@@ -159,16 +159,21 @@ git push origin main
 - 末尾の「今日のテーマ考察」を引用ボックスで強調
 
 メール送信：
+
+> **GAS Web App の仕様制約**: `doPost(e)` から Authorization ヘッダを取得できないため、シークレットは **POST body の `secret` フィールド**で渡す。
+
 ```bash
 curl -X POST "$WEBHOOK_URL" \
-  -H "Authorization: Bearer $WEBHOOK_SECRET" \
   -H "Content-Type: application/json" \
   -d '{
-    "to": ["hideki.kusunoki@gmail.com", "h2-hiramatsu@nri.co.jp"],
-    "subject": "News-Grasp YYYY-MM-DD ({対象ジャンル})",
+    "secret":   "'"$WEBHOOK_SECRET"'",
+    "to":       ["hideki.kusunoki@gmail.com", "h2-hiramatsu@nri.co.jp"],
+    "subject":  "News-Grasp YYYY-MM-DD ({対象ジャンル})",
     "htmlBody": "..."
   }'
 ```
+
+レスポンスは常に HTTP 200 で返るため、`body.ok === true` で成功判定する。`body.results` に各宛先の送信結果が入る。NRI ドメイン宛が `ok: false` でも他宛先が成功していれば全体は成功扱い、`_status.md` に「NRI 不達」を補足記録する。
 
 ### ステップ 7: 失敗時の処理
 
