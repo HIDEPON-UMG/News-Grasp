@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>News-Grasp {{DATE}}</title>
+<!--
+  Gmail 互換のため：
+  - インライン CSS のみ（<style> ブロックも一部 Gmail で剥がされるが基本対応）
+  - レイアウトは <table> ベース（flex/grid 不可）
+  - <details> は Gmail でも展開して表示される（折り畳まれるのは一部クライアントのみ）
+-->
+<style>
+  body { margin:0; padding:0; background:#f4f6fa; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; color:#1a2238; }
+  a { color:#2756d3; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .container { max-width:760px; margin:0 auto; background:#ffffff; }
+  .badge { display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; margin-right:6px; }
+  .badge-date { background:#1a2238; color:#fff; }
+  .badge-genre { background:#e6ecfb; color:#2756d3; }
+  .card { border:1px solid #e1e6f0; border-radius:8px; margin:12px 0; overflow:hidden; }
+  .card h3 { margin:0; padding:12px 16px; background:#f7f9fd; font-size:15px; }
+  .card .meta { padding:8px 16px; font-size:12px; color:#6b7588; border-bottom:1px solid #eef1f7; }
+  .card .body { padding:12px 16px; font-size:14px; line-height:1.7; }
+  .card .related { padding:8px 16px; background:#fdf6e3; border-top:1px solid #f1e6c4; font-size:13px; color:#6b5a1f; }
+  .insight { background:#1a2238; color:#fff; padding:20px 24px; border-radius:8px; margin:24px 16px; }
+  .insight h2 { margin:0 0 12px 0; font-size:16px; color:#a3c4ff; }
+  .insight p { margin:0 0 12px 0; font-size:14px; line-height:1.8; }
+  details { margin:8px 16px; }
+  summary { cursor:pointer; padding:10px 14px; background:#eef2fb; border-radius:6px; font-weight:600; font-size:14px; }
+  .market-table { width:calc(100% - 32px); margin:12px 16px; border-collapse:collapse; font-size:13px; }
+  .market-table th, .market-table td { padding:8px 10px; border:1px solid #e1e6f0; text-align:right; }
+  .market-table th { background:#f7f9fd; text-align:center; }
+  .market-table td:first-child { text-align:left; font-weight:600; }
+  .footer { padding:16px 24px; font-size:12px; color:#6b7588; border-top:1px solid #e1e6f0; }
+  .footer a { color:#6b7588; }
+</style>
+</head>
+<body>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td>
+  <div class="container">
+
+    <!-- ヘッダー -->
+    <div style="padding:24px 24px 12px 24px;">
+      <div style="font-size:20px; font-weight:700; color:#1a2238; margin-bottom:8px;">
+        🗞️ News-Grasp
+      </div>
+      <div style="margin-bottom:6px;">
+        <span class="badge badge-date">{{DATE}} ({{WEEKDAY}})</span>
+        <!-- 対象ジャンルを {{GENRE_BADGES}} で展開 -->
+        {{GENRE_BADGES}}
+      </div>
+      <div style="font-size:12px; color:#6b7588;">
+        生成 {{GENERATED_AT}} JST / 記事 {{TOTAL_ARTICLES}} 件 / 所要 {{ELAPSED}}
+      </div>
+    </div>
+
+    <!-- マーケット概況（Economy ジャンルがある日のみ展開、なければセクションごと省略） -->
+    {{MARKET_SECTION}}
+
+    <!-- ジャンルごとの折り畳みセクション -->
+    <!--
+      {{GENRE_SECTIONS}} で以下の塊を対象ジャンル分繰り返す：
+
+      <details open>
+        <summary>🤖 AI（{{AI_COUNT}}件）</summary>
+        <div style="padding:0 8px;">
+          <!-- 記事カード x N -->
+          <div class="card">
+            <h3>{{ARTICLE_TITLE}}</h3>
+            <div class="meta">{{SOURCE}} ・ {{PUBLISHED}} ・ <a href="{{URL}}">原文を読む</a></div>
+            <div class="body">{{ARTICLE_BODY_HTML}}</div>
+            <!-- 関連がある場合のみ -->
+            <div class="related">
+              🔗 関連: <a href="{{RELATED_URL}}">{{RELATED_TITLE}}</a> と <strong>{{RELATION_AXIS}}</strong> の関係。{{RELATION_NOTE}}<br>
+              <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{RELATED_FILE}}">📂 Obsidian で開く</a>
+            </div>
+          </div>
+        </div>
+      </details>
+    -->
+    {{GENRE_SECTIONS}}
+
+    <!-- 今日のテーマ考察 -->
+    <div class="insight">
+      <h2>💡 今日のテーマ考察</h2>
+      {{INSIGHT_HTML}}
+    </div>
+
+    <!-- フッター -->
+    <div class="footer">
+      <p style="margin:0 0 6px 0;">
+        📂 Obsidian で開く:
+        <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{DATE}}-AI">AI</a>
+        ｜ <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{DATE}}-IT-Consulting">IT&コンサル</a>
+        {{FOOTER_LINKS_EXTRA}}
+      </p>
+      <p style="margin:0 0 6px 0;">
+        📦 GitHub: <a href="https://github.com/HIDEPON-UMG/News-Grasp">HIDEPON-UMG/News-Grasp</a>
+        ｜ ✏️ <a href="https://github.com/HIDEPON-UMG/News-Grasp/edit/main/data/watchlist.md">watchlist 編集</a>
+      </p>
+      <p style="margin:0; color:#9aa3b8; font-size:11px;">
+        🤖 自動配信: Anthropic Routine `news-grasp-daily` ／ 配信停止は GitHub repo の Routine 設定から
+      </p>
+    </div>
+
+  </div>
+</td></tr>
+</table>
+</body>
+</html>

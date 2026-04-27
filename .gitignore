@@ -1,0 +1,19 @@
+# Obsidian
+.obsidian/workspace*
+.obsidian/cache
+.trash/
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 一時
+*.tmp
+*.bak
+*~
+
+# secrets（万一置いてしまった場合の保険）
+.env
+.env.*
+*.secret.json
