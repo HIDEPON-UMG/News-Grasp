@@ -6,11 +6,13 @@
 
 watchlist で指定された企業・タイトル・キーワードと、ジャンル汎用キーワードを組み合わせて Web を検索し、**過去 90 日の記事との関連性を踏まえた**日次レポートを Markdown で生成する。完了後、HTML メールを GAS Webhook 経由で 2 名に送付する。
 
-## 必須シークレット（環境変数として渡される）
+## 認証・接続設定（B 案: シークレットなし方式）
 
-- `GH_TOKEN`: HIDEPON-UMG/News-Grasp への読み書き権限を持つ PAT
-- `WEBHOOK_URL`: GAS web app の `https://script.google.com/.../exec` URL
-- `WEBHOOK_SECRET`: Authorization ヘッダで照合するシークレットトークン
+Anthropic Routine の API には secrets を渡す機構が無いため、本構成は **「URL 自体が秘匿」** の前提で動く。
+
+- **GitHub repo の clone / push**: Routine 起動時の `sources.git_repository.url` で自動 clone される。Anthropic Cloud の OAuth GitHub 連携を経由するため `GH_TOKEN` は不要。push もこの認証で行える前提（不可なら本ドキュメント末尾「フォールバック」参照）。
+- **GAS Webhook URL（プロンプト内固定値）**: `https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec`
+- **GAS 側のクライアント識別**: POST body に `"client": "news-grasp-routine"` を含めると通る。ホワイトリスト宛先（`hideki.kusunoki@gmail.com` と `h2-hiramatsu@nri.co.jp`）以外には送信されない。
 
 ---
 
@@ -33,13 +35,16 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 
 ### ステップ 2: 状態ファイルの取得
 
-`gh` CLI で `HIDEPON-UMG/News-Grasp` から以下を取得：
+repo は Routine 起動時に作業ディレクトリへ自動 clone されているはず。以下を直接読む：
 - `data/watchlist.md`
 - `data/articles.jsonl`（直近 90 日分のみ）
+- `prompts/email-template.html`
+
+clone されていなければ手動で：
 
 ```bash
-gh api repos/HIDEPON-UMG/News-Grasp/contents/data/watchlist.md --jq '.content' | base64 -d
-gh api repos/HIDEPON-UMG/News-Grasp/contents/data/articles.jsonl --jq '.content' | base64 -d
+git clone https://github.com/HIDEPON-UMG/News-Grasp.git
+cd News-Grasp
 ```
 
 ### ステップ 3: 各ジャンルの収集と生成（ジャンルごとに独立に実行）
@@ -160,13 +165,13 @@ git push origin main
 
 メール送信：
 
-> **GAS Web App の仕様制約**: `doPost(e)` から Authorization ヘッダを取得できないため、シークレットは **POST body の `secret` フィールド**で渡す。
+> **B 案**: secret は使わない。`client: "news-grasp-routine"` のクライアント識別子のみ送る。GAS 側はホワイトリスト宛先のみ受け付ける。
 
 ```bash
-curl -X POST "$WEBHOOK_URL" \
+curl -X POST "https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec" \
   -H "Content-Type: application/json" \
   -d '{
-    "secret":   "'"$WEBHOOK_SECRET"'",
+    "client":   "news-grasp-routine",
     "to":       ["hideki.kusunoki@gmail.com", "h2-hiramatsu@nri.co.jp"],
     "subject":  "News-Grasp YYYY-MM-DD ({対象ジャンル})",
     "htmlBody": "..."
@@ -196,3 +201,18 @@ curl -X POST "$WEBHOOK_URL" \
 - **commit message は「なぜ」より「何を」**（自動生成のため定型でよい）
 - **過去 digest との重複チェック**: 同じ URL が `articles.jsonl` に既にある記事は再掲載しない
 - **タイムゾーンは常に JST**（YYYY-MM-DD は JST 基準）
+
+---
+
+## フォールバック: git push が認証エラーになった場合
+
+Routine 環境で `git push origin main` が `authentication failed` で落ちる場合、Anthropic Cloud Code の OAuth 連携が read-only または未連携の可能性がある。その場合は以下の運用に切り替える：
+
+1. **digest 内容を Webhook 経由でユーザー側 PC に送る**:
+   - メール本文（HTML）に当日 Markdown を**全文** code block で同梱
+   - ユーザーが手動で Obsidian にペーストする運用
+2. **`articles.jsonl` の更新は諦める**:
+   - 過去記事 DB が育たないので関連付け機能は劣化
+   - 代替: `gh api repos/.../contents/data/articles.jsonl` の生 PUT API を curl で叩く（GitHub PAT が必要 → A 案へ後退）
+
+このフォールバック運用が必要になった場合は実装方針を再検討する旨、メール末尾に明記してユーザーに通知する。
