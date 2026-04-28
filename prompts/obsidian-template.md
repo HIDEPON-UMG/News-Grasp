@@ -10,7 +10,7 @@ Genre は AI / FX / IT-Consulting / Economy / Game）も同じ強調記法・
 -->
 
 ---
-title: "News Grasp #{{ISSUE_NO}} — 五つの視点で、今日を掴む。"
+title: "News Grasp #{{ISSUE_NO}} — 時勢を掴み、日々に新たに。"
 date: {{ISSUE_DATE}}
 issue: {{ISSUE_NO}}
 weekday: {{ISSUE_WEEKDAY}}
@@ -25,7 +25,7 @@ categories: [{{CATEGORY_IDS_CSV}}]
 theme: "{{REFLECTION_TITLE}}"
 ---
 
-# News Grasp #{{ISSUE_NO}} — 五つの視点で、今日を掴む。
+# News Grasp #{{ISSUE_NO}} — 時勢を掴み、日々に新たに。
 
 #daily #news-grasp #issue-{{ISSUE_NO}}
 

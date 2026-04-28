@@ -181,7 +181,7 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
     bullets_html = ""
     for b in it["bullets"]:
         bullets_html += f"""
-        <li style="position:relative;padding-left:18px;margin-bottom:8px;font-size:13px;line-height:1.85;color:#1A1A1A;list-style:none;">
+        <li class="ng-card-body" style="position:relative;padding-left:18px;margin-bottom:8px;font-size:13px;line-height:1.85;color:#1A1A1A;list-style:none;">
           <span style="position:absolute;left:0;top:0;color:{accent};font-weight:700;font-family:'JetBrains Mono',Menlo,monospace;">▸</span>
           {render_inline_emphasis(b, accent)}
         </li>""".strip()
@@ -197,7 +197,7 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
             'font-size:10px;padding:2px 6px;margin-right:8px;vertical-align:middle;letter-spacing:1px;">TOP</span>'
         )
         feature_img_html = f"""
-        <div style="margin-bottom:14px;position:relative;border:1px solid #E2DED4;">
+        <div class="ng-feature-img" style="margin-bottom:14px;position:relative;border:1px solid #E2DED4;">
           <img src="{img}" alt="" width="568" style="width:100%;height:200px;object-fit:cover;display:block;">
           <div style="position:absolute;bottom:0;left:0;background:{accent};color:#fff;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;padding:4px 10px;letter-spacing:1.5px;">
             FEATURED · {html.escape(cat['nameEn'].upper())}
@@ -205,39 +205,39 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
         </div>"""
     else:
         side_img_html = f"""
-          <td width="140" valign="top" style="padding-right:16px;">
+          <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
             <img src="{img}" alt="" width="140" style="width:140px;height:90px;object-fit:cover;display:block;border:1px solid #E2DED4;">
-            <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:8px;color:#8B8B85;letter-spacing:1px;margin-top:4px;text-align:center;">
+            <div class="ng-side-thumb-caption" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:8px;color:#8B8B85;letter-spacing:1px;margin-top:4px;text-align:center;">
               ▢ IMG · {idx+1:02d}
             </div>
           </td>"""
 
     return f"""
-    <tr><td style="padding:24px 36px;background:{bg};border-bottom:1px solid #EDEAE3;">
+    <tr><td class="ng-card-pad" style="padding:24px 36px;background:{bg};border-bottom:1px solid #EDEAE3;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;"><tbody><tr>
         <td>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
             <td style="background:{accent};color:#fff;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;font-weight:700;padding:2px 6px;letter-spacing:0.5px;">
               {idx+1:02d}
             </td>
-            <td style="padding-left:8px;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:0.5px;">
+            <td class="ng-card-meta" style="padding-left:8px;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:0.5px;">
               {html.escape(it.get('time',''))} · {html.escape(it.get('source',''))}
             </td>
           </tr></tbody></table>
         </td>
-        <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;">
+        <td align="right" class="ng-card-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;">
           SCORE <span style="color:{accent};font-weight:700;font-size:14px;margin-left:4px;">{it.get('score','')}</span>
         </td>
       </tr></tbody></table>
 
-      <h3 style="font-size:{19 if idx==0 else 16}px;font-weight:800;line-height:1.45;margin:8px 0 12px;letter-spacing:-0.3px;">
+      <h3 class="ng-card-title" style="font-size:{19 if idx==0 else 16}px;font-weight:800;line-height:1.45;margin:8px 0 12px;letter-spacing:-0.3px;">
         {top_label}<a href="{html.escape(it.get('url','#'))}" style="color:#1A1A1A;text-decoration:none;">{html.escape(it.get('title',''))}</a>
       </h3>
       {feature_img_html}
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
         {side_img_html}
-        <td valign="top">
+        <td class="ng-side-text" valign="top">
           <ul style="margin:0;padding-left:0;list-style:none;">
             {bullets_html}
           </ul>
@@ -251,13 +251,13 @@ def build_categories_html(categories: list[dict]) -> str:
     for ci, cat in enumerate(categories):
         # カテゴリヘッダー
         parts.append(f"""
-        <tr><td style="background:{cat['accent']};padding:20px 36px;">
+        <tr><td class="ng-cat-pad" style="background:{cat['accent']};padding:20px 36px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
             <td style="vertical-align:middle;">
               <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">
                 CATEGORY {ci+1:02d} / {len(categories):02d} · {html.escape(cat['nameEn'].upper())}
               </div>
-              <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
+              <div class="ng-cat-name" style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
                 <span style="font-family:'JetBrains Mono',Menlo,monospace;margin-right:10px;">{cat['glyph']}</span>{html.escape(cat['name'])}
               </div>
             </td>
@@ -265,7 +265,7 @@ def build_categories_html(categories: list[dict]) -> str:
               {len(cat['items'])} stories
             </td>
           </tr></tbody></table>
-          <div style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">
+          <div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">
             {html.escape(cat['summary'])}
           </div>
         </td></tr>""")
@@ -283,17 +283,17 @@ def build_reflection_sections(sections: list[dict]) -> str:
         is_last = si == len(sections) - 1
         border = "none" if is_last else "1px dashed #E2DED4"
         parts.append(f"""
-        <tr><td style="background:#FAF7F0;padding:0 36px;">
+        <tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:{border};"><tbody><tr>
-            <td width="80" valign="top" style="padding:28px 16px 28px 0;">
-              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:38px;font-weight:900;color:{accent};line-height:0.9;letter-spacing:-2px;">§{si+1:02d}</div>
+            <td width="80" valign="top" class="ng-section-num-cell" style="padding:28px 16px 28px 0;">
+              <div class="ng-section-num" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:38px;font-weight:900;color:{accent};line-height:0.9;letter-spacing:-2px;">§{si+1:02d}</div>
               <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:9px;color:#fff;background:{accent};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{html.escape(sec['tag'])}</div>
             </td>
-            <td valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;">
-              <h3 style="font-size:18px;font-weight:800;margin:0 0 14px;color:#1A1A1A;letter-spacing:-0.3px;line-height:1.4;">
+            <td valign="top" class="ng-section-text-cell" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;">
+              <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;color:#1A1A1A;letter-spacing:-0.3px;line-height:1.4;">
                 {html.escape(sec['heading'])}
               </h3>
-              <div style="font-size:13.5px;line-height:2.0;color:#1A1A1A;">
+              <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;color:#1A1A1A;">
                 {render_inline_emphasis(sec['body'], accent)}
               </div>
             </td>
@@ -415,7 +415,9 @@ def post_to_webhook(
 def main() -> int:
     parser = argparse.ArgumentParser(description="News Grasp email template renderer")
     parser.add_argument("--send", action="store_true",
-                        help="Webhook 経由でメールを送信する（デフォルト: ローカル保存のみ）")
+                        help="GAS Webhook 経由で送信（旧経路、200KB 上限あり）")
+    parser.add_argument("--smtp", action="store_true",
+                        help="本番経路: tools/send_email.py 経由で SMTP 直送（推奨）")
     parser.add_argument("--to", action="append", default=None,
                         help="送信先メールアドレス（複数指定可）。未指定時はテスト宛先のみ")
     parser.add_argument("--subject", default=f"[TEST] News Grasp #{mock_data.ISSUE_NO} mock",
@@ -451,6 +453,34 @@ def main() -> int:
             print("FAIL: webhook reported failure")
             return 1
         print("OK: mail sent")
+
+    if args.smtp:
+        # 本番経路: cid: 参照のみ HTML に書き、tools/send_email.py が assets/*.jpg を自動添付
+        set_cid_mode(True)
+        send_html = render_email_html()  # SMTP 経路はサイズ制限が緩いので minify 不要
+        recipients = args.to or RECIPIENTS
+
+        # 一時 HTML ファイルに書き出して send_email.py に渡す
+        tmp_html = os.path.join(HERE, "output", "smtp_body.html")
+        os.makedirs(os.path.dirname(tmp_html), exist_ok=True)
+        with open(tmp_html, "w", encoding="utf-8") as f:
+            f.write(send_html)
+
+        import subprocess
+        cmd = [
+            sys.executable,
+            os.path.join(os.path.dirname(HERE), "tools", "send_email.py"),
+            "--html-file", tmp_html,
+            "--subject", args.subject,
+            "--to", ",".join(recipients),
+        ]
+        print(f"\nSMTP send via tools/send_email.py")
+        print(f"  htmlBody size: {len(send_html):,} bytes (no minify)")
+        rc = subprocess.call(cmd)
+        if rc != 0:
+            print("FAIL: SMTP send returned non-zero")
+            return rc
+        print("OK: SMTP mail sent")
 
     return 0
 

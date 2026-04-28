@@ -1,6 +1,6 @@
 # News Grasp
 
-> 五つの視点で、今日を掴む。
+> 時勢を掴み、日々に新たに。
 
 毎朝 06:00 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → GAS Webhook 経由で Gmail に HTML メール配信、までを自律実行する **個人向け日次ニュースレター・パイプライン**。
 

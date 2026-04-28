@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="format-detection" content="telephone=no">
 <meta name="x-apple-disable-message-reformatting">
-<title>News Grasp #{{ISSUE_NO}} — 五つの視点で、今日を掴む。</title>
+<title>News Grasp #{{ISSUE_NO}} — 時勢を掴み、日々に新たに。</title>
 <!--
   Email-safe HTML newsletter
   - Layout: <table> ベース、Gmail / Outlook / Apple Mail / iOS Mail 互換
@@ -19,6 +19,60 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
+<!--
+  Responsive layout for mobile (<= 600px)
+  Gmail (web/iOS/Android), Apple Mail, Outlook 2019+ がメディアクエリをサポート。
+  Outlook desktop はインラインスタイルで PC 幅レイアウトのまま。
+  クラス名 ng-* を経由して上書き、!important でインラインスタイルを優先する。
+-->
+<style>
+@media only screen and (max-width: 600px) {
+  /* 外枠 */
+  .ng-wrap { width: 100% !important; max-width: 100% !important; }
+  .ng-pad-x { padding-left: 16px !important; padding-right: 16px !important; }
+  .ng-pad-x-tight { padding-left: 14px !important; padding-right: 14px !important; }
+  /* マストヘッド */
+  .ng-h1 { font-size: 26px !important; line-height: 1.25 !important; letter-spacing: -0.3px !important; }
+  .ng-masthead-meta { font-size: 9px !important; letter-spacing: 0.5px !important; }
+  /* TOC / カテゴリ帯 */
+  .ng-toc-pad { padding: 12px 14px !important; }
+  .ng-cat-pad { padding: 16px 16px !important; }
+  .ng-cat-name { font-size: 22px !important; }
+  .ng-cat-summary { font-size: 12px !important; line-height: 1.55 !important; }
+  /* 記事カード */
+  .ng-card-pad { padding: 18px 16px !important; }
+  .ng-card-title { font-size: 16px !important; line-height: 1.4 !important; letter-spacing: -0.1px !important; }
+  .ng-card-body { font-size: 13px !important; line-height: 1.85 !important; }
+  .ng-card-meta { font-size: 10px !important; letter-spacing: 0.4px !important; }
+  /* サイドサムネ -> 上部に再配置（CSS のみで完結させる） */
+  .ng-side-thumb { display: block !important; padding: 0 0 10px 0 !important; width: 100% !important; max-width: 100% !important; }
+  .ng-side-thumb img { width: 100% !important; max-width: 100% !important; height: auto !important; max-height: 180px !important; object-fit: cover !important; }
+  .ng-side-thumb-caption { display: none !important; }
+  .ng-side-text { display: block !important; padding: 0 !important; }
+  /* FEATURED 画像 */
+  .ng-feature-img img { height: auto !important; max-height: 220px !important; }
+  /* 考察ブロック */
+  .ng-essay-pad { padding: 28px 16px 24px !important; }
+  .ng-essay-h2 { font-size: 26px !important; letter-spacing: -0.3px !important; }
+  .ng-essay-sub { font-size: 13px !important; }
+  .ng-essay-counter { display: none !important; }
+  .ng-pull-quote-pad { padding: 22px 16px !important; }
+  .ng-pull-quote { font-size: 17px !important; line-height: 1.55 !important; }
+  .ng-quote-mark { font-size: 56px !important; }
+  .ng-section-pad { padding: 0 16px !important; }
+  .ng-section-num-cell { width: auto !important; padding: 22px 12px 22px 0 !important; }
+  .ng-section-num { font-size: 28px !important; }
+  .ng-section-text-cell { padding: 22px 0 22px 14px !important; }
+  .ng-section-heading { font-size: 16px !important; }
+  .ng-section-body { font-size: 13px !important; line-height: 1.85 !important; }
+  /* テイクアウェイ・関連号・フッター */
+  .ng-takeaway-pad { padding: 24px 16px !important; }
+  .ng-takeaway-card { padding: 14px !important; }
+  .ng-related-pad { padding: 18px 16px !important; }
+  .ng-footer-pad { padding: 22px 16px !important; }
+  .ng-footer-text { font-size: 10px !important; line-height: 1.6 !important; }
+}
+</style>
 </head>
 <body style="margin:0;padding:0;background:#E8E4DA;">
 
@@ -28,28 +82,28 @@
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E8E4DA;padding:24px 0;font-family:'Noto Serif JP','Yu Mincho','游明朝','Hiragino Mincho ProN',serif;">
 <tr><td align="center">
 
-<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;background:#FAF7F0;color:#1A1A1A;">
+<table role="presentation" class="ng-wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;background:#FAF7F0;color:#1A1A1A;">
 <tbody>
 
 <!-- ====================================================================== -->
 <!-- ─── Masthead ───                                                         -->
 <!-- ====================================================================== -->
-<tr><td style="border-top:4px solid #1A1A1A;padding:32px 36px 20px;">
+<tr><td class="ng-pad-x" style="border-top:4px solid #1A1A1A;padding:32px 36px 20px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
     <td style="vertical-align:middle;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
         <td style="background:#1A1A1A;color:#FAF7F0;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;font-weight:700;padding:4px 8px;letter-spacing:1px;">NG</td>
-        <td style="padding-left:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1.5px;">NEWS GRASP · Morning Edition</td>
+        <td class="ng-masthead-meta" style="padding-left:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1.5px;">NEWS GRASP · Morning Edition</td>
       </tr></tbody></table>
     </td>
-    <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">
+    <td align="right" class="ng-masthead-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">
       #{{ISSUE_NO}} · {{ISSUE_DATE}}（{{ISSUE_WEEKDAY}}）
     </td>
   </tr></tbody></table>
-  <h1 style="font-size:34px;font-weight:900;line-height:1.25;letter-spacing:-0.5px;margin:18px 0 8px;color:#1A1A1A;">
-    五つの視点で、<br>今日を掴む。
+  <h1 class="ng-h1" style="font-size:34px;font-weight:900;line-height:1.25;letter-spacing:-0.5px;margin:18px 0 8px;color:#1A1A1A;">
+    時勢を掴み、<br>日々に新たに。
   </h1>
-  <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1px;margin-top:6px;">
+  <div class="ng-masthead-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1px;margin-top:6px;">
     {{TOTAL_CATEGORIES}} CATEGORIES · {{TOTAL_STORIES}} STORIES · {{TOTAL_SECTIONS}} ESSAY SECTIONS
   </div>
 </td></tr>
@@ -58,9 +112,9 @@
 <!-- ─── 目次 (TOC) ───                                                       -->
 <!-- {{TOC_ROWS_HTML}} は対象カテゴリ分の <table> 行を Claude が展開する        -->
 <!-- ====================================================================== -->
-<tr><td style="padding:0 36px 24px;">
+<tr><td class="ng-pad-x" style="padding:0 36px 24px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2EEE3;border:1px solid #E2DED4;">
-    <tbody><tr><td style="padding:14px 18px;">
+    <tbody><tr><td class="ng-toc-pad" style="padding:14px 18px;">
       <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:10px;">┌── TABLE OF CONTENTS</div>
       {{TOC_ROWS_HTML}}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;padding-top:8px;border-top:1px solid #E2DED4;"><tbody><tr>
@@ -107,21 +161,21 @@
 <!-- ====================================================================== -->
 <!-- ─── テーマ考察ヘッダー（ダーク） ───                                      -->
 <!-- ====================================================================== -->
-<tr><td style="background:#1A1A1A;padding:40px 36px 32px;">
+<tr><td class="ng-essay-pad" style="background:#1A1A1A;padding:40px 36px 32px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
     <td>
       <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#C9B98A;letter-spacing:4px;margin-bottom:12px;">
         ━━━━━━━━━━━━━━━━━━━━━━━<br>
         EDITORIAL · 本日のテーマ考察
       </div>
-      <h2 style="font-size:36px;font-weight:900;margin:0 0 8px;letter-spacing:-1px;color:#FAF7F0;line-height:1.15;">
+      <h2 class="ng-essay-h2" style="font-size:36px;font-weight:900;margin:0 0 8px;letter-spacing:-1px;color:#FAF7F0;line-height:1.15;">
         {{REFLECTION_TITLE}}
       </h2>
-      <div style="font-size:15px;color:#C9B98A;font-style:italic;font-family:'JetBrains Mono',Menlo,monospace;margin-bottom:24px;">
+      <div class="ng-essay-sub" style="font-size:15px;color:#C9B98A;font-style:italic;font-family:'JetBrains Mono',Menlo,monospace;margin-bottom:24px;">
         {{REFLECTION_SUBTITLE}}
       </div>
     </td>
-    <td width="120" align="right" valign="top">
+    <td class="ng-essay-counter" width="120" align="right" valign="top">
       <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:64px;color:#3A3530;line-height:1;font-weight:900;">§</div>
       <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:9px;color:#9C9A92;letter-spacing:2px;margin-top:4px;">{{TOTAL_SECTIONS}} PARTS</div>
     </td>
@@ -139,11 +193,11 @@
 <!-- ====================================================================== -->
 <!-- ─── プルクオート ───                                                      -->
 <!-- ====================================================================== -->
-<tr><td style="background:#FAF7F0;padding:28px 36px;border-top:1px solid #E2DED4;border-bottom:1px solid #E2DED4;">
+<tr><td class="ng-pull-quote-pad" style="background:#FAF7F0;padding:28px 36px;border-top:1px solid #E2DED4;border-bottom:1px solid #E2DED4;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
-    <td width="56" valign="top" style="font-family:Georgia,serif;font-size:80px;color:#8E2A19;line-height:0.9;font-weight:900;">"</td>
+    <td width="56" valign="top" class="ng-quote-mark" style="font-family:Georgia,serif;font-size:80px;color:#8E2A19;line-height:0.9;font-weight:900;">"</td>
     <td valign="middle" style="padding-left:4px;">
-      <div style="font-size:19px;font-weight:700;line-height:1.6;color:#1A1A1A;letter-spacing:-0.2px;">
+      <div class="ng-pull-quote" style="font-size:19px;font-weight:700;line-height:1.6;color:#1A1A1A;letter-spacing:-0.2px;">
         {{REFLECTION_PULL_QUOTE_HTML}}
       </div>
       <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1.5px;margin-top:12px;">
@@ -179,7 +233,7 @@
 <!-- ====================================================================== -->
 <!-- ─── KEY TAKEAWAYS（3 カード） ───                                         -->
 <!-- ====================================================================== -->
-<tr><td style="background:#F2EEE3;padding:28px 36px;border-top:2px solid #1A1A1A;">
+<tr><td class="ng-takeaway-pad" style="background:#F2EEE3;padding:28px 36px;border-top:2px solid #1A1A1A;">
   <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:16px;">━━ KEY TAKEAWAYS · 今日の3つの結論</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
     {{TAKEAWAYS_HTML}}
@@ -201,7 +255,7 @@
 <!-- ====================================================================== -->
 <!-- ─── 関連過去号 ───                                                        -->
 <!-- ====================================================================== -->
-<tr><td style="padding:28px 36px;background:#F2EEE3;border-top:2px solid #E2DED4;">
+<tr><td class="ng-related-pad" style="padding:28px 36px;background:#F2EEE3;border-top:2px solid #E2DED4;">
   <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:12px;">━━ RELATED ISSUES · 関連する過去号</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
     {{RELATED_ISSUES_HTML}}
@@ -221,7 +275,7 @@
 <!-- ====================================================================== -->
 <!-- ─── フッター ───                                                          -->
 <!-- ====================================================================== -->
-<tr><td style="padding:24px 36px 32px;background:#FAF7F0;border-top:1px solid #E2DED4;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1px;text-align:center;">
+<tr><td class="ng-footer-pad ng-footer-text" style="padding:24px 36px 32px;background:#FAF7F0;border-top:1px solid #E2DED4;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1px;text-align:center;">
   <div style="margin-bottom:8px;">
     <strong style="color:#1A1A1A;letter-spacing:2px;">NEWS GRASP</strong> — Five Lenses on Today
   </div>

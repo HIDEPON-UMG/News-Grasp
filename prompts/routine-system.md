@@ -219,6 +219,44 @@ git push origin main
 - `{{RELATED_ISSUES_HTML}}` → 関連過去号 HTML
 - `{{TAKEAWAYS_HTML}}` → KEY TAKEAWAYS HTML
 
+#### レスポンシブ対応の必須クラス（モバイル可読性）
+
+email-template.html の `<head>` に `@media (max-width: 600px)` の CSS が定義済み。Routine が生成する HTML 要素には**指定された `class` 属性を付与必須**。これによりスマホ表示時にレイアウトが自動で 1 カラムに切り替わる。Outlook デスクトップ等は class を無視して PC 幅のままなので、両方が成立する。
+
+| 要素 | 必須 class | 効果（モバイル時） |
+|---|---|---|
+| カテゴリ帯（紫帯）の外側 td | `ng-cat-pad` | padding を 16px に縮小 |
+| カテゴリ名テキスト | `ng-cat-name` | font-size 22px |
+| カテゴリ要約 | `ng-cat-summary` | font-size 12px |
+| 記事カード外側 td | `ng-card-pad` | padding を 16px に縮小 |
+| 記事タイトル h3 | `ng-card-title` | font-size 16px |
+| 箇条書き li | `ng-card-body` | font-size 13px |
+| メタ情報行（時刻・出典） | `ng-card-meta` | font-size 10px |
+| TOP 記事 FEATURED 画像の wrapper div | `ng-feature-img` | height auto |
+| サイドサムネ td | `ng-side-thumb` | display: block で**上に再配置** |
+| サイドサムネのキャプション | `ng-side-thumb-caption` | display: none で非表示 |
+| サムネ右の本文 td | `ng-side-text` | display: block で下に配置 |
+
+**例**: 記事カード（2 件目以降）の最小骨格
+
+```html
+<tr><td class="ng-card-pad" style="padding:24px 36px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">
+  <div class="ng-card-meta" style="...">07:30 · OANDA</div>
+  <h3 class="ng-card-title" style="font-size:16px;...">タイトル</h3>
+  <table width="100%"><tr>
+    <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
+      <img src="cid:ng-thumb-common-fx" width="140" style="...">
+      <div class="ng-side-thumb-caption" style="...">▢ IMG</div>
+    </td>
+    <td class="ng-side-text" valign="top">
+      <ul><li class="ng-card-body" style="...">[[キーワード]] が __重要__ ...</li></ul>
+    </td>
+  </tr></table>
+</td></tr>
+```
+
+PC ではサムネ左 + 本文右の横並び、モバイルではサムネが上・本文が下に自動で切り替わる。
+
 サムネ URL が `null` のときは、**位置に応じて 2 種類**の NG プレースホルダ画像を使い分ける：
 
 | 表示枠 | 使う画像 | 用途 |
@@ -228,55 +266,46 @@ git push origin main
 
 `{cat_id}` は `fx` / `ai` / `it` / `economy` / `game`。
 
-> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。また GAS GmailApp の `htmlBody` には **約 200 KB のハード上限**があり、base64 data URI を HTML 本文に直接埋め込むと 50 記事分で 400 KB を超え送信失敗する。
+> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。NG プレースホルダ画像は **MIME inline 添付（cid: 参照）** でメールに埋め込む。
 >
-> **正解**: HTML 側は `<img src="cid:KEY">` で参照し、画像本体（data URI）は POST body の `inlineImages` フィールドに別マップで送る。GAS が MIME multipart/related に展開して埋め込んでくれる。
+> **手順**:
 >
-> NG プレースホルダ用の base64 文字列は **事前計算済み**で `prompts/ng-thumbs-base64.md` に格納されている。Routine は以下の手順で使うこと：
->
-> 1. **メール生成の最初に** `Read` ツールで `prompts/ng-thumbs-base64.md` を 1 回だけ読み込む（10 個のキー → data URI のマップ）
-> 2. その日に**実際に使うキーだけ**を `inlineImages` マップに収録する（記事数分 × 5 カテゴリで最大 10 キーに収まる）。例: 当日 FX/AI/IT/Economy/Game の 5 カテゴリが走るなら、`ng-thumb-fx, ng-thumb-ai, ..., ng-thumb-common-fx, ...` の 10 キー
-> 3. HTML 側の `<img>` タグは `<img src="cid:ng-thumb-fx" alt="" width="568" style="...">` の形で書く（src 属性はキー名を `cid:` プレフィクス付きで指定するだけ。data URI は HTML には書かない）
-> 4. POST body の `inlineImages` を `{"ng-thumb-fx": "data:image/jpeg;base64,/9j/4AAQ...", ...}` の形で構築（lookup ファイルの該当ブロックを verbatim でコピーして JSON 化）
+> 1. HTML 側の `<img>` タグは `<img src="cid:ng-thumb-fx" alt="" width="568" style="...">` の形で書く。`cid:` プレフィクスの後に**ファイル名（拡張子なし）**を指定するだけ
+> 2. 送信スクリプト `tools/send_email.py` が HTML を走査して `cid:KEY` 参照を検出し、`assets/KEY.jpg` を自動で MIME inline 添付する。Routine 自身は base64 化や添付マップ構築をしなくてよい
+> 3. 利用可能なキー: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-economy`, `ng-thumb-game`（FEATURED 用、568×200 想定）／ `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-economy`, `ng-thumb-common-game`（サイドサムネ用、140×90 想定）
 >
 > **絶対にやってはいけないこと**:
 >
-> - HTML 本文に `<img src="data:image/jpeg;base64,...">` と data URI を直接埋め込む（200 KB 上限超過で送信失敗）
-> - `<img src="../../assets/ng-thumb-economy.jpg">` のような相対パス（メール送信先で解決不能）
+> - HTML 本文に `<img src="data:image/jpeg;base64,...">` と data URI を直接埋め込む（メールサイズが膨らみ可読性も落ちる）
+> - `<img src="../../assets/ng-thumb-economy.jpg">` のような相対パス（受信側で解決不能）
 > - `<img src="https://raw.githubusercontent.com/HIDEPON-UMG/News-Grasp/main/assets/...">` のような raw URL（プライベート repo のため認証必須で 404）
 > - `<img>` タグの省略（FEATURED と各サイドサムネは必ず描画する）
 >
-> OGP で取得した実画像 URL（外部の絶対 URL、つまり `articles.jsonl` の `thumb` フィールドが non-null）はそのまま `<img src="https://...">` で参照する（cid: 経由は不要）。
+> OGP で取得した実画像 URL（外部の絶対 URL、つまり `articles.jsonl` の `thumb` フィールドが non-null）はそのまま `<img src="https://...">` で参照する（cid: 経由は不要、自動添付の対象にもならない）。
 
-Webhook 送信：
+メール送信：
 
 ```bash
-# POST body は以下の構造（実際は Python urllib などで送る）
-# {
-#   "client":       "news-grasp-routine",
-#   "to":           ["hideki.kusunoki@gmail.com", "h2-hiramatsu@nri.co.jp"],
-#   "subject":      "News Grasp #YYYYMMDD — 五つの視点で、今日を掴む。",
-#   "htmlBody":     "<html>... <img src=\"cid:ng-thumb-fx\"> ...</html>",
-#   "inlineImages": {
-#     "ng-thumb-fx":         "data:image/jpeg;base64,/9j/4AAQ...",
-#     "ng-thumb-ai":         "data:image/jpeg;base64,...",
-#     "ng-thumb-common-fx":  "data:image/jpeg;base64,..."
-#   }
-# }
+# 1) HTML をファイルに書き出す
+python -c "open('build/email.html','w',encoding='utf-8').write(html_body)"
+
+# 2) tools/send_email.py で SMTP 直送（cid: 参照は自動で assets/*.jpg を添付）
+python tools/send_email.py \
+  --html-file build/email.html \
+  --subject "News Grasp #YYYYMMDD — 時勢を掴み、日々に新たに。" \
+  --to "hideki.kusunoki@gmail.com,h2-hiramatsu@nri.co.jp"
 ```
 
-`inlineImages` は当日使うキーだけを収録すれば良い（最大 10 キー）。GAS は `Utilities.base64Decode` で各 data URI を Blob に変換し、`GmailApp.sendEmail` の `inlineImages` オプションに渡す。HTML 本文の `<img src="cid:KEY">` がメールクライアント上で展開される。
+`tools/send_email.py` は `~/.secrets/news-grasp-smtp.txt` から Gmail App Password を読み、`smtp.gmail.com:587` (STARTTLS) で `hidepontrainer@gmail.com` から直送する。HTML サイズ上限は実質 25 MB（Gmail 1 メッセージ上限）まで使える。
 
-### 送信前の必須チェック（200KB 上限対策）
+### 送信前の任意チェック
 
-GAS GmailApp の `htmlBody` は実測 **約 200 KB がハード上限**。50 記事分の HTML は容易にこの境界に近づくため、送信前に必ず以下をチェック・適用する：
+SMTP 経路は htmlBody サイズ制限が極めて緩いため、minify は必須ではないが、以下は引き続き有効：
 
-1. **HTML を空白圧縮する**: `>\s+<` → `><`、改行直後の連続空白を 1 個に畳む等の単純な空白除去（実測 ~14% 削減）
-2. **サイズを measure する**: minify 後の `htmlBody` バイト数をログに出す。180 KB 超なら警告レベル、200 KB 超なら送信前に articles.jsonl から最低スコア記事を間引く
-3. **OGP URL を活かす**: `articles.jsonl` の `thumb` フィールドが non-null の記事は `<img src="https://...">` で URL 直リンクを使う（cid: 経由不要、`inlineImages` への登録もしない）。これで NG フォールバック数を減らせる
-4. **記事カードのインラインスタイルを最小化**: 同じ font-family や padding が繰り返し現れる場合、`<head><style>` ブロックに class として定義し、各タグは `class="..."` で参照する（Gmail は `<style>` in `<head>` をサポート）
+1. **OGP URL を活かす**: `articles.jsonl` の `thumb` フィールドが non-null の記事は `<img src="https://...">` で URL 直リンクを使う。これで自動添付対象から外れ、メール総量が減る
+2. **記事カードのインラインスタイルを最小化**: 共通するスタイルは `<head><style>` ブロックに class 化（Gmail / Apple Mail / Outlook 2019+ 対応）
 
-レスポンスの `body.ok === true` を確認。`ok: false` で `error` に「メール本文のサイズ」が含まれていたら 200KB 上限なので、上記 1〜4 を強化して再送する。`results` の各宛先で NRI 不達があれば `_status.md` に補足記録。
+スクリプトの戻り値が 0 でない場合、stderr のエラーを `_status.md` に追記する。NRI 宛が SPF/DKIM フィルタに引っかかる可能性は GAS 経由と同じ（どちらも Google MX 経由のため挙動は同一）。
 
 ---
 
