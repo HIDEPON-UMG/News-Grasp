@@ -222,7 +222,16 @@ git push origin main
 - `assets/ng-thumb-economy.png`
 - `assets/ng-thumb-game.png`
 
-これらは GitHub raw URL `https://raw.githubusercontent.com/HIDEPON-UMG/News-Grasp/main/assets/ng-thumb-{id}.png` で参照（メール埋め込みのため絶対 URL 必須）。
+> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。メール HTML には **base64 data URI 埋め込み** で画像を入れる：
+>
+> ```bash
+> # ローカルファイルを base64 化して data URI を作る
+> printf 'data:image/png;base64,'; base64 -w0 assets/ng-thumb-{id}.png
+> ```
+>
+> Bash 経由で `base64 -w0 path/to/file.png` を呼んで結果を `<img src="data:image/png;base64,..." alt="">` に埋め込む。同じカテゴリの NG 画像が記事数分繰り返し HTML に展開されるが、メールクライアント側で同一 URI はキャッシュされるので表示時のメモリは 1 枚分。
+>
+> OGP で取得した実画像 URL（外部の絶対 URL）はそのまま `<img src="https://...">` で参照する（base64 化不要）。
 
 Webhook 送信：
 

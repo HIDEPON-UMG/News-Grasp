@@ -20,3 +20,8 @@ desktop.ini
 
 # テスト出力
 tests/output/
+
+
+# Python
+__pycache__/
+*.pyc

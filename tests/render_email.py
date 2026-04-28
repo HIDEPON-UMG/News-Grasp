@@ -19,12 +19,14 @@ mock_data.py のサンプルデータで埋めて完成版 HTML を出力する�
 from __future__ import annotations
 
 import argparse
+import base64
 import html
 import json
 import os
 import re
 import sys
 import urllib.request
+from functools import lru_cache
 
 # 自身が置かれている tests/ から repo ルートを解決
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,8 +42,7 @@ WEBHOOK_URL = (
 WEBHOOK_CLIENT = "news-grasp-routine"
 RECIPIENTS = ["hideki.kusunoki@gmail.com"]  # テストはまず自分だけに
 
-# Pillow が無くても落ちないようにフォールバック先（GitHub raw）
-NG_THUMB_BASE = "https://raw.githubusercontent.com/HIDEPON-UMG/News-Grasp/main/assets"
+ASSETS_DIR = os.path.join(REPO_ROOT, "assets")
 
 
 # ---------------------------------------------------------------------------
@@ -99,11 +100,30 @@ def render_inline_emphasis(text: str, accent: str) -> str:
 # 個別ブロック HTML
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=8)
+def ng_thumb_data_uri(cat_id: str) -> str:
+    """`assets/ng-thumb-{id}.png` を base64 data URI に変換してキャッシュ。
+
+    private repo でも動くよう、メール HTML には外部 URL ではなく
+    data URI として画像を埋め込む。
+    """
+    path = os.path.join(ASSETS_DIR, f"ng-thumb-{cat_id}.png")
+    if not os.path.exists(path):
+        # 万一ファイルが無くても致命的にならないよう 1px 透明 GIF を返す
+        return (
+            "data:image/gif;base64,"
+            "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+        )
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("ascii")
+    return f"data:image/png;base64,{b64}"
+
+
 def thumb_url(item: dict, cat_id: str) -> str:
-    """OGP があればそれ、無ければカテゴリ別 NG プレースホルダ。"""
+    """OGP があればそれ、無ければカテゴリ別 NG プレースホルダの data URI。"""
     if item.get("thumb"):
         return item["thumb"]
-    return f"{NG_THUMB_BASE}/ng-thumb-{cat_id}.png"
+    return ng_thumb_data_uri(cat_id)
 
 
 def build_toc_rows(categories: list[dict]) -> str:
