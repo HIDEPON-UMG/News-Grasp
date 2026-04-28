@@ -3,110 +3,241 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>News-Grasp {{DATE}}</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no">
+<meta name="x-apple-disable-message-reformatting">
+<title>News Grasp #{{ISSUE_NO}} — 五つの視点で、今日を掴む。</title>
 <!--
-  Gmail 互換のため：
-  - インライン CSS のみ（<style> ブロックも一部 Gmail で剥がされるが基本対応）
-  - レイアウトは <table> ベース（flex/grid 不可）
-  - <details> は Gmail でも展開して表示される（折り畳まれるのは一部クライアントのみ）
+  Email-safe HTML newsletter
+  - Layout: <table> ベース、Gmail / Outlook / Apple Mail / iOS Mail 互換
+  - CSS: 全てインライン（<style> ブロックは一部メーラーで剥がされるため最小限）
+  - JS: なし
+  - フォント: 日本語 = Noto Serif JP（明朝） / 欧文 = Inter / メタ = JetBrains Mono
+            Web フォント不可のクライアントには Yu Mincho / Hiragino Mincho / serif にフォールバック
+  - 強調記法: <strong> + アクセント色背景 = [[太字]]、<span border-bottom> = __下線__
 -->
-<style>
-  body { margin:0; padding:0; background:#f4f6fa; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; color:#1a2238; }
-  a { color:#2756d3; text-decoration:none; }
-  a:hover { text-decoration:underline; }
-  .container { max-width:760px; margin:0 auto; background:#ffffff; }
-  .badge { display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; margin-right:6px; }
-  .badge-date { background:#1a2238; color:#fff; }
-  .badge-genre { background:#e6ecfb; color:#2756d3; }
-  .card { border:1px solid #e1e6f0; border-radius:8px; margin:12px 0; overflow:hidden; }
-  .card h3 { margin:0; padding:12px 16px; background:#f7f9fd; font-size:15px; }
-  .card .meta { padding:8px 16px; font-size:12px; color:#6b7588; border-bottom:1px solid #eef1f7; }
-  .card .body { padding:12px 16px; font-size:14px; line-height:1.7; }
-  .card .related { padding:8px 16px; background:#fdf6e3; border-top:1px solid #f1e6c4; font-size:13px; color:#6b5a1f; }
-  .insight { background:#1a2238; color:#fff; padding:20px 24px; border-radius:8px; margin:24px 16px; }
-  .insight h2 { margin:0 0 12px 0; font-size:16px; color:#a3c4ff; }
-  .insight p { margin:0 0 12px 0; font-size:14px; line-height:1.8; }
-  details { margin:8px 16px; }
-  summary { cursor:pointer; padding:10px 14px; background:#eef2fb; border-radius:6px; font-weight:600; font-size:14px; }
-  .market-table { width:calc(100% - 32px); margin:12px 16px; border-collapse:collapse; font-size:13px; }
-  .market-table th, .market-table td { padding:8px 10px; border:1px solid #e1e6f0; text-align:right; }
-  .market-table th { background:#f7f9fd; text-align:center; }
-  .market-table td:first-child { text-align:left; font-weight:600; }
-  .footer { padding:16px 24px; font-size:12px; color:#6b7588; border-top:1px solid #e1e6f0; }
-  .footer a { color:#6b7588; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
 </head>
-<body>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td>
-  <div class="container">
+<body style="margin:0;padding:0;background:#E8E4DA;">
 
-    <!-- ヘッダー -->
-    <div style="padding:24px 24px 12px 24px;">
-      <div style="font-size:20px; font-weight:700; color:#1a2238; margin-bottom:8px;">
-        🗞️ News-Grasp
-      </div>
-      <div style="margin-bottom:6px;">
-        <span class="badge badge-date">{{DATE}} ({{WEEKDAY}})</span>
-        <!-- 対象ジャンルを {{GENRE_BADGES}} で展開 -->
-        {{GENRE_BADGES}}
-      </div>
-      <div style="font-size:12px; color:#6b7588;">
-        生成 {{GENERATED_AT}} JST / 記事 {{TOTAL_ARTICLES}} 件 / 所要 {{ELAPSED}}
-      </div>
-    </div>
+<!-- ====================================================================== -->
+<!-- ─── 外枠ラッパー ───                                                      -->
+<!-- ====================================================================== -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E8E4DA;padding:24px 0;font-family:'Noto Serif JP','Yu Mincho','游明朝','Hiragino Mincho ProN',serif;">
+<tr><td align="center">
 
-    <!-- マーケット概況（Economy ジャンルがある日のみ展開、なければセクションごと省略） -->
-    {{MARKET_SECTION}}
+<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;background:#FAF7F0;color:#1A1A1A;">
+<tbody>
 
-    <!-- ジャンルごとの折り畳みセクション -->
-    <!--
-      {{GENRE_SECTIONS}} で以下の塊を対象ジャンル分繰り返す：
-
-      <details open>
-        <summary>🤖 AI（{{AI_COUNT}}件）</summary>
-        <div style="padding:0 8px;">
-          <!-- 記事カード x N -->
-          <div class="card">
-            <h3>{{ARTICLE_TITLE}}</h3>
-            <div class="meta">{{SOURCE}} ・ {{PUBLISHED}} ・ <a href="{{URL}}">原文を読む</a></div>
-            <div class="body">{{ARTICLE_BODY_HTML}}</div>
-            <!-- 関連がある場合のみ -->
-            <div class="related">
-              🔗 関連: <a href="{{RELATED_URL}}">{{RELATED_TITLE}}</a> と <strong>{{RELATION_AXIS}}</strong> の関係。{{RELATION_NOTE}}<br>
-              <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{RELATED_FILE}}">📂 Obsidian で開く</a>
-            </div>
-          </div>
-        </div>
-      </details>
-    -->
-    {{GENRE_SECTIONS}}
-
-    <!-- 今日のテーマ考察 -->
-    <div class="insight">
-      <h2>💡 今日のテーマ考察</h2>
-      {{INSIGHT_HTML}}
-    </div>
-
-    <!-- フッター -->
-    <div class="footer">
-      <p style="margin:0 0 6px 0;">
-        📂 Obsidian で開く:
-        <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{DATE}}-AI">AI</a>
-        ｜ <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{DATE}}-IT-Consulting">IT&コンサル</a>
-        {{FOOTER_LINKS_EXTRA}}
-      </p>
-      <p style="margin:0 0 6px 0;">
-        📦 GitHub: <a href="https://github.com/HIDEPON-UMG/News-Grasp">HIDEPON-UMG/News-Grasp</a>
-        ｜ ✏️ <a href="https://github.com/HIDEPON-UMG/News-Grasp/edit/main/data/watchlist.md">watchlist 編集</a>
-      </p>
-      <p style="margin:0; color:#9aa3b8; font-size:11px;">
-        🤖 自動配信: Anthropic Routine `news-grasp-daily` ／ 配信停止は GitHub repo の Routine 設定から
-      </p>
-    </div>
-
+<!-- ====================================================================== -->
+<!-- ─── Masthead ───                                                         -->
+<!-- ====================================================================== -->
+<tr><td style="border-top:4px solid #1A1A1A;padding:32px 36px 20px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td style="vertical-align:middle;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+        <td style="background:#1A1A1A;color:#FAF7F0;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;font-weight:700;padding:4px 8px;letter-spacing:1px;">NG</td>
+        <td style="padding-left:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1.5px;">NEWS GRASP · Morning Edition</td>
+      </tr></tbody></table>
+    </td>
+    <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">
+      #{{ISSUE_NO}} · {{ISSUE_DATE}}（{{ISSUE_WEEKDAY}}）
+    </td>
+  </tr></tbody></table>
+  <h1 style="font-size:34px;font-weight:900;line-height:1.25;letter-spacing:-0.5px;margin:18px 0 8px;color:#1A1A1A;">
+    五つの視点で、<br>今日を掴む。
+  </h1>
+  <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1px;margin-top:6px;">
+    {{TOTAL_CATEGORIES}} CATEGORIES · {{TOTAL_STORIES}} STORIES · {{TOTAL_SECTIONS}} ESSAY SECTIONS
   </div>
 </td></tr>
+
+<!-- ====================================================================== -->
+<!-- ─── 目次 (TOC) ───                                                       -->
+<!-- {{TOC_ROWS_HTML}} は対象カテゴリ分の <table> 行を Claude が展開する        -->
+<!-- ====================================================================== -->
+<tr><td style="padding:0 36px 24px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2EEE3;border:1px solid #E2DED4;">
+    <tbody><tr><td style="padding:14px 18px;">
+      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:10px;">┌── TABLE OF CONTENTS</div>
+      {{TOC_ROWS_HTML}}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;padding-top:8px;border-top:1px solid #E2DED4;"><tbody><tr>
+        <td width="32" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#1A1A1A;font-weight:700;">§.</td>
+        <td style="font-size:14px;font-weight:700;">本日のテーマ考察</td>
+        <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">{{TOTAL_SECTIONS}} sections</td>
+      </tr></tbody></table>
+    </td></tr></tbody>
+  </table>
+</td></tr>
+
+<!-- ====================================================================== -->
+<!-- ─── 各カテゴリブロック ───                                                -->
+<!--                                                                          -->
+<!-- {{CATEGORIES_HTML}} に Claude が下のテンプレを 4〜5 回繰り返した HTML を入れる -->
+<!--                                                                          -->
+<!-- ＜カテゴリ 1 件分のテンプレ＞ ※コメントアウト、Claude は実 HTML を生成する  -->
+<!--                                                                          -->
+<!-- <tr><td style="background:{{CAT_ACCENT}};padding:20px 36px;">             -->
+<!--   <table width="100%"><tr>                                                -->
+<!--     <td style="vertical-align:middle;">                                   -->
+<!--       <div style="font-family:JetBrains Mono;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;"> -->
+<!--         CATEGORY {{CAT_INDEX}} / {{TOTAL_CATEGORIES}} · {{CAT_NAME_EN_UPPER}} -->
+<!--       </div>                                                              -->
+<!--       <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;"> -->
+<!--         <span style="font-family:JetBrains Mono;margin-right:10px;">{{CAT_GLYPH}}</span>{{CAT_NAME_JP}} -->
+<!--       </div>                                                              -->
+<!--     </td>                                                                 -->
+<!--     <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:JetBrains Mono;font-size:11px;">{{CAT_ITEMS_COUNT}} stories</td> -->
+<!--   </tr></table>                                                           -->
+<!--   <div style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);"> -->
+<!--     {{CAT_SUMMARY}}                                                       -->
+<!--   </div>                                                                  -->
+<!-- </td></tr>                                                                -->
+<!--                                                                          -->
+<!-- ＜各記事 1 件分（idx=0 = TOP FEATURED、それ以外は左サイドサムネ）＞       -->
+<!--                                                                          -->
+<!-- <tr><td style="padding:24px 36px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;"> -->
+<!--   メタ行 → タイトル → (TOP のみ) 全幅サムネ → サムネ + 箇条書き → 関連過去号 -->
+<!-- </td></tr>                                                                -->
+<!-- ====================================================================== -->
+{{CATEGORIES_HTML}}
+
+<!-- ====================================================================== -->
+<!-- ─── テーマ考察ヘッダー（ダーク） ───                                      -->
+<!-- ====================================================================== -->
+<tr><td style="background:#1A1A1A;padding:40px 36px 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td>
+      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#C9B98A;letter-spacing:4px;margin-bottom:12px;">
+        ━━━━━━━━━━━━━━━━━━━━━━━<br>
+        EDITORIAL · 本日のテーマ考察
+      </div>
+      <h2 style="font-size:36px;font-weight:900;margin:0 0 8px;letter-spacing:-1px;color:#FAF7F0;line-height:1.15;">
+        {{REFLECTION_TITLE}}
+      </h2>
+      <div style="font-size:15px;color:#C9B98A;font-style:italic;font-family:'JetBrains Mono',Menlo,monospace;margin-bottom:24px;">
+        {{REFLECTION_SUBTITLE}}
+      </div>
+    </td>
+    <td width="120" align="right" valign="top">
+      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:64px;color:#3A3530;line-height:1;font-weight:900;">§</div>
+      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:9px;color:#9C9A92;letter-spacing:2px;margin-top:4px;">{{TOTAL_SECTIONS}} PARTS</div>
+    </td>
+  </tr></tbody></table>
+
+  <!-- リード（強調マーカーは Claude が <strong style="background:..."> に変換して挿入） -->
+  <div style="border-top:1px solid #3A3530;padding-top:20px;margin-top:8px;">
+    <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#C9B98A;letter-spacing:2px;margin-bottom:10px;">┌── LEAD</div>
+    <div style="font-size:15px;line-height:1.95;color:#E8E2D4;padding-left:12px;border-left:3px solid #C9B98A;">
+      {{REFLECTION_LEAD_HTML}}
+    </div>
+  </div>
+</td></tr>
+
+<!-- ====================================================================== -->
+<!-- ─── プルクオート ───                                                      -->
+<!-- ====================================================================== -->
+<tr><td style="background:#FAF7F0;padding:28px 36px;border-top:1px solid #E2DED4;border-bottom:1px solid #E2DED4;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td width="56" valign="top" style="font-family:Georgia,serif;font-size:80px;color:#8E2A19;line-height:0.9;font-weight:900;">"</td>
+    <td valign="middle" style="padding-left:4px;">
+      <div style="font-size:19px;font-weight:700;line-height:1.6;color:#1A1A1A;letter-spacing:-0.2px;">
+        {{REFLECTION_PULL_QUOTE_HTML}}
+      </div>
+      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1.5px;margin-top:12px;">
+        ─── PULL QUOTE
+      </div>
+    </td>
+  </tr></tbody></table>
+</td></tr>
+
+<!-- ====================================================================== -->
+<!-- ─── 5 セクション ───                                                      -->
+<!--                                                                          -->
+<!-- {{REFLECTION_SECTIONS_HTML}} に Claude が以下のテンプレを 5 回展開：     -->
+<!--                                                                          -->
+<!-- <tr><td style="background:#FAF7F0;padding:0 36px;">                       -->
+<!--   <table width="100%" style="border-bottom:1px dashed #E2DED4;"><tr>      -->
+<!--     <td width="80" valign="top" style="padding:28px 16px 28px 0;">        -->
+<!--       <div style="font-family:JetBrains Mono;font-size:38px;font-weight:900;color:{{SEC_ACCENT}};line-height:0.9;letter-spacing:-2px;">§{{SEC_NUM}}</div> -->
+<!--       <div style="font-family:JetBrains Mono;font-size:9px;color:#fff;background:{{SEC_ACCENT}};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{{SEC_TAG}}</div> -->
+<!--     </td>                                                                 -->
+<!--     <td valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;"> -->
+<!--       <h3 style="font-size:18px;font-weight:800;margin:0 0 14px;">{{SEC_HEADING}}</h3> -->
+<!--       <div style="font-size:13.5px;line-height:2.0;">{{SEC_BODY_HTML}}</div> -->
+<!--     </td>                                                                 -->
+<!--   </tr></table>                                                           -->
+<!-- </td></tr>                                                                -->
+<!--                                                                          -->
+<!-- セクションのアクセントは順に: 総論=#1A1A1A / 為替経済=#B8860B /          -->
+<!-- AI=#2D5BB8 / 産業=#2E6B52 / 明日=#C9B98A                                 -->
+<!-- ====================================================================== -->
+{{REFLECTION_SECTIONS_HTML}}
+
+<!-- ====================================================================== -->
+<!-- ─── KEY TAKEAWAYS（3 カード） ───                                         -->
+<!-- ====================================================================== -->
+<tr><td style="background:#F2EEE3;padding:28px 36px;border-top:2px solid #1A1A1A;">
+  <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:16px;">━━ KEY TAKEAWAYS · 今日の3つの結論</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
+    {{TAKEAWAYS_HTML}}
+    <!--
+      Claude は 3 行を以下の形式で展開：
+      <tr><td style="padding-bottom:12px;">
+        <table width="100%" style="background:#fff;border:1px solid #E2DED4;"><tr>
+          <td width="56" valign="middle" style="background:{{T_COLOR}};color:#fff;text-align:center;font-family:JetBrains Mono;font-size:18px;font-weight:900;padding:14px 0;">{{T_NUM}}</td>
+          <td style="padding:12px 16px;">
+            <div style="font-family:JetBrains Mono;font-size:9px;color:{{T_COLOR}};font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">{{T_TAG_UPPER}}</div>
+            <div style="font-size:13px;line-height:1.7;font-weight:600;">{{T_TEXT_HTML}}</div>
+          </td>
+        </tr></table>
+      </td></tr>
+    -->
+  </tbody></table>
+</td></tr>
+
+<!-- ====================================================================== -->
+<!-- ─── 関連過去号 ───                                                        -->
+<!-- ====================================================================== -->
+<tr><td style="padding:28px 36px;background:#F2EEE3;border-top:2px solid #E2DED4;">
+  <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:12px;">━━ RELATED ISSUES · 関連する過去号</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
+    {{RELATED_ISSUES_HTML}}
+    <!--
+      Claude は最大 3 行を以下の形式で展開：
+      <tr><td style="padding:10px 0;border-bottom:1px solid #E2DED4;">
+        <table width="100%"><tr>
+          <td width="100" style="font-family:JetBrains Mono;font-size:11px;color:#5C5A52;">{{R_DATE}}</td>
+          <td style="font-size:13px;font-weight:600;"><a href="{{R_URL}}" style="color:#1A1A1A;text-decoration:none;">{{R_TITLE}}</a></td>
+          <td width="20" align="right" style="color:#5C5A52;">→</td>
+        </tr></table>
+      </td></tr>
+    -->
+  </tbody></table>
+</td></tr>
+
+<!-- ====================================================================== -->
+<!-- ─── フッター ───                                                          -->
+<!-- ====================================================================== -->
+<tr><td style="padding:24px 36px 32px;background:#FAF7F0;border-top:1px solid #E2DED4;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1px;text-align:center;">
+  <div style="margin-bottom:8px;">
+    <strong style="color:#1A1A1A;letter-spacing:2px;">NEWS GRASP</strong> — Five Lenses on Today
+  </div>
+  <div>ISSUE #{{ISSUE_NO}} · {{ISSUE_DATE}} · MORNING EDITION</div>
+  <div style="margin-top:14px;padding-top:14px;border-top:1px solid #E2DED4;">
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp" style="color:#5C5A52;text-decoration:none;margin:0 8px;">GITHUB</a>·
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp/edit/main/data/watchlist.md" style="color:#5C5A52;text-decoration:none;margin:0 8px;">EDIT WATCHLIST</a>·
+    <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F{{ISSUE_DATE}}" style="color:#5C5A52;text-decoration:none;margin:0 8px;">OPEN IN OBSIDIAN</a>
+  </div>
+</td></tr>
+
+</tbody>
 </table>
+
+</td></tr>
+</table>
+
 </body>
 </html>
