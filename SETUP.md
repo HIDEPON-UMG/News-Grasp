@@ -1,173 +1,174 @@
 # News-Grasp セットアップ手順
 
-このドキュメントは **ユーザーが手動で行う必要があるステップ** をまとめたもの。Claude が自動化できる部分（GitHub repo、ファイル群、GAS プロジェクト本体、コードのデプロイ）は既に完了している。残りは認証・権限・シークレット投入が絡むため手作業が必要。
+D 案（ローカル Claude Code via Windows タスクスケジューラ）の最終版手順。すでに本番運用中なので、これは **新規環境への再構築** や **誰かに引き継ぐとき** のリファレンスとして使う。
 
----
+## 確定構成
 
-## 完了済み（Claude が実施）
-
-- ✅ GitHub プライベート repo 作成: <https://github.com/HIDEPON-UMG/News-Grasp>
-- ✅ ボルト内へ clone: `C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp\`
-- ✅ 初期ファイル一式 commit & push
-- ✅ GAS プロジェクト作成: `news-grasp-mailer`
-- ✅ Web App デプロイ（v1）
-- ✅ Windows 用同期バッチ: `C:\Users\hidek\bin\news-grasp-pull.bat`
-
-### 確定値（設定時に使う）
-
-| キー | 値 |
+| 項目 | 値 |
 |---|---|
-| GitHub repo | `HIDEPON-UMG/News-Grasp` |
-| GAS scriptId | `1Vf0gQPHe-1SevaGqKBDz6FvJhrCUXGr7cWWwYAEv_lhktlwKWzNP3-Gd` |
-| GAS エディタ URL | <https://script.google.com/d/1Vf0gQPHe-1SevaGqKBDz6FvJhrCUXGr7cWWwYAEv_lhktlwKWzNP3-Gd/edit> |
-| **Webhook URL（v1）** | `https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec` |
+| 実行方式 | Windows タスクスケジューラ → `news-grasp-runner.bat` → `claude.exe --print` |
+| 実行時刻 | 毎朝 06:00 JST |
+| モデル | Claude Sonnet 4.6（Max サブスク内認証） |
+| GitHub repo | `HIDEPON-UMG/News-Grasp`（プライベート） |
+| Obsidian ボルト | `C:\Users\hidek\OneDrive\Obsidians\New's Grasp\` |
+| Repo の clone 先 | ボルト直下 `New's Grasp\News-Grasp\` |
+| GAS web app | `news-grasp-mailer`（`hidepontrainer@gmail.com` 配下） |
+| Webhook URL | `https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec` |
+| 配信宛先 | `hideki.kusunoki@gmail.com` / `h2-hiramatsu@nri.co.jp` |
 
----
+## 0. 前提環境
 
-## ステップ 1: WEBHOOK_SECRET を生成して保管
+- Windows 11
+- Git for Windows（`C:\Program Files\Git\cmd\git.exe`）
+- Claude Code CLI（`C:\Users\hidek\.local\bin\claude.exe`、Max サブスクで認証済み）
+- Python 3.13+（テスト実行用）
+- `gh` CLI（HIDEPON-UMG でログイン済み）
+- `clasp` v3.x（`hidepontrainer@gmail.com` でログイン済み）
+- Obsidian Desktop（任意・閲覧用）
 
-Routine と GAS の両方で使う共有シークレット。**32〜64 文字のランダム文字列を生成し、安全な場所にメモしておく**。例：
-
-```bash
-# PowerShell:
-[Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Max 256 } | ForEach-Object { [byte]$_ }))
-# または bash:
-openssl rand -base64 48
-```
-
-このあと **同じ値** を以下 2 箇所に投入する：
-1. GAS の Script Properties（GAS 側で受信を検証する）
-2. Anthropic Routine の secrets（Routine 側で送信に付与する）
-
----
-
-## ステップ 2: GAS の OAuth 同意とシークレット投入
-
-GAS の `GmailApp.sendEmail` は初回実行時に OAuth 同意が必要。**ブラウザで手動実行する**。
-
-1. GAS エディタを開く: <https://script.google.com/d/1Vf0gQPHe-1SevaGqKBDz6FvJhrCUXGr7cWWwYAEv_lhktlwKWzNP3-Gd/edit>
-2. 関数選択ドロップダウンから **`testSendSelf`** を選んで「実行」をクリック
-3. 「権限を確認」→ アカウント選択 → 「詳細」→「（安全ではないページ）に移動」→「許可」
-4. 実行後、`hidepontrainer@gmail.com` 宛に「[News-Grasp] 疎通テスト」メールが届くことを確認
-
-5. 続けて **シークレットを投入**：
-   - GAS エディタ左サイドバーの ⚙️「プロジェクトの設定」
-   - 「スクリプト プロパティ」セクションで **「スクリプト プロパティを追加」**
-   - キー: `WEBHOOK_SECRET`、値: ステップ 1 で生成した文字列
-   - 「スクリプト プロパティを保存」
-
----
-
-## ステップ 3: Web App の公開設定確認
-
-`appsscript.json` で `executeAs: USER_DEPLOYING` / `access: ANYONE_ANONYMOUS` を指定済みだが、初回デプロイは UI で再確認が安全：
-
-1. GAS エディタ右上の **「デプロイ」→「デプロイを管理」**
-2. 「News-Grasp Webhook v1」が表示されていることを確認
-3. 「種類」が「ウェブアプリ」、「次のユーザーとして実行: 自分（hidepontrainer@gmail.com）」、「アクセスできるユーザー: 全員」になっていれば OK
-4. もし違っていれば右上の鉛筆アイコンから編集 → 上記設定で「デプロイ」
-
----
-
-## ステップ 4: Webhook 疎通テスト（任意）
-
-ローカル PowerShell から実際に POST して確認：
+## 1. リポジトリの clone
 
 ```powershell
-$secret = "<ステップ1で生成したシークレット>"
-$body = @{
-  secret   = $secret
-  to       = @("hideki.kusunoki@gmail.com")
-  subject  = "News-Grasp Webhook smoke test"
-  htmlBody = "<p>If you can read this, the webhook is alive.</p>"
-} | ConvertTo-Json
-Invoke-RestMethod -Method POST -Uri "https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec" -Body $body -ContentType "application/json"
+cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp"
+gh repo clone HIDEPON-UMG/News-Grasp
 ```
 
-`{ ok: true, results: [...] }` が返り、Gmail に届けば成功。
+ボルト直下に `News-Grasp\` フォルダができ、Obsidian で digest が表示できる状態になる。
 
----
+## 2. GAS Webhook（`news-grasp-mailer`）
 
-## ステップ 5: Windows タスクスケジューラ登録
+すでに `hidepontrainer@gmail.com` 配下に作成済み。新規環境ではない場合はスキップ。
 
-毎朝 07:00 JST に repo を pull してボルトに反映する。
+新規作成する場合：
 
-1. Windows キーから「タスク スケジューラ」を起動
-2. 右ペイン「**タスクの作成**」（基本タスクではなく詳細版）
-3. 全般:
-   - 名前: `News-Grasp Pull`
-   - 説明: `毎朝 News-Grasp repo を Obsidian ボルトに同期`
-   - 「ユーザーがログオンしているかどうかにかかわらず実行する」
-4. トリガー → 新規:
-   - スケジュール: 毎日
-   - 開始: 07:00:00
-   - 「有効」チェック
-5. 操作 → 新規:
-   - 操作: `プログラムの開始`
-   - プログラム/スクリプト: `C:\Users\hidek\bin\news-grasp-pull.bat`
-6. 条件:
-   - 「タスクを実行するためにスリープを解除する」をチェック
-   - 「コンピューターを AC 電源で使用している場合のみタスクを開始する」のチェックを **外す**（ノート PC でも動かす場合）
-7. 設定:
-   - 「タスクが失敗した場合の再起動の間隔: 5 分」、「再起動試行の最大数: 3」
-8. 保存（パスワード入力を求められる）
+1. <https://script.google.com> で新規プロジェクト
+2. `clasp` でローカル管理：
+   ```powershell
+   mkdir "c:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp-mailer"
+   cd "c:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp-mailer"
+   clasp create --type standalone --title "news-grasp-mailer"
+   ```
+3. `Code.js` / `appsscript.json` をローカルに置いて `clasp push`
+4. GAS エディタで `testSendSelf` を 1 回手動実行 → OAuth 同意（GmailApp スコープ）
+5. 「デプロイ」→「ウェブアプリ」→「自分として実行 / 全員アクセス可」で公開
+6. 取得した URL を `prompts/routine-system.md` と `tests/render_email.py` の `WEBHOOK_URL` に反映
 
-ログは `C:\Users\hidek\bin\news-grasp-pull.log` に出る。
+GAS の `doPost(e)` は受信 body の `client === "news-grasp-routine"` を確認、宛先ホワイトリスト（`hideki.kusunoki@gmail.com` / `h2-hiramatsu@nri.co.jp`）以外は拒否する設計。
 
----
+## 3. `news-grasp-runner.bat` 配置
 
-## ステップ 6: Anthropic Routine の登録（/schedule）
+`C:\Users\hidek\bin\news-grasp-runner.bat` に以下を配置。**ASCII のみ・CRLF・goto ベース**で書く（Windows の cmd.exe 互換性確保のため）：
 
-**`/schedule` コマンドを Claude Code 上で実行する**。Claude に以下のように依頼する：
+```bat
+@echo off
+echo [%DATE% %TIME%] runner-invoked >> "%USERPROFILE%\bin\news-grasp-invoked.log"
 
-> News-Grasp の Routine を /schedule で登録したい。
-> - 名前: news-grasp-daily
-> - cron: `0 21 * * *` (UTC = 06:00 JST)
-> - リトライ: 3 回
-> - secrets:
->   - GH_TOKEN = ghp_xxx (HIDEPON-UMG/News-Grasp の repo 権限)
->   - WEBHOOK_URL = https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec
->   - WEBHOOK_SECRET = <ステップ1の値>
-> - プロンプト本体は HIDEPON-UMG/News-Grasp の prompts/routine-system.md をそのまま使う。
+set REPO_DIR=C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp
+set LOG_DIR=%USERPROFILE%\bin\news-grasp-logs
+set GIT=C:\Program Files\Git\cmd\git.exe
+set CLAUDE=C:\Users\hidek\.local\bin\claude.exe
 
-`GH_TOKEN` は GitHub > Settings > Developer settings > Personal access tokens > Fine-grained で作成：
-- repository access: HIDEPON-UMG/News-Grasp のみ
-- permissions: `Contents: Read and write`, `Metadata: Read-only`
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+for /f "tokens=2 delims==" %%i in ('wmic os get LocalDateTime /value 2^>NUL ^| find "="') do set DT=%%i
+set DATESTAMP=%DT:~0,4%-%DT:~4,2%-%DT:~6,2%
+set LOG=%LOG_DIR%\%DATESTAMP%.log
 
----
+echo. >> "%LOG%"
+echo [%DATE% %TIME%] news-grasp-runner start >> "%LOG%"
 
-## ステップ 7: 初回エンドツーエンド検証
+if not exist "%REPO_DIR%\.git" goto err_repo
+"%GIT%" -C "%REPO_DIR%" fetch --quiet origin main >> "%LOG%" 2>&1
+if errorlevel 1 goto err_fetch
+"%GIT%" -C "%REPO_DIR%" pull --ff-only origin main >> "%LOG%" 2>&1
+if errorlevel 1 goto err_pull
 
-`/schedule run news-grasp-daily` で即時実行し、以下を確認：
+pushd "%REPO_DIR%"
+"%CLAUDE%" --print --dangerously-skip-permissions --tools default --model sonnet "本リポジトリ内の prompts/routine-system.md を Read で読み込み、その指示に厳密に従って当日（JST）の News-Grasp 日次 digest を生成してください..." >> "%LOG%" 2>&1
+set CLAUDE_RC=%errorlevel%
+popd
+if not %CLAUDE_RC%==0 goto err_claude
 
-- [ ] GitHub repo の `digest/2026-MM-DD-AI.md` 等が新規追加されている
-- [ ] `data/articles.jsonl` に新規記事メタが追記されている
-- [ ] `data/_status.md` に成功行が追記されている
-- [ ] `news-grasp-pull.bat` を手動実行（タスクスケジューラ待たずに）
-- [ ] Obsidian で `News-Grasp/digest/` 配下に当日 Markdown が表示される
-- [ ] `[[2026-MM-DD-AI]]` 等の wiki link が解決する
-- [ ] Gmail に HTML メールが届く（2 宛先とも）
-- [ ] NRI 宛が外部メールフィルタで弾かれていないか平松氏に確認依頼
+echo [%DATE% %TIME%] news-grasp-runner OK >> "%LOG%"
+exit /b 0
 
----
+:err_repo & echo ERROR: repo not found >> "%LOG%" & exit /b 1
+:err_fetch & echo ERROR: fetch failed >> "%LOG%" & exit /b 1
+:err_pull & echo ERROR: pull failed >> "%LOG%" & exit /b 1
+:err_claude & echo ERROR: claude exited %CLAUDE_RC% >> "%LOG%" & exit /b 1
+```
 
-## トラブルシューティング
+**注意**: 改行コードは **CRLF 必須**。Write tool で書いた直後に：
+
+```bash
+sed -i 's/$/\r/' "/c/Users/hidek/bin/news-grasp-runner.bat"
+```
+
+## 4. Windows タスクスケジューラ登録
+
+| 設定 | 値 |
+|---|---|
+| 名前 | `News-Grasp Runner` |
+| 全般 | **「ユーザーがログオンしている時にだけ実行する」** を選択（claude の OAuth キーチェーン認証のため） |
+| トリガー | 毎日 06:00:00 |
+| 操作 | プログラム開始：`C:\Users\hidek\bin\news-grasp-runner.bat` |
+| 条件 | 「タスクを実行するためにスリープを解除する」チェック、AC 電源条件のチェック外す |
+| 設定 | 失敗時 5 分間隔で 3 回リトライ |
+
+## 5. 動作確認
+
+```powershell
+# 疎通テスト（Webhook + GAS）
+cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp"
+python tests/render_email.py --send
+
+# Runner の手動起動（実機の本番フロー）
+# タスクスケジューラから「News-Grasp Runner」を右クリック → 「実行する」
+```
+
+ログは `C:\Users\hidek\bin\news-grasp-logs\YYYY-MM-DD.log` に出る。リアルタイム監視は別 PowerShell で：
+
+```powershell
+Get-Content "C:\Users\hidek\bin\news-grasp-logs\2026-04-28.log" -Wait -Tail 100
+```
+
+成功条件：
+
+- `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` 各ファイルが repo に push されている
+- `digest/Summary/{YYYY-MM-DD}.md` も生成されている
+- `data/articles.jsonl` に 40〜50 件のメタが追記されている
+- Gmail 2 宛先に HTML メールが届いている
+
+## 6. watchlist の更新（運用作業）
+
+トラッキング対象を増減するときは `data/watchlist.md` を編集して push する：
+
+```powershell
+# Obsidian で開いて編集 → 通常の git
+cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp"
+git add data/watchlist.md
+git commit -m "watchlist: ${変更概要}"
+git push
+```
+
+翌朝の Runner から自動的に新しい watchlist が反映される。
+
+## 7. トラブルシューティング
 
 | 症状 | 対処 |
 |---|---|
-| `clasp logs` で `OAuth not granted` | ステップ 2 の OAuth 同意未完了。`testSendSelf` を再実行 |
-| Webhook が `WEBHOOK_SECRET not configured` を返す | ステップ 2 の Script Properties 投入未完了 |
-| Webhook が `invalid secret` を返す | Routine secrets と GAS Script Properties の値が不一致 |
-| Routine が `gh: command not found` | Anthropic Routine 環境に `gh` プリインストール済みのはず。`/schedule` 設定で確認 |
-| メールが NRI ドメインに届かない | NRI セキュリティ部に「外部 Gmail 経由の受信許可リクエスト」を出すか、`hideki.kusunoki@gmail.com` から手動転送する運用 |
-| Obsidian で digest/ が見えない | `news-grasp-pull.bat` の手動実行 → ログ確認 |
-| バッチで `.git not found` | clone 失敗。手動で `git -C "C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp" status` で状態確認 |
+| 黒い画面が開いてすぐ閉じる | ログに `ERROR: ...` が出る → `news-grasp-invoked.log` から原因切り分け |
+| `'sks' は内部コマンド〜` | bat の改行が LF。`sed -i 's/$/\r/' news-grasp-runner.bat` で CRLF 化 |
+| `claude` が見つからない | bat 内で `set CLAUDE=` をフルパスに（`where claude` で確認） |
+| メールが届かない | `tests/render_email.py --send` で Webhook 単体テスト → GAS 側で `testSendSelf` を再実行（OAuth リフレッシュ） |
+| NRI 宛だけ届かない | NRI セキュリティ部のメールフィルタ。`hidepontrainer@gmail.com` のホワイトリスト依頼か、`hideki.kusunoki@gmail.com` から手動転送運用へ |
+| 画像が壊れる（メール内） | `assets/` の JPG が repo にあるか確認 → `routine-system.md` の base64 化指示が守られているか確認 |
+| Obsidian で同期されない | Runner 自体が `git pull` を内包しているので、別途のタスクは不要。手動で `git pull` |
 
----
+## 8. 関連ドキュメント
 
-## 改修・拡張時のメモ
-
-- watchlist 編集: ボルト内 `data/watchlist.md` を直接編集 → `git commit && git push` で翌朝から反映
-- プロンプト改修: `prompts/routine-system.md` を編集 → push（Routine が次回起動時に最新版を読む）
-- ジャンル追加: `routine-system.md` の曜日マトリクス + `watchlist.md` の対応セクション + email-template の `{{GENRE_BADGES}}` を更新
-- 90 日 → 180 日に延ばす: `routine-system.md` の「直近 90 日」を書き換え
+- [README.md](README.md) — 全体構成と運用フロー
+- [prompts/routine-system.md](prompts/routine-system.md) — Runner プロンプトの完全仕様
+- [tests/README.md](tests/README.md) — 単体テストの使い方
+- [docs/architecture.pptx](docs/architecture.pptx) — アーキテクチャ図と仕様まとめ（プレゼン用）
+- [memory/feedback_windows_bat_gotchas.md](../../../.claude/projects/c--Users-hidek-OneDrive--------ProjectFolders/memory/feedback_windows_bat_gotchas.md) — Windows .bat 落とし穴チェックリスト
+- [memory/feedback_email_html_image_inline.md](../../../.claude/projects/c--Users-hidek-OneDrive--------ProjectFolders/memory/feedback_email_html_image_inline.md) — メール HTML 画像 base64 必須ルール
