@@ -72,9 +72,45 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 #### 3-A. Web 検索
 
 - watchlist の各エントリと汎用キーワードで **直近 24 時間** の英語＋日本語ニュースを `WebSearch` ツールで検索
-- カテゴリ全体で **厳選 10 件** を選ぶ（重要度・新規性・関連付けやすさ）
-- **重要度スコア（0-100）** を各記事に付ける（指標：話題性 / 影響範囲 / 一次情報度）。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**
+- 候補は当面 **20-30 件まで広めに収集**（後段の dedup で半分は弾かれる前提）
+- 各候補に **重要度スコア（0-100）** を付ける（指標：話題性 / 影響範囲 / 一次情報度）
 - **NewsPicks の有料コンテンツは見出し・公開部分のみ**
+
+#### 3-A.5 重複除外フェーズ（24 時間ルール）
+
+`articles.jsonl` から **直近 7 日分のエントリ**を Read で読み込み、各候補について以下の判定を機械的に実行する：
+
+##### A. URL 正規化マッチ
+
+候補 URL と既存エントリの URL を以下の正規化を行ってから完全一致比較：
+
+1. scheme / host を小文字化
+2. URL fragment（`#...`）を削除
+3. クエリパラメータから tracking 系（`utm_*`, `ref`, `ref_src`, `fbclid`, `gclid`, `sessionid`, `mc_eid` など）を除去
+4. AMP 表記を canonical に変換: `?amp=1`, `?output=amp`, パス末尾 `/amp/` の除去
+5. 末尾スラッシュを統一（パスが `/` で終わる場合は削除）
+6. `m.example.com` のような mobile prefix を `example.com` に正規化（任意）
+
+##### B. タイトル類似度マッチ
+
+正規化したタイトル文字列で類似度を計算：
+
+1. 全角→半角、英大文字→小文字、`「」『』""''（）()【】[]` などの記号を除去、連続空白を 1 つに
+2. **正規化後タイトルが完全一致** → 重複候補
+3. または **正規化後タイトルの文字 N-gram (N=2 or 3) Jaccard 係数 ≥ 0.7** → 重複候補
+
+##### C. 24 時間判定
+
+A または B でマッチした場合、既存エントリの `seen_at`（ISO 8601 タイムスタンプ）と現在時刻 `now`（JST）を比較：
+
+- `now - seen_at <= 24 時間` → **重複として候補から除外**（articles.jsonl への追記もしない）
+- `now - seen_at > 24 時間` → **続報扱い（採用）**。3-C の 5 軸関連付けで「復状/進展」軸として記事カードの「関連過去号」欄にリンク
+
+##### D. 結果
+
+dedup を通過した候補から最終的に **カテゴリあたり 10 件**をスコア降順で確定。10 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
+
+実装ヒント: 必要なら `Bash` で短い Python ワンライナーを呼び出す（`urllib.parse` で URL 正規化、`difflib.SequenceMatcher` で類似度計算）。または Sonnet が直接判定しても良い。
 
 #### 3-B. サムネイル URL の取得
 
@@ -182,11 +218,31 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 
 #### 5-B. articles.jsonl の更新
 
-各カテゴリの 10 件 × カテゴリ数の新規メタを `data/articles.jsonl` に append。スキーマ：
+3-A.5 dedup を通過した記事のみ、新規メタを `data/articles.jsonl` に append。スキーマ：
 
 ```json
-{"date":"YYYY-MM-DD","genre":"AI","title":"...","url":"...","source":"...","summary":"80 字程度","tags":["..."]}
+{
+  "date": "2026-04-29",
+  "seen_at": "2026-04-29T06:12:34+09:00",
+  "genre": "AI",
+  "title": "...",
+  "url": "...",
+  "url_norm": "...",
+  "source": "...",
+  "summary": "80 字程度",
+  "tags": ["..."]
+}
 ```
+
+フィールド説明：
+
+- `date`: JST 日付（YYYY-MM-DD）。digest ファイル名と一致
+- `seen_at`: Routine が初めて当該記事を取り込んだ ISO 8601 タイムスタンプ（JST）。**dedup の 24 時間判定の基準**
+- `url`: 元 URL（記事サイトの canonical をそのまま）
+- `url_norm`: 3-A.5-A の正規化規則を適用した URL（次回の dedup で照合用）
+- 他は従来通り
+
+dedup ですでに同じ url_norm or 正規化タイトルが見つかったが時系列で 24 時間超えていた場合（続報扱い）も append する。同事象でも時間が経って新しい記事として扱う場合だけ追記される。
 
 90 日超のエントリは `data/archive/YYYY-MM.jsonl` に移動して main から削除（ローテート）。
 
@@ -219,67 +275,75 @@ git push origin main
 - `{{RELATED_ISSUES_HTML}}` → 関連過去号 HTML
 - `{{TAKEAWAYS_HTML}}` → KEY TAKEAWAYS HTML
 
+#### サムネ画像の参照ルール（CDN 化済み）
+
+OGP 取得結果と NG プレースホルダで分岐する：
+
+| 状態 | 参照先 | 形式 |
+|---|---|---|
+| `articles.jsonl` の `thumb` が non-null（OGP 取得成功） | 記事サイトの OGP 画像 URL | `<img src="https://外部サイト/og.jpg">` |
+| `thumb` が null（OGP 取得失敗・NewsPicks 等） | **公開 CDN** の NG プレースホルダ | `<img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-{key}.jpg">` |
+
+公開 CDN repo: [HIDEPON-UMG/news-grasp-assets](https://github.com/HIDEPON-UMG/news-grasp-assets) （public、汎用ジャンル別キービジュアルのみ。private repo の本体とは分離）
+
+利用可能な NG プレースホルダ keys：
+
+- **FEATURED**（TOP 記事、568×220 想定）: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-economy`, `ng-thumb-game`
+- **サイドサムネ**（2 件目以降、140×90 想定）: `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-economy`, `ng-thumb-common-game`
+
+#### 画像クリックで記事 URL に飛ばす
+
+すべての記事画像（FEATURED・サイドサムネとも）は `<a href="{記事URL}">` でラップする。タイトル文字列も同じ URL にリンクする（既存通り）。
+
 #### レスポンシブ対応の必須クラス（モバイル可読性）
 
-email-template.html の `<head>` に `@media (max-width: 600px)` の CSS が定義済み。Routine が生成する HTML 要素には**指定された `class` 属性を付与必須**。これによりスマホ表示時にレイアウトが自動で 1 カラムに切り替わる。Outlook デスクトップ等は class を無視して PC 幅のままなので、両方が成立する。
+email-template.html の `<head>` に `@media (max-width: 600px)` の CSS と atomic class が定義済み。Routine が生成する HTML 要素には**指定された `class` 属性を付与必須**。スマホ表示時にレイアウトが自動で 1 カラムに切り替わる。Outlook デスクトップは class を無視して PC 幅のままなので、両方成立する。
+
+**構造クラス（モバイル時に挙動が変わる）**:
 
 | 要素 | 必須 class | 効果（モバイル時） |
 |---|---|---|
-| カテゴリ帯（紫帯）の外側 td | `ng-cat-pad` | padding を 16px に縮小 |
-| カテゴリ名テキスト | `ng-cat-name` | font-size 22px |
-| カテゴリ要約 | `ng-cat-summary` | font-size 12px |
-| 記事カード外側 td | `ng-card-pad` | padding を 16px に縮小 |
-| 記事タイトル h3 | `ng-card-title` | font-size 16px |
-| 箇条書き li | `ng-card-body` | font-size 13px |
-| メタ情報行（時刻・出典） | `ng-card-meta` | font-size 10px |
-| TOP 記事 FEATURED 画像の wrapper div | `ng-feature-img` | height auto |
-| サイドサムネ td | `ng-side-thumb` | display: block で**上に再配置** |
+| カテゴリ帯外側 td | `ng-cat-pad` | padding 縮小 |
+| カテゴリ名 | `ng-cat-name` | font-size 24px |
+| カテゴリ要約 | `ng-cat-summary` | font-size 13px |
+| 記事カード外側 td | `ng-card-pad` | padding 縮小 |
+| 記事タイトル h3 | `ng-card-title` | font-size 18px |
+| 箇条書き要素 | `ng-card-body` | font-size 14.5px |
+| メタ行（時刻・出典） | `ng-card-meta` | font-size 11px |
+| TOP 記事 FEATURED 画像の wrapper | `ng-feature-img` | height auto |
+| サイドサムネ td | `ng-side-thumb` | display: block で上に再配置 |
 | サムネ右の本文 td | `ng-side-text` | display: block で下に配置 |
 
-**例**: 記事カード（2 件目以降）の最小骨格
+**atomic 補助クラス（HTML サイズ削減用、style 属性内の重複を吸収）**:
+
+`m`(JetBrains Mono), `b7-b9`(font-weight 700-900), `mut`/`dk`/`w`(色), `fz9-fz16`(font-size), `lh185`/`lh145`(line-height), `ls05`/`ls1`/`ls15`/`ls2`(letter-spacing), `tdn`(text-decoration:none), `ofc`(object-fit:cover), `db`(display:block), `dn`(display:none), `br2`(border-radius:2px), `p3`/`p26`(padding), `pl8`/`pr16`(padding-left/right), `mb6`/`mb14`/`ml4`/`mt8`/`t812`(margin), `lsm03`(letter-spacing:-0.3px), `bgcard`/`bbcard`/`brd`/`pcard`(card 共通 padding/border/bg), `vmid`/`vtop`(vertical-align), `acFx`/`acAi`/`acIt`/`acEc`/`acGm`(カテゴリアクセント色), `thb`(140x90)。
+詳細定義は `prompts/email-template.html` の `<head><style>` を参照。
+
+**例**: 記事カード（2 件目以降）の骨格
 
 ```html
-<tr><td class="ng-card-pad" style="padding:24px 36px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">
-  <div class="ng-card-meta" style="...">07:30 · OANDA</div>
-  <h3 class="ng-card-title" style="font-size:16px;...">タイトル</h3>
+<tr><td class="ng-card-pad bgcard bbcard pcard" style="background:#FAF7F0;">
+  <div class="ng-card-meta m mut fz10 ls05" style="margin-bottom:6px;">
+    <span class="b7" style="background:#B8860B;color:#fff;padding:2px 6px;font-size:12px;">02</span>
+    <span class="pl8">07:30 · 日経新聞 · SCORE 88</span>
+  </div>
+  <h3 class="ng-card-title b8 lh145 t812 lsm03" style="font-size:18px;">
+    <a href="記事URL" class="dk tdn">タイトル</a>
+  </h3>
   <table width="100%"><tr>
-    <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
-      <img src="cid:ng-thumb-common-fx" width="140" style="...">
+    <td class="ng-side-thumb pr16 vtop" width="140">
+      <a href="記事URL" class="db tdn">
+        <img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-fx.jpg" width="140" class="thb db ofc brd">
+      </a>
     </td>
-    <td class="ng-side-text" valign="top">
-      <ul><li class="ng-card-body" style="...">[[キーワード]] が __重要__ ...</li></ul>
+    <td class="ng-side-text vtop">
+      <div class="bul ng-card-body" style="color:#B8860B"><span class="dk">[[キーワード]] が __重要__ ...</span></div>
     </td>
   </tr></table>
 </td></tr>
 ```
 
-PC ではサムネ左 + 本文右の横並び、モバイルではサムネが上・本文が下に自動で切り替わる。
-
-サムネ URL が `null` のときは、**位置に応じて 2 種類**の NG プレースホルダ画像を使い分ける：
-
-| 表示枠 | 使う画像 | 用途 |
-|---|---|---|
-| FEATURED（TOP 記事、568×200 横長） | `assets/ng-thumb-{cat_id}.jpg` | カテゴリ別キービジュアル（5 種、各 25-48 KB） |
-| サイドサムネ（2 件目以降、140×90） | `assets/ng-thumb-common-{cat_id}.jpg` | カテゴリ別共通サムネ（5 種、各 5-7 KB） |
-
-`{cat_id}` は `fx` / `ai` / `it` / `economy` / `game`。
-
-> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。NG プレースホルダ画像は **MIME inline 添付（cid: 参照）** でメールに埋め込む。
->
-> **手順**:
->
-> 1. HTML 側の `<img>` タグは `<img src="cid:ng-thumb-fx" alt="" width="568" style="...">` の形で書く。`cid:` プレフィクスの後に**ファイル名（拡張子なし）**を指定するだけ
-> 2. 送信スクリプト `tools/send_email.py` が HTML を走査して `cid:KEY` 参照を検出し、`assets/KEY.jpg` を自動で MIME inline 添付する。Routine 自身は base64 化や添付マップ構築をしなくてよい
-> 3. 利用可能なキー: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-economy`, `ng-thumb-game`（FEATURED 用、568×200 想定）／ `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-economy`, `ng-thumb-common-game`（サイドサムネ用、140×90 想定）
->
-> **絶対にやってはいけないこと**:
->
-> - HTML 本文に `<img src="data:image/jpeg;base64,...">` と data URI を直接埋め込む（メールサイズが膨らみ可読性も落ちる）
-> - `<img src="../../assets/ng-thumb-economy.jpg">` のような相対パス（受信側で解決不能）
-> - `<img src="https://raw.githubusercontent.com/HIDEPON-UMG/News-Grasp/main/assets/...">` のような raw URL（プライベート repo のため認証必須で 404）
-> - `<img>` タグの省略（FEATURED と各サイドサムネは必ず描画する）
->
-> OGP で取得した実画像 URL（外部の絶対 URL、つまり `articles.jsonl` の `thumb` フィールドが non-null）はそのまま `<img src="https://...">` で参照する（cid: 経由は不要、自動添付の対象にもならない）。
+OGP 取得済記事は `<img src="https://外部サイト/og.jpg">` を使う（CDN URL 不要）。
 
 メール送信：
 
@@ -314,7 +378,7 @@ SMTP 経路は htmlBody サイズ制限が極めて緩いため、minify は必�
 - **NewsPicks 有料部分・認証ゲートのある記事は深追いしない**
 - **箇条書きは 1 文 100 字程度 × 3 = 約 300 字 / 記事**。冗長はNG
 - **Markdown のリンクは Obsidian wiki link 形式 `[[…]]` を優先**（同 vault 内のため）
-- **過去 digest との重複チェック**: 同じ URL が `articles.jsonl` に既にある記事は再掲載しない
+- **重複除外は 3-A.5 で実施**（URL 正規化マッチ + タイトル N-gram Jaccard ≥ 0.7 + 24 時間ルール）。指示忘れ防止のため**毎回必ず通す**
 - **タイムゾーンは常に JST**（YYYY-MM-DD は JST 基準）
 - **`[[]]` `__` 強調記法を必ず使う**。記事本文・考察ともに
 
