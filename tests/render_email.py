@@ -100,14 +100,16 @@ def render_inline_emphasis(text: str, accent: str) -> str:
 # 個別ブロック HTML
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=8)
-def ng_thumb_data_uri(cat_id: str) -> str:
-    """`assets/ng-thumb-{id}.png` を base64 data URI に変換してキャッシュ。
+@lru_cache(maxsize=16)
+def ng_thumb_data_uri(name: str) -> str:
+    """`assets/{name}.jpg` を base64 data URI に変換してキャッシュ。
 
     private repo でも動くよう、メール HTML には外部 URL ではなく
     data URI として画像を埋め込む。
+    name は `ng-thumb-fx`（FEATURED 横長 1136x400）か
+    `ng-thumb-common-fx`（共通サイド 280x180）の形式。
     """
-    path = os.path.join(ASSETS_DIR, f"ng-thumb-{cat_id}.png")
+    path = os.path.join(ASSETS_DIR, f"{name}.jpg")
     if not os.path.exists(path):
         # 万一ファイルが無くても致命的にならないよう 1px 透明 GIF を返す
         return (
@@ -116,14 +118,19 @@ def ng_thumb_data_uri(cat_id: str) -> str:
         )
     with open(path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode("ascii")
-    return f"data:image/png;base64,{b64}"
+    return f"data:image/jpeg;base64,{b64}"
 
 
-def thumb_url(item: dict, cat_id: str) -> str:
-    """OGP があればそれ、無ければカテゴリ別 NG プレースホルダの data URI。"""
+def thumb_url(item: dict, cat_id: str, *, is_top: bool = False) -> str:
+    """OGP があればそれ、無ければ位置に応じた NG プレースホルダ。
+
+    is_top=True (FEATURED 568x200 枠) → カテゴリ別キービジュアル
+    is_top=False (サイド 140x90 枠) → カテゴリ別共通サムネ
+    """
     if item.get("thumb"):
         return item["thumb"]
-    return ng_thumb_data_uri(cat_id)
+    name = f"ng-thumb-{cat_id}" if is_top else f"ng-thumb-common-{cat_id}"
+    return ng_thumb_data_uri(name)
 
 
 def build_toc_rows(categories: list[dict]) -> str:
@@ -144,7 +151,8 @@ def build_toc_rows(categories: list[dict]) -> str:
 
 def build_article_card(it: dict, idx: int, cat: dict) -> str:
     accent = cat["accent"]
-    img = thumb_url(it, cat["id"])
+    is_top = (idx == 0)
+    img = thumb_url(it, cat["id"], is_top=is_top)
     bullets_html = ""
     for b in it["bullets"]:
         bullets_html += f"""

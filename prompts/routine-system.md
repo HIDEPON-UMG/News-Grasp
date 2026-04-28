@@ -214,22 +214,23 @@ git push origin main
 - `{{RELATED_ISSUES_HTML}}` → 関連過去号 HTML
 - `{{TAKEAWAYS_HTML}}` → KEY TAKEAWAYS HTML
 
-サムネ URL が `null` のときは、カテゴリ別 NG プレースホルダ画像に置換する：
+サムネ URL が `null` のときは、**位置に応じて 2 種類**の NG プレースホルダ画像を使い分ける：
 
-- `assets/ng-thumb-fx.png`
-- `assets/ng-thumb-ai.png`
-- `assets/ng-thumb-it.png`
-- `assets/ng-thumb-economy.png`
-- `assets/ng-thumb-game.png`
+| 表示枠 | 使う画像 | 用途 |
+|---|---|---|
+| FEATURED（TOP 記事、568×200 横長） | `assets/ng-thumb-{cat_id}.jpg` | カテゴリ別キービジュアル（5 種、各 25-48 KB） |
+| サイドサムネ（2 件目以降、140×90） | `assets/ng-thumb-common-{cat_id}.jpg` | カテゴリ別共通サムネ（5 種、各 5-7 KB） |
+
+`{cat_id}` は `fx` / `ai` / `it` / `economy` / `game`。
 
 > **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。メール HTML には **base64 data URI 埋め込み** で画像を入れる：
 >
 > ```bash
 > # ローカルファイルを base64 化して data URI を作る
-> printf 'data:image/png;base64,'; base64 -w0 assets/ng-thumb-{id}.png
+> printf 'data:image/jpeg;base64,'; base64 -w0 assets/ng-thumb-{name}.jpg
 > ```
 >
-> Bash 経由で `base64 -w0 path/to/file.png` を呼んで結果を `<img src="data:image/png;base64,..." alt="">` に埋め込む。同じカテゴリの NG 画像が記事数分繰り返し HTML に展開されるが、メールクライアント側で同一 URI はキャッシュされるので表示時のメモリは 1 枚分。
+> Bash 経由で `base64 -w0 path/to/file.jpg` を呼んで結果を `<img src="data:image/jpeg;base64,..." alt="">` に埋め込む。同じカテゴリの NG 画像が記事数分繰り返し HTML に展開されるが、メールクライアント側で同一 URI はキャッシュされるので表示時のメモリは 1 枚分。
 >
 > OGP で取得した実画像 URL（外部の絶対 URL）はそのまま `<img src="https://...">` で参照する（base64 化不要）。
 
