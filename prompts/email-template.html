@@ -20,12 +20,70 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
 <!--
-  Responsive layout for mobile (<= 600px)
-  Gmail (web/iOS/Android), Apple Mail, Outlook 2019+ がメディアクエリをサポート。
-  Outlook desktop はインラインスタイルで PC 幅レイアウトのまま。
-  クラス名 ng-* を経由して上書き、!important でインラインスタイルを優先する。
+  Responsive + Atomic class definitions for HTML body size reduction.
+  Gmail/Apple Mail/Outlook 365 が <style> in <head> をサポート。
+  Outlook desktop (Word renderer) は class を無視するが、最低限のフォントは
+  デフォルトで読めるレベルに収めている。
+
+  Atomic クラスで頻出インラインスタイルを共通化し、HTML body サイズを
+  Gmail のクリッピング閾値（~102KB）以下に抑えるのが目的。
 -->
 <style>
+/* Atomic style classes — 重複する inline スタイルを共通化 */
+.m { font-family: 'JetBrains Mono', Menlo, monospace; }
+.b7 { font-weight: 700; }
+.b8 { font-weight: 800; }
+.b9 { font-weight: 900; }
+.mut { color: #5C5A52; }
+.dk { color: #1A1A1A; }
+.w { color: #FFFFFF; }
+.ls1 { letter-spacing: 1px; }
+.ls15 { letter-spacing: 1.5px; }
+.ls2 { letter-spacing: 2px; }
+.it { font-style: italic; }
+table { border-collapse: collapse; }
+/* 記事カード共通 */
+.bul { padding-left: 18px; margin: 0 0 6px; font-size: 13px; line-height: 1.85; color: #1A1A1A; }
+.bul:before { content: "▸"; color: inherit; margin-left: -18px; padding-right: 8px; font-family: 'JetBrains Mono', Menlo, monospace; font-weight: 700; }
+.fz10 { font-size: 10px; }
+.fz11 { font-size: 11px; }
+.fz12 { font-size: 12px; }
+.fz13 { font-size: 13px; }
+.fz14 { font-size: 14px; }
+.lh185 { line-height: 1.85; }
+.lh145 { line-height: 1.45; }
+.ls05 { letter-spacing: 0.5px; }
+.tdn { text-decoration: none; }
+.ofc { object-fit: cover; }
+.db { display: block; }
+.dn { display: none; }
+.br2 { border-radius: 2px; }
+.p3 { padding: 0 3px; }
+.p26 { padding: 2px 6px; }
+.pb1 { padding-bottom: 1px; }
+.pl8 { padding-left: 8px; }
+.pr16 { padding-right: 16px; }
+.mb6 { margin-bottom: 6px; }
+.mb14 { margin-bottom: 14px; }
+.ml4 { margin-left: 4px; }
+.mt8 { margin-top: 8px; }
+.t812 { margin: 8px 0 12px; }
+.lsm03 { letter-spacing: -0.3px; }
+.bgcard { background: #FAF7F0; }
+.bbcard { border-bottom: 1px solid #EDEAE3; }
+.brd { border: 1px solid #E2DED4; }
+.pcard { padding: 24px 36px; }
+.vmid { vertical-align: middle; }
+.vtop { vertical-align: top; }
+/* カテゴリアクセント色 */
+.acFx { color: #B8860B; }
+.acAi { color: #2D5BB8; }
+.acIt { color: #2E6B52; }
+.acEc { color: #8E2A19; }
+.acGm { color: #5E3D8C; }
+/* サイドサムネ寸法 */
+.thb { width: 140px; height: 90px; }
+
 @media only screen and (max-width: 600px) {
   /* 外枠 */
   .ng-wrap { width: 100% !important; max-width: 100% !important; }

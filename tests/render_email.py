@@ -121,10 +121,22 @@ def ng_thumb_data_uri(name: str) -> str:
     return f"data:image/jpeg;base64,{b64}"
 
 
-# cid: モード用のレジストリ（--send 時のみ使用）
+# cid: モード用のレジストリ（--send 時のみ使用、GAS 経路の遺物）
 # render 完了後に post_to_webhook へ inlineImages として引き渡す。
 _CID_MODE: bool = False
 _CID_REGISTRY: dict[str, str] = {}
+
+# CDN モード: NG プレースホルダ画像を公開 repo の raw URL で参照する
+# Gmail のインボックスプレビューに「noname 添付」として表示されるのを回避するため。
+# https://github.com/HIDEPON-UMG/news-grasp-assets (public) に同じ JPG が置いてある
+NG_THUMB_CDN_BASE = "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main"
+_CDN_MODE: bool = False
+
+
+def set_cdn_mode(enabled: bool) -> None:
+    """NG プレースホルダを公開 CDN URL で参照するモード（SMTP 送信時に有効化推奨）。"""
+    global _CDN_MODE
+    _CDN_MODE = enabled
 
 
 def set_cid_mode(enabled: bool) -> None:
@@ -145,12 +157,17 @@ def thumb_url(item: dict, cat_id: str, *, is_top: bool = False) -> str:
     is_top=True (FEATURED 568x200 枠) → カテゴリ別キービジュアル
     is_top=False (サイド 140x90 枠) → カテゴリ別共通サムネ
 
-    cid_mode=True のときは `cid:<name>` を返し、data URI をレジストリに記録する。
-    GAS 側で MIME multipart/related の inlineImages として展開される。
+    優先順位:
+        1. item.thumb が non-null → OGP URL を直返し
+        2. _CDN_MODE → 公開 repo の raw URL を返す（Gmail プレビューに添付として出ない）
+        3. _CID_MODE → cid:<name> + registry 登録（GAS Webhook 用、現在は遺物）
+        4. それ以外 → base64 data URI（プレビュー用、ブラウザで直接開ける）
     """
     if item.get("thumb"):
         return item["thumb"]
     name = f"ng-thumb-{cat_id}" if is_top else f"ng-thumb-common-{cat_id}"
+    if _CDN_MODE:
+        return f"{NG_THUMB_CDN_BASE}/{name}.jpg"
     if _CID_MODE:
         if name not in _CID_REGISTRY:
             _CID_REGISTRY[name] = ng_thumb_data_uri(name)
@@ -180,11 +197,11 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
     img = thumb_url(it, cat["id"], is_top=is_top)
     bullets_html = ""
     for b in it["bullets"]:
-        bullets_html += f"""
-        <li class="ng-card-body" style="position:relative;padding-left:18px;margin-bottom:8px;font-size:13px;line-height:1.85;color:#1A1A1A;list-style:none;">
-          <span style="position:absolute;left:0;top:0;color:{accent};font-weight:700;font-family:'JetBrains Mono',Menlo,monospace;">▸</span>
-          {render_inline_emphasis(b, accent)}
-        </li>""".strip()
+        bullets_html += (
+            f'<div class="bul ng-card-body" style="color:{accent}">'
+            f'<span style="color:#1A1A1A">{render_inline_emphasis(b, accent)}</span>'
+            f'</div>'
+        )
 
     bg = "#FAF7F0" if idx % 2 == 0 else "#F5F1E7"
     top_label = ""
@@ -206,40 +223,32 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
     else:
         side_img_html = f"""
           <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
-            <img src="{img}" alt="" width="140" style="width:140px;height:90px;object-fit:cover;display:block;border:1px solid #E2DED4;">
+            <img src="{img}" alt="" width="140" class="thb db ofc brd">
           </td>"""
 
     return f"""
     <tr><td class="ng-card-pad" style="padding:24px 36px;background:{bg};border-bottom:1px solid #EDEAE3;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;"><tbody><tr>
-        <td>
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
-            <td style="background:{accent};color:#fff;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;font-weight:700;padding:2px 6px;letter-spacing:0.5px;">
-              {idx+1:02d}
-            </td>
-            <td class="ng-card-meta" style="padding-left:8px;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:0.5px;">
-              {html.escape(it.get('time',''))} · {html.escape(it.get('source',''))}
-            </td>
-          </tr></tbody></table>
+      <table width="100%" style="margin-bottom:6px;"><tr>
+        <td class="ng-card-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:0.5px;">
+          <span style="background:{accent};color:#fff;font-size:11px;font-weight:700;padding:2px 6px;">{idx+1:02d}</span>
+          <span style="padding-left:8px;">{html.escape(it.get('time',''))} · {html.escape(it.get('source',''))}</span>
         </td>
         <td align="right" class="ng-card-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;">
           SCORE <span style="color:{accent};font-weight:700;font-size:14px;margin-left:4px;">{it.get('score','')}</span>
         </td>
-      </tr></tbody></table>
+      </tr></table>
 
       <h3 class="ng-card-title" style="font-size:{19 if idx==0 else 16}px;font-weight:800;line-height:1.45;margin:8px 0 12px;letter-spacing:-0.3px;">
         {top_label}<a href="{html.escape(it.get('url','#'))}" style="color:#1A1A1A;text-decoration:none;">{html.escape(it.get('title',''))}</a>
       </h3>
       {feature_img_html}
 
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+      <table width="100%"><tr>
         {side_img_html}
         <td class="ng-side-text" valign="top">
-          <ul style="margin:0;padding-left:0;list-style:none;">
-            {bullets_html}
-          </ul>
+          {bullets_html}
         </td>
-      </tr></tbody></table>
+      </tr></table>
     </td></tr>"""
 
 
@@ -375,12 +384,121 @@ def render_email_html() -> str:
 
 
 def minify_html(html_text: str) -> str:
-    """簡易 HTML 圧縮: タグ間空白除去・連続空白の畳み込み・改行整理。
+    """HTML 圧縮: 頻出 inline スタイルを <style> ブロック内 atomic クラスに置換。
 
-    Gmail / Outlook はインラインスタイル必須なので `<style>` 抽出はせず、
-    空白だけ削る。実測で ~14% 削減。GAS htmlBody 200KB 上限回避用。
+    背景: Gmail は htmlBody が ~102 KB を超えると「メッセージの一部のみ表示」で
+    本文を切る。SMTP 経路でも受信側の制約として残るため、本関数で構造的に
+    圧縮し、25 記事規模でも 102 KB 以下に収まるようにする。
+
+    Outlook desktop は class セレクタを無視するが、本テンプレでは最低限のフォントは
+    デフォルトで読めるレベルに収めている（記事内容は判読可能）。
     """
-    s = re.sub(r">\s+<", "><", html_text)
+    s = html_text
+
+    # 1. 頻出 inline スタイル断片を atomic クラスに置換
+    #    declaration の trailing ; は任意（regex で吸収）
+    INLINE_TO_CLASS = [
+        ("font-family:'JetBrains Mono',Menlo,monospace", "m"),
+        ("font-weight:900", "b9"),
+        ("font-weight:800", "b8"),
+        ("font-weight:700", "b7"),
+        ("color:#5C5A52", "mut"),
+        ("color:#1A1A1A", "dk"),
+        ("color:#fff", "w"),
+        ("color:#FFFFFF", "w"),
+        ("letter-spacing:1.5px", "ls15"),
+        ("letter-spacing:2px", "ls2"),
+        ("letter-spacing:1px", "ls1"),
+        ("letter-spacing:0.5px", "ls05"),
+        ("font-style:italic", "it"),
+        ("line-height:1.85", "lh185"),
+        ("line-height:1.45", "lh145"),
+        ("font-size:10px", "fz10"),
+        ("font-size:11px", "fz11"),
+        ("font-size:12px", "fz12"),
+        ("font-size:13px", "fz13"),
+        ("font-size:14px", "fz14"),
+        ("text-decoration:none", "tdn"),
+        ("object-fit:cover", "ofc"),
+        ("display:block", "db"),
+        ("display:none", "dn"),
+        ("border-radius:2px", "br2"),
+        ("padding:0 3px", "p3"),
+        ("padding:2px 6px", "p26"),
+        ("padding-bottom:1px", "pb1"),
+        ("padding-left:8px", "pl8"),
+        ("padding-right:16px", "pr16"),
+        ("padding:24px 36px", "pcard"),
+        ("margin-bottom:6px", "mb6"),
+        ("margin-bottom:14px", "mb14"),
+        ("margin-left:4px", "ml4"),
+        ("margin-top:8px", "mt8"),
+        ("margin:8px 0 12px", "t812"),
+        ("letter-spacing:-0.3px", "lsm03"),
+        ("background:#FAF7F0", "bgcard"),
+        ("border-bottom:1px solid #EDEAE3", "bbcard"),
+        ("border:1px solid #E2DED4", "brd"),
+        ("vertical-align:middle", "vmid"),
+        ("vertical-align:top", "vtop"),
+        ("color:#B8860B", "acFx"),
+        ("color:#2D5BB8", "acAi"),
+        ("color:#2E6B52", "acIt"),
+        ("color:#8E2A19", "acEc"),
+        ("color:#5E3D8C", "acGm"),
+        ("font-size:16px", "fz16"),
+        ("font-size:9px", "fz9"),
+    ]
+
+    def transform_tag(match: re.Match) -> str:
+        tag_text = match.group(0)
+        if 'style="' not in tag_text:
+            return tag_text
+        added_classes: list[str] = []
+        def style_replacer(style_match: re.Match) -> str:
+            style_body = style_match.group(1)
+            for needle, cls in INLINE_TO_CLASS:
+                # ; 任意で挙動するため regex で吸収
+                pattern = re.escape(needle) + r";?"
+                if re.search(pattern, style_body):
+                    style_body = re.sub(pattern, "", style_body)
+                    if cls not in added_classes:
+                        added_classes.append(cls)
+            return f'style="{style_body}"'
+        new_tag = re.sub(r'style="([^"]*)"', style_replacer, tag_text)
+        if added_classes:
+            class_str = " ".join(added_classes)
+            if 'class="' in new_tag:
+                new_tag = re.sub(
+                    r'class="([^"]*)"',
+                    lambda m: f'class="{m.group(1)} {class_str}"' if m.group(1) else f'class="{class_str}"',
+                    new_tag, count=1,
+                )
+            else:
+                new_tag = re.sub(
+                    r"^(<\w+)",
+                    rf'\1 class="{class_str}"',
+                    new_tag, count=1,
+                )
+        # style 末尾の余分な ; や空 style="" を整理
+        new_tag = re.sub(r';;+', ';', new_tag)
+        new_tag = re.sub(r'style="\s*;\s*', 'style="', new_tag)
+        new_tag = re.sub(r';\s*"', '"', new_tag)
+        new_tag = re.sub(r'\s*style=""', "", new_tag)
+        return new_tag
+
+    s = re.sub(r"<[^>]+>", transform_tag, s)
+
+    # 2. role="presentation" / cellpadding="0" cellspacing="0" border="0" を削除
+    #    （アクセシビリティヒントだが email 用途では冗長、border-collapse で代用）
+    s = re.sub(r'\s*role="presentation"', "", s)
+    s = re.sub(r'\s*cellpadding="0"\s*cellspacing="0"\s*border="0"', "", s)
+    s = re.sub(r'\s*cellpadding="0"', "", s)
+    s = re.sub(r'\s*cellspacing="0"', "", s)
+    # tbody は省略可能（多くのメーラーで自動補完される）
+    s = re.sub(r"</?tbody>", "", s)
+
+    # 3. 空白圧縮
+    s = re.sub(r">\s+<", "><", s)
     s = re.sub(r"\n\s+", "\n", s)
     s = re.sub(r"  +", " ", s)
     return s
@@ -452,9 +570,14 @@ def main() -> int:
         print("OK: mail sent")
 
     if args.smtp:
-        # 本番経路: cid: 参照のみ HTML に書き、tools/send_email.py が assets/*.jpg を自動添付
-        set_cid_mode(True)
-        send_html = render_email_html()  # SMTP 経路はサイズ制限が緩いので minify 不要
+        # 本番経路: 公開 CDN の raw URL で NG プレースホルダを参照
+        #   → cid: inline 添付を使わず、Gmail インボックスプレビューに「noname」として
+        #     画像が出るのを完全に回避できる
+        # OGP URL 取得済の記事はそのまま外部 URL で参照（CDN もスキップ）
+        # Gmail の htmlBody クリッピング (~102KB) 対策で minify は引き続き適用
+        set_cid_mode(False)
+        set_cdn_mode(True)
+        send_html = minify_html(render_email_html())
         recipients = args.to or RECIPIENTS
 
         # 一時 HTML ファイルに書き出して send_email.py に渡す
