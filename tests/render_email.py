@@ -179,22 +179,29 @@ def build_toc_rows(categories: list[dict]) -> str:
     rows = []
     for i, c in enumerate(categories):
         rows.append(f"""
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:4px;"><tbody><tr>
-          <td width="32" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:{c['accent']};font-weight:700;">{i+1:02d}.</td>
-          <td style="font-size:14px;font-weight:700;">
+        <table width="100%" style="margin-bottom:6px;"><tr>
+          <td width="32" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:{c['accent']};font-weight:700;">{i+1:02d}.</td>
+          <td style="font-size:16px;font-weight:700;">
             <span style="color:{c['accent']};margin-right:6px;font-family:'JetBrains Mono',Menlo,monospace;">{c['glyph']}</span>
             {html.escape(c['name'])}
-            <span style="color:#8B8B85;font-weight:400;font-size:11px;font-family:'JetBrains Mono',Menlo,monospace;margin-left:8px;">{html.escape(c['nameEn'])}</span>
+            <span style="color:#8B8B85;font-weight:400;font-size:12px;font-family:'JetBrains Mono',Menlo,monospace;margin-left:8px;">{html.escape(c['nameEn'])}</span>
           </td>
-          <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">{len(c['items'])} items</td>
-        </tr></tbody></table>""".strip())
+          <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#5C5A52;">{len(c['items'])} items</td>
+        </tr></table>""".strip())
     return "\n".join(rows)
 
 
 def build_article_card(it: dict, idx: int, cat: dict) -> str:
+    """
+    各記事のカード:
+    - TOP (idx=0): FEATURED 大画像 (568x200)、画像クリックで記事 URL へ
+    - 非TOP (idx>=1): サイドサムネ (140x90) を左、本文を右、画像クリックで記事 URL へ
+    - 画像はいずれも OGP 優先 (item.thumb 有り) → 無ければ CDN/NG プレースホルダ
+    """
     accent = cat["accent"]
     is_top = (idx == 0)
     img = thumb_url(it, cat["id"], is_top=is_top)
+    url = html.escape(it.get("url", "#"))
     bullets_html = ""
     for b in it["bullets"]:
         bullets_html += (
@@ -208,38 +215,33 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
     feature_img_html = ""
     side_img_html = ""
 
-    if idx == 0:
+    if is_top:
         top_label = (
             f'<span style="background:{accent};color:#fff;font-family:\'JetBrains Mono\',Menlo,monospace;'
-            'font-size:10px;padding:2px 6px;margin-right:8px;vertical-align:middle;letter-spacing:1px;">TOP</span>'
+            'font-size:11px;padding:2px 6px;margin-right:8px;vertical-align:middle;letter-spacing:1px;">TOP</span>'
         )
         feature_img_html = f"""
-        <div class="ng-feature-img" style="margin-bottom:14px;position:relative;border:1px solid #E2DED4;">
-          <img src="{img}" alt="" width="568" style="width:100%;height:200px;object-fit:cover;display:block;">
-          <div style="position:absolute;bottom:0;left:0;background:{accent};color:#fff;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;padding:4px 10px;letter-spacing:1.5px;">
+        <a href="{url}" style="text-decoration:none;display:block;margin-bottom:14px;position:relative;border:1px solid #E2DED4;" class="ng-feature-img">
+          <img src="{img}" alt="" width="568" style="width:100%;height:220px;object-fit:cover;display:block;">
+          <div style="position:absolute;bottom:0;left:0;background:{accent};color:#fff;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;padding:4px 10px;letter-spacing:1.5px;">
             FEATURED · {html.escape(cat['nameEn'].upper())}
           </div>
-        </div>"""
+        </a>"""
     else:
         side_img_html = f"""
           <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
-            <img src="{img}" alt="" width="140" class="thb db ofc brd">
+            <a href="{url}" class="db tdn"><img src="{img}" alt="" width="140" class="thb db ofc brd"></a>
           </td>"""
 
     return f"""
     <tr><td class="ng-card-pad" style="padding:24px 36px;background:{bg};border-bottom:1px solid #EDEAE3;">
-      <table width="100%" style="margin-bottom:6px;"><tr>
-        <td class="ng-card-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:0.5px;">
-          <span style="background:{accent};color:#fff;font-size:11px;font-weight:700;padding:2px 6px;">{idx+1:02d}</span>
-          <span style="padding-left:8px;">{html.escape(it.get('time',''))} · {html.escape(it.get('source',''))}</span>
-        </td>
-        <td align="right" class="ng-card-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;">
-          SCORE <span style="color:{accent};font-weight:700;font-size:14px;margin-left:4px;">{it.get('score','')}</span>
-        </td>
-      </tr></table>
+      <div class="ng-card-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:0.5px;margin-bottom:6px;">
+        <span style="background:{accent};color:#fff;font-size:12px;font-weight:700;padding:2px 6px;">{idx+1:02d}</span>
+        <span style="padding-left:8px;">{html.escape(it.get('time',''))} · {html.escape(it.get('source',''))} · SCORE {it.get('score','')}</span>
+      </div>
 
-      <h3 class="ng-card-title" style="font-size:{19 if idx==0 else 16}px;font-weight:800;line-height:1.45;margin:8px 0 12px;letter-spacing:-0.3px;">
-        {top_label}<a href="{html.escape(it.get('url','#'))}" style="color:#1A1A1A;text-decoration:none;">{html.escape(it.get('title',''))}</a>
+      <h3 class="ng-card-title" style="font-size:{22 if is_top else 18}px;font-weight:800;line-height:1.45;margin:8px 0 12px;letter-spacing:-0.3px;">
+        {top_label}<a href="{url}" style="color:#1A1A1A;text-decoration:none;">{html.escape(it.get('title',''))}</a>
       </h3>
       {feature_img_html}
 
@@ -258,20 +260,20 @@ def build_categories_html(categories: list[dict]) -> str:
         # カテゴリヘッダー
         parts.append(f"""
         <tr><td class="ng-cat-pad" style="background:{cat['accent']};padding:20px 36px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+          <table width="100%"><tr>
             <td style="vertical-align:middle;">
-              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">
+              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">
                 CATEGORY {ci+1:02d} / {len(categories):02d} · {html.escape(cat['nameEn'].upper())}
               </div>
-              <div class="ng-cat-name" style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
+              <div class="ng-cat-name" style="font-size:30px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
                 <span style="font-family:'JetBrains Mono',Menlo,monospace;margin-right:10px;">{cat['glyph']}</span>{html.escape(cat['name'])}
               </div>
             </td>
-            <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;">
+            <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;">
               {len(cat['items'])} stories
             </td>
-          </tr></tbody></table>
-          <div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">
+          </tr></table>
+          <div class="ng-cat-summary" style="font-size:14px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">
             {html.escape(cat['summary'])}
           </div>
         </td></tr>""")
@@ -290,20 +292,20 @@ def build_reflection_sections(sections: list[dict]) -> str:
         border = "none" if is_last else "1px dashed #E2DED4"
         parts.append(f"""
         <tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:{border};"><tbody><tr>
+          <table width="100%" style="border-bottom:{border};"><tr>
             <td width="80" valign="top" class="ng-section-num-cell" style="padding:28px 16px 28px 0;">
-              <div class="ng-section-num" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:38px;font-weight:900;color:{accent};line-height:0.9;letter-spacing:-2px;">§{si+1:02d}</div>
-              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:9px;color:#fff;background:{accent};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{html.escape(sec['tag'])}</div>
+              <div class="ng-section-num" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:42px;font-weight:900;color:{accent};line-height:0.9;letter-spacing:-2px;">§{si+1:02d}</div>
+              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#fff;background:{accent};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{html.escape(sec['tag'])}</div>
             </td>
             <td valign="top" class="ng-section-text-cell" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;">
-              <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;color:#1A1A1A;letter-spacing:-0.3px;line-height:1.4;">
+              <h3 class="ng-section-heading" style="font-size:20px;font-weight:800;margin:0 0 14px;color:#1A1A1A;letter-spacing:-0.3px;line-height:1.4;">
                 {html.escape(sec['heading'])}
               </h3>
-              <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;color:#1A1A1A;">
+              <div class="ng-section-body" style="font-size:15px;line-height:2.0;color:#1A1A1A;">
                 {render_inline_emphasis(sec['body'], accent)}
               </div>
             </td>
-          </tr></tbody></table>
+          </tr></table>
         </td></tr>""")
     return "\n".join(parts)
 
@@ -313,19 +315,19 @@ def build_takeaways(takeaways: list[dict]) -> str:
     for i, t in enumerate(takeaways):
         parts.append(f"""
         <tr><td style="padding-bottom:12px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff;border:1px solid #E2DED4;"><tbody><tr>
-            <td width="56" valign="middle" style="background:{t['color']};color:#fff;text-align:center;font-family:'JetBrains Mono',Menlo,monospace;font-size:18px;font-weight:900;padding:14px 0;">
+          <table width="100%" style="background:#fff;border:1px solid #E2DED4;"><tr>
+            <td width="56" valign="middle" style="background:{t['color']};color:#fff;text-align:center;font-family:'JetBrains Mono',Menlo,monospace;font-size:20px;font-weight:900;padding:14px 0;">
               {i+1:02d}
             </td>
             <td style="padding:12px 16px;">
-              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:9px;color:{t['color']};font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">
+              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:{t['color']};font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">
                 {html.escape(t['tag'].upper())}
               </div>
-              <div style="font-size:13px;line-height:1.7;font-weight:600;">
+              <div style="font-size:14.5px;line-height:1.75;font-weight:600;">
                 {render_inline_emphasis(t['text'], t['color'])}
               </div>
             </td>
-          </tr></tbody></table>
+          </tr></table>
         </td></tr>""")
     return "\n".join(parts)
 
@@ -337,11 +339,11 @@ def build_related_issues(related: list[dict]) -> str:
         border = "none" if is_last else "1px solid #E2DED4"
         parts.append(f"""
         <tr><td style="padding:10px 0;border-bottom:{border};">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
-            <td width="100" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">{html.escape(r['date'])}</td>
-            <td style="font-size:13px;font-weight:600;"><a href="{html.escape(r.get('url','#'))}" style="color:#1A1A1A;text-decoration:none;">{html.escape(r['title'])}</a></td>
+          <table width="100%"><tr>
+            <td width="100" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#5C5A52;">{html.escape(r['date'])}</td>
+            <td style="font-size:14px;font-weight:600;"><a href="{html.escape(r.get('url','#'))}" style="color:#1A1A1A;text-decoration:none;">{html.escape(r['title'])}</a></td>
             <td width="20" align="right" style="color:#5C5A52;">→</td>
-          </tr></tbody></table>
+          </tr></table>
         </td></tr>""")
     return "\n".join(parts)
 
@@ -594,8 +596,11 @@ def main() -> int:
             "--subject", args.subject,
             "--to", ",".join(recipients),
         ]
+        send_bytes = len(send_html.encode("utf-8"))
         print(f"\nSMTP send via tools/send_email.py")
-        print(f"  htmlBody size: {len(send_html):,} bytes (no minify)")
+        print(f"  htmlBody size: {send_bytes:,} bytes (minified, UTF-8 encoded)")
+        if send_bytes > 102 * 1024:
+            print(f"  ⚠ Gmail clip threshold (~102 KB) exceeded by {send_bytes - 102*1024:,} bytes")
         rc = subprocess.call(cmd)
         if rc != 0:
             print("FAIL: SMTP send returned non-zero")
