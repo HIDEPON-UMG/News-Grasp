@@ -228,16 +228,22 @@ git push origin main
 
 `{cat_id}` は `fx` / `ai` / `it` / `economy` / `game`。
 
-> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。メール HTML には **base64 data URI 埋め込み** で画像を入れる：
+> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。メール HTML には **base64 data URI 埋め込み** で画像を入れる。
 >
-> ```bash
-> # ローカルファイルを base64 化して data URI を作る
-> printf 'data:image/jpeg;base64,'; base64 -w0 assets/ng-thumb-{name}.jpg
-> ```
+> NG プレースホルダ用の base64 文字列は **事前計算済み**で `prompts/ng-thumbs-base64.md` に格納されている。Routine は以下の手順で使うこと：
 >
-> Bash 経由で `base64 -w0 path/to/file.jpg` を呼んで結果を `<img src="data:image/jpeg;base64,..." alt="">` に埋め込む。同じカテゴリの NG 画像が記事数分繰り返し HTML に展開されるが、メールクライアント側で同一 URI はキャッシュされるので表示時のメモリは 1 枚分。
+> 1. **メール生成の最初に** `Read` ツールで `prompts/ng-thumbs-base64.md` を 1 回だけ読み込む（10 個のキー → data URI のマップ）
+> 2. NG フォールバックを使う記事の `<img>` タグでは、**ファイル内のコードブロックから verbatim で `data:image/jpeg;base64,...` の文字列を取り出して `src` 属性に貼り付ける**。`base64` コマンドや `printf` を**呼ばない**
+> 3. 例（FEATURED）: `<img src="data:image/jpeg;base64,/9j/4AAQ..." alt="" width="568" style="...">`
+> 4. 同じカテゴリの NG 画像が複数の `<img>` で繰り返されるのは正常。メールクライアントが同一 data URI をキャッシュするため負荷は 1 枚分
 >
-> OGP で取得した実画像 URL（外部の絶対 URL）はそのまま `<img src="https://...">` で参照する（base64 化不要）。
+> **絶対にやってはいけないこと**:
+>
+> - `<img src="../../assets/ng-thumb-economy.jpg">` のような相対パス（メール送信先で解決不能）
+> - `<img src="https://raw.githubusercontent.com/HIDEPON-UMG/News-Grasp/main/assets/...">` のような raw URL（プライベート repo のため認証必須で 404）
+> - `<img>` タグの省略（FEATURED と各サイドサムネは必ず描画する）
+>
+> OGP で取得した実画像 URL（外部の絶対 URL、つまり `articles.jsonl` の `thumb` フィールドが non-null）はそのまま `<img src="https://...">` で参照する（base64 化不要）。
 
 Webhook 送信：
 

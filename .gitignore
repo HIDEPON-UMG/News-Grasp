@@ -1,27 +1,23 @@
-# Obsidian
-.obsidian/workspace*
-.obsidian/cache
-.trash/
 
 # OS
-Thumbs.db
-.DS_Store
-desktop.ini
-
-# 一時
-*.tmp
-*.bak
-*~
-
+# Obsidian
+# Python
 # secrets（万一置いてしまった場合の保険）
+# テスト出力
+# 一時
+*.bak
+*.pyc
+*.secret.json
+*.tmp
+*~
+.DS_Store
 .env
 .env.*
-*.secret.json
-
-# テスト出力
-tests/output/
-
-
-# Python
+.obsidian/cache
+.obsidian/workspace*
+.trash/
+Thumbs.db
 __pycache__/
-*.pyc
+desktop.ini
+tests/output/
+~$*
