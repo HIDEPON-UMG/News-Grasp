@@ -4,6 +4,8 @@
 
 最終的な見た目は `prompts/email-template.html` と `prompts/obsidian-template.md` のテンプレートに従う。本ドキュメントは **記事収集ロジックと出力構造の決定論的部分** を規定する。
 
+**Obsidian タグ仕様**：記事 JSON のタグ関連フィールド（entities / topics / industries / events / tags）と、frontmatter / 記事カードへのタグ展開ルールは `prompts/obsidian-tagging-spec.md` を**毎回必ず読み込んで**従うこと。本ドキュメントの記事 JSON スキーマもこの仕様に準拠する。
+
 ## 全体ゴール
 
 watchlist で指定された企業・タイトル・キーワードと、ジャンル汎用キーワードを組み合わせて Web を検索し、**過去 90 日の記事との関連性を踏まえた**日次レポートを Markdown / HTML で生成する。完了後、HTML メールを GAS Webhook 経由で 2 名に送付する。
@@ -155,7 +157,32 @@ dedup を通過した候補から最終的に **カテゴリあたり 10 件**�
     "ref_date": "2026-04-15",
     "note": "..."                  // 1〜2 行の解釈
   },
-  "tags": ["..."]                 // articles.jsonl 追記用、3〜6 個
+
+  // ↓ Obsidian タグ生成用フィールド（必須・空でも [] を出力）
+  // 詳細ルールは prompts/obsidian-tagging-spec.md を毎回参照すること
+  "entities": {
+    "companies": [],   // 企業／組織。日本語表記、英字固有名詞は原文（OpenAI / NVIDIA 等）
+    "countries": [],   // 国。日本語（日本／米国／中国／EU 等）
+    "services":  [],   // サービス／製品。固有名詞は原文、半角スペースはハイフン化（Switch-2）
+    "people":    [],   // 人名。日本語フルネーム、海外要人は中点 ・ 区切りのカナ
+    "tickers":   []    // 株式ティッカー or 通貨ペア（USDJPY / NVDA / 7974）。スラッシュ不可
+  },
+  "topics":     [],    // 主題テーマ 1〜3 個（日本語推奨、国際略号 OK）
+  "industries": [],    // 業界 0〜2 個（日本語）
+  "events":     [],    // イベント種別 0〜2 個（決算／製品発表／政策会合 等）
+
+  "tags": ["co/...", "country/...", "topic/...", "score/高"]
+  // 上記 entities/topics/industries/events と score を階層タグに変換した配列
+  // 規則：
+  //   entities.companies → co/{値}
+  //   entities.countries → country/{値}
+  //   entities.services  → svc/{値}
+  //   entities.people    → person/{値}
+  //   entities.tickers   → ticker/{値}
+  //   topics             → topic/{値}
+  //   industries         → industry/{値}
+  //   events             → event/{値}
+  //   score              → score/高（>=85）/ score/中（65-84）/ score/低（<65）
 }
 ```
 
@@ -214,7 +241,21 @@ dedup を通過した候補から最終的に **カテゴリあたり 10 件**�
 | `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` | 各カテゴリの記事カード 10 件（フォーマットは `prompts/obsidian-template.md` 参照） |
 | `digest/Summary/{YYYY-MM-DD}.md` | 当日サマリー（目次 + 考察）。Obsidian で `[[]]` リンクのハブ |
 
-**フォルダが存在しない場合は事前に `mkdir -p` で作成**。Obsidian の wiki link は vault 内のファイル名で解決されるため、`[[2026-04-28-AI]]` のリンクはフォルダの場所に依存せず動く。
+**フォルダが存在しない場合は事前に `mkdir -p` で作成**。
+
+##### Obsidian タグの展開（必須）
+
+各 .md ファイルの frontmatter `tags:` と本文中の記事カードに、`prompts/obsidian-tagging-spec.md`
+の §4 に従ってタグを展開する：
+
+- **Summary**：共通固定 4 件（`daily` / `newsletter` / `news-grasp` / `issue-{ISSUE_NO}`）
+  + 当日扱った全カテゴリの `cat/{id}` + 全記事の `tags` 集約（`score/*` を除く、重複排除）
+- **カテゴリ別 .md**：共通固定 4 件 + 当該カテゴリの `cat/{id}` + そのカテゴリ内 10 記事の
+  `tags` 集約（`score/*` を除く）
+- **各記事カード**：`### [score] タイトル` の直下メタ行の次に、当該記事の `tags`
+  全件（`score/*` 含む）を `#tag #tag ...` の 1 行で並べる
+
+`tags:` リストはプレフィックス順 → 値の昇順でソートする（共通固定 4 件のみ先頭固定）。Obsidian の wiki link は vault 内のファイル名で解決されるため、`[[2026-04-28-AI]]` のリンクはフォルダの場所に依存せず動く。
 
 #### 5-B. articles.jsonl の更新
 
@@ -230,9 +271,19 @@ dedup を通過した候補から最終的に **カテゴリあたり 10 件**�
   "url_norm": "...",
   "source": "...",
   "summary": "80 字程度",
-  "tags": ["..."]
+
+  "entities": {
+    "companies": [], "countries": [], "services": [], "people": [], "tickers": []
+  },
+  "topics": [],
+  "industries": [],
+  "events": [],
+  "tags": ["co/...", "country/...", "topic/...", "score/高"]
 }
 ```
+
+タグ仕様の詳細は `prompts/obsidian-tagging-spec.md` を参照。dedup（24 時間ルール）は
+URL 正規化とタイトル類似度で行うため、`tags` 構造の変更は dedup ロジックに影響しない。
 
 フィールド説明：
 

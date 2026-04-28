@@ -168,6 +168,7 @@ git push
 
 - [README.md](README.md) — 全体構成と運用フロー
 - [prompts/routine-system.md](prompts/routine-system.md) — Runner プロンプトの完全仕様
+- [prompts/obsidian-tagging-spec.md](prompts/obsidian-tagging-spec.md) — Obsidian タグ階層仕様（正本）
 - [tests/README.md](tests/README.md) — 単体テストの使い方
 - [docs/architecture.pptx](docs/architecture.pptx) — アーキテクチャ図と仕様まとめ（プレゼン用）
 - [memory/feedback_windows_bat_gotchas.md](../../../.claude/projects/c--Users-hidek-OneDrive--------ProjectFolders/memory/feedback_windows_bat_gotchas.md) — Windows .bat 落とし穴チェックリスト

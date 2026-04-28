@@ -94,9 +94,10 @@ News-Grasp/
 │   ├── archive/             # 90 日超のアーカイブ
 │   └── _status.md           # 実行ログ
 ├── prompts/
-│   ├── routine-system.md    # ★ Runner の中核プロンプト
-│   ├── email-template.html  # メール HTML テンプレート
-│   └── obsidian-template.md # Obsidian Markdown テンプレート
+│   ├── routine-system.md         # ★ Runner の中核プロンプト
+│   ├── obsidian-tagging-spec.md  # ★ Obsidian タグ生成ルール（階層タグ仕様）
+│   ├── email-template.html       # メール HTML テンプレート
+│   └── obsidian-template.md      # Obsidian Markdown テンプレート
 ├── assets/                  # OGP 不足時の NG プレースホルダ（v2、計 10 JPG）
 │   ├── ng-thumb-{cat}.jpg          # FEATURED 横長 1136×400
 │   └── ng-thumb-common-{cat}.jpg   # サイドサムネ 280×180
@@ -179,10 +180,40 @@ python tests/render_email.py --send
 
 5h 枠は 1 回の実行で **15〜25% 程度**消費。朝 06:00 実行のため日中の作業と干渉しない。
 
+## Obsidian タグ運用
+
+Runner は記事の要約と同じターンで `entities` / `topics` / `industries` / `events`
+を抽出し、**階層タグ**（`cat/`, `co/`, `country/`, `svc/`, `person/`, `ticker/`,
+`topic/`, `industry/`, `event/`, `score/`）として `digest/` 配下の frontmatter と
+記事カード行内、`data/articles.jsonl` に展開する。タグ値は**日本語優先**（英字
+固有名詞 OpenAI / NVIDIA 等はそのまま）、半角スペース・スラッシュ・ピリオドは
+それぞれ `-` / 削除 / `_` に置換する。詳細は
+[prompts/obsidian-tagging-spec.md](prompts/obsidian-tagging-spec.md) を正本とする。
+
+例：
+```yaml
+tags:
+  - daily
+  - newsletter
+  - news-grasp
+  - issue-20260428
+  - cat/ai
+  - co/Anthropic
+  - co/OpenAI
+  - country/米国
+  - person/Sarah-Friar
+  - svc/Claude
+  - svc/GPT-5_5         # ピリオドはアンダースコア化
+  - ticker/USDJPY       # スラッシュは削除
+  - topic/AIエージェント
+  - score/高
+```
+
 ## 関連ドキュメント
 
 - [SETUP.md](SETUP.md) — 初期セットアップ手順（タスクスケジューラ・GAS Webhook・watchlist 等）
 - [prompts/routine-system.md](prompts/routine-system.md) — Runner の中核プロンプト
+- [prompts/obsidian-tagging-spec.md](prompts/obsidian-tagging-spec.md) — Obsidian タグ階層仕様（正本）
 - [tests/README.md](tests/README.md) — 単体テストの使い方
 
 ## 補足

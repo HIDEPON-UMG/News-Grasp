@@ -8,6 +8,70 @@ categoryId: it
 accent: "#2E6B52"
 glyph: "▲"
 edition: Morning Edition
+tags:
+  - daily
+  - newsletter
+  - news-grasp
+  - issue-20260428
+  - cat/it
+  - co/NEC
+  - co/NECネクサソリューションズ
+  - co/NTT
+  - co/NTTデータ
+  - co/NTTデータ先端技術
+  - co/アクセンチュア
+  - co/デロイト
+  - co/フォーティエンス
+  - co/三菱商事
+  - co/富士通
+  - co/日立
+  - country/日本
+  - event/サービス刷新
+  - event/サービス開始
+  - event/事業戦略発表
+  - event/事業開始
+  - event/事例公表
+  - event/構造改革
+  - event/組織再編
+  - event/製品発表
+  - event/調査公表
+  - event/連合発表
+  - industry/IT-コンサル
+  - industry/法務
+  - svc/AI-Refinery
+  - svc/AIネイティブ開発
+  - svc/デジタルサクセス
+  - svc/知財DX-SaaS
+  - ticker/6701
+  - ticker/6702
+  - ticker/8058
+  - ticker/9432
+  - ticker/9613
+  - topic/AIエージェント
+  - topic/AIネイティブ
+  - topic/DX
+  - topic/DXコンサル
+  - topic/DX事例
+  - topic/DX人材
+  - topic/DX支援
+  - topic/IT人材不足
+  - topic/KPI設計
+  - topic/PoC
+  - topic/RAG
+  - topic/SIer変革
+  - topic/SaaS
+  - topic/SoR
+  - topic/コンサル化
+  - topic/サブスクリプション
+  - topic/業界特化
+  - topic/構造改革
+  - topic/生成AI
+  - topic/知財DX
+  - topic/組織変革
+  - topic/組織改革
+  - topic/脱SIer
+  - topic/受託開発
+  - topic/連合
 ---
 
 # ▲ 3. IT-Consulting (IT & Consulting)
@@ -21,6 +85,8 @@ edition: Morning Edition
 
 📅 2026-04-28 09:00 · 📰 日経新聞 · 🔗 [元記事](https://www.nikkei.com/nkd/company/us/IT/news/?DisplayType=1&ng=DGXZQOUC254OB025122025000000)
 
+#cat/it #co/NTTデータ #country/日本 #event/事業戦略発表 #industry/IT-コンサル #svc/AIネイティブ開発 #ticker/9613 #topic/IT人材不足 #topic/SIer変革 #topic/受託開発 #topic/生成AI #score/高
+
 ![thumb](../../assets/ng-thumb-it.jpg)
 
 - [[NTTデータ]] が 2026 年度中にシステム開発の大半を生成 AI が担う「[[AIネイティブ開発]]」を本格導入。人手作業を大幅削減し、IT 人材不足に正面から対処。
@@ -32,6 +98,8 @@ edition: Morning Edition
 ### [85] NTTデータ先端技術 × フォーティエンス AI 導入効果最大化支援サービス開始
 
 📅 2026-04-28 10:00 · 📰 NTTデータ先端技術 · 🔗 [元記事](https://www.intellilink.co.jp/topics/news_release/2026/022400.aspx)
+
+#cat/it #co/NTTデータ先端技術 #co/フォーティエンス #country/日本 #event/サービス開始 #industry/IT-コンサル #topic/AIエージェント #topic/DX支援 #topic/KPI設計 #topic/生成AI #score/高
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -45,6 +113,8 @@ edition: Morning Edition
 
 📅 2026-04-28 09:30 · 📰 Accenture newsroom JP · 🔗 [元記事](https://newsroom.accenture.jp/jp/news/2025/release-20250415)
 
+#cat/it #co/NTTデータ #co/アクセンチュア #co/富士通 #event/製品発表 #industry/IT-コンサル #svc/AI-Refinery #topic/AIエージェント #topic/DX #topic/業界特化 #score/中
+
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
 - [[Accenture]] が [[AI Refinery]] プラットフォームの拡充と業界特化型エージェントソリューションを発表。金融・製造・医療など 15 業種向けに事前構築済みパッケージを提供。
@@ -56,6 +126,8 @@ edition: Morning Edition
 ### [80] NEC DX 事業「攻めに転換」AIエージェント活用状況 2026 年調査発表
 
 📅 2026-04-28 10:30 · 📰 NEC Wisdom · 🔗 [元記事](https://wisdom.nec.com/ja/feature/dxmanagement/2026042101/index.html)
+
+#cat/it #co/NEC #country/日本 #event/調査公表 #industry/IT-コンサル #ticker/6701 #topic/AIエージェント #topic/DX人材 #topic/組織変革 #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -69,6 +141,8 @@ edition: Morning Edition
 
 📅 2026-04-28 10:15 · 📰 NEC プレスリリース · 🔗 [元記事](https://jpn.nec.com/press/202601/20260119_01.html)
 
+#cat/it #co/NEC #country/日本 #event/事業開始 #industry/IT-コンサル #industry/法務 #svc/知財DX-SaaS #ticker/6701 #topic/SaaS #topic/サブスクリプション #topic/知財DX #score/中
+
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
 - [[NEC]] が 2026 年 1 月に「[[知財 DX 事業]]」を開始。AI を活用した特許・商標管理 SaaS と専門コンサルをセットで提供し、2030 年度末に 30 億円売上を目指す。
@@ -80,6 +154,8 @@ edition: Morning Edition
 ### [75] NECネクサソリューションズ DXビジネスイノベーション部門新設 4 月 1 日機構改革
 
 📅 2026-04-28 09:00 · 📰 NECネクサソリューションズ · 🔗 [元記事](https://www.nec-nexs.com/news/press/2026/0401-2.html)
+
+#cat/it #co/NEC #co/NECネクサソリューションズ #co/アクセンチュア #co/デロイト #country/日本 #event/組織再編 #industry/IT-コンサル #topic/SIer変革 #topic/コンサル化 #topic/組織改革 #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -93,6 +169,8 @@ edition: Morning Edition
 
 📅 2026-04-28 11:00 · 📰 Diamond Online · 🔗 [元記事](https://diamond.jp/articles/-/300058)
 
+#cat/it #co/NTT #co/アクセンチュア #co/三菱商事 #co/富士通 #country/日本 #event/連合発表 #industry/IT-コンサル #ticker/8058 #ticker/9432 #topic/DXコンサル #topic/脱SIer #topic/連合 #score/中
+
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
 - [[三菱商事]] と [[NTT]] が連携し、DX コンサルティング領域で [[アクセンチュア]] に対抗するエコシステムを形成。産業知見 × IT 力の融合で差別化を図る。
@@ -104,6 +182,8 @@ edition: Morning Edition
 ### [70] 富士通 コンサル転換加速 従来型 IT 比率 60% へ構造改革継続
 
 📅 2026-04-28 10:45 · 📰 日経xTECH · 🔗 [元記事](https://xtech.nikkei.com/atcl/nxt/column/18/03330/091000001/)
+
+#cat/it #co/NEC #co/NTTデータ #co/アクセンチュア #co/富士通 #co/日立 #country/日本 #event/構造改革 #industry/IT-コンサル #ticker/6702 #topic/コンサル化 #topic/構造改革 #topic/脱SIer #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -117,6 +197,8 @@ edition: Morning Edition
 
 📅 2026-04-28 11:30 · 📰 DXビジネスマガジン · 🔗 [元記事](https://www.dxbm.jp/c/dx.html)
 
+#cat/it #co/NTTデータ #co/アクセンチュア #co/富士通 #country/日本 #event/事例公表 #industry/IT-コンサル #topic/AIエージェント #topic/DX事例 #topic/PoC #topic/RAG #score/中
+
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
 - [[DXビジネスマガジン]] が 2026 年 4 月版 DX 事例集を公開。AI エージェント活用・RAG 基盤構築・データドリブン経営の 3 テーマで事例数が前年比 2.5 倍。
@@ -128,6 +210,8 @@ edition: Morning Edition
 ### [65] NTTデータ デジタルサクセス DX 推進のワンストップ支援を刷新
 
 📅 2026-04-28 12:00 · 📰 NTTデータ · 🔗 [元記事](https://www.nttdata.com/jp/ja/lineup/digital_success/)
+
+#cat/it #co/NTTデータ #country/日本 #event/サービス刷新 #industry/IT-コンサル #svc/デジタルサクセス #ticker/9613 #topic/AIネイティブ #topic/DX支援 #topic/SoR #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
