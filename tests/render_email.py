@@ -377,6 +377,18 @@ def render_email_html() -> str:
     return out
 
 
+def minify_html(html_text: str) -> str:
+    """簡易 HTML 圧縮: タグ間空白除去・連続空白の畳み込み・改行整理。
+
+    Gmail / Outlook はインラインスタイル必須なので `<style>` 抽出はせず、
+    空白だけ削る。実測で ~14% 削減。GAS htmlBody 200KB 上限回避用。
+    """
+    s = re.sub(r">\s+<", "><", html_text)
+    s = re.sub(r"\n\s+", "\n", s)
+    s = re.sub(r"  +", " ", s)
+    return s
+
+
 def post_to_webhook(
     html_body: str,
     recipients: list[str],
@@ -425,13 +437,13 @@ def main() -> int:
     print(f"  open in browser to inspect the layout")
 
     if args.send:
-        # 送信用は cid: + inlineImages（GAS htmlBody サイズ上限回避）
+        # 送信用は cid: + inlineImages + 空白圧縮（GAS htmlBody ~200KB 上限を回避）
         set_cid_mode(True)
-        send_html = render_email_html()
+        send_html = minify_html(render_email_html())
         inline = get_inline_images()
         recipients = args.to or RECIPIENTS
         print(f"\nSending to: {recipients}")
-        print(f"  send htmlBody size: {len(send_html):,} bytes")
+        print(f"  send htmlBody size: {len(send_html):,} bytes (minified)")
         print(f"  inline images:      {len(inline)} ({sum(len(v) for v in inline.values()):,} chars total)")
         result = post_to_webhook(send_html, recipients, args.subject, inline_images=inline)
         print(f"Webhook response: {json.dumps(result, ensure_ascii=False, indent=2)}")

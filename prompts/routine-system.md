@@ -267,7 +267,16 @@ Webhook 送信：
 
 `inlineImages` は当日使うキーだけを収録すれば良い（最大 10 キー）。GAS は `Utilities.base64Decode` で各 data URI を Blob に変換し、`GmailApp.sendEmail` の `inlineImages` オプションに渡す。HTML 本文の `<img src="cid:KEY">` がメールクライアント上で展開される。
 
-レスポンスの `body.ok === true` を確認。`results` の各宛先で NRI 不達があれば `_status.md` に補足記録。
+### 送信前の必須チェック（200KB 上限対策）
+
+GAS GmailApp の `htmlBody` は実測 **約 200 KB がハード上限**。50 記事分の HTML は容易にこの境界に近づくため、送信前に必ず以下をチェック・適用する：
+
+1. **HTML を空白圧縮する**: `>\s+<` → `><`、改行直後の連続空白を 1 個に畳む等の単純な空白除去（実測 ~14% 削減）
+2. **サイズを measure する**: minify 後の `htmlBody` バイト数をログに出す。180 KB 超なら警告レベル、200 KB 超なら送信前に articles.jsonl から最低スコア記事を間引く
+3. **OGP URL を活かす**: `articles.jsonl` の `thumb` フィールドが non-null の記事は `<img src="https://...">` で URL 直リンクを使う（cid: 経由不要、`inlineImages` への登録もしない）。これで NG フォールバック数を減らせる
+4. **記事カードのインラインスタイルを最小化**: 同じ font-family や padding が繰り返し現れる場合、`<head><style>` ブロックに class として定義し、各タグは `class="..."` で参照する（Gmail は `<style>` in `<head>` をサポート）
+
+レスポンスの `body.ok === true` を確認。`ok: false` で `error` に「メール本文のサイズ」が含まれていたら 200KB 上限なので、上記 1〜4 を強化して再送する。`results` の各宛先で NRI 不達があれば `_status.md` に補足記録。
 
 ---
 
