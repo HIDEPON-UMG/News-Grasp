@@ -171,9 +171,14 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 
 #### 5-A. Markdown digest の生成
 
-カテゴリごとに `digest/{YYYY-MM-DD}-{Genre}.md` を作る。`Genre` は `FX` / `AI` / `IT-Consulting` / `Economy` / `Game`。フォーマットは `prompts/obsidian-template.md` の構造に従う。
+**カテゴリ別フォルダ構造**で出力する。`Genre` は `FX` / `AI` / `IT-Consulting` / `Economy` / `Game`：
 
-加えて、当日のサマリーとして `digest/{YYYY-MM-DD}.md`（インデックス + 考察）を生成。これは Obsidian で `[[]]` リンクのハブになる。
+| ファイル | 内容 |
+|---|---|
+| `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` | 各カテゴリの記事カード 10 件（フォーマットは `prompts/obsidian-template.md` 参照） |
+| `digest/Summary/{YYYY-MM-DD}.md` | 当日サマリー（目次 + 考察）。Obsidian で `[[]]` リンクのハブ |
+
+**フォルダが存在しない場合は事前に `mkdir -p` で作成**。Obsidian の wiki link は vault 内のファイル名で解決されるため、`[[2026-04-28-AI]]` のリンクはフォルダの場所に依存せず動く。
 
 #### 5-B. articles.jsonl の更新
 

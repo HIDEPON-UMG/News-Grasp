@@ -1,11 +1,12 @@
 <!--
 News Grasp — Obsidian / Markdown テンプレート
 
-Routine が `digest/{YYYY-MM-DD}.md` を生成する際に従う構造。
+Routine が `digest/Summary/{YYYY-MM-DD}.md` を生成する際に従う構造。
 プレースホルダ {{ }} は Claude が当日のデータで埋める。
 
-各カテゴリ別の記事ファイル（`digest/{YYYY-MM-DD}-{Genre}.md`）も同じ
-強調記法・カードレイアウトに従う。本ファイルは「日次サマリー」用の親ノート。
+各カテゴリ別の記事ファイル（`digest/{Genre}/{YYYY-MM-DD}-{Genre}.md`、
+Genre は AI / FX / IT-Consulting / Economy / Game）も同じ強調記法・
+カードレイアウトに従う。本ファイルは「日次サマリー」用の親ノート。
 -->
 
 ---
