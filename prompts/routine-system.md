@@ -228,35 +228,44 @@ git push origin main
 
 `{cat_id}` は `fx` / `ai` / `it` / `economy` / `game`。
 
-> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。メール HTML には **base64 data URI 埋め込み** で画像を入れる。
+> **重要**: 本リポジトリは **プライベート repo** のため、`raw.githubusercontent.com` の URL は認証なしでアクセスできない。また GAS GmailApp の `htmlBody` には **約 200 KB のハード上限**があり、base64 data URI を HTML 本文に直接埋め込むと 50 記事分で 400 KB を超え送信失敗する。
+>
+> **正解**: HTML 側は `<img src="cid:KEY">` で参照し、画像本体（data URI）は POST body の `inlineImages` フィールドに別マップで送る。GAS が MIME multipart/related に展開して埋め込んでくれる。
 >
 > NG プレースホルダ用の base64 文字列は **事前計算済み**で `prompts/ng-thumbs-base64.md` に格納されている。Routine は以下の手順で使うこと：
 >
 > 1. **メール生成の最初に** `Read` ツールで `prompts/ng-thumbs-base64.md` を 1 回だけ読み込む（10 個のキー → data URI のマップ）
-> 2. NG フォールバックを使う記事の `<img>` タグでは、**ファイル内のコードブロックから verbatim で `data:image/jpeg;base64,...` の文字列を取り出して `src` 属性に貼り付ける**。`base64` コマンドや `printf` を**呼ばない**
-> 3. 例（FEATURED）: `<img src="data:image/jpeg;base64,/9j/4AAQ..." alt="" width="568" style="...">`
-> 4. 同じカテゴリの NG 画像が複数の `<img>` で繰り返されるのは正常。メールクライアントが同一 data URI をキャッシュするため負荷は 1 枚分
+> 2. その日に**実際に使うキーだけ**を `inlineImages` マップに収録する（記事数分 × 5 カテゴリで最大 10 キーに収まる）。例: 当日 FX/AI/IT/Economy/Game の 5 カテゴリが走るなら、`ng-thumb-fx, ng-thumb-ai, ..., ng-thumb-common-fx, ...` の 10 キー
+> 3. HTML 側の `<img>` タグは `<img src="cid:ng-thumb-fx" alt="" width="568" style="...">` の形で書く（src 属性はキー名を `cid:` プレフィクス付きで指定するだけ。data URI は HTML には書かない）
+> 4. POST body の `inlineImages` を `{"ng-thumb-fx": "data:image/jpeg;base64,/9j/4AAQ...", ...}` の形で構築（lookup ファイルの該当ブロックを verbatim でコピーして JSON 化）
 >
 > **絶対にやってはいけないこと**:
 >
+> - HTML 本文に `<img src="data:image/jpeg;base64,...">` と data URI を直接埋め込む（200 KB 上限超過で送信失敗）
 > - `<img src="../../assets/ng-thumb-economy.jpg">` のような相対パス（メール送信先で解決不能）
 > - `<img src="https://raw.githubusercontent.com/HIDEPON-UMG/News-Grasp/main/assets/...">` のような raw URL（プライベート repo のため認証必須で 404）
 > - `<img>` タグの省略（FEATURED と各サイドサムネは必ず描画する）
 >
-> OGP で取得した実画像 URL（外部の絶対 URL、つまり `articles.jsonl` の `thumb` フィールドが non-null）はそのまま `<img src="https://...">` で参照する（base64 化不要）。
+> OGP で取得した実画像 URL（外部の絶対 URL、つまり `articles.jsonl` の `thumb` フィールドが non-null）はそのまま `<img src="https://...">` で参照する（cid: 経由は不要）。
 
 Webhook 送信：
 
 ```bash
-curl -X POST "https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "client":   "news-grasp-routine",
-    "to":       ["hideki.kusunoki@gmail.com", "h2-hiramatsu@nri.co.jp"],
-    "subject":  "News Grasp #YYYYMMDD — 五つの視点で、今日を掴む。",
-    "htmlBody": "..."
-  }'
+# POST body は以下の構造（実際は Python urllib などで送る）
+# {
+#   "client":       "news-grasp-routine",
+#   "to":           ["hideki.kusunoki@gmail.com", "h2-hiramatsu@nri.co.jp"],
+#   "subject":      "News Grasp #YYYYMMDD — 五つの視点で、今日を掴む。",
+#   "htmlBody":     "<html>... <img src=\"cid:ng-thumb-fx\"> ...</html>",
+#   "inlineImages": {
+#     "ng-thumb-fx":         "data:image/jpeg;base64,/9j/4AAQ...",
+#     "ng-thumb-ai":         "data:image/jpeg;base64,...",
+#     "ng-thumb-common-fx":  "data:image/jpeg;base64,..."
+#   }
+# }
 ```
+
+`inlineImages` は当日使うキーだけを収録すれば良い（最大 10 キー）。GAS は `Utilities.base64Decode` で各 data URI を Blob に変換し、`GmailApp.sendEmail` の `inlineImages` オプションに渡す。HTML 本文の `<img src="cid:KEY">` がメールクライアント上で展開される。
 
 レスポンスの `body.ok === true` を確認。`results` の各宛先で NRI 不達があれば `_status.md` に補足記録。
 

@@ -121,15 +121,40 @@ def ng_thumb_data_uri(name: str) -> str:
     return f"data:image/jpeg;base64,{b64}"
 
 
+# cid: モード用のレジストリ（--send 時のみ使用）
+# render 完了後に post_to_webhook へ inlineImages として引き渡す。
+_CID_MODE: bool = False
+_CID_REGISTRY: dict[str, str] = {}
+
+
+def set_cid_mode(enabled: bool) -> None:
+    """cid: 参照モードの ON/OFF。OFF ならローカルプレビュー用に base64 inline する。"""
+    global _CID_MODE, _CID_REGISTRY
+    _CID_MODE = enabled
+    _CID_REGISTRY = {}
+
+
+def get_inline_images() -> dict[str, str]:
+    """直近の render で集まった cid: → data URI マップを返す。"""
+    return dict(_CID_REGISTRY)
+
+
 def thumb_url(item: dict, cat_id: str, *, is_top: bool = False) -> str:
     """OGP があればそれ、無ければ位置に応じた NG プレースホルダ。
 
     is_top=True (FEATURED 568x200 枠) → カテゴリ別キービジュアル
     is_top=False (サイド 140x90 枠) → カテゴリ別共通サムネ
+
+    cid_mode=True のときは `cid:<name>` を返し、data URI をレジストリに記録する。
+    GAS 側で MIME multipart/related の inlineImages として展開される。
     """
     if item.get("thumb"):
         return item["thumb"]
     name = f"ng-thumb-{cat_id}" if is_top else f"ng-thumb-common-{cat_id}"
+    if _CID_MODE:
+        if name not in _CID_REGISTRY:
+            _CID_REGISTRY[name] = ng_thumb_data_uri(name)
+        return f"cid:{name}"
     return ng_thumb_data_uri(name)
 
 
@@ -352,13 +377,20 @@ def render_email_html() -> str:
     return out
 
 
-def post_to_webhook(html_body: str, recipients: list[str], subject: str) -> dict:
+def post_to_webhook(
+    html_body: str,
+    recipients: list[str],
+    subject: str,
+    inline_images: dict[str, str] | None = None,
+) -> dict:
     payload = {
         "client": WEBHOOK_CLIENT,
         "to": recipients,
         "subject": subject,
         "htmlBody": html_body,
     }
+    if inline_images:
+        payload["inlineImages"] = inline_images
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         WEBHOOK_URL, data=body,
@@ -380,7 +412,9 @@ def main() -> int:
                         help="HTML 保存先")
     args = parser.parse_args()
 
+    # プレビュー用は base64 inline（ブラウザで直接開ける）
     print(f"Rendering with mock data (issue #{mock_data.ISSUE_NO})...")
+    set_cid_mode(False)
     html_body = render_email_html()
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -391,9 +425,15 @@ def main() -> int:
     print(f"  open in browser to inspect the layout")
 
     if args.send:
+        # 送信用は cid: + inlineImages（GAS htmlBody サイズ上限回避）
+        set_cid_mode(True)
+        send_html = render_email_html()
+        inline = get_inline_images()
         recipients = args.to or RECIPIENTS
         print(f"\nSending to: {recipients}")
-        result = post_to_webhook(html_body, recipients, args.subject)
+        print(f"  send htmlBody size: {len(send_html):,} bytes")
+        print(f"  inline images:      {len(inline)} ({sum(len(v) for v in inline.values()):,} chars total)")
+        result = post_to_webhook(send_html, recipients, args.subject, inline_images=inline)
         print(f"Webhook response: {json.dumps(result, ensure_ascii=False, indent=2)}")
         if not result.get("ok"):
             print("FAIL: webhook reported failure")
