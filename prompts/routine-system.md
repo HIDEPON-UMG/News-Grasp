@@ -234,7 +234,6 @@ email-template.html の `<head>` に `@media (max-width: 600px)` の CSS が定�
 | メタ情報行（時刻・出典） | `ng-card-meta` | font-size 10px |
 | TOP 記事 FEATURED 画像の wrapper div | `ng-feature-img` | height auto |
 | サイドサムネ td | `ng-side-thumb` | display: block で**上に再配置** |
-| サイドサムネのキャプション | `ng-side-thumb-caption` | display: none で非表示 |
 | サムネ右の本文 td | `ng-side-text` | display: block で下に配置 |
 
 **例**: 記事カード（2 件目以降）の最小骨格
@@ -246,7 +245,6 @@ email-template.html の `<head>` に `@media (max-width: 600px)` の CSS が定�
   <table width="100%"><tr>
     <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
       <img src="cid:ng-thumb-common-fx" width="140" style="...">
-      <div class="ng-side-thumb-caption" style="...">▢ IMG</div>
     </td>
     <td class="ng-side-text" valign="top">
       <ul><li class="ng-card-body" style="...">[[キーワード]] が __重要__ ...</li></ul>

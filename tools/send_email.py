@@ -112,6 +112,7 @@ def build_message(
     msg.add_alternative(final_html, subtype="html")
 
     # inline 添付（multipart/related の中に入れる必要がある → html part に対して付ける）
+    # disposition="inline" を明示しないと Gmail が「添付ファイル」一覧に表示してしまう
     html_part = msg.get_payload()[1]  # alternative の 2 番目 = html
     for key, path in inline_images.items():
         cid = cid_map[key]
@@ -120,7 +121,10 @@ def build_message(
         ext = path.suffix.lower().lstrip(".")  # jpg / png 等
         maintype = "image"
         subtype = "jpeg" if ext in ("jpg", "jpeg") else ext
-        html_part.add_related(data, maintype=maintype, subtype=subtype, cid=f"<{cid}>")
+        html_part.add_related(
+            data, maintype=maintype, subtype=subtype,
+            cid=f"<{cid}>", disposition="inline",
+        )
     return msg
 
 

@@ -207,9 +207,6 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
         side_img_html = f"""
           <td class="ng-side-thumb" width="140" valign="top" style="padding-right:16px;">
             <img src="{img}" alt="" width="140" style="width:140px;height:90px;object-fit:cover;display:block;border:1px solid #E2DED4;">
-            <div class="ng-side-thumb-caption" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:8px;color:#8B8B85;letter-spacing:1px;margin-top:4px;text-align:center;">
-              ▢ IMG · {idx+1:02d}
-            </div>
           </td>"""
 
     return f"""
