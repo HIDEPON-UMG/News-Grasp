@@ -293,9 +293,9 @@ def build_reflection_sections(sections: list[dict]) -> str:
         parts.append(f"""
         <tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
           <table width="100%" style="border-bottom:{border};"><tr>
-            <td width="80" valign="top" class="ng-section-num-cell" style="padding:28px 16px 28px 0;">
+            <td width="120" valign="top" class="ng-section-num-cell" style="padding:28px 16px 28px 0;white-space:nowrap;">
               <div class="ng-section-num" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:42px;font-weight:900;color:{accent};line-height:0.9;letter-spacing:-2px;">§{si+1:02d}</div>
-              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#fff;background:{accent};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{html.escape(sec['tag'])}</div>
+              <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#fff;background:{accent};padding:3px 8px;display:inline-block;letter-spacing:1px;margin-top:10px;white-space:nowrap;">{html.escape(sec['tag'])}</div>
             </td>
             <td valign="top" class="ng-section-text-cell" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;">
               <h3 class="ng-section-heading" style="font-size:20px;font-weight:800;margin:0 0 14px;color:#1A1A1A;letter-spacing:-0.3px;line-height:1.4;">
@@ -600,7 +600,7 @@ def main() -> int:
         print(f"\nSMTP send via tools/send_email.py")
         print(f"  htmlBody size: {send_bytes:,} bytes (minified, UTF-8 encoded)")
         if send_bytes > 102 * 1024:
-            print(f"  ⚠ Gmail clip threshold (~102 KB) exceeded by {send_bytes - 102*1024:,} bytes")
+            print(f"  WARN: Gmail clip threshold (~102 KB) exceeded by {send_bytes - 102*1024:,} bytes")
         rc = subprocess.call(cmd)
         if rc != 0:
             print("FAIL: SMTP send returned non-zero")
