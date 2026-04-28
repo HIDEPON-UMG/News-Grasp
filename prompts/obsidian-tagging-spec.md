@@ -126,42 +126,62 @@ Runner が使うカテゴリ id は以下の通り。`prompts/routine-system.md`
 8. `events[]`     → `event/{値}`
 9. `score` を `score/高｜中｜低` に丸めて 1 件追加
 
-## 4. frontmatter への展開ルール
+## 4. frontmatter への展開ルール（**圧縮版・スマホ可読性優先**）
+
+タグ数を絞る方針（旧仕様の 1/5〜1/3 程度）。理由：Obsidian モバイルでタグペインが
+肥大化するとスクロール挙動が破綻する／記事カード上の `#tag` 行が画面幅で折り返さ
+ず読み解けない。**多くの軸は記事カード行のみで運用**し、frontmatter には集約しない。
 
 ### Summary `digest/Summary/{YYYY-MM-DD}.md`
 
-`tags:` には以下を全て入れる（重複排除、プレフィックス順 → 値の昇順）：
+`tags:` に**含めるのは以下だけ**（重複排除、プレフィックス順 → 値の昇順）：
 
 1. **共通固定**（4 件・先頭固定）：`daily` / `newsletter` / `news-grasp` / `issue-{ISSUE_NO}`
 2. **カテゴリタグ**：当日扱った全カテゴリ id を `cat/{id}` で追加
-3. **記事 entity タグ**：全カテゴリの全記事 (= 40〜50 件) の `tags` を集約。
-   ただし `score/*` は記事ローカルのみで、frontmatter には**入れない**
+3. **企業タグ**：全カテゴリの全記事の `co/*` を集約
+4. **国タグ**：全記事の `country/*` を集約
+5. **人名タグ**：全記事の `person/*` を集約
+
+`svc/` `ticker/` `topic/` `industry/` `event/` `score/*` は **frontmatter には入れない**
+（記事カード行のみで運用）。
 
 ### カテゴリ別 `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md`
 
-`tags:` には以下を入れる：
+Summary と同じ方針で、対象を当該カテゴリ 5 記事に絞る：
 
-1. 共通固定 4 件（`daily` / `newsletter` / `news-grasp` / `issue-{ISSUE_NO}`）
+1. 共通固定 4 件
 2. 当該カテゴリのみ `cat/{id}`
-3. **当該カテゴリ内 10 記事**の `tags` 集約（`score/*` 除く）
+3. 当該カテゴリ 5 記事の `co/*` 集約
+4. 当該カテゴリ 5 記事の `country/*` 集約
+5. 当該カテゴリ 5 記事の `person/*` 集約
 
 ### 各記事カード（カテゴリ別 .md 内）
 
 `### [score] タイトル` の直下、メタ行（📅 ... · 📰 ...）の次に、
-**1 行で `#tag #tag ...` 並べる**（`score/*` を含む全タグ）。
+**1 行で `#tag #tag ...` を 4〜7 個並べる**。多すぎる場合は重要度の低いものから
+間引く。優先順位：
+
+1. `cat/{id}`（必須・当該カテゴリ 1 個）
+2. `co/{値}` 主要 1〜3 個（記事の中核企業のみ。脇役の名前列挙は不要）
+3. `country/{値}` 0〜1 個（主題国のみ）
+4. `topic/{値}` 0〜1 個（最も中核のテーマ 1 つだけ）
+5. `event/{値}` 0〜1 個（決算 / 製品発表 等、該当する場合のみ）
+6. `score/{高｜中｜低}`（必須・末尾固定 1 個）
+
+**目安は 4〜7 個**。`svc/` `ticker/` `industry/` `person/` は frontmatter にも記事
+カード行にも原則出さない（必要な特定記事のみ例外的に追加可）。`tags` フィールド
+（記事 JSON 側）は内部処理用に従来通り全種を保持してよいが、Markdown レンダリング
+時に上記フィルタを必ず通す。
 
 ```markdown
 ### [95] Google が Anthropic に最大 400 億ドル追加投資 ...
 
 📅 2026-04-28 09:00 · 📰 CNBC · 🔗 [元記事](...)
 
-#co/Google #co/Anthropic #co/Amazon #country/米国 #topic/AI投資 #industry/AI #event/出資発表 #score/高
+#cat/ai #co/Google #co/Anthropic #country/米国 #topic/AI投資 #event/出資発表 #score/高
 
 ![thumb](...)
 ```
-
-行末の `#score/高` まで含めて 8〜12 個程度を目安に。多すぎる場合は重要度の低い `topic/*`
-や `industry/*` を間引いてよい（ただし `co/` `person/` `ticker/` は記事に登場した分は全件残す）。
 
 ## 5. articles.jsonl のスキーマ拡張
 

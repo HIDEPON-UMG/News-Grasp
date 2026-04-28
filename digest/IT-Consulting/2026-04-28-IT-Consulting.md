@@ -15,63 +15,12 @@ tags:
   - issue-20260428
   - cat/it
   - co/NEC
-  - co/NECネクサソリューションズ
-  - co/NTT
   - co/NTTデータ
   - co/NTTデータ先端技術
   - co/アクセンチュア
-  - co/デロイト
   - co/フォーティエンス
-  - co/三菱商事
   - co/富士通
-  - co/日立
   - country/日本
-  - event/サービス刷新
-  - event/サービス開始
-  - event/事業戦略発表
-  - event/事業開始
-  - event/事例公表
-  - event/構造改革
-  - event/組織再編
-  - event/製品発表
-  - event/調査公表
-  - event/連合発表
-  - industry/IT-コンサル
-  - industry/法務
-  - svc/AI-Refinery
-  - svc/AIネイティブ開発
-  - svc/デジタルサクセス
-  - svc/知財DX-SaaS
-  - ticker/6701
-  - ticker/6702
-  - ticker/8058
-  - ticker/9432
-  - ticker/9613
-  - topic/AIエージェント
-  - topic/AIネイティブ
-  - topic/DX
-  - topic/DXコンサル
-  - topic/DX事例
-  - topic/DX人材
-  - topic/DX支援
-  - topic/IT人材不足
-  - topic/KPI設計
-  - topic/PoC
-  - topic/RAG
-  - topic/SIer変革
-  - topic/SaaS
-  - topic/SoR
-  - topic/コンサル化
-  - topic/サブスクリプション
-  - topic/業界特化
-  - topic/構造改革
-  - topic/生成AI
-  - topic/知財DX
-  - topic/組織変革
-  - topic/組織改革
-  - topic/脱SIer
-  - topic/受託開発
-  - topic/連合
 ---
 
 # ▲ 3. IT-Consulting (IT & Consulting)
@@ -85,7 +34,7 @@ tags:
 
 📅 2026-04-28 09:00 · 📰 日経新聞 · 🔗 [元記事](https://www.nikkei.com/nkd/company/us/IT/news/?DisplayType=1&ng=DGXZQOUC254OB025122025000000)
 
-#cat/it #co/NTTデータ #country/日本 #event/事業戦略発表 #industry/IT-コンサル #svc/AIネイティブ開発 #ticker/9613 #topic/IT人材不足 #topic/SIer変革 #topic/受託開発 #topic/生成AI #score/高
+#cat/it #co/NTTデータ #country/日本 #topic/SIer変革 #event/事業戦略発表 #score/高
 
 ![thumb](../../assets/ng-thumb-it.jpg)
 
@@ -99,7 +48,7 @@ tags:
 
 📅 2026-04-28 10:00 · 📰 NTTデータ先端技術 · 🔗 [元記事](https://www.intellilink.co.jp/topics/news_release/2026/022400.aspx)
 
-#cat/it #co/NTTデータ先端技術 #co/フォーティエンス #country/日本 #event/サービス開始 #industry/IT-コンサル #topic/AIエージェント #topic/DX支援 #topic/KPI設計 #topic/生成AI #score/高
+#cat/it #co/NTTデータ先端技術 #co/フォーティエンス #country/日本 #topic/AIエージェント #event/サービス開始 #score/高
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -113,7 +62,7 @@ tags:
 
 📅 2026-04-28 09:30 · 📰 Accenture newsroom JP · 🔗 [元記事](https://newsroom.accenture.jp/jp/news/2025/release-20250415)
 
-#cat/it #co/NTTデータ #co/アクセンチュア #co/富士通 #event/製品発表 #industry/IT-コンサル #svc/AI-Refinery #topic/AIエージェント #topic/DX #topic/業界特化 #score/中
+#cat/it #co/アクセンチュア #co/NTTデータ #topic/業界特化 #event/製品発表 #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -127,7 +76,7 @@ tags:
 
 📅 2026-04-28 10:30 · 📰 NEC Wisdom · 🔗 [元記事](https://wisdom.nec.com/ja/feature/dxmanagement/2026042101/index.html)
 
-#cat/it #co/NEC #country/日本 #event/調査公表 #industry/IT-コンサル #ticker/6701 #topic/AIエージェント #topic/DX人材 #topic/組織変革 #score/中
+#cat/it #co/NEC #country/日本 #topic/DX人材 #event/調査公表 #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
@@ -141,83 +90,13 @@ tags:
 
 📅 2026-04-28 10:15 · 📰 NEC プレスリリース · 🔗 [元記事](https://jpn.nec.com/press/202601/20260119_01.html)
 
-#cat/it #co/NEC #country/日本 #event/事業開始 #industry/IT-コンサル #industry/法務 #svc/知財DX-SaaS #ticker/6701 #topic/SaaS #topic/サブスクリプション #topic/知財DX #score/中
+#cat/it #co/NEC #country/日本 #topic/知財DX #event/事業開始 #score/中
 
 ![thumb](../../assets/ng-thumb-common-it.jpg)
 
 - [[NEC]] が 2026 年 1 月に「[[知財 DX 事業]]」を開始。AI を活用した特許・商標管理 SaaS と専門コンサルをセットで提供し、2030 年度末に 30 億円売上を目指す。
 - 知財部門は IT 化が遅れた最後の聖域の一つ。__ドキュメント AI × 法務判断支援__ の組み合わせは専門コンサル会社には真似しにくい強み。
 - SaaS 収益化によりプロジェクト型から [[サブスクリプション型]] へのシフトを加速し、収益安定化に向かう NEC の事業変革の一環。
-
----
-
-### [75] NECネクサソリューションズ DXビジネスイノベーション部門新設 4 月 1 日機構改革
-
-📅 2026-04-28 09:00 · 📰 NECネクサソリューションズ · 🔗 [元記事](https://www.nec-nexs.com/news/press/2026/0401-2.html)
-
-#cat/it #co/NEC #co/NECネクサソリューションズ #co/アクセンチュア #co/デロイト #country/日本 #event/組織再編 #industry/IT-コンサル #topic/SIer変革 #topic/コンサル化 #topic/組織改革 #score/中
-
-![thumb](../../assets/ng-thumb-common-it.jpg)
-
-- [[NECネクサソリューションズ]] が 4 月 1 日付で「[[DXビジネスイノベーション部門]]」を新設。営業部門も製造系・流通サービス系に再編。
-- 顧客業界別に特化した組織設計は Accenture・デロイトが先行する手法。__SIer 型からコンサル型への変革__ を組織体制から実現しようとする試み。
-- NEC グループ全体の DX 路線転換を末端子会社レベルにまで浸透させる意図が明確。
-
----
-
-### [73] 三菱商事・NTT 連合 DX コンサルでアクセンチュアに挑戦状
-
-📅 2026-04-28 11:00 · 📰 Diamond Online · 🔗 [元記事](https://diamond.jp/articles/-/300058)
-
-#cat/it #co/NTT #co/アクセンチュア #co/三菱商事 #co/富士通 #country/日本 #event/連合発表 #industry/IT-コンサル #ticker/8058 #ticker/9432 #topic/DXコンサル #topic/脱SIer #topic/連合 #score/中
-
-![thumb](../../assets/ng-thumb-common-it.jpg)
-
-- [[三菱商事]] と [[NTT]] が連携し、DX コンサルティング領域で [[アクセンチュア]] に対抗するエコシステムを形成。産業知見 × IT 力の融合で差別化を図る。
-- __「御用聞き IT サービス」からの脱却__ が国内大手 SIer の共通テーマ。顧客の事業変革を共に担う「共創パートナー」へのポジションシフトが加速。
-- 一方で富士通は 3,000 人規模リストラを断行し、従来型 IT の売上比率を 2025 年度に 60% まで削減する構造改革を継続中。
-
----
-
-### [70] 富士通 コンサル転換加速 従来型 IT 比率 60% へ構造改革継続
-
-📅 2026-04-28 10:45 · 📰 日経xTECH · 🔗 [元記事](https://xtech.nikkei.com/atcl/nxt/column/18/03330/091000001/)
-
-#cat/it #co/NEC #co/NTTデータ #co/アクセンチュア #co/富士通 #co/日立 #country/日本 #event/構造改革 #industry/IT-コンサル #ticker/6702 #topic/コンサル化 #topic/構造改革 #topic/脱SIer #score/中
-
-![thumb](../../assets/ng-thumb-common-it.jpg)
-
-- [[富士通]] が従来型 IT サービス売上比率を 2022 年度の 86% から 2025 年度 60% へ引き下げる目標の進捗を開示。コンサル強化とパッケージ型サービスへの移行が加速。
-- NEC・NTTデータ・日立と同様に「__脱 SIer__」への旗を掲げるが、3,000 人リストラを経て実行力への疑念も残る。
-- [[アクセンチュア]] の巨大化と比較したとき、日本 SIer の変革スピードが問われており、2026 年が試金石の年となっている。
-
----
-
-### [68] DX 事例集 2026 年 4 月版 AI エージェント・本番稼働事例が急増
-
-📅 2026-04-28 11:30 · 📰 DXビジネスマガジン · 🔗 [元記事](https://www.dxbm.jp/c/dx.html)
-
-#cat/it #co/NTTデータ #co/アクセンチュア #co/富士通 #country/日本 #event/事例公表 #industry/IT-コンサル #topic/AIエージェント #topic/DX事例 #topic/PoC #topic/RAG #score/中
-
-![thumb](../../assets/ng-thumb-common-it.jpg)
-
-- [[DXビジネスマガジン]] が 2026 年 4 月版 DX 事例集を公開。AI エージェント活用・RAG 基盤構築・データドリブン経営の 3 テーマで事例数が前年比 2.5 倍。
-- __「PoC 止まり」から「本番稼働」へ__ の移行事例が急増。IT コンサルへの発注内容が「AI 評価」から「AI 実装・定着支援」に変化している。
-- [[NTTデータ]] [[富士通]] [[Accenture]] が事例提供企業の上位を占め、国内外の SI/コンサル大手による実績蓄積競争が加速。
-
----
-
-### [65] NTTデータ デジタルサクセス DX 推進のワンストップ支援を刷新
-
-📅 2026-04-28 12:00 · 📰 NTTデータ · 🔗 [元記事](https://www.nttdata.com/jp/ja/lineup/digital_success/)
-
-#cat/it #co/NTTデータ #country/日本 #event/サービス刷新 #industry/IT-コンサル #svc/デジタルサクセス #ticker/9613 #topic/AIネイティブ #topic/DX支援 #topic/SoR #score/中
-
-![thumb](../../assets/ng-thumb-common-it.jpg)
-
-- [[NTTデータ]] の「[[デジタルサクセス]]」ブランドが刷新。戦略立案→要件定義→実装→定着まで一貫したサービス体系に再整理。
-- AI エージェント時代に対応した新カテゴリ「AI ネイティブ変革支援」を追加。__既存 SoR との共存設計__ を強調し、段階的移行を重視。
-- 国内外 3 万人超の DX 専門人材を抱える規模感が、__ワンストップ支援__ の説得力の根拠になっている。
 
 ---
 

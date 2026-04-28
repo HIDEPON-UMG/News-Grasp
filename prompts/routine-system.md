@@ -12,7 +12,7 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 
 ## 認証・接続設定
 
-- **作業ディレクトリ**: `C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp\`（Obsidian ボルト直下のサブフォルダ。Bash 経由でアクセスする際はパスに `'` を含むのでクォーティング必須）
+- **作業ディレクトリ**: `C:\Users\hidek\Obsidian\New's Grasp\News-Grasp\`（Obsidian ボルト直下のサブフォルダ。Bash 経由でアクセスする際はパスに `'` を含むのでクォーティング必須）
 - **GitHub の clone / push**: ローカルにすでに clone 済み。`gh` CLI が `HIDEPON-UMG` でログイン済み。`git -c user.name="HIDEPON" -c user.email="hideki.kusunoki@gmail.com"` をコマンド毎に付けて commit する
 - **GAS Webhook URL**: `https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec`
 - **GAS 側のクライアント識別**: POST body に `"client": "news-grasp-routine"` を含める。宛先ホワイトリストは `hideki.kusunoki@gmail.com` と `h2-hiramatsu@nri.co.jp` のみ
@@ -110,7 +110,7 @@ A または B でマッチした場合、既存エントリの `seen_at`（ISO 8
 
 ##### D. 結果
 
-dedup を通過した候補から最終的に **カテゴリあたり 10 件**をスコア降順で確定。10 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
+dedup を通過した候補から最終的に **カテゴリあたり 5 件**をスコア降順で確定。5 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
 
 実装ヒント: 必要なら `Bash` で短い Python ワンライナーを呼び出す（`urllib.parse` で URL 正規化、`difflib.SequenceMatcher` で類似度計算）。または Sonnet が直接判定しても良い。
 
@@ -196,7 +196,7 @@ dedup を通過した候補から最終的に **カテゴリあたり 10 件**�
   "accent": "#2D5BB8",
   "glyph": "◆",
   "summary": "...",                // カテゴリ全体の 1 文要約（80 字程度）
-  "items": [ /* 10 件、score 降順 */ ]
+  "items": [ /* 5 件、score 降順 */ ]
 }
 ```
 
@@ -208,7 +208,7 @@ dedup を通過した候補から最終的に **カテゴリあたり 10 件**�
 {
   "title": "金利の天井とAIの底入れ",       // 大見出し（10〜20 字）
   "subtitle": "...",                     // サブタイトル（30〜50 字）
-  "lead": "本日5分野・40〜50 本のニュースから浮かび上がる最大のテーマは [[X]] と [[Y]] の同時進行である。以下、各カテゴリを横断して読み解く。",
+  "lead": "本日5分野・20〜25 本のニュースから浮かび上がる最大のテーマは [[X]] と [[Y]] の同時進行である。以下、各カテゴリを横断して読み解く。",
   "pull_quote": "「単一の強い製品」から「__エコシステムでの占有率__」へ──プラットフォーム経済が成熟期に入った日。",
   "sections": [                          // ちょうど 5 セクション
     { "tag": "総論",      "heading": "...", "body": "..." },
@@ -238,22 +238,26 @@ dedup を通過した候補から最終的に **カテゴリあたり 10 件**�
 
 | ファイル | 内容 |
 |---|---|
-| `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` | 各カテゴリの記事カード 10 件（フォーマットは `prompts/obsidian-template.md` 参照） |
+| `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` | 各カテゴリの記事カード 5 件（フォーマットは `prompts/obsidian-template.md` 参照） |
 | `digest/Summary/{YYYY-MM-DD}.md` | 当日サマリー（目次 + 考察）。Obsidian で `[[]]` リンクのハブ |
 
 **フォルダが存在しない場合は事前に `mkdir -p` で作成**。
 
-##### Obsidian タグの展開（必須）
+##### Obsidian タグの展開（必須・**圧縮版**）
 
 各 .md ファイルの frontmatter `tags:` と本文中の記事カードに、`prompts/obsidian-tagging-spec.md`
-の §4 に従ってタグを展開する：
+の §4 に従ってタグを展開する。**スマホ可読性のためタグ数を絞る**：
 
 - **Summary**：共通固定 4 件（`daily` / `newsletter` / `news-grasp` / `issue-{ISSUE_NO}`）
-  + 当日扱った全カテゴリの `cat/{id}` + 全記事の `tags` 集約（`score/*` を除く、重複排除）
-- **カテゴリ別 .md**：共通固定 4 件 + 当該カテゴリの `cat/{id}` + そのカテゴリ内 10 記事の
-  `tags` 集約（`score/*` を除く）
-- **各記事カード**：`### [score] タイトル` の直下メタ行の次に、当該記事の `tags`
-  全件（`score/*` 含む）を `#tag #tag ...` の 1 行で並べる
+  + 当日扱った全カテゴリの `cat/{id}` + 全記事の **`co/*` / `country/*` / `person/*` のみ**集約
+  （`svc/` `ticker/` `topic/` `industry/` `event/` `score/*` は **frontmatter には含めない**）
+- **カテゴリ別 .md**：共通固定 4 件 + 当該カテゴリの `cat/{id}` + そのカテゴリ内 5 記事の
+  `co/*` / `country/*` / `person/*` のみ集約（同上、他のプレフィクスは除外）
+- **各記事カード**：`### [score] タイトル` の直下メタ行の次に、**4〜7 個に絞った** `#tag` 行を 1 行で並べる。
+  優先順位は `cat/{id}` → `co/*` 主要 1〜3 個 → `country/*` 0〜1 個 → `topic/*` 0〜1 個 → `event/*` 0〜1 個 → `score/*` 末尾固定。
+  `svc/` `ticker/` `industry/` `person/` は記事カード行にも原則出さない（必要な特定記事のみ例外的に追加可）
+
+記事 JSON の `tags` フィールドは従来どおり全種（`co/` `svc/` `topic/` `industry/` `event/` `ticker/` `person/` `score/`）を保持してよい。Markdown レンダリング時に上記フィルタを通す。
 
 `tags:` リストはプレフィックス順 → 値の昇順でソートする（共通固定 4 件のみ先頭固定）。Obsidian の wiki link は vault 内のファイル名で解決されるため、`[[2026-04-28-AI]]` のリンクはフォルダの場所に依存せず動く。
 

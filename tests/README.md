@@ -15,7 +15,7 @@
 ### A. レイアウト確認
 
 ```powershell
-cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp"
+cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
 python tests/render_email.py
 ```
 

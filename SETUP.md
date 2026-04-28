@@ -10,7 +10,7 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 | 実行時刻 | 毎朝 06:00 JST |
 | モデル | Claude Sonnet 4.6（Max サブスク内認証） |
 | GitHub repo | `HIDEPON-UMG/News-Grasp`（プライベート） |
-| Obsidian ボルト | `C:\Users\hidek\OneDrive\Obsidians\New's Grasp\` |
+| Obsidian ボルト | `C:\Users\hidek\Obsidian\New's Grasp\` |
 | Repo の clone 先 | ボルト直下 `New's Grasp\News-Grasp\` |
 | GAS web app | `news-grasp-mailer`（`hidepontrainer@gmail.com` 配下） |
 | Webhook URL | `https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec` |
@@ -29,7 +29,7 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 ## 1. リポジトリの clone
 
 ```powershell
-cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp"
+cd "C:\Users\hidek\Obsidian\New's Grasp"
 gh repo clone HIDEPON-UMG/News-Grasp
 ```
 
@@ -63,7 +63,7 @@ GAS の `doPost(e)` は受信 body の `client === "news-grasp-routine"` を確�
 @echo off
 echo [%DATE% %TIME%] runner-invoked >> "%USERPROFILE%\bin\news-grasp-invoked.log"
 
-set REPO_DIR=C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp
+set REPO_DIR=C:\Users\hidek\Obsidian\New's Grasp\News-Grasp
 set LOG_DIR=%USERPROFILE%\bin\news-grasp-logs
 set GIT=C:\Program Files\Git\cmd\git.exe
 set CLAUDE=C:\Users\hidek\.local\bin\claude.exe
@@ -118,7 +118,7 @@ sed -i 's/$/\r/' "/c/Users/hidek/bin/news-grasp-runner.bat"
 
 ```powershell
 # 疎通テスト（Webhook + GAS）
-cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp"
+cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
 python tests/render_email.py --send
 
 # Runner の手動起動（実機の本番フロー）
@@ -135,7 +135,7 @@ Get-Content "C:\Users\hidek\bin\news-grasp-logs\2026-04-28.log" -Wait -Tail 100
 
 - `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` 各ファイルが repo に push されている
 - `digest/Summary/{YYYY-MM-DD}.md` も生成されている
-- `data/articles.jsonl` に 40〜50 件のメタが追記されている
+- `data/articles.jsonl` に 20〜25 件のメタが追記されている
 - Gmail 2 宛先に HTML メールが届いている
 
 ## 6. watchlist の更新（運用作業）
@@ -144,7 +144,7 @@ Get-Content "C:\Users\hidek\bin\news-grasp-logs\2026-04-28.log" -Wait -Tail 100
 
 ```powershell
 # Obsidian で開いて編集 → 通常の git
-cd "C:\Users\hidek\OneDrive\Obsidians\New's Grasp\News-Grasp"
+cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
 git add data/watchlist.md
 git commit -m "watchlist: ${変更概要}"
 git push
