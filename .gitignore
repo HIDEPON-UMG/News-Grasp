@@ -17,3 +17,6 @@ desktop.ini
 .env
 .env.*
 *.secret.json
+
+# テスト出力
+tests/output/
