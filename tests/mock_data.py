@@ -24,7 +24,7 @@ CATEGORIES = [
             {"score": 95, "time": "07:42", "source": "Bloomberg Markets",
              "title": "ドル円、151円台前半まで急伸後に反落──FOMC議事要旨で利下げ示唆",
              "url": "https://example.com/fx/1",
-             "thumb": "https://placehold.co/600x315/B8860B/ffffff/png?text=USD%2FJPY+151.20",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-fx.jpg",
              "bullets": [
                  "NY市場でドル円は一時[[152.10円]]まで上昇したが、FOMC議事要旨で複数メンバーが__年内追加利下げ__に言及していたことが明らかになり、151.20円台まで反落。",
                  "CFTC建玉では[[ヘッジファンドの円ショート]]が3週連続で減少、累計持ち高は前月比△18%となり、ポジション巻き戻しが鮮明になっている。",
@@ -33,7 +33,7 @@ CATEGORIES = [
             {"score": 88, "time": "08:15", "source": "日本経済新聞",
              "title": "日銀総裁、追加利上げの「条件は整いつつある」と発言",
              "url": "https://example.com/fx/2",
-             "thumb": "https://placehold.co/600x315/A06600/ffffff/png?text=BOJ+%2B0.75%25",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-fx.jpg",
              "bullets": [
                  "植田総裁は参議院財政金融委員会で、賃金と物価の好循環について「[[これまでより確度が高まっている]]」と述べた。",
                  "市場は[[7月会合]]での追加利上げ観測を織り込み始めており、OISインプライドレートは__0.75%へ20bp上昇__。",
@@ -42,7 +42,7 @@ CATEGORIES = [
             {"score": 82, "time": "06:58", "source": "Reuters FX",
              "title": "ユーロドル、1.09台回復──ECB高官「6月利下げは決定事項ではない」",
              "url": "https://example.com/fx/3",
-             "thumb": "https://placehold.co/600x315/8B6914/ffffff/png?text=EUR%2FUSD+1.09",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-fx.jpg",
              "bullets": [
                  "ECBの[[シュナーベル理事]]がFTのインタビューでサービスインフレの粘着性に言及、6月会合での利下げは「自動的なものではない」と強調。",
                  "ユーロは対ドルで0.6%上昇、対円では165.20円台まで上昇。__独伊スプレッドは縮小__でリスクオン気味の反応。",
@@ -59,7 +59,7 @@ CATEGORIES = [
             {"score": 60, "time": "13:45", "source": "AFR",
              "title": "豪ドル、CPI鈍化で0.65割れ──RBAの利下げ前倒し観測",
              "url": "https://example.com/fx/5",
-             "thumb": "https://placehold.co/600x315/B8860B/ffffff/png?text=AUD%2FUSD+0.6485",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-fx.jpg",
              "bullets": [
                  "豪第1四半期CPIが前年同期比[[+3.4%]]と市場予想を下回り、豪ドルは対米ドルで0.6485まで下落。",
                  "RBAの__早期利下げ観測__が強まり、OISは8月会合での25bp利下げを6割織り込む水準に。",
@@ -78,7 +78,7 @@ CATEGORIES = [
             {"score": 96, "time": "07:00", "source": "Anthropic",
              "title": "Anthropic、Claude Opus 4.7 を一般公開──高解像度ビジョンとコーディング性能を強化",
              "url": "https://example.com/ai/1",
-             "thumb": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&q=80",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-ai.jpg",
              "bullets": [
                  "[[Opus 4.7]] が GA。コーディングベンチで前世代比 +6pt、高解像度ビジョンは __OCR 精度 12% 改善__。",
                  "価格は Opus 4.6 と同水準（入力 $5/M、出力 $25/M）。価格性能比が更に改善した形。",
@@ -87,7 +87,7 @@ CATEGORIES = [
             {"score": 92, "time": "08:30", "source": "CNBC",
              "title": "OpenAI、GPT-5.5 を発表──GPT-5.4 から 6 週間での連続リリース",
              "url": "https://example.com/ai/2",
-             "thumb": "https://placehold.co/600x315/2D5BB8/ffffff/png?text=GPT-5.5+Released",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-ai.jpg",
              "bullets": [
                  "[[GPT-5.5]] 発表、コーディング・データ分析を重点強化。API 提供は 4/24 開始。",
                  "__6 週間での版上げ__ は競争激化の象徴。Anthropic Opus 4.7 と直接競合する位置取り。",
@@ -104,7 +104,7 @@ CATEGORIES = [
             {"score": 80, "time": "10:00", "source": "Google Blog",
              "title": "Google、Gemini 3.1 Pro 搭載 Deep Research Max を API 公開",
              "url": "https://example.com/ai/4",
-             "thumb": "https://placehold.co/600x315/4A6CC8/ffffff/png?text=Gemini+3.1+Pro",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-ai.jpg",
              "bullets": [
                  "[[Deep Research Max]] が API 経由で利用可能に。MCP 対応・社内データ統合・グラフ生成を実装。",
                  "__非同期バックグラウンド調査__ で長時間タスクの自動化が現実解に。",
@@ -113,7 +113,7 @@ CATEGORIES = [
             {"score": 76, "time": "11:30", "source": "Intellectia",
              "title": "NVIDIA、時価総額 5 兆ドル突破──AI チップ需要継続で 4.3% 上昇",
              "url": "https://example.com/ai/5",
-             "thumb": "https://placehold.co/600x315/2D5BB8/ffffff/png?text=NVIDIA+%245T",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-ai.jpg",
              "bullets": [
                  "4/24 に [[NVIDIA 時価総額 $5 兆]] 突破。Intel 好決算が触媒となり半導体セクター全面高。",
                  "__AI インフラ需要__ は 2026 年も継続、設備投資ガイダンスは前年比 +35%。",
@@ -132,7 +132,7 @@ CATEGORIES = [
             {"score": 90, "time": "07:30", "source": "Accenture Newsroom",
              "title": "Accenture × Google Cloud、Gemini Enterprise Acceleration Program 始動",
              "url": "https://example.com/it/1",
-             "thumb": "https://placehold.co/600x315/2E6B52/ffffff/png?text=Accenture+%C3%97+Google",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-it.jpg",
              "bullets": [
                  "[[Accenture]] と Google Cloud が Gemini Enterprise Acceleration Program 始動。",
                  "__数千人体制__ でエンタープライズ AI 展開を支援、初年度の対象企業は 100 社規模。",
@@ -141,7 +141,7 @@ CATEGORIES = [
             {"score": 85, "time": "08:45", "source": "Metaintro",
              "title": "BCG、2025 年収益の 25%（$36 億）が AI 関連業務",
              "url": "https://example.com/it/2",
-             "thumb": "https://placehold.co/600x315/3D7B62/ffffff/png?text=BCG+AI+%2436B",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-it.jpg",
              "bullets": [
                  "[[BCG]] 2025 年収益 $144 億のうち $36 億が AI 案件。前年比 __+58%__ の急拡大。",
                  "コンサル業界で AI が「本業」化した転換点を示す数字。Bain・McKinsey も追随傾向。",
@@ -150,7 +150,7 @@ CATEGORIES = [
             {"score": 78, "time": "10:30", "source": "Stanford AI Index",
              "title": "Stanford AI Index 2026：AI エージェント成功率 66%──本番到達は 11〜14% のみ",
              "url": "https://example.com/it/3",
-             "thumb": "https://placehold.co/600x315/2E6B52/ffffff/png?text=Stanford+AI+Index",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-it.jpg",
              "bullets": [
                  "OSWorld ベンチマークで [[66% 達成]] も、企業本番導入は __11-14% のみ__ という実態。",
                  "PoC から本番への「死の谷」を越えるガバナンス・運用が、コンサル業界の新主戦場に。",
@@ -159,7 +159,7 @@ CATEGORIES = [
             {"score": 72, "time": "11:00", "source": "FP Trendy",
              "title": "NTT グループ、国内データセンター IT 電力容量を 2033 年度までに 3 倍超へ",
              "url": "https://example.com/it/4",
-             "thumb": "https://placehold.co/600x315/4A8770/ffffff/png?text=NTT+DC+x3",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-it.jpg",
              "bullets": [
                  "NTT/NTTデータ/NTTドコモビジネスが [[2033 年度までに DC 電力容量 3 倍超]] 拡張。",
                  "__電力・冷却__ が今後の競争優位の鍵。生成 AI 需要の物理基盤を国内で確保する狙い。",
@@ -186,7 +186,7 @@ CATEGORIES = [
             {"score": 94, "time": "07:00", "source": "日本経済新聞",
              "title": "日経平均、4 月 27 日に史上初の 6 万円台突破──ファナック急伸",
              "url": "https://example.com/economy/1",
-             "thumb": "https://placehold.co/600x315/8E2A19/ffffff/png?text=Nikkei+60%2C537",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-economy.jpg",
              "bullets": [
                  "日経平均が 4/27 終値 [[60,537 円]] と史上初 6 万円台。ファナック急伸が牽引役。",
                  "5 万→ 6 万円が約 __半年で史上最速__。フィジカル AI 相場の口火という解説が主流。",
@@ -195,7 +195,7 @@ CATEGORIES = [
             {"score": 86, "time": "08:00", "source": "日本経済新聞",
              "title": "日銀、4 月会合で政策金利 0.75% 据え置き──6 月へ判断先送り",
              "url": "https://example.com/economy/2",
-             "thumb": "https://placehold.co/600x315/A03A29/ffffff/png?text=BOJ+0.75%25+Hold",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-economy.jpg",
              "bullets": [
                  "日銀 4 月会合で [[0.75% 据え置き]] 確定。中東情勢を理由に 6 月会合に先送り。",
                  "市場は __6 月・10 月に各 25bp 利上げ__ を予想継続。OIS は 1.25% へのパスを織り込み。",
@@ -212,7 +212,7 @@ CATEGORIES = [
             {"score": 70, "time": "11:00", "source": "Reuters",
              "title": "米 GDP 第 1 四半期速報値、前期比年率 +2.8%──市場予想上回る",
              "url": "https://example.com/economy/4",
-             "thumb": "https://placehold.co/600x315/8E2A19/ffffff/png?text=US+GDP+%2B2.8%25",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-economy.jpg",
              "bullets": [
                  "米 1Q GDP 速報値は [[+2.8%]] と市場予想 +2.5% を上回り、ソフトランディング期待が再燃。",
                  "個人消費が __+3.2%__ と力強く、サービス業中心に底堅さが続く。",
@@ -221,7 +221,7 @@ CATEGORIES = [
             {"score": 60, "time": "13:00", "source": "Yahoo!ニュース",
              "title": "国内 4 月 CPI、前年比 +2.3%──サービス価格主導で粘着性",
              "url": "https://example.com/economy/5",
-             "thumb": "https://placehold.co/600x315/B0392B/ffffff/png?text=JP+CPI+%2B2.3%25",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-economy.jpg",
              "bullets": [
                  "国内 4 月 CPI（生鮮除くコア）は前年比 [[+2.3%]]、3 か月連続で日銀目標を上回る。",
                  "サービス価格は __+2.1%__ で粘着性、賃金上昇の物価への反映が定着しつつある。",
@@ -240,7 +240,7 @@ CATEGORIES = [
             {"score": 88, "time": "08:00", "source": "ファミ通",
              "title": "ウマ娘 4 周年記念キャンペーン、ピーク同時接続が過去最高更新",
              "url": "https://example.com/game/1",
-             "thumb": "https://placehold.co/600x315/5E3D8C/ffffff/png?text=Switch+Sports+Pack",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-game.jpg",
              "bullets": [
                  "[[ウマ娘 4 周年]] のピーク同時接続が __前年比 +18%__、過去最高を更新。",
                  "新ウマ娘「ヴィヴラスファル」実装と限定衣装が課金牽引、初日売上推定 4 億円超。",
@@ -249,7 +249,7 @@ CATEGORIES = [
             {"score": 80, "time": "09:30", "source": "Bloomberg",
              "title": "任天堂、Switch 後継機の発売を 2026 年 11 月に正式アナウンス",
              "url": "https://example.com/game/2",
-             "thumb": "https://placehold.co/600x315/7050A0/ffffff/png?text=Pragmata+2M",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-game.jpg",
              "bullets": [
                  "任天堂は [[Switch 2]]（仮称）を 2026 年 11 月発売と正式アナウンス。価格は $399 を中心軸。",
                  "__後方互換性__ を Switch 1 タイトル全てで維持、サブスク移行モデルも検討中との報道。",
@@ -266,7 +266,7 @@ CATEGORIES = [
             {"score": 65, "time": "13:00", "source": "4Gamer",
              "title": "miHoYo、原神アップデート 5.5 を配信──新キャラ実装で売上ブースト",
              "url": "https://example.com/game/4",
-             "thumb": "https://placehold.co/600x315/5E3D8C/ffffff/png?text=Cygames+New+Title",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-game.jpg",
              "bullets": [
                  "[[miHoYo]] 原神 5.5 配信、新キャラ「フリーナ」実装で初週売上 __$8,200 万__ を記録。",
                  "崩壊スターレイル/ゼンレスゾーンゼロとあわせ、miHoYo グループ売上は四半期 $5 億超ペース。",
