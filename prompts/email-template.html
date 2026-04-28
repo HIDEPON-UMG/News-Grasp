@@ -19,6 +19,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
+<!--[if mso]>
+<style type="text/css">
+/* Outlook desktop (Word renderer) 専用：Web フォントはロードされないので
+   Windows 標準フォントで強制上書き。!important でインラインスタイルに勝つ。
+   英字 = Constantia（Office 同梱の上品セリフ）/ 日本語 = Yu Gothic（モダンゴシック）。
+   明朝系（Yu Mincho / MS Mincho）はユーザー指示により使用しない。 */
+body, table, td, div, span, p, a, li, b, strong, h1, h2, h3, h4 {
+  font-family: Constantia, 'Yu Gothic', 'Yu Gothic UI', Meiryo, 'Segoe UI', sans-serif !important;
+}
+.m, .ng-masthead-meta, .ng-essay-sub, .ng-toc-num, .ng-section-num,
+.ng-takeaway-num, .ng-takeaway-tag, .ng-related-date, .ng-quote-attrib,
+.ng-footer-text, .ng-grasp-badge {
+  font-family: Consolas, 'Courier New', monospace !important;
+}
+.ng-quote-mark { font-family: Constantia, Georgia, 'Times New Roman', serif !important; }
+</style>
+<![endif]-->
 <!--
   Responsive + Atomic class definitions for HTML body size reduction.
   Gmail/Apple Mail/Outlook 365 が <style> in <head> をサポート。
@@ -30,7 +47,7 @@
 -->
 <style>
 /* Atomic style classes — 重複する inline スタイルを共通化 */
-.m { font-family: 'JetBrains Mono', Menlo, monospace; }
+.m { font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace; }
 .b7 { font-weight: 700; }
 .b8 { font-weight: 800; }
 .b9 { font-weight: 900; }
@@ -44,7 +61,7 @@
 table { border-collapse: collapse; }
 /* 記事カード共通 — 一回り大きめのフォント設計 */
 .bul { padding-left: 20px; margin: 0 0 8px; font-size: 14.5px; line-height: 1.9; color: #1A1A1A; }
-.bul:before { content: "▸"; color: inherit; margin-left: -20px; padding-right: 8px; font-family: 'JetBrains Mono', Menlo, monospace; font-weight: 700; }
+.bul:before { content: "▸"; color: inherit; margin-left: -20px; padding-right: 8px; font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace; font-weight: 700; }
 .fz10 { font-size: 11px; }
 .fz11 { font-size: 12px; }
 .fz12 { font-size: 13px; }
@@ -135,7 +152,7 @@ table { border-collapse: collapse; }
 <!-- ====================================================================== -->
 <!-- ─── 外枠ラッパー ───                                                      -->
 <!-- ====================================================================== -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E8E4DA;padding:24px 0;font-family:'Noto Serif JP','Yu Mincho','游明朝','Hiragino Mincho ProN',serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E8E4DA;padding:24px 0;font-family:'Noto Serif JP','Hiragino Mincho ProN',Constantia,Cambria,serif;">
 <tr><td align="center">
 
 <table role="presentation" class="ng-wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;background:#FAF7F0;color:#1A1A1A;">
@@ -148,18 +165,18 @@ table { border-collapse: collapse; }
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
     <td style="vertical-align:middle;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
-        <td style="background:#1A1A1A;color:#FAF7F0;font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;font-weight:700;padding:4px 10px;letter-spacing:1.5px;">GRASP</td>
-        <td class="ng-masthead-meta" style="padding-left:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1.5px;">NEWS GRASP · Morning Edition</td>
+        <td class="m" style="background:#1A1A1A;color:#FAF7F0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;font-weight:700;padding:4px 10px;letter-spacing:1.5px;">GRASP</td>
+        <td class="ng-masthead-meta" style="padding-left:10px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;letter-spacing:1.5px;">NEWS GRASP · Morning Edition</td>
       </tr></tbody></table>
     </td>
-    <td align="right" class="ng-masthead-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">
+    <td align="right" class="ng-masthead-meta" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">
       #{{ISSUE_NO}} · {{ISSUE_DATE}}（{{ISSUE_WEEKDAY}}）
     </td>
   </tr></tbody></table>
   <h1 class="ng-h1" style="font-size:36px;font-weight:900;line-height:1.25;letter-spacing:-0.5px;margin:18px 0 8px;color:#1A1A1A;">
     時勢を掴み、<br>日々に新たに。
   </h1>
-  <div class="ng-masthead-meta" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;letter-spacing:1px;margin-top:6px;">
+  <div class="ng-masthead-meta" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;letter-spacing:1px;margin-top:6px;">
     {{TOTAL_CATEGORIES}} CATEGORIES · {{TOTAL_STORIES}} STORIES · {{TOTAL_SECTIONS}} ESSAY SECTIONS
   </div>
 </td></tr>
@@ -171,12 +188,12 @@ table { border-collapse: collapse; }
 <tr><td class="ng-pad-x" style="padding:0 36px 24px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2EEE3;border:1px solid #E2DED4;">
     <tbody><tr><td class="ng-toc-pad" style="padding:14px 18px;">
-      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:10px;">┌── TABLE OF CONTENTS</div>
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:10px;">┌── TABLE OF CONTENTS</div>
       {{TOC_ROWS_HTML}}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;padding-top:8px;border-top:1px solid #E2DED4;"><tbody><tr>
-        <td width="32" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#1A1A1A;font-weight:700;">§.</td>
+        <td width="32" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#1A1A1A;font-weight:700;">§.</td>
         <td style="font-size:14px;font-weight:700;">本日のテーマ考察</td>
-        <td align="right" style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;color:#5C5A52;">{{TOTAL_SECTIONS}} sections</td>
+        <td align="right" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">{{TOTAL_SECTIONS}} sections</td>
       </tr></tbody></table>
     </td></tr></tbody>
   </table>
@@ -192,14 +209,14 @@ table { border-collapse: collapse; }
 <!-- <tr><td style="background:{{CAT_ACCENT}};padding:20px 36px;">             -->
 <!--   <table width="100%"><tr>                                                -->
 <!--     <td style="vertical-align:middle;">                                   -->
-<!--       <div style="font-family:JetBrains Mono;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;"> -->
+<!--       <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;"> -->
 <!--         CATEGORY {{CAT_INDEX}} / {{TOTAL_CATEGORIES}} · {{CAT_NAME_EN_UPPER}} -->
 <!--       </div>                                                              -->
 <!--       <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;"> -->
-<!--         <span style="font-family:JetBrains Mono;margin-right:10px;">{{CAT_GLYPH}}</span>{{CAT_NAME_JP}} -->
+<!--         <span style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-right:10px;">{{CAT_GLYPH}}</span>{{CAT_NAME_JP}} -->
 <!--       </div>                                                              -->
 <!--     </td>                                                                 -->
-<!--     <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:JetBrains Mono;font-size:11px;">{{CAT_ITEMS_COUNT}} stories</td> -->
+<!--     <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;">{{CAT_ITEMS_COUNT}} stories</td> -->
 <!--   </tr></table>                                                           -->
 <!--   <div style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);"> -->
 <!--     {{CAT_SUMMARY}}                                                       -->
@@ -220,26 +237,26 @@ table { border-collapse: collapse; }
 <tr><td class="ng-essay-pad" style="background:#1A1A1A;padding:40px 36px 32px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
     <td>
-      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#C9B98A;letter-spacing:4px;margin-bottom:12px;">
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#C9B98A;letter-spacing:4px;margin-bottom:12px;">
         ━━━━━━━━━━━━━━━━━━━━━━━<br>
         EDITORIAL · 本日のテーマ考察
       </div>
       <h2 class="ng-essay-h2" style="font-size:40px;font-weight:900;margin:0 0 8px;letter-spacing:-1px;color:#FAF7F0;line-height:1.15;">
         {{REFLECTION_TITLE}}
       </h2>
-      <div class="ng-essay-sub" style="font-size:16px;color:#C9B98A;font-style:italic;font-family:'JetBrains Mono',Menlo,monospace;margin-bottom:24px;">
+      <div class="ng-essay-sub" style="font-size:16px;color:#C9B98A;font-style:italic;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-bottom:24px;">
         {{REFLECTION_SUBTITLE}}
       </div>
     </td>
     <td class="ng-essay-counter" width="120" align="right" valign="top">
-      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:64px;color:#3A3530;line-height:1;font-weight:900;">§</div>
-      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:9px;color:#9C9A92;letter-spacing:2px;margin-top:4px;">{{TOTAL_SECTIONS}} PARTS</div>
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:64px;color:#3A3530;line-height:1;font-weight:900;">§</div>
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#9C9A92;letter-spacing:2px;margin-top:4px;">{{TOTAL_SECTIONS}} PARTS</div>
     </td>
   </tr></tbody></table>
 
   <!-- リード（強調マーカーは Claude が <strong style="background:..."> に変換して挿入） -->
   <div style="border-top:1px solid #3A3530;padding-top:20px;margin-top:8px;">
-    <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#C9B98A;letter-spacing:2px;margin-bottom:10px;">┌── LEAD</div>
+    <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#C9B98A;letter-spacing:2px;margin-bottom:10px;">┌── LEAD</div>
     <div style="font-size:16px;line-height:1.95;color:#E8E2D4;padding-left:12px;border-left:3px solid #C9B98A;">
       {{REFLECTION_LEAD_HTML}}
     </div>
@@ -256,7 +273,7 @@ table { border-collapse: collapse; }
       <div class="ng-pull-quote" style="font-size:21px;font-weight:700;line-height:1.6;color:#1A1A1A;letter-spacing:-0.2px;">
         {{REFLECTION_PULL_QUOTE_HTML}}
       </div>
-      <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1.5px;margin-top:12px;">
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:1.5px;margin-top:12px;">
         ─── PULL QUOTE
       </div>
     </td>
@@ -271,8 +288,8 @@ table { border-collapse: collapse; }
 <!-- <tr><td style="background:#FAF7F0;padding:0 36px;">                       -->
 <!--   <table width="100%" style="border-bottom:1px dashed #E2DED4;"><tr>      -->
 <!--     <td width="80" valign="top" style="padding:28px 16px 28px 0;">        -->
-<!--       <div style="font-family:JetBrains Mono;font-size:38px;font-weight:900;color:{{SEC_ACCENT}};line-height:0.9;letter-spacing:-2px;">§{{SEC_NUM}}</div> -->
-<!--       <div style="font-family:JetBrains Mono;font-size:9px;color:#fff;background:{{SEC_ACCENT}};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{{SEC_TAG}}</div> -->
+<!--       <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:{{SEC_ACCENT}};line-height:0.9;letter-spacing:-2px;">§{{SEC_NUM}}</div> -->
+<!--       <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:{{SEC_ACCENT}};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{{SEC_TAG}}</div> -->
 <!--     </td>                                                                 -->
 <!--     <td valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;"> -->
 <!--       <h3 style="font-size:18px;font-weight:800;margin:0 0 14px;">{{SEC_HEADING}}</h3> -->
@@ -290,16 +307,16 @@ table { border-collapse: collapse; }
 <!-- ─── KEY TAKEAWAYS（3 カード） ───                                         -->
 <!-- ====================================================================== -->
 <tr><td class="ng-takeaway-pad" style="background:#F2EEE3;padding:28px 36px;border-top:2px solid #1A1A1A;">
-  <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:16px;">━━ KEY TAKEAWAYS · 今日の3つの結論</div>
+  <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:16px;">━━ KEY TAKEAWAYS · 今日の3つの結論</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
     {{TAKEAWAYS_HTML}}
     <!--
       Claude は 3 行を以下の形式で展開：
       <tr><td style="padding-bottom:12px;">
         <table width="100%" style="background:#fff;border:1px solid #E2DED4;"><tr>
-          <td width="56" valign="middle" style="background:{{T_COLOR}};color:#fff;text-align:center;font-family:JetBrains Mono;font-size:18px;font-weight:900;padding:14px 0;">{{T_NUM}}</td>
+          <td width="56" valign="middle" class="m" style="background:{{T_COLOR}};color:#fff;text-align:center;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:18px;font-weight:900;padding:14px 0;">{{T_NUM}}</td>
           <td style="padding:12px 16px;">
-            <div style="font-family:JetBrains Mono;font-size:9px;color:{{T_COLOR}};font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">{{T_TAG_UPPER}}</div>
+            <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:{{T_COLOR}};font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">{{T_TAG_UPPER}}</div>
             <div style="font-size:13px;line-height:1.7;font-weight:600;">{{T_TEXT_HTML}}</div>
           </td>
         </tr></table>
@@ -312,14 +329,14 @@ table { border-collapse: collapse; }
 <!-- ─── 関連過去号 ───                                                        -->
 <!-- ====================================================================== -->
 <tr><td class="ng-related-pad" style="padding:28px 36px;background:#F2EEE3;border-top:2px solid #E2DED4;">
-  <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:12px;">━━ RELATED ISSUES · 関連する過去号</div>
+  <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:12px;">━━ RELATED ISSUES · 関連する過去号</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
     {{RELATED_ISSUES_HTML}}
     <!--
       Claude は最大 3 行を以下の形式で展開：
       <tr><td style="padding:10px 0;border-bottom:1px solid #E2DED4;">
         <table width="100%"><tr>
-          <td width="100" style="font-family:JetBrains Mono;font-size:11px;color:#5C5A52;">{{R_DATE}}</td>
+          <td width="100" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">{{R_DATE}}</td>
           <td style="font-size:13px;font-weight:600;"><a href="{{R_URL}}" style="color:#1A1A1A;text-decoration:none;">{{R_TITLE}}</a></td>
           <td width="20" align="right" style="color:#5C5A52;">→</td>
         </tr></table>
@@ -331,7 +348,7 @@ table { border-collapse: collapse; }
 <!-- ====================================================================== -->
 <!-- ─── フッター ───                                                          -->
 <!-- ====================================================================== -->
-<tr><td class="ng-footer-pad ng-footer-text" style="padding:24px 36px 32px;background:#FAF7F0;border-top:1px solid #E2DED4;font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;color:#5C5A52;letter-spacing:1px;text-align:center;">
+<tr><td class="ng-footer-pad ng-footer-text" style="padding:24px 36px 32px;background:#FAF7F0;border-top:1px solid #E2DED4;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:1px;text-align:center;">
   <div style="margin-bottom:8px;">
     <strong style="color:#1A1A1A;letter-spacing:2px;">NEWS GRASP</strong> — Five Lenses on Today
   </div>
