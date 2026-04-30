@@ -366,8 +366,10 @@ email-template.html の `<head>` に `@media (max-width: 600px)` の CSS と ato
 | 箇条書き要素 | `ng-card-body` | font-size 14.5px |
 | メタ行（時刻・出典） | `ng-card-meta` | font-size 11px |
 | TOP 記事 FEATURED 画像の wrapper | `ng-feature-img` | height auto |
-| サイドサムネ td | `ng-side-thumb` | display: block で上に再配置 |
-| サムネ右の本文 td | `ng-side-text` | display: block で下に配置 |
+| サイドサムネ外側 table | `ng-side-table` | width:100% 強制 |
+| サイドサムネ td | `ng-card-thumb` | display: block で全幅化、画像セルが上に移動 |
+| サムネ画像 img | `ng-card-thumb-img` | width:100% / max-height:160px に拡大 |
+| サムネ右の本文 td | `ng-card-body-cell` | display: block で画像下に再配置 |
 
 **atomic 補助クラス（HTML サイズ削減用、style 属性内の重複を吸収）**:
 
@@ -385,13 +387,13 @@ email-template.html の `<head>` に `@media (max-width: 600px)` の CSS と ato
   <h3 class="ng-card-title b8 lh145 t812 lsm03" style="font-size:18px;">
     <a href="記事URL" class="dk tdn">タイトル</a>
   </h3>
-  <table width="100%"><tr>
-    <td class="ng-side-thumb pr16 vtop" width="140">
+  <table width="100%" class="ng-side-table"><tr>
+    <td class="ng-card-thumb thb pr16 vtop" width="140">
       <a href="記事URL" class="db tdn">
-        <img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-fx.jpg" width="140" class="thb db ofc brd">
+        <img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-fx.jpg" width="140" class="ng-card-thumb-img db ofc brd">
       </a>
     </td>
-    <td class="ng-side-text vtop">
+    <td class="ng-card-body-cell vtop">
       <div class="bul ng-card-body" style="color:#B8860B"><span class="dk">[[キーワード]] が __重要__ ...</span></div>
     </td>
   </tr></table>

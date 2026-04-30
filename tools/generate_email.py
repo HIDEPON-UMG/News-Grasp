@@ -54,14 +54,14 @@ def top_card(score, title, source, url, img, buls, accent):
     )
 
 def side_card(score, title, source, url, img, buls, accent, label=None):
-    """通常カード（サイドサムネ）"""
+    """通常カード（サイドサムネ）。スマホ時は @media で画像→本文の縦積みに切替（ng-card-thumb / ng-card-body-cell が連動）"""
     lbl = label or f"0{score}" if score < 100 else str(score)
     return (
         '<tr><td class="ng-card-pad" style="padding:18px 36px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">'
-        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>'
-        f'<td class="thb vtop pr16" width="140" style="width:140px;vertical-align:top;padding-right:16px;">'
-        f'<img src="{img}" width="140" height="90" alt="" style="width:140px;height:90px;object-fit:cover;display:block;"></td>'
-        '<td class="vtop" style="vertical-align:top;">'
+        '<table role="presentation" class="ng-side-table" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>'
+        f'<td class="ng-card-thumb thb vtop pr16" width="140" style="width:140px;vertical-align:top;padding-right:16px;">'
+        f'<img class="ng-card-thumb-img" src="{img}" width="140" height="90" alt="" style="width:140px;height:90px;object-fit:cover;display:block;"></td>'
+        '<td class="ng-card-body-cell vtop" style="vertical-align:top;">'
         + meta_line(score, lbl, source, url, accent)
         + f'<h3 class="ng-card-title" style="font-size:17px;font-weight:800;line-height:1.4;margin:0 0 12px;color:#1A1A1A;">{title}</h3>'
         + bullets(buls, accent)

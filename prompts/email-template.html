@@ -121,7 +121,24 @@ table { border-collapse: collapse; }
   .ng-card-title { font-size: 18px !important; line-height: 1.4 !important; letter-spacing: -0.1px !important; }
   .ng-card-body { font-size: 14.5px !important; line-height: 1.9 !important; }
   .ng-card-meta { font-size: 11px !important; letter-spacing: 0.4px !important; }
-  .ng-side-text { display: block !important; padding: 0 !important; }
+  /* サイドサムネカードをスマホでは画像→本文の縦積みに切替（圧迫回避） */
+  .ng-side-table { width: 100% !important; }
+  .ng-card-thumb {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding-right: 0 !important;
+    padding-bottom: 12px !important;
+  }
+  .ng-card-thumb-img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 160px !important;
+  }
+  .ng-card-body-cell {
+    display: block !important;
+    width: 100% !important;
+  }
   /* FEATURED 画像 */
   .ng-feature-img img { height: auto !important; max-height: 240px !important; }
   /* 考察ブロック */
