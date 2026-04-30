@@ -4,6 +4,7 @@
 
 | 日付 | 状態 | 対象ジャンル | 所要 | リトライ | 備考 |
 |---|---|---|---|---|---|
+| 2026-05-01 | ✅成功 | FX, AI, IT-Consulting, Economy, Game | 約40分 | 0 | 記事25件 |
 | 2026-04-30 | ✅成功 | FX, AI, IT-Consulting, Economy, Game | 約35分 | 0 | 記事25件 |
 | 2026-04-29 | ✅成功 | FX, AI, IT-Consulting, Economy, Game | 約30分 | 0 | 記事25件 |
 | 2026-04-28 | ✅成功 | FX, AI, IT-Consulting, Economy, Game | 約25分 | 0 | 記事50件 |
