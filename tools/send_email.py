@@ -27,7 +27,7 @@ from email.message import EmailMessage
 from email.utils import make_msgid
 from pathlib import Path
 
-DEFAULT_SENDER = "hidepontrainer@gmail.com"
+DEFAULT_SENDER = "news.grasp.magazine@gmail.com"
 DEFAULT_PASSWORD_FILE = Path.home() / ".secrets" / "news-grasp-smtp.txt"
 DEFAULT_ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 SMTP_HOST = "smtp.gmail.com"

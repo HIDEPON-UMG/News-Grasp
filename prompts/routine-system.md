@@ -415,7 +415,7 @@ python tools/send_email.py \
   --to "hideki.kusunoki@gmail.com,h2-hiramatsu@nri.co.jp"
 ```
 
-`tools/send_email.py` は `~/.secrets/news-grasp-smtp.txt` から Gmail App Password を読み、`smtp.gmail.com:587` (STARTTLS) で `hidepontrainer@gmail.com` から直送する。HTML サイズ上限は実質 25 MB（Gmail 1 メッセージ上限）まで使える。
+`tools/send_email.py` は `~/.secrets/news-grasp-smtp.txt` から Gmail App Password を読み、`smtp.gmail.com:587` (STARTTLS) で `news.grasp.magazine@gmail.com` から直送する（差出人専用アカウント。プロフィール写真として News Grasp ロゴが受信側アバターに表示される）。HTML サイズ上限は実質 25 MB（Gmail 1 メッセージ上限）まで使える。
 
 ### 送信前の任意チェック
 

@@ -160,7 +160,7 @@ git push
 | `'sks' は内部コマンド〜` | bat の改行が LF。`sed -i 's/$/\r/' news-grasp-runner.bat` で CRLF 化 |
 | `claude` が見つからない | bat 内で `set CLAUDE=` をフルパスに（`where claude` で確認） |
 | メールが届かない | `tests/render_email.py --send` で Webhook 単体テスト → GAS 側で `testSendSelf` を再実行（OAuth リフレッシュ） |
-| NRI 宛だけ届かない | NRI セキュリティ部のメールフィルタ。`hidepontrainer@gmail.com` のホワイトリスト依頼か、`hideki.kusunoki@gmail.com` から手動転送運用へ |
+| NRI 宛だけ届かない | NRI セキュリティ部のメールフィルタ。`news.grasp.magazine@gmail.com` のホワイトリスト依頼か、`hideki.kusunoki@gmail.com` から手動転送運用へ |
 | 画像が壊れる（メール内） | `assets/` の JPG が repo にあるか確認 → `routine-system.md` の base64 化指示が守られているか確認 |
 | Obsidian で同期されない | Runner 自体が `git pull` を内包しているので、別途のタスクは不要。手動で `git pull` |
 
