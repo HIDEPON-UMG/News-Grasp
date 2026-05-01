@@ -370,6 +370,12 @@ email-template.html の `<head>` に `@media (max-width: 600px)` の CSS と ato
 | サイドサムネ td | `ng-card-thumb` | display: block で全幅化、画像セルが上に移動 |
 | サムネ画像 img | `ng-card-thumb-img` | width:100% / max-height:160px に拡大 |
 | サムネ右の本文 td | `ng-card-body-cell` | display: block で画像下に再配置 |
+| 考察セクション外側 td | `ng-section-pad` | padding 縮小（左右 16px） |
+| §番号 td | `ng-section-num-cell` | display:block で全幅化、本文の上に再配置（縦積みの上段） |
+| §番号 div | `ng-section-num` | font-size 30px |
+| 本文 td | `ng-section-text-cell` | display:block で §番号下に再配置、左罫線解除（縦積みの下段） |
+| 見出し h3 | `ng-section-heading` | font-size 18px |
+| 本文 div | `ng-section-body` | font-size 14px |
 
 **atomic 補助クラス（HTML サイズ削減用、style 属性内の重複を吸収）**:
 

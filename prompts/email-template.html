@@ -150,9 +150,19 @@ table { border-collapse: collapse; }
   .ng-pull-quote { font-size: 19px !important; line-height: 1.55 !important; }
   .ng-quote-mark { font-size: 60px !important; }
   .ng-section-pad { padding: 0 16px !important; }
-  .ng-section-num-cell { width: auto !important; padding: 22px 12px 22px 0 !important; }
+  /* §番号セルと本文セルをスマホでは縦積みに切替（右セルが極細列に詰まる症状を解消）*/
+  .ng-section-num-cell {
+    display: block !important;
+    width: 100% !important;
+    padding: 22px 0 0 !important;
+  }
   .ng-section-num { font-size: 30px !important; }
-  .ng-section-text-cell { padding: 22px 0 22px 14px !important; }
+  .ng-section-text-cell {
+    display: block !important;
+    width: 100% !important;
+    padding: 14px 0 22px !important;
+    border-left: none !important;
+  }
   .ng-section-heading { font-size: 18px !important; }
   .ng-section-body { font-size: 14px !important; line-height: 1.9 !important; }
   /* テイクアウェイ・関連号・フッター */
@@ -302,17 +312,18 @@ table { border-collapse: collapse; }
 <!--                                                                          -->
 <!-- {{REFLECTION_SECTIONS_HTML}} に Claude が以下のテンプレを 5 回展開：     -->
 <!--                                                                          -->
-<!-- <tr><td style="background:#FAF7F0;padding:0 36px;">                       -->
+<!-- <tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;"> -->
 <!--   <table width="100%" style="border-bottom:1px dashed #E2DED4;"><tr>      -->
-<!--     <td width="80" valign="top" style="padding:28px 16px 28px 0;">        -->
-<!--       <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:{{SEC_ACCENT}};line-height:0.9;letter-spacing:-2px;">§{{SEC_NUM}}</div> -->
+<!--     <td class="ng-section-num-cell" width="80" valign="top" style="padding:28px 16px 28px 0;"> -->
+<!--       <div class="m ng-section-num" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:{{SEC_ACCENT}};line-height:0.9;letter-spacing:-2px;">§{{SEC_NUM}}</div> -->
 <!--       <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:{{SEC_ACCENT}};padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">{{SEC_TAG}}</div> -->
 <!--     </td>                                                                 -->
-<!--     <td valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;"> -->
-<!--       <h3 style="font-size:18px;font-weight:800;margin:0 0 14px;">{{SEC_HEADING}}</h3> -->
-<!--       <div style="font-size:13.5px;line-height:2.0;">{{SEC_BODY_HTML}}</div> -->
+<!--     <td class="ng-section-text-cell" valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;"> -->
+<!--       <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;">{{SEC_HEADING}}</h3> -->
+<!--       <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;">{{SEC_BODY_HTML}}</div> -->
 <!--     </td>                                                                 -->
 <!--   </tr></table>                                                           -->
+<!--   ※ class はスマホ縦積み（§番号→本文の順）に必須。Outlook desktop は無視 -->
 <!-- </td></tr>                                                                -->
 <!--                                                                          -->
 <!-- セクションのアクセントは順に: 総論=#1A1A1A / 為替経済=#B8860B /          -->
