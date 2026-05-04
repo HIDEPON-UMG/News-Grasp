@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+import io as _io, sys as _sys
+if hasattr(_sys.stdout, 'buffer'):
+    _sys.stdout = _io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+if hasattr(_sys.stderr, 'buffer'):
+    _sys.stderr = _io.TextIOWrapper(_sys.stderr.buffer, encoding='utf-8', errors='replace')
 """News-Grasp 本番用メール送信スクリプト（直接 SMTP）。
 
 GAS Webhook を撤廃し、Python から Gmail SMTP+TLS で直送する。
