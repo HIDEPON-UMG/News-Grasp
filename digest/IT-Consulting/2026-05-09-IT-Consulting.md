@@ -1,0 +1,119 @@
+---
+title: "News Grasp #20260509 — IT & Consulting"
+date: 2026-05-09
+issue: 20260509
+weekday: 土
+category: IT & Consulting
+categoryId: it
+accent: "#2E6B52"
+glyph: "▲"
+edition: Morning Edition
+tags:
+  - daily
+  - newsletter
+  - news-grasp
+  - issue-20260509
+  - cat/it
+  - co/IBM
+  - co/NEC
+  - co/NTTデータ
+  - co/ServiceNow
+  - co/アクセンチュア
+  - co/富士通
+  - co/日立
+  - country/日本
+  - country/米国
+  - person/アービンド・クリシュナ
+---
+
+# ▲ 3. IT-Consulting (IT & Consulting) — 2026-05-09
+
+#daily #news-grasp #issue-20260509
+
+> [!summary]
+> NTTデータGが「コンサルティング×AI」を軸とした大規模組織改編を発表し、日本のSI老舗の戦略コンサル化が加速。Accenture×ServiceNow FDEプログラムとIBM Think 2026発表が重なり、エンタープライズAIの「PoC地獄」脱出競争が激化している。
+
+---
+
+### [95] NTTデータグループ 大規模組織改編発表 — 「コンサルティング×AI」中核に新セグメント新設・グローバルAIユニット設立
+
+📅 2026-05-08 08:07 · 📰 NTTデータグループ · 🔗 [元記事](https://www.nttdata.com/global/ja/news/release/2026/050807/)
+
+#cat/it #co/NTTデータ #country/日本 #topic/DX #topic/AIエージェント #score/高
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-it.jpg)
+
+- NTTデータGは2026年5月8日、既存の公共・金融・法人セグメントを横断する[[コンサルティングセグメント]]を新設。「構想から提言・実装・成果創出を一気通貫」するAI変革推進体制に転換すると発表。
+- 海外子会社NTT DATA, Inc.に[[グローバルAIユニット]]を新設。さらに「[[NTT DATA AIVista]]」コアAIプラットフォームを2026年度Q2より順次提供し、2027年度にAIエージェント関連売上3,000億円を目標に置く。
+- \"コンサルティング×AI\"という旗印は、アクセンチュアやBCGとの直接対決を意味する。__国内SI老舗の「戦略コンサル化」宣言__は業界再編の号砲となる可能性がある。
+
+> [!tip] 🔗 関連: 類似
+> [[2026-05-07-IT-Consulting#NTTデータOpenAI|NTTデータxOpenAI：AIエージェント世界展開 — 人月型SI契約の終焉が加速]] と類似の関係。OpenAIとのJV戦略に続き、組織構造の変革を宣言。攻守両面でのAI転換を加速。
+
+---
+
+### [88] Accenture×ServiceNow FDE Program — 企業AIを「パイロット→本番」へ橋渡し、300プリビルドスキル＋AI Control Tower
+
+📅 2026-05-06 08:30 · 📰 Accenture Newsroom · 🔗 [元記事](https://newsroom.accenture.com/news/2026/servicenow-and-accenture-launch-forward-deployed-engineering-program-to-scale-agentic-ai-across-the-enterprise)
+
+#cat/it #co/アクセンチュア #co/ServiceNow #country/米国 #topic/AIエージェント #score/高
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+
+- [[Forward Deployed Engineering（FDE）]]プログラムでは、ServiceNow・Accenture両社のエンジニアが顧客環境に常駐。300以上のプリビルドAIエージェントスキルを活用し、__PoC停滞（Proof of Concept Hell）を解消して本番稼働を加速__する。
+- 中枢に置かれる[[AI Control Tower]]は、エージェントのパフォーマンス・セキュリティ・スケールを一元統制。\"スピードとコントロールのトレードオフなし\"を謳い、__ガバナンス面でもコンサル付加価値を上乗せ__する設計。
+- Knowledge 2026基調講演で発表。Accenture FY2026 Q1のAI案件受注は__22億ドルとほぼ前年比倍増__しており、ServiceNowとのFDEがその次の増収ドライバーとなる見込み。
+
+---
+
+### [84] NTT DATA AIVista、2026年度Q2より提供開始 — シリコンバレー新会社が本格始動、AIエージェント関連3,000億円を狙う
+
+📅 2026-05-07 09:00 · 📰 EnterpriseZine · 🔗 [元記事](https://enterprisezine.jp/news/detail/23340)
+
+#cat/it #co/NTTデータ #country/日本 #country/米国 #topic/AIエージェント #score/高
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+
+- 2025年12月設立の[[NTT DATA AIVista]]がシリコンバレーで本格始動。グローバル企業向けのAIエージェントプラットフォームとして、2026年度Q2（7〜9月）より順次提供を開始する。
+- AIVistaは\"LLM不可知論的（[[LLM-agnostic]]）\"設計で、Claude・GPT・Geminiのいずれでも稼働可能。特定AIベンダーへの依存を排除し、__コンサルのニュートラル性__を売り物にする。
+- 2027年度にAIエージェント関連ビジネスで__売上3,000億円__という目標は野心的だが、グローバル2,000件超のLITRON Builder受注がベースラインとなっており、既存案件の深耕で達成を狙う。
+
+> [!tip] 🔗 関連: 波及
+> [[2026-05-06-IT-Consulting#LITRONBuilder|NTTデータ「LITRON Builder」でエージェントAI基盤を製品化 — グローバル2,000件超受注]] と波及の関係。LITRON Builderの成功がAIVistaの営業基盤となっている。
+
+---
+
+### [79] IBM Think 2026 全発表まとめ — Context Studio・Process Studio・量子AI統合、Enterprise Advantageで「アセット基盤型」を標榜
+
+📅 2026-05-06 09:30 · 📰 Business Daily Network · 🔗 [元記事](https://businessdailynetwork.com/stories/681788650-ibm-announces-new-ai-consulting-capabilities-and-partnerships-at-think-2026)
+
+#cat/it #co/IBM #country/米国 #topic/DX #event/製品発表 #score/中
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+
+- Think 2026でIBMが[[Enterprise Advantage]]を発表。Context Studio（エージェント組織データへの根拠付け）とProcess Studio（レガシー業務手順書のエージェント化）の2ツールで、__「コンサルアセット」を再定義__した。
+- 医療大手Providenceでの人事AIエージェント導入事例が注目を集めた。HR担当者の採用工数[[90%削減]]・内部異動の12日短縮を達成。__IBM＝「測定可能な成果」__のブランド訴求を強化。
+- [[量子コンピューター×AI]]の統合ロードマップも公表。2027年にibm_quantum＋watsonxを連携させ、創薬・材料科学での__実用量子優位性達成__を宣言した。
+
+> [!tip] 🔗 関連: 復状
+> [[2026-05-08-IT-Consulting#IBMThink|IBM Think 2026: Context Studio+Process Studio — AIコンサルが「アセット基盤型」に本格移行]] と復状の関係。初報から量子AI統合ロードマップの詳細が開示された。
+
+---
+
+### [77] IT大手4社、生成AI適用「本腰」 — NTTデータG「2027年度に開発工程40%効率化」の具体工程が明らかに
+
+📅 2026-05-06 08:00 · 📰 日経クロステック · 🔗 [元記事](https://xtech.nikkei.com/atcl/nxt/column/18/00001/11238)
+
+#cat/it #co/NTTデータ #co/富士通 #co/NEC #country/日本 #topic/生成AI導入 #score/中
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+
+- NTTデータGは2027年度末までに[[生成AIネーティブ開発]]を全プロジェクトの主流にする計画を具体化。要件定義・設計・コーディング・テストの各工程に生成AIを組み込み、__人による作業を約40%削減__する。
+- 富士通はKozuchi AIアシスタントとFujitsu Kozuchi Enterpriseを組み合わせ、SI案件の提案フェーズから__AIによる設計書自動生成__を本格適用。NECも「[[cotomi Act]]」でナレッジエージェントが稼働中。
+- SIerの「AI適用」は表向き生産性向上だが、真の目的は__「人月ビジネスを固定価格・アウトカム報酬型へ転換」__にある。単価上昇なき効率化では収益改善に限界との声もある。
+
+---
+
+← [[2026-05-08-IT-Consulting|前号]] | [[2026-05-10-IT-Consulting|翌号]] →
+
+*🤖 Auto-generated by News-Grasp Runner — `news-grasp-runner.bat` @ 2026-05-09 06:00 JST*
