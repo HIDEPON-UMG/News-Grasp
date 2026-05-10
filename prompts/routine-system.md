@@ -117,13 +117,44 @@ dedup を通過した候補から最終的に **カテゴリあたり 5 件**を
 
 #### 3-B. サムネイル URL の取得
 
-各記事に **サムネ画像 URL** を付ける（OGP 画像）：
+各記事に **サムネ画像 URL** を付ける（OGP 画像）。**`thumb` フィールドは記事レコードに必ず含めること**（取得失敗時は `null`）。`articles.jsonl` の append 時、メール HTML 生成時、Obsidian Markdown 出力時の 3 経路すべてで参照される。
 
-1. `WebFetch` で記事 URL を取得し、HTML 内の `<meta property="og:image" content="...">` または `<meta name="twitter:image" content="...">` を抽出
-2. 取得できた絶対 URL を `thumb` フィールドに格納
-3. 取得できなかった場合は `thumb: null` のまま（メール / Obsidian 側でカテゴリ別 NG プレースホルダ画像にフォールバック）
+**取得は 3 段フォールバック**で行う。最終的な戻り値が `null` であっても **キーは必ず出力**すること（過去の失敗ケースは「キー自体が無い」状態が多発し、診断不能になっていた）。
 
-時間をかけすぎない：1 記事あたり OGP 取得は 5 秒以内、失敗したら即諦める。
+##### 段階 1: 生 HTML を直接パース（第一候補）
+
+`Bash` で `tools/fetch_ogp.py <URL>` を呼び出す。これは `urllib.request` で生 HTML を取得し、`html.parser` で `<meta property="og:image">` / `<meta name="twitter:image">` を抽出する標準ライブラリのみのスクリプト。Mozilla 系 User-Agent を投げるので大半の媒体で通る。
+
+```bash
+py tools/fetch_ogp.py "https://example.com/article"
+# stdout: {"url":"...","og_image":"https://...","twitter_image":null,"status":"ok","elapsed_sec":1.2}
+# 失敗時: {"url":"...","og_image":null,"twitter_image":null,"status":"http_403","elapsed_sec":0.5}
+```
+
+`og_image` または `twitter_image` のいずれかに有効 URL があればそれを採用。
+
+##### 段階 2: WebSearch の thumbnail を試す（第二候補）
+
+段階 1 が `og_image` も `twitter_image` も `null` で返ってきた記事に対して、`WebSearch` の検索結果メタデータに含まれる thumbnail URL を採用する。3-A のジャンル検索の結果に **thumbnail** / **image** プロパティがある場合はそこから引き当てる（同じ URL の検索結果を引いて `thumbnail` を取り出す）。
+
+##### 段階 3: 諦めて `null` を入れる（最終）
+
+それでも取れない場合は `thumb: null` のまま採用。**この `null` は「フィールド省略」と区別される**ため、必ずキーを出力すること。null になりやすい記事ソース（Bloomberg / Reuters / 日経 paywall / NewsPicks）は、メール側でカテゴリ別 NG プレースホルダ（`ng-thumb-common-{cat}.jpg`）にフォールバック。
+
+##### タイムアウトと並列度
+
+- `tools/fetch_ogp.py` は内部で 10 秒タイムアウト + 1 回リトライ。1 記事あたりの実時間上限は 12 秒
+- 25 記事 × 12 秒 = 5 分が最悪値。実測ではキャッシュドメイン (`*.unsplash.com` 等) は数百 ms で返るので合計 1〜2 分で済むことが多い
+- 並列化は不要（順次でも本処理時間に対する増分は小さい）
+
+##### よくある失敗ドメイン (2026-05 時点 P5 計測より)
+
+- `bloomberg.com` / `nikkei.com` / `cnbc.com` / `newspicks.com` / `nri.com`：bot ブロック・paywall・SPA で OGP 抽出困難
+- `*.pdf` / `*.docx`：そもそも OGP が無い（拡張子で短絡判定して即 `null` 返却）
+
+##### 契約
+
+`tests/test_thumb_contract.py` が `articles.jsonl` の全レコードに `thumb` キーが存在することを検証する。1 件でも欠けると pytest が落ちるので、append 段階で必ず thumb を入れる。
 
 #### 3-C. 過去記事との照合
 

@@ -1,0 +1,501 @@
+{
+  "total": 334,
+  "overall": {
+    "missing": 309,
+    "present": 1,
+    "null": 24
+  },
+  "by_genre": {
+    "FX": {
+      "missing": 70,
+      "present": 1,
+      "null": 4
+    },
+    "AI": {
+      "missing": 70,
+      "null": 5
+    },
+    "IT-Consulting": {
+      "missing": 69,
+      "null": 5
+    },
+    "Economy": {
+      "missing": 50,
+      "null": 5
+    },
+    "Game": {
+      "missing": 50,
+      "null": 5
+    }
+  },
+  "by_date": {
+    "2026-04-28": {
+      "missing": 25
+    },
+    "2026-04-29": {
+      "missing": 25
+    },
+    "2026-04-30": {
+      "missing": 50
+    },
+    "2026-05-01": {
+      "missing": 27
+    },
+    "2026-05-02": {
+      "missing": 20
+    },
+    "2026-05-03": {
+      "missing": 20
+    },
+    "2026-05-04": {
+      "missing": 24
+    },
+    "2026-05-05": {
+      "missing": 27
+    },
+    "2026-05-06": {
+      "missing": 32
+    },
+    "2026-05-07": {
+      "present": 1,
+      "null": 24
+    },
+    "2026-05-08": {
+      "missing": 20
+    },
+    "2026-05-09": {
+      "missing": 19
+    },
+    "2026-05-10": {
+      "missing": 20
+    }
+  },
+  "by_domain": {
+    "smbc.co.jp": {
+      "missing": 1
+    },
+    "ig.com": {
+      "missing": 8,
+      "null": 1
+    },
+    "oanda.jp": {
+      "missing": 8,
+      "null": 1
+    },
+    "nomura.co.jp": {
+      "missing": 7,
+      "null": 1
+    },
+    "murc-kawasesouba.jp": {
+      "missing": 1
+    },
+    "cnbc.com": {
+      "missing": 18,
+      "null": 2
+    },
+    "openai.com": {
+      "missing": 3
+    },
+    "fool.com": {
+      "missing": 3
+    },
+    "nikkei.com": {
+      "missing": 17
+    },
+    "intellilink.co.jp": {
+      "missing": 1
+    },
+    "newsroom.accenture.jp": {
+      "missing": 4
+    },
+    "wisdom.nec.com": {
+      "missing": 1
+    },
+    "jpn.nec.com": {
+      "missing": 1,
+      "null": 1
+    },
+    "boj.or.jp": {
+      "missing": 1
+    },
+    "am.jpmorgan.com": {
+      "missing": 1
+    },
+    "game.watch.impress.co.jp": {
+      "missing": 4
+    },
+    "bestcalendar.jp": {
+      "missing": 3
+    },
+    "esports-world.jp": {
+      "missing": 1
+    },
+    "4gamer.net": {
+      "missing": 3
+    },
+    "gamewith.jp": {
+      "missing": 2
+    },
+    "gaitame.com": {
+      "missing": 8
+    },
+    "dlri.co.jp": {
+      "missing": 2
+    },
+    "bloomberg.com": {
+      "missing": 10
+    },
+    "smd-am.co.jp": {
+      "missing": 2
+    },
+    "ai-insight.jp": {
+      "missing": 1
+    },
+    "venturebeat.com": {
+      "missing": 3
+    },
+    "atmarkit.itmedia.co.jp": {
+      "missing": 1
+    },
+    "cloud.watch.impress.co.jp": {
+      "missing": 1
+    },
+    "techcrunch.com": {
+      "missing": 7,
+      "null": 1
+    },
+    "googlecloudpresscorner.com": {
+      "missing": 3
+    },
+    "businessinsider.jp": {
+      "missing": 3
+    },
+    "tradingkey.com": {
+      "missing": 1
+    },
+    "bloomo.co.jp": {
+      "missing": 1
+    },
+    "smbctb.co.jp": {
+      "missing": 3
+    },
+    "gamebiz.jp": {
+      "missing": 5,
+      "null": 3
+    },
+    "famitsu.com": {
+      "missing": 4,
+      "null": 1
+    },
+    "diamond.jp": {
+      "missing": 2
+    },
+    "mitrade.com": {
+      "missing": 2
+    },
+    "mufg.jp": {
+      "missing": 2
+    },
+    "aijungle.substack.com": {
+      "missing": 6
+    },
+    "spectrum.ieee.org": {
+      "missing": 2
+    },
+    "futureofconsulting.ai": {
+      "missing": 2
+    },
+    "deloitte.com": {
+      "missing": 2
+    },
+    "toyokeizai.net": {
+      "missing": 2
+    },
+    "plusai.com": {
+      "missing": 3
+    },
+    "finance.yahoo.com": {
+      "missing": 2
+    },
+    "gamespark.jp": {
+      "missing": 2
+    },
+    "finance.yahoo.co.jp": {
+      "missing": 2
+    },
+    "fxstreet.com": {
+      "missing": 3
+    },
+    "reuters.com": {
+      "missing": 1
+    },
+    "oanda.com": {
+      "missing": 1
+    },
+    "ebc.com": {
+      "missing": 2
+    },
+    "dailyforex.com": {
+      "missing": 1,
+      "null": 1
+    },
+    "anthropic.com": {
+      "missing": 3
+    },
+    "thecrimson.com": {
+      "missing": 1
+    },
+    "llm-stats.com": {
+      "missing": 2
+    },
+    "newsroom.accenture.com": {
+      "missing": 4
+    },
+    "businesswire.com": {
+      "missing": 2
+    },
+    "brandfinance.com": {
+      "missing": 1
+    },
+    "tradingeconomics.com": {
+      "missing": 4
+    },
+    "seekingalpha.com": {
+      "missing": 1
+    },
+    "investing.com": {
+      "missing": 2
+    },
+    "nomuraconnects.com": {
+      "missing": 1
+    },
+    "gamerant.com": {
+      "missing": 4
+    },
+    "nintendolife.com": {
+      "missing": 4
+    },
+    "monstervine.com": {
+      "missing": 1
+    },
+    "nintendo.com": {
+      "missing": 1
+    },
+    "screenrant.com": {
+      "missing": 1
+    },
+    "nri.com": {
+      "missing": 5
+    },
+    "forex.com": {
+      "missing": 3,
+      "null": 1
+    },
+    "techbriefly.com": {
+      "missing": 1
+    },
+    "cleverhack.com": {
+      "missing": 1
+    },
+    "blog.mean.ceo": {
+      "missing": 1
+    },
+    "mem0.ai": {
+      "missing": 1
+    },
+    "metaintro.com": {
+      "missing": 2
+    },
+    "thebusinessresearchcompany.com": {
+      "missing": 1
+    },
+    "ainvest.com": {
+      "missing": 1
+    },
+    "fortune.com": {
+      "missing": 7
+    },
+    "comicbook.com": {
+      "missing": 1
+    },
+    "media.monex.co.jp": {
+      "missing": 1
+    },
+    "life.oricon.co.jp": {
+      "missing": 1
+    },
+    "cnn.com": {
+      "missing": 2
+    },
+    "ainexusdaily.com": {
+      "missing": 1
+    },
+    "releasebot.io": {
+      "missing": 1
+    },
+    "technologyreview.com": {
+      "missing": 1
+    },
+    "whitehat-seo.co.uk": {
+      "missing": 1
+    },
+    "nintendo-insider.com": {
+      "missing": 1
+    },
+    "jiji.com": {
+      "missing": 1
+    },
+    "wa2.ai": {
+      "missing": 1
+    },
+    "alphaspread.com": {
+      "missing": 1
+    },
+    "xtech.nikkei.com": {
+      "missing": 4,
+      "null": 1
+    },
+    "uncoveralpha.com": {
+      "missing": 1
+    },
+    "fptrendy.com": {
+      "missing": 1
+    },
+    "markets.financialcontent.com": {
+      "missing": 1
+    },
+    "tradingpedia.com": {
+      "missing": 1
+    },
+    "ghacks.net": {
+      "missing": 1,
+      "null": 2
+    },
+    "computing.net": {
+      "missing": 1
+    },
+    "247wallst.com": {
+      "missing": 1
+    },
+    "nttdata.com": {
+      "missing": 5
+    },
+    "prtimes.jp": {
+      "missing": 1
+    },
+    "zaikei.co.jp": {
+      "missing": 1,
+      "null": 1
+    },
+    "defensenews.com": {
+      "missing": 2
+    },
+    "deepmind.google": {
+      "missing": 3
+    },
+    "blog.google": {
+      "missing": 2
+    },
+    "enterprisezine.jp": {
+      "missing": 3
+    },
+    "blogs.itmedia.co.jp": {
+      "missing": 2,
+      "null": 1
+    },
+    "go.sbisec.co.jp": {
+      "missing": 2
+    },
+    "kabukiso.com": {
+      "missing": 3,
+      "null": 1
+    },
+    "bitmex.com": {
+      "present": 1
+    },
+    "federalreserve.gov": {
+      "null": 2
+    },
+    "techtimes.com": {
+      "null": 1
+    },
+    "phemex.com": {
+      "null": 1
+    },
+    "gamebusiness.jp": {
+      "null": 1
+    },
+    "blog.sonybank.jp": {
+      "missing": 1
+    },
+    "fx.minkabu.jp": {
+      "missing": 3
+    },
+    "engadget.com": {
+      "missing": 1
+    },
+    "cloud.google.com": {
+      "missing": 1
+    },
+    "money.usnews.com": {
+      "missing": 1
+    },
+    "newsroom.ibm.com": {
+      "missing": 1
+    },
+    "prnewswire.com": {
+      "missing": 1
+    },
+    "blogs.microsoft.com": {
+      "missing": 1
+    },
+    "indexbox.io": {
+      "missing": 1
+    },
+    "businesstoday.in": {
+      "missing": 1
+    },
+    "note.com": {
+      "missing": 1
+    },
+    "9to5mac.com": {
+      "missing": 1
+    },
+    "businessdailynetwork.com": {
+      "missing": 1
+    },
+    "news.denfaminicogamer.jp": {
+      "missing": 1
+    },
+    "today-jp.com": {
+      "missing": 1
+    },
+    "press.airstreet.com": {
+      "missing": 1
+    },
+    "aiweekly.co": {
+      "missing": 1
+    },
+    "nttdata-strategy.com": {
+      "missing": 1
+    },
+    "thehrdigest.com": {
+      "missing": 1
+    },
+    "tikr.com": {
+      "missing": 1
+    },
+    "nintendoeverything.com": {
+      "missing": 1
+    },
+    "cygames.co.jp": {
+      "missing": 1
+    },
+    "gamereactor.eu": {
+      "missing": 1
+    },
+    "gameinformer.com": {
+      "missing": 1
+    }
+  }
+}
