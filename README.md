@@ -2,7 +2,7 @@
 
 > 時勢を掴み、日々に新たに。
 
-毎朝 06:00 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → GAS Webhook 経由で Gmail に HTML メール配信、までを自律実行する **個人向け日次ニュースレター・パイプライン**。
+毎朝 06:00 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → Gmail SMTP 直送（`tools/send_email.py`、差出人 `news.grasp.magazine@gmail.com`）で HTML メール配信、までを自律実行する **個人向け日次ニュースレター・パイプライン**。
 
 ## アーキテクチャ概要（D 案：ローカル Claude Code）
 
@@ -24,25 +24,26 @@
    │ ⑤ 過去 90 日の articles.jsonl と関連付け（5 軸）            │
    │ ⑥ digest Markdown を生成（カテゴリ別 + Summary）            │
    │ ⑦ git commit & push                                         │
-   │ ⑧ HTML メール組み立て → GAS Webhook へ POST                 │
+   │ ⑧ HTML メール組み立て → tools/send_email.py で SMTP 直送    │
    └────────────────────────────────────────────────────────────┘
                           │
         ┌─────────────────┴─────────────────┐
         ▼                                   ▼
-┌──────────────┐                ┌─────────────────────┐
-│ GitHub       │                │ GAS Webhook         │
-│ HIDEPON-UMG  │                │ news-grasp-mailer   │
-│ /News-Grasp  │                │  └─ GmailApp        │
-│  (private)   │                │     .sendEmail x 2  │
-└──────────────┘                └─────────────────────┘
-        │                                   │
-        ▼                                   ▼
-┌──────────────────────┐          ┌─────────────────────┐
-│ Obsidian Vault       │          │ Gmail 受信箱（×2）  │
-│ News's Grasp/News-   │          │ - hideki@gmail.com  │
-│ Grasp/digest/        │          │ - h2-hiramatsu@nri  │
-│ （Runner が直接書込）│          └─────────────────────┘
-└──────────────────────┘
+┌──────────────┐                ┌──────────────────────────┐
+│ GitHub       │                │ Gmail SMTP 直送          │
+│ HIDEPON-UMG  │                │ tools/send_email.py      │
+│ /News-Grasp  │                │  └─ smtp.gmail.com:587   │
+│  (private)   │                │     差出人:              │
+└──────────────┘                │     news.grasp.magazine  │
+        │                       │     @gmail.com 固定      │
+        ▼                       └──────────────────────────┘
+┌──────────────────────┐                    │
+│ Obsidian Vault       │                    ▼
+│ News's Grasp/News-   │          ┌─────────────────────┐
+│ Grasp/digest/        │          │ Gmail 受信箱（×2）  │
+│ （Runner が直接書込）│          │ - hideki@gmail.com  │
+└──────────────────────┘          │ - h2-hiramatsu@nri  │
+                                  └─────────────────────┘
 ```
 
 **Max サブスク内で完結**するため追加課金は発生せず（5h 枠の 15〜25% / 回を消費）、Anthropic Routine のクラウド側障害にも依存しません。
@@ -162,8 +163,8 @@ News-Grasp/
 python tests/render_email.py
 # → tests/output/preview.html を吐く
 
-# C: Webhook 経由でテスト送信（自分宛のみ、$0、5〜10 秒）
-python tests/render_email.py --send
+# C: SMTP 経由でテスト送信（本番経路、自分宛のみ、$0、5〜10 秒）
+python tests/render_email.py --smtp
 ```
 
 詳細は [`tests/README.md`](tests/README.md) 参照。
@@ -174,8 +175,7 @@ python tests/render_email.py --send
 |---|---|
 | Anthropic Sonnet 4.6 実行料 | **$0**（Max サブスク内） |
 | GitHub プライベート repo | **$0** |
-| GAS Webhook | **$0**（Workspace 無料枠） |
-| メール配信（GmailApp） | **$0** |
+| メール配信（Gmail SMTP 直送） | **$0**（Gmail 個人アカウント無料枠 500 通/日） |
 | **合計** | **$0** |
 
 5h 枠は 1 回の実行で **15〜25% 程度**消費。朝 06:00 実行のため日中の作業と干渉しない。
@@ -211,7 +211,7 @@ tags:
 
 ## 関連ドキュメント
 
-- [SETUP.md](SETUP.md) — 初期セットアップ手順（タスクスケジューラ・GAS Webhook・watchlist 等）
+- [SETUP.md](SETUP.md) — 初期セットアップ手順（タスクスケジューラ・SMTP 認証・watchlist 等）
 - [prompts/routine-system.md](prompts/routine-system.md) — Runner の中核プロンプト
 - [prompts/obsidian-tagging-spec.md](prompts/obsidian-tagging-spec.md) — Obsidian タグ階層仕様（正本）
 - [tests/README.md](tests/README.md) — 単体テストの使い方

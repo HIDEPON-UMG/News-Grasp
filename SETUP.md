@@ -12,9 +12,11 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 | GitHub repo | `HIDEPON-UMG/News-Grasp`（プライベート） |
 | Obsidian ボルト | `C:\Users\hidek\Obsidian\New's Grasp\` |
 | Repo の clone 先 | ボルト直下 `New's Grasp\News-Grasp\` |
-| GAS web app | `news-grasp-mailer`（`hidepontrainer@gmail.com` 配下） |
-| Webhook URL | `https://script.google.com/macros/s/AKfycbxCNRk_M3s1xPyCm_9BObpVWAzilFGwXQxFi-XMBnBHu7-Ly3nhydzqL_cPJUOGYgGu/exec` |
+| メール送信 | `tools/send_email.py`（Gmail SMTP `smtp.gmail.com:587` STARTTLS） |
+| 差出人 | `news.grasp.magazine@gmail.com`（専用アカウント、`tools/send_email.py:35` の `DEFAULT_SENDER` で集約・正本） |
+| App Password | `~/.secrets/news-grasp-smtp.txt`（差出人アカウントの Gmail App Password） |
 | 配信宛先 | `hideki.kusunoki@gmail.com` / `h2-hiramatsu@nri.co.jp` |
+| 旧 GAS Webhook 経路 | **2026-04 末で廃止**（旧 `hidepontrainer@gmail.com` 配下の web app。本番未使用） |
 
 ## 0. 前提環境
 
@@ -23,8 +25,10 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 - Claude Code CLI（`C:\Users\hidek\.local\bin\claude.exe`、Max サブスクで認証済み）
 - Python 3.13+（テスト実行用）
 - `gh` CLI（HIDEPON-UMG でログイン済み）
-- `clasp` v3.x（`hidepontrainer@gmail.com` でログイン済み）
+- Gmail App Password を `~/.secrets/news-grasp-smtp.txt` に保存済み（差出人 `news.grasp.magazine@gmail.com` の 2FA → App Password 発行画面で生成）
 - Obsidian Desktop（任意・閲覧用）
+
+> **旧経路**: `clasp` v3.x（`hidepontrainer@gmail.com` 配下の GAS web app `news-grasp-mailer` 管理用）は 2026-04 末で廃止のため新規環境では不要。
 
 ## 1. リポジトリの clone
 
@@ -35,25 +39,25 @@ gh repo clone HIDEPON-UMG/News-Grasp
 
 ボルト直下に `News-Grasp\` フォルダができ、Obsidian で digest が表示できる状態になる。
 
-## 2. GAS Webhook（`news-grasp-mailer`）
+## 2. Gmail SMTP の認証設定
 
-すでに `hidepontrainer@gmail.com` 配下に作成済み。新規環境ではない場合はスキップ。
+`tools/send_email.py` は Gmail SMTP（`smtp.gmail.com:587` STARTTLS）で **`news.grasp.magazine@gmail.com` から直送**する。差出人は `tools/send_email.py:35` の `DEFAULT_SENDER` 1 箇所で集約済みなので、本番では `--from` フラグを指定しないこと（指定すると先祖返りリスクがある）。
 
-新規作成する場合：
+新規環境でのセットアップ：
 
-1. <https://script.google.com> で新規プロジェクト
-2. `clasp` でローカル管理：
+1. `news.grasp.magazine@gmail.com` に Google アカウントでログイン → 2 段階認証を有効化
+2. <https://myaccount.google.com/apppasswords> で App Password を発行（用途名: `News-Grasp SMTP`）
+3. 発行された 16 文字のパスワードを `~/.secrets/news-grasp-smtp.txt` に **改行なしで保存**：
+
    ```powershell
-   mkdir "c:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp-mailer"
-   cd "c:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp-mailer"
-   clasp create --type standalone --title "news-grasp-mailer"
+   New-Item -ItemType Directory -Force -Path "$HOME\.secrets" | Out-Null
+   # 16文字のパスワードを貼り付け（末尾改行なし）
+   notepad "$HOME\.secrets\news-grasp-smtp.txt"
    ```
-3. `Code.js` / `appsscript.json` をローカルに置いて `clasp push`
-4. GAS エディタで `testSendSelf` を 1 回手動実行 → OAuth 同意（GmailApp スコープ）
-5. 「デプロイ」→「ウェブアプリ」→「自分として実行 / 全員アクセス可」で公開
-6. 取得した URL を `prompts/routine-system.md` と `tests/render_email.py` の `WEBHOOK_URL` に反映
 
-GAS の `doPost(e)` は受信 body の `client === "news-grasp-routine"` を確認、宛先ホワイトリスト（`hideki.kusunoki@gmail.com` / `h2-hiramatsu@nri.co.jp`）以外は拒否する設計。
+4. パーミッション制限（任意・PC 共有時のみ）：エクスプローラ → プロパティ → セキュリティで自分以外をアクセス拒否
+
+> **旧 GAS Webhook 経路**: `hidepontrainer@gmail.com` 配下の `news-grasp-mailer` web app は 2026-04 末で廃止。`tests/render_email.py --send` 内の Webhook 系コードは互換のため残しているが本番は使わない。誤って `--send` を実行すると差出人が旧アドレスに先祖返りするので注意。
 
 ## 3. `news-grasp-runner.bat` 配置
 
@@ -117,9 +121,9 @@ sed -i 's/$/\r/' "/c/Users/hidek/bin/news-grasp-runner.bat"
 ## 5. 動作確認
 
 ```powershell
-# 疎通テスト（Webhook + GAS）
+# 疎通テスト（SMTP 直送・自分宛のみ、本番経路と同じ）
 cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
-python tests/render_email.py --send
+python tests/render_email.py --smtp
 
 # Runner の手動起動（実機の本番フロー）
 # タスクスケジューラから「News-Grasp Runner」を右クリック → 「実行する」
@@ -159,7 +163,8 @@ git push
 | 黒い画面が開いてすぐ閉じる | ログに `ERROR: ...` が出る → `news-grasp-invoked.log` から原因切り分け |
 | `'sks' は内部コマンド〜` | bat の改行が LF。`sed -i 's/$/\r/' news-grasp-runner.bat` で CRLF 化 |
 | `claude` が見つからない | bat 内で `set CLAUDE=` をフルパスに（`where claude` で確認） |
-| メールが届かない | `tests/render_email.py --send` で Webhook 単体テスト → GAS 側で `testSendSelf` を再実行（OAuth リフレッシュ） |
+| メールが届かない | `tests/render_email.py --smtp` で SMTP 単体テスト → 失敗時は `~/.secrets/news-grasp-smtp.txt` の App Password が有効か Google アカウントの App Passwords ページで確認（古い App Password は revoke して再発行） |
+| 差出人が `hidepontrainer@gmail.com` に先祖返り | `news-grasp-runner.bat` の `claude --print` 引数に「GAS Webhook」が残っていないか確認。`tools/send_email.py` の `DEFAULT_SENDER` が正本（`news.grasp.magazine@gmail.com`） |
 | NRI 宛だけ届かない | NRI セキュリティ部のメールフィルタ。`news.grasp.magazine@gmail.com` のホワイトリスト依頼か、`hideki.kusunoki@gmail.com` から手動転送運用へ |
 | 画像が壊れる（メール内） | `assets/` の JPG が repo にあるか確認 → `routine-system.md` の base64 化指示が守られているか確認 |
 | Obsidian で同期されない | Runner 自体が `git pull` を内包しているので、別途のタスクは不要。手動で `git pull` |
