@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no">
+<meta name="x-apple-disable-message-reformatting">
+<title>News Grasp #20260516 — 時勢を掴み、日々に新たに。</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
+
+<style>
+/* Atomic style classes — 重複する inline スタイルを共通化 */
+.m { font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace; }
+.b7 { font-weight: 700; }
+.b8 { font-weight: 800; }
+.b9 { font-weight: 900; }
+.mut { color: #5C5A52; }
+.dk { color: #1A1A1A; }
+.w { color: #FFFFFF; }
+.ls1 { letter-spacing: 1px; }
+.ls15 { letter-spacing: 1.5px; }
+.ls2 { letter-spacing: 2px; }
+.it { font-style: italic; }
+table { border-collapse: collapse; }
+/* 記事カード共通 — 一回り大きめのフォント設計 */
+.bul { padding-left: 20px; margin: 0 0 8px; font-size: 14.5px; line-height: 1.9; color: #1A1A1A; }
+.bul:before { content: "▸"; color: inherit; margin-left: -20px; padding-right: 8px; font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace; font-weight: 700; }
+.fz10 { font-size: 11px; }
+.fz11 { font-size: 12px; }
+.fz12 { font-size: 13px; }
+.fz13 { font-size: 14px; }
+.fz14 { font-size: 15px; }
+.fz16 { font-size: 18px; }
+.fz9 { font-size: 10px; }
+.lh185 { line-height: 1.9; }
+.lh145 { line-height: 1.45; }
+.ls05 { letter-spacing: 0.5px; }
+.tdn { text-decoration: none; }
+.ofc { object-fit: cover; }
+.db { display: block; }
+.dn { display: none; }
+.br2 { border-radius: 2px; }
+.p3 { padding: 0 3px; }
+.p26 { padding: 2px 6px; }
+.pb1 { padding-bottom: 1px; }
+.pl8 { padding-left: 8px; }
+.pr16 { padding-right: 16px; }
+.mb6 { margin-bottom: 6px; }
+.mb14 { margin-bottom: 14px; }
+.ml4 { margin-left: 4px; }
+.mt8 { margin-top: 8px; }
+.t812 { margin: 8px 0 12px; }
+.lsm03 { letter-spacing: -0.3px; }
+.bgcard { background: #FAF7F0; }
+.bbcard { border-bottom: 1px solid #EDEAE3; }
+.brd { border: 1px solid #E2DED4; }
+.pcard { padding: 24px 36px; }
+.vmid { vertical-align: middle; }
+.vtop { vertical-align: top; }
+/* カテゴリアクセント色 */
+.acFx { color: #B8860B; }
+.acAi { color: #2D5BB8; }
+.acIt { color: #2E6B52; }
+.acEc { color: #8E2A19; }
+.acGm { color: #5E3D8C; }
+/* サイドサムネ寸法 */
+.thb { width: 140px; height: 90px; }
+
+@media only screen and (max-width: 600px) {
+  /* 外枠 */
+  .ng-wrap { width: 100% !important; max-width: 100% !important; }
+  .ng-pad-x { padding-left: 16px !important; padding-right: 16px !important; }
+  .ng-pad-x-tight { padding-left: 14px !important; padding-right: 14px !important; }
+  /* マストヘッド */
+  .ng-h1 { font-size: 28px !important; line-height: 1.25 !important; letter-spacing: -0.3px !important; }
+  .ng-masthead-meta { font-size: 10px !important; letter-spacing: 0.5px !important; }
+  /* TOC / カテゴリ帯 */
+  .ng-toc-pad { padding: 12px 14px !important; }
+  .ng-cat-pad { padding: 16px 16px !important; }
+  .ng-cat-name { font-size: 24px !important; }
+  .ng-cat-summary { font-size: 13px !important; line-height: 1.6 !important; }
+  /* 記事カード */
+  .ng-card-pad { padding: 18px 16px !important; }
+  .ng-card-title { font-size: 18px !important; line-height: 1.4 !important; letter-spacing: -0.1px !important; }
+  .ng-card-body { font-size: 14.5px !important; line-height: 1.9 !important; }
+  .ng-card-meta { font-size: 11px !important; letter-spacing: 0.4px !important; }
+  /* サイドサムネカードをスマホでは画像→本文の縦積みに切替（圧迫回避） */
+  .ng-side-table { width: 100% !important; }
+  .ng-card-thumb {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding-right: 0 !important;
+    padding-bottom: 12px !important;
+  }
+  .ng-card-thumb-img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 160px !important;
+  }
+  .ng-card-body-cell {
+    display: block !important;
+    width: 100% !important;
+  }
+  /* FEATURED 画像 */
+  .ng-feature-img img { height: auto !important; max-height: 240px !important; }
+  /* 考察ブロック */
+  .ng-essay-pad { padding: 28px 16px 24px !important; }
+  .ng-essay-h2 { font-size: 28px !important; letter-spacing: -0.3px !important; }
+  .ng-essay-sub { font-size: 14px !important; }
+  .ng-essay-counter { display: none !important; }
+  .ng-pull-quote-pad { padding: 22px 16px !important; }
+  .ng-pull-quote { font-size: 19px !important; line-height: 1.55 !important; }
+  .ng-quote-mark { font-size: 60px !important; }
+  .ng-section-pad { padding: 0 16px !important; }
+  /* §番号セルと本文セルをスマホでは縦積みに切替（右セルが極細列に詰まる症状を解消）*/
+  .ng-section-num-cell {
+    display: block !important;
+    width: 100% !important;
+    padding: 22px 0 0 !important;
+  }
+  .ng-section-num { font-size: 30px !important; }
+  .ng-section-text-cell {
+    display: block !important;
+    width: 100% !important;
+    padding: 14px 0 22px !important;
+    border-left: none !important;
+  }
+  .ng-section-heading { font-size: 18px !important; }
+  .ng-section-body { font-size: 14px !important; line-height: 1.9 !important; }
+  /* テイクアウェイ・関連号・フッター */
+  .ng-takeaway-pad { padding: 24px 16px !important; }
+  .ng-takeaway-card { padding: 14px !important; }
+  .ng-related-pad { padding: 18px 16px !important; }
+  .ng-footer-pad { padding: 22px 16px !important; }
+  .ng-footer-text { font-size: 11px !important; line-height: 1.6 !important; }
+}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#E8E4DA;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E8E4DA;padding:24px 0;font-family:'Noto Serif JP','Hiragino Mincho ProN',Constantia,Cambria,serif;">
+<tr><td align="center">
+
+<table role="presentation" class="ng-wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;background:#FAF7F0;color:#1A1A1A;">
+<tbody>
+
+<tr><td class="ng-pad-x" style="border-top:4px solid #1A1A1A;padding:32px 36px 20px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td style="vertical-align:middle;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+        <td class="m" style="background:#1A1A1A;color:#FAF7F0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;font-weight:700;padding:4px 10px;letter-spacing:1.5px;">GRASP</td>
+        <td class="ng-masthead-meta" style="padding-left:10px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;letter-spacing:1.5px;">NEWS GRASP · Morning Edition</td>
+      </tr></tbody></table>
+    </td>
+    <td align="right" class="ng-masthead-meta" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">
+      #20260516 · 2026-05-16（金）
+    </td>
+  </tr></tbody></table>
+  <h1 class="ng-h1" style="font-size:36px;font-weight:900;line-height:1.25;letter-spacing:-0.5px;margin:18px 0 8px;color:#1A1A1A;">
+    時勢を掴み、<br>日々に新たに。
+  </h1>
+  <div class="ng-masthead-meta" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;letter-spacing:1px;margin-top:6px;">
+    4 CATEGORIES · 20 STORIES · 5 ESSAY SECTIONS
+  </div>
+</td></tr>
+
+<tr><td class="ng-pad-x" style="padding:0 36px 24px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2EEE3;border:1px solid #E2DED4;">
+    <tbody><tr><td class="ng-toc-pad" style="padding:14px 18px;">
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:10px;">┌── TABLE OF CONTENTS</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;"><tbody><tr>
+  <td width="32" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#B8860B;font-weight:700;">¥</td>
+  <td style="font-size:14px;font-weight:700;">FX <span style="color:#5C5A52;font-size:11px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;">Foreign Exchange</span></td>
+  <td align="right" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">5 stories</td>
+</tr></tbody></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;"><tbody><tr>
+  <td width="32" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#2D5BB8;font-weight:700;">◆</td>
+  <td style="font-size:14px;font-weight:700;">AI <span style="color:#5C5A52;font-size:11px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;">Artificial Intelligence</span></td>
+  <td align="right" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">5 stories</td>
+</tr></tbody></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;"><tbody><tr>
+  <td width="32" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#2E6B52;font-weight:700;">▲</td>
+  <td style="font-size:14px;font-weight:700;">IT-Consulting <span style="color:#5C5A52;font-size:11px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;">IT & Consulting</span></td>
+  <td align="right" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">5 stories</td>
+</tr></tbody></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;"><tbody><tr>
+  <td width="32" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#8E2A19;font-weight:700;">■</td>
+  <td style="font-size:14px;font-weight:700;">経済 <span style="color:#5C5A52;font-size:11px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;">Economy</span></td>
+  <td align="right" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">5 stories</td>
+</tr></tbody></table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;padding-top:8px;border-top:1px solid #E2DED4;"><tbody><tr>
+        <td width="32" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#1A1A1A;font-weight:700;">§.</td>
+        <td style="font-size:14px;font-weight:700;">本日のテーマ考察</td>
+        <td align="right" class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">5 sections</td>
+      </tr></tbody></table>
+    </td></tr></tbody>
+  </table>
+</td></tr>
+
+<tr><td class="ng-cat-pad" style="background:#B8860B;padding:22px 36px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td style="vertical-align:middle;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">CATEGORY 1 / 4 · FOREIGN EXCHANGE</div>
+      <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
+        <span style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-right:10px;">¥</span>FX
+      </div>
+    </td>
+    <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;">5 stories</td>
+  </tr></tbody></table>
+  <div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">ウォーシュFRB議長が就任初日に「独立した行動者」と表明した一方、CPI+3.8%・PPI+6.0%確認後のインフレ圧力が「利上げ観測」をドルに乗せ、ドル円は158.6円と4連騰。160円介入ラインまで約1.4円に迫り攻防が続く。</div>
+</td></tr>
+<tr><td style="background:#FAF7F0;padding:24px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:6px;"><span style="background:#B8860B;color:#fff;padding:2px 7px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">★ TOP</span><span style="padding-left:8px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">07:15 · FXStreet · 97</span></div><h3 class="ng-card-title" style="font-size:20px;font-weight:800;margin:8px 0 12px;line-height:1.35;"><a href="https://www.fxstreet.com/currencies/usdjpy" style="color:#1A1A1A;text-decoration:none;">ドル円158.6円 — ウォーシュ就任初日・インフレ加速で4連騰、160円ライン緊迫</a></h3><div style="margin-bottom:14px;"><a href="https://www.fxstreet.com/currencies/usdjpy" style="display:block;text-decoration:none;"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-fx.jpg" width="568" height="200" alt="" style="display:block;width:100%;height:200px;object-fit:cover;border:1px solid #E2DED4;"></a></div><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;"><strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">ドル円</strong>は158.6円まで上昇し4営業日連続の円安。ウォーシュFRB議長が「独立した行動者」と宣言しつつも、CPI+3.8%を前に<span style="border-bottom:2px solid currentColor;">即時利下げを否定する文脈でドル買いが勢いを増した</span>。</span></div><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">介入警戒ライン160円まで約1.4円の距離に縮まり、財務省は「あらゆる手段を排除しない」と再度牽制。ヘッジファンドは160円プット・オプションを積み増す動き。</span></div></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#B8860B;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">02</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">06:30 · MTFX Group · 90</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.mtfxgroup.com/fx-monthly-us/" style="color:#1A1A1A;text-decoration:none;">米ドル5月見通し — Warsh就任後はUSD/JPY 156〜162の「均衡なき均衡」レンジ相場入りか</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.mtfxgroup.com/fx-monthly-us/" style="display:block;text-decoration:none;"><img src="https://content.mtfxgroup.com/uploads/OG_Image2_349da0dbd1.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">MTFXがドル5月見通しを公開。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Warsh就任後</strong>のFOMC（6月17日）まで<span style="border-bottom:2px solid currentColor;">ドルは高止まりだが方向感を欠くレンジ相場</span>と予測。CPI・PPI・原油の三変数が方向を決める。</span></div><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">USDJPY月間レンジ予想は156.0〜162.0円。160円突破時には日本当局の直接介入が現実的とし、「攻防ライン」として最重要の節目と分析。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#B8860B;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">03</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">08:00 · 野村総合研究所 · 85</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.nri.com/jp/media/column/kiuchi/20260507.html" style="color:#1A1A1A;text-decoration:none;">NRI木内登英「介入効果は15日で半減」— 円安の構造要因、根治は日銀利上げのみ</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.nri.com/jp/media/column/kiuchi/20260507.html" style="display:block;text-decoration:none;"><img src="https://www.nri.com/jp/media/column/kiuchi/files/000061005.png" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">NRI<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">木内登英</strong>氏が連休中に戻った円安の構造的要因を3点分析：(1)日米金利差継続、(2)経常赤字のデジタル収支悪化、(3)国内投資家の海外逃避。<span style="border-bottom:2px solid currentColor;">介入効果は平均15日で半減</span>するとデータで実証。</span></div><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">日米金利差が3.0%超を維持する限り、円売りは構造的需給に起因し口先・実弾介入では根本解決にならない。日銀利上げが唯一の「根治療法」と断言。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#B8860B;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">04</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">09:00 · CBS News · 78</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.cbsnews.com/news/kevin-warsh-federal-reserve-chair-interest-rates/" style="color:#1A1A1A;text-decoration:none;">ウォーシュ議長「独立した行動者」宣言 — CBS分析が示す4つの利下げシナリオ</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.cbsnews.com/news/kevin-warsh-federal-reserve-chair-interest-rates/" style="display:block;text-decoration:none;"><img src="https://assets3.cbsnewsstatic.com/hub/i/r/2026/05/12/7ebfc5ff-9608-4c40-85b9-0f2028b18c39/thumbnail/1200x630g2/dfa29d7b732dcd9b24489b22fd45dc5c/ap26111849758674.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;"><strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">ウォーシュ</strong>議長はトランプ系議員からの利下げ圧力に対して「自らの判断で動く」と明言。過去の任期中はタカ派路線で知られ、<span style="border-bottom:2px solid currentColor;">インフレ再加速下では「引き締め」を選好する公算大</span>とCBSが分析。</span></div><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">CBSが提示する4シナリオ：①データ次第で6月利下げ、②年内据置、③25bp利上げ、④50bp以上の利上げ。現在の市場確率は③が最も上昇中で18%。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#B8860B;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">05</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">06:00 · Trading Economics · 72</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://jp.tradingeconomics.com/japan/currency" style="color:#1A1A1A;text-decoration:none;">円 対ドル週間マイナス — ベッセント訪日効果が剥落、円安再加速の構図</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://jp.tradingeconomics.com/japan/currency" style="display:block;text-decoration:none;"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-fx.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">円は対ドルで今週約1%下落し、4月30日以来の介入効果がほぼ剥落。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">ベッセント</strong>米財務長官の訪日で得た「協調介入への期待感」は、インフレデータと新FRB議長就任で上書きされた。</span></div><div class="bul ng-card-body" style="color:#B8860B"><span style="color:#1A1A1A;">Trading Economicsのコンセンサスでは、日本円の対ドル3ヵ月予想が155.0円（強気）から158.5円（弱気）へ修正。<span style="border-bottom:2px solid currentColor;">日銀が6月に動かなければ160円到達の時間軸が前倒し</span>される。</span></div></td></tr></tbody></table></td></tr>
+<tr><td class="ng-cat-pad" style="background:#2D5BB8;padding:22px 36px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td style="vertical-align:middle;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">CATEGORY 2 / 4 · ARTIFICIAL INTELLIGENCE</div>
+      <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
+        <span style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-right:10px;">◆</span>AI
+      </div>
+    </td>
+    <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;">5 stories</td>
+  </tr></tbody></table>
+  <div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">AnthropicがClaude Platform on AWS GAとMCP Connectorを一斉リリースし、エンタープライズ浸透が次フェーズへ。Google I/O開幕まで3日で期待値が沸騰。OpenAIはDeployCoを創設してAIコンサル市場に直接参入、プラットフォーム戦争がサービス領域に拡大した。</div>
+</td></tr>
+<tr><td style="background:#FAF7F0;padding:24px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:6px;"><span style="background:#2D5BB8;color:#fff;padding:2px 7px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">★ TOP</span><span style="padding-left:8px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">07:00 · InfoQ · 95</span></div><h3 class="ng-card-title" style="font-size:20px;font-weight:800;margin:8px 0 12px;line-height:1.35;"><a href="https://www.infoq.com/news/2026/05/anthropic-claude-aws/" style="color:#1A1A1A;text-decoration:none;">Anthropic、Claude Platform on AWS GA + MCP Connector + Managed Agents を一斉リリース</a></h3><div style="margin-bottom:14px;"><a href="https://www.infoq.com/news/2026/05/anthropic-claude-aws/" style="display:block;text-decoration:none;"><img src="https://res.infoq.com/news/2026/05/anthropic-claude-aws/en/headerimage/generatedHeaderImage-1778682420283.jpg" width="568" height="200" alt="" style="display:block;width:100%;height:200px;object-fit:cover;border:1px solid #E2DED4;"></a></div><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;"><strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Claude Platform on AWS</strong>が一般提供（GA）開始。AWSの認証・課金・監視をそのまま使いながらAnthropicのネイティブAPIに直接アクセス可能。Managed Agents（β）とMCP Connector（β）を同時リリース。</span></div><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">MCP Connectorにより<span style="border-bottom:2px solid currentColor;">クライアントコードを書かずに任意のリモートMCPサーバーへ接続</span>が可能になった。Thomson Reuters CoCounsel、Dun & Bradstreet KYCなど主要SaaS連携が即日ライブ。</span></div></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2D5BB8;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">02</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">08:15 · AI Business · 90</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://aibusiness.com/generative-ai/openai-launches-ai-consulting-company-anthropic" style="color:#1A1A1A;text-decoration:none;">OpenAI、DeployCo創設（$40億）+ Tomoro買収 — AIコンサル市場への直接参入が加速</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://aibusiness.com/generative-ai/openai-launches-ai-consulting-company-anthropic" style="display:block;text-decoration:none;"><img src="https://eu-images.contentstack.com/v3/assets/blt6b0f74e5591baa03/blt3e21d962ce3ce6a6/6a0246ed751e95096d8c06bb/OpenAI_logo.jpg?disable=upscale&width=1200&height=630&fit=crop" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">OpenAIが<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">DeployCo</strong>を初期投資$40億で創設。応用AIコンサルのTomoroを同時買収し、企業向けAIシステム構築・展開を一貫支援する独立子会社として立ち上げた。</span></div><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">背景にあるのは「生成AIパイロット95%がROI未達」という現実。Frontier Alliance（McKinsey/BCG/Accenture）を通じた間接展開ではスピードが不足と判断し、<span style="border-bottom:2px solid currentColor;">内製コンサル部隊を持つ戦略に転換</span>。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2D5BB8;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">03</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">09:30 · Engadget · 85</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.engadget.com/2171038/everything-announced-at-android-show-google-io-2026/" style="color:#1A1A1A;text-decoration:none;">Google I/O 2026 まで3日 — Android Show先行発表が解禁、Gemini 4・Android 17の全貌が明らかに</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.engadget.com/2171038/everything-announced-at-android-show-google-io-2026/" style="display:block;text-decoration:none;"><img src="https://www.engadget.com/img/gallery/everything-announced-during-the-android-show-io-2026-edition/l-intro-1778605292.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">Google I/O 2026の前哨戦「<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Android Show | I/O Edition</strong>」ですでに複数の発表が解禁。Android 17の新機能・Gemini 4の能力強化・プロアクティブAIアシスタント「Remy」が主役。</span></div><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">Gemini 4は<span style="border-bottom:2px solid currentColor;">Responsive AIからProactive AIへの転換</span>が最大の革新。ユーザーがタスクを依頼するのではなく、AIが先回りしてワークフローを代替するエージェントへと進化。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2D5BB8;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">04</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">06:45 · Ramp AI Index · 80</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://ramp.com/leading-indicators/ai-index-may-2026" style="color:#1A1A1A;text-decoration:none;">Claude Code が全GitHubコミットの4% — 1ヶ月で倍増、エンタープライズ採用加速を示すシグナル</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://ramp.com/leading-indicators/ai-index-may-2026" style="display:block;text-decoration:none;"><img src="https://cdn.sanity.io/images/6jz6vxxd/production/9088989de14173fd6c74125f5eb139b26d8c8bf0-2400x1260.png?rect=0,3,2400,1254&w=1200&h=627&fit=crop" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">Ramp AI Indexによれば、<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Claude Code</strong>が全GitHub公開コミットに占める割合が1ヶ月で2%→4%と倍増。AnthropicのビジネスAI採用率（34.4%）がOpenAI（32.3%）を初めて上回った要因の一つ。</span></div><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">$100万超の大型契約企業が2ヶ月で倍増し、ARRは$300億を突破。<span style="border-bottom:2px solid currentColor;">エンタープライズARR成長率180%という数字は、GPT-5.5ファミリーの製品展開が加速するOpenAIに対して優位を保っている</span>。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2D5BB8;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">05</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">10:00 · Thomson Reuters · 75</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.thomsonreuters.com/en/press-releases/2026/may/thomson-reuters-and-anthropic-expand-partnership-to-connect-claude-with-cocounsel-legal" style="color:#1A1A1A;text-decoration:none;">Thomson Reuters × Anthropic — CoCounsel LegalにClaude MCP統合、法務AIが実用域へ</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.thomsonreuters.com/en/press-releases/2026/may/thomson-reuters-and-anthropic-expand-partnership-to-connect-claude-with-cocounsel-legal" style="display:block;text-decoration:none;"><img src="https://www.thomsonreuters.com/content/dam/ewp-m/images/thomsonreuters/en/photography/reuters/rtr1zkvu-luke-macgregor-tr.jpg.transform/rect-768/q90/image.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">Thomson ReutersがAnthropicとのパートナーシップを拡大し、<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">CoCounsel Legal</strong>にClaude MCPを統合。法律調査・契約審査・デューデリジェンスをClaudeが直接支援する形に。</span></div><div class="bul ng-card-body" style="color:#2D5BB8"><span style="color:#1A1A1A;">MCP統合により、CoCounselは単なる検索支援から<span style="border-bottom:2px solid currentColor;">法的判断の一次草稿まで自律的に作成するアシスタント</span>へと進化。法律事務所・企業法務での本格導入が現実味を帯びた。</span></div></td></tr></tbody></table></td></tr>
+<tr><td class="ng-cat-pad" style="background:#2E6B52;padding:22px 36px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td style="vertical-align:middle;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">CATEGORY 3 / 4 · IT & CONSULTING</div>
+      <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
+        <span style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-right:10px;">▲</span>IT-Consulting
+      </div>
+    </td>
+    <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;">5 stories</td>
+  </tr></tbody></table>
+  <div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">McKinseyがCEO自ら「AIエージェント2.5万体が実稼働中」と公言し、成果連動・株式報酬型への経営転換を宣言。KPMGは低付加価値業務400人を先行削減しAI再編を加速。富士通はデジタルリハーサルをグローバル展開し、コンサル×SIer境界の溶解が1段深まった。</div>
+</td></tr>
+<tr><td style="background:#FAF7F0;padding:24px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:6px;"><span style="background:#2E6B52;color:#fff;padding:2px 7px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">★ TOP</span><span style="padding-left:8px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">07:00 · Market Realist · 95</span></div><h3 class="ng-card-title" style="font-size:20px;font-weight:800;margin:8px 0 12px;line-height:1.35;"><a href="https://marketrealist.com/how-is-mc-kinsey-changing-its-workforce/" style="color:#1A1A1A;text-decoration:none;">McKinsey、AIエージェント2.5万体が実稼働 — CEO「40,000人+25,000体」で成果連動型コンサルへ転換</a></h3><div style="margin-bottom:14px;"><a href="https://marketrealist.com/how-is-mc-kinsey-changing-its-workforce/" style="display:block;text-decoration:none;"><img src="https://media.marketrealist.com/brand-img/rcXGimV79/1200x628/pn/787155/uploads/469022b0-f04b-11f0-9829-b7b52e025ebf_1200_630.jpeg" width="568" height="200" alt="" style="display:block;width:100%;height:200px;object-fit:cover;border:1px solid #E2DED4;"></a></div><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">McKinsey CEO Bob Sternfelsが<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">AIエージェント2.5万体</strong>の実稼働を公式に認めた。40,000人の人間コンサルタントと並走する形で、調査・データ分析・文書作成を担う「バーチャル人材」として機能。</span></div><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">直近1.5百万時間の業務をAIが代替した実績を踏まえ、<span style="border-bottom:2px solid currentColor;">パートナー報酬の一部を株式へシフト</span>する方針を発表。AI×成果連動で収益が不安定化する前提に立ち、固定費を圧縮する資本構造の転換が始まった。</span></div></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2E6B52;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">02</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">08:00 · TheStreet · 88</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.thestreet.com/employment/big-four-firm-kpmg-cuts-100s-of-jobs-as-consulting-demand-slows" style="color:#1A1A1A;text-decoration:none;">KPMG 米アドバイザリー400人削減 — AI再編で低付加価値業務を先行カット、Big4の構造改革加速</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.thestreet.com/employment/big-four-firm-kpmg-cuts-100s-of-jobs-as-consulting-demand-slows" style="display:block;text-decoration:none;"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;"><strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">KPMG</strong>が米アドバイザリー部門の約4%にあたる400名を削減。規制リスクアドバイザリー・カスタマーオペレーション・金融サービスに集中した実施で、パートナー層への影響はなし。</span></div><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">削減理由は「需要の戦略的再調整」と説明しつつも、AIが合成・分析・調査を担う現在、<span style="border-bottom:2px solid currentColor;">ジュニア・ミドルレベルの作業の市場価値が急速に収縮している</span>ことが背景にある。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2E6B52;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">03</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">09:00 · Fujitsu Global · 85</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://global.fujitsu/en-global/insight/tl-scm-digital-rehearsal-202600302" style="color:#1A1A1A;text-decoration:none;">富士通「デジタルリハーサル」グローバル展開 — AI×デジタルツインでサプライチェーン輸送コスト30%削減実証</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://global.fujitsu/en-global/insight/tl-scm-digital-rehearsal-202600302" style="display:block;text-decoration:none;"><img src="https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/insight/tl-scm-digital-rehearsal-202600302/ogp-scm-digital-rehearsal-1200x630.jpg?rev=ba1097759e624e8d9f393d536834e1bd" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">富士通が「<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">デジタルリハーサル</strong>」をグローバル展開。デジタルツイン環境でAIが実世界のサプライチェーンをミラーリングし、地政学リスク・気候変動・需要急変への対応策を事前シミュレーション。</span></div><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">医薬品SCM（ロート製薬×東工大との共同実証）で輸送コスト30%削減を検証済み。強化学習エンジンが<span style="border-bottom:2px solid currentColor;">数千シナリオを数時間で評価</span>し、人間では不可能な大域最適を実現。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2E6B52;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">04</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">08:30 · Strat-Bridge · 80</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.strat-bridge.com/insights/consultings-partnership-model-is-shifting-with-ai/" style="color:#1A1A1A;text-decoration:none;">コンサルのパートナーシップモデルが変わる — AI×成果連動でパートナー報酬を株式化、業界経営が転換期</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.strat-bridge.com/insights/consultings-partnership-model-is-shifting-with-ai/" style="display:block;text-decoration:none;"><img src="https://www.strat-bridge.com/wp-content/uploads/2026/05/Insight-Blog-feature-pic-53.png" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">Strat-Bridgeが分析するコンサル業界の経営転換：AI×成果連動型プライシングにより、収益の予測可能性が下がるため、<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">McKinsey・BCG</strong>を含む上位5社がパートナー報酬の固定部分を圧縮し始めた。</span></div><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">従来の年収ベースから<span style="border-bottom:2px solid currentColor;">エクイティ比率を高めた成果報酬型</span>へのシフトは、ベンチャーキャピタルのインセンティブ設計に近い。コンサル会社がVC的な投資リスクを負うことを意味する。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#2E6B52;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">05</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">06:00 · The Business Research Company · 75</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.thebusinessresearchcompany.com/report/it-consulting-global-market-report" style="color:#1A1A1A;text-decoration:none;">ITコンサル市場 2026年$3,750億規模 — AI需要が成長エンジン、アジア太平洋が最速成長地域</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.thebusinessresearchcompany.com/report/it-consulting-global-market-report" style="display:block;text-decoration:none;"><img src="https://www.thebusinessresearchcompany.com/images/tbrc-logo-og.png" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">The Business Research Companyが2026年のITコンサル市場規模を$3,750億と発表。2025年比約5%成長で、成長ドライバーは<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">生成AIとクラウド移行</strong>の複合需要。</span></div><div class="bul ng-card-body" style="color:#2E6B52"><span style="color:#1A1A1A;">地域別ではアジア太平洋（APAC）が最速成長。日本・インド・韓国での大型DX案件とAI投資義務化規制が牽引。<span style="border-bottom:2px solid currentColor;">欧米の成長率鈍化を新興市場が補完する構図</span>が2027年以降も続く見込み。</span></div></td></tr></tbody></table></td></tr>
+<tr><td class="ng-cat-pad" style="background:#8E2A19;padding:22px 36px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td style="vertical-align:middle;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">CATEGORY 4 / 4 · ECONOMY</div>
+      <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">
+        <span style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-right:10px;">■</span>経済
+      </div>
+    </td>
+    <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;">5 stories</td>
+  </tr></tbody></table>
+  <div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">S&P500が史上初めて7,500ポイントを超えて引けた一方、ウォーシュFRB議長の「データ次第・独立路線」発言を受け「利上げ観測」が市場語彙に復活した。日経平均は63,700円台で高値圏維持。CPI+3.8%がバリュエーションへの圧力として意識され始め、転換点となる週を迎えた。</div>
+</td></tr>
+<tr><td style="background:#FAF7F0;padding:24px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:6px;"><span style="background:#8E2A19;color:#fff;padding:2px 7px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">★ TOP</span><span style="padding-left:8px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">07:00 · Charles Schwab · 97</span></div><h3 class="ng-card-title" style="font-size:20px;font-weight:800;margin:8px 0 12px;line-height:1.35;"><a href="https://www.schwab.com/learn/story/stock-market-update-open" style="color:#1A1A1A;text-decoration:none;">S&P500、史上初の7,500超え — ウォーシュ就任初日に利上げ観測急浮上、転換点となる週</a></h3><div style="margin-bottom:14px;"><a href="https://www.schwab.com/learn/story/stock-market-update-open" style="display:block;text-decoration:none;"><img src="https://www.schwab.com/sites/g/files/eyrktu1071/files/41301781_2x1_0.jpg" width="568" height="200" alt="" style="display:block;width:100%;height:200px;object-fit:cover;border:1px solid #E2DED4;"></a></div><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">S&P500が<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">史上初めて7,500ポイント</strong>を超えて引けた。しかし同時に、CPI+3.8%と新FRB議長就任が重なり「利上げが利下げより先に来る」という観測がSchwab・金利ストラテジストから出始めた。</span></div><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">Schwab Charles Martin氏「<span style="border-bottom:2px solid currentColor;">年内利下げはほぼ消滅した。議論の焦点は「何月に利上げするか」に移りつつある</span>」と発言。3ヵ月債利回りが年内+0.25bp利上げを44%の確率で織り込んでいる。</span></div></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#8E2A19;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">02</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">08:00 · Trading Economics · 92</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://tradingeconomics.com/japan/stock-market" style="color:#1A1A1A;text-decoration:none;">日経平均63,700円台 — 企業業績好調・AI半導体牽引で高値更新基調、ウォーシュ演説が外部変数</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://tradingeconomics.com/japan/stock-market" style="display:block;text-decoration:none;"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-economy.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">日経平均は63,700円台で推移し、強い企業業績（FY2027ガイダンス好調）とAI半導体関連株の牽引が高値更新基調を維持。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">TOPIXとの乖離</strong>（NT倍率16.4倍）が拡大しており、指数効果が株高を増幅。</span></div><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">米ウォーシュ議長の演説と今週のFX動向が外部変数として最大の不確実性。ドル高進行→外資の円ヘッジ見直し→短期売り圧力という経路が今週末に意識される。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#8E2A19;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">03</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">09:00 · CNBC · 87</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.cnbc.com/2026/05/04/fed-kevin-warsh-interest-rates.html" style="color:#1A1A1A;text-decoration:none;">ウォーシュ「独立した行動者」就任宣言 — インフレが制約、data drivenで市場に緊張感</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.cnbc.com/2026/05/04/fed-kevin-warsh-interest-rates.html" style="display:block;text-decoration:none;"><img src="https://image.cnbcfm.com/api/v1/image/108294688-1776783714597-gettyimages-2271829405-WARSH_CONFIRMATION.jpeg?v=1777488458&w=1920&h=1080" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">CNBCが<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">ウォーシュ</strong>議長の初期スタンスを解析。「トランプ政権の要求には屈しない」と明言しつつも、過去の任期中はタカ派路線が定評。<span style="border-bottom:2px solid currentColor;">インフレ第二波の現環境では最初の行動が利下げになりにくい</span>。</span></div><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">市場が懸念するのは「Warshが独立しすぎてサプライズ利上げに踏み切るシナリオ」。利上げ確率は3週前の5%から現在18%まで上昇し、リスクプレミアムが株式バリュエーションに乗り始めた。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#8E2A19;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">04</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">08:30 · Economy Middle East · 83</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://economymiddleeast.com/news/stock-markets-today-sp-500-nikkei-and-euro-stoxx-plunge-as-warsh-fed-pick-metals-cash-rattle-investors/" style="color:#1A1A1A;text-decoration:none;">インフレ第二波×Warsh就任 — S&P500のバリュエーション調整か、年末8,000への分水嶺</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://economymiddleeast.com/news/stock-markets-today-sp-500-nikkei-and-euro-stoxx-plunge-as-warsh-fed-pick-metals-cash-rattle-investors/" style="display:block;text-decoration:none;"><img src="https://economymiddleeast.com/wp-content/uploads/2025/10/stock-markets.jpg" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">Economy Middle EastがS&P500と日経・ユーロ・金属市場の連動を分析。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">CPI+3.8%×Warsh就任</strong>の組み合わせが「安全資産への逃避」を誘発し、金・国債が短期急騰した局面もあった。</span></div><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">2シナリオの分水嶺：①Warshが積極前倒し利下げなら年末S&P500は8,000超え、②インフレ再燃で据置・利上げなら6,500割れ。<span style="border-bottom:2px solid currentColor;">現在の市場はシナリオ①に7割を、②に3割を配分</span>している。</span></div></td></tr></tbody></table></td></tr><tr><td style="background:#FAF7F0;padding:18px 36px;border-bottom:1px solid #EDEAE3;"><div style="margin-bottom:5px;"><span style="background:#8E2A19;color:#fff;padding:1px 5px;font-size:11px;font-family:'JetBrains Mono',Consolas,monospace;font-weight:700;">05</span><span style="padding-left:7px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:#5C5A52;">07:30 · 野村証券 · 78</span></div><h3 class="ng-card-title" style="font-size:17px;font-weight:800;margin:6px 0 10px;line-height:1.4;"><a href="https://www.nomura.co.jp/wealthstyle/article/0714/" style="color:#1A1A1A;text-decoration:none;">野村証券 S&P500年末予想を7,500→7,700に上方修正 — 米中会談収束シナリオがカタリスト</a></h3><table width="100%" class="ng-side-table" role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="ng-card-thumb" width="152" style="width:152px;vertical-align:top;padding-right:14px;"><a href="https://www.nomura.co.jp/wealthstyle/article/0714/" style="display:block;text-decoration:none;"><img src="https://www.nomura.co.jp/wealthstyle/article/0714/images/og_a_0714_01.png" width="140" height="88" alt="" class="ng-card-thumb-img" style="display:block;width:140px;height:88px;object-fit:cover;border:1px solid #E2DED4;"></a></td><td class="ng-card-body-cell" style="vertical-align:top;"><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">野村証券が<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">S&P500年末予想</strong>を7,500から7,700へ上方修正。米中対話の再開・AI需要拡大・イラン情勢の漸進的収束の3条件が揃いつつあることを根拠に強気見解を維持。</span></div><div class="bul ng-card-body" style="color:#8E2A19"><span style="color:#1A1A1A;">ダウンサイドリスクは「インフレ再燃によるFRBの政策転換」と「中東情勢の急変」。Warsh議長が6月FOMCでハト派シグナルを出せれば<span style="border-bottom:2px solid currentColor;">年末7,700は射程内</span>と試算。</span></div></td></tr></tbody></table></td></tr>
+
+<tr><td class="ng-essay-pad" style="background:#1A1A1A;padding:40px 36px 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td>
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#C9B98A;letter-spacing:4px;margin-bottom:12px;">
+        ━━━━━━━━━━━━━━━━━━━━━━━<br>
+        EDITORIAL · 本日のテーマ考察
+      </div>
+      <h2 class="ng-essay-h2" style="font-size:40px;font-weight:900;margin:0 0 8px;letter-spacing:-1px;color:#FAF7F0;line-height:1.15;">
+        金利の天井とAIの底入れ
+      </h2>
+      <div class="ng-essay-sub" style="font-size:16px;color:#C9B98A;font-style:italic;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;margin-bottom:24px;">
+        ウォーシュ就任初日と史上初7,500超え — 利上げ観測とAI覇権争いが同時進行する「高温の金曜日」
+      </div>
+    </td>
+    <td class="ng-essay-counter" width="120" align="right" valign="top">
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:64px;color:#3A3530;line-height:1;font-weight:900;">§</div>
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#9C9A92;letter-spacing:2px;margin-top:4px;">5 PARTS</div>
+    </td>
+  </tr></tbody></table>
+
+  
+  <div style="border-top:1px solid #3A3530;padding-top:20px;margin-top:8px;">
+    <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#C9B98A;letter-spacing:2px;margin-bottom:10px;">┌── LEAD</div>
+    <div style="font-size:16px;line-height:1.95;color:#E8E2D4;padding-left:12px;border-left:3px solid #C9B98A;">
+      本日4分野・20本のニュースから浮かび上がる最大のテーマは <strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">ウォーシュ体制下の金利不確実性</strong> と <strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">AIのエンタープライズ浸透加速</strong> の同時進行である。一見逆方向に動く二つの力が、今週の市場を同じ「高温」状態に置いている。
+    </div>
+  </div>
+</td></tr>
+
+<tr><td class="ng-pull-quote-pad" style="background:#FAF7F0;padding:28px 36px;border-top:1px solid #E2DED4;border-bottom:1px solid #E2DED4;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td width="56" valign="top" class="ng-quote-mark" style="font-family:Georgia,serif;font-size:88px;color:#8E2A19;line-height:0.9;font-weight:900;">"</td>
+    <td valign="middle" style="padding-left:4px;">
+      <div class="ng-pull-quote" style="font-size:21px;font-weight:700;line-height:1.6;color:#1A1A1A;letter-spacing:-0.2px;">
+        「単一のモデル性能」から「<span style="border-bottom:2px solid currentColor;">エコシステムでの占有率</span>」へ── AIプラットフォーム競争は生産性指標を戦場にしてきた。
+      </div>
+      <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:1.5px;margin-top:12px;">
+        ─── PULL QUOTE
+      </div>
+    </td>
+  </tr></tbody></table>
+</td></tr>
+
+<tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
+  <table width="100%" style="border-bottom:1px dashed #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td class="ng-section-num-cell" width="80" valign="top" style="padding:28px 16px 28px 0;vertical-align:top;">
+      <div class="m ng-section-num" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:#1A1A1A;line-height:0.9;letter-spacing:-2px;">§01</div>
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:#1A1A1A;padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">総論</div>
+    </td>
+    <td class="ng-section-text-cell" valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;vertical-align:top;">
+      <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;">転換点か、継続か</h3>
+      <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;">本日最大の構造的問いは「インフレ第二波（CPI+3.8%）とAI成長（Claude Code 全GitHubコミット4%）が<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">共存できるか</strong>」である。歴史的に高インフレは株式のバリュエーション圧縮要因だが、AIの生産性向上が企業収益の底上げとして先行している。S&P500の7,500超えは<span style="border-bottom:2px solid currentColor;">「AI期待値の前払い」が「金利コスト」を上回っている状態</span>の可視化である。この均衡がいつ崩れるかが今夏の最大の問い。</div>
+    </td>
+  </tr></tbody></table>
+</td></tr><tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
+  <table width="100%" style="border-bottom:1px dashed #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td class="ng-section-num-cell" width="80" valign="top" style="padding:28px 16px 28px 0;vertical-align:top;">
+      <div class="m ng-section-num" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:#B8860B;line-height:0.9;letter-spacing:-2px;">§02</div>
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:#B8860B;padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">為替・経済</div>
+    </td>
+    <td class="ng-section-text-cell" valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;vertical-align:top;">
+      <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;">ウォーシュ就任が開けたパンドラの箱</h3>
+      <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;">ドル円は<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">158.6円</strong>と4連騰し、160円介入ラインに迫った。新FRB議長ウォーシュが「独立した行動者」と宣言したことで市場が読みにくくなり、3ヵ月債が年内利上げを18%織り込み始めた。<span style="border-bottom:2px solid currentColor;">介入効果は平均15日で半減</span>（NRI木内登英）というデータが示す通り、財務省の口先牽制の限界が再び可視化されつつある。6月日銀会合（利上げ確率50%超）との連携が円安の唯一の構造的解決策として浮かび上がった。</div>
+    </td>
+  </tr></tbody></table>
+</td></tr><tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
+  <table width="100%" style="border-bottom:1px dashed #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td class="ng-section-num-cell" width="80" valign="top" style="padding:28px 16px 28px 0;vertical-align:top;">
+      <div class="m ng-section-num" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:#2D5BB8;line-height:0.9;letter-spacing:-2px;">§03</div>
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:#2D5BB8;padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">AI・技術</div>
+    </td>
+    <td class="ng-section-text-cell" valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;vertical-align:top;">
+      <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;">エンタープライズの「摩擦ゼロ」競争</h3>
+      <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;">Anthropicが<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Claude on AWS GA</strong>・MCP Connector・Managed Agentsを一斉リリースし、企業内展開の摩擦を大幅に低減した。同時にClaude Codeが全GitHubコミットの4%に達し1ヵ月で倍増、デファクト化への坂を駆け上がっている。OpenAIもDeployCo（$40億）とTomoro買収で「ベンダー直接コンサル」へと進出し、AI企業がITサービス産業の全バリューチェーンを取り込む動きが加速している。Google I/O（5/19）の<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Gemini 4</strong>発表で、週明けに競争がさらに激化する。</div>
+    </td>
+  </tr></tbody></table>
+</td></tr><tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
+  <table width="100%" style="border-bottom:1px dashed #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td class="ng-section-num-cell" width="80" valign="top" style="padding:28px 16px 28px 0;vertical-align:top;">
+      <div class="m ng-section-num" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:#2E6B52;line-height:0.9;letter-spacing:-2px;">§04</div>
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:#2E6B52;padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">産業・業界</div>
+    </td>
+    <td class="ng-section-text-cell" valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;vertical-align:top;">
+      <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;">コンサル業界の「25,000体の衝撃」</h3>
+      <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;">McKinseyのCEOが「25,000体のAIエージェントが実稼働」と公言し、パートナー報酬の株式化を発表。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Big4もKPMG</strong>が400人を削減し、低付加価値業務の終焉が現実になった。富士通のデジタルリハーサル（輸送コスト30%削減実証）に代表されるように、SIerがコンサル領域に技術で侵入している。AI企業（OpenAI・Anthropic）が直接コンサルを展開する動きと合わせ、<span style="border-bottom:2px solid currentColor;">コンサル業界はクライアント・AI企業・SIerの三方向から挟まれる構造に入った</span>。</div>
+    </td>
+  </tr></tbody></table>
+</td></tr><tr><td class="ng-section-pad" style="background:#FAF7F0;padding:0 36px;">
+  <table width="100%" style="border-bottom:1px dashed #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td class="ng-section-num-cell" width="80" valign="top" style="padding:28px 16px 28px 0;vertical-align:top;">
+      <div class="m ng-section-num" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:38px;font-weight:900;color:#C9B98A;line-height:0.9;letter-spacing:-2px;">§05</div>
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#fff;background:#C9B98A;padding:2px 6px;display:inline-block;letter-spacing:1.5px;margin-top:8px;">明日へ</div>
+    </td>
+    <td class="ng-section-text-cell" valign="top" style="padding:28px 0 28px 20px;border-left:1px solid #E2DED4;vertical-align:top;">
+      <h3 class="ng-section-heading" style="font-size:18px;font-weight:800;margin:0 0 14px;">今夏の4つのシナリオ軸</h3>
+      <div class="ng-section-body" style="font-size:13.5px;line-height:2.0;">今夏の市場を決める4軸：①<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">6月日銀利上げ（可否）</strong> — 円安構造の唯一の解決策。植田総裁が「物価目標達成は視野」と発言済み。②<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">6月17日FOMC（Warsh初会合）</strong> — 利下げ・据置・利上げ、どのシグナルを出すかが2026年下半期の金融市場を決定。③Google I/O（5/19）<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Gemini 4</strong> — 3日後の発表でAI競争の次の覇権軸が決まる。④S&P500 PER調整 — 7,500のバリュエーション（PER 24.1倍）が高インフレ継続で正当化できるか。<span style="border-bottom:2px solid currentColor;">これら4つのうち1つでも予想外の方向に振れれば、複合的な市場変動が起きる</span>。</div>
+    </td>
+  </tr></tbody></table>
+</td></tr>
+
+<tr><td class="ng-takeaway-pad" style="background:#F2EEE3;padding:28px 36px;border-top:2px solid #1A1A1A;">
+  <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:16px;">━━ KEY TAKEAWAYS · 今日の3つの結論</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
+    <tr><td style="padding-bottom:12px;">
+  <table width="100%" style="background:#fff;border:1px solid #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td width="56" valign="middle" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;background:#B8860B;color:#fff;text-align:center;font-size:18px;font-weight:900;padding:14px 0;width:56px;vertical-align:middle;">1</td>
+    <td style="padding:12px 16px;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#B8860B;font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">為替</div>
+      <div style="font-size:13px;line-height:1.7;font-weight:600;">ドル円158.6円と4連騰。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">160円ラインまで1.4円</strong>。ウォーシュ就任とCPI+3.8%が重なりドル高圧力が増大。NRI木内「介入効果は15日で半減、根治は日銀利上げのみ」</div>
+    </td>
+  </tr></tbody></table>
+</td></tr><tr><td style="padding-bottom:12px;">
+  <table width="100%" style="background:#fff;border:1px solid #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td width="56" valign="middle" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;background:#2D5BB8;color:#fff;text-align:center;font-size:18px;font-weight:900;padding:14px 0;width:56px;vertical-align:middle;">2</td>
+    <td style="padding:12px 16px;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#2D5BB8;font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">AI</div>
+      <div style="font-size:13px;line-height:1.7;font-weight:600;">AnthropicがClaude on AWS GA・MCP・Managed Agentsを一斉リリース。<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">Claude Code</strong>が全GitHubコミットの4%（1ヵ月で倍増）。OpenAIはDeployCo $40億でコンサル直接参入</div>
+    </td>
+  </tr></tbody></table>
+</td></tr><tr><td style="padding-bottom:12px;">
+  <table width="100%" style="background:#fff;border:1px solid #E2DED4;border-collapse:collapse;"><tbody><tr>
+    <td width="56" valign="middle" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;background:#2E6B52;color:#fff;text-align:center;font-size:18px;font-weight:900;padding:14px 0;width:56px;vertical-align:middle;">3</td>
+    <td style="padding:12px 16px;">
+      <div style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:9px;color:#2E6B52;font-weight:700;letter-spacing:1.5px;margin-bottom:4px;">産業</div>
+      <div style="font-size:13px;line-height:1.7;font-weight:600;">McKinsey「<strong style="background:#C9B98A;color:#1A1A1A;padding:0 3px;">AI 2.5万体実稼働</strong>、パートナー報酬を株式化」。KPMG 400人削減。富士通SCMデジタルリハーサルグローバル展開。<span style="border-bottom:2px solid currentColor;">コンサル×SIer×AI三つ巴の構造転換が加速</span></div>
+    </td>
+  </tr></tbody></table>
+</td></tr>
+    
+  </tbody></table>
+</td></tr>
+
+<tr><td class="ng-related-pad" style="padding:28px 36px;background:#F2EEE3;border-top:2px solid #E2DED4;">
+  <div class="m" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:2px;margin-bottom:12px;">━━ RELATED ISSUES · 関連する過去号</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>
+    <tr><td style="padding:10px 0;border-bottom:1px solid #E2DED4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td width="100" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">2026-05-15</td>
+    <td style="font-size:13px;font-weight:600;"><a href="https://github.com/HIDEPON-UMG/News-Grasp/blob/main/digest/Summary/2026-05-15.md" style="color:#1A1A1A;text-decoration:none;">ウォーシュ就任シナリオ・S&P500 7,250警戒・Anthropic逆転OpenAI（34.4% vs 32.3%）</a></td>
+    <td width="20" align="right" style="color:#5C5A52;">→</td>
+  </tr></tbody></table>
+</td></tr><tr><td style="padding:10px 0;border-bottom:1px solid #E2DED4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td width="100" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">2026-05-14</td>
+    <td style="font-size:13px;font-weight:600;"><a href="https://github.com/HIDEPON-UMG/News-Grasp/blob/main/digest/Summary/2026-05-14.md" style="color:#1A1A1A;text-decoration:none;">ウォーシュ議会承認・日経平均62,742円・FRB議長交代市場影響</a></td>
+    <td width="20" align="right" style="color:#5C5A52;">→</td>
+  </tr></tbody></table>
+</td></tr><tr><td style="padding:10px 0;border-bottom:1px solid #E2DED4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>
+    <td width="100" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">2026-05-11</td>
+    <td style="font-size:13px;font-weight:600;"><a href="https://github.com/HIDEPON-UMG/News-Grasp/blob/main/digest/Summary/2026-05-11.md" style="color:#1A1A1A;text-decoration:none;">ベッセント訪日・CPI発表前・Wall Street AI半導体多極化</a></td>
+    <td width="20" align="right" style="color:#5C5A52;">→</td>
+  </tr></tbody></table>
+</td></tr>
+    
+  </tbody></table>
+</td></tr>
+
+<tr><td class="ng-footer-pad ng-footer-text" style="padding:24px 36px 32px;background:#FAF7F0;border-top:1px solid #E2DED4;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;color:#5C5A52;letter-spacing:1px;text-align:center;">
+  <div style="margin-bottom:8px;">
+    <strong style="color:#1A1A1A;letter-spacing:2px;">NEWS GRASP</strong> — Five Lenses on Today
+  </div>
+  <div>ISSUE #20260516 · 2026-05-16 · MORNING EDITION</div>
+  <div style="margin-top:14px;padding-top:14px;border-top:1px solid #E2DED4;">
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp" style="color:#5C5A52;text-decoration:none;margin:0 8px;">GITHUB</a>·
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp/edit/main/data/watchlist.md" style="color:#5C5A52;text-decoration:none;margin:0 8px;">EDIT WATCHLIST</a>·
+    <a href="obsidian://open?vault=New%27s%20Grasp&file=News-Grasp%2Fdigest%2F2026-05-16" style="color:#5C5A52;text-decoration:none;margin:0 8px;">OPEN IN OBSIDIAN</a>
+  </div>
+</td></tr>
+
+</tbody>
+</table>
+
+</td></tr>
+</table>
+
+</body>
+</html>
