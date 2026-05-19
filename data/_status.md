@@ -26,3 +26,4 @@
 | 2026-05-17 | ✅成功 | FX, AI, IT-Consulting, Game | 絀50分 | 0 | 記事20件 |
 | _初回実行待ち_ | – | – | – | – | – |
 | 2026-05-19 | OK | FX, AI, IT-Consulting, Economy, Game | 780sec | 0 | 25 articles |
+| 2026-05-20 | ✅成功 | FX, AI, IT-Consulting, Economy | 約40分 | 0 | 記事20件 |
