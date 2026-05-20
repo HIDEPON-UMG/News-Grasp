@@ -37,13 +37,19 @@
 └──────────────┘                │     news.grasp.magazine  │
         │                       │     @gmail.com 固定      │
         ▼                       └──────────────────────────┘
-┌──────────────────────┐                    │
-│ Obsidian Vault       │                    ▼
-│ News's Grasp/News-   │          ┌─────────────────────┐
-│ Grasp/digest/        │          │ Gmail 受信箱（×2）  │
-│ （Runner が直接書込）│          │ - hideki@gmail.com  │
-└──────────────────────┘          │ - h2-hiramatsu@nri  │
-                                  └─────────────────────┘
+┌──────────────────────────────┐            │
+│ Obsidian Vault               │            ▼
+│ New's Grasp/                 │  ┌─────────────────────┐
+│ ├── News-Grasp/digest/       │  │ Gmail 受信箱（×2）  │
+│ │   (Runner が直接書込・     │  │ - hideki@gmail.com  │
+│ │    サブリポ git で同期)    │  │ - h2-hiramatsu@nri  │
+│ └── .obsidian/snippets/      │  └─────────────────────┘
+│     news-grasp.css 他        │
+│     (Obsidian Git で         │
+│      HIDEPON-UMG/            │
+│      obsidian-newsgrasp-vault│
+│      へ同期、2026-05-21〜)   │
+└──────────────────────────────┘
 ```
 
 **Max サブスク内で完結**するため追加課金は発生せず（5h 枠の 15〜25% / 回を消費）、Anthropic Routine のクラウド側障害にも依存しません。
@@ -221,3 +227,5 @@ tags:
 - **採用しなかった方針**: ① ローカル cron（PC オン依存）/ ② Anthropic Routine（クラウドコンテナのプロビジョニング不安定で 1 時間以上ハング）/ ③ Hook + claude-mem / ④ GitHub Actions cron + API → 最終的に **D 案（ローカル Claude Code via Windows タスク）** で安定運用に到達
 - **採用しているが意識してほしい点**: 強調記法 `[[]]` `__` は機械処理用のマーカーではなく **HTML レンダリング時に視覚強調に変換される** ためのプロンプト規約
 - **デザイン由来**: メールテンプレートは Claude Design (claude.ai/design) で作成した「News Grasp Template」を実装ベースに、サムネイル v2（10 JPG）を後から差し込んだもの
+- **Vault 同期方式（2026-05-21〜）**: 親 Vault `New's Grasp/` 全体を **Obsidian Git プラグイン**で `HIDEPON-UMG/obsidian-newsgrasp-vault`（private）に同期。本リポ（記事本体）は Vault root の `.gitignore` で除外され、Runner が独立に commit/push する 2 リポ構成。旧 Remotely Save 同期は廃止
+- **Reading View デザイン（2026-05-21〜）**: 親 Vault の `.obsidian/snippets/news-grasp.css` が digest 記事をニュースカード化（accent `#497074` 単一トーン）。Runner 出力構造は [`prompts/obsidian-template.md`](prompts/obsidian-template.md) 末尾の「CSS スニペット連動の必須要素」契約に従う
