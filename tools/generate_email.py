@@ -2,12 +2,16 @@
 generate_email.py — prompts/email-template.html のプレースホルダを展開して
 build/email.html を生成する。
 """
-import re, os, pathlib
+import re, os, pathlib, sys
 
 BASE = pathlib.Path(__file__).parent.parent
 TEMPLATE = BASE / "prompts" / "email-template.html"
 OUTPUT   = BASE / "build" / "email.html"
 CDN      = "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/"
+
+# 公開 web (GitHub Pages) ベース URL。tools/config.py の BASE_URL を流用する。
+sys.path.insert(0, str(BASE))
+from tools.config import BASE_URL as WEB_BASE  # noqa: E402
 
 # ── ヘルパー ───────────────────────────────────────────────
 def hl(text, accent):
@@ -69,7 +73,9 @@ def side_card(score, title, source, url, img, buls, accent, label=None):
         '</td></tr>'
     )
 
-def cat_header(idx, total, name_en, name_jp, glyph, accent, summary, count):
+def cat_header(idx, total, name_en, name_jp, glyph, accent, summary, count, cat_id):
+    """カテゴリ帯ヘッダ。右端に公開 web の該当 archive へのリンクを表示。"""
+    cat_web_url = f"{WEB_BASE}/{cat_id}/"
     return (
         f'<tr><td class="ng-cat-pad" style="background:{accent};padding:20px 36px;">'
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>'
@@ -78,7 +84,10 @@ def cat_header(idx, total, name_en, name_jp, glyph, accent, summary, count):
         f'<div class="ng-cat-name" style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">'
         f'<span class="m" style="font-family:\'JetBrains Mono\',Consolas,\'Courier New\',monospace;margin-right:10px;">{glyph}</span>{name_jp}</div>'
         '</td>'
-        f'<td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:\'JetBrains Mono\',Consolas,\'Courier New\',monospace;font-size:11px;">{count} stories</td>'
+        f'<td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:\'JetBrains Mono\',Consolas,\'Courier New\',monospace;font-size:11px;">'
+        f'<div>{count} stories</div>'
+        f'<div style="margin-top:6px;"><a href="{cat_web_url}" style="color:rgba(255,255,255,0.95);text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.5);font-family:\'JetBrains Mono\',Consolas,\'Courier New\',monospace;font-size:10px;letter-spacing:1px;">VIEW WEB →</a></div>'
+        '</td>'
         '</tr></tbody></table>'
         f'<div class="ng-cat-summary" style="font-size:13px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">{summary}</div>'
         '</td></tr>'
@@ -149,7 +158,7 @@ CDN_GM = CDN + "ng-thumb-common-game.jpg"
 # ── FX ────────────────────────────────────────────────────
 fx_block = (
     cat_header(1, 5, "Foreign Exchange", "為替 (Foreign Exchange)", "¥", FX,
-        "FOMC8-4分裂での据え置きを受けてUSD/JPYは159.6台で円安継続。財務相が160円接近に口先介入トーンを強化し、GW薄商い相場での実弾介入警戒が高まる。", 5)
+        "FOMC8-4分裂での据え置きを受けてUSD/JPYは159.6台で円安継続。財務相が160円接近に口先介入トーンを強化し、GW薄商い相場での実弾介入警戒が高まる。", 5, "fx")
     + top_card(95, "FOMC 8-4分裂で金利据え置き — タカ派3名が緩和バイアス削除要求、USD/JPY下落反応は限定的",
         "CNBC", "https://www.cnbc.com/2026/04/29/fed-holds-rates-three-officials-dissent-against-easing-bias.html",
         CDN + "ng-thumb-fx.jpg",
@@ -195,7 +204,7 @@ fx_block = (
 # ── AI ────────────────────────────────────────────────────
 ai_block = (
     cat_header(2, 5, "Artificial Intelligence", "AI (Artificial Intelligence)", "◆", AI,
-        "OpenAIがCustom GPTを廃止しWorkspace Agentsへ完全移行。Anthropicがエージェント間マーケットプレイス実験を成功させ、AI同士が取引する自律経済圏の現実味が急浮上した週。", 5)
+        "OpenAIがCustom GPTを廃止しWorkspace Agentsへ完全移行。Anthropicがエージェント間マーケットプレイス実験を成功させ、AI同士が取引する自律経済圏の現実味が急浮上した週。", 5, "ai")
     + top_card(95, "OpenAI Workspace Agents — Custom GPT廃止、GPT-5.5がクラウド常駐の自律マルチステップエージェントへ完全移行",
         "AI Stars (AI Jungle)", "https://aijungle.substack.com/p/ai-stars-of-the-week-newsletter-april-0c6",
         "https://substackcdn.com/image/fetch/$s_!bnTV!,w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fd3acc3e2-c38f-46a6-be4a-c22168ecf020_600x400.jpeg",
@@ -241,7 +250,7 @@ ai_block = (
 # ── IT-Consulting ─────────────────────────────────────────
 it_block = (
     cat_header(3, 5, "IT & Consulting", "IT-Consulting (IT & Consulting)", "▲", IT,
-        "Deloitte×Google CloudがエージェントAI変革プラクティスを設立し、OpenAI Frontier Allianceと真っ向から競合するGoogle陣営のコンサル布陣が固まった。Big4 AI投資累計$100B超でコンサル産業が「探索」から「実装」へ本格転換する。", 5)
+        "Deloitte×Google CloudがエージェントAI変革プラクティスを設立し、OpenAI Frontier Allianceと真っ向から競合するGoogle陣営のコンサル布陣が固まった。Big4 AI投資累計$100B超でコンサル産業が「探索」から「実装」へ本格転換する。", 5, "it")
     + top_card(90, "Deloitte×Google Cloud エージェント型AI変革プラクティス設立 — Gemini Enterprise全面活用で300社超展開へ",
         "Google Cloud Press Corner", "https://www.googlecloudpresscorner.com/2026-04-22-Deloitte-Accelerates-AI-Transformation-on-Gemini-Enterprise-With-Dedicated-Google-Cloud-Agentic-Transformation-Practice",
         CDN + "ng-thumb-it.jpg",
@@ -287,7 +296,7 @@ it_block = (
 # ── Economy ──────────────────────────────────────────────
 ec_block = (
     cat_header(4, 5, "Economy", "経済 (Economy)", "■", EC,
-        "Amazon・Meta・Alphabet・Microsoftの4社が4月29日に決算発表し、AI投資がROIに転換したことを揃って証明した歴史的な夜。AWSは15四半期ぶり最高成長率28%、Meta広告は+33%、Google Cloud急伸で純利益+81%。FOMC8-4分裂据え置きとの組み合わせがS&P500を最高値圏に押し上げた。", 5)
+        "Amazon・Meta・Alphabet・Microsoftの4社が4月29日に決算発表し、AI投資がROIに転換したことを揃って証明した歴史的な夜。AWSは15四半期ぶり最高成長率28%、Meta広告は+33%、Google Cloud急伸で純利益+81%。FOMC8-4分裂据え置きとの組み合わせがS&P500を最高値圏に押し上げた。", 5, "economy")
     + top_card(95, "Amazon Q1 2026 — EPS$2.78・売上$181.5B、AWS 15四半期最高成長28%、Anthropic保有益が純利益を倍増",
         "Yahoo Finance", "https://finance.yahoo.com/markets/stocks/articles/amazon-q1-2026-earnings-beat-203149838.html",
         "https://s.yimg.com/ny/api/res/1.2/o.Y31HAFcmh44hU8ebpbHw--/YXBwaWQ9aGlnaGxhbmRlcjt3PTk2MDtoPTU0MA--/https://media.zenfs.com/en/quartz_855/13acee6127594e601d6004b2934e0c81",
@@ -333,7 +342,7 @@ ec_block = (
 # ── Game ──────────────────────────────────────────────────
 gm_block = (
     cat_header(5, 5, "Gaming", "ゲーム (Gaming)", "●", GM,
-        "ウマ娘がGW最大のキャンペーン「GOLD WEEK」を本日開幕。カプコンのPRAGMATAが1週間で350万本を突破し好調な続伸を示した。任天堂は5月8日決算を前にアナリストが上方修正を予測し、Switch2エコシステムの拡大が続いている。", 5)
+        "ウマ娘がGW最大のキャンペーン「GOLD WEEK」を本日開幕。カプコンのPRAGMATAが1週間で350万本を突破し好調な続伸を示した。任天堂は5月8日決算を前にアナリストが上方修正を予測し、Switch2エコシステムの拡大が続いている。", 5, "game")
     + top_card(90, "ウマ娘 GOLD WEEK開幕 — 24K純金コインプレゼント・1日10連ガチャ無料、ステゴ一族が主役のGW最大イベント",
         "Game*Spark", "https://www.gamespark.jp/article/2026/04/29/165827.html",
         CDN + "ng-thumb-game.jpg",
@@ -491,6 +500,8 @@ result = result.replace("{{ISSUE_WEEKDAY}}", "木")
 result = result.replace("{{TOTAL_CATEGORIES}}", "5")
 result = result.replace("{{TOTAL_STORIES}}", "25")
 result = result.replace("{{TOTAL_SECTIONS}}", "5")
+result = result.replace("{{WEB_BASE_URL}}", WEB_BASE)
+result = result.replace("{{ISSUE_WEB_URL}}", f"{WEB_BASE}/summary/2026-04-30/")
 result = result.replace("{{TOC_ROWS_HTML}}", TOC_ROWS_HTML)
 result = result.replace("{{CATEGORIES_HTML}}", CATEGORIES_HTML)
 result = result.replace("{{REFLECTION_TITLE}}", REFLECTION_TITLE)

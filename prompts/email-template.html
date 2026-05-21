@@ -197,7 +197,10 @@ table { border-collapse: collapse; }
       </tr></tbody></table>
     </td>
     <td align="right" class="ng-masthead-meta" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#5C5A52;">
-      #{{ISSUE_NO}} · {{ISSUE_DATE}}（{{ISSUE_WEEKDAY}}）
+      <div>#{{ISSUE_NO}} · {{ISSUE_DATE}}（{{ISSUE_WEEKDAY}}）</div>
+      <div style="margin-top:4px;">
+        <a href="{{ISSUE_WEB_URL}}" style="color:#5C5A52;text-decoration:none;border-bottom:1px solid #B5B0A4;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:10px;letter-spacing:1.5px;">VIEW IN BROWSER →</a>
+      </div>
     </td>
   </tr></tbody></table>
   <h1 class="ng-h1" style="font-size:36px;font-weight:900;line-height:1.25;letter-spacing:-0.5px;margin:18px 0 8px;color:#1A1A1A;">

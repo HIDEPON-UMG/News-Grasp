@@ -32,8 +32,10 @@ from functools import lru_cache
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
+sys.path.insert(0, REPO_ROOT)
 
 import mock_data  # noqa: E402
+from tools.config import BASE_URL as WEB_BASE  # noqa: E402
 
 WEBHOOK_URL = (
     "https://script.google.com/macros/s/"
@@ -257,6 +259,8 @@ def build_article_card(it: dict, idx: int, cat: dict) -> str:
 def build_categories_html(categories: list[dict]) -> str:
     parts = []
     for ci, cat in enumerate(categories):
+        # カテゴリ web リンク (公開サイトの該当カテゴリ archive)
+        cat_web_url = f"{WEB_BASE}/{cat['id']}/"
         # カテゴリヘッダー
         parts.append(f"""
         <tr><td class="ng-cat-pad" style="background:{cat['accent']};padding:20px 36px;">
@@ -270,7 +274,10 @@ def build_categories_html(categories: list[dict]) -> str:
               </div>
             </td>
             <td align="right" style="vertical-align:middle;color:rgba(255,255,255,0.85);font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;">
-              {len(cat['items'])} stories
+              <div>{len(cat['items'])} stories</div>
+              <div style="margin-top:6px;">
+                <a href="{cat_web_url}" style="color:rgba(255,255,255,0.95);text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.5);font-family:'JetBrains Mono',Menlo,monospace;font-size:10px;letter-spacing:1px;">VIEW WEB →</a>
+              </div>
             </td>
           </tr></table>
           <div class="ng-cat-summary" style="font-size:14px;color:rgba(255,255,255,0.95);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.25);">
@@ -368,6 +375,8 @@ def render_email_html() -> str:
         "{{TOTAL_CATEGORIES}}": str(len(cats)),
         "{{TOTAL_STORIES}}": str(total_stories),
         "{{TOTAL_SECTIONS}}": str(len(refl["sections"])),
+        "{{WEB_BASE_URL}}": WEB_BASE,
+        "{{ISSUE_WEB_URL}}": f"{WEB_BASE}/summary/{mock_data.ISSUE_DATE}/",
         "{{TOC_ROWS_HTML}}": build_toc_rows(cats),
         "{{CATEGORIES_HTML}}": build_categories_html(cats),
         "{{REFLECTION_TITLE}}": html.escape(refl["title"]),

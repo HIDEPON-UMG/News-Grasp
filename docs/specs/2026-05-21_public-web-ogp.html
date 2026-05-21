@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp 公開 web 配信と OGP 対応 — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン (Claude.ai 公式トンマナ準拠)
+       - 色直書き禁止: ここで定義した CSS 変数のみを使う
+       - 同期元: ~/.claude/templates/DESIGN.md
+       - News-Grasp 固有: --accent-{fx,ai,it,economy,game,summary}
+       ============================================================ */
+    :root {
+      --color-primary: #141413;
+      --color-secondary: #6A6A6A;
+      --color-tertiary: #CC785C;
+      --color-neutral: #F8F6F3;
+      --color-surface: #FFFFFF;
+      --color-border: #E8E6E3;
+      --color-on-tertiary: #FFFFFF;
+      --color-on-primary: #FAF9F5;
+      --color-accent-blue: #A8C5E6;
+      --color-accent-teal: #9DD4C7;
+      --color-accent-beige: #F4E4C1;
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+      --color-tertiary-hover: #B86A50;
+      --color-step-tdd: #E8F0E4;
+      --color-step-release: #FCE4DC;
+      /* News-Grasp カテゴリ accent (既存 .obsidian/snippets/news-grasp.css と整合) */
+      --accent-fx: #B8860B;
+      --accent-ai: #8B5CF6;
+      --accent-it: #2563EB;
+      --accent-economy: #047857;
+      --accent-game: #DC2626;
+      --accent-summary: #475569;
+      --font-serif: Copernicus, 'Source Serif 4', Georgia, serif;
+      --font-sans: 'Styrene B', Söhne, Inter, system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+      --rounded-sm: 6px;
+      --rounded-md: 10px;
+      --rounded-lg: 16px;
+      --rounded-full: 9999px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04);
+      --shadow-md: 0 4px 12px rgba(20, 20, 19, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 64rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; font-weight: 500; text-transform: uppercase; }
+    h1 { font-family: var(--font-serif); font-size: 3rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; margin: var(--space-md) 0 var(--space-sm); }
+    h2 { font-family: var(--font-serif); font-size: 2rem; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 var(--space-md); }
+    h3 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; line-height: 1.3; margin: var(--space-xl) 0 var(--space-sm); }
+    .lead { color: var(--color-secondary); font-size: 1.125rem; line-height: 1.6; margin: var(--space-sm) 0 var(--space-md); }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-tertiary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .tabs { display: flex; gap: var(--space-xs); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: none; padding: var(--space-sm) var(--space-md); font-family: var(--font-sans); font-size: 0.875rem; color: var(--color-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+    .tab:hover { color: var(--color-primary); }
+    .tab.active { color: var(--color-primary); border-bottom-color: var(--color-tertiary); font-weight: 500; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+    .card-muted { background: var(--color-surface); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+
+    .badge { display: inline-block; background: var(--color-accent-beige); color: var(--color-primary); border-radius: var(--rounded-full); padding: 4px 12px; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; }
+    .badge-success { background: var(--color-success); color: var(--color-on-primary); }
+    .badge-warning { background: var(--color-warning); color: var(--color-on-primary); }
+    .badge-error { background: var(--color-error); color: var(--color-on-primary); }
+
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.9375rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 500; color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; text-transform: uppercase; }
+
+    code { font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-neutral); padding: 2px 6px; border-radius: var(--rounded-sm); border: 1px solid var(--color-border); }
+    pre { background: var(--color-primary); color: var(--color-on-primary); border-radius: var(--rounded-md); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.5; margin: var(--space-md) 0; }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 10px 18px; border-radius: var(--rounded-md); border: 0; font-family: var(--font-sans); font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: background 120ms; }
+    .btn-accent { background: var(--color-tertiary); color: var(--color-on-tertiary); }
+    .btn-accent:hover { background: var(--color-tertiary-hover); }
+
+    .timeline { display: flex; gap: var(--space-md); margin: var(--space-lg) 0; flex-wrap: wrap; }
+    .timeline-step { flex: 1 1 220px; background: var(--color-accent-beige); border-radius: var(--rounded-md); padding: var(--space-md); position: relative; min-height: 100px; }
+    .timeline-step strong { display: block; font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: var(--space-xs); }
+    .timeline-step.tdd { background: var(--color-step-tdd); }
+    .timeline-step.release { background: var(--color-step-release); }
+
+    .severity-info { border-left: 3px solid var(--color-accent-blue); padding-left: var(--space-md); margin: var(--space-md) 0; background: rgba(168, 197, 230, 0.08); padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+    .severity-warn { border-left: 3px solid var(--color-warning); padding-left: var(--space-md); margin: var(--space-md) 0; background: rgba(183, 119, 61, 0.08); padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+    .severity-error { border-left: 3px solid var(--color-error); padding-left: var(--space-md); margin: var(--space-md) 0; background: rgba(184, 58, 45, 0.08); padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+      .timeline-step { flex-basis: 100%; }
+    }
+
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .playground-control { display: flex; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { min-width: 240px; font-size: 0.875rem; color: var(--color-secondary); }
+    .playground-control input[type="range"] { flex: 1; accent-color: var(--color-tertiary); }
+    .playground-control output { min-width: 72px; font-family: var(--font-mono); font-size: 0.875rem; text-align: right; }
+
+    /* カテゴリチップ */
+    .cat-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin: var(--space-sm) 0 var(--space-lg); }
+    .cat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--rounded-full); background: var(--color-surface); border: 1px solid var(--color-border); font-size: 0.8125rem; }
+    .cat-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* OGP モックアップ */
+    .ogp-mock { display: grid; grid-template-columns: 200px 1fr; gap: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-md); overflow: hidden; max-width: 520px; box-shadow: var(--shadow-sm); }
+    .ogp-mock .ogp-image { background: linear-gradient(135deg, var(--accent-fx), #D4A028); display: flex; align-items: center; justify-content: center; min-height: 110px; }
+    .ogp-mock .ogp-image svg { width: 80%; height: auto; }
+    .ogp-mock .ogp-body { padding: var(--space-md); }
+    .ogp-mock .ogp-domain { font-size: 0.6875rem; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+    .ogp-mock .ogp-title { font-size: 0.9375rem; font-weight: 500; margin: 4px 0; line-height: 1.3; }
+    .ogp-mock .ogp-desc { font-size: 0.8125rem; color: var(--color-secondary); line-height: 1.4; }
+
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · <span id="spec-date">2026-05-21</span> · News-Grasp</div>
+      <h1>公開 web 配信と OGP 対応</h1>
+      <p class="lead">News-Grasp の各カテゴリ digest を独立した公開 HTML として発行し、Slack / Discord / X / Gmail / iOS Messages で OGP プレビューが安定して出る状態を作る。</p>
+      <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md); flex-wrap: wrap;">
+        <span class="badge">approved</span>
+        <span class="badge">HIDEPON-UMG</span>
+        <span class="badge">GitHub Pages</span>
+        <span class="badge">Jinja2</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-chip"><span class="dot" style="background: var(--accent-fx);"></span>FX</span>
+        <span class="cat-chip"><span class="dot" style="background: var(--accent-ai);"></span>AI</span>
+        <span class="cat-chip"><span class="dot" style="background: var(--accent-it);"></span>IT-Consulting</span>
+        <span class="cat-chip"><span class="dot" style="background: var(--accent-economy);"></span>Economy</span>
+        <span class="cat-chip"><span class="dot" style="background: var(--accent-game);"></span>Game</span>
+        <span class="cat-chip"><span class="dot" style="background: var(--accent-summary);"></span>Summary</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="alternatives">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <!-- ============================== 概要 ============================== -->
+    <section id="overview" class="tab-panel active">
+      <h2>概要</h2>
+      <p>
+        News-Grasp は毎朝 06:00 にカテゴリ別 (FX / AI / IT-Consulting / Economy / Game) ニュースダイジェストをメール配信しているが、<strong>公開 web ページが存在しない</strong>ため、記事 URL を SNS / Slack に貼っても OGP プレビューが出ない。親アイデア <code>News-Grasp-thumbnail-fix-2026-05-04.md</code> でメール側の og:image は data URI inline 化で解決済みだが、web 経由の OGP プレビューには公開ページが要る。
+      </p>
+
+      <div class="severity-info">
+        <strong>前提</strong>
+        <p>News-Grasp 本体リポを <strong>private → public</strong> に切り替える（mirror なし）。実行前に gitleaks で履歴の機密スキャンを行い、検出ゼロでなければ plan を中断して別アイデアに切り出す。</p>
+      </div>
+
+      <h3>完了条件 (DoD)</h3>
+      <ul>
+        <li>任意の記事 URL を Slack / Discord / X / Gmail / iOS Messages に貼ったとき、意図したサムネ + タイトル + 説明が表示される</li>
+        <li>全記事ページの og:image / og:url / og:title / og:description が <code>https://</code> 始まりの絶対 URL で出力される</li>
+        <li>Facebook / X / LinkedIn の OGP デバッガーでキャッシュをパージしても次回取得で画像が読まれる</li>
+        <li>メール本文の "VIEW IN BROWSER" リンクが自前 URL を指している</li>
+      </ul>
+
+      <h3>OGP プレビュー（FX サンプル）</h3>
+      <p>Slack / Discord に <code>https://hidepon-umg.github.io/News-Grasp/fx/2026-05-20/</code> を貼ったときのイメージ:</p>
+      <div class="ogp-mock">
+        <div class="ogp-image">
+          <svg viewBox="0 0 200 110" role="img" aria-label="FX カテゴリ og:image">
+            <rect width="200" height="110" fill="url(#fxGrad)"/>
+            <defs>
+              <linearGradient id="fxGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#B8860B"/>
+                <stop offset="100%" stop-color="#D4A028"/>
+              </linearGradient>
+            </defs>
+            <text x="100" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="32" font-weight="500" fill="#FFFFFF">¥</text>
+            <text x="100" y="78" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#FFFFFF" letter-spacing="2">NEWS GRASP / FX</text>
+          </svg>
+        </div>
+        <div class="ogp-body">
+          <div class="ogp-domain">hidepon-umg.github.io</div>
+          <div class="ogp-title">News Grasp #20260520 — Foreign Exchange</div>
+          <div class="ogp-desc">ドル円 159 円台が続き 160 円の再介入ゾーンに迫る中、NRI 木内氏は…</div>
+        </div>
+      </div>
+
+      <h3>確定事項</h3>
+      <table>
+        <thead><tr><th>項目</th><th>決定</th></tr></thead>
+        <tbody>
+          <tr><td>公開方式</td><td>News-Grasp 本体を public 化（mirror なし）</td></tr>
+          <tr><td>ホスティング</td><td><strong>GitHub Pages</strong>（main + <code>/docs</code>、Actions 不要）</td></tr>
+          <tr><td>SSG</td><td>Python + Jinja2 自作ジェネレータ</td></tr>
+          <tr><td>公開範囲</td><td>全期間蓄積型（初回 full build、日次 incremental）</td></tr>
+          <tr><td>gitleaks 検出時</td><td>検出ゼロ前提。出たら plan 中断 → 別アイデア起票</td></tr>
+          <tr><td>data/ 公開</td><td><code>articles.jsonl</code> は public、<code>watchlist.md</code> は <code>.gitignore</code> 退避</td></tr>
+          <tr><td>og:image</td><td>ハイブリッド: og:image は自前 <code>ng-thumb-{cat}.jpg</code>、本文サムネは hotlink</td></tr>
+          <tr><td>メールカード単体リンク</td><td>追加しない（ヘッダ + カテゴリ見出しのみ）</td></tr>
+          <tr><td>ドメイン</td><td>デフォルト <code>hidepon-umg.github.io/News-Grasp/</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="severity-warn" style="margin-top: var(--space-lg);">
+        <strong>不可逆操作の注意</strong>
+        <p>private → public 切替は GitHub UI 上は元に戻せるが、SNS インデックス・検索クローラのキャッシュは即時撤回できない。public 化前に safe-commit ゲートを通し、watchlist.md と .env が cached 対象から外れていることを必ず目視確認すること。</p>
+      </div>
+    </section>
+
+    <!-- ============================== 比較 ============================== -->
+    <section id="alternatives" class="tab-panel">
+      <h2>採用しなかった案 / 採用案</h2>
+
+      <h3>ホスティング</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">GitHub Pages</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <ul>
+            <li>web UI のみで設定完了、Actions 不要</li>
+            <li>push = 即配信（既存 Windows タスクスケジューラ運用と完全整合）</li>
+            <li>CNAME 1 行で独自ドメイン対応、Let's Encrypt 自動</li>
+            <li>soft limit 100GB/月（News-Grasp 規模なら余裕）</li>
+            <li>SNS クローラ実績豊富</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">Cloudflare Pages</h3>
+            <span class="badge badge-warning">将来選択肢</span>
+          </div>
+          <ul>
+            <li>無制限帯域 / リクエスト数</li>
+            <li>edge function / preview deploy が強力</li>
+            <li>dashboard で repo 連携・追加サービスアカウントの管理対象が増える</li>
+            <li>build 済 commit 運用なら差別化要素を活かしきれない</li>
+            <li>本タスクでは GitHub Pages で十分という判断</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>公開方式</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">News-Grasp 本体を public 化</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>1 リポで完結し、Pages 設定が UI 単独で済む。<code>watchlist.md</code> は <code>.gitignore</code> 退避、<code>.env</code> 系は履歴含めスキャン済前提。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">別 public repo に mirror</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>2 リポ運用の維持コスト（同期 script / 認証 / 差分管理）が増える。public 化の機密リスクは gitleaks + .gitignore で対処可能と判断。</p>
+        </div>
+      </div>
+
+      <h3>SSG</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">Python + Jinja2</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>既存 <code>generate_email.py</code> と同じ流派で実装、依存は <code>jinja2</code> 1 つ追加のみ。テンプレ表現力と運用負荷のバランス最適。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">Hugo / Astro</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>Node / Go 環境追加 + Windows タスクスケジューラとの繋ぎ込みが要る。本格的なサイト構築は楽だが、News-Grasp 規模ではオーバーキル。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== データフロー ============================== -->
+    <section id="dataflow" class="tab-panel">
+      <h2>データフロー</h2>
+      <p>毎朝 06:00 のタスクスケジューラ起動から、SNS / Gmail で OGP プレビューが出るまで。</p>
+
+      <svg viewBox="0 0 880 480" role="img" aria-label="News-Grasp 公開 web 配信のデータフロー" style="width: 100%; height: auto;">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="#6A6A6A"/>
+          </marker>
+          <marker id="arrow-accent" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="#CC785C"/>
+          </marker>
+        </defs>
+
+        <!-- 06:00 タスクスケジューラ -->
+        <rect x="20" y="20" width="180" height="56" rx="10" fill="#F4E4C1"/>
+        <text x="110" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">06:00 タスクスケジューラ</text>
+        <text x="110" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">news-grasp-runner.bat</text>
+
+        <!-- Claude Code Runner -->
+        <rect x="240" y="20" width="180" height="56" rx="10" fill="#A8C5E6"/>
+        <text x="330" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">Claude Code Runner</text>
+        <text x="330" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">Sonnet 4.6 --print</text>
+        <path d="M 200 48 L 240 48" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- digest 生成 -->
+        <rect x="460" y="20" width="180" height="56" rx="10" fill="#9DD4C7"/>
+        <text x="550" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">digest/*.md 生成</text>
+        <text x="550" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">5 ジャンル + Summary</text>
+        <path d="M 420 48 L 460 48" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- generate_email.py -->
+        <rect x="680" y="20" width="180" height="56" rx="10" fill="#9DD4C7"/>
+        <text x="770" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">generate_email.py</text>
+        <text x="770" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">build/email.html + 配信</text>
+        <path d="M 640 48 L 680 48" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- generate_pages.py 新規 -->
+        <rect x="460" y="140" width="180" height="80" rx="10" fill="#CC785C"/>
+        <text x="550" y="170" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#FFFFFF">generate_pages.py</text>
+        <text x="550" y="188" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#FAF9F5">Jinja2 + config.py</text>
+        <text x="550" y="204" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#FAF9F5">新規</text>
+        <path d="M 550 76 L 550 140" stroke="#CC785C" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrow-accent)"/>
+
+        <!-- docs/ 出力 -->
+        <rect x="240" y="140" width="180" height="80" rx="10" fill="#F4E4C1"/>
+        <text x="330" y="170" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">docs/{genre}/YYYY-MM-DD/</text>
+        <text x="330" y="188" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">index.html (og:* 絶対 URL)</text>
+        <text x="330" y="204" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">+ assets/og/{cat}.jpg</text>
+        <path d="M 460 180 L 420 180" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- git push -->
+        <rect x="240" y="260" width="180" height="56" rx="10" fill="#A8C5E6"/>
+        <text x="330" y="286" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">git add docs/ &amp; push</text>
+        <text x="330" y="302" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">main branch</text>
+        <path d="M 330 220 L 330 260" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- GitHub Pages -->
+        <rect x="240" y="360" width="180" height="56" rx="10" fill="#9DD4C7"/>
+        <text x="330" y="386" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">GitHub Pages</text>
+        <text x="330" y="402" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">hidepon-umg.github.io/News-Grasp/</text>
+        <path d="M 330 316 L 330 360" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- SNS クローラ -->
+        <rect x="460" y="360" width="180" height="56" rx="10" fill="#F4E4C1"/>
+        <text x="550" y="386" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#141413">SNS / Mail クローラ</text>
+        <text x="550" y="402" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">Slack / Twitter / FB / iMessage</text>
+        <path d="M 420 388 L 460 388" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- OGP プレビュー -->
+        <rect x="680" y="360" width="180" height="56" rx="10" fill="#CC785C"/>
+        <text x="770" y="386" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#FFFFFF">OGP プレビュー表示</text>
+        <text x="770" y="402" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#FAF9F5">og:image / og:title / og:desc</text>
+        <path d="M 640 388 L 680 388" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- 凡例 -->
+        <g transform="translate(680, 140)">
+          <rect x="0" y="0" width="180" height="100" rx="8" fill="#FFFFFF" stroke="#E8E6E3"/>
+          <text x="12" y="20" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#141413">凡例</text>
+          <rect x="12" y="32" width="14" height="10" rx="2" fill="#CC785C"/>
+          <text x="32" y="41" font-family="Inter, sans-serif" font-size="10" fill="#141413">新規実装</text>
+          <rect x="12" y="48" width="14" height="10" rx="2" fill="#9DD4C7"/>
+          <text x="32" y="57" font-family="Inter, sans-serif" font-size="10" fill="#141413">既存 (一部変更)</text>
+          <rect x="12" y="64" width="14" height="10" rx="2" fill="#A8C5E6"/>
+          <text x="32" y="73" font-family="Inter, sans-serif" font-size="10" fill="#141413">既存 (変更なし)</text>
+          <rect x="12" y="80" width="14" height="10" rx="2" fill="#F4E4C1"/>
+          <text x="32" y="89" font-family="Inter, sans-serif" font-size="10" fill="#141413">成果物 / 外部</text>
+        </g>
+      </svg>
+
+      <h3>og:image 解決ルール（4 段フォールバック）</h3>
+      <svg viewBox="0 0 800 220" role="img" aria-label="og:image 解決の優先順位フロー" style="width: 100%; height: auto; max-width: 800px;">
+        <defs>
+          <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="#6A6A6A"/>
+          </marker>
+        </defs>
+        <rect x="20" y="20" width="160" height="56" rx="10" fill="#A8C5E6"/>
+        <text x="100" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#141413">1. frontmatter</text>
+        <text x="100" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">og_image キー</text>
+
+        <path d="M 180 48 L 220 48" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow2)"/>
+
+        <rect x="220" y="20" width="160" height="56" rx="10" fill="#A8C5E6"/>
+        <text x="300" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#141413">2. 本文 !thumb</text>
+        <text x="300" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">https + 自前ドメイン</text>
+
+        <path d="M 380 48 L 420 48" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow2)"/>
+
+        <rect x="420" y="20" width="160" height="56" rx="10" fill="#CC785C"/>
+        <text x="500" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#FFFFFF">3. 自前 fallback</text>
+        <text x="500" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#FAF9F5">/assets/og/{cat}.jpg</text>
+
+        <path d="M 580 48 L 620 48" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow2)"/>
+
+        <rect x="620" y="20" width="160" height="56" rx="10" fill="#9DD4C7"/>
+        <text x="700" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#141413">4. 絶対化</text>
+        <text x="700" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#6A6A6A">urljoin(BASE_URL)</text>
+
+        <text x="400" y="120" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#6A6A6A">
+          実運用では現状ほぼ全件 3 に落ちる（自前ドメイン下にサムネを置いていないため）。
+        </text>
+        <text x="400" y="140" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#6A6A6A">
+          1 はフロントマター拡張用、2 は将来サムネを自前ホストするとき有効。
+        </text>
+        <text x="400" y="180" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#141413">
+          → og:image はカテゴリ別固定画像、本文中サムネのみ元記事 og:image を hotlink
+        </text>
+      </svg>
+    </section>
+
+    <!-- ============================== 実装ステップ ============================== -->
+    <section id="impl" class="tab-panel">
+      <h2>実装ステップ（TDD 順）</h2>
+
+      <h3>フェーズ別タイムライン</h3>
+      <div class="timeline">
+        <div class="timeline-step">
+          <strong>準備</strong>
+          DESIGN.md 展開 → gitleaks スキャン → .gitignore 強化 → 依存追加
+          <div style="margin-top: 6px; font-size: 0.75rem; color: var(--color-secondary);">Step 1-4</div>
+        </div>
+        <div class="timeline-step tdd">
+          <strong>TDD</strong>
+          失敗テスト先行 → context builder → render → 統合テスト
+          <div style="margin-top: 6px; font-size: 0.75rem; color: var(--color-secondary);">Step 5-8</div>
+        </div>
+        <div class="timeline-step">
+          <strong>サイト完成</strong>
+          index / category / archive + incremental build
+          <div style="margin-top: 6px; font-size: 0.75rem; color: var(--color-secondary);">Step 9-10</div>
+        </div>
+        <div class="timeline-step">
+          <strong>連携</strong>
+          generate_email.py 統合 + runner.bat 統合
+          <div style="margin-top: 6px; font-size: 0.75rem; color: var(--color-secondary);">Step 11-12</div>
+        </div>
+        <div class="timeline-step release">
+          <strong>リリース</strong>
+          safe-commit → public 化 → Pages → OGP 検証
+          <div style="margin-top: 6px; font-size: 0.75rem; color: var(--color-secondary);">Step 13-14</div>
+        </div>
+      </div>
+
+      <h3>変更ファイル一覧</h3>
+      <table>
+        <thead><tr><th>パス</th><th>種別</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td><code>tools/generate_pages.py</code></td><td>add</td><td>SSG 本体</td></tr>
+          <tr><td><code>tools/config.py</code></td><td>add</td><td>BASE_URL / SITE_TITLE 一元化</td></tr>
+          <tr><td><code>prompts/page-template.html</code></td><td>add</td><td>個別記事 Jinja2 テンプレ</td></tr>
+          <tr><td><code>prompts/index-template.html</code></td><td>add</td><td>トップ</td></tr>
+          <tr><td><code>prompts/category-template.html</code></td><td>add</td><td>カテゴリ別アーカイブ</td></tr>
+          <tr><td><code>prompts/archive-template.html</code></td><td>add</td><td>日付別 (全カテゴリ横断)</td></tr>
+          <tr><td><code>tests/test_generate_pages.py</code></td><td>add</td><td>OGP メタ契約 (TDD)</td></tr>
+          <tr><td><code>tests/test_generate_pages_integration.py</code></td><td>add</td><td>出力 HTML パース確認</td></tr>
+          <tr><td><code>pyproject.toml</code></td><td>add</td><td>jinja2 / pytest 依存宣言</td></tr>
+          <tr><td><code>DESIGN.md</code></td><td>add</td><td>デザイントークン定義</td></tr>
+          <tr><td><code>docs/</code></td><td>add</td><td>GitHub Pages 公開源</td></tr>
+          <tr><td><code>tools/generate_email.py</code></td><td>modify</td><td>WEB_BASE + 2 プレースホルダ追加</td></tr>
+          <tr><td><code>prompts/email-template.html</code></td><td>modify</td><td>VIEW IN BROWSER + カテゴリ web リンク追加</td></tr>
+          <tr><td><code>.gitignore</code></td><td>modify</td><td>build/site/, .pytest_cache/, .env*, data/watchlist.md</td></tr>
+          <tr><td><code>news-grasp-runner.bat</code></td><td>modify</td><td>generate_pages.py + git push 統合</td></tr>
+          <tr><td><code>README.md</code></td><td>modify</td><td>公開 URL 案内追加</td></tr>
+        </tbody>
+      </table>
+
+      <h3>config.py のシード（推奨）</h3>
+      <pre><code>import os
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+BASE_URL = os.environ.get(
+    "NEWS_GRASP_BASE_URL",
+    "https://hidepon-umg.github.io/News-Grasp",
+).rstrip("/")
+
+SITE_TITLE = "News Grasp"
+SITE_DESCRIPTION = "時勢を掴み、日々に新たに。"
+DEFAULT_OG_IMAGE = f"{BASE_URL}/assets/og/summary.jpg"
+
+CATEGORIES = {
+    "fx":       {"label": "Foreign Exchange",  "jp": "為替",          "accent": "#B8860B", "glyph": "¥"},
+    "ai":       {"label": "Artificial Intelligence", "jp": "AI",     "accent": "#8B5CF6", "glyph": "◆"},
+    "it":       {"label": "IT Consulting",     "jp": "IT/コンサル",   "accent": "#2563EB", "glyph": "▲"},
+    "economy":  {"label": "Economy",           "jp": "経済",          "accent": "#047857", "glyph": "●"},
+    "game":     {"label": "Game",              "jp": "ゲーム",        "accent": "#DC2626", "glyph": "◇"},
+    "summary":  {"label": "Summary",           "jp": "総括",          "accent": "#475569", "glyph": "★"},
+}</code></pre>
+
+      <h3>テストのシード（推奨）</h3>
+      <pre><code># tests/test_generate_pages.py
+def test_og_image_is_absolute_https(sample_digest):
+    ctx = build_context(sample_digest)
+    assert ctx["og_image"].startswith("https://")
+
+def test_og_url_matches_canonical(sample_digest):
+    ctx = build_context(sample_digest)
+    assert ctx["og_url"] == ctx["canonical"]
+
+def test_og_description_within_160_chars(sample_digest):
+    ctx = build_context(sample_digest)
+    assert len(ctx["og_description"]) <= 160
+
+def test_og_image_fallback_when_no_thumb(digest_without_thumb):
+    ctx = build_context(digest_without_thumb)
+    assert ctx["og_image"].endswith(f"/assets/og/{digest_without_thumb.category_id}.jpg")</code></pre>
+
+      <div class="severity-info">
+        <strong>checkpoint</strong>
+        <p>各ステップ完了時に「何を行った / 検証済み / 残り」を 1 行で報告。grep で確認可能な実体（PASS 数、生成ファイル数、git status の差分）を必ず添える。</p>
+      </div>
+    </section>
+
+    <!-- ============================== パラメータ ============================== -->
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ</h2>
+      <p>実装着手時に確定したい数値を 3 つ。スライダーで触り、最後に「プロンプトとしてコピー」で Claude Code に戻す。</p>
+
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-desc-len">og:description 最大文字数</label>
+          <input type="range" id="param-desc-len" min="100" max="200" value="160" step="10" data-unit=" 文字">
+          <output for="param-desc-len">160 文字</output>
+        </div>
+
+        <div class="playground-control">
+          <label for="param-og-width">og:image 推奨幅</label>
+          <input type="range" id="param-og-width" min="800" max="1600" value="1136" step="80" data-unit=" px">
+          <output for="param-og-width">1136 px</output>
+        </div>
+
+        <div class="playground-control">
+          <label for="param-archive-recent">トップに並べる最近の日数</label>
+          <input type="range" id="param-archive-recent" min="3" max="30" value="7" step="1" data-unit=" 日">
+          <output for="param-archive-recent">7 日</output>
+        </div>
+
+        <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+          <button class="btn btn-accent" id="copy-prompt">プロンプトとしてコピー</button>
+          <span style="color: var(--color-secondary); font-size: 0.875rem; align-self: center;">→ Claude Code に貼って実装ステップ 5 を開始</span>
+        </div>
+      </div>
+
+      <h3>参考レンジ</h3>
+      <table>
+        <thead><tr><th>パラメータ</th><th>下限の根拠</th><th>上限の根拠</th><th>デフォルト</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>og:description</code> 文字数</td>
+            <td>100 文字未満は SNS プレビューが薄く見える</td>
+            <td>X / Facebook は 200 文字超で truncate される</td>
+            <td>160 文字（X 公式推奨）</td>
+          </tr>
+          <tr>
+            <td><code>og:image</code> 幅</td>
+            <td>800px 未満は X カードで縮小表示</td>
+            <td>1600px 超はファイルサイズ肥大化</td>
+            <td>1136 px（既存 ng-thumb FEATURED と一致）</td>
+          </tr>
+          <tr>
+            <td>トップ表示日数</td>
+            <td>3 日未満は薄い</td>
+            <td>30 日超は初回読み込みが重い</td>
+            <td>7 日（直近 1 週間）</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    // Playground 値同期
+    document.querySelectorAll('.playground-control input[type="range"]').forEach(r => {
+      const out = document.querySelector(`output[for="${r.id}"]`);
+      const unit = r.dataset.unit || '';
+      r.addEventListener('input', () => { if (out) out.textContent = r.value + unit; });
+    });
+
+    // プロンプトコピー
+    const copyBtn = document.getElementById('copy-prompt');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const values = Array.from(document.querySelectorAll('.playground-control')).map(c => {
+          const label = c.querySelector('label')?.textContent?.trim() || '';
+          const range = c.querySelector('input[type="range"]');
+          const unit = range?.dataset.unit || '';
+          return `- ${label}: ${range.value}${unit}`;
+        }).join('\n');
+        const prompt = [
+          'News-Grasp 公開 web 配信タスクの実装ステップ 5 (失敗テスト先行) を、以下のパラメータで進めてください。',
+          '',
+          values,
+          '',
+          '参考 plan: C:\\Users\\hidek\\.claude\\plans\\c-users-hidek-obsidian-ideastash-ideas-toasty-salamander.md',
+          '参考 spec: News-Grasp/docs/specs/2026-05-21_public-web-ogp.html',
+        ].join('\n');
+        try {
+          await navigator.clipboard.writeText(prompt);
+          const orig = copyBtn.textContent;
+          copyBtn.textContent = 'コピーしました';
+          setTimeout(() => copyBtn.textContent = orig, 1500);
+        } catch (e) {
+          alert('クリップボードに書き込めませんでした。\n\n' + prompt);
+        }
+      });
+    }
+
+    // 日付セット
+    const dateEl = document.getElementById('spec-date');
+    if (dateEl) dateEl.textContent = new Date().toISOString().slice(0, 10);
+  </script>
+</body>
+</html>

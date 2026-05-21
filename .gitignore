@@ -15,9 +15,14 @@
 .env.*
 .obsidian/cache
 .obsidian/workspace*
+.pytest_cache/
 .trash/
+.venv/
 Thumbs.db
 __pycache__/
+build/email.html
+build/preview-shots/
+build/preview-site/
 desktop.ini
 tests/output/
 ~$*
