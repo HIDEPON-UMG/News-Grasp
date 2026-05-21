@@ -2,7 +2,16 @@
 
 > 時勢を掴み、日々に新たに。
 
-毎朝 06:00 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → Gmail SMTP 直送（`tools/send_email.py`、差出人 `news.grasp.magazine@gmail.com`）で HTML メール配信、までを自律実行する **個人向け日次ニュースレター・パイプライン**。
+毎朝 06:00 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → 公開 web (GitHub Pages) に SSG で配信 → Gmail SMTP 直送（`tools/send_email.py`、差出人 `news.grasp.magazine@gmail.com`）で HTML メール配信、までを自律実行する **個人向け日次ニュースレター・パイプライン**。
+
+## 公開 web (2026-05-22〜)
+
+- **トップ**: https://hidepon-umg.github.io/News-Grasp/
+- **カテゴリ別アーカイブ**: `/{fx,ai,it,economy,game,summary}/`
+- **日付横断アーカイブ**: `/archive/`
+- **個別記事 (例)**: `/{cat}/{YYYY-MM-DD}/`
+
+SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生成し GitHub Pages で配信する。OGP メタは 1120×587 (1.91:1) の og:image + 180 字以内 og:description + summary_large_image card を全ページ出力。デザインシステムは [`DESIGN.md`](DESIGN.md) を一次ソースとする。詳細仕様は [`docs/specs/2026-05-21_public-web-ogp.html`](docs/specs/2026-05-21_public-web-ogp.html)。
 
 ## アーキテクチャ概要（D 案：ローカル Claude Code）
 
