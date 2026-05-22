@@ -3,13 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
 
 <title>{{ title }}</title>
 <meta name="description" content="{{ og_description }}">
 <link rel="canonical" href="{{ canonical }}">
 
-<!-- Open Graph (Slack / Facebook / Discord / Threads / iOS Messages) -->
+<!-- Open Graph -->
 <meta property="og:type" content="{{ og_type }}">
 <meta property="og:site_name" content="{{ site_title }}">
 <meta property="og:title" content="{{ og_title }}">
@@ -20,7 +19,7 @@
 <meta property="og:image:height" content="587">
 <meta property="og:locale" content="ja_JP">
 
-<!-- Twitter Cards (X) -->
+<!-- Twitter -->
 <meta name="twitter:card" content="{{ twitter_card }}">
 <meta name="twitter:title" content="{{ og_title }}">
 <meta name="twitter:description" content="{{ og_description }}">
@@ -29,77 +28,195 @@
 <!-- Webfonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
 
 <link rel="stylesheet" href="{{ base_url }}/assets/site.css">
 </head>
 <body data-category="{{ category_id }}">
-<div class="page">
 
-  <header class="site-header">
-    <div class="site-title"><a href="{{ base_url }}/">{{ site_title }}</a></div>
-    <div class="site-tagline">時勢を掴み、日々に新たに。</div>
-  </header>
-
-  <article>
-    <div class="article-header">
-      <div class="article-meta">
-        <span class="accent">{{ category_jp }} / {{ category_label }}</span>
-        &nbsp;·&nbsp;<span>{{ date }}</span>
-        {% if issue %}&nbsp;·&nbsp;<span>#{{ issue }}</span>{% endif %}
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a></h1>
       </div>
-      <h1 class="article-title">
-        <span class="article-glyph">{{ glyph }}</span>{{ title }}
-      </h1>
     </div>
+    <nav class="brand-zone__nav">
+      <a href="{{ base_url }}/">HOME</a>
+      <a href="{{ base_url }}/archive/">ARCHIVE</a>
+      <a href="{{ base_url }}/{{ category_id }}/">{{ category_label|upper }}</a>
+      <button class="brand-zone__subscribe">SUBSCRIBE →</button>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
 
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    {% for c in nav_categories %}
+    <a href="{{ base_url }}/{{ c.id }}/" class="lens-pill {% if c.is_active %}is-active{% endif %}" style="color: {{ c.accent }};">
+      <span class="lens-pill__glyph">{{ c.glyph }}</span>{{ c.name_en|upper }}
+    </a>
+    {% endfor %}
+    <span class="lens-nav__meta">{{ date }} · #{{ issue_no }}</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="{{ base_url }}/assets/og/{{ thumb_slug }}.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ {{ category_label|upper }} EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">{{ glyph }}</span>
+      <h1 class="cat-hero__title">{{ category_jp }}.</h1>
+    </div>
     {% if summary_text %}
-    <section class="summary-callout">
-      <div class="summary-label">Summary</div>
-      <div>{{ summary_text }}</div>
-    </section>
+    <div class="cat-hero__summary">{{ summary_text }}</div>
     {% endif %}
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">{{ articles|length }}</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">{{ avg_score }}</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">{{ date_mmdd }}</div>
+    <div class="cat-hero__date-small">{{ date[:4] }} · ISSUE #{{ issue_no }}</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="{{ base_url }}/{{ category_id }}/">← BACK TO {{ category_label|upper }} ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
 
-    <section class="article-list">
-      {% for art in articles %}
-      <div class="article-card">
-        <h3>
-          {% if art.score %}<span class="score-chip">{{ art.score }}</span>{% endif %}{{ art.title }}
-        </h3>
-        <div class="card-meta">
-          {% if art.date %}<span>📅 {{ art.date }}</span>{% endif %}
-          {% if art.source %} · <span>📰 {{ art.source }}</span>{% endif %}
-          {% if art.source_url %} · <a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank">🔗 元記事</a>{% endif %}
-        </div>
-        {% if art.tags %}
-        <div class="card-tags">
-          {% for tag in art.tags %}<span class="tag">#{{ tag }}</span>{% endfor %}
-        </div>
-        {% endif %}
-        {% if art.thumb %}
-        <div class="card-thumb">
-          <img src="{{ art.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
-        </div>
-        {% endif %}
-        <ul class="card-bullets">
-          {% for b in art.bullets %}<li>{{ b|safe }}</li>{% endfor %}
-        </ul>
+<div class="cat-container">
+
+{% if top %}
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>{{ top.date }}{% if top.source %} · {{ top.source }}{% endif %}</span>
+    <span class="top-story__score">{{ top.score }}</span>
+  </div>
+  <div class="top-story__grid">
+    {% if top.thumb %}
+    <div class="top-story__thumb-wrap">
+      <img src="{{ top.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    </div>
+    {% else %}
+    <div class="top-story__thumb-wrap" style="background: {{ accent }};"></div>
+    {% endif %}
+    <div>
+      <h2 class="top-story__title">
+        {% if top.source_url %}<a href="{{ top.source_url }}" rel="noopener nofollow" target="_blank" style="color: inherit;">{{ top.title }}</a>{% else %}{{ top.title }}{% endif %}
+      </h2>
+      <ul class="top-story__bullets">
+        {% for b in top.bullets %}<li>{{ b|safe }}</li>{% endfor %}
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">{{ glyph }} {{ category_label|upper }}</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#{{ date }}</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if more %}
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More {{ glyph }} stories</h2>
+    <span class="more-stories__head-meta">{{ more|length }} REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    {% for art in more %}
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">{{ "%02d"|format(loop.index + 1) }}</span>
+        {% if art.date %}<span>{{ art.date }}</span>{% endif %}
+        {% if art.source %}<span>· {{ art.source }}</span>{% endif %}
+        {% if art.score %}<span class="more-card__score">{{ art.score }}</span>{% endif %}
+      </div>
+      {% if art.thumb %}
+      <div class="more-card__thumb-wrap">
+        <img src="{{ art.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+      {% endif %}
+      <h3 class="more-card__title">
+        {% if art.source_url %}<a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank">{{ art.title }}</a>{% else %}{{ art.title }}{% endif %}
+      </h3>
+      <ul class="more-card__bullets">
+        {% for b in art.bullets %}<li>{{ b|safe }}</li>{% endfor %}
+      </ul>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if summary_text %}
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§{{ "%02d"|format(essay_index) }} OF 7 · {{ category_label|upper }}</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>{{ summary_text|render_emph }}</p>
+      <div class="editorial__cta">
+        <a href="{{ base_url }}/summary/{{ date }}/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="{{ base_url }}/{{ category_id }}/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      {% for num, label in essay_outline %}
+      <div class="editorial__outline-row {% if loop.index == essay_index %}is-active{% endif %}">
+        <span>{{ num }}</span>
+        <span>{{ label }}</span>
       </div>
       {% endfor %}
-    </section>
-  </article>
-
-  <footer class="site-footer">
-    <div>
-      <a href="{{ base_url }}/">トップ</a>
-      &nbsp;·&nbsp;<a href="{{ base_url }}/{{ category_id }}/">{{ category_jp }}アーカイブ</a>
-      &nbsp;·&nbsp;<a href="{{ base_url }}/archive/">日付アーカイブ</a>
     </div>
-    <div>
-      Auto-generated by News-Grasp Runner
-    </div>
-  </footer>
+  </div>
+</section>
+{% endif %}
 
-</div>
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · {{ category_label|upper }} · {{ date }}
+  </div>
+  <div class="site-footer__links">
+    <a href="{{ base_url }}/archive/">ARCHIVE</a>
+    <a href="{{ base_url }}/">HOME</a>
+    <a href="{{ base_url }}/{{ category_id }}/">{{ category_label|upper }}</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
 </body>
 </html>

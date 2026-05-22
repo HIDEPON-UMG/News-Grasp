@@ -268,7 +268,54 @@ def build_context(digest_path: Path) -> dict[str, Any]:
 
     articles = parse_articles(body)
 
+    # ===== Magazine Spread 用の追加 context =====
+    top = articles[0] if articles else None
+    more = articles[1:10] if len(articles) > 1 else []
+
+    # hero スタッツ: 平均スコア
+    scores = [int(a["score"]) for a in articles if str(a.get("score") or "").isdigit()]
+    avg_score = round(sum(scores) / len(scores)) if scores else 0
+
+    # 日付スタンプ "MM·DD"
+    date_mmdd = ""
+    if date_str and len(date_str) >= 10:
+        date_mmdd = f"{date_str[5:7]}·{date_str[8:10]}"
+
+    # economy だけ画像ファイル名が "economy" (Claude Design Handoff のアセット命名規約)
+    thumb_slug = category_id
+
+    # editorial section 番号 (Claude Design の 7 セクション中、各カテゴリは固定インデックス)
+    # 総論(§01) / 為替(§02) / AI(§03) / IT(§04) / 経済(§05) / ゲーム(§06) / 明日へ(§07)
+    essay_index_map = {"fx": 2, "ai": 3, "it": 4, "economy": 5, "game": 6, "summary": 1}
+    essay_index = essay_index_map.get(category_id, 1)
+
+    # Editorial outline 7 セクション固定ラベル
+    essay_outline = [
+        ("§01", "総論"),
+        ("§02", "為替"),
+        ("§03", "AI"),
+        ("§04", "IT"),
+        ("§05", "経済"),
+        ("§06", "ゲーム"),
+        ("§07", "明日へ"),
+    ]
+
+    # categories (lens nav 用)
+    nav_categories = [
+        {
+            "id": cid,
+            "name_jp": meta["jp"],
+            "name_en": meta["label"],
+            "glyph": meta["glyph"],
+            "accent": meta["accent"],
+            "is_active": cid == category_id,
+        }
+        for cid, meta in CATEGORIES.items()
+        if cid != "summary"  # lens nav は 5 lenses 想定
+    ]
+
     return {
+        # ----- OGP / meta (既存契約) -----
         "title": title,
         "date": date_str,
         "issue": fm.get("issue", ""),
@@ -288,6 +335,16 @@ def build_context(digest_path: Path) -> dict[str, Any]:
         "site_title": SITE_TITLE,
         "summary_text": summary_text,
         "articles": articles,
+        # ----- Magazine Spread 追加 context -----
+        "top": top,
+        "more": more,
+        "avg_score": avg_score,
+        "date_mmdd": date_mmdd,
+        "thumb_slug": thumb_slug,
+        "essay_index": essay_index,
+        "essay_outline": essay_outline,
+        "nav_categories": nav_categories,
+        "issue_no": fm.get("issue", "") or date_str.replace("-", ""),
     }
 
 
@@ -298,16 +355,39 @@ _jinja_env = None
 
 
 def _get_jinja_env():
-    """Jinja2 Environment を lazy 初期化 (テンプレ未配置時は import エラーを後ろ倒し)。"""
+    """Jinja2 Environment を lazy 初期化 (テンプレ未配置時は import エラーを後ろ倒し)。
+
+    render_emph フィルタは [[X]] / __X__ マーカーを Magazine デザインの
+    accent カラー強調 HTML に変換する。Python 側で html.escape を完全に通してから
+    inline 装飾だけ Markup で挿入するため、autoescape 環境下でも安全。
+    """
     global _jinja_env
     if _jinja_env is None:
         from jinja2 import Environment, FileSystemLoader, select_autoescape
+        from markupsafe import Markup
 
         _jinja_env = Environment(
             loader=FileSystemLoader(str(_TEMPLATE_DIR)),
             autoescape=select_autoescape(["html"]),
             keep_trailing_newline=True,
         )
+
+        def _render_emph(text: str) -> Markup:
+            if text is None:
+                return Markup("")
+            s = _html.escape(str(text), quote=False)
+            # [[X|Y]] -> Y, [[X]] -> X として bold + accent 背景
+            s = _WIKILINK_RE.sub(
+                lambda m: f'<strong class="emph-bold">{_html.escape(m.group(2) or m.group(1), quote=False)}</strong>',
+                s,
+            )
+            # __X__ -> underline + bold
+            s = _UNDERLINE_RE.sub(r'<span class="emph-und">\1</span>', s)
+            # **X** -> bold (累積)
+            s = _BOLD_RE.sub(r'<strong>\1</strong>', s)
+            return Markup(s)
+
+        _jinja_env.filters["render_emph"] = _render_emph
     return _jinja_env
 
 

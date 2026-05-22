@@ -1,68 +1,73 @@
 ---
 version: alpha
 name: News-Grasp
-description: ニュースダイジェスト公開 web のデザインシステム — 明朝セリフ + 温白基盤に 6 カテゴリ accent を持つ静謐な読み物 UI
+description: Magazine Spread デザインシステム — navy×gold×paper の編集者的トーン。明朝×Inter×JetBrains Mono の 3 フォント体系で 6 カテゴリ accent を切替
 colors:
-  primary: "#141413"
+  primary: "#1A1A1A"
   secondary: "#5C5A52"
-  tertiary: "#CC785C"
-  neutral: "#F8F6F3"
+  tertiary: "#C9A155"
+  neutral: "#FAF7F0"
   surface: "#FFFFFF"
-  border: "#E8E6E3"
-  on-tertiary: "#FFFFFF"
-  on-primary: "#FAF9F5"
+  border: "#E2DED4"
+  paper-soft: "#F2EEE3"
+  on-tertiary: "#181C2A"
+  on-primary: "#F0EBE0"
+  navy: "#181C2A"
+  cream: "#F0EBE0"
+  gold: "#C9A155"
   accent-fx: "#B8860B"
-  accent-ai: "#8B5CF6"
-  accent-it: "#2563EB"
-  accent-economy: "#047857"
-  accent-game: "#DC2626"
+  accent-ai: "#2D5BB8"
+  accent-it: "#2E6B52"
+  accent-economy: "#8E2A19"
+  accent-game: "#5E3D8C"
   accent-summary: "#475569"
   success: "#3D7E60"
   warning: "#B7773D"
   error: "#B83A2D"
 typography:
   h1:
-    fontFamily: "'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif"
-    fontSize: 2.5rem
-    fontWeight: 800
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
+    fontFamily: "'Inter', -apple-system, 'Segoe UI', sans-serif"
+    fontSize: 3.5rem
+    fontWeight: 900
+    lineHeight: 0.95
+    letterSpacing: "-0.03em"
   h2:
-    fontFamily: "'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif"
-    fontSize: 1.75rem
-    fontWeight: 700
-    lineHeight: 1.3
-    letterSpacing: "-0.005em"
+    fontFamily: "'Inter', -apple-system, 'Segoe UI', sans-serif"
+    fontSize: 2.25rem
+    fontWeight: 900
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   h3:
-    fontFamily: "'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif"
-    fontSize: 1.25rem
-    fontWeight: 700
-    lineHeight: 1.4
+    fontFamily: "'Noto Serif JP', 'Yu Mincho', serif"
+    fontSize: 1.5rem
+    fontWeight: 800
+    lineHeight: 1.35
+    letterSpacing: "-0.01em"
   body-lg:
-    fontFamily: "'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif"
-    fontSize: 1.0625rem
-    lineHeight: 1.85
+    fontFamily: "'Noto Serif JP', 'Yu Mincho', serif"
+    fontSize: 1rem
+    lineHeight: 1.9
   body-md:
-    fontFamily: "'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif"
+    fontFamily: "'Noto Serif JP', 'Yu Mincho', serif"
     fontSize: 0.9375rem
     lineHeight: 1.85
   body-sm:
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
-    fontSize: 0.8125rem
-    lineHeight: 1.6
+    fontFamily: "'Noto Serif JP', 'Yu Mincho', serif"
+    fontSize: 0.84rem
+    lineHeight: 1.7
   label:
-    fontFamily: "'JetBrains Mono', Consolas, 'Courier New', monospace"
+    fontFamily: "'JetBrains Mono', Consolas, monospace"
     fontSize: 0.6875rem
     fontWeight: 700
-    letterSpacing: "0.12em"
+    letterSpacing: "0.15em"
   code:
-    fontFamily: "'JetBrains Mono', Consolas, 'Courier New', monospace"
+    fontFamily: "'JetBrains Mono', Consolas, monospace"
     fontSize: 0.8125rem
     lineHeight: 1.5
 rounded:
-  sm: 4px
-  md: 8px
-  lg: 12px
+  sm: 0px
+  md: 0px
+  lg: 0px
   full: 9999px
 spacing:
   xs: 4px
@@ -74,124 +79,137 @@ spacing:
   3xl: 64px
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.md}"
+    backgroundColor: "{colors.navy}"
+    textColor: "{colors.cream}"
+    rounded: "{rounded.sm}"
     padding: 12px
-    typography: "{typography.body-md}"
+    typography: "{typography.label}"
   button-primary-hover:
-    backgroundColor: "#262625"
-    textColor: "{colors.on-primary}"
+    backgroundColor: "#262B40"
+    textColor: "{colors.cream}"
   button-accent:
-    backgroundColor: "{colors.tertiary}"
-    textColor: "{colors.on-tertiary}"
-    rounded: "{rounded.md}"
+    backgroundColor: "{colors.gold}"
+    textColor: "{colors.navy}"
+    rounded: "{rounded.sm}"
     padding: 12px
-    typography: "{typography.body-md}"
+    typography: "{typography.label}"
   button-accent-hover:
-    backgroundColor: "#B86A50"
-    textColor: "{colors.on-tertiary}"
+    backgroundColor: "#B58D45"
+    textColor: "{colors.navy}"
   button-secondary:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.sm}"
     padding: 12px
-    typography: "{typography.body-md}"
+    typography: "{typography.label}"
   button-secondary-hover:
     backgroundColor: "{colors.neutral}"
     textColor: "{colors.primary}"
   card:
     backgroundColor: "{colors.surface}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.sm}"
     padding: 24px
   card-muted:
-    backgroundColor: "{colors.neutral}"
-    rounded: "{rounded.lg}"
+    backgroundColor: "{colors.paper-soft}"
+    rounded: "{rounded.sm}"
     padding: 24px
   article-card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.sm}"
     padding: 24px
     typography: "{typography.body-md}"
   category-badge:
-    backgroundColor: "{colors.neutral}"
-    textColor: "{colors.primary}"
+    backgroundColor: "{colors.navy}"
+    textColor: "{colors.cream}"
     rounded: "{rounded.sm}"
     padding: 4px
     typography: "{typography.label}"
   input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.sm}"
     padding: 12px
   badge:
-    backgroundColor: "{colors.neutral}"
-    textColor: "{colors.primary}"
+    backgroundColor: "{colors.navy}"
+    textColor: "{colors.cream}"
     rounded: "{rounded.full}"
     padding: 8px
 ---
 
 ## Overview
 
-News Grasp 公開 web 配信のデザインシステム。**温白 (#F8F6F3) の読み物基盤** に **6 カテゴリ accent** を 1 点差し色として配置し、明朝セリフ (Noto Serif JP) を主体に長文記事を読みやすくする。OGP プレビュー (Slack / X / Threads / Discord) と本文 web の両方で同じトークンを参照することで、媒体間のブランド一貫性を担保する。
+Magazine Spread 編集者トーンのデザインシステム。**navy (`#181C2A`) × gold (`#C9A155`) × paper (`#FAF7F0`)** の 3 軸で「新聞・雑誌の紙面」のような情報密度と落ち着きを作る。本文は明朝 (Noto Serif JP)、見出し巨大数値は Inter Black 900、ラベル / メタは JetBrains Mono の **3 フォント鼎立**。角丸は全廃 (`rounded.sm = 0`) でフラット・エッジィな仕上げ。
 
 主な性格:
 
-- **明朝主体の読み物 UI**: 見出しから本文まで Noto Serif JP。欧文 / 数値 / コードは JetBrains Mono / Inter にフォールバック
-- **カテゴリ accent**: FX (金 #B8860B) / AI (紫 #8B5CF6) / IT (青 #2563EB) / 経済 (緑 #047857) / ゲーム (赤 #DC2626) / 総括 (鉄灰 #475569) の 6 種。同一画面で混ぜず、ページ単位で 1 色を主張させる
-- **静謐な余白**: 8 の倍数 spacing。記事間は `2xl` (48px) 以上で確保し、罫線は `border` トークンに揃える
-- **OGP 互換**: 1120 × 587 px の og:image を `assets/og/{cat}.jpg` に配置、og:description は 180 文字以下、twitter:card は summary_large_image
+- **navy ヘッダー + gold underline rule** で誌名 zone を強く立てる
+- **明朝主体の長文読み物 UI**: body は Noto Serif JP、`line-height` 1.85–1.9 で 220 字級の長文ブロックを耐える
+- **6 カテゴリ accent**: FX 琥珀 / AI 電子青 / IT 苔緑 / Economy 深紅 / Game 洋紫 / Summary 鉄灰。1 ページ 1 accent が原則
+- **角丸 0px**: news-thumb プレースホルダのみ例外で 4px (アセット側に閉じる)
+- **大型グリフ装飾**: editorial § や hero glyph を 96-200px の serif で gold 18% opacity 透過させる
 
-> **意図的に component から参照していないトークン**: `secondary` / `border` / `on-primary` / `accent-fx` / `accent-ai` / `accent-it` / `accent-economy` / `accent-game` / `accent-summary` / `success` / `warning` / `error` は実装側で**直接参照** (CSS 変数化 / Jinja2 経由) して使う前提。lint で `orphaned-tokens` warning が出るが意図通り。カテゴリ accent はページごとに 1 色が主導する設計で、component slot に固定で当てると逆に表現が痩せる。
+> **意図的に component から参照していないトークン**: `secondary` / `border` / `paper-soft` / `cream` / `gold` / `navy` / `accent-fx/ai/it/economy/game/summary` / `on-tertiary` / `on-primary` / `success` / `warning` / `error` は実装側で**直接参照** (CSS 変数 / Jinja2 経由) する設計。component slot に固定すると Magazine の表現幅 (1 ページ 1 accent / dark Editorial / pull quote ハイライト) が痩せる。lint で `orphaned-tokens` warning が出るが意図通り。
 
 ## Colors
 
-### コアパレット
+### コアパレット (Magazine 三軸)
 
 | Token | Hex | 用途 |
 |:--|:--|:--|
-| `primary` | `#141413` | 見出し・本文の主要テキスト。**near-black**（純黒は使わない） |
-| `secondary` | `#5C5A52` | 補助テキスト・metadata・出典 |
-| `tertiary` | `#CC785C` | リンク・トップページのブランド誘導 |
-| `neutral` | `#F8F6F3` | 温白ベース背景 (warm cream) |
-| `surface` | `#FFFFFF` | 記事カード・モーダルなど一段持ち上げる面 |
-| `border` | `#E8E6E3` | 罫線・区切り |
+| `primary` | `#1A1A1A` | 本文・見出し主要テキスト |
+| `secondary` | `#5C5A52` | 補助テキスト・メタ |
+| `tertiary` | `#C9A155` | **gold**。Editorial / Subscribe / underline 装飾 (= `gold` の alias) |
+| `neutral` | `#FAF7F0` | **paper**。ページ背景 |
+| `paper-soft` | `#F2EEE3` | Categories / Footer / Subscribe など副背景 |
+| `surface` | `#FFFFFF` | カード面 |
+| `border` | `#E2DED4` | 罫線・区切り |
+| `navy` | `#181C2A` | Brand zone / dark editorial 背景 |
+| `cream` | `#F0EBE0` | navy 上の文字色 |
+| `gold` | `#C9A155` | アクセント (`tertiary` の意味的別名) |
 
 ### カテゴリ accent
 
 | Token | Hex | 用途 |
 |:--|:--|:--|
-| `accent-fx` | `#B8860B` | 為替 (FX)。金色寄りの落ち着いた黄土 |
-| `accent-ai` | `#8B5CF6` | AI。深めの紫 |
-| `accent-it` | `#2563EB` | IT / コンサル。鮮やかな青 |
-| `accent-economy` | `#047857` | 経済。深緑 |
-| `accent-game` | `#DC2626` | ゲーム。鮮やかな赤 |
-| `accent-summary` | `#475569` | 総括。鉄灰 |
+| `accent-fx` | `#B8860B` | 為替 (琥珀) |
+| `accent-ai` | `#2D5BB8` | AI (電子青) |
+| `accent-it` | `#2E6B52` | IT/コンサル (苔緑) |
+| `accent-economy` | `#8E2A19` | 経済 (深紅) |
+| `accent-game` | `#5E3D8C` | ゲーム (洋紫) |
+| `accent-summary` | `#475569` | 総括 (鉄灰) |
 
-> **使用ルール**: ページごとに **1 カテゴリ accent のみ**主導する。1 ページに 2 色以上の accent を並べない (アーカイブ・トップページのカード一覧では各カードの**左罫線色**にだけ使う)。
+### gold tint (Editorial / underline 装飾)
+
+| 用途 | rgba 値 |
+|:--|:--|
+| gold underline (Hero keyword) | `rgba(201,161,85,0.35)` |
+| § 装飾 (Editorial 大型) | `rgba(201,161,85,0.18)` |
+| § 縦罫線 | `rgba(201,161,85,0.30)` |
+| lead box 半透明地 | `rgba(201,161,85,0.12)` |
+| emphasis `[[X]]` 背景 (gold base) | `rgba(201,161,85,0.18)` |
 
 ### セマンティクス
 
 | Token | Hex | 用途 |
 |:--|:--|:--|
 | `success` | `#3D7E60` | 成功・完了 |
-| `warning` | `#B7773D` | 警告・要注意 |
-| `error` | `#B83A2D` | エラー・破壊的操作 |
+| `warning` | `#B7773D` | 警告 |
+| `error` | `#B83A2D` | エラー |
 
 ## Typography
 
-- **見出し (h1–h3)**: `Noto Serif JP` → フォールバックで `Yu Mincho` / `Hiragino Mincho ProN` / `serif`。**weight 700–800**, 字詰めはやや tight
-- **本文 (body-lg / body-md)**: `Noto Serif JP`。行間 1.85 で長文を読みやすく
-- **補助 (body-sm)**: `Inter`。日付 / 出典 / カテゴリ説明など欧文混在テキスト
-- **ラベル**: `JetBrains Mono` で `letter-spacing 0.12em` の小キャプス風
-- **コード**: `JetBrains Mono` → `Consolas` → `Courier New`
+3 フォント鼎立:
 
-> Noto Serif JP は Google Fonts 配信。HTML 出力時に preconnect で先読みする。Web フォント不可環境では `Yu Mincho` / `Hiragino Mincho ProN` にフォールバック。
+- **本文 (body-lg / body-md / body-sm / h3)**: `Noto Serif JP` → `Yu Mincho` フォールバック
+- **巨大見出し / 数値 (h1 / h2)**: `Inter` 900 weight。letter-spacing -0.02 ~ -0.03em で詰める
+- **ラベル / メタ / グリフ (label / code)**: `JetBrains Mono` 700 weight。letter-spacing 0.12-0.15em で大文字キャプス風
+
+Hero h1 は 3.5rem (56px) ~ 5.5rem (88px) まで使う。Editorial h2 は 2.25rem。本文は 0.9375rem-1rem。
 
 ## Layout
 
-8 の倍数を基準にした段階。
+8 の倍数 spacing。
 
 | Token | px |
 |:--|:--|
@@ -203,10 +221,12 @@ News Grasp 公開 web 配信のデザインシステム。**温白 (#F8F6F3) の
 | `2xl` | 48 |
 | `3xl` | 64 |
 
-- 記事セクション間: `2xl` (48px)
-- カード内パディング: `lg` (24px)
-- 本文行間隔: `md` (16px)
-- インライン要素間: `sm` (8px)
+- ページ最大幅: 1280px (Magazine 想定)
+- セクション padding: 40-64px 横 / 24-64px 縦
+- Lens nav padding: `12px 40px`
+- Hero: 480px height のフル幅 KV
+- More stories: 2 カラム grid `gap: 32 40`
+- Editorial: 3 カラム `200px / 1fr / 280px`
 
 **ブレークポイント**:
 
@@ -215,69 +235,75 @@ News Grasp 公開 web 配信のデザインシステム。**温白 (#F8F6F3) の
 | sm | 640px |
 | md | 768px |
 | lg | 1024px |
-
-最大コンテンツ幅は `42rem` (672px) を本文に、`64rem` (1024px) をアーカイブ一覧に使う。
+| xl | 1280px |
 
 ## Elevation & Depth
 
-シャドウは控えめに。2 段階のみ。
+シャドウなし (`elevation.none` のみ)。境界は **gold 2px rule** または `border` 1px で表現。
 
 | レベル | 値 |
 |:--|:--|
-| `none` | 平面（罫線のみで区切り） |
-| `sm` | `0 1px 2px rgba(20, 20, 19, 0.04)` カード持ち上げ |
+| `none` | 平面 (gold rule または border のみ) |
 
-濃いシャドウや 3 段以上のレイヤは使わない。**境界は `border` トークンで表現**することを優先。
+濃いシャドウや 2 段以上のレイヤは使わない。Magazine のフラットさを担保。
 
 ## Shapes
 
 | Token | 値 | 用途 |
 |:--|:--|:--|
-| `rounded.sm` | 4px | バッジ・タグ |
-| `rounded.md` | 8px | ボタン・入力 |
-| `rounded.lg` | 12px | カード |
-| `rounded.full` | 9999px | アバター・ピル |
+| `rounded.sm` | 0px | 既定 |
+| `rounded.md` | 0px | カード・ボタン |
+| `rounded.lg` | 0px | モーダル |
+| `rounded.full` | 9999px | バッジ・アバター (例外) |
 
-新聞風の落ち着きを残すため、カードでも丸めは 12px までに留める。
+**全要素 angular** が原則。badge / placeholder thumb / pull quote 等の例外は実装側でローカルに上書き。
 
 ## Components
 
 ### `article-card`
 
-記事カード。`surface` 背景 + `rounded.lg` + 24px パディング。**左端 4px の罫線**にカテゴリ accent を使う (CSS 変数 `--accent-current` 経由)。
+Magazine の "More stories" card。`surface` 背景 + 0 角丸 + 24px padding。下端 `1px solid border`。
 
 ### `category-badge`
 
-カテゴリラベル小バッジ。`neutral` 背景 + `primary` テキスト + `rounded.sm`。背景にカテゴリ accent を 8% 不透明で重ねる派生を 1 種だけ許可。
+`navy` 背景 + `cream` 文字 + 0 角丸。Brand zone の SUBSCRIBE ボタンと同じトーン。
 
-### `button-primary`
+### `button-primary` / `button-accent`
 
-主要 CTA (near-black + warm-white)。記事末尾の「メール購読」「次の記事へ」など。
+- primary: navy bg + cream text (Hero CTA / Subscribe form 送信)
+- accent: gold bg + navy text (Editorial primary CTA)
+両者とも 0 角丸 + mono ラベル + letter-spacing 0.15em。
 
-### `button-accent`
+### `card` / `card-muted`
 
-ブランド前面の誘導 CTA (Claude Orange + white)。トップ「最新号を読む」のみ。1 画面に 1 個。
+- card: surface 背景 + border + 0 角丸
+- card-muted: paper-soft 背景 + 0 角丸
 
-### `card` / `card-muted` / `input` / `badge`
+### `input`
 
-汎用。`card` は記事冒頭の summary callout、`card-muted` はメタ情報枠、`badge` は OGP プレビューや日付 chip に使う。
+surface 背景 + 0 角丸。focus 時は `border: 2px solid gold` で囲む (実装側 CSS)。
+
+### `badge`
+
+`navy` 背景 + `cream` 文字 + `rounded.full`。Score chip など丸い小バッジ用 (角丸 0 原則の例外)。
 
 ## Do's and Don'ts
 
 ### ✅ Do
 
-- 1 ページに **1 カテゴリ accent** のみ主導させる (左罫線・見出し下線・リンク色に限定)
-- 背景は **`neutral` (#F8F6F3)** を使う。純白はカード面のみ
-- テキストは `primary` (#141413) と `secondary` (#5C5A52) の **2 色のみ**
-- 余白は **8 の倍数**で揃える
-- 罫線は `border` (`#E8E6E3`) で統一
-- 見出しは明朝、ラベルは JetBrains Mono の小キャプス
+- 1 ページに **1 カテゴリ accent** のみ主導 (Hero 罫線 / TOP STORY バッジ / score / outline で)
+- navy ヘッダーには **gold 2px rule (opacity 0.7)** を必ず添える
+- emphasis は `[[X]]` (accent 12% 背景 + accent 色文字 + 太字) と `__X__` (2px accent 下線) の 2 種のみ
+- 本文は明朝 1.85-1.9 行間。120 字以上のブロックは line-height を緩める
+- ラベル / メタは mono 大文字 + letter-spacing 0.15em で「新聞風」を作る
+- 角丸は 0px 維持 (Magazine の鋭利さが命)
 
 ### ❌ Don't
 
-- 1 ページに 2 種以上のカテゴリ accent を並べない (アーカイブの **左罫線のみ** が例外)
-- 純黒 `#000000` を本文に使わない (`#141413` を使う)
-- 純白 `#FFFFFF` をページ背景に使わない (クリーム `#F8F6F3` を使う)
-- 角を立てない (最小でも `rounded.sm` = 4px)
-- カテゴリ accent をボタン背景に使わない (色がうるさくなる)
-- 影を 2 段以上重ねない
+- 1 ページに 2 種以上のカテゴリ accent を並べない (アーカイブ一覧の左罫線のみ例外)
+- 純黒 `#000000` をテキストに使わない (`#1A1A1A`)
+- 純白 `#FFFFFF` をページ背景に使わない (`#FAF7F0` paper)
+- 角を丸めない (`rounded.full` の badge 1 種だけ例外)
+- 影を 2 段以上重ねない (本デザインは原則 shadow 無し)
+- カテゴリ accent をボタン背景に使わない (CTA は navy / gold / outline の 3 種に限定)
+- Hero の巨大グリフ・editorial § を accent カラーで塗らない (gold opacity 0.18 で抑える)

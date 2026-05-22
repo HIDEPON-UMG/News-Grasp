@@ -22,6 +22,7 @@ BASE_URL: str = os.environ.get(
 
 SITE_TITLE: str = "News Grasp"
 SITE_DESCRIPTION: str = "時勢を掴み、日々に新たに。"
+SITE_TAGLINE_EN: str = "FIVE LENSES ON TODAY"
 
 OG_DESCRIPTION_MAX: int = 180
 OG_IMAGE_WIDTH: int = 1120
@@ -30,13 +31,24 @@ TOP_RECENT_DAYS: int = 7
 
 DEFAULT_OG_IMAGE: str = f"{BASE_URL}/assets/og/summary.jpg"
 
+# Magazine palette (DESIGN.md と同期)
+NAVY: str = "#181C2A"
+CREAM: str = "#F0EBE0"
+GOLD: str = "#C9A155"
+PAPER: str = "#FAF7F0"
+PAPER_SOFT: str = "#F2EEE3"
+INK: str = "#1A1A1A"
+INK_DIM: str = "#5C5A52"
+BORDER: str = "#E2DED4"
+
 # カテゴリ定義: digest frontmatter の categoryId をキーに引く。
-# accent / glyph は既存 .obsidian/snippets/news-grasp.css と整合させること。
+# economy キーは公開済 URL `/economy/` 互換のため維持 (Claude Design 仕様の `econ` は内部慣用名)。
+# accent / glyph / name_en は Claude Design Handoff README に整合させた値。
 CATEGORIES: dict[str, dict[str, str]] = {
     "fx":      {"label": "Foreign Exchange",        "jp": "為替",        "accent": "#B8860B", "glyph": "¥"},
-    "ai":      {"label": "Artificial Intelligence", "jp": "AI",          "accent": "#8B5CF6", "glyph": "◆"},
-    "it":      {"label": "IT Consulting",           "jp": "IT/コンサル", "accent": "#2563EB", "glyph": "▲"},
-    "economy": {"label": "Economy",                  "jp": "経済",        "accent": "#047857", "glyph": "●"},
-    "game":    {"label": "Game",                     "jp": "ゲーム",      "accent": "#DC2626", "glyph": "◇"},
+    "ai":      {"label": "Artificial Intelligence", "jp": "AI",          "accent": "#2D5BB8", "glyph": "◆"},
+    "it":      {"label": "IT & Consulting",         "jp": "IT-Consulting", "accent": "#2E6B52", "glyph": "⌗"},
+    "economy": {"label": "Economy",                  "jp": "経済",        "accent": "#8E2A19", "glyph": "§"},
+    "game":    {"label": "Gaming",                   "jp": "ゲーム",      "accent": "#5E3D8C", "glyph": "▶"},
     "summary": {"label": "Summary",                  "jp": "総括",        "accent": "#475569", "glyph": "★"},
 }
