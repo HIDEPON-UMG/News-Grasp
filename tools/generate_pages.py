@@ -790,6 +790,209 @@ def build_all_overviews(entries: list[dict[str, Any]], docs_root: Path) -> list[
     return written
 
 
+# ---------- Phase 5: Editorial Summary (Pattern D) ----------
+
+# 7 セクションの固定タグ + accent (Claude Design site/desktop-extra.jsx の DesktopSummaryOnly より)
+_SUMMARY_SECTION_TAGS = ["総論", "為替", "AI", "IT", "経済", "ゲーム", "明日へ"]
+_SUMMARY_SECTION_COLORS = ["#1A1A1A", "#B8860B", "#2D5BB8", "#2E6B52", "#8E2A19", "#5E3D8C", "#C9A155"]
+# §02-06 を担当する category id (順序固定)
+_SUMMARY_CAT_ORDER = [None, "fx", "ai", "it", "economy", "game", None]
+
+
+def _extract_reflection(digest_path: Path) -> dict[str, Any]:
+    """summary digest の frontmatter / 本文から reflection 構造を取り出す。
+
+    γ schema (2026-05-23 で導入予定) では frontmatter に reflection: {} 構造を持つが、
+    まだ未対応の digest が大半なので、frontmatter から取れなければ {} を返す。
+    取れた場合は {lead, subtitle, pull_quote, takeaways, sections} を返す。
+
+    現実装はスケルトン (frontmatter スカラー読みのみ)。本格的な reflection 解析は
+    Phase 5 後半で digest 側を γ schema に揃えてから対応する。
+    """
+    # TODO: γ schema 対応後に本実装 (YAML reflection ブロックのパース)
+    # 今は空 dict を返してテンプレ側 fallback に任せる
+    return {}
+
+
+def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
+                  digest_sources: list[Path] | None = None) -> Path:
+    """Phase 5: 日付別 Editorial Summary (Pattern D) docs/{date}/summary/index.html を生成。
+
+    γ schema digest があれば reflection 各フィールドを正しく注入。無ければテンプレ
+    fallback (lead = summary_text / pull_quote 非表示 / takeaways = Top 3 記事タイトル /
+    sections = 5 カテゴリ summary + 総論 / 明日へ プレースホルダ) で必ず描画する。
+    """
+    same_day = [e for e in entries if e["date"] == date]
+    if not same_day:
+        raise ValueError(f"build_summary: entries に date={date} が無い")
+
+    # summary digest (同日カテゴリ summary)
+    editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
+
+    # γ reflection が取れれば優先 (今は未対応で常に {})
+    reflection: dict[str, Any] = {}
+    if digest_sources:
+        for src in digest_sources:
+            if "summary" in str(src).lower() and date in str(src):
+                reflection = _extract_reflection(src) or {}
+                break
+
+    # ---- Hero: subtitle / lead ----
+    hero_lead = (
+        reflection.get("lead")
+        or (editorial["summary_text"] if editorial else "")
+        or "本日の Editorial Digest 準備中。"
+    )
+    if len(hero_lead) > 260:
+        hero_lead = hero_lead[:258] + "…"
+
+    theme_source = editorial["summary_text"] if editorial else ""
+    left, right = _split_theme_phrases(theme_source)
+    hero_subtitle = reflection.get("subtitle") or (
+        f"{left}と{right}" if left and right else ""
+    )
+
+    # ---- Pull quote ----
+    pull_quote = reflection.get("pull_quote") or {"text": "", "from": ""}
+
+    # ---- 7 sections ----
+    sections_raw = reflection.get("sections") or []
+    if sections_raw and len(sections_raw) >= 7:
+        # γ schema 経由の 7 セクション
+        sections = []
+        for i, sec in enumerate(sections_raw[:7]):
+            sections.append({
+                "number": i + 1,
+                "tag": sec.get("tag") or _SUMMARY_SECTION_TAGS[i],
+                "color": sec.get("color") or _SUMMARY_SECTION_COLORS[i],
+                "heading": sec.get("heading") or "",
+                "body": sec.get("body") or "",
+                "canonical": "",
+            })
+    else:
+        # Fallback: §01=総論 / §02-06=各カテゴリ Top 1 / §07=明日へ
+        by_cat: dict[str, dict[str, Any]] = {}
+        for e in same_day:
+            cid = e["category_id"]
+            if cid != "summary" and cid not in by_cat:
+                by_cat[cid] = e
+        sections = []
+        for i in range(7):
+            tag = _SUMMARY_SECTION_TAGS[i]
+            color = _SUMMARY_SECTION_COLORS[i]
+            cid = _SUMMARY_CAT_ORDER[i]
+            if i == 0:
+                # 総論
+                body = (editorial["summary_text"] if editorial
+                        else "本日の総論データ準備中。")
+                heading = "本日の総論"
+                canonical = editorial["canonical"] if editorial else ""
+            elif i == 6:
+                # 明日へ
+                body = (editorial["summary_text"] if editorial
+                        else "明日への示唆データ準備中。")
+                # 同じ summary_text を流用するので前後重複しないよう短縮
+                if editorial and len(body) > 200:
+                    body = body[-200:]
+                heading = "明日への示唆"
+                canonical = editorial["canonical"] if editorial else ""
+            else:
+                e = by_cat.get(cid) if cid else None
+                if e:
+                    heading = e.get("top_title") or f"{CATEGORIES[cid]['jp']}本日のテーマ"
+                    body = e.get("summary_text") or f"{CATEGORIES[cid]['jp']}カテゴリのダイジェスト準備中。"
+                    canonical = e["canonical"]
+                else:
+                    heading = f"{CATEGORIES[cid]['jp']}本日のテーマ" if cid else tag
+                    body = f"{CATEGORIES[cid]['jp'] if cid else tag}カテゴリのダイジェスト準備中。"
+                    canonical = f"{BASE_URL}/{cid}/" if cid else ""
+            sections.append({
+                "number": i + 1,
+                "tag": tag,
+                "color": color,
+                "heading": heading,
+                "body": body,
+                "canonical": canonical,
+            })
+
+    # ---- Key Takeaways (3 件) ----
+    takeaways_raw = reflection.get("takeaways") or []
+    if takeaways_raw and len(takeaways_raw) >= 3:
+        takeaways = [
+            {
+                "n": t.get("n") or (i + 1),
+                "tag": t.get("tag") or _SUMMARY_SECTION_TAGS[1 + i],
+                "color": t.get("color") or _SUMMARY_SECTION_COLORS[1 + i],
+                "text": t.get("text") or "",
+            }
+            for i, t in enumerate(takeaways_raw[:3])
+        ]
+    else:
+        # Fallback: 同日 Top 3 entries (score 降順) を takeaways に流用
+        sorted_by_score = sorted(same_day, key=lambda e: e.get("top_score", 0), reverse=True)
+        top3 = sorted_by_score[:3]
+        takeaways = []
+        for i, e in enumerate(top3):
+            takeaways.append({
+                "n": i + 1,
+                "tag": e["category_label"],
+                "color": e["accent"],
+                "text": e.get("top_title") or e.get("summary_text", ""),
+            })
+        # 3 件未満なら空セル詰め
+        while len(takeaways) < 3:
+            takeaways.append({
+                "n": len(takeaways) + 1,
+                "tag": "—",
+                "color": "#5C5A52",
+                "text": "本日の結論準備中。",
+            })
+
+    # ---- Stats ----
+    sources_count = sum(e.get("articles_count", 0) for e in same_day)
+    stats = {
+        "sections": 7,
+        "read_min": 9,
+        "takeaways": len(takeaways),
+        "sources": sources_count or len(same_day),
+    }
+
+    # ---- Render ----
+    issue_no = date.replace("-", "")
+    canonical = f"{BASE_URL}/{date}/summary/"
+    ctx = {
+        "site_title": SITE_TITLE,
+        "site_tagline": SITE_DESCRIPTION,
+        "base_url": BASE_URL,
+        "canonical": canonical,
+
+        "date": date,
+        "issue_no": issue_no,
+
+        "hero_subtitle": hero_subtitle,
+        "hero_lead": hero_lead,
+
+        "pull_quote": pull_quote,
+        "sections": sections,
+        "takeaways": takeaways,
+        "stats": stats,
+    }
+    out = Path(docs_root) / date / "summary" / "index.html"
+    return render_page(ctx, out, template_name="summary-template.html")
+
+
+def build_all_summaries(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
+    """全 unique date について summary ページを生成。"""
+    unique_dates = sorted({e["date"] for e in entries if e.get("date")}, reverse=True)
+    written: list[Path] = []
+    for d in unique_dates:
+        try:
+            written.append(build_summary(d, entries, docs_root))
+        except Exception as exc:
+            print(f"[warn] summary build failed for {d}: {exc}", file=sys.stderr)
+    return written
+
+
 def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
     """カテゴリ別アーカイブ docs/{cat}/index.html を生成。"""
     written: list[Path] = []
@@ -867,9 +1070,11 @@ def main(argv: list[str] | None = None) -> int:
         cat_pages = build_category_pages(entries, docs_root)
         arc = build_archive(entries, docs_root)
         overviews = build_all_overviews(entries, docs_root)
+        summaries = build_all_summaries(entries, docs_root)
         print(
             f"wrote index/archive: {idx.name}, {len(cat_pages)} category page(s), "
-            f"{arc.parent.name}/{arc.name}, {len(overviews)} overview page(s)"
+            f"{arc.parent.name}/{arc.name}, {len(overviews)} overview page(s), "
+            f"{len(summaries)} summary page(s)"
         )
     return 0
 

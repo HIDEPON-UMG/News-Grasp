@@ -6,12 +6,26 @@
 
 ## 公開 web (2026-05-22〜)
 
-- **トップ**: https://hidepon-umg.github.io/News-Grasp/
-- **カテゴリ別アーカイブ**: `/{fx,ai,it,economy,game,summary}/`
-- **日付横断アーカイブ**: `/archive/`
-- **個別記事 (例)**: `/{cat}/{YYYY-MM-DD}/`
+Magazine Spread デザイン (navy / cream / gold + 角丸 0 + Noto Serif JP × Inter ×
+JetBrains Mono の 3 フォント鼎立) で、4 階層の URL 体系を持つ。
 
-SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生成し GitHub Pages で配信する。OGP メタは 1120×587 (1.91:1) の og:image + 180 字以内 og:description + summary_large_image card を全ページ出力。デザインシステムは [`DESIGN.md`](DESIGN.md) を一次ソースとする。詳細仕様は [`docs/specs/2026-05-21_public-web-ogp.html`](docs/specs/2026-05-21_public-web-ogp.html)。
+| 階層 | URL | パターン | 役割 |
+|---|---|---|---|
+| Home | https://hidepon-umg.github.io/News-Grasp/ | **Variant B** (Editorial Landing) | サイトの顔。Today's Theme 76px ハイライト見出し + Editor's Top 3 + Featured Story + 5 lens カテゴリグリッド + Editorial preview |
+| Daily Overview | `/{YYYY-MM-DD}/` | **Pattern C** (Category Overview) | 1 日分の俯瞰。Page header (DAILY OVERVIEW + 56px 日付) → Theme banner → Category rows × 5 (KV + Top 3 + Score histogram) |
+| Editorial Summary | `/{YYYY-MM-DD}/summary/` | **Pattern D** (Summary Only) | 1 日分の長文考察。Dark hero + Pull quote + 7 § sections (総論/為替/AI/IT/経済/ゲーム/明日へ) + Key Takeaways × 3 |
+| Category Detail | `/{cat}/{YYYY-MM-DD}/` | **Variant B Magazine** | 1 カテゴリの詳細。480px Hero KV + TOP STORY + More stories + Editorial reflection |
+| Category Archive | `/{fx,ai,it,economy,game,summary}/` | 旧スタイル | カテゴリの全 digest 一覧 |
+| 日付横断 Archive | `/archive/` | 旧スタイル | 全カテゴリ × 全日付 |
+
+SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生成し GitHub
+Pages で配信する。Daily Overview と Editorial Summary は γ schema の `reflection`
+ブロック（`prompts/routine-system.md` ステップ 4 参照）が digest に入っていれば
+リッチに、無ければ fallback (lead = summary_text / takeaways = Top 3 / sections =
+各カテゴリ Top 1 + 総論/明日へプレースホルダ) で必ず描画する。OGP メタは 1120×587
+(1.91:1) の og:image + 180 字以内 og:description + summary_large_image card を全
+ページ出力。デザインシステムは [`DESIGN.md`](DESIGN.md) を一次ソースとする。詳細
+仕様は [`docs/specs/2026-05-21_public-web-ogp.html`](docs/specs/2026-05-21_public-web-ogp.html)。
 
 ## アーキテクチャ概要（D 案：ローカル Claude Code）
 

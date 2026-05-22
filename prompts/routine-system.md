@@ -232,35 +232,80 @@ py tools/fetch_ogp.py "https://example.com/article"
 }
 ```
 
-### ステップ 4: テーマ考察の生成
+### ステップ 4: テーマ考察の生成 (γ schema)
 
-カテゴリ横断で、当日の通底テーマを抽出。以下の 5 ブロックで構成（**全体 800〜1200 字目安**）：
+カテゴリ横断で、当日の通底テーマを抽出。**Phase 5 で /News-Grasp/{date}/summary/ の
+Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflection` ブロックを 7
+セクション + 3 takeaways + pull_quote 構造で出力する：
 
 ```jsonc
 {
   "title": "金利の天井とAIの底入れ",       // 大見出し（10〜20 字）
   "subtitle": "...",                     // サブタイトル（30〜50 字）
-  "lead": "本日5分野・20〜25 本のニュースから浮かび上がる最大のテーマは [[X]] と [[Y]] の同時進行である。以下、各カテゴリを横断して読み解く。",
-  "pull_quote": "「単一の強い製品」から「__エコシステムでの占有率__」へ──プラットフォーム経済が成熟期に入った日。",
-  "sections": [                          // ちょうど 5 セクション
-    { "tag": "総論",      "heading": "...", "body": "..." },
-    { "tag": "為替・経済", "heading": "...", "body": "..." },
-    { "tag": "AI・技術",   "heading": "...", "body": "..." },
-    { "tag": "産業・業界", "heading": "...", "body": "..." },
-    { "tag": "明日へ",     "heading": "...", "body": "..." }
+
+  // ===== γ schema (Pattern D Editorial Summary 用) =====
+
+  // Hero リード (200 字、gold 12% 半透明ボックスに入る)
+  "lead": "本日5分野・20〜25 本のニュースから浮かび上がる最大のテーマは [[X]] と [[Y]] の同時進行である。以下、各カテゴリを横断して読み解く──",
+
+  // Pull quote (Georgia 120px " + 28px 引用 + gold underline)。
+  // emphasis は引用中の gold underline 強調語句（1 つだけ）。from はそれが出る§
+  "pull_quote": {
+    "text": "「単一の強い製品」から「[[エコシステムでの占有率]]」へ──プラットフォーム経済が成熟期に入った日。",
+    "emphasis": "エコシステムでの占有率",
+    "from": "§06 GAME"
+  },
+
+  // **ちょうど 7 セクション**: 総論 / 為替 / AI / IT / 経済 / ゲーム / 明日へ
+  // 順序固定、color はテンプレ側で固定値 (_SUMMARY_SECTION_COLORS) を当てるので不要
+  "sections": [
+    { "number": 1, "tag": "総論",    "heading": "本日の総論",       "body": "..." },
+    { "number": 2, "tag": "為替",    "heading": "...",             "body": "..." },
+    { "number": 3, "tag": "AI",      "heading": "...",             "body": "..." },
+    { "number": 4, "tag": "IT",      "heading": "...",             "body": "..." },
+    { "number": 5, "tag": "経済",    "heading": "...",             "body": "..." },
+    { "number": 6, "tag": "ゲーム",  "heading": "...",             "body": "..." },
+    { "number": 7, "tag": "明日へ",  "heading": "明日への示唆",     "body": "..." }
   ],
-  "takeaways": [                         // ちょうど 3 つ
-    { "tag": "為替", "color": "#B8860B", "text": "..." },
-    { "tag": "AI",   "color": "#2D5BB8", "text": "..." },
-    { "tag": "産業", "color": "#2E6B52", "text": "..." }
+
+  // **ちょうど 3 件**: KEY TAKEAWAYS (3 カラム / 64px 番号バー + tag + 本文)
+  // n は 01-03。color はカテゴリ accent を当てる
+  "takeaways": [
+    { "n": 1, "tag": "為替", "color": "#B8860B", "text": "..." },
+    { "n": 2, "tag": "AI",   "color": "#2D5BB8", "text": "..." },
+    { "n": 3, "tag": "産業", "color": "#2E6B52", "text": "..." }
   ],
-  "related": [                           // 過去号への参照（最大 3 件）
+
+  // 過去号への参照（最大 3 件、Pattern D では現状未使用だが互換のため残す）
+  "related": [
     { "date": "2026-04-25", "title": "..." }
   ]
 }
 ```
 
-各 section の body は **150〜250 字**、5 軸のいずれかの観点で深く掘る。`[[]]`/`__` を必ず使う。
+#### γ schema の必須ルール
+
+- **sections は必ず 7 件**。順序は 総論 → 為替 → AI → IT → 経済 → ゲーム → 明日へ で固定。
+  これは Pattern D のセクションタグ（`_SUMMARY_SECTION_TAGS` in `tools/generate_pages.py`）と
+  揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし）でも 7 件は守り、該当カテゴリは
+  「ゲーム関連は本日休載」のように 1 文で繋ぐ
+- **takeaways は必ず 3 件**。`n` は 1/2/3 の番号、`tag` は本文中で最も強調したい軸、`color` は対応する
+  カテゴリ accent (`#B8860B` / `#2D5BB8` / `#2E6B52` / `#8E2A19` / `#5E3D8C` / `#475569`) から選ぶ
+- **pull_quote.text** は **40〜80 字** が目安。Georgia 120px の大型引用符と並ぶので長すぎると改行が乱れる。
+  `emphasis` 部分は `[[ ]]` で囲まなくてよい (テンプレ側で gold underline を当てる)
+- **lead は 180〜220 字**。`[[ ]]` を 2-4 箇所だけ使う（多すぎ禁止）
+- **各 section body は 150〜250 字**。`[[ ]]` / `__ __` を必ず使う
+
+#### 旧 schema (5 sections) からの差分
+
+- sections 配列は 5 → **7** に拡張 (IT と ゲーム を独立、§07「明日へ」を追加)
+- pull_quote は文字列 → **オブジェクト {text, emphasis, from}** に変換
+- takeaways に `n` フィールドを追加 (1〜3 の番号)
+- sections / takeaways に `number` / `n` フィールドを追加
+
+旧 schema の digest を読み込んだ場合、`tools/generate_pages.py` の `build_summary()` は fallback で
+描画する (lead=summary_text / pull_quote 非表示 / takeaways=Top 3 / sections=各カテゴリ Top 1 +
+総論/明日へプレースホルダ)。順次 γ schema に揃えていけば自動的に richer な Editorial Summary が出る。
 
 ### ステップ 5: ファイル生成
 

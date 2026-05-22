@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>{{ site_title }} — Editorial Summary {{ date }}</title>
+<meta name="description" content="{{ date }} の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="{{ canonical }}">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="{{ site_title }}">
+<meta property="og:title" content="{{ site_title }} — Editorial Summary {{ date }}">
+<meta property="og:description" content="{{ date }} の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:image" content="{{ base_url }}/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ site_title }} — Editorial Summary {{ date }}">
+<meta name="twitter:description" content="{{ date }} の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="{{ base_url }}/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="{{ base_url }}/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="{{ base_url }}/">HOME</a>
+      <a href="{{ base_url }}/archive/">ARCHIVE</a>
+      <a href="{{ base_url }}/{{ date }}/">DIGEST</a>
+      <button class="brand-zone__subscribe">SUBSCRIBE →</button>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="{{ base_url }}/{{ date }}/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #{{ issue_no }}</div>
+      <h2 class="summary-hero__title">本日のテーマ考察</h2>
+      {% if hero_subtitle %}
+      <div class="summary-hero__subtitle">「{{ hero_subtitle }}」</div>
+      {% endif %}
+      <div class="summary-hero__lead">{{ hero_lead }}</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">{{ stats.sections }}</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~{{ stats.read_min }}</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">{{ stats.takeaways }}</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">{{ stats.sources }}</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+{% if pull_quote and pull_quote.text %}
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">{{ pull_quote.text|safe }}</div>
+      {% if pull_quote.from %}<div class="summary-pull__from">─── {{ pull_quote.from }} より</div>{% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの § セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      {% for sec in sections %}
+      <div class="summary-sec">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: {{ sec.color }};">§{{ "%02d"|format(sec.number) }}</span>
+          <span class="summary-sec__tag" style="background: {{ sec.color }};">{{ sec.tag }}</span>
+        </div>
+        <h3 class="summary-sec__title">{{ sec.heading }}</h3>
+        <p class="summary-sec__body">
+          {{ sec.body|render_emph }}
+          {% if sec.canonical %}
+          <a class="summary-sec__more" href="{{ sec.canonical }}" style="color: {{ sec.color }};">READ FULL §{{ "%02d"|format(sec.number) }} →</a>
+          {% endif %}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      {% for t in takeaways %}
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: {{ t.color }};">{{ "%02d"|format(t.n) }}</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: {{ t.color }};">{{ t.tag|upper }}</div>
+          <div class="summary-take__text">{{ t.text|render_emph }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="{{ base_url }}/{{ date }}/">全{{ stats.sources }}本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="{{ base_url }}/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · {{ date }} · #{{ issue_no }}
+  </div>
+  <div class="site-footer__links">
+    <a href="{{ base_url }}/">HOME</a>
+    <a href="{{ base_url }}/{{ date }}/">DIGEST</a>
+    <a href="{{ base_url }}/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
