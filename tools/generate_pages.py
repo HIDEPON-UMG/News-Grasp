@@ -463,6 +463,24 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         top_score_int = int(raw_score) if str(raw_score).strip().isdigit() else 0
     except (TypeError, ValueError):
         top_score_int = 0
+    # Phase 4 (Overview C) 用: 全 articles の score 配列 + Top 3 を持つ
+    all_articles = ctx.get("articles") or []
+    scores: list[int] = []
+    for a in all_articles:
+        s = a.get("score") or ""
+        if str(s).strip().isdigit():
+            scores.append(int(s))
+        else:
+            scores.append(0)
+    top3 = [
+        {
+            "title": a.get("title", ""),
+            "score": a.get("score") or "",
+            "date": a.get("date", ""),
+            "source": a.get("source", ""),
+        }
+        for a in all_articles[:3]
+    ]
     return {
         "title": ctx["title"],
         "date": ctx["date"],
@@ -482,7 +500,10 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "top_source_url": top.get("source_url", ""),
         "top_date": top.get("date", ""),
         "top_bullets": top.get("bullets", []),
-        "articles_count": len(ctx.get("articles") or []),
+        "articles_count": len(all_articles),
+        # Overview C 用
+        "scores": scores,
+        "top3": top3,
     }
 
 
@@ -674,6 +695,101 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     return render_page(ctx, out, template_name="index-template.html")
 
 
+def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) -> Path:
+    """Phase 4: 日付別 Daily Overview (Pattern C) docs/{date}/index.html を生成。
+
+    entries は **同一 date の** entries だけを渡す前提。summary を含む全カテゴリの
+    最新ダイジェストを集約して、5 lens の 1 ページサマリを作る。
+    """
+    same_day = [e for e in entries if e["date"] == date]
+    if not same_day:
+        raise ValueError(f"build_overview: entries に date={date} が無い")
+
+    # 各カテゴリ (summary 除く 5 lens) を CATEGORIES 順に並べる
+    by_cat: dict[str, dict[str, Any]] = {}
+    for e in same_day:
+        cid = e["category_id"]
+        if cid != "summary" and cid not in by_cat:
+            by_cat[cid] = e
+    cat_rows: list[dict[str, Any]] = []
+    for cid, meta in CATEGORIES.items():
+        if cid == "summary":
+            continue
+        e = by_cat.get(cid)
+        scores = e.get("scores", []) if e else []
+        # 10 本に整形 (足りなければ 0 で詰める)
+        scores10 = (scores + [0] * 10)[:10]
+        non_zero = [s for s in scores if s > 0]
+        avg_score = round(sum(non_zero) / len(non_zero)) if non_zero else 0
+        max_score = max(non_zero) if non_zero else 0
+        cat_rows.append({
+            "id": cid,
+            "name_jp": meta["jp"],
+            "name_en": meta["label"],
+            "glyph": meta["glyph"],
+            "accent": meta["accent"],
+            "summary": e["summary_text"] if e else "",
+            "canonical": e["canonical"] if e else f"{BASE_URL}/{cid}/",
+            "articles_count": e.get("articles_count", 0) if e else 0,
+            "scores": scores10,
+            "avg_score": avg_score,
+            "max_score": max_score,
+            "top3": e.get("top3", []) if e else [],
+        })
+
+    # Theme banner: 同日 summary digest から 2 フレーズ抽出
+    editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
+    theme_source = editorial["summary_text"] if editorial else ""
+    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_source)
+
+    # Stats
+    stories_total = sum(r["articles_count"] for r in cat_rows)
+    # ざっくり: 全記事 50 本想定で ~30 分。スケールは記事数 / 50 * 30 で計算
+    full_read_min = max(5, round(stories_total / 50 * 30)) if stories_total else 30
+
+    issue_no = date.replace("-", "")
+    date_mmdd = f"{date[5:7]}·{date[8:10]}" if len(date) >= 10 else date
+    canonical = f"{BASE_URL}/{date}/"
+
+    ctx = {
+        "site_title": SITE_TITLE,
+        "site_tagline": SITE_DESCRIPTION,
+        "base_url": BASE_URL,
+        "canonical": canonical,
+
+        "date": date,
+        "date_mmdd": date_mmdd,
+        "issue_no": issue_no,
+
+        "hero_phrase_left": hero_phrase_left,
+        "hero_phrase_right": hero_phrase_right,
+
+        "editorial_date": editorial["date"] if editorial else "",
+
+        "cat_rows": cat_rows,
+        "stats": {
+            "stories": stories_total,
+            "categories": 5,
+            "essay": 7,
+            "full_read_min": full_read_min,
+        },
+    }
+    out = Path(docs_root) / date / "index.html"
+    return render_page(ctx, out, template_name="overview-template.html")
+
+
+def build_all_overviews(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
+    """全 unique date について overview ページを生成。"""
+    unique_dates = sorted({e["date"] for e in entries if e.get("date")}, reverse=True)
+    written: list[Path] = []
+    for d in unique_dates:
+        try:
+            written.append(build_overview(d, entries, docs_root))
+        except Exception as exc:
+            print(f"[warn] overview build failed for {d}: {exc}", file=sys.stderr)
+    return written
+
+
 def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
     """カテゴリ別アーカイブ docs/{cat}/index.html を生成。"""
     written: list[Path] = []
@@ -750,7 +866,11 @@ def main(argv: list[str] | None = None) -> int:
         idx = build_index(entries, docs_root)
         cat_pages = build_category_pages(entries, docs_root)
         arc = build_archive(entries, docs_root)
-        print(f"wrote index/archive: {idx.name}, {len(cat_pages)} category page(s), {arc.parent.name}/{arc.name}")
+        overviews = build_all_overviews(entries, docs_root)
+        print(
+            f"wrote index/archive: {idx.name}, {len(cat_pages)} category page(s), "
+            f"{arc.parent.name}/{arc.name}, {len(overviews)} overview page(s)"
+        )
     return 0
 
 

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>{{ site_title }} — Daily Overview {{ date }}</title>
+<meta name="description" content="{{ date }} のニュース俯瞰 — 5 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<link rel="canonical" href="{{ canonical }}">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ site_title }}">
+<meta property="og:title" content="{{ site_title }} — Daily Overview {{ date }}">
+<meta property="og:description" content="{{ date }} のニュース俯瞰 — 5 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:image" content="{{ base_url }}/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ site_title }} — Daily Overview {{ date }}">
+<meta name="twitter:description" content="{{ date }} のニュース俯瞰 — 5 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta name="twitter:image" content="{{ base_url }}/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="{{ base_url }}/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact, 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="{{ base_url }}/">HOME</a>
+      <a href="{{ base_url }}/archive/">ARCHIVE</a>
+      {% if editorial_date %}<a href="{{ base_url }}/{{ editorial_date }}/summary/">§ ESSAY</a>{% endif %}
+      <button class="brand-zone__subscribe">SUBSCRIBE →</button>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Page header (DAILY OVERVIEW · ISSUE # + 56px date + stats 2x2) ============= -->
+<section class="overview-page-header">
+  <div class="overview-page-header__left">
+    <div class="overview-page-header__eyebrow">━━ DAILY OVERVIEW · ISSUE #{{ issue_no }}</div>
+    <h2 class="overview-page-header__title">
+      <span class="date-mmdd">{{ date_mmdd }}</span> <span class="em">—</span> 本日のニュース俯瞰
+    </h2>
+    <div class="overview-page-header__sub">5 レンズ × 各 10 記事の温度感を 1 ページで掴む</div>
+  </div>
+  <div class="overview-stats">
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">STORIES</span>
+      <span class="overview-stats__num">{{ stats.stories }}</span>
+    </div>
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">LENSES</span>
+      <span class="overview-stats__num">{{ stats.categories }}</span>
+    </div>
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">ESSAY §</span>
+      <span class="overview-stats__num">{{ stats.essay }}</span>
+    </div>
+    <div class="overview-stats__cell">
+      <span class="overview-stats__label">FULL READ</span>
+      <span class="overview-stats__num">~{{ stats.full_read_min }}<span class="overview-stats__unit">MIN</span></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============= Theme banner (navy, 24px) ============= -->
+<section class="overview-theme">
+  <div class="overview-theme__inner">
+    <span class="overview-theme__eyebrow">━━ TODAY'S THEME</span>
+    <h3 class="overview-theme__title">
+      {% if hero_phrase_left and hero_phrase_right %}
+        <span style="background: rgba(201,161,85,0.3); padding: 0 6px;">{{ hero_phrase_left }}</span>と<span style="background: rgba(45,91,184,0.4); padding: 0 6px;">{{ hero_phrase_right }}</span>
+      {% else %}
+        5 つのレンズで今日を読む
+      {% endif %}
+    </h3>
+    {% if editorial_date %}
+    <a href="{{ base_url }}/{{ editorial_date }}/summary/" class="overview-theme__cta">READ § ESSAY →</a>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ============= Category rows × 5 ============= -->
+<div>
+  {% for cat in cat_rows %}
+  <div class="overview-row cat-{{ cat.id }}">
+    <div class="overview-row__inner">
+
+      <!-- KV + summary -->
+      <div>
+        <div class="overview-kv">
+          <img src="{{ base_url }}/assets/og/{{ cat.id }}.jpg" alt="" loading="lazy">
+          <div class="overview-kv__gradient"></div>
+          <div class="overview-kv__caption">
+            <div class="overview-kv__title-row">
+              <span class="overview-kv__glyph">{{ cat.glyph }}</span>
+              <div class="overview-kv__title">{{ cat.name_jp }}</div>
+            </div>
+            <div class="overview-kv__sub">{{ cat.name_en|upper }} · {{ cat.articles_count }} STORIES</div>
+          </div>
+        </div>
+        {% if cat.summary %}
+        <p class="overview-row__summary">{{ cat.summary|truncate(110, true, '…') }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Top 3 headlines -->
+      <div>
+        <div class="overview-top3__head">━━ TOP 3 BY SCORE</div>
+        {% if cat.top3 %}
+          {% for it in cat.top3 %}
+          <a class="overview-top3__row" href="{{ cat.canonical }}">
+            <span class="overview-top3__no">{{ "%02d"|format(loop.index) }}</span>
+            <div>
+              <div class="overview-top3__meta">{% if it.date %}{{ it.date }}{% endif %}{% if it.source %} · {{ it.source }}{% endif %}</div>
+              <h4 class="overview-top3__title">{{ it.title }}</h4>
+            </div>
+            <div class="overview-top3__score-cell">
+              <div class="overview-top3__score">{{ it.score or '—' }}</div>
+              <div class="overview-top3__score-label">SCORE</div>
+            </div>
+          </a>
+          {% endfor %}
+        {% else %}
+          <p style="color: var(--color-ink-dim); font-size: 13px;">本日の記事準備中</p>
+        {% endif %}
+      </div>
+
+      <!-- Score distribution + CTA -->
+      <div class="overview-dist">
+        <div class="overview-dist__head">━━ SCORE DISTRIBUTION</div>
+        <div class="overview-dist__bars">
+          {% for s in cat.scores %}
+          <div class="overview-dist__bar" style="opacity: {{ "%.2f"|format(0.3 + (s / 100) * 0.7) }}; height: {{ s }}%;"></div>
+          {% endfor %}
+        </div>
+        <div class="overview-dist__legend">
+          <span>AVG <span class="num">{{ cat.avg_score }}</span></span>
+          <span>MAX <span class="num">{{ cat.max_score }}</span></span>
+        </div>
+        <a class="overview-dist__cta" href="{{ cat.canonical }}">
+          <span>VIEW ALL {{ cat.articles_count }} {{ cat.name_en|upper }}</span>
+          <span>→</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · #{{ issue_no }} · {{ date }}
+  </div>
+  <div class="site-footer__links">
+    <a href="{{ base_url }}/">HOME</a>
+    <a href="{{ base_url }}/archive/">ARCHIVE</a>
+    {% if editorial_date %}<a href="{{ base_url }}/{{ editorial_date }}/summary/">§ SUMMARY</a>{% endif %}
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
