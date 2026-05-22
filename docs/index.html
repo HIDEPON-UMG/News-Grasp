@@ -8,6 +8,7 @@
 <meta name="description" content="時勢を掴み、日々に新たに。 為替・AI・IT・経済・ゲームの 5 カテゴリで毎朝配信されるニュースダイジェスト。">
 <link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/">
 
+<!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="News Grasp">
 <meta property="og:title" content="News Grasp">
@@ -18,6 +19,7 @@
 <meta property="og:image:height" content="587">
 <meta property="og:locale" content="ja_JP">
 
+<!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="News Grasp">
 <meta name="twitter:description" content="時勢を掴み、日々に新たに。">
@@ -25,515 +27,323 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
 </head>
 <body data-category="summary">
-<div class="archive-page">
 
-  <header class="site-header">
-    <div class="site-title"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></div>
-    <div class="site-tagline">時勢を掴み、日々に新たに。</div>
-  </header>
+<!-- ============= Home Brand zone (navy header / 86px wordmark) ============= -->
+<section class="home-brand">
+  <div class="home-brand__inner">
+    <div class="home-brand__left">
+      <div class="home-brand__mark"></div>
+      <div class="home-brand__title">
+        <div class="home-brand__eyebrow">━━ THE</div>
+        <h1 class="home-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+        <div class="home-brand__tagline">FIVE  LENSES  ON  TODAY</div>
+      </div>
+    </div>
+    
+    <div class="home-brand__issue">
+      <div class="home-brand__issue-label">ISSUE</div>
+      <div class="home-brand__issue-num">#20260522</div>
+      <div class="home-brand__issue-meta">
+        2026·05·22 金 · MORNING<br/>
+        <span class="home-brand__issue-loc">TOKYO</span>
+      </div>
+    </div>
+    
+  </div>
+  <div class="home-brand__rule"></div>
+</section>
 
-  <section style="margin-bottom: var(--space-2xl);">
-    <h2 style="font-family: var(--font-serif); font-size: 1.75rem; font-weight: 800; margin: 0 0 var(--space-md);">最新 7 日分</h2>
-    <p style="color: var(--color-secondary); margin: 0 0 var(--space-xl);">直近 7 日に投稿された各カテゴリの digest。</p>
+<!-- ============= Sticky nav (TODAY + 5 lenses + § ESSAY + ARCHIVE) ============= -->
+<nav class="home-nav">
+  <div class="home-nav__inner">
+    <div class="home-nav__links">
+      <span class="home-nav__today">TODAY</span>
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="home-nav__lens-fx">
+        <span style="margin-right:4px;">¥</span>FOREIGN EXCHANGE
+      </a>
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="home-nav__lens-ai">
+        <span style="margin-right:4px;">◆</span>ARTIFICIAL INTELLIGENCE
+      </a>
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="home-nav__lens-it">
+        <span style="margin-right:4px;">⌗</span>IT &amp; CONSULTING
+      </a>
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="home-nav__lens-economy">
+        <span style="margin-right:4px;">§</span>ECONOMY
+      </a>
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="home-nav__lens-game">
+        <span style="margin-right:4px;">▶</span>GAMING
+      </a>
+      
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-22/summary/" class="home-nav__dim">§ ESSAY</a>
+      
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/" class="home-nav__dim">ARCHIVE</a>
+    </div>
+    <div class="home-nav__right">
+      <span class="home-nav__lang">JP / EN</span>
+      <button class="home-nav__subscribe">SUBSCRIBE →</button>
+    </div>
+  </div>
+</nav>
 
-    <div class="index-grid">
+<!-- ============= Hero (2 col: theme + Editor's Top 3 + Stats) ============= -->
+<section class="home-hero">
+  <div class="home-hero__inner">
+
+    <!-- LEFT: Today's theme -->
+    <div>
+      <div class="home-hero__eyebrow"><span class="rule">━━</span> TODAY'S THEME</div>
+      <h2 class="home-hero__title">
+        
+          <span class="hl-gold">5 つのレンズ</span>で <br/><span class="hl-blue">今日を読む</span>。
+        
+      </h2>
+      <p class="home-hero__lead">イラン核交渉「最終段階」宣言でUSD/JPYが159→157.9円へ急落。植田総裁「下振れなければ利上げ」で日銀6月利上げ確率が急騰。ヘッジファンドの円ショートが過去最大水準で本日の雇用統計が引き金候補。</p>
       
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-22/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-22</span>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-22/summary/" class="home-hero__cta">READ FULL ESSAY →</a>
+      
+    </div>
+
+    <!-- RIGHT: Editor's Top 3 + Stats 2x2 -->
+    <div class="home-hero__right">
+      
+      <div>
+        <div class="home-top3__head">
+          <span class="home-top3__label"><span class="rule">━━</span> EDITOR'S TOP 3</span>
+          <span class="home-top3__sort">BY SCORE ↓</span>
         </div>
-        <h3 class="index-card-title">News Grasp #20260522 — 時勢を掴み、日々に新たに。</h3>
         
-        <p class="index-card-summary">イラン核交渉「最終段階」宣言でUSD/JPYが159→157.9円へ急落。植田総裁「下振れなければ利上げ」で日銀6月利上げ確率が急騰。ヘッジファンドの円ショートが過去最大水準で本日の雇用統計が引き金候補。</p>
+        <a class="home-top3__row" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-22/">
+          <span class="home-top3__no">01</span>
+          <div class="home-top3__main">
+            <div class="home-top3__meta">
+              <span class="home-top3__badge cat-ai">◆ ARTIFICIAL INTELLIGENCE</span>
+              <span class="home-top3__time">2026-05-22 07:00</span>
+            </div>
+            <h3 class="home-top3__title">Andrej KarpathyがAnthropicに入社 — 元OpenAI共同創業者がClaude事前学習と再帰的自己改善を加速</h3>
+          </div>
+          <span class="home-top3__score cat-ai">95</span>
+        </a>
         
+        <a class="home-top3__row" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-22/">
+          <span class="home-top3__no">02</span>
+          <div class="home-top3__main">
+            <div class="home-top3__meta">
+              <span class="home-top3__badge cat-it">▲ IT &amp; CONSULTING</span>
+              <span class="home-top3__time">2026-05-22 08:00</span>
+            </div>
+            <h3 class="home-top3__title">Google Cloud $750Mパートナーファンド — Accenture・Deloitte・KPMG・PwCが史上最大規模のコミットメント</h3>
+          </div>
+          <span class="home-top3__score cat-it">92</span>
+        </a>
+        
+        <a class="home-top3__row" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-22/">
+          <span class="home-top3__no">03</span>
+          <div class="home-top3__main">
+            <div class="home-top3__meta">
+              <span class="home-top3__badge cat-economy">■ ECONOMY</span>
+              <span class="home-top3__time">2026-05-22 08:00</span>
+            </div>
+            <h3 class="home-top3__title">日経平均+3.31%・61,782円 — イラン交渉・4月輸出+14.8%でアジア株がS&amp;P500をリード</h3>
+          </div>
+          <span class="home-top3__score cat-economy">92</span>
+        </a>
+        
+      </div>
+      
+
+      <div class="home-stats2x2">
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">STORIES</span>
+          <span class="home-stats2x2__num">41</span>
+        </div>
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">CATEGORIES</span>
+          <span class="home-stats2x2__num">5</span>
+        </div>
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">ESSAY §</span>
+          <span class="home-stats2x2__num">7</span>
+        </div>
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">READING</span>
+          <span class="home-stats2x2__num">15<span class="home-stats2x2__unit">MIN</span></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============= Featured Story (full bleed) ============= -->
+<section class="home-featured cat-ai">
+  <div class="home-featured__inner">
+    <div class="home-featured__eyebrow">
+      <span class="home-featured__badge cat-ai">TOP STORY</span>
+      <span>ARTIFICIAL INTELLIGENCE · SCORE 95</span>
+    </div>
+    <div class="home-featured__grid">
+      <div class="home-featured__thumb-wrap">
+        
+          <img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-ai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
+        
+      </div>
+      <div>
+        <h2 class="home-featured__title">
+          <a href="https://www.axios.com/2026/05/19/anthropic-openai-karpathy-andrej-claude" rel="noopener nofollow" target="_blank">Andrej KarpathyがAnthropicに入社 — 元OpenAI共同創業者がClaude事前学習と再帰的自己改善を加速</a>
+        </h2>
+        <ul class="home-featured__bullets">
+          <li><span class="wikilink">アンドレイ・カルパシー</span>（元OpenAI創業メンバー・元Tesla自動運転責任者）が今週からAnthropicの<span class="wikilink">事前学習チーム</span>に参加。「Claudeを使って次世代Claudeをトレーニングする」再帰的自己改善チームを新設する。</li><li>OpenAI創業者が競合Anthropicへ移籍するという象徴的な人材流出。Eureka Labs（AI教育スタートアップ）を離れてのAnthropicへの転向は、<u class="underline">AI業界の人材磁場がAnthropicへ傾いた</u>ことを示す最強シグナル。</li><li>Anthropicの評価額$380Bとき、ARR$30B。OpenAI($25B)を上回る収益規模と最高峰の技術者獲得が合流し、GPT-5世代以降の基盤モデル競争での優位が固まりつつある。</li>
+        </ul>
+        <div class="home-featured__meta">
+          <span>2026-05-22 07:00</span>
+          <span>· Axios</span>
+          <span>· <a href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-22/">READ ALL IN ARTIFICIAL INTELLIGENCE →</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= Categories 5-col grid ============= -->
+<section class="home-cats">
+  <div class="home-cats__inner">
+    <div class="home-cats__head">
+      <h2><span class="by">by</span> Category.</h2>
+      <div class="home-cats__head-meta">5 lenses, 41 stories ↘</div>
+    </div>
+    <div class="home-cats__grid">
+      
+      <a class="home-cat-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-22/">
+        <div class="home-cat-card__band">
+          <div class="home-cat-card__glyph">¥</div>
+          <div class="home-cat-card__en">FOREIGN EXCHANGE</div>
+          <div class="home-cat-card__jp">為替</div>
+        </div>
+        <div class="home-cat-card__body">
+          <p class="home-cat-card__summary">イラン核交渉「最終段階」宣言でホルムズ海峡再開期待が急浮上し、USD/JPYは159円台から157.9円台へ急落。4月…</p>
+          <div class="home-cat-card__foot">
+            <span>5 STORIES</span>
+            <span class="home-cat-card__arrow">→</span>
+          </div>
+        </div>
       </a>
       
-      <a class="index-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-22/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-it">IT-Consulting</span>
-          <span style="color: var(--color-secondary);">2026-05-22</span>
+      <a class="home-cat-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-22/">
+        <div class="home-cat-card__band">
+          <div class="home-cat-card__glyph">◆</div>
+          <div class="home-cat-card__en">ARTIFICIAL INTELLIGENCE</div>
+          <div class="home-cat-card__jp">AI</div>
         </div>
-        <h3 class="index-card-title">News Grasp #20260522 — IT &amp; Consulting</h3>
-        
-        <p class="index-card-summary">Google Cloudが$750Mの「AIパートナーファンド」でコンサル大手を一斉に囲い込み、Google Firstシフトが業界構造を塗り替えつつある。Accentureは新卒採用を逆説的に拡大し「AI流暢なGen Z」で組織を再設計…</p>
-        
+        <div class="home-cat-card__body">
+          <p class="home-cat-card__summary">Andrej Karpathy（元OpenAI共同創業者）がAnthropicに入社し事前学習チームを率いる衝撃ニュー…</p>
+          <div class="home-cat-card__foot">
+            <span>5 STORIES</span>
+            <span class="home-cat-card__arrow">→</span>
+          </div>
+        </div>
       </a>
       
-      <a class="index-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-22/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-fx">為替</span>
-          <span style="color: var(--color-secondary);">2026-05-22</span>
+      <a class="home-cat-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-22/">
+        <div class="home-cat-card__band">
+          <div class="home-cat-card__glyph">⌗</div>
+          <div class="home-cat-card__en">IT &amp; CONSULTING</div>
+          <div class="home-cat-card__jp">IT-Consulting</div>
         </div>
-        <h3 class="index-card-title">News Grasp #20260522 — Foreign Exchange</h3>
-        
-        <p class="index-card-summary">イラン核交渉「最終段階」宣言でホルムズ海峡再開期待が急浮上し、USD/JPYは159円台から157.9円台へ急落。4月輸出+14.8%が円の実力を裏付け、植田総裁「下振れなければ利上げ可能」発言が日銀6月利上げ確率を急騰させた。ヘッジファ…</p>
-        
+        <div class="home-cat-card__body">
+          <p class="home-cat-card__summary">Google Cloudが$750Mの「AIパートナーファンド」でコンサル大手を一斉に囲い込み、Google Firs…</p>
+          <div class="home-cat-card__foot">
+            <span>5 STORIES</span>
+            <span class="home-cat-card__arrow">→</span>
+          </div>
+        </div>
       </a>
       
-      <a class="index-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-22/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-economy">経済</span>
-          <span style="color: var(--color-secondary);">2026-05-22</span>
+      <a class="home-cat-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-22/">
+        <div class="home-cat-card__band">
+          <div class="home-cat-card__glyph">§</div>
+          <div class="home-cat-card__en">ECONOMY</div>
+          <div class="home-cat-card__jp">経済</div>
         </div>
-        <h3 class="index-card-title">News Grasp #20260522 — Economy</h3>
-        
-        <p class="index-card-summary">イラン核交渉の進展でホルムズ海峡再開期待が浮上し、日経平均が+3.31%・61,782円と急騰。4月輸出+14.8%が円安・供給網強靭化の成果を証明した。Warsh FRB議長は利下げ拒絶スタンスを維持しS&amp;P500は7,405で調整。ベ…</p>
-        
+        <div class="home-cat-card__body">
+          <p class="home-cat-card__summary">イラン核交渉の進展でホルムズ海峡再開期待が浮上し、日経平均が+3.31%・61,782円と急騰。4月輸出+14.8%が…</p>
+          <div class="home-cat-card__foot">
+            <span>5 STORIES</span>
+            <span class="home-cat-card__arrow">→</span>
+          </div>
+        </div>
       </a>
       
-      <a class="index-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-22/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-ai">AI</span>
-          <span style="color: var(--color-secondary);">2026-05-22</span>
+      <a class="home-cat-card cat-game" href="https://hidepon-umg.github.io/News-Grasp/game/">
+        <div class="home-cat-card__band">
+          <div class="home-cat-card__glyph">▶</div>
+          <div class="home-cat-card__en">GAMING</div>
+          <div class="home-cat-card__jp">ゲーム</div>
         </div>
-        <h3 class="index-card-title">News Grasp #20260522 — Artificial Intelligence</h3>
-        
-        <p class="index-card-summary">Andrej Karpathy（元OpenAI共同創業者）がAnthropicに入社し事前学習チームを率いる衝撃ニュースが業界を揺るがす。Google I/O 2026後続発表でGemini 3.5 Flash・Omniワールドモデルの詳…</p>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-21/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-21</span>
+        <div class="home-cat-card__body">
+          <p class="home-cat-card__summary">本日のダイジェスト準備中</p>
+          <div class="home-cat-card__foot">
+            <span>0 STORIES</span>
+            <span class="home-cat-card__arrow">→</span>
+          </div>
         </div>
-        <h3 class="index-card-title">News Grasp #20260521 — 時勢を掴み、日々に新たに。</h3>
-        
-        <p class="index-card-summary">Moody&#39;s格下げ後もドル一強が継続しUSD/JPY 159円台維持。BOJ議事要旨でインフレ予測2.8%上方修正・タカ派3名が1.0%利上げ主張し7月実施シナリオが固まる。</p>
-        
-      </a>
-      
-      <a class="index-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-21/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-it">IT-Consulting</span>
-          <span style="color: var(--color-secondary);">2026-05-21</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260521 — IT &amp; Consulting</h3>
-        
-        <p class="index-card-summary">NTTデータが2026年度中の生成AI全工程担当技術投入を宣言し工数70%削減へ。NTTデータ経営研究所が金融AI導入コンサルを本格展開し18サービスを開始。OpenAI Frontier×4大コンサルの役割分担が3ヶ月で確立し、Acce…</p>
-        
-      </a>
-      
-      <a class="index-card cat-game" href="https://hidepon-umg.github.io/News-Grasp/game/2026-05-21/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-game">ゲーム</span>
-          <span style="color: var(--color-secondary);">2026-05-21</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260521 — Gaming</h3>
-        
-        <p class="index-card-summary">テイルズ・オブ・アライズとヨッシーとフカシギの図鑑がSwitch 2向けに本日同時発売。任天堂は来期出荷16.5M台に下方修正し株価-8.44%。サイバーエージェントは英語版ウマ娘の海外ヒットでQ2大幅増収増益、カプコンはデジタル販売比率…</p>
-        
-      </a>
-      
-      <a class="index-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-21/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-fx">為替</span>
-          <span style="color: var(--color-secondary);">2026-05-21</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260521 — Foreign Exchange</h3>
-        
-        <p class="index-card-summary">Moody&#39;s格下げ後もドル一強が継続しUSD/JPY 159円台を維持。BOJ4月議事要旨でインフレ予測2.8%上方修正・タカ派3名が1.0%利上げを主張し7月利上げシナリオが固まる一方、EUR/JPYは183円台で方向感を欠き、GBP…</p>
-        
-      </a>
-      
-      <a class="index-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-21/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-economy">経済</span>
-          <span style="color: var(--color-secondary);">2026-05-21</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260521 — Economy</h3>
-        
-        <p class="index-card-summary">Moody&#39;s格下げ余震で米30年国債利回り5.19%・S&amp;P500が3連続安と市場が財政リスクを消化中。米4月CPI+3.8%でWarsh FRB議長の高金利維持路線が正当化され、野村証券は日経平均2026年末6万円に上方修正。OECD…</p>
-        
-      </a>
-      
-      <a class="index-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-21/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-ai">AI</span>
-          <span style="color: var(--color-secondary);">2026-05-21</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260521 — Artificial Intelligence</h3>
-        
-        <p class="index-card-summary">Google I/O 2026余波が続く中、Gemini SparkとGemini Omniが「always-on AIエージェント」時代の到来を宣言。AnthropicはProject GlasswingでClaude Mythosによ…</p>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-20/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-20</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260520 — 時勢を掴み、日々に新たに。</h3>
-        
-        <p class="index-card-summary">ドル円159円台が続き160円の再介入ゾーンに迫る中、FRBのタカ派堅持と日銀の利上げ観測が交錯。BofAが2026年内利下げを完全撤回し、ドル高構造の長期化シナリオが優位になった。</p>
-        
-      </a>
-      
-      <a class="index-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-20/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-it">IT-Consulting</span>
-          <span style="color: var(--color-secondary);">2026-05-20</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260520 — IT &amp; Consulting</h3>
-        
-        <p class="index-card-summary">NTT DATAのWinWire買収でAgenticAI戦略が加速。テクノロジーコンサル市場が初の4000億ドル超を見込む中、AI人材獲得競争と組織再編が各社の生き残りを左右する「実装フェーズ」が幕を開けた。</p>
-        
-      </a>
-      
-      <a class="index-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-20/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-fx">為替</span>
-          <span style="color: var(--color-secondary);">2026-05-20</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260520 — Foreign Exchange</h3>
-        
-        <p class="index-card-summary">ドル円159円台が続き160円の再介入ゾーンに迫る中、FRBのタカ派堅持と日銀の利上げ観測が交錯。BofAが2026年内利下げを完全撤回し、ドル高構造の長期化シナリオが優位になった。</p>
-        
-      </a>
-      
-      <a class="index-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-20/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-economy">経済</span>
-          <span style="color: var(--color-secondary);">2026-05-20</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260520 — Economy</h3>
-        
-        <p class="index-card-summary">S&amp;P500が3連続安、30年債利回りが19年ぶり高水準に達する中、米4月CPI+3.8%・Q1 GDP+2.0%が示す「強すぎる経済」がFRBの利下げ余地を一段と縮小。日本はOECDに0.7%成長を予測された。</p>
-        
-      </a>
-      
-      <a class="index-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-20/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-ai">AI</span>
-          <span style="color: var(--color-secondary);">2026-05-20</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260520 — Artificial Intelligence</h3>
-        
-        <p class="index-card-summary">Google I/O翌日にNVIDIA Q1決算が発表（本日5/20）、Gemini 3.5 Flash GAとNVDA $780億予想でAI勢いを示す一方、Claude安全性問題・Contextual AI買収・PwC提携拡大が業界の多…</p>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-19/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-19</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260519 — 時勢を掴み、日々に新たに。</h3>
-        
-        <p class="index-card-summary">Warsh 新 FRB 議長就任でドル強含みが継続、USD/JPY は 158〜159 円レンジを試す週に入る。日銀の 9 月利上げ確率が 77% に達し、円の下値硬直性は増しているが介入閾値の 160 円まで余裕あり。</p>
-        
-      </a>
-      
-      <a class="index-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-19/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-it">IT-Consulting</span>
-          <span style="color: var(--color-secondary);">2026-05-19</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260519 — IT &amp; Consulting</h3>
-        
-        <p class="index-card-summary">BCG が AI エージェント専用予算の急拡大を報告する一方、Deloitte の調査は「74% 期待 vs 20% 実績」という業界横断の死の谷を暴露。Google I/O 発表の Gemini Intelligence は SIer …</p>
-        
-      </a>
-      
-      <a class="index-card cat-game" href="https://hidepon-umg.github.io/News-Grasp/game/2026-05-19/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-game">ゲーム</span>
-          <span style="color: var(--color-secondary);">2026-05-19</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260519 — Gaming</h3>
-        
-        <p class="index-card-summary">Nintendo Switch 2 の発売まで 6 日。5/25 の 17 本一斉リリースと価格改定後の在庫争奪戦が過熱。SQUARE ENIX は Tales of Arise Switch 2 版を 5/21 に投下しマルチプラットフ…</p>
-        
-      </a>
-      
-      <a class="index-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-19/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-fx">為替</span>
-          <span style="color: var(--color-secondary);">2026-05-19</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260519 — Foreign Exchange</h3>
-        
-        <p class="index-card-summary">Warsh 新 FRB 議長就任でドル強含みが継続、USD/JPY は 158〜159 円レンジを試す週に入る。日銀の 9 月利上げ確率が 77% に達し、円の下値硬直性は増しているが介入閾値の 160 円まで余裕あり。</p>
-        
-      </a>
-      
-      <a class="index-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-19/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-economy">経済</span>
-          <span style="color: var(--color-secondary);">2026-05-19</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260519 — Economy</h3>
-        
-        <p class="index-card-summary">Warsh 新 FRB 議長就任で「インフレ優先・政治圧力拒絶」路線が確定。同日の Google I/O が AI 株を押し上げ S&amp;P500 は 7,500 台で攻防。日経平均は 6.2 万円台を維持するも訪日中のベッセント財務長官発言が焦点。</p>
-        
-      </a>
-      
-      <a class="index-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-19/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-ai">AI</span>
-          <span style="color: var(--color-secondary);">2026-05-19</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260519 — Artificial Intelligence</h3>
-        
-        <p class="index-card-summary">Google I/O 2026 が本日開幕。Gemini Intelligence がアプリを横断してタスクを自律実行する「OS 統合型 AI」戦略を発表。一方 Anthropic が職場シェアでOpenAI を初逆転し、AI モデル三極…</p>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-18/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-18</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260518 — 時勢を掴み、日々に新たに。</h3>
-        
-        <p class="index-card-summary">USD/JPY 158円台で週明けへ — BOJ利上げ確率77%急騰と介入効果剥落が交錯、Google I/O週に決定的な水準攻防へ</p>
-        
-      </a>
-      
-      <a class="index-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-18/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-it">IT-Consulting</span>
-          <span style="color: var(--color-secondary);">2026-05-18</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260518 — IT &amp; Consulting</h3>
-        
-        <p class="index-card-summary">デロイトが職名廃止・BCGがAI収益初開示 — Big4/3のAI再編が同時進行し、コンサル業界の「知識階層」が根底から書き換わる日曜日</p>
-        
-      </a>
-      
-      <a class="index-card cat-game" href="https://hidepon-umg.github.io/News-Grasp/game/2026-05-18/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-game">ゲーム</span>
-          <span style="color: var(--color-secondary);">2026-05-18</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260518 — Gaming</h3>
-        
-        <p class="index-card-summary">Switch2が5月ソフト最盛期へ — スクウェア・任天堂・Microsoft・バンダイナムコが一斉に大型タイトルを投下し、ハード普及の加速局面に突入</p>
-        
-      </a>
-      
-      <a class="index-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-18/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-fx">為替</span>
-          <span style="color: var(--color-secondary);">2026-05-18</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260518 — Foreign Exchange</h3>
-        
-        <p class="index-card-summary">USD/JPY 158円台で週明けへ — BOJ利上げ確率77%急騰と介入効果剥落が交錯、Google I/O週に決定的な水準攻防へ</p>
-        
-      </a>
-      
-      <a class="index-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-18/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-ai">AI</span>
-          <span style="color: var(--color-secondary);">2026-05-18</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260518 — Artificial Intelligence</h3>
-        
-        <p class="index-card-summary">AnthropicがゲイツとAI公共財へ — OpenAI超アプリ化・Google I/O前夜・中国LLM台頭が同時並行し、週明けはAI大再編の一手が出揃う</p>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-17/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-17</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260517 — 時勢を掴み、日々に新たに。</h3>
-        
-        <p class="index-card-summary">USD/JPY は 158 円台で週末を迎え、4 月末の実弾介入効果が半減。米インフレ再加速と FRB タカ派転換が円安の新たな原動力となっている。</p>
-        
-      </a>
-      
-      <a class="index-card cat-it" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-17/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-it">IT-Consulting</span>
-          <span style="color: var(--color-secondary);">2026-05-17</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260517 — IT &amp; Consulting</h3>
-        
-        <p class="index-card-summary">アクセンチュアと PwC が相次いで Anthropic との大型提携を具体化、日本でも 30,000 名規模の Claude 研修が始動した。NTT DATA は AI を中核とした 2030 年成長戦略を公表し、ビッグ 4 の上級幹部…</p>
-        
-      </a>
-      
-      <a class="index-card cat-game" href="https://hidepon-umg.github.io/News-Grasp/game/2026-05-17/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-game">ゲーム</span>
-          <span style="color: var(--color-secondary);">2026-05-17</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260517 — Gaming</h3>
-        
-        <p class="index-card-summary">Nintendo Switch 2 の 5 月ラッシュが本格化、インディ・ジョーンズ・ヨッシー・テイルズ・オブ・アライズが相次いで投入される。カプコン「プラグマタ」は 16 日で 200 万本を達成し、任天堂は秋の追加サプライズを示唆。ス…</p>
-        
-      </a>
-      
-      <a class="index-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-17/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-fx">為替</span>
-          <span style="color: var(--color-secondary);">2026-05-17</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260517 — Foreign Exchange</h3>
-        
-        <p class="index-card-summary">USD/JPY は 158 円台で週を終え、米インフレ加速で「160 円介入ライン」への再接近が鮮明。ECB は 6 月利上げ確率 86% でユーロ強含み、一方ポンドは週間最悪パフォーマンスを記録。</p>
-        
-      </a>
-      
-      <a class="index-card cat-ai" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-17/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-ai">AI</span>
-          <span style="color: var(--color-secondary);">2026-05-17</span>
-        </div>
-        <h3 class="index-card-title">News Grasp #20260517 — Artificial Intelligence</h3>
-        
-        <p class="index-card-summary">NVIDIA×OpenAI が 10GW 超インフラ展開を宣言し AI 投資の桁が変わった。Anthropic は Claude Mythos Preview で OSWorld 人間水準に到達、中小企業向け Small Business…</p>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-16/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-16</span>
-        </div>
-        <h3 class="index-card-title">News Grasp — Summary</h3>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-16/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-16</span>
-        </div>
-        <h3 class="index-card-title">News Grasp — Summary</h3>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-16/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-16</span>
-        </div>
-        <h3 class="index-card-title">News Grasp — Summary</h3>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-16/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-16</span>
-        </div>
-        <h3 class="index-card-title">News Grasp — Summary</h3>
-        
-      </a>
-      
-      <a class="index-card cat-summary" href="https://hidepon-umg.github.io/News-Grasp/summary/2026-05-16/">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-summary">総括</span>
-          <span style="color: var(--color-secondary);">2026-05-16</span>
-        </div>
-        <h3 class="index-card-title">News Grasp — Summary</h3>
-        
       </a>
       
     </div>
-  </section>
+  </div>
+</section>
 
-  <section style="margin-bottom: var(--space-2xl);">
-    <h2 style="font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; margin: 0 0 var(--space-md);">カテゴリ別</h2>
-    <ul style="list-style: none; padding: 0; margin: 0; display: flex; gap: var(--space-md); flex-wrap: wrap;">
-      
-      <li>
-        <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="cat-badge cat-fx" style="text-decoration: none;">為替 / Foreign Exchange</a>
-      </li>
-      
-      <li>
-        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="cat-badge cat-ai" style="text-decoration: none;">AI / Artificial Intelligence</a>
-      </li>
-      
-      <li>
-        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="cat-badge cat-it" style="text-decoration: none;">IT-Consulting / IT &amp; Consulting</a>
-      </li>
-      
-      <li>
-        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="cat-badge cat-economy" style="text-decoration: none;">経済 / Economy</a>
-      </li>
-      
-      <li>
-        <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="cat-badge cat-game" style="text-decoration: none;">ゲーム / Gaming</a>
-      </li>
-      
-      <li>
-        <a href="https://hidepon-umg.github.io/News-Grasp/summary/" class="cat-badge cat-summary" style="text-decoration: none;">総括 / Summary</a>
-      </li>
-      
-    </ul>
-  </section>
 
-  <section>
-    <h2 style="font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; margin: 0 0 var(--space-md);">アーカイブ</h2>
-    <p><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付順アーカイブ（全カテゴリ横断）→</a></p>
-  </section>
+<!-- ============= Editorial preview (dark navy) ============= -->
+<section class="home-editorial">
+  <div class="home-editorial__inner">
+    <div class="home-editorial__left">
+      <div class="home-editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="home-editorial__sigil">§</div>
+      <div class="home-editorial__sub">7 SECTIONS · 9 MIN</div>
+    </div>
+    <div class="home-editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>イラン核交渉「最終段階」宣言でUSD/JPYが159→157.9円へ急落。植田総裁「下振れなければ利上げ」で日銀6月利上げ確率が急騰。ヘッジファンドの円ショートが過去最大水準で本日の雇用統計が引き金候補。</p>
+      <div class="home-editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-22/summary/" class="btn-gold">READ FULL ESSAY →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/" class="btn-ghost">ALL SECTIONS</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <footer class="site-footer">
-    <div>Auto-generated by News-Grasp Runner</div>
-    <div>129 pages</div>
-  </footer>
 
-</div>
+<!-- ============= Subscribe band ============= -->
+<section class="home-subscribe">
+  <div class="home-subscribe__eyebrow">━━ JOIN THE READERS</div>
+  <h3>毎朝6:30、メールで届く。</h3>
+  <div class="home-subscribe__sub">無料・週5回・1分で解除</div>
+</section>
 
-<style>
-.index-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-md);
-}
-.index-card {
-  display: block;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-accent-summary);
-  border-radius: var(--rounded-lg);
-  padding: var(--space-md);
-  text-decoration: none;
-  color: var(--color-primary);
-  transition: box-shadow 120ms ease, transform 120ms ease;
-}
-.index-card:hover {
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-  border-bottom: 1px solid var(--color-border);
-}
-.index-card.cat-fx      { border-left-color: var(--color-accent-fx); }
-.index-card.cat-ai      { border-left-color: var(--color-accent-ai); }
-.index-card.cat-it      { border-left-color: var(--color-accent-it); }
-.index-card.cat-economy { border-left-color: var(--color-accent-economy); }
-.index-card.cat-game    { border-left-color: var(--color-accent-game); }
-.index-card.cat-summary { border-left-color: var(--color-accent-summary); }
-.index-card-meta {
-  display: flex;
-  gap: var(--space-sm);
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  margin-bottom: var(--space-sm);
-}
-.index-card-title {
-  font-family: var(--font-serif);
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.4;
-  margin: 0 0 var(--space-sm);
-}
-.index-card-summary {
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--color-secondary);
-  margin: 0;
-}
-</style>
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · EST. 2026 · #20260522
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/">FOREIGN EXCHANGE</a><a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a><a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a><a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a><a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
 </body>
 </html>

@@ -8,6 +8,7 @@
 <meta name="description" content="{{ site_tagline }} 為替・AI・IT・経済・ゲームの 5 カテゴリで毎朝配信されるニュースダイジェスト。">
 <link rel="canonical" href="{{ base_url }}/">
 
+<!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ site_title }}">
 <meta property="og:title" content="{{ site_title }}">
@@ -18,6 +19,7 @@
 <meta property="og:image:height" content="587">
 <meta property="og:locale" content="ja_JP">
 
+<!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ site_title }}">
 <meta name="twitter:description" content="{{ site_tagline }}">
@@ -25,109 +27,234 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="{{ base_url }}/assets/site.css">
 </head>
 <body data-category="summary">
-<div class="archive-page">
 
-  <header class="site-header">
-    <div class="site-title"><a href="{{ base_url }}/">{{ site_title }}</a></div>
-    <div class="site-tagline">{{ site_tagline }}</div>
-  </header>
+<!-- ============= Home Brand zone (navy header / 86px wordmark) ============= -->
+<section class="home-brand">
+  <div class="home-brand__inner">
+    <div class="home-brand__left">
+      <div class="home-brand__mark"></div>
+      <div class="home-brand__title">
+        <div class="home-brand__eyebrow">━━ THE</div>
+        <h1 class="home-brand__name"><a href="{{ base_url }}/">News Grasp</a></h1>
+        <div class="home-brand__tagline">FIVE  LENSES  ON  TODAY</div>
+      </div>
+    </div>
+    {% if today_date %}
+    <div class="home-brand__issue">
+      <div class="home-brand__issue-label">ISSUE</div>
+      <div class="home-brand__issue-num">#{{ issue_no }}</div>
+      <div class="home-brand__issue-meta">
+        {{ today_date|replace('-', '·') }}{% if today_weekday %} {{ today_weekday }}{% endif %} · MORNING<br/>
+        <span class="home-brand__issue-loc">TOKYO</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="home-brand__rule"></div>
+</section>
 
-  <section style="margin-bottom: var(--space-2xl);">
-    <h2 style="font-family: var(--font-serif); font-size: 1.75rem; font-weight: 800; margin: 0 0 var(--space-md);">最新 {{ recent_days }} 日分</h2>
-    <p style="color: var(--color-secondary); margin: 0 0 var(--space-xl);">直近 {{ recent_days }} 日に投稿された各カテゴリの digest。</p>
+<!-- ============= Sticky nav (TODAY + 5 lenses + § ESSAY + ARCHIVE) ============= -->
+<nav class="home-nav">
+  <div class="home-nav__inner">
+    <div class="home-nav__links">
+      <span class="home-nav__today">TODAY</span>
+      {% for c in categories %}{% if c.id != 'summary' %}
+      <a href="{{ base_url }}/{{ c.id }}/" class="home-nav__lens-{{ c.id }}">
+        <span style="margin-right:4px;">{{ c.glyph }}</span>{{ c.label|upper }}
+      </a>
+      {% endif %}{% endfor %}
+      {% if editorial %}
+      <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="home-nav__dim">§ ESSAY</a>
+      {% else %}
+      <span class="home-nav__dim">§ ESSAY</span>
+      {% endif %}
+      <a href="{{ base_url }}/archive/" class="home-nav__dim">ARCHIVE</a>
+    </div>
+    <div class="home-nav__right">
+      <span class="home-nav__lang">JP / EN</span>
+      <button class="home-nav__subscribe">SUBSCRIBE →</button>
+    </div>
+  </div>
+</nav>
 
-    <div class="index-grid">
-      {% for it in recent %}
-      <a class="index-card cat-{{ it.category_id }}" href="{{ it.canonical }}">
-        <div class="index-card-meta">
-          <span class="cat-badge cat-{{ it.category_id }}">{{ it.category_jp }}</span>
-          <span style="color: var(--color-secondary);">{{ it.date }}</span>
-        </div>
-        <h3 class="index-card-title">{{ it.title }}</h3>
-        {% if it.summary_text %}
-        <p class="index-card-summary">{{ it.summary_text|truncate(120, true, '…') }}</p>
+<!-- ============= Hero (2 col: theme + Editor's Top 3 + Stats) ============= -->
+<section class="home-hero">
+  <div class="home-hero__inner">
+
+    <!-- LEFT: Today's theme -->
+    <div>
+      <div class="home-hero__eyebrow"><span class="rule">━━</span> TODAY'S THEME</div>
+      <h2 class="home-hero__title">
+        {% if hero_phrase_left %}
+          <span class="hl-gold">{{ hero_phrase_left }}</span>
+          {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right }}</span>。{% else %}。{% endif %}
+        {% else %}
+          <span class="hl-gold">5 つのレンズ</span>で <br/><span class="hl-blue">今日を読む</span>。
         {% endif %}
+      </h2>
+      <p class="home-hero__lead">{{ hero_lead }}</p>
+      {% if editorial %}
+      <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="home-hero__cta">READ FULL ESSAY →</a>
+      {% else %}
+      <a href="{{ base_url }}/archive/" class="home-hero__cta">BROWSE ARCHIVE →</a>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: Editor's Top 3 + Stats 2x2 -->
+    <div class="home-hero__right">
+      {% if editor_top3 %}
+      <div>
+        <div class="home-top3__head">
+          <span class="home-top3__label"><span class="rule">━━</span> EDITOR'S TOP 3</span>
+          <span class="home-top3__sort">BY SCORE ↓</span>
+        </div>
+        {% for it in editor_top3 %}
+        <a class="home-top3__row" href="{{ it.canonical }}">
+          <span class="home-top3__no">{{ "%02d"|format(loop.index) }}</span>
+          <div class="home-top3__main">
+            <div class="home-top3__meta">
+              <span class="home-top3__badge cat-{{ it.category_id }}">{{ it.glyph }} {{ it.category_label|upper }}</span>
+              {% if it.top_date %}<span class="home-top3__time">{{ it.top_date }}</span>{% endif %}
+            </div>
+            <h3 class="home-top3__title">{{ it.top_title }}</h3>
+          </div>
+          <span class="home-top3__score cat-{{ it.category_id }}">{{ it.top_score }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="home-stats2x2">
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">STORIES</span>
+          <span class="home-stats2x2__num">{{ stats.stories }}</span>
+        </div>
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">CATEGORIES</span>
+          <span class="home-stats2x2__num">{{ stats.categories }}</span>
+        </div>
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">ESSAY §</span>
+          <span class="home-stats2x2__num">{{ stats.essay }}</span>
+        </div>
+        <div class="home-stats2x2__cell">
+          <span class="home-stats2x2__label">READING</span>
+          <span class="home-stats2x2__num">{{ stats.reading_min }}<span class="home-stats2x2__unit">MIN</span></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% if hero_story %}
+<!-- ============= Featured Story (full bleed) ============= -->
+<section class="home-featured cat-{{ hero_story.category_id }}">
+  <div class="home-featured__inner">
+    <div class="home-featured__eyebrow">
+      <span class="home-featured__badge cat-{{ hero_story.category_id }}">TOP STORY</span>
+      <span>{{ hero_story.category_label|upper }} · SCORE {{ hero_story.top_score }}</span>
+    </div>
+    <div class="home-featured__grid">
+      <div class="home-featured__thumb-wrap">
+        {% if hero_story.top_thumb %}
+          <img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+        {% else %}
+          <div style="background: {{ hero_story.accent }}; width: 100%; height: 100%;"></div>
+        {% endif %}
+      </div>
+      <div>
+        <h2 class="home-featured__title">
+          {% if hero_story.top_source_url %}<a href="{{ hero_story.top_source_url }}" rel="noopener nofollow" target="_blank">{{ hero_story.top_title }}</a>{% else %}{{ hero_story.top_title }}{% endif %}
+        </h2>
+        <ul class="home-featured__bullets">
+          {% for b in hero_story.top_bullets[:3] %}<li>{{ b|safe }}</li>{% endfor %}
+        </ul>
+        <div class="home-featured__meta">
+          {% if hero_story.top_date %}<span>{{ hero_story.top_date }}</span>{% endif %}
+          {% if hero_story.top_source %}<span>· {{ hero_story.top_source }}</span>{% endif %}
+          <span>· <a href="{{ hero_story.canonical }}">READ ALL IN {{ hero_story.category_label|upper }} →</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ============= Categories 5-col grid ============= -->
+<section class="home-cats">
+  <div class="home-cats__inner">
+    <div class="home-cats__head">
+      <h2><span class="by">by</span> Category.</h2>
+      <div class="home-cats__head-meta">5 lenses, {{ stats.stories }} stories ↘</div>
+    </div>
+    <div class="home-cats__grid">
+      {% for c in lens_cards %}
+      <a class="home-cat-card cat-{{ c.id }}" href="{{ c.canonical }}">
+        <div class="home-cat-card__band">
+          <div class="home-cat-card__glyph">{{ c.glyph }}</div>
+          <div class="home-cat-card__en">{{ c.name_en|upper }}</div>
+          <div class="home-cat-card__jp">{{ c.name_jp }}</div>
+        </div>
+        <div class="home-cat-card__body">
+          <p class="home-cat-card__summary">{% if c.summary %}{{ c.summary|truncate(60, true, '…') }}{% else %}本日のダイジェスト準備中{% endif %}</p>
+          <div class="home-cat-card__foot">
+            <span>{{ c.stories }} STORIES</span>
+            <span class="home-cat-card__arrow">→</span>
+          </div>
+        </div>
       </a>
       {% endfor %}
     </div>
-  </section>
+  </div>
+</section>
 
-  <section style="margin-bottom: var(--space-2xl);">
-    <h2 style="font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; margin: 0 0 var(--space-md);">カテゴリ別</h2>
-    <ul style="list-style: none; padding: 0; margin: 0; display: flex; gap: var(--space-md); flex-wrap: wrap;">
-      {% for c in categories %}
-      <li>
-        <a href="{{ base_url }}/{{ c.id }}/" class="cat-badge cat-{{ c.id }}" style="text-decoration: none;">{{ c.jp }} / {{ c.label }}</a>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
+{% if editorial %}
+<!-- ============= Editorial preview (dark navy) ============= -->
+<section class="home-editorial">
+  <div class="home-editorial__inner">
+    <div class="home-editorial__left">
+      <div class="home-editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="home-editorial__sigil">§</div>
+      <div class="home-editorial__sub">7 SECTIONS · 9 MIN</div>
+    </div>
+    <div class="home-editorial__body">
+      <h2>本日のテーマ考察</h2>
+      {% if hero_phrase_left and hero_phrase_right %}
+      <div class="home-editorial__subtitle">「{{ hero_phrase_left }}と{{ hero_phrase_right }}」</div>
+      {% endif %}
+      <p>{{ editorial.summary_text|truncate(240, true, '…') }}</p>
+      <div class="home-editorial__cta">
+        <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="btn-gold">READ FULL ESSAY →</a>
+        <a href="{{ base_url }}/archive/" class="btn-ghost">ALL SECTIONS</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
 
-  <section>
-    <h2 style="font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; margin: 0 0 var(--space-md);">アーカイブ</h2>
-    <p><a href="{{ base_url }}/archive/">日付順アーカイブ（全カテゴリ横断）→</a></p>
-  </section>
+<!-- ============= Subscribe band ============= -->
+<section class="home-subscribe">
+  <div class="home-subscribe__eyebrow">━━ JOIN THE READERS</div>
+  <h3>毎朝6:30、メールで届く。</h3>
+  <div class="home-subscribe__sub">無料・週5回・1分で解除</div>
+</section>
 
-  <footer class="site-footer">
-    <div>Auto-generated by News-Grasp Runner</div>
-    <div>{{ total_pages }} pages</div>
-  </footer>
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · EST. 2026{% if today_date %} · #{{ issue_no }}{% endif %}
+  </div>
+  <div class="site-footer__links">
+    <a href="{{ base_url }}/archive/">ARCHIVE</a>
+    {% for c in categories %}{% if c.id != 'summary' %}<a href="{{ base_url }}/{{ c.id }}/">{{ c.label|upper }}</a>{% endif %}{% endfor %}
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
 
-</div>
-
-<style>
-.index-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-md);
-}
-.index-card {
-  display: block;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-accent-summary);
-  border-radius: var(--rounded-lg);
-  padding: var(--space-md);
-  text-decoration: none;
-  color: var(--color-primary);
-  transition: box-shadow 120ms ease, transform 120ms ease;
-}
-.index-card:hover {
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-  border-bottom: 1px solid var(--color-border);
-}
-.index-card.cat-fx      { border-left-color: var(--color-accent-fx); }
-.index-card.cat-ai      { border-left-color: var(--color-accent-ai); }
-.index-card.cat-it      { border-left-color: var(--color-accent-it); }
-.index-card.cat-economy { border-left-color: var(--color-accent-economy); }
-.index-card.cat-game    { border-left-color: var(--color-accent-game); }
-.index-card.cat-summary { border-left-color: var(--color-accent-summary); }
-.index-card-meta {
-  display: flex;
-  gap: var(--space-sm);
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  margin-bottom: var(--space-sm);
-}
-.index-card-title {
-  font-family: var(--font-serif);
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.4;
-  margin: 0 0 var(--space-sm);
-}
-.index-card-summary {
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--color-secondary);
-  margin: 0;
-}
-</style>
 </body>
 </html>

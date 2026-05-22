@@ -33,6 +33,7 @@ from tools.config import (  # noqa: E402
     CATEGORIES,
     OG_DESCRIPTION_MAX,
     SITE_DESCRIPTION,
+    SITE_TAGLINE_EN,
     SITE_TITLE,
     TOP_RECENT_DAYS,
 )
@@ -449,7 +450,19 @@ def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Ite
 # ---------- index / category / archive ----------
 
 def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
-    """個別ページ ctx から index / category / archive 用の軽量 entry を抽出。"""
+    """個別ページ ctx から index / category / archive 用の軽量 entry を抽出。
+
+    Phase 3 (Variant B Home) 追加フィールド:
+      top_score / top_title / top_thumb / top_source / top_source_url /
+      top_date / top_bullets / articles_count
+    Hero Featured / Editor's Top 3 / category 件数表示で使用。
+    """
+    top = ctx.get("top") or {}
+    raw_score = top.get("score", "")
+    try:
+        top_score_int = int(raw_score) if str(raw_score).strip().isdigit() else 0
+    except (TypeError, ValueError):
+        top_score_int = 0
     return {
         "title": ctx["title"],
         "date": ctx["date"],
@@ -461,6 +474,15 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "og_image": ctx["og_image"],
         "accent": ctx["accent"],
         "glyph": ctx["glyph"],
+        # Variant B Home 用
+        "top_score": top_score_int,
+        "top_title": top.get("title", ""),
+        "top_thumb": top.get("thumb", ""),
+        "top_source": top.get("source", ""),
+        "top_source_url": top.get("source_url", ""),
+        "top_date": top.get("date", ""),
+        "top_bullets": top.get("bullets", []),
+        "articles_count": len(ctx.get("articles") or []),
     }
 
 
@@ -480,23 +502,172 @@ def _collect_entries(digests: Iterable[Path]) -> list[dict[str, Any]]:
     return entries
 
 
+_WEEKDAY_JP = ["月", "火", "水", "木", "金", "土", "日"]
+
+
+def _date_weekday_jp(date_str: str) -> str:
+    """YYYY-MM-DD から日本語の曜日 1 文字を返す。失敗時は空文字。"""
+    if not date_str or len(date_str) < 10:
+        return ""
+    try:
+        from datetime import date as _date
+        y, m, d = int(date_str[0:4]), int(date_str[5:7]), int(date_str[8:10])
+        return _WEEKDAY_JP[_date(y, m, d).weekday()]
+    except (ValueError, IndexError):
+        return ""
+
+
+def _split_theme_phrases(summary_text: str) -> tuple[str, str]:
+    """summary_text から Hero 用の 2 フレーズ ("金利の天井" "AIの底入れ" 風) を抽出。
+
+    句読点 (「、」「。」) で切り、最初の名詞句 2 つを返す。最大 9 文字程度に揃える。
+    取れなければ ("", "") を返し、テンプレ側のフォールバックに任せる。
+    """
+    if not summary_text:
+        return ("", "")
+    # 最初の「。」までを切り、それを「、」「と」で分ける
+    head = summary_text.split("。", 1)[0]
+    # 「と」で挟まれた 2 句がある場合
+    for sep in (" と ", "と", "、"):
+        if sep in head:
+            parts = [p.strip() for p in head.split(sep, 1)]
+            if len(parts) == 2 and parts[0] and parts[1]:
+                left = parts[0]
+                right = parts[1].split("。", 1)[0].split(".", 1)[0]
+                if 2 <= len(left) <= 14 and 2 <= len(right) <= 14:
+                    return (left, right)
+    return ("", "")
+
+
 def build_index(entries: list[dict[str, Any]], docs_root: Path,
                 recent_days: int = TOP_RECENT_DAYS) -> Path:
-    """トップページ docs/index.html を生成。直近 recent_days 日分のカードを並べる。"""
-    from datetime import date as _date
+    """Variant B Magazine Spread Home (docs/index.html) を生成。
 
-    # 一意な日付の降順から recent_days 日分を抜き出して、その日に出た全 entry を集める。
-    dates_sorted = sorted({e["date"] for e in entries}, reverse=True)
-    recent_dates = set(dates_sorted[:recent_days])
-    recent = [e for e in entries if e["date"] in recent_dates]
+    context 構成:
+      site_title / base_url / total_pages
+      today_date / today_date_mmdd / today_weekday / issue_no
+      hero_phrase_left / hero_phrase_right / hero_lead
+      hero_story / editor_top3 / lens_cards / editorial / stats
+      categories (raw)
+    """
+    if not entries:
+        # 空配列でも render は走る。fallback メッセージで安全に
+        ctx = {
+            "site_title": SITE_TITLE,
+            "site_tagline": SITE_DESCRIPTION,
+            "site_tagline_en": SITE_TAGLINE_EN,
+            "base_url": BASE_URL,
+            "total_pages": 0,
+            "today_date": "",
+            "today_date_mmdd": "",
+            "today_weekday": "",
+            "issue_no": "",
+            "hero_phrase_left": "",
+            "hero_phrase_right": "",
+            "hero_lead": "本日のダイジェスト準備中。",
+            "hero_story": None,
+            "editor_top3": [],
+            "lens_cards": [{"id": cid, "name_jp": meta["jp"], "name_en": meta["label"],
+                            "glyph": meta["glyph"], "accent": meta["accent"],
+                            "summary": "", "canonical": f"{BASE_URL}/{cid}/", "stories": 0}
+                           for cid, meta in CATEGORIES.items() if cid != "summary"],
+            "editorial": None,
+            "stats": {"stories": 0, "categories": 5, "essay": 7, "reading_min": 15},
+            "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
+        }
+        out = Path(docs_root) / "index.html"
+        return render_page(ctx, out, template_name="index-template.html")
+
+    # entries は日付降順なので最初の entry の日付が今日
+    today_date = entries[0]["date"]
+    same_day = [e for e in entries if e["date"] == today_date]
+
+    # Editor's Top 3: score 降順、上位 3 件 (同一カテゴリ重複は許容、デザイン仕様通り)
+    sorted_by_score = sorted(same_day, key=lambda e: e.get("top_score", 0), reverse=True)
+    editor_top3 = sorted_by_score[:3]
+    hero_story = sorted_by_score[0] if sorted_by_score else None
+
+    # 5 lens cards (summary を除く 5 カテゴリ、同日最新 entry を引く)
+    by_cat: dict[str, dict[str, Any]] = {}
+    for e in same_day:
+        cid = e["category_id"]
+        if cid != "summary" and cid not in by_cat:
+            by_cat[cid] = e
+    lens_cards: list[dict[str, Any]] = []
+    for cid, meta in CATEGORIES.items():
+        if cid == "summary":
+            continue
+        e = by_cat.get(cid)
+        lens_cards.append({
+            "id": cid,
+            "name_jp": meta["jp"],
+            "name_en": meta["label"],
+            "glyph": meta["glyph"],
+            "accent": meta["accent"],
+            "summary": e["summary_text"] if e else "",
+            "canonical": e["canonical"] if e else f"{BASE_URL}/{cid}/",
+            "stories": e.get("articles_count", 0) if e else 0,
+        })
+
+    # Editorial preview: 同日の summary digest を引く。無ければ全 entry から最新の summary を探す
+    editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
+    if editorial is None:
+        editorial = next((e for e in entries if e["category_id"] == "summary"), None)
+
+    # Today's Theme: editorial.summary_text から 2 フレーズ抽出を試みる
+    theme_source = editorial["summary_text"] if editorial else ""
+    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_source)
+
+    # Hero lead: editorial の summary が最も豊か。無ければ hero_story.summary_text に
+    hero_lead = ""
+    if editorial and editorial.get("summary_text"):
+        hero_lead = editorial["summary_text"]
+    elif hero_story and hero_story.get("summary_text"):
+        hero_lead = hero_story["summary_text"]
+    else:
+        hero_lead = f"本日 {len(same_day)} カテゴリのダイジェストをお届けします。"
+    # lead を 180 文字程度に丸める
+    if len(hero_lead) > 200:
+        hero_lead = hero_lead[:198] + "…"
+
+    # Stats
+    stories_total = sum(e.get("articles_count", 0) for e in same_day)
+    if stories_total == 0:
+        stories_total = len(same_day)
+
+    issue_no = today_date.replace("-", "") if today_date else ""
+
+    today_date_mmdd = ""
+    if today_date and len(today_date) >= 10:
+        today_date_mmdd = f"{today_date[5:7]}·{today_date[8:10]}"
 
     ctx = {
         "site_title": SITE_TITLE,
         "site_tagline": SITE_DESCRIPTION,
+        "site_tagline_en": SITE_TAGLINE_EN,
         "base_url": BASE_URL,
-        "recent": recent,
-        "recent_days": recent_days,
         "total_pages": len(entries),
+
+        "today_date": today_date,
+        "today_date_mmdd": today_date_mmdd,
+        "today_weekday": _date_weekday_jp(today_date),
+        "issue_no": issue_no,
+
+        "hero_phrase_left": hero_phrase_left,
+        "hero_phrase_right": hero_phrase_right,
+        "hero_lead": hero_lead,
+
+        "hero_story": hero_story,
+        "editor_top3": editor_top3,
+        "lens_cards": lens_cards,
+        "editorial": editorial,
+
+        "stats": {
+            "stories": stories_total,
+            "categories": 5,
+            "essay": 7,
+            "reading_min": 15,
+        },
         "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
     }
     out = Path(docs_root) / "index.html"
