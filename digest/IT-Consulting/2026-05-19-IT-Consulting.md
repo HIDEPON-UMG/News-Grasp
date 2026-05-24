@@ -69,7 +69,7 @@ tags:
 
 #cat/it #co/Google #co/アクセンチュア #co/NTTデータ #country/米国 #topic/AIエージェント #event/製品発表 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://letsdatascience.com/lds-og-image.png)
 
 - Google I/O で発表の [[Gemini Intelligence]] は OS 横断型マルチステップ AI エージェントで、SIer 各社が主力事業としてきたワークフロー自動化ソリューションに真正面から競合。
 - アクセンチュア・NTT データ・富士通は Google Cloud パートナーシップをテコに「[[Gemini Intelligence 導入支援]]」へ素早く転換する動き。__パートナー陣営の即応力が競争優位の新軸に__。
@@ -83,7 +83,7 @@ tags:
 
 #cat/it #co/マッキンゼー #co/PwC #co/KPMG #country/米国 #topic/コンサル業界-動向 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://media.loom-app.com/loom/2026/02/18/74b330cb-b511-4627-b7e0-4beb636de3f7/original.jpg?w=1200&h=630)
 
 - McKinsey CEO が「40,000 人 ＋ [[25,000 人]] AI エージェント」体制を宣言。コンサルタント人件費主体から AI インフラ費用主体へのコスト構造転換が進む。
 - PwC は「Human+AI Skillset」として 30 スキル体系を策定し、20 万人の ChatPwC ユーザーへの受講を義務化。__ジェネラリストからエンジニア兼コンサルへ人材像が再定義__。
@@ -97,7 +97,7 @@ tags:
 
 #cat/it #co/NTTデータ #co/アクセンチュア #country/日本 #topic/AIエージェント #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.ndw.jp/ndw/wordpress/wp-content/uploads/2026/01/catalog-software-2026_000.jpg)
 
 - NTT Data が 2030 年 EBITDA [[1.2 兆円]]を目標とする AIVista フレームワークを再公表。グローバル 5 万人規模を AI 導入支援に特化し、法務・財務向け AI コンサル 18 サービスが稼働済み。
 - NTT DOCOMO Global × アクセンチュアの __Universal Wallet Infrastructure__（AI 駆動決済基盤）と連携予定。決済×コンサル×AI のフルスタック路線が鮮明。

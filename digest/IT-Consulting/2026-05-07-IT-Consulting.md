@@ -54,7 +54,7 @@ tags:
 
 #cat/it #co/アクセンチュア #co/OpenAI #country/米国 #topic/IT投資 #topic/生成AI導入 #event/決算 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://static.phemex.com/pubimg/5f24b9c7d4a63a9b37534cc0f17bac8297747a09775c6caafd6b97af02f9b372.png)
 
 - [[アクセンチュア]]の2026年Q1 AIプロジェクト受注が[[22億ドル]]（前年比ほぼ倍増）に達し、コンサル業界全体でAI関連プロジェクトが主戦場に。株価は年初比+18%で推移中。
 - 3月末に発表した「Reinvention Services」体制刷新では、全社横断でAI実装支援を担う専門組織を設立し、競合他社との差別化戦略を加速。__OpenAIとの「Frontier Alliance」締結（2月）が受注急増の直接要因__とアナリストが分析。
@@ -68,7 +68,7 @@ tags:
 
 #cat/it #co/OpenAI #co/BCG #co/マッキンゼー #co/アクセンチュア #country/米国 #topic/生成AI導入 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://image.cnbcfm.com/api/v1/image/108267428-17715195742026-02-19t075251z_840998235_rc2vojaaaikb_rtrmadp_0_india-ai.jpeg?v=1771519587&w=1920&h=1080)
 
 - [[OpenAI]]は2月にBCG・マッキンゼー・アクセンチュア・Capgeminiとの多年間提携「Frontier Alliance」を締結。企業のAI戦略策定からエージェント本番稼働までの全支援をコンサル4社に委託する構造が確立。
 - コンサル各社には[[GPT-5.5]]の優先アクセスと専用サポートが付与され、企業顧客への導入速度が競合AIより最大3倍速いという試算も。__AIとコンサルの「蜜月関係」はシリコンバレーと外資系コンサルの業界境界を溶かしている__。
@@ -82,7 +82,7 @@ tags:
 
 #cat/it #co/富士通 #co/アクセンチュア #co/NTTデータ #country/日本 #topic/DX #topic/システム開発 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://blogs.itmedia.co.jp/serial/assets_c/2026/02/bd17472345425c80bc9566eb7f9f7cb85e940d1a-thumb-660x562-64906.png)
 
 - [[富士通]]は自社AI駆動開発プラットフォームを2026年度末までに医療・自治体向け67システムに全面適用。「2025年の崖」で立ち往生している老朽システムの低リスク・短納期リプレースを本格化。
 - AIエージェントが既存システムの仕様書を逆引き復元し本番稼働までのリードタイムを大幅短縮。__従来比40-60%のコスト削減__が見込まれ、競合のアクセンチュア・NTTデータ・NECとの差別化要因に。

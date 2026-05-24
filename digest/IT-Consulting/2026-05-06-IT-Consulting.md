@@ -49,7 +49,7 @@ tags:
 
 #cat/it #co/アクセンチュア #country/米国 #topic/生成AI導入 #event/提携発表 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://newsroom.accenture.jp/jp/news/2026/media_1cc719aa877839af2a12e3a105e1c72de7f73bc08.png?width=1200&format=pjpg&optimize=medium)
 
 - アクセンチュアとDatabricksが戦略的パートナーシップを拡大し、[[アクセンチュア-データブリックス-ビジネスグループ]]（専門組織）を設立。DatabricksをコアデータAIプラットフォームとした大規模AIエージェント導入支援を提供する。
 - AI Refinery™ Distiller Agenticフレームワークと組み合わせることで、開発者が[[信頼性の高いAIエージェント]]を迅速に構築・展開できる仕組みを構築。OpenAI・Anthropic等の複数モデルを統合する「__AIエージェントの工場__」として位置づける。
@@ -66,7 +66,7 @@ tags:
 
 #cat/it #co/富士通 #country/日本 #topic/生成AI導入 #event/製品発表 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://ez-cdn.shoeisha.jp/static/images/article/23590/23590-top.png)
 
 - 富士通が「[[Fujitsu Kozuchi Enterprise AI Factory]]」を日本と欧州で展開。顧客専有環境で業務特化した生成AIモデルを自律運用できる基盤として2026年2月から先行トライアル、[[7月に正式提供]]予定。
 - ユーザーが独自のLLMやエージェントを開発・改善できる点が差別化要因。OSSのLLMからクローズドモデルまで選択でき、業務データで継続的にファインチューニング可能な__「専有環境でのAI自律運用」__ という新カテゴリを提唱する。
@@ -80,7 +80,7 @@ tags:
 
 #cat/it #co/富士通 #co/アクセンチュア #co/NTTデータ #country/日本 #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://blogs.itmedia.co.jp/serial/assets_c/2026/02/bd17472345425c80bc9566eb7f9f7cb85e940d1a-thumb-660x562-64906.png)
 
 - 富士通がAI駆動の開発フライホイールを本格稼働させれば、[[アクセンチュア]]・[[NTTデータ]]・[[NEC]]を駆逐するロジックが成立するとの見方が業界で広まりつつある。「AIがシステムを丸ごと開発する」富士通の戦略は人月ビジネスの根本を崩しかねない。
 - NTTデータグループは2027年度に開発工程全体の40%効率化・適用案件比率50%を目標。富士通も70%工数削減を見込む。__二社の競争が業界全体の生産性基準を引き上げ__、中小SIerを市場から締め出す可能性がある。
@@ -94,7 +94,7 @@ tags:
 
 #cat/it #co/NTTデータ #co/富士通 #co/NEC #country/日本 #topic/IT投資 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://xtech.nikkei.com/atcl/nxt/column/18/00001/11238/topm.jpg?20220512)
 
 - NTTデータグループ・富士通・NEC・日立の大手4社が生成AI適用を本格化。NTTデータGは「[[2027年度に40%の開発工程効率化]]」「適用案件比率50%」を目標に掲げ、現在は500件のプロジェクトに生成AIを適用中。
 - GitHub CopilotなどのAIコーディングツールが先行普及した外資系コンサルに対して、日本勢は固有業務ロジックを組み込んだ「業務特化型エージェント」で差別化。__言語・法制度・業界慣行__ に精通した日本独自のデータ資産が強みとなる見通し。

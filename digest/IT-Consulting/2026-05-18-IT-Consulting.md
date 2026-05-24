@@ -55,7 +55,7 @@ tags:
 
 #cat/it #co/BCG #co/マッキンゼー #co/PwC #co/KPMG #country/米国 #topic/AI投資 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://futureofconsulting.ai/wp-content/uploads/2026/01/Consulting-AI-2026-Update-1170x745.jpg)
 
 - [[BCG]] が2026年4月に [[$144億]] の2025年収益の [[25%]] ＝ [[36億ドル]] がAI案件だと公式開示。ビッグ3（マッキンゼー・BCG・ベイン）で初めてAI比率を数値化した歴史的な発表。
 - __「AI仕事を取れるかどうかが中期の生死を分ける」という競争軸が業界内で確定__ した。マッキンゼーの「エージェント at Scale」・PwCの「Agent OS」・KPMGの「Workbench」が同様の収益化レースを展開。
@@ -69,7 +69,7 @@ tags:
 
 #cat/it #co/Databricks #co/アクセンチュア #country/日本 #country/米国 #topic/DX #event/提携発表 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://newsroom.accenture.jp/jp/news/2026/media_1cc719aa877839af2a12e3a105e1c72de7f73bc08.png?width=1200&format=pjpg&optimize=medium)
 
 - [[アクセンチュア]] と [[Databricks]] が「Accenture-Databricksビジネスグループ」を設立。企業向けAIアプリ・エージェントの大規模展開支援を一体型で提供する体制を整えた。
 - Databricksの [[データレイクハウス]] プラットフォームとアクセンチュアの業界別実装力を組み合わせ、__製造・金融・流通の3業界でAIエージェントの本番稼働を半年以内に実現する__ 支援プログラムを提供。
@@ -86,7 +86,7 @@ tags:
 
 #cat/it #country/EU #country/米国 #topic/DX #topic/AI変革 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://framerusercontent.com/images/ZB1NOtNA5xBtRZfcMNCwp819is.png?width=1920&height=1080)
 
 - AI導入加速の大手コンサル（Big4・Big3）と「パイロット段階から抜け出せない」中小コンサルとの間で [[二極化]] が鮮明に。調査では中小プロジェクトの [[約半数]] がPOCのまま本番移行できていない。
 - 大手の優位性は「専有AI基盤（PairD / ChatPwC / Rewired）」と「大量スタッフのAI訓練済み人材」にある。__技術単体ではなく、実装を量産できる組織規模が差別化要因__ になっている。
@@ -100,7 +100,7 @@ tags:
 
 #cat/it #co/PwC #country/米国 #topic/AI変革 #topic/人材育成 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.roadtooffer.com/blog/big-4-consulting-firms-hero.webp)
 
 - [[PwC]] が2026年2月に「Human+AI Skillset」カリキュラムを開始。[[30スキル]]（AI系15・人間系15）を全職員に展開し、[[ChatPwC]] の20万人ユーザーベースを活用した大規模習熟化を推進。
 - __人間の差別化優位（創造性・批判的思考・交渉力）をAIと組み合わせる設計__ で、「AIに仕事を奪われる」という懸念から「AIと共に働く」マインドセットへの転換を図る。

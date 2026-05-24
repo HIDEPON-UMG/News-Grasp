@@ -49,7 +49,7 @@ tags:
 
 #cat/it #co/OpenAI #co/アクセンチュア #co/マッキンゼー #country/米国 #topic/AIエージェント #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://techcrunch.com/wp-content/uploads/2025/04/GettyImages-2206295463.jpg?resize=1200,800)
 
 - OpenAIが2月23日、McKinsey・BCG・Accenture・Capgeminiと多年契約「[[Frontier Alliance]]」を締結。企業向けAIエージェントプラットフォーム「Frontier」の展開を共同推進。
 - 調査では「生成AIパイロットの__95%が測定可能なROIを達成できず__」というデータが判明。コンサルを介した変革管理・業務再設計が不可欠と位置付けた。
@@ -63,7 +63,7 @@ tags:
 
 #cat/it #co/アクセンチュア #co/Google #country/米国 #topic/DX #event/事業戦略発表 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://mma.prnewswire.com/media/1032194/Google_Cloud_Logo.jpg?p=facebook)
 
 - Google Cloudが4月22日、アジェンティックAI普及に向け$7.5億ドルのパートナー支援基金を設立。[[Accenture]]・BCG・Deloitte・McKinsey等に対してGemini APIの早期アクセスとFDE（前線エンジニア）派遣を提供。
 - OpenAIのFrontier Allianceと真っ向から競合。__コンサルティング会社をAI普及の「実装アーム」として囲い込む競争__がOpenAI・Google間で激化。
@@ -77,7 +77,7 @@ tags:
 
 #cat/it #co/マッキンゼー #country/米国 #topic/DX人材 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://media.loom-app.com/loom/2026/01/19/1c1c5a8a-bcfe-4c28-b96f-f8208bbf7cd6/original.jpg?w=1200&h=630)
 
 - Bloombergが4月15日付で「AIがMcKinsey・BCG・Bainの新卒採用を変える」と報道。データ分析・スライド作成等の初年度業務がAIに代替され、[[採用要件]]が「AI協働能力」に急変。
 - McKinsey 2026年採用計画は前年比12%増だが、__定型業務担当のジュニアアナリストより業界専門家・エンジニアの比率が高まる__。

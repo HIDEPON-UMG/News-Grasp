@@ -55,7 +55,7 @@ tags:
 
 #cat/it #co/BCG #co/Bain #co/McKinsey #country/米国 #topic/AI採用影響 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.thebusinessresearchcompany.com/images/tbrc-logo-og.png)
 
 - 2026年の採用市場は「今のAI時代に__不可欠と証明できる候補者__」のみを選抜する構造に変化。ピーク時より内定率が大幅低下し、合格者は過去最高レベルという逆説的状況。
 - プリンストン大学の学生は「アナリストとして不可欠かどうかが不明確になっている」と発言。__エントリーレベル職の存在意義が問われている__。AIが事実収集・分析を代替し人間の差別化ポイントが消失しつつある。
@@ -69,7 +69,7 @@ tags:
 
 #cat/it #co/Accenture #co/PwC #co/デロイト #country/米国 #topic/AI-advisory市場 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://cdn.ainvest.com/aigc/hxcmp/images/compress-qwen_generated_1777143565693.jpg.png)
 
 - AI advisory（AI導入支援・戦略策定）市場は2025年の[[110億ドル]]から2033年には[[2,570億ドル]]へ、__年率成長率47%超__で急拡大する予測。コンサルが削減するボリュームを超える新市場が生まれつつある。
 - コンサル大手にとって従来のIT実装ビジネスを超える「AI経済の__インフラ層__」を担うビジネスが形成されつつある。エンタープライズAI展開のROI保証がコンサルの新たな差別化領域。
@@ -83,7 +83,7 @@ tags:
 
 #cat/it #co/Accenture #co/Anthropic #co/Databricks #country/米国 #topic/AI投資 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://fortune.com/img-assets/wp-content/uploads/2026/02/GettyImages-2261861349.jpg?resize=1200,600)
 
 - [[Accenture]]は2026年度のAI関連投資を[[22億ドル]]と発表したが、企業のAIパイロット失敗率は依然[[95%]]と高い。失敗の最大要因はデータ品質・組織変革の欠如・明確なROI指標の不在。
 - [[Accenture]]は「[[Faculty]]買収」「[[Databricks]]パートナーシップ」「[[Cyber.AI]]（[[Anthropic]] Claude搭載）」の3軸で、パイロットから本番移行を支援する__統合コンサル基盤__を構築中。

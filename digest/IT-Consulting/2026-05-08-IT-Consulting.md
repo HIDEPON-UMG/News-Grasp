@@ -56,7 +56,7 @@ tags:
 
 #cat/it #co/OpenAI #co/PwC #country/米国 #topic/財務DX #topic/エンタープライズAI #event/提携発表 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://mma.prnewswire.com/media/2972445/PwC_Logo.jpg?p=facebook)
 
 - OpenAIとPwCがCFO業務を再定義するAIエージェントJVを発表。[[計画・予測・報告・調達・税務・決算クローズ]]の各工程にエージェントを配置し、人間は例外処理と意思決定に特化させるAI-Native Financeモデルを実世界で構築。
 - OpenAI社内でCodexを使い、同規模チームで__5倍のコントラクト処理__を実現。IR-GPTは最近の資金調達で200件超の投資家対話を自律管理するなど、「自社を実験台」にした実装事例をPwCの顧客向けに提供する形。
@@ -70,7 +70,7 @@ tags:
 
 #cat/it #co/Microsoft #country/米国 #country/UAE #topic/AI普及 #topic/デジタル格差 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://blogs.microsoft.com/wp-content/uploads/sites/5/2026/05/AI-Diffusion-Blog-Header-1024x576.png)
 
 - Microsoft AI Economy InstituteのQ1 2026レポートによれば、世界のAI活用率が[[17.8%]]に上昇（前Q比+1.5pt）。一方、先進国27.5% vs 途上国15.4%と__格差が過去最大水準__に拡大しており、「AIのデジタル断層線」が固定化しつつある。
 - UAE 70.1%・米国31.3%がトップクラス。26カ国で利用率が30%超に達する中、日本は上位圏内だが「AIを使う人材」への転換が課題として浮上。企業のAI活用とワーカーレベルの習熟の乖離が指摘される。
@@ -84,7 +84,7 @@ tags:
 
 #cat/it #co/DXC Technology #co/ServiceNow #country/米国 #topic/構造改革 #topic/AIプラットフォーム #event/決算 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.indexbox.io/landing/img/blog/telegram-fallback/ca8e113c1980c1af92e28ef5cf73017f.webp)
 
 - DXC Technologyが5/7にQ4 FY2026決算を発表。株価$11.32の過去最安値圏で迎えた決算は、4月末に発表した[[OASIS AIプラットフォーム]]（ServiceNow統合型インテリジェント・オーケストレーション）の実績評価が焦点。
 - 2段構えの再建計画（コストカット＋AI高マージン化）を掲げ、AI-Nativeソリューションを36ヶ月で売上[[10%]]へ引き上げる目標。__従来のIT-アウトソーシング依存からの脱却__を最終目標に据えるが、売上減少が止まっていない。
@@ -98,7 +98,7 @@ tags:
 
 #cat/it #co/Bain #country/インド #topic/IT投資 #topic/デジタルトランスフォーメーション #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://akm-img-a-in.tosshub.com/businesstoday/images/story/202605/69fc379b27e67-the-report-highlighted-that-indian-companies-are-now-shifting-from-incremental-digital-upgrades-towa-075621720-16x9.png)
 
 - Bainの最新レポートによれば、[[インドの企業IT支出]]が2026年に前年比+6.8%増加見込み。AI・データプロジェクトへの投資がドライバーで、企業テクノロジー予算の40〜45%がAI変革に充当される見通し。
 - インドはIT輸出大国として「AI活用の供給側」だったが、今後は国内企業の「[[AI消費側]]」としての市場規模が急拡大。グローバルコンサルが次のAI市場としてインドを本格争奪する局面に入った。

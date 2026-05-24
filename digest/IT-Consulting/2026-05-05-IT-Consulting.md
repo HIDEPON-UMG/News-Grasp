@@ -57,7 +57,7 @@ tags:
 
 #cat/it #co/NTTデータ #co/ソフトバンク #co/富士通 #country/日本 #event/団体設立 #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.nttdata.com/global/ja/-/media/assets/images/sns_share.png?rev=583d5951ace649c08be7a88679328a3b)
 
 - NTTデータグループ・富士通・ソフトバンクなど産学8団体が「[[AIスペース]]」構想の実現を目指すxIPFコンソーシアムを2026年4月10日に設立。企業の壁を越えてAIとデータを共有する基盤の構築を目指す。
 - [[NTTデータ]]は生成AIを用いた「[[AIネーティブ開発]]」を2026年度中に全社展開し、2027年度にはAI適用案件比率50%・開発生産性40%向上を目標とする。__IT人材不足への抜本的対策__ として位置づけている。
@@ -71,7 +71,7 @@ tags:
 
 #cat/it #co/BCG #co/Microsoft #co/OpenAI #co/アクセンチュア #co/マッキンゼー #country/米国 #topic/パートナーシップ #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://media.loom-app.com/loom/2026/04/26/3571c76d-b9f4-4088-9cac-3065ad42984f/original.jpg?w=1200&h=630)
 
 - 元コンサルタント従業員の証言によると、[[マッキンゼー]]・[[アクセンチュア]]・BCGはそれぞれOpenAI/Microsoft・GoogleのAIツールを優先採用する「__パートナー割引__」を受けている。
 - マッキンゼーのAI関連案件は[[全業務の40%]]を占め、BCGも20%と急拡大。従来の「人材貸し出し」モデルから「AIツール＋エンジニア実装」へ移行が加速している。
@@ -85,7 +85,7 @@ tags:
 
 #cat/it #co/BCG #country/日本 #country/米国 #topic/AIエージェント #topic/IT投資 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://prcdn.freetls.fastly.net/release_image/145445/35/145445-35-8cdf634a791f9fa35ab26eb394a1129e-1280x720.png?format=jpeg&auto=webp&fit=bounds&width=2400&height=1260)
 
 - BCGが世界16市場・9業界のCEO 2,360人を調査。[[2026年のAI投資]]は売上高比1.7%に達し、[[2024年比で倍増]]する見込み。CEO主導の経営課題として本格化している。
 - 注目されるのは投資先の変化で、AI投資の[[30%超をAIエージェント]]に充てる計画が示され、単なるパイロット段階から「__全業務フローの再設計__」フェーズへ移行した。
@@ -99,7 +99,7 @@ tags:
 
 #cat/it #co/BCG #co/EY #co/PwC #co/マッキンゼー #country/米国 #topic/AIエージェント #score/低
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://media.loom-app.com/loom/2026/02/18/74b330cb-b511-4627-b7e0-4beb636de3f7/original.jpg?w=1200&h=630)
 
 - [[マッキンゼー]]・BCG・[[PwC]]・EYの主要4社が、AIエージェント導入の費用対効果を定量的に測定するROI計算モデルの構築を開始。__ROI測定の標準化不在__ が大規模展開の障壁になっていることが明らかになった。
 - マッキンゼーはAIエージェント活用で弁護士・会計士相当業務の[[70%を自動化]] できると試算。ただし「人間の承認なしに行動するエージェント」への法的・倫理的責任所在が課題として残る。

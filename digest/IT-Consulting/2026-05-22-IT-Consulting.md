@@ -54,7 +54,7 @@ tags:
 
 #cat/it #co/アクセンチュア #country/米国 #topic/人材育成 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://fortune.com/img-assets/wp-content/uploads/2026/05/55281101353_f680158e4f_4k.jpg?resize=1200,600)
 
 - AccentureのグローバルCDO Beck Baileyが「[[新卒採用]]を2025年より増やす」と明言。ChatGPT登場後に大学入学したGen Z世代は「AI流暢さ」を生得的に持ち、コンサルの組織変革を後押しする存在と位置付ける。
 - AIが中堅層（マネージャー〜シニアコンサルタント）の定型業務を侵食する中、__新卒←→パートナーの二極構造__へのシフトが鮮明に。Meta・PwCが新卒採用を絞る中でAccentureのみ逆張りしている。
@@ -68,7 +68,7 @@ tags:
 
 #cat/it #co/マッキンゼー #co/BCG #co/アクセンチュア #co/OpenAI #country/米国 #topic/生成AI導入 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://plusai.com/62375700635d76646ef2457f/690130bb00d5d62159784ce8_openai-gives-mckinsey-company-an-award-for-passing-100-v0-78mcg23u09xf1.webp)
 
 - OpenAIが2月に発足させた[[Frontier Alliances]]にMcKinsey・BCG・Accentureが参画。GPT-5.5を活用した企業変革プロジェクトを成果連動型フィーモデルで展開する体制が確立された。
 - BCGは2025年AI収益$3.6B（全体の約25%）を初開示し、Big4・Big3コンサルのAI収益化が数値として可視化されてきた。__収益モデルの転換点__が業界全体で同時進行している。
@@ -82,7 +82,7 @@ tags:
 
 #cat/it #co/NTTデータ #country/日本 #country/米国 #topic/AIエージェント #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.nttdata.com/jp/ja/-/media/nttdatajapan/images/data-insight/2026/032502/index_list.jpg?rev=c1b53132b2a44862b7f4badf483c3961)
 
 - NTTデータグループが米シリコンバレーに「NTT DATA [[AIVista]]」を設立。自然言語指示でAIエージェントを構築できる「LITRON Builder」を2026年4月から提供開始し、製造・金融・流通向けエージェントの本番稼働を半年以内に実現する。
 - 2030年にEBITDA1.2兆円（2025年比約50%増）を目指す成長戦略の中核であり、__グローバル5万人のAI支援専門家__を配置する計画。Gemini Intelligence衝撃波を受け、導入支援→エージェント本番稼働への転換を急いでいる。
@@ -96,7 +96,7 @@ tags:
 
 #cat/it #co/富士通 #country/日本 #topic/生成AI導入 #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/insight/tl-scm-digital-rehearsal-202600302/ogp-scm-digital-rehearsal-1200x630.jpg?rev=ba1097759e624e8d9f393d536834e1bd)
 
 - 富士通が独自LLM「[[Takane]]」を核とした「AI-Driven Software Development Platform」を医療・自治体向け全67種ソフトウェアに2026年度末までに適用完了する計画を公開。SEナレッジを大量学習した国内公共セクター特化型。
 - 要件定義から実装までの__自動化率60%超__を目標とし、従来型の人的工数集約モデルからの脱却を図る。ローカルLLM戦略でAccenture/NTTデータのGlobal Cloud路線と差別化する。

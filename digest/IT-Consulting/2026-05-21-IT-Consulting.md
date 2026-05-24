@@ -36,7 +36,7 @@ tags:
 
 #cat/it #co/NTTデータ #country/日本 #topic/生成AI導入 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO2423196027122025000000-1.jpg?auto=format&bg=FFFF&crop=focalpoint&fit=crop&h=630&w=1200&s=8cd6ea6553fc47ae3ad4d3771f4820a6)
 
 - [[NTTデータ]]は2026年度末までに生成AIを使ったシステム開発の自動化を本番環境に投入する計画を発表。要件定義からデプロイまでの工数を2025年比で[[50%削減]]（既存ツール30%+AI20%）し、2030年には[[70%削減]]を目指す。
 - 国内SIerの人材不足が深刻化する中、__生成AIによるシステム開発の自動化は業界全体の変革トリガー__になり得る。競合する富士通・NEC・IBMコンサルティングも対応を迫られる状況に。
@@ -70,7 +70,7 @@ tags:
 
 #cat/it #co/OpenAI #co/アクセンチュア #co/マッキンゼー #co/BCG #country/米国 #topic/生成AI導入 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://fortune.com/img-assets/wp-content/uploads/2026/02/GettyImages-2261861349.jpg?resize=1200,600)
 
 - 2月発表の[[OpenAI Frontier]]と4大コンサル提携から3ヶ月。Accenture・Capgeminiがシステム統合・実装を担い、McKinsey・BCGが経営変革のフレームワーク設計を担う役割分担が定着しつつある。
 - [[Frontier Alliances]]は企業のAI導入を__「戦略から実装まで一気通貫で支援する新たな産業インフラ」__として機能し始めており、Uber・State Farm・Intuitなど初期ユーザーで成果事例が積み上がっている。
@@ -87,7 +87,7 @@ tags:
 
 #cat/it #co/アクセンチュア #country/米国 #country/日本 #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://website-cdn.casebasix.com/top-10-management-consulting-firms.png)
 
 - 2026年のコンサル業界最大手は[[Accenture]]（売上$650億）。AI実装・テック統合を中核とする同社はMcKinsey・BCG・Bainの成長率6〜8%に対し__約15%の高成長__を達成し、業界の勢力図が変わりつつある。
 - 戦略特化のMBBと実装型のAccenture・Capgeminiの二極化が完成。コンサル業界は「アイデアを売る時代」から「__テックで結果にコミットする時代__」に移行した。
@@ -101,7 +101,7 @@ tags:
 
 #cat/it #country/米国 #country/日本 #topic/DX #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://www.roadtooffer.com/blog/top-consulting-firms-hero.webp)
 
 - グローバル経営コンサル市場は2025年に3,500億ドルを突破し、2026年は[[3,750億ドル]]超えが見込まれる。[[生成AIサービスライン]]が最速成長セグメントで、ほぼ全大手ファームで主力に育っている。
 - 地域別ではアジア太平洋が最速成長地域として台頭。インド・シンガポール・日本の需要が牽引し、__欧米コンサルが一斉にアジア拠点を強化__している動きが顕著。

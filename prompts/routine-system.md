@@ -121,6 +121,10 @@ dedup を通過した候補から最終的に **カテゴリあたり 5 件**を
 
 **取得は 3 段フォールバック**で行う。最終的な戻り値が `null` であっても **キーは必ず出力**すること（過去の失敗ケースは「キー自体が無い」状態が多発し、診断不能になっていた）。
 
+> **絶対遵守 (2026-05-25 強化)**: 段階 1 を **必ず最初に実行する**。手抜きして「Bloomberg / Reuters 系だから」「いつもの fallback でいい」と判断して **`ng-thumb-common-{cat}.jpg` を digest md の `![thumb](...)` 行に直接書き込んではいけない**。`ng-thumb-common-*` は **メール HTML 生成時のみ**の fallback であり、digest md / articles.jsonl にはあくまで「段階 1 の戻り値（実 OGP URL or null）」を入れる。
+>
+> 由来: 2026-05-25 検証で TechStartups / Substack 系を含む 40〜80% の記事で `ng-thumb-common-ai.jpg` 等が digest md に直接書き込まれており、再実行可能なはずの段階 1 (`tools/fetch_ogp.py`) を呼ばずに fallback を即採用していた事実が判明（[`tools/recover_thumbs.py`](../tools/recover_thumbs.py) で 1 回検出する）。同問題の再発時は `tools/recover_thumbs.py --dry-run` で digest 内の fallback URL を全列挙して報告する。
+
 ##### 段階 1: 生 HTML を直接パース（第一候補）
 
 `Bash` で `tools/fetch_ogp.py <URL>` を呼び出す。これは `urllib.request` で生 HTML を取得し、`html.parser` で `<meta property="og:image">` / `<meta name="twitter:image">` を抽出する標準ライブラリのみのスクリプト。Mozilla 系 User-Agent を投げるので大半の媒体で通る。

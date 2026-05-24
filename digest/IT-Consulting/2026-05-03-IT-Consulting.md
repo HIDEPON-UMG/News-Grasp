@@ -57,7 +57,7 @@ tags:
 
 #cat/it #co/BCG #co/McKinsey #country/米国 #topic/AI収益 #topic/コンサル業界 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://cdn.metaintro.com/rs:fill:1200:630/q:80/plain/images/kai.YQQGVCPm.png)
 
 - [[BCG]]の2025年総収益は[[144億ドル]]、うち[[36億ドル]]（[[25%]]）が[[AI関連コンサル]]。Bloomberg 4/23報道で「__コンサル業界史上最大のシフト__」と評価された。AI戦略策定・実装支援・AIエージェント導入の3本柱が収益を牽引。
 - [[BCG Gamma]]プラットフォーム（AI開発・展開基盤）が受注増の主要因で、__「AIを語る」から「AIで実装する」__フェーズへの業界全体の移行が鮮明になった。McKinseyのAI関連プロジェクト比率は約40%に到達。
@@ -71,7 +71,7 @@ tags:
 
 #cat/it #co/KPMG #co/McKinsey #co/PwC #country/米国 #topic/AIエージェント #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://whitehat-seo.co.uk/hubfs/How-AI-is-transforming-consulting.webp)
 
 - [[McKinsey]]の「[[Agents-at-Scale]]」、[[PwC]]の「[[Agent OS]]」、[[KPMG]]の「[[Workbench]]」が相次いで発表。AIエージェント基盤の自社開発がコンサル競争の__新フロンティア__となり、独自基盤の有無が価格競争力と差別化を左右している。
 - エージェントAIが提供する価値はコスト削減にとどまらず、顧客が気づいていない経営課題の__先回り提案__まで拡張。BCGの試算ではエージェントAIが2028年までに全AI価値の[[29%]]を占めると予測されている。
@@ -85,7 +85,7 @@ tags:
 
 #cat/it #co/Accenture #co/Deloitte #co/EY #co/McKinsey #country/米国 #topic/AI導入事例 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://plusai.com/62375700635d76646ef2457f/690130bb00d5d62159784ce8_openai-gives-mckinsey-company-an-award-for-passing-100-v0-78mcg23u09xf1.webp)
 
 - [[McKinsey]]は内部AI「LillyRose」で資料作成・リサーチを自動化し、コンサルタントの__「付加価値時間」を60%向上__と公称。[[Deloitte]]のDeloitte AIは監査・税務業務へ展開し業界特化で差別化を図る。
 - [[Accenture]]の[[AI Refinery]]は社内外のAIサービスを統合するプラットフォームとして1000以上の企業に展開済み。[[EY]]・[[KPMG]]も会計・法務・医療の業界特化モデル開発に注力し、__オールラウンド型vs専門特化型__の競争が深まっている。

@@ -58,7 +58,7 @@ tags:
 
 #cat/it #co/アクセンチュア #co/ServiceNow #country/米国 #topic/AIエージェント #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://newsroom.accenture.com/news/2026/media_1234823475cfefd0870b4b9f98ace3f47701b3202.png?width=1200&format=pjpg&optimize=medium)
 
 - [[Forward Deployed Engineering（FDE）]]プログラムでは、ServiceNow・Accenture両社のエンジニアが顧客環境に常駐。300以上のプリビルドAIエージェントスキルを活用し、__PoC停滞（Proof of Concept Hell）を解消して本番稼働を加速__する。
 - 中枢に置かれる[[AI Control Tower]]は、エージェントのパフォーマンス・セキュリティ・スケールを一元統制。\"スピードとコントロールのトレードオフなし\"を謳い、__ガバナンス面でもコンサル付加価値を上乗せ__する設計。
@@ -72,7 +72,7 @@ tags:
 
 #cat/it #co/NTTデータ #country/日本 #country/米国 #topic/AIエージェント #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://ez-cdn.shoeisha.jp/static/images/article/23340/23340-top.jpg)
 
 - 2025年12月設立の[[NTT DATA AIVista]]がシリコンバレーで本格始動。グローバル企業向けのAIエージェントプラットフォームとして、2026年度Q2（7〜9月）より順次提供を開始する。
 - AIVistaは\"LLM不可知論的（[[LLM-agnostic]]）\"設計で、Claude・GPT・Geminiのいずれでも稼働可能。特定AIベンダーへの依存を排除し、__コンサルのニュートラル性__を売り物にする。
@@ -89,7 +89,7 @@ tags:
 
 #cat/it #co/IBM #country/米国 #topic/DX #event/製品発表 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://s3.amazonaws.com/jnswire/jns-media/6c/ba/27638975/webp_gx8k7oqpd2v8e8nh44krfvysaz6f.webp)
 
 - Think 2026でIBMが[[Enterprise Advantage]]を発表。Context Studio（エージェント組織データへの根拠付け）とProcess Studio（レガシー業務手順書のエージェント化）の2ツールで、__「コンサルアセット」を再定義__した。
 - 医療大手Providenceでの人事AIエージェント導入事例が注目を集めた。HR担当者の採用工数[[90%削減]]・内部異動の12日短縮を達成。__IBM＝「測定可能な成果」__のブランド訴求を強化。
@@ -106,7 +106,7 @@ tags:
 
 #cat/it #co/NTTデータ #co/富士通 #co/NEC #country/日本 #topic/生成AI導入 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://xtech.nikkei.com/atcl/nxt/column/18/00001/11238/topm.jpg?20220512)
 
 - NTTデータGは2027年度末までに[[生成AIネーティブ開発]]を全プロジェクトの主流にする計画を具体化。要件定義・設計・コーディング・テストの各工程に生成AIを組み込み、__人による作業を約40%削減__する。
 - 富士通はKozuchi AIアシスタントとFujitsu Kozuchi Enterpriseを組み合わせ、SI案件の提案フェーズから__AIによる設計書自動生成__を本格適用。NECも「[[cotomi Act]]」でナレッジエージェントが稼働中。

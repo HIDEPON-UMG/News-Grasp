@@ -58,7 +58,7 @@ tags:
 
 #cat/it #co/アクセンチュア #co/Faculty #country/英国 #country/米国 #event/M&A #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://newsroom.accenture.com/news/2026/media_129bd820225fe5d024ccc230881b33764021cdb1b.png?width=1200&format=pjpg&optimize=medium)
 
 - AccentureがUK AI企業Faculty（2026年1月発表）の買収を推進中。Faculty CEO Marc WarnerがAccentureのCTOとしてグローバルマネジメント委員会に参加する予定。
 - Facultyは[[OpenAI・Anthropic]]と連携してAIモデルの安全性評価を手がけており、UK AI Security Instituteとも協力関係にある。__安全なAI導入__という差別化軸でBig4競合に先行する狙い。
@@ -72,7 +72,7 @@ tags:
 
 #cat/it #co/アクセンチュア #co/Databricks #country/米国 #event/事業提携 #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://newsroom.accenture.com/news/2026/media_19a4f469815ca6b6ee41ba7fefa7d9927eef19eb4.png?width=1200&format=pjpg&optimize=medium)
 
 - AccentureとDatabricksが「Accenture Databricks Business Group」を設立。企業のデータ資産とAIエージェントを統合する[[フルスタック支援]]を100社超に展開する計画。
 - DatabricksのMosaicAI基盤とAccentureの産業別実装力を組み合わせ、__ROI未達95%問題__（企業パイロットの95%がROI未達という課題）への処方箋と位置づける。
@@ -86,7 +86,7 @@ tags:
 
 #cat/it #co/NTTドコモ #co/アクセンチュア #country/日本 #country/米国 #event/事業提携 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://static.brandfinance.com/wp-content/uploads/2020/10/Press-Release-Image-768x363.jpg)
 
 - NTT DOCOMO Globalとアクセンチュアが[[Universal Wallet Infrastructure (UWI)]]を共同開発。デジタルID・通貨・資産・文書を単一ウォレットで統合管理するエンタープライズ基盤。
 - UWIはブロックチェーンとAIを組み合わせた信頼性証明機能を持ち、__多業種横断のデジタル信頼エコシステム__構築を目指す。国際展開を視野に入れた共同事業体が設立済み。

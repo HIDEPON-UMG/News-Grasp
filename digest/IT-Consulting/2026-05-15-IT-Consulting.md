@@ -36,7 +36,7 @@ tags:
 
 #cat/it #co/Anthropic #co/OpenAI #country/米国 #topic/AIコンサル #topic/コンサル業界変革 #topic/M&A #score/高
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://nerdleveltech.com/images/placeholders/cover-general.svg)
 
 - [[OpenAI]] と [[Anthropic]] が相次いでPrivate Equity・大企業向けのAIサービス子会社を設立し、従来コンサルファームが独占してきた「戦略立案＋実装支援」市場に直接侵食を開始した。
 - OpenAI の DeployCo（$40億）と Anthropic の Blackstone/Goldman Sachs 支援エンタープライズJVは、__コンサルタントの代替ではなくコンサルファームそのものの代替__を目指す構造だ。
@@ -81,7 +81,7 @@ tags:
 
 #cat/it #co/アクセンチュア #co/マッキンゼー #country/米国 #topic/AI人材 #topic/コンサル競争 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://copilot-experts.com/wp-content/uploads/2026/04/Top-AI-Consulting-Firms.jpg)
 
 - [[アクセンチュア]] のAI・データプロフェッショナルが85,000名超（2026年3月）に達し、Big4やMBBを圧倒する人材規模を確立。FY2025の生成AI収益は$27億（前年比3倍）・受注残$59億。
 - __実行力重視（Deloitte・EY・アクセンチュア）と戦略重視（McKinsey・BCG・Bain）の成長格差が拡大__し、近年実行型の成長率が戦略型の約2倍となっている。
@@ -95,7 +95,7 @@ tags:
 
 #cat/it #co/PwC #co/アクセンチュア #country/米国 #topic/AI研修 #topic/スキル開発 #score/中
 
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+![thumb](https://plusai.com/62375700635d76646ef2457f/690130bb00d5d62159784ce8_openai-gives-mckinsey-company-an-award-for-passing-100-v0-78mcg23u09xf1.webp)
 
 - [[PwC]] が「Human + AI Skillset」30スキルカリキュラムを全社展開（AI関連15・人間力関連15）。アクセンチュアのLearnVantage・DeloitteのAI AcademyとともにBig4各社の人材育成競争が激化している。
 - __AIが実務を担う割合が増えても「発注側・評価側」としての人間力は不可欠__という共通認識が業界に広がり、クライアント説明力・倫理判断・コミュニケーション能力が次の差別化軸となりつつある。
