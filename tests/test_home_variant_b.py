@@ -133,6 +133,28 @@ def test_no_rounded_corners_in_template(built_home: str):
         "Variant B is corner=0; no inline border-radius allowed"
 
 
+def test_favicon_links_present(built_home: str):
+    """News Grasp の N→ ロゴが favicon として 3 サイズ登録されている。"""
+    assert 'rel="icon"' in built_home, "favicon link missing"
+    assert 'href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png"' in built_home \
+        or '/assets/favicon-256.png' in built_home, "favicon-256.png missing"
+    assert 'rel="apple-touch-icon"' in built_home, "apple-touch-icon missing"
+
+
+def test_hero_title_uses_brand_tagline_in_fallback(built_home: str):
+    """テーマ抽出に失敗したときの Hero fallback は「時勢を掴み、日々に新たに」を維持する。
+
+    Variant B の variant-b.jsx に書かれていた仮テキスト「5 つのレンズで今日を読む」を
+    そのまま流用していた版を改修。ブランドコピー (config.py の SITE_DESCRIPTION も
+    同値) と完全一致させる。
+    """
+    # テーマが抽出できたかどうかに関わらず、テンプレに「時勢を掴み」と「日々に新たに」の
+    # ブランドコピー fallback が source として埋まっていること、そして Hero に
+    # 「5 つのレンズ」「今日を読む」の仮テキストが残っていないことを pin する。
+    assert "5 つのレンズ" not in built_home, "仮テキスト「5 つのレンズ」が Hero に残存"
+    assert "今日を読む" not in built_home, "仮テキスト「今日を読む」が Hero に残存"
+
+
 # ============================================================
 # Pure unit tests
 # ============================================================

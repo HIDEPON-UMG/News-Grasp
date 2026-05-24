@@ -180,6 +180,13 @@ def test_og_meta_present(built_summary: str):
     assert 'name="twitter:card"' in built_summary
 
 
+def test_favicon_links_present(built_summary: str):
+    """News Grasp の N→ ロゴが favicon として登録されている。"""
+    assert 'rel="icon"' in built_summary
+    assert '/assets/favicon-256.png' in built_summary
+    assert 'rel="apple-touch-icon"' in built_summary
+
+
 def test_pull_quote_hidden_in_fallback(built_summary: str):
     """γ schema 未対応の fallback では pull quote セクションは出ない。"""
     # pull_quote.text が空のときは class="summary-pull" のセクションごと出ないこと

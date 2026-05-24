@@ -133,6 +133,20 @@ def test_theme_banner_navy(built_overview: str):
     assert "TODAY&#39;S THEME" in built_overview or "TODAY'S THEME" in built_overview
 
 
+def test_theme_fallback_uses_brand_tagline(built_overview: str):
+    """テーマ抽出失敗時の Theme banner fallback は「時勢を掴み、日々に新たに」を保つ。"""
+    # γ schema 非対応の fixture では hero_phrase_*= 空のため fallback が走る
+    assert "5 つのレンズで今日を読む" not in built_overview, \
+        "仮テキストが Theme banner に残存"
+
+
+def test_favicon_links_present(built_overview: str):
+    """News Grasp の N→ ロゴが favicon として登録されている。"""
+    assert 'rel="icon"' in built_overview
+    assert '/assets/favicon-256.png' in built_overview
+    assert 'rel="apple-touch-icon"' in built_overview
+
+
 def test_5_category_rows(built_overview: str):
     """fx / ai / it / economy / game の overview-row が 5 行並ぶ (summary は除く)。"""
     for cid in ("fx", "ai", "it", "economy", "game"):
