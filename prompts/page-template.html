@@ -123,7 +123,11 @@
   <div class="top-story__grid">
     {% if top.thumb %}
     <div class="top-story__thumb-wrap">
+      {% if top.source_url %}
+      <a href="{{ top.source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ top.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      {% else %}
       <img src="{{ top.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      {% endif %}
     </div>
     {% else %}
     <div class="top-story__thumb-wrap" style="background: {{ accent }};"></div>
@@ -163,7 +167,11 @@
       </div>
       {% if art.thumb %}
       <div class="more-card__thumb-wrap">
+        {% if art.source_url %}
+        <a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ art.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        {% else %}
         <img src="{{ art.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+        {% endif %}
       </div>
       {% endif %}
       <h3 class="more-card__title">

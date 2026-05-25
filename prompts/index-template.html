@@ -168,7 +168,11 @@
     <div class="home-featured__grid">
       <div class="home-featured__thumb-wrap">
         {% if hero_story.top_thumb %}
+          {% if hero_story.top_source_url %}
+          <a href="{{ hero_story.top_source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+          {% else %}
           <img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+          {% endif %}
         {% else %}
           <div style="background: {{ hero_story.accent }}; width: 100%; height: 100%;"></div>
         {% endif %}
