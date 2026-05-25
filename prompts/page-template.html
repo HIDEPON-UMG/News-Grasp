@@ -165,15 +165,16 @@
         {% if art.source %}<span>· {{ art.source }}</span>{% endif %}
         {% if art.score %}<span class="more-card__score">{{ art.score }}</span>{% endif %}
       </div>
-      {% if art.thumb %}
-      <div class="more-card__thumb-wrap">
+      {# サムネ取得失敗時はカテゴリ OG 画像 (docs/assets/og/{cat}.jpg) を fallback 表示。
+         レイアウト崩れ・サムネ穴を防ぐため、art.thumb が空でも必ずカード上端に画像を出す。 #}
+      <div class="more-card__thumb-wrap{% if not art.thumb %} more-card__thumb-wrap--fallback{% endif %}">
+        {% set _thumb_src = art.thumb or (base_url ~ '/assets/og/' ~ category_id ~ '.jpg') %}
         {% if art.source_url %}
-        <a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ art.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        <a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ _thumb_src }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
         {% else %}
-        <img src="{{ art.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+        <img src="{{ _thumb_src }}" alt="" loading="lazy" referrerpolicy="no-referrer">
         {% endif %}
       </div>
-      {% endif %}
       <h3 class="more-card__title">
         {% if art.source_url %}<a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank">{{ art.title }}</a>{% else %}{{ art.title }}{% endif %}
       </h3>
