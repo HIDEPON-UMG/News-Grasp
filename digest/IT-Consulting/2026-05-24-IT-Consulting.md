@@ -1,0 +1,107 @@
+---
+title: "News Grasp #20260524 — IT & Consulting"
+date: 2026-05-24
+issue: 20260524
+weekday: 土
+category: IT & Consulting
+categoryId: it
+accent: "#2E6B52"
+glyph: "▲"
+edition: Morning Edition
+tags:
+  - daily
+  - newsletter
+  - news-grasp
+  - issue-20260524
+  - cat/it
+  - co/NTTデータ
+  - co/デロイト
+  - co/マッキンゼー
+  - co/PwC
+  - country/米国
+  - country/日本
+---
+
+# ▲ IT-Consulting — IT & Consulting
+
+> [!summary]
+> McKinsey・PwC・EYが幹部秘書職を相次ぎ削減し、AIが白カラー支援職を代替する「見えない自動化」が実態として浮かび上がった。一方NTT DATAはWinWire買収によるMicrosoft Azureエコシステム強化とグローバルデータセンター再編でAI受注基盤の拡充を加速。Deloitte Tech Trends 2026は「アダプティブ企業」をキーワードに、人間と機械の融合が競争優位の核心と宣言している。
+
+---
+
+### [93] McKinsey・PwC・EYが幹部秘書職を削減——AI自動化が白カラー支援業務を代替、業界の構造変化が加速
+
+📅 2026-05-24 08:30 · 📰 Bloomberg · 🔗 [元記事](https://www.bloomberg.com/news/features/2026-05-21/mckinsey-pwc-and-ey-lay-off-executive-assistants-as-ai-accelerates)
+
+#cat/it #co/マッキンゼー #co/PwC #country/米国 #topic/DX #score/高
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-it.jpg)
+
+- Bloombergの報道によると、[[McKinsey・PwC・EY]]の3社が幹部秘書（Executive Assistant）職を相次ぎ削減。PwCは米国で約600名、McKinseyは200名超の技術・支援スタッフを削減済み。KPMGも同様の動きで、[[Big4のうち3社が支援職を整理]]という同時進行が確認された。
+- 削減対象は「スケジュール管理・調査・報告・文書作成」といった定型業務群で、生成AIが数分で完結させるタスクをこれまで数週間かけて処理してきた。__内部AIツール（Microsoft Copilot/専用AI）への移行が人件費圧縮の直接要因__となっている。
+- 特徴的なのは、この削減が外部クライアントに見える形の「ダウンサイジング」でなく、__バックオフィス（ミドルレイヤー）の静かな収縮__として進んでいる点。コンサル産業の「人×時間=フィー」モデルが内部から溶解していくサインとして受け止められている。
+
+---
+
+### [88] NTT DATA、WinWire買収でエンタープライズAIをMicrosoft Azureで加速——全産業のエージェントAI採用を拡大
+
+📅 2026-05-24 09:00 · 📰 NTT DATA Global · 🔗 [元記事](https://www.nttdata.com/global/en/news/press-release/2026/may/051800)
+
+#cat/it #co/NTTデータ #country/米国 #country/日本 #topic/M&A #event/M&A #score/高
+
+![thumb](https://www.nttdata.com/global/en/-/media/assets/images/sns_share.png?rev=583d5951ace649c08be7a88679328a3b)
+
+- [[NTT DATA]]が5月15日付でWinWire（米国のMicrosoft専門AIパートナー、約850名）の買収に正式合意。WinWireはAgentic AI・AI on Azure・データエンジニアリング・クラウドネイティブ開発を専門とし、Microsoft Gold Partner資格を最上位レベルで保有している。
+- この買収でNTT DATAは[[Microsoft Azureエコシステム]]での実装力を大幅に強化。Google Cloud偏重と批判されていたNTTデータの「マルチクラウドAI」戦略において、Azure側の補強が急務だった。顧客産業は製造・金融・小売・医療にまたがる多様な垂直市場。
+- グローバルでの人材統合後は「Azure AI Studio + NTT DATA LITRON Builder」の組み合わせで[[AIエージェントの本番稼働]]を6ヶ月以内に実現するパッケージを企業向けに展開する計画。__NTTデータとして初のアジェンティックAI実装全社規模の買収__と位置付けられる。
+
+---
+
+### [84] NTT DATAがグローバルデータセンター事業を再編——AIとクラウド需要急増でグローバル統括体制へ移行
+
+📅 2026-05-24 10:00 · 📰 NTT Global · 🔗 [元記事](https://services.global.ntt/en-us/newsroom/ntt-data-globalizes-sales-and-client-services-of-its-data-center-business)
+
+#cat/it #co/NTTデータ #country/日本 #country/米国 #topic/DX #score/高
+
+![thumb](https://services.global.ntt/-/media/ntt/global/newsroom/ntt-blue-logo-2.jpg?rev=267dd8aab4f74063969e661cd164a44c)
+
+- NTT DATAが5月21日、グローバルデータセンタービジネスの営業・顧客サービス機能を一元化する組織変更を発表。AIワークロードとクラウドインフラへの需要急増を受け、地域割りの[[サイロ体制からグローバル統括体制]]に移行する。
+- 親会社NTTはすでに[[$16.4B規模でNTT DATAの株式公開分を買い戻し]]、完全非公開化を推進中。グローバルデータセンターの再編は、この統合戦略の具体的な実行フェーズとして位置付けられる。
+- NTTはほぼ1ギガワット規模の新データセンター容量を計画中で、世界主要都市でのAIインフラ展開を急いでいる。__競合の商業クラウド（AWS・Azure・Google Cloud）と「中立インフラ」として差別化__するNTTの戦略が具体化しつつある。
+
+> [!tip] 🔗 関連: 波及
+> [[2026-05-22-IT-Consulting#NTTデータ|5/22号: NTT DATA AIVista設立]] の続報。シリコンバレーのAI開発拠点と今回のグローバルデータセンター再編が一体的な戦略として機能し始めた。
+
+---
+
+### [80] Deloitte Tech Trends 2026——「アダプティブ企業」と「AI基盤化」が2大テーマ、人間×機械融合が競争優位に
+
+📅 2026-05-24 07:00 · 📰 Deloitte Insights · 🔗 [元記事](https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends.html)
+
+#cat/it #co/デロイト #country/米国 #topic/IT投資 #score/高
+
+![thumb](https://media.deloitte.com/is/image/deloitte/US188546_Social:1200-x-627)
+
+- Deloitteが公表したTech Trends 2026の主要テーマは[[アダプティブ企業]]（変化に動的に適応する組織）と「AIの基盤インフラ化」。AIはもはやツールではなく電力や通信網と同じ「産業基盤」として位置付けられ、企業競争力はAIをどれだけ深く組み込んでいるかで決まる。
+- 特筆される10のテクノロジートレンドの中で上位を占めるのは「Agentic Architectures（エージェント型AI）」「Human×Machine Collaboration」「Trust Architecture（AI信頼設計）」の3つ。__従来の「AI活用」から「AIとの協働で組織を再設計する」フェーズへの移行__が宣言されている。
+- Deloitteの調査では74%の企業がAIに高い期待を持つ一方、実際の成果を上げているのは[[わずか20%]]。このギャップを「死の谷」と呼び、その橋渡しを担うのがアジェンティックAI実装の専門コンサルタントだとDeloitteは自社を位置付ける。
+
+---
+
+### [77] McKinseyリストラが示すコンサル業界への警告——AIがジュニア層業務を代替し、業界の階層構造自体が揺らいでいる
+
+📅 2026-05-24 11:00 · 📰 Fast Company · 🔗 [元記事](https://www.fastcompany.com/91463039/why-the-mckinsey-layoffs-are-a-warning-signal-for-consulting-in-the-ai-age-ai-layoffs-management-consulting)
+
+#cat/it #co/マッキンゼー #country/米国 #topic/コンサル業界 #score/中
+
+![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
+
+- Fast Companyの分析は、McKinseyの削減を「コンサル業界の構造変化の氷山の一角」と位置付ける。問題は幹部秘書だけでなく、[[ジュニアコンサルタント・アナリスト]]という「コンサルの梯子」の底部を成す層がAIで代替されつつある点にある。
+- 従来の「新卒→2年でPA昇格→5年で管理職」というピラミッドモデルは、高ボリューム・構造化・文書集約型タスクをジュニアが担うことで成立していた。この業務プロファイルは__生成AIが最も得意とするもの__であり、ジュニア層の採用を続けるコンサルと削減するコンサルとの二極化が加速している。
+- Accentureが新卒採用を逆説的に増やすなか（5/22号）、McKinseyが削減するという対照的な動きは、「実装×規模」重視のSIer型と「戦略×ブランド」重視のMBB型の戦略が全く異なる人材需要を生み出している実態を示す。[[コンサル業界の二極分化]]が2026年の中核テーマとして定着しつつある。
+
+---
+
+← [[2026-05-23-IT-Consulting|前号 IT-Consulting]] | [[2026-05-25-IT-Consulting|翌号 IT-Consulting]] →
+
+*🤖 Auto-generated by News-Grasp Runner — `news-grasp-runner.bat` @ 2026-05-24 06:00 JST*
