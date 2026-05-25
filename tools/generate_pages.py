@@ -148,21 +148,20 @@ def _normalize_title(raw_title: str, category_label: str) -> str:
 def inline_html(text: str) -> str:
     """digest 本文の inline 記法を HTML に変換 (escape 込み・|safe で渡す前提)。
 
-    変換順:
+    DESIGN.md「強調記法 (3 階層)」と一致させるため、クラス名は render_emph と統一:
         1. HTML escape (`&` `<` `>` `"`)
-        2. `[[X|Y]]` -> Y / `[[X]]` -> X (wikilink クラスでハイライト)
-        3. `__X__` -> <u class="underline">X</u>
-        4. `**X**` -> <strong>X</strong>
-        5. `[text](url)` -> <a> (ただしメタ行で消費済みのことが多い)
+        2. `[[X|Y]]` -> Y / `[[X]]` -> X (<strong class="emph-bold">、マーカー最強)
+        3. `__X__` -> <span class="emph-und">X</span> (下線、弱・含意)
+        4. `**X**` -> <strong>X</strong> (太字、中)
     """
     s = _html.escape(text, quote=False)
 
     def _wikilink(m: re.Match[str]) -> str:
         label = m.group(2) or m.group(1)
-        return f'<span class="wikilink">{label}</span>'
+        return f'<strong class="emph-bold">{label}</strong>'
     s = _WIKILINK_RE.sub(_wikilink, s)
 
-    s = _UNDERLINE_RE.sub(r'<u class="underline">\1</u>', s)
+    s = _UNDERLINE_RE.sub(r'<span class="emph-und">\1</span>', s)
     s = _BOLD_RE.sub(r"<strong>\1</strong>", s)
     return s
 
