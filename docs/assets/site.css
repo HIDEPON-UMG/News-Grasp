@@ -981,10 +981,11 @@ strong {
 }
 .home-hero__eyebrow .rule { color: var(--color-gold); }
 .home-hero__title {
+  font-family: var(--font-serif);
   font-size: 76px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  line-height: 1.1;
   color: var(--color-navy);
   margin: 0 0 28px;
   font-family: var(--font-serif);
@@ -1174,12 +1175,12 @@ strong {
 }
 .home-featured__thumb-wrap a:hover img { opacity: 0.92; transform: scale(1.02); }
 .home-featured__title {
+  font-family: var(--font-serif);
   font-size: 32px;
   font-weight: 800;
   margin: 0 0 16px;
-  line-height: 1.25;
-  letter-spacing: -0.016em;
-  font-family: var(--font-serif);
+  line-height: 1.3;
+  letter-spacing: -0.005em;
   color: var(--color-ink);
 }
 .home-featured__title a { color: inherit; }
@@ -1378,10 +1379,11 @@ strong {
 }
 .home-editorial__body { }
 .home-editorial__body h2 {
+  font-family: var(--font-serif);
   font-size: 40px;
-  font-weight: 900;
+  font-weight: 800;
   margin: 0 0 18px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.005em;
   line-height: 1.15;
   color: var(--color-cream);
   font-family: var(--font-sans);
@@ -1474,10 +1476,11 @@ strong {
   margin-bottom: 8px;
 }
 .overview-page-header__title {
+  font-family: var(--font-serif);
   font-size: 56px;
-  font-weight: 900;
+  font-weight: 800;
   margin: 0;
-  letter-spacing: -0.036em;
+  letter-spacing: -0.005em;
   line-height: 0.95;
   font-family: var(--font-sans);
 }
