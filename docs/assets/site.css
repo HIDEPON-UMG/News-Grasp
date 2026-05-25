@@ -1896,7 +1896,9 @@ strong {
 }
 .summary-sections__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* auto-fit + minmax(440px, 1fr) = viewport が狭ければ 1col、広ければ 2col に自動切替。
+   * media query 依存ではないのでブラウザズーム時にも堅牢に追従する。 */
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
   gap: 0 40px;
 }
 .summary-sec {
@@ -2242,7 +2244,8 @@ strong {
   .summary-pull__quote { font-size: 60px; }
   .summary-pull__text { font-size: 18px; }
   .summary-sections { padding: 24px 16px; }
-  .summary-sections__grid { grid-template-columns: 1fr; gap: 0; }
+  /* .summary-sections__grid は auto-fit + minmax(440px,1fr) なので mobile では
+   * 自然に 1col になる。media query での強制は不要。 */
   .summary-sections__head h2 { font-size: 24px; }
   .summary-sec { padding: 28px 0; }
   .summary-sec__no { font-size: 32px; }
