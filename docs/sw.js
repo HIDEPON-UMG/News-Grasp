@@ -1,0 +1,112 @@
+/**
+ * News Grasp Service Worker
+ *
+ * 戦略:
+ *   - HTML (navigation): network-first → cache fallback → offline.html
+ *     (digest が毎朝更新されるため stale 表示を避ける)
+ *   - 静的アセット (CSS / JS / 画像 / フォント): stale-while-revalidate
+ *   - 同一 origin (`/News-Grasp/` 配下) のみ intercept。
+ *     Google Fonts など cross-origin は SW を素通しさせブラウザに任せる。
+ *
+ *  キャッシュ名に SW_VERSION を含めることで、デプロイ時に SW_VERSION を上げれば
+ *  activate 時に古いキャッシュをまとめて削除できる。
+ */
+
+const SW_VERSION = '2026-05-26-1';
+const SCOPE_PREFIX = '/News-Grasp/';
+const HTML_CACHE = `news-grasp-html-${SW_VERSION}`;
+const ASSET_CACHE = `news-grasp-assets-${SW_VERSION}`;
+const PRECACHE = `news-grasp-precache-${SW_VERSION}`;
+
+// install 時に最小限を事前キャッシュ (オフラインで Home が見える保証)
+const PRECACHE_URLS = [
+  '/News-Grasp/',
+  '/News-Grasp/manifest.webmanifest',
+  '/News-Grasp/assets/site.css',
+  '/News-Grasp/assets/icons/icon-192.png',
+  '/News-Grasp/assets/icons/icon-512.png',
+  '/News-Grasp/offline.html',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(PRECACHE);
+      // 失敗ファイルがあっても install は通す (個別 fetch でログのみ)
+      await Promise.all(
+        PRECACHE_URLS.map(async (url) => {
+          try {
+            const res = await fetch(url, { cache: 'reload' });
+            if (res.ok) await cache.put(url, res);
+          } catch (e) {
+            // ignore
+          }
+        }),
+      );
+      await self.skipWaiting();
+    })(),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((k) => k.startsWith('news-grasp-') && ![HTML_CACHE, ASSET_CACHE, PRECACHE].includes(k))
+          .map((k) => caches.delete(k)),
+      );
+      await self.clients.claim();
+    })(),
+  );
+});
+
+function isHtmlNavigation(request) {
+  return request.mode === 'navigate' || (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
+}
+
+function isSameScope(url) {
+  return url.origin === self.location.origin && url.pathname.startsWith(SCOPE_PREFIX);
+}
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (!isSameScope(url)) return; // cross-origin は素通し
+
+  if (isHtmlNavigation(request)) {
+    event.respondWith(networkFirstHTML(request));
+    return;
+  }
+  event.respondWith(staleWhileRevalidate(request));
+});
+
+async function networkFirstHTML(request) {
+  const cache = await caches.open(HTML_CACHE);
+  try {
+    const fresh = await fetch(request);
+    if (fresh.ok) cache.put(request, fresh.clone());
+    return fresh;
+  } catch (e) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    const precache = await caches.open(PRECACHE);
+    const offline = await precache.match('/News-Grasp/offline.html');
+    return offline || new Response('オフラインです', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
+}
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(ASSET_CACHE);
+  const cached = await cache.match(request);
+  const network = fetch(request)
+    .then((res) => {
+      if (res && res.ok) cache.put(request, res.clone());
+      return res;
+    })
+    .catch(() => null);
+  return cached || network || new Response('', { status: 504 });
+}

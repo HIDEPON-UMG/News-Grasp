@@ -1,0 +1,36 @@
+{
+  "name": "News Grasp — Five Lenses on Today",
+  "short_name": "News Grasp",
+  "description": "為替・AI・IT・経済・ゲームの 5 レンズで毎朝届く個人向けニュースダイジェスト。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "/News-Grasp/",
+  "scope": "/News-Grasp/",
+  "id": "/News-Grasp/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#F0EBE0",
+  "theme_color": "#181C2A",
+  "categories": ["news", "magazines"],
+  "icons": [
+    {
+      "src": "/News-Grasp/assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/News-Grasp/assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/News-Grasp/assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

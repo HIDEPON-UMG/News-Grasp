@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オフライン — News Grasp</title>
+<meta name="theme-color" content="#181C2A">
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="256x256" href="/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="/News-Grasp/assets/apple-touch-icon.png">
+<style>
+  :root { color-scheme: light; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #F0EBE0;
+    color: #181C2A;
+    font-family: 'Noto Serif JP', 'Yu Mincho', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: #5E5A52;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .rule {
+    width: 56px;
+    height: 3px;
+    background: #C9A155;
+    margin: 24px auto;
+  }
+  p {
+    max-width: 32em;
+    font-size: 1rem;
+    line-height: 1.85;
+    margin-bottom: 12px;
+  }
+  .footer {
+    margin-top: 32px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    color: #5E5A52;
+  }
+  button {
+    margin-top: 24px;
+    background: #181C2A;
+    color: #F0EBE0;
+    border: none;
+    padding: 12px 32px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+  }
+  button:hover { background: #262B40; }
+</style>
+</head>
+<body>
+  <div class="eyebrow">━━ OFFLINE</div>
+  <h1>接続を確認</h1>
+  <div class="rule"></div>
+  <p>現在ネットワークに接続できないため最新のニュースを取得できませんでした。回線を確認したうえで再読み込みしてください。</p>
+  <p>過去に開いた日付のページはオフラインキャッシュから閲覧できることがあります。</p>
+  <button onclick="location.reload()">再読み込み</button>
+  <div class="footer">News Grasp · FIVE LENSES ON TODAY</div>
+</body>
+</html>
