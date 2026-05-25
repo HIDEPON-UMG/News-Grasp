@@ -1298,7 +1298,7 @@ strong {
   font-size: 22px;
   font-weight: 900;
   letter-spacing: -0.018em;
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
 }
 .home-cat-card__body { padding: 14px 16px; }
 .home-cat-card__summary {
