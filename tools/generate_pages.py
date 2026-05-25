@@ -867,10 +867,11 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
                 "color": sec.get("color") or _SUMMARY_SECTION_COLORS[i],
                 "heading": sec.get("heading") or "",
                 "body": sec.get("body") or "",
+                "bullets": sec.get("bullets") or [],
                 "canonical": "",
             })
     else:
-        # Fallback: §01=総論 / §02-06=各カテゴリ Top 1 / §07=明日へ
+        # Fallback: §01=総論 / §02-06=各カテゴリ Top 1 + bullets / §07=明日へ
         by_cat: dict[str, dict[str, Any]] = {}
         for e in same_day:
             cid = e["category_id"]
@@ -881,6 +882,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
             tag = _SUMMARY_SECTION_TAGS[i]
             color = _SUMMARY_SECTION_COLORS[i]
             cid = _SUMMARY_CAT_ORDER[i]
+            bullets: list[str] = []
             if i == 0:
                 # 総論
                 body = (editorial["summary_text"] if editorial
@@ -901,6 +903,8 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
                 if e:
                     heading = e.get("top_title") or f"{CATEGORIES[cid]['jp']}本日のテーマ"
                     body = e.get("summary_text") or f"{CATEGORIES[cid]['jp']}カテゴリのダイジェスト準備中。"
+                    # Top 1 記事の bullets を 3 件まで挿入 (フル展開でリッチ化)
+                    bullets = list(e.get("top_bullets") or [])[:3]
                     canonical = e["canonical"]
                 else:
                     heading = f"{CATEGORIES[cid]['jp']}本日のテーマ" if cid else tag
@@ -912,6 +916,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
                 "color": color,
                 "heading": heading,
                 "body": body,
+                "bullets": bullets,
                 "canonical": canonical,
             })
 

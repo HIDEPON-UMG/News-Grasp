@@ -106,18 +106,23 @@
     </div>
     <div class="summary-sections__grid">
       {% for sec in sections %}
-      <div class="summary-sec">
+      <div class="summary-sec" style="--accent-current: {{ sec.color }};">
         <div class="summary-sec__head">
           <span class="summary-sec__no" style="color: {{ sec.color }};">§{{ "%02d"|format(sec.number) }}</span>
           <span class="summary-sec__tag" style="background: {{ sec.color }};">{{ sec.tag }}</span>
         </div>
         <h3 class="summary-sec__title">{{ sec.heading }}</h3>
-        <p class="summary-sec__body">
-          {{ sec.body|render_emph }}
-          {% if sec.canonical %}
-          <a class="summary-sec__more" href="{{ sec.canonical }}" style="color: {{ sec.color }};">READ FULL §{{ "%02d"|format(sec.number) }} →</a>
-          {% endif %}
-        </p>
+        <p class="summary-sec__body">{{ sec.body|render_emph }}</p>
+        {% if sec.bullets %}
+        <ul class="summary-sec__bullets">
+          {% for b in sec.bullets %}
+          <li>{{ b|safe }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% if sec.canonical %}
+        <a class="summary-sec__more" href="{{ sec.canonical }}" style="color: {{ sec.color }};">→ §{{ "%02d"|format(sec.number) }} {{ sec.tag }} 詳細を読む</a>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
