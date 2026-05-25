@@ -262,11 +262,11 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   line-height: 1;
 }
 .cat-hero__title {
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
   font-size: 88px;
-  font-weight: 900;
-  letter-spacing: -0.034em;
-  line-height: 0.92;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  line-height: 1.0;
   color: var(--color-cream);
   margin: 0;
 }
