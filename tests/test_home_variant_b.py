@@ -104,9 +104,9 @@ def test_editorial_preview_or_none(built_home: str):
 
 
 def test_subscribe_band(built_home: str):
-    """home-subscribe (毎朝6:30) があり Footer に NEWS GRASP がある。"""
+    """home-subscribe (毎朝6:30更新) があり Footer に NEWS GRASP がある。"""
     assert "home-subscribe" in built_home
-    assert "毎朝6:30" in built_home
+    assert "毎朝6:30更新" in built_home
     assert "NEWS GRASP" in built_home
     assert "EST. 2026" in built_home
 
