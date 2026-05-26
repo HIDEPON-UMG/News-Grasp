@@ -1969,10 +1969,15 @@ strong {
   color: var(--color-navy);
 }
 .summary-sec--lead .summary-sec__title {
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.4;
   margin-bottom: 18px;
   color: var(--color-navy);
+  /* lead 容器側に gold gradient + 4px gold border-left があるので、
+     title 個別の accent tint / border / padding は無効化 (二重装飾を避ける)。 */
+  padding: 0;
+  background: transparent;
+  border-left: 0;
 }
 .summary-sec--lead .summary-sec__body {
   font-size: 17.5px;
@@ -2001,12 +2006,17 @@ strong {
   letter-spacing: 0.15em;
 }
 .summary-sec__title {
-  font-size: 22px;
+  font-family: var(--font-serif);
+  /* 2026-05-26 ユーザー指摘: More stories と同様の「タイトル帯」装飾を §02-§07 にも適用。
+     §01 (lead) は容器側に gold gradient があるので個別装飾を打ち消す (下のルール参照)。 */
+  font-size: 27px;
   font-weight: 800;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   line-height: 1.45;
   letter-spacing: -0.005em;
-  font-family: var(--font-serif);
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent-current) 8%, transparent);
+  border-left: 3px solid var(--accent-current);
 }
 .summary-sec__body {
   font-size: 16.5px;
@@ -2322,13 +2332,13 @@ strong {
   .summary-sections__head h2 { font-size: 24px; }
   .summary-sec { padding: 28px 0; }
   .summary-sec__no { font-size: 32px; }
-  .summary-sec__title { font-size: 23px; margin-bottom: 14px; line-height: 1.45; }
+  .summary-sec__title { font-size: 21px; margin-bottom: 14px; line-height: 1.45; padding: 8px 12px; }
   .summary-sec__body { font-size: 17px; line-height: 1.95; max-width: 100%; }
   .summary-sec__bullets li { font-size: 16px; line-height: 1.85; max-width: 100%; padding-left: 22px; }
   /* §01 lead はモバイルでも背景・border-left は維持。padding は内側に詰める。 */
   .summary-sec--lead { padding: 24px 18px 20px; margin: 4px 0 20px; }
   .summary-sec--lead .summary-sec__no { font-size: 32px; }
-  .summary-sec--lead .summary-sec__title { font-size: 22px; }
+  .summary-sec--lead .summary-sec__title { font-size: 24px; padding: 0; }
   .summary-sec--lead .summary-sec__body { font-size: 17px; }
   .summary-takeaways { padding: 24px 16px; }
   .summary-takeaways__grid { grid-template-columns: 1fr; gap: 12px; }
