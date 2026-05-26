@@ -1807,11 +1807,13 @@ strong {
   margin-bottom: 16px;
 }
 .summary-hero__title {
-  font-size: 72px;
-  font-weight: 800;
+  font-size: 64px;
+  /* weight 800 だと明朝のうろこが潰れて視覚的にゴシック寄りに見えるため 700 に下げる
+     (2026-05-26 ユーザー指摘「ゴシック体のままなので明朝系に」への対応)。 */
+  font-weight: 700;
   margin: 0 0 18px;
-  letter-spacing: -0.005em;
-  line-height: 1.15;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
   color: var(--color-cream);
   font-family: var(--font-serif);
 }
@@ -1930,15 +1932,43 @@ strong {
 }
 .summary-sections__grid {
   display: grid;
-  /* auto-fit + minmax(440px, 1fr) = viewport が狭ければ 1col、広ければ 2col に自動切替。
+  /* auto-fit + minmax(min(440px, 100%), 1fr) で iPhone 375 等の狭幅でも溢れない
+   * (旧 minmax(440px, 1fr) は viewport 375 で実幅 440 を取り横スクロール発生)。
    * media query 依存ではないのでブラウザズーム時にも堅牢に追従する。 */
-  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
   gap: 0 40px;
 }
 .summary-sec {
   padding: 26px 0;
   border-bottom: 1px dashed var(--color-border);
   break-inside: avoid;
+}
+/* §01「総論」は本文全文を載せる特別セクション。必ず全列スパン + gold tint 背景で他と分離。
+   2026-05-26 ユーザー指示「総論だけ必ず一列・茶背景でデザイン性重視」に基づく実装。 */
+.summary-sec--lead {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, rgba(201, 161, 85, 0.14) 0%, rgba(201, 161, 85, 0.04) 100%);
+  border-left: 4px solid var(--color-gold);
+  border-bottom: 1px solid rgba(201, 161, 85, 0.35);
+  padding: 32px 36px 28px;
+  margin: 8px 0 28px;
+}
+.summary-sec--lead .summary-sec__head { gap: 14px; }
+.summary-sec--lead .summary-sec__no { font-size: 36px; }
+.summary-sec--lead .summary-sec__tag {
+  background: var(--color-gold) !important;
+  color: var(--color-navy);
+}
+.summary-sec--lead .summary-sec__title {
+  font-size: 28px;
+  line-height: 1.4;
+  margin-bottom: 18px;
+  color: var(--color-navy);
+}
+.summary-sec--lead .summary-sec__body {
+  font-size: 17.5px;
+  line-height: 2;
+  max-width: 72ch;
 }
 .summary-sec__head {
   display: flex;
@@ -2286,6 +2316,11 @@ strong {
   .summary-sec__title { font-size: 23px; margin-bottom: 14px; line-height: 1.45; }
   .summary-sec__body { font-size: 17px; line-height: 1.95; max-width: 100%; }
   .summary-sec__bullets li { font-size: 16px; line-height: 1.85; max-width: 100%; padding-left: 22px; }
+  /* §01 lead はモバイルでも背景・border-left は維持。padding は内側に詰める。 */
+  .summary-sec--lead { padding: 24px 18px 20px; margin: 4px 0 20px; }
+  .summary-sec--lead .summary-sec__no { font-size: 32px; }
+  .summary-sec--lead .summary-sec__title { font-size: 22px; }
+  .summary-sec--lead .summary-sec__body { font-size: 17px; }
   .summary-takeaways { padding: 24px 16px; }
   .summary-takeaways__grid { grid-template-columns: 1fr; gap: 12px; }
   .summary-cta { padding: 20px 16px; flex-direction: column; align-items: stretch; }
