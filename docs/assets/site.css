@@ -552,11 +552,17 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
 .more-card__thumb-wrap a:hover img { opacity: 0.92; transform: scale(1.02); }
 .more-card__title {
   font-family: var(--font-serif);
-  font-size: 23px;
+  /* 2026-05-26 ユーザー指摘: 本文が大きくなりタイトルが相対的に小さく見える
+     → 一回り拡大 (23→27px) + accent-current の極薄 tint で「タイトル帯」を明示し
+     記事間の階層を視覚化 (デザイン性重視)。 */
+  font-size: 27px;
   font-weight: 800;
   letter-spacing: -0.008em;
   line-height: 1.4;
   margin: 0 0 14px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent-current) 8%, transparent);
+  border-left: 3px solid var(--accent-current);
 }
 .more-card__title a { color: inherit; }
 .more-card__title a:hover { color: var(--accent-current); }
@@ -992,6 +998,7 @@ strong {
 }
 .home-hero__eyebrow .rule { color: var(--color-gold); }
 .home-hero__title {
+  /* font-family: var(--font-serif) の重複指定があったため整理 (2026-05-26)。 */
   font-family: var(--font-serif);
   font-size: 76px;
   font-weight: 800;
@@ -999,7 +1006,6 @@ strong {
   line-height: 1.1;
   color: var(--color-navy);
   margin: 0 0 28px;
-  font-family: var(--font-serif);
 }
 .home-hero__title .hl-gold {
   background: linear-gradient(180deg, transparent 65%, rgba(201, 161, 85, 0.35) 65%);
@@ -1390,14 +1396,16 @@ strong {
 }
 .home-editorial__body { }
 .home-editorial__body h2 {
+  /* 旧コードに `font-family: var(--font-sans)` が後勝ちで二重指定されており、
+     トップページの「本日のテーマ考察」が Inter (ゴシック) で描画されていた。
+     明朝に統一するため sans 指定行を削除済 (2026-05-26 修正)。 */
   font-family: var(--font-serif);
-  font-size: 40px;
-  font-weight: 800;
+  font-size: 44px;
+  font-weight: 700;
   margin: 0 0 18px;
-  letter-spacing: -0.005em;
-  line-height: 1.15;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
   color: var(--color-cream);
-  font-family: var(--font-sans);
 }
 .home-editorial__subtitle {
   font-family: var(--font-serif);
@@ -1487,13 +1495,14 @@ strong {
   margin-bottom: 8px;
 }
 .overview-page-header__title {
+  /* `font-family: var(--font-sans)` を後勝ち指定で Inter (ゴシック) になっていたため削除。
+     Magazine デザインの h2 系は本来明朝で統一 (2026-05-26 修正)。 */
   font-family: var(--font-serif);
   font-size: 56px;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0;
-  letter-spacing: -0.005em;
-  line-height: 0.95;
-  font-family: var(--font-sans);
+  letter-spacing: 0.005em;
+  line-height: 1.05;
 }
 .overview-page-header__title .date-mmdd { color: var(--color-gold); }
 .overview-page-header__title .em {
@@ -2241,7 +2250,7 @@ strong {
   .more-stories__head h2 { font-size: 22px; }
   .more-stories__grid { grid-template-columns: 1fr; gap: 24px; }
   .more-card__thumb-wrap { height: 140px; }
-  .more-card__title { font-size: 18px; }
+  .more-card__title { font-size: 21px; padding: 8px 12px; }
   .more-card__bullets li { font-size: 14px; line-height: 1.75; padding-left: 18px; }
   .editorial { padding: 24px 16px; }
   .editorial__grid { grid-template-columns: 1fr; gap: 24px; }
