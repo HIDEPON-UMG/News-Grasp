@@ -2324,12 +2324,23 @@ strong {
   /* Summary (Pattern D) Mobile */
   .summary-mode-pill { padding: 8px 16px; flex-wrap: wrap; }
   .summary-hero { padding: 24px 16px; }
-  .summary-hero__inner { grid-template-columns: 1fr; gap: 16px; }
+  /* モバイルではグリッドが 1 列になり § が下に落ちて余白を圧迫するため、
+     stats 群の右側の空きに重ねる形で絶対配置する。inner を position 基準にして bottom-right に固定。 */
+  .summary-hero__inner { grid-template-columns: 1fr; gap: 16px; position: relative; }
   .summary-hero__title { font-size: 36px; line-height: 1.2; letter-spacing: 0; }
   .summary-hero__subtitle { font-size: 18px; margin-bottom: 16px; }
   .summary-hero__lead { font-size: 15px; line-height: 1.85; padding: 12px 16px; max-width: 100%; }
-  /* モバイルではグリッドが 1 列になり § が下に落ちる。フッター扱いで右寄せ + サイズ縮小して占有を抑える */
-  .summary-hero__sigil { font-size: 96px; text-align: right; padding-right: 4px; margin-top: -8px; line-height: 0.85; }
+  .summary-hero__sigil {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    font-size: 88px;
+    line-height: 0.85;
+    text-align: right;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+  }
   /* h2 の途中改行を有効化。「7 つの」までで折り返し、「§ セクション」を次行に送る */
   .summary-sections__head-br { display: inline; }
   .summary-pull { padding: 24px 16px; }
