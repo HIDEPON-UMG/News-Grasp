@@ -561,7 +561,9 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   line-height: 1.4;
   margin: 0 0 14px;
   padding: 10px 14px;
-  background: color-mix(in srgb, var(--accent-current) 8%, transparent);
+  /* 2026-05-26 ユーザー指摘 (sec タイトルと同じ思想で整合): カテゴリ色を視認できる
+     レベルに上げる。8% → 18% (DESIGN.md gold tint 18% と整合的)。 */
+  background: color-mix(in srgb, var(--accent-current) 18%, transparent);
   border-left: 3px solid var(--accent-current);
 }
 .more-card__title a { color: inherit; }
@@ -2015,7 +2017,10 @@ strong {
   line-height: 1.45;
   letter-spacing: -0.005em;
   padding: 10px 14px;
-  background: color-mix(in srgb, var(--accent-current) 8%, transparent);
+  /* 2026-05-26 ユーザー指摘「タイトルにカテゴリにあった背景色を足してください」
+     → tint 強度を 8% → 18% に上げてカテゴリ色を視認できるレベルに引き上げ。
+     DESIGN.md の gold tint 18% (Editorial 装飾) と整合的な濃度。 */
+  background: color-mix(in srgb, var(--accent-current) 18%, transparent);
   border-left: 3px solid var(--accent-current);
 }
 .summary-sec__body {
