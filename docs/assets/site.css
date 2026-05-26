@@ -391,15 +391,20 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
 }
 .top-story__grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  /* 画像 4 : 要約 6 (2026-05-26 ユーザー指定リバランス)。
+     旧 1.4fr 1fr (画像 58% / 文 42%) → 2fr 3fr (画像 40% / 文 60%) */
+  grid-template-columns: 2fr 3fr;
   gap: 40px;
   align-items: start;
 }
 .top-story__thumb-wrap {
   width: 100%;
-  height: 440px;
+  /* 4:6 グリッドの画像セル (~400px 幅想定) に合わせ、3:2 比のアスペクトで高さを抑える。
+     固定 440px だと縦長になりすぎてバランスが崩れる。 */
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   border: 1px solid var(--color-border);
+  background: var(--accent-current, var(--color-paper-soft));
 }
 .top-story__thumb-wrap a,
 .top-story__thumb-wrap img {
@@ -412,6 +417,12 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   transition: opacity 0.2s ease, transform 0.4s ease;
 }
 .top-story__thumb-wrap a:hover img { opacity: 0.92; transform: scale(1.02); }
+/* サムネ取得失敗時 (--fallback) はカテゴリ OG 画像を 70% opacity で敷き、上から
+   accent 色のオーバーレイで「仮画像」と分かるトーンに落とす。クリック遷移は保持。 */
+.top-story__thumb-wrap--fallback img {
+  opacity: 0.55;
+  mix-blend-mode: luminosity;
+}
 .top-story__title {
   font-family: var(--font-serif);
   font-size: 42px;

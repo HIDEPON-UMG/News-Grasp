@@ -24,6 +24,7 @@ from tools.generate_pages import (  # noqa: E402
     build_all,
     build_all_summaries,
     build_summary,
+    parse_essay_sections,
     _collect_entries,
     _SUMMARY_SECTION_TAGS,
     _SUMMARY_SECTION_COLORS,
@@ -192,6 +193,98 @@ def test_pull_quote_hidden_in_fallback(built_summary: str):
     # pull_quote.text が空のときは class="summary-pull" のセクションごと出ないこと
     assert 'class="summary-pull"' not in built_summary, \
         "Pull quote should be hidden when γ pull_quote is empty (fallback)"
+
+
+# ============================================================
+# §01 全文表示 (2026-05-26 ユーザー要望)
+# ============================================================
+
+_SUMMARY_DIGEST_WITH_ESSAY = """---
+title: "News Grasp #20260520 — 時勢を掴み、日々に新たに。"
+date: 2026-05-20
+issue: 20260520
+weekday: 水
+categoryId: summary
+---
+
+# News Grasp #20260520
+
+> [!summary]
+> ヒーロー導入のサマリ文。一行で本日のテーマを語る。
+
+## § 本日のテーマ考察
+
+### §01 総論 — 金利の壁と AI の自律が交差した一日
+
+本日の 5 分野を貫く構造は「**金利上昇圧力と AI 投資の続行**」という矛盾した二軸の共存だ。__バブルだから崩れる__ と「稼げるから続く」の綱引きは今週の FOMC 議事録・PCE で一度答えが出る。
+
+### §02 為替 — タカ派議事録がドル高の「第二波」を呼ぶ
+
+[[FOMC]] の 4 票反対と「緩和バイアス削除」が、ドル円の 7 連騰を演出した。
+
+### §07 明日への示唆 — 今週は「数字が相場を決める週」
+
+5/28 ・ 5/30 ・ 5/29 の指標が並ぶ。__観察の週__ であり、行動を決める情報収集の週だ。
+
+### KEY TAKEAWAYS
+
+- 為替: PCE が 3.5% 超で 160 円突破
+"""
+
+
+def test_parse_essay_sections_extracts_section_bodies():
+    """parse_essay_sections() が `### §NN ...` を {heading, body} 辞書で返す。"""
+    sections = parse_essay_sections(_SUMMARY_DIGEST_WITH_ESSAY)
+    assert 1 in sections
+    assert "総論" in sections[1]["heading"]
+    assert "金利上昇圧力" in sections[1]["body"]
+    # body は次の `### §` 前で切れる (§02 の文言を含まない)
+    assert "ドル円の 7 連騰" not in sections[1]["body"]
+    # § 07 まで届く
+    assert 7 in sections
+    assert "観察の週" in sections[7]["body"]
+    # KEY TAKEAWAYS ブロックは含めない
+    assert "KEY TAKEAWAYS" not in sections[7]["body"]
+    assert "160 円突破" not in sections[7]["body"]
+
+
+def test_build_summary_renders_section1_full_body_when_essay_present(tmp_path):
+    """digest_sources に summary digest を渡すと §01 本文が HTML に出る (全文表示)。"""
+    root = tmp_path
+    docs = root / "docs"
+    sources: list[Path] = []
+    # 5 カテゴリ digest (entries 生成用)
+    for cat_id, label in [("fx", "FX"), ("ai", "AI"), ("it", "IT-Consulting"),
+                          ("economy", "Economy"), ("game", "Game")]:
+        digest_dir = root / "digest" / label.upper()
+        digest_dir.mkdir(parents=True, exist_ok=True)
+        p = digest_dir / f"2026-05-20-{label}.md"
+        p.write_text(
+            DIGEST_TEMPLATE.format(label=label, LABEL=label.upper(), cat_id=cat_id),
+            encoding="utf-8",
+        )
+        sources.append(p)
+    # summary digest (§01-§07 構造を持つ)
+    sum_dir = root / "digest" / "Summary"
+    sum_dir.mkdir(parents=True, exist_ok=True)
+    sum_path = sum_dir / "2026-05-20.md"
+    sum_path.write_text(_SUMMARY_DIGEST_WITH_ESSAY, encoding="utf-8")
+    sources.append(sum_path)
+
+    build_all(full=True, docs_root=docs, digests=sources)
+    entries = _collect_entries(sources)
+
+    out = build_summary("2026-05-20", entries, docs, digest_sources=sources)
+    html_text = out.read_text(encoding="utf-8")
+
+    # §01 本文 (digest md 由来) が HTML に含まれる
+    assert "金利上昇圧力" in html_text, "§01 本文 (essay sections) が HTML に注入されていない"
+    # 強調 emph の bold タグも render_emph で出る
+    assert "金利上昇圧力と AI 投資の続行" in html_text
+    # §01 の「詳細を読む」リンク (自己参照) は出ない
+    assert "→ §01 総論 詳細を読む" not in html_text
+    # §07 の「詳細を読む」も自己参照なので出ない
+    assert "→ §07 明日へ 詳細を読む" not in html_text
 
 
 def test_build_all_summaries_unique_dates():

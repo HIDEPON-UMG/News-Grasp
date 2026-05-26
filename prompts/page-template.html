@@ -122,17 +122,16 @@
     <span class="top-story__score">{{ top.score }}</span>
   </div>
   <div class="top-story__grid">
-    {% if top.thumb %}
-    <div class="top-story__thumb-wrap">
+    {# サムネ取得失敗時はカテゴリ OG 画像 (docs/assets/og/{cat}.jpg) を仮画像として使う。
+       塗りつぶしブロックの旧仕様を廃止し、画像クリックで元記事に遷移する機能を仮画像でも維持。 #}
+    {% set _top_thumb_src = top.thumb or (base_url ~ '/assets/og/' ~ thumb_slug ~ '.jpg') %}
+    <div class="top-story__thumb-wrap{% if not top.thumb %} top-story__thumb-wrap--fallback{% endif %}">
       {% if top.source_url %}
-      <a href="{{ top.source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ top.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      <a href="{{ top.source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ _top_thumb_src }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
       {% else %}
-      <img src="{{ top.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      <img src="{{ _top_thumb_src }}" alt="" loading="lazy" referrerpolicy="no-referrer">
       {% endif %}
     </div>
-    {% else %}
-    <div class="top-story__thumb-wrap" style="background: {{ accent }};"></div>
-    {% endif %}
     <div>
       <h2 class="top-story__title">
         {% if top.source_url %}<a href="{{ top.source_url }}" rel="noopener nofollow" target="_blank" style="color: inherit;">{{ top.title }}</a>{% else %}{{ top.title }}{% endif %}
@@ -201,7 +200,7 @@
       <h2>本日のテーマ考察</h2>
       <p>{{ summary_text|render_emph }}</p>
       <div class="editorial__cta">
-        <a href="{{ base_url }}/summary/{{ date }}/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="{{ base_url }}/{{ date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
         <a href="{{ base_url }}/{{ category_id }}/" class="btn-ghost">BACK TO ARCHIVE</a>
       </div>
     </div>

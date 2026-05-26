@@ -66,6 +66,9 @@ def _parse_meta(html_text: str) -> _MetaCollector:
 
 # ---------- digest fixtures ----------
 
+# 統合方針 (2026-05-26): category_id=summary は build_all 対象外
+# (個別ページ /summary/{date}/ を廃止し /{date}/summary/ に統合)。
+# build_all を pin する本テストでは summary を含めない。
 _FIXTURE_DIGESTS: list[dict[str, str]] = [
     {
         "category_id": "fx",
@@ -76,11 +79,6 @@ _FIXTURE_DIGESTS: list[dict[str, str]] = [
         "category_id": "ai",
         "date": "2026-05-20",
         "title": "News Grasp #20260520 — Artificial Intelligence",
-    },
-    {
-        "category_id": "summary",
-        "date": "2026-05-20",
-        "title": "News Grasp #20260520 — Summary",
     },
 ]
 

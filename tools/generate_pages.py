@@ -45,6 +45,9 @@ _SUMMARY_RE = re.compile(r"> \[!summary\]\r?\n((?:>.*\r?\n)+)")
 
 # 各記事ヘッダ: `### [88] タイトル ...`
 _ARTICLE_HEAD_RE = re.compile(r"^###\s*(?:\[(\d+)\]\s*)?(.+?)\s*$", re.MULTILINE)
+# Editorial summary digest 内の `### §NN ...` (考察 7 セクション) ヘッダ。
+# digest/Summary/{date}.md 本文から §01-§07 を構造化抽出するのに使う。
+_ESSAY_SECTION_RE = re.compile(r"^###\s+§(\d{2})\s+(.+?)\s*$", re.MULTILINE)
 # メタ行: `📅 2026-05-20 不明 · 📰 Trading Economics · 🔗 [元記事](https://...)`
 _META_DATE_RE = re.compile(r"📅\s*([\d\-/]+(?:\s+[^··\n]+)?)")
 _META_SOURCE_RE = re.compile(r"📰\s*([^··\n]+?)(?=\s*[··]|\s*🔗|\s*$)")
@@ -257,7 +260,12 @@ def build_context(digest_path: Path) -> dict[str, Any]:
     cat = CATEGORIES[category_id]
 
     date_str = fm.get("date", "")
-    canonical = f"{BASE_URL}/{category_id}/{date_str}/"
+    # category=summary は廃止された `/summary/{date}/` ではなく統合先
+    # `/{date}/summary/` を canonical とする (2026-05-26 統合)。
+    if category_id == "summary":
+        canonical = f"{BASE_URL}/{date_str}/summary/"
+    else:
+        canonical = f"{BASE_URL}/{category_id}/{date_str}/"
 
     title = _normalize_title(fm.get("title", ""), cat["label"])
 
@@ -437,6 +445,11 @@ def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Ite
             continue
         if not ctx.get("date") or not ctx.get("category_id"):
             print(f"[skip] missing date/category_id: {src.name}", file=sys.stderr)
+            continue
+        # 統合方針 (2026-05-26): summary カテゴリの個別ページ /summary/{date}/ は廃止し、
+        # /{date}/summary/ (build_summary 出力) に統合した。digest/Summary/*.md は
+        # build_summary 側でのみ消費するため、ここでは個別ページ生成をスキップする。
+        if ctx["category_id"] == "summary":
             continue
         out = _out_path_for(ctx, docs)
         if not full and not _needs_rebuild(src, out):
@@ -798,6 +811,37 @@ _SUMMARY_SECTION_COLORS = ["#1A1A1A", "#B8860B", "#2D5BB8", "#2E6B52", "#8E2A19"
 _SUMMARY_CAT_ORDER = [None, "fx", "ai", "it", "economy", "game", None]
 
 
+def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
+    """summary digest md 本文から `### §NN ...` の 7 セクションを構造化辞書で返す。
+
+    キーは 1..7、値は `{heading, body}`。
+    - heading: 行頭 `### §NN ` の直後の文字列 (例: `総論 — 金利の壁とAIの自律が交差した一日`)
+    - body: 次の `### ` ヘッダ直前まで or `### KEY TAKEAWAYS` 直前までの段落テキスト
+
+    digest が §01-§07 全部含む前提だが、欠けていればその番号のキーは作らない。
+    """
+    matches = list(_ESSAY_SECTION_RE.finditer(body))
+    sections: dict[int, dict[str, str]] = {}
+    for idx, m in enumerate(matches):
+        num = int(m.group(1))
+        heading = m.group(2).strip()
+        start = m.end()
+        if idx + 1 < len(matches):
+            end = matches[idx + 1].start()
+        else:
+            end = len(body)
+        section_body = body[start:end]
+        # `### KEY TAKEAWAYS` や `### ` で始まる別ブロックは段落から除外
+        cut = re.search(r"^###\s", section_body, re.MULTILINE)
+        if cut:
+            section_body = section_body[: cut.start()]
+        sections[num] = {
+            "heading": heading,
+            "body": section_body.strip(),
+        }
+    return sections
+
+
 def _extract_reflection(digest_path: Path) -> dict[str, Any]:
     """summary digest の frontmatter / 本文から reflection 構造を取り出す。
 
@@ -829,12 +873,29 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
 
     # γ reflection が取れれば優先 (今は未対応で常に {})
+    # 加えて summary digest md の `### §NN` から essay_sections (§01-§07 全文) を抽出。
+    # §01 はテンプレで「総論」全文表示するため、ここで body を取り込む。
     reflection: dict[str, Any] = {}
+    essay_sections: dict[int, dict[str, str]] = {}
     if digest_sources:
         for src in digest_sources:
-            if "summary" in str(src).lower() and date in str(src):
-                reflection = _extract_reflection(src) or {}
-                break
+            # tmp_path が "summary" を含むケース (pytest fixture) で誤マッチしないよう、
+            # 親ディレクトリ名 or ファイル名のみで判定する。
+            parent_name = src.parent.name.lower()
+            file_name = src.name.lower()
+            if "summary" not in parent_name and "summary" not in file_name:
+                continue
+            if date not in file_name and date not in src.parent.name:
+                continue
+            reflection = _extract_reflection(src) or {}
+            try:
+                sm_text = src.read_text(encoding="utf-8")
+                _, sm_body = parse_frontmatter(sm_text)
+                essay_sections = parse_essay_sections(sm_body)
+            except OSError as exc:
+                print(f"[warn] essay_sections read failed for {src.name}: {exc}",
+                      file=sys.stderr)
+            break
 
     # ---- Hero: subtitle / lead ----
     hero_lead = (
@@ -883,20 +944,34 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
             cid = _SUMMARY_CAT_ORDER[i]
             bullets: list[str] = []
             if i == 0:
-                # 総論
-                body = (editorial["summary_text"] if editorial
-                        else "本日の総論データ準備中。")
-                heading = "本日の総論"
-                canonical = editorial["canonical"] if editorial else ""
+                # 総論 — digest md `### §01` が取れれば本文全文を載せる (ユーザー要望
+                # 2026-05-26「総論だけ省略せず全文表示」)。無ければ summary_text fallback。
+                es = essay_sections.get(1)
+                if es and es.get("body"):
+                    body = es["body"]
+                    heading = es.get("heading") or "本日の総論"
+                else:
+                    body = (editorial["summary_text"] if editorial
+                            else "本日の総論データ準備中。")
+                    heading = "本日の総論"
+                # §01 は本ページ自身を全文表示するので「詳細を読む」リンクは不要
+                # (canonical を空にすると summary-template の {% if sec.canonical %} で
+                # アンカー自体が出ない)
+                canonical = ""
             elif i == 6:
-                # 明日へ
-                body = (editorial["summary_text"] if editorial
-                        else "明日への示唆データ準備中。")
-                # 同じ summary_text を流用するので前後重複しないよう短縮
-                if editorial and len(body) > 200:
-                    body = body[-200:]
-                heading = "明日への示唆"
-                canonical = editorial["canonical"] if editorial else ""
+                # 明日へ — digest md `### §07` が取れれば本文を載せる
+                es = essay_sections.get(7)
+                if es and es.get("body"):
+                    body = es["body"]
+                    heading = es.get("heading") or "明日への示唆"
+                else:
+                    body = (editorial["summary_text"] if editorial
+                            else "明日への示唆データ準備中。")
+                    if editorial and len(body) > 200:
+                        body = body[-200:]
+                    heading = "明日への示唆"
+                # §07 も同ページ内表示なので自己リンク回避
+                canonical = ""
             else:
                 e = by_cat.get(cid) if cid else None
                 if e:
@@ -985,13 +1060,19 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     return render_page(ctx, out, template_name="summary-template.html")
 
 
-def build_all_summaries(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
-    """全 unique date について summary ページを生成。"""
+def build_all_summaries(entries: list[dict[str, Any]], docs_root: Path,
+                        digest_sources: list[Path] | None = None) -> list[Path]:
+    """全 unique date について summary ページを生成。
+
+    digest_sources を渡すと build_summary 側で digest/Summary/*.md の `### §NN`
+    本文を抽出し §01 / §07 を全文表示する (2026-05-26 統合)。
+    """
     unique_dates = sorted({e["date"] for e in entries if e.get("date")}, reverse=True)
     written: list[Path] = []
     for d in unique_dates:
         try:
-            written.append(build_summary(d, entries, docs_root))
+            written.append(build_summary(d, entries, docs_root,
+                                         digest_sources=digest_sources))
         except Exception as exc:
             print(f"[warn] summary build failed for {d}: {exc}", file=sys.stderr)
     return written
@@ -1001,6 +1082,10 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
     """カテゴリ別アーカイブ docs/{cat}/index.html を生成。"""
     written: list[Path] = []
     for cat_id, cat in CATEGORIES.items():
+        # 統合方針 (2026-05-26): summary カテゴリのアーカイブ /summary/ は廃止
+        # (日付別考察 /{date}/summary/ に統合)。
+        if cat_id == "summary":
+            continue
         cat_entries = [e for e in entries if e["category_id"] == cat_id]
         if not cat_entries:
             continue
@@ -1069,12 +1154,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  ... and {len(written) - 5} more")
 
     if not args.no_index:
-        entries = _collect_entries(scan_digests())
+        digests_all = scan_digests()
+        entries = _collect_entries(digests_all)
         idx = build_index(entries, docs_root)
         cat_pages = build_category_pages(entries, docs_root)
         arc = build_archive(entries, docs_root)
         overviews = build_all_overviews(entries, docs_root)
-        summaries = build_all_summaries(entries, docs_root)
+        summaries = build_all_summaries(entries, docs_root,
+                                        digest_sources=digests_all)
         print(
             f"wrote index/archive: {idx.name}, {len(cat_pages)} category page(s), "
             f"{arc.parent.name}/{arc.name}, {len(overviews)} overview page(s), "
