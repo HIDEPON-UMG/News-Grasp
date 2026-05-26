@@ -1941,6 +1941,8 @@ strong {
   color: var(--color-ink-dim);
   letter-spacing: 0.15em;
 }
+/* h2 内部の改行ヒント。デスクトップでは display:none で 1 行表示、モバイル幅で改行を効かせる */
+.summary-sections__head-br { display: none; }
 .summary-sections__grid {
   display: grid;
   /* auto-fit + minmax(min(440px, 100%), 1fr) で iPhone 375 等の狭幅でも溢れない
@@ -2326,7 +2328,10 @@ strong {
   .summary-hero__title { font-size: 36px; line-height: 1.2; letter-spacing: 0; }
   .summary-hero__subtitle { font-size: 18px; margin-bottom: 16px; }
   .summary-hero__lead { font-size: 15px; line-height: 1.85; padding: 12px 16px; max-width: 100%; }
-  .summary-hero__sigil { font-size: 120px; }
+  /* モバイルではグリッドが 1 列になり § が下に落ちる。フッター扱いで右寄せ + サイズ縮小して占有を抑える */
+  .summary-hero__sigil { font-size: 96px; text-align: right; padding-right: 4px; margin-top: -8px; line-height: 0.85; }
+  /* h2 の途中改行を有効化。「7 つの」までで折り返し、「§ セクション」を次行に送る */
+  .summary-sections__head-br { display: inline; }
   .summary-pull { padding: 24px 16px; }
   .summary-pull__inner { grid-template-columns: 40px 1fr; gap: 12px; }
   .summary-pull__quote { font-size: 60px; }
