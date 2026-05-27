@@ -770,7 +770,7 @@ strong {
 .past-week__head-meta a { color: var(--accent-current); }
 .past-week__grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 14px;
 }
 .past-card {
@@ -1273,7 +1273,7 @@ strong {
 }
 .home-cats__grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
 }
 .home-cat-card {
@@ -2258,6 +2258,12 @@ strong {
 .cat-badge.cat-economy  { background: var(--color-accent-economy); }
 .cat-badge.cat-game     { background: var(--color-accent-game); }
 .cat-badge.cat-summary  { background: var(--color-accent-summary); }
+
+/* ---------------- Tablet (768-1279px): home-cats 3col 中間ブレイク (v2 / 6 LENSES) ---------------- */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .home-cats__grid { grid-template-columns: repeat(3, 1fr); }
+  .past-week__grid { grid-template-columns: repeat(4, 1fr); }
+}
 
 /* ---------------- Mobile ---------------- */
 @media (max-width: 768px) {

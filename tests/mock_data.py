@@ -3,7 +3,7 @@
 設計エクスポート (design/untitled/project/data/news-data-full.js) を Python に
 ポートしたサンプル。テンプレートのレイアウト確認や Webhook 経路テストに使う。
 
-5 カテゴリ × 各 5 件（フル 10 件は冗長なので軽量化）。
+6 カテゴリ × 各 5 件（フル 10 件は冗長なので軽量化）。
 記事本文は本物っぽい強調記法 [[..]] / __..__ を含む。
 """
 from __future__ import annotations
@@ -286,8 +286,8 @@ CATEGORIES = [
 
 REFLECTION = {
     "title": "金利の天井とAIの底入れ",
-    "subtitle": "April 28 — 5 lenses converge on a single inflection",
-    "lead": "本日 5 分野・40 本のニュースから浮かび上がる最大のテーマは、[[金利の天井]] と [[AI の底入れ]] の同時進行である。以下、各カテゴリを横断して読み解く。",
+    "subtitle": "April 28 — 6 lenses converge on a single inflection",
+    "lead": "本日 6 分野・40 本のニュースから浮かび上がる最大のテーマは、[[金利の天井]] と [[AI の底入れ]] の同時進行である。以下、各カテゴリを横断して読み解く。",
     "pull_quote": "「単一の強い製品」から「__エコシステムでの占有率__」へ──プラットフォーム経済が成熟期に入った日。",
     "sections": [
         {"tag": "総論", "accent": "#1A1A1A",

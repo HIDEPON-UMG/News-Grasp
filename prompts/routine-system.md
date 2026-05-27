@@ -25,6 +25,7 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 | `fx` | 為替 | Foreign Exchange | `#B8860B`（琥珀） | `¥` |
 | `ai` | AI | Artificial Intelligence | `#2D5BB8`（電子青） | `◆` |
 | `it` | IT-Consulting | IT & Consulting | `#2E6B52`（苔緑） | `▲` |
+| `mobility` | モビリティ | Mobility | `#3A7B8C`（ティール） | `◎` |
 | `economy` | 経済 | Economy | `#8E2A19`（深紅） | `■` |
 | `game` | ゲーム | Gaming | `#5E3D8C`（洋紫） | `●` |
 
@@ -70,17 +71,17 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 ### ステップ 1: 当日情報の準備
 
 1. 現在時刻を JST で取得し、当日の **YYYY-MM-DD** と **曜日** を確定する
-2. 曜日に応じて対象カテゴリを決定（**FX は毎日固定、Economy は平日のみ、Game は火木土日のみ**）：
+2. 曜日に応じて対象カテゴリを決定（**FX と Mobility は毎日固定、Economy は平日のみ、Game は火木土日のみ**）：
 
 | 曜日 | 対象カテゴリ | 件数 |
 |---|---|---|
-| 月 | FX, AI, IT-Consulting, Economy | 4 |
-| 火 | FX, AI, IT-Consulting, Economy, Game | 5 |
-| 水 | FX, AI, IT-Consulting, Economy | 4 |
-| 木 | FX, AI, IT-Consulting, Economy, Game | 5 |
-| 金 | FX, AI, IT-Consulting, Economy | 4 |
-| 土 | FX, AI, IT-Consulting, Game | 4 |
-| 日 | FX, AI, IT-Consulting, Game | 4 |
+| 月 | FX, AI, IT-Consulting, Mobility, Economy | 5 |
+| 火 | FX, AI, IT-Consulting, Mobility, Economy, Game | 6 |
+| 水 | FX, AI, IT-Consulting, Mobility, Economy | 5 |
+| 木 | FX, AI, IT-Consulting, Mobility, Economy, Game | 6 |
+| 金 | FX, AI, IT-Consulting, Mobility, Economy | 5 |
+| 土 | FX, AI, IT-Consulting, Mobility, Game | 5 |
+| 日 | FX, AI, IT-Consulting, Mobility, Game | 5 |
 
 3. **issue 番号**: `YYYYMMDD` 形式（例: 20260428）
 
@@ -285,20 +286,22 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
     "from": "§06 GAME"
   },
 
-  // **ちょうど 7 セクション**: 総論 / 為替 / AI / IT / 経済 / ゲーム / 明日へ
+  // **ちょうど 8 セクション**: 総論 / 為替 / AI / IT / モビリティ / 経済 / ゲーム / 明日へ
   // 順序固定、color はテンプレ側で固定値 (_SUMMARY_SECTION_COLORS) を当てるので不要
   "sections": [
-    { "number": 1, "tag": "総論",    "heading": "本日の総論",       "body": "..." },
-    { "number": 2, "tag": "為替",    "heading": "...",             "body": "..." },
-    { "number": 3, "tag": "AI",      "heading": "...",             "body": "..." },
-    { "number": 4, "tag": "IT",      "heading": "...",             "body": "..." },
-    { "number": 5, "tag": "経済",    "heading": "...",             "body": "..." },
-    { "number": 6, "tag": "ゲーム",  "heading": "...",             "body": "..." },
-    { "number": 7, "tag": "明日へ",  "heading": "明日への示唆",     "body": "..." }
+    { "number": 1, "tag": "総論",       "heading": "本日の総論",       "body": "..." },
+    { "number": 2, "tag": "為替",       "heading": "...",             "body": "..." },
+    { "number": 3, "tag": "AI",         "heading": "...",             "body": "..." },
+    { "number": 4, "tag": "IT",         "heading": "...",             "body": "..." },
+    { "number": 5, "tag": "モビリティ", "heading": "...",             "body": "..." },
+    { "number": 6, "tag": "経済",       "heading": "...",             "body": "..." },
+    { "number": 7, "tag": "ゲーム",     "heading": "...",             "body": "..." },
+    { "number": 8, "tag": "明日へ",     "heading": "明日への示唆",     "body": "..." }
   ],
 
   // **ちょうど 3 件**: KEY TAKEAWAYS (3 カラム / 64px 番号バー + tag + 本文)
   // n は 01-03。color はカテゴリ accent を当てる
+  // color 候補: #B8860B(FX) / #2D5BB8(AI) / #2E6B52(IT) / #3A7B8C(モビリティ) / #8E2A19(経済) / #5E3D8C(ゲーム) / #475569(総括)
   "takeaways": [
     { "n": 1, "tag": "為替", "color": "#B8860B", "text": "..." },
     { "n": 2, "tag": "AI",   "color": "#2D5BB8", "text": "..." },
@@ -314,12 +317,12 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### γ schema の必須ルール
 
-- **sections は必ず 7 件**。順序は 総論 → 為替 → AI → IT → 経済 → ゲーム → 明日へ で固定。
+- **sections は必ず 8 件**。順序は 総論 → 為替 → AI → IT → モビリティ → 経済 → ゲーム → 明日へ で固定。
   これは Pattern D のセクションタグ（`_SUMMARY_SECTION_TAGS` in `tools/generate_pages.py`）と
-  揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし）でも 7 件は守り、該当カテゴリは
+  揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし）でも 8 件は守り、該当カテゴリは
   「ゲーム関連は本日休載」のように 1 文で繋ぐ
 - **takeaways は必ず 3 件**。`n` は 1/2/3 の番号、`tag` は本文中で最も強調したい軸、`color` は対応する
-  カテゴリ accent (`#B8860B` / `#2D5BB8` / `#2E6B52` / `#8E2A19` / `#5E3D8C` / `#475569`) から選ぶ
+  カテゴリ accent (`#B8860B` / `#2D5BB8` / `#2E6B52` / `#3A7B8C` / `#8E2A19` / `#5E3D8C` / `#475569`) から選ぶ
 - **pull_quote.text** は **40〜80 字** が目安。Georgia 120px の大型引用符と並ぶので長すぎると改行が乱れる。
   `emphasis` 部分は `[[ ]]` で囲まなくてよい (テンプレ側で gold underline を当てる)
 - **lead は 180〜220 字**。`[[ ]]` を 2-4 箇所だけ使う（多すぎ禁止）
@@ -340,7 +343,7 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### 5-A. Markdown digest の生成
 
-**カテゴリ別フォルダ構造**で出力する。`Genre` は `FX` / `AI` / `IT-Consulting` / `Economy` / `Game`：
+**カテゴリ別フォルダ構造**で出力する。`Genre` は `FX` / `AI` / `IT-Consulting` / `Mobility` / `Economy` / `Game`：
 
 | ファイル | 内容 |
 |---|---|
@@ -451,8 +454,8 @@ OGP 取得結果と NG プレースホルダで分岐する：
 
 利用可能な NG プレースホルダ keys：
 
-- **FEATURED**（TOP 記事、568×220 想定）: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-economy`, `ng-thumb-game`
-- **サイドサムネ**（2 件目以降、140×90 想定）: `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-economy`, `ng-thumb-common-game`
+- **FEATURED**（TOP 記事、568×220 想定）: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-mobility`, `ng-thumb-economy`, `ng-thumb-game`
+- **サイドサムネ**（2 件目以降、140×90 想定）: `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-mobility`, `ng-thumb-common-economy`, `ng-thumb-common-game`
 
 #### 画像クリックで記事 URL に飛ばす
 

@@ -29,14 +29,14 @@ UI モック側の参考実装は
 | 種別 | プレフィクス | 値の規則 | 例 |
 | --- | --- | --- | --- |
 | 共通固定 | （なし） | 4 種・英字 | `daily` / `newsletter` / `news-grasp` / `issue-{号番号}` |
-| カテゴリー | `cat/` | News Grasp の 5 カテゴリ id（既存） | `cat/fx` `cat/ai` `cat/it` `cat/economy` `cat/game` |
+| カテゴリー | `cat/` | News Grasp の 6 カテゴリ id（既存） | `cat/fx` `cat/ai` `cat/it` `cat/mobility` `cat/economy` `cat/game` |
 | 企業 | `co/` | 日本での一般通用表記 | `co/トヨタ` `co/任天堂` `co/NTTデータ` `co/OpenAI` `co/NVIDIA` `co/アクセンチュア` |
 | 国 | `country/` | 日本語国名。EU は `EU` を許容 | `country/日本` `country/米国` `country/中国` `country/EU` `country/トルコ` |
 | サービス／製品 | `svc/` | 固有名詞は原文、和名がある場合は日本語 | `svc/Claude` `svc/ChatGPT` `svc/iPhone` `svc/Switch-2` `svc/ウィッチャー` |
 | 人名 | `person/` | 日本語フルネーム。中点 `・` を使ってよい | `person/植田和男` `person/ジェローム・パウエル` `person/サム・アルトマン` |
 | ティッカー／通貨 | `ticker/` | 大文字の取引所コード or 通貨ペア（スラッシュ不可） | `ticker/NVDA` `ticker/USDJPY` `ticker/7974` |
 | トピック | `topic/` | 日本語スラッグ。ただし国際略号は英字でよい | `topic/利下げ` `topic/利上げ` `topic/FOMC` `topic/規制` `topic/M&A` |
-| 業界 | `industry/` | 日本語 | `industry/半導体` `industry/ゲーム` `industry/IT-コンサル` `industry/AI` |
+| 業界 | `industry/` | 日本語 | `industry/半導体` `industry/ゲーム` `industry/IT-コンサル` `industry/AI` `industry/モビリティ` `industry/EV` `industry/自動運転` |
 | イベント種別 | `event/` | 日本語 | `event/決算` `event/製品発表` `event/政策会合` `event/規制公表` |
 | 重要度 | `score/` | 日本語 1 文字 | `score/高` / `score/中` / `score/低` |
 
@@ -57,6 +57,7 @@ Runner が使うカテゴリ id は以下の通り。`prompts/routine-system.md`
 | 為替 | `fx` | Foreign Exchange | `#B8860B` |
 | AI | `ai` | Artificial Intelligence | `#2D5BB8` |
 | IT-Consulting | `it` | IT & Consulting | `#2E6B52` |
+| モビリティ | `mobility` | Mobility | `#3A7B8C` |
 | 経済 | `economy` | Economy | `#8E2A19` |
 | ゲーム | `game` | Gaming | `#5E3D8C` |
 

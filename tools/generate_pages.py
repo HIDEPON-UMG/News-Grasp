@@ -319,7 +319,7 @@ def build_context(digest_path: Path) -> dict[str, Any]:
             "is_active": cid == category_id,
         }
         for cid, meta in CATEGORIES.items()
-        if cid != "summary"  # lens nav は 5 lenses 想定
+        if cid != "summary"  # lens nav は 6 lenses 想定
     ]
 
     return {
@@ -605,7 +605,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
                             "summary": "", "canonical": f"{BASE_URL}/{cid}/", "stories": 0}
                            for cid, meta in CATEGORIES.items() if cid != "summary"],
             "editorial": None,
-            "stats": {"stories": 0, "categories": 5, "essay": 7, "reading_min": 15},
+            "stats": {"stories": 0, "categories": 6, "essay": 7, "reading_min": 15},
             "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
         }
         out = Path(docs_root) / "index.html"
@@ -620,7 +620,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     editor_top3 = sorted_by_score[:3]
     hero_story = sorted_by_score[0] if sorted_by_score else None
 
-    # 5 lens cards (summary を除く 5 カテゴリ、同日最新 entry を引く)
+    # 6 lens cards (summary を除く 6 カテゴリ、同日最新 entry を引く)
     by_cat: dict[str, dict[str, Any]] = {}
     for e in same_day:
         cid = e["category_id"]
@@ -697,7 +697,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
 
         "stats": {
             "stories": stories_total,
-            "categories": 5,
+            "categories": 6,
             "essay": 7,
             "reading_min": 15,
         },
@@ -711,13 +711,13 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
     """Phase 4: 日付別 Daily Overview (Pattern C) docs/{date}/index.html を生成。
 
     entries は **同一 date の** entries だけを渡す前提。summary を含む全カテゴリの
-    最新ダイジェストを集約して、5 lens の 1 ページサマリを作る。
+    最新ダイジェストを集約して、6 lens の 1 ページサマリを作る (v2: Mobility 追加)。
     """
     same_day = [e for e in entries if e["date"] == date]
     if not same_day:
         raise ValueError(f"build_overview: entries に date={date} が無い")
 
-    # 各カテゴリ (summary 除く 5 lens) を CATEGORIES 順に並べる
+    # 各カテゴリ (summary 除く 6 lens) を CATEGORIES 順に並べる
     by_cat: dict[str, dict[str, Any]] = {}
     for e in same_day:
         cid = e["category_id"]
@@ -781,7 +781,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
         "cat_rows": cat_rows,
         "stats": {
             "stories": stories_total,
-            "categories": 5,
+            "categories": 6,
             "essay": 7,
             "full_read_min": full_read_min,
         },
@@ -863,7 +863,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
 
     γ schema digest があれば reflection 各フィールドを正しく注入。無ければテンプレ
     fallback (lead = summary_text / pull_quote 非表示 / takeaways = Top 3 記事タイトル /
-    sections = 5 カテゴリ summary + 総論 / 明日へ プレースホルダ) で必ず描画する。
+    sections = 6 カテゴリ summary + 総論 / 明日へ プレースホルダ) で必ず描画する。
     """
     same_day = [e for e in entries if e["date"] == date]
     if not same_day:
@@ -1079,8 +1079,30 @@ def build_all_summaries(entries: list[dict[str, Any]], docs_root: Path,
 
 
 def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
-    """カテゴリ別アーカイブ docs/{cat}/index.html を生成。"""
+    """カテゴリ別アーカイブ docs/{cat}/index.html を生成 (v2 Magazine Spread)。
+
+    v2 リデザイン (Phase 3 / 2026-05-28): リスト型 71 行から B Magazine Spread
+    (hero + TOP feature + 9 grid + past 7) にフル置換。ctx を追加：
+
+        featured  : 最新 1 件 (= cat_entries[0]) を TOP feature と hero summary に流用
+        grid_9    : featured を除く直近 9 件 (cat_entries[1:10])。SVG 構図と一致
+        past_7    : featured を除く直近 7 日 (cat_entries[1:8])。
+                    各カードは <a href="{base_url}/{cat_id}/{date}/"> で詳細ページにラップ
+        nav_categories : 6 lens pill 用 (summary 除く)、is_active で現カテゴリ強調
+    """
     written: list[Path] = []
+    # nav_categories は全 cat 共通 (is_active は内側でセット)。summary 除く 6 lens
+    nav_base = [
+        {
+            "id": cid,
+            "name_en": meta["label"],
+            "name_jp": meta["jp"],
+            "glyph": meta["glyph"],
+            "accent": meta["accent"],
+        }
+        for cid, meta in CATEGORIES.items()
+        if cid != "summary"
+    ]
     for cat_id, cat in CATEGORIES.items():
         # 統合方針 (2026-05-26): summary カテゴリのアーカイブ /summary/ は廃止
         # (日付別考察 /{date}/summary/ に統合)。
@@ -1089,14 +1111,28 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
         cat_entries = [e for e in entries if e["category_id"] == cat_id]
         if not cat_entries:
             continue
+        # 日付降順は _collect_entries で保証済だが、念のため
+        cat_entries_sorted = sorted(cat_entries, key=lambda e: e["date"], reverse=True)
+        featured = cat_entries_sorted[0]
+        grid_9 = cat_entries_sorted[1:10]
+        past_7 = cat_entries_sorted[1:8]
+        nav_categories = [
+            {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
+        ]
         ctx = {
             "site_title": SITE_TITLE,
             "base_url": BASE_URL,
             "category_id": cat_id,
             "category_label": cat["label"],
             "category_jp": cat["jp"],
+            "accent": cat["accent"],
+            "glyph": cat["glyph"],
             "canonical": f"{BASE_URL}/{cat_id}/",
-            "entries": cat_entries,
+            "entries": cat_entries_sorted,
+            "featured": featured,
+            "grid_9": grid_9,
+            "past_7": past_7,
+            "nav_categories": nav_categories,
         }
         out = Path(docs_root) / cat_id / "index.html"
         written.append(render_page(ctx, out, template_name="category-template.html"))

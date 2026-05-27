@@ -118,7 +118,13 @@ def test_wrapper_exit_zero(smoke_run_via_promptfile):
 def test_no_encoding_error_in_response(smoke_run_via_promptfile):
     """claude の応答に「文字化け」「encoding」「Shift」「もう一度」等が出ないこと。"""
     _, log = smoke_run_via_promptfile
-    hit = [tok for tok in ENCODING_ERROR_TOKENS if tok in log]
+    # wrapper 自身のヘッダ行 ([run_claude_with_timeout] ...) は判定対象から除外。
+    # pytest tmp_path に test 関数名 "test_no_encoding_error_in_response" が含まれ
+    # wrapper ログに echo されて自己参照で encoding を誤検出するため (2026-05-28 修正)。
+    response = "\n".join(
+        ln for ln in log.splitlines() if "[run_claude_with_timeout]" not in ln
+    )
+    hit = [tok for tok in ENCODING_ERROR_TOKENS if tok in response]
     assert not hit, (
         f"claude が encoding 問題を検出しました: {hit}\n"
         f"= wrapper.ps1 / runner.bat の prompt 経路が壊れている疑い。\n"

@@ -18,6 +18,7 @@ colors:
   accent-fx: "#B8860B"
   accent-ai: "#2D5BB8"
   accent-it: "#2E6B52"
+  accent-mobility: "#3A7B8C"
   accent-economy: "#8E2A19"
   accent-game: "#5E3D8C"
   accent-summary: "#475569"

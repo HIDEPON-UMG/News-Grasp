@@ -48,7 +48,7 @@ def meta_line(score, label, source, url, accent):
 def top_card(score, title, source, url, img, buls, accent):
     """TOP FEATURED カード（全幅画像付き）"""
     return (
-        '<tr><td class="ng-card-pad" style="padding:24px 36px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">'
+        '<tr><td class="ng-card-pad" style="padding:20px 36px 8px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">'
         + meta_line(score, "TOP", source, url, accent)
         + f'<h3 class="ng-card-title" style="font-size:20px;font-weight:800;line-height:1.4;margin:0 0 16px;color:#1A1A1A;">{title}</h3>'
         + f'<div class="ng-feature-img" style="margin-bottom:16px;">'
@@ -61,7 +61,7 @@ def side_card(score, title, source, url, img, buls, accent, label=None):
     """通常カード（サイドサムネ）。スマホ時は @media で画像→本文の縦積みに切替（ng-card-thumb / ng-card-body-cell が連動）"""
     lbl = label or f"0{score}" if score < 100 else str(score)
     return (
-        '<tr><td class="ng-card-pad" style="padding:18px 36px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">'
+        '<tr><td class="ng-card-pad" style="padding:18px 36px 8px;background:#FAF7F0;border-bottom:1px solid #EDEAE3;">'
         '<table role="presentation" class="ng-side-table" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr>'
         f'<td class="ng-card-thumb thb vtop pr16" width="140" style="width:140px;vertical-align:top;padding-right:16px;">'
         f'<img class="ng-card-thumb-img" src="{img}" width="140" height="90" alt="" style="width:140px;height:90px;object-fit:cover;display:block;"></td>'

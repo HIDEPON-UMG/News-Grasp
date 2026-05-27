@@ -55,16 +55,16 @@ def test_brand_zone_present(built_home: str):
     """home-brand (navy 86px wordmark + ISSUE) セクションがある。"""
     assert 'class="home-brand"' in built_home, "home-brand class missing"
     assert "News Grasp" in built_home, "site title missing"
-    assert "FIVE  LENSES  ON  TODAY" in built_home or "FIVE LENSES ON TODAY" in built_home, \
+    assert "SIX  LENSES  ON  TODAY" in built_home or "SIX LENSES ON TODAY" in built_home, \
         "tagline missing"
 
 
-def test_sticky_nav_with_5_lenses(built_home: str):
-    """home-nav の 5 lenses + TODAY + § ESSAY + ARCHIVE が並ぶ。"""
+def test_sticky_nav_with_6_lenses(built_home: str):
+    """home-nav の 6 lenses + TODAY + § ESSAY + ARCHIVE が並ぶ。"""
     assert 'class="home-nav"' in built_home
     assert "home-nav__today" in built_home
-    # 5 lenses
-    for lens in ("fx", "ai", "it", "economy", "game"):
+    # 6 lenses (Mobility 含む)
+    for lens in ("fx", "ai", "it", "mobility", "economy", "game"):
         assert f"home-nav__lens-{lens}" in built_home, f"lens nav for {lens} missing"
     # § ESSAY / ARCHIVE
     assert "§ ESSAY" in built_home, "ESSAY entry missing"
@@ -86,10 +86,10 @@ def test_featured_story_section(built_home: str):
     assert "TOP STORY" in built_home
 
 
-def test_categories_5col(built_home: str):
-    """home-cats__grid が repeat(5, 1fr) クラスを当てており 5 lens card が並ぶ。"""
+def test_categories_6col(built_home: str):
+    """home-cats__grid が repeat(6, 1fr) クラスを当てており 6 lens card が並ぶ (v2: Mobility 追加)。"""
     assert 'class="home-cats__grid"' in built_home
-    for lens in ("fx", "ai", "it", "economy", "game"):
+    for lens in ("fx", "ai", "it", "mobility", "economy", "game"):
         assert f'class="home-cat-card cat-{lens}"' in built_home, \
             f"home-cat-card for {lens} missing"
 

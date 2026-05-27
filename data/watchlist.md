@@ -79,6 +79,60 @@ Routine がここを読み込み、毎朝の検索対象として使う。**自�
 
 ---
 
+## Mobility
+
+毎日掲載。**EV / 自動運転 / MaaS / 完成車・部品サプライヤー**を独立カテゴリで追跡。
+
+### 完成車メーカー
+
+- Tesla
+- トヨタ
+- 日産
+- ホンダ
+- BMW
+- フォルクスワーゲン (VW)
+- BYD (比亜迪)
+- 現代自動車
+- Stellantis
+- Ford
+
+### 自動運転・モビリティサービス
+
+- Waymo
+- Cruise
+- Uber
+- Lyft
+- DiDi
+- Aurora
+- Mobileye
+
+### 電池・サプライヤー
+
+- CATL
+- LG Energy Solution
+- Panasonic Energy
+- パナソニック ホールディングス
+- デンソー
+- ボッシュ
+- Continental
+
+### 汎用キーワード
+
+- 自動運転
+- EV化
+- MaaS
+- Robotaxi
+- 電池技術
+- 全固体電池
+- 充電インフラ
+- ライドシェア
+- 空飛ぶクルマ
+- eVTOL
+- 自動車補助金
+- 燃費規制
+
+---
+
 ## Economy
 
 平日（月〜金）に掲載。**為替は独立カテゴリ「FX」へ移動済み**。

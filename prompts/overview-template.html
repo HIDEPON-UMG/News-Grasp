@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>{{ site_title }} — Daily Overview {{ date }}</title>
-<meta name="description" content="{{ date }} のニュース俯瞰 — 5 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta name="description" content="{{ date }} のニュース俯瞰 — 6 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
 <link rel="canonical" href="{{ canonical }}">
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ site_title }}">
 <meta property="og:title" content="{{ site_title }} — Daily Overview {{ date }}">
-<meta property="og:description" content="{{ date }} のニュース俯瞰 — 5 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta property="og:description" content="{{ date }} のニュース俯瞰 — 6 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
 <meta property="og:url" content="{{ canonical }}">
 <meta property="og:image" content="{{ base_url }}/assets/og/summary.jpg">
 <meta property="og:image:width" content="1120">
@@ -22,7 +22,7 @@
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ site_title }} — Daily Overview {{ date }}">
-<meta name="twitter:description" content="{{ date }} のニュース俯瞰 — 5 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
+<meta name="twitter:description" content="{{ date }} のニュース俯瞰 — 6 レンズ × 各 10 記事の温度感を 1 ページで掴む。">
 <meta name="twitter:image" content="{{ base_url }}/assets/og/summary.jpg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,7 +65,7 @@
     <h2 class="overview-page-header__title">
       <span class="date-mmdd">{{ date_mmdd }}</span> <span class="em">—</span> 本日のニュース俯瞰
     </h2>
-    <div class="overview-page-header__sub">5 レンズ × 各 10 記事の温度感を 1 ページで掴む</div>
+    <div class="overview-page-header__sub">6 レンズ × 各 10 記事の温度感を 1 ページで掴む</div>
   </div>
   <div class="overview-stats">
     <div class="overview-stats__cell">
@@ -104,7 +104,7 @@
   </div>
 </section>
 
-<!-- ============= Category rows × 5 ============= -->
+<!-- ============= Category rows × 6 ============= -->
 <div>
   {% for cat in cat_rows %}
   <div class="overview-row cat-{{ cat.id }}">
