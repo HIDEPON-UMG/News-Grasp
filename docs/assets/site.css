@@ -29,6 +29,7 @@
   --color-accent-fx: #B8860B;
   --color-accent-ai: #2D5BB8;
   --color-accent-it: #2E6B52;
+  --color-accent-mobility: #3A7B8C;
   --color-accent-economy: #8E2A19;
   --color-accent-game: #5E3D8C;
   --color-accent-summary: #475569;
@@ -59,12 +60,13 @@
   --accent-current: var(--color-accent-summary);
 }
 
-body[data-category="fx"]      { --accent-current: var(--color-accent-fx); }
-body[data-category="ai"]      { --accent-current: var(--color-accent-ai); }
-body[data-category="it"]      { --accent-current: var(--color-accent-it); }
-body[data-category="economy"] { --accent-current: var(--color-accent-economy); }
-body[data-category="game"]    { --accent-current: var(--color-accent-game); }
-body[data-category="summary"] { --accent-current: var(--color-accent-summary); }
+body[data-category="fx"]       { --accent-current: var(--color-accent-fx); }
+body[data-category="ai"]       { --accent-current: var(--color-accent-ai); }
+body[data-category="it"]       { --accent-current: var(--color-accent-it); }
+body[data-category="mobility"] { --accent-current: var(--color-accent-mobility); }
+body[data-category="economy"]  { --accent-current: var(--color-accent-economy); }
+body[data-category="game"]     { --accent-current: var(--color-accent-game); }
+body[data-category="summary"]  { --accent-current: var(--color-accent-summary); }
 
 /* ---------------- Reset ---------------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -955,11 +957,12 @@ strong {
   border-bottom: 2px solid var(--color-navy);
   padding-bottom: 4px;
 }
-.home-nav__lens-fx      { color: var(--color-accent-fx); }
-.home-nav__lens-ai      { color: var(--color-accent-ai); }
-.home-nav__lens-it      { color: var(--color-accent-it); }
-.home-nav__lens-economy { color: var(--color-accent-economy); }
-.home-nav__lens-game    { color: var(--color-accent-game); }
+.home-nav__lens-fx       { color: var(--color-accent-fx); }
+.home-nav__lens-ai       { color: var(--color-accent-ai); }
+.home-nav__lens-it       { color: var(--color-accent-it); }
+.home-nav__lens-mobility { color: var(--color-accent-mobility); }
+.home-nav__lens-economy  { color: var(--color-accent-economy); }
+.home-nav__lens-game     { color: var(--color-accent-game); }
 .home-nav__dim          { color: var(--color-ink-dim); }
 .home-nav__right { display: flex; align-items: center; gap: 14px; }
 .home-nav__lang {
@@ -1091,12 +1094,13 @@ strong {
   letter-spacing: 0.1em;
   padding: 1px 6px;
 }
-.home-top3__badge.cat-fx      { background: var(--color-accent-fx); }
-.home-top3__badge.cat-ai      { background: var(--color-accent-ai); }
-.home-top3__badge.cat-it      { background: var(--color-accent-it); }
-.home-top3__badge.cat-economy { background: var(--color-accent-economy); }
-.home-top3__badge.cat-game    { background: var(--color-accent-game); }
-.home-top3__badge.cat-summary { background: var(--color-accent-summary); }
+.home-top3__badge.cat-fx       { background: var(--color-accent-fx); }
+.home-top3__badge.cat-ai       { background: var(--color-accent-ai); }
+.home-top3__badge.cat-it       { background: var(--color-accent-it); }
+.home-top3__badge.cat-mobility { background: var(--color-accent-mobility); }
+.home-top3__badge.cat-economy  { background: var(--color-accent-economy); }
+.home-top3__badge.cat-game     { background: var(--color-accent-game); }
+.home-top3__badge.cat-summary  { background: var(--color-accent-summary); }
 .home-top3__time {
   font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim);
 }
@@ -1119,12 +1123,13 @@ strong {
   font-weight: 900;
   text-align: right;
 }
-.home-top3__score.cat-fx      { color: var(--color-accent-fx); }
-.home-top3__score.cat-ai      { color: var(--color-accent-ai); }
-.home-top3__score.cat-it      { color: var(--color-accent-it); }
-.home-top3__score.cat-economy { color: var(--color-accent-economy); }
-.home-top3__score.cat-game    { color: var(--color-accent-game); }
-.home-top3__score.cat-summary { color: var(--color-accent-summary); }
+.home-top3__score.cat-fx       { color: var(--color-accent-fx); }
+.home-top3__score.cat-ai       { color: var(--color-accent-ai); }
+.home-top3__score.cat-it       { color: var(--color-accent-it); }
+.home-top3__score.cat-mobility { color: var(--color-accent-mobility); }
+.home-top3__score.cat-economy  { color: var(--color-accent-economy); }
+.home-top3__score.cat-game     { color: var(--color-accent-game); }
+.home-top3__score.cat-summary  { color: var(--color-accent-summary); }
 
 .home-stats2x2 {
   display: grid;
@@ -1164,12 +1169,13 @@ strong {
   color: #fff; padding: 2px 8px;
   font-weight: 700; letter-spacing: 0.15em;
 }
-.home-featured__badge.cat-fx      { background: var(--color-accent-fx); }
-.home-featured__badge.cat-ai      { background: var(--color-accent-ai); }
-.home-featured__badge.cat-it      { background: var(--color-accent-it); }
-.home-featured__badge.cat-economy { background: var(--color-accent-economy); }
-.home-featured__badge.cat-game    { background: var(--color-accent-game); }
-.home-featured__badge.cat-summary { background: var(--color-accent-summary); }
+.home-featured__badge.cat-fx       { background: var(--color-accent-fx); }
+.home-featured__badge.cat-ai       { background: var(--color-accent-ai); }
+.home-featured__badge.cat-it       { background: var(--color-accent-it); }
+.home-featured__badge.cat-mobility { background: var(--color-accent-mobility); }
+.home-featured__badge.cat-economy  { background: var(--color-accent-economy); }
+.home-featured__badge.cat-game     { background: var(--color-accent-game); }
+.home-featured__badge.cat-summary  { background: var(--color-accent-summary); }
 .home-featured__grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -1218,12 +1224,13 @@ strong {
   position: absolute; left: 0;
   font-weight: 700; font-size: 18px;
 }
-.home-featured.cat-fx      .home-featured__bullets li::before { color: var(--color-accent-fx); }
-.home-featured.cat-ai      .home-featured__bullets li::before { color: var(--color-accent-ai); }
-.home-featured.cat-it      .home-featured__bullets li::before { color: var(--color-accent-it); }
-.home-featured.cat-economy .home-featured__bullets li::before { color: var(--color-accent-economy); }
-.home-featured.cat-game    .home-featured__bullets li::before { color: var(--color-accent-game); }
-.home-featured.cat-summary .home-featured__bullets li::before { color: var(--color-accent-summary); }
+.home-featured.cat-fx       .home-featured__bullets li::before { color: var(--color-accent-fx); }
+.home-featured.cat-ai       .home-featured__bullets li::before { color: var(--color-accent-ai); }
+.home-featured.cat-it       .home-featured__bullets li::before { color: var(--color-accent-it); }
+.home-featured.cat-mobility .home-featured__bullets li::before { color: var(--color-accent-mobility); }
+.home-featured.cat-economy  .home-featured__bullets li::before { color: var(--color-accent-economy); }
+.home-featured.cat-game     .home-featured__bullets li::before { color: var(--color-accent-game); }
+.home-featured.cat-summary  .home-featured__bullets li::before { color: var(--color-accent-summary); }
 .home-featured__meta {
   margin-top: 16px;
   font-family: var(--font-mono);
@@ -1284,12 +1291,13 @@ strong {
   position: relative;
   overflow: hidden;
 }
-.home-cat-card.cat-fx      .home-cat-card__band { background: var(--color-accent-fx); }
-.home-cat-card.cat-ai      .home-cat-card__band { background: var(--color-accent-ai); }
-.home-cat-card.cat-it      .home-cat-card__band { background: var(--color-accent-it); }
-.home-cat-card.cat-economy .home-cat-card__band { background: var(--color-accent-economy); }
-.home-cat-card.cat-game    .home-cat-card__band { background: var(--color-accent-game); }
-.home-cat-card.cat-summary .home-cat-card__band { background: var(--color-accent-summary); }
+.home-cat-card.cat-fx       .home-cat-card__band { background: var(--color-accent-fx); }
+.home-cat-card.cat-ai       .home-cat-card__band { background: var(--color-accent-ai); }
+.home-cat-card.cat-it       .home-cat-card__band { background: var(--color-accent-it); }
+.home-cat-card.cat-mobility .home-cat-card__band { background: var(--color-accent-mobility); }
+.home-cat-card.cat-economy  .home-cat-card__band { background: var(--color-accent-economy); }
+.home-cat-card.cat-game     .home-cat-card__band { background: var(--color-accent-game); }
+.home-cat-card.cat-summary  .home-cat-card__band { background: var(--color-accent-summary); }
 .home-cat-card__glyph {
   position: absolute;
   right: -10px;
@@ -1343,12 +1351,13 @@ strong {
   font-weight: 700;
   letter-spacing: 0.1em;
 }
-.home-cat-card.cat-fx      .home-cat-card__foot { color: var(--color-accent-fx); }
-.home-cat-card.cat-ai      .home-cat-card__foot { color: var(--color-accent-ai); }
-.home-cat-card.cat-it      .home-cat-card__foot { color: var(--color-accent-it); }
-.home-cat-card.cat-economy .home-cat-card__foot { color: var(--color-accent-economy); }
-.home-cat-card.cat-game    .home-cat-card__foot { color: var(--color-accent-game); }
-.home-cat-card.cat-summary .home-cat-card__foot { color: var(--color-accent-summary); }
+.home-cat-card.cat-fx       .home-cat-card__foot { color: var(--color-accent-fx); }
+.home-cat-card.cat-ai       .home-cat-card__foot { color: var(--color-accent-ai); }
+.home-cat-card.cat-it       .home-cat-card__foot { color: var(--color-accent-it); }
+.home-cat-card.cat-mobility .home-cat-card__foot { color: var(--color-accent-mobility); }
+.home-cat-card.cat-economy  .home-cat-card__foot { color: var(--color-accent-economy); }
+.home-cat-card.cat-game     .home-cat-card__foot { color: var(--color-accent-game); }
+.home-cat-card.cat-summary  .home-cat-card__foot { color: var(--color-accent-summary); }
 .home-cat-card__arrow { font-size: 12px; }
 
 /* Editorial preview (dark navy) */
@@ -1736,30 +1745,34 @@ strong {
   text-decoration: none;
 }
 
-.overview-row.cat-fx      .overview-top3__score { color: var(--color-accent-fx); }
-.overview-row.cat-ai      .overview-top3__score { color: var(--color-accent-ai); }
-.overview-row.cat-it      .overview-top3__score { color: var(--color-accent-it); }
-.overview-row.cat-economy .overview-top3__score { color: var(--color-accent-economy); }
-.overview-row.cat-game    .overview-top3__score { color: var(--color-accent-game); }
-.overview-row.cat-summary .overview-top3__score { color: var(--color-accent-summary); }
-.overview-row.cat-fx      .overview-dist__bar   { background: var(--color-accent-fx); }
-.overview-row.cat-ai      .overview-dist__bar   { background: var(--color-accent-ai); }
-.overview-row.cat-it      .overview-dist__bar   { background: var(--color-accent-it); }
-.overview-row.cat-economy .overview-dist__bar   { background: var(--color-accent-economy); }
-.overview-row.cat-game    .overview-dist__bar   { background: var(--color-accent-game); }
-.overview-row.cat-summary .overview-dist__bar   { background: var(--color-accent-summary); }
-.overview-row.cat-fx      .overview-dist__legend .num,
-.overview-row.cat-fx      .overview-dist__cta   { background: var(--color-accent-fx); color: #fff; }
-.overview-row.cat-ai      .overview-dist__legend .num,
-.overview-row.cat-ai      .overview-dist__cta   { background: var(--color-accent-ai); color: #fff; }
-.overview-row.cat-it      .overview-dist__legend .num,
-.overview-row.cat-it      .overview-dist__cta   { background: var(--color-accent-it); color: #fff; }
-.overview-row.cat-economy .overview-dist__legend .num,
-.overview-row.cat-economy .overview-dist__cta   { background: var(--color-accent-economy); color: #fff; }
-.overview-row.cat-game    .overview-dist__legend .num,
-.overview-row.cat-game    .overview-dist__cta   { background: var(--color-accent-game); color: #fff; }
-.overview-row.cat-summary .overview-dist__legend .num,
-.overview-row.cat-summary .overview-dist__cta   { background: var(--color-accent-summary); color: #fff; }
+.overview-row.cat-fx       .overview-top3__score { color: var(--color-accent-fx); }
+.overview-row.cat-ai       .overview-top3__score { color: var(--color-accent-ai); }
+.overview-row.cat-it       .overview-top3__score { color: var(--color-accent-it); }
+.overview-row.cat-mobility .overview-top3__score { color: var(--color-accent-mobility); }
+.overview-row.cat-economy  .overview-top3__score { color: var(--color-accent-economy); }
+.overview-row.cat-game     .overview-top3__score { color: var(--color-accent-game); }
+.overview-row.cat-summary  .overview-top3__score { color: var(--color-accent-summary); }
+.overview-row.cat-fx       .overview-dist__bar   { background: var(--color-accent-fx); }
+.overview-row.cat-ai       .overview-dist__bar   { background: var(--color-accent-ai); }
+.overview-row.cat-it       .overview-dist__bar   { background: var(--color-accent-it); }
+.overview-row.cat-mobility .overview-dist__bar   { background: var(--color-accent-mobility); }
+.overview-row.cat-economy  .overview-dist__bar   { background: var(--color-accent-economy); }
+.overview-row.cat-game     .overview-dist__bar   { background: var(--color-accent-game); }
+.overview-row.cat-summary  .overview-dist__bar   { background: var(--color-accent-summary); }
+.overview-row.cat-fx       .overview-dist__legend .num,
+.overview-row.cat-fx       .overview-dist__cta   { background: var(--color-accent-fx); color: #fff; }
+.overview-row.cat-ai       .overview-dist__legend .num,
+.overview-row.cat-ai       .overview-dist__cta   { background: var(--color-accent-ai); color: #fff; }
+.overview-row.cat-it       .overview-dist__legend .num,
+.overview-row.cat-it       .overview-dist__cta   { background: var(--color-accent-it); color: #fff; }
+.overview-row.cat-mobility .overview-dist__legend .num,
+.overview-row.cat-mobility .overview-dist__cta   { background: var(--color-accent-mobility); color: #fff; }
+.overview-row.cat-economy  .overview-dist__legend .num,
+.overview-row.cat-economy  .overview-dist__cta   { background: var(--color-accent-economy); color: #fff; }
+.overview-row.cat-game     .overview-dist__legend .num,
+.overview-row.cat-game     .overview-dist__cta   { background: var(--color-accent-game); color: #fff; }
+.overview-row.cat-summary  .overview-dist__legend .num,
+.overview-row.cat-summary  .overview-dist__cta   { background: var(--color-accent-summary); color: #fff; }
 .overview-dist__legend .num {
   padding: 0 4px; color: #fff; font-weight: 700;
 }
@@ -2198,12 +2211,13 @@ strong {
   color: var(--color-ink);
 }
 .index-card:hover { background: var(--color-paper-soft); }
-.index-card.cat-fx      { border-left-color: var(--color-accent-fx); }
-.index-card.cat-ai      { border-left-color: var(--color-accent-ai); }
-.index-card.cat-it      { border-left-color: var(--color-accent-it); }
-.index-card.cat-economy { border-left-color: var(--color-accent-economy); }
-.index-card.cat-game    { border-left-color: var(--color-accent-game); }
-.index-card.cat-summary { border-left-color: var(--color-accent-summary); }
+.index-card.cat-fx       { border-left-color: var(--color-accent-fx); }
+.index-card.cat-ai       { border-left-color: var(--color-accent-ai); }
+.index-card.cat-it       { border-left-color: var(--color-accent-it); }
+.index-card.cat-mobility { border-left-color: var(--color-accent-mobility); }
+.index-card.cat-economy  { border-left-color: var(--color-accent-economy); }
+.index-card.cat-game     { border-left-color: var(--color-accent-game); }
+.index-card.cat-summary  { border-left-color: var(--color-accent-summary); }
 .index-card-meta {
   display: flex;
   gap: 8px;
@@ -2237,12 +2251,13 @@ strong {
   color: var(--color-cream);
   padding: 2px 8px;
 }
-.cat-badge.cat-fx      { background: var(--color-accent-fx); }
-.cat-badge.cat-ai      { background: var(--color-accent-ai); }
-.cat-badge.cat-it      { background: var(--color-accent-it); }
-.cat-badge.cat-economy { background: var(--color-accent-economy); }
-.cat-badge.cat-game    { background: var(--color-accent-game); }
-.cat-badge.cat-summary { background: var(--color-accent-summary); }
+.cat-badge.cat-fx       { background: var(--color-accent-fx); }
+.cat-badge.cat-ai       { background: var(--color-accent-ai); }
+.cat-badge.cat-it       { background: var(--color-accent-it); }
+.cat-badge.cat-mobility { background: var(--color-accent-mobility); }
+.cat-badge.cat-economy  { background: var(--color-accent-economy); }
+.cat-badge.cat-game     { background: var(--color-accent-game); }
+.cat-badge.cat-summary  { background: var(--color-accent-summary); }
 
 /* ---------------- Mobile ---------------- */
 @media (max-width: 768px) {

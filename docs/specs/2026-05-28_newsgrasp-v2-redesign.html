@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp v2 リデザイン — 6 LENSES Magazine Spread 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン継承 (News-Grasp 本体 DESIGN.md と同期)
+       Magazine Spread: navy × gold × paper の編集者的トーン
+       ============================================================ */
+    :root {
+      --color-primary: #1A1A1A;
+      --color-secondary: #5C5A52;
+      --color-tertiary: #C9A155;
+      --color-neutral: #FAF7F0;
+      --color-surface: #FFFFFF;
+      --color-border: #E2DED4;
+      --color-paper-soft: #F2EEE3;
+      --color-on-tertiary: #181C2A;
+      --color-on-primary: #F0EBE0;
+      --color-navy: #181C2A;
+      --color-cream: #F0EBE0;
+      --color-gold: #C9A155;
+
+      --color-accent-fx: #B8860B;
+      --color-accent-ai: #2D5BB8;
+      --color-accent-it: #2E6B52;
+      --color-accent-mobility: #3A7B8C;
+      --color-accent-economy: #8E2A19;
+      --color-accent-game: #5E3D8C;
+      --color-accent-summary: #475569;
+
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+
+      --font-serif: 'Noto Serif JP', 'Yu Mincho', Georgia, serif;
+      --font-sans: 'Inter', -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+      --rounded-sm: 0px;
+      --rounded-md: 0px;
+      --rounded-lg: 0px;
+      --rounded-full: 9999px;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+
+      --shadow-sm: 0 1px 2px rgba(24, 28, 40, 0.06);
+      --shadow-md: 0 4px 12px rgba(24, 28, 40, 0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-serif);
+      font-size: 0.9375rem;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 72rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 2px solid var(--color-navy); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; font-weight: 700; text-transform: uppercase; }
+    h1 { font-family: var(--font-sans); font-size: 3rem; font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin: var(--space-md) 0 var(--space-sm); color: var(--color-navy); }
+    h2 { font-family: var(--font-sans); font-size: 2rem; font-weight: 900; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--space-md); color: var(--color-navy); }
+    h3 { font-family: var(--font-serif); font-size: 1.375rem; font-weight: 800; line-height: 1.35; letter-spacing: -0.01em; margin: var(--space-xl) 0 var(--space-sm); color: var(--color-navy); }
+    h4 { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; margin: var(--space-lg) 0 var(--space-sm); color: var(--color-primary); }
+    .lead { color: var(--color-secondary); font-size: 1.0625rem; line-height: 1.75; margin: var(--space-sm) 0 var(--space-md); font-style: italic; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: 0; padding: var(--space-md) var(--space-lg); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; text-transform: uppercase; font-weight: 700; }
+    .tab:hover { color: var(--color-navy); background: var(--color-paper-soft); }
+    .tab.active { color: var(--color-navy); border-bottom-color: var(--color-gold); background: var(--color-surface); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-muted { background: var(--color-paper-soft); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy { background: var(--color-navy); color: var(--color-cream); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy h3 { color: var(--color-gold); }
+    .card-navy a { color: var(--color-gold); }
+
+    /* Badge */
+    .badge { display: inline-block; padding: 4px 12px; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-right: var(--space-xs); }
+    .badge-draft { background: var(--color-warning); color: var(--color-cream); }
+    .badge-confirmed { background: var(--color-success); color: var(--color-cream); }
+    .badge-new { background: var(--color-accent-mobility); color: var(--color-cream); }
+    .badge-out-of-scope { background: var(--color-error); color: var(--color-cream); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.875rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 700; color: var(--color-navy); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; text-transform: uppercase; background: var(--color-paper-soft); border-bottom: 2px solid var(--color-navy); }
+    tr:hover td { background: var(--color-paper-soft); }
+    td code { font-size: 0.8125rem; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--color-paper-soft); padding: 2px 6px; border: 1px solid var(--color-border); }
+    pre { background: var(--color-navy); color: var(--color-cream); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.6; margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 12px 20px; border: 0; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 120ms; }
+    .btn-navy { background: var(--color-navy); color: var(--color-cream); }
+    .btn-navy:hover { background: #262B40; }
+    .btn-gold { background: var(--color-gold); color: var(--color-navy); }
+    .btn-gold:hover { background: #B58D45; }
+
+    /* Timeline */
+    .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin: var(--space-lg) 0; }
+    .timeline-step { background: var(--color-paper-soft); border-left: 4px solid var(--color-gold); padding: var(--space-md) var(--space-lg); }
+    .timeline-step strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: var(--color-gold); text-transform: uppercase; margin-bottom: var(--space-xs); }
+    .timeline-step span { font-family: var(--font-serif); font-size: 1rem; line-height: 1.6; color: var(--color-navy); font-weight: 600; }
+
+    /* Severity */
+    .severity-info { border-left: 4px solid var(--color-accent-ai); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-warn { border-left: 4px solid var(--color-warning); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-success { border-left: 4px solid var(--color-success); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: var(--space-xs); color: var(--color-navy); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-top: 4px solid var(--color-gold); padding: var(--space-xl); margin: var(--space-md) 0; }
+    .playground-control { display: grid; grid-template-columns: 220px 1fr 80px; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+    .playground-control input[type="range"] { width: 100%; }
+    .playground-control output { font-family: var(--font-mono); font-size: 0.875rem; color: var(--color-navy); text-align: right; }
+
+    .playground-preview { padding: var(--space-lg); background: var(--color-paper-soft); margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    .playground-preview svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
+
+    /* Palette grid */
+    .palette { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); margin: var(--space-md) 0; }
+    .palette-cell { display: flex; flex-direction: column; align-items: center; padding: var(--space-md); border: 1px solid var(--color-border); background: var(--color-surface); }
+    .palette-swatch { width: 64px; height: 64px; margin-bottom: var(--space-sm); }
+    .palette-cell strong { font-family: var(--font-sans); font-size: 0.875rem; font-weight: 700; color: var(--color-navy); }
+    .palette-cell span { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--color-secondary); letter-spacing: 0.05em; }
+    .palette-cell.new { border: 2px solid var(--color-accent-mobility); position: relative; }
+    .palette-cell.new::after { content: 'NEW'; position: absolute; top: -10px; right: -10px; background: var(--color-accent-mobility); color: var(--color-cream); font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; padding: 2px 8px; letter-spacing: 0.1em; }
+
+    /* Compare grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    .compare-grid svg { width: 100%; height: auto; max-width: 100%; display: block; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .playground-control { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+    }
+
+    /* Footer */
+    footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+      .playground { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · 2026-05-28 · NEWS-GRASP</div>
+      <h1>News-Grasp v2 リデザイン</h1>
+      <p class="lead">5 LENSES から 6 LENSES への拡張、カテゴリ詳細ページの Magazine Spread 化、Daily Overview の Pattern C/D 化、メール縦尺の圧縮を一括で実施する v2 リデザイン。本ドキュメントは実装の道標 (Phase 0 / 1.5 で生成)。</p>
+      <div style="margin-top: var(--space-md);">
+        <span class="badge badge-draft">draft</span>
+        <span class="badge badge-confirmed">plan-approved 2026-05-28</span>
+        <span class="badge badge-new">6 LENSES</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="comparison">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <!-- ============================================================
+         概要
+         ============================================================ -->
+    <section id="overview" class="tab-panel active">
+      <h2>Context</h2>
+      <p>News-Grasp は A 群 (Mobility カテゴリ追加 / 未 commit) 完了後、Claude Design 納品物 (<code>variant-b.jsx</code> / <code>category-b.jsx</code> / <code>category-mobile.jsx</code> / <code>desktop-extra.jsx</code> / <code>mobile-extra.jsx</code>) を一次ソースに <strong>v2 編集者トーン強化</strong> へ進む。<code>prompts/index-template.html</code> (Home) を 6 LENSES 化、<code>prompts/category-template.html</code> (現状 71 行のシンプルリスト型) を Magazine Spread にフル置換、Daily Overview (<code>docs/{YYYY-MM-DD}/index.html</code>) を Pattern C/D 化、メール縦尺を圧縮する。</p>
+
+      <h3>DONE 定義</h3>
+      <ol>
+        <li>Home に 6 LENSES grid が表示される (タグライン <code>SIX LENSES ON TODAY</code>)</li>
+        <li><code>/{cat}/</code> 詳細が hero + 9 grid + past 1 週間で render される (Magazine Spread)</li>
+        <li>Daily Overview が 6 カテゴリ俯瞰 (KV + TOP3 + Score histogram) で出る</li>
+        <li><code>SITE_TAGLINE_EN = "SIX LENSES ON TODAY"</code> が全箇所に反映</li>
+        <li>Past カードが <code>/News-Grasp/{cat}/{YYYY-MM-DD}/</code> リンクでラップ</li>
+        <li>メール本文の全高が現状比 <strong>10-15% 短縮</strong></li>
+        <li>本 HTML 仕様書が <code>safe-commit</code> gate 4' を pass</li>
+        <li>A 群 + v2 を一括した単一 commit が作成される</li>
+      </ol>
+
+      <h3>確定方針 (2026-05-28)</h3>
+      <table>
+        <thead><tr><th>項目</th><th>確定値</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td>Commit 戦略</td><td>A 群 + v2 を 1 commit にまとめる</td><td>Mobility 追加と v2 リデザインは「6 LENSES 化」の同一テーマ</td></tr>
+          <tr><td>Cat 詳細 desktop/mobile</td><td>1 テンプレ + media query</td><td>JSX 差分は CSS で吸収可。breakpoints は 1024 / 640 / &lt;640px</td></tr>
+          <tr><td>news-grasp-assets</td><td>新規 clone (ProjectFolders/news-grasp-assets/)</td><td>CDN URL <code>raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/</code> 経由</td></tr>
+          <tr><td>Overview ページ (Pattern C/D)</td><td>スコープ追加 (Phase 3.5)</td><td><code>desktop-extra.jsx</code> + <code>mobile-extra.jsx</code> を 1 テンプレで実装</td></tr>
+          <tr><td>仕様書 Phase 位置</td><td><strong>Phase 1.5</strong> (実装前)</td><td>仕様書は実装の道標。最終 Phase 配置は <code>enforce_html_spec_phase_order</code> hook で物理 block</td></tr>
+        </tbody>
+      </table>
+
+      <h3>本 PR のスコープ外 <span class="badge badge-out-of-scope">out</span></h3>
+      <ul>
+        <li>Summary カテゴリ (<code>summary-template.html</code>) の v2 化 (現行で十分機能している)</li>
+        <li>archive-template.html (日付横断アーカイブ) の v2 化</li>
+        <li>サムネ自動生成パイプライン (`news-grasp-assets` の手動 push を継続)</li>
+        <li>メールの送信頻度・配信先管理</li>
+      </ul>
+
+      <div class="severity-info severity">
+        <strong>前提</strong>
+        <p>リポ実体: <code>C:\Users\hidek\Obsidian\New's Grasp\News-Grasp\</code>。テンプレ engine: Jinja2 SSG via <code>tools/generate_pages.py</code>。データソース: <code>digest/{Cat}/YYYY-MM-DD-*.md</code>。GitHub Pages 公開 URL: <code>https://hidepon-umg.github.io/News-Grasp</code>。site.css は既に Magazine Spread / Daily Overview / Variant B 用のスタイル class (<code>.lens-nav</code>, <code>.cat-hero</code>, <code>.cat-container</code>, <code>.past-week</code>, <code>.home-cats__grid</code>, <code>.overview-row</code>) を 2367 行まで実装済。本 v2 はテンプレと build 関数の追従が主作業。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         比較
+         ============================================================ -->
+    <section id="comparison" class="tab-panel">
+      <h2>Before ↔ After</h2>
+
+      <h3>1. Home (Variant B): 5 LENSES → 6 LENSES grid</h3>
+      <p>Home の <code>.home-cats__grid</code> を <code>repeat(5, 1fr)</code> から <code>repeat(6, 1fr)</code> に拡張。タブレット (768-1279px) 用に <code>repeat(3, 1fr)</code> の中間ブレイク追加。タグラインも全媒体で統一。</p>
+      <div class="compare-grid">
+        <div class="card">
+          <h4>Before (v1 / 5 LENSES)</h4>
+          <svg viewBox="0 0 360 200" role="img" aria-label="5 LENSES grid before" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="360" height="200" fill="#FAF7F0"/>
+            <text x="180" y="20" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#5C5A52" letter-spacing="1.5">FIVE LENSES ON TODAY</text>
+            <g transform="translate(20, 40)">
+              <rect x="0" y="0" width="60" height="140" fill="#B8860B"/><text x="30" y="80" text-anchor="middle" font-family="Inter" font-size="11" font-weight="900" fill="#FFF">FX</text>
+              <rect x="68" y="0" width="60" height="140" fill="#2D5BB8"/><text x="98" y="80" text-anchor="middle" font-family="Inter" font-size="11" font-weight="900" fill="#FFF">AI</text>
+              <rect x="136" y="0" width="60" height="140" fill="#2E6B52"/><text x="166" y="80" text-anchor="middle" font-family="Inter" font-size="11" font-weight="900" fill="#FFF">IT</text>
+              <rect x="204" y="0" width="60" height="140" fill="#8E2A19"/><text x="234" y="80" text-anchor="middle" font-family="Inter" font-size="11" font-weight="900" fill="#FFF">ECO</text>
+              <rect x="272" y="0" width="60" height="140" fill="#5E3D8C"/><text x="302" y="80" text-anchor="middle" font-family="Inter" font-size="11" font-weight="900" fill="#FFF">GAME</text>
+            </g>
+          </svg>
+        </div>
+        <div class="card">
+          <h4>After (v2 / 6 LENSES)</h4>
+          <svg viewBox="0 0 360 200" role="img" aria-label="6 LENSES grid after" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="360" height="200" fill="#FAF7F0"/>
+            <text x="180" y="20" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#181C2A" letter-spacing="1.5" font-weight="700">SIX LENSES ON TODAY</text>
+            <g transform="translate(15, 40)">
+              <rect x="0" y="0" width="50" height="140" fill="#B8860B"/><text x="25" y="80" text-anchor="middle" font-family="Inter" font-size="10" font-weight="900" fill="#FFF">FX</text>
+              <rect x="55" y="0" width="50" height="140" fill="#2D5BB8"/><text x="80" y="80" text-anchor="middle" font-family="Inter" font-size="10" font-weight="900" fill="#FFF">AI</text>
+              <rect x="110" y="0" width="50" height="140" fill="#2E6B52"/><text x="135" y="80" text-anchor="middle" font-family="Inter" font-size="10" font-weight="900" fill="#FFF">IT</text>
+              <rect x="165" y="0" width="50" height="140" fill="#3A7B8C" stroke="#C9A155" stroke-width="2"/><text x="190" y="76" text-anchor="middle" font-family="Inter" font-size="9" font-weight="900" fill="#FFF">MOBI</text><text x="190" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#FFF">◎</text>
+              <rect x="220" y="0" width="50" height="140" fill="#8E2A19"/><text x="245" y="80" text-anchor="middle" font-family="Inter" font-size="10" font-weight="900" fill="#FFF">ECO</text>
+              <rect x="275" y="0" width="50" height="140" fill="#5E3D8C"/><text x="300" y="80" text-anchor="middle" font-family="Inter" font-size="10" font-weight="900" fill="#FFF">GAME</text>
+            </g>
+            <text x="180" y="195" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#C9A155">NEW: Mobility (#3A7B8C ◎)</text>
+          </svg>
+        </div>
+      </div>
+
+      <h3>2. カテゴリ詳細: シンプルリスト型 → B Magazine Spread</h3>
+      <p>現状の <code>category-template.html</code> (71 行) は <code>&lt;ul&gt;</code> 列挙のみ。これを納品 JSX <code>category-b.jsx</code> の B Magazine Spread (Hero KV / Lens pill nav / TOP feature / 2 列 9 grid + Past 1 週間アーカイブ) に置換する。</p>
+      <div class="compare-grid">
+        <div class="card">
+          <h4>Before (リスト型 / 71 行)</h4>
+          <svg viewBox="0 0 360 280" role="img" aria-label="category list type before" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="360" height="280" fill="#FAF7F0"/>
+            <rect x="0" y="0" width="360" height="40" fill="#181C2A"/>
+            <text x="20" y="25" font-family="Inter" font-size="14" font-weight="900" fill="#F0EBE0">News Grasp</text>
+            <text x="20" y="65" font-family="JetBrains Mono" font-size="9" fill="#5C5A52">AI / Artificial Intelligence · 21 entries</text>
+            <text x="20" y="85" font-family="Noto Serif JP" font-size="14" font-weight="800" fill="#181C2A">AI アーカイブ</text>
+            <line x1="20" y1="110" x2="340" y2="110" stroke="#E2DED4"/>
+            <text x="20" y="125" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">2026-05-28</text>
+            <text x="20" y="140" font-family="Noto Serif JP" font-size="11" font-weight="700" fill="#181C2A">Claude Opus 4.7 release notes ...</text>
+            <line x1="20" y1="160" x2="340" y2="160" stroke="#E2DED4"/>
+            <text x="20" y="175" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">2026-05-27</text>
+            <text x="20" y="190" font-family="Noto Serif JP" font-size="11" font-weight="700" fill="#181C2A">Anthropic Routine announce ...</text>
+            <line x1="20" y1="210" x2="340" y2="210" stroke="#E2DED4"/>
+            <text x="20" y="225" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">2026-05-26</text>
+            <text x="20" y="240" font-family="Noto Serif JP" font-size="11" font-weight="700" fill="#181C2A">OpenAI GPT-5 ...</text>
+            <text x="180" y="270" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#B83A2D">編集者トーン無し</text>
+          </svg>
+        </div>
+        <div class="card">
+          <h4>After (B Magazine Spread)</h4>
+          <svg viewBox="0 0 360 280" role="img" aria-label="B Magazine Spread after" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="360" height="280" fill="#FAF7F0"/>
+            <rect x="0" y="0" width="360" height="20" fill="#181C2A"/>
+            <text x="10" y="14" font-family="Inter" font-size="9" font-weight="900" fill="#F0EBE0">News Grasp</text>
+            <text x="350" y="14" text-anchor="end" font-family="JetBrains Mono" font-size="7" fill="#C9A155">◎ MOBILITY</text>
+            <rect x="0" y="20" width="360" height="80" fill="#3A7B8C"/>
+            <rect x="0" y="20" width="360" height="80" fill="url(#g1)"/>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.5"/></linearGradient></defs>
+            <text x="20" y="50" font-family="JetBrains Mono" font-size="7" fill="#C9A155" letter-spacing="1.5">━━ LENS / MOBILITY</text>
+            <text x="20" y="80" font-family="Inter" font-size="20" font-weight="900" fill="#FFF">モビリティ</text>
+            <text x="20" y="92" font-family="JetBrains Mono" font-size="7" fill="#FFF" opacity="0.8">EV · 自動運転 · MaaS · 完成車</text>
+            <rect x="10" y="110" width="170" height="50" fill="#FFF" stroke="#E2DED4"/>
+            <rect x="10" y="110" width="3" height="50" fill="#3A7B8C"/>
+            <text x="20" y="125" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">TOP FEATURE</text>
+            <text x="20" y="140" font-family="Noto Serif JP" font-size="9" font-weight="700" fill="#181C2A">Toyota EV 戦略...</text>
+            <rect x="185" y="110" width="78" height="22" fill="#FFF" stroke="#E2DED4"/>
+            <text x="190" y="125" font-family="Noto Serif JP" font-size="7" font-weight="700" fill="#181C2A">記事 #2</text>
+            <rect x="267" y="110" width="78" height="22" fill="#FFF" stroke="#E2DED4"/>
+            <text x="272" y="125" font-family="Noto Serif JP" font-size="7" font-weight="700" fill="#181C2A">記事 #3</text>
+            <rect x="185" y="138" width="78" height="22" fill="#FFF" stroke="#E2DED4"/>
+            <rect x="267" y="138" width="78" height="22" fill="#FFF" stroke="#E2DED4"/>
+            <text x="20" y="180" font-family="JetBrains Mono" font-size="7" fill="#181C2A" letter-spacing="1.5">━━ PAST 1 WEEK</text>
+            <g>
+              <rect x="10" y="190" width="48" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="34" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/27</text>
+              <rect x="60" y="190" width="48" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="84" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/26</text>
+              <rect x="110" y="190" width="48" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="134" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/25</text>
+              <rect x="160" y="190" width="48" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="184" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/24</text>
+              <rect x="210" y="190" width="48" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="234" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/23</text>
+              <rect x="260" y="190" width="48" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="284" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/22</text>
+              <rect x="310" y="190" width="40" height="60" fill="#FFF" stroke="#3A7B8C"/><text x="330" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#3A7B8C">05/21</text>
+            </g>
+            <text x="180" y="270" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#3D7E60">編集者トーン完備</text>
+          </svg>
+        </div>
+      </div>
+
+      <h3>3. メール縦尺: 圧縮 (balance-review 確定値)</h3>
+      <p>メール本文の縦尺を <strong>10-15% 短縮</strong>。Masthead 帯の高さ・カード margin・カテゴリ間 spacing を <code>52 / 8 / 20px</code> に再計算。</p>
+      <table>
+        <thead><tr><th>部位</th><th>Before</th><th>After</th><th>差</th></tr></thead>
+        <tbody>
+          <tr><td>Masthead 帯 (実視覚高)</td><td>≈ 68px (padding+h1 margin の合算)</td><td><strong>52px</strong></td><td>-24%</td></tr>
+          <tr><td>カード margin-bottom</td><td>12-14px</td><td><strong>8px</strong></td><td>-40%</td></tr>
+          <tr><td>カテゴリ間 spacing (cat_header top padding)</td><td>32px</td><td><strong>20px</strong></td><td>-38%</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4. カラーパレット俯瞰 (6 LENSES)</h3>
+      <p>6 カテゴリ + Summary + Gold を一枚で確認。Mobility ティール <code>#3A7B8C</code> は AI 電子青 <code>#2D5BB8</code> と色相が近いが彩度・明度が低く識別可能。</p>
+      <div class="palette">
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-fx);"></div><strong>FX</strong><span>#B8860B</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-ai);"></div><strong>AI</strong><span>#2D5BB8</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-it);"></div><strong>IT</strong><span>#2E6B52</span></div>
+        <div class="palette-cell new"><div class="palette-swatch" style="background: var(--color-accent-mobility);"></div><strong>Mobility</strong><span>#3A7B8C</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-economy);"></div><strong>Economy</strong><span>#8E2A19</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-game);"></div><strong>Game</strong><span>#5E3D8C</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-summary);"></div><strong>Summary</strong><span>#475569</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-gold);"></div><strong>Gold</strong><span>#C9A155</span></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         データフロー
+         ============================================================ -->
+    <section id="dataflow" class="tab-panel">
+      <h2>Data Flow — digest から render まで</h2>
+      <p><code>digest/{Cat}/YYYY-MM-DD-*.md</code> から SSG (<code>tools/generate_pages.py</code>) を経由して、Home / Category / Detail / Overview / Email の 5 出力に分岐する。Past 1 週間セクションは <code>build_category</code> 内で同カテゴリの直近 7 日分を抽出。</p>
+
+      <svg viewBox="0 0 1000 480" role="img" aria-label="News-Grasp v2 SSG data flow" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="1000" height="480" fill="#FAF7F0"/>
+
+        <!-- input -->
+        <g>
+          <rect x="20" y="40" width="180" height="80" fill="#181C2A"/>
+          <text x="110" y="65" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#C9A155" letter-spacing="1.5">INPUT</text>
+          <text x="110" y="85" text-anchor="middle" font-family="Inter" font-size="13" font-weight="800" fill="#F0EBE0">digest/</text>
+          <text x="110" y="105" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#F0EBE0">{Cat}/YYYY-MM-DD-*.md</text>
+        </g>
+
+        <!-- scan -->
+        <g>
+          <rect x="240" y="40" width="170" height="80" fill="#FFF" stroke="#181C2A" stroke-width="2"/>
+          <text x="325" y="65" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C9A155" letter-spacing="1.5">SCAN</text>
+          <text x="325" y="85" text-anchor="middle" font-family="Inter" font-size="12" font-weight="800" fill="#181C2A">scan_digests()</text>
+          <text x="325" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">frontmatter parse</text>
+          <text x="325" y="113" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">→ entries[]</text>
+        </g>
+
+        <!-- collect -->
+        <g>
+          <rect x="450" y="40" width="170" height="80" fill="#F2EEE3" stroke="#181C2A"/>
+          <text x="535" y="65" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C9A155" letter-spacing="1.5">COLLECT</text>
+          <text x="535" y="85" text-anchor="middle" font-family="Inter" font-size="12" font-weight="800" fill="#181C2A">_collect_entries()</text>
+          <text x="535" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">enrich (canonical,</text>
+          <text x="535" y="113" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">thumb, accent)</text>
+        </g>
+
+        <!-- arrows input -->
+        <path d="M 200 80 L 240 80" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 410 80 L 450 80" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M 0 0 L 8 3 L 0 6 z" fill="#181C2A"/>
+          </marker>
+        </defs>
+
+        <!-- branching -->
+        <path d="M 535 120 L 535 160" stroke="#181C2A" stroke-width="2"/>
+        <path d="M 535 160 L 130 160 L 130 200" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 535 160 L 350 160 L 350 200" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 535 160 L 535 200" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 535 160 L 720 160 L 720 200" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 535 160 L 900 160 L 900 200" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- 5 builders -->
+        <g>
+          <rect x="55" y="200" width="150" height="70" fill="#FFF" stroke="#2D5BB8" stroke-width="2"/>
+          <text x="130" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#2D5BB8" letter-spacing="1.5">BUILD_INDEX</text>
+          <text x="130" y="240" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">Home</text>
+          <text x="130" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">lens_cards × 6</text>
+        </g>
+        <g>
+          <rect x="275" y="200" width="150" height="70" fill="#FFF" stroke="#3A7B8C" stroke-width="2"/>
+          <text x="350" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3A7B8C" letter-spacing="1.5">BUILD_CATEGORY</text>
+          <text x="350" y="240" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">/{cat}/</text>
+          <text x="350" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">hero + 9 grid + past 7</text>
+        </g>
+        <g>
+          <rect x="460" y="200" width="150" height="70" fill="#FFF" stroke="#2E6B52" stroke-width="2"/>
+          <text x="535" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#2E6B52" letter-spacing="1.5">BUILD_PAGE</text>
+          <text x="535" y="240" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">/{cat}/{date}/</text>
+          <text x="535" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">Magazine detail</text>
+        </g>
+        <g>
+          <rect x="645" y="200" width="150" height="70" fill="#FFF" stroke="#8E2A19" stroke-width="2"/>
+          <text x="720" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8E2A19" letter-spacing="1.5">BUILD_OVERVIEW</text>
+          <text x="720" y="240" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">/{date}/</text>
+          <text x="720" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">Pattern C/D × 6 cat</text>
+        </g>
+        <g>
+          <rect x="825" y="200" width="150" height="70" fill="#FFF" stroke="#5E3D8C" stroke-width="2"/>
+          <text x="900" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5E3D8C" letter-spacing="1.5">GENERATE_EMAIL</text>
+          <text x="900" y="240" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">build/email.html</text>
+          <text x="900" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5C5A52">52/8/20 縦尺</text>
+        </g>
+
+        <!-- templates row -->
+        <path d="M 130 270 L 130 305" stroke="#5C5A52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+        <path d="M 350 270 L 350 305" stroke="#5C5A52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+        <path d="M 535 270 L 535 305" stroke="#5C5A52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+        <path d="M 720 270 L 720 305" stroke="#5C5A52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+        <path d="M 900 270 L 900 305" stroke="#5C5A52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+
+        <text x="500" y="293" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5C5A52" letter-spacing="1.5">━━ Jinja2 templates ━━</text>
+
+        <g>
+          <rect x="55" y="305" width="150" height="40" fill="#F0EBE0" stroke="#181C2A"/>
+          <text x="130" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#181C2A">index-template.html</text>
+          <text x="130" y="334" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#5C5A52">既存 / 268 行</text>
+        </g>
+        <g>
+          <rect x="275" y="305" width="150" height="40" fill="#3A7B8C" stroke="#C9A155" stroke-width="2"/>
+          <text x="350" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#FFF">category-template.html</text>
+          <text x="350" y="334" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#FFF">★ 71 行 → 全置換</text>
+        </g>
+        <g>
+          <rect x="460" y="305" width="150" height="40" fill="#F0EBE0" stroke="#181C2A"/>
+          <text x="535" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#181C2A">page-template.html</text>
+          <text x="535" y="334" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#5C5A52">既存 / 236 行</text>
+        </g>
+        <g>
+          <rect x="645" y="305" width="150" height="40" fill="#F0EBE0" stroke="#181C2A"/>
+          <text x="720" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#181C2A">overview-template.html</text>
+          <text x="720" y="334" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#5C5A52">既存 / 190 行 + mobility row</text>
+        </g>
+        <g>
+          <rect x="825" y="305" width="150" height="40" fill="#F0EBE0" stroke="#181C2A"/>
+          <text x="900" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#181C2A">email-template.html</text>
+          <text x="900" y="334" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#5C5A52">A 群更新済 / 403 行</text>
+        </g>
+
+        <!-- output row -->
+        <path d="M 130 345 L 130 380" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 350 345 L 350 380" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 535 345 L 535 380" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 720 345 L 720 380" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 900 345 L 900 380" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <g>
+          <rect x="55" y="380" width="150" height="60" fill="#C9A155"/>
+          <text x="130" y="400" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#181C2A" letter-spacing="1.5">OUTPUT</text>
+          <text x="130" y="418" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">docs/index.html</text>
+          <text x="130" y="432" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#181C2A">6 lens grid</text>
+        </g>
+        <g>
+          <rect x="275" y="380" width="150" height="60" fill="#C9A155"/>
+          <text x="350" y="418" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">docs/{cat}/index.html</text>
+          <text x="350" y="432" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#181C2A">Magazine + Past 7</text>
+        </g>
+        <g>
+          <rect x="460" y="380" width="150" height="60" fill="#C9A155"/>
+          <text x="535" y="418" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">docs/{cat}/{date}/</text>
+          <text x="535" y="432" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#181C2A">記事詳細</text>
+        </g>
+        <g>
+          <rect x="645" y="380" width="150" height="60" fill="#C9A155"/>
+          <text x="720" y="418" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">docs/{date}/index.html</text>
+          <text x="720" y="432" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#181C2A">Daily Overview</text>
+        </g>
+        <g>
+          <rect x="825" y="380" width="150" height="60" fill="#C9A155"/>
+          <text x="900" y="418" text-anchor="middle" font-family="Inter" font-size="11" font-weight="800" fill="#181C2A">build/email.html</text>
+          <text x="900" y="432" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#181C2A">52/8/20 縦尺</text>
+        </g>
+      </svg>
+
+      <h3>Past 1 週間セクションの抽出ロジック</h3>
+      <p><code>build_category</code> 関数で同カテゴリの過去 7 日分を <code>entries[:7]</code> で抽出。テンプレ側で <code>&lt;a href="{{ base_url }}/{{ category_id }}/{{ p.date }}/" class="cat-past__card"&gt;...&lt;/a&gt;</code> でラップ。既存生成済の <code>docs/{cat}/{YYYY-MM-DD}/index.html</code> と URL 整合する (= リンク先 200 OK 前提)。</p>
+
+      <pre><code>def build_category_pages(entries, docs_root):
+    for cat_id, cat in CATEGORIES.items():
+        if cat_id == "summary": continue
+        cat_entries = [e for e in entries if e["category_id"] == cat_id]
+        if not cat_entries: continue
+
+        # v2 追加 ↓ Magazine Spread 用 context
+        cat_entries.sort(key=lambda e: e["date"], reverse=True)
+        hero_entry = cat_entries[0]                  # 最新 1 件 = Hero KV
+        featured   = cat_entries[0]                  # TOP feature (同じか別判定可)
+        grid_9     = cat_entries[:9]                 # 2 列 9 grid
+        past_7     = cat_entries[1:8]                # Past 1 週間 (Hero を除く)
+
+        ctx = {
+            "site_title": SITE_TITLE, "base_url": BASE_URL,
+            "category_id": cat_id, "category_label": cat["label"],
+            "category_jp": cat["jp"], "accent": cat["accent"],
+            "glyph": cat["glyph"], "canonical": f"{BASE_URL}/{cat_id}/",
+            "entries": cat_entries,
+            "hero_entry": hero_entry, "featured": featured,
+            "grid_9": grid_9, "past_7": past_7,
+        }
+        out = Path(docs_root) / cat_id / "index.html"
+        render_page(ctx, out, template_name="category-template.html")</code></pre>
+    </section>
+
+    <!-- ============================================================
+         実装ステップ
+         ============================================================ -->
+    <section id="impl" class="tab-panel">
+      <h2>Phase 別 実装ステップ</h2>
+      <p>本セクションが <strong>実装の道標</strong>。各 Phase の変更ファイル / 方針 / 検証コマンドを順に並べる。Phase 0 / 1 / 1.5 (= 本 spec) は完了済の前提で記載。</p>
+
+      <div class="timeline">
+        <div class="timeline-step"><strong>Phase 0</strong><span>アセット配備 (Mobility jpg × 4 箇所)</span></div>
+        <div class="timeline-step"><strong>Phase 1</strong><span>DESIGN.md + site.css に Mobility トークン追記</span></div>
+        <div class="timeline-step"><strong>Phase 1.5</strong><span>本 HTML 仕様書を生成 (実装の道標)</span></div>
+        <div class="timeline-step"><strong>Phase 2</strong><span>Home (Variant B) は Jinja for で自動展開 → スキップ</span></div>
+        <div class="timeline-step"><strong>Phase 3</strong><span>category-template を B Magazine に置換</span></div>
+        <div class="timeline-step"><strong>Phase 3.5</strong><span>Daily Overview Pattern C/D 化</span></div>
+        <div class="timeline-step"><strong>Phase 4</strong><span>メール縦尺 52/8/20 圧縮</span></div>
+        <div class="timeline-step"><strong>Phase 5</strong><span>FIVE → SIX LENSES + grid (5→6) + tests</span></div>
+        <div class="timeline-step"><strong>Phase 7</strong><span>E2E 検証 (lint / SSG / DevTools / pytest)</span></div>
+      </div>
+
+      <h3>Phase 0: アセット配備 <span class="badge badge-confirmed">DONE</span></h3>
+      <ul>
+        <li>ソース: <code>C:\Users\hidek\AppData\Local\Temp\news-grasp-design-v2\untitled\project\mobility\</code> 12 ファイル</li>
+        <li>配備先: <code>News-Grasp/assets/</code> + <code>news-grasp-assets/</code> repo (新規 clone) + <code>News-Grasp/docs/assets/{cards,heroes,og}/</code></li>
+        <li>OGP fallback はリネーム: <code>ng-fallback-mobility.jpg</code> → <code>docs/assets/og/mobility.jpg</code></li>
+        <li>news-grasp-assets はローカル commit 済、push はユーザー明示指示時に実行</li>
+      </ul>
+
+      <h3>Phase 1: CSS 変数追記 <span class="badge badge-confirmed">DONE</span></h3>
+      <ul>
+        <li>DESIGN.md L23 の後ろに <code>accent-mobility: "#3A7B8C"</code> 追加</li>
+        <li>site.css に <code>--color-accent-mobility: #3A7B8C;</code> + <code>body[data-category="mobility"]</code> + <code>.home-nav__lens-mobility</code> + <code>.home-top3__badge.cat-mobility</code> + <code>.home-top3__score.cat-mobility</code> + <code>.home-featured__badge.cat-mobility</code> + <code>.home-featured.cat-mobility .home-featured__bullets li::before</code> + <code>.home-cat-card.cat-mobility .home-cat-card__band</code> + <code>.home-cat-card.cat-mobility .home-cat-card__foot</code> + <code>.overview-row.cat-mobility</code> 群 + <code>.index-card.cat-mobility</code> + <code>.cat-badge.cat-mobility</code> を追加 (計 12 箇所)</li>
+        <li>並び順は <code>fx → ai → it → mobility → economy → game → summary</code></li>
+      </ul>
+
+      <h3>Phase 3: カテゴリ詳細 B Magazine 化 <span class="badge badge-draft">TODO</span></h3>
+      <h4>変更ファイル</h4>
+      <ul>
+        <li><code>News-Grasp/prompts/category-template.html</code> — 現状 71 行 (リスト型) を Magazine Spread にフル置換</li>
+        <li><code>News-Grasp/tools/generate_pages.py</code> の <code>build_category_pages</code> — context に <code>hero_entry / featured / grid_9 / past_7 / accent / glyph</code> を追加 (上記データフロー node の Python コード参照)</li>
+        <li><code>News-Grasp/docs/assets/site.css</code> — 既存 <code>.cat-hero / .cat-container / .lens-nav / .past-week</code> 群を Mobility (data-category) に拡張 (Phase 1 で完了済)</li>
+      </ul>
+      <h4>テンプレ構造 (1 テンプレ + media query)</h4>
+      <ul>
+        <li><strong>≥1024px</strong>: hero 480px / lens pill 横並び / 9 grid 2 列 / past 7 横並び</li>
+        <li><strong>640-1023px</strong>: hero 320px / lens pill 横スクロール / 9 grid 2 列 / past 7 横スクロール</li>
+        <li><strong>&lt;640px</strong>: hero 220px / lens pill 横スクロール / 9 grid 1 列縦並び / past 7 横スクロール</li>
+      </ul>
+      <h4>Past 1 週間カードのラップ (新要件)</h4>
+      <pre><code>&lt;div class="past-week"&gt;
+  &lt;div class="past-week__head"&gt;
+    &lt;h2&gt;━━ PAST 1 WEEK&lt;/h2&gt;
+    &lt;div class="past-week__head-meta"&gt;&lt;a href="{{ base_url }}/archive/"&gt;ALL ARCHIVE →&lt;/a&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="past-week__grid"&gt;
+    {% for p in past_7 %}
+    &lt;a href="{{ base_url }}/{{ category_id }}/{{ p.date }}/" class="cat-past__card cat-{{ category_id }}"&gt;
+      &lt;div class="cat-past__date"&gt;{{ p.date|replace('-', '·') }}&lt;/div&gt;
+      &lt;h3 class="cat-past__title"&gt;{{ p.top_title|truncate(50, true, '…') }}&lt;/h3&gt;
+      {% if p.top_score %}&lt;span class="cat-past__score"&gt;{{ p.top_score }}&lt;/span&gt;{% endif %}
+    &lt;/a&gt;
+    {% endfor %}
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+      <h4>検証</h4>
+      <ul>
+        <li><code>python -m tools.generate_pages</code> で 6 カテゴリ詳細を再生成 (<code>docs/fx/index.html</code> 〜 <code>docs/mobility/index.html</code>)</li>
+        <li>Chrome DevTools MCP で <code>docs/mobility/index.html</code> を開き hero / 9 grid / past 7 cards が DOM に存在することを <code>evaluate_script</code> で確認</li>
+        <li>Past リンクの href が <code>200 OK</code> を返すことを <code>mcp__chrome-devtools__list_network_requests</code> で確認</li>
+      </ul>
+
+      <h3>Phase 3.5: Daily Overview Pattern C/D <span class="badge badge-draft">TODO</span></h3>
+      <h4>変更ファイル</h4>
+      <ul>
+        <li><code>News-Grasp/prompts/overview-template.html</code> — 既存 190 行に Mobility row を追加 (現在は 5 カテゴリ × Pattern C/D)</li>
+        <li><code>News-Grasp/tools/generate_pages.py</code> の <code>build_overview</code> — Mobility カテゴリの hero theme banner / TOP3 / Score histogram の context を追加 (CATEGORIES dict から自動展開可能か確認)</li>
+        <li><code>News-Grasp/docs/assets/site.css</code> — <code>.overview-row.cat-mobility</code> 系は Phase 1 で追加済</li>
+      </ul>
+      <h4>方針</h4>
+      <ul>
+        <li><code>desktop-extra.jsx</code> (3col Pattern C) と <code>mobile-extra.jsx</code> (1col Pattern D) を 1 テンプレ + media query で実装 (<code>≥1024px → 3col, &lt;1024px → スタック</code>)</li>
+        <li>Score histogram はインライン SVG で描画 (3 ブロック: high/mid/low の counts を bar で表示)</li>
+      </ul>
+
+      <h3>Phase 4: メール縦尺調整 <span class="badge badge-draft">TODO</span></h3>
+      <h4>変更ファイル</h4>
+      <ul>
+        <li><code>News-Grasp/prompts/email-template.html</code> — Masthead <code>&lt;h1&gt;</code> の <code>margin:18px 0 8px</code> → <code>margin:10px 0 6px</code></li>
+        <li><code>News-Grasp/tools/generate_email.py</code> — <code>top_card()</code> / <code>side_card()</code> 関数内の <code>padding:24px 36px</code> → <code>padding:20px 36px 8px</code></li>
+      </ul>
+      <h4>確定値 (balance-review)</h4>
+      <ul>
+        <li>Masthead 実視覚高 = <strong>52px</strong> (Before ≈68px)</li>
+        <li>カード margin-bottom = <strong>8px</strong> (Before 12-14px)</li>
+        <li>カテゴリ間 spacing (cat_header top padding) = <strong>20px</strong> (Before 32px)</li>
+      </ul>
+      <h4>検証</h4>
+      <ul>
+        <li><code>python -m tools.generate_email</code> で <code>build/email.html</code> 再生成</li>
+        <li><code>start "" "build\email.html"</code> で目視 (Chrome / Outlook desktop preview)</li>
+        <li>メール全高 (<code>document.body.scrollHeight</code>) が現状比 <strong>10-15% 短縮</strong>を Chrome DevTools MCP で実測</li>
+      </ul>
+
+      <h3>Phase 5: FIVE → SIX LENSES 全置換 <span class="badge badge-draft">TODO</span></h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>置換内容</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>tools/config.py</code></td><td><code>SITE_TAGLINE_EN = "FIVE LENSES ON TODAY"</code> → <code>"SIX LENSES ON TODAY"</code></td></tr>
+          <tr><td>2</td><td><code>prompts/index-template.html</code></td><td>L51 <code>FIVE LENSES ON TODAY</code> / L68 コメント <code>5 lenses</code> / L201 <code>5 lenses, ... stories</code> / L8 + L15 OGP description <code>5 カテゴリ</code> → <code>6 カテゴリ</code> + カテゴリ列挙にモビリティ追加</td></tr>
+          <tr><td>3</td><td><code>tools/generate_pages.py</code></td><td>stats <code>"categories": 5</code> → <code>6</code> (L608, L700, L784 等)、コメント <code># 5 lenses 想定</code> → <code>6 lenses 想定</code></td></tr>
+          <tr><td>4</td><td><code>tests/test_home_variant_b.py</code></td><td><code>FIVE LENSES</code> → <code>SIX LENSES</code> / lens list に <code>mobility</code> 追加</td></tr>
+          <tr><td>5</td><td><code>tests/mock_data.py</code></td><td><code>"5 lenses converge"</code> → <code>"6 lenses converge"</code></td></tr>
+          <tr><td>6</td><td><code>docs/offline.html</code></td><td>L83 <code>FIVE LENSES ON TODAY</code> → <code>SIX LENSES ON TODAY</code></td></tr>
+          <tr><td>7</td><td><code>docs/assets/site.css</code></td><td><code>.home-cats__grid</code> L1276 <code>repeat(5, 1fr)</code> → <code>repeat(6, 1fr)</code> + 中間ブレイク <code>768-1279px → repeat(3, 1fr)</code> を追加</td></tr>
+          <tr><td>8</td><td><code>prompts/email-template.html</code></td><td>"5 categories" 系の表記 → "6 categories"</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 7: E2E 検証 <span class="badge badge-draft">TODO</span></h3>
+      <pre><code>cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
+python -m tools.generate_pages          # docs/ 全件再生成
+python -m tools.generate_email          # build/email.html 再生成
+npx "@google/design.md" lint            # DESIGN.md gate
+pytest tests/ -v                        # 全テスト</code></pre>
+      <p>検証チェックリストはチャットで管理。HTML 仕様書には含めない (<code>feedback_html_spec_no_ui_verify.md</code>)。</p>
+
+      <div class="severity-success severity">
+        <strong>commit ルール</strong>
+        <p>A 群 (Mobility 追加 / 未 commit) + v2 リデザインを <strong>1 つの commit</strong> にまとめる。<code>safe-commit</code> skill の gate 4 (DESIGN.md lint) / gate 4' (HTML 仕様書 lint) / gate 5 (個人情報・脆弱性・機密) を通過してから commit。<strong>push はユーザー明示指示時のみ</strong> (block_remote_git hook で物理的に守られる)。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         パラメータ + playground
+         ============================================================ -->
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ + Playground</h2>
+
+      <h3>DESIGN.md トークン (Magazine palette)</h3>
+      <table>
+        <thead><tr><th>トークン</th><th>値</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>--color-navy</code></td><td><code>#181C2A</code></td><td>Brand zone 背景、Editorial dark, タイトル文字</td></tr>
+          <tr><td><code>--color-cream</code></td><td><code>#F0EBE0</code></td><td>Navy 上のテキスト</td></tr>
+          <tr><td><code>--color-gold</code></td><td><code>#C9A155</code></td><td>アクセント (ruler / hover / playground border-top)</td></tr>
+          <tr><td><code>--color-paper</code></td><td><code>#FAF7F0</code></td><td>本文背景</td></tr>
+          <tr><td><code>--color-paper-soft</code></td><td><code>#F2EEE3</code></td><td>card-muted 背景, table th 背景</td></tr>
+          <tr><td><code>--color-ink</code></td><td><code>#1A1A1A</code></td><td>本文テキスト</td></tr>
+          <tr><td><code>--color-ink-dim</code></td><td><code>#5C5A52</code></td><td>副テキスト</td></tr>
+          <tr><td><code>--color-border</code></td><td><code>#E2DED4</code></td><td>仕切り線 / card border</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6 カテゴリ accent (並び順厳守)</h3>
+      <table>
+        <thead><tr><th>id</th><th>和名</th><th>英名</th><th>accent</th><th>glyph</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td><code>fx</code></td><td>為替</td><td>Foreign Exchange</td><td><code>#B8860B</code></td><td>¥</td><td>既存</td></tr>
+          <tr><td><code>ai</code></td><td>AI</td><td>Artificial Intelligence</td><td><code>#2D5BB8</code></td><td>◆</td><td>既存</td></tr>
+          <tr><td><code>it</code></td><td>IT-Consulting</td><td>IT &amp; Consulting</td><td><code>#2E6B52</code></td><td>⌗</td><td>既存</td></tr>
+          <tr><td><code>mobility</code></td><td>モビリティ</td><td>Mobility</td><td><code>#3A7B8C</code></td><td>◎</td><td><span class="badge badge-new">NEW</span></td></tr>
+          <tr><td><code>economy</code></td><td>経済</td><td>Economy</td><td><code>#8E2A19</code></td><td>§</td><td>既存</td></tr>
+          <tr><td><code>game</code></td><td>ゲーム</td><td>Gaming</td><td><code>#5E3D8C</code></td><td>▶</td><td>既存</td></tr>
+          <tr><td><code>summary</code></td><td>総括</td><td>Summary</td><td><code>#475569</code></td><td>★</td><td>既存</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Breakpoints</h3>
+      <table>
+        <thead><tr><th>用途</th><th>≥1280px</th><th>768-1279px</th><th>&lt;768px</th></tr></thead>
+        <tbody>
+          <tr><td>Home <code>.home-cats__grid</code></td><td><code>repeat(6, 1fr)</code></td><td><code>repeat(3, 1fr)</code> ← 新規追加</td><td><code>repeat(2, 1fr)</code> = <code>1fr 1fr</code></td></tr>
+          <tr><td>Cat <code>.cat-hero</code> 高</td><td>480px</td><td>320px</td><td>220px</td></tr>
+          <tr><td>Cat 9 grid 列数</td><td>2</td><td>2</td><td>1</td></tr>
+          <tr><td>Past archive</td><td>横並び 7 件</td><td>横スクロール</td><td>横スクロール</td></tr>
+          <tr><td>Overview row</td><td>3col (Pattern C)</td><td>3col</td><td>1col スタック (Pattern D)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>その他確定値</h3>
+      <table>
+        <tbody>
+          <tr><td>Past archive 件数</td><td><code>past_7 = cat_entries[1:8]</code> (Hero を除く直近 7 日)</td></tr>
+          <tr><td>Home <code>lens_cards</code> 件数</td><td>6 (mobility 含む、summary 除外)</td></tr>
+          <tr><td>Overview カテゴリ表示数</td><td>6 (mobility 含む、summary 除外)</td></tr>
+          <tr><td>メール CDN</td><td><code>https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/</code></td></tr>
+          <tr><td>本番 BASE_URL</td><td><code>https://hidepon-umg.github.io/News-Grasp</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top: var(--space-2xl);">Playground: メール縦尺パラメータ</h2>
+      <p>Masthead 帯 / カード margin / カテゴリ間 spacing をスライダーで調整して即時プレビュー。balance-review.md 確定値は <strong>52 / 8 / 20px</strong>。</p>
+
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-masthead">Masthead 実視覚高</label>
+          <input type="range" id="param-masthead" min="40" max="80" step="2" value="52">
+          <output for="param-masthead">52px</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-card-margin">カード margin-bottom</label>
+          <input type="range" id="param-card-margin" min="0" max="24" step="2" value="8">
+          <output for="param-card-margin">8px</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-cat-gap">カテゴリ間 spacing</label>
+          <input type="range" id="param-cat-gap" min="8" max="48" step="2" value="20">
+          <output for="param-cat-gap">20px</output>
+        </div>
+
+        <div class="playground-preview">
+          <svg id="preview-svg" viewBox="0 0 360 320" role="img" aria-label="メール縦尺プレビュー" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="360" height="320" fill="#FAF7F0"/>
+            <!-- Masthead -->
+            <rect id="prev-masthead" x="0" y="0" width="360" height="52" fill="#181C2A"/>
+            <text x="180" y="32" text-anchor="middle" font-family="Inter" font-size="14" font-weight="900" fill="#C9A155">NEWS GRASP</text>
+            <!-- Category 1 band -->
+            <rect id="prev-cat1" x="0" y="52" width="360" height="20" fill="#3A7B8C"/>
+            <text x="10" y="66" font-family="JetBrains Mono" font-size="8" fill="#FFF">◎ MOBILITY</text>
+            <!-- Card 1 -->
+            <rect id="prev-card1" x="10" y="80" width="340" height="55" fill="#FFF" stroke="#E2DED4"/>
+            <text x="20" y="100" font-family="Noto Serif JP" font-size="11" font-weight="700" fill="#181C2A">Toyota EV戦略 - SCORE 92</text>
+            <text x="20" y="118" font-family="JetBrains Mono" font-size="7" fill="#5C5A52">2026-05-28 · Bloomberg</text>
+            <!-- Card 2 -->
+            <rect id="prev-card2" x="10" y="143" width="340" height="55" fill="#FFF" stroke="#E2DED4"/>
+            <text x="20" y="163" font-family="Noto Serif JP" font-size="11" font-weight="700" fill="#181C2A">Tesla FSD v13 - SCORE 88</text>
+            <!-- Category 2 band -->
+            <rect id="prev-cat2" x="0" y="218" width="360" height="20" fill="#2D5BB8"/>
+            <text x="10" y="232" font-family="JetBrains Mono" font-size="8" fill="#FFF">◆ AI</text>
+            <!-- Card 3 -->
+            <rect id="prev-card3" x="10" y="246" width="340" height="55" fill="#FFF" stroke="#E2DED4"/>
+            <text x="20" y="266" font-family="Noto Serif JP" font-size="11" font-weight="700" fill="#181C2A">Claude Opus 4.7</text>
+            <!-- Height indicator -->
+            <text id="prev-height" x="350" y="315" text-anchor="end" font-family="JetBrains Mono" font-size="8" fill="#C9A155">total: 320px</text>
+          </svg>
+        </div>
+
+        <div style="margin-top: var(--space-md);">
+          <button class="btn btn-gold" id="copy-prompt">プロンプトとしてコピー</button>
+          <button class="btn btn-navy" id="reset-defaults">balance-review 確定値に戻す</button>
+        </div>
+      </div>
+
+      <h3>関連ドキュメント</h3>
+      <ul>
+        <li>Plan: <code>~/.claude/plans/news-grasp-v2-plan-rustling-glacier.md</code></li>
+        <li>A 群 Plan: <code>~/.claude/plans/newsgrasp-mobility-expressive-catmull.md</code></li>
+        <li>Postmortem: <code>~/.claude/postmortems/2026-05-28_news-grasp-v2-plan-spec-order-mistake.md</code></li>
+        <li>Hook: <code>~/.claude/hooks/enforce_html_spec_phase_order.ps1</code> (Phase 順違反を物理 block)</li>
+        <li>Memory: <code>feedback_html_spec_first_not_last.md</code> / <code>feedback_strong_pushback_triple_action.md</code></li>
+      </ul>
+    </section>
+
+    <footer>
+      News-Grasp v2 リデザイン仕様書 · 2026-05-28 · safe-commit gate 4' lint 通過後 commit
+    </footer>
+  </main>
+
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    // Playground: メール縦尺パラメータ
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      masthead: $('param-masthead'),
+      cardMargin: $('param-card-margin'),
+      catGap: $('param-cat-gap'),
+      prevMasthead: $('prev-masthead'),
+      prevCat1: $('prev-cat1'),
+      prevCard1: $('prev-card1'),
+      prevCard2: $('prev-card2'),
+      prevCat2: $('prev-cat2'),
+      prevCard3: $('prev-card3'),
+      prevHeight: $('prev-height'),
+      mastheadOut: document.querySelector('output[for="param-masthead"]'),
+      cardMarginOut: document.querySelector('output[for="param-card-margin"]'),
+      catGapOut: document.querySelector('output[for="param-cat-gap"]'),
+      copyPrompt: $('copy-prompt'),
+      resetBtn: $('reset-defaults'),
+    };
+
+    function refresh() {
+      const m = parseInt(els.masthead.value, 10);
+      const cm = parseInt(els.cardMargin.value, 10);
+      const cg = parseInt(els.catGap.value, 10);
+
+      // Masthead
+      els.prevMasthead.setAttribute('height', m);
+      // Category 1 band
+      const cat1Y = m;
+      els.prevCat1.setAttribute('y', cat1Y);
+      // Card 1
+      const card1Y = cat1Y + 20 + cg / 2;
+      els.prevCard1.setAttribute('y', card1Y);
+      // Card 2
+      const card2Y = card1Y + 55 + cm;
+      els.prevCard2.setAttribute('y', card2Y);
+      // Category 2 band
+      const cat2Y = card2Y + 55 + cg;
+      els.prevCat2.setAttribute('y', cat2Y);
+      // Card 3
+      const card3Y = cat2Y + 20 + cg / 2;
+      els.prevCard3.setAttribute('y', card3Y);
+      // Total height
+      const total = card3Y + 55;
+      els.prevHeight.textContent = `total: ${total}px`;
+
+      els.mastheadOut.textContent = m + 'px';
+      els.cardMarginOut.textContent = cm + 'px';
+      els.catGapOut.textContent = cg + 'px';
+    }
+
+    ['masthead', 'cardMargin', 'catGap'].forEach(k => {
+      els[k].addEventListener('input', refresh);
+    });
+
+    els.resetBtn.addEventListener('click', () => {
+      els.masthead.value = '52';
+      els.cardMargin.value = '8';
+      els.catGap.value = '20';
+      refresh();
+    });
+
+    function copy(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'コピーしました';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }).catch(() => alert('クリップボードに書き込めませんでした:\n\n' + text));
+    }
+
+    els.copyPrompt.addEventListener('click', () => {
+      const m = els.masthead.value;
+      const cm = els.cardMargin.value;
+      const cg = els.catGap.value;
+      const prompt = `News-Grasp v2 メール縦尺を以下に確定して prompts/email-template.html と tools/generate_email.py を更新してください。
+
+- Masthead 実視覚高: ${m}px (Masthead <h1> margin で調整)
+- カード margin-bottom: ${cm}px (top_card / side_card の padding-bottom)
+- カテゴリ間 spacing: ${cg}px (cat_header の top padding)
+
+確定後 python -m tools.generate_email で build/email.html を再生成し、Chrome で目視確認してください。balance-review 確定値は 52/8/20。それ以外の値を選んだ場合は意図を明記してください。`;
+      copy(prompt, els.copyPrompt);
+    });
+
+    refresh();
+  </script>
+</body>
+</html>

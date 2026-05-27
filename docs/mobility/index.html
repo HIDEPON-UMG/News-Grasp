@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>モビリティ / Mobility — News Grasp</title>
+<meta name="description" content="News Grasp モビリティ (Mobility) カテゴリのアーカイブ。直近 1 週間の編集者ダイジェスト。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="モビリティ / Mobility — News Grasp">
+<meta property="og:description" content="モビリティ (Mobility) カテゴリの直近ダイジェストとアーカイブ。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="モビリティ / Mobility — News Grasp">
+<meta name="twitter:description" content="モビリティ (Mobility) カテゴリのダイジェストとアーカイブ。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (compact navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (6 lens pills, 現カテゴリは is-active) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">§</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">1 ENTRIES · ARCHIVE</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px category KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ LENS / MOBILITY</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">WaymoがカバレッジをロードアイランドState超の**1,400平方マイル・11都市**に拡大し「ロボタクシーの本命」を実証する一方、TeslaのRoboTaxi実稼働は**20台**に縮小と格差が広がる。BYDの**記録的10%割引**にトヨタ・ホンダのCEOが「生き残れ…</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">1</div>
+        <div class="stat-label">ENTRIES</div>
+      </div>
+      <div>
+        <div class="stat-num">0</div>
+        <div class="stat-label">PAST 1 WEEK</div>
+      </div>
+      
+      <div>
+        <div class="stat-num">93</div>
+        <div class="stat-label">TOP SCORE</div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">LATEST</div>
+    <div class="cat-hero__date-big">05·28</div>
+    <div class="cat-hero__date-small">2026 · #20260528</div>
+  </div>
+  
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">← ALL ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP feature (最新 1 件) ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP FEATURE</span>
+    <span>2026-05-28 · Electrek</span>
+    <span class="top-story__score">93</span>
+  </div>
+  <div class="top-story__grid">
+    
+    <div class="top-story__thumb-wrap">
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-05-28/" aria-label="記事詳細ページを開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2026/05/Waymo-market-expansion.jpeg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-05-28/" style="color: inherit;">Waymo、カバレッジ20%超拡大で1,400平方マイル達成──11都市体制でロードアイランド州超え</a>
+      </h2>
+      
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Waymo</strong>は5月13日にサービスカバレッジを約<strong>1,400平方マイル（ロードアイランド州超）</strong>に拡大し、Phoenix周辺を含む11都市体制でロボタクシー週間<strong>100万トリップ達成</strong>を年内目標に据える。</li><li>Alphabet傘下が今年調達した<strong>$160億</strong>（バリュエーション$1260億）の大部分はMagna International製造拠点（アリゾナ州メサ）整備に充当され、年産<strong>2,000台超</strong>の拡大生産ラインが始動中。</li><li><span class="emph-und">Waymoが「2026年はロボタクシー元年」という業界テーゼを単独で証明しつつある</span>一方、Tesla・Waymoという二強の格差が可視化され、自動運転市場の「勝者総取り」構造が鮮明になってきた。</li>
+      </ul>
+      
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#LATEST</span>
+        <span class="top-story__tag">#2026-05-28</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 1 entries
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp Mobility カテゴリ追加 — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン継承 (News-Grasp 本体 DESIGN.md と同期)
+       Magazine Spread: navy × gold × paper の編集者的トーン
+       ============================================================ */
+    :root {
+      --color-primary: #1A1A1A;
+      --color-secondary: #5C5A52;
+      --color-tertiary: #C9A155;
+      --color-neutral: #FAF7F0;
+      --color-surface: #FFFFFF;
+      --color-border: #E2DED4;
+      --color-paper-soft: #F2EEE3;
+      --color-on-tertiary: #181C2A;
+      --color-on-primary: #F0EBE0;
+      --color-navy: #181C2A;
+      --color-cream: #F0EBE0;
+      --color-gold: #C9A155;
+
+      --color-accent-fx: #B8860B;
+      --color-accent-ai: #2D5BB8;
+      --color-accent-it: #2E6B52;
+      --color-accent-economy: #8E2A19;
+      --color-accent-game: #5E3D8C;
+      --color-accent-mobility: #3A7B8C;
+      --color-accent-summary: #475569;
+
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+
+      --font-serif: 'Noto Serif JP', 'Yu Mincho', Georgia, serif;
+      --font-sans: 'Inter', -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+      --rounded-sm: 0px;
+      --rounded-md: 0px;
+      --rounded-lg: 0px;
+      --rounded-full: 9999px;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+
+      --shadow-sm: 0 1px 2px rgba(24, 28, 40, 0.06);
+      --shadow-md: 0 4px 12px rgba(24, 28, 40, 0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-serif);
+      font-size: 0.9375rem;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 72rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 2px solid var(--color-navy); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; font-weight: 700; text-transform: uppercase; }
+    h1 { font-family: var(--font-sans); font-size: 3rem; font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin: var(--space-md) 0 var(--space-sm); color: var(--color-navy); }
+    h2 { font-family: var(--font-sans); font-size: 2rem; font-weight: 900; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--space-md); color: var(--color-navy); }
+    h3 { font-family: var(--font-serif); font-size: 1.375rem; font-weight: 800; line-height: 1.35; letter-spacing: -0.01em; margin: var(--space-xl) 0 var(--space-sm); color: var(--color-navy); }
+    h4 { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; margin: var(--space-lg) 0 var(--space-sm); color: var(--color-primary); }
+    .lead { color: var(--color-secondary); font-size: 1.0625rem; line-height: 1.75; margin: var(--space-sm) 0 var(--space-md); font-style: italic; }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-accent-ai); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+    a:hover { color: var(--color-navy); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: 0; padding: var(--space-md) var(--space-lg); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; text-transform: uppercase; font-weight: 700; }
+    .tab:hover { color: var(--color-navy); background: var(--color-paper-soft); }
+    .tab.active { color: var(--color-navy); border-bottom-color: var(--color-gold); background: var(--color-surface); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-muted { background: var(--color-paper-soft); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy { background: var(--color-navy); color: var(--color-cream); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy h3 { color: var(--color-gold); }
+    .card-navy a { color: var(--color-gold); }
+
+    /* Badge */
+    .badge { display: inline-block; padding: 4px 12px; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-right: var(--space-xs); }
+    .badge-draft { background: var(--color-warning); color: var(--color-cream); }
+    .badge-confirmed { background: var(--color-success); color: var(--color-cream); }
+    .badge-new { background: var(--color-accent-mobility); color: var(--color-cream); }
+    .badge-out-of-scope { background: var(--color-error); color: var(--color-cream); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.875rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 700; color: var(--color-navy); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; text-transform: uppercase; background: var(--color-paper-soft); border-bottom: 2px solid var(--color-navy); }
+    tr:hover td { background: var(--color-paper-soft); }
+    td code { font-size: 0.8125rem; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--color-paper-soft); padding: 2px 6px; border: 1px solid var(--color-border); }
+    pre { background: var(--color-navy); color: var(--color-cream); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.6; margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 12px 20px; border: 0; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 120ms; }
+    .btn-navy { background: var(--color-navy); color: var(--color-cream); }
+    .btn-navy:hover { background: #262B40; }
+    .btn-gold { background: var(--color-gold); color: var(--color-navy); }
+    .btn-gold:hover { background: #B58D45; }
+
+    /* Timeline */
+    .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin: var(--space-lg) 0; }
+    .timeline-step { background: var(--color-paper-soft); border-left: 4px solid var(--color-gold); padding: var(--space-md) var(--space-lg); }
+    .timeline-step strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: var(--color-gold); text-transform: uppercase; margin-bottom: var(--space-xs); }
+    .timeline-step span { font-family: var(--font-serif); font-size: 1rem; line-height: 1.6; color: var(--color-navy); font-weight: 600; }
+
+    /* Severity */
+    .severity-info { border-left: 4px solid var(--color-accent-ai); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-warn { border-left: 4px solid var(--color-warning); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-success { border-left: 4px solid var(--color-success); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: var(--space-xs); color: var(--color-navy); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-top: 4px solid var(--color-gold); padding: var(--space-xl); margin: var(--space-md) 0; }
+    .playground-control { display: grid; grid-template-columns: 200px 1fr 100px; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+    .playground-control input[type="color"] { width: 100%; height: 40px; border: 1px solid var(--color-border); cursor: pointer; }
+    .playground-control input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-surface); color: var(--color-primary); }
+    .playground-control select { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-surface); color: var(--color-primary); }
+    .playground-control output { font-family: var(--font-mono); font-size: 0.875rem; color: var(--color-navy); }
+
+    .playground-preview { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); background: var(--color-paper-soft); margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    .preview-swatch { width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--color-cream); transition: background 200ms; }
+    .preview-text strong { font-family: var(--font-sans); font-size: 1.5rem; font-weight: 900; color: var(--color-navy); display: block; }
+    .preview-text span { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+
+    /* Palette grid */
+    .palette { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); margin: var(--space-md) 0; }
+    .palette-cell { display: flex; flex-direction: column; align-items: center; padding: var(--space-md); border: 1px solid var(--color-border); background: var(--color-surface); }
+    .palette-swatch { width: 64px; height: 64px; margin-bottom: var(--space-sm); }
+    .palette-cell strong { font-family: var(--font-sans); font-size: 0.875rem; font-weight: 700; color: var(--color-navy); }
+    .palette-cell span { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--color-secondary); letter-spacing: 0.05em; }
+    .palette-cell.new { border: 2px solid var(--color-accent-mobility); position: relative; }
+    .palette-cell.new::after { content: 'NEW'; position: absolute; top: -10px; right: -10px; background: var(--color-accent-mobility); color: var(--color-cream); font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; padding: 2px 8px; letter-spacing: 0.1em; }
+
+    /* Compare grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .playground-control { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+    }
+
+    /* Footer */
+    footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+      .playground { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · 2026-05-28 · NEWS-GRASP</div>
+      <h1>Mobility カテゴリ追加</h1>
+      <p class="lead">6 つ目のカテゴリ「Mobility」を新設し、EV / 自動運転 / MaaS / 完成車・部品サプライヤーの動向を独立した日次 digest として追跡する。</p>
+      <div style="margin-top: var(--space-md);">
+        <span class="badge badge-draft">draft</span>
+        <span class="badge badge-confirmed">user-approved 2026-05-28</span>
+        <span class="badge badge-new">+1 category</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="comparison">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <!-- ============================================================
+         概要
+         ============================================================ -->
+    <section id="overview" class="tab-panel active">
+      <h2>Context</h2>
+      <p>News-Grasp は現在 5 カテゴリ (FX / AI / IT-Consulting / Economy / Game) + Summary で日次メルマガと Obsidian digest を生成している。EV / 自動運転 / MaaS / 完成車・部品メーカーの動向は AI と Economy の境界に埋もれて単独追跡できていない。Mobility を 6 つ目の独立カテゴリとして追加することで、自動車・電動化・モビリティサービス領域の動向を「為替」「ゲーム」と同じ重みで毎朝の digest に組み込む。</p>
+
+      <h3>ユーザー確定方針 (2026-05-28)</h3>
+      <table>
+        <thead><tr><th>項目</th><th>確定値</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td>掲載頻度</td><td>毎日 (FX と同等)</td><td>EV・自動運転・MaaS の動向は週末も継続するため追従しやすい</td></tr>
+          <tr><td>γ schema</td><td>7 → 8 セクション</td><td><code>総論 / 為替 / AI / IT / 経済 / ゲーム / モビリティ / 明日へ</code> に拡張</td></tr>
+          <tr><td>アクセント色</td><td><code>#3A7B8C</code> (ティール)</td><td>既存 5 色 (琥珀 / 電子青 / 苔緑 / 深紅 / 洋紫) と隣接しない色相を選定</td></tr>
+          <tr><td>グリフ</td><td><code>◎</code></td><td>同心円 = タイヤ / 自動車的シンボル</td></tr>
+          <tr><td>バックフィル</td><td>直近 1 週間 (5/22-5/28)</td><td>新カテゴリ導入時の過去継承を最小工数で確保</td></tr>
+        </tbody>
+      </table>
+
+      <h3>本 PR のスコープ外 <span class="badge badge-out-of-scope">out</span></h3>
+      <ul>
+        <li><code>tools/generate_email.py</code> の iterate ベースへの全面リファクタ (現ハードコード並べを最小差分で吸収)</li>
+        <li>既存日 (4/28〜5/27) の Summary を 8 sections schema に書き換えるバックフィル (旧 7 sections は fallback で描画される設計)</li>
+        <li>メール HTML 全体のレイアウト見直し (レスポンシブ既存設計で吸収可能)</li>
+        <li>アセット public repo <code>news-grasp-assets</code> の管理運用見直し</li>
+      </ul>
+
+      <div class="severity-info severity">
+        <strong>前提</strong>
+        <p>Runner は <code>news-grasp-runner.bat</code> → <code>claude --print</code> のローカル CLI 経路 (Anthropic Routine ではない)。実体ディレクトリは <code>C:\Users\hidek\Obsidian\New's Grasp\News-Grasp\</code>。GitHub Pages の公開 URL は <code>https://hidepon-umg.github.io/News-Grasp</code>。サムネ CDN は別 public repo <code>HIDEPON-UMG/news-grasp-assets</code> に分離されている。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         比較
+         ============================================================ -->
+    <section id="comparison" class="tab-panel">
+      <h2>現行 5 カテゴリ ↔ 新 6 カテゴリ</h2>
+
+      <h3>カラーパレット俯瞰</h3>
+      <p>本 PR 適用後の 6 カテゴリ accent + Summary グレー + Gold を一枚で確認。Mobility ティール <code>#3A7B8C</code> は AI 電子青 <code>#2D5BB8</code> と色相が近いが、彩度・明度ともに低めで識別可能。</p>
+      <div class="palette">
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-fx);"></div><strong>FX</strong><span>#B8860B</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-ai);"></div><strong>AI</strong><span>#2D5BB8</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-it);"></div><strong>IT</strong><span>#2E6B52</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-economy);"></div><strong>Economy</strong><span>#8E2A19</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-game);"></div><strong>Game</strong><span>#5E3D8C</span></div>
+        <div class="palette-cell new"><div class="palette-swatch" style="background: var(--color-accent-mobility);"></div><strong>Mobility</strong><span>#3A7B8C</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-summary);"></div><strong>Summary</strong><span>#475569</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-gold);"></div><strong>Gold</strong><span>#C9A155</span></div>
+      </div>
+
+      <h3>デザインシステム表</h3>
+      <table>
+        <thead><tr><th>id</th><th>和名</th><th>英名</th><th>アクセント</th><th>グリフ</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td><code>fx</code></td><td>為替</td><td>Foreign Exchange</td><td><code>#B8860B</code></td><td>¥</td><td>既存</td></tr>
+          <tr><td><code>ai</code></td><td>AI</td><td>Artificial Intelligence</td><td><code>#2D5BB8</code></td><td>◆</td><td>既存</td></tr>
+          <tr><td><code>it</code></td><td>IT-Consulting</td><td>IT &amp; Consulting</td><td><code>#2E6B52</code></td><td>▲</td><td>既存</td></tr>
+          <tr><td><code>economy</code></td><td>経済</td><td>Economy</td><td><code>#8E2A19</code></td><td>■</td><td>既存</td></tr>
+          <tr><td><code>game</code></td><td>ゲーム</td><td>Gaming</td><td><code>#5E3D8C</code></td><td>●</td><td>既存</td></tr>
+          <tr><td><code>mobility</code></td><td>モビリティ</td><td>Mobility</td><td><code>#3A7B8C</code></td><td>◎</td><td><span class="badge badge-new">NEW</span></td></tr>
+          <tr><td><code>summary</code></td><td>総括</td><td>Summary</td><td><code>#475569</code></td><td>★</td><td>既存</td></tr>
+        </tbody>
+      </table>
+
+      <h3>曜日マトリクスの変化</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <h4>現行</h4>
+          <table>
+            <thead><tr><th>曜日</th><th>件数</th><th>対象カテゴリ</th></tr></thead>
+            <tbody>
+              <tr><td>月</td><td>4</td><td>FX, AI, IT, Eco</td></tr>
+              <tr><td>火</td><td>5</td><td>+ Game</td></tr>
+              <tr><td>水</td><td>4</td><td>FX, AI, IT, Eco</td></tr>
+              <tr><td>木</td><td>5</td><td>+ Game</td></tr>
+              <tr><td>金</td><td>4</td><td>FX, AI, IT, Eco</td></tr>
+              <tr><td>土</td><td>4</td><td>FX, AI, IT, Game</td></tr>
+              <tr><td>日</td><td>4</td><td>FX, AI, IT, Game</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h4>新仕様 (Mobility 毎日掲載)</h4>
+          <table>
+            <thead><tr><th>曜日</th><th>件数</th><th>対象カテゴリ</th></tr></thead>
+            <tbody>
+              <tr><td>月</td><td>5</td><td>FX, AI, IT, Eco, <strong style="color: var(--color-accent-mobility);">Mob</strong></td></tr>
+              <tr><td>火</td><td>6</td><td>+ Game</td></tr>
+              <tr><td>水</td><td>5</td><td>FX, AI, IT, Eco, <strong style="color: var(--color-accent-mobility);">Mob</strong></td></tr>
+              <tr><td>木</td><td>6</td><td>+ Game</td></tr>
+              <tr><td>金</td><td>5</td><td>FX, AI, IT, Eco, <strong style="color: var(--color-accent-mobility);">Mob</strong></td></tr>
+              <tr><td>土</td><td>5</td><td>FX, AI, IT, Game, <strong style="color: var(--color-accent-mobility);">Mob</strong></td></tr>
+              <tr><td>日</td><td>5</td><td>FX, AI, IT, Game, <strong style="color: var(--color-accent-mobility);">Mob</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>γ schema sections 7 → 8</h3>
+      <p>Summary の Editorial 構造 (<code>tools/generate_pages.py:808</code> の <code>_SUMMARY_SECTION_TAGS</code>) を 1 要素拡張。order と color 並びを視覚化:</p>
+      <svg viewBox="0 0 800 180" role="img" aria-label="γ schema sections 7 vs 8 比較" style="width: 100%; height: auto; max-width: 800px;">
+        <defs>
+          <pattern id="dot-pattern" patternUnits="userSpaceOnUse" width="6" height="6"><circle cx="3" cy="3" r="0.6" fill="#5C5A52"/></pattern>
+        </defs>
+
+        <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#181C2A" letter-spacing="1.5">CURRENT · 7 SECTIONS</text>
+        <g transform="translate(10, 30)">
+          <rect x="0" y="0" width="100" height="36" fill="#1A1A1A"/><text x="50" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">総論</text>
+          <rect x="105" y="0" width="100" height="36" fill="#B8860B"/><text x="155" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">為替</text>
+          <rect x="210" y="0" width="100" height="36" fill="#2D5BB8"/><text x="260" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">AI</text>
+          <rect x="315" y="0" width="100" height="36" fill="#2E6B52"/><text x="365" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">IT</text>
+          <rect x="420" y="0" width="100" height="36" fill="#8E2A19"/><text x="470" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">経済</text>
+          <rect x="525" y="0" width="100" height="36" fill="#5E3D8C"/><text x="575" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">ゲーム</text>
+          <rect x="630" y="0" width="100" height="36" fill="#C9A155"/><text x="680" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#181C2A">明日へ</text>
+        </g>
+
+        <text x="10" y="100" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#181C2A" letter-spacing="1.5">NEW · 8 SECTIONS</text>
+        <g transform="translate(10, 110)">
+          <rect x="0" y="0" width="88" height="36" fill="#1A1A1A"/><text x="44" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">総論</text>
+          <rect x="92" y="0" width="88" height="36" fill="#B8860B"/><text x="136" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">為替</text>
+          <rect x="184" y="0" width="88" height="36" fill="#2D5BB8"/><text x="228" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">AI</text>
+          <rect x="276" y="0" width="88" height="36" fill="#2E6B52"/><text x="320" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">IT</text>
+          <rect x="368" y="0" width="88" height="36" fill="#8E2A19"/><text x="412" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">経済</text>
+          <rect x="460" y="0" width="88" height="36" fill="#5E3D8C"/><text x="504" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">ゲーム</text>
+          <rect x="552" y="0" width="88" height="36" fill="#3A7B8C" stroke="#181C2A" stroke-width="2"/><text x="596" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">モビリティ</text>
+          <rect x="644" y="0" width="88" height="36" fill="#C9A155"/><text x="688" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#181C2A">明日へ</text>
+          <text x="596" y="58" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="#3A7B8C" letter-spacing="1">NEW · §07</text>
+        </g>
+      </svg>
+    </section>
+
+    <!-- ============================================================
+         データフロー
+         ============================================================ -->
+    <section id="dataflow" class="tab-panel">
+      <h2>Runner パイプライン全体</h2>
+      <p>Windows タスクスケジューラから起動した <code>claude --print</code> が 5 軸検索 → dedup → 記事 JSON 生成 → Markdown/HTML 出力 → SMTP 直送までを 1 セッションで実行する。Mobility 追加で増える経路は <strong style="color: var(--color-accent-mobility);">ティールで強調</strong>。</p>
+
+      <svg viewBox="0 0 1000 480" role="img" aria-label="News-Grasp Runner パイプライン" style="width: 100%; height: auto; max-width: 1000px;">
+        <defs>
+          <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto">
+            <path d="M 0 0 L 10 4 L 0 8 Z" fill="#181C2A"/>
+          </marker>
+          <marker id="arrow-mob" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto">
+            <path d="M 0 0 L 10 4 L 0 8 Z" fill="#3A7B8C"/>
+          </marker>
+        </defs>
+
+        <!-- レイヤー区切り -->
+        <line x1="0" y1="80" x2="1000" y2="80" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <line x1="0" y1="240" x2="1000" y2="240" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <line x1="0" y1="380" x2="1000" y2="380" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+
+        <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 1 · TRIGGER &amp; CLI</text>
+        <text x="10" y="100" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 2 · SEARCH &amp; DEDUP</text>
+        <text x="10" y="260" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 3 · ARTIFACT GENERATION</text>
+        <text x="10" y="400" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 4 · DELIVERY</text>
+
+        <!-- Layer 1 -->
+        <rect x="20" y="30" width="180" height="38" fill="#181C2A"/>
+        <text x="110" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#F0EBE0" font-weight="700">Task Scheduler 06:00</text>
+        <path d="M 200 49 L 240 49" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="240" y="30" width="200" height="38" fill="#181C2A"/>
+        <text x="340" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#F0EBE0" font-weight="700">news-grasp-runner.bat</text>
+        <path d="M 440 49 L 480 49" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="480" y="30" width="200" height="38" fill="#C9A155"/>
+        <text x="580" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#181C2A" font-weight="700">claude --print (Sonnet 4.6)</text>
+
+        <!-- Layer 2 -->
+        <rect x="20" y="120" width="180" height="48" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="110" y="142" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">watchlist.md</text>
+        <text x="110" y="158" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">5 → 6 カテゴリ</text>
+
+        <rect x="20" y="178" width="180" height="48" fill="#F2EEE3" stroke="#3A7B8C" stroke-width="2"/>
+        <text x="110" y="200" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#3A7B8C" font-weight="700">## Mobility section</text>
+        <text x="110" y="216" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3A7B8C">+30 ワード追記</text>
+
+        <path d="M 200 144 L 240 144" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <path d="M 200 202 L 240 156" stroke="#3A7B8C" stroke-width="2" marker-end="url(#arrow-mob)"/>
+
+        <rect x="240" y="120" width="200" height="106" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="340" y="144" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">3-A · WebSearch</text>
+        <text x="340" y="162" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">直近24h・カテゴリ毎 20-30件</text>
+        <text x="340" y="180" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">3-A.5 · dedup (24h)</text>
+        <text x="340" y="198" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">URL正規化 + N-gram Jaccard</text>
+        <text x="340" y="216" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3D7E60" font-weight="700">→ カテゴリ毎 5 件確定</text>
+
+        <path d="M 440 173 L 480 173" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="480" y="120" width="200" height="106" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="580" y="144" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">3-B · fetch_ogp.py</text>
+        <text x="580" y="162" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">og_image / twitter_image</text>
+        <text x="580" y="180" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">3-C · 5 軸関連付け</text>
+        <text x="580" y="198" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">復状/対立/波及/類似/株価</text>
+        <text x="580" y="216" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">3-D · 記事 JSON</text>
+
+        <path d="M 680 173 L 720 173" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="720" y="120" width="200" height="106" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="820" y="144" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">Step 4 · γ schema</text>
+        <text x="820" y="162" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3A7B8C" font-weight="700">7 → 8 sections</text>
+        <text x="820" y="180" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">+ takeaways(3) + pull_quote</text>
+        <text x="820" y="216" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">考察ブロック</text>
+
+        <!-- Layer 3 -->
+        <rect x="20" y="280" width="220" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="130" y="304" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">digest/{Genre}/*.md</text>
+        <text x="130" y="322" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">FX / AI / IT / Eco / Game</text>
+        <text x="130" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3A7B8C" font-weight="700">+ digest/Mobility/*.md</text>
+        <text x="130" y="354" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">+ digest/Summary/*.md</text>
+
+        <path d="M 240 320 L 290 320" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="290" y="280" width="200" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="390" y="304" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">articles.jsonl append</text>
+        <text x="390" y="322" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">seen_at / 階層タグ / thumb</text>
+        <text x="390" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3A7B8C" font-weight="700">genre: "Mobility" 新規値</text>
+
+        <path d="M 490 320 L 540 320" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="540" y="280" width="200" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="640" y="304" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">generate_pages.py</text>
+        <text x="640" y="322" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">CATEGORIES iterate</text>
+        <text x="640" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3D7E60" font-weight="700">→ docs/{cat}/{date}/*.html</text>
+
+        <path d="M 740 320 L 790 320" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="790" y="280" width="180" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="880" y="304" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">git commit</text>
+        <text x="880" y="322" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">push は bat 側</text>
+        <text x="880" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">hook 回避</text>
+
+        <!-- Layer 4 -->
+        <rect x="20" y="420" width="220" height="48" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="130" y="442" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">generate_email.py</text>
+        <text x="130" y="458" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#B7773D" font-weight="700">ハードコード並べ + mo_block</text>
+
+        <path d="M 240 444 L 290 444" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="290" y="420" width="200" height="48" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="390" y="442" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">email-template.html</text>
+        <text x="390" y="458" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">+ Mobility &lt;table&gt; + acMb</text>
+
+        <path d="M 490 444 L 540 444" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="540" y="420" width="200" height="48" fill="#FFFFFF" stroke="#3A7B8C" stroke-width="2"/>
+        <text x="640" y="442" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#3A7B8C" font-weight="700">news-grasp-assets CDN</text>
+        <text x="640" y="458" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3A7B8C">+ ng-thumb-mobility.jpg</text>
+
+        <path d="M 740 444 L 790 444" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="790" y="420" width="180" height="48" fill="#C9A155"/>
+        <text x="880" y="442" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">SMTP 直送</text>
+        <text x="880" y="458" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#181C2A">smtp.gmail.com:587</text>
+      </svg>
+
+      <h3>Mobility 追加で増える / 触る経路 (まとめ)</h3>
+      <ul>
+        <li><strong>Layer 1 (CLI)</strong>: 変更なし</li>
+        <li><strong>Layer 2 (Search/Dedup)</strong>: <code>watchlist.md</code> に <code>## Mobility</code> セクション追加 + <code>routine-system.md</code> 曜日マトリクスに行追加</li>
+        <li><strong>Layer 3 (Artifact)</strong>: <code>digest/Mobility/</code> ディレクトリ新設、<code>config.py</code> CATEGORIES に行追加で <code>generate_pages.py</code> は iterate 自動拡張、γ schema 7→8 で <code>_SUMMARY_SECTION_TAGS</code> 更新</li>
+        <li><strong>Layer 4 (Delivery)</strong>: <code>generate_email.py</code> に <code>mo_block</code> 追加 + email-template.html に <code>&lt;table&gt;</code> 1 つコピペ + 別 repo <code>news-grasp-assets</code> に画像 4 ファイル push</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         実装ステップ
+         ============================================================ -->
+    <section id="impl" class="tab-panel">
+      <h2>実装順序</h2>
+      <div class="timeline">
+        <div class="timeline-step"><strong>1 · 設定一括</strong><span>A 群 #1-13 を 1 コミット</span></div>
+        <div class="timeline-step"><strong>2 · 生成スクリプト</strong><span>B 群 #14-18 を 2 コミット目</span></div>
+        <div class="timeline-step"><strong>3 · クリエイティブ</strong><span>G 群プロンプト作成 → Claude Design 依頼 → C 群アセット push</span></div>
+        <div class="timeline-step"><strong>4 · デザイン同期</strong><span>D 群 #24-26 を 3 コミット目</span></div>
+        <div class="timeline-step"><strong>5 · テスト</strong><span>E 群 #27-31 を 4 コミット目</span></div>
+        <div class="timeline-step"><strong>6 · バックフィル</strong><span>F 群 #32-36 を別ブランチで 7 コミット</span></div>
+        <div class="timeline-step"><strong>7 · 実機検証</strong><span>翌朝 06:00 Runner で受信メール / Obsidian を確認</span></div>
+      </div>
+
+      <h3>A · 設定・プロンプト系 (Runner が読む正本)</h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>変更内容</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>tools/config.py:47-54</code></td><td><code>CATEGORIES</code> dict に <code>"mobility"</code> 行追加 (<code>game</code> の次)</td></tr>
+          <tr><td>2</td><td><code>prompts/routine-system.md:23-29</code></td><td>デザインシステム表に <code>mobility</code> 行追加</td></tr>
+          <tr><td>3</td><td><code>prompts/routine-system.md:75-83</code></td><td>曜日マトリクス全 7 曜日に <code>Mobility</code> 追加、件数 +1</td></tr>
+          <tr><td>4</td><td><code>prompts/routine-system.md:288-297</code></td><td>γ schema sections を 7 → 8 件に拡張</td></tr>
+          <tr><td>5</td><td><code>prompts/routine-system.md:317,322,330</code></td><td>「7 件」表記を「8 件」に書き換え + 旧 schema 差分節を新規追記</td></tr>
+          <tr><td>6</td><td><code>prompts/routine-system.md:343</code></td><td>Genre 例示に <code>Mobility</code> 追加</td></tr>
+          <tr><td>7</td><td><code>prompts/routine-system.md:454-455</code></td><td>NG プレースホルダ key 列挙に <code>ng-thumb-mobility</code> 追加</td></tr>
+          <tr><td>8</td><td><code>prompts/obsidian-tagging-spec.md:32</code></td><td><code>cat/mobility</code> を例示に追加</td></tr>
+          <tr><td>9</td><td><code>prompts/obsidian-tagging-spec.md:55-61</code></td><td>id 正規化テーブルに行追加</td></tr>
+          <tr><td>10</td><td><code>prompts/obsidian-tagging-spec.md:39</code></td><td><code>industry/モビリティ</code> を例示に追加</td></tr>
+          <tr><td>11</td><td><code>data/watchlist.md</code></td><td><code>## Mobility</code> セクション新規追加</td></tr>
+          <tr><td>12</td><td><code>prompts/email-template.html</code></td><td>Mobility セクション 1 つ追加 + <code>acMb { color: #3A7B8C }</code> 追加</td></tr>
+          <tr><td>13</td><td><code>prompts/ng-thumbs-base64.md</code></td><td>base64 ブロック 2 つ追加 (アセット生成後)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>B · Python 生成スクリプト</h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>変更内容</th></tr></thead>
+        <tbody>
+          <tr><td>14</td><td><code>tools/generate_email.py:388</code></td><td><code>mo_block</code> 追加 + <code>CATEGORIES_HTML</code> 連結に含める</td></tr>
+          <tr><td>15</td><td><code>tools/generate_email.py:500</code></td><td><code>{{TOTAL_CATEGORIES}}</code> を当日 digest 存在ファイル数から動的に算出</td></tr>
+          <tr><td>16</td><td><code>tools/generate_pages.py:808</code></td><td><code>_SUMMARY_SECTION_TAGS</code> を 8 要素に拡張</td></tr>
+          <tr><td>17</td><td><code>tools/generate_pages.py:809</code></td><td><code>_SUMMARY_SECTION_COLORS</code> を 8 要素に拡張 (<code>#3A7B8C</code> 挿入)</td></tr>
+          <tr><td>18</td><td><code>tools/generate_pages.py</code></td><td>テスト側で <code>len(_SUMMARY_SECTION_TAGS) == 8</code> 契約検証</td></tr>
+        </tbody>
+      </table>
+
+      <h3>C · アセット (別 public repo <code>HIDEPON-UMG/news-grasp-assets</code>)</h3>
+      <table>
+        <thead><tr><th>#</th><th>成果物</th><th>生成方法</th></tr></thead>
+        <tbody>
+          <tr><td>19</td><td><code>ng-thumb-mobility.jpg</code> (568×220)</td><td>Claude Design 納品 → <code>news-grasp-assets</code> に push</td></tr>
+          <tr><td>20</td><td><code>ng-thumb-mobility.png</code></td><td>同上</td></tr>
+          <tr><td>21</td><td><code>ng-thumb-common-mobility.jpg</code> (140×90)</td><td>同上</td></tr>
+          <tr><td>22</td><td><code>ng-thumb-common-mobility.png</code></td><td>同上</td></tr>
+          <tr><td>23</td><td>repo commit &amp; push</td><td><code>gh</code> CLI (HIDEPON-UMG ログイン済)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>D · デザインプロジェクト同期 (<code>ProjectFolders/News-Grasp/design2</code>)</h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>変更内容</th></tr></thead>
+        <tbody>
+          <tr><td>24</td><td><code>design2/.../data/news-data.js</code></td><td><code>categories[]</code> に Mobility 追加 (<code>game</code> の次)</td></tr>
+          <tr><td>25</td><td><code>design2/.../assets/</code></td><td>サムネ 4 ファイルを Vault 実体 or 別 repo からコピー</td></tr>
+          <tr><td>26</td><td><code>ProjectFolders/News-Grasp/docs/obsidian-tagging-spec.md</code></td><td>Vault 側と同期更新</td></tr>
+        </tbody>
+      </table>
+
+      <h3>E · テスト</h3>
+      <table>
+        <thead><tr><th>#</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>27</td><td><code>tests/test_summary_pattern_d.py</code> で <code>_SUMMARY_SECTION_TAGS</code> 長さ 7 → 8</td></tr>
+          <tr><td>28</td><td><code>tests/test_generate_pages.py</code> で nav カテゴリ count 5 → 6 (summary 除く)</td></tr>
+          <tr><td>29</td><td><code>tests/test_thumb_contract.py</code> で Mobility ダミー記事の thumb 検証</td></tr>
+          <tr><td>30</td><td><code>tests/mock_data.py</code> に Mobility ダミー 5 件追加 (存在すれば)</td></tr>
+          <tr><td>31</td><td>新規 <code>tests/test_mobility_contract.py</code>: CATEGORIES / γ schema / tagging-spec の 3 件契約テスト</td></tr>
+        </tbody>
+      </table>
+
+      <h3>F · バックフィル (5/22-5/28)</h3>
+      <table>
+        <thead><tr><th>#</th><th>ステップ</th></tr></thead>
+        <tbody>
+          <tr><td>32</td><td><code>prompts/backfill-mobility.md</code> 一時プロンプト新規作成 (target_date 引数、SMTP off、1 日 1 commit)</td></tr>
+          <tr><td>33</td><td>PowerShell で 7 日ループ <code>claude --print</code> 実行</td></tr>
+          <tr><td>34</td><td><code>digest/Mobility/{date}-Mobility.md</code> 7 ファイル生成 + <code>articles.jsonl</code> append</td></tr>
+          <tr><td>35</td><td><code>generate_pages.py</code> で <code>docs/mobility/{date}/index.html</code> 7 ファイル生成</td></tr>
+          <tr><td>36</td><td>既存 Summary <code>digest/Summary/{date}.md</code> は触らない (旧 7 sections は fallback で描画)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>G · Claude Design 依頼プロンプト (新規スコープ)</h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>Z1</td><td><code>prompts/handoff/claude-design-mobility-request.md</code></td><td>Claude.ai のデザインプロジェクトに貼る依頼プロンプト本文 (現行サイト URL + 既存 5 カテゴリ仕様 + 新 Mobility 仕様 + 期待成果物 + バランス調整レビュー依頼)</td></tr>
+          <tr><td>Z2</td><td><code>prompts/handoff/</code> ディレクトリ</td><td>今後の design handoff プロンプトを集約する場所として新設</td></tr>
+        </tbody>
+      </table>
+
+      <h3>watchlist 追記スニペット</h3>
+      <pre><code>## Mobility
+
+毎日掲載。**EV / 自動運転 / MaaS / 完成車・部品サプライヤー**を独立カテゴリで追跡。
+
+### 完成車メーカー
+
+- Tesla
+- トヨタ
+- 日産
+- ホンダ
+- BMW
+- フォルクスワーゲン (VW)
+- BYD (比亜迪)
+- 現代自動車
+- Stellantis
+- Ford
+
+### 自動運転・モビリティサービス
+
+- Waymo
+- Cruise
+- Uber
+- Lyft
+- DiDi
+- Aurora
+- Mobileye
+
+### 電池・サプライヤー
+
+- CATL
+- LG Energy Solution
+- Panasonic Energy
+- パナソニック ホールディングス
+- デンソー
+- ボッシュ
+- Continental
+
+### 汎用キーワード
+
+- 自動運転
+- EV化
+- MaaS
+- Robotaxi
+- 電池技術
+- 全固体電池
+- 充電インフラ
+- ライドシェア
+- 空飛ぶクルマ
+- eVTOL
+- 自動車補助金
+- 燃費規制</code></pre>
+
+      <h3>config.py 追記スニペット</h3>
+      <pre><code>CATEGORIES: dict[str, dict[str, str]] = {
+    "fx":       {"label": "Foreign Exchange",        "jp": "為替",          "accent": "#B8860B", "glyph": "¥"},
+    "ai":       {"label": "Artificial Intelligence", "jp": "AI",            "accent": "#2D5BB8", "glyph": "◆"},
+    "it":       {"label": "IT &amp; Consulting",         "jp": "IT-Consulting", "accent": "#2E6B52", "glyph": "⌗"},
+    "economy":  {"label": "Economy",                 "jp": "経済",          "accent": "#8E2A19", "glyph": "§"},
+    "game":     {"label": "Gaming",                  "jp": "ゲーム",         "accent": "#5E3D8C", "glyph": "▶"},
+    "mobility": {"label": "Mobility",                "jp": "モビリティ",      "accent": "#3A7B8C", "glyph": "◎"},  # NEW
+    "summary":  {"label": "Summary",                 "jp": "総括",          "accent": "#475569", "glyph": "★"},
+}</code></pre>
+
+      <div class="severity-success severity">
+        <strong>検証</strong>
+        <p><code>pytest tests/test_mobility_contract.py tests/test_summary_pattern_d.py tests/test_generate_pages.py tests/test_thumb_contract.py</code> 全 pass → <code>python tools/generate_pages.py --date 2026-05-29</code> でナビバーにモビリティ出現 → <code>build/email.html</code> をブラウザで開いて Mobility セクション表示 → 翌朝 06:00 Runner 実機で受信メール確認。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         パラメータ playground (色・グリフ・id を試して config.py スニペットをコピー)
+         ============================================================ -->
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ playground</h2>
+      <p>Mobility カテゴリのアクセント色・グリフ・id を試行し、納得した値で「<strong>config.py 行をコピー</strong>」を押すと <code>tools/config.py</code> の <code>CATEGORIES</code> に追加すべき 1 行が clipboard に入る。</p>
+
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-id">id (lowercase)</label>
+          <input type="text" id="param-id" value="mobility" maxlength="16" pattern="[a-z0-9_-]+">
+          <output for="param-id">URL: /mobility/</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-jp">和名</label>
+          <input type="text" id="param-jp" value="モビリティ" maxlength="12">
+          <output></output>
+        </div>
+        <div class="playground-control">
+          <label for="param-label">英名 (label)</label>
+          <input type="text" id="param-label" value="Mobility" maxlength="32">
+          <output></output>
+        </div>
+        <div class="playground-control">
+          <label for="param-accent">アクセント色</label>
+          <input type="color" id="param-accent" value="#3A7B8C">
+          <output for="param-accent">#3A7B8C</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-glyph">グリフ</label>
+          <select id="param-glyph">
+            <option value="◎" selected>◎ (同心円 / タイヤ)</option>
+            <option value="◐">◐ (半月 / 移動)</option>
+            <option value="→">→ (矢印 / 進行)</option>
+            <option value="⇨">⇨ (太矢印)</option>
+            <option value="⚙">⚙ (歯車 / 機械)</option>
+            <option value="⊕">⊕ (拡張)</option>
+            <option value="◈">◈ (構造)</option>
+          </select>
+          <output></output>
+        </div>
+
+        <h4>プレビュー</h4>
+        <div class="playground-preview">
+          <div class="preview-swatch" id="preview-swatch">◎</div>
+          <div class="preview-text">
+            <strong id="preview-jp">モビリティ</strong>
+            <span id="preview-label">MOBILITY · #3A7B8C</span>
+          </div>
+        </div>
+
+        <h4>γ schema sections 拡張位置のプレビュー</h4>
+        <svg viewBox="0 0 800 60" role="img" aria-label="γ schema 8 sections preview" style="width: 100%; height: auto; max-width: 800px;">
+          <g transform="translate(0, 10)">
+            <rect x="0" y="0" width="88" height="36" fill="#1A1A1A"/><text x="44" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">総論</text>
+            <rect x="92" y="0" width="88" height="36" fill="#B8860B"/><text x="136" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">為替</text>
+            <rect x="184" y="0" width="88" height="36" fill="#2D5BB8"/><text x="228" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">AI</text>
+            <rect x="276" y="0" width="88" height="36" fill="#2E6B52"/><text x="320" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">IT</text>
+            <rect x="368" y="0" width="88" height="36" fill="#8E2A19"/><text x="412" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">経済</text>
+            <rect x="460" y="0" width="88" height="36" fill="#5E3D8C"/><text x="504" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">ゲーム</text>
+            <rect id="preview-rect-mob" x="552" y="0" width="88" height="36" fill="#3A7B8C" stroke="#181C2A" stroke-width="2"/><text id="preview-text-mob" x="596" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">モビリティ</text>
+            <rect x="644" y="0" width="88" height="36" fill="#C9A155"/><text x="688" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#181C2A">明日へ</text>
+          </g>
+        </svg>
+
+        <div style="margin-top: var(--space-xl); display: flex; gap: var(--space-md); flex-wrap: wrap;">
+          <button class="btn btn-navy" id="copy-config">config.py 行をコピー</button>
+          <button class="btn btn-gold" id="copy-prompt">Claude Code 用プロンプトをコピー</button>
+        </div>
+
+        <h4>生成スニペットプレビュー</h4>
+        <pre><code id="snippet-preview">"mobility": {"label": "Mobility", "jp": "モビリティ", "accent": "#3A7B8C", "glyph": "◎"},</code></pre>
+      </div>
+    </section>
+
+    <footer>
+      <p>News-Grasp · Mobility カテゴリ追加仕様書 · 2026-05-28 · DESIGN.md 同期 · plan ファイル: <code>C:\Users\hidek\.claude\plans\newsgrasp-mobility-expressive-catmull.md</code></p>
+    </footer>
+  </main>
+
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    // Playground state
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      id: $('param-id'),
+      jp: $('param-jp'),
+      label: $('param-label'),
+      accent: $('param-accent'),
+      glyph: $('param-glyph'),
+      swatch: $('preview-swatch'),
+      previewJp: $('preview-jp'),
+      previewLabel: $('preview-label'),
+      previewRect: $('preview-rect-mob'),
+      previewText: $('preview-text-mob'),
+      snippet: $('snippet-preview'),
+      copyConfig: $('copy-config'),
+      copyPrompt: $('copy-prompt'),
+      accentOut: document.querySelector('output[for="param-accent"]'),
+      idOut: document.querySelector('output[for="param-id"]'),
+    };
+
+    function refreshPreview() {
+      const id = els.id.value || 'mobility';
+      const jp = els.jp.value || 'モビリティ';
+      const label = els.label.value || 'Mobility';
+      const accent = els.accent.value || '#3A7B8C';
+      const glyph = els.glyph.value || '◎';
+
+      els.swatch.style.background = accent;
+      els.swatch.textContent = glyph;
+      els.previewJp.textContent = jp;
+      els.previewLabel.textContent = `${label.toUpperCase()} · ${accent.toUpperCase()}`;
+      els.previewRect.setAttribute('fill', accent);
+      els.previewText.textContent = jp;
+      els.snippet.textContent = `"${id}": {"label": "${label}", "jp": "${jp}", "accent": "${accent.toUpperCase()}", "glyph": "${glyph}"},`;
+      els.accentOut.textContent = accent.toUpperCase();
+      els.idOut.textContent = `URL: /${id}/`;
+    }
+
+    ['id', 'jp', 'label', 'accent', 'glyph'].forEach(k => {
+      els[k].addEventListener('input', refreshPreview);
+      els[k].addEventListener('change', refreshPreview);
+    });
+
+    function copy(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'コピーしました';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }).catch(() => alert('クリップボードに書き込めませんでした:\n\n' + text));
+    }
+
+    els.copyConfig.addEventListener('click', () => {
+      copy(els.snippet.textContent, els.copyConfig);
+    });
+
+    els.copyPrompt.addEventListener('click', () => {
+      const prompt = `News-Grasp に Mobility カテゴリを以下のパラメータで追加してください。
+
+- id: ${els.id.value}
+- 和名: ${els.jp.value}
+- 英名 (label): ${els.label.value}
+- アクセント色: ${els.accent.value.toUpperCase()}
+- グリフ: ${els.glyph.value}
+
+このパラメータで plan ファイル C:\\Users\\hidek\\.claude\\plans\\newsgrasp-mobility-expressive-catmull.md の A 群 #1〜#13 から順に実装を進めてください。`;
+      copy(prompt, els.copyPrompt);
+    });
+
+    refreshPreview();
+  </script>
+</body>
+</html>
