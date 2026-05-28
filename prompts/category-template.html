@@ -65,6 +65,11 @@
       <span class="lens-pill__glyph">{{ c.glyph }}</span>{{ c.name_en|upper }}
     </a>
     {% endfor %}
+    {% if featured and featured.date %}
+    <a href="{{ base_url }}/{{ featured.date }}/summary/" class="lens-pill lens-pill--essay">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+    {% endif %}
     <span class="lens-nav__meta">{{ entries|length }} ENTRIES · ARCHIVE</span>
   </div>
 </nav>
@@ -194,7 +199,10 @@
   <div class="past-week__grid">
     {% for p in past_7 %}
     <a class="past-card cat-{{ category_id }}" href="{{ base_url }}/{{ category_id }}/{{ p.date }}/" style="text-decoration: none; color: inherit;">
-      <div class="past-card__cover">
+      <div class="past-card__cover{% if p.top_thumb %} past-card__cover--has-thumb{% endif %}">
+        {% if p.top_thumb %}
+        <img class="past-card__thumb" src="{{ p.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+        {% endif %}
         <div class="past-card__no">{{ "%02d"|format(loop.index) }}</div>
         <div class="past-card__date">{{ p.date|replace('-', '·') }}</div>
         <div class="past-card__glyph">{{ glyph }}</div>
@@ -204,6 +212,27 @@
       </div>
     </a>
     {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if featured and featured.summary_text %}
+<!-- ============= Editorial (本日のテーマ考察 navy band / page-template と統一) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">{{ category_label|upper }} · {{ featured.date }}</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>{{ featured.summary_text|render_emph }}</p>
+      <div class="editorial__cta">
+        <a href="{{ base_url }}/{{ featured.date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="{{ base_url }}/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
   </div>
 </section>
 {% endif %}

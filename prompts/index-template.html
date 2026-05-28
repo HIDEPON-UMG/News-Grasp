@@ -257,7 +257,7 @@
 <section class="pub-matrix">
   <div class="pub-matrix__head">
     <h3 class="pub-matrix__title">━━ 配信スケジュール</h3>
-    <div class="pub-matrix__meta">直近 {{ publication_matrix.days }} 日の実配信頻度 · 今日 ({{ publication_matrix.weekdays[publication_matrix.today_idx] }}) の列を強調</div>
+    <div class="pub-matrix__meta">曜日別の確定スケジュール · 今日 ({{ publication_matrix.weekdays[publication_matrix.today_idx] }}) の列を強調</div>
   </div>
   <div class="pub-matrix__wrap">
     <table class="pub-matrix__table">
@@ -276,8 +276,8 @@
             <span class="pub-matrix__cat-glyph">{{ row.glyph }}</span>{{ row.jp }}
           </th>
           {% for cell in row.cells %}
-          <td class="pub-matrix__cell pub-matrix__cell--{{ cell.level }}{% if loop.index0 == publication_matrix.today_idx %} is-today{% endif %}" aria-label="{{ cell.count }}回">
-            {% if cell.level == 'high' %}●{% elif cell.level == 'mid' %}◐{% elif cell.level == 'low' %}◦{% else %}·{% endif %}
+          <td class="pub-matrix__cell pub-matrix__cell--{% if cell.scheduled %}on{% else %}off{% endif %}{% if loop.index0 == publication_matrix.today_idx %} is-today{% endif %}" aria-label="{% if cell.scheduled %}配信日{% else %}休載日{% endif %}">
+            {% if cell.scheduled %}●{% else %}–{% endif %}
           </td>
           {% endfor %}
         </tr>
@@ -286,10 +286,8 @@
     </table>
   </div>
   <div class="pub-matrix__legend">
-    <span><span class="pub-matrix__legend-mark">●</span> 高頻度 (5割超)</span>
-    <span><span class="pub-matrix__legend-mark">◐</span> 中頻度 (2-5割)</span>
-    <span><span class="pub-matrix__legend-mark">◦</span> 低頻度</span>
-    <span><span class="pub-matrix__legend-mark">·</span> 配信実績なし</span>
+    <span><span class="pub-matrix__legend-mark">●</span> 配信日</span>
+    <span><span class="pub-matrix__legend-mark">–</span> 休載日</span>
   </div>
 </section>
 {% endif %}

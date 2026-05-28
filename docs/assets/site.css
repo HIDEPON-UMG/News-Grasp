@@ -2580,12 +2580,45 @@ strong {
   font-size: 18px;
   color: var(--color-ink-dim);
 }
-.pub-matrix__cell--high { color: var(--color-ink); font-weight: 700; }
-.pub-matrix__cell--mid  { color: var(--color-ink); opacity: 0.7; }
-.pub-matrix__cell--low  { color: var(--color-ink-dim); opacity: 0.55; }
-.pub-matrix__cell--zero { color: var(--color-ink-dim); opacity: 0.35; }
+.pub-matrix__cell--on  { color: var(--color-ink); font-weight: 700; }
+.pub-matrix__cell--off { color: var(--color-ink-dim); opacity: 0.4; }
 .pub-matrix__cell.is-today {
   background: color-mix(in srgb, var(--color-gold) 14%, transparent);
+}
+
+/* 件 E: past-card にサムネ画像を背景埋め込み (cover が紫だけのタイルから画像入りに) */
+.past-card__cover {
+  position: relative;
+  overflow: hidden;
+}
+.past-card__thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.55;
+  mix-blend-mode: luminosity;
+}
+.past-card__cover--has-thumb { background: var(--accent-current); }
+.past-card__cover--has-thumb .past-card__no,
+.past-card__cover--has-thumb .past-card__date,
+.past-card__cover--has-thumb .past-card__glyph {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+/* 件 C: lens-nav の § ESSAY pill (Home の § ESSAY と一貫) */
+.lens-pill--essay {
+  color: var(--color-ink-dim) !important;
+  border-color: var(--color-border) !important;
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+.lens-pill--essay:hover {
+  color: var(--color-gold) !important;
+  border-color: var(--color-gold) !important;
 }
 .pub-matrix__legend {
   display: flex;

@@ -550,91 +550,124 @@ def _date_weekday_jp(date_str: str) -> str:
         return ""
 
 
+# 配信スケジュール (確定ルール / prompts/routine-system.md L78-84 に準拠)
+#   月=0 ... 日=6。値は配信するカテゴリ ID のセット。
+#   月: FX/AI/IT/Mobility/Economy (5)
+#   火: + Game (6)
+#   水: 月と同じ (5)
+#   木: 火と同じ (6)
+#   金: 月と同じ (5)
+#   土: FX/AI/IT/Mobility/Game (Economy 除く、5)
+#   日: 土と同じ (5)
+_PUBLICATION_SCHEDULE: dict[int, set[str]] = {
+    0: {"fx", "ai", "it", "mobility", "economy"},          # 月
+    1: {"fx", "ai", "it", "mobility", "economy", "game"},  # 火
+    2: {"fx", "ai", "it", "mobility", "economy"},          # 水
+    3: {"fx", "ai", "it", "mobility", "economy", "game"},  # 木
+    4: {"fx", "ai", "it", "mobility", "economy"},          # 金
+    5: {"fx", "ai", "it", "mobility", "game"},             # 土
+    6: {"fx", "ai", "it", "mobility", "game"},             # 日
+}
+
+
+# cat_id → data/articles.jsonl の "genre" 表記揺れ吸収マッピング
+_GENRE_ALIASES: dict[str, set[str]] = {
+    "fx":       {"FX", "Foreign Exchange"},
+    "ai":       {"AI", "Artificial Intelligence"},
+    "it":       {"IT", "IT-Consulting", "IT & Consulting"},
+    "mobility": {"Mobility"},
+    "economy":  {"Economy"},
+    "game":     {"Game"},
+}
+
+
+def _articles_as_grid_entries(cat_id: str, date: str,
+                               skip_url: str | None = None) -> list[dict[str, Any]]:
+    """data/articles.jsonl から同日同カテゴリ記事を more-card 用 entry-like dict に変換。
+
+    backfill 未着手の新設カテゴリ (Mobility 等) で 1 entry しか持たない場合の fallback。
+    score 降順で最大 9 件返す。featured 記事 (top_source_url) は skip。
+    """
+    import json as _json
+    p = _PKG_ROOT / "data" / "articles.jsonl"
+    if not p.exists():
+        return []
+    aliases = _GENRE_ALIASES.get(cat_id, set())
+    out: list[dict[str, Any]] = []
+    cat_meta = CATEGORIES.get(cat_id, {})
+    with p.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                o = _json.loads(line)
+            except _json.JSONDecodeError:
+                continue
+            genre = o.get("genre", "")
+            if genre not in aliases and o.get("category_id") != cat_id:
+                continue
+            if o.get("date") != date:
+                continue
+            if skip_url and o.get("url") == skip_url:
+                continue
+            out.append({
+                "date": o.get("date", date),
+                "top_title": o.get("title", ""),
+                "top_thumb": o.get("thumb"),
+                "top_source": o.get("source"),
+                "top_source_url": o.get("url"),
+                "top_score": o.get("score"),
+                "summary_text": o.get("summary", "") or "",
+                "top_bullets": [],
+                "canonical": o.get("url", ""),
+                "category_id": cat_id,
+                "category_label": cat_meta.get("label", cat_id),
+                "category_jp": cat_meta.get("jp", cat_id),
+                "accent": cat_meta.get("accent", ""),
+                "glyph": cat_meta.get("glyph", ""),
+            })
+    out.sort(key=lambda x: x.get("top_score") or 0, reverse=True)
+    return out[:9]
+
+
 def compute_publication_matrix(entries: list[dict[str, Any]],
                                 today_date: str,
                                 days: int = 30) -> dict[str, Any]:
-    """過去 N 日間の entries からカテゴリ × 曜日の配信頻度マトリクスを構築。
+    """配信スケジュール (確定ルール) を行列形式で返す。
+
+    routine-system.md L78-84 の表を _PUBLICATION_SCHEDULE に固定値で持つ。
+    entries / days 引数は後方互換のため受けるが、確定ルールの返却には使わない。
 
     返却 dict:
       {
         "weekdays": ["月","火","水","木","金","土","日"],
-        "today_idx": int,  # 今日の曜日インデックス (月=0)
+        "today_idx": int,  # 今日の曜日 (月=0)
         "rows": [
-          {"id": "fx", "jp": "為替", "glyph": "¥", "accent": "#...",
-           "cells": [{"count": int, "level": "high"|"mid"|"low"|"zero"}, ...]}, ...
+          {"id": "fx", "jp": "為替", "glyph": "¥", "label": "...", "accent": "#...",
+           "cells": [{"scheduled": bool}, ...×7]}, ...
         ],
-        "days": int,  # 実集計対象日数
       }
-    level 閾値: high >= 50%, mid 20-50%, low 0-20%, zero == 0。
     """
-    from datetime import date as _date, timedelta as _td
+    from datetime import date as _date
     weekdays = list(_WEEKDAY_JP)
     today_idx = 0
-    base_dt: _date | None = None
     if today_date and len(today_date) >= 10:
         try:
-            base_dt = _date(int(today_date[0:4]), int(today_date[5:7]),
-                            int(today_date[8:10]))
-            today_idx = base_dt.weekday()
+            today_idx = _date(int(today_date[0:4]),
+                              int(today_date[5:7]),
+                              int(today_date[8:10])).weekday()
         except (ValueError, IndexError):
-            base_dt = None
-    # 集計対象日 = base_dt から過去 days 日 (base 含む)
-    target_dates: set[str] = set()
-    if base_dt is not None:
-        for n in range(days):
-            d = base_dt - _td(days=n)
-            target_dates.add(d.isoformat())
-    # 曜日ごとの日付数 (分母)
-    weekday_total: dict[int, int] = {i: 0 for i in range(7)}
-    if base_dt is not None:
-        for ds in target_dates:
-            y, m, d = int(ds[0:4]), int(ds[5:7]), int(ds[8:10])
-            weekday_total[_date(y, m, d).weekday()] += 1
-    # カテゴリ × 曜日の配信回数 (entries は同日同カテゴリ 1 件想定)
-    counts: dict[str, dict[int, int]] = {
-        cid: {i: 0 for i in range(7)}
-        for cid in CATEGORIES if cid != "summary"
-    }
-    seen_pairs: set[tuple[str, str]] = set()
-    for e in entries:
-        ds = e.get("date", "")
-        cid = e.get("category_id", "")
-        if not ds or cid not in counts:
-            continue
-        if target_dates and ds not in target_dates:
-            continue
-        pair = (cid, ds)
-        if pair in seen_pairs:
-            continue
-        seen_pairs.add(pair)
-        try:
-            y, m, d = int(ds[0:4]), int(ds[5:7]), int(ds[8:10])
-            wd = _date(y, m, d).weekday()
-            counts[cid][wd] += 1
-        except (ValueError, IndexError):
-            continue
-
-    def _level(c: int, total: int) -> str:
-        if c == 0:
-            return "zero"
-        if total <= 0:
-            return "high" if c > 0 else "zero"
-        ratio = c / total
-        if ratio >= 0.5:
-            return "high"
-        if ratio >= 0.2:
-            return "mid"
-        return "low"
+            today_idx = 0
 
     rows: list[dict[str, Any]] = []
     for cid, meta in CATEGORIES.items():
         if cid == "summary":
             continue
-        cells = []
-        for i in range(7):
-            c = counts[cid][i]
-            total = weekday_total.get(i, 0)
-            cells.append({"count": c, "level": _level(c, total)})
+        cells = [
+            {"scheduled": (cid in _PUBLICATION_SCHEDULE[i])}
+            for i in range(7)
+        ]
         rows.append({
             "id": cid,
             "jp": meta["jp"],
@@ -647,7 +680,6 @@ def compute_publication_matrix(entries: list[dict[str, Any]],
         "weekdays": weekdays,
         "today_idx": today_idx,
         "rows": rows,
-        "days": sum(weekday_total.values()),
     }
 
 
@@ -1227,8 +1259,16 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
         # 日付降順は _collect_entries で保証済だが、念のため
         cat_entries_sorted = sorted(cat_entries, key=lambda e: e["date"], reverse=True)
         featured = cat_entries_sorted[0]
-        grid_9 = cat_entries_sorted[1:10]
-        past_7 = cat_entries_sorted[1:8]
+        if len(cat_entries_sorted) >= 2:
+            grid_9 = cat_entries_sorted[1:10]
+            past_7 = cat_entries_sorted[1:8]
+        else:
+            # data 不足 (= backfill 未着手の新設カテゴリ) の fallback:
+            # data/articles.jsonl の同日 5 記事を grid に展開して、他カテゴリと粒度を揃える
+            grid_9 = _articles_as_grid_entries(
+                cat_id, featured["date"], skip_url=featured.get("top_source_url")
+            )
+            past_7 = []
         nav_categories = [
             {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
         ]
