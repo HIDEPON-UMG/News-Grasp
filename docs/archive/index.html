@@ -97,9 +97,10 @@
 .ng-search input { background: #fff; border: 1px solid var(--color-border); padding: 9px 14px 9px 30px; width: min(360px, 70vw); font-family: var(--font-mono); font-size: 11px; color: var(--color-ink); letter-spacing: .03em; outline: none; }
 .ng-search input:focus { border-color: var(--color-navy); }
 .ng-filters__bottom { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
-.ng-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ng-chips__label, .ng-month-jump__label { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .2em; margin-right: 6px; }
-.ng-chip { position: relative; background: #fff; color: var(--lens, var(--color-navy)); border: 1.5px solid var(--lens, var(--color-navy)); font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+.ng-chips { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 9px 2px 3px 0; }
+.ng-chips::-webkit-scrollbar { display: none; }
+.ng-chips__label, .ng-month-jump__label { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .2em; margin-right: 6px; flex-shrink: 0; white-space: nowrap; }
+.ng-chip { position: relative; flex-shrink: 0; white-space: nowrap; background: #fff; color: var(--lens, var(--color-navy)); border: 1.5px solid var(--lens, var(--color-navy)); font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
 .ng-chip.is-active { background: var(--lens, var(--color-navy)); color: #fff; }
 .ng-chip__glyph { font-family: var(--font-serif); font-size: 12px; }
 .ng-chip__new { position: absolute; top: -7px; right: -8px; background: var(--color-gold); color: var(--color-navy); font-size: 7px; padding: 1px 4px; letter-spacing: .05em; font-weight: 700; }
@@ -218,21 +219,75 @@
 .ng-foot__links a:hover { color: var(--color-ink); }
 
 /* ---- Responsive ---- */
+/* ============================================================
+ * Mobile (Claude Design "ArchiveTimelineMobile" 準拠)
+ * 日付レールのサイドグリッドを廃し、1 カラムの縦積みカードに。
+ * リード/レンズも縦積みにして語中改行 (1 文字ずつ縦割れ) を解消。
+ * ============================================================ */
 @media (max-width: 760px) {
-  .ng-intro { grid-template-columns: 1fr; gap: 22px; }
+  .ng-wrap { padding: 0 16px; }
+
+  /* ブランド: 縦積み。「日付アーカイブ」を語中改行させず 1 行に収める */
   .ng-brand__nav { display: none; }
-  .ng-filters__h1 { font-size: 30px; }
-  .ng-timeline::before { left: 64px; }
-  .ng-month__lab { width: 64px; }
-  .ng-issue { grid-template-columns: 64px 1fr; }
-  .ng-issue__day { font-size: 38px; }
-  .ng-issue__body { padding-left: 14px; }
-  .ng-card { padding: 16px; }
-  .ng-card__headline { font-size: 21px; }
-  .ng-issue--featured .ng-card__headline { font-size: 24px; }
-  .ng-lead { grid-template-columns: 1fr auto; gap: 10px 12px; }
-  .ng-lead__badge { grid-column: 1 / -1; }
-  .ng-end { padding-left: 64px; }
+  .ng-brand__logo { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ng-brand__name { font-size: 30px; white-space: nowrap; }
+  .ng-brand__sep { border-left: none; padding-left: 0; margin-left: 0; }
+  .ng-brand__sect { font-size: 22px; white-space: nowrap; }
+  .ng-brand__sect span { font-size: 11px; }
+
+  /* フィルタバー */
+  .ng-filters__top { gap: 10px; }
+  .ng-filters__h1 { font-size: 27px; }
+  .ng-filters__h1 em { font-size: 17px; }
+  .ng-search { width: 100%; }
+  .ng-search input { width: 100%; }
+
+  /* イントロ: 1 カラム */
+  .ng-intro { grid-template-columns: 1fr; gap: 20px; }
+
+  /* タイムライン: サイドレール・縦罫線を撤去し 1 カラム化 */
+  .ng-timeline { padding: 16px 0 28px; }
+  .ng-timeline::before { display: none; }
+
+  .ng-month { margin: 18px 0 12px; gap: 10px; }
+  .ng-month__lab { width: auto; text-align: left; padding-right: 0; display: flex; align-items: baseline; gap: 6px; }
+  .ng-month__m { font-size: 22px; }
+  .ng-month__y { font-size: 9px; }
+  .ng-month__count { display: none; }
+
+  .ng-issue { display: block; margin-bottom: 14px; }
+  .ng-issue__rail { display: flex; align-items: baseline; gap: 8px; text-align: left; padding: 0 0 6px; }
+  .ng-issue__day { font-size: 30px; }
+  .ng-issue__ym, .ng-issue__no { margin-top: 0; }
+  .ng-issue__dot { display: none; }
+  .ng-issue__body { padding-left: 0; }
+
+  .ng-card { padding: 14px; }
+  .ng-card__meta { gap: 8px; }
+  .ng-card__headline { font-size: 19px; margin-bottom: 12px; }
+  .ng-issue--featured .ng-card__headline { font-size: 21px; }
+
+  /* リード: 縦積み (バッジ → タイトル → スコア)。タイトルが全幅を得て語中改行しない */
+  .ng-lead { display: block; padding: 10px 12px; }
+  .ng-lead__badge { margin-bottom: 4px; }
+  .ng-lead__star { display: inline-block; margin: 0 0 0 8px; }
+  .ng-lead__title { display: block; font-size: 15px; margin: 6px 0; }
+  .ng-issue--featured .ng-lead__title { font-size: 16px; }
+  .ng-lead__score { text-align: left; }
+  .ng-lead__score b { display: inline; font-size: 22px; }
+  .ng-lead__score small { margin-left: 6px; }
+
+  .ng-essay { font-size: 13px; }
+
+  /* レンズ別トップ: 1 カラム */
+  .ng-lens-grid { grid-template-columns: 1fr; }
+
+  /* フッター行: ボタンを全幅で縦に */
+  .ng-card__foot { flex-direction: column; align-items: stretch; gap: 10px; }
+  .ng-card__btns { justify-content: stretch; }
+  .ng-card__btns .ng-btn { flex: 1; text-align: center; }
+
+  .ng-end { padding-left: 0; }
 }
 </style>
 </head>

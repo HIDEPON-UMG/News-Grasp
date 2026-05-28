@@ -9,7 +9,7 @@
   "id": "/News-Grasp/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#F0EBE0",
   "theme_color": "#181C2A",
   "categories": ["news", "magazines"],

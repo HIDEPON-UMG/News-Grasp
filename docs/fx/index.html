@@ -59,15 +59,15 @@
  * (アーカイブの検索フィルターを流用。配色は site.css の DESIGN.md トークン参照) */
 .brand-zone__inner { gap: 20px; }
 .brand-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; max-width: 440px; }
-.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-gold); pointer-events: none; }
+.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-ink-dim); pointer-events: none; }
 .brand-search input {
-  width: 100%; background: rgba(240, 235, 224, 0.06);
-  border: 1px solid rgba(240, 235, 224, 0.28); color: var(--color-cream);
+  width: 100%; background: var(--color-cream);
+  border: 1px solid var(--color-border); color: var(--color-ink);
   font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em;
-  padding: 8px 12px 8px 30px; outline: none;
+  padding: 9px 12px 9px 30px; outline: none; border-radius: 2px;
 }
-.brand-search input::placeholder { color: rgba(240, 235, 224, 0.5); }
-.brand-search input:focus { border-color: var(--color-gold); background: rgba(240, 235, 224, 0.1); }
+.brand-search input::placeholder { color: var(--color-ink-dim); }
+.brand-search input:focus { border-color: var(--color-gold); box-shadow: 0 0 0 2px rgba(201, 161, 85, 0.35); }
 .cat-search-empty {
   display: none; font-family: var(--font-mono); font-size: 13px;
   color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
