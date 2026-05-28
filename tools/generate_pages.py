@@ -550,6 +550,107 @@ def _date_weekday_jp(date_str: str) -> str:
         return ""
 
 
+def compute_publication_matrix(entries: list[dict[str, Any]],
+                                today_date: str,
+                                days: int = 30) -> dict[str, Any]:
+    """過去 N 日間の entries からカテゴリ × 曜日の配信頻度マトリクスを構築。
+
+    返却 dict:
+      {
+        "weekdays": ["月","火","水","木","金","土","日"],
+        "today_idx": int,  # 今日の曜日インデックス (月=0)
+        "rows": [
+          {"id": "fx", "jp": "為替", "glyph": "¥", "accent": "#...",
+           "cells": [{"count": int, "level": "high"|"mid"|"low"|"zero"}, ...]}, ...
+        ],
+        "days": int,  # 実集計対象日数
+      }
+    level 閾値: high >= 50%, mid 20-50%, low 0-20%, zero == 0。
+    """
+    from datetime import date as _date, timedelta as _td
+    weekdays = list(_WEEKDAY_JP)
+    today_idx = 0
+    base_dt: _date | None = None
+    if today_date and len(today_date) >= 10:
+        try:
+            base_dt = _date(int(today_date[0:4]), int(today_date[5:7]),
+                            int(today_date[8:10]))
+            today_idx = base_dt.weekday()
+        except (ValueError, IndexError):
+            base_dt = None
+    # 集計対象日 = base_dt から過去 days 日 (base 含む)
+    target_dates: set[str] = set()
+    if base_dt is not None:
+        for n in range(days):
+            d = base_dt - _td(days=n)
+            target_dates.add(d.isoformat())
+    # 曜日ごとの日付数 (分母)
+    weekday_total: dict[int, int] = {i: 0 for i in range(7)}
+    if base_dt is not None:
+        for ds in target_dates:
+            y, m, d = int(ds[0:4]), int(ds[5:7]), int(ds[8:10])
+            weekday_total[_date(y, m, d).weekday()] += 1
+    # カテゴリ × 曜日の配信回数 (entries は同日同カテゴリ 1 件想定)
+    counts: dict[str, dict[int, int]] = {
+        cid: {i: 0 for i in range(7)}
+        for cid in CATEGORIES if cid != "summary"
+    }
+    seen_pairs: set[tuple[str, str]] = set()
+    for e in entries:
+        ds = e.get("date", "")
+        cid = e.get("category_id", "")
+        if not ds or cid not in counts:
+            continue
+        if target_dates and ds not in target_dates:
+            continue
+        pair = (cid, ds)
+        if pair in seen_pairs:
+            continue
+        seen_pairs.add(pair)
+        try:
+            y, m, d = int(ds[0:4]), int(ds[5:7]), int(ds[8:10])
+            wd = _date(y, m, d).weekday()
+            counts[cid][wd] += 1
+        except (ValueError, IndexError):
+            continue
+
+    def _level(c: int, total: int) -> str:
+        if c == 0:
+            return "zero"
+        if total <= 0:
+            return "high" if c > 0 else "zero"
+        ratio = c / total
+        if ratio >= 0.5:
+            return "high"
+        if ratio >= 0.2:
+            return "mid"
+        return "low"
+
+    rows: list[dict[str, Any]] = []
+    for cid, meta in CATEGORIES.items():
+        if cid == "summary":
+            continue
+        cells = []
+        for i in range(7):
+            c = counts[cid][i]
+            total = weekday_total.get(i, 0)
+            cells.append({"count": c, "level": _level(c, total)})
+        rows.append({
+            "id": cid,
+            "jp": meta["jp"],
+            "label": meta["label"],
+            "glyph": meta["glyph"],
+            "accent": meta["accent"],
+            "cells": cells,
+        })
+    return {
+        "weekdays": weekdays,
+        "today_idx": today_idx,
+        "rows": rows,
+        "days": sum(weekday_total.values()),
+    }
+
+
 def _split_theme_phrases(summary_text: str) -> tuple[str, str]:
     """summary_text から Hero 用の 2 フレーズ ("金利の天井" "AIの底入れ" 風) を抽出。
 
@@ -702,6 +803,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "reading_min": 15,
         },
         "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
+        "publication_matrix": compute_publication_matrix(entries, today_date, days=30),
     }
     out = Path(docs_root) / "index.html"
     return render_page(ctx, out, template_name="index-template.html")
@@ -960,7 +1062,18 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
                 canonical = ""
             elif i == 6:
                 # 明日へ — digest md `### §07` が取れれば本文を載せる
+                # ただし digest md が §01-§08 で書かれているケースがあり、
+                # その場合 §07 にはカテゴリ別記事 (例: ゲーム本日休載) が入り、
+                # §08 に本来の「明日へ」が入っている。
+                # heading に「明日」を含む section を優先採用するフォールバックを通す。
                 es = essay_sections.get(7)
+                if not es or "明日" not in (es.get("heading") or ""):
+                    for _key, _sec in essay_sections.items():
+                        if _key == 1:
+                            continue  # §01 総論は別途処理
+                        if "明日" in (_sec.get("heading") or ""):
+                            es = _sec
+                            break
                 if es and es.get("body"):
                     body = es["body"]
                     heading = es.get("heading") or "明日への示唆"
@@ -982,7 +1095,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
                     canonical = e["canonical"]
                 else:
                     heading = f"{CATEGORIES[cid]['jp']}本日のテーマ" if cid else tag
-                    body = f"{CATEGORIES[cid]['jp'] if cid else tag}カテゴリのダイジェスト準備中。"
+                    body = "本日は配信日ではありません。"
                     canonical = f"{BASE_URL}/{cid}/" if cid else ""
             sections.append({
                 "number": i + 1,

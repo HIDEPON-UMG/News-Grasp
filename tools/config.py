@@ -50,7 +50,7 @@ CATEGORIES: dict[str, dict[str, str]] = {
     "ai":       {"label": "Artificial Intelligence", "jp": "AI",            "accent": "#2D5BB8", "glyph": "◆"},
     "it":       {"label": "IT & Consulting",         "jp": "IT-Consulting", "accent": "#2E6B52", "glyph": "⌗"},
     "mobility": {"label": "Mobility",                "jp": "モビリティ",     "accent": "#3A7B8C", "glyph": "◎"},
-    "economy":  {"label": "Economy",                 "jp": "経済",          "accent": "#8E2A19", "glyph": "§"},
+    "economy":  {"label": "Economy",                 "jp": "経済",          "accent": "#8E2A19", "glyph": "■"},
     "game":     {"label": "Gaming",                  "jp": "ゲーム",         "accent": "#5E3D8C", "glyph": "▶"},
     "summary":  {"label": "Summary",                 "jp": "総括",          "accent": "#475569", "glyph": "★"},
 }
