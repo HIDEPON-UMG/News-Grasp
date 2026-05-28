@@ -54,10 +54,9 @@
 .ng-brand { background: var(--color-navy); color: var(--color-cream); position: relative; padding: 18px 0 20px; }
 .ng-brand::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--color-gold); opacity: .7; }
 .ng-brand__inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-.ng-brand__logo { display: flex; align-items: center; gap: 18px; }
-.ng-brand__mark { height: 50px; width: auto; display: block; }
-.ng-brand__eyebrow { font-family: var(--font-mono); font-size: 10px; color: var(--color-gold); letter-spacing: .3em; margin-bottom: 4px; }
-.ng-brand__name { font-family: var(--font-sans); font-size: 32px; font-weight: 900; line-height: .9; letter-spacing: -.04em; color: var(--color-cream); }
+.ng-brand__logo { display: flex; align-items: center; gap: 24px; }
+.ng-brand__eyebrow { font-family: var(--font-mono); font-size: 9px; color: var(--color-gold); letter-spacing: .3em; margin-bottom: 4px; }
+.ng-brand__name { font-family: var(--font-sans); font-size: 36px; font-weight: 900; line-height: .9; letter-spacing: -.04em; color: var(--color-cream); }
 .ng-brand__name a { color: inherit; text-decoration: none; }
 .ng-brand__sep { border-left: 1px solid rgba(240,235,224,.25); padding-left: 18px; margin-left: 4px; }
 .ng-brand__sect-k { font-family: var(--font-mono); font-size: 10px; color: var(--color-gold); letter-spacing: .25em; }
@@ -226,8 +225,7 @@
   <header class="ng-brand">
     <div class="ng-wrap ng-brand__inner">
       <div class="ng-brand__logo">
-        <img class="ng-brand__mark" src="{{ base_url }}/assets/favicon-256.png" alt="">
-        <div>
+        <div class="ng-brand__title">
           <div class="ng-brand__eyebrow">━━ THE</div>
           <div class="ng-brand__name"><a href="{{ base_url }}/">{{ site_title }}</a></div>
         </div>
