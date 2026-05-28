@@ -53,6 +53,31 @@
 
 
 <link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+
+<style>
+/* カテゴリーランディング: ブランドヘッダー内の記事検索フィルター
+ * (アーカイブの検索フィルターを流用。配色は site.css の DESIGN.md トークン参照) */
+.brand-zone__inner { gap: 20px; }
+.brand-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; max-width: 440px; }
+.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-gold); pointer-events: none; }
+.brand-search input {
+  width: 100%; background: rgba(240, 235, 224, 0.06);
+  border: 1px solid rgba(240, 235, 224, 0.28); color: var(--color-cream);
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em;
+  padding: 8px 12px 8px 30px; outline: none;
+}
+.brand-search input::placeholder { color: rgba(240, 235, 224, 0.5); }
+.brand-search input:focus { border-color: var(--color-gold); background: rgba(240, 235, 224, 0.1); }
+.cat-search-empty {
+  display: none; font-family: var(--font-mono); font-size: 13px;
+  color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
+}
+.is-search-hidden { display: none !important; }
+@media (max-width: 720px) {
+  .brand-zone__inner { flex-wrap: wrap; }
+  .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+}
+</style>
 </head>
 <body data-category="fx">
 
@@ -65,6 +90,12 @@
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
       </div>
     </div>
+    <label class="brand-search">
+      <span class="brand-search__icon">⌕</span>
+      <input id="cat-search" type="text" autocomplete="off"
+             aria-label="為替カテゴリの記事を検索"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)">
+    </label>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
       <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
@@ -159,7 +190,7 @@
 
 
 <!-- ============= TOP feature (最新 1 件) ============= -->
-<section class="top-story">
+<section class="top-story" data-search="2026-05-28 PCE・GDP同時公開で「高インフレ確認」──USD/JPY 159台後半が週内射程、利下げシナリオ後退 HeyGoTrade">
   <div class="top-story__meta">
     <span class="top-story__badge">TOP FEATURE</span>
     <span>2026-05-28 · HeyGoTrade</span>
@@ -198,7 +229,7 @@
   </div>
   <div class="more-stories__grid">
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-27 USD/JPY 158円台後半で膠着──Warsh新議長の利下げ封印でドル高持続、160円介入ラインへ再接近 Investing.com">
       <div class="more-card__meta">
         <span class="more-card__no">02</span>
         <span>2026-05-27</span>
@@ -219,7 +250,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-26 タカ派FOMC議事録でドル急騰──USD/JPY 159円台でブレイクアウト圏へ迫る Forex.com">
       <div class="more-card__meta">
         <span class="more-card__no">03</span>
         <span>2026-05-26</span>
@@ -240,7 +271,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-25 Warsh新FRB議長、就任初週はタカ派スタンス継続——インフレ3.8%を前に利下げ封印 CNBC">
       <div class="more-card__meta">
         <span class="more-card__no">04</span>
         <span>2026-05-25</span>
@@ -261,7 +292,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-24 来週5/25週のドル円——PCE・東京CPI・FOMC議事録が円高/円安の分水嶺 外為どっとコム">
       <div class="more-card__meta">
         <span class="more-card__no">05</span>
         <span>2026-05-24</span>
@@ -282,7 +313,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-23 ドル円159円台で週終わり・日銀コアCPI 4年ぶり低水準 — 利上げ・介入の均衡点 FXEmpire">
       <div class="more-card__meta">
         <span class="more-card__no">06</span>
         <span>2026-05-23</span>
@@ -303,7 +334,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-22 USD/JPY 157.9円台へ急落 — イラン和平期待とホルムズ再開でドル安・原油安の連鎖 Trading Economics / Reuters">
       <div class="more-card__meta">
         <span class="more-card__no">07</span>
         <span>2026-05-22</span>
@@ -324,7 +355,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-21 ドル高の本質: Moody&#39;s格下げ後もドル需要が衰えない理由 — 安全資産性と金利差の二重効果 IG Japan">
       <div class="more-card__meta">
         <span class="more-card__no">08</span>
         <span>2026-05-21</span>
@@ -345,7 +376,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-20 ドル円159.09円（5/19）——FRBタカ派継続で6連騰、160円介入ゾーンへ Trading Economics">
       <div class="more-card__meta">
         <span class="more-card__no">09</span>
         <span>2026-05-20</span>
@@ -366,7 +397,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-19 Warsh 新 FRB 議長就任——インフレ優先・データドリブン路線で利下げ期待を冷却 NPR / Reuters">
       <div class="more-card__meta">
         <span class="more-card__no">10</span>
         <span>2026-05-19</span>
@@ -421,7 +452,7 @@
   </div>
   <div class="past-week__grid">
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-27/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-27/" style="text-decoration: none; color: inherit;" data-search="2026-05-27 USD/JPY 158円台後半で膠着──Warsh新議長の利下げ封印でドル高持続、160円介入ラインへ再接近">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-fx.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -435,7 +466,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-26/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-26/" style="text-decoration: none; color: inherit;" data-search="2026-05-26 タカ派FOMC議事録でドル急騰──USD/JPY 159円台でブレイクアウト圏へ迫る">
       <div class="past-card__cover">
         
         <div class="past-card__no">02</div>
@@ -447,7 +478,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-25/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-25/" style="text-decoration: none; color: inherit;" data-search="2026-05-25 Warsh新FRB議長、就任初週はタカ派スタンス継続——インフレ3.8%を前に利下げ封印">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://image.cnbcfm.com/api/v1/image/108311287-1779466491747-gettyimages-2277688148-rs2_5781_wb3w.jpeg?v=1779466515&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -461,7 +492,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-24/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-24/" style="text-decoration: none; color: inherit;" data-search="2026-05-24 来週5/25週のドル円——PCE・東京CPI・FOMC議事録が円高/円安の分水嶺">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-fx.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -475,7 +506,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-23/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-23/" style="text-decoration: none; color: inherit;" data-search="2026-05-23 ドル円159円台で週終わり・日銀コアCPI 4年ぶり低水準 — 利上げ・介入の均衡点">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://responsive.fxempire.com/v7/_fxempire_/2025/09/USDJPY-1.jpg?func=cover&amp;q=70&amp;width=700" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -489,7 +520,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-22/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-22/" style="text-decoration: none; color: inherit;" data-search="2026-05-22 USD/JPY 157.9円台へ急落 — イラン和平期待とホルムズ再開でドル安・原油安の連鎖">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-fx.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -503,7 +534,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-21/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-fx" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-21/" style="text-decoration: none; color: inherit;" data-search="2026-05-21 ドル高の本質: Moody&#39;s格下げ後もドル需要が衰えない理由 — 安全資産性と金利差の二重効果">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://a.c-dn.net/c/content/dam/publicsites/igcom/uk/images/news-article-image-folder/bb_USDJPY_Japan_flag_14_11_2024.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -521,6 +552,8 @@
 </section>
 
 
+<div id="cat-search-empty" class="cat-search-empty">該当する記事がありません。検索条件を変えてください。</div>
+
 </div><!-- /.cat-container -->
 
 <!-- ============= Footer ============= -->
@@ -536,5 +569,35 @@
   </div>
 </footer>
 
+<script>
+/* カテゴリーランディング: ブランドヘッダー検索で記事カードを絞り込み (素 JS / 無効でも全件表示) */
+(function () {
+  var input = document.getElementById('cat-search');
+  if (!input) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('[data-search]'));
+  var containers = Array.prototype.slice.call(document.querySelectorAll('.more-stories, .past-week'));
+  var editorial = document.querySelector('.editorial');
+  var empty = document.getElementById('cat-search-empty');
+
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (c) {
+      var hit = !q || (c.getAttribute('data-search') || '').toLowerCase().indexOf(q) >= 0;
+      c.classList.toggle('is-search-hidden', !hit);
+      if (hit) anyVisible = true;
+    });
+    // 記事カードを内包するセクションは、可視カードが 0 件なら見出しごと隠す
+    containers.forEach(function (s) {
+      if (!q) { s.classList.remove('is-search-hidden'); return; }
+      s.classList.toggle('is-search-hidden', !s.querySelector('[data-search]:not(.is-search-hidden)'));
+    });
+    // 考察(プロセクション)は検索中は隠す
+    if (editorial) editorial.classList.toggle('is-search-hidden', !!q);
+    if (empty) empty.style.display = (q && !anyVisible) ? 'block' : 'none';
+  }
+  input.addEventListener('input', apply);
+})();
+</script>
 </body>
 </html>

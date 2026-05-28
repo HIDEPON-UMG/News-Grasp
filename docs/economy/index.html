@@ -53,6 +53,31 @@
 
 
 <link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+
+<style>
+/* カテゴリーランディング: ブランドヘッダー内の記事検索フィルター
+ * (アーカイブの検索フィルターを流用。配色は site.css の DESIGN.md トークン参照) */
+.brand-zone__inner { gap: 20px; }
+.brand-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; max-width: 440px; }
+.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-gold); pointer-events: none; }
+.brand-search input {
+  width: 100%; background: rgba(240, 235, 224, 0.06);
+  border: 1px solid rgba(240, 235, 224, 0.28); color: var(--color-cream);
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em;
+  padding: 8px 12px 8px 30px; outline: none;
+}
+.brand-search input::placeholder { color: rgba(240, 235, 224, 0.5); }
+.brand-search input:focus { border-color: var(--color-gold); background: rgba(240, 235, 224, 0.1); }
+.cat-search-empty {
+  display: none; font-family: var(--font-mono); font-size: 13px;
+  color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
+}
+.is-search-hidden { display: none !important; }
+@media (max-width: 720px) {
+  .brand-zone__inner { flex-wrap: wrap; }
+  .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+}
+</style>
 </head>
 <body data-category="economy">
 
@@ -65,6 +90,12 @@
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
       </div>
     </div>
+    <label class="brand-search">
+      <span class="brand-search__icon">⌕</span>
+      <input id="cat-search" type="text" autocomplete="off"
+             aria-label="経済カテゴリの記事を検索"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)">
+    </label>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
       <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
@@ -159,7 +190,7 @@
 
 
 <!-- ============= TOP feature (最新 1 件) ============= -->
-<section class="top-story">
+<section class="top-story" data-search="2026-05-28 日経平均65,800突破・最高値更新連続──AI半導体主導のウォール街追随、PCE/GDP待ちで様子見も 日本経済新聞">
   <div class="top-story__meta">
     <span class="top-story__badge">TOP FEATURE</span>
     <span>2026-05-28 · 日本経済新聞</span>
@@ -198,7 +229,7 @@
   </div>
   <div class="more-stories__grid">
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-27 Micron時価総額1兆ドル突破──AI楽観論がS&amp;P500（7,519）・NASDAQ（26,656）を史上最高値へ押し上げ Motley Fool">
       <div class="more-card__meta">
         <span class="more-card__no">02</span>
         <span>2026-05-27</span>
@@ -219,7 +250,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-26 日経平均、一時6万5000円台突破──2000円超高で過去最大級の上昇 日本経済新聞">
       <div class="more-card__meta">
         <span class="more-card__no">03</span>
         <span>2026-05-26</span>
@@ -240,7 +271,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-25 日本Q1 GDP年率2.1%——自動車輸出回復と5期連続の個人消費増で市場予想を上回る成長 CNBC">
       <div class="more-card__meta">
         <span class="more-card__no">04</span>
         <span>2026-05-25</span>
@@ -261,7 +292,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-22 日経平均+3.31%・61,782円 — イラン交渉・4月輸出+14.8%でアジア株がS&amp;P500をリード Trading Economics / ロイター">
       <div class="more-card__meta">
         <span class="more-card__no">05</span>
         <span>2026-05-22</span>
@@ -282,7 +313,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-21 Moody&#39;s格下げ余震: 米30年国債利回り5.19%、S&amp;P500が3連続安 — 財政赤字134%/GDPを市場が消化 NBC News">
       <div class="more-card__meta">
         <span class="more-card__no">06</span>
         <span>2026-05-21</span>
@@ -303,7 +334,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-20 S&amp;P500 3連続安・30年債利回り5.19%——株式市場がインフレ再加速に警戒 CNBC">
       <div class="more-card__meta">
         <span class="more-card__no">07</span>
         <span>2026-05-20</span>
@@ -324,7 +355,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-19 Warsh FRB 議長就任——インフレ優先・データドリブン路線で金融市場を試す NPR / Bloomberg">
       <div class="more-card__meta">
         <span class="more-card__no">08</span>
         <span>2026-05-19</span>
@@ -345,7 +376,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-15 ウォーシュ就任後の市場シナリオ — 「利下げなし」示唆なら株安・円高、積極利下げなら株高 Washington Post">
       <div class="more-card__meta">
         <span class="more-card__no">09</span>
         <span>2026-05-15</span>
@@ -366,7 +397,7 @@
       
     </article>
     
-    <article class="more-card">
+    <article class="more-card" data-search="2026-05-14 米4月CPI+3.8%（3年ぶり高水準）— 年内利下げ遠のき、12月利上げ確率30%へ Bloomberg">
       <div class="more-card__meta">
         <span class="more-card__no">10</span>
         <span>2026-05-14</span>
@@ -421,7 +452,7 @@
   </div>
   <div class="past-week__grid">
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-27/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-27/" style="text-decoration: none; color: inherit;" data-search="2026-05-27 Micron時価総額1兆ドル突破──AI楽観論がS&amp;P500（7,519）・NASDAQ（26,656）を史上最高値へ押し上げ">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://g.foolcdn.com/image/?url=https%3A%2F%2Fcdn.content.foolcdn.com%2Fimages%2F1umn9qeh%2Fproduction%2F446dde0c7af61257ba43e10a3a4377ea2eab4d36-300x180.png%3Fw%3D800%26q%3D75%26fit%3Dmax%26auto%3Dformat&amp;w=1200&amp;op=resize" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -435,7 +466,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-26/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-26/" style="text-decoration: none; color: inherit;" data-search="2026-05-26 日経平均、一時6万5000円台突破──2000円超高で過去最大級の上昇">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3066611025052026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;fp-x=0.9&amp;fp-y=0.89&amp;h=630&amp;upscale=false&amp;w=1200&amp;s=5a68bf4791465333709f3b6a4623ff08" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -449,7 +480,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-25/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-25/" style="text-decoration: none; color: inherit;" data-search="2026-05-25 日本Q1 GDP年率2.1%——自動車輸出回復と5期連続の個人消費増で市場予想を上回る成長">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://image.cnbcfm.com/api/v1/image/108188376-1755681997373-gettyimages-1252632438-AFP_33EE2UE.jpeg?v=1755682695&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -463,7 +494,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-22/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-22/" style="text-decoration: none; color: inherit;" data-search="2026-05-22 日経平均+3.31%・61,782円 — イラン交渉・4月輸出+14.8%でアジア株がS&amp;P500をリード">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -477,7 +508,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-21/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-21/" style="text-decoration: none; color: inherit;" data-search="2026-05-21 Moody&#39;s格下げ余震: 米30年国債利回り5.19%、S&amp;P500が3連続安 — 財政赤字134%/GDPを市場が消化">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://media-cldnry.s-nbcnews.com/image/upload/t_nbcnews-fp-1200-630,f_auto,q_auto:best/rockcms/2025-05/250519-new-york-stock-exchange-ew-126p-6fb0d1.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -491,7 +522,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-20/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-20/" style="text-decoration: none; color: inherit;" data-search="2026-05-20 S&amp;P500 3連続安・30年債利回り5.19%——株式市場がインフレ再加速に警戒">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://image.cnbcfm.com/api/v1/image/108301577-1777904769462-gettyimages-2274452515-mms20762_dpnokecb.jpeg?v=1777904954&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -505,7 +536,7 @@
       </div>
     </a>
     
-    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-19/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-economy" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-19/" style="text-decoration: none; color: inherit;" data-search="2026-05-19 Warsh FRB 議長就任——インフレ優先・データドリブン路線で金融市場を試す">
       <div class="past-card__cover past-card__cover--has-thumb">
         
         <img class="past-card__thumb" src="https://npr.brightspotcdn.com/dims3/default/strip/false/crop/3542x1992+0+185/resize/1400/quality/85/format/jpeg/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fb8%2F0e%2F62a09b724e0ca347faddf737929f%2Fgettyimages-2272388349.jpg" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -523,6 +554,8 @@
 </section>
 
 
+<div id="cat-search-empty" class="cat-search-empty">該当する記事がありません。検索条件を変えてください。</div>
+
 </div><!-- /.cat-container -->
 
 <!-- ============= Footer ============= -->
@@ -538,5 +571,35 @@
   </div>
 </footer>
 
+<script>
+/* カテゴリーランディング: ブランドヘッダー検索で記事カードを絞り込み (素 JS / 無効でも全件表示) */
+(function () {
+  var input = document.getElementById('cat-search');
+  if (!input) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('[data-search]'));
+  var containers = Array.prototype.slice.call(document.querySelectorAll('.more-stories, .past-week'));
+  var editorial = document.querySelector('.editorial');
+  var empty = document.getElementById('cat-search-empty');
+
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (c) {
+      var hit = !q || (c.getAttribute('data-search') || '').toLowerCase().indexOf(q) >= 0;
+      c.classList.toggle('is-search-hidden', !hit);
+      if (hit) anyVisible = true;
+    });
+    // 記事カードを内包するセクションは、可視カードが 0 件なら見出しごと隠す
+    containers.forEach(function (s) {
+      if (!q) { s.classList.remove('is-search-hidden'); return; }
+      s.classList.toggle('is-search-hidden', !s.querySelector('[data-search]:not(.is-search-hidden)'));
+    });
+    // 考察(プロセクション)は検索中は隠す
+    if (editorial) editorial.classList.toggle('is-search-hidden', !!q);
+    if (empty) empty.style.display = (q && !anyVisible) ? 'block' : 'none';
+  }
+  input.addEventListener('input', apply);
+})();
+</script>
 </body>
 </html>

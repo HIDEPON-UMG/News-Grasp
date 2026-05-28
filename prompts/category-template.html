@@ -35,6 +35,31 @@
 {% include "_partials/pwa-head.html" %}
 
 <link rel="stylesheet" href="{{ base_url }}/assets/site.css">
+
+<style>
+/* カテゴリーランディング: ブランドヘッダー内の記事検索フィルター
+ * (アーカイブの検索フィルターを流用。配色は site.css の DESIGN.md トークン参照) */
+.brand-zone__inner { gap: 20px; }
+.brand-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; max-width: 440px; }
+.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-gold); pointer-events: none; }
+.brand-search input {
+  width: 100%; background: rgba(240, 235, 224, 0.06);
+  border: 1px solid rgba(240, 235, 224, 0.28); color: var(--color-cream);
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em;
+  padding: 8px 12px 8px 30px; outline: none;
+}
+.brand-search input::placeholder { color: rgba(240, 235, 224, 0.5); }
+.brand-search input:focus { border-color: var(--color-gold); background: rgba(240, 235, 224, 0.1); }
+.cat-search-empty {
+  display: none; font-family: var(--font-mono); font-size: 13px;
+  color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
+}
+.is-search-hidden { display: none !important; }
+@media (max-width: 720px) {
+  .brand-zone__inner { flex-wrap: wrap; }
+  .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+}
+</style>
 </head>
 <body data-category="{{ category_id }}">
 
@@ -47,6 +72,12 @@
         <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a></h1>
       </div>
     </div>
+    <label class="brand-search">
+      <span class="brand-search__icon">⌕</span>
+      <input id="cat-search" type="text" autocomplete="off"
+             aria-label="{{ category_jp }}カテゴリの記事を検索"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)">
+    </label>
     <nav class="brand-zone__nav">
       <a href="{{ base_url }}/">HOME</a>
       <a href="{{ base_url }}/archive/">ARCHIVE</a>
@@ -121,7 +152,7 @@
 
 {% if featured %}
 <!-- ============= TOP feature (最新 1 件) ============= -->
-<section class="top-story">
+<section class="top-story" data-search="{{ featured.date }} {{ featured.top_title or featured.title }} {{ featured.top_source }}">
   <div class="top-story__meta">
     <span class="top-story__badge">TOP FEATURE</span>
     <span>{{ featured.date }}{% if featured.top_source %} · {{ featured.top_source }}{% endif %}</span>
@@ -162,7 +193,7 @@
   </div>
   <div class="more-stories__grid">
     {% for e in grid_9 %}
-    <article class="more-card">
+    <article class="more-card" data-search="{{ e.date }} {{ e.top_title or e.title }} {{ e.top_source }}">
       <div class="more-card__meta">
         <span class="more-card__no">{{ "%02d"|format(loop.index + 1) }}</span>
         <span>{{ e.date }}</span>
@@ -219,7 +250,7 @@
   </div>
   <div class="past-week__grid">
     {% for p in past_7 %}
-    <a class="past-card cat-{{ category_id }}" href="{{ base_url }}/{{ category_id }}/{{ p.date }}/" style="text-decoration: none; color: inherit;">
+    <a class="past-card cat-{{ category_id }}" href="{{ base_url }}/{{ category_id }}/{{ p.date }}/" style="text-decoration: none; color: inherit;" data-search="{{ p.date }} {{ p.top_title or p.title }}">
       <div class="past-card__cover{% if p.top_thumb %} past-card__cover--has-thumb{% endif %}">
         {% if p.top_thumb %}
         <img class="past-card__thumb" src="{{ p.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
@@ -237,6 +268,8 @@
 </section>
 {% endif %}
 
+<div id="cat-search-empty" class="cat-search-empty">該当する記事がありません。検索条件を変えてください。</div>
+
 </div><!-- /.cat-container -->
 
 <!-- ============= Footer ============= -->
@@ -252,5 +285,35 @@
   </div>
 </footer>
 
+<script>
+/* カテゴリーランディング: ブランドヘッダー検索で記事カードを絞り込み (素 JS / 無効でも全件表示) */
+(function () {
+  var input = document.getElementById('cat-search');
+  if (!input) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('[data-search]'));
+  var containers = Array.prototype.slice.call(document.querySelectorAll('.more-stories, .past-week'));
+  var editorial = document.querySelector('.editorial');
+  var empty = document.getElementById('cat-search-empty');
+
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (c) {
+      var hit = !q || (c.getAttribute('data-search') || '').toLowerCase().indexOf(q) >= 0;
+      c.classList.toggle('is-search-hidden', !hit);
+      if (hit) anyVisible = true;
+    });
+    // 記事カードを内包するセクションは、可視カードが 0 件なら見出しごと隠す
+    containers.forEach(function (s) {
+      if (!q) { s.classList.remove('is-search-hidden'); return; }
+      s.classList.toggle('is-search-hidden', !s.querySelector('[data-search]:not(.is-search-hidden)'));
+    });
+    // 考察(プロセクション)は検索中は隠す
+    if (editorial) editorial.classList.toggle('is-search-hidden', !!q);
+    if (empty) empty.style.display = (q && !anyVisible) ? 'block' : 'none';
+  }
+  input.addEventListener('input', apply);
+})();
+</script>
 </body>
 </html>
