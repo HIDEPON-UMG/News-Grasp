@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>日付アーカイブ — {{ site_title }}</title>
-<meta name="description" content="{{ site_title }} の日付順アーカイブ。全カテゴリ横断。">
+<meta name="description" content="{{ site_title }} の日付順アーカイブ。全カテゴリ横断のエディトリアル・タイムライン。">
 <link rel="canonical" href="{{ canonical }}">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ site_title }}">
 <meta property="og:title" content="日付アーカイブ — {{ site_title }}">
-<meta property="og:description" content="{{ site_title }} の日付順アーカイブ。全カテゴリ横断。">
+<meta property="og:description" content="{{ site_title }} の日付順アーカイブ。全カテゴリ横断のエディトリアル・タイムライン。">
 <meta property="og:url" content="{{ canonical }}">
 <meta property="og:image" content="{{ base_url }}/assets/og/summary.jpg">
 <meta property="og:image:width" content="1120">
@@ -20,12 +20,12 @@
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="日付アーカイブ — {{ site_title }}">
-<meta name="twitter:description" content="{{ site_title }} の日付順アーカイブ。全カテゴリ横断。">
+<meta name="twitter:description" content="{{ site_title }} の日付順アーカイブ。全カテゴリ横断のエディトリアル・タイムライン。">
 <meta name="twitter:image" content="{{ base_url }}/assets/og/summary.jpg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
 
 <!-- Favicon: News Grasp N→ mark -->
 <link rel="icon" type="image/png" sizes="256x256" href="{{ base_url }}/assets/favicon-256.png">
@@ -35,38 +35,443 @@
 {% include "_partials/pwa-head.html" %}
 
 <link rel="stylesheet" href="{{ base_url }}/assets/site.css">
+
+<style>
+/* ============================================================
+ * 日付アーカイブ — Editorial Timeline
+ * Claude Design "News Grasp Archive" (Variant B) 準拠。
+ * 配色・余白・フォントは site.css の DESIGN.md トークンを参照。
+ * ============================================================ */
+.ng-arch { background: var(--color-paper); color: var(--color-ink); }
+.ng-arch *, .ng-arch *::before, .ng-arch *::after { box-sizing: border-box; }
+.ng-wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+/* 強調マーカーは見出し/エッセイ内では塗りボックスを使わず太字・下線のみに中和 */
+.ng-arch .emph-bold { background: transparent; color: inherit; padding: 0; border-radius: 0; font-weight: 900; }
+.ng-arch .emph-und  { border-bottom-color: currentColor; }
+
+/* ---- Brand header ---- */
+.ng-brand { background: var(--color-navy); color: var(--color-cream); position: relative; padding: 18px 0 20px; }
+.ng-brand::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--color-gold); opacity: .7; }
+.ng-brand__inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.ng-brand__logo { display: flex; align-items: center; gap: 18px; }
+.ng-brand__mark { height: 50px; width: auto; display: block; }
+.ng-brand__eyebrow { font-family: var(--font-mono); font-size: 10px; color: var(--color-gold); letter-spacing: .3em; margin-bottom: 4px; }
+.ng-brand__name { font-family: var(--font-sans); font-size: 32px; font-weight: 900; line-height: .9; letter-spacing: -.04em; color: var(--color-cream); }
+.ng-brand__name a { color: inherit; text-decoration: none; }
+.ng-brand__sep { border-left: 1px solid rgba(240,235,224,.25); padding-left: 18px; margin-left: 4px; }
+.ng-brand__sect-k { font-family: var(--font-mono); font-size: 10px; color: var(--color-gold); letter-spacing: .25em; }
+.ng-brand__sect { font-family: var(--font-serif); font-size: 26px; font-weight: 800; color: var(--color-cream); line-height: 1; margin-top: 2px; letter-spacing: -.02em; }
+.ng-brand__sect span { font-family: var(--font-mono); font-size: 12px; color: var(--color-gold); letter-spacing: .15em; font-weight: 700; margin-left: 8px; }
+.ng-brand__nav { display: flex; gap: 20px; align-items: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; font-weight: 700; color: rgba(240,235,224,.6); }
+.ng-brand__nav a { color: inherit; text-decoration: none; }
+.ng-brand__nav a:hover { color: var(--color-cream); }
+.ng-brand__nav a.is-active { color: var(--color-cream); border-bottom: 2px solid var(--color-gold); padding-bottom: 3px; }
+.ng-brand__sub { background: var(--color-gold); color: var(--color-navy); border: none; text-decoration: none; padding: 7px 14px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .15em; }
+
+/* ---- Filter bar ---- */
+.ng-filters { background: var(--color-paper); border-bottom: 1px solid var(--color-border); padding: 16px 0; }
+.ng-filters__top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.ng-filters__h1 { margin: 0; font-family: var(--font-serif); font-size: 38px; font-weight: 900; letter-spacing: -.03em; color: var(--color-navy); line-height: 1; }
+.ng-filters__h1 em { color: var(--color-ink-dim); font-style: italic; font-weight: 600; font-size: 22px; margin-left: 10px; }
+.ng-filters__stat { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-dim); letter-spacing: .1em; margin-top: 8px; }
+.ng-search { position: relative; display: flex; align-items: center; }
+.ng-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-dim); pointer-events: none; }
+.ng-search input { background: #fff; border: 1px solid var(--color-border); padding: 9px 14px 9px 30px; width: min(360px, 70vw); font-family: var(--font-mono); font-size: 11px; color: var(--color-ink); letter-spacing: .03em; outline: none; }
+.ng-search input:focus { border-color: var(--color-navy); }
+.ng-filters__bottom { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.ng-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ng-chips__label, .ng-month-jump__label { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .2em; margin-right: 6px; }
+.ng-chip { position: relative; background: #fff; color: var(--lens, var(--color-navy)); border: 1.5px solid var(--lens, var(--color-navy)); font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+.ng-chip.is-active { background: var(--lens, var(--color-navy)); color: #fff; }
+.ng-chip__glyph { font-family: var(--font-serif); font-size: 12px; }
+.ng-chip__new { position: absolute; top: -7px; right: -8px; background: var(--color-gold); color: var(--color-navy); font-size: 7px; padding: 1px 4px; letter-spacing: .05em; font-weight: 700; }
+.ng-month-jump { display: flex; align-items: center; gap: 6px; }
+.ng-month-jump a { border: 1px solid var(--color-border); background: #fff; color: var(--color-ink); font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; padding: 5px 10px; text-decoration: none; }
+.ng-month-jump a:hover { border-color: var(--color-navy); }
+.ng-density { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .1em; margin-left: 8px; }
+.ng-density strong { color: var(--color-navy); }
+
+/* ---- Editor's intro strip ---- */
+.ng-intro { border-bottom: 1px solid var(--color-border); padding: 24px 0 20px; display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 32px; }
+.ng-intro__k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .22em; margin-bottom: 8px; color: var(--color-ink-dim); }
+.ng-intro__k--gold { color: var(--color-gold); letter-spacing: .3em; }
+.ng-intro__note { font-family: var(--font-serif); font-size: 15px; line-height: 1.85; color: var(--color-ink); margin: 0; font-style: italic; }
+.ng-nums { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 18px; }
+.ng-nums__cell { border-bottom: 1px solid var(--color-border); padding-bottom: 6px; }
+.ng-nums__v { font-family: var(--font-sans); font-size: 28px; font-weight: 900; color: var(--color-navy); line-height: 1; letter-spacing: -.03em; }
+.ng-nums__l { font-family: var(--font-mono); font-size: 9px; color: var(--color-ink-dim); letter-spacing: .12em; margin-top: 4px; }
+.ng-lens-most { display: flex; gap: 14px; align-items: baseline; }
+.ng-lens-most__glyph { font-family: var(--font-serif); font-size: 40px; font-weight: 900; line-height: 1; }
+.ng-lens-most__name { font-family: var(--font-sans); font-size: 22px; font-weight: 900; color: var(--color-navy); line-height: 1; letter-spacing: -.02em; }
+.ng-lens-most__sub { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .12em; margin-top: 4px; }
+
+/* ---- Timeline ---- */
+.ng-timeline { position: relative; padding: 30px 0 36px; }
+.ng-timeline::before { content: ""; position: absolute; top: 0; bottom: 0; left: 96px; width: 1px; background: var(--color-border); }
+
+.ng-month { display: flex; align-items: center; gap: 14px; margin: 26px 0 18px; position: relative; }
+.ng-month__lab { width: 96px; text-align: right; padding-right: 16px; flex-shrink: 0; }
+.ng-month__m { font-family: var(--font-sans); font-size: 28px; font-weight: 900; color: var(--color-navy); line-height: 1; letter-spacing: -.04em; }
+.ng-month__y { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .12em; }
+.ng-month__diamond { width: 16px; height: 16px; background: var(--color-gold); transform: rotate(45deg); flex-shrink: 0; z-index: 1; }
+.ng-month__line { flex: 1; height: 1px; background: var(--color-navy); opacity: .2; }
+.ng-month__count { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .15em; }
+
+.ng-issue { display: grid; grid-template-columns: 96px 1fr; gap: 0; margin-bottom: 26px; position: relative; }
+.ng-issue__rail { text-align: right; padding-right: 22px; position: relative; }
+.ng-issue__day { font-family: var(--font-sans); font-size: 54px; font-weight: 900; color: var(--rail, var(--color-navy)); line-height: .9; letter-spacing: -.05em; }
+.ng-issue__ym { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .12em; margin-top: 4px; }
+.ng-issue__no { font-family: var(--font-mono); font-size: 10px; color: var(--lens, var(--color-navy)); letter-spacing: .12em; margin-top: 2px; font-weight: 700; }
+.ng-issue__dot { position: absolute; right: -8px; top: 16px; width: 14px; height: 14px; border-radius: 50%; background: var(--rail, var(--lens, var(--color-navy))); border: 3px solid var(--color-paper); box-shadow: 0 0 0 1px var(--rail, var(--lens, var(--color-navy))); z-index: 1; }
+.ng-issue__body { padding-left: 20px; min-width: 0; }
+
+.ng-card { background: #fff; color: var(--color-ink); border: 1px solid var(--color-border); padding: 22px 24px; position: relative; overflow: hidden; }
+.ng-issue--featured .ng-card { background: var(--color-navy); color: var(--color-cream); border: none; }
+.ng-issue--featured .ng-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--color-gold); }
+
+.ng-card__meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+.ng-card__metaL { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ng-card__tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .25em; font-weight: 700; color: var(--color-ink-dim); }
+.ng-issue--featured .ng-card__tag { color: var(--color-gold); }
+.ng-card__sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: .15em; color: var(--color-ink-dim); }
+.ng-issue--featured .ng-card__sub { color: rgba(240,235,224,.7); }
+.ng-glyphs { display: flex; gap: 4px; }
+.ng-glyph { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; font-family: var(--font-serif); font-size: 12px; font-weight: 900; }
+.ng-glyph--on { color: #fff; }
+.ng-glyph--off { color: var(--color-border); border: 1px dashed var(--color-border); }
+.ng-issue--featured .ng-glyph--off { color: rgba(240,235,224,.25); border-color: rgba(240,235,224,.25); }
+
+.ng-card__headline { font-family: var(--font-serif); font-weight: 800; margin: 0 0 16px; font-size: 26px; line-height: 1.25; letter-spacing: -.02em; color: var(--color-ink); }
+.ng-issue--featured .ng-card__headline { font-size: 32px; color: var(--color-cream); }
+.ng-card__headline--sparse { color: var(--color-ink-dim); font-style: italic; font-weight: 600; font-size: 18px; }
+
+.ng-lead { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 14px 16px; border-left: 4px solid var(--lens, var(--color-navy)); background: color-mix(in srgb, var(--lens, var(--color-navy)) 6%, transparent); margin-bottom: 16px; }
+.ng-issue--featured .ng-lead { background: rgba(201,161,85,.10); border-left-color: var(--color-gold); }
+.ng-lead__badge { display: inline-flex; align-items: center; gap: 6px; background: var(--lens, var(--color-navy)); color: #fff; font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .12em; padding: 3px 8px; white-space: nowrap; }
+.ng-lead__badge span { font-family: var(--font-serif); font-size: 12px; font-weight: 900; }
+.ng-lead__star { font-family: var(--font-mono); font-size: 9px; color: var(--lens, var(--color-navy)); letter-spacing: .15em; margin-top: 6px; font-weight: 700; white-space: nowrap; }
+.ng-issue--featured .ng-lead__star { color: var(--color-gold); }
+.ng-lead__title { font-family: var(--font-serif); font-size: 18px; font-weight: 700; line-height: 1.45; color: var(--color-ink); }
+.ng-issue--featured .ng-lead__title { font-size: 21px; color: var(--color-cream); }
+.ng-lead__score { text-align: right; }
+.ng-lead__score b { font-family: var(--font-sans); font-size: 32px; font-weight: 900; color: var(--lens, var(--color-navy)); line-height: 1; letter-spacing: -.03em; display: block; }
+.ng-issue--featured .ng-lead__score b { color: var(--color-gold); }
+.ng-lead__score small { font-family: var(--font-mono); font-size: 8px; color: var(--color-ink-dim); letter-spacing: .15em; }
+.ng-issue--featured .ng-lead__score small { color: rgba(240,235,224,.7); }
+
+.ng-essay { font-family: var(--font-serif); font-size: 14px; font-style: italic; line-height: 1.85; margin: 0 0 18px; color: rgba(240,235,224,.88); border-top: 1px solid rgba(240,235,224,.2); padding-top: 14px; }
+
+.ng-lens-wrap { border-top: 1px solid var(--color-border); padding-top: 14px; }
+.ng-issue--featured .ng-lens-wrap { border-top-color: rgba(240,235,224,.2); }
+.ng-lens-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ng-lens-head__k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .25em; font-weight: 700; color: var(--color-ink-dim); }
+.ng-issue--featured .ng-lens-head__k, .ng-issue--featured .ng-lens-head__n { color: rgba(240,235,224,.7); }
+.ng-lens-head__n { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--color-ink-dim); }
+.ng-lens-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 18px; }
+.ng-lens-item { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; background: #fff; border: 1px solid var(--color-border); border-left: 3px solid var(--lens); }
+.ng-issue--featured .ng-lens-item { background: rgba(240,235,224,.04); border-color: rgba(240,235,224,.12); border-left-color: var(--lens); }
+.ng-lens-item__ico { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ng-lens-item__ico b { font-family: var(--font-serif); color: var(--lens); font-size: 18px; font-weight: 900; line-height: 1; }
+.ng-lens-item__ico small { font-family: var(--font-mono); font-size: 7.5px; color: var(--lens); font-weight: 700; letter-spacing: .08em; }
+.ng-lens-item__t { font-family: var(--font-serif); font-size: 13.5px; font-weight: 600; line-height: 1.5; color: var(--color-ink); }
+.ng-issue--featured .ng-lens-item__t { color: var(--color-cream); }
+.ng-lens-item__s { font-family: var(--font-sans); font-size: 16px; font-weight: 900; color: var(--lens); text-align: right; }
+
+.ng-card__foot { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--color-border); padding-top: 12px; flex-wrap: wrap; }
+.ng-issue--featured .ng-card__foot { border-top-color: rgba(240,235,224,.2); }
+.ng-card__cats { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; flex-wrap: wrap; }
+.ng-card__cats span { font-weight: 700; }
+.ng-card__btns { display: flex; gap: 6px; }
+.ng-btn { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .15em; padding: 6px 12px; text-decoration: none; border: 1px solid var(--color-navy); color: var(--color-navy); background: transparent; }
+.ng-btn--solid { background: var(--color-navy); color: var(--color-cream); border-color: var(--color-navy); }
+.ng-issue--featured .ng-btn { border-color: var(--color-gold); color: var(--color-gold); }
+.ng-issue--featured .ng-btn--solid { background: var(--color-gold); color: var(--color-navy); }
+
+.ng-end { display: flex; align-items: center; gap: 14px; padding-left: 90px; margin-top: 24px; }
+.ng-end__dot { width: 12px; height: 12px; border-radius: 50%; background: var(--color-navy); }
+.ng-end__t { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-dim); letter-spacing: .18em; }
+
+/* ---- Footer ---- */
+.ng-foot { background: var(--color-paper-soft); border-top: 1px solid var(--color-border); padding: 20px 0; }
+.ng-foot__inner { display: flex; justify-content: space-between; gap: 16px; font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .15em; flex-wrap: wrap; }
+.ng-foot__inner strong { color: var(--color-ink); letter-spacing: .3em; }
+.ng-foot__links { display: flex; gap: 16px; }
+.ng-foot__links a { color: inherit; text-decoration: none; }
+.ng-foot__links a:hover { color: var(--color-ink); }
+
+/* ---- Responsive ---- */
+@media (max-width: 760px) {
+  .ng-intro { grid-template-columns: 1fr; gap: 22px; }
+  .ng-brand__nav { display: none; }
+  .ng-filters__h1 { font-size: 30px; }
+  .ng-timeline::before { left: 64px; }
+  .ng-month__lab { width: 64px; }
+  .ng-issue { grid-template-columns: 64px 1fr; }
+  .ng-issue__day { font-size: 38px; }
+  .ng-issue__body { padding-left: 14px; }
+  .ng-card { padding: 16px; }
+  .ng-card__headline { font-size: 21px; }
+  .ng-issue--featured .ng-card__headline { font-size: 24px; }
+  .ng-lead { grid-template-columns: 1fr auto; gap: 10px 12px; }
+  .ng-lead__badge { grid-column: 1 / -1; }
+  .ng-end { padding-left: 64px; }
+}
+</style>
 </head>
 <body data-category="summary">
-<div class="archive-page">
+<div class="ng-arch">
 
-  <header class="site-header">
-    <div class="site-title"><a href="{{ base_url }}/">{{ site_title }}</a></div>
-    <div class="site-tagline">時勢を掴み、日々に新たに。</div>
+  <!-- Brand header -->
+  <header class="ng-brand">
+    <div class="ng-wrap ng-brand__inner">
+      <div class="ng-brand__logo">
+        <img class="ng-brand__mark" src="{{ base_url }}/assets/favicon-256.png" alt="">
+        <div>
+          <div class="ng-brand__eyebrow">━━ THE</div>
+          <div class="ng-brand__name"><a href="{{ base_url }}/">{{ site_title }}</a></div>
+        </div>
+        <div class="ng-brand__sep">
+          <div class="ng-brand__sect-k">SECTION</div>
+          <div class="ng-brand__sect">日付アーカイブ <span>· ARCHIVE</span></div>
+        </div>
+      </div>
+      <nav class="ng-brand__nav">
+        <a href="{{ base_url }}/">HOME</a>
+        {% if issues %}<a href="{{ issues[0].open_href }}">TODAY</a>{% endif %}
+        <a href="{{ canonical }}" class="is-active">ARCHIVE</a>
+        {% if issues and issues[0].summary_href %}<a href="{{ issues[0].summary_href }}">§ ESSAY</a>{% endif %}
+        <a href="{{ base_url }}/" class="ng-brand__sub">SUBSCRIBE →</a>
+      </nav>
+    </div>
   </header>
 
-  <div class="article-header">
-    <div class="article-meta"><span class="accent">ARCHIVE</span> &nbsp;·&nbsp; {{ days|length }} days</div>
-    <h1 class="article-title">日付アーカイブ</h1>
+  <!-- Filter / search bar -->
+  <div class="ng-filters">
+    <div class="ng-wrap">
+      <div class="ng-filters__top">
+        <div>
+          <h1 class="ng-filters__h1">日付アーカイブ<em>by date.</em></h1>
+          <div class="ng-filters__stat">{{ stats.days }} ISSUES · {{ stats.pages }} PAGES · {{ stats.span_from }} → {{ stats.span_to }}</div>
+        </div>
+        <label class="ng-search">
+          <span class="ng-search__icon">⌕</span>
+          <input id="ng-search" type="text" autocomplete="off" placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)">
+        </label>
+      </div>
+      <div class="ng-filters__bottom">
+        <div class="ng-chips">
+          <span class="ng-chips__label">FILTER</span>
+          <button type="button" class="ng-chip is-active" data-filter="all" style="--lens: var(--color-navy);"><span class="ng-chip__glyph">◇</span>ALL</button>
+          {% for c in cats_meta %}
+          <button type="button" class="ng-chip" data-filter="{{ c.id }}" style="--lens: var(--color-accent-{{ c.id }});">
+            <span class="ng-chip__glyph">{{ c.glyph }}</span>{{ c.en }}
+            {% if c.is_new %}<span class="ng-chip__new">NEW</span>{% endif %}
+          </button>
+          {% endfor %}
+        </div>
+        <div class="ng-month-jump">
+          <span class="ng-month-jump__label">MONTH</span>
+          {% for m in months_meta %}
+          <a href="#m-{{ m.id }}">{{ m.label }} {{ m.year }}</a>
+          {% endfor %}
+          <span class="ng-density">DENSITY: <strong>COMFORTABLE</strong></span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  {% for day in days %}
-  <section style="margin-bottom: var(--space-2xl);">
-    <h2 style="font-family: var(--font-serif); font-size: 1.5rem; font-weight: 800; margin: 0 0 var(--space-md); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--color-border);">{{ day.date }}</h2>
-    <ul style="list-style: none; padding: 0; margin: 0; display: flex; gap: var(--space-sm); flex-wrap: wrap;">
-      {% for it in day.entries %}
-      <li>
-        <a href="{{ it.canonical }}" class="cat-badge cat-{{ it.category_id }}" style="text-decoration: none;" title="{{ it.title }}">{{ it.category_jp }}</a>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
-  {% endfor %}
+  <!-- Editor's intro strip -->
+  <div class="ng-wrap">
+    <section class="ng-intro">
+      <div>
+        <div class="ng-intro__k ng-intro__k--gold">━━ EDITOR'S NOTE</div>
+        <p class="ng-intro__note">日付をたどると、各レンズ（為替・AI・IT・モビリティ・経済・ゲーム）の論点がどう動いたかを一筆書きで追えます。各号の見出しはその日の総括から、リード記事は最高スコアの一本を採っています。</p>
+      </div>
+      <div>
+        <div class="ng-intro__k">━ THIS MONTH IN NUMBERS</div>
+        <div class="ng-nums">
+          <div class="ng-nums__cell"><div class="ng-nums__v">{{ stats.days }}</div><div class="ng-nums__l">DAYS</div></div>
+          <div class="ng-nums__cell"><div class="ng-nums__v">{{ stats.pages }}</div><div class="ng-nums__l">PAGES</div></div>
+          <div class="ng-nums__cell"><div class="ng-nums__v">{{ stats.essays }}</div><div class="ng-nums__l">§ ESSAYS</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="ng-intro__k">━ MOST COVERED LENS</div>
+        {% if most_covered %}
+        <div class="ng-lens-most" style="--lens: {{ most_covered.accent }};">
+          <div class="ng-lens-most__glyph" style="color: var(--lens);">{{ most_covered.glyph }}</div>
+          <div>
+            <div class="ng-lens-most__name">{{ most_covered.jp }}</div>
+            <div class="ng-lens-most__sub">{{ most_covered.count }} ISSUES · {{ most_covered.pct }}%</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
 
-  <footer class="site-footer">
-    <div><a href="{{ base_url }}/">← トップ</a></div>
-    <div>{{ total_pages }} pages</div>
+  <!-- Timeline -->
+  <div class="ng-wrap">
+    <div class="ng-timeline">
+      {% set ns = namespace(last_month='') %}
+      {% for it in issues %}
+        {% if it.month != ns.last_month %}
+        <div class="ng-month" id="m-{{ it.month }}" data-month="{{ it.month }}">
+          <div class="ng-month__lab">
+            <div class="ng-month__m">{{ it.month_label }}</div>
+            <div class="ng-month__y">{{ it.year }}</div>
+          </div>
+          <div class="ng-month__diamond"></div>
+          <div class="ng-month__line"></div>
+          <div class="ng-month__count">{{ month_counts[it.month] }} ISSUES · {{ it.month_label }} {{ it.year }}</div>
+        </div>
+        {% set ns.last_month = it.month %}
+        {% endif %}
+
+        <div class="ng-issue{% if it.featured %} ng-issue--featured{% endif %}"
+             data-month="{{ it.month }}"
+             data-cats="{{ it.cats | join(' ') }}"
+             data-text="{{ it.date }} {{ it.weekday }} {{ it.headline }} {% for s in it.stories %}{{ s.title }} {% endfor %}"
+             style="--lens: {% if it.lead %}var(--color-accent-{{ it.lead.cat }}){% else %}var(--color-navy){% endif %}; --rail: {% if it.featured %}var(--color-gold){% else %}var(--lens){% endif %};">
+          <div class="ng-issue__rail">
+            <div class="ng-issue__day">{{ it.day }}</div>
+            <div class="ng-issue__ym">{{ it.year }}-{{ it.ym[5:7] }}</div>
+            <div class="ng-issue__no">#{{ it.no }} · {{ it.weekday }}</div>
+            <div class="ng-issue__dot"></div>
+          </div>
+          <div class="ng-issue__body">
+            <div class="ng-card">
+              <div class="ng-card__meta">
+                <div class="ng-card__metaL">
+                  <span class="ng-card__tag">{% if it.featured %}★ TODAY{% else %}ISSUE{% endif %} · #{{ it.no }}</span>
+                  <span class="ng-card__sub">{{ it.date }} ({{ it.weekday }})</span>
+                  <span class="ng-card__sub">{{ it.stories | length }} STORIES</span>
+                </div>
+                <div class="ng-glyphs">
+                  {% for c in cats_meta %}
+                  {% if c.id in it.cats %}
+                  <span class="ng-glyph ng-glyph--on" style="background: var(--color-accent-{{ c.id }});" title="{{ c.jp }}">{{ c.glyph }}</span>
+                  {% else %}
+                  <span class="ng-glyph ng-glyph--off" title="{{ c.jp }}">{{ c.glyph }}</span>
+                  {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+
+              <h2 class="ng-card__headline{% if it.sparse %} ng-card__headline--sparse{% endif %}">{{ it.headline | render_emph }}</h2>
+
+              {% if not it.sparse %}
+              <div class="ng-lead">
+                <div>
+                  <div class="ng-lead__badge"><span>{{ it.lead.glyph }}</span>{{ it.lead.en }}</div>
+                  <div class="ng-lead__star">★ LEAD STORY</div>
+                </div>
+                <a href="{{ it.lead.href }}" class="ng-lead__title" style="text-decoration: none;">{{ it.lead.title }}</a>
+                {% if it.lead.score %}
+                <div class="ng-lead__score"><b>{{ it.lead.score }}</b><small>SCORE</small></div>
+                {% else %}
+                <div class="ng-lead__score"></div>
+                {% endif %}
+              </div>
+
+              {% if it.featured and it.essay %}
+              <p class="ng-essay">{{ it.essay | render_emph }}</p>
+              {% endif %}
+
+              {% if it.rest %}
+              <div class="ng-lens-wrap">
+                <div class="ng-lens-head">
+                  <div class="ng-lens-head__k">━ TOP STORY PER LENS</div>
+                  <div class="ng-lens-head__n">{{ it.rest | length }} STORIES ↘</div>
+                </div>
+                <div class="ng-lens-grid">
+                  {% for s in it.rest %}
+                  <a class="ng-lens-item" href="{{ s.href }}" style="--lens: var(--color-accent-{{ s.cat }}); text-decoration: none;">
+                    <span class="ng-lens-item__ico"><b>{{ s.glyph }}</b><small>{{ s.en[:4] }}</small></span>
+                    <span class="ng-lens-item__t">{{ s.title }}</span>
+                    {% if s.score %}<span class="ng-lens-item__s">{{ s.score }}</span>{% else %}<span></span>{% endif %}
+                  </a>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% endif %}
+
+              <div class="ng-card__foot">
+                <div class="ng-card__cats">
+                  {% for c in cats_meta %}{% if c.id in it.cats %}<span style="color: var(--color-accent-{{ c.id }});">{{ c.glyph }} {{ c.jp }}</span>{% endif %}{% endfor %}
+                </div>
+                <div class="ng-card__btns">
+                  {% if it.has_summary and it.summary_href %}<a class="ng-btn" href="{{ it.summary_href }}">§ SUMMARY</a>{% endif %}
+                  <a class="ng-btn ng-btn--solid" href="{{ it.open_href }}">OPEN ISSUE →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <div class="ng-end">
+        <span class="ng-end__dot"></span>
+        <span class="ng-end__t">END OF ARCHIVE · EST. {{ stats.span_from }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="ng-foot">
+    <div class="ng-wrap ng-foot__inner">
+      <div><strong>NEWS GRASP</strong> · ARCHIVE · {{ total_pages }} PAGES</div>
+      <div class="ng-foot__links">
+        <a href="{{ base_url }}/">← HOME</a>
+        <a href="{{ base_url }}/feed.xml">RSS</a>
+        <a href="{{ base_url }}/">ABOUT</a>
+      </div>
+    </div>
   </footer>
 
 </div>
+
+<script>
+(function () {
+  var root = document.querySelector('.ng-arch');
+  if (!root) return;
+  var chips  = Array.prototype.slice.call(root.querySelectorAll('[data-filter]'));
+  var search = root.querySelector('#ng-search');
+  var issues = Array.prototype.slice.call(root.querySelectorAll('.ng-issue'));
+  var months = Array.prototype.slice.call(root.querySelectorAll('.ng-month'));
+  var state = { cat: 'all', q: '' };
+
+  function apply() {
+    var q = state.q.trim().toLowerCase();
+    issues.forEach(function (el) {
+      var cats = (el.getAttribute('data-cats') || '').split(' ');
+      var text = (el.getAttribute('data-text') || '').toLowerCase();
+      var okCat = state.cat === 'all' || cats.indexOf(state.cat) >= 0;
+      var okQ = !q || text.indexOf(q) >= 0;
+      el.style.display = (okCat && okQ) ? '' : 'none';
+    });
+    var seen = {};
+    issues.forEach(function (el) {
+      if (el.style.display !== 'none') seen[el.getAttribute('data-month')] = true;
+    });
+    months.forEach(function (b) {
+      b.style.display = seen[b.getAttribute('data-month')] ? '' : 'none';
+    });
+  }
+
+  chips.forEach(function (c) {
+    c.addEventListener('click', function () {
+      state.cat = c.getAttribute('data-filter');
+      chips.forEach(function (x) { x.classList.toggle('is-active', x === c); });
+      apply();
+    });
+  });
+  if (search) {
+    search.addEventListener('input', function () { state.q = search.value; apply(); });
+  }
+})();
+</script>
 </body>
 </html>

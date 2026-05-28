@@ -537,6 +537,9 @@ def _collect_entries(digests: Iterable[Path]) -> list[dict[str, Any]]:
 
 _WEEKDAY_JP = ["月", "火", "水", "木", "金", "土", "日"]
 
+_MONTH_ABBR = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+               "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+
 
 def _date_weekday_jp(date_str: str) -> str:
     """YYYY-MM-DD から日本語の曜日 1 文字を返す。失敗時は空文字。"""
@@ -1292,21 +1295,147 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
     return written
 
 
+def _archive_headline(summary_text: str, lead: dict[str, Any] | None) -> str:
+    """号の見出し。総括 (summary_text) 先頭 1 文を優先、無ければ lead 記事タイトル。"""
+    if summary_text:
+        head = summary_text.split("。", 1)[0].strip()
+        # マーカー (** __ [[]]) は render_emph フィルタ側で装飾するためここでは残す
+        if head:
+            return head
+    if lead:
+        return lead["title"]
+    return "この日は準備中"
+
+
 def build_archive(entries: list[dict[str, Any]], docs_root: Path) -> Path:
-    """日付横断アーカイブ docs/archive/index.html を生成。日付ごとにグループ化して降順。"""
+    """日付横断アーカイブ docs/archive/index.html を生成。
+
+    Claude Design "News Grasp Archive" (Editorial Timeline / Variant B) に準拠。
+    日付ごとに 1 号 (issue) としてまとめ、各カテゴリの最上位記事を stories に整形する。
+    """
+    lens_order = [cid for cid in CATEGORIES if cid != "summary"]
+
+    cats_meta = [
+        {
+            "id": cid,
+            "jp": CATEGORIES[cid]["jp"],
+            "en": cid.upper(),
+            "label": CATEGORIES[cid]["label"],
+            "accent": CATEGORIES[cid]["accent"],
+            "glyph": CATEGORIES[cid]["glyph"],
+            "is_new": cid == "mobility",
+        }
+        for cid in lens_order
+    ]
+
     by_date: dict[str, list[dict[str, Any]]] = {}
     for e in entries:
         by_date.setdefault(e["date"], []).append(e)
-    days = [
-        {"date": d, "entries": sorted(by_date[d], key=lambda x: x["category_id"])}
-        for d in sorted(by_date.keys(), reverse=True)
+
+    dates_desc = sorted(by_date.keys(), reverse=True)
+    dates_asc = list(reversed(dates_desc))
+    seq_no = {d: i + 1 for i, d in enumerate(dates_asc)}  # 最古号 = 1
+
+    cover_count = {cid: 0 for cid in lens_order}
+    month_counts: dict[str, int] = {}
+    total_cat_pages = 0
+
+    def _score_int(v: Any) -> int:
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
+
+    issues: list[dict[str, Any]] = []
+    for d in dates_desc:
+        day_entries = by_date[d]
+        summary_e = next((e for e in day_entries if e["category_id"] == "summary"), None)
+        cat_entries = [e for e in day_entries if e["category_id"] in CATEGORIES and e["category_id"] != "summary"]
+
+        stories: list[dict[str, Any]] = []
+        for e in cat_entries:
+            cid = e["category_id"]
+            meta = CATEGORIES[cid]
+            stories.append({
+                "cat": cid,
+                "title": e.get("top_title") or e.get("title") or meta["jp"],
+                "score": _score_int(e.get("top_score")),
+                "accent": meta["accent"],
+                "glyph": meta["glyph"],
+                "en": cid.upper(),
+                "jp": meta["jp"],
+                "href": e.get("canonical", "#"),
+            })
+            cover_count[cid] += 1
+            total_cat_pages += 1
+        stories.sort(key=lambda s: (-s["score"], lens_order.index(s["cat"])))
+
+        lead = stories[0] if stories else None
+        summary_text = (summary_e or {}).get("summary_text", "") if summary_e else ""
+        month = d[:7]
+        month_counts[month] = month_counts.get(month, 0) + 1
+
+        issues.append({
+            "date": d,
+            "no": seq_no[d],
+            "weekday": _date_weekday_jp(d),
+            "day": d[8:10],
+            "ym": d[:7],
+            "month": month,
+            "month_label": _MONTH_ABBR[int(d[5:7]) - 1],
+            "year": d[:4],
+            "featured": False,  # 最新号を下で True に
+            "sparse": lead is None,
+            "headline": _archive_headline(summary_text, lead),
+            "essay": summary_text,
+            "has_summary": summary_e is not None,
+            "summary_href": (summary_e or {}).get("canonical", "") if summary_e else "",
+            "open_href": (lead["href"] if lead else ((summary_e or {}).get("canonical") if summary_e else "#")),
+            "stories": stories,
+            "lead": lead,
+            "rest": stories[1:],
+            "cats": [s["cat"] for s in stories],
+        })
+    if issues:
+        issues[0]["featured"] = True
+
+    n_issues = len(dates_desc)
+    n_essays = sum(1 for it in issues if it["has_summary"])
+
+    most_covered = None
+    if n_issues and any(cover_count.values()):
+        most_cid = max(lens_order, key=lambda c: cover_count[c])
+        most_covered = {
+            "jp": CATEGORIES[most_cid]["jp"],
+            "glyph": CATEGORIES[most_cid]["glyph"],
+            "accent": CATEGORIES[most_cid]["accent"],
+            "count": cover_count[most_cid],
+            "pct": round(cover_count[most_cid] * 100 / n_issues),
+        }
+
+    months_meta = [
+        {"id": m, "label": _MONTH_ABBR[int(m[5:7]) - 1], "year": m[:4], "count": month_counts[m]}
+        for m in sorted(month_counts.keys())  # 古い → 新しい (ジャンプ用ボタン)
     ]
+
+    stats = {
+        "days": n_issues,
+        "pages": total_cat_pages,
+        "essays": n_essays,
+        "span_from": dates_asc[0] if dates_asc else "",
+        "span_to": dates_desc[0] if dates_desc else "",
+    }
 
     ctx = {
         "site_title": SITE_TITLE,
         "base_url": BASE_URL,
         "canonical": f"{BASE_URL}/archive/",
-        "days": days,
+        "issues": issues,
+        "cats_meta": cats_meta,
+        "months_meta": months_meta,
+        "month_counts": month_counts,
+        "stats": stats,
+        "most_covered": most_covered,
         "total_pages": len(entries),
     }
     out = Path(docs_root) / "archive" / "index.html"

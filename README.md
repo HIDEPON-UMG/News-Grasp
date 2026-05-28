@@ -17,7 +17,7 @@ Magazine Spread デザイン (navy / cream / gold + 角丸 0 + Noto Serif JP × 
 | Editorial Summary | `/{YYYY-MM-DD}/summary/` | **Pattern D** (Summary Only) | 1 日分の長文考察。Dark hero + Pull quote + 7 § sections (総論/為替/AI/IT/経済/ゲーム/明日へ) + Key Takeaways × 3 |
 | Category Detail | `/{cat}/{YYYY-MM-DD}/` | **Variant B Magazine** | 1 カテゴリの詳細。480px Hero KV + TOP STORY + More stories + Editorial reflection |
 | Category Archive | `/{fx,ai,it,economy,game,summary}/` | 旧スタイル | カテゴリの全 digest 一覧 |
-| 日付横断 Archive | `/archive/` | 旧スタイル | 全カテゴリ × 全日付 |
+| 日付横断 Archive | `/archive/` | **Editorial Timeline** | 全カテゴリ × 全日付。号ごとのカード (日付レール + リード記事 + レンズ別トップ + スコア) を縦タイムラインで降順表示。カテゴリ絞り込み / 検索 / 月ジャンプ付き |
 
 SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生成し GitHub Pages で配信する。Daily Overview と Editorial Summary は γ schema の `reflection` ブロック (`prompts/routine-system.md` ステップ 4 参照) が digest に入っていればリッチに、無ければ fallback (lead = summary_text / takeaways = Top 3 / sections = 各カテゴリ Top 1 + 総論/明日へプレースホルダ) で必ず描画する。OGP メタは 1120×587 (1.91:1) の og:image + 180 字以内 og:description + summary_large_image card を全ページ出力。PWA メタ (manifest / theme-color / apple-touch-icon / service worker) は `prompts/_partials/pwa-head.html` を Jinja include。デザインシステムは [`DESIGN.md`](DESIGN.md) を一次ソースとする。詳細仕様は [`docs/specs/2026-05-21_public-web-ogp.html`](docs/specs/2026-05-21_public-web-ogp.html)。
 
@@ -146,7 +146,7 @@ News-Grasp/
 │   ├── overview-template.html    # Daily Overview (Pattern C)
 │   ├── summary-template.html     # Editorial Summary (Pattern D)
 │   ├── category-template.html    # Category Detail (Variant B Magazine)
-│   ├── archive-template.html     # Archive 一覧
+│   ├── archive-template.html     # Archive (Editorial Timeline)
 │   ├── page-template.html        # 旧汎用テンプレート
 │   └── _partials/
 │       └── pwa-head.html         # PWA <head> include (manifest / theme-color / apple-touch-icon / sw)
