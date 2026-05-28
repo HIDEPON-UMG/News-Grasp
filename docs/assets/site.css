@@ -2290,13 +2290,13 @@ strong {
   .top-story__grid { grid-template-columns: 1fr; gap: 16px; }
   .top-story__thumb-wrap { height: 200px; }
   .top-story__title { font-size: 24px; }
-  .top-story__bullets li { font-size: 15px; line-height: 1.8; padding-left: 18px; }
+  .top-story__bullets li { font-size: 16px; line-height: 1.8; padding-left: 18px; }
   .more-stories { padding: 24px 16px; }
   .more-stories__head h2 { font-size: 22px; }
   .more-stories__grid { grid-template-columns: 1fr; gap: 24px; }
   .more-card__thumb-wrap { height: 140px; }
   .more-card__title { font-size: 21px; padding: 8px 12px; }
-  .more-card__bullets li { font-size: 14px; line-height: 1.75; padding-left: 18px; }
+  .more-card__bullets li { font-size: 16px; line-height: 1.8; padding-left: 18px; }
   .editorial { padding: 24px 16px; }
   .editorial__grid { grid-template-columns: 1fr; gap: 16px; }
   /* 巨大装飾 § は隠し、見出しにインライン § を付けて「§ 本日のテーマ考察」を一行化 */
@@ -2327,14 +2327,16 @@ strong {
   .home-featured__grid { grid-template-columns: 1fr; gap: 16px; }
   .home-featured__thumb-wrap { height: 200px; }
   .home-featured__title { font-size: 22px; }
-  .home-featured__bullets li { font-size: 14px; line-height: 1.65; }
+  .home-featured__bullets li { font-size: 16px; line-height: 1.8; }
   .home-cats { padding: 24px 16px; }
   .home-cats__head h2 { font-size: 22px; }
   .home-cats__grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .home-editorial { padding: 24px 16px; }
   .home-editorial__inner { grid-template-columns: 1fr; gap: 16px; }
-  .home-editorial__sigil { font-size: 80px; }
+  /* 巨大装飾 § は隠し、見出しにインライン § を付け「§ 本日のテーマ考察」を一行化 (.editorial と平仄) */
+  .home-editorial__sigil { display: none; }
   .home-editorial__body h2 { font-size: 24px; }
+  .home-editorial__body h2::before { content: "\00A7\00A0"; color: var(--color-gold); font-weight: 900; }
   .home-editorial__body p { font-size: 14px; line-height: 1.7; }
   .home-subscribe { padding: 24px 16px; }
   .home-subscribe h3 { font-size: 22px; }
