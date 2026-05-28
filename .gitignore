@@ -26,3 +26,7 @@ build/preview-site/
 desktop.ini
 tests/output/
 ~$*
+node_modules/
+# design 大容量素材（git 履歴を膨らませないためローカルのみ保持）
+design/architecture.v2.pptx
+design/cover-ai.png

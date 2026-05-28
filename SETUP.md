@@ -12,7 +12,8 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 | GitHub repo（記事本体） | `HIDEPON-UMG/News-Grasp`（プライベート、Runner が直接 commit/push） |
 | GitHub repo（Vault root） | `HIDEPON-UMG/obsidian-newsgrasp-vault`（プライベート、Obsidian Git プラグインが同期。2026-05-21〜） |
 | Obsidian ボルト | `C:\Users\hidek\Obsidian\New's Grasp\` |
-| Repo の clone 先 | ボルト直下 `New's Grasp\News-Grasp\`（記事 repo は Vault のサブフォルダとしてネスト） |
+| Repo の実体 | `C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp\`（**2026-05-28 に Vault 内から ProjectFolders へ物理移管**。旧構成は Vault 直下にネストしていた） |
+| Obsidian で digest を見る経路 | 旧 Vault パス `C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp` を実体へのディレクトリ junction にして表示（移管後の再リンク方式） |
 | Vault 同期方式 | **Obsidian Git プラグイン**（Remotely Save は 2026-05-21 に廃止） |
 | メール送信 | `tools/send_email.py`（Gmail SMTP `smtp.gmail.com:587` STARTTLS） |
 | 差出人 | `news.grasp.magazine@gmail.com`（専用アカウント、`tools/send_email.py:35` の `DEFAULT_SENDER` で集約・正本） |
@@ -107,7 +108,7 @@ Vault root の同期は別途 Obsidian Git プラグインが担当する（後�
 @echo off
 echo [%DATE% %TIME%] runner-invoked >> "%USERPROFILE%\bin\news-grasp-invoked.log"
 
-set REPO_DIR=C:\Users\hidek\Obsidian\New's Grasp\News-Grasp
+set REPO_DIR=C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp
 set LOG_DIR=%USERPROFILE%\bin\news-grasp-logs
 set GIT=C:\Program Files\Git\cmd\git.exe
 set CLAUDE=C:\Users\hidek\.local\bin\claude.exe
@@ -162,7 +163,7 @@ sed -i 's/$/\r/' "/c/Users/hidek/bin/news-grasp-runner.bat"
 
 ```powershell
 # 疎通テスト（SMTP 直送・自分宛のみ、本番経路と同じ）
-cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
+cd "C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp"
 python tests/render_email.py --smtp
 
 # Runner の手動起動（実機の本番フロー）
@@ -188,7 +189,7 @@ Get-Content "C:\Users\hidek\bin\news-grasp-logs\2026-04-28.log" -Wait -Tail 100
 
 ```powershell
 # Obsidian で開いて編集 → 通常の git
-cd "C:\Users\hidek\Obsidian\New's Grasp\News-Grasp"
+cd "C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp"
 git add data/watchlist.md
 git commit -m "watchlist: ${変更概要}"
 git push

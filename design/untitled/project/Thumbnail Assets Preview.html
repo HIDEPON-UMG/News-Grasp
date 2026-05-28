@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>News Grasp — Thumbnail Asset Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" />
+<style>
+  :root {
+    --paper:#FAF7F0; --ink:#1A1A1A; --inkDim:#5C5A52; --inkSoft:#8B8B85;
+    --border:#E2DED4; --borderSoft:#EDEAE3;
+    --fx:#B8860B; --ai:#2D5BB8; --it:#2E6B52; --econ:#8E2A19; --game:#5E3D8C;
+    --serif:"Noto Serif JP","Yu Mincho",serif;
+    --mono:"JetBrains Mono",monospace;
+    --sans:"Inter",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#E8E4DA;color:var(--ink);font-family:var(--serif)}
+
+  .doc{max-width:1280px;margin:0 auto;padding:48px 32px 80px;background:var(--paper);min-height:100vh}
+
+  /* Masthead */
+  .mast{border-top:5px solid var(--ink);border-bottom:1px solid var(--ink);padding:20px 0 16px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:flex-end}
+  .mast-l{display:flex;align-items:baseline;gap:12px}
+  .badge{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 8px;letter-spacing:1.5px}
+  .mast h1{font-size:38px;font-weight:900;letter-spacing:-1px;margin:0;line-height:1}
+  .mast h1 em{font-style:italic;color:var(--inkDim);font-weight:600;font-size:24px}
+  .mast-r{font-family:var(--mono);font-size:11px;color:var(--inkDim);text-align:right;letter-spacing:1.2px;line-height:1.7}
+  .mast-r b{color:var(--ink)}
+
+  /* Section */
+  section{margin-bottom:56px}
+  .sec-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:24px}
+  .sec-head h2{font-size:24px;font-weight:800;margin:0;letter-spacing:-0.3px}
+  .sec-head h2 .num{font-family:var(--mono);color:var(--inkDim);font-weight:600;margin-right:8px}
+  .sec-head .meta{font-family:var(--mono);font-size:10px;color:var(--inkDim);letter-spacing:1.5px;text-align:right}
+  .sec-lead{font-size:14px;line-height:1.85;color:var(--inkDim);margin:0 0 24px;max-width:760px}
+  .sec-lead strong{color:var(--ink)}
+
+  /* Common thumb showcase */
+  .common-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+  .common-card{background:#fff;border:1px solid var(--border);padding:20px}
+  .common-card h3{font-family:var(--mono);font-size:11px;letter-spacing:2px;margin:0 0 4px;color:var(--inkDim)}
+  .common-card .filename{font-family:var(--mono);font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ink)}
+  .common-card img{display:block;border:1px solid var(--border);background:#000}
+
+  /* 5-up thumb row */
+  .thumb-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  .thumb-cell{background:#fff;border:1px solid var(--border);padding:14px;border-top:3px solid var(--ac,var(--ink))}
+  .thumb-cell img{width:100%;height:auto;display:block;border:1px solid var(--borderSoft)}
+  .thumb-cell .thumb-meta{margin-top:10px;display:flex;flex-direction:column;font-family:var(--mono);font-size:9.5px;line-height:1.6;letter-spacing:.5px}
+  .thumb-cell .thumb-meta b{color:var(--ink);font-weight:700;word-break:break-all}
+  .thumb-cell .thumb-meta span{color:var(--inkDim);margin-top:2px}
+  .common-actual{padding:28px;background:#F2EEE3;border:1px solid var(--border)}
+  .common-actual .actual-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px dashed var(--border)}
+  .common-actual .actual-row:last-child{border-bottom:none}
+  .common-actual img{width:140px;height:90px;border:1px solid var(--border);object-fit:cover;flex-shrink:0}
+  .common-actual .actual-row .txt{flex:1;font-size:12.5px;line-height:1.7}
+  .common-actual .actual-row .txt b{color:var(--ink)}
+  .common-actual .actual-row .meta{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;color:var(--inkDim);margin-bottom:4px}
+
+  /* Category cards */
+  .cat-card{margin-bottom:32px;background:#fff;border:1px solid var(--border)}
+  .cat-card .top{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+  .cat-card .swatch{width:8px;flex-shrink:0}
+  .cat-card .top-meta{padding:14px 20px;flex:1;display:flex;justify-content:space-between;align-items:center}
+  .cat-card .top-meta .l{display:flex;align-items:baseline;gap:12px}
+  .cat-card .top-meta .glyph{font-family:var(--mono);font-size:24px;font-weight:900}
+  .cat-card .top-meta .name{font-size:18px;font-weight:800;letter-spacing:-0.3px}
+  .cat-card .top-meta .name-en{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--inkDim)}
+  .cat-card .top-meta .r{font-family:var(--mono);font-size:10px;color:var(--inkDim);letter-spacing:1.2px;text-align:right;line-height:1.5}
+  .cat-card .preview{padding:20px;background:#F8F5EC}
+  .cat-card .preview img{width:100%;height:auto;display:block;border:1px solid var(--border)}
+  .cat-card .footer{display:grid;grid-template-columns:2fr 1fr;border-top:1px solid var(--border)}
+  .cat-card .footer .specs{padding:14px 20px;font-family:var(--mono);font-size:10px;color:var(--inkDim);letter-spacing:1px;line-height:1.85}
+  .cat-card .footer .specs b{color:var(--ink)}
+  .cat-card .footer .motif{padding:14px 20px;border-left:1px solid var(--border);font-size:11px;color:var(--inkDim);line-height:1.7}
+  .cat-card .footer .motif b{color:var(--ink);font-family:var(--mono);letter-spacing:1.2px;font-size:9px;display:block;margin-bottom:4px}
+
+  /* Use-in-context table */
+  .ctx-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border)}
+  .ctx-table th,.ctx-table td{text-align:left;padding:14px 16px;font-size:12px;border-bottom:1px solid var(--borderSoft);vertical-align:top}
+  .ctx-table th{background:#F2EEE3;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--inkDim);font-weight:700;text-transform:uppercase}
+  .ctx-table td.file{font-family:var(--mono);font-size:11px;font-weight:700}
+  .ctx-table td.size{font-family:var(--mono);color:var(--inkDim);font-size:11px}
+  .ctx-table tr:last-child td{border-bottom:none}
+
+  /* Footer */
+  .doc-foot{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);text-align:center;font-family:var(--mono);font-size:10px;color:var(--inkDim);letter-spacing:1.5px}
+  .doc-foot b{color:var(--ink);letter-spacing:2.5px}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- Masthead -->
+  <div class="mast">
+    <div class="mast-l">
+      <span class="badge">NG</span>
+      <h1>Thumbnail Assets <em>v2 · 10 files</em></h1>
+    </div>
+    <div class="mast-r">
+      <b>NEWS GRASP</b> · ASSET PREVIEW<br/>
+      OGP-FALLBACK PLACEHOLDERS<br/>
+      DELIVERED TO <code>assets/</code>
+    </div>
+  </div>
+
+  <p class="sec-lead">
+    OGPが取得できない記事に当てる<strong>NGプレースホルダ</strong>を、テンプレ既存の2サムネ枠
+    （<strong>140×90 サイドサムネ</strong> / <strong>568×200 FEATUREDサムネ</strong>）に対して別系統で再設計しました。
+    <strong>v2</strong>では共通サムネを<strong>カテゴリ別5色</strong>に分け、よりモダンで読みやすいレイアウトに刷新。すべて100KB以下のJPGで <code>assets/</code> に配置済みです。
+  </p>
+
+  <!-- ──────────────────────────────────── -->
+  <section>
+    <div class="sec-head">
+      <h2><span class="num">§01</span>共通サムネイル（A・v2） — 140×90 サイドサムネ用 ／ カテゴリ別5色</h2>
+      <div class="meta">2× DELIVERY: 280 × 180 PX · 計5枚</div>
+    </div>
+
+    <p class="sec-lead">
+      モダン路線にアップデート：<strong>カテゴリ別の淡いグラデーション</strong>に大型カテゴリ名（<code>FX / AI / IT / ECON / GAME</code>）、
+      右端に大きな<strong>ファセット・グリフ</strong>。新聞罫線をやめ、ドット・ハイラインと小さなアクセントスクエアで余白を活かしたエディトリアル感を出しています。
+    </p>
+
+    <div class="thumb-row">
+      <div class="thumb-cell" style="--ac:#B8860B">
+        <img src="assets/ng-thumb-common-fx.jpg" alt="" />
+        <div class="thumb-meta"><b>ng-thumb-common-fx.jpg</b><span>FX · 5.5 KB</span></div>
+      </div>
+      <div class="thumb-cell" style="--ac:#2D5BB8">
+        <img src="assets/ng-thumb-common-ai.jpg" alt="" />
+        <div class="thumb-meta"><b>ng-thumb-common-ai.jpg</b><span>AI · 5.5 KB</span></div>
+      </div>
+      <div class="thumb-cell" style="--ac:#2E6B52">
+        <img src="assets/ng-thumb-common-it.jpg" alt="" />
+        <div class="thumb-meta"><b>ng-thumb-common-it.jpg</b><span>IT · 4.8 KB</span></div>
+      </div>
+      <div class="thumb-cell" style="--ac:#8E2A19">
+        <img src="assets/ng-thumb-common-economy.jpg" alt="" />
+        <div class="thumb-meta"><b>ng-thumb-common-economy.jpg</b><span>ECON · 7.1 KB</span></div>
+      </div>
+      <div class="thumb-cell" style="--ac:#5E3D8C">
+        <img src="assets/ng-thumb-common-game.jpg" alt="" />
+        <div class="thumb-meta"><b>ng-thumb-common-game.jpg</b><span>GAME · 6.4 KB</span></div>
+      </div>
+    </div>
+
+    <div class="common-actual" style="margin-top:24px">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--inkDim);margin-bottom:14px">
+        ┌── IN CONTEXT · 140 × 90 でカテゴリ別に並べた状態
+      </div>
+      <div class="actual-row">
+        <img src="assets/ng-thumb-common-fx.jpg" alt="" />
+        <div class="txt">
+          <div class="meta">FX · 08:15 · 日経</div>
+          <b>日銀総裁、追加利上げの「条件は整いつつある」と発言</b>
+        </div>
+      </div>
+      <div class="actual-row">
+        <img src="assets/ng-thumb-common-ai.jpg" alt="" />
+        <div class="txt">
+          <div class="meta">AI · 07:42 · The Verge</div>
+          <b>OpenAI、推論コスト60%減のo4-miniを公開──API価格も改定</b>
+        </div>
+      </div>
+      <div class="actual-row">
+        <img src="assets/ng-thumb-common-it.jpg" alt="" />
+        <div class="txt">
+          <div class="meta">IT · 09:10 · Bloomberg</div>
+          <b>Accenture、AI コンサル部門を 35% 増員へ──需要急増に対応</b>
+        </div>
+      </div>
+      <div class="actual-row">
+        <img src="assets/ng-thumb-common-economy.jpg" alt="" />
+        <div class="txt">
+          <div class="meta">ECON · 06:58 · Reuters</div>
+          <b>米Q1 GDP +2.7%、市場予想を上回る──利下げ観測やや後退</b>
+        </div>
+      </div>
+      <div class="actual-row">
+        <img src="assets/ng-thumb-common-game.jpg" alt="" />
+        <div class="txt">
+          <div class="meta">GAME · 10:24 · IGN Japan</div>
+          <b>任天堂、Switch 2 の生産能力を月産 200万台へ引き上げ</b>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────────────────────────────── -->
+  <section>
+    <div class="sec-head">
+      <h2><span class="num">§02</span>カテゴリ別 横長キービジュアル（B） — 568×200 FEATURED 用</h2>
+      <div class="meta">2× DELIVERY: 1136 × 400 PX · 計5枚</div>
+    </div>
+
+    <p class="sec-lead">
+      各カテゴリの「顔」になる横長デザイン。<strong>カテゴリを連想させる抽象モチーフ</strong>をベースカラーで描き、
+      News Grasp / NG クレジットは控えめに（上部リボンと下部署名バー）。
+      表示時は <code>568 × 200</code> へ縮小されます。
+    </p>
+
+    <div class="cat-card">
+      <div class="top">
+        <div class="swatch" style="background:#B8860B"></div>
+        <div class="top-meta">
+          <div class="l">
+            <span class="glyph" style="color:#B8860B">¥</span>
+            <span class="name">為替</span>
+            <span class="name-en">FOREIGN EXCHANGE · #B8860B</span>
+          </div>
+          <div class="r">FX · KEY VISUAL<br/><b>ng-thumb-fx.jpg</b></div>
+        </div>
+      </div>
+      <div class="preview"><img src="assets/ng-thumb-fx.jpg" alt="" /></div>
+      <div class="footer">
+        <div class="specs">
+          <b>1136 × 400 px</b> · JPEG q=78 · 45.5 KB<br/>
+          GRADIENT <code>#9A6F09 → #D9A11A</code> · DIAGONAL HATCH 8%
+        </div>
+        <div class="motif">
+          <b>MOTIF</b>
+          通貨記号モンタージュ（¥/$/€/£/元）<br/>
+          + ティッカーテープ + 為替スパークライン
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="top">
+        <div class="swatch" style="background:#2D5BB8"></div>
+        <div class="top-meta">
+          <div class="l">
+            <span class="glyph" style="color:#2D5BB8">◆</span>
+            <span class="name">AI</span>
+            <span class="name-en">ARTIFICIAL INTELLIGENCE · #2D5BB8</span>
+          </div>
+          <div class="r">AI · KEY VISUAL<br/><b>ng-thumb-ai.jpg</b></div>
+        </div>
+      </div>
+      <div class="preview"><img src="assets/ng-thumb-ai.jpg" alt="" /></div>
+      <div class="footer">
+        <div class="specs">
+          <b>1136 × 400 px</b> · JPEG q=78 · 39.2 KB<br/>
+          GRADIENT <code>#1A3A8C → #3A6FD8</code> · GRID 32PX
+        </div>
+        <div class="motif">
+          <b>MOTIF</b>
+          ニューラルネット（4層・19ノード）<br/>
+          + 散開した <code>◆</code> グリフ
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="top">
+        <div class="swatch" style="background:#2E6B52"></div>
+        <div class="top-meta">
+          <div class="l">
+            <span class="glyph" style="color:#2E6B52">▲</span>
+            <span class="name">IT-Consulting</span>
+            <span class="name-en">IT &amp; CONSULTING · #2E6B52</span>
+          </div>
+          <div class="r">IT · KEY VISUAL<br/><b>ng-thumb-it.jpg</b></div>
+        </div>
+      </div>
+      <div class="preview"><img src="assets/ng-thumb-it.jpg" alt="" /></div>
+      <div class="footer">
+        <div class="specs">
+          <b>1136 × 400 px</b> · JPEG q=78 · 25.9 KB<br/>
+          GRADIENT <code>#1F4A38 → #3F8568</code>
+        </div>
+        <div class="motif">
+          <b>MOTIF</b>
+          5レイヤー・アーキテクチャスタック<br/>
+          （L1 INFRA → L5 STRATEGY）+ 三角形クラスタ
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="top">
+        <div class="swatch" style="background:#8E2A19"></div>
+        <div class="top-meta">
+          <div class="l">
+            <span class="glyph" style="color:#8E2A19">§</span>
+            <span class="name">Economy</span>
+            <span class="name-en">ECONOMY · #8E2A19</span>
+          </div>
+          <div class="r">ECON · KEY VISUAL<br/><b>ng-thumb-economy.jpg</b></div>
+        </div>
+      </div>
+      <div class="preview"><img src="assets/ng-thumb-economy.jpg?v=3" alt="" /></div>
+      <div class="footer">
+        <div class="specs">
+          <b>1136 × 400 px</b> · JPEG q=78 · 47.2 KB · <b style="color:#8E2A19">v3</b><br/>
+          GRADIENT <code>#5A1108 → #A8392A</code> · 3-LAYER PARALLAX
+        </div>
+        <div class="motif">
+          <b>MOTIF · v3 (re-design)</b>
+          大都会のスカイライン（前/中/奥3レイヤー・約40棟）<br/>
+          + GDP指標カード + § 透かし + ヒーロータワー航空灯
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="top">
+        <div class="swatch" style="background:#5E3D8C"></div>
+        <div class="top-meta">
+          <div class="l">
+            <span class="glyph" style="color:#5E3D8C">●</span>
+            <span class="name">Game</span>
+            <span class="name-en">GAMING · #5E3D8C</span>
+          </div>
+          <div class="r">GAME · KEY VISUAL<br/><b>ng-thumb-game.jpg</b></div>
+        </div>
+      </div>
+      <div class="preview"><img src="assets/ng-thumb-game.jpg" alt="" /></div>
+      <div class="footer">
+        <div class="specs">
+          <b>1136 × 400 px</b> · JPEG q=78 · 24.3 KB<br/>
+          GRADIENT <code>#3F2860 → #7B5BB0</code> · PIXEL DUST
+        </div>
+        <div class="motif">
+          <b>MOTIF</b>
+          ピクセルアート再生三角形<br/>
+          + HP/XP/MP セグメントバー + LEVEL HUD
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────────────────────────────── -->
+  <section>
+    <div class="sec-head">
+      <h2><span class="num">§03</span>納品ファイル一覧</h2>
+      <div class="meta">10 FILES · TOTAL ≈ 191 KB</div>
+    </div>
+
+    <table class="ctx-table">
+      <thead>
+        <tr><th style="width:38%">FILENAME</th><th style="width:18%">DIMENSION (2×)</th><th style="width:14%">SIZE</th><th>USE</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="file">assets/ng-thumb-common-fx.jpg</td><td class="size">280 × 180</td><td class="size">5.5 KB</td><td>FX 共通サムネ（140×90 表示枠）</td></tr>
+        <tr><td class="file">assets/ng-thumb-common-ai.jpg</td><td class="size">280 × 180</td><td class="size">5.5 KB</td><td>AI 共通サムネ</td></tr>
+        <tr><td class="file">assets/ng-thumb-common-it.jpg</td><td class="size">280 × 180</td><td class="size">4.8 KB</td><td>IT-Consulting 共通サムネ</td></tr>
+        <tr><td class="file">assets/ng-thumb-common-economy.jpg</td><td class="size">280 × 180</td><td class="size">7.1 KB</td><td>Economy 共通サムネ</td></tr>
+        <tr><td class="file">assets/ng-thumb-common-game.jpg</td><td class="size">280 × 180</td><td class="size">6.4 KB</td><td>Game 共通サムネ</td></tr>
+        <tr><td class="file">assets/ng-thumb-fx.jpg</td><td class="size">1136 × 400</td><td class="size">45.5 KB</td><td>FX FEATURED（568×200 表示枠）</td></tr>
+        <tr><td class="file">assets/ng-thumb-ai.jpg</td><td class="size">1136 × 400</td><td class="size">39.2 KB</td><td>AI FEATURED</td></tr>
+        <tr><td class="file">assets/ng-thumb-it.jpg</td><td class="size">1136 × 400</td><td class="size">25.9 KB</td><td>IT-Consulting FEATURED</td></tr>
+        <tr><td class="file">assets/ng-thumb-economy.jpg</td><td class="size">1136 × 400</td><td class="size">27.0 KB</td><td>Economy FEATURED</td></tr>
+        <tr><td class="file">assets/ng-thumb-game.jpg</td><td class="size">1136 × 400</td><td class="size">24.3 KB</td><td>Game FEATURED</td></tr>
+      </tbody>
+    </table>
+
+    <p class="sec-lead" style="margin-top:24px">
+      <strong>運用メモ</strong>：透過なし／塗りベースで Gmail・Outlook・iOS Mail・Apple Mail 互換。
+      base64 inline 埋め込みを行う場合は約 4/3 にサイズ膨張するので、6枚合計でおよそ <strong>225 KB</strong> 前後を見込んでください。
+      PNG 版も <code>assets/</code> に同梱しています（高品質ロスレスが必要な用途向け）。
+    </p>
+  </section>
+
+  <div class="doc-foot">
+    <b>NEWS GRASP</b> — Five Lenses on Today<br/>
+    <span style="margin-top:8px;display:inline-block">THUMBNAIL ASSETS v1 · 2026-04-28</span>
+  </div>
+
+</div>
+</body>
+</html>

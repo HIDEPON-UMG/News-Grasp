@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>News Grasp — Email Newsletter Template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #f0eee9; }
+  * { box-sizing: border-box; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data/news-data.js"></script>
+<script src="data/news-data-full.js?v=2"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="macos-window.jsx"></script>
+<script type="text/babel" src="components/news-thumb.jsx"></script>
+<script type="text/babel" src="components/email-newsletter.jsx"></script>
+<script type="text/babel" src="components/email-mobile.jsx"></script>
+<script type="text/babel" src="components/obsidian-preview.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="email" title="News Grasp — メール配信版" subtitle="箇条書き×3倍情報量・段落見出し強調・[[太字]]＋__下線__でキーワード強調。テーブルベースHTMLでGmail/Outlook/Apple Mail対応">
+
+        <DCArtboard id="email-desktop" label="Desktop Email · 640px (Gmail / Outlook)" width={720} height={6800} style={{ background: '#E8E4DA' }}>
+          <EmailNewsletter />
+        </DCArtboard>
+
+        <DCArtboard id="email-mobile" label="Mobile Email · 375px (iOS Mail / Gmail App)" width={375} height={6400} style={{ background: '#E8E4DA' }}>
+          <EmailMobile />
+        </DCArtboard>
+
+        <DCArtboard id="obsidian" label="Obsidian · Markdown Vault" width={900} height={2400} style={{ background: 'transparent' }}>
+          <ObsidianPreview dark={false} />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
