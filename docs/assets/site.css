@@ -2278,8 +2278,10 @@ strong {
   .lens-nav { padding: 10px 16px; }
   .cat-hero { height: 340px; }
   .cat-hero__title-block { top: 24px; left: 16px; right: 16px; }
-  .cat-hero__title { font-size: 46px; }
-  .cat-hero__glyph { font-size: 56px; }
+  .cat-hero__title-row { gap: 10px; }
+  /* "IT-Consulting." を狭幅でも一行に: glyph/間隔を詰め、タイトルは vw 連動で折返し禁止 */
+  .cat-hero__title { font-size: clamp(26px, 8vw, 46px); white-space: nowrap; }
+  .cat-hero__glyph { font-size: 40px; }
   .cat-hero__summary { font-size: 13px; }
   .cat-hero__date { right: 16px; top: 16px; }
   .cat-hero__date-big { font-size: 22px; }
@@ -2296,10 +2298,12 @@ strong {
   .more-card__title { font-size: 21px; padding: 8px 12px; }
   .more-card__bullets li { font-size: 14px; line-height: 1.75; padding-left: 18px; }
   .editorial { padding: 24px 16px; }
-  .editorial__grid { grid-template-columns: 1fr; gap: 24px; }
-  .editorial__sigil { font-size: 80px; }
+  .editorial__grid { grid-template-columns: 1fr; gap: 16px; }
+  /* 巨大装飾 § は隠し、見出しにインライン § を付けて「§ 本日のテーマ考察」を一行化 */
+  .editorial__sigil { display: none; }
   .editorial__outline { display: none; }
   .editorial__body h2 { font-size: 28px; line-height: 1.3; margin-bottom: 18px; }
+  .editorial__body h2::before { content: "\00A7\00A0"; color: var(--color-gold); font-weight: 900; }
   .editorial__body p { font-size: 16px; line-height: 1.9; margin-bottom: 18px; }
   .past-week { padding: 24px 16px; }
   .past-week__grid { grid-template-columns: 1fr 1fr; }
