@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260529 — Artificial Intelligence</title>
+<meta name="description" content="AnthropicがシリーズHで650億ドルを調達し評価額9,650億ドルでOpenAIを抜き世界最高値プライベートAI企業に到達。OpenAIはIPO向けS-1を提出、NVIDIA売上816億ドル達成と三大ニュースが重なった歴史的な1日。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-29/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260529 — Artificial Intelligence">
+<meta property="og:description" content="AnthropicがシリーズHで650億ドルを調達し評価額9,650億ドルでOpenAIを抜き世界最高値プライベートAI企業に到達。OpenAIはIPO向けS-1を提出、NVIDIA売上816億ドル達成と三大ニュースが重なった歴史的な1日。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-29/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260529 — Artificial Intelligence">
+<meta name="twitter:description" content="AnthropicがシリーズHで650億ドルを調達し評価額9,650億ドルでOpenAIを抜き世界最高値プライベートAI企業に到達。OpenAIはIPO向けS-1を提出、NVIDIA売上816億ドル達成と三大ニュースが重なった歴史的な1日。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-05-29 · #20260529</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">AnthropicがシリーズHで650億ドルを調達し評価額9,650億ドルでOpenAIを抜き世界最高値プライベートAI企業に到達。OpenAIはIPO向けS-1を提出、NVIDIA売上816億ドル達成と三大ニュースが重なった歴史的な1日。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">05·29</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260529</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-05-29 08:00 · TechCrunch</span>
+    <span class="top-story__score">98</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://techcrunch.com/2026/05/28/anthropic-raises-65-billion-nears-1t-valuation-ahead-of-ipo/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://techcrunch.com/wp-content/uploads/2025/09/Screenshot-2025-09-02-at-12.22.37PM.png?resize=1200,671" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://techcrunch.com/2026/05/28/anthropic-raises-65-billion-nears-1t-valuation-ahead-of-ipo/" rel="noopener nofollow" target="_blank" style="color: inherit;">AnthropicがシリーズHで650億ドル調達 — 評価額9,650億ドルでOpenAIを抜き世界最高値に</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>がシリーズHで<strong>650億ドル</strong>を調達し評価額<strong>9,650億ドル</strong>（1兆ドル目前）に到達。<strong class="emph-bold">OpenAI</strong>を抜き世界最高値のプライベートAI企業となった。</li><li>売上年換算<strong>470億ドル</strong>で<strong class="emph-bold">Altimeter Capital</strong>・<strong class="emph-bold">Sequoia</strong>が主導。<strong>Claude Code</strong>の企業向け展開がNetflix・Spotify・KPMGに広がりQ2で<strong>130%増</strong>を記録。</li><li><span class="emph-und">IPO前最終資金調達とみられ</span>、1兆ドルバリュエーションへの歴史的な一里塚として市場に衝撃が走った。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-05-29</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-05-29 14:00</span>
+        <span>· CNBC</span>
+        <span class="more-card__score">95</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cnbc.com/2026/05/20/openai-ipo-filing.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.cnbcfm.com/api/v1/image/108276787-1773253292188-gettyimages-2265445220-BLACKROCK_INFRASTRUCTURE_SUMMIT.jpeg?v=1779296174&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cnbc.com/2026/05/20/openai-ipo-filing.html" rel="noopener nofollow" target="_blank">OpenAIがGoldman Sachs主幹でIPO向け機密S-1書類をSECに提出</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong>が5月22日にSECへ<strong>機密IPO目論見書（S-1）</strong>を提出。<strong>2026年9月上場</strong>を目標に評価額<strong>8,520億〜1兆ドル</strong>を目指す。</li><li><strong class="emph-bold">Goldman Sachs</strong>・<strong class="emph-bold">Morgan Stanley</strong>が主幹事。機関投資家への開示を進める段階に入り、<strong>ChatGPTの収益化構造</strong>が初めて公式書類として開示される。</li><li><span class="emph-und">AI覇権企業の上場が現実を帯びる</span>中、Anthropicの評価額更新と合わせ「AIバブル到達点か転換点か」の議論が加速している。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-05-29 16:00</span>
+        <span>· Intellectia AI</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://intellectia.ai/blog/nvda-stock-earnings-analysis-may-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://intellectia.ai/blog/nvda-stock-earnings-analysis-may-2026" rel="noopener nofollow" target="_blank">NVIDIA Q1 FY2027決算 — 売上816億ドル+85%、データセンターが全収益の87%</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NVIDIA</strong>が<strong>売上816億ドル</strong>（前年比+85%）で過去最高を記録。<strong>データセンター収益391億ドル</strong>（+69%）が全収益の87%を占める。</li><li><strong class="emph-bold">Sovereign AI</strong>が<strong>前年比3倍超の300億ドル超</strong>に達し成長を牽引。次世代<strong>Vera Rubin NVL72</strong>が年後半にAWS・Google Cloudで展開予定。</li><li><span class="emph-und">AIインフラ需要が飽和を知らない</span>という決算証明が示され、データセンター投資サイクルの長期化観測がさらに強まった。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-05-29 07:00</span>
+        <span>· TechCrunch</span>
+        <span class="more-card__score">84</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://techcrunch.com/2026/05/27/meta-officially-launches-instagram-facebook-and-whatsapp-subscriptions-with-more-to-come-including-ai-plans/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://techcrunch.com/wp-content/uploads/2026/05/meta-apps-GettyImages-2164040793.jpg?w=1024" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://techcrunch.com/2026/05/27/meta-officially-launches-instagram-facebook-and-whatsapp-subscriptions-with-more-to-come-including-ai-plans/" rel="noopener nofollow" target="_blank">Metaが「Meta One」サブスク世界展開 — Instagram/Facebook/WhatsApp有料プラン開始</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Meta</strong>が月額3.99〜19.99ドルの<strong>Meta Oneサブスクプラン</strong>を世界展開。<strong>Meta One Premium</strong>では高度推論・画像生成強化を提供する。</li><li><strong>SNS広告モデル</strong>から課金モデルへの大転換として注目。<strong>Instagram・Facebook・WhatsApp</strong>3プラットフォームを一括有料化する大胆な戦略。</li><li><span class="emph-und">AI機能を収益化する新モデルの試金石</span>として、OpenAI・GoogleとのROI比較が投資家から迫られる展開になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-05-29 09:00</span>
+        <span>· Fujitsu Global</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://global.fujitsu/en-global/pr/news/2026/05/25-01" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/pr/news/common/ogp/news-ogp-ai02.png?rev=b2c92af86d8c4104ad3ab0c62589d393" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://global.fujitsu/en-global/pr/news/2026/05/25-01" rel="noopener nofollow" target="_blank">富士通が自己進化マルチAIエージェント技術を開発 — 業務中に平均28ポイント精度向上</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">富士通</strong>が複数AIエージェントが<strong>チームで業務を遂行しながら失敗から自律学習</strong>する技術を発表。自社LLM「<strong class="emph-bold">Takane</strong>」適用で<strong>平均28pt精度向上</strong>を確認。</li><li><strong>カーネギーメロン大</strong>との共同研究で軽量版も開発中。<strong>業務インフラに組み込まれる自己進化AI</strong>という概念実証が日本企業初の成果として提示された。</li><li><span class="emph-und">AIが仕事をしながら賢くなる</span>設計思想は固定モデル運用から動的学習モデルへのパラダイムシフトを象徴する試みだ。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>AnthropicがシリーズHで650億ドルを調達し評価額9,650億ドルでOpenAIを抜き世界最高値プライベートAI企業に到達。OpenAIはIPO向けS-1を提出、NVIDIA売上816億ドル達成と三大ニュースが重なった歴史的な1日。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-05-29
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

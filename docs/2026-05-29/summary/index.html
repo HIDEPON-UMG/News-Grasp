@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-05-29</title>
+<meta name="description" content="2026-05-29 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-05-29">
+<meta property="og:description" content="2026-05-29 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-05-29/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-05-29">
+<meta name="twitter:description" content="2026-05-29 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260529</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260529</span></h2>
+      
+      <div class="summary-hero__lead">米・イラン停戦延長合意でドル安・円高方向にシフト。財務省の介入実績月次公表と東京CPI速報値が日銀6月利上げ判断を左右する。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">7</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">31</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — 1兆ドルとCPI3.8%の同時撃</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Anthropic</strong>の評価額が<strong>9,650億ドル</strong>に到達した同じ日、米インフレが<strong>3.8%</strong>という3年ぶりの高水準を記録した。AI企業の「夢の値段」と中央銀行の「現実の温度」が乖離し続けるという構造矛盾が、本日30件のニュースを貫く通底テーマだ。<strong>利下げ封印</strong>というFed新議長の宣言は、高金利下でも続く<strong>AIバリュエーション膨張</strong>と鋭く対立する。この二律背反は今後6か月の相場の核心となる。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">ドル円159円台前半 — 米・イラン合意報道でドル安優勢</h3>
+        <p class="summary-sec__body">米・イラン停戦延長合意報道でドル安が優勢となりドル円は159円台前半。財務省が4〜5月の介入実績を本日公表、東京CPI速報値と合わせ日銀6月利上げ判断の材料が揃う一日となった。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">米・イラン両国</strong>が<strong>60日間停戦延長</strong>と<strong>核開発交渉開始</strong>で合意との報道を受け、ドル安が優勢となり<strong>ドル円は159.21円</strong>台前半まで下落した。</li>
+          
+          <li>ホルムズ海峡リスク後退で<strong>原油先物も急落</strong>しインフレ懸念が和らぎ、ドル売り・円買いに拍車をかけた。</li>
+          
+          <li><span class="emph-und">中東情勢の変化が為替の新たな変数</span>として浮上し、断続的な報道が相場を揺さぶる構図が続く。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-29/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AnthropicがシリーズHで650億ドル調達 — 評価額9,650億ドルでOpenAIを抜き世界最高値に</h3>
+        <p class="summary-sec__body">AnthropicがシリーズHで650億ドルを調達し評価額9,650億ドルでOpenAIを抜き世界最高値プライベートAI企業に到達。OpenAIはIPO向けS-1を提出、NVIDIA売上816億ドル達成と三大ニュースが重なった歴史的な1日。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Anthropic</strong>がシリーズHで<strong>650億ドル</strong>を調達し評価額<strong>9,650億ドル</strong>（1兆ドル目前）に到達。<strong class="emph-bold">OpenAI</strong>を抜き世界最高値のプライベートAI企業となった。</li>
+          
+          <li>売上年換算<strong>470億ドル</strong>で<strong class="emph-bold">Altimeter Capital</strong>・<strong class="emph-bold">Sequoia</strong>が主導。<strong>Claude Code</strong>の企業向け展開がNetflix・Spotify・KPMGに広がりQ2で<strong>130%増</strong>を記録。</li>
+          
+          <li><span class="emph-und">IPO前最終資金調達とみられ</span>、1兆ドルバリュエーションへの歴史的な一里塚として市場に衝撃が走った。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-29/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">AccentureとHUMAIN、サウジアラビアでAI導入を官民横断で加速</h3>
+        <p class="summary-sec__body">AccentureがサウジアラビアPIF傘下HUMAINと官民AI加速パートナーシップを締結。国内ではNEC・日立・富士通がAnthropicとそろい踏みの提携を完成させ、日本IT産業の構造転換が決定的となった。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Accenture</strong>と<strong class="emph-bold">HUMAIN</strong>（<strong class="emph-bold">サウジアラビア</strong>PIF傘下）が<strong>戦略的パートナーシップ</strong>を締結。官民のAI実装を<strong>実験段階から本番運用</strong>に移行させる5分野で協業開始。</li>
+          
+          <li>Vision 2030加速とGCC地域全域への波及を視野に入れた大規模コンサル案件で、<strong>中東市場の主導権</strong>を巡るMBBとの競争が激化する。</li>
+          
+          <li><span class="emph-und">新興AI経済圏でのコンサル覇権争い</span>という新局面を開く案件で、中東発のAI投資規模がシリコンバレーに匹敵しはじめている。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-29/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§05</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">S&amp;P 500・NasdaqがAIけん引で最高値更新 — Snowflake 36%急騰</h3>
+        <p class="summary-sec__body">S&amp;P500がSnowflake急騰でAI牽引の最高値更新を継続する一方、米4月CPI3.8%という3年ぶり高水準が利下げシナリオを再び遠のかせた。日経平均は「5月売り」で一時1000円超安、Goldman Sachsは年末目標を8,000に引き上げ。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li>5月28日の<strong class="emph-bold">S&amp;P500</strong>は<strong>0.58%高の7,563pt</strong>と最高値を更新。<strong class="emph-bold">Snowflake</strong>がQ2ガイダンス好調で<strong>36.5%急騰</strong>し、<strong class="emph-bold">Microsoft</strong>・<strong class="emph-bold">Palantir</strong>も3〜4%上昇。</li>
+          
+          <li><strong class="emph-bold">NVIDIA</strong> Vera Rubin発表後も<strong>AIデータセンター関連株が強含み</strong>継続し、<strong>NASDAQ 26,000台</strong>超えを定着させる相場環境が維持された。</li>
+          
+          <li><span class="emph-und">AIマネーフローが一点集中から幅広いエコシステム株に拡散</span>し始めた初期兆候として、市場関係者がターニングポイントと注目。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-05-29/" style="color: #8E2A19;">→ §05 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§06</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">Forza Horizon 6、正式リリース後Steam最高同接30万人超 — シリーズ史上最大ローンチ</h3>
+        <p class="summary-sec__body">Forza Horizon 6がSteam同接30万人超でシリーズ最高記録を達成。スクウェア・エニックスが賞金総額10億円の開発コンテストを発表し、PlayStation Days of Play 2026も開幕。Cygamesは映像スタジオ買収でIP戦略を加速。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li>日本を舞台にした<strong class="emph-bold">Forza Horizon 6</strong>が正式リリース。<strong>Steam最高同接302,645人</strong>を記録し<strong>前作比約3倍</strong>のユーザーを集め、シリーズ史上最大のローンチを達成。</li>
+          
+          <li><strong>メタスコアも今年暫定トップ</strong>を獲得。東京・大阪・京都の実写スキャンデータと日本固有の車文化が海外プレイヤーに高く評価された。</li>
+          
+          <li><span class="emph-und">「日本が主役の欧米AAA作品」という稀有なポジション</span>が全世界のゲーマーを引きつけ、ゲームツーリズム的な経済効果も生まれつつある。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/2026-05-29/" style="color: #5E3D8C;">→ §06 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§07</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日へ — 6月の焦点：日銀会合・Anthropic IPO観測・FF7 Rebirth</h3>
+        <p class="summary-sec__body">来週6月はAI・金融・ゲームの三分野で重要イベントが集中する。<strong>日銀6月16〜17日会合</strong>（利上げ判断）、<strong>OpenAI上場スケジュール確認</strong>（IPO申請後の次の動き）、<strong>FF7 Rebirth・Star Fox Switch 2</strong>（任天堂夏コンテンツ波）。<span class="emph-und">Anthropicが1兆ドルを突破するか・日銀が利上げに踏み切るか</span>の二大問いが、6月の相場の縦糸となる。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">ARTIFICIAL INTELLIGENCE</div>
+          <div class="summary-take__text">AnthropicがシリーズHで650億ドル調達 — 評価額9,650億ドルでOpenAIを抜き世界最高値に</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #3A7B8C;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #3A7B8C;">MOBILITY</div>
+          <div class="summary-take__text">WaymoがOjai第6世代ロボタクシーを一部ライダーに公開開放 — サンディエゴ・ラスベガス展開へ</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2E6B52;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2E6B52;">IT &amp; CONSULTING</div>
+          <div class="summary-take__text">AccentureとHUMAIN、サウジアラビアでAI導入を官民横断で加速</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/">全31本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-05-29 · #20260529
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
