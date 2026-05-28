@@ -28,7 +28,7 @@ def test_thumb_key_present_after_cutoff() -> list[str]:
         errs.append(f"articles.jsonl not found: {JSONL}")
         return errs
 
-    with JSONL.open(encoding="utf-8") as f:
+    with JSONL.open(encoding="utf-8-sig") as f:
         for lineno, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -50,6 +50,14 @@ def test_thumb_key_present_after_cutoff() -> list[str]:
 
 
 def main() -> int:
+    # 日本語版 Windows の既定 cp932 では、エラー文中の em-dash 等で print が
+    # UnicodeEncodeError を起こしテスト自体がクラッシュする。標準出力を UTF-8/replace
+    # に再構成して落ちないようにする。
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
     cases = [
         (f"thumb キー必須 (date >= {CUTOFF_DATE})", test_thumb_key_present_after_cutoff),
     ]
