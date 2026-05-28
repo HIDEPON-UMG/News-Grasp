@@ -942,16 +942,20 @@ strong {
   max-width: var(--container-max);
   margin: 0 auto;
   width: 100%;
+}
+/* 上段バー: TODAY (左) と ARCHIVE (右)。カテゴリーはこの下に全幅で展開 */
+.home-nav__bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 .home-nav__links {
   display: flex; gap: 28px;
   font-family: var(--font-mono); font-size: 11px;
   letter-spacing: 0.13em; font-weight: 700;
   flex-wrap: wrap;
-  flex: 1 1 auto; min-width: 0;
+  margin-top: 12px;
 }
 .home-nav__today {
   color: var(--color-navy);

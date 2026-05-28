@@ -68,8 +68,11 @@
 <!-- ============= Sticky nav (TODAY + 6 lenses + § ESSAY + ARCHIVE) ============= -->
 <nav class="home-nav">
   <div class="home-nav__inner">
-    <div class="home-nav__links">
+    <div class="home-nav__bar">
       <span class="home-nav__today">TODAY</span>
+      <a href="{{ base_url }}/archive/" class="home-nav__archive">ARCHIVE</a>
+    </div>
+    <div class="home-nav__links">
       {% for c in categories %}{% if c.id != 'summary' %}
       <a href="{{ base_url }}/{{ c.id }}/" class="home-nav__lens-{{ c.id }}">
         <span style="margin-right:4px;">{{ c.glyph }}</span>{{ c.label|upper }}
@@ -81,7 +84,6 @@
       <span class="home-nav__dim">§ ESSAY</span>
       {% endif %}
     </div>
-    <a href="{{ base_url }}/archive/" class="home-nav__archive">ARCHIVE</a>
   </div>
 </nav>
 
