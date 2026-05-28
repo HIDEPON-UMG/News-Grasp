@@ -189,8 +189,29 @@
 </section>
 {% endif %}
 
+{% if featured and featured.summary_text %}
+<!-- ============= Editorial (本日のテーマ考察 navy band / page-template と統一) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">{{ category_label|upper }} · {{ featured.date }}</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>{{ featured.summary_text|render_emph }}</p>
+      <div class="editorial__cta">
+        <a href="{{ base_url }}/{{ featured.date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="{{ base_url }}/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {% if past_7 %}
-<!-- ============= Past 1 week (新要件: 各カード <a> で /{cat}/{date}/ にラップ) ============= -->
+<!-- ============= Past 1 week (editorial の下に配置: 各カード <a> で /{cat}/{date}/ にラップ) ============= -->
 <section class="past-week">
   <div class="past-week__head">
     <h2>━━ PAST 1 WEEK</h2>
@@ -212,27 +233,6 @@
       </div>
     </a>
     {% endfor %}
-  </div>
-</section>
-{% endif %}
-
-{% if featured and featured.summary_text %}
-<!-- ============= Editorial (本日のテーマ考察 navy band / page-template と統一) ============= -->
-<section class="editorial">
-  <div class="editorial__grid">
-    <div class="editorial__left">
-      <div class="editorial__eyebrow">━━ EDITORIAL</div>
-      <div class="editorial__sigil">§</div>
-      <div class="editorial__meta">{{ category_label|upper }} · {{ featured.date }}</div>
-    </div>
-    <div class="editorial__body">
-      <h2>本日のテーマ考察</h2>
-      <p>{{ featured.summary_text|render_emph }}</p>
-      <div class="editorial__cta">
-        <a href="{{ base_url }}/{{ featured.date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
-        <a href="{{ base_url }}/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
-      </div>
-    </div>
   </div>
 </section>
 {% endif %}
