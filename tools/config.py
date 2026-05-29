@@ -20,6 +20,14 @@ BASE_URL: str = os.environ.get(
     "https://hidepon-umg.github.io/News-Grasp",
 ).rstrip("/")
 
+# Web Push 購読ストア Worker の URL。tools/send_push.py が購読一覧の取得に使う。
+# 環境変数 NEWS_GRASP_PUSH_WORKER_URL で上書き可。
+# ★ docs/push.js の WORKER_URL 定数と必ず同じ値にすること（client と server の両輪）。
+PUSH_WORKER_URL: str = os.environ.get(
+    "NEWS_GRASP_PUSH_WORKER_URL",
+    "https://news-grasp-push.news-grasp-push.workers.dev",
+).rstrip("/")
+
 SITE_TITLE: str = "News Grasp"
 SITE_DESCRIPTION: str = "時勢を掴み、日々に新たに。"
 SITE_TAGLINE_EN: str = "SIX LENSES ON TODAY"

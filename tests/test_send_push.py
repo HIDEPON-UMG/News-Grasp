@@ -85,9 +85,12 @@ def test_build_payload_shape_and_japanese():
 def test_main_no_subscribers_returns_zero(tmp_path, monkeypatch, capsys):
     """購読者 0 人なら dry-run でなくても exit 0（Runner を落とさない）。"""
     empty = tmp_path / "subs.json"  # 存在しないパス
+    no_token = tmp_path / "no_token.txt"  # token 無し → Worker でなく file 経路を強制
     monkeypatch.setattr(
         sys, "argv",
-        ["send_push.py", "--subscriptions-file", str(empty)],
+        ["send_push.py",
+         "--subscriptions-file", str(empty),
+         "--token-file", str(no_token)],
     )
     assert main() == 0
     out = capsys.readouterr().out
@@ -98,9 +101,12 @@ def test_main_dry_run_does_not_send(tmp_path, monkeypatch, capsys):
     """購読者がいても --dry-run なら送信処理に入らず exit 0。"""
     f = tmp_path / "subs.json"
     f.write_text(json.dumps([SAMPLE_SUB]), encoding="utf-8")
+    no_token = tmp_path / "no_token.txt"  # token 無し → file 経路を強制
     monkeypatch.setattr(
         sys, "argv",
-        ["send_push.py", "--dry-run", "--subscriptions-file", str(f)],
+        ["send_push.py", "--dry-run",
+         "--subscriptions-file", str(f),
+         "--token-file", str(no_token)],
     )
     assert main() == 0
     out = capsys.readouterr().out

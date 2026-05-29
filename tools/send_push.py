@@ -28,7 +28,6 @@ VAPID 秘密鍵は ~/.secrets/news-grasp-vapid.pem（tools/gen_vapid_keys.py で
 """
 import argparse
 import json
-import os
 import sys
 import urllib.error
 import urllib.parse
@@ -38,7 +37,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.config import BASE_URL  # noqa: E402  BASE_URL の単一ソース
+from tools.config import BASE_URL, PUSH_WORKER_URL  # noqa: E402  URL の単一ソース
 
 DEFAULT_VAPID_KEY_FILE = Path.home() / ".secrets" / "news-grasp-vapid.pem"
 DEFAULT_TOKEN_FILE = Path.home() / ".secrets" / "news-grasp-push-token.txt"
@@ -56,8 +55,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--body", default=DEFAULT_BODY, help="通知本文")
     p.add_argument("--url", default=f"{BASE_URL}/",
                    help=f"タップで開く URL（既定: {BASE_URL}/）")
-    p.add_argument("--worker-url", default=os.environ.get("NEWS_GRASP_PUSH_WORKER_URL"),
-                   help="購読保存先 Worker の URL（既定: 環境変数 NEWS_GRASP_PUSH_WORKER_URL）")
+    p.add_argument("--worker-url", default=None,
+                   help=f"購読保存先 Worker の URL（既定: config.PUSH_WORKER_URL = {PUSH_WORKER_URL}）")
     p.add_argument("--token-file", default=str(DEFAULT_TOKEN_FILE),
                    help=f"Worker /list の LIST_TOKEN ファイル（既定: {DEFAULT_TOKEN_FILE}）")
     p.add_argument("--subscriptions-file", default=str(DEFAULT_SUBSCRIPTIONS_FILE),
@@ -71,10 +70,18 @@ def parse_args() -> argparse.Namespace:
 
 # ---------------------------------------------------------------------------
 # HTTP ヘルパ（標準ライブラリのみ。テストでは monkeypatch で差し替える）
+#   - User-Agent を明示する。既定の "Python-urllib/x" は Cloudflare のエッジで
+#     bot 判定され 403 で弾かれることがあり、その場合 /list が永遠に取れず
+#     毎朝の送信が黙って skip される（2026-05-29 実測で 403 を踏んで発覚）。
 # ---------------------------------------------------------------------------
 
+_USER_AGENT = "News-Grasp-Push/1.0 (+https://hidepon-umg.github.io/News-Grasp)"
+
+
 def _http_get_json(url: str, timeout: int = 10):
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    req = urllib.request.Request(
+        url, headers={"Accept": "application/json", "User-Agent": _USER_AGENT}
+    )
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
@@ -82,7 +89,9 @@ def _http_get_json(url: str, timeout: int = 10):
 def _http_post_json(url: str, body: dict, timeout: int = 10):
     data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+        url, data=data,
+        headers={"Content-Type": "application/json", "User-Agent": _USER_AGENT},
+        method="POST",
     )
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
@@ -168,7 +177,8 @@ def main() -> int:
     args = parse_args()
 
     # 取得元の決定: Worker URL + token が揃えば Worker、無ければローカルファイル。
-    worker_url = args.worker_url.rstrip("/") if args.worker_url else None
+    # URL は --worker-url > config.PUSH_WORKER_URL（環境変数で上書き可）の順。
+    worker_url = (args.worker_url or PUSH_WORKER_URL).rstrip("/") or None
     token = resolve_token(args.token_file)
     if worker_url and token:
         source = "worker"
