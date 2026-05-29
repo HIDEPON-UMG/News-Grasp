@@ -34,3 +34,12 @@ worker/.wrangler/
 # design 大容量素材（git 履歴を膨らませないためローカルのみ保持）
 design/architecture.v2.pptx
 design/cover-ai.png
+# 一時・調査用ワンオフ（コミット対象外, 2026-05-29 追加）
+_tmp_*
+tmp_*
+/dedup_check.py
+/update_articles.py
+build/test_avatar.html
+build/email_preview.png
+# セッション引き継ぎメモ（ローカル参照のみ・履歴には残さない）
+/handoff_*.md
