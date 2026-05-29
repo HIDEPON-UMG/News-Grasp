@@ -73,7 +73,7 @@
       {% if hero_subtitle %}
       <div class="summary-hero__subtitle">「{{ hero_subtitle }}」</div>
       {% endif %}
-      <div class="summary-hero__lead">{{ hero_lead }}</div>
+      <div class="summary-hero__lead">{{ hero_lead|render_emph }}</div>
       <div class="summary-hero__stats">
         <span><span class="summary-hero__stat-num">{{ stats.sections }}</span>SECTIONS</span>
         <span><span class="summary-hero__stat-num">~{{ stats.read_min }}</span>MIN READ</span>

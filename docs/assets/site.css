@@ -692,6 +692,19 @@ strong {
 .editorial__body .emph-und {
   border-bottom-color: var(--color-gold);
 }
+/* LP「本日のテーマ考察」(home-editorial) と Summary Hero も dark navy 上にあるため、
+ * .editorial__body と同じゴールド系の強調 (マーカー=gold 32%背景+gold文字 / 下線=gold /
+ * 太字=cream) を適用する。長文化した考察 lead の可読性を上げつつデザインを害さない。 */
+.home-editorial__body strong { color: var(--color-cream); }
+.home-editorial__body .emph-bold,
+.summary-hero__lead .emph-bold {
+  background: rgba(201, 161, 85, 0.32);
+  color: var(--color-gold);
+}
+.home-editorial__body .emph-und,
+.summary-hero__lead .emph-und {
+  border-bottom-color: var(--color-gold);
+}
 .editorial__cta {
   display: flex;
   gap: 14px;

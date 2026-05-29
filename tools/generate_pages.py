@@ -61,6 +61,29 @@ _WIKILINK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]")
 _UNDERLINE_RE = re.compile(r"__(.+?)__")
 _BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
 
+# Summary digest の考察 (reflection) ブロック抽出用。
+# `## § 本日のテーマ考察` 見出し / `> [!quote]` PULL QUOTE / `### KEY TAKEAWAYS`。
+_THEME_ESSAY_HEADER_RE = re.compile(r"^##\s+§?\s*本日のテーマ考察\s*$", re.MULTILINE)
+_PULLQUOTE_RE = re.compile(r"^>\s*\[!quote\][^\n]*\r?\n((?:>.*(?:\r?\n|$))+)", re.MULTILINE)
+_TAKEAWAYS_HEADER_RE = re.compile(r"^###\s+KEY\s+TAKEAWAYS\s*$", re.MULTILINE)
+_TAKEAWAY_ITEM_RE = re.compile(r"^-\s+\*\*\[([^\]]+)\]\*\*\s*(.+?)\s*$", re.MULTILINE)
+# Hero / LP の考察文末尾に付く定型の遷移句 (「以下、各カテゴリを横断して読み解く。」)。
+# LP の「本日のテーマ考察」ボックスは単体で読まれるため、表示時に除去する。
+_HOME_LEAD_TRAILER_RE = re.compile(
+    r"以下[、,]?\s*各カテゴリを横断して読み解く[。\.\-—─]*\s*$"
+)
+# 考察 §NN 見出しの先頭ラベル (為替/AI/...) を category id に対応付ける。
+# CATEGORIES["it"]["jp"] は "IT-Consulting" だが、digest 見出しは "IT —" 表記なので別途 alias。
+TAG_TO_CID: dict[str, str] = {
+    "為替": "fx",
+    "AI": "ai",
+    "IT": "it",
+    "IT-Consulting": "it",
+    "モビリティ": "mobility",
+    "経済": "economy",
+    "ゲーム": "game",
+}
+
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     """YAML 風 frontmatter を簡易パースして (dict, body) を返す。
@@ -169,6 +192,20 @@ def inline_html(text: str) -> str:
     return s
 
 
+def strip_inline(text: str) -> str:
+    """digest 本文の inline 装飾記法 (`[[X|Y]]` `__X__` `**X**`) を剥がして素テキスト化。
+
+    `render_emph` を通さず `{{ }}` で素表示する箇所 (LP / Hero のリード文など) で使う。
+    マーカー文字がそのまま画面に出るのを防ぐ。HTML escape はテンプレ側の autoescape に任せる。
+    """
+    if not text:
+        return ""
+    s = _WIKILINK_RE.sub(lambda m: m.group(2) or m.group(1), text)
+    s = _UNDERLINE_RE.sub(r"\1", s)
+    s = _BOLD_RE.sub(r"\1", s)
+    return s
+
+
 def _parse_article_block(block: str) -> dict[str, Any] | None:
     """記事 1 ブロック (### 行から次の `---` まで) を dict に変換。
 
@@ -272,6 +309,11 @@ def build_context(digest_path: Path) -> dict[str, Any]:
     summary_text = extract_summary_text(body).replace("\n", " ").replace("\r", " ").strip()
     og_description = truncate(summary_text, OG_DESCRIPTION_MAX)
 
+    # summary digest のみ考察 (reflection) と theme フレーズを抽出。
+    # LP / overview / summary ページの「本日のテーマ考察」「総論」「PULL QUOTE」
+    # 「KEY TAKEAWAYS」はここで抽出したデータを使う (entry に同梱して再パースを避ける)。
+    reflection = parse_reflection(body) if category_id == "summary" else {}
+
     og_image = _absolutize(resolve_og_image(fm, body, category_id))
 
     articles = parse_articles(body)
@@ -342,6 +384,8 @@ def build_context(digest_path: Path) -> dict[str, Any]:
         "base_url": BASE_URL,
         "site_title": SITE_TITLE,
         "summary_text": summary_text,
+        "theme": fm.get("theme", ""),
+        "reflection": reflection,
         "articles": articles,
         # ----- Magazine Spread 追加 context -----
         "top": top,
@@ -501,6 +545,8 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "category_jp": ctx["category_jp"],
         "canonical": ctx["canonical"],
         "summary_text": ctx.get("summary_text", ""),
+        "theme": ctx.get("theme", ""),
+        "reflection": ctx.get("reflection") or {},
         "og_image": ctx["og_image"],
         "accent": ctx["accent"],
         "glyph": ctx["glyph"],
@@ -702,7 +748,9 @@ def _split_theme_phrases(summary_text: str) -> tuple[str, str]:
             parts = [p.strip() for p in head.split(sep, 1)]
             if len(parts) == 2 and parts[0] and parts[1]:
                 left = parts[0]
-                right = parts[1].split("。", 1)[0].split(".", 1)[0]
+                # 末尾の英文節 (". Read more" 等) だけを落とす。小数点 (3.8% 等) は残す
+                # ため、"." の後ろが空白/英字のときのみ分割する。
+                right = re.split(r"\.(?=\s|[A-Za-z])", parts[1].split("。", 1)[0], maxsplit=1)[0]
                 if 2 <= len(left) <= 14 and 2 <= len(right) <= 14:
                     return (left, right)
     return ("", "")
@@ -783,19 +831,27 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     if editorial is None:
         editorial = next((e for e in entries if e["category_id"] == "summary"), None)
 
-    # Today's Theme: editorial.summary_text から 2 フレーズ抽出を試みる
-    theme_source = editorial["summary_text"] if editorial else ""
-    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_source)
+    # Today's Theme フレーズ: frontmatter `theme:` ("A と B" 形式) を 2 トーンに分割。
+    # 旧実装は editorial.summary_text (= 本文先頭の [!summary] = 為替カテゴリ要約) を使い
+    # 為替語句しか出なかったため、日全体を表す theme 由来に変更。
+    reflection = (editorial.get("reflection") if editorial else None) or {}
+    theme_phrase = (editorial.get("theme") if editorial else "") or ""
+    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_phrase)
 
-    # Hero lead: editorial の summary が最も豊か。無ければ hero_story.summary_text に
-    hero_lead = ""
-    if editorial and editorial.get("summary_text"):
-        hero_lead = editorial["summary_text"]
-    elif hero_story and hero_story.get("summary_text"):
-        hero_lead = hero_story["summary_text"]
-    else:
+    # 本日のテーマ考察 (多カテゴリ横断・150〜250字)。考察 lead の末尾遷移句だけ除去し、
+    # 装飾記法 (`[[ ]]` `__ __` `**`) は保持 → テンプレ側で render_emph により
+    # マーカー/太字/下線を描画し、長文の可読性を上げる (デザインを害さないネイビー強調)。
+    # 取れない (旧 digest) ときは従来どおり summary_text にフォールバック。
+    editorial_essay = _strip_lead_trailer(reflection.get("lead", ""))
+    if not editorial_essay and editorial:
+        editorial_essay = editorial.get("summary_text", "")
+
+    # Hero lead: LP 上部 TODAY'S THEME の導入文。同じ考察を装飾なしの素テキストで簡潔に。
+    hero_lead = strip_inline(editorial_essay)
+    if not hero_lead and hero_story and hero_story.get("summary_text"):
+        hero_lead = strip_inline(hero_story["summary_text"])
+    if not hero_lead:
         hero_lead = f"本日 {len(same_day)} カテゴリのダイジェストをお届けします。"
-    # lead を 180 文字程度に丸める
     if len(hero_lead) > 200:
         hero_lead = hero_lead[:198] + "…"
 
@@ -825,6 +881,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         "hero_phrase_left": hero_phrase_left,
         "hero_phrase_right": hero_phrase_right,
         "hero_lead": hero_lead,
+        "editorial_essay": editorial_essay,
 
         "hero_story": hero_story,
         "editor_top3": editor_top3,
@@ -888,8 +945,9 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
 
     # Theme banner: 同日 summary digest から 2 フレーズ抽出
     editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
-    theme_source = editorial["summary_text"] if editorial else ""
-    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_source)
+    # フレーズは frontmatter `theme:` 由来 (日全体を表す)。為替偏重だった summary_text から変更。
+    theme_phrase = (editorial.get("theme") if editorial else "") or ""
+    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_phrase)
 
     # Stats
     stories_total = sum(r["articles_count"] for r in cat_rows)
@@ -979,19 +1037,199 @@ def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
     return sections
 
 
-def _extract_reflection(digest_path: Path) -> dict[str, Any]:
-    """summary digest の frontmatter / 本文から reflection 構造を取り出す。
+def _parse_theme_intro(body: str) -> tuple[str, str]:
+    """`## § 本日のテーマ考察` 直下の subtitle (斜体) と lead (考察 blockquote) を返す。
 
-    γ schema (2026-05-23 で導入予定) では frontmatter に reflection: {} 構造を持つが、
-    まだ未対応の digest が大半なので、frontmatter から取れなければ {} を返す。
-    取れた場合は {lead, subtitle, pull_quote, takeaways, sections} を返す。
-
-    現実装はスケルトン (frontmatter スカラー読みのみ)。本格的な reflection 解析は
-    Phase 5 後半で digest 側を γ schema に揃えてから対応する。
+    digest の構造 (毎朝 routine が生成):
+        ## § 本日のテーマ考察
+        *{subtitle}*
+        > {lead 本文。多カテゴリ横断・150〜250字}
+        > [!quote] PULL QUOTE   ← lead はここの手前で切る
+    lead は最初に現れる「callout でない blockquote ブロック」。取れなければ ("", "")。
     """
-    # TODO: γ schema 対応後に本実装 (YAML reflection ブロックのパース)
-    # 今は空 dict を返してテンプレ側 fallback に任せる
-    return {}
+    m = _THEME_ESSAY_HEADER_RE.search(body)
+    if not m:
+        return ("", "")
+    rest = body[m.end():]
+    nxt = re.search(r"^###\s", rest, re.MULTILINE)
+    region = rest[: nxt.start()] if nxt else rest
+
+    subtitle = ""
+    sub_m = re.search(r"^\*(.+?)\*\s*$", region, re.MULTILINE)
+    if sub_m:
+        subtitle = sub_m.group(1).strip()
+
+    lead_lines: list[str] = []
+    in_block = False
+    for line in region.splitlines():
+        s = line.rstrip()
+        if s.startswith(">"):
+            content = s[1:].strip()
+            if content.startswith("[!"):
+                if in_block:
+                    break  # lead は callout の手前まで
+                continue
+            if not content:
+                if in_block:
+                    break
+                continue
+            lead_lines.append(content)
+            in_block = True
+        elif in_block:
+            break
+    lead = " ".join(lead_lines).strip()
+    return (subtitle, lead)
+
+
+def _parse_pull_quote(body: str) -> dict[str, str]:
+    """`> [!quote] PULL QUOTE` ブロックから {text, from} を取り出す。無ければ空。"""
+    m = _PULLQUOTE_RE.search(body)
+    if not m:
+        return {"text": "", "from": ""}
+    lines: list[str] = []
+    frm = ""
+    for line in m.group(1).splitlines():
+        c = line.lstrip(">").strip()
+        if not c:
+            continue
+        attr = re.match(r"^[─—-]+\s*(.+?)\s*より\s*$", c)
+        if attr:
+            frm = attr.group(1).strip()
+            continue
+        lines.append(c)
+    return {"text": " ".join(lines).strip(), "from": frm}
+
+
+def _parse_takeaways(body: str) -> list[dict[str, str]]:
+    """`### KEY TAKEAWAYS` の `- **[tag]** text` 形式 bullet を [{tag, text}] で返す。"""
+    m = _TAKEAWAYS_HEADER_RE.search(body)
+    if not m:
+        return []
+    rest = body[m.end():]
+    nxt = re.search(r"^(?:###\s|>\s*\[!|---\s*$|←\s|\*🤖)", rest, re.MULTILINE)
+    region = rest[: nxt.start()] if nxt else rest
+    out: list[dict[str, str]] = []
+    for tm in _TAKEAWAY_ITEM_RE.finditer(region):
+        out.append({"tag": tm.group(1).strip(), "text": tm.group(2).strip()})
+    return out
+
+
+def parse_reflection(body: str) -> dict[str, Any]:
+    """summary digest 本文から考察 (reflection) 構造を抽出。
+
+    返却: {subtitle, lead, pull_quote{text,from}, sections{NN:{heading,body}}, takeaways[]}。
+    summary 以外の digest や考察ブロックが無い digest では各値が空のまま返る。
+    """
+    subtitle, lead = _parse_theme_intro(body)
+    return {
+        "subtitle": subtitle,
+        "lead": lead,
+        "pull_quote": _parse_pull_quote(body),
+        "sections": parse_essay_sections(body),
+        "takeaways": _parse_takeaways(body),
+    }
+
+
+def _strip_lead_trailer(lead: str) -> str:
+    """lead 末尾の定型遷移句 (「以下、各カテゴリを横断して読み解く。」) を除去。装飾記法は保持。
+
+    LP「本日のテーマ考察」ボックスは render_emph で太字/下線/マーカーを描画するため、
+    `[[ ]]` `__ __` `**` を残したまま末尾の遷移句だけ落とす。
+    """
+    return _HOME_LEAD_TRAILER_RE.sub("", (lead or "").strip()).rstrip()
+
+
+def _theme_essay_for_home(lead: str) -> str:
+    """LP Hero リード用に lead を素テキスト化し末尾遷移句も除去 (装飾なしの簡潔表示向け)。"""
+    return strip_inline(_strip_lead_trailer(lead))
+
+
+def _build_essay_sections(sections: dict[int, dict[str, str]],
+                          by_cat: dict[str, dict[str, Any]]) -> list[dict[str, Any]] | None:
+    """digest の `### §NN` から抽出した考察を summary-template 用 sections に変換。
+
+    sections が空 (考察ブロック非対応の digest) なら None を返し、呼び出し側の
+    fallback (7-grid) に委ねる。各 §NN の見出し先頭ラベルからカテゴリを判定し、
+    総論/明日へは自己ページ表示なので「詳細を読む」リンク (canonical) を出さない。
+    """
+    if not sections:
+        return None
+    out: list[dict[str, Any]] = []
+    for num in sorted(sections.keys()):
+        es = sections[num]
+        heading = es.get("heading", "")
+        body = es.get("body", "")
+        label = re.split(r"\s*[—–\-]\s*", heading, maxsplit=1)[0].strip() if heading else ""
+        cid = TAG_TO_CID.get(label)
+        bullets: list[str] = []
+        if num == 1 or "総論" in heading:
+            tag, color, canonical = "総論", "#1A1A1A", ""
+        elif "明日" in heading or "明日" in label:
+            tag, color, canonical = "明日へ", "#C9A155", ""
+        elif cid:
+            tag = CATEGORIES[cid]["jp"] if cid != "it" else "IT"
+            color = CATEGORIES[cid]["accent"]
+            canonical = f"{BASE_URL}/{cid}/"
+            e = by_cat.get(cid)
+            bullets = list((e.get("top_bullets") if e else []) or [])[:3]
+        else:
+            tag, color, canonical = (label or f"§{num:02d}"), "#475569", ""
+        out.append({
+            "number": num,
+            "tag": tag,
+            "color": color,
+            "heading": heading,
+            "body": body,
+            "bullets": bullets,
+            "canonical": canonical,
+        })
+    return out
+
+
+def _fallback_sections(editorial: dict[str, Any] | None,
+                       by_cat: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """考察 §NN が取れない digest 用の 7-grid fallback。
+
+    §01 総論 / §02-06 各カテゴリ Top1 + bullets / §07 明日へ を必ず描画する。
+    §01・§07 は summary_text にフォールバックし、自己ページ表示なので canonical を出さない。
+    """
+    summary_text = (editorial.get("summary_text") if editorial else "") or ""
+    sections: list[dict[str, Any]] = []
+    for i in range(7):
+        tag = _SUMMARY_SECTION_TAGS[i]
+        color = _SUMMARY_SECTION_COLORS[i]
+        cid = _SUMMARY_CAT_ORDER[i]
+        bullets: list[str] = []
+        if i == 0:
+            heading = "本日の総論"
+            body = summary_text or "本日の総論データ準備中。"
+            canonical = ""
+        elif i == 6:
+            heading = "明日への示唆"
+            body = (summary_text[-200:] if len(summary_text) > 200 else summary_text) \
+                or "明日への示唆データ準備中。"
+            canonical = ""
+        else:
+            e = by_cat.get(cid) if cid else None
+            if e:
+                heading = e.get("top_title") or f"{CATEGORIES[cid]['jp']}本日のテーマ"
+                body = e.get("summary_text") or f"{CATEGORIES[cid]['jp']}カテゴリのダイジェスト準備中。"
+                bullets = list(e.get("top_bullets") or [])[:3]
+                canonical = e["canonical"]
+            else:
+                heading = f"{CATEGORIES[cid]['jp']}本日のテーマ" if cid else tag
+                body = "本日は配信日ではありません。"
+                canonical = f"{BASE_URL}/{cid}/" if cid else ""
+        sections.append({
+            "number": i + 1,
+            "tag": tag,
+            "color": color,
+            "heading": heading,
+            "body": body,
+            "bullets": bullets,
+            "canonical": canonical,
+        })
+    return sections
 
 
 def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
@@ -1009,42 +1247,31 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     # summary digest (同日カテゴリ summary)
     editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
 
-    # γ reflection が取れれば優先 (今は未対応で常に {})
-    # 加えて summary digest md の `### §NN` から essay_sections (§01-§07 全文) を抽出。
-    # §01 はテンプレで「総論」全文表示するため、ここで body を取り込む。
-    reflection: dict[str, Any] = {}
-    essay_sections: dict[int, dict[str, str]] = {}
-    if digest_sources:
-        for src in digest_sources:
-            # tmp_path が "summary" を含むケース (pytest fixture) で誤マッチしないよう、
-            # 親ディレクトリ名 or ファイル名のみで判定する。
-            parent_name = src.parent.name.lower()
-            file_name = src.name.lower()
-            if "summary" not in parent_name and "summary" not in file_name:
-                continue
-            if date not in file_name and date not in src.parent.name:
-                continue
-            reflection = _extract_reflection(src) or {}
-            try:
-                sm_text = src.read_text(encoding="utf-8")
-                _, sm_body = parse_frontmatter(sm_text)
-                essay_sections = parse_essay_sections(sm_body)
-            except OSError as exc:
-                print(f"[warn] essay_sections read failed for {src.name}: {exc}",
-                      file=sys.stderr)
-            break
+    # reflection は build_context が summary digest 本文から抽出済 (entry に同梱)。
+    # subtitle / lead / pull_quote / sections / takeaways を保持する。
+    # digest_sources は後方互換のため引数に残すが、現在は entry.reflection を一次ソースにする。
+    reflection: dict[str, Any] = (editorial.get("reflection") if editorial else None) or {}
+
+    # 同日カテゴリ entry (sections / takeaways の fallback・bullets で使う)。
+    by_cat: dict[str, dict[str, Any]] = {}
+    for e in same_day:
+        cid = e["category_id"]
+        if cid != "summary" and cid not in by_cat:
+            by_cat[cid] = e
 
     # ---- Hero: subtitle / lead ----
+    # 考察 lead (多カテゴリ横断) を優先。装飾記法は保持し、テンプレ側で render_emph 描画
+    # (マーカー/太字/下線で長文の可読性を上げる)。末尾の遷移句は §セクションへ続くので残す。
     hero_lead = (
         reflection.get("lead")
         or (editorial["summary_text"] if editorial else "")
-        or "本日の Editorial Digest 準備中。"
-    )
+    ) or "本日の Editorial Digest 準備中。"
     if len(hero_lead) > 260:
         hero_lead = hero_lead[:258] + "…"
 
-    theme_source = editorial["summary_text"] if editorial else ""
-    left, right = _split_theme_phrases(theme_source)
+    # フレーズは frontmatter `theme:` 由来 (為替偏重だった summary_text から変更)。
+    theme_phrase = (editorial.get("theme") if editorial else "") or ""
+    left, right = _split_theme_phrases(theme_phrase)
     hero_subtitle = reflection.get("subtitle") or (
         f"{left}と{right}" if left and right else ""
     )
@@ -1052,108 +1279,27 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     # ---- Pull quote ----
     pull_quote = reflection.get("pull_quote") or {"text": "", "from": ""}
 
-    # ---- 7 sections ----
-    sections_raw = reflection.get("sections") or []
-    if sections_raw and len(sections_raw) >= 7:
-        # γ schema 経由の 7 セクション
-        sections = []
-        for i, sec in enumerate(sections_raw[:7]):
-            sections.append({
-                "number": i + 1,
-                "tag": sec.get("tag") or _SUMMARY_SECTION_TAGS[i],
-                "color": sec.get("color") or _SUMMARY_SECTION_COLORS[i],
-                "heading": sec.get("heading") or "",
-                "body": sec.get("body") or "",
-                "bullets": sec.get("bullets") or [],
-                "canonical": "",
-            })
-    else:
-        # Fallback: §01=総論 / §02-06=各カテゴリ Top 1 + bullets / §07=明日へ
-        by_cat: dict[str, dict[str, Any]] = {}
-        for e in same_day:
-            cid = e["category_id"]
-            if cid != "summary" and cid not in by_cat:
-                by_cat[cid] = e
-        sections = []
-        for i in range(7):
-            tag = _SUMMARY_SECTION_TAGS[i]
-            color = _SUMMARY_SECTION_COLORS[i]
-            cid = _SUMMARY_CAT_ORDER[i]
-            bullets: list[str] = []
-            if i == 0:
-                # 総論 — digest md `### §01` が取れれば本文全文を載せる (ユーザー要望
-                # 2026-05-26「総論だけ省略せず全文表示」)。無ければ summary_text fallback。
-                es = essay_sections.get(1)
-                if es and es.get("body"):
-                    body = es["body"]
-                    heading = es.get("heading") or "本日の総論"
-                else:
-                    body = (editorial["summary_text"] if editorial
-                            else "本日の総論データ準備中。")
-                    heading = "本日の総論"
-                # §01 は本ページ自身を全文表示するので「詳細を読む」リンクは不要
-                # (canonical を空にすると summary-template の {% if sec.canonical %} で
-                # アンカー自体が出ない)
-                canonical = ""
-            elif i == 6:
-                # 明日へ — digest md `### §07` が取れれば本文を載せる
-                # ただし digest md が §01-§08 で書かれているケースがあり、
-                # その場合 §07 にはカテゴリ別記事 (例: ゲーム本日休載) が入り、
-                # §08 に本来の「明日へ」が入っている。
-                # heading に「明日」を含む section を優先採用するフォールバックを通す。
-                es = essay_sections.get(7)
-                if not es or "明日" not in (es.get("heading") or ""):
-                    for _key, _sec in essay_sections.items():
-                        if _key == 1:
-                            continue  # §01 総論は別途処理
-                        if "明日" in (_sec.get("heading") or ""):
-                            es = _sec
-                            break
-                if es and es.get("body"):
-                    body = es["body"]
-                    heading = es.get("heading") or "明日への示唆"
-                else:
-                    body = (editorial["summary_text"] if editorial
-                            else "明日への示唆データ準備中。")
-                    if editorial and len(body) > 200:
-                        body = body[-200:]
-                    heading = "明日への示唆"
-                # §07 も同ページ内表示なので自己リンク回避
-                canonical = ""
-            else:
-                e = by_cat.get(cid) if cid else None
-                if e:
-                    heading = e.get("top_title") or f"{CATEGORIES[cid]['jp']}本日のテーマ"
-                    body = e.get("summary_text") or f"{CATEGORIES[cid]['jp']}カテゴリのダイジェスト準備中。"
-                    # Top 1 記事の bullets を 3 件まで挿入 (フル展開でリッチ化)
-                    bullets = list(e.get("top_bullets") or [])[:3]
-                    canonical = e["canonical"]
-                else:
-                    heading = f"{CATEGORIES[cid]['jp']}本日のテーマ" if cid else tag
-                    body = "本日は配信日ではありません。"
-                    canonical = f"{BASE_URL}/{cid}/" if cid else ""
-            sections.append({
-                "number": i + 1,
-                "tag": tag,
-                "color": color,
-                "heading": heading,
-                "body": body,
-                "bullets": bullets,
-                "canonical": canonical,
-            })
+    # ---- Sections ----
+    # 考察 §NN が取れれば data-driven (総論 + 各カテゴリ + 明日へ、digest の節数どおり)。
+    # 取れない (考察ブロック非対応の digest) ときは 7-grid fallback。
+    sections = _build_essay_sections(reflection.get("sections") or {}, by_cat)
+    if sections is None:
+        sections = _fallback_sections(editorial, by_cat)
 
     # ---- Key Takeaways (3 件) ----
     takeaways_raw = reflection.get("takeaways") or []
-    if takeaways_raw and len(takeaways_raw) >= 3:
-        takeaways = [
-            {
-                "n": t.get("n") or (i + 1),
-                "tag": t.get("tag") or _SUMMARY_SECTION_TAGS[1 + i],
-                "color": t.get("color") or _SUMMARY_SECTION_COLORS[1 + i],
+    if len(takeaways_raw) >= 3:
+        takeaways = []
+        for i, t in enumerate(takeaways_raw[:3]):
+            tag = t.get("tag") or _SUMMARY_SECTION_TAGS[1 + i]
+            cid = TAG_TO_CID.get(tag)
+            color = CATEGORIES[cid]["accent"] if cid else _SUMMARY_SECTION_COLORS[1 + i]
+            takeaways.append({
+                "n": i + 1,
+                "tag": tag,
+                "color": color,
                 "text": t.get("text") or "",
-            }
-            for i, t in enumerate(takeaways_raw[:3])
-        ]
+            })
     else:
         # Fallback: 同日 Top 3 entries (score 降順) を takeaways に流用
         sorted_by_score = sorted(same_day, key=lambda e: e.get("top_score", 0), reverse=True)
@@ -1178,7 +1324,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     # ---- Stats ----
     sources_count = sum(e.get("articles_count", 0) for e in same_day)
     stats = {
-        "sections": 7,
+        "sections": len(sections),
         "read_min": 9,
         "takeaways": len(takeaways),
         "sources": sources_count or len(same_day),

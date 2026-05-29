@@ -237,7 +237,7 @@
       {% if hero_phrase_left and hero_phrase_right %}
       <div class="home-editorial__subtitle">「{{ hero_phrase_left }}と{{ hero_phrase_right }}」</div>
       {% endif %}
-      <p>{{ editorial.summary_text|truncate(240, true, '…') }}</p>
+      <p>{{ editorial_essay|render_emph }}</p>
       <div class="home-editorial__cta">
         <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="btn-gold">READ FULL ESSAY →</a>
         <a href="{{ base_url }}/archive/" class="btn-ghost">ALL SECTIONS</a>
