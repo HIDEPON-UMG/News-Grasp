@@ -12,7 +12,7 @@
  *  activate 時に古いキャッシュをまとめて削除できる。
  */
 
-const SW_VERSION = '2026-05-29-1';
+const SW_VERSION = '2026-05-29-2';
 const SCOPE_PREFIX = '/News-Grasp/';
 const HTML_CACHE = `news-grasp-html-${SW_VERSION}`;
 const ASSET_CACHE = `news-grasp-assets-${SW_VERSION}`;
@@ -110,3 +110,58 @@ async function staleWhileRevalidate(request) {
     .catch(() => null);
   return cached || network || new Response('', { status: 504 });
 }
+
+// ---------------------------------------------------------------------------
+// Web Push: 毎朝の digest 更新を「読んでみて！」と通知する。
+//   - 送信側は tools/send_push.py (pywebpush + VAPID) が data に
+//     {title, body, url} を JSON で詰めて push する。
+//   - tag を固定することで通知が積み上がらず、毎朝 1 件に置き換わる。
+// ---------------------------------------------------------------------------
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (e) {
+    // JSON でなければ本文テキストとして扱う
+    payload = { body: event.data ? event.data.text() : '' };
+  }
+
+  const title = payload.title || 'News Grasp';
+  const options = {
+    body: payload.body || '本日のニュースダイジェストが更新されました。読んでみて！',
+    icon: '/News-Grasp/assets/icons/icon-192.png',
+    badge: '/News-Grasp/assets/icons/icon-192.png',
+    lang: 'ja',
+    tag: 'news-grasp-daily', // 同タグは置き換え → 毎朝 1 件に保つ
+    renotify: true,
+    data: { url: payload.url || '/News-Grasp/' },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) || '/News-Grasp/';
+
+  event.waitUntil(
+    (async () => {
+      const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+      // 既に開いている News Grasp のタブ/PWA があればフォーカスして遷移
+      for (const client of all) {
+        if (client.url.includes(SCOPE_PREFIX) && 'focus' in client) {
+          await client.focus();
+          if ('navigate' in client) {
+            try {
+              await client.navigate(targetUrl);
+            } catch (e) {
+              // navigate 不可 (古いブラウザ等) は focus のみで許容
+            }
+          }
+          return;
+        }
+      }
+      if (clients.openWindow) await clients.openWindow(targetUrl);
+    })(),
+  );
+});

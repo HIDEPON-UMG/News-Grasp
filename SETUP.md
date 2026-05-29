@@ -100,6 +100,21 @@ Vault root の同期は別途 Obsidian Git プラグインが担当する（後�
 
 > **旧 GAS Webhook 経路**: `hidepontrainer@gmail.com` 配下の `news-grasp-mailer` web app は 2026-04 末で廃止。`tests/render_email.py --send` 内の Webhook 系コードは互換のため残しているが本番は使わない。誤って `--send` を実行すると差出人が旧アドレスに先祖返りするので注意。
 
+## 2-B. Web Push の VAPID 鍵設定（1 回だけ）
+
+PWA へのプッシュ通知（`tools/send_push.py`）は VAPID 鍵ペアで本人性を担保する。新規環境では 1 回だけ以下を行う。
+
+1. 鍵ペアを生成する。秘密鍵が `~/.secrets/news-grasp-vapid.pem` に保存され、ブラウザ用の公開鍵が表示される：
+
+   ```powershell
+   python tools/gen_vapid_keys.py
+   ```
+
+2. 表示された公開鍵（base64url の 1 行）を `docs/push.js` の `VAPID_PUBLIC_KEY` 定数に貼る。
+3. 鍵を作り直すと既存の全購読が無効化される（全端末の再登録が必要）。`~/.secrets/news-grasp-vapid.pem` が既にある環境では再生成しない。
+
+端末（購読者）の登録手順と運用は [README.md](README.md) の「Web Push 通知 (PWA)」節を参照する。購読リスト `data/push_subscriptions.secret.json` は `*.secret.json` で git 管理外。
+
 ## 3. `news-grasp-runner.bat` 配置
 
 `C:\Users\hidek\bin\news-grasp-runner.bat` に以下を配置。**ASCII のみ・CRLF・goto ベース**で書く（Windows の cmd.exe 互換性確保のため）：

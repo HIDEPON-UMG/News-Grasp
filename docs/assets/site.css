@@ -1489,6 +1489,50 @@ strong {
   color: var(--color-ink-dim);
   margin-bottom: 22px;
 }
+/* Web Push 購読 UI（毎朝の更新通知） */
+.home-subscribe__push {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+.push-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: var(--space-md) var(--space-xl);
+  background: var(--color-navy);
+  color: var(--color-cream);
+  border: 1px solid var(--color-navy);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.push-btn:hover {
+  background: var(--color-gold);
+  color: var(--color-navy);
+  border-color: var(--color-gold);
+}
+.push-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-ink-dim);
+  margin: 0;
+  max-width: 36em;
+}
+.push-sub-json {
+  width: 100%;
+  max-width: 36em;
+  min-height: 84px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  resize: vertical;
+}
 
 /* ================================================================
    Phase 4: Daily Overview (Pattern C)

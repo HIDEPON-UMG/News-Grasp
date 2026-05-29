@@ -543,6 +543,19 @@ SMTP 経路は htmlBody サイズ制限が極めて緩いため、minify は必�
 
 スクリプトの戻り値が 0 でない場合、stderr のエラーを `_status.md` に追記する。NRI 宛が SPF/DKIM フィルタに引っかかる可能性はある（Gmail SMTP 経由のため Google MX だが、宛先側のフィルタ設定次第）。
 
+### ステップ 8: Web Push 通知（スマホへ「更新したよ」）
+
+メール送信が終わったら、PWA 購読者へ更新通知を送る。**1 行実行するだけ**でよい。
+
+```bash
+python tools/send_push.py
+```
+
+- 文面（タイトル / 本文 / 遷移先 URL）は既定値で「本日のダイジェストを公開しました。読んでみて！」→ Home を開く。引数で上書きする必要はない。
+- 購読者は管理人が手動収集したローカルの `data/push_subscriptions.secret.json`（`*.secret.json` で git 管理外）を参照する。**購読者が 0 人でも鍵が無くても exit 0** で、毎朝の処理を絶対に止めない（push は付随機能）。
+- 失効した購読（HTTP 404/410）はこのスクリプトが自動で同ファイルから除去する。
+- VAPID 秘密鍵は `~/.secrets/news-grasp-vapid.pem`。これが無く購読者がいる場合のみ exit 1 で設定漏れを表面化するので、その時は `_status.md` に追記する。
+
 ---
 
 ## 守るべき原則

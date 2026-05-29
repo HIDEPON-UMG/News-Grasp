@@ -114,6 +114,37 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 
 一般読者向けの正規導線は **公開 Web (GitHub Pages + PWA)**。Home の subscribe band も「毎朝 6:30 更新 / 土日祝日も毎朝公開」と表記され、メール購読を匂わせるコピーは置いていない。
 
+## Web Push 通知 (PWA / 2026-05-29〜)
+
+スマホのホーム画面に追加した PWA へ、毎朝の更新を「本日のダイジェストを公開しました。読んでみて！」とプッシュ通知で届ける。**サーバーを追加せず、$0 のまま**動く設計で、購読情報は管理人が手動で集める（手動登録運用）。
+
+### 仕組み (3 要素)
+
+| 要素 | 実装 | 置き場所 |
+|---|---|---|
+| 受信 | Service Worker の `push` / `notificationclick` ハンドラ | `docs/sw.js` |
+| 購読 UI | Home の「スマホに更新通知を受け取る」ボタン → 通知許可 → 購読 JSON を表示 | `docs/push.js` + `prompts/index-template.html` |
+| 送信 | 毎朝の Runner が `tools/send_push.py` で全購読者へ pywebpush 送信 | Runner ステップ 8 |
+
+VAPID 方式（送信側が秘密鍵で署名、ブラウザが公開鍵で検証）で本人性を担保する。秘密鍵は `~/.secrets/news-grasp-vapid.pem`、ブラウザ用の公開鍵は `docs/push.js` の `VAPID_PUBLIC_KEY` 定数に埋め込む。
+
+### 初期セットアップ (1 回だけ)
+
+1. 管理人が `python tools/gen_vapid_keys.py` を実行する。秘密鍵が `~/.secrets/news-grasp-vapid.pem` に保存され、ブラウザ用の公開鍵（application server key）が表示される。
+2. 表示された公開鍵を `docs/push.js` の `VAPID_PUBLIC_KEY` に貼る（鍵を作り直すと既存購読は全て無効化されるため、通常は再生成しない）。
+
+### 端末を登録する手順 (購読者ごと)
+
+1. iPhone / iPad の場合は、Safari で公開 Web を開き **「ホーム画面に追加」して PWA として開き直す**（iOS は Safari タブのままでは Web Push を受け取れない仕様）。Android Chrome はタブのままでもよい。
+2. Home の「**スマホに更新通知を受け取る**」ボタンを押し、通知を許可する。
+3. 画面に表示された購読 JSON 文字列をコピーし、管理人に渡す。
+4. 管理人がローカルの `data/push_subscriptions.secret.json`（JSON 配列。`*.secret.json` で git 管理外）にその 1 件を追記する。
+
+### 運用上の約束
+
+- `tools/send_push.py` は購読者が 0 人でも秘密鍵が無くても **exit 0** で、毎朝の digest 生成・公開を絶対に止めない（push は付随機能）。
+- 失効した購読（HTTP 404/410）は送信時に自動検出し、`data/push_subscriptions.secret.json` から除去する。
+
 ## ディレクトリ構造
 
 ```

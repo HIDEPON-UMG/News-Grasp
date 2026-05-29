@@ -17,6 +17,7 @@ archive / category) の <head> に以下の PWA snippet が **6 種すべて** �
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -181,3 +182,45 @@ def test_pwa_icons_exist():
         # PNG signature 確認 (最低限 0 byte ファイルを防ぐ)
         head = p.read_bytes()[:8]
         assert head == b"\x89PNG\r\n\x1a\n", f"{name} is not a valid PNG (head={head!r})"
+
+
+# ============================================================
+# Web Push (2026-05-29): SW ハンドラ / クライアント / 購読 UI
+# ============================================================
+
+def test_sw_has_push_handlers():
+    """docs/sw.js に push と notificationclick のハンドラがある。
+
+    どちらか欠けると、push を受けても通知が出ない / タップで開かない。
+    """
+    text = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
+    assert "addEventListener('push'" in text, "push ハンドラが無い（通知が表示されない）"
+    assert "addEventListener('notificationclick'" in text, \
+        "notificationclick ハンドラが無い（タップで記事を開けない）"
+    assert "showNotification" in text, "showNotification 呼び出しが無い"
+
+
+def test_push_js_has_real_vapid_key_and_subscribe():
+    """docs/push.js に実在の VAPID 公開鍵と subscribe ロジックがある。
+
+    VAPID_PUBLIC_KEY が空 / プレースホルダのまま deploy されると、
+    pushManager.subscribe が必ず失敗する（誰も購読できない）ため pin する。
+    """
+    text = (ROOT / "docs" / "push.js").read_text(encoding="utf-8")
+    assert "pushManager.subscribe" in text
+    assert "userVisibleOnly" in text, "userVisibleOnly:true は Web Push 仕様上必須"
+
+    # VAPID_PUBLIC_KEY = '....'; から鍵を抜き、形式を検証
+    m = re.search(r"VAPID_PUBLIC_KEY\s*=\s*'([^']*)'", text)
+    assert m, "VAPID_PUBLIC_KEY 定数が見つからない"
+    key = m.group(1)
+    # P-256 非圧縮点(65byte) の base64url は 87 文字・先頭 'B'（0x04 プレフィックス）
+    assert key.startswith("B"), f"VAPID 公開鍵の形式が不正（先頭が B でない）: {key[:8]!r}"
+    assert len(key) >= 80, f"VAPID 公開鍵が短すぎる（プレースホルダの疑い）: len={len(key)}"
+
+
+def test_home_has_push_subscribe_ui(built_root: Path):
+    """生成された Home に購読ボタンと push.js 読込がある。"""
+    html = (built_root / "index.html").read_text(encoding="utf-8")
+    assert 'id="push-subscribe-btn"' in html, "購読ボタンが Home に無い"
+    assert "/News-Grasp/push.js" in html, "push.js の読込が Home に無い"

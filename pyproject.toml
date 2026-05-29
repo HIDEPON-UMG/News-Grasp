@@ -5,6 +5,7 @@ description = "News Grasp ニュースダイジェスト配信 + 公開 web 配�
 requires-python = ">=3.10"
 dependencies = [
     "jinja2>=3.1",
+    "pywebpush>=2.0",  # Web Push 通知の送信 (tools/send_push.py)
 ]
 
 [project.optional-dependencies]
