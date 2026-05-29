@@ -27,6 +27,8 @@ sys.path.insert(0, str(ROOT))
 import tools.send_push as sp  # noqa: E402
 from tools.send_push import (  # noqa: E402
     build_payload,
+    categories_for_weekday,
+    default_body_for_today,
     load_subscriptions,
     load_subscriptions_from_worker,
     main,
@@ -71,6 +73,37 @@ def test_load_subscriptions_missing_endpoint_rejected(tmp_path):
     f.write_text(json.dumps([{"keys": {}}]), encoding="utf-8")  # endpoint 欠落
     with pytest.raises(SystemExit):
         load_subscriptions(f)
+
+
+def test_schedule_matches_routine_matrix():
+    """配信曜日マトリクスが routine-system.md と一致（経済=平日のみ / ゲーム=火木土日）。
+
+    ここがズレると通知が「配信していないカテゴリ」を約束してしまう。
+    weekday(): 月=0 ... 日=6。
+    """
+    everyday = {"為替", "AI", "IT", "モビリティ"}
+    for wd in range(7):
+        cats = set(categories_for_weekday(wd))
+        assert everyday <= cats, f"曜日{wd}: 毎日カテゴリが欠けている"
+    # 経済: 平日(0-4)のみ
+    for wd in (0, 1, 2, 3, 4):
+        assert "経済" in categories_for_weekday(wd)
+    for wd in (5, 6):
+        assert "経済" not in categories_for_weekday(wd)
+    # ゲーム: 火(1)木(3)土(5)日(6)のみ
+    for wd in (1, 3, 5, 6):
+        assert "ゲーム" in categories_for_weekday(wd)
+    for wd in (0, 2, 4):
+        assert "ゲーム" not in categories_for_weekday(wd)
+
+
+def test_default_body_value_phrasing_and_order():
+    """本文は配信順で並び『…の最新情報をまとめています。』で締める（価値訴求型）。"""
+    body_tue = default_body_for_today(1)  # 火 = 全 6 カテゴリ
+    assert body_tue == "為替・AI・IT・モビリティ・経済・ゲームの最新情報をまとめています。"
+    body_sat = default_body_for_today(5)  # 土 = 経済なし・ゲームあり
+    assert body_sat == "為替・AI・IT・モビリティ・ゲームの最新情報をまとめています。"
+    assert body_sat.endswith("の最新情報をまとめています。")
 
 
 def test_build_payload_shape_and_japanese():

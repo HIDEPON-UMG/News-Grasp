@@ -32,6 +32,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,14 +46,42 @@ DEFAULT_SUBSCRIPTIONS_FILE = ROOT / "data" / "push_subscriptions.secret.json"
 # VAPID の "sub" クレーム: push サービスが送信者に連絡するための識別子（mailto: か https:）
 VAPID_CLAIMS_SUB = "mailto:hideki.kusunoki@gmail.com"
 
-DEFAULT_TITLE = "News Grasp — 本日の更新"
-DEFAULT_BODY = "本日のニュースダイジェストを公開しました。読んでみて！"
+DEFAULT_TITLE = "📰 今日のNews Grasp"
+
+# 配信曜日マトリクス（prompts/routine-system.md ステップ1 と一致させること）。
+# Python の weekday(): 月=0, 火=1, ... 日=6。
+#   為替/AI/IT/モビリティ … 毎日固定 / 経済 … 平日のみ / ゲーム … 火木土日のみ
+_PUBLISH_SCHEDULE = (
+    ("為替",       {0, 1, 2, 3, 4, 5, 6}),
+    ("AI",         {0, 1, 2, 3, 4, 5, 6}),
+    ("IT",         {0, 1, 2, 3, 4, 5, 6}),
+    ("モビリティ", {0, 1, 2, 3, 4, 5, 6}),
+    ("経済",       {0, 1, 2, 3, 4}),
+    ("ゲーム",     {1, 3, 5, 6}),
+)
+
+
+def categories_for_weekday(weekday: int) -> list[str]:
+    """その曜日に配信されるカテゴリ表示名を、配信順で返す。"""
+    return [name for name, days in _PUBLISH_SCHEDULE if weekday in days]
+
+
+def default_body_for_today(weekday: int | None = None) -> str:
+    """その日に配信されるカテゴリだけを並べた通知本文（価値訴求型）。"""
+    if weekday is None:
+        try:
+            from zoneinfo import ZoneInfo
+            weekday = datetime.now(ZoneInfo("Asia/Tokyo")).weekday()
+        except Exception:  # noqa: BLE001  tz 取得失敗時はローカル時刻にフォールバック
+            weekday = datetime.now().weekday()
+    return "・".join(categories_for_weekday(weekday)) + "の最新情報をまとめています。"
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="News-Grasp Web Push sender")
     p.add_argument("--title", default=DEFAULT_TITLE, help="通知タイトル")
-    p.add_argument("--body", default=DEFAULT_BODY, help="通知本文")
+    p.add_argument("--body", default=None,
+                   help="通知本文（既定: 当日配信カテゴリを自動列挙）")
     p.add_argument("--url", default=f"{BASE_URL}/",
                    help=f"タップで開く URL（既定: {BASE_URL}/）")
     p.add_argument("--worker-url", default=None,
@@ -205,7 +234,8 @@ def main() -> int:
         source = "file"
         subs = load_subscriptions(args.subscriptions_file)
 
-    payload = build_payload(args.title, args.body, args.url)
+    body = args.body if args.body is not None else default_body_for_today()
+    payload = build_payload(args.title, body, args.url)
 
     print(f"取得元:   {source}" + (f" ({worker_url})" if source == "worker" else ""))
     print(f"購読者:   {len(subs)} 件")
