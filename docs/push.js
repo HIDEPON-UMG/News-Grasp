@@ -16,7 +16,7 @@
 
   // 購読保存先 Worker の URL。`cd worker && npx wrangler deploy` で表示された
   // *.workers.dev の URL に差し替える（末尾スラッシュ無し）。
-  var WORKER_URL = 'https://news-grasp-push.YOUR-SUBDOMAIN.workers.dev';
+  var WORKER_URL = 'https://news-grasp-push.news-grasp-push.workers.dev';
 
   function workerConfigured() {
     return WORKER_URL.indexOf('YOUR-SUBDOMAIN') === -1;

@@ -16,7 +16,7 @@ compatibility_date = "2026-05-29"
 # ローカル `wrangler dev` では id の実体は使われず、ローカル KV で動作する。
 [[kv_namespaces]]
 binding = "SUBS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "79f340bc7bcd40ccba76d129b17f7fcf"
 
 [observability]
 enabled = true

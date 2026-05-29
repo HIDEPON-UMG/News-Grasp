@@ -120,16 +120,25 @@ PWA へのプッシュ通知（`tools/send_push.py`）は VAPID 鍵ペアで本�
 ```powershell
 cd worker
 
-# 1) KV namespace を作成 → 表示された id を wrangler.toml の id に貼る
+# 0) 初回のみ: Cloudflare アカウントにログイン（ブラウザが開く）
+npx wrangler login
+
+# 1) KV namespace を作成 → 表示された "id" の値だけを wrangler.toml の id に貼る
+#    （binding = "SUBS" は変えない。Worker コードが env.SUBS を参照するため）
 npx wrangler kv namespace create news-grasp-subs
 
-# 2) 受信者リスト取得を守る乱数トークンを設定（例: openssl rand -hex 24 の値）
-npx wrangler secret put LIST_TOKEN
-#    入力した同じ値を Runner 側にも保存する:
-#    notepad "$HOME\.secrets\news-grasp-push-token.txt"   ← 改行なしで貼る
-
-# 3) デプロイ → 表示された https://news-grasp-push.<subdomain>.workers.dev を控える
+# 2) デプロイ（Worker 本体を作成）→ 表示された
+#    https://news-grasp-push.<subdomain>.workers.dev を控える
+#    （初回は workers.dev サブドメインの登録を求められることがある）
 npx wrangler deploy
+
+# 3) 受信者リスト取得を守る乱数トークンを Worker に設定する。
+#    secret put は Worker が存在してから（= deploy 後）に行う。
+npx wrangler secret put LIST_TOKEN
+#    プロンプトに乱数を貼る。生成例（リポジトリ直下で）:
+#      python -c "import secrets; print(secrets.token_hex(24))"
+#    入力した同じ値を Runner 側にも保存する（前後空白は自動除去される）:
+#      notepad "$HOME\.secrets\news-grasp-push-token.txt"
 ```
 
 仕上げ:
