@@ -113,7 +113,34 @@ PWA へのプッシュ通知（`tools/send_push.py`）は VAPID 鍵ペアで本�
 2. 表示された公開鍵（base64url の 1 行）を `docs/push.js` の `VAPID_PUBLIC_KEY` 定数に貼る。
 3. 鍵を作り直すと既存の全購読が無効化される（全端末の再登録が必要）。`~/.secrets/news-grasp-vapid.pem` が既にある環境では再生成しない。
 
-端末（購読者）の登録手順と運用は [README.md](README.md) の「Web Push 通知 (PWA)」節を参照する。購読リスト `data/push_subscriptions.secret.json` は `*.secret.json` で git 管理外。
+## 2-C. Web Push 購読ストア Worker のデプロイ（1 回だけ）
+
+読者が「許可」を押すだけで購読を完結させるには、購読情報を保存する受け口が要る。静的サイトには書き込み口が無いため、極小の Cloudflare Worker (+ KV) を 1 つ立てる（無料枠）。
+
+```powershell
+cd worker
+
+# 1) KV namespace を作成 → 表示された id を wrangler.toml の id に貼る
+npx wrangler kv namespace create news-grasp-subs
+
+# 2) 受信者リスト取得を守る乱数トークンを設定（例: openssl rand -hex 24 の値）
+npx wrangler secret put LIST_TOKEN
+#    入力した同じ値を Runner 側にも保存する:
+#    notepad "$HOME\.secrets\news-grasp-push-token.txt"   ← 改行なしで貼る
+
+# 3) デプロイ → 表示された https://news-grasp-push.<subdomain>.workers.dev を控える
+npx wrangler deploy
+```
+
+仕上げ:
+
+1. 控えた Worker URL を `docs/push.js` の `WORKER_URL` 定数に貼る（末尾スラッシュ無し）。
+2. 同じ URL を Runner に環境変数 `NEWS_GRASP_PUSH_WORKER_URL` として渡す（`news-grasp-runner.bat` に `set NEWS_GRASP_PUSH_WORKER_URL=https://...` を追記）。
+3. 動作確認: `python tools/send_push.py --dry-run`（`取得元: worker` と購読者数が表示されれば疎通 OK）。
+
+> ローカル検証だけなら `cd worker && npx wrangler dev`（CF 認証不要・local KV）。`worker/.dev.vars` に `LIST_TOKEN` を置けば `/list` も叩ける。`.dev.vars` は git 管理外。
+
+読者の購読手順は [README.md](README.md) の「Web Push 通知 (PWA)」節を参照。`data/push_subscriptions.secret.json` は Worker 未設定時の手元テスト用 fallback（`*.secret.json` で git 管理外）。
 
 ## 3. `news-grasp-runner.bat` 配置
 

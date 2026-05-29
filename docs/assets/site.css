@@ -1521,18 +1521,6 @@ strong {
   margin: 0;
   max-width: 36em;
 }
-.push-sub-json {
-  width: 100%;
-  max-width: 36em;
-  min-height: 84px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  padding: var(--space-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-ink);
-  resize: vertical;
-}
 
 /* ================================================================
    Phase 4: Daily Overview (Pattern C)

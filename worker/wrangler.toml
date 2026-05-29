@@ -1,0 +1,22 @@
+# News Grasp Push 購読ストア Worker の設定。
+#
+# 初回デプロイ手順（管理人が 1 回だけ。詳細は ../SETUP.md「2-C」）:
+#   cd worker
+#   npx wrangler kv namespace create news-grasp-subs   # → 表示された id を下の id に貼る
+#   npx wrangler secret put LIST_TOKEN                  # → Runner と共有する乱数トークンを入力
+#   npx wrangler deploy                                 # → 表示された *.workers.dev URL を控える
+#
+# ローカル検証（CF 認証不要・local KV で動く）:
+#   cd worker && npx wrangler dev
+name = "news-grasp-push"
+main = "src/index.js"
+compatibility_date = "2026-05-29"
+
+# `wrangler kv namespace create news-grasp-subs` で発行された id をここに貼る。
+# ローカル `wrangler dev` では id の実体は使われず、ローカル KV で動作する。
+[[kv_namespaces]]
+binding = "SUBS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[observability]
+enabled = true

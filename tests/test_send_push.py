@@ -24,10 +24,13 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import tools.send_push as sp  # noqa: E402
 from tools.send_push import (  # noqa: E402
     build_payload,
     load_subscriptions,
+    load_subscriptions_from_worker,
     main,
+    resolve_token,
 )
 
 SAMPLE_SUB = {
@@ -102,3 +105,48 @@ def test_main_dry_run_does_not_send(tmp_path, monkeypatch, capsys):
     assert main() == 0
     out = capsys.readouterr().out
     assert "DRY-RUN" in out
+
+
+# --- Worker 連携 ---------------------------------------------------------
+
+def test_resolve_token_missing_and_empty_and_value(tmp_path):
+    assert resolve_token(str(tmp_path / "nope.txt")) is None
+    empty = tmp_path / "t.txt"
+    empty.write_text("   ", encoding="utf-8")
+    assert resolve_token(str(empty)) is None
+    real = tmp_path / "t2.txt"
+    real.write_text("  secret-token\n", encoding="utf-8")
+    assert resolve_token(str(real)) == "secret-token"
+
+
+def test_load_subscriptions_from_worker(monkeypatch):
+    """Worker /list の戻りを購読配列として読み、token を URL に載せる。"""
+    captured = {}
+
+    def fake_get(url, timeout=10):
+        captured["url"] = url
+        return [SAMPLE_SUB]
+
+    monkeypatch.setattr(sp, "_http_get_json", fake_get)
+    subs = load_subscriptions_from_worker("https://w.example.dev", "tok en/+")
+    assert len(subs) == 1 and subs[0]["endpoint"] == SAMPLE_SUB["endpoint"]
+    # token は URL エンコードされて /list に載る
+    assert captured["url"].startswith("https://w.example.dev/list?token=")
+    assert "tok%20en" in captured["url"], "token が URL エンコードされていない"
+
+
+def test_main_prefers_worker_when_configured(tmp_path, monkeypatch, capsys):
+    """worker-url と token が揃えば Worker を取得元に選ぶ（dry-run で送信せず確認）。"""
+    tok = tmp_path / "tok.txt"
+    tok.write_text("abc123", encoding="utf-8")
+    monkeypatch.setattr(sp, "_http_get_json", lambda url, timeout=10: [SAMPLE_SUB])
+    monkeypatch.setattr(
+        sys, "argv",
+        ["send_push.py", "--dry-run",
+         "--worker-url", "https://w.example.dev",
+         "--token-file", str(tok)],
+    )
+    assert main() == 0
+    out = capsys.readouterr().out
+    assert "取得元:   worker" in out
+    assert "購読者:   1 件" in out

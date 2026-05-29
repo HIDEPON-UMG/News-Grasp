@@ -219,6 +219,21 @@ def test_push_js_has_real_vapid_key_and_subscribe():
     assert len(key) >= 80, f"VAPID 公開鍵が短すぎる（プレースホルダの疑い）: len={len(key)}"
 
 
+def test_push_js_is_self_service_via_worker():
+    """購読はユーザー操作だけで完結する = Worker へ自動 POST する実装である。
+
+    手動で JSON を管理人へ渡す旧 UX に退行していないことを pin する
+    （= 今回の要件「ユーザー操作だけで設定完結」を構造的に守る）。
+    """
+    text = (ROOT / "docs" / "push.js").read_text(encoding="utf-8")
+    assert re.search(r"WORKER_URL\s*=\s*'", text), "WORKER_URL 定数が無い（購読の自動保存先）"
+    assert "'/subscribe'" in text, "Worker への購読 POST (/subscribe) が無い"
+    assert "fetch(" in text, "Worker への送信 (fetch) が無い"
+    # 旧・手動コピー UX の痕跡が残っていないこと
+    assert "管理人にお渡し" not in text, "手動 JSON 渡しの旧 UX が残っている"
+    assert "push-sub-json" not in text, "手動コピー用 textarea 参照が残っている"
+
+
 def test_home_has_push_subscribe_ui(built_root: Path):
     """生成された Home に購読ボタンと push.js 読込がある。"""
     html = (built_root / "index.html").read_text(encoding="utf-8")

@@ -116,34 +116,39 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 
 ## Web Push 通知 (PWA / 2026-05-29〜)
 
-スマホのホーム画面に追加した PWA へ、毎朝の更新を「本日のダイジェストを公開しました。読んでみて！」とプッシュ通知で届ける。**サーバーを追加せず、$0 のまま**動く設計で、購読情報は管理人が手動で集める（手動登録運用）。
+スマホのホーム画面に追加した PWA へ、毎朝の更新を「本日のダイジェストを公開しました。読んでみて！」とプッシュ通知で届ける。**読者は「通知を受け取る」を押して許可するだけで購読が完了する**（手動コピーや管理人への連絡は不要）。もう一度押せば購読解除。
 
-### 仕組み (3 要素)
+### 仕組み (受信・購読保存・送信)
+
+GitHub Pages は読み取り専用の静的サイトで購読情報を保存できないため、保存だけを**極小の Cloudflare Worker (+ KV)** が担う。Worker には VAPID 秘密鍵を置かず、保持する秘密は受信者リストを守る `LIST_TOKEN` のみ。
 
 | 要素 | 実装 | 置き場所 |
 |---|---|---|
 | 受信 | Service Worker の `push` / `notificationclick` ハンドラ | `docs/sw.js` |
-| 購読 UI | Home の「スマホに更新通知を受け取る」ボタン → 通知許可 → 購読 JSON を表示 | `docs/push.js` + `prompts/index-template.html` |
-| 送信 | 毎朝の Runner が `tools/send_push.py` で全購読者へ pywebpush 送信 | Runner ステップ 8 |
+| 購読 UI | Home の「通知を受け取る」ボタン → 許可 → 購読情報を Worker に自動 POST | `docs/push.js` + `prompts/index-template.html` |
+| 購読保存 | `POST /subscribe` で KV 保存・`POST /unsubscribe` で削除・`GET /list?token=` で一覧 | `worker/src/index.js` (Cloudflare Worker + KV) |
+| 送信 | 毎朝の Runner が `tools/send_push.py` で Worker から一覧取得 → pywebpush 送信 | Runner ステップ 8 |
 
-VAPID 方式（送信側が秘密鍵で署名、ブラウザが公開鍵で検証）で本人性を担保する。秘密鍵は `~/.secrets/news-grasp-vapid.pem`、ブラウザ用の公開鍵は `docs/push.js` の `VAPID_PUBLIC_KEY` 定数に埋め込む。
+VAPID 方式（送信側が秘密鍵で署名、ブラウザが公開鍵で検証）で本人性を担保する。秘密鍵は `~/.secrets/news-grasp-vapid.pem`（repo 外）、ブラウザ用の公開鍵は `docs/push.js` の `VAPID_PUBLIC_KEY` 定数に埋め込む。
 
-### 初期セットアップ (1 回だけ)
+### 初期セットアップ (管理人が 1 回だけ)
 
-1. 管理人が `python tools/gen_vapid_keys.py` を実行する。秘密鍵が `~/.secrets/news-grasp-vapid.pem` に保存され、ブラウザ用の公開鍵（application server key）が表示される。
-2. 表示された公開鍵を `docs/push.js` の `VAPID_PUBLIC_KEY` に貼る（鍵を作り直すと既存購読は全て無効化されるため、通常は再生成しない）。
+詳細手順は [SETUP.md](SETUP.md) の「2-B（VAPID 鍵）」「2-C（Worker デプロイ）」を参照。要点:
 
-### 端末を登録する手順 (購読者ごと)
+1. `python tools/gen_vapid_keys.py` で VAPID 鍵を生成し、表示された公開鍵を `docs/push.js` の `VAPID_PUBLIC_KEY` に貼る。
+2. `cd worker && npx wrangler kv namespace create news-grasp-subs`（→ id を `worker/wrangler.toml` に貼る）、`npx wrangler secret put LIST_TOKEN`（乱数トークン。同じ値を `~/.secrets/news-grasp-push-token.txt` にも保存）、`npx wrangler deploy`。
+3. デプロイで表示された `*.workers.dev` の URL を `docs/push.js` の `WORKER_URL` に貼り、Runner には環境変数 `NEWS_GRASP_PUSH_WORKER_URL` として渡す。
 
-1. iPhone / iPad の場合は、Safari で公開 Web を開き **「ホーム画面に追加」して PWA として開き直す**（iOS は Safari タブのままでは Web Push を受け取れない仕様）。Android Chrome はタブのままでもよい。
-2. Home の「**スマホに更新通知を受け取る**」ボタンを押し、通知を許可する。
-3. 画面に表示された購読 JSON 文字列をコピーし、管理人に渡す。
-4. 管理人がローカルの `data/push_subscriptions.secret.json`（JSON 配列。`*.secret.json` で git 管理外）にその 1 件を追記する。
+### 読者の購読手順 (ユーザー操作だけで完結)
+
+1. iPhone / iPad は、Safari で公開 Web を開き **「ホーム画面に追加」して PWA として開き直す**（iOS は Safari タブのままでは Web Push を受け取れない仕様）。Android Chrome はタブのままでよい。
+2. Home の「**スマホに更新通知を受け取る**」を押し、通知を許可する。**これで完了**（購読は自動で Worker に保存される）。
 
 ### 運用上の約束
 
-- `tools/send_push.py` は購読者が 0 人でも秘密鍵が無くても **exit 0** で、毎朝の digest 生成・公開を絶対に止めない（push は付随機能）。
-- 失効した購読（HTTP 404/410）は送信時に自動検出し、`data/push_subscriptions.secret.json` から除去する。
+- `tools/send_push.py` は購読者が 0 人でも秘密鍵が無くても **exit 0** で、毎朝の digest 生成・公開を絶対に止めない（push は付随機能）。Worker に繋がらない一時障害も警告して skip（exit 0）し、`LIST_TOKEN` 不一致のときだけ exit 1 で表面化する。
+- 失効した購読（HTTP 404/410）は送信時に自動検出し、Worker の `/unsubscribe` で除去する。
+- 購読保存先は Worker (KV) が本番。`data/push_subscriptions.secret.json` は管理人の手元テスト用 fallback（`*.secret.json` で git 管理外）。
 
 ## ディレクトリ構造
 
@@ -187,16 +192,22 @@ News-Grasp/
 ├── docs/                    # GitHub Pages 公開先 (SSG 出力)
 │   ├── index.html
 │   ├── assets/site.css      # 公開サイト CSS (DESIGN.md トークン由来)
-│   ├── manifest.json        # PWA manifest
-│   ├── sw.js                # service worker
+│   ├── manifest.webmanifest # PWA manifest
+│   ├── sw.js                # service worker (push / notificationclick 含む)
+│   ├── push.js              # Web Push 購読クライアント (許可→Worker へ自動 POST)
 │   ├── offline.html         # オフライン時 fallback
 │   ├── {YYYY-MM-DD}/        # 日次オーバービュー / summary
 │   ├── {cat}/               # カテゴリアーカイブと日別詳細
 │   └── specs/               # 仕様書 HTML
+├── worker/                  # Web Push 購読ストア (Cloudflare Worker + KV)
+│   ├── src/index.js         # /subscribe・/unsubscribe・/list (token 保護)
+│   └── wrangler.toml        # KV namespace / デプロイ設定
 ├── tools/
 │   ├── generate_pages.py    # SSG (Jinja2) — 全テンプレートを束ねる
 │   ├── generate_email.py    # メール HTML 組み立て (管理人専用)
 │   ├── send_email.py        # SMTP 送信 (管理人本人宛)
+│   ├── send_push.py         # Web Push 送信 (Worker から購読取得 → pywebpush)
+│   ├── gen_vapid_keys.py    # VAPID 鍵ペア生成 (1 回だけ)
 │   ├── fetch_ogp.py         # OGP 画像取得 (urllib + html.parser)
 │   ├── append_articles.py   # articles.jsonl への追記
 │   ├── append_today.py      # 当日分だけ追記
