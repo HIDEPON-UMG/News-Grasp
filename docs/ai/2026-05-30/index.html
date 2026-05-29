@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260530 — Artificial Intelligence</title>
+<meta name="description" content="Opus 4.8の信頼性革命・NVIDIA 10GW決戦・State of AI調査が重なり、AIは産業実装期の深化を鮮明にした1週間">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-30/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260530 — Artificial Intelligence">
+<meta property="og:description" content="Opus 4.8の信頼性革命・NVIDIA 10GW決戦・State of AI調査が重なり、AIは産業実装期の深化を鮮明にした1週間">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-30/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260530 — Artificial Intelligence">
+<meta name="twitter:description" content="Opus 4.8の信頼性革命・NVIDIA 10GW決戦・State of AI調査が重なり、AIは産業実装期の深化を鮮明にした1週間">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-05-30 · #20260530</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Opus 4.8の信頼性革命・NVIDIA 10GW決戦・State of AI調査が重なり、AIは産業実装期の深化を鮮明にした1週間</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">05·30</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260530</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-05-29 07:00 · Business Standard</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.business-standard.com/amp/technology/tech-news/anthropic-upgrades-claude-ai-with-opus-4-8-what-s-new-in-flagship-model-126052900541_1.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-ai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.business-standard.com/amp/technology/tech-news/anthropic-upgrades-claude-ai-with-opus-4-8-what-s-new-in-flagship-model-126052900541_1.html" rel="noopener nofollow" target="_blank" style="color: inherit;">Claude Opus 4.8リリース — コード品質4倍改善、Fast Mode 2.5倍高速・3倍廉価</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>が<strong>Claude Opus 4.8</strong>をリリース。コード欠陥を見落とす確率が<strong>Opus 4.7比4分の1</strong>に改善し、信頼性が大幅向上。</li><li><strong class="emph-bold">Fast Mode</strong>は<strong>2.5倍高速</strong>・<strong>3倍廉価</strong>になり、数百サブエージェントを並列管理する<strong>Dynamic Workflows</strong>機能を追加。</li><li><span class="emph-und">AIエージェントとしての完成度が一段高まった</span>節目リリース。Messages APIのリアルタイム命令変更機能でエンタープライズ採用が加速。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-05-30</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-05-28 09:00</span>
+        <span>· NVIDIA Newsroom</span>
+        <span class="more-card__score">93</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://nvidianews.nvidia.com/news/openai-and-nvidia-announce-strategic-partnership-to-deploy-10gw-of-nvidia-systems" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://iprsoftwaremedia.com/219/files/202509/68d164573d63320d88f176b7_openai-and-nvidia/openai-and-nvidia_cbdd3def-150e-4b20-bf18-b15de5fb1eb0-prv.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://nvidianews.nvidia.com/news/openai-and-nvidia-announce-strategic-partnership-to-deploy-10gw-of-nvidia-systems" rel="noopener nofollow" target="_blank">NVIDIA × OpenAI 10GW戦略提携 — Vera Rubin NVL72を2026年下期に展開</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NVIDIA</strong>と<strong class="emph-bold">OpenAI</strong>が<strong>10ギガワット</strong>分のNVIDIAシステム展開を柱とする大型戦略提携を発表。NVIDIAは<strong>$1000億</strong>相当の投資を予定。</li><li><strong>Vera Rubin NVL72</strong>ラックスケールシステムが<strong>2026年下期</strong>にOpenAI次世代インフラへの第一段として稼働開始。</li><li><span class="emph-und">計算資源の垂直統合がAIの覇権を決める時代</span>。AWS・Google Cloud・Microsoftも同Rubin基盤の優先展開先に名乗り。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-05-28 10:00</span>
+        <span>· Motley Fool</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.fool.com/investing/2026/05/28/nvidia-already-is-the-gpu-giant-now-its-aiming-to/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://g.foolcdn.com/image/?url=https%3A%2F%2Fg.foolcdn.com%2Feditorial%2Fimages%2F871805%2Fgettyimages-638638994.jpg&amp;w=1200&amp;op=resize" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.fool.com/investing/2026/05/28/nvidia-already-is-the-gpu-giant-now-its-aiming-to/" rel="noopener nofollow" target="_blank">NVIDIAが$200B CPU市場参入 — Vera Rubin単体CPUで「汎用GPU時代」に終止符</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NVIDIA</strong>がVera Rubin専用スタンドアロン<strong>CPU</strong>を投入し、<strong>$2000億</strong>規模のCPU市場参入を宣言。FY2026に<strong>$200億</strong>のCPU売上を予測。</li><li><strong>汎用GPU時代の終焉</strong>を自ら認め、推論特化とCPU市場への展開を同時に進める「ポストGPU戦略」が明確化。</li><li><span class="emph-und">エヌビディアの多角化が半導体競合を再定義する</span>分岐点。Intel・AMDへの新たな圧力となる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-05-27 08:30</span>
+        <span>· Air Street Press</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://press.airstreet.com/p/state-of-ai-may-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://substackcdn.com/image/fetch/$s_!ag1W!,w_1200,h_675,c_fill,f_jpg,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F00c9e8cf-9b64-43ed-b464-2a9e79a033e1_1818x1018.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://press.airstreet.com/p/state-of-ai-may-2026" rel="noopener nofollow" target="_blank">State of AI May 2026 — 「モデル競争」から「産業実装」へフェーズ転換</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong>2026年5月のAIは「モデル競争のニュース」から「産業実装のニュース」へ</strong>質的に移行した。<strong class="emph-bold">Google</strong>はエージェント化、<strong class="emph-bold">NVIDIA</strong>は計算資源の民主化を前進。</li><li><strong class="emph-bold">OpenAI</strong>は地域展開・<strong class="emph-bold">Anthropic</strong>は安全保障と基盤多様化、<strong>米国政府は制度と輸出戦略</strong>を同時並行で進める。</li><li><span class="emph-und">5月の教訓：AIの「できること」より「誰が・どこで・いつ動かすか」の主戦場へ</span>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-05-07 07:30</span>
+        <span>· InfoQ</span>
+        <span class="more-card__score">83</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.infoq.com/news/2026/05/code-with-claude/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://res.infoq.com/news/2026/05/code-with-claude/en/headerimage/codewithclaude-1779025768208.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.infoq.com/news/2026/05/code-with-claude/" rel="noopener nofollow" target="_blank">Code with Claude 2026 — Managed Agents新機能でProactive Workflowsが加速</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>が「Code with Claude 2026」サンフランシスコ開催。<strong>Managed Agents</strong>に「Proactive Workflows」など<strong>3新機能</strong>を追加。</li><li>開発者が明示的に起動せずとも<strong>Claudeが自律的に次のタスクを先読み・提案</strong>する機能が実験的実装へ。</li><li><span class="emph-und">AIが「指示待ち」から「先読み」へ進化する転換点</span>。Claude Codeのサブスクリプション拡大に直結する重要発表。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>Opus 4.8の信頼性革命・NVIDIA 10GW決戦・State of AI調査が重なり、AIは産業実装期の深化を鮮明にした1週間</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-05-30
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260530 — Mobility</title>
+<meta name="description" content="Waymo 10都市制覇・Tesla首位奪還・全固体電池マイルストーンとCATL 6分充電が重なり、EV/自動運転に技術革命と市場覇権争いが同時に進行">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-05-30/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260530 — Mobility">
+<meta property="og:description" content="Waymo 10都市制覇・Tesla首位奪還・全固体電池マイルストーンとCATL 6分充電が重なり、EV/自動運転に技術革命と市場覇権争いが同時に進行">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-05-30/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260530 — Mobility">
+<meta name="twitter:description" content="Waymo 10都市制覇・Tesla首位奪還・全固体電池マイルストーンとCATL 6分充電が重なり、EV/自動運転に技術革命と市場覇権争いが同時に進行">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-05-30 · #20260530</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Waymo 10都市制覇・Tesla首位奪還・全固体電池マイルストーンとCATL 6分充電が重なり、EV/自動運転に技術革命と市場覇権争いが同時に進行</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">87</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">05·30</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260530</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-05-28 08:00 · Auto Connected Car</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.autoconnectedcar.com/2026/05/autonomous-self-driving-vehicle-news-waymo-alphabet-may-mobility-toyota-ntt-lyft-uber-nuro-cpuc-lucid-hyundai-qualcomm-weride-stellantis-wayve-hesai-group-mercedes/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.autoconnectedcar.com/2026/05/autonomous-self-driving-vehicle-news-waymo-alphabet-may-mobility-toyota-ntt-lyft-uber-nuro-cpuc-lucid-hyundai-qualcomm-weride-stellantis-wayve-hesai-group-mercedes/" rel="noopener nofollow" target="_blank" style="color: inherit;">Waymo、ダラス等4都市同時展開 — 10都市超・週50万乗降回でロボタクシー覇権を強化</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Waymo</strong>がダラス・ヒューストン・サンアントニオ・オーランドの<strong>4都市に同時展開</strong>、商業運営都市が<strong>10都市超</strong>へ拡大。</li><li><strong class="emph-bold">Magna</strong>との工場協業で<strong>2026年末までに2,000台</strong>を生産目標。週当たり<strong>50万回</strong>の有料乗降を達成済み。</li><li><span class="emph-und">ロボタクシーが「実験」から「事業」へ転換した決定的な証拠が数字に現れた</span>。ZeekrとのOjai 6世代開発も並行進行。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-05-30</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-05-28 09:00</span>
+        <span>· EVTech.News</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://evtech.news/news/tesla-reclaims-global-ev-sales-crown-in-q1-2026-surpassing-byd.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://evtech.news/assets/images/og-default.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://evtech.news/news/tesla-reclaims-global-ev-sales-crown-in-q1-2026-surpassing-byd.html" rel="noopener nofollow" target="_blank">Tesla Q1 2026 EV世界首位奪還 — 358,023台でBYDを47,000台リード</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Tesla</strong>がQ1 2026グローバルEV販売で<strong>358,023台</strong>を達成、<strong class="emph-bold">BYD</strong>の約<strong>310,000台</strong>に対して<strong>47,000台差</strong>で首位奪還。</li><li>BYDは<strong>EV新税・規制強化・政策変更</strong>で前年比<strong>25%減</strong>に落ち込み。欧州での逆転は継続するも、グローバルではTeslaが優勢。</li><li><span class="emph-und">EV市場の「BYD優勢」は地域別に異なり、グローバル順位と欧州シェアが乖離</span>。投資家に複雑なシグナルを与える。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-05-21 07:30</span>
+        <span>· Electrek</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://electrek.co/2026/05/21/solid-state-ev-batteries-hit-another-major-milestone-china/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2026/02/Solid-State-EV-Batteries-Changan-1.jpeg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://electrek.co/2026/05/21/solid-state-ev-batteries-hit-another-major-milestone-china/" rel="noopener nofollow" target="_blank">中国全固体電池が重要マイルストーン達成 — BYD・CATL・各社の量産前夜</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>中国の複数EVメーカーが全固体電池の<strong>重要な技術マイルストーン</strong>を達成。<strong class="emph-bold">長安汽車</strong>が試験走行データを公表。</li><li><strong class="emph-bold">CATL</strong>・<strong class="emph-bold">BYD</strong>が2027〜2028年の小規模量産、<strong>2030年以降の大量生産</strong>を目指す開発スケジュールを維持。</li><li><span class="emph-und">中国勢の全固体電池参入でトヨタ・出光の先行アドバンテージが圧縮される</span>。2027年実車投入が競争の分岐点。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-05-28 10:00</span>
+        <span>· Cryptopolitan</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cryptopolitan.com/how-waymo-may-dominate-2026-while-byd-crushes-tesla-in-the-ev-race/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.cryptopolitan.com/wp-content/uploads/2026/01/Waymo-robotaxis.webp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cryptopolitan.com/how-waymo-may-dominate-2026-while-byd-crushes-tesla-in-the-ev-race/" rel="noopener nofollow" target="_blank">Waymo vs Tesla テキサス格差の構造分析 — 577台 vs 42台が示す「ロボタクシー本命論争」</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>テキサス州の新公開データで<strong class="emph-bold">Waymo</strong>が<strong>577台</strong>、<strong class="emph-bold">Tesla</strong>が<strong>42台</strong>のロボタクシーを運用中と判明。<strong>13倍以上の差</strong>。</li><li>Tesla Austinフリートで<strong>17件のインシデント</strong>（2025/7〜2026/4）が報告、うち2件が負傷・1件が入院を要した。</li><li><span class="emph-und">台数比・安全データともにWaymoが圧倒</span>。テスラの「完全自動運転は数カ月後」発言の繰り返しが投資家の信頼を侵食し続ける。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-04-21 08:00</span>
+        <span>· Electrek</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://electrek.co/2026/04/21/catl-one-ups-byd-new-lfp-ev-battery-charges-in-6-mins/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2026/04/CATL-new-LFP-EV-battery-6-min-charge.jpg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://electrek.co/2026/04/21/catl-one-ups-byd-new-lfp-ev-battery-charges-in-6-mins/" rel="noopener nofollow" target="_blank">CATL LFP電池「6分27秒フル充電」達成 — BYD Blade 2.0を凌駕した急速充電革命</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">CATL</strong>が第3世代Shenxing LFP電池で<strong>10〜98%フル充電を6分27秒</strong>で達成。<strong class="emph-bold">BYD</strong> Blade Battery 2.0の<strong>9分を超えた</strong>急速充電性能。</li><li>新技術は既存の充電インフラ（<strong>最大3,000kW出力</strong>対応）と互換性を保ちながら、航続距離も大幅に拡大した設計。</li><li><span class="emph-und">「充電が遅い」というEV普及最大の障壁をCATLが技術的に突破</span>。2026年中の商用化を予定しており市場投入時期が鍵。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>Waymo 10都市制覇・Tesla首位奪還・全固体電池マイルストーンとCATL 6分充電が重なり、EV/自動運転に技術革命と市場覇権争いが同時に進行</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-05-30
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

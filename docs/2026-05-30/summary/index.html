@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-05-30</title>
+<meta name="description" content="2026-05-30 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-05-30">
+<meta property="og:description" content="2026-05-30 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-05-30/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-05-30">
+<meta name="twitter:description" content="2026-05-30 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260530</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260530</span></h2>
+      
+      <div class="summary-hero__subtitle">「Opus 4.8・ドル全面安・Waymo10都市・Switch 2値上げ、週末に重なった5つの構造変化」</div>
+      
+      <div class="summary-hero__lead"><strong class="emph-bold">Claude Opus 4.8</strong>リリースと<strong class="emph-bold">Waymo</strong>の10都市制覇が重なった土曜日、AI・モビリティ・FXが「競争から実装」へ移行する同一の構造変化を映した。<strong class="emph-bold">NVIDIA</strong>とOpenAIの10GW契約、ECBの利上げ転換、任天堂のSwitch 2値上げ、コナミ9年連続最高益と、5カテゴリが互いに増幅し合う週の締めくくりとなった。以下、各カテゴリを横断して読み解く。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">8</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">26</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">「モデル競争」から「10GWのインフラ競争」へ——計算資源の覇権が次のAI時代を決める。</div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — 5分野に共通する「実装移行」の週</h3>
+        <p class="summary-sec__body">本日の5分野は「競争から実装へ」という同一の構造変化を互いに映し合った。<strong class="emph-bold">Anthropic</strong>のOpus 4.8は信頼性を4倍に高め、<strong class="emph-bold">Waymo</strong>は商業ロボタクシーを10都市に広げ、<strong class="emph-bold">NTTデータ</strong>はAIコンサル組織を本格稼働させた。ドル円は<strong>159.14円</strong>で週を終え、<strong class="emph-bold">コナミ</strong>・<strong class="emph-bold">カプコン</strong>は揃って最高益を更新した。<span class="emph-und">各業界で「誰が実装を制するか」が2026年の最大テーマ</span>であることが、この1日で改めて浮き彫りになった。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">為替 — ドル全面安と中銀三重奏の週明け</h3>
+        <p class="summary-sec__body">米・イラン停戦延長合意を受け、<strong class="emph-bold">ドル円</strong>は<strong>159.14円</strong>に下落してドル全面安で週末を迎えた。注目すべきは<strong class="emph-bold">ECB</strong>の急速なタカ派転換で、シュナーベル理事の「<strong>6月11日利上げ必要</strong>」発言が利上げ確率を<strong>80%</strong>に引き上げた。日銀は<strong class="emph-bold">植田和男</strong>総裁の慎重姿勢が続くなか、<span class="emph-und">非執行部主導での利上げという異例の展開</span>も視野に入ってきた。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">ドル円</strong>が<strong>159.14円</strong>まで下落、NY市場クローズにかけてドル全面安が加速した。<strong>前日比-0.36%</strong>の安値更新。</li>
+          
+          <li>背景は<strong class="emph-bold">米・イラン</strong>による<strong>停戦延長合意</strong>の報道で、地政学リスク後退がリスクオフ後退→ドル売りを呼んだ構図。</li>
+          
+          <li><span class="emph-und">方向感が定まらないまま週末入り</span>。来週は<strong>ECB政策会合</strong>と<strong>米雇用統計</strong>が次のドル方向性を決めるカタリスト。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — Opus 4.8とNVIDIA 10GWが産業実装期を宣言</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Claude Opus 4.8</strong>のリリースとNVIDIA×OpenAIの<strong>10GW戦略提携</strong>が同日に存在感を示した。<strong class="emph-bold">NVIDIA</strong>は<strong>$2000億</strong>規模のCPU市場参入も宣言し、Air Street Pressの月次調査も「AIは産業実装フェーズへ移行した」と結論付けた。<span class="emph-und">モデルの能力競争は終わっていないが、主戦場は「誰がインフラを支配するか」に移った</span>。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Anthropic</strong>が<strong>Claude Opus 4.8</strong>をリリース。コード欠陥を見落とす確率が<strong>Opus 4.7比4分の1</strong>に改善し、信頼性が大幅向上。</li>
+          
+          <li><strong class="emph-bold">Fast Mode</strong>は<strong>2.5倍高速</strong>・<strong>3倍廉価</strong>になり、数百サブエージェントを並列管理する<strong>Dynamic Workflows</strong>機能を追加。</li>
+          
+          <li><span class="emph-und">AIエージェントとしての完成度が一段高まった</span>節目リリース。Messages APIのリアルタイム命令変更機能でエンタープライズ採用が加速。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — コンサル業界の地殻変動が加速</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">NTTデータ</strong>の600名AIコンサル組織立ち上げ、<strong class="emph-bold">Bain</strong>の成果型報酬30%→50%目標、<strong class="emph-bold">OpenAI</strong>とBCG/McKinsey/Accenture四強連合という三つの動きが重なった。<span class="emph-und">コンサル業界はAIによって「提言を売る会社」から「実装を主導する会社」への転換を余儀なくされている</span>。<strong class="emph-bold">富士通</strong>の最高益更新は、変革に成功した日本IT企業の先例として注目される。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">NTTデータ</strong>グループが「コンサルティング×AI」を中核とした組織転換を発表。全社<strong>600名</strong>規模の<strong>AIコンサル専門組織</strong>を立ち上げ。</li>
+          
+          <li><strong>2030年EBITDA1.2兆円</strong>目標の達成に向け、AIを武器に従来型SIから<strong>AI-empowered New Value</strong>モデルへのシフトを加速。</li>
+          
+          <li><span class="emph-und">国内IT大手がSIerからコンサルタントへ転身する試みの中でも最大規模の構造変革</span>。Accentureへのキャッチアップが明確な意図。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #3A7B8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #3A7B8C;">§05</span>
+          <span class="summary-sec__tag" style="background: #3A7B8C;">モビリティ</span>
+        </div>
+        <h3 class="summary-sec__title">モビリティ — Waymoの数字が本物を証明した日</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Waymo</strong>の4都市同時展開・週50万乗降回・Telaとの577台 vs 42台の格差という三重の証拠が、<span class="emph-und">ロボタクシーが実験段階を終えたことを数字で証明</span>した。中国では全固体電池の技術マイルストーン達成と<strong class="emph-bold">CATL</strong>の6分充電革命が相次ぎ、EV電池技術の次章が始まった。<strong class="emph-bold">Tesla</strong>はEVグローバル首位を奪還するもロボタクシーで大きく立ち遅れる、という評価の二極化が進む。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Waymo</strong>がダラス・ヒューストン・サンアントニオ・オーランドの<strong>4都市に同時展開</strong>、商業運営都市が<strong>10都市超</strong>へ拡大。</li>
+          
+          <li><strong class="emph-bold">Magna</strong>との工場協業で<strong>2026年末までに2,000台</strong>を生産目標。週当たり<strong>50万回</strong>の有料乗降を達成済み。</li>
+          
+          <li><span class="emph-und">ロボタクシーが「実験」から「事業」へ転換した決定的な証拠が数字に現れた</span>。ZeekrとのOjai 6世代開発も並行進行。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/" style="color: #3A7B8C;">→ §05 モビリティ 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§06</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済 — 本日休載</h3>
+        <p class="summary-sec__body">経済カテゴリは土曜日のため本日休載。</p>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §06 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§07</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">ゲーム — 日本IPのグローバル競争力</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">コナミ</strong>と<strong class="emph-bold">カプコン</strong>の同時最高益更新は、日本ゲームIPがグローバルで稼ぎ続けることを証明した。<strong class="emph-bold">任天堂</strong>は値上げとソフトラッシュを組み合わせた二段戦略で<strong>19.86M台</strong>のSwitch 2需要を維持しようとしており、<span class="emph-und">「価格上昇 × コンテンツ密度」モデルの有効性</span>が今秋に試される。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">任天堂</strong>が<strong class="emph-bold">Switch-2</strong>の米国価格を<strong>$449.99→$499.99</strong>へ9月1日から改定。日本は<strong>5月25日に¥49,980→¥59,980</strong>値上げ済み。</li>
+          
+          <li>販売台数は<strong>19.86M台</strong>に達しており（2026年3月末）、<strong>Mario Kart World 14.70M本</strong>が単品タイトル史上最速の記録を更新中。</li>
+          
+          <li><span class="emph-und">価格弾力性よりソフトウェアラインナップの密度で需要を維持する任天堂の戦略</span>が今秋に試される。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/" style="color: #5E3D8C;">→ §07 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§08</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日への示唆 — 6月最初週の注目点</h3>
+        <p class="summary-sec__body">来週の最大カタリストは<strong>6月11日ECB政策会合</strong>と<strong>米雇用統計（6/6予定）</strong>。ECB利上げが確定すれば<strong class="emph-bold">EUR/USD</strong>は1.18台への突破シナリオが浮上。<strong class="emph-bold">NVIDIA</strong>Rubin NVL72の具体的なデプロイ発表と<strong class="emph-bold">Claude Opus 4.8</strong>の採用事例報告も相次ぐ見通し。モビリティでは<strong class="emph-bold">Waymo</strong>ワシントンD.C.ローンチの公式発表タイミングが注目される。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">為替</div>
+          <div class="summary-take__text"><strong class="emph-bold">ドル円</strong>は米・イラン合意とECBタカ派転換で<strong>159.14円</strong>に下落。来週のECB政策会合が次のドル方向性を決める。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">AI</div>
+          <div class="summary-take__text"><strong class="emph-bold">Anthropic</strong> Opus 4.8とNVIDIA 10GW提携が同時に産業実装期の深化を宣言。<span class="emph-und">計算資源の覇権競争</span>が主舞台に。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2E6B52;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2E6B52;">産業</div>
+          <div class="summary-take__text"><strong class="emph-bold">コナミ</strong>・<strong class="emph-bold">カプコン</strong>揃って最高益更新。日本ゲームIPのグローバル収益力が2026年も健在であることを証明した。</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/">全26本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-05-30 · #20260530
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
