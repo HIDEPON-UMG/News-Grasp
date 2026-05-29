@@ -71,7 +71,7 @@
       <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #{{ issue_no }}</div>
       <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#{{ issue_no }}</span></h2>
       {% if hero_subtitle %}
-      <div class="summary-hero__subtitle">「{{ hero_subtitle }}」</div>
+      <div class="summary-hero__subtitle">「{{ hero_subtitle|render_emph }}」</div>
       {% endif %}
       <div class="summary-hero__lead">{{ hero_lead|render_emph }}</div>
       <div class="summary-hero__stats">
@@ -91,7 +91,7 @@
   <div class="summary-pull__inner">
     <div class="summary-pull__quote">&ldquo;</div>
     <div>
-      <div class="summary-pull__text">{{ pull_quote.text|safe }}</div>
+      <div class="summary-pull__text">{{ pull_quote.text|render_emph }}</div>
       {% if pull_quote.from %}<div class="summary-pull__from">─── {{ pull_quote.from }} より</div>{% endif %}
     </div>
   </div>

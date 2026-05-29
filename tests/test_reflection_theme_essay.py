@@ -265,6 +265,19 @@ def test_summary_pull_quote_rendered(built):
     assert "単一のAI企業の評価額" in summary
 
 
+def test_summary_pull_quote_renders_emph(built):
+    """考察由来テキスト (PULL QUOTE) の装飾マーカーが render_emph で描画され生マーカーが残らない。
+
+    回帰防止 (2026-05-29): summary-template の pull_quote.text / hero_subtitle が
+    |safe / フィルタ無しだと __ __ や [[ ]] が生で漏れる。考察由来は必ず render_emph を通す契約。
+    """
+    summary = built["summary"]
+    # PULL QUOTE の __X__ が emph-und に変換される
+    assert '<span class="emph-und">金融政策の天井とAIの底なし井戸</span>' in summary
+    # 生マーカーが残らない
+    assert "__金融政策の天井とAIの底なし井戸__" not in summary
+
+
 def test_summary_renders_8_sections_with_mobility(built):
     """digest の §01-§08 を data-driven 描画。モビリティ・明日へが出る。"""
     summary = built["summary"]

@@ -2,6 +2,7 @@
 date: 2026-05-16
 issue: "20260516"
 category: IT-Consulting
+categoryId: it
 tags:
   - daily
   - newsletter

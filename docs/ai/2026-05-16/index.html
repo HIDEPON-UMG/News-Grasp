@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Artificial Intelligence</title>
+<meta name="description" content="">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-16/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Artificial Intelligence">
+<meta property="og:description" content="">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-16/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Artificial Intelligence">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-05-16 · #20260516</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">85</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">05·16</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260516</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-05-16 07:00 · InfoQ</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.infoq.com/news/2026/05/anthropic-claude-aws/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://res.infoq.com/news/2026/05/anthropic-claude-aws/en/headerimage/generatedHeaderImage-1778682420283.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.infoq.com/news/2026/05/anthropic-claude-aws/" rel="noopener nofollow" target="_blank" style="color: inherit;">Anthropic、Claude Platform on AWS GA + MCP Connector + Managed Agents を一斉リリース</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Claude Platform on AWS</strong>が一般提供（GA）開始。AWSの認証・課金・監視をそのまま使いながらAnthropicのネイティブAPIに直接アクセス可能。Managed Agents（β）とMCP Connector（β）を同時リリース。</li><li>MCP Connectorにより<span class="emph-und">クライアントコードを書かずに任意のリモートMCPサーバーへ接続</span>が可能になった。Thomson Reuters CoCounsel、Dun &amp; Bradstreet KYCなど主要SaaS連携が即日ライブ。</li><li>「AWS上のClaude」は既存ユーザーが認証・ID管理を追加せずに移行可能なため、企業内展開の摩擦を大幅低減。<strong class="emph-bold">Managed Agents</strong>はスケールでのエージェント構築・デプロイを標準化する。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-05-16</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-05-16 08:15</span>
+        <span>· AI Business</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://aibusiness.com/generative-ai/openai-launches-ai-consulting-company-anthropic" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://eu-images.contentstack.com/v3/assets/blt6b0f74e5591baa03/blt3e21d962ce3ce6a6/6a0246ed751e95096d8c06bb/OpenAI_logo.jpg?disable=upscale&amp;width=1200&amp;height=630&amp;fit=crop" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://aibusiness.com/generative-ai/openai-launches-ai-consulting-company-anthropic" rel="noopener nofollow" target="_blank">OpenAI、DeployCo創設（$40億）＋Tomoro買収 — AIコンサル市場への直接参入が加速</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>OpenAIが<strong class="emph-bold">DeployCo</strong>を初期投資$40億で創設。応用AIコンサルのTomoroを同時買収し、企業向けAIシステム構築・展開を一貫支援する独立子会社として立ち上げた。</li><li>背景にあるのは「生成AIパイロット95%がROI未達」という現実。Frontier Alliance（McKinsey/BCG/Accenture）を通じた間接展開ではスピードが不足と判断し、<span class="emph-und">内製コンサル部隊を持つ戦略に転換</span>。</li><li>AnthropicもBlackstone・Goldman支援のJVで同様の動きを見せており、GPT/Claude双方の開発元がIT大手・Big4のコア事業に直接侵食する新しい競争軸が形成された。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-05-16 09:30</span>
+        <span>· Engadget</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.engadget.com/2171038/everything-announced-at-android-show-google-io-2026/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.engadget.com/img/gallery/everything-announced-during-the-android-show-io-2026-edition/l-intro-1778605292.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.engadget.com/2171038/everything-announced-at-android-show-google-io-2026/" rel="noopener nofollow" target="_blank">Google I/O 2026 まで3日 — Android Show先行発表が解禁、Gemini 4・Android 17の全貌が明らかに</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Google I/O 2026の前哨戦「<strong class="emph-bold"> I/O Edition</strong>」ですでに複数の発表が解禁。Android 17の新機能・Gemini 4の能力強化・プロアクティブAIアシスタント「Remy」が主役。</li><li>Gemini 4は<span class="emph-und">Responsive AIからProactive AIへの転換</span>が最大の革新。ユーザーがタスクを依頼するのではなく、AIが先回りしてワークフローを代替するエージェントへと進化。</li><li>Googlebookの正式発表も5/19に予定。AIネイティブOS搭載のラップトップカテゴリーとしてMacBookに真っ向対決。MuskのOpenAI持分取得報道も並走しビッグテック再編の予感が高まっている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-05-16 06:45</span>
+        <span>· Ramp AI Index</span>
+        <span class="more-card__score">80</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://ramp.com/leading-indicators/ai-index-may-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.sanity.io/images/6jz6vxxd/production/9088989de14173fd6c74125f5eb139b26d8c8bf0-2400x1260.png?rect=0,3,2400,1254&amp;w=1200&amp;h=627&amp;fit=crop" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://ramp.com/leading-indicators/ai-index-may-2026" rel="noopener nofollow" target="_blank">Claude Code が全GitHubコミットの4% — 1ヶ月で倍増、エンタープライズ採用加速を示すシグナル</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Ramp AI Indexによれば、<strong class="emph-bold">Claude Code</strong>が全GitHub公開コミットに占める割合が1ヶ月で2%→4%と倍増。AnthropicのビジネスAI採用率（34.4%）がOpenAI（32.3%）を初めて上回った要因の一つ。</li><li>$100万超の大型契約企業が2ヶ月で倍増し、ARRは$300億を突破。<span class="emph-und">エンタープライズARR成長率180%という数字は、GPT-5.5ファミリーの製品展開が加速するOpenAIに対して優位を保っている</span>。</li><li>コード生成分野でClaude Codeがデファクト化すると、Anthropicは「コーディングAI」→「エージェント型SIer」という経路でIT産業全体を取り込む可能性がある。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-05-16 10:00</span>
+        <span>· Thomson Reuters</span>
+        <span class="more-card__score">75</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.thomsonreuters.com/en/press-releases/2026/may/thomson-reuters-and-anthropic-expand-partnership-to-connect-claude-with-cocounsel-legal" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.thomsonreuters.com/content/dam/ewp-m/images/thomsonreuters/en/photography/reuters/rtr1zkvu-luke-macgregor-tr.jpg.transform/rect-768/q90/image.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.thomsonreuters.com/en/press-releases/2026/may/thomson-reuters-and-anthropic-expand-partnership-to-connect-claude-with-cocounsel-legal" rel="noopener nofollow" target="_blank">Thomson Reuters × Anthropic — CoCounsel LegalにClaude MCP統合、法務AIが実用域へ</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Thomson ReutersがAnthropicとのパートナーシップを拡大し、<strong class="emph-bold">CoCounsel Legal</strong>にClaude MCPを統合。法律調査・契約審査・デューデリジェンスをClaudeが直接支援する形に。</li><li>MCP統合により、CoCounselは単なる検索支援から<span class="emph-und">法的判断の一次草稿まで自律的に作成するアシスタント</span>へと進化。法律事務所・企業法務での本格導入が現実味を帯びた。</li><li>リーガルテックでのClaude採用は、AI連携がniche-verticalからハイプロフィールな専門職領域へ広がるパターンの典型例。他領域（医療・監査・税務）への波及を示唆している。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-05-16
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
