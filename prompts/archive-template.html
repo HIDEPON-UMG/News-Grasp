@@ -56,7 +56,7 @@
 .ng-brand__inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .ng-brand__logo { display: flex; align-items: center; gap: 24px; }
 .ng-brand__eyebrow { font-family: var(--font-mono); font-size: 9px; color: var(--color-gold); letter-spacing: .3em; margin-bottom: 4px; }
-.ng-brand__name { font-family: var(--font-sans); font-size: 36px; font-weight: 900; line-height: .9; letter-spacing: -.04em; color: var(--color-cream); }
+.ng-brand__name { font-family: var(--font-sans); font-size: 36px; font-weight: 900; line-height: .9; letter-spacing: -.04em; color: var(--color-cream); display: flex; align-items: flex-end; }
 .ng-brand__name a { color: inherit; text-decoration: none; }
 .ng-brand__sep { border-left: 1px solid rgba(240,235,224,.25); padding-left: 18px; margin-left: 4px; }
 .ng-brand__sect-k { font-family: var(--font-mono); font-size: 10px; color: var(--color-gold); letter-spacing: .25em; }
@@ -282,7 +282,7 @@
       <div class="ng-brand__logo">
         <div class="ng-brand__title">
           <div class="ng-brand__eyebrow">━━ THE</div>
-          <div class="ng-brand__name"><a href="{{ base_url }}/">{{ site_title }}</a></div>
+          <div class="ng-brand__name"><a href="{{ base_url }}/">{{ site_title }}</a><img class="brand-icon" src="{{ base_url }}/assets/news-grasp-icon.png" alt="" width="254" height="256"></div>
         </div>
         <div class="ng-brand__sep">
           <div class="ng-brand__sect-k">SECTION</div>

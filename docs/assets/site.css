@@ -125,6 +125,9 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   line-height: 0.9;
   margin: 0;
   color: var(--color-cream);
+  white-space: nowrap;
+  display: flex;
+  align-items: flex-end;
 }
 .brand-zone__name a { color: inherit; }
 .brand-zone__nav {
@@ -901,8 +904,19 @@ strong {
   letter-spacing: -0.04em;
   color: var(--color-cream);
   margin: 4px 0 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: flex-end;
 }
 .home-brand__name a { color: inherit; }
+/* ブランドアイコン (拳+N): ワードマーク右に flex 配置。h1 を flex 行にして折返しを防ぎ、
+   height は em 連動なので全ヘッダー (86px/36px/モバイル) で自動スケールする */
+.brand-icon {
+  height: 0.92em;
+  width: auto;
+  margin-left: 0.16em;
+  flex-shrink: 0;
+}
 .home-brand__tagline {
   font-family: var(--font-mono);
   font-size: 12px;

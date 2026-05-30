@@ -142,6 +142,35 @@ def test_url_exact_match() -> list[str]:
     return errs
 
 
+def test_same_url_old_still_dropped() -> list[str]:
+    """同一記事 (URL 一致) は何日前でも常に除外される (続報は別 URL なので影響なし)。
+
+    なぜ重要か: Mobility の Waymo 記事が 3 日連続で再掲された事象の再発防止。
+    URL 一致を 24h 窓で続報扱いにしていたのが原因だったため、URL 一致は
+    時間に関係なく弾くのが正しい仕様であることをロックする。
+    """
+    errs: list[str] = []
+    existing = [{
+        "title": "Waymo、ダラス等4都市同時展開",
+        "url": "https://www.autoconnectedcar.com/2026/05/waymo-expands/",
+        "url_norm": "https://www.autoconnectedcar.com/2026/05/waymo-expands",
+        "seen_at": _ts(72.0),  # 3 日前 = 24h 窓の外
+    }]
+    candidates = [{
+        # 同じ URL (tracking 付き)・タイトルは多少変わっていても「同一記事」
+        "title": "Waymo、ダラス等4都市同時展開 — 続報まとめ",
+        "url": "https://www.autoconnectedcar.com/2026/05/waymo-expands/?utm_source=x",
+        "score": 92,
+    }]
+    passed, dropped = dedup.dedup_candidates(candidates, existing, window_hours=24.0)
+    if passed or len(dropped) != 1:
+        errs.append(
+            f"3 日前の同一 URL 記事は常に除外されるべき: "
+            f"passed={len(passed)}, dropped={len(dropped)}"
+        )
+    return errs
+
+
 def test_batch_internal_dedup() -> list[str]:
     errs: list[str] = []
     existing: list[dict] = []
@@ -169,6 +198,7 @@ def main() -> int:
         ("24 時間ウィンドウ除外", test_24h_window),
         ("24 時間超は続報扱い",   test_followup_after_24h),
         ("URL 完全マッチ除外",    test_url_exact_match),
+        ("同一URLは常に除外(数日後も)", test_same_url_old_still_dropped),
         ("batch 内重複除外",      test_batch_internal_dedup),
     ]
     overall_ok = True

@@ -62,6 +62,21 @@
       }
     } catch (e) { /* 非対応環境は無視 */ }
   })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
 </script>
 
 
@@ -76,7 +91,7 @@
       <div class="home-brand__mark"></div>
       <div class="home-brand__title">
         <div class="home-brand__eyebrow">━━ THE</div>
-        <h1 class="home-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a></h1>
+        <h1 class="home-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
         <div class="home-brand__tagline">SIX  LENSES  ON  TODAY</div>
       </div>
     </div>
@@ -396,6 +411,35 @@
   </div>
 </section>
 <script src="/News-Grasp/push.js" defer></script>
+<script>
+// TODAY'S THEME 見出しは hero_phrase の文字数が日替わりで変わるため、
+// フォントを 1px ずつ縮小して「必ず 2 行 (<br/> による 1 改行ぶん)」に収める。
+// 高さ計測方式: 3 行に折り返している間だけ縮小し、グリッド幅・nowrap には触れない。
+(function () {
+  function fitHeroTitle() {
+    var el = document.querySelector('.home-hero__title');
+    if (!el) return;
+    el.style.fontSize = '';  // CSS 既定 (PC 76px / モバイル 38px) に戻してから判定
+    var guard = 0;
+    while (guard < 80) {
+      var cs = getComputedStyle(el);
+      var size = parseFloat(cs.fontSize);
+      var lh = parseFloat(cs.lineHeight);
+      if (isNaN(lh)) lh = size * 1.2;
+      if (el.offsetHeight <= lh * 2 + 1 || size <= 28) break;
+      el.style.fontSize = (size - 1) + 'px';
+      guard++;
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fitHeroTitle);
+  } else {
+    fitHeroTitle();
+  }
+  window.addEventListener('resize', fitHeroTitle);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitHeroTitle); }
+})();
+</script>
 
 
 <!-- ============= Publication matrix (カテゴリ × 曜日 配信頻度・過去30日) ============= -->

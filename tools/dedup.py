@@ -117,25 +117,35 @@ def find_match(
     existing: list[dict],
     title_threshold: float = 0.5,
     ngram_n: int = 2,
-) -> dict | None:
-    """候補に対して existing の中から最初にマッチするエントリを返す。"""
-    cand_url_norm = candidate.get("url_norm") or normalize_url(candidate.get("url", ""))
+) -> tuple[dict | None, str | None]:
+    """候補に対して existing の中から最初にマッチするエントリと種別を返す。
+
+    返り値 (entry, match_type):
+      - ("url",)   : 正規化 URL が完全一致 = 同一記事そのもの
+      - ("title",) : タイトルが一致/類似 = 同一トピック (続報の可能性あり)
+      - (None, None): マッチなし
+    呼び出し側は match_type で「同一記事の再掲(常に除外)」と
+    「続報候補(時間窓で判定)」を区別する。
+    """
+    # 保存済み url_norm は過去バージョンで scheme 有無が不統一なため信頼せず、
+    # 毎回 url から再正規化して比較する (取りこぼし防止)。
+    cand_url_norm = normalize_url(candidate.get("url", ""))
     cand_title_norm = normalize_title(candidate.get("title", ""))
     cand_ngrams = char_ngrams(cand_title_norm, n=ngram_n)
 
     for e in existing:
-        # A. URL 正規化マッチ
-        e_url_norm = e.get("url_norm") or normalize_url(e.get("url", ""))
+        # A. URL 正規化マッチ (= 同一記事)
+        e_url_norm = normalize_url(e["url"]) if e.get("url") else e.get("url_norm", "")
         if cand_url_norm and cand_url_norm == e_url_norm:
-            return e
-        # B. タイトル類似度
+            return e, "url"
+        # B. タイトル一致 / 類似 (= 同一トピック・続報候補)
         e_title_norm = normalize_title(e.get("title", ""))
         if cand_title_norm and cand_title_norm == e_title_norm:
-            return e
+            return e, "title"
         sim = jaccard(cand_ngrams, char_ngrams(e_title_norm, n=ngram_n))
         if sim >= title_threshold:
-            return e
-    return None
+            return e, "title"
+    return None, None
 
 
 def dedup_candidates(
@@ -154,13 +164,23 @@ def dedup_candidates(
     pool = list(existing)
     for c in candidates:
         c["url_norm"] = normalize_url(c.get("url", ""))
-        match = find_match(c, pool, title_threshold=title_threshold)
+        match, match_type = find_match(c, pool, title_threshold=title_threshold)
         if match is None:
             c["is_followup"] = False
             c.setdefault("seen_at", now_iso)
             passed.append(c)
             pool.append(c)
             continue
+        if match_type == "url":
+            # 完全に同じ記事 (正規化 URL 一致) は経過時間に関係なく常に除外する。
+            # 続報は必ず別 URL になるので、ここで落ちるのは「同一記事の複数日再掲」だけ。
+            # (従来は 24h 窓を超えると続報扱いで通過し、同じ記事が数日連続で載っていた)
+            c["dedup_reason"] = (
+                f"same article (url match, any age) url={(match.get('url') or '')[:50]}"
+            )
+            dropped.append(c)
+            continue
+        # 以降は title 類似マッチ = 同一トピック。時間窓で続報かどうかを判定する。
         seen_at = match.get("seen_at")
         if not seen_at:
             seen_at = f"{match.get('date', '1970-01-01')}T00:00:00+09:00"

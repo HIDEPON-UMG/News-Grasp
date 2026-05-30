@@ -82,6 +82,22 @@ Routine がここを読み込み、毎朝の検索対象として使う。**自�
 ## Mobility
 
 毎日掲載。**EV / 自動運転 / MaaS / 完成車・部品サプライヤー**を独立カテゴリで追跡。
+エントリーが少ない日が続いたため、情報源（媒体）と対象企業・キーワードを拡充した（2026-05-30）。
+
+### 優先情報源（媒体）
+
+- Electrek
+- InsideEVs
+- CleanTechnica
+- The Verge  # Transportation
+- TechCrunch  # Transportation / Mobility
+- Reuters  # Autos
+- Bloomberg  # Hyperdrive
+- Automotive News
+- Auto Connected Car News
+- 日経 xTECH / 日経Automotive
+- レスポンス (Response.jp)
+- Car Watch (Impress)
 
 ### 完成車メーカー
 
@@ -89,47 +105,91 @@ Routine がここを読み込み、毎朝の検索対象として使う。**自�
 - トヨタ
 - 日産
 - ホンダ
+- スバル
+- マツダ
+- 三菱自動車
 - BMW
+- メルセデス・ベンツ
 - フォルクスワーゲン (VW)
 - BYD (比亜迪)
-- 現代自動車
+- 現代自動車 (Hyundai)
+- 起亜 (Kia)
 - Stellantis
 - Ford
+- GM (General Motors)
+- NIO (蔚来)
+- XPeng (小鵬)
+- Li Auto (理想汽車)
+- 吉利 (Geely)
+- Zeekr
+- Xiaomi EV (小米汽車)
+- Leapmotor (零跑)
+- Rivian
+- Lucid Motors
 
 ### 自動運転・モビリティサービス
 
 - Waymo
 - Cruise
+- Zoox  # Amazon
 - Uber
 - Lyft
 - DiDi
 - Aurora
 - Mobileye
+- Pony.ai (小馬智行)
+- WeRide (文遠知行)
+- Baidu Apollo (百度)
+- Nuro
+- May Mobility
+- Wayve
 
 ### 電池・サプライヤー
 
 - CATL
+- BYD  # 電池部門
 - LG Energy Solution
+- Samsung SDI
+- SK On
 - Panasonic Energy
 - パナソニック ホールディングス
+- QuantumScape
 - デンソー
-- ボッシュ
+- ボッシュ (Bosch)
 - Continental
+- ZF
+- Aptiv
+- Valeo
+- Magna
+- Hyundai Mobis
+- NVIDIA  # DRIVE / 車載
+- Qualcomm  # Snapdragon Digital Chassis
 
 ### 汎用キーワード
 
 - 自動運転
+- 自動運転レベル4 / レベル5
+- ADAS
+- LiDAR
 - EV化
+- EV販売台数
+- 商用EV / EVトラック
 - MaaS
 - Robotaxi
+- 配車サービス
+- ライドシェア
 - 電池技術
 - 全固体電池
+- LFP電池
+- 超急速充電
 - 充電インフラ
-- ライドシェア
+- バッテリースワップ
+- V2G
 - 空飛ぶクルマ
 - eVTOL
 - 自動車補助金
 - 燃費規制
+- リコール
 
 ---
 

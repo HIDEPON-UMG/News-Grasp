@@ -47,7 +47,7 @@
       <div class="home-brand__mark"></div>
       <div class="home-brand__title">
         <div class="home-brand__eyebrow">━━ THE</div>
-        <h1 class="home-brand__name"><a href="{{ base_url }}/">News Grasp</a></h1>
+        <h1 class="home-brand__name"><a href="{{ base_url }}/">News Grasp</a><img class="brand-icon" src="{{ base_url }}/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
         <div class="home-brand__tagline">SIX  LENSES  ON  TODAY</div>
       </div>
     </div>
@@ -258,6 +258,35 @@
   </div>
 </section>
 <script src="/News-Grasp/push.js" defer></script>
+<script>
+// TODAY'S THEME 見出しは hero_phrase の文字数が日替わりで変わるため、
+// フォントを 1px ずつ縮小して「必ず 2 行 (<br/> による 1 改行ぶん)」に収める。
+// 高さ計測方式: 3 行に折り返している間だけ縮小し、グリッド幅・nowrap には触れない。
+(function () {
+  function fitHeroTitle() {
+    var el = document.querySelector('.home-hero__title');
+    if (!el) return;
+    el.style.fontSize = '';  // CSS 既定 (PC 76px / モバイル 38px) に戻してから判定
+    var guard = 0;
+    while (guard < 80) {
+      var cs = getComputedStyle(el);
+      var size = parseFloat(cs.fontSize);
+      var lh = parseFloat(cs.lineHeight);
+      if (isNaN(lh)) lh = size * 1.2;
+      if (el.offsetHeight <= lh * 2 + 1 || size <= 28) break;
+      el.style.fontSize = (size - 1) + 'px';
+      guard++;
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fitHeroTitle);
+  } else {
+    fitHeroTitle();
+  }
+  window.addEventListener('resize', fitHeroTitle);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitHeroTitle); }
+})();
+</script>
 
 {% if publication_matrix and publication_matrix.rows %}
 <!-- ============= Publication matrix (カテゴリ × 曜日 配信頻度・過去30日) ============= -->
