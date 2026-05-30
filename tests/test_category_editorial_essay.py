@@ -35,6 +35,7 @@ from tools.generate_pages import (  # noqa: E402
     _category_essay,
     _section_label_to_cid,
     _collect_entries,
+    _get_jinja_env,
 )
 
 
@@ -73,7 +74,7 @@ theme: "為替とAIの交差"
 [[ドル円]]は**159円**台へ。SENTINEL_FX_BODY。
 
 ### §03 AI — Anthropic評価額の膨張
-[[Anthropic]]が__9650億ドル__に到達。SENTINEL_AI_BODY。
+[[Anthropic]]が__9650億ドル__に到達。[[R&D]]投資も拡大。SENTINEL_AI_BODY。
 
 ### §04 IT — 国内3社がそろい踏み
 [[NEC]]がAnthropicと提携。SENTINEL_IT_BODY。
@@ -234,6 +235,29 @@ def test_category_essay_renders_emphasis(built):
     assert "emph-und" in ai                       # __9650億ドル__ 下線
     assert "[[Anthropic]]" not in ai              # 生 wikilink が素通りしていない
     assert "__9650億ドル__" not in ai             # 生 underline が素通りしていない
+    # [[R&D]] が単一エスケープで出る (二重エスケープ R&amp;amp;D に化けない)
+    assert "R&amp;D" in ai
+    assert "R&amp;amp;D" not in ai
+
+
+def test_render_emph_no_double_escape():
+    """render_emph が [[ ]] 内の & < > を二重エスケープしない回帰テスト。
+
+    バグ (2026-05-30): _render_emph が文字列全体を escape した後、wikilink 捕捉群を
+    もう一度 escape していたため [[S&P500]] が S&amp;amp;P500 と二重化し、画面に
+    「S&amp;P500」と化けて表示されていた (economy ページ / 既存 summary・LP も同様)。
+    この class of bug を render_emph 単体で 1 件封じる。
+    """
+    render_emph = _get_jinja_env().filters["render_emph"]
+    out = str(render_emph("[[S&P500]]が最高値"))
+    assert "S&amp;P500" in out            # 単一エスケープ (正しい)
+    assert "S&amp;amp;P500" not in out    # 二重エスケープしない
+    # 素テキスト中の & も単一エスケープのまま
+    assert str(render_emph("AT&T")) == "AT&amp;T"
+    # < > を含む wikilink も単一
+    lt = str(render_emph("[[<tag>]]"))
+    assert "&lt;tag&gt;" in lt
+    assert "&amp;lt;" not in lt
 
 
 def test_category_essay_subtitle_is_per_category(built):

@@ -431,9 +431,11 @@ def _get_jinja_env():
             if text is None:
                 return Markup("")
             s = _html.escape(str(text), quote=False)
-            # [[X|Y]] -> Y, [[X]] -> X として bold + accent 背景
+            # [[X|Y]] -> Y, [[X]] -> X として bold + accent 背景。
+            # s は上で escape 済みなので捕捉群を再 escape しない (再 escape すると
+            # [[S&P500]] が S&amp;amp;P500 と二重エスケープされて画面に化ける)。inline_html と統一。
             s = _WIKILINK_RE.sub(
-                lambda m: f'<strong class="emph-bold">{_html.escape(m.group(2) or m.group(1), quote=False)}</strong>',
+                lambda m: f'<strong class="emph-bold">{m.group(2) or m.group(1)}</strong>',
                 s,
             )
             # __X__ -> underline + bold
