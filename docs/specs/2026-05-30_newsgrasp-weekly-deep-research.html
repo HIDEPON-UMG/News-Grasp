@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp 週次 DeepDive レポート — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン継承 (News-Grasp 本体 DESIGN.md と同期)
+       Magazine Spread: navy × gold × paper の編集者的トーン
+       ============================================================ */
+    :root {
+      --color-primary: #1A1A1A;
+      --color-secondary: #5C5A52;
+      --color-tertiary: #C9A155;
+      --color-neutral: #FAF7F0;
+      --color-surface: #FFFFFF;
+      --color-border: #E2DED4;
+      --color-paper-soft: #F2EEE3;
+      --color-on-tertiary: #181C2A;
+      --color-on-primary: #F0EBE0;
+      --color-navy: #181C2A;
+      --color-cream: #F0EBE0;
+      --color-gold: #C9A155;
+
+      --color-accent-fx: #B8860B;
+      --color-accent-ai: #2D5BB8;
+      --color-accent-it: #2E6B52;
+      --color-accent-economy: #8E2A19;
+      --color-accent-game: #5E3D8C;
+      --color-accent-mobility: #3A7B8C;
+      --color-accent-summary: #475569;
+      /* 新ページ種別 DeepDive のアクセント (plan: DEEPDIVE_ACCENT 候補) */
+      --color-accent-deepdive: #1A1A1A;
+
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+
+      --font-serif: 'Noto Serif JP', 'Yu Mincho', Georgia, serif;
+      --font-sans: 'Inter', -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+      --rounded-sm: 0px;
+      --rounded-md: 0px;
+      --rounded-lg: 0px;
+      --rounded-full: 9999px;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-serif);
+      font-size: 0.9375rem;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 72rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 2px solid var(--color-navy); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; font-weight: 700; text-transform: uppercase; }
+    h1 { font-family: var(--font-sans); font-size: 3rem; font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin: var(--space-md) 0 var(--space-sm); color: var(--color-navy); }
+    h2 { font-family: var(--font-sans); font-size: 2rem; font-weight: 900; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--space-md); color: var(--color-navy); }
+    h3 { font-family: var(--font-serif); font-size: 1.375rem; font-weight: 800; line-height: 1.35; letter-spacing: -0.01em; margin: var(--space-xl) 0 var(--space-sm); color: var(--color-navy); }
+    h4 { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; margin: var(--space-lg) 0 var(--space-sm); color: var(--color-primary); }
+    .lead { color: var(--color-secondary); font-size: 1.0625rem; line-height: 1.75; margin: var(--space-sm) 0 var(--space-md); font-style: italic; }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-accent-ai); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+    a:hover { color: var(--color-navy); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: 0; padding: var(--space-md) var(--space-lg); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; text-transform: uppercase; font-weight: 700; }
+    .tab:hover { color: var(--color-navy); background: var(--color-paper-soft); }
+    .tab.active { color: var(--color-navy); border-bottom-color: var(--color-gold); background: var(--color-surface); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-muted { background: var(--color-paper-soft); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy { background: var(--color-navy); color: var(--color-cream); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy h3, .card-navy h4 { color: var(--color-gold); }
+    .card-navy a { color: var(--color-gold); }
+
+    /* Badge */
+    .badge { display: inline-block; padding: 4px 12px; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-right: var(--space-xs); }
+    .badge-draft { background: var(--color-warning); color: var(--color-cream); }
+    .badge-confirmed { background: var(--color-success); color: var(--color-cream); }
+    .badge-new { background: var(--color-accent-deepdive); color: var(--color-cream); }
+    .badge-out-of-scope { background: var(--color-error); color: var(--color-cream); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.875rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 700; color: var(--color-navy); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; text-transform: uppercase; background: var(--color-paper-soft); border-bottom: 2px solid var(--color-navy); }
+    tr:hover td { background: var(--color-paper-soft); }
+    td code { font-size: 0.8125rem; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--color-paper-soft); padding: 2px 6px; border: 1px solid var(--color-border); }
+    pre { background: var(--color-navy); color: var(--color-cream); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.6; margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 12px 20px; border: 0; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 120ms; }
+    .btn-navy { background: var(--color-navy); color: var(--color-cream); }
+    .btn-navy:hover { background: #262B40; }
+    .btn-gold { background: var(--color-gold); color: var(--color-navy); }
+    .btn-gold:hover { background: #B58D45; }
+
+    /* Timeline (impl 用) */
+    .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin: var(--space-lg) 0; }
+    .timeline-step { background: var(--color-paper-soft); border-left: 4px solid var(--color-gold); padding: var(--space-md) var(--space-lg); }
+    .timeline-step strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: var(--color-gold); text-transform: uppercase; margin-bottom: var(--space-xs); }
+    .timeline-step span { font-family: var(--font-serif); font-size: 0.9375rem; line-height: 1.6; color: var(--color-navy); font-weight: 600; }
+
+    /* Severity */
+    .severity-info { border-left: 4px solid var(--color-accent-ai); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-warn { border-left: 4px solid var(--color-warning); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-success { border-left: 4px solid var(--color-success); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: var(--space-xs); color: var(--color-navy); }
+
+    /* DeepDive 3 節デザイン用 */
+    .dd-section { border: 1px solid var(--color-border); border-top: 4px solid var(--color-accent-deepdive); background: var(--color-surface); padding: var(--space-lg); margin: var(--space-lg) 0; }
+    .dd-section > h4:first-child { margin-top: 0; }
+    .dd-eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.15em; color: var(--color-accent-deepdive); text-transform: uppercase; }
+    .player-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-md); margin: var(--space-md) 0; }
+    .player-card { background: var(--color-paper-soft); border-left: 4px solid var(--color-accent-deepdive); padding: var(--space-md); }
+    .player-card strong { font-family: var(--font-sans); font-size: 1rem; font-weight: 800; color: var(--color-navy); display: block; }
+    .player-card .role { font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.1em; color: var(--color-secondary); text-transform: uppercase; }
+    .player-card .move { font-size: 0.8125rem; margin: var(--space-xs) 0; line-height: 1.6; }
+    .player-card .pos { font-size: 0.8125rem; font-weight: 700; color: var(--color-accent-deepdive); }
+    .decision-frame { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; }
+    .decision-frame th { width: 160px; background: var(--color-navy); color: var(--color-cream); border-bottom: 1px solid var(--color-surface); }
+    .decision-frame td { border-bottom: 1px solid var(--color-border); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-top: 4px solid var(--color-gold); padding: var(--space-xl); margin: var(--space-md) 0; }
+    .playground-control { display: grid; grid-template-columns: 220px 1fr 160px; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+    .playground-control input[type="range"] { width: 100%; }
+    .playground-control input[type="number"], .playground-control input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-surface); color: var(--color-primary); }
+    .playground-control select { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-surface); color: var(--color-primary); }
+    .playground-control output { font-family: var(--font-mono); font-size: 0.875rem; color: var(--color-navy); font-weight: 700; }
+    .playground-preview { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); background: var(--color-paper-soft); margin: var(--space-md) 0; border-left: 4px solid var(--color-accent-deepdive); }
+    .preview-swatch { width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--color-cream); background: var(--color-accent-deepdive); }
+    .preview-text strong { font-family: var(--font-sans); font-size: 1.5rem; font-weight: 900; color: var(--color-navy); display: block; }
+    .preview-text span { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+
+    /* Palette grid */
+    .palette { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); margin: var(--space-md) 0; }
+    .palette-cell { display: flex; flex-direction: column; align-items: center; padding: var(--space-md); border: 1px solid var(--color-border); background: var(--color-surface); }
+    .palette-swatch { width: 64px; height: 64px; margin-bottom: var(--space-sm); }
+    .palette-cell strong { font-family: var(--font-sans); font-size: 0.875rem; font-weight: 700; color: var(--color-navy); }
+    .palette-cell span { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--color-secondary); letter-spacing: 0.05em; }
+    .palette-cell.new { border: 2px solid var(--color-accent-deepdive); position: relative; }
+    .palette-cell.new::after { content: 'NEW'; position: absolute; top: -10px; right: -10px; background: var(--color-accent-deepdive); color: var(--color-cream); font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; padding: 2px 8px; letter-spacing: 0.1em; }
+
+    /* Compare grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .playground-control { grid-template-columns: 1fr; }
+      .player-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+    }
+
+    /* Footer */
+    footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+      .playground { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · 2026-05-30 · NEWS-GRASP</div>
+      <h1>週次 DeepDive レポート</h1>
+      <p class="lead">直近 7 日の収集記事から全 6 カテゴリ横断で最も深掘り価値の高いテーマを週 1 本自動選定し、一次ソースまで遡った深掘りレポートを生成する。価値の核は <strong>背景（タイムライン＋登場人物のポジション）／深掘り（データ駆動インフォグラフィック）／注目点（意思決定フレーム）</strong> の 3 節。<strong>公開 Web での表現にフォーカス</strong>し、Obsidian は調査の原本、Push は新ページ通知に使う。</p>
+      <div style="margin-top: var(--space-md);">
+        <span class="badge badge-draft">draft</span>
+        <span class="badge badge-confirmed">user-approved 2026-05-30</span>
+        <span class="badge badge-new">web-focused</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="comparison">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <!-- ============================================================
+         概要
+         ============================================================ -->
+    <section id="overview" class="tab-panel active">
+      <h2>Context</h2>
+      <p>News-Grasp は既存の RSS 収集＋日次要約配信パイプラインを持つが、記事の<strong>表面的要約に留まり</strong>「なぜ今これが話題か」「関連プレイヤーの現状」「次に何が論点になるか」の文脈化ができていない。週 1 回、直近 7 日の収集記事から<strong>深掘り価値の高いテーマを 1 本自動選定</strong>し、一次ソースまで遡った深掘りレポートを<strong>公開 Web</strong>で表現する。出典は IdeaStash の要望ファイル <code>News-Grasp-newsgrasp-weekly-deep-research-2026-05-30.md</code>。</p>
+
+      <h3>ユーザー確定方針 (2026-05-30)</h3>
+      <table>
+        <thead><tr><th>項目</th><th>確定値</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td>テーマ数・範囲</td><td>全 6 カテゴリ横断で<strong>週 1 本</strong></td><td>「速報性×奥行き×波及性」最上位の 1 テーマだけ深掘り。コスト最小で価値を検証し、手応えを見て本数を増やす</td></tr>
+          <tr><td>名称 / ページ種別</td><td><code>DeepDive</code></td><td><code>digest/DeepDive/</code> ・ <code>/deepdive/{date}/</code> ・ accent <code>#1A1A1A</code></td></tr>
+          <tr><td>配信構成</td><td><strong>公開 Web（主）＋ Obsidian 原本 ＋ Push 通知</strong></td><td>メールは<strong>廃止</strong>。Obsidian には全引用・チャート元データ付きの原本を保存、公開 Web がリッチ表現の本体、Push は新ページ通知</td></tr>
+          <tr><td>図表生成</td><td><strong>方式 A: データ駆動 + Python レンダラ</strong></td><td>LLM は <code>{種類/データ/出典}</code> を構造化出力 → 新規 <code>tools/render_chart.py</code> が決定論的に<strong>インライン SVG</strong> 生成。数値が正確・再現性・契約テスト可</td></tr>
+          <tr><td>実行モデル</td><td><strong>STEP0 スパイク実測後に確定</strong></td><td>Opus で 1 回手動実行し実コスト・所要時間・品質を数値で測ってから本番モデルと予算上限を決める</td></tr>
+          <tr><td>スケジュール</td><td>日曜 23:00 JST</td><td>日次 06:00 タスクとは<strong>完全独立</strong>のタスク。週次失敗が日次に波及しない</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3 節の提供価値 (DeepDive の核)</h3>
+      <table>
+        <thead><tr><th>節</th><th>提供価値</th><th>表現</th></tr></thead>
+        <tbody>
+          <tr><td><code>## 背景</code></td><td>なぜ今このテーマが注目に至ったかの経緯と、主要プレイヤーの<strong>動き → ポジション</strong></td><td>タイムライン（収集記事＋一次イベント）＋ 登場人物・企業カード</td></tr>
+          <tr><td><code>## 深掘り</code></td><td>論点を洗い出すフェーズ。<strong>図表で状況を説明</strong>し、注目点へつなぐ導線を設計</td><td>データ駆動インフォグラフィック（必須）＋ 解説 → 論点提示</td></tr>
+          <tr><td><code>## 注目点</code></td><td>深掘りから導いた<strong>意思決定フレーム</strong></td><td>論点 / 選択肢 / 期限 / 決定権者 を必須スキーマで明示</td></tr>
+        </tbody>
+      </table>
+
+      <h3>設計を縛る 3 つの確定事実</h3>
+      <div class="severity-warn severity">
+        <strong>制約 1 · headless ではスラッシュコマンド / スキル不可</strong>
+        <p>公式 headless doc に「<em>In -p mode, describe the task instead</em>」と明記。<code>claude -p "/deep-research ..."</code> は使えない。さらに本パイプラインはプロンプトを stdin で渡すため argv コマンドの余地もない。→ deep-research の手法（多段 fan-out 検索・一次ソース取得・対向検証・引用付き合成）を自然言語の新プロンプト <code>prompts/weekly-research-system.md</code> に記述して再現する。</p>
+      </div>
+      <div class="severity-warn severity">
+        <strong>制約 2 · ラッパーがモデル / ツールをハードコード (必須ブロッカー)</strong>
+        <p><code>run_claude_with_timeout.ps1</code> L92 が <code>'--print --dangerously-skip-permissions --tools default --model sonnet'</code> を固定文字列で持つ。週次の Opus 化＋検索ツール許可にはこの 1 行の引数化（後方互換）が前提。日次は引数なしで既定 sonnet のまま不変にする。</p>
+      </div>
+      <div class="severity-info severity">
+        <strong>制約 3 · メール廃止により図表は SVG 一本化</strong>
+        <p>当初の「フル統合（メール含む）」から<strong>公開 Web フォーカスに転換</strong>。メールが外れたことで、図表のメール用 PNG ラスタライズ（resvg 依存）が<strong>不要</strong>になり、公開 Web では純粋なインライン SVG で描ける。<code>render_chart.py</code> の出力は SVG 一本。</p>
+      </div>
+
+      <h3>利用制限・課金（最重要の前提）</h3>
+      <div class="severity-warn severity">
+        <strong>⚠ 2026-06-15 の課金変更 — 「サブスク内・追加料金なし」は 6/15 まで</strong>
+        <p>2026-06-15 から <code>claude -p</code>（headless）は Claude サブスク枠から<strong>外れ</strong>、別建ての <strong>Agent SDK 月次クレジット（Max 5x = $100/月・API 従量レート・繰越なし）</strong>を消費する。News-Grasp は<strong>日次＋週次の両方が headless</strong> なので、両方がこの $100 を食う。クレジット枯渇後は usage credits 有効なら $ 課金、無効なら停止。→ 6/15 以降は (1) Agent SDK クレジットを claim (2) 消費を監視 (3) usage credits の有効/無効を判断、が必要。STEP0 の <code>total_cost_usd</code> 実測は 6/15 以降の<strong>実クレジット消費の見積もり</strong>になる。</p>
+      </div>
+      <div class="severity-info severity">
+        <strong>5 時間制限（Max 5x・6/15 まで）への回答</strong>
+        <p>Max 5x は約 5 時間ローリング枠（軽量モデルで ~225 msg/5h・最近倍増）＋ 週次上限（Max は最大 ~40 Opus 時間 / ~480 Sonnet 時間）。<strong>深夜の単発 Opus 実行は、直前に他の利用が無ければ枠がリフレッシュ済みのため 5 時間制限に当たりにくい</strong>。週次 Opus 上限 40h に対し 1 回数十分は極小で、既存の日次 headless も枠内で回っている。リスクは fan-out が極端に重く 1 回で枠を食い切る場合のみ → <code>--max-turns</code>（既定 100・最大 150）と単一テーマで抑える。万一枠に当たれば実行は途中で rate-limit され、部分生成 commit 済みなら公開・未生成なら休載（後述ガードレール）。</p>
+      </div>
+
+      <h3>スコープ外 <span class="badge badge-out-of-scope">out</span></h3>
+      <ul>
+        <li><strong>メール配信</strong>（今回の転換で廃止）</li>
+        <li>読者リクエスト型（都度実行）— 今回は週次自動選定型のみ</li>
+        <li>購読者向け配信の A/B テストや有料化設計</li>
+        <li>Deep Research 結果のファクトチェック自動化（対向検証はプロンプト内で行うが外部 fact-check API 連携はしない）</li>
+        <li>既存 RSS 収集（日次 routine）部分の改変</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         比較 (日次↔週次 + 3 節の提供価値設計)
+         ============================================================ -->
+    <section id="comparison" class="tab-panel">
+      <h2>日次 routine ↔ 週次 DeepDive</h2>
+      <p>同じ headless エージェント基盤を流用しつつ、検索の深度・出力・表現が異なる。週次で<strong>新設 / 変更する経路</strong>は <strong style="color: var(--color-accent-deepdive);">黒で強調</strong>。</p>
+      <table>
+        <thead><tr><th>軸</th><th>日次 routine (既存)</th><th>週次 DeepDive (新)</th></tr></thead>
+        <tbody>
+          <tr><td>頻度</td><td>毎朝 06:00 JST</td><td><strong style="color: var(--color-accent-deepdive);">日曜 23:00 JST</strong></td></tr>
+          <tr><td>モデル</td><td>Sonnet 4.6</td><td><strong style="color: var(--color-accent-deepdive);">Opus (STEP0 で確定)</strong></td></tr>
+          <tr><td>入力</td><td>watchlist.md + 直近 24h 検索</td><td><strong style="color: var(--color-accent-deepdive);">articles.jsonl 直近 7 日 + 多段 fan-out</strong></td></tr>
+          <tr><td>検索深度</td><td>カテゴリ毎 1 段</td><td><strong style="color: var(--color-accent-deepdive);">サブ問い 3-5 本 fan-out + 一次ソース + 対向検証</strong></td></tr>
+          <tr><td>レポート構造</td><td>記事カード列挙</td><td><strong style="color: var(--color-accent-deepdive);">背景(timeline+players) / 深掘り(infographic) / 注目点(decision)</strong></td></tr>
+          <tr><td>図表</td><td>なし（サムネのみ）</td><td><strong style="color: var(--color-accent-deepdive);">データ駆動 SVG インフォグラフィック（必須）</strong></td></tr>
+          <tr><td>Markdown 原本</td><td><code>digest/{Genre}/*.md</code></td><td><strong style="color: var(--color-accent-deepdive);">digest/DeepDive/*.md（Obsidian 原本）</strong></td></tr>
+          <tr><td>公開 Web</td><td><code>docs/{cat}/{date}/</code></td><td><strong style="color: var(--color-accent-deepdive);">docs/deepdive/{date}/</strong></td></tr>
+          <tr><td>メール</td><td>日次テンプレ</td><td><strong style="color: var(--color-error);">廃止</strong></td></tr>
+          <tr><td>Push</td><td>日次通知</td><td><strong style="color: var(--color-accent-deepdive);">新 DeepDive ページ通知</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top: var(--space-2xl);">3 節の提供価値設計</h2>
+      <p>以下は公開 Web ページでの表現イメージ。レポート本文（Obsidian 原本）は各データを <strong>fenced code ブロック（<code>timeline</code> / <code>players</code> / <code>chart</code> / <code>decision</code>）</strong>に JSON で持ち、SSG がこれを下記のように描画する。</p>
+
+      <!-- 背景 -->
+      <div class="dd-section">
+        <div class="dd-eyebrow">## 背景 — TIMELINE &amp; PLAYERS</div>
+        <h4>① なぜ今か をタイムラインで</h4>
+        <p style="font-size: 0.875rem;">収集記事（<code>articles.jsonl</code> の date/title/source/サムネ）を日付順に並べ、深掘りで発掘した一次イベント（規制・決算・発表など 90 日 DB に無いもの）も出典付きで統合する。下は描画イメージ:</p>
+        <svg viewBox="0 0 760 230" role="img" aria-label="背景タイムライン描画イメージ" style="width: 100%; height: auto; max-width: 760px;">
+          <line x1="60" y1="20" x2="60" y2="210" stroke="#1A1A1A" stroke-width="2"/>
+          <!-- node 1 -->
+          <circle cx="60" cy="40" r="6" fill="#1A1A1A"/>
+          <text x="80" y="36" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#5C5A52">2026/05/14</text>
+          <text x="80" y="54" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#181C2A">カゴメ、容器を透明デザインへ変更</text>
+          <rect x="640" y="26" width="96" height="30" fill="#E2DED4"/><text x="688" y="45" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">thumb</text>
+          <!-- node 2 -->
+          <circle cx="60" cy="100" r="6" fill="#1A1A1A"/>
+          <text x="80" y="96" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#5C5A52">2026/05/25</text>
+          <text x="80" y="114" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#181C2A">ナフサ由来化学品、6月末に不足の可能性</text>
+          <rect x="640" y="86" width="96" height="30" fill="#E2DED4"/><text x="688" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">thumb</text>
+          <!-- node 3 (一次イベント) -->
+          <circle cx="60" cy="160" r="6" fill="#C9A155"/>
+          <text x="80" y="156" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#B7773D">2026/05/27 · 一次ソース</text>
+          <text x="80" y="174" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#181C2A">政府説明と現場の悲鳴が矛盾する「3つの原因」</text>
+          <rect x="640" y="146" width="96" height="30" fill="#E2DED4"/><text x="688" y="165" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">thumb</text>
+        </svg>
+        <h4>② 登場人物・企業のポジション</h4>
+        <p style="font-size: 0.875rem;">記事の <code>entities</code>（companies/people）＋調査から各プレイヤーを特定し、「動き → ポジション」を 1 枚ずつ:</p>
+        <div class="player-grid">
+          <div class="player-card">
+            <strong>赤沢経産相</strong><span class="role">政府</span>
+            <div class="move">「供給は現時点で問題なし」と強調、包装変更は予防的と説明</div>
+            <div class="pos">▶ ポジション: 安定論・火消し</div>
+          </div>
+          <div class="player-card">
+            <strong>丸紅元社長</strong><span class="role">業界 OB</span>
+            <div class="move">早ければ 6 月末に不足の可能性と警鐘</div>
+            <div class="pos">▶ ポジション: 警戒論</div>
+          </div>
+          <div class="player-card">
+            <strong>カルビー / カゴメ</strong><span class="role">当事者企業</span>
+            <div class="move">パッケージを白黒・透明へ変更（インク・容器材の予防対応）</div>
+            <div class="pos">▶ ポジション: 先回り対応</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 深掘り -->
+      <div class="dd-section">
+        <div class="dd-eyebrow">## 深掘り — DATA-DRIVEN INFOGRAPHIC (必須)</div>
+        <h4>図表で状況説明 → 論点へつなぐ</h4>
+        <p style="font-size: 0.875rem;">LLM は数値と出典を <code>chart</code> ブロックに構造化出力し、<code>render_chart.py</code> が決定論的に SVG 化する。下は <code>stacked_bar</code> の描画イメージ（添付参考図に対応）:</p>
+        <svg viewBox="0 0 720 300" role="img" aria-label="深掘りチャート描画イメージ (stacked_bar)" style="width: 100%; height: auto; max-width: 720px;">
+          <text x="20" y="24" font-family="Inter, sans-serif" font-size="15" font-weight="900" fill="#181C2A">日本船主の発注動向（万総トン）</text>
+          <!-- legend -->
+          <rect x="20" y="36" width="12" height="12" fill="#2D5BB8"/><text x="36" y="46" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">日本</text>
+          <rect x="90" y="36" width="12" height="12" fill="#B8860B"/><text x="106" y="46" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">韓国</text>
+          <rect x="160" y="36" width="12" height="12" fill="#8E2A19"/><text x="176" y="46" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">中国</text>
+          <rect x="230" y="36" width="12" height="12" fill="#5C5A52"/><text x="246" y="46" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">その他</text>
+          <!-- axis -->
+          <line x1="60" y1="70" x2="60" y2="250" stroke="#E2DED4"/>
+          <line x1="60" y1="250" x2="700" y2="250" stroke="#181C2A"/>
+          <!-- bars (mock) -->
+          <g>
+            <rect x="90" y="170" width="70" height="80" fill="#2D5BB8"/><text x="125" y="215" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">67%</text>
+            <rect x="90" y="150" width="70" height="20" fill="#B8860B"/>
+            <rect x="90" y="132" width="70" height="18" fill="#8E2A19"/><text x="125" y="145" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">16%</text>
+            <text x="125" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">2020</text>
+          </g>
+          <g>
+            <rect x="210" y="110" width="70" height="140" fill="#2D5BB8"/><text x="245" y="190" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">58%</text>
+            <rect x="210" y="86" width="70" height="24" fill="#B8860B"/>
+            <rect x="210" y="64" width="70" height="22" fill="#8E2A19"/><text x="245" y="79" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">17%</text>
+            <text x="245" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">'21</text>
+          </g>
+          <g>
+            <rect x="330" y="150" width="70" height="100" fill="#2D5BB8"/><text x="365" y="205" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">58%</text>
+            <rect x="330" y="128" width="70" height="22" fill="#B8860B"/>
+            <rect x="330" y="100" width="70" height="28" fill="#8E2A19"/><text x="365" y="118" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">26%</text>
+            <text x="365" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">'22</text>
+          </g>
+          <g>
+            <rect x="450" y="160" width="70" height="90" fill="#2D5BB8"/><text x="485" y="210" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">43%</text>
+            <rect x="450" y="135" width="70" height="25" fill="#B8860B"/>
+            <rect x="450" y="100" width="70" height="35" fill="#8E2A19"/><text x="485" y="122" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">39%</text>
+            <text x="485" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">'23</text>
+          </g>
+          <g>
+            <rect x="570" y="120" width="70" height="130" fill="#2D5BB8"/><text x="605" y="190" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F0EBE0">63%</text>
+            <rect x="570" y="100" width="70" height="20" fill="#B8860B"/>
+            <rect x="570" y="76" width="70" height="24" fill="#8E2A19"/><text x="605" y="92" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">32%</text>
+            <text x="605" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#5C5A52">'24</text>
+          </g>
+          <text x="20" y="288" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">※契約年ベース 出所: render_chart.py が chart ブロックの source を脚注に固定描画</text>
+        </svg>
+        <h4>chart ブロック（Obsidian 原本に持つ構造化データ）</h4>
+        <pre><code>```chart
+{
+  "type": "stacked_bar",
+  "title": "日本船主の発注動向",
+  "unit": "万総トン",
+  "categories": ["2020","'21","'22","'23","'24"],
+  "series": [
+    {"name":"日本","color":"accent-ai","values":[560,1040,790,560,860]},
+    {"name":"中国","color":"accent-economy","values":[120,310,360,510,440]}
+  ],
+  "annotations": [{"at":"'21","text":"コロナ禍からの再開で需要急増"}],
+  "source": "国交省海事局"
+}
+```</code></pre>
+      </div>
+
+      <!-- 注目点 -->
+      <div class="dd-section">
+        <div class="dd-eyebrow">## 注目点 — DECISION FRAME (4 要素必須)</div>
+        <h4>深掘りから導いた意思決定フレーム</h4>
+        <table class="decision-frame">
+          <tr><th>何が論点か</th><td>国内造船・海運の中国シフトが進む中、日本は供給網の自立をどこまで維持すべきか</td></tr>
+          <tr><th>どんな選択肢</th><td>① 国内造船への補助拡充　② 韓国との連携強化　③ 中国発注を前提に保守・運用で差別化</td></tr>
+          <tr><th>いつまでに</th><td>2026 年度造船政策の概算要求（夏）までに方向性</td></tr>
+          <tr><th>誰が決定</th><td>国交省海事局・経産省、主要船主（商船三井/日本郵船等）</td></tr>
+        </table>
+        <p style="font-size: 0.875rem;">この 4 要素を <code>decision</code> ブロックの<strong>必須キー</strong>とし、契約テストで欠落を構造的に封じる（後述）。</p>
+      </div>
+
+      <h3>新ページ種別 DeepDive のアクセント</h3>
+      <div class="palette">
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-fx);"></div><strong>FX</strong><span>#B8860B</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-ai);"></div><strong>AI</strong><span>#2D5BB8</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-it);"></div><strong>IT</strong><span>#2E6B52</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-mobility);"></div><strong>Mobility</strong><span>#3A7B8C</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-economy);"></div><strong>Economy</strong><span>#8E2A19</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-game);"></div><strong>Game</strong><span>#5E3D8C</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-summary);"></div><strong>Summary</strong><span>#475569</span></div>
+        <div class="palette-cell new"><div class="palette-swatch" style="background: var(--color-accent-deepdive);"></div><strong>DeepDive</strong><span>#1A1A1A</span></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         データフロー
+         ============================================================ -->
+    <section id="dataflow" class="tab-panel">
+      <h2>週次 DeepDive パイプライン全体</h2>
+      <p>日曜 23:00 のタスクスケジューラから起動した <code>claude --print (Opus)</code> が、テーマ選定 → 多段 fan-out 調査 → 構造化レポート生成 → commit までを 1 セッションで実行。push / SSG / Push 通知は bat が代行する。<strong style="color: var(--color-accent-deepdive);">新設経路は黒で強調</strong>。<strong style="color: var(--color-error);">メール経路は廃止</strong>。</p>
+
+      <svg viewBox="0 0 1000 520" role="img" aria-label="News-Grasp 週次 DeepDive パイプライン" style="width: 100%; height: auto; max-width: 1000px;">
+        <defs>
+          <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto"><path d="M 0 0 L 10 4 L 0 8 Z" fill="#181C2A"/></marker>
+          <marker id="arrow-dd" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto"><path d="M 0 0 L 10 4 L 0 8 Z" fill="#1A1A1A"/></marker>
+        </defs>
+        <line x1="0" y1="80" x2="1000" y2="80" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <line x1="0" y1="250" x2="1000" y2="250" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <line x1="0" y1="400" x2="1000" y2="400" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 1 · TRIGGER &amp; CLI</text>
+        <text x="10" y="100" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 2 · THEME &amp; DEEP RESEARCH (deep-research 手法の再現)</text>
+        <text x="10" y="270" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 3 · STRUCTURED REPORT (Obsidian 原本)</text>
+        <text x="10" y="420" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 4 · PUBLISH (公開 Web フォーカス)</text>
+
+        <!-- Layer 1 -->
+        <rect x="20" y="30" width="190" height="38" fill="#1A1A1A"/><text x="115" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#F0EBE0" font-weight="700">Task Scheduler 日 23:00</text>
+        <path d="M 210 49 L 246 49" stroke="#1A1A1A" stroke-width="2" marker-end="url(#arrow-dd)"/>
+        <rect x="246" y="30" width="230" height="38" fill="#1A1A1A"/><text x="361" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#F0EBE0" font-weight="700">news-grasp-weekly-runner.bat</text>
+        <path d="M 476 49 L 512 49" stroke="#1A1A1A" stroke-width="2" marker-end="url(#arrow-dd)"/>
+        <rect x="512" y="30" width="210" height="38" fill="#C9A155"/><text x="617" y="47" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#181C2A" font-weight="700">claude --print (Opus)</text><text x="617" y="61" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#181C2A">wrapper: -ModelArg / -ExtraArgs</text>
+
+        <!-- Layer 2 -->
+        <rect x="20" y="120" width="180" height="60" fill="#FFFFFF" stroke="#E2DED4"/><text x="110" y="144" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">articles.jsonl</text><text x="110" y="162" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">直近 7 日 / 6 カテゴリ</text>
+        <path d="M 200 150 L 236 150" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="236" y="120" width="200" height="60" fill="#F2EEE3" stroke="#1A1A1A" stroke-width="2"/><text x="336" y="142" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#1A1A1A" font-weight="700">テーマ選定</text><text x="336" y="159" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1A1A1A">速報性×奥行き×波及性</text><text x="336" y="173" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1A1A1A">→ 単一リサーチ質問化</text>
+        <path d="M 436 150 L 472 150" stroke="#1A1A1A" stroke-width="2" marker-end="url(#arrow-dd)"/>
+        <rect x="472" y="118" width="240" height="64" fill="#F2EEE3" stroke="#1A1A1A" stroke-width="2"/><text x="592" y="138" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#1A1A1A" font-weight="700">多段 fan-out 調査</text><text x="592" y="155" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1A1A1A">サブ問い 3-5 本を Task 並列</text><text x="592" y="169" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1A1A1A">WebSearch → WebFetch 一次ソース</text>
+        <path d="M 712 150 L 748 150" stroke="#1A1A1A" stroke-width="2" marker-end="url(#arrow-dd)"/>
+        <rect x="748" y="120" width="220" height="60" fill="#F2EEE3" stroke="#1A1A1A" stroke-width="2"/><text x="858" y="142" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#1A1A1A" font-weight="700">対向検証 + 合成</text><text x="858" y="159" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1A1A1A">複数ソースでクロスチェック</text><text x="858" y="173" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1A1A1A">引用付きで構造化</text>
+
+        <!-- Layer 3 -->
+        <rect x="20" y="285" width="430" height="96" fill="#F2EEE3" stroke="#1A1A1A" stroke-width="2"/>
+        <text x="235" y="308" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#1A1A1A" font-weight="700">digest/DeepDive/{date}-DeepDive.md  (Obsidian 原本)</text>
+        <text x="235" y="328" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">fenced blocks: timeline / players / chart / decision (JSON)</text>
+        <text x="235" y="346" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">## 要約 / 背景 / 深掘り / 注目点 / 参考リンク</text>
+        <text x="235" y="366" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">git commit (push は bat)</text>
+        <path d="M 450 333 L 500 333" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="500" y="285" width="240" height="96" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="620" y="312" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">render_chart.py (新規)</text>
+        <text x="620" y="332" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1A1A1A" font-weight="700">chart ブロック → 決定論 SVG</text>
+        <text x="620" y="350" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">stacked_bar / bar / line / timeline</text>
+        <text x="620" y="368" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">DESIGN.md accent 色を使用</text>
+        <path d="M 740 333 L 790 333" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="790" y="285" width="180" height="96" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="880" y="318" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">generate_pages.py</text>
+        <text x="880" y="338" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1A1A1A" font-weight="700">scan_deepdives()</text>
+        <text x="880" y="356" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">deepdive-template</text>
+
+        <!-- Layer 4 -->
+        <rect x="20" y="440" width="250" height="50" fill="#1A1A1A"/>
+        <text x="145" y="462" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#F0EBE0" font-weight="700">docs/deepdive/{date}/index.html</text>
+        <text x="145" y="479" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#F0EBE0">背景/深掘り/注目点 + インライン SVG</text>
+        <path d="M 270 465 L 320 465" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="320" y="440" width="200" height="50" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="420" y="462" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">git push (bat)</text>
+        <text x="420" y="479" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#5C5A52">digest → docs · hook 回避</text>
+        <path d="M 520 465 L 570 465" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="570" y="440" width="190" height="50" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="665" y="462" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">send_push.py (差分0)</text>
+        <text x="665" y="479" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#5C5A52">--title/--body/--url</text>
+        <path d="M 760 465 L 810 465" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="810" y="440" width="160" height="50" fill="#181C2A"/>
+        <text x="890" y="462" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#F0EBE0" font-weight="700">GitHub Pages</text>
+        <text x="890" y="479" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#C9A155">+ Web Push 通知</text>
+      </svg>
+
+      <h3>週次で新設 / 触る経路 (まとめ)</h3>
+      <ul>
+        <li><strong>Layer 1 (CLI)</strong>: <code>news-grasp-weekly-runner.bat</code> 新設 + <code>run_claude_with_timeout.ps1</code> をモデル/ツール/予算で引数化（後方互換）+ Task Scheduler 日曜 23:00 タスク登録</li>
+        <li><strong>Layer 2 (Research)</strong>: <code>prompts/weekly-research-system.md</code> 新設。テーマ選定 → 多段 fan-out → 一次ソース → 対向検証 → 引用付き合成を自然言語で記述</li>
+        <li><strong>Layer 3 (Report)</strong>: <code>render_chart.py</code> 新設（chart ブロック → SVG）。<code>generate_pages.py</code> に <code>scan_deepdives</code>/<code>build_deepdive</code> を追加し <code>scan_digests</code> から DeepDive 除外 1 行。<code>deepdive-template.html</code> 新設、<code>config.py</code> に DeepDive 定数</li>
+        <li><strong>Layer 4 (Publish)</strong>: 公開 Web が本体。<code>send_push.py</code> はコード差分ゼロ（引数で吸収）。<strong style="color: var(--color-error);">メール（send_email / weekly-email-template）は廃止</strong></li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         実装ステップ
+         ============================================================ -->
+    <section id="impl" class="tab-panel">
+      <h2>実装順序 (依存順)</h2>
+      <div class="timeline">
+        <div class="timeline-step"><strong>STEP0 · スパイク</strong><span>手動 1 回でコスト/時間/品質を実測しモデル確定</span></div>
+        <div class="timeline-step"><strong>STEP1 · プロンプト</strong><span>weekly-research-system.md（3 節スキーマ）</span></div>
+        <div class="timeline-step"><strong>STEP2 · チャート</strong><span>render_chart.py（chart→SVG）+ 契約テスト</span></div>
+        <div class="timeline-step"><strong>STEP3 · 公開 Web</strong><span>generate_pages に DeepDive 分離 + template</span></div>
+        <div class="timeline-step"><strong>STEP4 · ラッパー/bat</strong><span>引数化（後方互換）+ Task Scheduler</span></div>
+        <div class="timeline-step"><strong>STEP5 · Push</strong><span>send_push 文面（差分0）</span></div>
+        <div class="timeline-step"><strong>本番 · 1 回実行</strong><span>end-to-end → _status.md 記録</span></div>
+      </div>
+
+      <h3>STEP0 · 手動スパイク (コード変更ゼロ・最優先)</h3>
+      <p>本番モデルと予算/タイムアウトを<strong>数値で確定</strong>する 1 回限りの実測。bat を介さず直接 headless 起動し、プロンプト草案を stdin 投入する。<strong>3 節（背景/深掘り/注目点）と chart ブロックが正しく出るか</strong>もここで確認する。記録先 <code>data/_status.md</code>。</p>
+      <table>
+        <thead><tr><th>実測指標</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>total_cost_usd</code></td><td><code>--max-budget-usd</code> の根拠（実測 × 1.5）</td></tr>
+          <tr><td>実所要秒</td><td>ラッパー <code>TimeoutSec</code> の根拠（暫定 7200）</td></tr>
+          <tr><td><code>num_turns</code></td><td><code>--max-turns</code> の根拠</td></tr>
+          <tr><td>出力品質（人手）</td><td>一次ソース到達 / 引用 / chart ブロック妥当性 / 注目点 4 要素</td></tr>
+        </tbody>
+      </table>
+
+      <h3>STEP1 · 週次プロンプト <code>prompts/weekly-research-system.md</code> (新規)</h3>
+      <table>
+        <thead><tr><th>フェーズ</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>1 · 日付</td><td>JST 日付・issue 番号 <code>YYYYMMDD</code> 確定</td></tr>
+          <tr><td>2 · テーマ選定</td><td><code>articles.jsonl</code> 直近 7 日 → 6 カテゴリ横断で頻度集計 → 速報性×奥行き×波及性で 1 テーマ → <strong>単一リサーチ質問に書き換える</strong>（明確化質問で止まらない旨を明示）</td></tr>
+          <tr><td>3 · 深掘り</td><td>WebSearch を多段 fan-out（Task 並列）→ WebFetch 一次ソース → 対向検証 → 引用付き合成</td></tr>
+          <tr><td>4 · 構造化生成</td><td><code>digest/DeepDive/{date}-DeepDive.md</code> に出力。<strong>背景に <code>timeline</code>/<code>players</code> ブロック、深掘りに <code>chart</code> ブロック（最低 1・出典必須）、注目点に <code>decision</code> ブロック（4 要素必須）</strong>を JSON で埋める</td></tr>
+          <tr><td>5 · commit</td><td>commit のみ（push は bat 代行）</td></tr>
+        </tbody>
+      </table>
+      <p>出力フォーマット（強調 3 階層 <code>[[]]</code>/<code>**</code>/<code>__</code> 踏襲）: <code>## 要約</code> / <code>## 背景</code>（timeline + players）/ <code>## 深掘り</code>（chart + 解説 → 論点）/ <code>## 注目点</code>（decision）/ <code>## 参考リンク</code>。0 件時は <code>_status.md</code> に休載行を追記し終了。</p>
+
+      <h3>STEP2 · チャートレンダラ <code>tools/render_chart.py</code> (新規・方式 A の核)</h3>
+      <table>
+        <thead><tr><th>要素</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>入力</td><td><code>chart</code> ブロックの JSON（<code>type</code>/<code>title</code>/<code>unit</code>/<code>categories</code>/<code>series[]</code>/<code>annotations</code>/<code>source</code>）</td></tr>
+          <tr><td>出力</td><td>決定論的なインライン <strong>SVG</strong> 文字列（同入力 → 同出力）。色は <code>config.py</code> の accent を参照</td></tr>
+          <tr><td>対応 type</td><td>初版: <code>stacked_bar</code> / <code>bar</code> / <code>line</code> / <code>timeline</code>。未対応 type は明示エラー（無音フォールバックしない）</td></tr>
+          <tr><td>source 脚注</td><td><code>source</code> を必ず図の脚注に固定描画（一次ソース明示の担保）</td></tr>
+        </tbody>
+      </table>
+
+      <h3>STEP3 · 公開 Web 統合 <code>tools/generate_pages.py</code> (最小差分)</h3>
+      <table>
+        <thead><tr><th>#</th><th>変更</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>config.py</code></td><td><code>DEEPDIVE_ACCENT</code>/<code>DEEPDIVE_GLYPH</code>/<code>DEEPDIVE_LABEL</code> を新規定数（CATEGORIES には入れない＝除外ループ汚染回避）</td></tr>
+          <tr><td>2</td><td><code>generate_pages.py</code></td><td><code>scan_digests()</code> に 1 行 <code>if "DeepDive" in p.parts: continue</code>（既存ループが DeepDive を無視＝影響ゼロ）</td></tr>
+          <tr><td>3</td><td><code>generate_pages.py</code></td><td><code>scan_deepdives()</code> / <code>build_deepdive_context()</code>（fenced block 抽出 → timeline/players/chart/decision を構造化、chart は <code>render_chart</code> で SVG 化、メタは <code>_absolutize</code>/<code>truncate</code> 再利用）/ <code>build_deepdive()</code> → <code>docs/deepdive/{date}/index.html</code> / <code>build_all_deepdives()</code>。<code>main()</code> に 1 行</td></tr>
+          <tr><td>4</td><td><code>deepdive-template.html</code></td><td>新規。<code>page-template.html</code> の head/brand/lens-nav を流用、本体に 背景(timeline SVG + player cards) / 深掘り(chart SVG + 解説) / 注目点(decision table) / 参考リンク を描画</td></tr>
+        </tbody>
+      </table>
+      <div class="severity-info severity">
+        <strong>なぜ別経路か (構造で封じる)</strong>
+        <p>DeepDive を既存日次ループに混ぜると <code>categoryId</code> 欠落で <code>summary</code> 既定化されレンダリングで消える／archive にノイズが出る。別 scan・別ビルド関数に<strong>分離する設計そのもの</strong>がこの class of bug を構造的に不能化（個別 smoke を増やさない＝feedback_check_design_principles）。既存 <code>test_generate_pages.py</code> の契約には触れない。</p>
+      </div>
+
+      <h3>STEP4 · 週次バッチ + ラッパー引数化 + Task Scheduler</h3>
+      <p>ラッパー L92 を<strong>後方互換で引数化</strong>（日次は引数なしで既定 sonnet/<code>--tools default</code> のまま不変）:</p>
+      <pre><code># run_claude_with_timeout.ps1 — 後方互換の引数化
+param(
+  # ...既存パラメータ...
+  [string]$ModelArg = 'sonnet',
+  [string]$AllowedTools = '',
+  [string]$ExtraArgs = ''
+)
+$toolsPart = if ($AllowedTools) { "--allowedTools `"$AllowedTools`"" } else { '--tools default' }
+$psi.Arguments = "--print --dangerously-skip-permissions $toolsPart --model $ModelArg $ExtraArgs".Trim()</code></pre>
+      <p>週次 bat は <code>-ModelArg opus -AllowedTools "WebSearch,WebFetch,Read,Bash,Task,Write,Edit" -ExtraArgs "--output-format json --max-turns 100 --max-budget-usd &lt;STEP0×1.5&gt;"</code>、<code>CLAUDE_TIMEOUT_SEC</code> は STEP0 実測値。以降 push → generate_pages → docs push → send_push。Task Scheduler <code>News-Grasp-Weekly</code> を日曜 23:00 で新規登録（日次と独立）。</p>
+
+      <h3>STEP5 · Push (コード差分ゼロ) + ガードレール + テスト</h3>
+      <ul>
+        <li>Push: bat から <code>send_push.py --title/--body --url "%BASE%/deepdive/{date}/"</code>。購読 0 人/鍵無しでも exit0 で非致命</li>
+        <li>タイムアウト超過 = exit124 を bat が非 0 終了で記録（既存 <code>err_claude_timeout</code> と同型）</li>
+        <li><code>--max-budget-usd</code> 超過時の<strong>部分生成 → commit 済みなら公開 / 未生成なら休載</strong>をプロンプトに明記。週次は<strong>完全独立タスク</strong>で日次に影響させない</li>
+        <li><strong>契約テスト 1 件</strong> <code>tests/test_deepdive_contract.py</code>: 「<code>digest/DeepDive/*.md</code> が存在すれば frontmatter に <code>kind/date/theme</code>、各 <code>chart</code> ブロックは <code>{type, series, source}</code> を持ち <code>render_chart</code> が例外なく SVG を返し、<code>decision</code> ブロックは <code>{issue, options, deadline, decider}</code> 全キーを持ち、<code>og_image/canonical</code> が <code>BASE_URL</code> 始まりの絶対 URL」を不変条件として pin</li>
+      </ul>
+
+      <h3>Critical Files</h3>
+      <table>
+        <thead><tr><th>種別</th><th>パス</th></tr></thead>
+        <tbody>
+          <tr><td>新規・週次プロンプト</td><td><code>prompts/weekly-research-system.md</code></td></tr>
+          <tr><td>新規・チャートレンダラ</td><td><code>tools/render_chart.py</code></td></tr>
+          <tr><td>改修・DeepDive 分離</td><td><code>tools/generate_pages.py</code></td></tr>
+          <tr><td>改修・DeepDive 定数</td><td><code>tools/config.py</code></td></tr>
+          <tr><td>改修・引数化 (最重要)</td><td><code>C:\Users\hidek\bin\run_claude_with_timeout.ps1</code></td></tr>
+          <tr><td>新規・週次 runner</td><td><code>C:\Users\hidek\bin\news-grasp-weekly-runner.bat</code></td></tr>
+          <tr><td>新規・SSG テンプレ</td><td><code>prompts/deepdive-template.html</code></td></tr>
+          <tr><td>新規・契約テスト</td><td><code>tests/test_deepdive_contract.py</code></td></tr>
+        </tbody>
+      </table>
+      <p><code>tools/send_push.py</code> はコード差分ゼロ（引数で吸収）。<strong style="color: var(--color-error);">send_email.py / weekly-email-template.html は今回不使用（メール廃止）</strong>。</p>
+
+      <div class="severity-success severity">
+        <strong>検証 (E2E)</strong>
+        <p>① STEP0 スパイクで 1 本生成・<code>_status.md</code> 記録 → ② <code>python tools/generate_pages.py --full</code> で <code>docs/deepdive/{date}/index.html</code> をブラウザ目視（タイムライン・チャート SVG・注目点が表示）→ ③ <code>pytest tests/</code> 全 PASS（既存契約不変 + 新契約 + <code>test_runner_wrapper_smoke.py</code> 後方互換）→ ④ <code>send_push.py --dry-run</code> で URL/文面 → ⑤ 週次 bat 手動実行で end-to-end → ⑥ 0 件休載のケースで exit0 を確認。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         パラメータ playground
+         ============================================================ -->
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ playground</h2>
+      <p>STEP0 スパイクと本番 bat で使う<strong>実行パラメータ</strong>を試行し、「<strong>STEP0 スパイクコマンドをコピー</strong>」「<strong>週次 bat 引数をコピー</strong>」で clipboard に入る。max-budget は<strong>暴走防止の上限</strong>（6/15 までは subscription 利用、以降は Agent SDK クレジット消費の目安。実課金そのものではない）。max-turns は既定 100・最大 150。図表は公開 Web 用の<strong>インライン SVG</strong>として出力される（メール用 PNG は不要）。</p>
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-model">実行モデル</label>
+          <select id="param-model"><option value="opus" selected>opus (STEP0 はこれで実測)</option><option value="sonnet">sonnet (低コスト)</option></select>
+          <output for="param-model">--model opus</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-budget">max-budget-usd (暫定)</label>
+          <input type="range" id="param-budget" min="2" max="40" step="1" value="15">
+          <output for="param-budget">$15.00</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-turns">max-turns</label>
+          <input type="range" id="param-turns" min="20" max="150" step="5" value="100">
+          <output for="param-turns">100</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-timeout">TimeoutSec (ラッパー)</label>
+          <input type="range" id="param-timeout" min="1800" max="14400" step="600" value="7200">
+          <output for="param-timeout">7200s (120分)</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-themes">テーマ本数 / 週</label>
+          <input type="range" id="param-themes" min="1" max="3" step="1" value="1">
+          <output for="param-themes">1 本</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-accent">DeepDive アクセント</label>
+          <input type="text" id="param-accent" value="#1A1A1A" maxlength="7" pattern="#[0-9A-Fa-f]{6}">
+          <output for="param-accent">#1A1A1A</output>
+        </div>
+
+        <h4>プレビュー</h4>
+        <div class="playground-preview">
+          <div class="preview-swatch" id="preview-swatch">❖</div>
+          <div class="preview-text"><strong id="preview-title">DeepDive · Opus</strong><span id="preview-meta">BUDGET $15.00 · 100 TURNS · 7200s · 1 THEME</span></div>
+        </div>
+
+        <h4>STEP0 スパイクコマンド (PowerShell)</h4>
+        <pre><code id="snippet-spike"></code></pre>
+        <h4>週次 bat ラッパー引数</h4>
+        <pre><code id="snippet-bat"></code></pre>
+
+        <div style="margin-top: var(--space-xl); display: flex; gap: var(--space-md); flex-wrap: wrap;">
+          <button class="btn btn-navy" id="copy-spike">STEP0 スパイクコマンドをコピー</button>
+          <button class="btn btn-navy" id="copy-bat">週次 bat 引数をコピー</button>
+          <button class="btn btn-gold" id="copy-prompt">Claude Code 用プロンプトをコピー</button>
+        </div>
+      </div>
+
+      <div class="severity-warn severity" style="margin-top: var(--space-lg);">
+        <strong>注意</strong>
+        <p>このタブの値は<strong>実装前の見積もり</strong>。max-budget / TimeoutSec / max-turns の確定値は STEP0 スパイクの実測に置き換える。テーマ本数は確定方針が「週 1 本」だが、手応えを見て増やす想定でスライダーを残している。</p>
+      </div>
+    </section>
+
+    <footer>
+      <p>News-Grasp · 週次 DeepDive レポート仕様書 · 2026-05-30 · DESIGN.md 同期 · plan ファイル: <code>C:\Users\hidek\.claude\plans\newsgrasp-c-users-hidek-obsidian-ideasta-parallel-globe.md</code></p>
+    </footer>
+  </main>
+
+  <script>
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      model: $('param-model'), budget: $('param-budget'), turns: $('param-turns'),
+      timeout: $('param-timeout'), themes: $('param-themes'), accent: $('param-accent'),
+      swatch: $('preview-swatch'), previewTitle: $('preview-title'), previewMeta: $('preview-meta'),
+      snippetSpike: $('snippet-spike'), snippetBat: $('snippet-bat'),
+      copySpike: $('copy-spike'), copyBat: $('copy-bat'), copyPrompt: $('copy-prompt'),
+      modelOut: document.querySelector('output[for="param-model"]'),
+      budgetOut: document.querySelector('output[for="param-budget"]'),
+      turnsOut: document.querySelector('output[for="param-turns"]'),
+      timeoutOut: document.querySelector('output[for="param-timeout"]'),
+      themesOut: document.querySelector('output[for="param-themes"]'),
+      accentOut: document.querySelector('output[for="param-accent"]'),
+    };
+    const TOOLS = 'WebSearch,WebFetch,Read,Bash,Task,Write,Edit';
+    const fmtBudget = (v) => '$' + Number(v).toFixed(2);
+
+    function buildSpike(model, budget, turns) {
+      return [
+        '# STEP0 スパイク: プロンプト草案を stdin 投入 (bat を介さず直接)',
+        'Get-Content -Raw -Encoding UTF8 prompts\\weekly-research-system.md |',
+        '  claude --print --output-format json --model ' + model + ' `',
+        '    --max-turns ' + turns + ' --max-budget-usd ' + Number(budget).toFixed(2) + ' `',
+        '    --dangerously-skip-permissions `',
+        '    --allowedTools "' + TOOLS + '" |',
+        '  Tee-Object data\\_spike_result.json',
+        '# → total_cost_usd / num_turns / 実所要秒 を data\\_status.md に記録'
+      ].join('\n');
+    }
+    function buildBat(model, budget, turns, timeout) {
+      return [
+        'REM news-grasp-weekly-runner.bat — ラッパー呼び出し部',
+        'set CLAUDE_TIMEOUT_SEC=' + timeout,
+        'powershell -NoProfile -ExecutionPolicy Bypass -File "%CLAUDE_TIMEOUT_WRAPPER%" ^',
+        '  -ClaudeExe "%CLAUDE%" -LogFile "%LOG%" -TimeoutSec %CLAUDE_TIMEOUT_SEC% ^',
+        '  -PromptFile "%REPO_DIR%\\prompts\\weekly-research-system.md" ^',
+        '  -ModelArg ' + model + ' -AllowedTools "' + TOOLS + '" ^',
+        '  -ExtraArgs "--output-format json --max-turns ' + turns + ' --max-budget-usd ' + Number(budget).toFixed(2) + '"'
+      ].join('\n');
+    }
+    function refresh() {
+      const model = els.model.value, budget = els.budget.value, turns = els.turns.value,
+            timeout = els.timeout.value, themes = els.themes.value,
+            accent = (els.accent.value || '#1A1A1A').toUpperCase();
+      els.modelOut.textContent = '--model ' + model;
+      els.budgetOut.textContent = fmtBudget(budget);
+      els.turnsOut.textContent = turns;
+      els.timeoutOut.textContent = timeout + 's (' + Math.round(timeout / 60) + '分)';
+      els.themesOut.textContent = themes + ' 本';
+      els.accentOut.textContent = accent;
+      els.swatch.style.background = accent;
+      els.previewTitle.textContent = 'DeepDive · ' + (model === 'opus' ? 'Opus' : 'Sonnet');
+      els.previewMeta.textContent = 'BUDGET ' + fmtBudget(budget) + ' · ' + turns + ' TURNS · ' + timeout + 's · ' + themes + ' THEME';
+      els.snippetSpike.textContent = buildSpike(model, budget, turns);
+      els.snippetBat.textContent = buildBat(model, budget, turns, timeout);
+    }
+    ['model','budget','turns','timeout','themes','accent'].forEach(k => {
+      els[k].addEventListener('input', refresh); els[k].addEventListener('change', refresh);
+    });
+    function copy(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent; btn.textContent = 'コピーしました';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }).catch(() => alert('クリップボードに書き込めませんでした:\n\n' + text));
+    }
+    els.copySpike.addEventListener('click', () => copy(els.snippetSpike.textContent, els.copySpike));
+    els.copyBat.addEventListener('click', () => copy(els.snippetBat.textContent, els.copyBat));
+    els.copyPrompt.addEventListener('click', () => {
+      const model = els.model.value, budget = Number(els.budget.value).toFixed(2),
+            turns = els.turns.value, timeout = els.timeout.value, themes = els.themes.value;
+      const prompt = [
+        'News-Grasp に週次 DeepDive レポート機能を以下のパラメータで実装してください。',
+        '', '- 実行モデル: ' + model, '- max-budget-usd (暫定): ' + budget,
+        '- max-turns: ' + turns, '- TimeoutSec: ' + timeout, '- テーマ本数/週: ' + themes,
+        '- DeepDive アクセント: ' + (els.accent.value || '#1A1A1A').toUpperCase(),
+        '- 配信: 公開 Web(主) + Obsidian 原本 + Push（メール無し）',
+        '', 'plan ファイル C:\\Users\\hidek\\.claude\\plans\\newsgrasp-c-users-hidek-obsidian-ideasta-parallel-globe.md の STEP0 から順に進めてください。',
+        'まず STEP0 スパイクを 1 回実行し total_cost_usd / num_turns / 実所要秒 を実測してから本番値を確定すること。'
+      ].join('\n');
+      copy(prompt, els.copyPrompt);
+    });
+    refresh();
+  </script>
+</body>
+</html>

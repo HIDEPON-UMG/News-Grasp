@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260531 — AI</title>
+<meta name="description" content="Claude Opus 4.8が1,000並列サブエージェントとDreaming機能で自律AIの新基準を提示。Google I/O 2026でGemini 3.5が全製品統合、NVIDIAが無償オープンモデルを公開し「AIコモディティ化」が加速する歴史的な週。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-31/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260531 — AI">
+<meta property="og:description" content="Claude Opus 4.8が1,000並列サブエージェントとDreaming機能で自律AIの新基準を提示。Google I/O 2026でGemini 3.5が全製品統合、NVIDIAが無償オープンモデルを公開し「AIコモディティ化」が加速する歴史的な週。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-31/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260531 — AI">
+<meta name="twitter:description" content="Claude Opus 4.8が1,000並列サブエージェントとDreaming機能で自律AIの新基準を提示。Google I/O 2026でGemini 3.5が全製品統合、NVIDIAが無償オープンモデルを公開し「AIコモディティ化」が加速する歴史的な週。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-05-31 · #20260531</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Claude Opus 4.8が1,000並列サブエージェントとDreaming機能で自律AIの新基準を提示。Google I/O 2026でGemini 3.5が全製品統合、NVIDIAが無償オープンモデルを公開し「AIコモディティ化」が加速する歴史的な週。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">05·31</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260531</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-05-31 07:00 · Anthropic</span>
+    <span class="top-story__score">96</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.anthropic.com/news/claude-opus-4-8" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-ai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.anthropic.com/news/claude-opus-4-8" rel="noopener nofollow" target="_blank" style="color: inherit;">Anthropic、Claude Opus 4.8リリース — DynamicWorkflowsとDreamingで長期エージェント作業が進化</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>が<strong>Claude Opus 4.8</strong>を5月28日にリリース。前作から<strong>わずか41日</strong>という過去最速の更新サイクルで、同価格（$5/$25 / 1Mトークン）のまま機能を大幅強化。</li><li>新機能「<strong>Dynamic Workflows</strong>」は<strong>最大1,000サブエージェント並列実行</strong>を可能にし、数十万行規模のコードベース移行を一括自動化。「<strong>Dreaming</strong>」はセッション間で記憶を整理・学習しエージェントが使うほど賢くなる仕組み。</li><li><span class="emph-und">エージェント・オーケストレーションの制高点</span>をAnthropicが握り、OpenAI・Geminiとの差別化軸が「長期自律作業の信頼性」に集約されてきた。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-05-31</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-05-31 06:00</span>
+        <span>· BuildFastWithAI</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.buildfastwithai.com/blogs/ai-news-today-may-18-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://oukdqujzonxvqhiefdsv.supabase.co/storage/v1/object/public/blogs/aa8a90dc-ec85-4b09-9066-a337ad90401f.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.buildfastwithai.com/blogs/ai-news-today-may-18-2026" rel="noopener nofollow" target="_blank">Google I/O 2026: Gemini 3.5 Flash + Omni + Spark — AI Agentsエラが全製品に浸透</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Google</strong>が<strong>I/O 2026</strong>（5月19日）で<strong class="emph-bold">Gemini</strong> <strong>3.5 Flash・Omni・Spark</strong>の3モデルを一斉発表。<strong>Flash</strong>はコスト効率・<strong>Omni</strong>はマルチモーダル・<strong>Spark</strong>は軽量エッジ向けの3分化戦略。</li><li><strong>NotebookLM・Workspace・Android</strong>全製品にエージェント機能を統合。<strong>Deep Research機能</strong>は複数ステップの調査を自律実行し、<strong>Project Astra</strong>はリアルタイム視覚推論を実演。</li><li><span class="emph-und">Gemini APIが1か月で5.5Mアプリに採用</span>されたという数字が、OpenAI GPT-4並みのエコシステム規模に達したことを示し競争構図が激化している。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-05-31 06:30</span>
+        <span>· Technology.org</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.technology.org/2026/05/29/anthropic-claude-opus-4-8-dynamic-workflows/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-ai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.technology.org/2026/05/29/anthropic-claude-opus-4-8-dynamic-workflows/" rel="noopener nofollow" target="_blank">Anthropic Releases Claude Opus 4.8 With Dynamic Workflows — 1,000 subagents in parallel, 41 days after Opus 4.7</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Claude Opus 4.8</strong>の<strong>Dynamic Workflows</strong>は最大<strong>1,000サブエージェントを並列実行</strong>し、コードベース移行・法律文書作成・研究レビューを自律的に完遂するマルチエージェントオーケストレーション。</li><li>法務SaaS<strong class="emph-bold">Harvey</strong>でのテストでは<strong>Dreaming機能</strong>により完了率が<strong>約6倍</strong>に向上。ファイルタイプ特有のバグパターンをエージェントがセッション間で記憶・回避する仕組み。</li><li><span class="emph-und">1,000並列という数字はClaude Codeのワークフロー規模</span>を一挙に大企業レベルへ引き上げ、ソフトウェア開発の「チームとしてのAI」という概念が現実化した。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-05-31 05:00</span>
+        <span>· CNBC</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cnbc.com/2026/05/20/cheap-ai-could-derail-openai-and-anthropics-ipos.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-ai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cnbc.com/2026/05/20/cheap-ai-could-derail-openai-and-anthropics-ipos.html" rel="noopener nofollow" target="_blank">NVIDIAが無償オープンAIシステムをエンタープライズ向けに公開 — OpenAI・Anthropicモデルに挑む</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NVIDIA</strong>が企業が自社サーバーで<strong>無償ダウンロード・運用できるAIシステム</strong>を公開。中国製オープンモデルとOpenAI・Anthropicの「鎖された」高価格モデルへの第三の道を提示。</li><li><strong class="emph-bold">Reflection AI</strong>も数十億ドル評価で調達し、<strong>米国製オープンソースモデル</strong>を企業向けに整備。「国産モデル・自社インフラ・フロンティア級性能」の組み合わせ需要が急拡大。</li><li><span class="emph-und">「高品質・安価・オンプレ」の三角形が成立する段階</span>に入り、OpenAI・AnthropicのIPO評価額を正当化する「閉じたモデルのプレミアム」に疑問符が付き始めた。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-05-31 08:00</span>
+        <span>· VentureBeat</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://venturebeat.com/technology/anthropics-claude-opus-4-8-is-here-with-3x-cheaper-fast-mode-and-near-mythos-level-alignment" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://images.ctfassets.net/jdtwqhzvc2n1/27tk5kZOLqHhemHPKHhKAv/8c69c10482122f05a0fa9d5a6fa475ef/ChatGPT_Image_May_28__2026__01_55_48_PM.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://venturebeat.com/technology/anthropics-claude-opus-4-8-is-here-with-3x-cheaper-fast-mode-and-near-mythos-level-alignment" rel="noopener nofollow" target="_blank">Claude Opus 4.8 is here with 3X cheaper Fast Mode and near-Mythos level alignment</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Claude Opus 4.8</strong>の<strong>Fast Mode</strong>（旧Extended Thinking）が<strong>コスト3分の1</strong>を実現。<strong class="emph-bold">Claude Mythos Preview</strong>（クローズドモデル）に並ぶ<strong>安全性・アライメント</strong>を達成したとVentureBeatが報道。</li><li><strong>Code with Claude 2026</strong>セッションで<strong class="emph-bold">Anthropic</strong>のCTO Roshに・d'Aloisioが紹介した<strong>Managed Agentsの新機能群</strong>がClaude Codeを「<strong>1,000人規模のエンジニアチーム</strong>」相当に変貌させる。</li><li><span class="emph-und">プロアクティブなコード品質向上提案</span>を自律的に行う機能が登場し、「言われたことだけやるAI」から「気づいたら先手を打つAI」への質的転換が明示された。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      <p>Claude Opus 4.8が1,000並列サブエージェントとDreaming機能で自律AIの新基準を提示。Google I/O 2026でGemini 3.5が全製品統合、NVIDIAが無償オープンモデルを公開し「AIコモディティ化」が加速する歴史的な週。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-31/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-05-31
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

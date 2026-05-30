@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-05-31</title>
+<meta name="description" content="2026-05-31 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-05-31/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-05-31">
+<meta property="og:description" content="2026-05-31 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-05-31/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-05-31">
+<meta name="twitter:description" content="2026-05-31 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-31/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-05-31/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260531</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260531</span></h2>
+      
+      <div class="summary-hero__lead">本日の Editorial Digest 準備中。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">7</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">25</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">本日の総論</h3>
+        <p class="summary-sec__body">本日の総論データ準備中。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">ドル円159円台で推移、財務省の介入警戒続く — 週末も160円接近で緊張感</h3>
+        <p class="summary-sec__body">ドル円は159円台を維持。日米金利差300bpsとイラン停戦合意報道が綱引きし方向感を欠く。日銀6月利上げへのカウントダウンと財務省の介入警戒が共存する複雑な相場環境が続く。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">ドル円</strong>は週末NY市場でも<strong>159円台前半</strong>を維持。財務省・三村財務官の「断固たる措置」発言が<strong>160円ライン</strong>の防衛線として機能している。</li>
+          
+          <li><strong>米・イラン60日間停戦延長合意</strong>報道を受けドル安が優勢となる局面も見られたが、上値は介入警戒で抑制され方向感に乏しい展開が続く。</li>
+          
+          <li><span class="emph-und">均衡なき均衡</span>という状態でドル円は週明けへ突入。東京CPI速報値と財務省介入実績公表が6月の相場方向を決定づける。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-05-31/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">Anthropic、Claude Opus 4.8リリース — DynamicWorkflowsとDreamingで長期エージェント作業が進化</h3>
+        <p class="summary-sec__body">Claude Opus 4.8が1,000並列サブエージェントとDreaming機能で自律AIの新基準を提示。Google I/O 2026でGemini 3.5が全製品統合、NVIDIAが無償オープンモデルを公開し「AIコモディティ化」が加速する歴史的な週。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Anthropic</strong>が<strong>Claude Opus 4.8</strong>を5月28日にリリース。前作から<strong>わずか41日</strong>という過去最速の更新サイクルで、同価格（$5/$25 / 1Mトークン）のまま機能を大幅強化。</li>
+          
+          <li>新機能「<strong>Dynamic Workflows</strong>」は<strong>最大1,000サブエージェント並列実行</strong>を可能にし、数十万行規模のコードベース移行を一括自動化。「<strong>Dreaming</strong>」はセッション間で記憶を整理・学習しエージェントが使うほど賢くなる仕組み。</li>
+          
+          <li><span class="emph-und">エージェント・オーケストレーションの制高点</span>をAnthropicが握り、OpenAI・Geminiとの差別化軸が「長期自律作業の信頼性」に集約されてきた。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-05-31/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">Accenture FY25 GenAI bookings $5.9B — AI収益$2.7Bへ3倍増、「再発明完了」でエンタープライズAI加速</h3>
+        <p class="summary-sec__body">Accenture FY25 GenAI受注$5.9B達成でエンタープライズAI移行が「実験→本番」フェーズへ。一方でGenAIプロジェクト80%が業績改善なしという現実も浮上。Big 5コンサルのAI提携戦略と日本IT大手の転換が同時並走する。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Accenture</strong>がFY25（8月期）に<strong>GenAI受注$5.9B</strong>（前年比倍増）・<strong>AI収益$2.7B</strong>（前年比約3倍）を達成。<strong>AI人材を4万→7.7万人</strong>に2年で倍増させた。</li>
+          
+          <li>CEO <strong class="emph-bold">Julie Sweet</strong>が「<strong>エンタープライズ全体でAIを採用しスケールするターニングポイント</strong>」を宣言し、FY2026の<strong>GenAI受注$9.3B超</strong>を予想する強気見通しを提示。</li>
+          
+          <li><span class="emph-und">「AI戦略なき企業」がコンサルの新客層</span>として浮上しており、GenAIの実装支援という需要が従来型SIやERP導入より単価・成長率ともに高い事業へとAccentureを転換させつつある。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/2026-05-31/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§05</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済本日のテーマ</h3>
+        <p class="summary-sec__body">本日は配信日ではありません。</p>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §05 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§06</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">Nintendo FY2026決算: Switch 2累計1,986万台・ソフト4,871万本 — Mario Kart World 1,470万本で首位</h3>
+        <p class="summary-sec__body">Nintendo FY2026決算でSwitch 2が1,986万台突破。スプラトゥーン レイダースの7月23日発売が決定し夏の布陣が固まる。HoYoverseがSwitch 2対応を示唆するコード発見で億単位ユーザーの流入期待が高まる。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">任天堂</strong>が<strong>FY2026通期決算</strong>を発表。<strong class="emph-bold">Switch 2</strong>累計ハード<strong>1,986万台</strong>・年間ソフト<strong>4,871万本</strong>で当初ガイダンスを上回る好スタートを確認。</li>
+          
+          <li><strong>Mario Kart World 1,470万本・Donkey Kong Bananza 452万本・Pokemon Pokopia 400万本超</strong>がトップ3を形成。<strong>値上げ後も完売基調</strong>が継続し高価格ハードの需要弾力性の低さを示した。</li>
+          
+          <li><span class="emph-und">Switch 2の成功はSwitch初代の再現を超えている</span>という評価が各社アナリストから出ており、任天堂が次の世代でも「エンタメ産業のプリンター（キャッシュカウ）」としての地位を維持するか問われる。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/2026-05-31/" style="color: #5E3D8C;">→ §06 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§07</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日への示唆</h3>
+        <p class="summary-sec__body">明日への示唆データ準備中。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">ARTIFICIAL INTELLIGENCE</div>
+          <div class="summary-take__text">Anthropic、Claude Opus 4.8リリース — DynamicWorkflowsとDreamingで長期エージェント作業が進化</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #3A7B8C;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #3A7B8C;">MOBILITY</div>
+          <div class="summary-take__text">WaymoがOjai第6世代ロボタクシーを一部ライダーに公開開放 — Zeekr製・センサー42%減・$20,000以下</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #5E3D8C;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #5E3D8C;">GAMING</div>
+          <div class="summary-take__text">Nintendo FY2026決算: Switch 2累計1,986万台・ソフト4,871万本 — Mario Kart World 1,470万本で首位</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-05-31/">全25本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-05-31 · #20260531
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-31/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
