@@ -39,3 +39,4 @@
 | 2026-05-30 | ✅成功 | FX, AI, IT-Consulting, Mobility, Game | - | 0 | 記事25件 |
   → Push: pywebpush未インストール (exit 1)。pip install pywebpush で解消可能。
 | 2026-05-31 | ✅DeepDive | 生成AIエージェントによるコンサル人月モデル侵食 | 約30分 | 0 | weekly deepdive |
+| 2026-05-31 | ✅成功 | FX, AI, IT-Consulting, Mobility, Game | - | 0 | 記事24件 |
