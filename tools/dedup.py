@@ -105,7 +105,10 @@ def load_existing(path: Path) -> list[dict]:
     if not path.exists():
         return []
     out = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    # data/articles.jsonl は UTF-8 BOM 付きで保存されている（日次 append スクリプト由来）。
+    # encoding="utf-8" だと先頭行が "Unexpected UTF-8 BOM" で json.loads に失敗するため
+    # utf-8-sig で読む（BOM が無いファイルでも透過的に動く）。
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if line:
             out.append(json.loads(line))

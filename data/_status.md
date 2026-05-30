@@ -37,3 +37,4 @@
 | 2026-05-28 | ✅成功 | FX, AI, IT-Consulting, Mobility, Economy | 約80分 | 0 | 記事25件 |
 | 2026-05-29 | ✅成功 | FX, AI, IT-Consulting, Mobility, Economy, Game | 720秒 | 0 | 記事30件 |
 | 2026-05-30 | ✅成功 | FX, AI, IT-Consulting, Mobility, Game | - | 0 | 記事25件 |
+  → Push: pywebpush未インストール (exit 1)。pip install pywebpush で解消可能。

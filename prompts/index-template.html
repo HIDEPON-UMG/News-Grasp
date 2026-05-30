@@ -102,7 +102,7 @@
           <span class="hl-gold">時勢</span>を掴み、<br/><span class="hl-blue">日々</span>に新たに。
         {% endif %}
       </h2>
-      <p class="home-hero__lead">{{ hero_lead }}</p>
+      <p class="home-hero__lead">{% if editorial_essay %}{{ editorial_essay|render_emph }}{% else %}{{ hero_lead }}{% endif %}</p>
       {% if editorial %}
       <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="home-hero__cta">READ FULL ESSAY →</a>
       {% else %}

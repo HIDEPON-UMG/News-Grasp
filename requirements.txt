@@ -7,3 +7,10 @@ pillow==12.2.0
 pluggy==1.6.0
 Pygments==2.20.0
 pytest==9.0.3
+
+# Web Push 送信 (tools/send_push.py)。必ず .venv の python で実行すること
+# (bare python は pywebpush 不在の別 venv に解決され 2026-05-30 朝に push が落ちた)。
+pywebpush==2.3.0
+py-vapid==1.9.4
+http-ece==1.2.1
+cryptography==48.0.0
