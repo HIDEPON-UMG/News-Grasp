@@ -99,9 +99,23 @@
   color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
 }
 .is-search-hidden { display: none !important; }
+/* 「本日のテーマ考察」見出し直下に出すカテゴリ固有 §NN 見出し (例「為替 — …」)。
+ * editorial バンド (navy) 上のゴールド系サブタイトル。site.css 未配備でも効くようテンプレ内に置く。 */
+.editorial__subtitle {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: var(--color-gold);
+  margin: -14px 0 22px;
+}
+.editorial__subtitle .emph-bold { background: rgba(201, 161, 85, 0.32); color: var(--color-gold); }
+.editorial__subtitle .emph-und { border-bottom-color: var(--color-gold); }
 @media (max-width: 720px) {
   .brand-zone__inner { flex-wrap: wrap; }
   .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+  .editorial__subtitle { font-size: 16px; margin: -8px 0 18px; }
 }
 </style>
 </head>
@@ -459,7 +473,8 @@
     </div>
     <div class="editorial__body">
       <h2>本日のテーマ考察</h2>
-      <p><strong class="emph-bold">Claude Opus 4.8</strong>リリースと<strong class="emph-bold">Pony.ai</strong>ら中国勢のロボタクシー拡大が重なった土曜日、AI・モビリティ・FXが<strong>「競争から実装」へ移行する同一の構造変化</strong>を映した。<strong class="emph-bold">NVIDIA</strong>とOpenAIの10GW契約、ECBの利上げ転換、任天堂のSwitch 2値上げ、コナミ9年連続最高益と、<span class="emph-und">5カテゴリが互いに増幅し合う週の締めくくり</span>となった。</p>
+      <div class="editorial__subtitle">AI — Opus 4.8とNVIDIA 10GWが産業実装期を宣言</div>
+      <p><strong class="emph-bold">Claude Opus 4.8</strong>のリリースとNVIDIA×OpenAIの<strong>10GW戦略提携</strong>が同日に存在感を示した。<strong class="emph-bold">NVIDIA</strong>は<strong>$2000億</strong>規模のCPU市場参入も宣言し、Air Street Pressの月次調査も「AIは産業実装フェーズへ移行した」と結論付けた。<span class="emph-und">モデルの能力競争は終わっていないが、主戦場は「誰がインフラを支配するか」に移った</span>。</p>
       <div class="editorial__cta">
         <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-30/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
         <a href="https://hidepon-umg.github.io/News-Grasp/archive/" class="btn-ghost">BACK TO ARCHIVE</a>

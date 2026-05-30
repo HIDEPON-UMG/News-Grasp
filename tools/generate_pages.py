@@ -1166,6 +1166,40 @@ def _theme_essay_for_home(lead: str) -> str:
     return strip_inline(_strip_lead_trailer(lead))
 
 
+def _section_label(heading: str) -> str:
+    """考察 §NN 見出し ("為替 — 副題") の先頭ラベルを em/en/hyphen 区切りで切り出す。
+
+    `_build_essay_sections` (summary ページ) と `_category_essay` (カテゴリページ) が
+    同じ正規化で参照する単一ソース。区切り記号や前後空白の扱いを 2 箇所に書かないため。
+    """
+    if not heading:
+        return ""
+    return re.split(r"\s*[—–\-]\s*", heading, maxsplit=1)[0].strip()
+
+
+def _section_label_to_cid(heading: str) -> str | None:
+    """考察 §NN 見出しの先頭ラベル (為替/AI/...) を category id に対応付ける。
+
+    総論/明日へ等カテゴリに対応しない節や未知ラベルは None。TAG_TO_CID を単一ソースに引く。
+    """
+    return TAG_TO_CID.get(_section_label(heading))
+
+
+def _category_essay(reflection: dict[str, Any], cat_id: str) -> tuple[str, str]:
+    """summary digest の reflection.sections から cat_id "固有" の考察 (heading, body) を引く。
+
+    各 §NN 見出しの先頭ラベルを _section_label_to_cid で cid に解決し、cat_id と一致する
+    最初の節の (heading, body) を返す。該当が無ければ ("", "") (呼び出し側でカテゴリ自身の
+    summary_text に fallback)。body には装飾記法 (** __ [[]]) が残るので render_emph で描画する。
+    """
+    sections = reflection.get("sections") or {}
+    for num in sorted(sections.keys()):
+        es = sections[num]
+        if _section_label_to_cid(es.get("heading", "")) == cat_id:
+            return (es.get("heading", "").strip(), es.get("body", "").strip())
+    return ("", "")
+
+
 def _build_essay_sections(sections: dict[int, dict[str, str]],
                           by_cat: dict[str, dict[str, Any]]) -> list[dict[str, Any]] | None:
     """digest の `### §NN` から抽出した考察を summary-template 用 sections に変換。
@@ -1181,7 +1215,7 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
         es = sections[num]
         heading = es.get("heading", "")
         body = es.get("body", "")
-        label = re.split(r"\s*[—–\-]\s*", heading, maxsplit=1)[0].strip() if heading else ""
+        label = _section_label(heading)
         cid = TAG_TO_CID.get(label)
         bullets: list[str] = []
         if num == 1 or "総論" in heading:
@@ -1419,8 +1453,8 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
         for cid, meta in CATEGORIES.items()
         if cid != "summary"
     ]
-    # 「本日のテーマ考察」navy band は LP と同じ多カテゴリ横断の考察文 (reflection.lead) を
-    # 出す。カテゴリ entry 自体は reflection={} なので、同日の summary digest entry から引く。
+    # 「本日のテーマ考察」navy band は "そのカテゴリ固有" の考察を出す (LP の日全体総論とは別)。
+    # カテゴリ entry 自体は reflection={} なので、同日の summary digest entry から引く。
     summary_by_date = {
         e["date"]: e for e in entries if e["category_id"] == "summary"
     }
@@ -1445,12 +1479,14 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
                 cat_id, featured["date"], skip_url=featured.get("top_source_url")
             )
             past_7 = []
-        # 「本日のテーマ考察」は LP と同じ装飾・文字数の考察文 (reflection.lead)。
-        # 同日 summary が無ければカテゴリ自身の summary_text に fallback (テンプレ側で判定)。
+        # 「本日のテーマ考察」は summary digest の §NN のうち、見出しラベルが当該カテゴリに
+        # 一致する節の body (= カテゴリ固有の考察)。装飾記法は保持しテンプレ側で render_emph 描画。
+        # 該当節が無ければ (旧 digest で §NN 非対応／その日そのカテゴリ非配信 等) カテゴリ自身の
+        # summary_text に fallback (テンプレ側で判定)。editorial_heading は見出しサブタイトル用。
         sum_e = summary_by_date.get(featured["date"])
-        editorial_essay = _strip_lead_trailer(
-            (sum_e.get("reflection") or {}).get("lead", "")
-        ) if sum_e else ""
+        editorial_heading, editorial_essay = (
+            _category_essay(sum_e.get("reflection") or {}, cat_id) if sum_e else ("", "")
+        )
         nav_categories = [
             {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
         ]
@@ -1466,6 +1502,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
             "entries": cat_entries_sorted,
             "featured": featured,
             "editorial_essay": editorial_essay,
+            "editorial_heading": editorial_heading,
             "grid_9": grid_9,
             "past_7": past_7,
             "nav_categories": nav_categories,

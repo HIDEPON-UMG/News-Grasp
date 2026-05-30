@@ -55,9 +55,23 @@
   color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
 }
 .is-search-hidden { display: none !important; }
+/* 「本日のテーマ考察」見出し直下に出すカテゴリ固有 §NN 見出し (例「為替 — …」)。
+ * editorial バンド (navy) 上のゴールド系サブタイトル。site.css 未配備でも効くようテンプレ内に置く。 */
+.editorial__subtitle {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: var(--color-gold);
+  margin: -14px 0 22px;
+}
+.editorial__subtitle .emph-bold { background: rgba(201, 161, 85, 0.32); color: var(--color-gold); }
+.editorial__subtitle .emph-und { border-bottom-color: var(--color-gold); }
 @media (max-width: 720px) {
   .brand-zone__inner { flex-wrap: wrap; }
   .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+  .editorial__subtitle { font-size: 16px; margin: -8px 0 18px; }
 }
 </style>
 </head>
@@ -231,6 +245,7 @@
     </div>
     <div class="editorial__body">
       <h2>本日のテーマ考察</h2>
+      {% if editorial_heading %}<div class="editorial__subtitle">{{ editorial_heading|render_emph }}</div>{% endif %}
       <p>{{ (editorial_essay or featured.summary_text)|render_emph }}</p>
       <div class="editorial__cta">
         <a href="{{ base_url }}/{{ featured.date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>

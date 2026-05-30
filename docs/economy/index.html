@@ -99,9 +99,23 @@
   color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
 }
 .is-search-hidden { display: none !important; }
+/* 「本日のテーマ考察」見出し直下に出すカテゴリ固有 §NN 見出し (例「為替 — …」)。
+ * editorial バンド (navy) 上のゴールド系サブタイトル。site.css 未配備でも効くようテンプレ内に置く。 */
+.editorial__subtitle {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: var(--color-gold);
+  margin: -14px 0 22px;
+}
+.editorial__subtitle .emph-bold { background: rgba(201, 161, 85, 0.32); color: var(--color-gold); }
+.editorial__subtitle .emph-und { border-bottom-color: var(--color-gold); }
 @media (max-width: 720px) {
   .brand-zone__inner { flex-wrap: wrap; }
   .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+  .editorial__subtitle { font-size: 16px; margin: -8px 0 18px; }
 }
 </style>
 </head>
@@ -459,7 +473,8 @@
     </div>
     <div class="editorial__body">
       <h2>本日のテーマ考察</h2>
-      <p>本日6分野・30件のニュースから浮かび上がる最大のテーマは<strong class="emph-bold">Anthropic</strong>の<strong>評価額9,650億ドル</strong>到達と<strong>米CPI3.8%加速</strong>という真逆のシグナルの同時進行である。AIへの資本流入が歴史的速度で拡大する一方、高金利の長期化が実体経済に重くのしかかる構図は、Waymoのロボタクシー拡大・Goldman Sachsの強気目標引き上げにも反映されている。<span class="emph-und">金融相場から実体相場へ──2026年後半の決定的なテーゼ転換</span>が始まっているかもしれない。</p>
+      <div class="editorial__subtitle">経済 — S&amp;P最高値・Goldman 8000・日経5月売りの三叉路</div>
+      <p><strong class="emph-bold">S&amp;amp;P500</strong>が<strong class="emph-bold">Snowflake</strong>急騰でAIけん引の最高値更新を継続する一方、<strong class="emph-bold">日経平均</strong>は「<strong>5月売り</strong>」アノマリーで一時<strong>1,000円超安</strong>と乱高下した。<strong class="emph-bold">Goldman Sachs</strong>が年末目標を<strong>7,600→8,000</strong>に引き上げ、日本の<strong>GDP+2.1%</strong>も日銀利上げ余地を支持する。<span class="emph-und">強気と弱気が並走する夏前の乱流期</span>に入った可能性がある。</p>
       <div class="editorial__cta">
         <a href="https://hidepon-umg.github.io/News-Grasp/2026-05-29/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
         <a href="https://hidepon-umg.github.io/News-Grasp/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
