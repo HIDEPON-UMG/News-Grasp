@@ -291,9 +291,12 @@ def build_context(digest_path: Path) -> dict[str, Any]:
     text = Path(digest_path).read_text(encoding="utf-8")
     fm, body = parse_frontmatter(text)
 
-    category_id = (fm.get("categoryId") or "summary").lower()
+    category_id = (fm.get("categoryId") or "").lower()
     if category_id not in CATEGORIES:
-        category_id = "summary"
+        # categoryId 欠落/不正時は親フォルダ名から導出 (digest/FX → fx)。
+        # 無条件 summary 既定化は categoryId 欠落のカテゴリ digest を summary に
+        # 化けさせ、同日重複 entry → 「準備中」fallback を生むため廃止 (2026-05-30)。
+        category_id = _resolve_cat_from_dirname(Path(digest_path).parent.name) or "summary"
     cat = CATEGORIES[category_id]
 
     date_str = fm.get("date", "")
@@ -628,6 +631,25 @@ _GENRE_ALIASES: dict[str, set[str]] = {
     "economy":  {"Economy"},
     "game":     {"Game"},
 }
+
+
+def _resolve_cat_from_dirname(dirname: str) -> str | None:
+    """digest の親フォルダ名 (FX / IT-Consulting 等) を cat_id に逆引きする。
+
+    _GENRE_ALIASES (cat_id → 表記揺れ set) を再利用し、大文字小文字差は casefold で無視する。
+    親フォルダ "Summary" は casefold で "summary" となり CATEGORIES に含まれるため summary を
+    返す (summary digest は summary のままが正しい)。どの cat にも該当しなければ None を返し、
+    呼び出し側で summary に既定化される。
+    """
+    if not dirname:
+        return None
+    key = dirname.casefold()
+    if key in CATEGORIES:
+        return key
+    for cat_id, aliases in _GENRE_ALIASES.items():
+        if any(key == alias.casefold() for alias in aliases):
+            return cat_id
+    return None
 
 
 def _articles_as_grid_entries(cat_id: str, date: str,

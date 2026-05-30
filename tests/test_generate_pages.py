@@ -185,6 +185,54 @@ def test_og_image_fallback_for_each_category(tmp_path):
         )
 
 
+def test_category_id_derived_from_parent_dir_when_frontmatter_missing(tmp_path):
+    """categoryId 欠落のカテゴリ digest は親フォルダ名から cat_id を導出し summary に化けない。
+
+    回帰防止 (2026-05-16 の class of bugs):
+      categoryId 欠落 → build_context が無条件 summary 既定化
+      → カテゴリ digest が summary 扱い → 同日に reflection 空の重複 summary entry
+      → build_summary が空 entry を掴み「準備中」fallback。
+    親フォルダ FX から fx を導出できれば、この illegal state を構造的に作れない。
+    """
+    cat_dir = tmp_path / "FX"
+    cat_dir.mkdir()
+    digest = cat_dir / "2026-05-20-FX.md"
+    # _write_minimal_digest と同等だが categoryId 行を意図的に省く
+    digest.write_text(
+        """---
+title: "News Grasp #20260520 — Foreign Exchange"
+date: 2026-05-20
+issue: 20260520
+weekday: 水
+category: Foreign Exchange
+accent: "#B8860B"
+glyph: "¥"
+---
+
+# ¥ FX — Foreign Exchange
+
+> [!summary]
+> テスト用サマリ本文。
+
+---
+
+### [88] テスト記事
+
+📰 Test · 🔗 [元記事](https://example.com)
+
+- a
+- b
+- c
+""",
+        encoding="utf-8",
+    )
+    ctx = build_context(digest)
+    assert ctx["category_id"] == "fx", (
+        f"categoryId 欠落でも親フォルダ FX から fx を導出すべきだが "
+        f"{ctx['category_id']!r} になった (summary 誤判定の回帰)"
+    )
+
+
 def test_og_description_truncates_at_180_chars(tmp_path):
     """200 文字超の summary callout でも og:description は 180 文字以下に truncate される。"""
     long_summary = "あ" * 250  # 250 chars
