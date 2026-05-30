@@ -1419,6 +1419,11 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
         for cid, meta in CATEGORIES.items()
         if cid != "summary"
     ]
+    # 「本日のテーマ考察」navy band は LP と同じ多カテゴリ横断の考察文 (reflection.lead) を
+    # 出す。カテゴリ entry 自体は reflection={} なので、同日の summary digest entry から引く。
+    summary_by_date = {
+        e["date"]: e for e in entries if e["category_id"] == "summary"
+    }
     for cat_id, cat in CATEGORIES.items():
         # 統合方針 (2026-05-26): summary カテゴリのアーカイブ /summary/ は廃止
         # (日付別考察 /{date}/summary/ に統合)。
@@ -1440,6 +1445,12 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
                 cat_id, featured["date"], skip_url=featured.get("top_source_url")
             )
             past_7 = []
+        # 「本日のテーマ考察」は LP と同じ装飾・文字数の考察文 (reflection.lead)。
+        # 同日 summary が無ければカテゴリ自身の summary_text に fallback (テンプレ側で判定)。
+        sum_e = summary_by_date.get(featured["date"])
+        editorial_essay = _strip_lead_trailer(
+            (sum_e.get("reflection") or {}).get("lead", "")
+        ) if sum_e else ""
         nav_categories = [
             {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
         ]
@@ -1454,6 +1465,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
             "canonical": f"{BASE_URL}/{cat_id}/",
             "entries": cat_entries_sorted,
             "featured": featured,
+            "editorial_essay": editorial_essay,
             "grid_9": grid_9,
             "past_7": past_7,
             "nav_categories": nav_categories,

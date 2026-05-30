@@ -220,7 +220,7 @@
 </section>
 {% endif %}
 
-{% if featured and featured.summary_text %}
+{% if editorial_essay or (featured and featured.summary_text) %}
 <!-- ============= Editorial (本日のテーマ考察 navy band / page-template と統一) ============= -->
 <section class="editorial">
   <div class="editorial__grid">
@@ -231,7 +231,7 @@
     </div>
     <div class="editorial__body">
       <h2>本日のテーマ考察</h2>
-      <p>{{ featured.summary_text|render_emph }}</p>
+      <p>{{ (editorial_essay or featured.summary_text)|render_emph }}</p>
       <div class="editorial__cta">
         <a href="{{ base_url }}/{{ featured.date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
         <a href="{{ base_url }}/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
