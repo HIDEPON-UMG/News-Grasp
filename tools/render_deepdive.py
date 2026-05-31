@@ -75,10 +75,17 @@ _DEFAULT_EDGE = {"color": INK, "dash": False}
 #   競合/対立 = 勢力の対立 → 左右に分けて配置 (rivalry を 2-color)
 #   出資/提携/供給 = 協力 → 同じ側に寄せ、上下 (縦) に積む (出資元/親を上)
 #   規制 = 監督 → 当局を中央下に置き、両勢力を見上げる三角構図にする
+#   協調的競合 (frenemy) = 協力かつ競合 → 両者を左右に置き、協力線(緑)と競合線(赤)を
+#     併走させる。「提携でありつつ人月モデルで競合」のような二面関係を 1 本に潰さず
+#     描くための kind。group-to-group (陣営 vs 陣営) の中心命題を表現する (2026-05-31 追加)。
 # 「とりあえず全部つなぐ」のではなく勢力構造が一目で分かる配置にするのが目的。
 _RIVAL_KINDS = {"競合", "対立"}
 _COOP_KINDS = {"出資", "提携", "供給", "協力"}
 _AUTH_KINDS = {"規制"}
+_FRENEMY_KINDS = {"協調的競合", "協力競合", "frenemy"}
+# frenemy の二面エッジで使う色 (協力面=提携の緑 / 競合面=競合の赤)。
+_FRENEMY_COOP_COLOR = "#2E6B52"
+_FRENEMY_RIVAL_COLOR = "#8E2A19"
 
 # 「裏が取れていない」ことを示すセル値 (table の淡色化判定)。
 _UNCONFIRMED_TOKENS = ("未確認", "未開示", "非開示")
@@ -213,11 +220,16 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     def _valid(e: dict[str, Any]) -> bool:
         return e.get("from") in idset and e.get("to") in idset
 
-    rival = [e for e in edges if _valid(e) and e.get("kind") in _RIVAL_KINDS]
+    # frenemy (協調的競合) も「左右に分かれて対峙」する点では rivalry と同じ配置にし、
+    # ただし協力面 (緑線) も併走させる。配置のためここでは rival 扱いにする。
+    rival = [e for e in edges if _valid(e)
+             and (e.get("kind") in _RIVAL_KINDS or e.get("kind") in _FRENEMY_KINDS)]
     auth = [e for e in edges if _valid(e) and e.get("kind") in _AUTH_KINDS]
     coop = [e for e in edges if _valid(e) and e.get("kind") in _COOP_KINDS]
+    # node.place == "center" は強制的に中央列へ (両陣営が奪い合う対象=発注企業/市場 等)。
+    forced_center = {nd.get("id", "") for nd in nodes if nd.get("place") == "center"}
 
-    # 1) 競合を左右に二分 (rivalry サブグラフを 2-color)
+    # 1) 競合/協調的競合を左右に二分 (rivalry サブグラフを 2-color)
     side: dict[str, str] = {}
     radj: dict[str, list[str]] = {}
     for e in rival:
@@ -235,8 +247,8 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
                     side[v] = "R" if side[u] == "L" else "L"
                     stack.append(v)
 
-    # 2) 規制当局 (規制エッジの source) は中央列へ
-    center: set[str] = {e["from"] for e in auth}
+    # 2) 規制当局 (規制エッジの source) と強制中央ノードは中央列へ
+    center: set[str] = {e["from"] for e in auth} | forced_center
     for c in center:
         side.pop(c, None)
 
@@ -291,15 +303,26 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     layout = dict(rel)
     layout["nodes"] = placed
     layout["vb_w"], layout["vb_h"] = vb_w, vb_h
-    # 凡例 = 実際に登場した kind のみ
-    kinds_present: list[str] = []
+    # 凡例 = 実際に登場した kind のみ。frenemy は協力(緑)+競合(赤)の 2 面に展開する。
+    legend: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def _add_legend(kind: str, color: str) -> None:
+        if kind and kind not in seen:
+            seen.add(kind)
+            legend.append({"kind": kind, "color": color, "dash": False})
+
     for e in edges:
         k = e.get("kind", "")
-        if k and k not in kinds_present:
-            kinds_present.append(k)
-    layout["legend"] = [
-        {"kind": k, **EDGE_KINDS.get(k, _DEFAULT_EDGE)} for k in kinds_present
-    ]
+        if not k:
+            continue
+        if k in _FRENEMY_KINDS:
+            _add_legend("提携", _FRENEMY_COOP_COLOR)
+            _add_legend("競合", _FRENEMY_RIVAL_COLOR)
+        else:
+            ks = EDGE_KINDS.get(k, _DEFAULT_EDGE)
+            _add_legend(k, ks["color"])
+    layout["legend"] = legend
     return layout
 
 
@@ -379,6 +402,37 @@ def relations_svg(rel: dict[str, Any]) -> str:
     for i, e in enumerate(rel.get("edges", [])):
         a, b = by_id.get(e.get("from")), by_id.get(e.get("to"))
         if not a or not b:
+            continue
+        # frenemy (協調的競合): 協力線(緑・上)と競合線(赤・下)を併走させ、各々に
+        # 双方向矢印とラベルを付ける。「提携でありつつ人月モデルで競合」の二面性を
+        # 1 本に潰さず描く中心命題用エッジ (2026-05-31 追加)。
+        if e.get("kind") in _FRENEMY_KINDS:
+            ax, ay, bx, by = a["x"], a["y"], b["x"], b["y"]
+            dx, dy = bx - ax, by - ay
+            length = math.hypot(dx, dy) or 1.0
+            ux, uy = dx / length, dy / length
+            px, py = -uy, ux
+            gap, off = 7, 15
+            faces = (
+                (-1, _FRENEMY_COOP_COLOR, "提携", e.get("coop") or "協力（提携）"),
+                (1, _FRENEMY_RIVAL_COLOR, "競合", e.get("rival") or "人月モデルで競合"),
+            )
+            for sign, color, kind, label in faces:
+                ox, oy = px * off * sign, py * off * sign
+                x1, y1 = ax + ux * (a["r"] + gap) + ox, ay + uy * (a["r"] + gap) + oy
+                x2, y2 = bx - ux * (b["r"] + gap) + ox, by - uy * (b["r"] + gap) + oy
+                parts.append(
+                    f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+                    f'stroke="{color}" stroke-width="2.4" opacity="0.9"/>'
+                )
+                parts.append(_arrow(x2, y2, ux, uy, color))   # 協力も競合も相互 = 双方向
+                parts.append(_arrow(x1, y1, -ux, -uy, color))
+                cw = 24 + _text_w(kind, fs) + (6 if label else 0) + _text_w(label, fs) + 14
+                lx = (x1 + x2) / 2 + px * sign * (chip_h / 2 + 5)
+                ly = (y1 + y2) / 2 + py * sign * (chip_h / 2 + 5)
+                gx = min(max(lx - cw / 2, 4), vb_w - cw - 4)
+                gy = min(max(ly - chip_h / 2, 4), vb_h - chip_h - 4)
+                parts.append(_label_chip(gx, gy, cw, color, kind, label))
             continue
         ks = EDGE_KINDS.get(e.get("kind", ""), _DEFAULT_EDGE)
         color, dash = ks["color"], ks["dash"]
@@ -676,11 +730,53 @@ def build_table(table: dict[str, Any]) -> dict[str, Any]:
 
 # ── context builder ───────────────────────────────────────────────────────────
 
+class DeepDiveIncompleteError(ValueError):
+    """DeepDive md が必須ブロック (関係図/変遷チャート/データ表 等) を欠く = 未完成記事。
+
+    weekly-research-system.md は relations を「必須」と 3 箇所で明記しているが、
+    2026-05-31 記事は relations 無しのまま生成・公開された。プロンプトに「必須」と
+    書くだけの防御 (記憶/指示頼み) は破れる。feedback_check_design_principles に従い、
+    その最弱の層を **ビルド時の loud failure** という構造ガードに格上げし、関係図や
+    データ表を欠いた未完成記事がサイレントに公開されるのを封じる。
+    """
+
+
+# weekly-research-system.md「出力スキーマ早見」の必須ブロックと一致させる。1 つでも
+# 欠けたら未完成扱い (背景=timeline/players/relations・深掘り=chart/table・注目点=decision)。
+_MANDATORY_BLOCKS: tuple[str, ...] = (
+    "timeline", "players", "relations", "chart", "table", "decision",
+)
+# 深掘りの図表 (chart) の最低本数。1 つでは論点を多面的に示せない (2026-05-31 ユーザー指示)。
+_MIN_CHARTS = 2
+
+
+def _require_blocks(md_path: Path, blocks: dict[str, list[Any]]) -> None:
+    """必須ブロックの欠落を loud に弾く (= サイレントな空描画を許さない)。"""
+    name = Path(md_path).name
+    missing = [b for b in _MANDATORY_BLOCKS if not blocks.get(b)]
+    if missing:
+        raise DeepDiveIncompleteError(
+            f"{name}: 必須ブロック欠落 {missing}。"
+            "timeline/players/relations/chart/table/decision は全て必須 "
+            "(weekly-research-system.md 出力スキーマ早見)。関係図・変遷チャート・"
+            "データ表が欠けた記事は未完成として公開しない。"
+        )
+    # 深掘りの図表 (chart) は最低 2 本。1 つでは論点を多面的に示せない
+    # (2026-05-31 ユーザー指示で恒久化)。
+    n_chart = len(blocks.get("chart", []))
+    if n_chart < _MIN_CHARTS:
+        raise DeepDiveIncompleteError(
+            f"{name}: 深掘りの chart が {n_chart} 本。最低 {_MIN_CHARTS} 本必要 "
+            "(図表 1 つでは論点を多面的に示せない)。異なる切り口の図を 2 本以上置く。"
+        )
+
+
 def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     """DeepDive md 1 件から Jinja テンプレ用 context を組み立てる。"""
     text = Path(md_path).read_text(encoding="utf-8")
     fm, body = parse_frontmatter(text)
     blocks = extract_blocks(body)
+    _require_blocks(md_path, blocks)  # 必須ブロック欠落は hard fail (未完成記事を公開しない)
     sections = split_sections(body)
 
     date_str = fm.get("date", "")
@@ -703,6 +799,13 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     charts = blocks.get("chart", [])
     table = blocks.get("table", [None])[0]
     decision = blocks.get("decision", [None])[0]
+    if decision:
+        # decider を箇条書き用に正規化 (配列はそのまま / 文字列は「、」区切り)。
+        # 決定者が複数いるときはテンプレが必ず <ul> で出す (2026-05-31 ユーザー指示)。
+        _dec = decision.get("decider", "")
+        _dl = ([str(x).strip() for x in _dec if str(x).strip()] if isinstance(_dec, list)
+               else [s.strip() for s in re.split(r"[、,]", str(_dec)) if s.strip()])
+        decision = {**decision, "decider_list": _dl}
 
     read_min = max(5, round(len(body) / 900))
 
@@ -825,6 +928,8 @@ def build_deepdive_pages(
     for src in sorted(src_dir.glob("*.md")):
         try:
             ctx = build_deepdive_context(src)
+        except DeepDiveIncompleteError:
+            raise  # 必須ブロック欠落は握りつぶさず伝播 (= 未完成記事の公開を構造的に阻止)
         except Exception as exc:  # noqa: BLE001
             print(f"[warn] DeepDive context 構築失敗 {src.name}: {exc}", file=sys.stderr)
             continue
@@ -839,6 +944,93 @@ def build_deepdive_pages(
     return written
 
 
+# ── テーマ書架 (DeepDive 連載インデックス) ────────────────────────────────────
+# 日付 digest の date アーカイブ (docs/archive/) とは別系統。テーマ単位で深掘りだけを
+# 時系列に束ね、レンズ (カテゴリ) 絞り込み + 全文検索できる読み物の書架。受領デザイン
+# deepdive-ia.jsx ThemeArchiveIndex に準拠。出力は docs/deepdive/index.html。
+
+_MONTHS_EN = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+              "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+# レンズチップ/タグの短縮 EN 表記 (受領 IA_CATS の en と一致: fx→FX … game→GAMING)。
+_LENS_CODE = {"fx": "FX", "ai": "AI", "it": "IT",
+              "mobility": "MOBILITY", "economy": "ECONOMY", "game": "GAMING"}
+
+
+def _archive_item(md_path: Path) -> dict[str, Any] | None:
+    """DeepDive md 1 件から書架の 1 行分メタデータを軽量抽出する。
+
+    書架は一覧なので本文ブロックは描画しない (= 必須ブロックガードは通さない)。
+    read_min は本文長から自動算出 (build_deepdive_context と同式)。
+    """
+    text = Path(md_path).read_text(encoding="utf-8")
+    fm, body = parse_frontmatter(text)
+    date_str = fm.get("date", "")
+    if not date_str:
+        return None
+    tags = _parse_tags(text)
+    lens_id = _resolve_lens(fm, tags)
+    lens = CATEGORIES.get(lens_id)
+    title = fm.get("title", "")
+    theme = fm.get("theme", "")
+    return {
+        "date": date_str,
+        "date_dot": date_str[5:].replace("-", "."),  # MM.DD
+        "year": date_str[:4],
+        "issue": fm.get("issue", "") or date_str.replace("-", ""),
+        "title": title,
+        "url": f"{BASE_URL}/deepdive/{date_str}/",
+        "read_min": max(5, round(len(body) / 900)),
+        "lens_id": lens_id,
+        "lens_code": _LENS_CODE.get(lens_id, (lens["label"].upper() if lens else "")),
+        "lens_glyph": (lens["glyph"] if lens else "❖"),
+        "lens_accent": resolve_accent(lens_id),
+        # 検索対象 = タイトル + テーマ + tags (固有名詞も拾えるように)。
+        "search": " ".join([title, theme, *tags]),
+    }
+
+
+def build_deepdive_archive(*, docs_root: Path | None = None,
+                           digest_dir: Path | None = None) -> Path | None:
+    """digest/DeepDive/*.md を束ねた書架インデックスを docs/deepdive/index.html に出力。"""
+    docs = Path(docs_root) if docs_root else (_PKG_ROOT / "docs")
+    src_dir = Path(digest_dir) if digest_dir else (_PKG_ROOT / "digest" / "DeepDive")
+    if not src_dir.exists():
+        return None
+    items = [it for it in (_archive_item(p) for p in src_dir.glob("*.md")) if it]
+    if not items:
+        return None
+    items.sort(key=lambda it: it["date"], reverse=True)  # 新しい号が上
+    items[0]["current"] = True                            # 最新 = ❖ TODAY 強調
+    latest = items[0]
+    mm = latest["date"][5:7]
+    month_label = f"{_MONTHS_EN[int(mm) - 1]} {latest['year']}"
+    # レンズチップ (ALL + 6 カテゴリ)。summary 疑似カテゴリは除外。
+    chips = [
+        {"id": cid, "code": _LENS_CODE.get(cid, meta["label"].upper()),
+         "glyph": meta["glyph"], "accent": meta["accent"]}
+        for cid, meta in CATEGORIES.items() if cid != "summary"
+    ]
+    ctx = {
+        "site_title": SITE_TITLE,
+        "base_url": BASE_URL,
+        "canonical": f"{BASE_URL}/deepdive/",
+        "og_title": "テーマ書架 — ❖ THEME アーカイブ",
+        "og_description": "深掘り (TODAY'S THEME) だけを束ねる連載インデックス。"
+                          "テーマ単位で時系列に積み、レンズ絞り込み・全文検索できる書架。",
+        "og_url": f"{BASE_URL}/deepdive/",
+        "og_image": "",
+        "ink": INK, "gold": GOLD, "cream": CREAM, "paper": PAPER, "border": BORDER,
+        "theme_count": len(items),
+        "month_label": month_label,
+        "latest_url": latest["url"],
+        "chips": chips,
+        "themes": items,
+    }
+    out = docs / "deepdive" / "index.html"
+    render_page(ctx, out, template_name="deepdive-archive-template.html")
+    return out
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -850,3 +1042,5 @@ if __name__ == "__main__":
     print(f"wrote {len(paths)} DeepDive page(s)")
     for p in paths:
         print(f"  - {p}")
+    arch = build_deepdive_archive(docs_root=a.docs_root)
+    print(f"wrote theme archive: {arch}")

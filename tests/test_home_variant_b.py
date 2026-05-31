@@ -72,11 +72,17 @@ def test_sticky_nav_with_6_lenses(built_home: str):
 
 
 def test_hero_2col_structure(built_home: str):
-    """home-hero の左 (76px theme title) + 右 (Editor's Top 3 + Stats 2x2) が両方存在。"""
+    """home-hero の左 (76px theme title) + 右 (Editor's Top 5 + Stats 2x2) が両方存在。
+
+    左の DEEP DIVE エディトリアルがリッチ化した分、右ヒーローは TOP3 では縦に余るので
+    TOP5 + 一回り大きいフォントで縦幅を埋める設計に変更済み (2026-05-31)。
+    """
     assert 'class="home-hero"' in built_home
     assert "home-hero__title" in built_home
     assert "home-hero__right" in built_home
-    assert "EDITOR&#39;S TOP 3" in built_home or "EDITOR'S TOP 3" in built_home
+    assert "EDITOR&#39;S TOP 5" in built_home or "EDITOR'S TOP 5" in built_home
+    # TOP5 なので 5 行 (01〜05) が出る
+    assert built_home.count('class="home-top3__row"') == 5, "右ヒーローは TOP5=5行であるべき"
     assert "home-stats2x2" in built_home
 
 

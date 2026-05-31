@@ -1210,6 +1210,11 @@ strong {
 .home-hero__report-item:last-child { border-bottom: none; }
 /* 黒地 CTA は gold で反転 */
 .home-hero__cta--dd { background: var(--color-gold); color: var(--color-ink); }
+/* DeepDive スライドから過去テーマ書架 (/deepdive/) への副導線 (黒パネル上の控えめなゴールド) */
+.home-hero__dd-archlink { display: inline-block; margin-top: 12px; margin-left: 14px; font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-gold); text-decoration: none;
+  border-bottom: 1px solid var(--color-gold); padding-bottom: 2px; }
+.home-hero__dd-archlink:hover { color: var(--color-cream); border-bottom-color: var(--color-cream); }
 
 /* Hero RIGHT: Editor's Top 3 + Stats 2x2 */
 .home-hero__right { display: flex; flex-direction: column; gap: 24px; padding-top: 4px; }
@@ -1237,7 +1242,7 @@ strong {
 }
 .home-top3__row {
   display: grid;
-  grid-template-columns: 26px 1fr 42px;
+  grid-template-columns: 38px 1fr 50px;
   gap: 12px;
   align-items: center;
   padding: 12px 0;
@@ -1248,21 +1253,22 @@ strong {
 .home-top3__row:last-of-type { border-bottom: none; }
 .home-top3__no {
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 900;
   color: var(--color-ink-dim);
+  white-space: nowrap;
 }
 .home-top3__main { min-width: 0; }
 .home-top3__meta {
-  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 7px; margin-bottom: 5px;
 }
 .home-top3__badge {
   color: #fff;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  padding: 1px 6px;
+  padding: 2px 7px;
 }
 .home-top3__badge.cat-fx       { background: var(--color-accent-fx); }
 .home-top3__badge.cat-ai       { background: var(--color-accent-ai); }
@@ -1272,10 +1278,10 @@ strong {
 .home-top3__badge.cat-game     { background: var(--color-accent-game); }
 .home-top3__badge.cat-summary  { background: var(--color-accent-summary); }
 .home-top3__time {
-  font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim);
+  font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-dim);
 }
 .home-top3__title {
-  font-size: 13.5px;
+  font-size: 17px;
   font-weight: 700;
   line-height: 1.5;
   color: var(--color-navy);
@@ -1289,7 +1295,7 @@ strong {
 }
 .home-top3__score {
   font-family: var(--font-sans);
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 900;
   text-align: right;
 }
@@ -1313,15 +1319,15 @@ strong {
 }
 .home-stats2x2__cell:nth-child(n+3) { border-bottom: none; }
 .home-stats2x2__label {
-  font-family: var(--font-mono); font-size: 10px;
+  font-family: var(--font-mono); font-size: 12px;
   color: var(--color-ink-dim); letter-spacing: 0.1em;
 }
 .home-stats2x2__num {
-  font-family: var(--font-sans); font-size: 20px;
+  font-family: var(--font-sans); font-size: 26px;
   font-weight: 900; color: var(--color-navy);
 }
 .home-stats2x2__unit {
-  font-size: 11px; color: var(--color-ink-dim); margin-left: 3px;
+  font-size: 13px; color: var(--color-ink-dim); margin-left: 3px;
 }
 
 /* Featured Story */

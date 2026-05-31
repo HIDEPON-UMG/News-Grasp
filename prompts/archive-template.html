@@ -293,6 +293,7 @@
         <a href="{{ base_url }}/">HOME</a>
         {% if issues %}<a href="{{ issues[0].open_href }}">TODAY</a>{% endif %}
         <a href="{{ canonical }}" class="is-active">ARCHIVE</a>
+        <a href="{{ base_url }}/deepdive/">❖ 書架</a>
         {% if issues and issues[0].summary_href %}<a href="{{ issues[0].summary_href }}">§ ESSAY</a>{% endif %}
         <a href="{{ base_url }}/" class="ng-brand__sub">SUBSCRIBE →</a>
       </nav>
@@ -478,6 +479,7 @@
       <div><strong>NEWS GRASP</strong> · ARCHIVE · {{ total_pages }} PAGES</div>
       <div class="ng-foot__links">
         <a href="{{ base_url }}/">← HOME</a>
+        <a href="{{ base_url }}/deepdive/">❖ テーマ書架</a>
         <a href="{{ base_url }}/feed.xml">RSS</a>
         <a href="{{ base_url }}/">ABOUT</a>
       </div>

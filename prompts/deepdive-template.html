@@ -211,21 +211,30 @@ html, body { margin: 0; padding: 0; }
 
 /* decision */
 .dd-decision { border: 1.5px solid var(--ink); background: #fff; }
-.dd-decision__issue { padding: 22px 26px; border-bottom: 1px solid var(--border); background: var(--paper-warm); }
-.dd-decision__issue .lbl { font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: 2px;
-                           color: var(--accent); margin-bottom: 9px; }
-.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 20px; font-weight: 700;
-                        line-height: 1.6; color: var(--ink); text-wrap: pretty; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
 .dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
 .dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
 .dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
-.dd-opt__txt { font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--dim); margin: 0; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
 .dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
-.dd-decision__foot > div { padding: 16px 22px; border-right: 1px solid var(--border); }
-.dd-decision__foot .lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
-                          color: var(--soft); margin-bottom: 6px; }
-.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
 
 /* summary box (dark) */
 .dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
@@ -284,6 +293,8 @@ html, body { margin: 0; padding: 0; }
      (一望性より可読性を優先。min-width 760 で実効フォント >=9px) */
   .dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .dd-relwrap svg { min-width: 760px; }
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
   .dd-decision__opts { grid-template-columns: 1fr; }
   .dd-decision__foot { grid-template-columns: 1fr; }
   .dd-summary { padding: 24px 20px; }
@@ -311,7 +322,7 @@ html, body { margin: 0; padding: 0; }
       <nav class="dd-brand__nav">
         <a href="{{ base_url }}/">DIGEST</a>
         <span class="on">❖ THEME</span>
-        <a href="{{ base_url }}/archive/">ARCHIVE</a>
+        <a href="{{ base_url }}/deepdive/">書架</a>
       </nav>
     </div>
     <div class="dd-brand__rule"></div>
@@ -477,7 +488,13 @@ html, body { margin: 0; padding: 0; }
           </div>
           <div class="dd-decision__foot">
             <div><div class="lbl">期限 — DEADLINE</div><p>{{ decision.deadline }}</p></div>
-            <div><div class="lbl">決定権者 — DECIDER</div><p>{{ decision.decider }}</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+              {% if decision.decider_list and decision.decider_list|length > 1 %}
+              <ul class="dd-decision__deciders">{% for d in decision.decider_list %}<li>{{ d }}</li>{% endfor %}</ul>
+              {% else %}
+              <p>{{ decision.decider_list[0] if decision.decider_list else decision.decider }}</p>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
@@ -516,7 +533,7 @@ html, body { margin: 0; padding: 0; }
   <!-- footer -->
   <div class="dd-foot">
     <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
-    <div class="links"><a href="{{ base_url }}/">← DIGEST</a><a href="{{ base_url }}/archive/">THEME ARCHIVE</a><a href="{{ base_url }}/">ABOUT</a></div>
+    <div class="links"><a href="{{ base_url }}/">← DIGEST</a><a href="{{ base_url }}/deepdive/">テーマ書架</a><a href="{{ base_url }}/archive/">日付アーカイブ</a></div>
   </div>
 
 </div>

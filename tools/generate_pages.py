@@ -854,9 +854,12 @@ def _latest_deepdive_card() -> dict[str, Any] | None:
     mds = sorted(src_dir.glob("*.md"))  # ファイル名 = YYYY-MM-DD 昇順 → 末尾が最新
     if not mds:
         return None
-    from tools.render_deepdive import build_deepdive_context  # 遅延 import (循環回避)
+    # 遅延 import (循環回避)
+    from tools.render_deepdive import DeepDiveIncompleteError, build_deepdive_context
     try:
         dd = build_deepdive_context(mds[-1])
+    except DeepDiveIncompleteError:
+        raise  # 未完成 DeepDive (関係図等の欠落) は LP にも黙って載せず build を止める
     except Exception as exc:  # noqa: BLE001
         print(f"[warn] LP DeepDive カード構築失敗 {mds[-1].name}: {exc}", file=sys.stderr)
         return None
@@ -936,7 +939,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
 
     # Editor's Top 3: score 降順、上位 3 件 (同一カテゴリ重複は許容、デザイン仕様通り)
     sorted_by_score = sorted(same_day, key=lambda e: e.get("top_score", 0), reverse=True)
-    editor_top3 = sorted_by_score[:3]
+    editor_top3 = sorted_by_score[:5]  # 右ヒーローは TOP5 (左の DeepDive スライダーと縦幅を揃える)
     hero_story = sorted_by_score[0] if sorted_by_score else None
 
     # 6 lens cards (summary を除く 6 カテゴリ、同日最新 entry を引く)
@@ -1803,8 +1806,10 @@ def main(argv: list[str] | None = None) -> int:
     # ※ LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダーだけは別経路: build_index が
     #   _latest_deepdive_card() で DeepDive md を直接読み独立データとして明示注入する
     #   (entries 非汚染なので不変条件と両立。deepdive_integration_spec.md オプション B)。
-    from tools.render_deepdive import build_deepdive_pages  # 遅延 import (循環回避)
+    # 遅延 import (循環回避)
+    from tools.render_deepdive import build_deepdive_archive, build_deepdive_pages
     dd_pages = build_deepdive_pages(docs_root=docs_root, full=args.full)
+    build_deepdive_archive(docs_root=docs_root)  # テーマ書架 (/deepdive/) も同時に生成
     if dd_pages:
         print(f"wrote {len(dd_pages)} DeepDive page(s)")
         for p in dd_pages[:5]:
