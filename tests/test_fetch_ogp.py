@@ -82,8 +82,13 @@ def test_first_match_wins() -> list[str]:
     return errs
 
 
-def test_stops_at_body() -> list[str]:
-    """<body> に入ったら以降の <meta> は無視。"""
+def test_head_meta_preferred_over_body() -> list[str]:
+    """<head> と <body> の両方に og:image があるときは <head> (= 最初の 1 件) が勝つ。
+
+    かつては <body> 突入で解析停止していたが、SSR 系サイトが SEO meta を body 後方に
+    出す対応で停止を外した (2026-05-31)。停止を外しても「最初の og:image が勝つ」ため
+    head が先にあれば head が採用され、この契約は維持される。
+    """
     errs: list[str] = []
     html = '''<head>
         <meta property="og:image" content="https://example.com/head.jpg">
@@ -94,6 +99,23 @@ def test_stops_at_body() -> list[str]:
     if og != "https://example.com/head.jpg":
         errs.append(f"only head meta should win, got {og!r}")
     return errs
+
+
+def test_body_only_og_image_found() -> None:
+    """<head> に og:image が無く <body> より後ろにしか無い場合でも拾えること。
+
+    Next.js / React SSR (anthropic.com 等) は og:image を <body> 後方に出力する。
+    旧 body-stop 実装はこれを取り逃して no_meta に落ち、News-Grasp トップ記事の
+    サムネが汎用プレースホルダに化けた (2026-05-31 事故)。回帰を loud に封じる契約。
+    """
+    html = '''<html><head><title>t</title></head><body>
+        <div>article</div>
+        <meta property="og:image" content="https://example.com/body-only.jpg">
+        <meta name="twitter:image" content="https://example.com/tw-body.jpg">
+    </body></html>'''
+    og, tw = _parse(html)
+    assert og == "https://example.com/body-only.jpg", f"body の og:image を拾えていない: {og!r}"
+    assert tw == "https://example.com/tw-body.jpg", f"body の twitter:image を拾えていない: {tw!r}"
 
 
 def test_no_meta() -> list[str]:

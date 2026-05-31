@@ -47,7 +47,14 @@ NON_HTML_SUFFIXES = (".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", 
 
 
 class _OGPParser(HTMLParser):
-    """<head> 内の og:image / twitter:image だけを拾う。<body> 突入で終了。"""
+    """HTML 全体から og:image / twitter:image の最初の 1 件を拾う。
+
+    かつては `<body>` 突入で解析を打ち切っていたが、Next.js / React の SSR ストリーミング
+    系サイト (anthropic.com 等) は SEO meta を `<head>` ではなく `<body>` より後方に
+    出力するため、body-stop だと og:image を取り逃して `no_meta` に落ちる
+    (2026-05-31 News-Grasp トップ記事サムネ事故)。MAX_BYTES (2MB) で読込量は既に
+    上限化されているので、body-stop を外し両画像が揃った時点で早期終了する。
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -57,9 +64,6 @@ class _OGPParser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if self._stop:
-            return
-        if tag == "body":
-            self._stop = True
             return
         if tag != "meta":
             return
@@ -73,6 +77,9 @@ class _OGPParser(HTMLParser):
             self.og_image = content
         elif name in ("twitter:image", "twitter:image:src") and self.twitter_image is None:
             self.twitter_image = content
+        # og:image と twitter:image が両方揃えば以降は読み飛ばす (早期終了)。
+        if self.og_image is not None and self.twitter_image is not None:
+            self._stop = True
 
     def feed_until_stop(self, data: str) -> None:
         try:

@@ -296,7 +296,14 @@ def build_context(digest_path: Path) -> dict[str, Any]:
         # categoryId 欠落/不正時は親フォルダ名から導出 (digest/FX → fx)。
         # 無条件 summary 既定化は categoryId 欠落のカテゴリ digest を summary に
         # 化けさせ、同日重複 entry → 「準備中」fallback を生むため廃止 (2026-05-30)。
-        category_id = _resolve_cat_from_dirname(Path(digest_path).parent.name) or "summary"
+        category_id = _resolve_cat_from_dirname(Path(digest_path).parent.name) or ""
+    if category_id not in CATEGORIES:
+        # 未知ディレクトリ / 非カテゴリ digest (kind: deepdive 等) は LP に載せない。
+        # ここで summary に既定化すると本物の Summary digest を「同日 2 本目の summary」で
+        # シャドーし、editorial が reflection 空の側を拾って LP のテーマ・考察が全滅する
+        # (2026-05-31 DeepDive 事故)。date/category_id を空で返し、呼び出し側
+        # (build_all / _collect_entries) の date/category_id ガードで skip させる。
+        return {"category_id": "", "date": fm.get("date", ""), "kind": (fm.get("kind") or "").lower()}
     cat = CATEGORIES[category_id]
 
     date_str = fm.get("date", "")
