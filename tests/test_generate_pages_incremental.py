@@ -19,7 +19,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.generate_pages import build_all  # noqa: E402
+from tools.generate_pages import _needs_rebuild, build_all  # noqa: E402
 
 
 def _write_digest(root: Path, cat: str, date: str) -> Path:
@@ -134,3 +134,28 @@ def test_full_flag_overrides_mtime(two_digests):
     assert build_all(full=False, docs_root=docs, digests=sources) == []
     # --full なら全件
     assert len(build_all(full=True, docs_root=docs, digests=sources)) == 2
+
+
+def test_template_change_triggers_rebuild_even_if_source_unchanged(tmp_path):
+    """テンプレ変更 (template_mtime) は src 据え置きでも out を stale 扱いにする。
+
+    意図 (なぜ重要か): 2026-06-01 に「テンプレを張り替えたのに DeepDive 個別記事の
+    md mtime が据え置きだったため、古い HTML (旧テーマ書架リンク) が増分ビルドで
+    残存」する事故が出た。増分判定 _needs_rebuild が src だけでなくテンプレ群の
+    mtime も入力に含めることを境界 1 箇所で locked-in する。build_all / DeepDive
+    (build_deepdive_pages) は共にこの _needs_rebuild を共有するため、この 1 件で
+    両経路の class of bug を封じる (チェックを増やさない)。
+    """
+    src = tmp_path / "src.md"
+    src.write_text("x", encoding="utf-8")
+    out = tmp_path / "out.html"
+    out.write_text("y", encoding="utf-8")
+
+    base = time.time()
+    os.utime(src, (base - 100, base - 100))  # src は out より古い = src 起因では不要
+    os.utime(out, (base, base))
+
+    # テンプレ未変更 (out より古い) なら再生成しない。
+    assert _needs_rebuild(src, out, template_mtime=base - 50) is False
+    # テンプレが out より新しい = 張り替え相当 → src 据え置きでも再生成する。
+    assert _needs_rebuild(src, out, template_mtime=base + 50) is True

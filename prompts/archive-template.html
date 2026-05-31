@@ -200,6 +200,32 @@
 .ng-foot__links a { color: inherit; text-decoration: none; }
 .ng-foot__links a:hover { color: var(--color-ink); }
 
+/* ---- Mode switch (DIGEST / DEEP DIVE) ---- */
+.ng-modeswitch { display: inline-flex; border: 1px solid var(--color-navy); flex-shrink: 0; align-self: flex-end; }
+.ng-modeswitch__btn { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; padding: 7px 16px; background: transparent; color: var(--color-navy); border: none; cursor: pointer; transition: background .15s, color .15s; }
+.ng-modeswitch__btn + .ng-modeswitch__btn { border-left: 1px solid var(--color-navy); }
+.ng-modeswitch__btn.is-active { background: var(--color-navy); color: var(--color-cream); }
+
+/* ---- DEEP DIVE pane (旧テーマ書架 /deepdive/ の一本化先) ---- */
+.ng-dd-cap { border-bottom: 1px solid var(--color-border); padding: 22px 0 18px; margin-bottom: 18px; }
+.ng-dd-cap__tag { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .15em; color: #fff; background: var(--color-navy); padding: 3px 9px; display: inline-block; margin-bottom: 10px; }
+.ng-dd-cap__desc { font-family: var(--font-serif); font-size: 13.5px; color: var(--color-ink-dim); margin: 0; line-height: 1.7; max-width: 880px; }
+.ng-dd-list { border: 1px solid var(--color-border); background: #fff; margin-bottom: 36px; }
+.ng-dd-row { display: grid; grid-template-columns: 120px 1fr auto; gap: 20px; align-items: center; padding: 16px 20px; border-top: 1px solid var(--color-border); text-decoration: none; color: var(--color-ink); }
+.ng-dd-row:first-child { border-top: none; }
+.ng-dd-row.is-current { background: rgba(201,161,85,.06); }
+.ng-dd-row:hover { background: var(--color-paper-soft); }
+.ng-dd-row.is-current:hover { background: rgba(201,161,85,.10); }
+.ng-dd-row__date .d { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--color-ink); }
+.ng-dd-row__date .y { font-family: var(--font-mono); font-size: 9px; color: var(--color-ink-dim); margin-top: 2px; }
+.ng-dd-row__tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ng-dd-row__lens { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: #fff; background: var(--lens, var(--color-navy)); padding: 2px 7px; }
+.ng-dd-row__today { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: .1em; color: var(--color-gold); border: 1px solid var(--color-gold); padding: 1px 6px; }
+.ng-dd-row__title { font-family: var(--font-serif); font-size: 18px; font-weight: 700; color: var(--color-ink); margin-top: 7px; line-height: 1.4; }
+.ng-dd-row__read { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); white-space: nowrap; text-align: right; }
+.ng-dd-row__read .go { color: var(--lens, var(--color-navy)); font-weight: 700; }
+.ng-dd-empty { padding: 30px; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-dim); }
+
 /* ---- Responsive ---- */
 /* ============================================================
  * Mobile (Claude Design "ArchiveTimelineMobile" 準拠)
@@ -270,6 +296,11 @@
   .ng-card__btns .ng-btn { flex: 1; text-align: center; }
 
   .ng-end { padding-left: 0; }
+
+  /* DEEP DIVE 行: 日付列を圧縮し本文に幅を回す (390px で 120px は過大) */
+  .ng-dd-row { grid-template-columns: 74px 1fr; gap: 12px; }
+  .ng-dd-row__read { grid-column: 2; text-align: left; }
+  .ng-dd-cap { padding: 16px 0 14px; }
 }
 </style>
 </head>
@@ -293,7 +324,7 @@
         <a href="{{ base_url }}/">HOME</a>
         {% if issues %}<a href="{{ issues[0].open_href }}">TODAY</a>{% endif %}
         <a href="{{ canonical }}" class="is-active">ARCHIVE</a>
-        <a href="{{ base_url }}/deepdive/">❖ 書架</a>
+        <a href="{{ canonical }}?view=deepdive">❖ DEEP DIVE</a>
         {% if issues and issues[0].summary_href %}<a href="{{ issues[0].summary_href }}">§ ESSAY</a>{% endif %}
         <a href="{{ base_url }}/" class="ng-brand__sub">SUBSCRIBE →</a>
       </nav>
@@ -305,8 +336,13 @@
     <div class="ng-wrap">
       <div class="ng-filters__top">
         <div>
-          <h1 class="ng-filters__h1">日付アーカイブ<em>by date.</em></h1>
-          <div class="ng-filters__stat">{{ stats.days }} ISSUES · {{ stats.pages }} PAGES · {{ stats.span_from }} → {{ stats.span_to }}</div>
+          <h1 class="ng-filters__h1"><span id="ng-h1-main">日付アーカイブ</span><em id="ng-h1-em">by date.</em></h1>
+          <div class="ng-filters__stat" id="ng-stat-digest">{{ stats.days }} ISSUES · {{ stats.pages }} PAGES · {{ stats.span_from }} → {{ stats.span_to }}</div>
+          <div class="ng-filters__stat" id="ng-stat-deepdive" style="display:none">{{ deepdive_count }} THEMES · ❖ TODAY'S THEME アーカイブ</div>
+        </div>
+        <div class="ng-modeswitch" role="tablist" aria-label="アーカイブ表示切替">
+          <button type="button" class="ng-modeswitch__btn is-active" data-view="digest" role="tab" aria-selected="true">DIGEST</button>
+          <button type="button" class="ng-modeswitch__btn" data-view="deepdive" role="tab" aria-selected="false">❖ DEEP DIVE</button>
         </div>
         <label class="ng-search">
           <span class="ng-search__icon">⌕</span>
@@ -324,7 +360,7 @@
           </button>
           {% endfor %}
         </div>
-        <div class="ng-month-jump">
+        <div class="ng-month-jump" id="ng-month-jump">
           <span class="ng-month-jump__label">MONTH</span>
           {% for m in months_meta %}
           <a href="#m-{{ m.id }}">{{ m.label }} {{ m.year }}</a>
@@ -334,6 +370,9 @@
       </div>
     </div>
   </div>
+
+  <!-- ============ DIGEST view (日付タイムライン) ============ -->
+  <div class="ng-pane" data-view-pane="digest">
 
   <!-- Editor's intro strip -->
   <div class="ng-wrap">
@@ -472,6 +511,40 @@
       </div>
     </div>
   </div>
+  </div><!-- /digest pane -->
+
+  <!-- ============ DEEP DIVE view (テーマ書架 一本化) ============ -->
+  <div class="ng-pane" data-view-pane="deepdive" style="display:none">
+    <div class="ng-wrap">
+      <div class="ng-dd-cap">
+        <span class="ng-dd-cap__tag">❖ THEME ARCHIVE</span>
+        <p class="ng-dd-cap__desc">深掘り（TODAY'S THEME）だけを束ねる連載インデックス。テーマ単位（1 テーマ ＝ 1 ページ）で時系列に積んでいます。上の検索ボックス・レンズ絞り込みがそのまま効きます。</p>
+      </div>
+      <div class="ng-dd-list">
+        {% for t in deepdive_items %}
+        <a class="ng-dd-row{% if t.current %} is-current{% endif %}" href="{{ t.url }}"
+           data-ddrow data-lens="{{ t.lens_id }}" data-text="{{ t.search }}" style="--lens: {{ t.lens_accent }};">
+          <div class="ng-dd-row__date">
+            <div class="d">{{ t.date_dot }}</div>
+            <div class="y">{{ t.year }} · #{{ t.issue }}</div>
+          </div>
+          <div class="ng-dd-row__mid">
+            <div class="ng-dd-row__tags">
+              <span class="ng-dd-row__lens">{{ t.lens_glyph }} {{ t.lens_code }}</span>
+              {% if t.current %}<span class="ng-dd-row__today">❖ TODAY</span>{% endif %}
+            </div>
+            <div class="ng-dd-row__title">{{ t.title }}</div>
+          </div>
+          <div class="ng-dd-row__read">{{ t.read_min }} MIN<br><span class="go">READ →</span></div>
+        </a>
+        {% endfor %}
+        {% if not deepdive_items %}
+        <div class="ng-dd-empty">まだ深掘りテーマがありません</div>
+        {% endif %}
+        <div class="ng-dd-empty" id="ng-dd-empty" style="display:none">該当するテーマはありません</div>
+      </div>
+    </div>
+  </div><!-- /deepdive pane -->
 
   <!-- Footer -->
   <footer class="ng-foot">
@@ -479,7 +552,7 @@
       <div><strong>NEWS GRASP</strong> · ARCHIVE · {{ total_pages }} PAGES</div>
       <div class="ng-foot__links">
         <a href="{{ base_url }}/">← HOME</a>
-        <a href="{{ base_url }}/deepdive/">❖ テーマ書架</a>
+        <a href="{{ canonical }}?view=deepdive">❖ DEEP DIVE</a>
         <a href="{{ base_url }}/feed.xml">RSS</a>
         <a href="{{ base_url }}/">ABOUT</a>
       </div>
@@ -492,13 +565,24 @@
 (function () {
   var root = document.querySelector('.ng-arch');
   if (!root) return;
-  var chips  = Array.prototype.slice.call(root.querySelectorAll('[data-filter]'));
-  var search = root.querySelector('#ng-search');
-  var issues = Array.prototype.slice.call(root.querySelectorAll('.ng-issue'));
-  var months = Array.prototype.slice.call(root.querySelectorAll('.ng-month'));
-  var state = { cat: 'all', q: '' };
+  var chips   = Array.prototype.slice.call(root.querySelectorAll('[data-filter]'));
+  var search  = root.querySelector('#ng-search');
+  var issues  = Array.prototype.slice.call(root.querySelectorAll('.ng-issue'));
+  var months  = Array.prototype.slice.call(root.querySelectorAll('.ng-month'));
+  var ddRows  = Array.prototype.slice.call(root.querySelectorAll('[data-ddrow]'));
+  var ddEmpty = root.querySelector('#ng-dd-empty');
+  var modeBtns = Array.prototype.slice.call(root.querySelectorAll('[data-view]'));
+  var paneDigest   = root.querySelector('[data-view-pane="digest"]');
+  var paneDeepdive = root.querySelector('[data-view-pane="deepdive"]');
+  var monthJump = root.querySelector('#ng-month-jump');
+  var statDigest = root.querySelector('#ng-stat-digest');
+  var statDeep   = root.querySelector('#ng-stat-deepdive');
+  var h1main = root.querySelector('#ng-h1-main');
+  var h1em   = root.querySelector('#ng-h1-em');
+  var state = { view: 'digest', cat: 'all', q: '' };
 
-  function apply() {
+  // DIGEST スライド (日付タイムライン) を data-cats + data-text で絞り込み
+  function applyDigest() {
     var q = state.q.trim().toLowerCase();
     issues.forEach(function (el) {
       var cats = (el.getAttribute('data-cats') || '').split(' ');
@@ -515,6 +599,40 @@
       b.style.display = seen[b.getAttribute('data-month')] ? '' : 'none';
     });
   }
+  // DEEP DIVE スライド (テーマ書架) を data-lens + data-text で絞り込み (単一 apply)
+  function applyDeepdive() {
+    var q = state.q.trim().toLowerCase();
+    var shown = 0;
+    ddRows.forEach(function (el) {
+      var okLens = state.cat === 'all' || el.getAttribute('data-lens') === state.cat;
+      var text = (el.getAttribute('data-text') || '').toLowerCase();
+      var okQ = !q || text.indexOf(q) >= 0;
+      var vis = okLens && okQ;
+      el.style.display = vis ? '' : 'none';
+      if (vis) shown++;
+    });
+    if (ddEmpty) ddEmpty.style.display = (ddRows.length && !shown) ? '' : 'none';
+  }
+  function apply() { applyDigest(); applyDeepdive(); }
+
+  function setView(v) {
+    state.view = v;
+    if (paneDigest)   paneDigest.style.display   = (v === 'digest')   ? '' : 'none';
+    if (paneDeepdive) paneDeepdive.style.display = (v === 'deepdive') ? '' : 'none';
+    if (monthJump)  monthJump.style.display  = (v === 'digest')   ? '' : 'none';
+    if (statDigest) statDigest.style.display = (v === 'digest')   ? '' : 'none';
+    if (statDeep)   statDeep.style.display   = (v === 'deepdive') ? '' : 'none';
+    if (h1main) h1main.textContent = (v === 'digest') ? '日付アーカイブ' : 'テーマ書架';
+    if (h1em)   h1em.textContent   = (v === 'digest') ? 'by date.' : 'by theme.';
+    if (search) search.placeholder = (v === 'digest')
+      ? '日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)'
+      : 'テーマ・固有名詞で検索 (e.g. Waymo, 半導体, 円安)';
+    modeBtns.forEach(function (b) {
+      var on = b.getAttribute('data-view') === v;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
 
   chips.forEach(function (c) {
     c.addEventListener('click', function () {
@@ -526,6 +644,20 @@
   if (search) {
     search.addEventListener('input', function () { state.q = search.value; apply(); });
   }
+  modeBtns.forEach(function (b) {
+    b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
+  });
+
+  // 初期 view: DeepDive 個別記事からの遷移 (?view=deepdive) / #deepdive を尊重
+  var initView = 'digest';
+  try {
+    var sp = new URLSearchParams(location.search);
+    if (sp.get('view') === 'deepdive' || location.hash === '#deepdive') initView = 'deepdive';
+  } catch (e) {
+    if (/[?&]view=deepdive/.test(location.search) || location.hash === '#deepdive') initView = 'deepdive';
+  }
+  apply();
+  setView(initView);
 })();
 </script>
 </body>

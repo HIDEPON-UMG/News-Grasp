@@ -47,6 +47,8 @@ if str(_PKG_ROOT) not in sys.path:
 from tools.config import BASE_URL, CATEGORIES, SITE_TITLE  # noqa: E402
 from tools.generate_pages import (  # noqa: E402
     _absolutize,
+    _needs_rebuild,
+    _templates_mtime,
     parse_frontmatter,
     render_page,
 )
@@ -925,6 +927,7 @@ def build_deepdive_pages(
     if not src_dir.exists():
         return []
     written: list[Path] = []
+    tmpl_mtime = _templates_mtime()  # テンプレ変更も増分判定に含める (generate_pages と同一境界)
     for src in sorted(src_dir.glob("*.md")):
         try:
             ctx = build_deepdive_context(src)
@@ -937,7 +940,7 @@ def build_deepdive_pages(
             print(f"[skip] DeepDive date 欠落: {src.name}", file=sys.stderr)
             continue
         out = docs / "deepdive" / ctx["date"] / "index.html"
-        if not full and out.exists() and src.stat().st_mtime <= out.stat().st_mtime:
+        if not full and not _needs_rebuild(src, out, tmpl_mtime):
             continue
         render_page(ctx, out, template_name="deepdive-template.html")
         written.append(out)
@@ -989,16 +992,20 @@ def _archive_item(md_path: Path) -> dict[str, Any] | None:
     }
 
 
-def build_deepdive_archive(*, docs_root: Path | None = None,
-                           digest_dir: Path | None = None) -> Path | None:
-    """digest/DeepDive/*.md を束ねた書架インデックスを docs/deepdive/index.html に出力。"""
-    docs = Path(docs_root) if docs_root else (_PKG_ROOT / "docs")
+def collect_archive_items(*, digest_dir: Path | None = None) -> dict[str, Any]:
+    """digest/DeepDive/*.md を束ね、アーカイブ DEEP DIVE ビュー用の items + chips を返す。
+
+    旧テーマ書架と日付アーカイブ (/archive/) の DEEP DIVE スライドが共有する単一の
+    収集経路 (= 境界 1 箇所に集約)。md が 1 件も無ければ items を空にして返す。
+    """
     src_dir = Path(digest_dir) if digest_dir else (_PKG_ROOT / "digest" / "DeepDive")
+    empty: dict[str, Any] = {"items": [], "chips": [], "theme_count": 0,
+                             "month_label": "", "latest_url": ""}
     if not src_dir.exists():
-        return None
+        return empty
     items = [it for it in (_archive_item(p) for p in src_dir.glob("*.md")) if it]
     if not items:
-        return None
+        return empty
     items.sort(key=lambda it: it["date"], reverse=True)  # 新しい号が上
     items[0]["current"] = True                            # 最新 = ❖ TODAY 強調
     latest = items[0]
@@ -1010,24 +1017,35 @@ def build_deepdive_archive(*, docs_root: Path | None = None,
          "glyph": meta["glyph"], "accent": meta["accent"]}
         for cid, meta in CATEGORIES.items() if cid != "summary"
     ]
-    ctx = {
-        "site_title": SITE_TITLE,
-        "base_url": BASE_URL,
-        "canonical": f"{BASE_URL}/deepdive/",
-        "og_title": "テーマ書架 — ❖ THEME アーカイブ",
-        "og_description": "深掘り (TODAY'S THEME) だけを束ねる連載インデックス。"
-                          "テーマ単位で時系列に積み、レンズ絞り込み・全文検索できる書架。",
-        "og_url": f"{BASE_URL}/deepdive/",
-        "og_image": "",
-        "ink": INK, "gold": GOLD, "cream": CREAM, "paper": PAPER, "border": BORDER,
-        "theme_count": len(items),
-        "month_label": month_label,
-        "latest_url": latest["url"],
-        "chips": chips,
-        "themes": items,
-    }
+    return {"items": items, "chips": chips, "theme_count": len(items),
+            "month_label": month_label, "latest_url": latest["url"]}
+
+
+def build_deepdive_archive(*, docs_root: Path | None = None,
+                           digest_dir: Path | None = None) -> Path | None:
+    """旧テーマ書架 /deepdive/ は日付アーカイブ /archive/?view=deepdive に一本化済み。
+
+    既存ブックマーク/被リンク保護のため 404 にせず、meta refresh + canonical の
+    リダイレクトページを docs/deepdive/index.html に出力する。個別記事
+    /deepdive/{date}/ は build_deepdive_pages がそのまま生成し維持する。
+    digest_dir は後方互換のため受けるが未使用 (収集は collect_archive_items 側)。
+    """
+    docs = Path(docs_root) if docs_root else (_PKG_ROOT / "docs")
+    target = f"{BASE_URL}/archive/?view=deepdive"
+    html = (
+        '<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n'
+        f'<meta http-equiv="refresh" content="0; url={target}">\n'
+        f'<link rel="canonical" href="{target}">\n'
+        '<meta name="robots" content="noindex">\n'
+        '<title>テーマ書架は日付アーカイブに統合されました</title>\n'
+        f'<script>location.replace({target!r});</script>\n'
+        '</head>\n<body>\n'
+        f'<p>テーマ書架は <a href="{target}">日付アーカイブ (DEEP DIVE)</a> に統合されました。</p>\n'
+        '</body>\n</html>\n'
+    )
     out = docs / "deepdive" / "index.html"
-    render_page(ctx, out, template_name="deepdive-archive-template.html")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(html, encoding="utf-8", newline="\n")
     return out
 
 

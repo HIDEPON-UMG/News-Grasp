@@ -483,10 +483,31 @@ def _out_path_for(ctx: dict[str, Any], docs_root: Path) -> Path:
     return docs_root / ctx["category_id"] / ctx["date"] / "index.html"
 
 
-def _needs_rebuild(src: Path, out: Path) -> bool:
+def _templates_mtime(template_dir: Path = _TEMPLATE_DIR) -> float:
+    """prompts/ 配下テンプレート群 (_partials の include 含む) の最新 mtime。
+
+    「どのページがどのテンプレを使うか」の対応表を持たず、テンプレが 1 つでも
+    更新されたら全 incremental ページを stale 扱いにするための単一の指標。
+    対応表を持たない = テンプレ追加時に「このページの依存に入れ忘れる」取りこぼし
+    (= バグ再発) が構造的に起きない。rglob で _partials も拾う。
+    """
+    times = [p.stat().st_mtime for p in template_dir.rglob("*.html")]
+    return max(times) if times else 0.0
+
+
+def _needs_rebuild(src: Path, out: Path, template_mtime: float = 0.0) -> bool:
+    """out が src またはテンプレ群 (template_mtime) より古ければ再生成が必要。
+
+    src だけでなく template_mtime も判定に含めるのが要点。これを忘れると
+    「テンプレを張り替えても src md の mtime が据え置きで古い HTML が残る」
+    class of bug (2026-06-01 DeepDive 旧テーマ書架リンク残存事故) を踏む。
+    増分判定は本関数 1 箇所に集約し、DeepDive 個別記事 (render_deepdive
+    .build_deepdive_pages) もインライン複製せず本関数を共有して通す。
+    """
     if not out.exists():
         return True
-    return src.stat().st_mtime > out.stat().st_mtime
+    out_mtime = out.stat().st_mtime
+    return src.stat().st_mtime > out_mtime or template_mtime > out_mtime
 
 
 def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Iterable[Path] | None = None) -> list[Path]:
@@ -512,6 +533,7 @@ def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Ite
         ctx["date"]: (ctx.get("reflection") or {})
         for _, ctx in built if ctx["category_id"] == "summary"
     }
+    tmpl_mtime = _templates_mtime()  # テンプレ変更も増分判定に含める (古い HTML 残存を防ぐ)
     for src, ctx in built:
         # 統合方針 (2026-05-26): summary カテゴリの個別ページ /summary/{date}/ は廃止し、
         # /{date}/summary/ (build_summary 出力) に統合した。digest/Summary/*.md は
@@ -523,7 +545,7 @@ def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Ite
         refl = summary_reflection_by_date.get(ctx["date"]) or {}
         ctx["editorial_heading"], ctx["editorial_essay"] = _category_essay(refl, ctx["category_id"])
         out = _out_path_for(ctx, docs)
-        if not full and not _needs_rebuild(src, out):
+        if not full and not _needs_rebuild(src, out, tmpl_mtime):
             continue
         render_page(ctx, out)
         written.append(out)
@@ -1657,11 +1679,15 @@ def _archive_headline(summary_text: str, lead: dict[str, Any] | None) -> str:
     return "この日は準備中"
 
 
-def build_archive(entries: list[dict[str, Any]], docs_root: Path) -> Path:
+def build_archive(entries: list[dict[str, Any]], docs_root: Path,
+                  deepdive_items: list[dict[str, Any]] | None = None,
+                  lens_chips: list[dict[str, Any]] | None = None) -> Path:
     """日付横断アーカイブ docs/archive/index.html を生成。
 
     Claude Design "News Grasp Archive" (Editorial Timeline / Variant B) に準拠。
     日付ごとに 1 号 (issue) としてまとめ、各カテゴリの最上位記事を stories に整形する。
+    deepdive_items / lens_chips は DEEP DIVE スライド (旧テーマ書架の一本化先) 用で、
+    render_deepdive.collect_archive_items() の戻り値をそのまま渡す。
     """
     lens_order = [cid for cid in CATEGORIES if cid != "summary"]
 
@@ -1787,6 +1813,10 @@ def build_archive(entries: list[dict[str, Any]], docs_root: Path) -> Path:
         "stats": stats,
         "most_covered": most_covered,
         "total_pages": len(entries),
+        # DEEP DIVE スライド (旧テーマ書架 /deepdive/ の一本化先)
+        "deepdive_items": deepdive_items or [],
+        "lens_chips": lens_chips or [],
+        "deepdive_count": len(deepdive_items or []),
     }
     out = Path(docs_root) / "archive" / "index.html"
     return render_page(ctx, out, template_name="archive-template.html")
@@ -1821,7 +1851,8 @@ def main(argv: list[str] | None = None) -> int:
     #   _latest_deepdive_card() で DeepDive md を直接読み独立データとして明示注入する
     #   (entries 非汚染なので不変条件と両立。deepdive_integration_spec.md オプション B)。
     # 遅延 import (循環回避)
-    from tools.render_deepdive import build_deepdive_archive, build_deepdive_pages
+    from tools.render_deepdive import (build_deepdive_archive, build_deepdive_pages,
+                                       collect_archive_items)
     dd_pages = build_deepdive_pages(docs_root=docs_root, full=args.full)
     build_deepdive_archive(docs_root=docs_root)  # テーマ書架 (/deepdive/) も同時に生成
     if dd_pages:
@@ -1845,7 +1876,9 @@ def main(argv: list[str] | None = None) -> int:
         entries = _collect_entries(digests_all)
         idx = build_index(entries, docs_root)
         cat_pages = build_category_pages(entries, docs_root)
-        arc = build_archive(entries, docs_root)
+        dd = collect_archive_items()
+        arc = build_archive(entries, docs_root,
+                            deepdive_items=dd["items"], lens_chips=dd["chips"])
         overviews = build_all_overviews(entries, docs_root)
         summaries = build_all_summaries(entries, docs_root,
                                         digest_sources=digests_all)
