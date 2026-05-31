@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260601 — Artificial Intelligence</title>
+<meta name="description" content="[[Anthropic]] が 6/15 に課金体系を二分割し、**AI エージェントを「有料商品」として明示**。同時に[[OpenAI]]の GPT-5.6 カナリーリークで__「夏のモデル洪水」__が秒読みに入った。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-01/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260601 — Artificial Intelligence">
+<meta property="og:description" content="[[Anthropic]] が 6/15 に課金体系を二分割し、**AI エージェントを「有料商品」として明示**。同時に[[OpenAI]]の GPT-5.6 カナリーリークで__「夏のモデル洪水」__が秒読みに入った。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-01/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260601 — Artificial Intelligence">
+<meta name="twitter:description" content="[[Anthropic]] が 6/15 に課金体系を二分割し、**AI エージェントを「有料商品」として明示**。同時に[[OpenAI]]の GPT-5.6 カナリーリークで__「夏のモデル洪水」__が秒読みに入った。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-01 · #20260601</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">[[Anthropic]] が 6/15 に課金体系を二分割し、**AI エージェントを「有料商品」として明示**。同時に[[OpenAI]]の GPT-5.6 カナリーリークで__「夏のモデル洪水」__が秒読みに入った。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">88</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·01</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260601</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-01 07:00 · The New Stack</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://thenewstack.io/anthropic-agent-sdk-credits/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.thenewstack.io/media/2026/05/dd26538e-subscription-credits-scaled.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://thenewstack.io/anthropic-agent-sdk-credits/" rel="noopener nofollow" target="_blank" style="color: inherit;">Anthropic 6/15 — Agent SDK 課金分離で AI エージェント利用が有料化へ</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>は <strong>6 月 15 日</strong>より Claude サブスクリプション課金を二分割。<strong>Agent SDK・claude -p・GitHub Actions</strong> などの自律型 AI 用途を<span class="emph-und">サブスク枠から切り離す</span>。</li><li>Pro は月 <strong>$20</strong>、Max 5x は <strong>$100</strong>、Max 20x は <strong>$200</strong> の専用クレジットを設定。超過分は<strong>API 定価換算</strong>となり、<span class="emph-und">エージェント構築コストが「見える化」</span>される転換点。</li><li>ターミナルでの<strong>Claude Code</strong> や Claude.ai チャットは<strong>従来通りサブスク枠</strong>のまま。<strong>DIY 利用者への影響は限定的</strong>だが、ビジネス用途には実質値上げに相当。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-01</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-01 06:00</span>
+        <span>· TechnoSports</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://technosports.co.in/gpt-5-6-is-coming-in-june-and-its-not-alone/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://technosports.co.in/wp-content/uploads/2026/05/May-24-2026-10_50_59-PM.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://technosports.co.in/gpt-5-6-is-coming-in-june-and-its-not-alone/" rel="noopener nofollow" target="_blank">GPT-5.6、6 月登場か — OpenAI の Codex ログにカナリーテスト痕跡</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong> の内部 Codex ログに <strong>GPT-5.6</strong> のカナリーテスト痕跡が浮上。<strong>Polymarket</strong> では「6 月末までに公開」<strong>80〜89%</strong> の確率が付いている。</li><li>期待されるスペックは<strong>コンテキスト窓 1.5M トークン</strong>（GPT-5.5 比 43% 増）と<strong>デュアルバージョン戦略</strong>（推論特化 vs エージェント特化）。<span class="emph-und">夏の AI モデル洪水</span>の先陣を切る形に。</li><li>GPT-5.5 Instant が<strong>4 月 23 日</strong>に公開されてわずか <strong>30〜60 日周期</strong>での更新。<span class="emph-und">AI ラボの反復速度がコモディティ化を加速</span>している現実を突きつける。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-01 06:30</span>
+        <span>· WaveSpeed Blog</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://wavespeed.ai/blog/posts/gpt-5-6-canary-leak-what-we-know/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://d8r3hf.wavespeed.ai/media/images/1773962750383987480_n3hqzHRZ.webp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://wavespeed.ai/blog/posts/gpt-5-6-canary-leak-what-we-know/" rel="noopener nofollow" target="_blank">GPT-5.6 Codex ログ漏洩 — カナリーリリースの意味するところ</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>カナリーテストとは<strong>本番トラフィックの一部</strong>を実験ビルドに流す段階的展開の仕組み。<strong class="emph-bold">OpenAI</strong>が Codex バックエンドでこれを行うのは<strong>正式公開の直前</strong>を意味するシグナル。</li><li>5 月 20 日に<strong>内部の推論ブレークスルー</strong>を開示したと伝わり、Polymarket の確率が<strong>急騰</strong>。<span class="emph-und">「リリース確率市場」が新モデルの出現を先行指標化</span>する時代に突入した。</li><li>GPT-5.6 の公式モデルカードは<strong>未存在</strong>。現時点では確定的な仕様は不明だが、<strong>Claude Code との競合激化</strong>を見越したポジション取りが始まっている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-01 07:30</span>
+        <span>· TrendingTopics</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.trendingtopics.eu/google-bets-40-billion-on-anthropic-in-landmark-ai-power-play/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.trendingtopics.eu/wp-content/uploads/2026/01/55051572791_56e3b64c2c_o-scaled.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.trendingtopics.eu/google-bets-40-billion-on-anthropic-in-landmark-ai-power-play/" rel="noopener nofollow" target="_blank">Google、Anthropic に最大 400 億ドル出資確約 — AI 패权争いの新局面</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Google</strong>が<strong class="emph-bold">Anthropic</strong>への追加出資を確約し、総額最大<strong>400 億ドル</strong>に。Anthropic のバリュエーションは<strong>3,500 億ドル</strong>と AI 企業最高水準を更新した。</li><li>Alphabet の Q3 勢いが後押し。<strong>Google Cloud</strong> 経由のエンタープライズ顧客獲得を加速させる戦略で、<span class="emph-und">プラットフォームロック戦争が中盤戦</span>に突入。</li><li>OpenAI・Microsoft 連合 vs Google・Anthropic 連合という<strong>二極構造</strong>が明確化。<strong>独占禁止当局</strong>の視線も注がれ始め、<span class="emph-und">規制リスクが新たな変数</span>として浮上。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-01 08:00</span>
+        <span>· DevToolPicks</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://devtoolpicks.com/blog/anthropic-splits-claude-subscriptions-agent-sdk-credit-june-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://devtoolpicks.com/storage/blog-images/01KRJESCHWVJRRCYV4SXZTFCV6.webp?v=1780261345" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://devtoolpicks.com/blog/anthropic-splits-claude-subscriptions-agent-sdk-credit-june-2026" rel="noopener nofollow" target="_blank">Anthropic、Claude サブスクを 6/15 から再構成 — エージェント利用は独立クレジットへ</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>6 月 8 日頃、対象ユーザーにクレジット<strong>請求メール</strong>が届く予定。クレームしないと<strong>エージェント用途が課金不能状態</strong>になるリスクがあるため早期確認を推奨。</li><li>インディーハッカーへの影響は<strong>最小限</strong>。ターミナルからの <strong class="emph-bold">Claude Code</strong> 手動実行・ChatUI は従来通り。<span class="emph-und">「誰が使い方を変えるのか」が明確化</span>される。</li><li>Dreaming / Outcomes / 組み込み AI Finance の<strong>5 機能同梱</strong>。<span class="emph-und">エージェントを「商品」として本格展開</span>する Anthropic の姿勢を象徴するアップデート。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Anthropic</strong> の <strong>6/15 課金分離</strong>は「エージェント AI を本格商品として展開する」宣言だ。同時に <strong class="emph-bold">OpenAI</strong> の GPT-5.6 カナリーリークが「<strong>夏のモデル洪水</strong>」の幕開けを告げる。Google の Anthropic への <strong>400 億ドル出資確約</strong>と合わせ、<span class="emph-und">「モデル競争」から「エコシステム競争」</span>へのシフトが加速している。NVIDIA Blackwell Ultra の GB300 移行が AI インフラ側を支え、夏は「価格・コンテキスト・速度」の三競軸が鮮明になる。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-01/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-01
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
