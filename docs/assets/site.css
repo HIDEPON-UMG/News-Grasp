@@ -683,9 +683,10 @@ strong {
 }
 .editorial__body p {
   font-family: var(--font-serif);
-  font-size: 20px;
-  line-height: 2.05;
-  margin: 0 0 28px;
+  /* LP home-editorial__body p と本文サイズを統一 (2026-05-31: カテゴリ/page 側が大きすぎたため縮小) */
+  font-size: 16px;
+  line-height: 1.95;
+  margin: 0 0 24px;
   color: rgba(240, 235, 224, 0.94);
 }
 .editorial__body .emph-bold {
@@ -2507,7 +2508,7 @@ strong {
   .editorial__outline { display: none; }
   .editorial__body h2 { font-size: 28px; line-height: 1.3; margin-bottom: 18px; }
   .editorial__body h2::before { content: "\00A7\00A0"; color: var(--color-gold); font-weight: 900; }
-  .editorial__body p { font-size: 16px; line-height: 1.9; margin-bottom: 18px; }
+  .editorial__body p { font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
   .past-week { padding: 24px 16px; }
   .past-week__grid { grid-template-columns: 1fr 1fr; }
   .site-footer { padding: 18px 16px; flex-direction: column; align-items: center; text-align: center; }

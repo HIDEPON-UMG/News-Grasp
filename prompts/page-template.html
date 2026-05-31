@@ -198,7 +198,8 @@
     </div>
     <div class="editorial__body">
       <h2>本日のテーマ考察</h2>
-      <p>{{ summary_text|render_emph }}</p>
+      {# カテゴリ固有の考察 (装飾記法付き) を優先。無ければ summary_text にフォールバック #}
+      <p>{{ (editorial_essay or summary_text)|render_emph }}</p>
       <div class="editorial__cta">
         <a href="{{ base_url }}/{{ date }}/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
         <a href="{{ base_url }}/{{ category_id }}/" class="btn-ghost">BACK TO ARCHIVE</a>

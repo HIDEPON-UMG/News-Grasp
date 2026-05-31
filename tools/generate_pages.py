@@ -494,6 +494,10 @@ def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Ite
     docs = Path(docs_root) if docs_root else (_PKG_ROOT / "docs")
     sources = list(digests) if digests is not None else scan_digests()
     written: list[Path] = []
+    # 1st pass: 全 ctx を構築 (build_context は元々 src 毎に呼んでおり追加コストは無い)。
+    # 「本日のテーマ考察」navy band にカテゴリ固有の装飾本文を出すため、同日 summary digest の
+    # reflection を date→reflection で先に集める (category-template と同じ仕組みを page にも適用)。
+    built: list[tuple[Path, dict[str, Any]]] = []
     for src in sources:
         try:
             ctx = build_context(src)
@@ -503,11 +507,21 @@ def build_all(*, full: bool = False, docs_root: Path | None = None, digests: Ite
         if not ctx.get("date") or not ctx.get("category_id"):
             print(f"[skip] missing date/category_id: {src.name}", file=sys.stderr)
             continue
+        built.append((src, ctx))
+    summary_reflection_by_date = {
+        ctx["date"]: (ctx.get("reflection") or {})
+        for _, ctx in built if ctx["category_id"] == "summary"
+    }
+    for src, ctx in built:
         # 統合方針 (2026-05-26): summary カテゴリの個別ページ /summary/{date}/ は廃止し、
         # /{date}/summary/ (build_summary 出力) に統合した。digest/Summary/*.md は
         # build_summary 側でのみ消費するため、ここでは個別ページ生成をスキップする。
         if ctx["category_id"] == "summary":
             continue
+        # カテゴリ固有の考察 (装飾記法 ** __ [[]] 付き) を同日 summary の §NN から注入。
+        # 該当節が無ければ ("", "") で、テンプレ側が summary_text (プレーン) に fallback する。
+        refl = summary_reflection_by_date.get(ctx["date"]) or {}
+        ctx["editorial_heading"], ctx["editorial_essay"] = _category_essay(refl, ctx["category_id"])
         out = _out_path_for(ctx, docs)
         if not full and not _needs_rebuild(src, out):
             continue
