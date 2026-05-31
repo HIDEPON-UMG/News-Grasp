@@ -88,6 +88,8 @@ DeepDive を LP やどこかのページに出したいなら、**フォール�
 
 `build_all` / `_collect_entries`（= 日次カテゴリ前提のパイプライン）には載せず、`build_deepdive_pages()` のような独立関数で `digest/DeepDive/*.md` だけを走査して専用ページを出す。日次 LP とは疎結合のまま DeepDive を出せる。LP に出さない/別ハブに置く運用ならこちらが軽い。
 
+> **✅ 採用・実装済み (2026-05-31)**: 本オプション B を採用。`tools/render_deepdive.py` の `build_deepdive_pages()` が `digest/DeepDive/*.md` を独立に走査し `docs/deepdive/{date}/` を生成する。**さらに LP 上部ヒーローに「SUMMARY ⇆ DEEP DIVE」スライダー**を追加し、`build_index()` が `_latest_deepdive_card()` で最新 DeepDive md を**直接読んで独立データとして明示注入**する（`_collect_entries` の entry ストリームには載せないため §3 の不変条件と両立）。hero lead は本文「## 背景」導入段落を `render_emph` で 3 階層強調描画し、Summary スライドと同等の強調を黒背景で再現する。10 秒で SUMMARY ⇆ DEEP DIVE を自動スライドし、ボタンクリックで自動切替を停止する。
+
 ---
 
 ## 4. 触る前に読むべき箇所（ファイル:行は目安）
@@ -107,3 +109,5 @@ DeepDive を LP やどこかのページに出したいなら、**フォール�
 ## 5. 一言サマリ（DeepDive セッションへ）
 
 > 今は **DeepDive digest を置いても安全（本物 Summary を壊さない）だが、ページにもLPにも出ない**。出したいなら §3 のオプション A/B で**明示的に**統合し、§3 の不変条件 3 つ（特に「summary に化けない」）を守ること。`tests/test_deepdive_not_summary.py` が見張っている。
+>
+> **更新 (2026-05-31)**: オプション B を実装し、DeepDive は**専用ページ `docs/deepdive/{date}/` と LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダーの両方に出る**ようになった。LP への露出は `build_index()` 内 `_latest_deepdive_card()` の**直接注入**で、entry ストリーム（`build_all` / `_collect_entries`）は一切汚染しないため §3 の不変条件 3 つ（特に「summary に化けない」）は維持されている。`tests/test_deepdive_not_summary.py` に加え `tests/test_deepdive_render.py`（13 件）が見張る。

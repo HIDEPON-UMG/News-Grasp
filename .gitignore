@@ -34,6 +34,8 @@ worker/.wrangler/
 # design 大容量素材（git 履歴を膨らませないためローカルのみ保持）
 design/architecture.v2.pptx
 design/cover-ai.png
+# 受領デザイン一式（jsx モック + 大量 PNG/JPG、数十MB の参照素材。ローカルのみ保持, 2026-05-31 追加）
+docs/specs/_design_received/
 # 一時・調査用ワンオフ（コミット対象外, 2026-05-29 追加）
 _tmp_*
 tmp_*

@@ -1073,6 +1073,144 @@ strong {
   display: inline-block;
 }
 
+/* ---- Hero SUMMARY ⇆ DEEP DIVE スイッチ + スライダー ---- */
+.home-hero__switch {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  margin-bottom: 22px;
+}
+.home-hero__switch-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--color-border);
+  padding: 7px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--color-ink-dim);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.home-hero__switch-btn:last-child { border-right: none; }
+.home-hero__switch-btn:hover { color: var(--color-navy); }
+.home-hero__switch-btn.is-active { background: var(--color-navy); color: var(--color-cream); }
+
+/* 2 スライドを横並びにし track を translateX で左右にスライド。
+   track 幅 200% / 各 slide 50% (= コンテナ幅と等しい)。高さは高い方のスライドに揃う。 */
+.home-hero__slides {
+  overflow: hidden;
+  /* 高さは JS がアクティブスライドに合わせて設定。スライドと同調して滑らかに変化 */
+  transition: height 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.home-hero__track {
+  display: flex;
+  align-items: flex-start;
+  width: 200%;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.home-hero__track[data-active="deepdive"] { transform: translateX(-50%); }
+.home-hero__slide { flex: 0 0 50%; min-width: 0; }
+.home-hero__slide .home-hero__cta { margin-bottom: 0; }
+
+/* DEEP DIVE スライド: 見出しは長文の記事タイトルなので phrase より小さめに */
+.home-hero__title.home-hero__title--dd {
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.18;
+  color: var(--color-navy);
+  word-break: auto-phrase;
+  line-break: strict;
+}
+.home-hero__dd-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.home-hero__dd-lens {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: var(--dd-accent, var(--color-gold));
+  padding: 4px 10px;
+}
+.home-hero__dd-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--color-ink-dim);
+}
+
+/* DEEP DIVE スライドは黒背景パネル (DeepDive ページ意匠を踏襲) */
+.home-hero__slide--dd {
+  background: var(--color-ink);
+  color: var(--color-cream);
+  padding: 30px 34px 32px;
+  position: relative;
+  overflow: hidden;
+}
+.home-hero__slide--dd > * { position: relative; z-index: 1; }
+.home-hero__slide--dd::after {        /* 右上の淡い ❖ サイン (deepdive-ia.jsx 準拠) */
+  content: "❖";
+  position: absolute;
+  top: 12px;
+  right: 22px;
+  z-index: 0;
+  font-size: 96px;
+  line-height: 1;
+  color: rgba(201, 161, 85, 0.12);
+  pointer-events: none;
+}
+.home-hero__slide--dd .home-hero__title { color: var(--color-cream); }
+.home-hero__slide--dd .home-hero__dd-date { color: rgba(240, 235, 224, 0.6); }
+.home-hero__lead--dd { color: rgba(240, 235, 224, 0.82); }
+/* title (tag 一致強調) は hl-gold。黒地で視認できるよう gold アンダーラインに */
+.home-hero__slide--dd .hl-gold {
+  background: linear-gradient(180deg, transparent 58%, rgba(201, 161, 85, 0.5) 58%);
+  padding: 0 3px;
+}
+/* lead は本文「## 背景」導入段落を render_emph で描く。emph-* を黒地で視認できるよう
+ * editorial__body / summary-hero と同じゴールド系で上書き (マーカー=gold 32%背景+gold文字 /
+ * 下線=gold / 太字=cream)。Summary と同等の 3 階層強調を黒背景で再現する。 */
+.home-hero__lead--dd strong { color: var(--color-cream); }
+.home-hero__lead--dd .emph-bold {
+  background: rgba(201, 161, 85, 0.32);
+  color: var(--color-gold);
+}
+.home-hero__lead--dd .emph-und {
+  border-bottom-color: var(--color-gold);
+}
+
+/* IN THIS REPORT: レポートに含まれるコンテンツの目次 (deepdive-ia.jsx 準拠) */
+.home-hero__report {
+  margin: 22px 0 24px;
+  border-left: 1px solid rgba(240, 235, 224, 0.2);
+  padding-left: 22px;
+}
+.home-hero__report-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--color-gold);
+  margin-bottom: 10px;
+}
+.home-hero__report-item {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: rgba(240, 235, 224, 0.85);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(240, 235, 224, 0.1);
+}
+.home-hero__report-item:last-child { border-bottom: none; }
+/* 黒地 CTA は gold で反転 */
+.home-hero__cta--dd { background: var(--color-gold); color: var(--color-ink); }
+
 /* Hero RIGHT: Editor's Top 3 + Stats 2x2 */
 .home-hero__right { display: flex; flex-direction: column; gap: 24px; padding-top: 4px; }
 .home-top3__head {
@@ -2382,6 +2520,13 @@ strong {
   .home-hero__inner { grid-template-columns: 1fr; gap: 24px; }
   .home-hero__title { font-size: 38px; }
   .home-hero__lead { font-size: 14px; line-height: 1.7; }
+  .home-hero__switch { margin-bottom: 18px; }
+  .home-hero__switch-btn { padding: 7px 14px; }
+  .home-hero__title.home-hero__title--dd { font-size: 30px; line-height: 1.22; }
+  .home-hero__dd-meta { margin-bottom: 14px; }
+  .home-hero__slide--dd { padding: 22px 18px 24px; }
+  .home-hero__slide--dd::after { font-size: 64px; top: 12px; right: 14px; }
+  .home-hero__report { margin: 16px 0 18px; padding-left: 16px; }
   .home-featured { padding: 16px 16px 24px; }
   .home-featured__grid { grid-template-columns: 1fr; gap: 16px; }
   .home-featured__thumb-wrap { height: 200px; }

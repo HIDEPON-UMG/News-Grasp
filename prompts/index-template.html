@@ -91,9 +91,54 @@
 <section class="home-hero">
   <div class="home-hero__inner">
 
-    <!-- LEFT: Today's theme -->
-    <div>
+    <!-- LEFT: Today's theme (SUMMARY ⇆ DEEP DIVE スライダー) -->
+    <div class="home-hero__theme">
       <div class="home-hero__eyebrow"><span class="rule">━━</span> TODAY'S THEME</div>
+      {% if latest_deepdive %}
+      <div class="home-hero__switch" role="tablist" aria-label="本日のテーマ表示切替">
+        <button type="button" class="home-hero__switch-btn is-active" data-slide="summary" role="tab" aria-selected="true">SUMMARY</button>
+        <button type="button" class="home-hero__switch-btn" data-slide="deepdive" role="tab" aria-selected="false">DEEP DIVE</button>
+      </div>
+      <div class="home-hero__slides">
+        <div class="home-hero__track" data-active="summary">
+          <!-- slide: SUMMARY (本日の考察) -->
+          <div class="home-hero__slide" data-slide="summary">
+            <h2 class="home-hero__title">
+              {% if hero_phrase_left %}
+                <span class="hl-gold">{{ hero_phrase_left }}</span>
+                {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right }}</span>。{% else %}。{% endif %}
+              {% else %}
+                <span class="hl-gold">時勢</span>を掴み、<br/><span class="hl-blue">日々</span>に新たに。
+              {% endif %}
+            </h2>
+            <p class="home-hero__lead">{% if editorial_essay %}{{ editorial_essay|render_emph }}{% else %}{{ hero_lead }}{% endif %}</p>
+            {% if editorial %}
+            <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="home-hero__cta">READ FULL ESSAY →</a>
+            {% else %}
+            <a href="{{ base_url }}/archive/" class="home-hero__cta">BROWSE ARCHIVE →</a>
+            {% endif %}
+          </div>
+          <!-- slide: DEEP DIVE (週次 TODAY'S THEME を build_index が独立注入。黒背景パネル) -->
+          <div class="home-hero__slide home-hero__slide--dd" data-slide="deepdive">
+            {% if latest_deepdive.lens_id %}
+            <div class="home-hero__dd-meta">
+              <span class="home-hero__dd-lens" style="--dd-accent: {{ latest_deepdive.accent }};">{{ latest_deepdive.lens_glyph }} {{ latest_deepdive.lens_name_en|upper }}</span>
+              <span class="home-hero__dd-date">{{ latest_deepdive.date_dot }} · {{ latest_deepdive.read_min }} MIN READ</span>
+            </div>
+            {% endif %}
+            <h2 class="home-hero__title home-hero__title--dd">{{ latest_deepdive.title_html|safe }}</h2>
+            {% if latest_deepdive.lead_md %}<p class="home-hero__lead home-hero__lead--dd">{{ latest_deepdive.lead_md|render_emph }}</p>{% endif %}
+            {% if latest_deepdive.report_items %}
+            <div class="home-hero__report">
+              <div class="home-hero__report-label">━━ IN THIS REPORT</div>
+              {% for it in latest_deepdive.report_items %}<div class="home-hero__report-item">{{ it }}</div>{% endfor %}
+            </div>
+            {% endif %}
+            <a href="{{ latest_deepdive.canonical }}" class="home-hero__cta home-hero__cta--dd">READ THE DEEP DIVE →</a>
+          </div>
+        </div>
+      </div>
+      {% else %}
       <h2 class="home-hero__title">
         {% if hero_phrase_left %}
           <span class="hl-gold">{{ hero_phrase_left }}</span>
@@ -107,6 +152,7 @@
       <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="home-hero__cta">READ FULL ESSAY →</a>
       {% else %}
       <a href="{{ base_url }}/archive/" class="home-hero__cta">BROWSE ARCHIVE →</a>
+      {% endif %}
       {% endif %}
     </div>
 
@@ -287,6 +333,50 @@
   if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitHeroTitle); }
 })();
 </script>
+{% if latest_deepdive %}
+<script>
+/* 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダー。
+   10 秒ごとに自動で交互スライドする。ユーザーがボタンを押したら自動切替は停止し、
+   選んだ側を表示し続ける (読んでいる最中に勝手に切り替わらない)。 */
+(function () {
+  var track = document.querySelector('.home-hero__track');
+  if (!track) { return; }
+  var slidesEl = track.parentElement;            // .home-hero__slides
+  var btns = document.querySelectorAll('.home-hero__switch-btn');
+  var slides = ['summary', 'deepdive'];
+  var cur = 0;
+  var timer = null;
+  function paneOf(name) { return track.querySelector('.home-hero__slide[data-slide="' + name + '"]'); }
+  // コンテナ高をアクティブスライドに合わせる (短い側で余白が出ないように)
+  function setHeight() {
+    var active = paneOf(slides[cur]);
+    if (active) { slidesEl.style.height = active.offsetHeight + 'px'; }
+  }
+  function go(name) {
+    track.setAttribute('data-active', name);
+    cur = slides.indexOf(name);
+    btns.forEach(function (b) {
+      var on = b.getAttribute('data-slide') === name;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    setHeight();
+  }
+  function stopAuto() { if (timer) { clearInterval(timer); timer = null; } }
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      stopAuto();                          // 手動操作で自動切替を止める
+      go(b.getAttribute('data-slide'));
+    });
+  });
+  setHeight();
+  window.addEventListener('resize', setHeight);
+  // フォント適用や考察見出しの自動縮小後に高さが変わるため再計測
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(setHeight); }
+  timer = setInterval(function () { go(slides[(cur + 1) % slides.length]); }, 10000);
+})();
+</script>
+{% endif %}
 
 {% if publication_matrix and publication_matrix.rows %}
 <!-- ============= Publication matrix (カテゴリ × 曜日 配信頻度・過去30日) ============= -->

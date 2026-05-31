@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>生成AIエージェント、コンサルの人月モデルを侵食 — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="生成AIエージェントの普及が大手コンサルと日系SIerの人月課金モデルをどう侵食し、各社はどう再編で応じているか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-05-31/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="生成AIエージェント、コンサルの人月モデルを侵食">
+<meta property="og:description" content="生成AIエージェントの普及が大手コンサルと日系SIerの人月課金モデルをどう侵食し、各社はどう再編で応じているか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-05-31/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="生成AIエージェント、コンサルの人月モデルを侵食">
+<meta name="twitter:description" content="生成AIエージェントの普及が大手コンサルと日系SIerの人月課金モデルをどう侵食し、各社はどう再編で応じているか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #2E6B52;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(46,107,82,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(46,107,82,0.22);
+  --accent-underline: rgba(46,107,82,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
+.dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* table */
+.dd-table-wrap { overflow-x: auto; }
+.dd-table { width: 100%; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 22px 26px; border-bottom: 1px solid var(--border); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 9px; }
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 20px; font-weight: 700;
+                        line-height: 1.6; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+.dd-opt__txt { font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--dim); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 16px 22px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 6px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 関係図 SVG は width:100% で縮小すると実効フォントが 3-8px に潰れ判読不能に
+     なるため、モバイルでは横スクロール + ピンチズームで実寸を確保する
+     (一望性より可読性を優先。min-width 760 で実効フォント >=9px) */
+  .dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dd-relwrap svg { min-width: 760px; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260531</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">⌗</span>IT &amp; CONSULTING · IT-Consulting</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.05.31</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260531</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">8 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">生成AIエージェント、コンサルの人月モデルを侵食</h1>
+      <p class="dd-hero__theme">生成AIエージェントの普及が大手コンサルと日系SIerの人月課金モデルをどう侵食し、各社はどう再編で応じているか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260531</span><span>#Accenture</span><span>#Anthropic</span><span>#OpenAI</span><span>#AIエージェント</span><span>#コンサル業界</span></div>
+    </header>
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p>直近半年で、エンタープライズ向け生成AIの主戦場は「モデル性能」から <strong>実装と運用</strong> へと<strong>急速に移った</strong>。<strong class="emph-bold">Anthropic</strong> は2月にエージェントプラグインを投入し、5月には <strong class="emph-bold">Blackstone</strong> らと総額<strong>15億ドル</strong>の合弁会社を<strong>設立</strong>した。<span class="emph-und">モデルを売る側が顧客の現場に自ら降りてくる</span>という構図が、わずか3か月で前面に出てきている。</p><p>同じ5月4日、<strong class="emph-bold">OpenAI</strong> も「The Development Company」を<strong>立ち上げ</strong>、40億ドルを<strong>調達</strong>した。両社に共通するのは、<strong class="emph-bold">Palantir</strong> が広めた現場常駐エンジニア(FDE)型を<strong>採り</strong>、要件定義から実装まで一気通貫で<strong>請け負う</strong>点だ。<span class="emph-und">従来は SIer とコンサルが握っていた「実装の中間層」を、モデルベンダーが直接取りにきた</span>と読める。</p><p>一方で両社は4大コンサルと <strong>Frontier Alliances</strong> や <strong>Partner Network</strong> を<strong>結び</strong>、彼らを販売・実装の<strong>チャネルとして取り込んでもいる</strong>。<span class="emph-und">敵に回すと同時に味方に取り込む二面戦略</span>であり、コンサル側は「分配を得る代わりに自社の付加価値を薄める」ジレンマに<strong>立たされている</strong>。日系では <strong class="emph-bold">富士通</strong> と <strong class="emph-bold">NTTデータ</strong> が専有型エージェント基盤で<strong>追走</strong>するが、<span class="emph-und">顧客の人員を削る道具を売るほど自社の人月も細る</span>構造的矛盾を抱える。</p></div>
+      <div class="dd-exhibits">
+        
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">12.09</div><div class="y">2025</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>NTTデータ、業務特化AI基盤「LITRON Builder」提供開始</p>
+                  <a href="https://www.nttdata.com/global/ja/news/release/2025/120901/"><span class="src">NTTデータ</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">01.26</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>富士通、専有型エージェント基盤「Kozuchi Enterprise AI Factory」発表</p>
+                  <a href="https://global.fujitsu/ja-jp/pr/news/2026/01/26-02"><span class="src">富士通</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">02.24</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Anthropic、Claudeにエンタープライズ向けエージェントプラグインを投入</p>
+                  <a href="https://techcrunch.com/2026/02/24/anthropic-launches-new-push-for-enterprise-agents-with-plugins-for-finance-engineering-and-design/"><span class="src">TechCrunch</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.04</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>AnthropicとOpenAIが同日、エンタープライズAI実装の合弁会社を相次ぎ設立</p>
+                  <a href="https://techcrunch.com/2026/05/04/anthropic-and-openai-are-both-launching-joint-ventures-for-enterprise-ai-services/"><span class="src">TechCrunch</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.25</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>富士通、自己進化するマルチAIエージェント技術を発表</p>
+                  <a href="https://global.fujitsu/ja-jp/pr/news/2026/05/25-01"><span class="src">富士通</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+            </div>
+          </figure>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+            
+            <div class="dd-player">
+              <div class="dd-player__name">Accenture</div>
+              <div class="dd-player__role">世界最大手コンサル/SIer</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">FY2025のGenAI新規受注は59億ドルで前年比約2倍。一方で約1.1万人を削減しつつ全55万人をAI再教育</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">人月削減の加害者とAI実装の最大受益者を兼ねる二刀流</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">Anthropic</div>
+              <div class="dd-player__role">Claudeの開発元</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Blackstone・Goldman Sachsらと総額15億ドルの合弁会社を設立し、現場常駐エンジニア型でコンサルを中抜き</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">Partner Networkでコンサルを販売網化しつつ直販でバイパスする両面作戦</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">OpenAI</div>
+              <div class="dd-player__role">GPT系モデルの開発元</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Accenture/BCG/McKinsey等と複数年のFrontier Alliancesを締結し、別途「The Development Company」(40億ドル調達/評価100億ドル)で実装直販</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">モデル販売依存から実装収益へ軸足を移す</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">McKinsey</div>
+              <div class="dd-player__role">戦略コンサル最大手</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">内製AI「Lilli」を全社展開し従業員の74%超が定期利用。同じ設計をクライアント向けに商品化</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">自社で生産性を実証し顧客に売るフライホイール戦略</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">富士通</div>
+              <div class="dd-player__role">日系最大手SIer</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">専有型のKozuchi Enterprise AI Factoryを投入。顧客先で調達担当を約1,500人→375人へ圧縮する導入事例を提示</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">人月侵食を顧客に売る加害者と、自社人月が削られる被害者を兼ねるジレンマ</p>
+            </div>
+            
+          </div>
+        </div>
+        
+        
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>業界最大手 <strong class="emph-bold">Accenture</strong> の数字は、この地殻変動を<strong>最も鮮明に映す</strong>。GenAI 新規受注は FY2024 の <strong>30億ドル</strong>から FY2025 の <strong>59億ドル</strong>へ約2倍、収益は <strong>9億ドル</strong>から <strong>27億ドル</strong>へ約3倍に<strong>伸びた</strong>。<span class="emph-und">受注より収益の伸びが速い</span>のは、PoC から本番・課金へと<strong>転換が進んでいる</strong>サインだ。AI実装需要そのものは、確かに巨大な追い風になっている。</p><p>だが同社の通期売上は約<strong>649億ドル</strong>で、GenAI 収益はなお<strong>全体の4%程度</strong>にすぎない。その裏で <strong class="emph-bold">Accenture</strong> は約<strong>1.1万人</strong>を<strong>削減</strong>し、8.65億ドルの構造改革費を<strong>計上</strong>しつつ、全55万人を<strong>再教育</strong>している。<span class="emph-und">上振れ（AI実装の受注増）と下押し（人月単価の圧縮）が同じ一社に同時に効いている</span>——これがこのテーマの核心の論点だ。</p></div>
+      
+      <div class="dd-charts">
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Accenture の生成AI 新規受注と収益（通期）</span></figcaption>
+          <div class="dd-chart__note">受注は約2倍・収益は約3倍</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Accenture の生成AI 新規受注と収益（通期）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">十億ドル</text><rect x="88.0" y="139.0" width="60.0" height="75.0" fill="#2E6B52"/><text x="118.0" y="131.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3.0</text><rect x="148.0" y="191.5" width="60.0" height="22.5" fill="#C9A155"/><text x="178.0" y="183.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">0.9</text><rect x="352.0" y="66.5" width="60.0" height="147.5" fill="#2E6B52"/><text x="382.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5.9</text><rect x="412.0" y="146.5" width="60.0" height="67.5" fill="#C9A155"/><text x="442.0" y="138.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">2.7</text><text x="148.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY2024</text><text x="412.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY2025</text><text x="412.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 受注は約2倍・収益は約3倍</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#2E6B52"></span>GenAI 新規受注</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>GenAI 収益</span></div></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">Accenture 通期決算（SEC Form 8-K FY2024 / FY2025 Q4 プレスリリース）https://www.stocktitan.net/news/ACN/accenture-reports-fourth-quarter-and-full-year-fiscal-2025-t7wo8n3bfooo.html ／収益は CIO Dive https://www.ciodive.com/news/accenture-generative-ai-revenue-skills-training-data-modernization/761161/</span></div>
+        </figure>
+        
+      </div>
+      
+      
+      <div class="dd-prose"><p>ただし侵食は一本調子ではない。<strong class="emph-bold">MIT</strong> の調査(Project NANDA)は、生成AIの本番導入の<strong>95%が損益への寄与を示せていない</strong>と<strong>報告</strong>し、内製構築の成功率33%に対しベンダー調達は67%と<strong>約2倍</strong>開く。<span class="emph-und">「誰が責任を持って実装し運用するか」という需要は消えず、むしろ複雑化で SIer 依存が増えうる</span>。価格モデルも揺れており、<strong class="emph-bold">McKinsey</strong> は報酬の約25%を成果連動に<strong>移し</strong>、調査では成果・従量型のハイブリッド採用が1年で27%→41%へ<strong>急伸した</strong>。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+      
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>コンサル/SIerは人月（工数）課金から成果・従量課金へ移行すべきか。移行する場合、自社のAI実装能力で先行者利益を取り切れるか</p>
+          </div>
+          <div class="dd-decision__opts">
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">AI実装を成果報酬型で請け負い、人月減を単価と量で補う（Accenture型の二刀流）</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">モデルベンダーと組み販売・実装チャネルに徹する（Partner Network型）</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">従来の人月モデルを死守し、AIは社内効率化に留める（守りの選択）</p>
+            </div>
+            
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-06-18 Accenture Q3 FY2026 決算 ／ 2026年下半期の大型契約更改シーズン</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div><p>Accenture CEO Julie Sweet ら大手コンサル経営陣、Anthropic/OpenAI のJV経営陣、発注側の大企業 CFO・調達部門</p></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dd-prose"><p>3案のトレードオフは明快だ。<strong>二刀流</strong>は受注規模を<strong>維持できる</strong>が単価下落と人員整理の痛みを伴い、<strong>チャネル特化</strong>は安全だが付加価値をモデルベンダーに<strong>明け渡す</strong>。<strong>守り</strong>は短期の利益を<strong>守る</strong>が、<strong class="emph-bold">Distyl</strong> や月250ドルで戦略レポートを生む <strong class="emph-bold">Rocket</strong> のような「人月ゼロ」競合に<span class="emph-und">価格の底を抜かれる</span>リスクが高い。<span class="emph-und">本命は二刀流だが、成立条件は「AIで生産性が上がった分を、値下げではなく成果課金で自社に取り込めるか」</span>に尽きる。次の試金石は <strong>6月18日の <strong class="emph-bold">Accenture</strong> 決算</strong>で、AI収益の人月外比率と価格モデルへの<strong>言及</strong>が、業界全体の方向を<strong>決める</strong>だろう。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+      
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p>エンタープライズAIの主戦場は「モデル性能」から <strong>実装と運用</strong> へ移り、<strong class="emph-bold">Anthropic</strong>・<strong class="emph-bold">OpenAI</strong> が5月に各々<strong>合弁会社</strong>を設立して現場常駐型でコンサルを<strong>中抜き</strong>し始めた。最大手 <strong class="emph-bold">Accenture</strong> は GenAI 受注を <strong>2倍</strong>・収益を <strong>3倍</strong>に<strong>伸ばす</strong>一方、約1.1万人を<strong>削減</strong>——<span class="emph-und">AI実装の追い風と人月単価の逆風が同じ一社に同時に効く</span>局面だ。ただし生成AI本番導入の95%が損益貢献を示せず、<span class="emph-und">実装責任の担い手としてのSIer需要は当面消えない</span>。焦点は <strong>6月18日の Accenture 決算</strong>と、人月から成果課金への移行速度に移る。</p>
+        <div class="watermark">❖</div>
+      </div>
+      
+      
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+          
+          <a class="dd-source" href="https://www.stocktitan.net/news/ACN/accenture-reports-fourth-quarter-and-full-year-fiscal-2025-t7wo8n3bfooo.html">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt">Accenture FY2025 Q4／通期決算プレスリリース（2025年9月、StockTitan 経由・本文確認済）— GenAI 新規受注 $5.9B、Q4 $1.8B <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.sec.gov/Archives/edgar/data/0001467373/000146737324000266/fy24q4plc8-kexhibit.htm">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt">Accenture Form 8-K FY2024（SEC, 2024年9月）— FY2024 GenAI 新規受注 $3.0B（Q4 $1B） <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.ciodive.com/news/accenture-generative-ai-revenue-skills-training-data-modernization/761161/">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt">CIO Dive「Accenture completes reinvention」（2025年）— GenAI 収益 $2.7B、研修修了55万人、AI&amp;Data 人員約7.7万人 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://techcrunch.com/2026/05/04/anthropic-and-openai-are-both-launching-joint-ventures-for-enterprise-ai-services/">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt">TechCrunch「Anthropic and OpenAI are both launching joint ventures for enterprise AI services」（2026年5月4日）— Anthropic $1.5B JV、OpenAI The Development Company $4B調達/評価$10B、FDEモデル <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://fortune.com/2026/05/04/anthropic-claude-consulting-industry-joint-venture-blackstone-goldman-sachs/">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt">Fortune（2026年5月4日）— Anthropic が Blackstone/Goldman らと中堅企業向けAI実装の新会社 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.anthropic.com/news/claude-partner-network">
+            <span class="dd-source__no">06</span>
+            <span class="dd-source__txt">Anthropic 公式「Claude Partner Network」— $100M投資、Deloitte/Accenture/PwC/KPMG への展開 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.mckinsey.com/capabilities/tech-and-ai/how-we-help-clients/rewiring-the-way-mckinsey-works-with-lilli">
+            <span class="dd-source__no">07</span>
+            <span class="dd-source__txt">McKinsey 公式「Rewiring the way McKinsey works with Lilli」— 全社展開・74%超が定期利用 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://global.fujitsu/ja-jp/pr/news/2026/01/26-02">
+            <span class="dd-source__no">08</span>
+            <span class="dd-source__txt">富士通 公式（2026年1月26日）— Kozuchi Enterprise AI Factory <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://global.fujitsu/ja-jp/pr/news/2026/05/25-01">
+            <span class="dd-source__no">09</span>
+            <span class="dd-source__txt">富士通 公式（2026年5月25日）— 自己進化マルチAIエージェント技術 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.nttdata.com/global/ja/news/release/2025/120901/">
+            <span class="dd-source__no">10</span>
+            <span class="dd-source__txt">NTTデータ 公式（2025年12月9日）— 業務特化AI基盤 LITRON Builder <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://xtech.nikkei.com/atcl/nxt/column/18/03393/120100004/">
+            <span class="dd-source__no">11</span>
+            <span class="dd-source__txt">日経xTECH（2025年12月）— 富士通のAIエージェント導入で調達担当を約1,500人→375人へ <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://fortune.com/2025/08/18/mit-report-95-percent-generative-ai-pilots-at-companies-failing-cfo/">
+            <span class="dd-source__no">12</span>
+            <span class="dd-source__txt">Fortune / MIT Project NANDA「The GenAI Divide」（2025年8月18日）— 生成AI本番導入の95%が損益貢献を示せず <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://futurumgroup.com/press-release/are-outcome-based-and-hybrid-ai-pricing-models-rewriting-the-vendor-playbook/">
+            <span class="dd-source__no">13</span>
+            <span class="dd-source__txt">Futurum Group（2026年）— 成果・従量・ハイブリッド型AI課金の購買動向（ハイブリッド 27%→41%） <span class="ext">↗</span></span>
+          </a>
+          
+        </div>
+      </div>
+      
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">THEME ARCHIVE</a><a href="https://hidepon-umg.github.io/News-Grasp/">ABOUT</a></div>
+  </div>
+
+</div>
+</body>
+</html>

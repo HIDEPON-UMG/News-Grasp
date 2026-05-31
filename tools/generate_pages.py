@@ -31,6 +31,7 @@ if str(_PKG_ROOT) not in sys.path:
 from tools.config import (  # noqa: E402
     BASE_URL,
     CATEGORIES,
+    INK,
     OG_DESCRIPTION_MAX,
     SITE_DESCRIPTION,
     SITE_TAGLINE_EN,
@@ -787,6 +788,108 @@ def _split_theme_phrases(summary_text: str) -> tuple[str, str]:
     return ("", "")
 
 
+def _emphasize_entities(text: str, tags: list[str]) -> str:
+    """text 内に出現する固有名詞 (tags 由来) を hl-gold マーカーで強調した安全 HTML。
+
+    Summary 側はダイジェスト本文に埋め込まれた強調記法を render_emph で描くが、
+    DeepDive の theme/title は素テキスト。そこで DeepDive が実際に持つ tags (= 固有
+    名詞/キーワード) を text 内で探して同系統のマーカーを当てる。語は DeepDive 自身の
+    メタデータ由来なので恣意的な語選びにならない。長い語を優先し二重置換を防ぐ。
+    """
+    import html as _h
+    esc = _h.escape(text)
+    skip = {"deepdive", "weekly", "news-grasp", "news grasp"}
+    terms = sorted(
+        {t for t in (tags or [])
+         if len(t) >= 2 and t.lower() not in skip and not t.lower().startswith("issue-")},
+        key=len, reverse=True,
+    )
+    spans: list[str] = []
+    for term in terms:
+        et = _h.escape(term)
+        if et and et in esc:
+            esc = esc.replace(et, f"\x00{len(spans)}\x00")
+            spans.append(f'<span class="hl-gold">{et}</span>')
+    for i, span in enumerate(spans):
+        esc = esc.replace(f"\x00{i}\x00", span)
+    return esc
+
+
+def _deepdive_report_items(dd: dict[str, Any]) -> list[str]:
+    """DeepDive context の実ブロックから「IN THIS REPORT」manifest を生成する。
+
+    デザイン (deepdive-ia.jsx) の固定サンプルではなく **実データ** から組む
+    (relations/table が無い回もあるため)。RELATIONS / TABLE は design 通り ★ を付す。
+    """
+    items: list[str] = []
+    if dd.get("timeline"):
+        items.append("時系列 TIMELINE")
+    if dd.get("players"):
+        items.append("当事者 PLAYERS")
+    if dd.get("relations_svg"):
+        items.append("関係図 RELATIONS ★")
+    n_charts = len(dd.get("charts") or [])
+    if n_charts:
+        items.append(f"数値 CHART ×{n_charts}" if n_charts > 1 else "数値 CHART")
+    if dd.get("table"):
+        items.append("データ表 TABLE ★")
+    if dd.get("decision"):
+        items.append("意思決定 DECISION")
+    return items
+
+
+def _latest_deepdive_card() -> dict[str, Any] | None:
+    """最新 DeepDive (週次 TODAY'S THEME) を LP 上部ヒーローの
+    SUMMARY ⇆ DEEP DIVE スライダー用に 1 枚分のデータへ整形する。
+
+    不変条件 (2026-05-31 事故) の本質は「日次 digest の **entry ストリーム**
+    (build_all / _collect_entries) を DeepDive で汚染しない」こと。ここでは
+    entries を一切触らず digest/DeepDive/*.md を **直接** 読んで LP の独立 pane
+    に明示注入するため、entry 汚染は起きず不変条件と両立する。DeepDive が
+    無い・壊れているときは None を返し、テンプレ側でトグル自体を出さない。
+    """
+    src_dir = _PKG_ROOT / "digest" / "DeepDive"
+    if not src_dir.exists():
+        return None
+    mds = sorted(src_dir.glob("*.md"))  # ファイル名 = YYYY-MM-DD 昇順 → 末尾が最新
+    if not mds:
+        return None
+    from tools.render_deepdive import build_deepdive_context  # 遅延 import (循環回避)
+    try:
+        dd = build_deepdive_context(mds[-1])
+    except Exception as exc:  # noqa: BLE001
+        print(f"[warn] LP DeepDive カード構築失敗 {mds[-1].name}: {exc}", file=sys.stderr)
+        return None
+    if not dd.get("date") or not dd.get("title"):
+        return None
+    tags = dd.get("tags") or []
+    title = dd.get("title", "")
+    theme = dd.get("theme", "")
+    # hero lead は本文「## 背景」導入段落 (**太字** __下線__ [[マーカー]] が密) を採用し、
+    # Summary の essay と同じ render_emph で 3 階層強調を描く。素テキストの theme は
+    # tag 一致でしか光らず薄いため使わない。背景散文が空のときだけ theme に退避する。
+    bg_prose = dd.get("bg_prose") or []
+    lead_md = bg_prose[0] if bg_prose else theme
+    return {
+        "title": title,
+        "title_html": _emphasize_entities(title, tags),
+        "theme": theme,
+        "lead_md": lead_md,
+        "date": dd.get("date", ""),
+        "date_dot": dd.get("date_dot", ""),
+        "canonical": dd.get("canonical", ""),
+        "read_min": dd.get("read_min", 0),
+        "lens_id": dd.get("lens_id", ""),
+        "lens_name_en": dd.get("lens_name_en", ""),
+        "lens_name_jp": dd.get("lens_name_jp", ""),
+        "lens_glyph": dd.get("lens_glyph", ""),
+        "accent": dd.get("accent", INK),
+        "tags": tags[:4],
+        # 「IN THIS REPORT」manifest (実ブロックから動的生成)
+        "report_items": _deepdive_report_items(dd),
+    }
+
+
 def build_index(entries: list[dict[str, Any]], docs_root: Path,
                 recent_days: int = TOP_RECENT_DAYS) -> Path:
     """Variant B Magazine Spread Home (docs/index.html) を生成。
@@ -822,6 +925,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "editorial": None,
             "stats": {"stories": 0, "categories": 6, "essay": 7, "reading_min": 15},
             "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
+            "latest_deepdive": _latest_deepdive_card(),
         }
         out = Path(docs_root) / "index.html"
         return render_page(ctx, out, template_name="index-template.html")
@@ -927,6 +1031,9 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         },
         "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
         "publication_matrix": compute_publication_matrix(entries, today_date, days=30),
+        # LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダー用。entry ストリームとは
+        # 独立に DeepDive md を直接読んだデータ (不変条件の本質 = entry 非汚染を維持)。
+        "latest_deepdive": _latest_deepdive_card(),
     }
     out = Path(docs_root) / "index.html"
     return render_page(ctx, out, template_name="index-template.html")
@@ -1688,6 +1795,23 @@ def main(argv: list[str] | None = None) -> int:
     docs_root = args.docs_root or (_PKG_ROOT / "docs")
     written = build_all(full=args.full, docs_root=docs_root)
     print(f"wrote {len(written)} article page(s)")
+
+    # DeepDive (週次 TODAY'S THEME) は日次パイプラインとは疎結合の独立レンダーパス。
+    # 不変条件 (2026-05-31 事故) の本質は「日次 digest の **entry ストリーム**
+    # (build_all / _collect_entries) を DeepDive で汚染しない」こと → ここは従来どおり
+    # entries に載せず digest/DeepDive/*.md だけを docs/deepdive/{date}/ に出力する。
+    # ※ LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダーだけは別経路: build_index が
+    #   _latest_deepdive_card() で DeepDive md を直接読み独立データとして明示注入する
+    #   (entries 非汚染なので不変条件と両立。deepdive_integration_spec.md オプション B)。
+    from tools.render_deepdive import build_deepdive_pages  # 遅延 import (循環回避)
+    dd_pages = build_deepdive_pages(docs_root=docs_root, full=args.full)
+    if dd_pages:
+        print(f"wrote {len(dd_pages)} DeepDive page(s)")
+        for p in dd_pages[:5]:
+            try:
+                print(f"  - {p.relative_to(_PKG_ROOT)}")
+            except ValueError:
+                print(f"  - {p}")
     for p in written[:5]:
         try:
             rel = p.relative_to(_PKG_ROOT)
