@@ -149,6 +149,7 @@ VAPID 方式（送信側が秘密鍵で署名、ブラウザが公開鍵で検�
 - `tools/send_push.py` は購読者が 0 人でも秘密鍵が無くても **exit 0** で、毎朝の digest 生成・公開を絶対に止めない（push は付随機能）。Worker に繋がらない一時障害も警告して skip（exit 0）し、`LIST_TOKEN` 不一致のときだけ exit 1 で表面化する。
 - 失効した購読（HTTP 404/410）は送信時に自動検出し、Worker の `/unsubscribe` で除去する。
 - 購読保存先は Worker (KV) が本番。`data/push_subscriptions.secret.json` は管理人の手元テスト用 fallback（`*.secret.json` で git 管理外）。
+- 送信は **TTL 12 時間**で行う（`DEFAULT_TTL_SECONDS`）。pywebpush の既定 `ttl=0` は「送信時に端末がオフラインなら破棄（かつ 201 を返す）」ため、朝 06:35 にスリープ中のスマホへ毎朝 silently 破棄され「3/3 送信成功なのに通知が来ない」が起きていた（2026-06-01 修正）。TTL を持たせ FCM/APNs が端末再接続まで保持→当日中に配信する。`tests/test_send_push.py::test_send_one_passes_positive_ttl` が `ttl=0` への退行を契約で封じる。
 
 ## ディレクトリ構造
 

@@ -146,6 +146,31 @@ def test_main_dry_run_does_not_send(tmp_path, monkeypatch, capsys):
     assert "DRY-RUN" in out
 
 
+# --- 送信契約: TTL ---------------------------------------------------------
+
+def test_send_one_passes_positive_ttl(monkeypatch):
+    """webpush へ必ず正の TTL を渡す（TTL=0 を禁ずる）不変条件。
+
+    なぜ重要か: push サービス（FCM/APNs）は TTL=0 を「送信時に端末がオンラインで
+    なければ破棄」と解釈し、しかも送信側には 201 を返す。朝のスリープ中端末では
+    毎朝 silently 破棄され「送信成功なのに通知が来ない」が再発する（2026-06-01 実測）。
+    pywebpush の既定 ttl=0 に戻ると本テストが落ちる。
+    """
+    import pywebpush
+
+    captured = {}
+
+    def fake_webpush(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    # send_one は関数内で `from pywebpush import webpush` するため、モジュール属性を差し替える
+    monkeypatch.setattr(pywebpush, "webpush", fake_webpush)
+    ok, gone, detail = sp.send_one(SAMPLE_SUB, '{"title":"t"}', "key.pem", "mailto:a@b.c")
+    assert ok is True and gone is False
+    assert captured.get("ttl", 0) > 0, "webpush に正の TTL を渡していない（TTL=0 はオフライン端末で破棄される）"
+
+
 # --- Worker 連携 ---------------------------------------------------------
 
 def test_resolve_token_missing_and_empty_and_value(tmp_path):

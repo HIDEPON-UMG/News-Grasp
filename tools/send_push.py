@@ -48,6 +48,14 @@ VAPID_CLAIMS_SUB = "mailto:hideki.kusunoki@gmail.com"
 
 DEFAULT_TITLE = "📰 今日のNews Grasp"
 
+# push サービス（FCM / APNs / Mozilla）に「端末がオフラインでもこの秒数だけ保持して
+# 再接続時に配信せよ」と伝える TTL。**0（pywebpush の既定）は禁止**: TTL=0 だと
+# push サービスは「送信した瞬間に端末がオンラインでなければ破棄」し、しかも送信側には
+# 201/Created を返す。朝 06:35 の送信時にスマホが Doze/スリープだと毎朝 silently
+# 破棄され、ログ上は「送信成功」なのに通知が一度も来ない（2026-06-01 実測で発覚）。
+# 当日中に開けば足りるので 12 時間保持する（翌朝の重複配信は tag 固定で 1 件に畳まれる）。
+DEFAULT_TTL_SECONDS = 12 * 60 * 60
+
 # 配信曜日マトリクス（prompts/routine-system.md ステップ1 と一致させること）。
 # Python の weekday(): 月=0, 火=1, ... 日=6。
 #   為替/AI/IT/モビリティ … 毎日固定 / 経済 … 平日のみ / ゲーム … 火木土日のみ
@@ -193,6 +201,7 @@ def send_one(subscription: dict, payload: str, vapid_key_file: str, claims_sub: 
             data=payload,
             vapid_private_key=vapid_key_file,
             vapid_claims={"sub": claims_sub},
+            ttl=DEFAULT_TTL_SECONDS,  # 0 だとオフライン端末で破棄される（上の定数コメント参照）
             timeout=10,
         )
         return True, False, "ok"
