@@ -83,7 +83,7 @@
       <h1 class="cat-hero__title">{{ category_jp }}.</h1>
     </div>
     {% if summary_text %}
-    <div class="cat-hero__summary">{{ summary_text }}</div>
+    <div class="cat-hero__summary">{{ summary_text|render_emph }}</div>
     {% endif %}
     <div class="cat-hero__stats">
       <div>

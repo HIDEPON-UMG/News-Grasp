@@ -130,7 +130,8 @@
       <h1 class="cat-hero__title">{{ category_jp }}.</h1>
     </div>
     {% if featured and featured.summary_text %}
-    <div class="cat-hero__summary">{{ featured.summary_text|truncate(140, true, '…') }}</div>
+    {# 装飾記法を render_emph で強調表示 (長さは CSS の -webkit-line-clamp で制御)。 #}
+    <div class="cat-hero__summary">{{ featured.summary_text|render_emph }}</div>
     {% endif %}
     <div class="cat-hero__stats">
       <div>

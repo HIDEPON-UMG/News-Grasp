@@ -318,7 +318,9 @@ def build_context(digest_path: Path) -> dict[str, Any]:
     title = _normalize_title(fm.get("title", ""), cat["label"])
 
     summary_text = extract_summary_text(body).replace("\n", " ").replace("\r", " ").strip()
-    og_description = truncate(summary_text, OG_DESCRIPTION_MAX)
+    # og/meta description は装飾記法 ([[ ]] ** __) を HTML 化できないので素テキスト化する。
+    # summary_text 自体は cat-hero / editorial 側で render_emph に渡るため記法を残す。
+    og_description = truncate(strip_inline(summary_text), OG_DESCRIPTION_MAX)
 
     # summary digest のみ考察 (reflection) と theme フレーズを抽出。
     # LP / overview / summary ページの「本日のテーマ考察」「総論」「PULL QUOTE」
