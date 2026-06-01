@@ -85,12 +85,23 @@ _RIVAL_KINDS = {"競合", "対立"}
 _COOP_KINDS = {"出資", "提携", "供給", "協力"}
 _AUTH_KINDS = {"規制"}
 _FRENEMY_KINDS = {"協調的競合", "協力競合", "frenemy"}
+# 一方向 (→) のフロー・エッジ: 親→子 (出資)・供給元→先 (供給)・当局→対象 (規制)。
+# 陣営を成さない事業者を段に分ける longest-path layering に使う (双方向の競合/協調的
+# 競合は peer 関係なのでランクに使わず同段に残す)。
+_FLOW_KINDS = {"出資", "供給", "規制"}
 # frenemy の二面エッジで使う色 (協力面=提携の緑 / 競合面=競合の赤)。
 _FRENEMY_COOP_COLOR = "#2E6B52"
 _FRENEMY_RIVAL_COLOR = "#8E2A19"
 
 # 「裏が取れていない」ことを示すセル値 (table の淡色化判定)。
 _UNCONFIRMED_TOKENS = ("未確認", "未開示", "非開示")
+
+# DeepDive 共通の og:image フォールバック (design/build_deepdive_og.py で生成)。
+# 日次記事の resolve_og_image がカテゴリ別 assets/og/{cat}.jpg に退避するのと同じく、
+# DeepDive は frontmatter に og_image が無ければ全号でこの 1 枚を共有する。空文字を
+# _absolutize すると BASE_URL (サイト HTML) になり Discord 等が画像を出せないため、
+# 必ず実画像へ退避させる (2026-06-01 サムネ欠落の構造対策)。
+_DEEPDIVE_OG_IMAGE = "assets/og/deepdive.jpg"
 
 # fenced ブロック ```lang\n...\n```
 _FENCED_RE = re.compile(r"^```([A-Za-z_]+)\r?\n(.*?)\r?\n```", re.DOTALL | re.MULTILINE)
@@ -163,6 +174,41 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
 
 # ── relations: 座標なしスキーマ → 役割レイヤー (band) 配置 + SVG ────────────────
 
+def _flow_layers(
+    operators: list[str], edges: list[dict[str, Any]], order: list[str],
+) -> list[list[str]]:
+    """陣営を成さない事業者を有向フロー (一方向エッジ) の最長路ランクで段に分ける。
+
+    供給/出資/規制のような一方向エッジ (from→to) だけを使い、各ノードのランクを
+    「そのノードへ入る最長フロー鎖の長さ」とする (DAG の longest-path layering)。供給先
+    などバリューチェーンの下流は供給元より下段に落ち、同段ノードを貫く直販供給線が
+    消える。競合/協調的競合 (双方向の peer 関係) はランクに使わず同段に残す。フローが
+    無く全ノードが同ランクなら単一 band を返し、従来の競合左右二分にフォールバックする。
+    """
+    ops = set(operators)
+    succ: dict[str, list[str]] = {i: [] for i in operators}
+    indeg: dict[str, int] = {i: 0 for i in operators}
+    for e in edges:
+        a, b = str(e.get("from", "")), str(e.get("to", ""))
+        if e.get("kind") in _FLOW_KINDS and a in ops and b in ops and a != b:
+            succ[a].append(b)
+            indeg[b] += 1
+    rank: dict[str, int] = {i: 0 for i in operators}
+    queue = [i for i in operators if indeg[i] == 0]
+    while queue:                      # Kahn 順で最長路ランクを伝播 (DAG 前提)
+        u = queue.pop(0)
+        for v in succ[u]:
+            rank[v] = max(rank[v], rank[u] + 1)
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                queue.append(v)
+    n_ranks = max(rank.values(), default=0) + 1
+    if n_ranks <= 1:
+        return [list(operators)]
+    return [[i for i in order if i in ops and rank[i] == k]
+            for k in range(n_ranks) if any(rank[i] == k for i in operators)]
+
+
 def _relation_bands(
     nodes: list[dict[str, Any]], edges: list[dict[str, Any]], ids: list[str],
 ) -> tuple[list[list[str]], set[str], set[str], bool]:
@@ -177,8 +223,9 @@ def _relation_bands(
 
     事業者が 2 つ以上の陣営 group (どれか 1 つでも 2 ノード以上) に分かれるときは、
     陣営ごとに別の中段 band へ積む (例: 米陣営 / 中国陣営)。陣営が形成されない
-    (group が全て単独) ときは事業者を 1 band に置き、競合を左右に二分する従来配置に
-    フォールバックする (契約テスト fixture の単一陣営ケースを保つ)。
+    (group が全て単独) ときは、事業者を有向フロー (供給/出資 = 一方向) の段で層化し
+    (バリューチェーン: 供給元の上段→供給先の下段)、フローも無ければ事業者を 1 band に
+    置き競合を左右に二分する従来配置にフォールバックする (単一陣営 fixture を保つ)。
 
     返り値: (rows, reg, parents, use_camps)
     """
@@ -210,7 +257,9 @@ def _relation_bands(
         if ungrouped:
             rows.append(ungrouped)
     elif operators:
-        rows.append(list(operators))
+        # 陣営を成さない事業者は有向フロー (供給/出資/規制 = 一方向) の段で層化する。
+        # 供給先 (下流) を供給元より下段へ落とし、同段ノードを貫く直販供給線を消す。
+        rows.extend(_flow_layers(operators, edges, order))
     if reg:
         rows.append([i for i in order if i in reg])
     if not rows:
@@ -353,6 +402,13 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
                 _even_slots(sorted(row, key=lambda i: desired[i]))
             else:
                 _space_row(row, desired)
+
+    # 仕上げ: FLOATING (出資元/規制) を確定後アンカー位置の重心へ最終整列する。スイープ内
+    # では各反復でアンカーより先に処理され 1 反復古い位置を読むため、出資元が出資先でなく
+    # 隣のノードの真上に残ることがある (出資元は出資先の上、の規約を最後に満たし直す)。
+    for k, row in enumerate(rows):
+        if k not in anchor_rows:
+            _space_row(row, {i: _bary(i) for i in row})
 
     placed = []
     for nd in nodes:
@@ -941,7 +997,7 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     tags = _parse_tags(text)
 
     canonical = f"{BASE_URL}/deepdive/{date_str}/"
-    og_image = _absolutize(fm.get("og_image", "") or "")
+    og_image = _absolutize(fm.get("og_image", "") or _DEEPDIVE_OG_IMAGE)
 
     # 各節の散文。背景/深掘り/注目点/要約。
     bg = sections.get("背景", "")

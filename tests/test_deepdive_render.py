@@ -227,6 +227,76 @@ def test_relations_layered_by_role_and_no_label_overlap() -> None:
                 f"ラベル同士が重なる: {rects[i]} ∩ {rects[j]}"
 
 
+# ── relations バリューチェーン層化 + 線の貫通禁止 (★2026-06-01 ユーザー指摘) ──────
+
+# 2026-05-31 DeepDive の関係図と同じ構造: group が陣営でなくサブタイトル (例示企業) で
+# 全ノード別値 → 旧ロジックは事業者を 1 band に潰し、供給元 (ベンダー/SI) と供給先
+# (発注企業) を同段に並べたため (1) 供給線が同段の SI を貫通し (2) 役割の違うノードが
+# 同レイヤーに乗った。有向フロー (供給) で段層化してこの 2 症状を封じる不変条件を固定。
+_VALUE_CHAIN_REL = {
+    "title": "モデルベンダー陣営とコンサル・SI の協調的競合",
+    "nodes": [
+        {"id": "capital", "label": "投資家", "group": "Blackstone・Goldman"},
+        {"id": "vendors", "label": "モデルベンダー", "group": "Anthropic・OpenAI"},
+        {"id": "consultants", "label": "コンサル・SI", "group": "Accenture・富士通 他"},
+        {"id": "client", "label": "発注企業", "group": "CFO・調達"},
+    ],
+    "edges": [
+        {"from": "capital", "to": "vendors", "label": "JV・実装直販に巨額出資", "kind": "出資"},
+        {"from": "vendors", "to": "consultants", "kind": "協調的競合",
+         "coop": "Partner Network で提携", "rival": "人月モデルを中抜き"},
+        {"from": "vendors", "to": "client", "label": "AI実装を直販で提供", "kind": "供給"},
+        {"from": "consultants", "to": "client", "label": "人月で実装・運用を提供", "kind": "供給"},
+    ],
+}
+
+_EDGE_LINE_RE = re.compile(
+    r'<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)" '
+    r'stroke="([^"]+)" stroke-width="([\d.]+)"')
+
+
+def _seg_point_dist(seg, px: float, py: float) -> float:
+    """線分 seg=(x1,y1,x2,y2) と点 (px,py) の最短距離。"""
+    x1, y1, x2, y2 = seg
+    dx, dy = x2 - x1, y2 - y1
+    L2 = dx * dx + dy * dy
+    if L2 < 1e-9:
+        return math.hypot(px - x1, py - y1)
+    t = max(0.0, min(1.0, ((px - x1) * dx + (py - y1) * dy) / L2))
+    return math.hypot(px - (x1 + dx * t), py - (y1 + dy * t))
+
+
+def test_relations_value_chain_layers_supply_sink_below() -> None:
+    """供給元 (ベンダー/SI) は同段、供給先 (発注企業) は下段、出資元は上段に層化する。
+
+    なぜ重要か: 2026-05-31 の関係図で供給元と供給先が同レイヤーに並び、
+    モデルベンダー→発注企業 の供給線が間のコンサル・SI を貫通していた。役割
+    (供給元/供給先/出資元) を有向フローで別段に分け、エッジ線がどのノード円も
+    貫通しないことを契約として固定する (円環/中央集約・直販線貫通への逆戻り防止)。
+    """
+    lay = layout_relations(_VALUE_CHAIN_REL)
+    pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
+    # 供給元 2 社 (frenemy) は同レイヤー、供給先 (発注企業) はその下段
+    assert pos["vendors"][1] == pos["consultants"][1], "供給元 2 社が同レイヤーに無い"
+    assert pos["client"][1] > pos["vendors"][1], "供給先 (発注企業) が下段に落ちていない"
+    # 出資元 (投資家) は供給元より上段
+    assert pos["capital"][1] < pos["vendors"][1], "出資元が上段に積まれていない"
+    # 3 役割が別レイヤー
+    assert len({pos["capital"][1], pos["vendors"][1], pos["client"][1]}) == 3, \
+        "出資元/供給元/供給先が別レイヤーに分かれていない"
+
+    # ★ どのエッジ線も自分の端点以外のノード円を貫通しない (線がオブジェクトを貫通禁止)
+    svg = relations_svg(_VALUE_CHAIN_REL)
+    circles = _node_circles(svg)
+    segs = [(float(a), float(b), float(c), float(d))
+            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
+    assert len(circles) == 4 and len(segs) >= 4
+    for seg in segs:
+        for cx, cy, cr in circles:
+            assert _seg_point_dist(seg, cx, cy) >= cr - 1.0, \
+                f"エッジ線がノード円を貫通: seg={seg} circle=({cx},{cy},{cr})"
+
+
 # ── table 未確認セル検出 (★新規描画) ─────────────────────────────────────────
 
 def test_table_flags_unconfirmed_cells() -> None:
@@ -261,6 +331,22 @@ def test_context_has_all_render_fields() -> None:
     assert ctx["table"] and ctx["decision"]
     assert ctx["bg_prose"] and ctx["di_prose"] and ctx["summary_prose"]
     assert len(ctx["sources"]) == 5
+
+
+def test_og_image_falls_back_to_real_image_not_site_root() -> None:
+    """frontmatter に og_image が無くても og:image は実画像 (.jpg) を指す。
+
+    2026-06-01 まで DeepDive は og_image フォールバックを欠き、空文字を絶対化して
+    og:image がサイト HTML (BASE_URL) を指していた → Discord 等がサムネを出せず無画像
+    カードになった。本テストは「og:image が必ず実画像ファイルを指す」不変条件を 1 件で
+    固定する (個別の md ごとの smoke は増やさない)。
+    """
+    from tools.config import BASE_URL
+
+    ctx = build_deepdive_context(_FIXTURE)  # _FIXTURE は og_image を持たない
+    assert ctx["og_image"].endswith(".jpg"), ctx["og_image"]
+    assert ctx["og_image"] != BASE_URL and ctx["og_image"] != BASE_URL + "/"
+    assert "/assets/og/" in ctx["og_image"]
 
 
 def test_build_writes_page_to_deepdive_path(tmp_path: Path) -> None:
