@@ -1371,6 +1371,15 @@ strong {
 .home-featured__badge.cat-mobility { background: var(--color-accent-mobility); }
 .home-featured__badge.cat-economy  { background: var(--color-accent-economy); }
 .home-featured__badge.cat-game     { background: var(--color-accent-game); }
+/* LP の body には data-category が無く --accent-current が summary 固定になるため、
+   home-featured セクション内ではカテゴリ修飾子から --featured-accent を供給する。 */
+.home-featured.cat-fx       { --featured-accent: var(--color-accent-fx); }
+.home-featured.cat-ai       { --featured-accent: var(--color-accent-ai); }
+.home-featured.cat-it       { --featured-accent: var(--color-accent-it); }
+.home-featured.cat-mobility { --featured-accent: var(--color-accent-mobility); }
+.home-featured.cat-economy  { --featured-accent: var(--color-accent-economy); }
+.home-featured.cat-game     { --featured-accent: var(--color-accent-game); }
+.home-featured.cat-summary  { --featured-accent: var(--color-accent-summary); }
 .home-featured__badge.cat-summary  { background: var(--color-accent-summary); }
 .home-featured__grid {
   display: grid;
@@ -1403,6 +1412,11 @@ strong {
   line-height: 1.3;
   letter-spacing: -0.005em;
   color: var(--color-ink);
+  /* カテゴリ色の淡 tint 背景 + 左アクセントバー (カテゴリページの .top-story__title と平仄)。
+     --featured-accent は下の .home-featured.cat-XX でカテゴリ色に切り替わる。 */
+  padding: 14px 20px;
+  background: color-mix(in srgb, var(--featured-accent, var(--color-accent-it)) 14%, transparent);
+  border-left: 5px solid var(--featured-accent, var(--color-accent-it));
 }
 .home-featured__title a { color: inherit; }
 .home-featured__bullets {
