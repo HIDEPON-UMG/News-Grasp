@@ -101,7 +101,10 @@ _UNCONFIRMED_TOKENS = ("未確認", "未開示", "非開示")
 # DeepDive は frontmatter に og_image が無ければ全号でこの 1 枚を共有する。空文字を
 # _absolutize すると BASE_URL (サイト HTML) になり Discord 等が画像を出せないため、
 # 必ず実画像へ退避させる (2026-06-01 サムネ欠落の構造対策)。
-_DEEPDIVE_OG_IMAGE = "assets/og/deepdive.jpg"
+# 末尾の ?v=N はキャッシュバスター。Discord の media proxy は og:image を URL 単位で
+# 長時間キャッシュし、同一パスでファイルを差し替えても古い画像を出し続けるため、画像の
+# 見た目を更新したら N を上げて URL を変える (= proxy に別画像として再取得させる)。
+_DEEPDIVE_OG_IMAGE = "assets/og/deepdive.jpg?v=2"
 
 # fenced ブロック ```lang\n...\n```
 _FENCED_RE = re.compile(r"^```([A-Za-z_]+)\r?\n(.*?)\r?\n```", re.DOTALL | re.MULTILINE)

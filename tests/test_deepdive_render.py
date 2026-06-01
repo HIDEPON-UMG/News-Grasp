@@ -344,7 +344,7 @@ def test_og_image_falls_back_to_real_image_not_site_root() -> None:
     from tools.config import BASE_URL
 
     ctx = build_deepdive_context(_FIXTURE)  # _FIXTURE は og_image を持たない
-    assert ctx["og_image"].endswith(".jpg"), ctx["og_image"]
+    assert ".jpg" in ctx["og_image"], ctx["og_image"]  # ?v=N クエリ付きも許容
     assert ctx["og_image"] != BASE_URL and ctx["og_image"] != BASE_URL + "/"
     assert "/assets/og/" in ctx["og_image"]
 
