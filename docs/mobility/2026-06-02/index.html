@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260602 — Mobility</title>
+<meta name="description" content="BYD Gods Eye 5.0の事故補償全引き受けが自動運転保険の新スタンダードを示した。WaymoはTexasで台数差14:1でTeslaをリードし、Robotaxiの現実と約束の差が鮮明になっている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-02/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260602 — Mobility">
+<meta property="og:description" content="BYD Gods Eye 5.0の事故補償全引き受けが自動運転保険の新スタンダードを示した。WaymoはTexasで台数差14:1でTeslaをリードし、Robotaxiの現実と約束の差が鮮明になっている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-02/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260602 — Mobility">
+<meta name="twitter:description" content="BYD Gods Eye 5.0の事故補償全引き受けが自動運転保険の新スタンダードを示した。WaymoはTexasで台数差14:1でTeslaをリードし、Robotaxiの現実と約束の差が鮮明になっている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-02 · #20260602</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">BYD Gods Eye 5.0の事故補償全引き受けが自動運転保険の新スタンダードを示した。WaymoはTexasで台数差14:1でTeslaをリードし、Robotaxiの現実と約束の差が鮮明になっている。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">81</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·02</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260602</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-02 06:00 · Electrek</span>
+    <span class="top-story__score">88</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://electrek.co/2026/06/01/byd-gods-eye-accepts-liability-tesla-never-has/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2025/06/BYD-Seagull-EV-sales-1.jpeg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://electrek.co/2026/06/01/byd-gods-eye-accepts-liability-tesla-never-has/" rel="noopener nofollow" target="_blank" style="color: inherit;">BYD Gods Eye 5.0 accepts full liability for crashes during urban driving: Tesla never did</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">BYD</strong>は<strong>Gods Eye 5.0</strong>（5月更新）について「シティナビゲーション・走行中の事故は<strong>BYDが全額補償</strong>」と宣言。Teslaが<strong>FSDの責任</strong>を一切ユーザーに転嫁してきたのと対照的で、<span class="emph-und">自動運転保険のスタンダードを書き換える</span>可能性がある。</li><li>BYDによると前版でスマートパーキング使用率が<strong>21%→93%</strong>に急増し、事故率は低水準を維持。<strong>レベル2.5相当のシステム</strong>（LiDAR搭載）で、この保険戦略は「<span class="emph-und">信頼経済」の真の差別化</span>を狙う。</li><li>レースの構図は変化した。<strong>技術の速度</strong>ではなく<strong>責任の取り方</strong>が選択基準になれば、<span class="emph-und">規制環境の整った日欧市場でBYDが優位に立つ</span>シナリオが現実化し始める。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-02</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-02 07:00</span>
+        <span>· Road to Autonomy</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.roadtoautonomy.com/waymo-accelerates-multi-city-rollout/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://media.roadtoautonomy.com/wp-content/uploads/2026/03/waymo-four-markets.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.roadtoautonomy.com/waymo-accelerates-multi-city-rollout/" rel="noopener nofollow" target="_blank">Waymo accelerates multi-city rollout: Dallas, Houston, San Antonio, Orlando added, now 10 cities</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Waymo</strong>は<strong>ダラス・ヒューストン・サンアントニオ・オーランド</strong>の4都市を同時追加し、計<strong>10都市</strong>での有料ロボタクシー運行を開始。<strong>週100万ライド</strong>を2026年末目標として掲げる。</li><li>現在フェニックス・SF・LA・オースティンで<strong>収益化済み</strong>のWaymoは、拡大に向けて<strong>160億ドルの追加調達</strong>も完了。対する<strong>テキサス州のTesla Robotaxi</strong>は同州内でたった<strong>42台</strong>（Waymoは577台）と規模差は歴然。</li><li><span class="emph-und">「スケーリング vs 約束」</span>の競争は数字で可視化された。Waymoの<strong>安全実績と規模</strong>に対し、Teslaは<strong>技術発表</strong>の頻度で期待を繋ぐ戦略を維持している。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-02 08:00</span>
+        <span>· The Next Web</span>
+        <span class="more-card__score">83</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://thenextweb.com/news/tesla-robotaxi-fleet-42-vehicles-waymo-577-texas" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://media.thenextweb.com/2026/05/tesla-robotaxi-fleet-42-vehicles-waymo-577-texas.avif" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://thenextweb.com/news/tesla-robotaxi-fleet-42-vehicles-waymo-577-texas" rel="noopener nofollow" target="_blank">Tesla has 42 robotaxis in Texas vs Waymo 577: 17 incidents in 10 months, FSD probe opens</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>テキサス州の規制データが<strong>Tesla Robotaxi：42台、Waymo：577台</strong>という台数差を公開。Teslaのオースティン車隊は2025年7月〜2026年4月の<strong>10か月で17件の事故</strong>（うち軽傷2件・入院1件）を記録した。</li><li>米当局は<strong>FSDの実際の安全性</strong>（冗長センサーなしでの自動運転）について調査を開始。<span class="emph-und">Teslaの「技術は本物」という主張に初の公的な疑念</span>が突きつけられた形で、株価にも下押し圧力。</li><li>【関連】5都市での<strong>Robotaxi拡大計画を延期</strong>したとの観測も浮上。<span class="emph-und">安全調査と台数の劣位が重なり、「テスラは自動運転でWaymoに追いつけるか」</span>という問いが業界全体に共有された。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-02 06:30</span>
+        <span>· Electrek</span>
+        <span class="more-card__score">75</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://electrek.co/2026/05/26/byd-unveils-first-car-for-global-markets-1000-km-range-phev/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2026/05/BYD-Dolphin-G.jpeg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://electrek.co/2026/05/26/byd-unveils-first-car-for-global-markets-1000-km-range-phev/" rel="noopener nofollow" target="_blank">BYD Dolphin G unveiled: first car built for global markets with 1,000km+ WLTP PHEV range</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">BYD</strong>が初の<strong>グローバル専用モデル「Dolphin G」</strong>を発表。<strong>Super Hybrid（PHEV）</strong>搭載でWLTP複合航続<strong>1,000km超</strong>を実現しつつ、欧州・豪州・ブラジル市場を主要ターゲットとした。</li><li>価格競争力が最大の武器。<strong>中国製造の効率</strong>を活かし、現地ライバル車より<strong>15〜20%安い</strong>設定を目指す。BYD海外輸出は<strong>2026年4月に前年比70%増の135,098台</strong>に達した。</li><li><span class="emph-und">「グローバル最初の1台」を日本・欧州メーカー製ではなくBYDが設計する</span>時代の幕が上がった。レンジと価格の両立は<span class="emph-und">次世代クロスオーバー市場の基準を書き直す</span>可能性がある。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-02 09:00</span>
+        <span>· LowCarb Style</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://lowcarb.style/2026/05/08/2026-latest-report-the-turbulent-global-ev-market/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://lowcarb.style/wp-content/uploads/2025/03/2026-toyota-bz4x-live-photos.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://lowcarb.style/2026/05/08/2026-latest-report-the-turbulent-global-ev-market/" rel="noopener nofollow" target="_blank">日本のEV市場シェア2026年3月4.15%で過去最高更新 トヨタがリード BYD輸出前年比70%増</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>日本の<strong>EV（BEV）市場シェア</strong>が2026年3月に<strong>4.15%</strong>を記録し、2022年9月の4.10%を超えて過去最高を更新。<strong class="emph-bold">トヨタ</strong>が国内EV販売5,140台でリードし、<strong class="emph-bold">日産</strong>が続く。</li><li><strong>トヨタの戦略</strong>は「全固体電池への橋渡し」として現行BEVと<strong>HV/PHVのパラレル投資</strong>を維持。年間EV販売目標<strong>150万台</strong>に向けて補助金政策と連動した販売拡大を図る。</li><li><span class="emph-und">4%台は「普及期の入り口」</span>という評価が業界で定着。ただし欧州（20%超）・中国（40%超）との差は大きく、<span class="emph-und">日本固有の充電インフラ課題</span>が普及加速の最大ボトルネックとして残る。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">BYD</strong>が<strong>Gods Eye 5.0</strong>の事故補償を全額引き受けたことは、Teslaが踏み込めなかった「責任の可視化」を実現した。<strong class="emph-bold">Waymo</strong>のテキサス577台 vs Teslaの42台という<strong>台数差14:1</strong>は、<span class="emph-und">「技術の約束」と「規模の現実」の乖離</span>を数字で証明した。EV市場でも日本の4.15%過去最高と、BYDのグローバル攻勢（輸出70%増）が同時進行している。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-02
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

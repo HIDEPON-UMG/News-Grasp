@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260602 — Economy</title>
+<meta name="description" content="日経平均は5月29日に終値66,329円で66,000円台を初達成。ウォーシュ新FRB議長の初FOMC（6/17）と日銀含み損45兆円が、相場の上振れと下方リスクの双方を規定する。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-02/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260602 — Economy">
+<meta property="og:description" content="日経平均は5月29日に終値66,329円で66,000円台を初達成。ウォーシュ新FRB議長の初FOMC（6/17）と日銀含み損45兆円が、相場の上振れと下方リスクの双方を規定する。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-02/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260602 — Economy">
+<meta name="twitter:description" content="日経平均は5月29日に終値66,329円で66,000円台を初達成。ウォーシュ新FRB議長の初FOMC（6/17）と日銀含み損45兆円が、相場の上振れと下方リスクの双方を規定する。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-02 · #20260602</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">日経平均は5月29日に終値66,329円で66,000円台を初達成。ウォーシュ新FRB議長の初FOMC（6/17）と日銀含み損45兆円が、相場の上振れと下方リスクの双方を規定する。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">81</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·02</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260602</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-02 08:00 · 野村証券</span>
+    <span class="top-story__score">88</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.nomura.co.jp/wealthstyle/article/0740/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.nomura.co.jp/wealthstyle/article/0740/images/og_a_0740_01.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.nomura.co.jp/wealthstyle/article/0740/" rel="noopener nofollow" target="_blank" style="color: inherit;">日経平均 史上初の65000円台 5月25日に65158円 AIと半導体関連が牽引 全員参加の相場</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">日経平均</strong>は2026年5月25日に終値<strong>65,158円</strong>を記録し、史上初の<strong>65,000円台</strong>突入。<strong class="emph-bold">AI</strong>・半導体関連株が上昇を牽引し、<strong>個人投資家</strong>も広く参入する「全員参加」型の相場となった。</li><li>上昇の背景は<strong>原油安</strong>（米イラン停戦合意観測）、<strong>円安継続</strong>（輸出株への恩恵）、<strong>AI投資ブーム</strong>の3重奏。<strong class="emph-bold">MLCC</strong>（積層セラミックコンデンサ）関連など<strong>インフラ素材</strong>にも波及している。</li><li>野村証券ストラテジストは「<strong>ハイボラ相場の入口</strong>」と警告。<span class="emph-und">過熱感はあるが上値を狙う環境は継続</span>しており、週明けからの崩れには慎重な検証が必要と指摘する。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">■ ECONOMY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-02</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-02 06:00</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.nikkei.com/article/DGXZQOUB270M30X20C26A5000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3078822027052026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;fp-x=0.11&amp;fp-y=0.79&amp;h=630&amp;w=1200&amp;s=5d16ea103c1b759f874f5f8a2c6fd8e5" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOUB270M30X20C26A5000000/" rel="noopener nofollow" target="_blank">日経平均5月29日66329円で終値66000円台初達成 原油安・米イラン停戦期待が追い風</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>5月29日の東京株式市場で<strong class="emph-bold">日経平均</strong>は前日比<strong>1,636円高の66,329円</strong>で引け、終値ベースで初の<strong>66,000円台</strong>に到達。<strong>上げ幅1,400円超</strong>という異例の強さで最高値を4日ぶりに更新した。</li><li>「<strong>トランプ大統領の米イラン停戦合意示唆</strong>」が起爆剤。<span class="emph-und">ホルムズ海峡の正常化→原油価格落ち着き→コスト圧力緩和→企業収益改善</span>という好循環を市場が先取りした。</li><li><strong>S&amp;P500</strong>も最高値を更新し「同時高」の構図。ただし<strong>FRBのタカ派転換リスク</strong>と<strong>日銀の利上げ観測</strong>が上値を抑える要因として残り、<span class="emph-und">二つのCBイベント（6/17 FOMC、6月日銀会合）が目下最大の下方リスク</span>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-02 07:00</span>
+        <span>· TradingKey</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.tradingkey.com/jp/analysis/economic/central-banks/261924396-fed-fomc-kevin-warsh-hawkish-shift-inflation-cpi-treasury-yields-rate-hike-pricing-labor-resilience-policy-pivot-tradingkey" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://resource.tradingkey.com/cms_uploads/img/20231116/2c1ddf838fb54c80bf544f304a03c8b9.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.tradingkey.com/jp/analysis/economic/central-banks/261924396-fed-fomc-kevin-warsh-hawkish-shift-inflation-cpi-treasury-yields-rate-hike-pricing-labor-resilience-policy-pivot-tradingkey" rel="noopener nofollow" target="_blank">ウォーシュ新FRB議長就任 6月17日初FOMC タカ派シフト懸念でCPI3.8%受け利上げ観測</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">ウォーシュ議長</strong>が第17代FRB議長として<strong>5月22日</strong>に正式就任。<strong>6月17日</strong>が初FOMCとなり、<strong>CPI3.8%（4月）</strong>と<strong>NFP115,000人増</strong>という強めの経済指標を前に、<span class="emph-und">タカ派スタンスへの転換が意識</span>されている。</li><li>CME FedWatchでは<strong>6月据え置き確率が99%</strong>。ただし「<strong>利下げ打ち止め→利上げ再開</strong>」シナリオへの警戒は高まり、<strong>10年債利回り</strong>が4.5%台に上昇。株式市場へのバリュエーション圧力となる。</li><li>日本への影響は複層的。<strong>ドル円は160円台維持</strong>→輸出企業の収益増、一方で<strong>輸入インフレ再燃</strong>→消費者物価の押し上げ→日銀の早期利上げ圧力増大という連鎖が<span class="emph-und">「悪い円安」のリスク</span>として浮上。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-02 09:00</span>
+        <span>· LIMO</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://limo.media/articles/-/126837" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://limo.ismcdn.jp/mwimgs/8/e/1200w/img_8e881bec1adc10202ed091d3d4bba4f6205298.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://limo.media/articles/-/126837" rel="noopener nofollow" target="_blank">日銀保有国債含み損が45兆円で過去最大 植田総裁「原油高は広範かつ持続的」とコメント</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>日銀が保有する長期国債の含み損が<strong>45兆円</strong>に達し、過去最大を更新。長期金利の上昇（10年債利回り1.7%台）と<strong>大量の低クーポン債</strong>保有が相まって、評価損が膨らんだ。</li><li><strong class="emph-bold">植田和男</strong>総裁は原油高について「<strong>広範囲かつ持続的</strong>」と発言。これはインフレ圧力への認識の高まりを示すが、<span class="emph-und">含み損拡大という「バランスシートの弱点」が利上げ決断を心理的に縛る</span>という逆説がある。</li><li>市場では「<span class="emph-und">日銀は利上げしたくとも含み損が壁となり躊躇する</span>」という見方が広がる。しかし国際基準では含み損は問題にならない——<span class="emph-und">認識論的な混乱が日銀コミュニケーションをより難しくしている</span>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-02 08:30</span>
+        <span>· 三井住友DS</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.smd-am.co.jp/market/ichikawa/2026/05/irepo260526/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.smd-am.co.jp/common_files/images/ogimage.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.smd-am.co.jp/market/ichikawa/2026/05/irepo260526/" rel="noopener nofollow" target="_blank">三井住友DSアセット、日経平均年末見通し68100円に上方修正 上振れシナリオ70000円超</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">三井住友DSアセットマネジメント</strong>が2026年12月末の<strong>日経平均見通しを68,100円</strong>に上方修正（5月19日時点）。上振れシナリオでは<strong>各四半期の上限を70,000円超</strong>に設定した。</li><li>上方修正の根拠は①<strong>AI・半導体需要の継続</strong>、②<strong>円安による輸出企業収益増</strong>、③<strong>日本企業のROE改善傾向</strong>の3点。<span class="emph-und">PBR1倍割れ解消の流れが持続する限り、株高の構造は崩れない</span>との見立て。</li><li>リスクシナリオは<strong>FRBのタカ派転換による米国株安の波及</strong>と<strong>地政学（中東・台湾）の突発化</strong>。<span class="emph-und">日本株のボラティリティ上昇への耐性</span>が機関投資家にとっての次の課題となる。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>5月25日の65,158円から4日後に<strong>66,329円</strong>への連続更新は、AI・半導体・原油安・円安という<strong>4つの好条件の重なり</strong>が原動力だ。しかし<strong class="emph-bold">ウォーシュ議長</strong>のタカ派転換と日銀の<strong>45兆円含み損</strong>という制約が、<span class="emph-und">利上げの「決断コスト」を非対称に高めている</span>。三井住友DSの68,100円予測は楽観シナリオの上限を示すが、6/17 FOMCがトリガーになりうる。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-06-02
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260602 — IT &amp; Consulting</title>
+<meta name="description" content="NTTデータ×OpenAI提携が国内IT大手のAI戦略の最前線を示す。富士通のKozuchiプラットフォームと合わせ、エンタープライズAI導入支援の競争が本格化している。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-06-02/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260602 — IT &amp; Consulting">
+<meta property="og:description" content="NTTデータ×OpenAI提携が国内IT大手のAI戦略の最前線を示す。富士通のKozuchiプラットフォームと合わせ、エンタープライズAI導入支援の競争が本格化している。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-06-02/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260602 — IT &amp; Consulting">
+<meta name="twitter:description" content="NTTデータ×OpenAI提携が国内IT大手のAI戦略の最前線を示す。富士通のKozuchiプラットフォームと合わせ、エンタープライズAI導入支援の競争が本格化している。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-02 · #20260602</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">▲</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">NTTデータ×OpenAI提携が国内IT大手のAI戦略の最前線を示す。富士通のKozuchiプラットフォームと合わせ、エンタープライズAI導入支援の競争が本格化している。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">76</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·02</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260602</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-02 07:00 · EnterpriseZine</span>
+    <span class="top-story__score">82</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://enterprisezine.jp/news/detail/21922" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://ez-cdn.shoeisha.jp/static/images/article/21922/21922_1200.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://enterprisezine.jp/news/detail/21922" rel="noopener nofollow" target="_blank" style="color: inherit;">NTTデータ×OpenAI提携 2027年末累計1000億円目標 AIエージェントを世界で販売</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">NTTデータグループ</strong>は<strong class="emph-bold">OpenAI</strong>と戦略的提携を締結し、日本初の<strong>ChatGPT Enterprise</strong>リセラーとして大手100社へのアクセラレーションプログラムを提供開始。<strong>2027年末までに累計1,000億円</strong>の売上を目標とする。</li><li>提携の核心は<strong>AIエージェント</strong>の共同開発・グローバル展開。NTTデータが持つ<strong>業界特化の業務知識</strong>とOpenAIの<strong>モデル力</strong>を掛け合わせ、金融・製造・公共向けに垂直統合ソリューションを展開する方針。</li><li><strong>NTT DATA Foresight Day 2026</strong>で公表されたグローバル戦略では、<span class="emph-und">「コンサル×AIの統合」を軸に、日本の伝統的SIer業態を根本から変える</span>という変革の意志が明示された。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">▲ IT &amp; CONSULTING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-02</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ▲ stories</h2>
+    <span class="more-stories__head-meta">2 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-02 06:00</span>
+        <span>· 富士通</span>
+        <span class="more-card__score">75</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://global.fujitsu/ja-jp/pr/news/2026/01/26-02" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/pr/news/common/ogp/news-ogp-network01.jpg?rev=48bcf7a82cbe4773b099390b6960e5da" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://global.fujitsu/ja-jp/pr/news/2026/01/26-02" rel="noopener nofollow" target="_blank">富士通 Kozuchi Enterprise AI Factory提供開始 専有環境で生成AIモデルの自律運用を実現</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">富士通</strong>が<strong>Kozuchi Enterprise AI Factory</strong>を提供開始。企業の<strong>専有クラウド環境</strong>で生成AIモデルの構築・運用・継続改善を自律的に行えるプラットフォームで、<strong>GA予定は2026年7月</strong>。</li><li>特徴は<strong>データフライホイール設計</strong>。業務フィードバックが自動でモデル再学習に還流し、<span class="emph-und">利用が増えるほど精度が向上する「自己強化AI」</span>を企業内で構築できる点がセールスポイント。</li><li>国内IT大手の中でも<strong>独自モデル開発</strong>路線を打ち出したのは富士通の差異化戦略。アクセンチュア・NTTデータとの<strong>三者競争</strong>においても、インフラ寄りの強みで独自ポジションを確立しようとしている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-02 08:00</span>
+        <span>· Innovatopia</span>
+        <span class="more-card__score">70</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://innovatopia.jp/ai/ai-news/98579/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://innovatopia.jp/wp-content/uploads/2026/04/Image_fx-84-1.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://innovatopia.jp/ai/ai-news/98579/" rel="noopener nofollow" target="_blank">NTTデータ 新商品コンセプトを150秒で生成するAIエージェントを2026年7月提供</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NTTデータ</strong>が<strong>商品開発AIエージェント</strong>を2026年7月から提供予定。消費者インサイトや市場データを投入すると、<strong>約150秒</strong>で新商品コンセプト草案を出力する生産性ツール。</li><li>ターゲットは<strong>食品・日用品・消費財メーカー</strong>の商品企画部門。従来数週間かかるアイデア発散フェーズを圧縮し、<span class="emph-und">人間は選択と深化に集中できる</span>ワークフロー変革を提案する。</li><li>NTTデータの<strong>OpenAIとの提携</strong>を活用し、GPT系の言語能力と市場データベースを組み合わせた業種特化AIの第一弾。<span class="emph-und">垂直統合型AIエージェントの国内量産フェーズが始まった</span>ことを示す。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>NTTデータがOpenAIと組んで<strong>2027年末1,000億円</strong>を狙い、富士通はKozuchiで<strong>専有型AI自律運用</strong>を提示。<span class="emph-und">「SIerからAIオーケストレーターへ」</span>という業態転換が、今年中に可視化される段階に入った。垂直統合AIエージェントの<strong>国内量産フェーズ</strong>の始まりを、150秒で商品コンセプトを出すNTTデータのデモが象徴している。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-06-02
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

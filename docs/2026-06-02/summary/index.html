@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-06-02</title>
+<meta name="description" content="2026-06-02 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-06-02">
+<meta property="og:description" content="2026-06-02 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-06-02/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-06-02">
+<meta name="twitter:description" content="2026-06-02 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260602</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260602</span></h2>
+      
+      <div class="summary-hero__subtitle">「Anthropicが評価額でOpenAIを超え、日経平均は66,329円——構造変化と一時的高揚をどう見分けるか」</div>
+      
+      <div class="summary-hero__lead"><strong class="emph-bold">Anthropic</strong>が評価額<strong>$965B</strong>でOpenAIを超えIPO申請、<strong class="emph-bold">日経平均</strong>は66,329円で史上最高値を更新——<strong>2026年6月2日</strong>は「AIの兆ドル化」と「株高・円安の共振」が同時進行した日として記録される。<span class="emph-und">為替・株・AI・モビリティ・ゲームの5分野で同じ構図が反復</span>し、構造的な変化が一時的な投機熱と混在している。BYD Gods Eyeが自動運転保険で先制、MicrosoftはClaude Codeを廃止しCopilot CLIへ——技術覇権の境界線は毎日塗り替えられてい…</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">8</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">28</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">「AIが市場の重力を塗り替えた日——兆ドルの序曲は、株高と円安を伴奏に鳴り響く。」</div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — AI兆ドル時代の幕開けと複合上昇の構造</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Anthropic</strong>のIPO申請（評価額$965B）と<strong class="emph-bold">日経平均</strong>66,329円の同日達成は、AIと資本市場の深部で同じ力学が働いていることを示す。<strong>金利差による円安→輸出株高→AI関連株への資金流入</strong>という連鎖が、<span class="emph-und">個別の動きを超えた構造的な上昇トレンド</span>を形成している。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">為替 — 160円の攻防とウォーシュFOMCの分水嶺</h3>
+        <p class="summary-sec__body">ドル円は<strong>160円台</strong>で介入警戒と日銀利上げ観測の綱引きが続く。<strong class="emph-bold">ウォーシュ議長</strong>の初FOMC（6/17）でタカ派スタンスが確認されれば、<span class="emph-und">「米利上げ→ドル高→介入発動」</span>というトリプルイベントが現実化しうる。4月の5兆円介入効果は数週間で消えた——<strong>金利差の壁</strong>は介入では崩せないことが改めて示された。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">ウォーシュ議長</strong>は5/22に正式就任し、<strong>6月17日</strong>に初回FOMCを主宰する。<strong>CPI3.8%</strong>（2023年5月来の高水準）を前に、利下げ路線から<span class="emph-und">タカ派への転換</span>を市場は意識し始めた。</li>
+          
+          <li>CME FedWatchでは6月据え置き確率が<strong>99%</strong>を維持している一方、年内の利上げ観測が浮上。<strong>4月非農業部門雇用者数115,000人増</strong>も雇用の底堅さを示した。</li>
+          
+          <li>日米金利差（<strong>約2.9%ポイント</strong>）は円売りを誘引し、ドル円は<strong>159〜160円台</strong>で推移。<span class="emph-und">FOMCの結果が年後半の為替方向感を決める最大の分岐点</span>となる。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — Anthropic 9650億ドルの意味——評価額競争はIPOへ</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Claude-Code</strong>が牽引した<strong>130%増収</strong>がAnthropicを$965Bに押し上げ、OpenAIの$852Bを初めて超えた。MicrosoftがClaude Codeライセンスを廃止した同日に、AnthropicがIPO申請書を提出するという<span class="emph-und">皮肉な逆転構図</span>。<strong>Google Gemini 3.5 Flash</strong>とDeepMindのContextual AI取り込みも、<span class="emph-und">多正面同時展開によるGoogleの巻き返し</span>を示す。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Anthropic</strong>は$65B Series H（共同リードはAltimeter・Sequoia・Coatue等）を経て、評価額<strong>$965B</strong>でIPO申請書を秘密提出。<strong>OpenAI（$852B）</strong>を初めて上回り、<span class="emph-und">AIスタートアップ史上初の「ほぼ兆ドル企業」</span>となった。</li>
+          
+          <li>躍進の原動力は<strong>Claude Code</strong>。エンタープライズ顧客急増で年初来収益率は<strong>130%増</strong>を見込み、月換算収益は<strong>$47B</strong>ラン。今秋（10月想定）のNASDAQ上場が有力視されている。</li>
+          
+          <li>前回2月ラウンド（<strong>$380B</strong>）からわずか4か月での評価額<strong>2.5倍</strong>は、<span class="emph-und">AIマーケットの重力が変化したことを示す数字</span>。IPOレース上のライバルOpenAIへのプレッシャーも一段と高まった。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — NTTデータ×OpenAIが示す日本ITの再定義</h3>
+        <p class="summary-sec__body">NTTデータがOpenAIと組んで<strong>2027年末1,000億円</strong>を狙い、富士通はKozuchiで<strong>専有型AI自律運用</strong>を提示。<span class="emph-und">「SIerからAIオーケストレーターへ」</span>という業態転換が、今年中に可視化される段階に入った。垂直統合AIエージェントの<strong>国内量産フェーズ</strong>の始まりを、150秒で商品コンセプトを出すNTTデータのデモが象徴している。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">NTTデータグループ</strong>は<strong class="emph-bold">OpenAI</strong>と戦略的提携を締結し、日本初の<strong>ChatGPT Enterprise</strong>リセラーとして大手100社へのアクセラレーションプログラムを提供開始。<strong>2027年末までに累計1,000億円</strong>の売上を目標とする。</li>
+          
+          <li>提携の核心は<strong>AIエージェント</strong>の共同開発・グローバル展開。NTTデータが持つ<strong>業界特化の業務知識</strong>とOpenAIの<strong>モデル力</strong>を掛け合わせ、金融・製造・公共向けに垂直統合ソリューションを展開する方針。</li>
+          
+          <li><strong>NTT DATA Foresight Day 2026</strong>で公表されたグローバル戦略では、<span class="emph-und">「コンサル×AIの統合」を軸に、日本の伝統的SIer業態を根本から変える</span>という変革の意志が明示された。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #3A7B8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #3A7B8C;">§05</span>
+          <span class="summary-sec__tag" style="background: #3A7B8C;">モビリティ</span>
+        </div>
+        <h3 class="summary-sec__title">モビリティ — BYD保険革命とWaymoの台数圧勝——自動運転の現実</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">BYD</strong>が<strong>Gods Eye 5.0</strong>の事故補償を全額引き受けたことは、Teslaが踏み込めなかった「責任の可視化」を実現した。<strong class="emph-bold">Waymo</strong>のテキサス577台 vs Teslaの42台という<strong>台数差14:1</strong>は、<span class="emph-und">「技術の約束」と「規模の現実」の乖離</span>を数字で証明した。EV市場でも日本の4.15%過去最高と、BYDのグローバル攻勢（輸出70%増）が同時進行している。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">BYD</strong>は<strong>Gods Eye 5.0</strong>（5月更新）について「シティナビゲーション・走行中の事故は<strong>BYDが全額補償</strong>」と宣言。Teslaが<strong>FSDの責任</strong>を一切ユーザーに転嫁してきたのと対照的で、<span class="emph-und">自動運転保険のスタンダードを書き換える</span>可能性がある。</li>
+          
+          <li>BYDによると前版でスマートパーキング使用率が<strong>21%→93%</strong>に急増し、事故率は低水準を維持。<strong>レベル2.5相当のシステム</strong>（LiDAR搭載）で、この保険戦略は「<span class="emph-und">信頼経済」の真の差別化</span>を狙う。</li>
+          
+          <li>レースの構図は変化した。<strong>技術の速度</strong>ではなく<strong>責任の取り方</strong>が選択基準になれば、<span class="emph-und">規制環境の整った日欧市場でBYDが優位に立つ</span>シナリオが現実化し始める。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/" style="color: #3A7B8C;">→ §05 モビリティ 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§06</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済 — 日経平均66,329円の根拠と不確実性の同居</h3>
+        <p class="summary-sec__body">5月25日の65,158円から4日後に<strong>66,329円</strong>への連続更新は、AI・半導体・原油安・円安という<strong>4つの好条件の重なり</strong>が原動力だ。しかし<strong class="emph-bold">ウォーシュ議長</strong>のタカ派転換と日銀の<strong>45兆円含み損</strong>という制約が、<span class="emph-und">利上げの「決断コスト」を非対称に高めている</span>。三井住友DSの68,100円予測は楽観シナリオの上限を示すが、6/17 FOMCがトリガーになりうる。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">日経平均</strong>は2026年5月25日に終値<strong>65,158円</strong>を記録し、史上初の<strong>65,000円台</strong>突入。<strong class="emph-bold">AI</strong>・半導体関連株が上昇を牽引し、<strong>個人投資家</strong>も広く参入する「全員参加」型の相場となった。</li>
+          
+          <li>上昇の背景は<strong>原油安</strong>（米イラン停戦合意観測）、<strong>円安継続</strong>（輸出株への恩恵）、<strong>AI投資ブーム</strong>の3重奏。<strong class="emph-bold">MLCC</strong>（積層セラミックコンデンサ）関連など<strong>インフラ素材</strong>にも波及している。</li>
+          
+          <li>野村証券ストラテジストは「<strong>ハイボラ相場の入口</strong>」と警告。<span class="emph-und">過熱感はあるが上値を狙う環境は継続</span>しており、週明けからの崩れには慎重な検証が必要と指摘する。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §06 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§07</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">ゲーム — FFVII Rebirth発売前夜——Switch 2の真価が試される</h3>
+        <p class="summary-sec__body">明日6月3日の<strong class="emph-bold">FFVII-REBIRTH</strong>（Switch 2版）発売は、スクエニのSwitch 2戦略の正念場。前作FF7リメイクの<strong>初週2万3千本</strong>という低調から反転できるか。崩壊スターレイルVer.4.3の同週開幕もあり、<span class="emph-und">Switch 2の6月は「サードパーティが本当に戦力になるか」を測る試験台</span>となる。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">SQUARE ENIX</strong>の<strong>FINAL FANTASY VII REBIRTH</strong>がNintendo Switch 2・Xbox Series X|S・Windows向けに<strong>明日6月3日（水）</strong>発売。定価6,578円（税込）で、<strong>6月10日23:59まで予約なら20%OFF</strong>キャンペーンが実施中。</li>
+          
+          <li>本作は「FFVIIリメイクプロジェクト」<strong>3部作の第2弾</strong>。PS5版は2024年2月に発売済みで、Switch 2版はグラフィック最適化と<strong>ポータブルプレイ対応</strong>が追加された移植版となる。</li>
+          
+          <li>ただし<strong>前作Switch 2版「FFVIIリメイクインターグレード」</strong>（2026年1月発売）の初週パッケージ売上は<strong>わずか23,428本</strong>にとどまり、<span class="emph-und">スクエニのSwitch 2戦略に対する市場の懐疑</span>が今作の初週成績の試金石となる。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/" style="color: #5E3D8C;">→ §07 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§08</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日へ — 明日への示唆</h3>
+        <p class="summary-sec__body">明日はFFVII Rebirth発売日（Switch 2）と米雇用統計（6/5予定）の前哨戦として、市場の目は<strong>植田総裁の講演</strong>と<strong>FRBメンバー発言</strong>に集まる。AI評価額競争は<strong>OpenAIのGPT-5.6</strong>発表観測が続報として来る可能性が高い。<span class="emph-und">「一日で世界が変わる」環境</span>が続く中、次の均衡点を探る作業はすでに始まっている。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">AI</div>
+          <div class="summary-take__text">Anthropicの評価額$965B達成はAI産業が「兆ドル時代」に突入した象徴。IPOを機に資本・人材・技術のさらなる集中が加速する。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #8E2A19;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #8E2A19;">経済</div>
+          <div class="summary-take__text">日経平均66,329円はAI・半導体主導の構造的上昇だが、ウォーシュFRBのタカ派転換が「下押しトリガー」として常に背後に控える。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #3A7B8C;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #3A7B8C;">モビリティ</div>
+          <div class="summary-take__text">BYD Gods Eyeの事故補償全引き受けは、自動運転の差別化軸を「技術性能」から「責任の可視化」にシフトさせる歴史的な転換点となりうる。</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/">全28本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-06-02 · #20260602
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260602 — Artificial Intelligence</title>
+<meta name="description" content="Anthropicが評価額9,650億ドルでIPO申請書を提出しOpenAIを超えた。同時にGemini 3.5 Flash・Microsoft Claude Code廃止・OpenAI幹部再編と、AIコーディング覇権争いが新局面に入った。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-02/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260602 — Artificial Intelligence">
+<meta property="og:description" content="Anthropicが評価額9,650億ドルでIPO申請書を提出しOpenAIを超えた。同時にGemini 3.5 Flash・Microsoft Claude Code廃止・OpenAI幹部再編と、AIコーディング覇権争いが新局面に入った。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-02/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260602 — Artificial Intelligence">
+<meta name="twitter:description" content="Anthropicが評価額9,650億ドルでIPO申請書を提出しOpenAIを超えた。同時にGemini 3.5 Flash・Microsoft Claude Code廃止・OpenAI幹部再編と、AIコーディング覇権争いが新局面に入った。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-02 · #20260602</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Anthropicが評価額9,650億ドルでIPO申請書を提出しOpenAIを超えた。同時にGemini 3.5 Flash・Microsoft Claude Code廃止・OpenAI幹部再編と、AIコーディング覇権争いが新局面に入った。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">82</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·02</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260602</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-02 09:00 · Fortune</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://fortune.com/2026/06/01/anthropic-confidentially-files-ipo-965-billion-valuation/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://fortune.com/img-assets/wp-content/uploads/2026/06/GettyImages-2278505646-e1780331279661.jpg?resize=1200,600" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://fortune.com/2026/06/01/anthropic-confidentially-files-ipo-965-billion-valuation/" rel="noopener nofollow" target="_blank" style="color: inherit;">Anthropic confidentially files for IPO at $965B valuation after $65B Series H, surpasses OpenAI</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>は$65B Series H（共同リードはAltimeter・Sequoia・Coatue等）を経て、評価額<strong>$965B</strong>でIPO申請書を秘密提出。<strong>OpenAI（$852B）</strong>を初めて上回り、<span class="emph-und">AIスタートアップ史上初の「ほぼ兆ドル企業」</span>となった。</li><li>躍進の原動力は<strong>Claude Code</strong>。エンタープライズ顧客急増で年初来収益率は<strong>130%増</strong>を見込み、月換算収益は<strong>$47B</strong>ラン。今秋（10月想定）のNASDAQ上場が有力視されている。</li><li>前回2月ラウンド（<strong>$380B</strong>）からわずか4か月での評価額<strong>2.5倍</strong>は、<span class="emph-und">AIマーケットの重力が変化したことを示す数字</span>。IPOレース上のライバルOpenAIへのプレッシャーも一段と高まった。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-02</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-02 06:00</span>
+        <span>· MarkTechPost</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.marktechpost.com/2026/05/20/google-introduces-gemini-3-5-flash-at-i-o-2026-a-faster-and-cheaper-model-for-ai-agents-and-coding/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.marktechpost.com/wp-content/uploads/2026/05/blog11-31.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.marktechpost.com/2026/05/20/google-introduces-gemini-3-5-flash-at-i-o-2026-a-faster-and-cheaper-model-for-ai-agents-and-coding/" rel="noopener nofollow" target="_blank">Google Gemini 3.5 Flash unveiled at I/O 2026: faster, cheaper for AI agents and coding</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Google</strong>はI/O 2026で<strong>Gemini 3.5 Flash</strong>を発表。AIエージェント・コーディング向けに最適化されたフロンティアモデルで、Ultra価格を<strong>$250→$200</strong>に引き下げ、新Developer層（$100/月）も設定した。</li><li>月間アクティブユーザーは<strong>9億人</strong>（2025年5月比2倍以上）。<strong>Gemini 3.1 Pro</strong>（Artificial Analysis指数57）に対し、3.5 Flashはエージェント向けの<strong>長期タスク対応力</strong>が大幅に向上した。</li><li><strong>DeepMind</strong>はContextual AIの研究者20名以上を<strong>8000〜9000万ドルのライセンス契約</strong>で招聘。<span class="emph-und">獲得 not 買収という構造でSEC審査を回避</span>しながら、AIエージェント開発の厚みを増した。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-02 07:30</span>
+        <span>· OpenTools</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://opentools.ai/news/microsoft-cancels-claude-code-licenses-copilot-cli" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://imagedelivery.net/FCiXvK7dG4mSm_W_033WNA/3f9035ec-c28a-4a71-0256-c5c978a5cc00/contentbanner" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://opentools.ai/news/microsoft-cancels-claude-code-licenses-copilot-cli" rel="noopener nofollow" target="_blank">Microsoft cancels Claude Code licenses by June 30, forces engineers to GitHub Copilot CLI</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Microsoft</strong>はWindows・M365を担当するExperiences+Devisions部門に対し、<strong>6月30日まで</strong>にClaude Codeライセンスを廃止し<strong>GitHub Copilot CLI</strong>への移行を命じた。財務年度末に合わせた費用削減が主因。</li><li>背景にはUberが<strong>2026年AI予算を4か月で使い切った</strong>事例。MicrosoftはCopilot CLIを2月にGAし、<strong>自律実行モード・マルチエージェント協調（/fleet）・PR要約</strong>等を搭載、機能的にはほぼ同等と判断。</li><li>Anthropicにとって<strong>最大の法人顧客の一つ</strong>を失う影響は大きい。ただし<span class="emph-und">AIコーディングツールの有料化モデルが企業予算を圧迫し始めた</span>ことは、業界全体の構造的課題を示す。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-02 05:30</span>
+        <span>· HeyGoTrade</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.heygotrade.com/en/news/google-io-2026-gemini-deepmind-contextual-ai/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://files-tr8.s3.ap-southeast-1.amazonaws.com/blog-posts/eb0db5b8b22bd9fd54823f49/feature-images/6a0d1c77b9e9a-feature-image.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.heygotrade.com/en/news/google-io-2026-gemini-deepmind-contextual-ai/" rel="noopener nofollow" target="_blank">DeepMind acquihires 20+ Contextual AI researchers for $80-90M, CEO Douwe Kiela joins Google</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">DeepMind</strong>は<strong>Contextual AI</strong>から研究者20名超を採用、同社CEO<strong class="emph-bold">ダウエ・キエラ</strong>も合流。契約総額は<strong>$80〜90M</strong>のライセンス料で、M&amp;A審査を回避するアクハイア構造を採用した。</li><li>Googleは同手法を<strong>Character.AI（2024年）</strong>でも使用しており、<span class="emph-und">人材と知財を低コストで取り込む「モデル・バイパス戦略」</span>として定着しつつある。</li><li>Contextual AIはエンタープライズRAGに強みを持つスタートアップ。AIエージェントの<strong>「長期記憶と文脈保持」</strong>能力を補強するピースとしてDeepMindが狙いを定めた。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-02 08:30</span>
+        <span>· AI Weekly</span>
+        <span class="more-card__score">75</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://aiweekly.co/ai-news-today/openai-news" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://dxj7eshgz03ln.cloudfront.net/production/publication/logo/1475/8f402391-cd29-43a4-9695-35d930a59660.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://aiweekly.co/ai-news-today/openai-news" rel="noopener nofollow" target="_blank">OpenAI IPO preps at $852B valuation as COO moves to PE venture, CMO and App CEO step back</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong>はIPO準備を本格化させ、評価額<strong>$852B</strong>でのNASDAQ上場を検討。ただし<strong>COOブラッド・ライトキャップ</strong>がPEジョイントベンチャーへ移動、アプリCEOフィジー・シモが病気療養と幹部再編が続く。</li><li>Anthropicの<strong>$965B評価額</strong>にSurpassedされた形だが、<strong>ChatGPT月次ユーザー</strong>は依然業界最大。プロダクト面での強みを持続できるかが<span class="emph-und">IPO後の市場評価を左右する</span>。</li><li>GPT-5.6が6月にリリース予定との観測も浮上。<span class="emph-und">モデル競争がIPO評価に直結する構造</span>の中、Anthropicとの評価額逆転を取り戻すことが経営の最優先課題となっている。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Claude-Code</strong>が牽引した<strong>130%増収</strong>がAnthropicを$965Bに押し上げ、OpenAIの$852Bを初めて超えた。MicrosoftがClaude Codeライセンスを廃止した同日に、AnthropicがIPO申請書を提出するという<span class="emph-und">皮肉な逆転構図</span>。<strong>Google Gemini 3.5 Flash</strong>とDeepMindのContextual AI取り込みも、<span class="emph-und">多正面同時展開によるGoogleの巻き返し</span>を示す。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-02/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-02
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
