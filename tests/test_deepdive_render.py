@@ -17,6 +17,8 @@
 """
 from __future__ import annotations
 
+import math
+import re
 import sys
 from pathlib import Path
 
@@ -133,6 +135,96 @@ def test_rivalry_edges_are_bidirectional_by_default() -> None:
     one = {"nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
            "edges": [{"from": "a", "to": "b", "label": "挑戦", "kind": "競合", "dir": "one"}]}
     assert relations_svg(one).count("<polygon") == 1, "dir=one が効いていない"
+
+
+# ── relations 役割レイヤー + ラベル無重なり (★2026-06-01 ユーザー指示) ──────────
+
+_MULTICAMP_REL = {
+    "title": "米中2陣営＋規制",
+    "nodes": [
+        {"id": "waymo", "label": "Waymo", "group": "米陣営"},
+        {"id": "tesla", "label": "Tesla", "group": "米陣営"},
+        {"id": "pony", "label": "Pony.ai", "group": "中国陣営"},
+        {"id": "baidu", "label": "Baidu", "group": "中国陣営"},
+        {"id": "geely", "label": "Geely", "group": "中国陣営"},
+        {"id": "nhtsa", "label": "NHTSA", "group": "規制"},
+        {"id": "chinareg", "label": "中国当局", "group": "規制"},
+    ],
+    "edges": [
+        {"from": "waymo", "to": "tesla", "label": "規模vs量産で競合", "kind": "競合"},
+        {"from": "waymo", "to": "pony", "label": "海外展開で激突", "kind": "競合"},
+        {"from": "geely", "to": "waymo", "label": "供給かつ競合", "kind": "協調的競合",
+         "coop": "車両を供給", "rival": "自陣で競合"},
+        {"from": "nhtsa", "to": "waymo", "label": "crash報告義務", "kind": "規制"},
+        {"from": "nhtsa", "to": "tesla", "label": "事故を調査", "kind": "規制"},
+        {"from": "chinareg", "to": "baidu", "label": "新規許可を凍結", "kind": "規制"},
+        {"from": "chinareg", "to": "pony", "label": "拡大を制限", "kind": "規制"},
+    ],
+}
+
+_NODE_CIRCLE_RE = re.compile(
+    r'<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([-\d.]+)" fill="#fff" stroke="#1A1A1A"')
+_CHIP_RECT_RE = re.compile(
+    r'<g transform="translate\(([-\d.]+),([-\d.]+)\)"><rect width="([-\d.]+)" height="26.0"')
+
+
+def _node_circles(svg: str) -> list[tuple[float, float, float]]:
+    return [(float(a), float(b), float(c)) for a, b, c in _NODE_CIRCLE_RE.findall(svg)]
+
+
+def _chip_rects(svg: str) -> list[tuple[float, float, float, float]]:
+    return [(float(x), float(y), float(w), 26.0) for x, y, w in _CHIP_RECT_RE.findall(svg)]
+
+
+def _rect_circle_hit(rect, circ, tol: float = 0.5) -> bool:
+    rx, ry, rw, rh = rect
+    cx, cy, cr = circ
+    qx = min(max(cx, rx), rx + rw)
+    qy = min(max(cy, ry), ry + rh)
+    return math.hypot(qx - cx, qy - cy) < cr - tol
+
+
+def _rect_overlap(r1, r2, tol: float = 0.5) -> bool:
+    ax, ay, aw, ah = r1
+    bx, by, bw, bh = r2
+    ox = min(ax + aw, bx + bw) - max(ax, bx)
+    oy = min(ay + ah, by + bh) - max(ay, by)
+    return ox > tol and oy > tol
+
+
+def test_relations_layered_by_role_and_no_label_overlap() -> None:
+    """役割 (米陣営/中国陣営/規制) を別レイヤーに積み、ラベルはノード/相互で重ねない。
+
+    2026-06-01 ユーザー指示「異なる役割は別レイヤー・同じ役割は同レイヤー」「文字の
+    重なりで読めないことは絶対不可」を契約として locked-in する。ラベルチップが
+    ノード円や他チップと (読めなくなるほど) 重なったら fail させ、円環/中央集約レイアウト
+    への逆戻りを構造的に防ぐ。
+    """
+    rel = _MULTICAMP_REL
+    lay = layout_relations(rel)
+    pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
+    # 同じ役割は同じ y (同レイヤー)、異なる役割は別の y
+    assert pos["waymo"][1] == pos["tesla"][1], "米陣営が同レイヤーに無い"
+    assert pos["pony"][1] == pos["baidu"][1] == pos["geely"][1], "中国陣営が同レイヤーに無い"
+    assert pos["nhtsa"][1] == pos["chinareg"][1], "規制が同レイヤーに無い"
+    ys = {pos["waymo"][1], pos["pony"][1], pos["nhtsa"][1]}
+    assert len(ys) == 3, "3 役割が別レイヤーに分かれていない"
+    assert pos["nhtsa"][1] == max(ys), "規制当局が最下段 (見上げる三角) に無い"
+
+    svg = relations_svg(rel)
+    circles = _node_circles(svg)
+    rects = _chip_rects(svg)
+    assert len(circles) == 7, f"ノード円が 7 個でない: {len(circles)}"
+    assert len(rects) == 8, f"ラベルチップが 8 個でない: {len(rects)}"
+    # ラベルチップ vs ノード円: 文字が読めなくなる重なりは 0
+    for r in rects:
+        for c in circles:
+            assert not _rect_circle_hit(r, c), f"ラベルがノードに重なる: rect={r} circle={c}"
+    # ラベルチップ同士の重なりも 0
+    for i in range(len(rects)):
+        for j in range(i + 1, len(rects)):
+            assert not _rect_overlap(rects[i], rects[j]), \
+                f"ラベル同士が重なる: {rects[i]} ∩ {rects[j]}"
 
 
 # ── table 未確認セル検出 (★新規描画) ─────────────────────────────────────────

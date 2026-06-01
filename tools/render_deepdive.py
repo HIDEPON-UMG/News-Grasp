@@ -161,80 +161,68 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
     return sources
 
 
-# ── relations: 座標なしスキーマ → 円環 auto-layout + SVG ──────────────────────
+# ── relations: 座標なしスキーマ → 役割レイヤー (band) 配置 + SVG ────────────────
 
-def _coop_order(members: list[str], coop: list[dict[str, Any]]) -> list[str]:
-    """協力エッジ (出資元→出資先 等) で source を上に来る順に安定ソートする。"""
-    mset = set(members)
-    succ: dict[str, list[str]] = {m: [] for m in members}
-    indeg: dict[str, int] = {m: 0 for m in members}
-    for e in coop:
-        a, b = e.get("from"), e.get("to")
-        if a in mset and b in mset and a != b:
-            succ[a].append(b)
-            indeg[b] += 1
-    order: list[str] = []
-    avail = [m for m in members if indeg[m] == 0]  # 入力順を保つ (安定)
-    while avail:
-        u = avail.pop(0)
-        order.append(u)
-        for v in succ[u]:
-            indeg[v] -= 1
-            if indeg[v] == 0:
-                avail.append(v)
-    for m in members:  # 循環があれば残りを末尾に
-        if m not in order:
-            order.append(m)
-    return order
+def _relation_bands(
+    nodes: list[dict[str, Any]], edges: list[dict[str, Any]], ids: list[str],
+) -> tuple[list[list[str]], set[str], set[str], bool]:
+    """ノードを役割レイヤー (band) に分類し、上→下の band 行リストを返す。
 
+    ユーザー指示 (2026-06-01): 「陣営や当局など異なる役割は必ず別レイヤーに分け、
+    同じ役割は必ず同じレイヤーに入れる」。これを満たすため役割で水平レイヤーを切る:
 
-def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
-    """nodes を「意味」に基づいて配置し x/y/r を決める (2026-05-31 全面改訂)。
+      出資元・親会社 (出資エッジの source で被出資でない) … 最上段
+      事業者 (それ以外)                                     … 中段
+      規制当局 (規制エッジの source / group に「規制」「当局」) … 最下段
 
-    スキーマ (weekly-research-system.md) の relations は座標を持たないため、
-    レンダラ側が決定論的に配置する。ただし円環に等間隔で並べる素朴な方式は
-    「勢力構造が読めない」「ラベルが枠からはみ出す」ため、edge の kind から
-    構図を決める:
+    事業者が 2 つ以上の陣営 group (どれか 1 つでも 2 ノード以上) に分かれるときは、
+    陣営ごとに別の中段 band へ積む (例: 米陣営 / 中国陣営)。陣営が形成されない
+    (group が全て単独) ときは事業者を 1 band に置き、競合を左右に二分する従来配置に
+    フォールバックする (契約テスト fixture の単一陣営ケースを保つ)。
 
-      競合/対立 → 当事者を左右に二分 (rivalry グラフを 2-color)。
-      出資/提携/供給 → 協力相手と同じ側に寄せ、出資元/親を上に縦積み。
-      規制 → 当局を中央下に置き、両勢力を見上げる三角構図にする。
-
-    これにより「左右で勢力が割れ、協力は縦、規制当局は中央下」という
-    一目で読める図になる。分類できないノードは中央列に退避する。
+    返り値: (rows, reg, parents, use_camps)
     """
-    nodes = list(rel.get("nodes", []))
-    edges = list(rel.get("edges", []))
-    ids = [nd.get("id", "") for nd in nodes]
-    idset = set(ids)
-    vb_w, vb_h = 1040, 600
+    order = [str(n.get("id", "")) for n in nodes]
+    grp = {str(n.get("id", "")): str(n.get("group", "")) for n in nodes}
 
-    deg: dict[str, int] = {}
-    for e in edges:
-        deg[e.get("from", "")] = deg.get(e.get("from", ""), 0) + 1
-        deg[e.get("to", "")] = deg.get(e.get("to", ""), 0) + 1
+    reg = {e["from"] for e in edges if e.get("kind") in _AUTH_KINDS}
+    reg |= {i for i in order if ("規制" in grp[i]) or ("当局" in grp[i])}
+    invest_to = {e["to"] for e in edges if e.get("kind") == "出資"}
+    parents = {e["from"] for e in edges if e.get("kind") == "出資"} - invest_to - reg
+    operators = [i for i in order if i not in reg and i not in parents]
 
-    def _node_r(i: str) -> float:
-        return min(40 + deg.get(i, 1) * 8, 62)
+    # 事業者の陣営 group を出現順で集計。2 群以上 (各 2 ノード以上が 1 つでもあれば)
+    # 陣営 band に割る。全て単独 group なら単一事業者 band (競合左右) にする。
+    seen_g: list[str] = []
+    for i in operators:
+        if grp[i] and grp[i] not in seen_g:
+            seen_g.append(grp[i])
+    counts = {g: sum(1 for i in operators if grp[i] == g) for g in seen_g}
+    use_camps = len(seen_g) >= 2 and any(c >= 2 for c in counts.values())
 
-    max_r = max((_node_r(i) for i in ids), default=50)
+    rows: list[list[str]] = []
+    if parents:
+        rows.append([i for i in order if i in parents])
+    if use_camps:
+        for g in seen_g:
+            rows.append([i for i in operators if grp[i] == g])
+        ungrouped = [i for i in operators if not grp[i]]
+        if ungrouped:
+            rows.append(ungrouped)
+    elif operators:
+        rows.append(list(operators))
+    if reg:
+        rows.append([i for i in order if i in reg])
+    if not rows:
+        rows = [list(order)]
+    return rows, reg, parents, use_camps
 
-    def _valid(e: dict[str, Any]) -> bool:
-        return e.get("from") in idset and e.get("to") in idset
 
-    # frenemy (協調的競合) も「左右に分かれて対峙」する点では rivalry と同じ配置にし、
-    # ただし協力面 (緑線) も併走させる。配置のためここでは rival 扱いにする。
-    rival = [e for e in edges if _valid(e)
-             and (e.get("kind") in _RIVAL_KINDS or e.get("kind") in _FRENEMY_KINDS)]
-    auth = [e for e in edges if _valid(e) and e.get("kind") in _AUTH_KINDS]
-    coop = [e for e in edges if _valid(e) and e.get("kind") in _COOP_KINDS]
-    # node.place == "center" は強制的に中央列へ (両陣営が奪い合う対象=発注企業/市場 等)。
-    forced_center = {nd.get("id", "") for nd in nodes if nd.get("place") == "center"}
-
-    # 1) 競合/協調的競合を左右に二分 (rivalry サブグラフを 2-color)
+def _rivalry_sides(rival_edges: list[dict[str, Any]]) -> dict[str, str]:
+    """競合/対立サブグラフを 2-color して L/R の側を返す (単一事業者 band の左右二分用)。"""
     side: dict[str, str] = {}
     radj: dict[str, list[str]] = {}
-    for e in rival:
+    for e in rival_edges:
         radj.setdefault(e["from"], []).append(e["to"])
         radj.setdefault(e["to"], []).append(e["from"])
     for start in radj:
@@ -248,59 +236,131 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
                 if v not in side:
                     side[v] = "R" if side[u] == "L" else "L"
                     stack.append(v)
+    return side
 
-    # 2) 規制当局 (規制エッジの source) と強制中央ノードは中央列へ
-    center: set[str] = {e["from"] for e in auth} | forced_center
-    for c in center:
-        side.pop(c, None)
 
-    # 3) 協力 (出資/提携/供給) は相手と同じ側に寄せる (伝播)
-    changed = True
-    while changed:
-        changed = False
-        for e in coop:
-            a, b = e["from"], e["to"]
-            if a in side and b not in side and b not in center:
-                side[b] = side[a]
-                changed = True
-            elif b in side and a not in side and a not in center:
-                side[a] = side[b]
-                changed = True
+def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
+    """nodes を役割レイヤー (band) に積み、x/y/r を決める (2026-06-01 全面改訂)。
 
-    # 4) 未割当は中央列へ退避
-    for i in ids:
-        if i not in side and i not in center:
-            center.add(i)
+    スキーマ (weekly-research-system.md) の relations は座標を持たないため、レンダラ側で
+    決定論的に配置する。ユーザー指示により「役割 (陣営/当局) ごとに水平レイヤーを分け、
+    同じ役割は同じレイヤーに揃える」方式へ変更した:
 
-    # 5) 列 → 座標。rival-core を同じ baseline に揃え、協力は上下に展開。
-    cols: dict[str, list[str]] = {"L": [], "C": [], "R": []}
-    for i in ids:
-        cols["C" if i in center else side[i]].append(i)
-    col_x = {"L": vb_w * 0.19, "C": vb_w * 0.50, "R": vb_w * 0.81}
-    rival_core = {i for e in rival for i in (e["from"], e["to"])}
-    baseline = vb_h * 0.44
-    slot = vb_h * 0.30
-    pos: dict[str, tuple[float, float]] = {}
-    for col, members in cols.items():
-        if not members:
-            continue
-        order = _coop_order(members, coop)
-        if col == "C":
-            # 規制当局は下揃え、その他はその上に積む。
-            for k, i in enumerate(reversed(order)):
-                pos[i] = (col_x[col], vb_h * 0.82 - k * slot)
+      上段 = 出資元/親会社、中段 = 事業者 (陣営ごとに別 band)、下段 = 規制当局。
+
+    水平位置はレイヤー間エッジの重心 (barycenter) を数回スイープして交差を抑える。
+    規制当局は被規制ノードの真下へ寄り「見上げる三角」を作る。ラベルの重なり回避は
+    relations_svg 側の _resolve_labels が担う (ノードは band 構造で重ならない)。
+    """
+    nodes = list(rel.get("nodes", []))
+    ids = [str(nd.get("id", "")) for nd in nodes]
+    idset = set(ids)
+    edges = [e for e in rel.get("edges", [])
+             if str(e.get("from", "")) in idset and str(e.get("to", "")) in idset]
+
+    deg: dict[str, int] = {}
+    for e in edges:
+        deg[str(e["from"])] = deg.get(str(e["from"]), 0) + 1
+        deg[str(e["to"])] = deg.get(str(e["to"]), 0) + 1
+
+    def _node_r(i: str) -> float:
+        return float(min(40 + deg.get(i, 1) * 8, 62))
+
+    max_r = max((_node_r(i) for i in ids), default=50.0)
+
+    rows, reg, parents, use_camps = _relation_bands(nodes, edges, ids)
+    n_levels = len(rows)
+    band_of = {i: k for k, row in enumerate(rows) for i in row}
+
+    vb_w = 1080
+    vb_h = int(max(560, 170 + n_levels * 175))
+    top_pad = max_r + 52
+    bot_pad = max_r + 70
+    if n_levels <= 1:
+        band_y = {0: vb_h / 2.0}
+    else:
+        usable = vb_h - top_pad - bot_pad
+        band_y = {k: top_pad + usable * (k / (n_levels - 1)) for k in range(n_levels)}
+
+    # barycenter 計算用の隣接 (自 band 内の辺も含めてよい)
+    nbr: dict[str, list[str]] = {i: [] for i in ids}
+    for e in edges:
+        a, b = str(e["from"]), str(e["to"])
+        nbr[a].append(b)
+        nbr[b].append(a)
+
+    margin = 100.0
+    lo, hi = margin, vb_w - margin
+
+    # 事業者/陣営 band = ANCHOR、出資元/規制 band = FLOATING (重心へ寄せる)。
+    anchor_rows = [k for k, row in enumerate(rows)
+                   if not (set(row) <= reg or set(row) <= parents)]
+    rival_edges = [e for e in edges
+                   if e.get("kind") in _RIVAL_KINDS or e.get("kind") in _FRENEMY_KINDS]
+    single_op_band = (not use_camps) and len(anchor_rows) == 1
+    side = _rivalry_sides(rival_edges) if single_op_band else {}
+
+    x: dict[str, float] = {}
+
+    def _even_slots(order_ids: list[str]) -> None:
+        m = len(order_ids)
+        if m == 1:
+            x[order_ids[0]] = vb_w / 2.0
+            return
+        step = min((hi - lo) / (m - 1), 290.0)
+        start = (vb_w - step * (m - 1)) / 2.0
+        for j, i in enumerate(order_ids):
+            x[i] = start + step * j
+
+    def _space_row(row: list[str], desired: dict[str, float]) -> None:
+        items = sorted(row, key=lambda i: desired.get(i, vb_w / 2.0))
+        gaps = [(_node_r(a) + _node_r(b) + 28.0) for a, b in zip(items, items[1:])]
+        xs = [desired.get(i, vb_w / 2.0) for i in items]
+        for j in range(1, len(items)):
+            if xs[j] < xs[j - 1] + gaps[j - 1]:
+                xs[j] = xs[j - 1] + gaps[j - 1]
+        if xs and xs[-1] > hi:
+            xs[-1] = hi
+            for j in range(len(items) - 2, -1, -1):
+                if xs[j] > xs[j + 1] - gaps[j]:
+                    xs[j] = xs[j + 1] - gaps[j]
+        if xs and xs[0] < lo:
+            shift = lo - xs[0]
+            xs = [v + shift for v in xs]
+        for i, v in zip(items, xs):
+            x[i] = v
+
+    # 初期 x: 全 band を均等スロット (単一事業者 band のみ競合 2-color で L→R)
+    for k, row in enumerate(rows):
+        if single_op_band and k in anchor_rows and side:
+            _even_slots([i for i in row if side.get(i) == "L"]
+                        + [i for i in row if side.get(i) != "L"])
         else:
-            anchor = next((k for k, i in enumerate(order) if i in rival_core),
-                          len(order) // 2)
-            for k, i in enumerate(order):
-                pos[i] = (col_x[col], baseline + (k - anchor) * slot)
+            _even_slots(list(row))
+
+    def _bary(i: str) -> float:
+        xs = [x[j] for j in nbr[i] if j in x]
+        return sum(xs) / len(xs) if xs else x.get(i, vb_w / 2.0)
+
+    # barycenter スイープ: FLOATING(出資元/規制) は重心へ寄せ、陣営 ANCHOR は重心順で
+    # 再スロットして交差を減らす。単一事業者 band は競合左右を保持するため固定する。
+    for _ in range(8):
+        for k, row in enumerate(rows):
+            if single_op_band and k in anchor_rows:
+                continue
+            desired = {i: _bary(i) for i in row}
+            if k in anchor_rows and len(row) > 1:
+                _even_slots(sorted(row, key=lambda i: desired[i]))
+            else:
+                _space_row(row, desired)
 
     placed = []
     for nd in nodes:
-        i = nd.get("id", "")
-        x, y = pos.get(i, (vb_w / 2, vb_h / 2))
-        y = min(max(y, max_r + 12), vb_h - max_r - 12)  # 枠内クランプ
-        placed.append({**nd, "x": round(x, 1), "y": round(y, 1),
+        i = str(nd.get("id", ""))
+        xx = x.get(i, vb_w / 2.0)
+        yy = band_y.get(band_of.get(i, 0), vb_h / 2.0)
+        xx = min(max(xx, _node_r(i) + 8), vb_w - _node_r(i) - 8)
+        placed.append({**nd, "x": round(xx, 1), "y": round(yy, 1),
                        "r": _node_r(i), "deg": deg.get(i, 1)})
     layout = dict(rel)
     layout["nodes"] = placed
@@ -371,6 +431,67 @@ def resolve_accent(lens_id: str) -> str:
     return cat["accent"] if cat else INK
 
 
+def _resolve_labels(
+    specs: list[dict[str, Any]], circles: list[tuple[float, float, float]],
+    vb_w: float, vb_h: float,
+) -> list[dict[str, Any]]:
+    """ラベルチップ同士・チップとノード円の重なりを反復で 0 にする (決定論的な力学分離)。
+
+    各 spec は中心 (cx,cy)・寸法 (w,h)・アンカー (ax,ay = エッジ上の初期位置) を持つ。
+    アンカーへ弱いバネで引き戻しつつ、(1) 他チップとの AABB 重なり、(2) ノード円との
+    重なりを押し離す。仕上げにバネ無しの分離パスを回し、残留重なりを潰す。乱数なし。
+    """
+    n = len(specs)
+
+    def _separate() -> bool:
+        moved = False
+        for a in range(n):
+            s = specs[a]
+            for b in range(a + 1, n):
+                t = specs[b]
+                ox = (s["w"] + t["w"]) / 2 + 6 - abs(s["cx"] - t["cx"])
+                oy = (s["h"] + t["h"]) / 2 + 5 - abs(s["cy"] - t["cy"])
+                if ox > 0 and oy > 0:
+                    if oy <= ox:  # 浅い側 (縦) で割る
+                        d = oy / 2 + 0.5
+                        s["cy"], t["cy"] = ((s["cy"] - d, t["cy"] + d)
+                                            if s["cy"] <= t["cy"] else (s["cy"] + d, t["cy"] - d))
+                    else:
+                        d = ox / 2 + 0.5
+                        s["cx"], t["cx"] = ((s["cx"] - d, t["cx"] + d)
+                                            if s["cx"] <= t["cx"] else (s["cx"] + d, t["cx"] - d))
+                    moved = True
+        for s in specs:
+            hw, hh = s["w"] / 2, s["h"] / 2
+            for (ncx, ncy, nr) in circles:
+                qx = min(max(ncx, s["cx"] - hw), s["cx"] + hw)
+                qy = min(max(ncy, s["cy"] - hh), s["cy"] + hh)
+                vx, vy = qx - ncx, qy - ncy
+                d = math.hypot(vx, vy)
+                need = nr + 7
+                if d < need:
+                    if d < 1e-6:
+                        vx, vy, d = 0.0, (1.0 if s["cy"] >= ncy else -1.0), 1.0
+                    push = need - d
+                    s["cx"] += vx / d * push
+                    s["cy"] += vy / d * push
+                    moved = True
+        for s in specs:
+            s["cx"] = min(max(s["cx"], s["w"] / 2 + 5), vb_w - s["w"] / 2 - 5)
+            s["cy"] = min(max(s["cy"], s["h"] / 2 + 5), vb_h - s["h"] / 2 - 5)
+        return moved
+
+    for _ in range(400):
+        for s in specs:  # アンカーへ弱いバネ
+            s["cx"] += (s["ax"] - s["cx"]) * 0.015
+            s["cy"] += (s["ay"] - s["cy"]) * 0.03
+        _separate()
+    for _ in range(200):  # 仕上げ: バネ無しで残留重なりを潰し切る
+        if not _separate():
+            break
+    return specs
+
+
 def relations_svg(rel: dict[str, Any]) -> str:
     """relations を SVG ネットワーク図 (ノード円 + ラベル付き有向エッジ) に描く。"""
     lay = layout_relations(rel)
@@ -399,25 +520,57 @@ def relations_svg(rel: dict[str, Any]) -> str:
             f'</text></g>'
         )
 
-    # ── edges: 線+矢印を先に全部描画。ラベルは (from, kind, label) で束ねる ──
+    # ノードが無い水平帯 (zone) の中心 y を求める。ラベルはまずこの空白帯にスナップし、
+    # その後 _resolve_labels が重なりを 0 にする (band 間にラベルを逃がす設計)。
+    ys = sorted({round(nd["y"], 1) for nd in nodes})
+    rmax_at: dict[float, float] = {}
+    for nd in nodes:
+        yk = round(nd["y"], 1)
+        rmax_at[yk] = max(rmax_at.get(yk, 0.0), float(nd["r"]))
+    zone_centers: list[float] = [max(chip_h, (ys[0] - rmax_at[ys[0]]) / 2)]
+    for i in range(len(ys) - 1):
+        zlo = ys[i] + rmax_at[ys[i]] + 8
+        zhi = ys[i + 1] - rmax_at[ys[i + 1]] - 8
+        zone_centers.append((zlo + zhi) / 2)
+    last = ys[-1] + rmax_at[ys[-1]]
+    zone_centers.append(min(vb_h - chip_h, last + (vb_h - last) / 2))
+
+    def _anchor(x1: float, y1: float, x2: float, y2: float) -> tuple[float, float]:
+        """エッジを、ノード無し zone の高さで横切る点 (ラベル初期位置) を返す。"""
+        # 水平 (同 band 内) エッジ: そのバンドの「上の gap」(最上段なら上余白) に逃がす。
+        # 外側の狭い余白へ押し込むと窮屈なので、内側の広い gap を優先する。
+        if abs(y2 - y1) <= 1.0:
+            bi = min(range(len(ys)), key=lambda i: abs(ys[i] - y1))
+            return (x1 + x2) / 2, zone_centers[bi]
+        mid_y = (y1 + y2) / 2
+        ylo, yhi = min(y1, y2), max(y1, y2)
+        cand = [c for c in zone_centers if ylo - 32 <= c <= yhi + 32]
+        gc = min(cand or zone_centers, key=lambda c: abs(c - mid_y))
+        t = min(max((gc - y1) / (y2 - y1), 0.12), 0.88)
+        return x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+
+    def _chip_w(kind: str, label: str) -> float:
+        return 24 + _text_w(kind, fs) + (6 if label else 0) + _text_w(label, fs) + 14
+
+    # ── edges: 線+矢印を全描画し、ラベルは spec として収集 (配置は後で一括解決) ──
+    specs: list[dict[str, Any]] = []
     groups: dict[tuple[Any, str, str], dict[str, Any]] = {}
-    for i, e in enumerate(rel.get("edges", [])):
+    for e in rel.get("edges", []):
         a, b = by_id.get(e.get("from")), by_id.get(e.get("to"))
         if not a or not b:
             continue
-        # frenemy (協調的競合): 協力線(緑・上)と競合線(赤・下)を併走させ、各々に
-        # 双方向矢印とラベルを付ける。「提携でありつつ人月モデルで競合」の二面性を
-        # 1 本に潰さず描く中心命題用エッジ (2026-05-31 追加)。
+        # frenemy (協調的競合): 協力線(緑)と競合線(赤)を併走させ、各々に双方向矢印と
+        # ラベルを付ける。供給(提携)でありつつ競合する二面性を 1 本に潰さない。
         if e.get("kind") in _FRENEMY_KINDS:
             ax, ay, bx, by = a["x"], a["y"], b["x"], b["y"]
             dx, dy = bx - ax, by - ay
             length = math.hypot(dx, dy) or 1.0
             ux, uy = dx / length, dy / length
             px, py = -uy, ux
-            gap, off = 7, 15
+            gap, off = 7, 14
             faces = (
                 (-1, _FRENEMY_COOP_COLOR, "提携", e.get("coop") or "協力（提携）"),
-                (1, _FRENEMY_RIVAL_COLOR, "競合", e.get("rival") or "人月モデルで競合"),
+                (1, _FRENEMY_RIVAL_COLOR, "競合", e.get("rival") or "競合"),
             )
             for sign, color, kind, label in faces:
                 ox, oy = px * off * sign, py * off * sign
@@ -429,12 +582,12 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 )
                 parts.append(_arrow(x2, y2, ux, uy, color))   # 協力も競合も相互 = 双方向
                 parts.append(_arrow(x1, y1, -ux, -uy, color))
-                cw = 24 + _text_w(kind, fs) + (6 if label else 0) + _text_w(label, fs) + 14
-                lx = (x1 + x2) / 2 + px * sign * (chip_h / 2 + 5)
-                ly = (y1 + y2) / 2 + py * sign * (chip_h / 2 + 5)
-                gx = min(max(lx - cw / 2, 4), vb_w - cw - 4)
-                gy = min(max(ly - chip_h / 2, 4), vb_h - chip_h - 4)
-                parts.append(_label_chip(gx, gy, cw, color, kind, label))
+                anx, an_y = _anchor(x1, y1, x2, y2)
+                anx += px * sign * (chip_h + 4)   # 2 面を上下にずらして初期分離
+                an_y += py * sign * (chip_h + 4)
+                specs.append({"cx": anx, "cy": an_y, "ax": anx, "ay": an_y,
+                              "w": _chip_w(kind, label), "h": chip_h,
+                              "color": color, "kind": kind, "label": label})
             continue
         ks = EDGE_KINDS.get(e.get("kind", ""), _DEFAULT_EDGE)
         color, dash = ks["color"], ks["dash"]
@@ -451,44 +604,44 @@ def relations_svg(rel: dict[str, Any]) -> str:
             f'stroke="{color}" stroke-width="2" opacity="0.85"{dash_attr}/>'
         )
         parts.append(_arrow(x2, y2, ux, uy, color))
-        # 競合/対立 は相互関係なので既定で双方向矢印 (⇔)。一方向に倒したいときだけ
-        # dir に "one"/"forward" を明示する。出資/規制/供給は本来一方向 (親→子・
-        # 当局→対象・供給元→供給先) なので片矢印のまま (2026-05-31)。
+        # 競合/対立 は相互関係なので既定で双方向矢印 (⇔)。出資/規制/供給は一方向のまま。
         bidirectional = e.get("dir") == "both" or (
             e.get("kind") in _RIVAL_KINDS and e.get("dir") not in ("one", "forward")
         )
         if bidirectional:
             parts.append(_arrow(x1, y1, -ux, -uy, color))
-        # 同一 (from, kind, label) のエッジ群はラベルを 1 回だけ描く。当局→複数勢力で
-        # 同文ラベルが 2 本並ぶと認知負荷を上げるだけなので束ねる (2026-05-31)。
+        # 同一 (from, kind, label) のエッジ群はラベルを 1 回だけ束ねる。
         kind, label = e.get("kind", ""), e.get("label", "")
         g = groups.setdefault(
             (e.get("from"), kind, label),
-            {"color": color, "kind": kind, "label": label,
-             "mids": [], "idx": i, "px": -uy, "py": ux, "seg": (x1, y1, x2, y2)},
+            {"color": color, "kind": kind, "label": label, "mids": [], "segs": []},
         )
         g["mids"].append(((x1 + x2) / 2, (y1 + y2) / 2))
+        g["segs"].append((x1, y1, x2, y2))
 
-    # ── ラベルチップ (束ねた単位で 1 個) ──
     for g in groups.values():
-        kind, label, color = g["kind"], g["label"], g["color"]
-        text_w = 24 + _text_w(kind, fs) + (6 if label else 0) + _text_w(label, fs)
-        chip_w = text_w + 14
-        mids = g["mids"]
-        if len(mids) >= 2:
-            # 複数辺で同一ラベル → 各中点の重心に 1 個 (扇状エッジの内側に収まる)
-            lx = sum(m[0] for m in mids) / len(mids)
-            ly = sum(m[1] for m in mids) / len(mids)
+        if len(g["mids"]) >= 2:   # 扇状の同文ラベル → 中点重心を最寄り zone へ
+            cxm = sum(m[0] for m in g["mids"]) / len(g["mids"])
+            cym = sum(m[1] for m in g["mids"]) / len(g["mids"])
+            anx, an_y = cxm, min(zone_centers, key=lambda c: abs(c - cym))
         else:
-            # 単独辺 → 辺上でスタガリングし他ラベルとの衝突を避ける
-            x1, y1, x2, y2 = g["seg"]
-            t = (0.5, 0.4, 0.6)[g["idx"] % 3]
-            perp = (0, -1, 1)[g["idx"] % 3] * (chip_h + 4)
-            lx = x1 + (x2 - x1) * t + g["px"] * perp
-            ly = y1 + (y2 - y1) * t + g["py"] * perp
-        gx = min(max(lx - chip_w / 2, 4), vb_w - chip_w - 4)
-        gy = min(max(ly - chip_h / 2, 4), vb_h - chip_h - 4)
-        parts.append(_label_chip(gx, gy, chip_w, color, kind, label))
+            anx, an_y = _anchor(*g["segs"][0])
+        specs.append({"cx": anx, "cy": an_y, "ax": anx, "ay": an_y,
+                      "w": _chip_w(g["kind"], g["label"]), "h": chip_h,
+                      "color": g["color"], "kind": g["kind"], "label": g["label"]})
+
+    # ── ラベル重なり解消 → リーダ線 → チップ描画 ──
+    circles = [(float(nd["x"]), float(nd["y"]), float(nd["r"])) for nd in nodes]
+    _resolve_labels(specs, circles, vb_w, vb_h)
+    for s in specs:   # アンカーから離れたチップは細いリーダ線で対応エッジを示す
+        if math.hypot(s["cx"] - s["ax"], s["cy"] - s["ay"]) > 22:
+            parts.append(
+                f'<line x1="{s["ax"]:.1f}" y1="{s["ay"]:.1f}" x2="{s["cx"]:.1f}" '
+                f'y2="{s["cy"]:.1f}" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/>'
+            )
+    for s in specs:
+        parts.append(_label_chip(s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2,
+                                 s["w"], s["color"], s["kind"], s["label"]))
 
     # ── nodes (テキストは円内に収まるようフォントを自動縮小) ──
     for nd in nodes:
