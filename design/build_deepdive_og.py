@@ -104,9 +104,7 @@ def build() -> None:
                         r"C:\Windows\Fonts\timesbd.ttf"], 150)
     f_jp = find_font([r"C:\Windows\Fonts\yumindb.ttf",
                       r"C:\Windows\Fonts\yumin.ttf",
-                      r"C:\Windows\Fonts\msmincho.ttc"], 58)
-    f_kicker = find_font([r"C:\Windows\Fonts\yumin.ttf",
-                          r"C:\Windows\Fonts\msmincho.ttc"], 24)
+                      r"C:\Windows\Fonts\msmincho.ttc"], 46)
     f_mono = find_font([r"C:\Windows\Fonts\consola.ttf"], 17)
     f_mono_bar = find_font([r"C:\Windows\Fonts\consolab.ttf",
                             r"C:\Windows\Fonts\consola.ttf"], 16)
@@ -125,12 +123,6 @@ def build() -> None:
     od2.polygon(_diamond(W - 40 - 8, BAR_TOP_H / 2, 7), fill=GOLD)
 
     # ── 中央キービジュアル ──
-    # キッカー (金・和文セリフ)
-    kicker = "週 次 ・ ひとつのテーマを深く"
-    kw = tracked_width(draw, kicker, f_kicker, 2)
-    draw_tracked_text(draw, (cx - kw / 2, cy - 168), kicker, f_kicker,
-                      (0x9A, 0x7B, 0x33), 2)
-
     # "DEEP DIVE" (Georgia Bold・墨・字間広め)
     title = "DEEP DIVE"
     tw = tracked_width(draw, title, f_dive, 10)
@@ -146,10 +138,10 @@ def build() -> None:
     od2.polygon(_diamond(cx, rule_y + 1.5, 11), fill=PAPER)
     od2.polygon(_diamond(cx, rule_y + 1.5, 9), outline=GOLD, width=2)
 
-    # "深 掘 り" (游明朝・DIM・字間広め)
-    jp = "深 掘 り"
-    jw = tracked_width(draw, jp, f_jp, 12)
-    draw_tracked_text(draw, (cx - jw / 2, rule_y + 26), jp, f_jp, DIM, 12)
+    # サブタイトル「ひとつのテーマを深く」(游明朝・DIM・適度な字間)
+    jp = "ひとつのテーマを深く"
+    jw = tracked_width(draw, jp, f_jp, 6)
+    draw_tracked_text(draw, (cx - jw / 2, rule_y + 26), jp, f_jp, DIM, 6)
 
     # ── 下バー (墨地・モノラベル) ──
     by0 = H - BAR_BOT_H
