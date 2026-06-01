@@ -43,3 +43,4 @@
 | 2026-06-01 | ✅成功 | FX, AI, IT-Consulting, Mobility, Economy | - | 0 | 記事25件 |
 | 2026-06-01 | ✅DeepDive | ロボタクシー覇権(Waymo独走とTeslaの量産反攻) | 約25分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch2件 |
 | 2026-06-02 | ✅成功 | FX, AI, IT-Consulting, Mobility, Economy, Game | - | 0 | 記事27件 |
+| 2026-06-02 | ✅DeepDive | AIラボ評価額レース(AnthropicがOpenAI逆転で1兆ドル目前) | 約20分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch4件(CNBC403は検索要約で補完) |
