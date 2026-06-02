@@ -10,6 +10,7 @@ colors:
   surface: "#FFFFFF"
   border: "#E2DED4"
   paper-soft: "#F2EEE3"
+  paper-dim: "#EAE3D3"
   on-tertiary: "#181C2A"
   on-primary: "#F0EBE0"
   navy: "#181C2A"
@@ -163,6 +164,7 @@ Magazine Spread 編集者トーンのデザインシステム。**navy (`#181C2A
 | `tertiary` | `#C9A155` | **gold**。Editorial / Subscribe / underline 装飾 (= `gold` の alias) |
 | `neutral` | `#FAF7F0` | **paper**。ページ背景 |
 | `paper-soft` | `#F2EEE3` | Categories / Footer / Subscribe など副背景 |
+| `paper-dim` | `#EAE3D3` | **YESTERDAY** 日報 (Daily Overview 前日) の地色。paper を一段落とした暖色 |
 | `surface` | `#FFFFFF` | カード面 |
 | `border` | `#E2DED4` | 罫線・区切り |
 | `navy` | `#181C2A` | Brand zone / dark editorial 背景 |

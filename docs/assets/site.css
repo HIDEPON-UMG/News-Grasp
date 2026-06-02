@@ -11,6 +11,7 @@
   /* Magazine palette */
   --color-paper: #FAF7F0;
   --color-paper-soft: #F2EEE3;
+  --color-paper-dim: #EAE3D3;   /* YESTERDAY overview の地色 (paper を一段落とした暖色) */
   --color-surface: #FFFFFF;
   --color-ink: #1A1A1A;
   --color-ink-dim: #5C5A52;
@@ -85,6 +86,45 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   TODAY ⇄ YESTERDAY をはじめ全ページ遷移で、旧ページが左へ抜け・新ページが右から入る
+   横パンにする。未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。
+   パンでページが横に動くと下地が露出するので、ルートとオーバーレイに paper を敷いて
+   白ちらつきを防ぐ (メニュー欄が切れても背景色が連続して見える)。 */
+html { background: var(--color-paper); }
+@view-transition { navigation: auto; }
+/* メニュー欄 (home-brand / home-nav) は view-transition-name で root から分離して固定し、
+   root (= 残りのコンテンツ) だけを横パンさせる。メニューが動かないので白が露出しない
+   (ユーザー提案: 一番上のメニュー欄は遷移させず、コンテンツと号数だけ切り替える)。 */
+.home-brand { view-transition-name: ng-header-brand; }
+.home-nav   { view-transition-name: ng-header-nav; }
+/* コンテンツ root のパンで端に出る隙間・透けの下地は paper を敷いて白を防ぐ (保険)。 */
+::view-transition { background: var(--color-paper); }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: var(--color-paper); }
+@media (prefers-reduced-motion: no-preference) {
+  /* パンは元方式 (両ページが軽く横移動 + クロスフェード) に戻す。メニュー固定により
+     上部に白が出ないため、この控えめパンでも下地白の問題は起きない。 */
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* YESTERDAY ページ (昨日 LP): ページ全体をやや暗いトーンにして TODAY と即座に区別する。
+   navy の home-brand / home-editorial は据え置き、paper 系セクションだけ連動して沈める
+   (元 paper の subscribe/pub-matrix は paper-dim、元 paper-soft の cats/footer は一段濃く)。 */
+body[data-variant="yesterday"] { background: var(--color-paper-dim); }
+body[data-variant="yesterday"] .home-subscribe,
+body[data-variant="yesterday"] .pub-matrix { background: var(--color-paper-dim); }
+body[data-variant="yesterday"] .home-cats,
+body[data-variant="yesterday"] .site-footer {
+  background: color-mix(in srgb, var(--color-paper-dim) 90%, #000);
+}
+/* 昨日 LP は号数・日付メタを沈めて、今日 (明るい cream の号数) との差を視覚的に強める。 */
+body[data-variant="yesterday"] .home-brand__issue-num { color: rgba(240, 235, 224, 0.45); }
+body[data-variant="yesterday"] .home-brand__issue-meta { color: rgba(201, 161, 85, 0.6); }
 /* 長い英単語・URL で viewport を突き破らないように全体に折り返し既定 */
 h1, h2, h3, h4, p, li, a, span, div { overflow-wrap: anywhere; }
 img { max-width: 100%; height: auto; display: block; }
@@ -1004,10 +1044,34 @@ strong {
   flex-wrap: wrap;
   margin-top: 12px;
 }
+.home-nav__day {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 15px;   /* TODAY / YESTERDAY (16px は大きい・14px は小さいので中間) */
+}
 .home-nav__today {
   color: var(--color-navy);
+  font-weight: 700;   /* 現在地は太字で強調 */
   border-bottom: 2px solid var(--color-navy);
   padding-bottom: 4px;
+}
+/* 現在地は < > で囲んでさらに強調 (例: <TODAY> / <YESTERDAY>)。非選択側には付けない。 */
+.home-nav__today::before { content: "<"; margin-right: 2px; }
+.home-nav__today::after  { content: ">"; margin-left: 2px; }
+/* TODAY の右に並ぶ「YESTERDAY」: 非アクティブ表現 (dim + 細字 + 下線なし)。
+   hover で navy + 薄下線になり、押せるリンクであることを示す。 */
+.home-nav__yesterday {
+  color: var(--color-ink-dim);
+  font-weight: 400;   /* 非選択は細字 */
+  text-decoration: none;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.home-nav__yesterday:hover {
+  color: var(--color-navy);
+  border-bottom-color: var(--color-border);
 }
 .home-nav__lens-fx       { color: var(--color-accent-fx); }
 .home-nav__lens-ai       { color: var(--color-accent-ai); }
@@ -2545,6 +2609,22 @@ strong {
   .past-week { padding: 24px 16px; }
   .past-week__grid { grid-template-columns: 1fr 1fr; }
   .site-footer { padding: 18px 16px; flex-direction: column; align-items: center; text-align: center; }
+  /* リンク集はスマホ幅では 1 文字ずつ縦折れして潰れるため、1 行 nowrap + 横スクロールに切替
+     (サイト内 lens-nav と同方式)。フル表記を保ったまま、はみ出しは横スワイプで送れる。
+     右端フェードで「続きが横にある」ことを示す。 */
+  .site-footer__links {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 18px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+            mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+  }
+  .site-footer__links::-webkit-scrollbar { display: none; }
+  .site-footer__links a { flex: 0 0 auto; white-space: nowrap; }
 
   /* Home (Variant B) Mobile */
   .home-brand { padding: 16px 16px; }

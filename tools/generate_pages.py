@@ -932,8 +932,14 @@ def _latest_deepdive_card() -> dict[str, Any] | None:
 
 
 def build_index(entries: list[dict[str, Any]], docs_root: Path,
-                recent_days: int = TOP_RECENT_DAYS) -> Path:
+                recent_days: int = TOP_RECENT_DAYS,
+                *, target_date: str | None = None, is_yesterday: bool = False) -> Path:
     """Variant B Magazine Spread Home (docs/index.html) を生成。
+
+    target_date を指定すると、その日付を「当日」とみなした LP を
+    docs/{target_date}/index.html に生成する (sticky nav の「YESTERDAY」遷移先)。
+    is_yesterday=True で hero 見出しを「YESTERDAY'S THEME」に切り替え、nav の現在地を
+    YESTERDAY 側にし、body data-variant="yesterday" でページ背景をやや暗くする。
 
     context 構成:
       site_title / base_url / total_pages
@@ -953,6 +959,8 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "today_date": "",
             "today_date_mmdd": "",
             "today_weekday": "",
+            "yesterday_date": "",
+            "is_yesterday": False,
             "issue_no": "",
             "hero_phrase_left": "",
             "hero_phrase_right": "",
@@ -971,9 +979,13 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         out = Path(docs_root) / "index.html"
         return render_page(ctx, out, template_name="index-template.html")
 
-    # entries は日付降順なので最初の entry の日付が今日
-    today_date = entries[0]["date"]
+    # entries は日付降順。target_date 指定時はその日を、無指定なら最新日を「当日」とする。
+    today_date = target_date or entries[0]["date"]
     same_day = [e for e in entries if e["date"] == today_date]
+    # sticky nav の「YESTERDAY」リンク用: today より前の最新 unique date (無ければ空)。
+    # 当日 LP では YESTERDAY をこの日付へリンクし、昨日 LP では YESTERDAY を現在地表示にする。
+    prior_dates = [e["date"] for e in entries if e.get("date") and e["date"] < today_date]
+    yesterday_date = max(prior_dates) if prior_dates else ""
 
     # Editor's Top 3: score 降順、上位 3 件 (同一カテゴリ重複は許容、デザイン仕様通り)
     sorted_by_score = sorted(same_day, key=lambda e: e.get("top_score", 0), reverse=True)
@@ -1052,6 +1064,8 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         "today_date": today_date,
         "today_date_mmdd": today_date_mmdd,
         "today_weekday": _date_weekday_jp(today_date),
+        "yesterday_date": yesterday_date,
+        "is_yesterday": is_yesterday,
         "issue_no": issue_no,
 
         "hero_phrase_left": hero_phrase_left,
@@ -1076,7 +1090,8 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         # 独立に DeepDive md を直接読んだデータ (不変条件の本質 = entry 非汚染を維持)。
         "latest_deepdive": _latest_deepdive_card(),
     }
-    out = Path(docs_root) / "index.html"
+    # target_date 指定時は docs/{date}/index.html (昨日 LP)、無指定は docs/index.html (当日 LP)
+    out = (Path(docs_root) / target_date / "index.html") if target_date else (Path(docs_root) / "index.html")
     return render_page(ctx, out, template_name="index-template.html")
 
 
@@ -1165,7 +1180,12 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
 
 
 def build_all_overviews(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
-    """全 unique date について overview ページを生成。"""
+    """全 unique date について overview ページを生成。
+
+    ※ 最新日の 1 つ前 (yesterday) は main() で build_index(target_date=...) により
+    LP 体裁の「昨日ページ」で上書きされる (docs/{昨日}/index.html)。ここでは全日付の
+    overview を一旦生成し、上書きは呼び出し側の順序に委ねる。
+    """
     unique_dates = sorted({e["date"] for e in entries if e.get("date")}, reverse=True)
     written: list[Path] = []
     for d in unique_dates:
@@ -1882,6 +1902,11 @@ def main(argv: list[str] | None = None) -> int:
         arc = build_archive(entries, docs_root,
                             deepdive_items=dd["items"], lens_chips=dd["chips"])
         overviews = build_all_overviews(entries, docs_root)
+        # 「YESTERDAY」ナビの遷移先: 最新日の 1 つ前を当日 LP と同じ体裁で docs/{昨日}/ に
+        # 上書き生成する (build_all_overviews が出した同日 overview を LP 昨日版で置換)。
+        _yesterday_dates = sorted({e["date"] for e in entries if e.get("date")}, reverse=True)
+        if len(_yesterday_dates) > 1:
+            build_index(entries, docs_root, target_date=_yesterday_dates[1], is_yesterday=True)
         summaries = build_all_summaries(entries, docs_root,
                                         digest_sources=digests_all)
         print(

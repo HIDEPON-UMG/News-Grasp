@@ -38,7 +38,7 @@
 
 <link rel="stylesheet" href="{{ base_url }}/assets/site.css">
 </head>
-<body data-category="summary">
+<body data-category="summary"{% if is_yesterday %} data-variant="yesterday"{% endif %}>
 
 <!-- ============= Home Brand zone (navy header / 86px wordmark) ============= -->
 <section class="home-brand">
@@ -69,7 +69,15 @@
 <nav class="home-nav">
   <div class="home-nav__inner">
     <div class="home-nav__bar">
-      <span class="home-nav__today">TODAY</span>
+      <span class="home-nav__day">
+        {% if is_yesterday %}
+        <a href="{{ base_url }}/" class="home-nav__yesterday">TODAY</a>
+        <span class="home-nav__today">YESTERDAY</span>
+        {% else %}
+        <span class="home-nav__today">TODAY</span>
+        {% if yesterday_date %}<a href="{{ base_url }}/{{ yesterday_date }}/" class="home-nav__yesterday">YESTERDAY</a>{% endif %}
+        {% endif %}
+      </span>
       <a href="{{ base_url }}/archive/" class="home-nav__archive">ARCHIVE</a>
     </div>
     <div class="home-nav__links">
@@ -93,7 +101,7 @@
 
     <!-- LEFT: Today's theme (SUMMARY ⇆ DEEP DIVE スライダー) -->
     <div class="home-hero__theme">
-      <div class="home-hero__eyebrow"><span class="rule">━━</span> TODAY'S THEME</div>
+      <div class="home-hero__eyebrow"><span class="rule">━━</span> {% if is_yesterday %}YESTERDAY{% else %}TODAY{% endif %}'S THEME</div>
       {% if latest_deepdive %}
       <div class="home-hero__switch" role="tablist" aria-label="本日のテーマ表示切替">
         <button type="button" class="home-hero__switch-btn is-active" data-slide="summary" role="tab" aria-selected="true">SUMMARY</button>

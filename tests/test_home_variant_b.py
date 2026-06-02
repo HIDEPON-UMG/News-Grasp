@@ -183,3 +183,62 @@ def test_split_theme_phrases_empty():
     """空文字や 1 文しかない場合は ("", "") を返す。"""
     assert _split_theme_phrases("") == ("", "")
     assert _split_theme_phrases("単一フレーズだけ。") == ("", "")
+
+
+# ============================================================
+# YESTERDAY LP (sticky nav の「YESTERDAY」遷移先 = 昨日を当日とみなした LP)
+# ============================================================
+
+@pytest.fixture(scope="module")
+def yesterday_lp(tmp_path_factory):
+    """build_index(target_date=前日, is_yesterday=True) で昨日 LP を生成し (html, 日付) を返す。
+
+    個別記事ページに依存しないため build_all は不要 (entries から直接 LP を組める)。
+    """
+    docs_root = tmp_path_factory.mktemp("yda_lp")
+    entries = _collect_entries(scan_digests())
+    dates = sorted({e["date"] for e in entries if e.get("date")}, reverse=True)
+    if len(dates) < 2:
+        pytest.skip("前日 digest が無いため昨日 LP を検証できない")
+    yda = dates[1]
+    out = build_index(entries, docs_root, target_date=yda, is_yesterday=True)
+    assert out.parts[-2:] == (yda, "index.html"), \
+        f"昨日 LP は docs/{yda}/index.html に出るべき: {out}"
+    return out.read_text(encoding="utf-8"), yda
+
+
+def test_yesterday_lp_variant_and_theme(yesterday_lp):
+    """昨日 LP は body に data-variant="yesterday" (背景やや暗め) と
+    見出し「YESTERDAY'S THEME」を持つ (TODAY と一目で区別する意図を pin)。"""
+    html, _ = yesterday_lp
+    assert 'data-variant="yesterday"' in html, "昨日 LP の背景識別子が無い"
+    assert "YESTERDAY&#39;S THEME" in html or "YESTERDAY'S THEME" in html, \
+        "見出しが YESTERDAY'S THEME になっていない"
+
+
+def test_yesterday_lp_keeps_today_layout(yesterday_lp):
+    """昨日 LP は当日トップと同じ LP 体裁 (home-brand / home-hero / カテゴリグリッド) を保つ。
+
+    「今日のトップと同じ見た目の昨日版」が要件なので、overview (俯瞰) ではなく
+    index テンプレートで生成されていることを構造で保証する。"""
+    html, _ = yesterday_lp
+    assert 'class="home-brand"' in html
+    assert 'class="home-hero"' in html
+    assert 'class="home-cats__grid"' in html
+
+
+def test_yesterday_lp_nav_is_reversed(yesterday_lp):
+    """昨日 LP の sticky nav は YESTERDAY が現在地・TODAY が当日 LP へのリンク
+    (今日 LP とは TODAY/YESTERDAY のアクティブが逆転し、相互に行き来できる)。"""
+    from tools.config import BASE_URL
+    html, _ = yesterday_lp
+    assert '<span class="home-nav__today">YESTERDAY</span>' in html, \
+        "昨日 LP では YESTERDAY が現在地 (active span) であるべき"
+    assert f'href="{BASE_URL}/" class="home-nav__yesterday">TODAY</a>' in html, \
+        "昨日 LP の TODAY は当日 LP (ルート) へのリンクであるべき"
+
+
+def test_today_lp_has_yesterday_link(built_home):
+    """当日 LP の sticky nav は TODAY が現在地・YESTERDAY が前日 LP へのリンク。"""
+    assert '<span class="home-nav__today">TODAY</span>' in built_home
+    assert 'class="home-nav__yesterday">YESTERDAY</a>' in built_home
