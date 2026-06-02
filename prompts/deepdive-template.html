@@ -145,6 +145,9 @@ html, body { margin: 0; padding: 0; }
                align-items: baseline; }
 .dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
 .dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+.dd-fig__src .cite { white-space: nowrap; }
 
 /* timeline */
 .dd-tl { position: relative; padding: 20px 22px; }
@@ -419,7 +422,7 @@ html, body { margin: 0; padding: 0; }
               {% endfor %}
             </div>
             {% endif %}
-            {% if relations_source %}<div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">{{ relations_source }}</span></div>{% endif %}
+            {% if relations_source %}<div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">{% for ct in relations_source.cites %}<a class="cite" href="{{ ct.url }}">*{{ ct.num }} {{ ct.name }}</a>{% if not loop.last %} {% endif %}{% endfor %}{% if relations_source.fallback %}{% if relations_source.fallback.url %}<a class="cite" href="{{ relations_source.fallback.url }}">{{ relations_source.fallback.text }} <span class="ext">↗</span></a>{% else %}{{ relations_source.fallback.text }}{% endif %}{% endif %}{% if relations_source.note %}{% if relations_source.cites %} — {% endif %}{{ relations_source.note }}{% endif %}</span></div>{% endif %}
           </figure>
         </div>
         {% endif %}
@@ -440,7 +443,7 @@ html, body { margin: 0; padding: 0; }
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">{{ c.title }}</span></figcaption>
           {% if c.note %}<div class="dd-chart__note">{{ c.note }}</div>{% endif %}
           <div class="dd-chart__svg">{{ c.svg|safe }}</div>
-          {% if c.source %}<div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">{{ c.source }}</span></div>{% endif %}
+          {% if c.source %}<div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">{% for ct in c.source.cites %}<a class="cite" href="{{ ct.url }}">*{{ ct.num }} {{ ct.name }}</a>{% if not loop.last %} {% endif %}{% endfor %}{% if c.source.fallback %}{% if c.source.fallback.url %}<a class="cite" href="{{ c.source.fallback.url }}">{{ c.source.fallback.text }} <span class="ext">↗</span></a>{% else %}{{ c.source.fallback.text }}{% endif %}{% endif %}{% if c.source.note %}{% if c.source.cites %} — {% endif %}{{ c.source.note }}{% endif %}</span></div>{% endif %}
         </figure>
         {% endfor %}
       </div>
@@ -464,7 +467,7 @@ html, body { margin: 0; padding: 0; }
               </tbody>
             </table>
           </div>
-          {% if table.source %}<div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">{{ table.source }}</span></div>{% endif %}
+          {% if table.source %}<div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">{% for ct in table.source.cites %}<a class="cite" href="{{ ct.url }}">*{{ ct.num }} {{ ct.name }}</a>{% if not loop.last %} {% endif %}{% endfor %}{% if table.source.fallback %}{% if table.source.fallback.url %}<a class="cite" href="{{ table.source.fallback.url }}">{{ table.source.fallback.text }} <span class="ext">↗</span></a>{% else %}{{ table.source.fallback.text }}{% endif %}{% endif %}{% if table.source.note %}{% if table.source.cites %} — {% endif %}{{ table.source.note }}{% endif %}</span></div>{% endif %}
         </figure>
       </div>
       {% endif %}

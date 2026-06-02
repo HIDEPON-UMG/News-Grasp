@@ -175,6 +175,55 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
     return sources
 
 
+def _publisher_name(biblio_text: Any) -> str:
+    """参考リンク 1 件の出版社名 (「記事タイトル」より前の社名部分) を取り出す。"""
+    return re.split(r"[「『（(]", str(biblio_text or ""), maxsplit=1)[0].strip()
+
+
+def _publisher_key(name: str) -> str:
+    """出版社名から照合キー (最長の英数字ラン) を作り、図の source 文字列と部分一致させる。
+
+    例:「ITmedia NEWS」→ ITmedia /「The Information」→ Information /「Investing.com」→ そのまま。
+    英数字を含まない日本語社名は名前全体をキーにする。
+    """
+    runs = [r for r in re.findall(r"[A-Za-z0-9.]+", name) if len(r) >= 4]
+    return max(runs, key=len) if runs else name.strip()
+
+
+def _figure_citations(raw: Any, biblio: list[dict[str, str]]) -> dict[str, Any] | None:
+    """図 (relations/chart/table) の source 文字列を、参考リンク番号付きの引用に変換する。
+
+    複数出典 (例「Axios / Investing.com / ITmedia」) を 1 リンクに潰さず、各出版社を末尾の
+    参考リンク一覧 (biblio。1-based 番号がそのまま脚注番号) と照合して `*N 出版社名` の
+    個別リンク (リンク先は出典サイト URL) にする。最初の 。より前を引用部、以降を著者の
+    注記として扱う (生 URL は番号リンクに置換するため除去)。参考リンクに該当が無ければ
+    従来どおり全文 1 リンクへフォールバックする。空文字なら None (SOURCE 行を出さない)。
+    """
+    s = str(raw or "").strip()
+    if not s:
+        return None
+    um = re.search(r"https?://\S+", s)
+    url = um.group(0) if um else ""
+    s = re.sub(r"\s*https?://\S+", "", s).strip()
+    head, _sep, note = s.partition("。")
+    note = note.strip(" 　、。")
+    cites: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for idx, b in enumerate(biblio, 1):
+        name = _publisher_name(b.get("text", ""))
+        key = _publisher_key(name)
+        if key and key.lower() in head.lower() and idx not in seen:
+            seen.add(idx)
+            cites.append({"num": idx, "name": name, "url": b.get("url", "")})
+    if cites:
+        return {"cites": cites, "note": note, "fallback": None}
+    # 参考リンクに該当が無い → 全文 1 リンク (旧挙動) にフォールバック
+    text = head.strip(" 　:：—-/。、") or note
+    if not text and not url:
+        return None
+    return {"cites": [], "note": "", "fallback": {"text": text or url, "url": url}}
+
+
 # ── relations: 座標なしスキーマ → 役割レイヤー (band) 配置 + SVG ────────────────
 
 def _flow_layers(
@@ -291,35 +340,145 @@ def _rivalry_sides(rival_edges: list[dict[str, Any]]) -> dict[str, str]:
     return side
 
 
-def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
-    """nodes を役割レイヤー (band) に積み、x/y/r を決める (2026-06-01 全面改訂)。
+def _camp_columns(
+    nodes: list[dict[str, Any]], edges: list[dict[str, Any]], ids: list[str],
+    deg: dict[str, int], node_r: Any,
+) -> dict[str, Any] | None:
+    """2 つの対立陣営を「左右カラム + 役割ティア」で配置する (2026-06-02 ユーザー指示)。
 
-    スキーマ (weekly-research-system.md) の relations は座標を持たないため、レンダラ側で
-    決定論的に配置する。ユーザー指示により「役割 (陣営/当局) ごとに水平レイヤーを分け、
-    同じ役割は同じレイヤーに揃える」方式へ変更した:
+    重要: 「陣営」は役割ではない。まず事業者を 2 陣営へ左右に分け (横軸 = 陣営)、各陣営
+    の内部で『主役』と、それを支援する出資元・顧客を別の段に積む (縦軸 = 役割ティア。
+    出資元/支援者 = 上 / 主役 = 中 / 顧客・下流 = 下)。主役同士は同じ高さで左右に対峙し、
+    それが図の対立軸になる。どちらの陣営にも属さない中立機関 (規制当局・両陣営へ供給する
+    ベンダー等) は専用の最下段レイヤーにまとめる。
 
-      上段 = 出資元/親会社、中段 = 事業者 (陣営ごとに別 band)、下段 = 規制当局。
-
-    水平位置はレイヤー間エッジの重心 (barycenter) を数回スイープして交差を抑える。
-    規制当局は被規制ノードの真下へ寄り「見上げる三角」を作る。ラベルの重なり回避は
-    relations_svg 側の _resolve_labels が担う (ノードは band 構造で重ならない)。
+    陣営 group (中立を除く事業者で同一 group が 2 ノード以上) が「ちょうど 2 つ」ある
+    ときだけ適用し、それ以外 (単一陣営・3 陣営以上・バリューチェーン) は None を返して
+    既存の _band_layout (役割レイヤー積み) へフォールバックする。
     """
-    nodes = list(rel.get("nodes", []))
-    ids = [str(nd.get("id", "")) for nd in nodes]
-    idset = set(ids)
-    edges = [e for e in rel.get("edges", [])
-             if str(e.get("from", "")) in idset and str(e.get("to", "")) in idset]
+    order = [str(n.get("id", "")) for n in nodes]
+    grp = {str(n.get("id", "")): str(n.get("group", "")) for n in nodes}
 
-    deg: dict[str, int] = {}
+    # 中立機関: group に 規制/当局 を含む or 規制エッジの source。
+    neutral_inst = {i for i in order if ("規制" in grp[i]) or ("当局" in grp[i])}
+    neutral_inst |= {str(e["from"]) for e in edges if e.get("kind") in _AUTH_KINDS}
+
+    # 陣営 group = 中立を除く事業者で同一 group が 2 ノード以上。ちょうど 2 つを要求。
+    camp_members = [i for i in order if i not in neutral_inst and grp[i]]
+    seen_g: list[str] = []
+    for i in camp_members:
+        if grp[i] not in seen_g:
+            seen_g.append(grp[i])
+    camps = [g for g in seen_g if sum(1 for i in camp_members if grp[i] == g) >= 2]
+    if len(camps) != 2:
+        return None
+    campA, campB = camps[0], camps[1]
+    members = {g: [i for i in order if grp[i] == g and i not in neutral_inst]
+               for g in camps}
+    in_camp = set(members[campA]) | set(members[campB])
+    camp_of = {i: (campA if i in members[campA] else campB) for i in in_camp}
+    # 陣営に属さないノード (供給ベンダー・規制当局・単独 group 事業者) は中立 = 最下段。
+    neutral = [i for i in order if i not in in_camp]
+
+    # 左右割当: 2 陣営をつなぐ最初の cross-camp 対立 (競合/対立/協調的競合) エッジの
+    # to 側を左に置く (OpenAI=左 のユーザー既定整理に一致する決定論ルール)。cross 対立が
+    # 無ければ出現順で campA を左にする。
+    left = campA
     for e in edges:
-        deg[str(e["from"])] = deg.get(str(e["from"]), 0) + 1
-        deg[str(e["to"])] = deg.get(str(e["to"]), 0) + 1
+        if e.get("kind") in (_RIVAL_KINDS | _FRENEMY_KINDS):
+            a, b = str(e.get("from", "")), str(e.get("to", ""))
+            if a in camp_of and b in camp_of and camp_of[a] != camp_of[b]:
+                left = camp_of[b]
+                break
+    side = {g: ("L" if g == left else "R") for g in camps}
 
-    def _node_r(i: str) -> float:
-        return float(min(40 + deg.get(i, 1) * 8, 62))
+    # 各陣営の主役 = 相手陣営との対立に絡む member (複数なら最大次数)、無ければ最大次数。
+    rival_pairs = [(str(e.get("from", "")), str(e.get("to", "")))
+                   for e in edges if e.get("kind") in (_RIVAL_KINDS | _FRENEMY_KINDS)]
 
-    max_r = max((_node_r(i) for i in ids), default=50.0)
+    def _principal(g: str) -> str:
+        cross = [m for m in members[g] if any(
+            (m == x and y in in_camp and camp_of.get(y) != g)
+            or (m == y and x in in_camp and camp_of.get(x) != g)
+            for x, y in rival_pairs)]
+        pool = cross or members[g]
+        return max(pool, key=lambda m: (deg.get(m, 0), -order.index(m)))
 
+    principal = {g: _principal(g) for g in camps}
+    princ_set = {principal[g] for g in camps}
+
+    # 役割ティア: 0 = 出資元/支援者 (上) / 1 = 主役 (中) / 2 = 顧客・下流 (下)。
+    # 主役→m が供給なら m は下流 (顧客) = 下段、それ以外の非主役は支援者 = 上段。
+    supply_sink = {str(e["to"]) for e in edges
+                   if e.get("kind") == "供給" and str(e["from"]) in princ_set}
+
+    def _tier(i: str) -> int:
+        if i in princ_set:
+            return 1
+        if i in supply_sink:
+            return 2
+        return 0
+
+    tier = {i: _tier(i) for i in in_camp}
+    used_tiers = sorted({tier[i] for i in in_camp})
+    row_of_tier = {t: k for k, t in enumerate(used_tiers)}
+    n_rows = len(used_tiers) + (1 if neutral else 0)
+    neutral_row = len(used_tiers)
+
+    vb_w = 1080
+    max_r = max((node_r(i) for i in order), default=50.0)
+    top_pad = max_r + 56
+    bot_pad = max_r + 70
+    vb_h = int(max(560, 200 + n_rows * 185))
+    usable = vb_h - top_pad - bot_pad
+    row_y = ({0: vb_h / 2.0} if n_rows <= 1
+             else {k: top_pad + usable * (k / (n_rows - 1)) for k in range(n_rows)})
+
+    xl_c, xr_c = vb_w * 0.27, vb_w * 0.73   # 左右カラムの中心 x (中央に対立軸チャネルを残す)
+    half_span = vb_w * 0.19                  # カラム内で同段ノードが広がれる半幅
+    x: dict[str, float] = {}
+    y: dict[str, float] = {}
+
+    def _spread(items: list[str], center: float, row: int) -> None:
+        items = sorted(items, key=lambda i: order.index(i))
+        m = len(items)
+        if m == 1:
+            x[items[0]] = center
+        elif m > 1:
+            step = min((2 * half_span) / (m - 1), 200.0)
+            start = center - step * (m - 1) / 2
+            for j, i in enumerate(items):
+                x[i] = start + step * j
+        for i in items:
+            y[i] = row_y[row]
+
+    # 各 (陣営, ティア) セルを左右カラムへ。主役は必ずカラム中心に揃え左右で対峙させる。
+    for g in camps:
+        c = xl_c if side[g] == "L" else xr_c
+        for t in used_tiers:
+            _spread([i for i in members[g] if tier[i] == t], c, row_of_tier[t])
+    if neutral:
+        _spread(neutral, vb_w / 2.0, neutral_row)
+
+    placed = []
+    for nd in nodes:
+        i = str(nd.get("id", ""))
+        xx = min(max(x.get(i, vb_w / 2.0), node_r(i) + 8), vb_w - node_r(i) - 8)
+        placed.append({**nd, "x": round(xx, 1), "y": round(y.get(i, vb_h / 2.0), 1),
+                       "r": node_r(i), "deg": deg.get(i, 1)})
+    return {"nodes": placed, "vb_w": vb_w, "vb_h": vb_h}
+
+
+def _band_layout(
+    nodes: list[dict[str, Any]], edges: list[dict[str, Any]], ids: list[str],
+    deg: dict[str, int], node_r: Any, max_r: float,
+) -> tuple[list[dict[str, Any]], int, int]:
+    """役割レイヤー (band) を縦に積む配置 (単一陣営・3 陣営以上・バリューチェーン用)。
+
+    2 陣営の対立は _camp_columns が左右カラムで処理するため、ここへは来ない。残りの
+    ケースを「出資元/親 = 上段、事業者 = 中段 (陣営ごとに別 band)、規制当局 = 下段」の
+    水平レイヤーに積み、barycenter スイープで交差を抑える (旧 layout_relations 本体)。
+    """
     rows, reg, parents, use_camps = _relation_bands(nodes, edges, ids)
     n_levels = len(rows)
     band_of = {i: k for k, row in enumerate(rows) for i in row}
@@ -366,7 +525,7 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
 
     def _space_row(row: list[str], desired: dict[str, float]) -> None:
         items = sorted(row, key=lambda i: desired.get(i, vb_w / 2.0))
-        gaps = [(_node_r(a) + _node_r(b) + 28.0) for a, b in zip(items, items[1:])]
+        gaps = [(node_r(a) + node_r(b) + 28.0) for a, b in zip(items, items[1:])]
         xs = [desired.get(i, vb_w / 2.0) for i in items]
         for j in range(1, len(items)):
             if xs[j] < xs[j - 1] + gaps[j - 1]:
@@ -418,9 +577,42 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
         i = str(nd.get("id", ""))
         xx = x.get(i, vb_w / 2.0)
         yy = band_y.get(band_of.get(i, 0), vb_h / 2.0)
-        xx = min(max(xx, _node_r(i) + 8), vb_w - _node_r(i) - 8)
+        xx = min(max(xx, node_r(i) + 8), vb_w - node_r(i) - 8)
         placed.append({**nd, "x": round(xx, 1), "y": round(yy, 1),
-                       "r": _node_r(i), "deg": deg.get(i, 1)})
+                       "r": node_r(i), "deg": deg.get(i, 1)})
+    return placed, vb_w, vb_h
+
+
+def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
+    """nodes に x/y/r を決定論的に付与する (relations は座標を持たないため)。
+
+    2 つの対立陣営があるときは _camp_columns が「左右カラム + 役割ティア」で配置し
+    (2026-06-02 ユーザー指示: 陣営 = 左右 / 主役と支援者 = 別段 / 中立機関 = 最下段)、
+    それ以外 (単一陣営・3 陣営以上・バリューチェーン) は _band_layout の役割レイヤーで
+    積む。ラベルの重なり回避は relations_svg 側の _resolve_labels が担う。
+    """
+    nodes = list(rel.get("nodes", []))
+    ids = [str(nd.get("id", "")) for nd in nodes]
+    idset = set(ids)
+    edges = [e for e in rel.get("edges", [])
+             if str(e.get("from", "")) in idset and str(e.get("to", "")) in idset]
+
+    deg: dict[str, int] = {}
+    for e in edges:
+        deg[str(e["from"])] = deg.get(str(e["from"]), 0) + 1
+        deg[str(e["to"])] = deg.get(str(e["to"]), 0) + 1
+
+    def _node_r(i: str) -> float:
+        return float(min(40 + deg.get(i, 1) * 8, 62))
+
+    max_r = max((_node_r(i) for i in ids), default=50.0)
+
+    cc = _camp_columns(nodes, edges, ids, deg, _node_r)
+    if cc is not None:
+        placed, vb_w, vb_h = cc["nodes"], cc["vb_w"], cc["vb_h"]
+    else:
+        placed, vb_w, vb_h = _band_layout(nodes, edges, ids, deg, _node_r, max_r)
+
     layout = dict(rel)
     layout["nodes"] = placed
     layout["vb_w"], layout["vb_h"] = vb_w, vb_h
@@ -1021,6 +1213,13 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
                else [s.strip() for s in re.split(r"[、,]", str(_dec)) if s.strip()])
         decision = {**decision, "decider_list": _dl}
 
+    # 参考リンク (脚注番号付き) を図の出典より先に用意し、各図の source を番号付き引用へ変換。
+    # 複数出典は *N で個別リンク化し、末尾の参考リンク一覧の番号と紐付ける (2026-06-02)。
+    biblio = parse_sources(refs_section)
+    table_ctx = build_table(table) if table else None
+    if table_ctx:
+        table_ctx["source"] = _figure_citations(table_ctx.get("source", ""), biblio)
+
     read_min = max(5, round(len(body) / 900))
 
     # アクセント = テーマのカテゴリ (lens) 色。frontmatter `lens:` を一次に、無ければ
@@ -1067,24 +1266,24 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
         "relations_svg": relations_svg(relations) if relations else "",
         "relations_legend": layout_relations(relations).get("legend", []) if relations else [],
         "relations_title": (relations or {}).get("title", "当事者の関係図"),
-        "relations_source": (relations or {}).get("source", ""),
+        "relations_source": _figure_citations((relations or {}).get("source", ""), biblio),
         "charts": [
             {
                 "title": c.get("title", ""),
                 "note": _chart_note(c),
-                "source": c.get("source", ""),
+                "source": _figure_citations(c.get("source", ""), biblio),
                 "svg": chart_svg(c, accent),
             }
             for c in charts
         ],
-        "table": build_table(table) if table else None,
+        "table": table_ctx,
         "decision": decision,
         # prose
         "bg_prose": _prose_paragraphs(bg),
         "di_prose": _prose_paragraphs(di),
         "watch_prose": _prose_paragraphs(watch),
         "summary_prose": " ".join(_prose_paragraphs(summary_section)),
-        "sources": parse_sources(refs_section),
+        "sources": biblio,
     }
 
 

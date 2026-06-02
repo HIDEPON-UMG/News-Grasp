@@ -137,7 +137,7 @@ def test_rivalry_edges_are_bidirectional_by_default() -> None:
     assert relations_svg(one).count("<polygon") == 1, "dir=one が効いていない"
 
 
-# ── relations 役割レイヤー + ラベル無重なり (★2026-06-01 ユーザー指示) ──────────
+# ── relations 2 陣営 = 左右カラム + ラベル無重なり (★2026-06-02 ユーザー指示) ──────
 
 _MULTICAMP_REL = {
     "title": "米中2陣営＋規制",
@@ -192,24 +192,32 @@ def _rect_overlap(r1, r2, tol: float = 0.5) -> bool:
     return ox > tol and oy > tol
 
 
-def test_relations_layered_by_role_and_no_label_overlap() -> None:
-    """役割 (米陣営/中国陣営/規制) を別レイヤーに積み、ラベルはノード/相互で重ねない。
+def test_relations_two_camps_split_left_right_and_no_overlap() -> None:
+    """2 つの対立陣営は左右カラムに分け、主役同士を同じ高さで対峙させる (2026-06-02 改訂)。
 
-    2026-06-01 ユーザー指示「異なる役割は別レイヤー・同じ役割は同レイヤー」「文字の
-    重なりで読めないことは絶対不可」を契約として locked-in する。ラベルチップが
-    ノード円や他チップと (読めなくなるほど) 重なったら fail させ、円環/中央集約レイアウト
-    への逆戻りを構造的に防ぐ。
+    ユーザー指示で「陣営」は役割ではないと明確化された: まず 2 陣営を左右に分け
+    (横軸 = 陣営)、各陣営内で主役と、それを支援する出資元・顧客を別の段に積み
+    (縦軸 = 役割)、どちらの陣営にも属さない中立機関 (規制当局) は専用の最下段レイヤーに
+    置く。旧「役割ごとの水平バンド」(米陣営=上段/中国陣営=中段) はこの指示で破棄した。
+    文字の重なり・線のノード貫通は図を読めなくする致命傷なので 0 を契約に固定する。
     """
     rel = _MULTICAMP_REL
     lay = layout_relations(rel)
     pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
-    # 同じ役割は同じ y (同レイヤー)、異なる役割は別の y
-    assert pos["waymo"][1] == pos["tesla"][1], "米陣営が同レイヤーに無い"
-    assert pos["pony"][1] == pos["baidu"][1] == pos["geely"][1], "中国陣営が同レイヤーに無い"
-    assert pos["nhtsa"][1] == pos["chinareg"][1], "規制が同レイヤーに無い"
-    ys = {pos["waymo"][1], pos["pony"][1], pos["nhtsa"][1]}
-    assert len(ys) == 3, "3 役割が別レイヤーに分かれていない"
-    assert pos["nhtsa"][1] == max(ys), "規制当局が最下段 (見上げる三角) に無い"
+    cx = lay["vb_w"] / 2
+    # 2 陣営は左右に分かれる: 米陣営 (waymo,tesla) は同じ側、中国陣営はその反対側
+    assert (pos["waymo"][0] - cx) * (pos["tesla"][0] - cx) > 0, "米陣営が左右で割れている"
+    assert (pos["pony"][0] - cx) * (pos["baidu"][0] - cx) > 0 \
+        and (pos["pony"][0] - cx) * (pos["geely"][0] - cx) > 0, "中国陣営が左右で割れている"
+    assert (pos["waymo"][0] - cx) * (pos["pony"][0] - cx) < 0, "2 陣営が左右に分かれていない"
+    # 主役 (waymo / pony) は同じ高さで対峙し、支援者は別の段 (上) に積まれる
+    assert pos["waymo"][1] == pos["pony"][1], "主役同士が同じ高さで対峙していない"
+    assert pos["tesla"][1] != pos["waymo"][1], "米陣営の支援者が主役と別段になっていない"
+    assert pos["baidu"][1] == pos["geely"][1] != pos["pony"][1], \
+        "中国陣営の支援者が別段に揃っていない"
+    # 中立機関 (規制当局) はどちらの陣営にも属さず専用の最下段レイヤーにまとまる
+    assert pos["nhtsa"][1] == pos["chinareg"][1], "規制当局が同じ中立レイヤーに無い"
+    assert pos["nhtsa"][1] == max(y for _, y in pos.values()), "規制当局が最下段に無い"
 
     svg = relations_svg(rel)
     circles = _node_circles(svg)
@@ -225,6 +233,13 @@ def test_relations_layered_by_role_and_no_label_overlap() -> None:
         for j in range(i + 1, len(rects)):
             assert not _rect_overlap(rects[i], rects[j]), \
                 f"ラベル同士が重なる: {rects[i]} ∩ {rects[j]}"
+    # エッジ線は端点以外のノード円を貫通しない (左右カラムでも線がオブジェクトを貫かない)
+    segs = [(float(a), float(b), float(c), float(d))
+            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
+    for seg in segs:
+        for ncx, ncy, ncr in circles:
+            assert _seg_point_dist(seg, ncx, ncy) >= ncr - 1.0, \
+                f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
 
 
 # ── relations バリューチェーン層化 + 線の貫通禁止 (★2026-06-01 ユーザー指摘) ──────

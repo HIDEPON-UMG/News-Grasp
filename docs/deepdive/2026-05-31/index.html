@@ -145,6 +145,9 @@ html, body { margin: 0; padding: 0; }
                align-items: baseline; }
 .dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
 .dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+.dd-fig__src .cite { white-space: nowrap; }
 
 /* timeline */
 .dd-tl { position: relative; padding: 20px 22px; }
@@ -497,7 +500,7 @@ html, body { margin: 0; padding: 0; }
               
             </div>
             
-            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">関係は本文・一次ソースに基づく編集部整理。TechCrunch 2026-05-04 / Anthropic Claude Partner Network / OpenAI Frontier Alliances / 富士通 Kozuchi</span></div>
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">関係は本文・一次ソースに基づく編集部整理</span></div>
           </figure>
         </div>
         
@@ -518,14 +521,14 @@ html, body { margin: 0; padding: 0; }
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Accenture の生成AI 新規受注と収益（通期）</span></figcaption>
           <div class="dd-chart__note">受注は約2倍・収益は約3倍</div>
           <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Accenture の生成AI 新規受注と収益（通期）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">十億ドル</text><rect x="88.0" y="139.0" width="60.0" height="75.0" fill="#2E6B52"/><text x="118.0" y="131.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3.0</text><rect x="148.0" y="191.5" width="60.0" height="22.5" fill="#C9A155"/><text x="178.0" y="183.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">0.9</text><rect x="352.0" y="66.5" width="60.0" height="147.5" fill="#2E6B52"/><text x="382.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5.9</text><rect x="412.0" y="146.5" width="60.0" height="67.5" fill="#C9A155"/><text x="442.0" y="138.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">2.7</text><text x="148.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY2024</text><text x="412.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY2025</text><text x="412.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 受注は約2倍・収益は約3倍</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#2E6B52"></span>GenAI 新規受注</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>GenAI 収益</span></div></div>
-          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">Accenture 通期決算（SEC Form 8-K FY2024 / FY2025 Q4 プレスリリース）https://www.stocktitan.net/news/ACN/accenture-reports-fourth-quarter-and-full-year-fiscal-2025-t7wo8n3bfooo.html ／収益は CIO Dive https://www.ciodive.com/news/accenture-generative-ai-revenue-skills-training-data-modernization/761161/</span></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.stocktitan.net/news/ACN/accenture-reports-fourth-quarter-and-full-year-fiscal-2025-t7wo8n3bfooo.html">*1 Accenture FY2025 Q4／通期決算プレスリリース</a> <a class="cite" href="https://www.sec.gov/Archives/edgar/data/0001467373/000146737324000266/fy24q4plc8-kexhibit.htm">*2 Accenture Form 8-K FY2024</a> <a class="cite" href="https://www.ciodive.com/news/accenture-generative-ai-revenue-skills-training-data-modernization/761161/">*3 CIO Dive</a></span></div>
         </figure>
         
         <figure class="dd-fig">
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">課金モデルの転換：成果・従量（ハイブリッド）型の採用率</span></figcaption>
           <div class="dd-chart__note">1年で +14pt（人月→成果へ）</div>
           <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="課金モデルの転換：成果・従量（ハイブリッド）型の採用率"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">%</text><rect x="88.0" y="116.9" width="120.0" height="97.1" fill="#2E6B52"/><text x="148.0" y="108.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">27</text><rect x="352.0" y="66.5" width="120.0" height="147.5" fill="#2E6B52"/><text x="412.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">41</text><text x="148.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">1年前</text><text x="412.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">現在</text><text x="412.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 1年で +14pt（人月→成果へ）</text></svg></div>
-          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">Futurum Group「成果・従量・ハイブリッド型AI課金の購買動向」（2026）https://futurumgroup.com/press-release/are-outcome-based-and-hybrid-ai-pricing-models-rewriting-the-vendor-playbook/</span></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://futurumgroup.com/press-release/are-outcome-based-and-hybrid-ai-pricing-models-rewriting-the-vendor-playbook/">*13 Futurum Group</a></span></div>
         </figure>
         
       </div>
