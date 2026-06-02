@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>USD/JPY 160円攻防、日米金融政策の逆行 — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="USD/JPYが160円に迫る中、ウォーシュ新議長下のFedの利下げ封印と日銀の利上げ躊躇という日米金融政策の逆行は、為替介入ライン160円の攻防をどう決着させるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-03/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="USD/JPY 160円攻防、日米金融政策の逆行">
+<meta property="og:description" content="USD/JPYが160円に迫る中、ウォーシュ新議長下のFedの利下げ封印と日銀の利上げ躊躇という日米金融政策の逆行は、為替介入ライン160円の攻防をどう決着させるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-03/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="USD/JPY 160円攻防、日米金融政策の逆行">
+<meta name="twitter:description" content="USD/JPYが160円に迫る中、ウォーシュ新議長下のFedの利下げ封印と日銀の利上げ躊躇という日米金融政策の逆行は、為替介入ライン160円の攻防をどう決着させるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #B8860B;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(184,134,11,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(184,134,11,0.22);
+  --accent-underline: rgba(184,134,11,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
+.dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+.dd-fig__src .cite { white-space: nowrap; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 関係図 SVG は width:100% で縮小すると実効フォントが 3-8px に潰れ判読不能に
+     なるため、モバイルでは横スクロール + ピンチズームで実寸を確保する
+     (一望性より可読性を優先。min-width 760 で実効フォント >=9px) */
+  .dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dd-relwrap svg { min-width: 760px; }
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260603</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">¥</span>FOREIGN EXCHANGE · 為替</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.06.03</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260603</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">9 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">USD/JPY 160円攻防、日米金融政策の逆行</h1>
+      <p class="dd-hero__theme">USD/JPYが160円に迫る中、ウォーシュ新議長下のFedの利下げ封印と日銀の利上げ躊躇という日米金融政策の逆行は、為替介入ライン160円の攻防をどう決着させるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260603</span><span>#USDJPY</span><span>#日銀</span><span>#FRB</span><span>#為替介入</span><span>#金利差</span></div>
+    </header>
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p>2026 年春の為替市場は、<strong class="emph-bold">USD/JPY</strong> が <strong>160 円</strong>の介入ラインを境に攻防を繰り返す<span class="emph-und">神経戦</span>に入った。震源は日米の金融政策が<strong>逆方向</strong>に開いたことにある。<strong class="emph-bold">FRB</strong> は政策金利を <strong>3.50〜3.75%</strong> で高止まりさせ、<strong class="emph-bold">日銀</strong> は <strong>0.75%</strong> で利上げをためらう。この<span class="emph-und">金利差約 2.9% が円キャリーの燃料</span>となり、円売りを<strong>構造的</strong>に支えているのだ。</p><p>転機は <strong>5 月</strong>の人事だった。<strong class="emph-bold">ケビン・ウォーシュ</strong> が<strong>第 17 代 FRB 議長</strong>に就任し(上院承認は史上最も僅差の 54 対 45)、市場は当初「タカ派シフト」を警戒した。だが<span class="emph-und">本人はむしろ低金利志向</span>で、AI の生産性向上が<strong>インフレを抑える</strong>との持論を持つ。皮肉なのは、その <strong class="emph-bold">ウォーシュ議長</strong> が <strong>CPI3.8%</strong>(4 月・2023 年 5 月来の高水準)の再加速に直面し、<span class="emph-und">利下げしたくてもできない</span>局面に追い込まれた点である。</p><p>日本側は<strong>二正面</strong>で身構える。<strong class="emph-bold">財務省</strong> は <strong>4 月末</strong>に推計<strong>約 5 兆円</strong>の円買い介入を断行し、<strong class="emph-bold">USD/JPY</strong> を 160 円台から <strong>155 円台</strong>へ一時押し戻した。しかし<span class="emph-und">効果はわずか 1〜2 週間で剥落</span>し、5 月下旬には再び 159 円台へ戻っている。<strong class="emph-bold">第一生命経済研究所</strong> の熊野英生氏は、介入は<strong>投機筋</strong>の円売りには効くが、<span class="emph-und">ファンダメンタルズが円安方向のときは限定的</span>だと釘を刺す。</p><p>だからこそ焦点は <strong class="emph-bold">日銀</strong> の<strong>追加利上げ</strong>へ移る。2024 年 7 月の円高転換は「<strong>介入＋利上げ</strong>の併せ技」で実現した、というのが市場の教訓だ。<strong class="emph-bold">植田総裁</strong> は慎重姿勢を崩さないが、<span class="emph-und">利上げ前倒しの観測そのものが円の下支え</span>になる。一方の <strong class="emph-bold">トランプ政権</strong> は自らウォーシュ氏を指名しながら<strong>ドル安</strong>を志向しており、Fed への<span class="emph-und">利下げ圧力と高インフレの現実のはざま</span>で揺れている。</p></div>
+      <div class="dd-exhibits">
+        
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">04.28</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>日銀、政策金利0.75%で据え置き・インフレ見通しを2.8%へ上方修正</p>
+                  <a href="https://www.cnbc.com/2026/04/28/bank-of-japan-keeps-policy-rate-steady-cpi-iran-war-gdp.html"><span class="src">CNBC</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">04.30</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>財務省、推計約5兆円の円買い介入。160円台から155円台へ一時押し戻す</p>
+                  <a href="https://www.nikkei.com/article/DGXZQOUB013C00R00C26A5000000/"><span class="src">日本経済新聞</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.13</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>ケビン・ウォーシュ、上院本会議54対45で第17代FRB議長に承認(史上最も僅差)</p>
+                  <a href="https://www.cbsnews.com/news/kevin-warsh-federal-reserve-chair-interest-rates/"><span class="src">CBS News</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.28</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>5月FOMC議事録「双方向リスク/石油主導インフレ長期化」、6月利下げを事実上排除</p>
+                  <a href="https://www.heygotrade.com/en/blog/may-2026-fomc-minutes-two-sided-framework-oil-inflation/"><span class="src">HeyGoTrade</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.29</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>米4月CPIが3.8%(2023年5月来高)、日経平均は66,329円で最高値更新</p>
+                  <a href="https://tradingeconomics.com/united-states/inflation-cpi"><span class="src">Trading Economics / 日本経済新聞</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.01</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>USD/JPYが一時160円に接近(日経は突破と報道)も売り続かず、介入リスク再燃</p>
+                  <a href="https://www.nikkei.com/article/DGXZQOUB014UN0R00C26A4000000/"><span class="src">日本経済新聞</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.03</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>植田総裁講演・ウォーシュ初FOMC(6/17)を控え、市場は方向感を探る展開</p>
+                  <a href="https://jp.investing.com/currencies/usd-jpy-news"><span class="src">外為どっとコム / Investing.com</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+            </div>
+          </figure>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+            
+            <div class="dd-player">
+              <div class="dd-player__name">FRB(ウォーシュ議長)</div>
+              <div class="dd-player__role">米国の金融政策を決定</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">5月就任。CPI3.8%の再加速で利下げを封印、6/17初FOMCは据え置き公算</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">本人はハト派寄りだがインフレで動けず、高金利維持が円安の構造要因に</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">日銀(植田総裁)</div>
+              <div class="dd-player__role">日本の金融政策を決定</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">4/28に0.75%据え置き。保有国債の含み損は45兆円と過去最大</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">利上げで円安を是正したいが慎重。6月会合の判断が円相場の鍵</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">財務省(通貨当局)</div>
+              <div class="dd-player__role">為替介入の実行主体</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">4月末に推計約5兆円の円買い介入、160→155円へ</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">160円超で再介入を警戒させるが、金利差ゆえ効果は1〜2週間</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">トランプ政権</div>
+              <div class="dd-player__role">米国の通商・通貨政策</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">ウォーシュ氏を指名する一方でドル安を志向</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">Fedへの利下げ圧力と高インフレの現実の間で揺れる</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">投機筋・円キャリー</div>
+              <div class="dd-player__role">円売りの主体</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">金利差約2.9%を収益源に円キャリーを継続</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">介入と利上げ観測がリスク。160円超で警戒を強める</p>
+            </div>
+            
+          </div>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">USD/JPY 160円攻防の当事者関係図(金利差・介入・日米連携)</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 560" width="100%" style="display:block;background:#FAF7F0" role="img" aria-label="USD/JPY 160円攻防の当事者関係図(金利差・介入・日米連携)"><line x1="597.7" y1="434.0" x2="611.7" y2="434.0" stroke="#8E2A19" stroke-width="2" opacity="0.85" stroke-dasharray="6 5"/><polygon points="611.7,434.0 602.7,438.5 602.7,429.5" fill="#8E2A19"/><polygon points="597.7,434.0 606.7,429.5 606.7,438.5" fill="#8E2A19"/><line x1="429.5" y1="153.0" x2="522.8" y2="370.6" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="522.8,370.6 515.1,364.1 523.3,360.5" fill="#2E6B52"/><polygon points="429.5,153.0 437.2,159.5 428.9,163.1" fill="#2E6B52"/><line x1="403.8" y1="164.1" x2="497.0" y2="381.6" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="497.0,381.6 489.3,375.1 497.6,371.6" fill="#8E2A19"/><polygon points="403.8,164.1 411.5,170.6 403.2,174.1" fill="#8E2A19"/><line x1="737.7" y1="434.0" x2="751.7" y2="434.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="751.7,434.0 742.7,438.5 742.7,429.5" fill="#2E6B52"/><line x1="791.4" y1="375.5" x2="705.3" y2="159.1" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="705.3,159.1 712.8,165.8 704.5,169.1" fill="#181C2A"/><line x1="505.9" y1="255.2" x2="505.9" y2="204.1" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="420.3" y1="278.8" x2="420.3" y2="329.6" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="604.7" y1="267.0" x2="604.7" y2="235.4" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="744.7" y1="267.0" x2="744.7" y2="298.6" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(390.2,191.1)"><rect width="231.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> トランプがウォーシュを指名</text></g><g transform="translate(272.1,316.6)"><rect width="296.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> CPI3.8%再加速で利下げ不可・据え置き</text></g><g transform="translate(345.2,222.4)"><rect width="519.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">対立</tspan> 高金利3.5–3.75%維持 vs 0.75%で利上げ躊躇 → 金利差約2.9%が円安を駆動</text></g><g transform="translate(542.7,285.6)"><rect width="404.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 円安阻止で協調 — 日銀は利上げ、財務省は介入で役割分担</text></g><g transform="translate(538.8,254.4)"><rect width="419.0" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 160円で円買い介入(4月末 約5兆円)、ただし効果は1〜2週間</text></g><circle cx="534.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="534.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">FRB(ウォーシュ議長)</text><text x="534.7" y="444.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米金融当局</text><circle cx="395.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.3" fill="#1A1A1A" letter-spacing="-0.5">トランプ政権</text><text x="395.0" y="120.3" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米政権</text><circle cx="674.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="674.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.3" fill="#1A1A1A" letter-spacing="-0.5">日銀(植田総裁)</text><text x="674.7" y="446.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日本・通貨当局</text><circle cx="814.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="814.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.7" fill="#1A1A1A" letter-spacing="-0.5">財務省(通貨当局)</text><text x="814.7" y="445.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日本・通貨当局</text><circle cx="685.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="685.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">投機筋・円キャリー</text><text x="685.0" y="118.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">市場</text></svg></div>
+            
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>対立</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#181C2A"></span>規制</span>
+              
+            </div>
+            
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.cnbc.com/2026/04/28/bank-of-japan-keeps-policy-rate-steady-cpi-iran-war-gdp.html">*3 CNBC</a> <a class="cite" href="https://www.nikkei.com/article/DGXZQOUB013C00R00C26A5000000/">*6 日本経済新聞</a> <a class="cite" href="https://www.nikkei.com/article/DGXZQOUB014UN0R00C26A4000000/">*7 日本経済新聞</a></span></div>
+          </figure>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>チャートが映すのは<span class="emph-und">介入の限界</span>である。<strong class="emph-bold">USD/JPY</strong> は <strong>4 月末</strong>の介入直後に <strong>155 円台</strong>へ急落したが、わずか 3 週間で <strong>158 円台</strong>へ巻き戻し、6 月初には再び <strong>160 円</strong>へ接近した。<strong class="emph-bold">金利差</strong> という<span class="emph-und">重力に逆らう介入は時間稼ぎにしかならない</span>——この <strong>V 字回復</strong>こそが、財務省単独では手詰まりであることを物語っている。</p><p>一方で、機関投資家の<strong>年末予測</strong>は逆を向く。<strong class="emph-bold">野村證券</strong> は年末見通しを <strong>152.5 円</strong>へ(中東情勢のドル高を受け上方修正しつつも)、<strong class="emph-bold">MUFG</strong> は <strong>146 円</strong>を見込む。<span class="emph-und">当面の円安(MUFG の 6〜8 月は 160 円前後)と年末の円高が同居</span>する形だ。市場は<strong>FRB の年内利下げ転換</strong>と<strong>日銀の追加利上げ</strong>で金利差が縮むシナリオを<span class="emph-und">すでに織り込み始めている</span>。</p></div>
+      
+      <div class="dd-charts">
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">USD/JPY の推移と4月末介入のV字(効果剥落)</span></figcaption>
+          <div class="dd-chart__note">約5兆円介入</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="USD/JPY の推移と4月末介入のV字(効果剥落)"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">円</text><polyline points="60.0,67.1 148.0,70.7 236.0,67.9 324.0,67.2 412.0,66.5 500.0,67.2" fill="none" stroke="#B8860B" stroke-width="2.5"/><circle cx="60.0" cy="67.1" r="4" fill="#B8860B"/><text x="60.0" y="59.1" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">159.4</text><circle cx="148.0" cy="70.7" r="4" fill="#B8860B"/><text x="148.0" y="62.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">155.5</text><circle cx="236.0" cy="67.9" r="4" fill="#B8860B"/><text x="236.0" y="59.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">158.5</text><circle cx="324.0" cy="67.2" r="4" fill="#B8860B"/><text x="324.0" y="59.2" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">159.3</text><circle cx="412.0" cy="66.5" r="4" fill="#B8860B"/><text x="412.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">160.0</text><circle cx="500.0" cy="67.2" r="4" fill="#B8860B"/><text x="500.0" y="59.2" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">159.3</text><text x="60.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">4/28</text><text x="148.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">4/30 介入後</text><text x="236.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">5月中旬</text><text x="324.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">5/29</text><text x="412.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">6/1</text><text x="500.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">6/3</text><text x="148.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 約5兆円介入</text><text x="412.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 160円接近</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.nikkei.com/article/DGXZQOUB013C00R00C26A5000000/">*6 日本経済新聞</a> <a class="cite" href="https://www.nikkei.com/article/DGXZQOUB014UN0R00C26A4000000/">*7 日本経済新聞</a></span></div>
+        </figure>
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">主要機関のドル円予測 — 当面は円安・年末は金利差縮小で円高へ</span></figcaption>
+          <div class="dd-chart__note">金利差縮小を織り込み</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="主要機関のドル円予測 — 当面は円安・年末は金利差縮小で円高へ"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">円</text><rect x="41.1" y="67.6" width="81.8" height="146.4" fill="#B8860B"/><text x="82.0" y="59.6" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">159.3</text><rect x="173.1" y="66.5" width="81.8" height="147.5" fill="#B8860B"/><text x="214.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">160.5</text><rect x="305.1" y="73.9" width="81.8" height="140.1" fill="#B8860B"/><text x="346.0" y="65.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">152.5</text><rect x="437.1" y="79.9" width="81.8" height="134.1" fill="#B8860B"/><text x="478.0" y="71.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">146.0</text><text x="82.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">現在 6/3</text><text x="214.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">MUFG 6–8月</text><text x="346.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">野村 年末</text><text x="478.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">MUFG 年末</text><text x="346.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 金利差縮小を織り込み</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.bk.mufg.jp/report/hconwnew/FX_Monthly_0529.pdf">*8 三菱UFJ銀行</a></span></div>
+        </figure>
+        
+      </div>
+      
+      
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">日米の金融政策・市場指標の対比</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>指標</th><th>米国(FRB)</th><th>日本(日銀)</th><th>出典</th></tr></thead>
+              <tbody>
+                
+                <tr>
+                  
+                  <td class="head">政策金利</td>
+                  
+                  <td class="val">3.50–3.75%(据え置き〜利上げ観測)</td>
+                  
+                  <td class="val">0.75%(4/28据え置き・利上げ躊躇)</td>
+                  
+                  <td class="src">CNBC / TradingKey</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">直近インフレ</td>
+                  
+                  <td class="val">CPI 3.8%(2026年4月・23年5月来高)</td>
+                  
+                  <td class="val">インフレ予測を2.8%へ上方修正</td>
+                  
+                  <td class="src">Trading Economics / CNBC</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">対米金利差</td>
+                  
+                  <td class="val">—</td>
+                  
+                  <td class="val">約2.9%pt(約300bps)</td>
+                  
+                  <td class="src">TradingKey / ING</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">市場の織り込み</td>
+                  
+                  <td class="val">12月までに利上げ1回以上 57%(CME)</td>
+                  
+                  <td class="val">6月利上げ確率75%〜見送り観測で割れ</td>
+                  
+                  <td class="src">CME FedWatch / 野村證券</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">次の節目</td>
+                  
+                  <td class="val">6/16–17 初FOMC(ウォーシュ)</td>
+                  
+                  <td class="val">6月会合・6/3 植田講演</td>
+                  
+                  <td class="src">CNBC / 外為どっとコム</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">株価(最高値)</td>
+                  
+                  <td class="val">S&amp;P500 7,600(6/2)</td>
+                  
+                  <td class="val">日経平均 66,329円(5/29)</td>
+                  
+                  <td class="src">OANDA / 日本経済新聞</td>
+                  
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">各社報道・CME FedWatch (2026/5–6)</span></div>
+        </figure>
+      </div>
+      
+      <div class="dd-prose"><p>ここで背景の関係図が効いてくる。円安の<strong>エンジン</strong>は <strong class="emph-bold">FRB</strong> の高金利であり、それを止められるのは<span class="emph-und">同じ通貨当局である日銀の利上げ</span>だけだ。<strong class="emph-bold">財務省</strong> の介入は投機筋への<strong>牽制</strong>にすぎず、<strong class="emph-bold">ウォーシュ議長</strong> がインフレで動けない限り<span class="emph-und">根本原因は残り続ける</span>。<strong>12 月までに利上げ 1 回以上</strong>を織り込む確率は <strong>57%</strong>(CME)——市場は Fed がむしろ引き締めに傾くリスクすら見ているのである。</p><p>波及は<strong>株式</strong>にも及ぶ。円安と好決算を追い風に <strong class="emph-bold">日経平均</strong> は <strong>66,329 円</strong>(5/29)、<strong class="emph-bold">S&amp;P500</strong> は <strong>7,600</strong>(6/2)と最高値を更新した。だが<span class="emph-und">円安頼みの株高は反転リスクと表裏</span>だ。<strong class="emph-bold">日銀</strong> 保有国債の<strong>含み損 45 兆円</strong>(過去最大)が示すように、<span class="emph-und">利上げは円高と引き換えに自らの財務を痛める</span>——日銀が動けない第二の理由が、ここにある。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+      
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>USD/JPY 160円防衛で円安を止める有効打は何か — 日米どの当局が先に動くか</p>
+          </div>
+          <div class="dd-decision__opts">
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">日銀が6月会合で追加利上げし金利差を縮小(介入＋利上げの併せ技)</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">財務省が160円超で再び円買い介入(時間稼ぎ・効果は1〜2週間)</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">ウォーシュFedがインフレで据え置きを継続=円安を放置(米主導で160円が定着)</p>
+            </div>
+            
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-06-16〜17 ウォーシュ初FOMC、6月 日銀会合、6/5 米雇用統計、6/3 植田講演</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+              
+              <ul class="dd-decision__deciders"><li>日銀(植田総裁・政策委員会)</li><li>財務省(通貨当局)</li><li>FRB(ウォーシュ議長)</li></ul>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dd-prose"><p>三つの選択肢のうち、<span class="emph-und">市場が本命視するのは「介入＋利上げ」の併せ技</span>だ。<strong class="emph-bold">財務省</strong> の介入が <strong>160 円超</strong>の急騰を抑えている間に、<strong class="emph-bold">日銀</strong> が <strong>6 月会合</strong>で動けば金利差が縮み、円高へ振れる余地が生まれる。だが <strong class="emph-bold">植田総裁</strong> が見送れば、<span class="emph-und">介入は弾切れし円安が定着</span>しかねない。最終的にボールを握るのは<strong>日米双方の中央銀行</strong>であり、6/17 のウォーシュ初 FOMC と 6 月日銀会合という<span class="emph-und">二つの結節点</span>が次の方向を決める。</p><p>読み筋としては、<strong class="emph-bold">ウォーシュ議長</strong> が<strong>据え置き</strong>を続ける公算が高く(初会合の据え置き織り込みは約 97%)、<span class="emph-und">短期の円安圧力は当面残る</span>。それでも年末にかけては <strong class="emph-bold">FRB</strong> の利下げ転換と <strong class="emph-bold">日銀</strong> の利上げで<strong>金利差が縮小</strong>し、<span class="emph-und">160 円は天井に近い</span>というのが複数機関の共通見解だ。直近では <strong>6/5 の米雇用統計</strong>が、この綱引きの最初の試金石になる。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+      
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">USD/JPY</strong> は <strong>160 円</strong>の介入ラインを巡る攻防に入った。<strong class="emph-bold">FRB</strong> の高金利(<strong>3.5〜3.75%</strong>)と <strong class="emph-bold">日銀</strong> の <strong>0.75%</strong> が生む<span class="emph-und">金利差約 2.9% が円安の構造要因</span>だ。<strong class="emph-bold">ウォーシュ新議長</strong> は本来ハト派ながら <strong>CPI3.8%</strong> の再加速で利下げできず、<strong class="emph-bold">財務省</strong> の<strong>約 5 兆円介入</strong>も効果は 1〜2 週間で剥落した。市場は<span class="emph-und">年末の金利差縮小=円高転換</span>を織り込み始め(野村 <strong>152.5 円</strong>・MUFG <strong>146 円</strong>)、<strong>6 月の日銀会合とウォーシュ初 FOMC</strong> が次の分岐点となる。</p>
+        <div class="watermark">❖</div>
+      </div>
+      
+      
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+          
+          <a class="dd-source" href="https://www.dlri.co.jp/report/macro/588082.html">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">第一生命経済研究所・熊野英生</span>「1ドル160円台で為替介入の警戒ラインへ〜為替介入か、日銀の追加利上げか〜」(2026-05) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.nomura.co.jp/wealthstyle/article/0676/">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">野村證券・後藤祐二朗</span>「2026年末の米ドル円見通しを152.5円に引き上げ」(NOMURA ウェルスタイル) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.cnbc.com/2026/04/28/bank-of-japan-keeps-policy-rate-steady-cpi-iran-war-gdp.html">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">CNBC</span>「Bank of Japan keeps policy rate steady at 0.75% — raises inflation forecast」(2026-04-28) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.cbsnews.com/news/kevin-warsh-federal-reserve-chair-interest-rates/">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">CBS News</span>「How much sway will newly sworn-in Fed Chair Kevin Warsh really have over interest rates?」(2026-05) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.heygotrade.com/en/blog/may-2026-fomc-minutes-two-sided-framework-oil-inflation/">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">HeyGoTrade</span>「FOMC議事録『石油主導インフレ長期化』懸念──6月利下げなしほぼ確定」(2026-05-28) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.nikkei.com/article/DGXZQOUB013C00R00C26A5000000/">
+            <span class="dd-source__no">06</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">日本経済新聞</span>「30日の円買い介入、5兆円規模か 市場推計」(2026-05) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.nikkei.com/article/DGXZQOUB014UN0R00C26A4000000/">
+            <span class="dd-source__no">07</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">日本経済新聞</span>「円160円突破も売り続かず 介入リスク瀬踏み、日銀利上げ観測も重荷」(2026-06-01) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://www.bk.mufg.jp/report/hconwnew/FX_Monthly_0529.pdf">
+            <span class="dd-source__no">08</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">三菱UFJ銀行</span>「FX Monthly 2026年5月(2026年末ドル円146円予測)」 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://tradingeconomics.com/united-states/inflation-cpi">
+            <span class="dd-source__no">09</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Trading Economics</span>「United States Inflation Rate(米4月CPI 3.8%)」 <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" href="https://think.ing.com/snaps/bank-of-japan-further-hikes-expected-but-not-imminent/">
+            <span class="dd-source__no">10</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">ING Think</span>「Bank of Japan: further hikes expected but not imminent(日米金利差300bps)」 <span class="ext">↗</span></span>
+          </a>
+          
+        </div>
+      </div>
+      
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+</body>
+</html>

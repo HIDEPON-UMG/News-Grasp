@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260603 — Mobility</title>
+<meta name="description" content="Waymoがテキサス4都市で完全自律サービス開始（商業展開10都市に）。トヨタはEV車種廃止を発表。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-03/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260603 — Mobility">
+<meta property="og:description" content="Waymoがテキサス4都市で完全自律サービス開始（商業展開10都市に）。トヨタはEV車種廃止を発表。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-03/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260603 — Mobility">
+<meta name="twitter:description" content="Waymoがテキサス4都市で完全自律サービス開始（商業展開10都市に）。トヨタはEV車種廃止を発表。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-03 · #20260603</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Waymoがテキサス4都市で完全自律サービス開始（商業展開10都市に）。トヨタはEV車種廃止を発表。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">83</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·03</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260603</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-03 07:00 · Waymo Blog</span>
+    <span class="top-story__score">90</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://waymo.com/blog/2026/02/dallas-houston-san-antonio-orlando/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://lh3.googleusercontent.com/cYBdQq9WvdTshpHTaP4uOjWfZrvkZpbgJadUrvvRfbQMJV4I0Ia0sYumR402AToZKcmp-SU5nQ2-XM7b4tyCMo_Byjwzsvcl7qU" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://waymo.com/blog/2026/02/dallas-houston-san-antonio-orlando/" rel="noopener nofollow" target="_blank" style="color: inherit;">Waymo テキサスDallas・Houston・San Antonio他4都市で完全自律ライドシェア一斉開始</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Waymo</strong> がDallas・Houston・San Antonio・Orlandoで完全自律ライドシェアを一斉開始。同社初の<strong>4都市同時展開</strong>で商業拠点が計10都市に拡大</li><li>サービス面積はテキサス全4都市で<strong>約500km²</strong>超。Hyundai Ioniq 5ベースの第6世代システムへの移行も並行して進める</li><li><span class="emph-und">ロボタクシー地図の書き換え</span>：Tesla 42台 vs Waymo 577台という数字が象徴するように、商業スケールの差が競争の構図を決定しつつある</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-03</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-03 07:30</span>
+        <span>· Electrek</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://electrek.co/2026/06/01/toyota-pulls-plug-most-important-evs/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2026/05/Toyota-scraps-Lexus-EV-1.jpeg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://electrek.co/2026/06/01/toyota-pulls-plug-most-important-evs/" rel="noopener nofollow" target="_blank">トヨタ 重要EV車種を廃止 電動化戦略の見直し迫られる LexusのEV複数モデルが対象</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">トヨタ</strong> が計画していた重要EV車種（<strong>Lexus EV</strong>複数モデル）を廃止。EV需要減速と中国<strong class="emph-bold">BYD</strong>のコスト圧力が意思決定の背景</li><li>トヨタは<strong>EV販売目標を100万台</strong>（当初150万台から大幅下方修正）に縮小。HEV・PHEVとの並走戦略に軸足を移す</li><li><span class="emph-und">世界最大の自動車メーカーの戦略転換</span>が市場に与えるシグナルは大きく、<span class="emph-und">純EV一辺倒の波が引く可能性</span>を示唆している</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-03 08:00</span>
+        <span>· Auto Connected Car News</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://www.autoconnectedcar.com/2026/05/autonomous-self-driving-vehicle-news-tesla-waymo-weride-helm-ai-torc-more/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.autoconnectedcar.com/2026/05/autonomous-self-driving-vehicle-news-tesla-waymo-weride-helm-ai-torc-more/" rel="noopener nofollow" target="_blank">Waymo 2026年末までにアリゾナ工場で2000台以上生産 Magna社と協業し量産フェーズへ</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Waymo</strong> が<strong class="emph-bold">Magna</strong>との協業でアリゾナ州工場の生産能力を倍増。<strong>2026年末までに2000台超</strong>の自律走行車両を生産予定</li><li>新拠点は<strong>第6世代ハードウェア対応</strong>で、Hyundai Ioniq 5への移行を支える。Googleによる長期的な設備投資コミットメントが背景</li><li><span class="emph-und">量産フェーズへの突入</span>：Waymoの展開モデルが「実証」から「スケール」へ転換し、年間数千台の商業展開が現実的に</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-03 08:30</span>
+        <span>· トヨタグローバルニュースルーム</span>
+        <span class="more-card__score">80</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://global.toyota/jp/newsroom/corporate/43380819.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://global.toyota/pages/news/images/2025/10/08/1330/20251008_01_ogp_jp.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://global.toyota/jp/newsroom/corporate/43380819.html" rel="noopener nofollow" target="_blank">トヨタ・住友金属鉱山 全固体電池正極材量産で協業 経産省計画認定を取得</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">トヨタ</strong> と<strong class="emph-bold">住友金属鉱山</strong> が全固体電池用<strong>正極材の量産</strong>に向けた協業を発表。経済産業省の「蓄電池供給確保計画」認定を取得</li><li>全固体電池の正極材は供給安定性が課題で、<strong>国内調達ルートの確立</strong>がEV競争力の鍵になる。2027年の量産開始に向けた重要マイルストーン</li><li><span class="emph-und">垂直統合で攻める</span>：中国CATL・BYDに対抗するため、トヨタはバッテリーサプライチェーンを日本国内で固めていく姿勢を鮮明にした</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-03 09:00</span>
+        <span>· Digital Trends</span>
+        <span class="more-card__score">77</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.digitaltrends.com/cars/tesla-wants-you-to-believe-in-its-self-driving-tech-but-even-its-own-ai-trainers-wont-trust-it/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.digitaltrends.com/tachyon/2026/02/wedding-2026-02-20T021254.874.jpg?resize=1200%2C630" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.digitaltrends.com/cars/tesla-wants-you-to-believe-in-its-self-driving-tech-but-even-its-own-ai-trainers-wont-trust-it/" rel="noopener nofollow" target="_blank">Tesla FSD安全統計の誇張疑惑 ロイター調査 エアバッグ展開データで3倍水増しか</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>ロイター調査が <strong class="emph-bold">Tesla</strong> FSD（Full Self-Driving）の安全統計を <strong>3倍水増し</strong>と指摘。エアバッグ展開データと連邦統計の照合で数値乖離が判明</li><li>Tesla自身のAIデータアノテーター（現場担当者）が<strong>自社技術を信頼しない</strong>と証言。緊急車両・スクールバス前後での誤作動が頻発</li><li><span class="emph-und">信頼の非対称</span>：マーケティングの自信と現場の体験が乖離。Waymoの577台 vs Tesla 42台という事実が、<span class="emph-und">技術主張と現実の溝</span>を埋められない</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Waymo</strong>がテキサス4都市に一斉展開し商業拠点を<strong>10都市</strong>に拡大。対してトヨタはLexus EVを含む重要車種を廃止した。同日に「Waymoがスケール」し「トヨタが撤退」した構図は象徴的だ。<span class="emph-und">2026年のモビリティ産業を二分する出来事が重なった</span>。トヨタは全固体電池の量産化（住友金属鉱山との協業）という長期賭けを続けており、2027〜2028年に照準を合わせている。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-03/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-03
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

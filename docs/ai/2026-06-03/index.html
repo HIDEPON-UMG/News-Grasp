@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260603 — Artificial Intelligence</title>
+<meta name="description" content="AnthropicがSECに機密IPO申請。評価額9650億ドルでOpenAIを超え史上最高値のAI企業に。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-03/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260603 — Artificial Intelligence">
+<meta property="og:description" content="AnthropicがSECに機密IPO申請。評価額9650億ドルでOpenAIを超え史上最高値のAI企業に。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-03/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260603 — Artificial Intelligence">
+<meta name="twitter:description" content="AnthropicがSECに機密IPO申請。評価額9650億ドルでOpenAIを超え史上最高値のAI企業に。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-03 · #20260603</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">AnthropicがSECに機密IPO申請。評価額9650億ドルでOpenAIを超え史上最高値のAI企業に。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">86</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·03</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260603</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-03 06:30 · CNBC</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.cnbc.com/2026/06/01/anthropic-ipo-s1-prospectus.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.cnbcfm.com/api/v1/image/108254389-1772565827216-108254389-17689275282026-01-20t124808z_1149863023_rc205jas0xak_rtrmadp_0_davos-meeting.jpeg?v=1777907000&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.cnbc.com/2026/06/01/anthropic-ipo-s1-prospectus.html" rel="noopener nofollow" target="_blank" style="color: inherit;">Anthropic、SECに機密S-1を提出しIPO申請 評価額9650億ドルでOpenAIを超える最高値AI企業に</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong> が6月1日にSECへ機密S-1書類を提出しIPO申請。評価額 <strong>9650億ドル</strong>（約140兆円）で<strong class="emph-bold">OpenAI</strong>（8520億ドル）を抜き史上最高値のAI企業に</li><li><strong>ARR $47B</strong>（前年末$10B比約5倍）の爆発的成長が上場の後押し。Series H <strong>650億ドル</strong>調達完了直後の申請で時価総額1兆ドルデビューを狙う</li><li><span class="emph-und">2026年はAI上場ラッシュの年</span>：SpaceX・OpenAI・Anthropicが3社同時に1兆ドル規模の上場を目指す前例なき状況に</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-03</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-03 07:00</span>
+        <span>· Fortune</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://fortune.com/2026/05/29/anthropic-raises-65-billion-at-record-965-billion-valuation-promises-mythos-ai-model-in-wide-release-in-coming-weeks-releases-claude-opus-4-8/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://fortune.com/img-assets/wp-content/uploads/2026/05/GettyImages-2276989677-e1780064515450.jpg?resize=1200,600" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://fortune.com/2026/05/29/anthropic-raises-65-billion-at-record-965-billion-valuation-promises-mythos-ai-model-in-wide-release-in-coming-weeks-releases-claude-opus-4-8/" rel="noopener nofollow" target="_blank">Anthropic ARR $47B達成 昨年末比約5倍成長 Series H 650億ドル調達完了</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Anthropic</strong> がARR <strong>$47B</strong>を達成と発表。年末の$10Bから半年で5倍弱と急成長。同時に <strong>Claude Opus 4.8</strong> をリリース</li><li>Series H 650億ドル調達で評価額9650億ドルを確定。<strong>Google・Amazon</strong> が主要投資家として名を連ねる</li><li><span class="emph-und">Mythos は数週間以内に一般公開予定</span>：サイバーセキュリティ分野での能力が卓越しており、ENISAの評価が完了次第リリース</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-03 07:30</span>
+        <span>· Silicon Republic</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.siliconrepublic.com/machines/openai-launching-security-ai-initiative-claude-mythos-rival-daybreak" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.siliconrepublic.com/wp-content/uploads/2026/05/OpenAI-Image.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.siliconrepublic.com/machines/openai-launching-security-ai-initiative-claude-mythos-rival-daybreak" rel="noopener nofollow" target="_blank">Claude Mythos Preview 欧州サイバー機関ENISAに限定提供 数千件の重大脆弱性を発見</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Claude Mythos</strong> が欧州サイバーセキュリティ機関<strong class="emph-bold">ENISA</strong>に限定提供開始。<strong>数千件の重大ソフトウェア脆弱性</strong>を発見・報告しており、広範公開前に修正対応が進む</li><li><strong class="emph-bold">OpenAI</strong> は対抗して<strong>セキュリティAIイニシアチブDaybreak</strong>を発表。AI安全保障分野でのAnthropicとの直接競争が激化</li><li><span class="emph-und">AIがセキュリティの武器になる時代</span>：Mythosの軍民両用能力が規制当局の注目を集め、米国防総省との取引制限問題も浮上</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-03 08:00</span>
+        <span>· Yahoo Finance</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://finance.yahoo.com/news/live/tech-stocks-today-anthropic-says-pentagon-ban-could-cost-it-billions-meta-announces-new-ai-chips-134456659.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://s.yimg.com/ny/api/res/1.2/huM5wJyvCDyATO0Id_1ryw--/YXBwaWQ9aGlnaGxhbmRlcjt3PTEyMDA7aD04MTg-/https://s.yimg.com/os/creatr-uploaded-images/2026-03/67fc4050-1d50-11f1-afef-c29f4e25b61f" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://finance.yahoo.com/news/live/tech-stocks-today-anthropic-says-pentagon-ban-could-cost-it-billions-meta-announces-new-ai-chips-134456659.html" rel="noopener nofollow" target="_blank">OpenAI IPO準備中 評価額8520億ドル 秋上場目指す AnthropicのIPO申請に追随</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong> が秋上場を目指し機密IPO申請書類を準備中と報道。評価額 <strong>8520億ドル</strong> でAnthropicに首位を奪われた形</li><li><strong>Metaが新型AIチップ</strong>を発表。NVIDIAへの依存低減を目指す独自半導体戦略の一環で、AI推論コストの削減を狙う</li><li><span class="emph-und">Anthropicの国防総省取引禁止問題</span>：ペンタゴン調達制限でBillions規模の損失リスク。安全保障と商業のジレンマが表面化</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-03 08:30</span>
+        <span>· LLM Stats</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://llm-stats.com/ai-news" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://llm-stats.com/og/main.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://llm-stats.com/ai-news" rel="noopener nofollow" target="_blank">NVIDIA 2026年通期売上3587億ドル予測 2022年比13倍超 AI半導体独占続く</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NVIDIA</strong> の2026年通期売上高が <strong>$358.7B（約52兆円）</strong> と予測。2022年の$26.9Bから4年で <strong>13倍超</strong>に膨張</li><li>AI訓練・推論の両面でNVIDIAの優位が継続。AMDと独自チップ勢（Google TPU / Meta）が追うも<strong>市場シェアは80%超</strong>を維持か</li><li><span class="emph-und">エコシステム占有率が真の戦場</span>：CUDAエコシステムの囲い込みが競合参入の最大障壁となり、ソフトウェア依存が長期的な堀として機能</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Anthropic</strong>が機密S-1をSECに提出。2025年末から半年でARRを<strong>5倍</strong>に伸ばした企業が1兆ドル規模での上場を目指す。Claude Mythosは欧州ENISA限定評価中で、サイバーセキュリティ分野での軍民両用能力が問題になっている。SpaceX・OpenAI・Anthropicが3社同時に1兆ドル上場を狙う「<strong>AI IPO元年</strong>」が到来した。<span class="emph-und">この週はシリコンバレーの歴史に刻まれる</span>かもしれない。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-03/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-03
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
