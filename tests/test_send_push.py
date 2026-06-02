@@ -171,6 +171,34 @@ def test_send_one_passes_positive_ttl(monkeypatch):
     assert captured.get("ttl", 0) > 0, "webpush に正の TTL を渡していない（TTL=0 はオフライン端末で破棄される）"
 
 
+def test_send_one_passes_high_urgency(monkeypatch):
+    """webpush へ必ず Urgency: high を渡す不変条件。
+
+    なぜ重要か: Urgency 未指定（pywebpush 既定）は "normal" 扱いとなり、端末 OS が
+    省電力状態のとき配信が先送りされる（Android Doze はメンテナンス窓までバッチ、
+    iOS は apns-priority 5）。朝 06:38 は端末が一晩アイドルで Doze/低電力に入っており、
+    FCM/APNs が 201 受理しても **端末側で通知が出ない**「送信成功なのに来ない」が
+    起きる（日中の手動送信は端末がアクティブなので即届く＝非対称性の正体）。
+    "high" は FCM 優先度 high / apns-priority 10 にマップされ Doze を貫通する。
+    normal に戻る退行をここで封じる。
+    """
+    import pywebpush
+
+    captured = {}
+
+    def fake_webpush(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(pywebpush, "webpush", fake_webpush)
+    ok, gone, detail = sp.send_one(SAMPLE_SUB, '{"title":"t"}', "key.pem", "mailto:a@b.c")
+    assert ok is True and gone is False
+    headers = captured.get("headers") or {}
+    assert headers.get("Urgency") == "high", (
+        "webpush に Urgency: high を渡していない（normal は省電力端末で配信が先送りされる）"
+    )
+
+
 # --- Worker 連携 ---------------------------------------------------------
 
 def test_resolve_token_missing_and_empty_and_value(tmp_path):

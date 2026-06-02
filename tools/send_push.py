@@ -56,6 +56,17 @@ DEFAULT_TITLE = "📰 今日のNews Grasp"
 # 当日中に開けば足りるので 12 時間保持する（翌朝の重複配信は tag 固定で 1 件に畳まれる）。
 DEFAULT_TTL_SECONDS = 12 * 60 * 60
 
+# Web Push の Urgency ヘッダ（RFC 8030 §5.3）。**"high" を必須**とする。
+# 未指定（pywebpush 既定）は "normal" 扱いになり、端末 OS が省電力状態のとき
+# 配信を先送り（バッチ）する: Android の Doze は normal 優先度の push を
+# メンテナンス窓までまとめ、iOS は apns-priority 5 として省電力配信する。
+# 朝 06:38 の送信時、スマホは一晩アイドルで Doze / 低電力モードに入っているため、
+# TTL を持たせて push サービス（FCM/APNs）が 201 受理しても **端末側で通知が
+# surface せず「送信成功なのに来ない」** が起きる（日中の手動送信は端末が
+# アクティブなので即表示される → これが「手動は届くが毎朝来ない」の非対称性）。
+# "high" は FCM 優先度 high / apns-priority 10 にマップされ Doze を貫通して即時配信する。
+DEFAULT_URGENCY = "high"
+
 # 配信曜日マトリクス（prompts/routine-system.md ステップ1 と一致させること）。
 # Python の weekday(): 月=0, 火=1, ... 日=6。
 #   為替/AI/IT/モビリティ … 毎日固定 / 経済 … 平日のみ / ゲーム … 火木土日のみ
@@ -202,6 +213,7 @@ def send_one(subscription: dict, payload: str, vapid_key_file: str, claims_sub: 
             vapid_private_key=vapid_key_file,
             vapid_claims={"sub": claims_sub},
             ttl=DEFAULT_TTL_SECONDS,  # 0 だとオフライン端末で破棄される（上の定数コメント参照）
+            headers={"Urgency": DEFAULT_URGENCY},  # Doze/低電力中の端末でも即配信（normal は先送りされる）
             timeout=10,
         )
         return True, False, "ok"

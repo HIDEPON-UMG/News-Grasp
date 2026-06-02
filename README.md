@@ -150,6 +150,7 @@ VAPID 方式（送信側が秘密鍵で署名、ブラウザが公開鍵で検�
 - 失効した購読（HTTP 404/410）は送信時に自動検出し、Worker の `/unsubscribe` で除去する。
 - 購読保存先は Worker (KV) が本番。`data/push_subscriptions.secret.json` は管理人の手元テスト用 fallback（`*.secret.json` で git 管理外）。
 - 送信は **TTL 12 時間**で行う（`DEFAULT_TTL_SECONDS`）。pywebpush の既定 `ttl=0` は「送信時に端末がオフラインなら破棄（かつ 201 を返す）」ため、朝 06:35 にスリープ中のスマホへ毎朝 silently 破棄され「3/3 送信成功なのに通知が来ない」が起きていた（2026-06-01 修正）。TTL を持たせ FCM/APNs が端末再接続まで保持→当日中に配信する。`tests/test_send_push.py::test_send_one_passes_positive_ttl` が `ttl=0` への退行を契約で封じる。
+- 送信は **`Urgency: high`** を付ける（`DEFAULT_URGENCY`）。ヘッダ省略時の既定 **normal** は、端末が省電力状態（Android の Doze / iOS の低電力・スリープ）だと OS が配信を後回し（バッチ）にするため、一晩アイドルだった朝 06:38 の通知が **FCM/APNs は 201 受理しても端末画面に出ない**（日中の手動送信は端末がアクティブなので即届く＝「手動は届くが毎朝来ない」の非対称性の正体。2026-06-02 修正）。`high` は FCM 優先度 high / apns-priority 10 にマップされ Doze を貫通して即時配信する。`tests/test_send_push.py::test_send_one_passes_high_urgency` が normal への退行を契約で封じる。なお iOS は urgency=high でも端末側の「集中モード（スリープ/おやすみ）」「通知の要約」「低電力モード」が朝の通知を抑制しうるため、それらは端末側で News Grasp を許可対象にする必要がある。
 
 ## ディレクトリ構造
 
