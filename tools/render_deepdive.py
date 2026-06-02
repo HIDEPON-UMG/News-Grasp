@@ -73,14 +73,10 @@ EDGE_KINDS: dict[str, dict[str, Any]] = {
 }
 _DEFAULT_EDGE = {"color": INK, "dash": False}
 
-# 関係図の構図ルール (2026-05-31 ユーザー指示で恒久化):
-#   競合/対立 = 勢力の対立 → 左右に分けて配置 (rivalry を 2-color)
-#   出資/提携/供給 = 協力 → 同じ側に寄せ、上下 (縦) に積む (出資元/親を上)
-#   規制 = 監督 → 当局を中央下に置き、両勢力を見上げる三角構図にする
-#   協調的競合 (frenemy) = 協力かつ競合 → 両者を左右に置き、協力線(緑)と競合線(赤)を
-#     併走させる。「提携でありつつ人月モデルで競合」のような二面関係を 1 本に潰さず
-#     描くための kind。group-to-group (陣営 vs 陣営) の中心命題を表現する (2026-05-31 追加)。
-# 「とりあえず全部つなぐ」のではなく勢力構造が一目で分かる配置にするのが目的。
+# edge kind の意味 (配置・矢印への効き方と構図規約の正典は _choose_layout_mode の docstring):
+#   競合/対立 = 勢力の対立 / 出資・提携・供給 = 協力 / 規制 = 監督 /
+#   協調的競合 (frenemy) = 協力かつ競合の二面関係 (緑=提携線 + 赤=競合線を併走。「提携で
+#   ありつつ人月モデルで競合」を 1 本に潰さず描く。coop/rival の短いラベル必須)。
 _RIVAL_KINDS = {"競合", "対立"}
 _COOP_KINDS = {"出資", "提携", "供給", "協力"}
 _AUTH_KINDS = {"規制"}
@@ -233,6 +229,88 @@ def _figure_citations(raw: Any, biblio: list[dict[str, str]]) -> dict[str, Any] 
 
 # ── relations: 座標なしスキーマ → 役割レイヤー (band) 配置 + SVG ────────────────
 
+def _neutral_institutions(
+    order: list[str], grp: dict[str, str], edges: list[dict[str, Any]],
+) -> set[str]:
+    """中立機関 = group に「規制」「当局」を含む or 規制エッジ (_AUTH_KINDS) の source。
+
+    どちらの陣営にも属さない監督主体。camps モードでは専用の最下段レイヤー、bands
+    モードでは最下段の規制 band へ置く。_camp_columns と _relation_bands が同じ定義を
+    共有するための単一ソース (旧: 両関数に同じ式が重複していた)。
+    """
+    reg = {i for i in order if ("規制" in grp[i]) or ("当局" in grp[i])}
+    reg |= {str(e["from"]) for e in edges if e.get("kind") in _AUTH_KINDS}
+    return reg
+
+
+def _camp_groups(members: list[str], grp: dict[str, str]) -> list[str]:
+    """members (中立を除く事業者) のうち同一 group が 2 ノード以上ある group を出現順で返す。
+
+    これが「陣営」。ちょうど 2 つなら左右カラム (_camp_columns)、それ以外は水平バンド
+    (_band_layout) へ分岐する。_choose_layout_mode と _camp_columns が共有する単一ソース。
+    """
+    seen: list[str] = []
+    for i in members:
+        if grp[i] and grp[i] not in seen:
+            seen.append(grp[i])
+    return [g for g in seen if sum(1 for i in members if grp[i] == g) >= 2]
+
+
+def _choose_layout_mode(
+    nodes: list[dict[str, Any]], edges: list[dict[str, Any]],
+) -> str:
+    """relations の配置モードを 1 箇所で決める ── 関係図レイアウトの単一の正典。
+
+    ★ この docstring が関係図 (relations / 勢力図 / 相関図) の配置規約の正典。memory
+       `feedback_relation_diagram_semantic_layout` とプロンプト `deepdive-research-system.md`
+       の relations 節はここを指すポインタで、配置アルゴリズムの詳細を二重に書かない
+       (二重記述が腐ってプロンプトだけ旧モデルに取り残された 2026-06-02 の反省)。
+
+    nodes/edges は座標を持たないので、kind と group の「意味」から決定論的に配置する。
+    目的は装飾でなく構造の可視化 ── 誰と誰が対立し・誰が誰を支え・誰が監督するかを一目で
+    読ませることなので、「とりあえず全部つなぐ」円環 auto-layout は採らない。
+
+    配置モードは 2 つ (bands は内部でさらに 3 分岐):
+
+      "camps"  中立機関を除く事業者が "ちょうど 2 つ" の対立陣営 (各 2 ノード以上) に
+               分かれる。→ _camp_columns。「陣営」は役割ではない。①事業者を陣営で左右に
+               分け (横軸 = 陣営)、②各陣営内で主役 (中心事業者) と支援者を役割ティアに積み
+               (縦軸: 出資元/支援者 = 上 / 主役 = 中 / 顧客・下流 = 下)、主役同士を同じ
+               高さで左右に対峙させる。③どちらの陣営にも属さない中立機関 (規制当局・両陣営へ
+               供給するベンダー等) は専用の最下段レイヤーにまとめる。
+
+      "bands"  上記以外。→ _band_layout が役割を水平レイヤーに積む。内部でさらに:
+               ・3 陣営以上 (各 2 ノード以上)         → 陣営ごとの水平バンド
+               ・陣営なし + 一方向フロー (出資/供給/規制) → _flow_layers でバリューチェーンを
+                 最長路段層化し供給先を供給元より下段へ落とす (同段ノードを貫く直販線を消す)
+               ・フローも無い                          → 単一バンドで競合を左右二分 (_rivalry_sides)
+
+    kind → 配置の効き方 / 矢印の向き:
+      競合・対立           = 勢力の対立 → 左右に二分。相互関係なので既定で双方向 (⇔)。
+      出資・提携・供給      = 協力       → 同じ側に縦積み (出資元/親が上)。一方向 (→)。
+      規制                = 監督       → 当局を最下段に。当局→対象の一方向 (→)。
+      協調的競合 (frenemy) = 協力かつ競合の二面関係 → 緑 (提携) + 赤 (競合) の線を併走。
+                            coop/rival の短いラベル必須 (無いと既定文言が漏れる)。双方向。
+
+    判定の母集団 (意図的差分):
+      "camps" の判定 = 中立機関を除く group 付き事業者 (= _camp_groups の members)。
+      bands 内のサブ分岐 (_relation_bands の use_camps) は出資元 (parents) も除いた
+      operators 基準。出資元は陣営の一員でなく独立の上段 band に置く意図のため、母集団が
+      "camps" 判定とは異なる。完全統一すると出資元の段が反転して挙動が変わるので統一しない。
+
+    配置の不変条件 (競合=左右 / 協力=縦 / 規制=最下段 / 2 陣営=左右カラム+主役対峙+中立最下段 /
+    バリューチェーン=供給先を下段 / ラベルの重なり 0 / エッジ線がノード円を貫通しない) は
+    tests/test_deepdive_render.py の relations 系 3 件 (test_relations_layout_is_semantic_not_circular
+    / test_relations_two_camps_split_left_right_and_no_overlap /
+    test_relations_value_chain_layers_supply_sink_below) で契約として固定する。
+    """
+    order = [str(n.get("id", "")) for n in nodes]
+    grp = {str(n.get("id", "")): str(n.get("group", "")) for n in nodes}
+    neutral = _neutral_institutions(order, grp, edges)
+    camp_members = [i for i in order if i not in neutral and grp[i]]
+    return "camps" if len(_camp_groups(camp_members, grp)) == 2 else "bands"
+
+
 def _flow_layers(
     operators: list[str], edges: list[dict[str, Any]], order: list[str],
 ) -> list[list[str]]:
@@ -291,8 +369,7 @@ def _relation_bands(
     order = [str(n.get("id", "")) for n in nodes]
     grp = {str(n.get("id", "")): str(n.get("group", "")) for n in nodes}
 
-    reg = {e["from"] for e in edges if e.get("kind") in _AUTH_KINDS}
-    reg |= {i for i in order if ("規制" in grp[i]) or ("当局" in grp[i])}
+    reg = _neutral_institutions(order, grp, edges)
     invest_to = {e["to"] for e in edges if e.get("kind") == "出資"}
     parents = {e["from"] for e in edges if e.get("kind") == "出資"} - invest_to - reg
     operators = [i for i in order if i not in reg and i not in parents]
@@ -366,18 +443,12 @@ def _camp_columns(
     order = [str(n.get("id", "")) for n in nodes]
     grp = {str(n.get("id", "")): str(n.get("group", "")) for n in nodes}
 
-    # 中立機関: group に 規制/当局 を含む or 規制エッジの source。
-    neutral_inst = {i for i in order if ("規制" in grp[i]) or ("当局" in grp[i])}
-    neutral_inst |= {str(e["from"]) for e in edges if e.get("kind") in _AUTH_KINDS}
-
-    # 陣営 group = 中立を除く事業者で同一 group が 2 ノード以上。ちょうど 2 つを要求。
+    # 中立機関 (規制当局等) と陣営 group は _choose_layout_mode と同じヘルパーで判定する
+    # (旧: 同じ式を両関数に重複記述していた → 単一ソースへ集約)。
+    neutral_inst = _neutral_institutions(order, grp, edges)
     camp_members = [i for i in order if i not in neutral_inst and grp[i]]
-    seen_g: list[str] = []
-    for i in camp_members:
-        if grp[i] not in seen_g:
-            seen_g.append(grp[i])
-    camps = [g for g in seen_g if sum(1 for i in camp_members if grp[i] == g) >= 2]
-    if len(camps) != 2:
+    camps = _camp_groups(camp_members, grp)
+    if len(camps) != 2:   # camps モード前提。通常は _choose_layout_mode 経由でのみ呼ばれる
         return None
     campA, campB = camps[0], camps[1]
     members = {g: [i for i in order if grp[i] == g and i not in neutral_inst]
@@ -593,10 +664,9 @@ def _band_layout(
 def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     """nodes に x/y/r を決定論的に付与する (relations は座標を持たないため)。
 
-    2 つの対立陣営があるときは _camp_columns が「左右カラム + 役割ティア」で配置し
-    (2026-06-02 ユーザー指示: 陣営 = 左右 / 主役と支援者 = 別段 / 中立機関 = 最下段)、
-    それ以外 (単一陣営・3 陣営以上・バリューチェーン) は _band_layout の役割レイヤーで
-    積む。ラベルの重なり回避は relations_svg 側の _resolve_labels が担う。
+    配置モードの選択と各モードの意味は _choose_layout_mode の docstring が正典
+    (camps = 2 陣営左右カラム / bands = 単一陣営・3 陣営以上・バリューチェーン)。
+    ラベルの重なり回避は relations_svg 側の _resolve_labels が担う。
     """
     nodes = list(rel.get("nodes", []))
     ids = [str(nd.get("id", "")) for nd in nodes]
@@ -614,7 +684,9 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
 
     max_r = max((_node_r(i) for i in ids), default=50.0)
 
-    cc = _camp_columns(nodes, edges, ids, deg, _node_r)
+    # 配置モードは _choose_layout_mode の docstring が正典 (camps=2 陣営左右カラム / bands=その他)。
+    cc = _camp_columns(nodes, edges, ids, deg, _node_r) \
+        if _choose_layout_mode(nodes, edges) == "camps" else None
     if cc is not None:
         placed, vb_w, vb_h = cc["nodes"], cc["vb_w"], cc["vb_h"]
     else:
