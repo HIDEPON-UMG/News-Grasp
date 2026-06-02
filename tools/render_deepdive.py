@@ -161,7 +161,11 @@ def _prose_paragraphs(section_text: str) -> list[str]:
 
 
 def parse_sources(section_text: str) -> list[dict[str, str]]:
-    """`## 参考リンク` の bullet を {text, url} のリストにする。"""
+    """`## 参考リンク` の bullet を {text, url, name, rest} のリストにする。
+
+    name = メディア名 (「記事タイトル」より前)、rest = それ以降 (タイトル+日付)。テンプレ側で
+    name をカテゴリ色に着色しメディアを認知しやすくする (rest は本文色のまま)。
+    """
     sources: list[dict[str, str]] = []
     for line in section_text.splitlines():
         line = line.strip()
@@ -171,7 +175,10 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
         um = _SRC_URL_RE.search(item)
         url = um.group(1) if um else ""
         text = item[: um.start()].rstrip(" :：—-") if um else item
-        sources.append({"text": text, "url": url})
+        bm = re.search(r"[「『（(]", text)
+        name = text[: bm.start()].strip() if bm else text
+        rest = text[bm.start():] if bm else ""
+        sources.append({"text": text, "url": url, "name": name, "rest": rest})
     return sources
 
 
@@ -791,8 +798,13 @@ def relations_svg(rel: dict[str, Any]) -> str:
         # 水平 (同 band 内) エッジ: そのバンドの「上の gap」(最上段なら上余白) に逃がす。
         # 外側の狭い余白へ押し込むと窮屈なので、内側の広い gap を優先する。
         if abs(y2 - y1) <= 1.0:
+            mx = (x1 + x2) / 2
+            # 中央チャネルが空く水平エッジ (2 陣営の主役対立など) は gap へ逃がさず線上
+            # (対立軸の真上) に載せ、上段の他エッジのラベルと混ざらないようにする。
+            if all(math.hypot(mx - nd["x"], y1 - nd["y"]) > nd["r"] + 36 for nd in nodes):
+                return mx, y1
             bi = min(range(len(ys)), key=lambda i: abs(ys[i] - y1))
-            return (x1 + x2) / 2, zone_centers[bi]
+            return mx, zone_centers[bi]
         mid_y = (y1 + y2) / 2
         ylo, yhi = min(y1, y2), max(y1, y2)
         cand = [c for c in zone_centers if ylo - 32 <= c <= yhi + 32]
