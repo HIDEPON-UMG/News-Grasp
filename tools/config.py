@@ -30,7 +30,7 @@ PUSH_WORKER_URL: str = os.environ.get(
 
 SITE_TITLE: str = "News Grasp"
 SITE_DESCRIPTION: str = "時勢を掴み、日々に新たに。"
-SITE_TAGLINE_EN: str = "SIX LENSES ON TODAY"
+SITE_TAGLINE_EN: str = "SEVEN LENSES ON TODAY"
 
 OG_DESCRIPTION_MAX: int = 180
 OG_IMAGE_WIDTH: int = 1120

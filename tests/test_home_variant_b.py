@@ -55,16 +55,16 @@ def test_brand_zone_present(built_home: str):
     """home-brand (navy 86px wordmark + ISSUE) セクションがある。"""
     assert 'class="home-brand"' in built_home, "home-brand class missing"
     assert "News Grasp" in built_home, "site title missing"
-    assert "SIX  LENSES  ON  TODAY" in built_home or "SIX LENSES ON TODAY" in built_home, \
+    assert "SEVEN  LENSES  ON  TODAY" in built_home or "SEVEN LENSES ON TODAY" in built_home, \
         "tagline missing"
 
 
-def test_sticky_nav_with_6_lenses(built_home: str):
-    """home-nav の 6 lenses + TODAY + § ESSAY + ARCHIVE が並ぶ。"""
+def test_sticky_nav_with_7_lenses(built_home: str):
+    """home-nav の 7 lenses + TODAY + § ESSAY + ARCHIVE が並ぶ。"""
     assert 'class="home-nav"' in built_home
     assert "home-nav__today" in built_home
-    # 6 lenses (Mobility 含む)
-    for lens in ("fx", "ai", "it", "mobility", "economy", "game"):
+    # 7 lenses (Mobility / Manufacturing 含む)
+    for lens in ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game"):
         assert f"home-nav__lens-{lens}" in built_home, f"lens nav for {lens} missing"
     # § ESSAY / ARCHIVE
     assert "§ ESSAY" in built_home, "ESSAY entry missing"

@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>{{ site_title }} — {{ site_tagline }}</title>
-<meta name="description" content="{{ site_tagline }} 為替・AI・IT・モビリティ・経済・ゲームの 6 カテゴリで毎朝配信されるニュースダイジェスト。">
+<meta name="description" content="{{ site_tagline }} 為替・AI・IT・モビリティ・製造・経済・ゲームの 7 カテゴリで毎朝配信されるニュースダイジェスト。">
 <link rel="canonical" href="{{ base_url }}/">
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ site_title }}">
 <meta property="og:title" content="{{ site_title }}">
-<meta property="og:description" content="{{ site_tagline }} 為替・AI・IT・モビリティ・経済・ゲームの 6 カテゴリで毎朝配信されるニュースダイジェスト。">
+<meta property="og:description" content="{{ site_tagline }} 為替・AI・IT・モビリティ・製造・経済・ゲームの 7 カテゴリで毎朝配信されるニュースダイジェスト。">
 <meta property="og:url" content="{{ base_url }}/">
 <meta property="og:image" content="{{ base_url }}/assets/og/summary.jpg">
 <meta property="og:image:width" content="1120">
@@ -48,7 +48,7 @@
       <div class="home-brand__title">
         <div class="home-brand__eyebrow">━━ THE</div>
         <h1 class="home-brand__name"><a href="{{ base_url }}/">News Grasp</a><img class="brand-icon" src="{{ base_url }}/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
-        <div class="home-brand__tagline">SIX  LENSES  ON  TODAY</div>
+        <div class="home-brand__tagline">SEVEN  LENSES  ON  TODAY</div>
       </div>
     </div>
     {% if today_date %}
@@ -65,7 +65,7 @@
   <div class="home-brand__rule"></div>
 </section>
 
-<!-- ============= Sticky nav (TODAY + 6 lenses + § ESSAY + ARCHIVE) ============= -->
+<!-- ============= Sticky nav (TODAY + 7 lenses + § ESSAY + ARCHIVE) ============= -->
 <nav class="home-nav">
   <div class="home-nav__inner">
     <div class="home-nav__bar">
@@ -255,7 +255,7 @@
   <div class="home-cats__inner">
     <div class="home-cats__head">
       <h2><span class="by">by</span> Category.</h2>
-      <div class="home-cats__head-meta">6 lenses, {{ stats.stories }} stories ↘</div>
+      <div class="home-cats__head-meta">7 lenses, {{ stats.stories }} stories ↘</div>
     </div>
     <div class="home-cats__grid">
       {% for c in lens_cards %}
