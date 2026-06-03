@@ -58,6 +58,25 @@ html, body { margin: 0; padding: 0; }
 .dd a { color: inherit; }
 .dd img { display: block; max-width: 100%; }
 
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: {{ paper }}; }
+@view-transition { navigation: auto; }
+::view-transition { background: {{ paper }}; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: {{ paper }}; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
 /* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
 .dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
 .dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }

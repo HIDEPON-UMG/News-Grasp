@@ -58,6 +58,25 @@ html, body { margin: 0; padding: 0; }
 .dd a { color: inherit; }
 .dd img { display: block; max-width: 100%; }
 
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
 /* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
 .dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
 .dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -259,6 +278,26 @@ html, body { margin: 0; padding: 0; }
 .dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
 .dd-summary strong { color: var(--cream); }
 
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
 /* sources */
 .dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
 .dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
@@ -287,6 +326,13 @@ html, body { margin: 0; padding: 0; }
   .dd-wrap { padding: 0 18px; }
   .dd-hero { padding: 30px 0 26px; }
   .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
   .dd-sec { padding: 30px 0; }
   .dd-sechead { flex-wrap: wrap; gap: 10px; }
   .dd-sechead .jp { font-size: 26px; }
@@ -362,6 +408,8 @@ html, body { margin: 0; padding: 0; }
       <p class="dd-hero__theme">USD/JPYが160円に迫る中、ウォーシュ新議長下のFedの利下げ封印と日銀の利上げ躊躇という日米金融政策の逆行は、為替介入ライン160円の攻防をどう決着させるか</p>
       <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260603</span><span>#USDJPY</span><span>#日銀</span><span>#FRB</span><span>#為替介入</span><span>#金利差</span></div>
     </header>
+
+    
 
     <!-- 背景 / BACKGROUND -->
     <section class="dd-sec">
