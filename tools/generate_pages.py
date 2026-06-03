@@ -653,19 +653,19 @@ def _date_weekday_jp(date_str: str) -> str:
 
 # 配信スケジュール (確定ルール / prompts/routine-system.md L78-84 に準拠)
 #   月=0 ... 日=6。値は配信するカテゴリ ID のセット。
-#   月: FX/AI/IT/Mobility/Economy (5)
-#   火: + Game (6)
-#   水: 月と同じ (5)
-#   木: 火と同じ (6)
-#   金: 月と同じ (5)
-#   土: FX/AI/IT/Mobility/Game (Economy 除く、5)
+#   月: FX/AI/IT/Mobility/Manufacturing/Economy (6)
+#   火: + Game (7)
+#   水: 月と同じ (6)
+#   木: 火と同じ (7)
+#   金: 月と同じ (6)
+#   土: FX/AI/IT/Mobility/Game (Manufacturing・Economy 除く、5)
 #   日: 土と同じ (5)
 _PUBLICATION_SCHEDULE: dict[int, set[str]] = {
-    0: {"fx", "ai", "it", "mobility", "economy"},          # 月
-    1: {"fx", "ai", "it", "mobility", "economy", "game"},  # 火
-    2: {"fx", "ai", "it", "mobility", "economy"},          # 水
-    3: {"fx", "ai", "it", "mobility", "economy", "game"},  # 木
-    4: {"fx", "ai", "it", "mobility", "economy"},          # 金
+    0: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},          # 月
+    1: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game"},  # 火
+    2: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},          # 水
+    3: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game"},  # 木
+    4: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},          # 金
     5: {"fx", "ai", "it", "mobility", "game"},             # 土
     6: {"fx", "ai", "it", "mobility", "game"},             # 日
 }
@@ -677,6 +677,7 @@ _GENRE_ALIASES: dict[str, set[str]] = {
     "ai":       {"AI", "Artificial Intelligence"},
     "it":       {"IT", "IT-Consulting", "IT & Consulting"},
     "mobility": {"Mobility"},
+    "manufacturing": {"Manufacturing"},
     "economy":  {"Economy"},
     "game":     {"Game"},
 }
@@ -1111,7 +1112,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
     """Phase 4: 日付別 Daily Overview (Pattern C) docs/{date}/index.html を生成。
 
     entries は **同一 date の** entries だけを渡す前提。summary を含む全カテゴリの
-    最新ダイジェストを集約して、6 lens の 1 ページサマリを作る (v2: Mobility 追加)。
+    最新ダイジェストを集約して、7 lens の 1 ページサマリを作る (Mobility/Manufacturing 追加)。
     """
     same_day = [e for e in entries if e["date"] == date]
     if not same_day:
@@ -1735,7 +1736,7 @@ def build_archive(entries: list[dict[str, Any]], docs_root: Path,
             "label": CATEGORIES[cid]["label"],
             "accent": CATEGORIES[cid]["accent"],
             "glyph": CATEGORIES[cid]["glyph"],
-            "is_new": cid == "mobility",
+            "is_new": cid == "manufacturing",
         }
         for cid in lens_order
     ]
