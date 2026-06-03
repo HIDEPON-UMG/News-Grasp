@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260604 — Mobility</title>
+<meta name="description" content="Tesla Robotaxiがオースティン全域に拡大も車両数はわずか39台。Waymoは週50万ライド・10都市展開でダッシュ。中国AV勢が米国に急追する構図が鮮明に。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-04/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260604 — Mobility">
+<meta property="og:description" content="Tesla Robotaxiがオースティン全域に拡大も車両数はわずか39台。Waymoは週50万ライド・10都市展開でダッシュ。中国AV勢が米国に急追する構図が鮮明に。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-04/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260604 — Mobility">
+<meta name="twitter:description" content="Tesla Robotaxiがオースティン全域に拡大も車両数はわずか39台。Waymoは週50万ライド・10都市展開でダッシュ。中国AV勢が米国に急追する構図が鮮明に。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-04 · #20260604</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Tesla Robotaxiがオースティン全域に拡大も車両数はわずか39台。Waymoは週50万ライド・10都市展開でダッシュ。中国AV勢が米国に急追する構図が鮮明に。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">83</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·04</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260604</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-04 06:00 · Electrek</span>
+    <span class="top-story__score">90</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://electrek.co/2026/06/03/tesla-robotaxi-expands-entire-austin-metro-only-20-vehicles/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/electrek.co/wp-content/uploads/sites/3/2026/04/Tesla-Robotaxi-hero.webp?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://electrek.co/2026/06/03/tesla-robotaxi-expands-entire-austin-metro-only-20-vehicles/" rel="noopener nofollow" target="_blank" style="color: inherit;">Tesla expands Robotaxi to entire Austin metro — but fleet shrinks to just 39 vehicles</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Tesla</strong> は6月3日、<strong>無人Robotaxiのジオフェンスをオースティン全域に拡大</strong>。<strong class="emph-bold">マスク</strong> の公式確認後、オースティンメトロ全エリアでアプリ予約が可能に — ただし稼働車両は推定<strong>わずか39台</strong></li><li>ダラスとヒューストンは4月のローンチから車両数が<strong>ゼロ成長（3台と6台のまま）</strong>。マスクは「FSD v15のリライト完了後（2026年末〜2027年初）に本格増車」と述べ、<strong>5都市への拡大も延期</strong></li><li><span class="emph-und">「版図は広げたが兵士がいない」</span>：オースティン全域カバーは戦略的訴求力があるが、Waymoが同10都市で週50万ライドを提供しているのと並べると拡大速度の差は歴然</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-04</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-04 06:00</span>
+        <span>· EVDances</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://evdances.com/blogs/news/how-waymo-s-robotaxi-growth-compares-with-tesla-in-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="http://evdances.com/cdn/shop/articles/Waymo-Expand-Robotaxi-To-Highway-3_f48060e2-2183-4944-addf-15b092f216fd.webp?v=1772091884" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://evdances.com/blogs/news/how-waymo-s-robotaxi-growth-compares-with-tesla-in-2026" rel="noopener nofollow" target="_blank">Waymo、10都市・週50万ライド達成 — 年末100万ライド目標へ前進</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Waymo</strong> は現在、アトランタ・オースティン・LA・フェニックス・SFなど<strong>10都市で週50万ライド</strong>を提供中（全て無人・バックシート乗務員なし）。年末<strong>100万ライド/週</strong>を目標に掲げる</li><li>稼働車両は約<strong>3,000台</strong>。Teslaの46都市計画（実質5都市・49台）と比較するとリアル規模の差は100倍超で、<strong>「ロボタクシー=Waymo」の市場認知が固まりつつある</strong></li><li><span class="emph-und">スケールが信頼を生む正のループ</span>：乗車データの蓄積によるモデル改善速度がTeslaとの差を広げており、都市ごとの規制取得ノウハウという参入障壁も高い</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-04 06:00</span>
+        <span>· Detroit News</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.detroitnews.com/story/business/autos/2026/06/02/china-us-autonomous-vehicle-technology-tesla-fsd-waymo-advanced-driver-assostance-robotaxi/90214304007/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.detroitnews.com/story/business/autos/2026/06/02/china-us-autonomous-vehicle-technology-tesla-fsd-waymo-advanced-driver-assostance-robotaxi/90214304007/" rel="noopener nofollow" target="_blank">China catching up to US on autonomous driving — experts warn of narrowing tech gap</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>専門家らが「<strong>中国はAV技術で米国に急速に追いついている</strong>」と警告。Pony.ai 1,700台・WeRide・百度Apollo Goが米の規制クーリングオフ下でも車両を拡大</li><li>BYD Gods Eye（ADASシステム）の<strong>市街地無事故の完全責任保証</strong>、BYD Semiconductor製4nm ADASチップの量産開始など、ハードとソフトの垂直統合が競争力の源泉</li><li><span class="emph-und">「軍拡競争の第2幕」</span>：米国はWaymoとTeslaという2強、中国は10社超のエコシステムという違いがあり、<strong>国家支援付きの中国勢が量とコストで米国を追い詰める可能性</strong>が現実味を帯びる</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-04 06:00</span>
+        <span>· Digital Trends</span>
+        <span class="more-card__score">80</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.digitaltrends.com/cars/teslas-top-rival-launches-self-driving-with-full-crash-coverage-at-a-fraction-of-the-cost/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.digitaltrends.com/tachyon/2026/05/BYD-2026-Seagull.jpg?resize=1200%2C630" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.digitaltrends.com/cars/teslas-top-rival-launches-self-driving-with-full-crash-coverage-at-a-fraction-of-the-cost/" rel="noopener nofollow" target="_blank">BYD Gods Eye 5.0が事故時の完全賠償を引き受け — Teslaが踏み込めない差別化</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">BYD</strong> のChairman Wang Chuanfuが「市街地走行中の事故は<strong>BYDが完全補償・修理コスト負担</strong>（保険料不変）」を宣言。Tesla FSDは保険や法的責任を曖昧にしたままで踏み込めていない</li><li><strong>Gods Eye B</strong>のアップグレードは12,000元（約2.5万円）で提供。Tesla FSDの中国向けオプション64,000元の<strong>1/5の価格</strong>で同等以上の安全保証という衝撃的な価格破壊</li><li><span class="emph-und">賠償引き受けが信頼の証になる</span>：「データドリブンで改善します」ではなく「事故を起こしたら払います」というリアルコミットメントが中国市場でのEV購買意欲を押し上げる</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-04 06:00</span>
+        <span>· Basenor</span>
+        <span class="more-card__score">75</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.basenor.com/blogs/news/tesla-robotaxi-expansion-7-new-cities-coming-in-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.basenor.com/cdn/shop/articles/0be16076a4a31fb37254de68515fbe40.jpg?v=1776125345" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.basenor.com/blogs/news/tesla-robotaxi-expansion-7-new-cities-coming-in-2026" rel="noopener nofollow" target="_blank">Tesla robotaxi expansion plan — 7 new cities in 2026 but most delayed</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Tesla</strong> は2026年前半中にPhoenix・Miami・Orlando・Tampa・Las Vegasへのロボタクシー展開を約束していたが、<strong>5都市が全て遅延</strong>。実質展開済みはダラスとヒューストンのみ（各3〜6台）</li><li>マスクは「<strong>FSD v15（完全ゼロ-ショット書き直し）完成後</strong>に本格フリートスケール」と繰り返しており、開発時間軸の見通しが甘かったことが否めない</li><li><span class="emph-und">「発表と実態のギャップ」が株価リスクに</span>：Q2決算（7月予定）でロボタクシー台数の実態が明らかになる見通し。<strong>Waymoとの台数対比が投資家心理を大きく動かす</strong>可能性</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Waymo</strong> 週50万ライド・10都市に対し、<strong class="emph-bold">Tesla</strong> はオースティン全域拡大でもフリートは39台。自動運転の覇権争いは「AIモデルの精度」から<strong>「何台走らせられるか」という製造・規制・資本の戦い</strong>に移行した。デトロイトニュースが警告する中国AV勢の急追も加わり、<strong>米国2強＋中国10社超</strong>という多極化構図が明確に。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-04/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-04
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

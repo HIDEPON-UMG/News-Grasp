@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>OpenAI、コンサル市場へ直接参入の衝撃 — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="OpenAIがDeployCoで実装受注に直接参入しFrontier Alliancesの提携先と競合に回る協調的競合は、グローバルコンサルと国内SIerの収益モデルと競争地図をどう塗り替えるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-04/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="OpenAI、コンサル市場へ直接参入の衝撃">
+<meta property="og:description" content="OpenAIがDeployCoで実装受注に直接参入しFrontier Alliancesの提携先と競合に回る協調的競合は、グローバルコンサルと国内SIerの収益モデルと競争地図をどう塗り替えるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-04/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenAI、コンサル市場へ直接参入の衝撃">
+<meta name="twitter:description" content="OpenAIがDeployCoで実装受注に直接参入しFrontier Alliancesの提携先と競合に回る協調的競合は、グローバルコンサルと国内SIerの収益モデルと競争地図をどう塗り替えるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #2E6B52;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(46,107,82,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(46,107,82,0.22);
+  --accent-underline: rgba(46,107,82,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
+.dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+.dd-fig__src .cite { white-space: nowrap; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 関係図 SVG は width:100% で縮小すると実効フォントが 3-8px に潰れ判読不能に
+     なるため、モバイルでは横スクロール + ピンチズームで実寸を確保する
+     (一望性より可読性を優先。min-width 760 で実効フォント >=9px) */
+  .dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dd-relwrap svg { min-width: 760px; }
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260604</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">⌗</span>IT &amp; CONSULTING · IT-Consulting</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.06.04</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260604</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">11 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">OpenAI、コンサル市場へ直接参入の衝撃</h1>
+      <p class="dd-hero__theme">OpenAIがDeployCoで実装受注に直接参入しFrontier Alliancesの提携先と競合に回る協調的競合は、グローバルコンサルと国内SIerの収益モデルと競争地図をどう塗り替えるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260604</span><span>#OpenAI</span><span>#Accenture</span><span>#McKinsey</span><span>#NTTデータ</span><span>#AIコンサル</span></div>
+    </header>
+
+    
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+        
+        <li class="dd-related__item" style="border-left-color: #2E6B52">
+          
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #181C2A">続報</span>
+            <span class="dd-related__chip">AIツールによる人月侵食 → モデルベンダーの実装直接参入</span>
+          </div>
+          
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-05-31/" style="border-bottom-color: #2E6B52">生成AIエージェント、コンサルの人月モデルを侵食</a>
+            <span class="dd-related__date">2026.05.31</span>
+          </div>
+          <p class="dd-related__change">前回はAIエージェントがコンサルの人月課金モデルを内側から侵食する力学を扱った。今回の変化点は、ツール供給元のOpenAIがDeployCoで実装受注に直接参入し、Frontier Alliancesの提携先でありながら競合に回る協調的競合の二重構造へ移行したこと。</p>
+        </li>
+        
+      </ul>
+    </aside>
+    
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><strong class="emph-bold">OpenAI</strong>によるコンサル市場への殴り込みは、本紙が<span class="emph-und">前回（5/31）</span>に扱った「生成AIエージェントがコンサルの<span class="emph-und">人月課金モデル</span>を内側から侵食する」構図の、明確な<strong>次の段階</strong>にあたる。<strong>前回は</strong>AIツールが<strong>コンサルの生産性を押し上げ</strong>、工数ベースの売上を<strong>目減りさせる</strong>力学を論じた。<strong>今回の変化点は</strong>、ツールの供給元である<strong class="emph-bold">OpenAI</strong>自身が<strong class="emph-bold">DeployCo</strong>（OpenAI Deployment Company）で<strong>実装受注そのものに直接参入し</strong>、<strong class="emph-bold">Accenture</strong>や<strong class="emph-bold">McKinsey</strong>の<span class="emph-und">提携相手でありながら同時に競合</span>へ回った——<span class="emph-und">協調的競合（frenemy）への構造転換</span>である。</p><p><strong class="emph-bold">OpenAI</strong>が2026年2月に結んだ<strong class="emph-bold">Frontier Alliances</strong>は、当初は<strong>純粋な協力関係</strong>だった。<strong class="emph-bold">BCG</strong>・<strong class="emph-bold">McKinsey</strong>・<strong class="emph-bold">Accenture</strong>・<strong class="emph-bold">Capgemini</strong>の4社がOpenAI技術の<strong>認定チームを編成し</strong>、OpenAIの<span class="emph-und">Forward Deployed Engineer（FDE）</span>と組んで企業へAIエージェントを実装する——<span class="emph-und">モデルは作るが手は動かさないOpenAIが、手を動かすコンサルを販路に変える</span>という、双方に利のある分業だった。</p><p>ところが2026年5月12日、<strong class="emph-bold">OpenAI</strong>は<strong class="emph-bold">DeployCo</strong>を立ち上げ、自ら<strong>$4Bを調達</strong>して<strong class="emph-bold">Tomoro</strong>を買収し<strong>約150名のFDEを即日投入した</strong>（<strong class="emph-bold">CIO Dive</strong>）。リード投資家は<strong class="emph-bold">TPG</strong>で、Advent・Bain Capital・Brookfieldが続く。これは<span class="emph-und">分業の前提を壊す</span>一手だ。<strong class="emph-bold">CIO Dive</strong>が引く<strong class="emph-bold">Omdia</strong>推計では、システムインテグレーター市場には<strong>年間1兆ドル超</strong>が流れ2031年まで<strong>年率6.5%で成長する</strong>。OpenAIが狙うのは、その<span class="emph-und">実装売上そのもの</span>であり、競合相手として名指しされたのは<strong class="emph-bold">Accenture</strong>・<strong class="emph-bold">Deloitte</strong>・<strong class="emph-bold">Cognizant</strong>だった。</p><p>国内も連動して動いた。<strong class="emph-bold">NTTデータ</strong>はOpenAIと組んで<strong>日本初のChatGPT Enterpriseリセラー</strong>となり<span class="emph-und">販路側に回って取り込む</span>戦略を取り、<strong class="emph-bold">富士通</strong>は専有環境向けの<strong class="emph-bold">Kozuchi Enterprise AI Factory</strong>で<strong>国産・専有という差別化</strong>に賭ける。<strong class="emph-bold">McKinsey</strong>は<strong class="emph-bold">Google Cloud</strong>とも共同変革グループを組み、<span class="emph-und">単一ベンダーに縛られない両建て</span>で上流を確保しにいった。<strong>提携と競合が同じ顔ぶれの間で交錯する</strong>——この<span class="emph-und">協調的競合の網</span>こそ、今回の構図の核心である。</p></div>
+      <div class="dd-exhibits">
+        
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">02.23</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>OpenAIがFrontier Alliances発表（BCG/McKinsey/Accenture/Capgemini）</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">03.19</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Accenture Q2 FY26決算 売上$18.0B(+8%)・新規受注$22.11B(過去最高Q2)</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.12</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>OpenAIがDeployCo立ち上げ $4B調達・Tomoro買収で約150名のFDE</p>
+                  <a href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/"><span class="src">CIO Dive</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.31</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Accenture「再発明完了」宣言 FY25 GenAI受注$5.9B・AI収益$2.7B</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.01</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>McKinsey×Google Cloudが共同変革グループ発足 成果連動型へ</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.02</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>NTTデータ×OpenAI提携 日本初ChatGPT Enterpriseリセラー 2027年末累計¥1,000億円目標</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.03</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>三菱商事・NTT連合がAccenture対抗を表明／富士通は3000人規模を見直し</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.18</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Accenture Q3 FY26決算予定（アナリストEPS予想$3.68）</p>
+                  
+                </div>
+              </div>
+              
+            </div>
+          </figure>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+            
+            <div class="dd-player">
+              <div class="dd-player__name">OpenAI</div>
+              <div class="dd-player__role">モデルベンダー／実装事業の新規参入者</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">DeployCoを立ち上げ$4Bを調達、Tomoro買収で約150名のFDEを即日投入。並行してFrontier Alliancesで4大コンサルと提携</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">提携で販路を広げつつ、実装受注では自ら受け皿となり垂直統合を狙う</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">Accenture</div>
+              <div class="dd-player__role">実装受注で最大手の既存コンサル</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">FY25のGenAI新規受注$5.9B・AI収益$2.7Bを誇示し「再発明完了」を宣言。Q2 FY26も過去最高Q2受注$22.11B</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">Frontier提携で取り込みつつ、DeployCoに最も侵食されうる本丸を防衛</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">McKinsey / BCG</div>
+              <div class="dd-player__role">戦略系のグローバルコンサル</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Frontier Alliancesに参加しOpenAI認定チームを編成。McKinseyはGoogle Cloudとも共同変革グループを発足、時間課金から成果報酬へ移行を検討</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">戦略の上流を握り、実装はAIベンダーと組んで囲い込む</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">NTTデータ</div>
+              <div class="dd-player__role">実装力で攻める国内SIer</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">OpenAIと提携し日本初のChatGPT Enterpriseリセラーに。全社AIコンサル化で600名の専門組織、2030年EBITDA¥1.2兆円を目標</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">OpenAIの販路を取り込みつつ国内大手案件でAccentureに対抗</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">富士通</div>
+              <div class="dd-player__role">AI転換を急ぐ国内SIer</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">専有環境向けKozuchi Enterprise AI Factoryを提供開始、FY2026通期最高益見通し。一方で3,000人規模を見直し戦線を縮小</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">専有・国産を武器に独自圏を築くが、人員はAI前提に再配置</p>
+            </div>
+            
+          </div>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">AIベンダー・グローバルコンサル・国内SIerの関係図</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 870" width="100%" style="display:block;background:#FAF7F0" role="img" aria-label="AIベンダー・グローバルコンサル・国内SIerの関係図"><line x1="628.8" y1="156.4" x2="318.3" y2="304.9" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="318.3,304.9 324.5,296.9 328.3,305.0" fill="#2E6B52"/><polygon points="628.8,156.4 622.6,164.3 618.7,156.2" fill="#2E6B52"/><line x1="616.7" y1="131.1" x2="306.2" y2="279.6" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="306.2,279.6 312.4,271.7 316.3,279.8" fill="#8E2A19"/><polygon points="616.7,131.1 610.5,139.1 606.7,131.0" fill="#8E2A19"/><line x1="645.5" y1="170.6" x2="576.0" y2="270.3" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="576.0,270.3 577.5,260.4 584.9,265.5" fill="#2E6B52"/><line x1="724.5" y1="170.6" x2="798.5" y2="276.9" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="798.5,276.9 789.7,272.1 797.1,266.9" fill="#2E6B52"/><line x1="431.0" y1="165.7" x2="504.0" y2="270.3" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="504.0,270.3 495.1,265.5 502.5,260.4" fill="#2E6B52"/><line x1="359.0" y1="165.7" x2="289.5" y2="265.4" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="289.5,265.4 290.9,255.4 298.3,260.6" fill="#2E6B52"/><line x1="685.0" y1="183.0" x2="685.0" y2="467.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="685.0,467.0 680.5,458.0 689.5,458.0" fill="#2E6B52"/><line x1="628.2" y1="502.8" x2="312.2" y2="351.8" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="312.2,351.8 322.3,351.6 318.4,359.7" fill="#8E2A19"/><polygon points="628.2,502.8 618.1,503.0 622.0,494.9" fill="#8E2A19"/><line x1="363.5" y1="484.9" x2="289.5" y2="378.6" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="289.5,378.6 298.3,383.4 290.9,388.6" fill="#8E2A19"/><polygon points="363.5,484.9 354.7,480.1 362.1,474.9" fill="#8E2A19"/><line x1="662.3" y1="179.2" x2="488.2" y2="678.5" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="488.2,678.5 486.9,668.5 495.4,671.5" fill="#2D5BB8"/><line x1="282.0" y1="383.1" x2="438.3" y2="682.2" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="438.3,682.2 430.2,676.3 438.1,672.1" fill="#2D5BB8"/><line x1="757.5" y1="218.0" x2="757.5" y2="196.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(375.9,233.0)"><rect width="274.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances提携(2/23)</text></g><g transform="translate(285.1,177.0)"><rect width="274.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DeployCoが実装受注を侵食(5/12)</text></g><g transform="translate(471.8,221.2)"><rect width="281.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances(戦略・変革)</text></g><g transform="translate(655.5,183.0)"><rect width="204.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances</text></g><g transform="translate(364.2,185.9)"><rect width="206.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 共同変革グループ(6/1)</text></g><g transform="translate(195.5,217.9)"><rect width="254.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> DeepMind実装提携・$750M基金</text></g><g transform="translate(562.1,400.5)"><rect width="254.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> ChatGPT Enterpriseリセラー</text></g><g transform="translate(384.0,400.5)"><rect width="171.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DXコンサルで対抗</text></g><g transform="translate(227.6,431.5)"><rect width="194.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 国産・専有環境で対抗</text></g><g transform="translate(479.5,431.5)"><rect width="191.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> DeployCoで直接実装</text></g><g transform="translate(334.9,621.0)"><rect width="156.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 従来の実装受注</text></g><circle cx="685.0" cy="114.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">OpenAI (DeployCo)</text><text x="685.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AIベンダー</text><circle cx="395.0" cy="114.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="395.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Google (DeepMind/Cloud)</text><text x="395.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AIベンダー</text><circle cx="250.0" cy="322.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="250.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">Accenture</text><text x="250.0" y="338.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコンサル</text><circle cx="540.0" cy="322.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="540.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">McKinsey</text><text x="540.0" y="338.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコンサル</text><circle cx="830.0" cy="322.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="830.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">BCG</text><text x="830.0" y="337.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコン…</text><circle cx="685.0" cy="530.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="526.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.8" fill="#1A1A1A" letter-spacing="-0.5">NTTデータ</text><text x="685.0" y="546.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">国内SIer</text><circle cx="395.0" cy="530.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="526.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">富士通</text><text x="395.0" y="545.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">国内SIer</text><circle cx="467.5" cy="738.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="467.5" y="734.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">発注企業</text><text x="467.5" y="756.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">クライアント</text></svg></div>
+            
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+              
+            </div>
+            
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="">*2 Fortune</a></span></div>
+          </figure>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>関係図が示す力学を、<strong>数値</strong>で裏づける。論点は単純だ——<strong class="emph-bold">OpenAI</strong>の直接参入は<span class="emph-und">既存コンサルのAI売上を奪う脅威</span>なのか、それとも<span class="emph-und">市場自体を膨らませる追い風</span>なのか。鍵は「AI関連受注がどれだけの速さで伸びているか」と「実装を担う体制の規模差」の二つにある。</p><p>数値が語るのは、<strong>AI受注が既存コンサルの成長エンジンになっている</strong>事実だ。<strong class="emph-bold">Accenture</strong>のGenAI新規受注は<span class="emph-und">区分開示前の実質ゼロ</span>から<strong>FY24に約$3.0B</strong>、<strong>FY25に$5.9Bへほぼ倍増</strong>し（<strong class="emph-bold">CIO Dive</strong>）、AI収益も<strong>$2.7Bへ3倍に</strong>伸びた。つまりOpenAIの参入は<span class="emph-und">既存市場を奪い合うゼロサム</span>ではなく、<span class="emph-und">実装需要そのものが急膨張する局面で起きている</span>。<strong class="emph-bold">Omdia</strong>が示す<strong>年1兆ドル超・年率6.5%成長</strong>の市場で、勝負は「縮むパイの奪い合い」ではなく「膨らむパイの取り分」である。</p></div>
+      
+      <div class="dd-charts">
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Accenture GenAI新規受注の推移（会計年度）</span></figcaption>
+          <div class="dd-chart__note">GenAI受注を区分開示</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Accenture GenAI新規受注の推移（会計年度）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">十億ドル</text><polyline points="104.0,214.0 280.0,139.0 456.0,66.5" fill="none" stroke="#2E6B52" stroke-width="2.5"/><circle cx="104.0" cy="214.0" r="4" fill="#2E6B52"/><text x="104.0" y="206.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">0</text><circle cx="280.0" cy="139.0" r="4" fill="#2E6B52"/><text x="280.0" y="131.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3.0</text><circle cx="456.0" cy="66.5" r="4" fill="#2E6B52"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5.9</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY23</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY24</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY25</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ GenAI受注を区分開示</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="">*3 Accenture / Business Wire</a></span></div>
+        </figure>
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">AI実装を担う体制規模の非対称（公表値）</span></figcaption>
+          
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="AI実装を担う体制規模の非対称（公表値）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">人</text><rect x="49.4" y="66.5" width="109.1" height="147.5" fill="#2E6B52"/><text x="104.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">85000</text><rect x="225.4" y="213.0" width="109.1" height="1.0" fill="#2E6B52"/><text x="280.0" y="205.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">600</text><rect x="401.4" y="213.7" width="109.1" height="0.3" fill="#2E6B52"/><text x="456.0" y="205.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">150</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Accenture (AI/データ専門家)</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">NTTデータ (AIコンサル組織)</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">OpenAI DeployCo (Tomoro由来FDE)</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="">*3 Accenture / Business Wire</a></span></div>
+        </figure>
+        
+      </div>
+      
+      
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">主要プレイヤーのAIコンサル戦略と公表指標</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>プレイヤー</th><th>立ち位置</th><th>AI関連の公表指標</th><th>出典</th></tr></thead>
+              <tbody>
+                
+                <tr>
+                  
+                  <td class="head">OpenAI (DeployCo)</td>
+                  
+                  <td class="val">実装へ直接参入（垂直統合）</td>
+                  
+                  <td class="val">$4B調達・Tomoro買収で約150名のFDE。競合はAccenture/Deloitte/Cognizant</td>
+                  
+                  <td class="src">CIO Dive</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">Accenture</td>
+                  
+                  <td class="val">提携＋本丸防衛の既存最大手</td>
+                  
+                  <td class="val">FY25 GenAI受注$5.9B/AI収益$2.7B、AI・データ人材85,000人超、Q2 FY26受注$22.11B(過去最高Q2)</td>
+                  
+                  <td class="src">CIO Dive / Business Wire</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">McKinsey / BCG</td>
+                  
+                  <td class="val">上流確保＋成果報酬へ移行</td>
+                  
+                  <td class="val">BCGは2026年売上の40%をAI業務と見込む（同社予想）。McKinseyはGoogleと共同変革グループ</td>
+                  
+                  <td class="src">TheStreet / Innovatopia</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">NTTデータ</td>
+                  
+                  <td class="val">OpenAI販路を取り込む国内SIer</td>
+                  
+                  <td class="val">ChatGPT Enterpriseリセラー、2027年末累計¥1,000億円目標、AIコンサル600名、2030年EBITDA¥1.2兆円目標</td>
+                  
+                  <td class="src">EnterpriseZine / NTTデータ</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">富士通</td>
+                  
+                  <td class="val">国産・専有で差別化する国内SIer</td>
+                  
+                  <td class="val">Kozuchi Enterprise AI Factory提供、FY2026通期最高益見通し、3,000人規模を見直し</td>
+                  
+                  <td class="src">富士通 / Diamond Online</td>
+                  
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a></span></div>
+        </figure>
+      </div>
+      
+      <div class="dd-prose"><p>ただし<strong>体制規模の非対称</strong>は見過ごせない。<strong class="emph-bold">Accenture</strong>は<strong>AI・データ人材を85,000人超</strong>抱え、<strong class="emph-bold">NTTデータ</strong>の<strong>600名</strong>、<strong class="emph-bold">DeployCo</strong>の<strong>約150名</strong>とは<span class="emph-und">二桁の開き</span>がある。それでも<strong class="emph-bold">OpenAI</strong>が脅威たり得るのは、<span class="emph-und">人海戦術ではなくモデルとFDE方式で工数あたりの生産性を覆す</span>からだ。ここで前回論じた<span class="emph-und">人月モデルの矛盾</span>が効いてくる——AIで一人当たりの生産性が跳ね上がるほど、<strong>時間課金で稼ぐ既存大手ほど自己破壊のジレンマに陥る</strong>。だからこそ<strong class="emph-bold">McKinsey</strong>・<strong class="emph-bold">BCG</strong>・<strong class="emph-bold">Bain</strong>は<strong>成果報酬モデルへの移行を急ぎ</strong>、<strong class="emph-bold">Accenture</strong>は提携でOpenAIを<span class="emph-und">敵に回す前に取り込もうとしている</span>。</p><p>そして<span class="emph-und">国内勢の選択は割れている</span>。<strong class="emph-bold">NTTデータ</strong>は<strong>OpenAIの販路に乗る</strong>ことで実装規模を取りにいき、<strong class="emph-bold">富士通</strong>は<strong>専有・国産環境という差別化</strong>で別の土俵を選んだ。<strong class="emph-bold">Diamond Online</strong>によれば三菱商事・NTT連合がAccenture対抗を掲げる一方、富士通は3,000人規模を見直す——<strong>同じ「3,000人」が一方では新設、他方では削減</strong>という対照は、<span class="emph-und">AI時代のSIerが人員構成そのものを問い直している</span>ことを象徴する。なお<strong class="emph-bold">McKinsey</strong>の分析では<span class="emph-und">GenAIプロジェクトの80%が業績改善に至らず90%がパイロットで停滞</span>しており、<strong>実装の質</strong>が次の勝敗を分ける。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+      
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>AI実装受注の主導権を誰が握るか — モデルベンダーの垂直統合(DeployCo)か、提携で取り込む既存コンサルか、国産SIerの独自圏か</p>
+          </div>
+          <div class="dd-decision__opts">
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">OpenAI/Google等モデルベンダーが垂直統合で実装まで握る</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">Accenture/McKinsey等が提携＋成果報酬で防衛し主導権を維持</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">NTTデータ/富士通等が国産・専有環境を武器に独自圏を築く</p>
+            </div>
+            
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-06-18 Accenture Q3 FY26決算（AI受注の伸びと人月モデルの耐性を確認）</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+              
+              <ul class="dd-decision__deciders"><li>OpenAI経営陣（DeployCoの拡大ペース）</li><li>Accenture/McKinsey/BCG経営陣（提携と自社実装の線引き）</li><li>発注企業のCIO・調達部門（誰に実装を任せるか）</li></ul>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dd-prose"><p>三つの選択肢は<span class="emph-und">排他ではなく綱引き</span>だ。<strong class="emph-bold">DeployCo</strong>が<strong>約150名から数千名規模へ拡大すれば</strong>、Palantirが埋め込み型エンジニアモデルから数十億ドル事業へ育った前例どおり<span class="emph-und">実装の主導権はモデルベンダーへ傾く</span>。逆に<strong class="emph-bold">Accenture</strong>がFrontier提携で<strong>OpenAIを自社の納品網に組み込み</strong>、成果報酬で<span class="emph-und">顧客の業績にコミットできれば</span>、垂直統合の脅威は「最良の下請け」に転じる。<span class="emph-und">最終的にボールを握るのは発注企業のCIO・調達部門</span>であり、彼らが「モデル直結の速さ」を取るか「業界知見と説明責任」を取るかで地図が決まる。<span class="emph-und">私の読み筋では</span>、当面は<strong>既存大手が提携で時間を買いつつ成果報酬へ移行する</strong> defensiveな均衡が続き、<strong class="emph-bold">DeployCo</strong>の規模が閾値を超える<span class="emph-und">24〜36か月後</span>に本格的な再編が来る。直近の試金石は<strong>6月18日のAccenture Q3決算</strong>で、AI受注の伸びが鈍れば<span class="emph-und">脅威論が一気に現実味を帯びる</span>。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+      
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">OpenAI</strong>は5月、$4Bを投じた<strong class="emph-bold">DeployCo</strong>で<strong>コンサル実装市場へ直接参入し</strong>、<strong class="emph-bold">Accenture</strong>や<strong class="emph-bold">McKinsey</strong>の<span class="emph-und">提携先でありながら競合</span>に回った。<strong class="emph-bold">Omdia</strong>が年1兆ドル超・年率6.5%成長と見る市場で、AccentureのGenAI受注は<strong>FY25に$5.9Bへ倍増</strong>——<span class="emph-und">参入はゼロサムでなく膨張するパイの取り分争い</span>だ。既存大手は成果報酬へ移り、国内勢は販路取り込み（NTTデータ）と国産差別化（富士通）に割れる。<span class="emph-und">主導権を決めるのは発注企業のCIO</span>で、直近の試金石は<strong>6月18日のAccenture Q3決算</strong>である。</p>
+        <div class="watermark">❖</div>
+      </div>
+      
+      
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+          
+          <a class="dd-source" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">CIO Dive</span>「OpenAI spins up standalone consulting business（DeployCo, $4B, Tomoro買収）」(2026-05) <span class="ext">↗</span></span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Fortune</span>「OpenAI partners with McKinsey, BCG, Accenture, and Capgemini（Frontier Alliances）」(2026-02)</span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Accenture / Business Wire</span>「Accenture Reports Second-Quarter Fiscal 2026 Results（売上$18.0B・受注$22.11B）」(2026-03)</span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">McKinsey / Innovatopia</span>「McKinsey×Google Cloud共同変革グループ発足」(2026-06)</span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">TheStreet</span>「AI is forcing McKinsey, BCG, Bain to rethink consulting fees（成果報酬移行・BCG 40%）」(2026-06)</span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">06</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">EnterpriseZine</span>「NTTデータ×OpenAI提携 ChatGPT Enterpriseリセラー 2027年末累計¥1,000億円」(2026-06)</span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">07</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Diamond Online</span>「三菱商事・NTT連合 DXコンサルでアクセンチュアに挑戦／富士通は3000人見直し」(2026-06)</span>
+          </a>
+          
+          <a class="dd-source" >
+            <span class="dd-source__no">08</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Constellation Research / McKinsey</span>「GenAIプロジェクトの80%が業績改善なし」(2026-05)</span>
+          </a>
+          
+        </div>
+      </div>
+      
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+</body>
+</html>
