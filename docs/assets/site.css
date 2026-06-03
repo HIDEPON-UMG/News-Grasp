@@ -31,6 +31,7 @@
   --color-accent-ai: #2D5BB8;
   --color-accent-it: #2E6B52;
   --color-accent-mobility: #3A7B8C;
+  --color-accent-manufacturing: #5A6B7B;
   --color-accent-economy: #8E2A19;
   --color-accent-game: #5E3D8C;
   --color-accent-summary: #475569;
@@ -65,6 +66,7 @@ body[data-category="fx"]       { --accent-current: var(--color-accent-fx); }
 body[data-category="ai"]       { --accent-current: var(--color-accent-ai); }
 body[data-category="it"]       { --accent-current: var(--color-accent-it); }
 body[data-category="mobility"] { --accent-current: var(--color-accent-mobility); }
+body[data-category="manufacturing"] { --accent-current: var(--color-accent-manufacturing); }
 body[data-category="economy"]  { --accent-current: var(--color-accent-economy); }
 body[data-category="game"]     { --accent-current: var(--color-accent-game); }
 body[data-category="summary"]  { --accent-current: var(--color-accent-summary); }
@@ -1077,6 +1079,7 @@ strong {
 .home-nav__lens-ai       { color: var(--color-accent-ai); }
 .home-nav__lens-it       { color: var(--color-accent-it); }
 .home-nav__lens-mobility { color: var(--color-accent-mobility); }
+.home-nav__lens-manufacturing { color: var(--color-accent-manufacturing); }
 .home-nav__lens-economy  { color: var(--color-accent-economy); }
 .home-nav__lens-game     { color: var(--color-accent-game); }
 .home-nav__dim          { color: var(--color-ink-dim); }
@@ -1358,6 +1361,7 @@ strong {
 .home-top3__badge.cat-ai       { background: var(--color-accent-ai); }
 .home-top3__badge.cat-it       { background: var(--color-accent-it); }
 .home-top3__badge.cat-mobility { background: var(--color-accent-mobility); }
+.home-top3__badge.cat-manufacturing { background: var(--color-accent-manufacturing); }
 .home-top3__badge.cat-economy  { background: var(--color-accent-economy); }
 .home-top3__badge.cat-game     { background: var(--color-accent-game); }
 .home-top3__badge.cat-summary  { background: var(--color-accent-summary); }
@@ -1387,6 +1391,7 @@ strong {
 .home-top3__score.cat-ai       { color: var(--color-accent-ai); }
 .home-top3__score.cat-it       { color: var(--color-accent-it); }
 .home-top3__score.cat-mobility { color: var(--color-accent-mobility); }
+.home-top3__score.cat-manufacturing { color: var(--color-accent-manufacturing); }
 .home-top3__score.cat-economy  { color: var(--color-accent-economy); }
 .home-top3__score.cat-game     { color: var(--color-accent-game); }
 .home-top3__score.cat-summary  { color: var(--color-accent-summary); }
@@ -1433,6 +1438,7 @@ strong {
 .home-featured__badge.cat-ai       { background: var(--color-accent-ai); }
 .home-featured__badge.cat-it       { background: var(--color-accent-it); }
 .home-featured__badge.cat-mobility { background: var(--color-accent-mobility); }
+.home-featured__badge.cat-manufacturing { background: var(--color-accent-manufacturing); }
 .home-featured__badge.cat-economy  { background: var(--color-accent-economy); }
 .home-featured__badge.cat-game     { background: var(--color-accent-game); }
 /* LP の body には data-category が無く --accent-current が summary 固定になるため、
@@ -1441,6 +1447,7 @@ strong {
 .home-featured.cat-ai       { --featured-accent: var(--color-accent-ai); }
 .home-featured.cat-it       { --featured-accent: var(--color-accent-it); }
 .home-featured.cat-mobility { --featured-accent: var(--color-accent-mobility); }
+.home-featured.cat-manufacturing { --featured-accent: var(--color-accent-manufacturing); }
 .home-featured.cat-economy  { --featured-accent: var(--color-accent-economy); }
 .home-featured.cat-game     { --featured-accent: var(--color-accent-game); }
 .home-featured.cat-summary  { --featured-accent: var(--color-accent-summary); }
@@ -1502,6 +1509,7 @@ strong {
 .home-featured.cat-ai       .home-featured__bullets li::before { color: var(--color-accent-ai); }
 .home-featured.cat-it       .home-featured__bullets li::before { color: var(--color-accent-it); }
 .home-featured.cat-mobility .home-featured__bullets li::before { color: var(--color-accent-mobility); }
+.home-featured.cat-manufacturing .home-featured__bullets li::before { color: var(--color-accent-manufacturing); }
 .home-featured.cat-economy  .home-featured__bullets li::before { color: var(--color-accent-economy); }
 .home-featured.cat-game     .home-featured__bullets li::before { color: var(--color-accent-game); }
 .home-featured.cat-summary  .home-featured__bullets li::before { color: var(--color-accent-summary); }
@@ -1569,6 +1577,7 @@ strong {
 .home-cat-card.cat-ai       .home-cat-card__band { background: var(--color-accent-ai); }
 .home-cat-card.cat-it       .home-cat-card__band { background: var(--color-accent-it); }
 .home-cat-card.cat-mobility .home-cat-card__band { background: var(--color-accent-mobility); }
+.home-cat-card.cat-manufacturing .home-cat-card__band { background: var(--color-accent-manufacturing); }
 .home-cat-card.cat-economy  .home-cat-card__band { background: var(--color-accent-economy); }
 .home-cat-card.cat-game     .home-cat-card__band { background: var(--color-accent-game); }
 .home-cat-card.cat-summary  .home-cat-card__band { background: var(--color-accent-summary); }
@@ -1629,6 +1638,7 @@ strong {
 .home-cat-card.cat-ai       .home-cat-card__foot { color: var(--color-accent-ai); }
 .home-cat-card.cat-it       .home-cat-card__foot { color: var(--color-accent-it); }
 .home-cat-card.cat-mobility .home-cat-card__foot { color: var(--color-accent-mobility); }
+.home-cat-card.cat-manufacturing .home-cat-card__foot { color: var(--color-accent-manufacturing); }
 .home-cat-card.cat-economy  .home-cat-card__foot { color: var(--color-accent-economy); }
 .home-cat-card.cat-game     .home-cat-card__foot { color: var(--color-accent-game); }
 .home-cat-card.cat-summary  .home-cat-card__foot { color: var(--color-accent-summary); }
@@ -2055,6 +2065,7 @@ strong {
 .overview-row.cat-ai       .overview-top3__score { color: var(--color-accent-ai); }
 .overview-row.cat-it       .overview-top3__score { color: var(--color-accent-it); }
 .overview-row.cat-mobility .overview-top3__score { color: var(--color-accent-mobility); }
+.overview-row.cat-manufacturing .overview-top3__score { color: var(--color-accent-manufacturing); }
 .overview-row.cat-economy  .overview-top3__score { color: var(--color-accent-economy); }
 .overview-row.cat-game     .overview-top3__score { color: var(--color-accent-game); }
 .overview-row.cat-summary  .overview-top3__score { color: var(--color-accent-summary); }
@@ -2062,6 +2073,7 @@ strong {
 .overview-row.cat-ai       .overview-dist__bar   { background: var(--color-accent-ai); }
 .overview-row.cat-it       .overview-dist__bar   { background: var(--color-accent-it); }
 .overview-row.cat-mobility .overview-dist__bar   { background: var(--color-accent-mobility); }
+.overview-row.cat-manufacturing .overview-dist__bar   { background: var(--color-accent-manufacturing); }
 .overview-row.cat-economy  .overview-dist__bar   { background: var(--color-accent-economy); }
 .overview-row.cat-game     .overview-dist__bar   { background: var(--color-accent-game); }
 .overview-row.cat-summary  .overview-dist__bar   { background: var(--color-accent-summary); }
