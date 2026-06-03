@@ -47,7 +47,7 @@ tags:
 
 ### [87] NTTデータ、2026年度末までにシステム開発の主役を生成AIに切替——IT人材不足への抜本策
 
-📅 2026-05-04 07:00 · 📰 日本経済新聞 · 🔗 [元記事](https://www.nikkei.com/article/DGXKKZO93538910R00C26A1MM8000/)
+📅 2026-05-04 07:00 · 📰 日本経済新聞 · 🔗 [元記事](https://www.nikkei.com/article/DGKKZO93538910R00C26A1MM8000/)
 
 #cat/it #co/NTTデータ #country/日本 #topic/生成AI #topic/DX #score/高
 

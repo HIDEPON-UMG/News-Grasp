@@ -52,6 +52,10 @@ from tools.generate_pages import (  # noqa: E402
     parse_frontmatter,
     render_page,
 )
+from tools.validate_deepdive_urls import (  # noqa: E402
+    DeepDiveUrlError,
+    require_live_urls,
+)
 
 # ── DeepDive デザイントークン (deepdive-shared.jsx DD と同値) ──────────────────
 INK = "#1A1A1A"          # DeepDive primary accent (near-black; 純黒 #000 は不可)
@@ -1277,6 +1281,11 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     fm, body = parse_frontmatter(text)
     blocks = extract_blocks(body)
     _require_blocks(md_path, blocks)  # 必須ブロック欠落は hard fail (未完成記事を公開しない)
+    # 参考リンク・timeline・relations/chart/table.source の URL を実機 HEAD で生存検証する。
+    # 1 件でも 404 等 fatal があれば DeepDiveUrlError で公開を阻止。捏造 URL のサイレント
+    # 公開を構造的に封じる (2026-06-03 三菱UFJ FX_Monthly 事故の恒久対策・境界 1 箇所集約)。
+    # オフライン/CI 環境は NEWS_GRASP_SKIP_URL_CHECK=1 で全スキップできる。
+    require_live_urls(Path(md_path), text)
     sections = split_sections(body)
 
     date_str = fm.get("date", "")
@@ -1465,8 +1474,8 @@ def build_deepdive_pages(
     for src in sorted(src_dir.glob("*.md")):
         try:
             ctx = build_deepdive_context(src)
-        except DeepDiveIncompleteError:
-            raise  # 必須ブロック欠落は握りつぶさず伝播 (= 未完成記事の公開を構造的に阻止)
+        except (DeepDiveIncompleteError, DeepDiveUrlError):
+            raise  # 必須ブロック欠落・URL 生存検証 NG は握りつぶさず伝播 (= 未完成記事/捏造 URL の公開を構造的に阻止)
         except Exception as exc:  # noqa: BLE001
             print(f"[warn] DeepDive context 構築失敗 {src.name}: {exc}", file=sys.stderr)
             continue

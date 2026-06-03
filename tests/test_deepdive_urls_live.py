@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""DeepDive md の URL 生存検証の契約テスト。
+
+# 検証する「なぜ重要か」
+
+2026-06-03 に DeepDive 本文と chart source へ `https://www.bk.mufg.jp/report/hconwnew/
+FX_Monthly_0529.pdf` が捏造 URL のまま記載され、404 で公開された。LLM が「それっぽい
+URL」を記憶ベースで生成しており、`WebFetch` で実際にアクセスしていない URL が混入する
+構造が露出した。
+
+`render_deepdive.py` の `_require_blocks` は必須ブロックの**存在**しか見ておらず、URL の
+**生存**は素通りしていた。本テストは `tools.validate_deepdive_urls` モジュール (URL 抽出
++ HEAD/GET 判定の境界 1 箇所集約) を呼び、全 DeepDive md に対し以下を locked-in する:
+
+  1. 抽出器が参考リンク・timeline・relations/chart/table.source の URL を正しく拾うこと
+  2. fatal な URL (404/410/捏造ホスト/恒久 5xx) が含まれていれば DeepDiveUrlError で
+     hard fail すること
+  3. 既存の DeepDive md 全件がこの検証を通過すること (= 公開済み記事に死リンクが無い)
+
+実行:
+  pytest tests/test_deepdive_urls_live.py -v
+  pytest tests/test_deepdive_urls_live.py -v -k extract  # オフラインだけ動かす単体
+
+ネットワークが無い環境 (CI 等) では `NEWS_GRASP_SKIP_URL_CHECK=1` で生存検証は skip され、
+抽出器の単体テストだけが残る。本番 runner (news-grasp-runner.ps1) は環境変数を立てないので
+常時 ON。
+"""
+from __future__ import annotations
+
+import os
+import socket
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from tools.validate_deepdive_urls import (  # noqa: E402
+    DeepDiveUrlError,
+    UrlRef,
+    extract_urls,
+    require_live_urls,
+    verify_urls,
+)
+
+
+# ── オフラインで動く単体テスト (抽出器の網羅性) ────────────────────────────────
+
+def test_extract_refs_url_from_bullet():
+    md = """## 参考リンク
+- 日経「円160円突破」(2026-06) https://www.nikkei.com/article/X.html
+- 普通の段落 (URL 無し)
+"""
+    refs = extract_urls(md)
+    assert refs == [UrlRef(url="https://www.nikkei.com/article/X.html", location="refs")]
+
+
+def test_extract_timeline_url():
+    md = """## 背景
+```timeline
+[
+  {"date": "2026-06-01", "title": "ev", "source": "Foo", "url": "https://example.com/a", "thumb": ""}
+]
+```
+"""
+    refs = extract_urls(md)
+    assert any(r.location == "timeline" and r.url == "https://example.com/a" for r in refs)
+
+
+def test_extract_chart_source_url():
+    md = """## 深掘り
+```chart
+{"type": "line", "title": "t", "categories": [], "series": [], "source": "Foo (2026) https://example.com/chart"}
+```
+"""
+    refs = extract_urls(md)
+    assert any(r.location == "chart.source" and r.url == "https://example.com/chart" for r in refs)
+
+
+def test_extract_table_and_relations_source_urls():
+    md = """## 深掘り
+```table
+{"title": "t", "columns": [], "rows": [], "source": "Foo https://example.com/table"}
+```
+
+```relations
+{"title": "t", "nodes": [], "edges": [], "source": "Bar https://example.com/rel"}
+```
+"""
+    refs = extract_urls(md)
+    locs = {(r.location, r.url) for r in refs}
+    assert ("table.source", "https://example.com/table") in locs
+    assert ("relations.source", "https://example.com/rel") in locs
+
+
+def test_extract_strips_trailing_punctuation():
+    md = """## 参考リンク
+- Foo (https://example.com/a).
+- Bar: https://example.com/b。
+"""
+    refs = extract_urls(md)
+    urls = {r.url for r in refs}
+    # 末尾の `.` と `。` が剥がされている (URL の正規化)。
+    assert "https://example.com/a" in urls or "https://example.com/a)" in urls
+    assert "https://example.com/b" in urls
+
+
+# ── ネットワーク必要テスト (本番検証) ────────────────────────────────────────
+
+def _network_available() -> bool:
+    if os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") == "1":
+        return False
+    try:
+        # 1 つの確実な公開ホストに 3 秒で connect だけ試す。完全オフラインなら fail。
+        with socket.create_connection(("1.1.1.1", 443), timeout=3.0):
+            return True
+    except OSError:
+        return False
+
+
+needs_network = pytest.mark.skipif(
+    not _network_available(),
+    reason="ネットワーク不可 (または NEWS_GRASP_SKIP_URL_CHECK=1)",
+)
+
+
+@needs_network
+def test_require_live_urls_raises_on_fabricated_url(tmp_path: Path):
+    """捏造 URL (確実に 404 になるパス) を含む md が DeepDiveUrlError で弾かれる契約。"""
+    md = """---
+title: "t"
+date: "2026-06-03"
+---
+## 参考リンク
+- 捏造 (確実 404): https://www.bk.mufg.jp/report/hconwnew/FX_Monthly_0529.pdf
+"""
+    p = tmp_path / "fake.md"
+    p.write_text(md, encoding="utf-8")
+    with pytest.raises(DeepDiveUrlError) as ei:
+        require_live_urls(p, md)
+    # エラーメッセージに捏造 URL と location が含まれていること (デバッグ可能性)。
+    assert "FX_Monthly_0529.pdf" in str(ei.value)
+    assert "[refs]" in str(ei.value)
+
+
+@needs_network
+def test_require_live_urls_passes_on_normal_urls(tmp_path: Path):
+    """安定して生存する公開 URL のみなら通る契約 (anti-bot 復旧含む)。"""
+    md = """---
+title: "t"
+date: "2026-06-03"
+---
+## 参考リンク
+- Cloudflare 1.1.1.1: https://one.one.one.one/
+- Example: https://example.com/
+"""
+    p = tmp_path / "ok.md"
+    p.write_text(md, encoding="utf-8")
+    # raise されないことが契約。
+    verdicts = require_live_urls(p, md)
+    assert len(verdicts) == 2
+    assert all(v.ok for v in verdicts)
+
+
+@needs_network
+def test_all_published_deepdives_have_live_urls():
+    """公開済み DeepDive md 全件 (digest/DeepDive/*.md) は生存 URL のみで構成されている。
+
+    捏造事故 (2026-06-03) の再発検出。1 件でも fatal があれば assertion で内訳を出す。
+    本テストが赤になったら md を修正し、runner が再生成するまで原状回復する。
+    """
+    src_dir = ROOT / "digest" / "DeepDive"
+    if not src_dir.exists():
+        pytest.skip("digest/DeepDive がまだ存在しない")
+    failures: list[str] = []
+    for md_path in sorted(src_dir.glob("*.md")):
+        text = md_path.read_text(encoding="utf-8")
+        refs = extract_urls(text)
+        if not refs:
+            continue
+        verdicts = verify_urls(refs)
+        for v in verdicts:
+            if not v.ok:
+                failures.append(f"{md_path.name}: [{v.ref.location}] {v.detail}  {v.ref.url}")
+    assert not failures, (
+        "公開 DeepDive に死リンクあり (捏造または恒久 404):\n  " + "\n  ".join(failures)
+    )

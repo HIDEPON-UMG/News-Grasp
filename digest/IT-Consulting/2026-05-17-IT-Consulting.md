@@ -85,17 +85,3 @@ tags:
 
 ---
 
-### [73] ビッグ 4 上級幹部が AI スタートアップへ流出加速 — コンサル報酬モデル崩壊の前兆
-
-📅 2026-05-17 08:00 · 📰 Business Insider Japan · 🔗 [元記事](https://www.businessinsider.jp/article/consulting-deloitte-pwc-ey-partner-c/)
-
-#cat/it #country/米国 #topic/コンサル業界動向 #score/中
-
-![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
-
-- デロイト米国法人元 AI 責任者がビッグ 4 を離れ AI 特化スタートアップへ転じた事例を皮切りに、[[Big4]] パートナー級の人材流出が加速している。
-- AI がルーティン調査・分析業務を代替することで、下位スタッフの採用削減と __上位専門家のスタートアップ移籍__ が同時進行する二極化が鮮明。
-- KPMG が米アドバイザリー 400 名削減（5/16 報道）と同時期に、逆方向の人材吸引力を持つ AI ベンチャーが台頭しており、コンサル業界の報酬・キャリアモデルが変曲点を迎えている。
-
-> [!tip] 🔗 関連: 波及
-> [[2026-05-16-IT-Consulting#KPMG 400 人削減|2026-05-16 IT-Consulting KPMG]] と 波及 の関係。削減と流出が同時進行する業界再編の深層。

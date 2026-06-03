@@ -655,6 +655,7 @@ SMTP 経路は htmlBody サイズ制限が極めて緩いため、minify は必�
 
 ## 守るべき原則
 
+- **URL は WebSearch / WebFetch / fetch_ogp.py で実際にアクセスし 200 が返ったものだけ書く**（2026-06-03 三菱UFJ FX_Monthly 捏造事故の恒久対策）。「ありそうな URL」「過去に見た URL の記憶」「サイトのトップから推測したパス」を `articles.jsonl` の `url` フィールド・Markdown の `[元記事]` リンクに書くことは絶対禁止。アクセスしていない URL を埋めるくらいなら**カテゴリから当該候補ごと落とす**ことを選ぶ。`news-grasp-runner.ps1` は push 前に `tools/audit_all_article_urls.py --gate` を必ず呼び、404/410 等の捏造 URL を 1 件でも検出すると push が阻止される（hard fail）。この時間ロスを発生させないために、**LLM の記憶を一切信用せず、`WebSearch` 結果に明示的に出てきた URL だけを使う**こと
 - **毎回必ず watchlist.md を最新で読む**（前日の編集が翌朝反映される）
 - **5 軸の関連付けは無理に当てはめない**。該当しなければ単純な解説で構わない
 - **NewsPicks 有料部分・認証ゲートのある記事は深追いしない**

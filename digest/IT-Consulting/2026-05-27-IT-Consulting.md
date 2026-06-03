@@ -38,7 +38,7 @@ tags:
 
 ### [93] OpenAI DeployCo始動──$40億・FDE 150名でアクセンチュア・マッキンゼーのエンタープライズ聖域に直接参入
 
-📅 2026-05-27 06:00 · 📰 eWeek · 🔗 [元記事](https://www.eweek.com/news/openai-deployco-enterprise-ai-consulting/)
+📅 2026-05-27 06:00 · 📰 eWeek · 🔗 [元記事](https://openai.com/index/openai-launches-the-deployment-company/)
 
 #cat/it #co/OpenAI #co/アクセンチュア #co/マッキンゼー #country/米国 #topic/エンタープライズAI #event/製品発表 #score/高
 
