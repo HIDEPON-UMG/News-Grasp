@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>製造 / Manufacturing — News Grasp</title>
+<meta name="description" content="News Grasp 製造 (Manufacturing) カテゴリのアーカイブ。直近 1 週間の編集者ダイジェスト。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="製造 / Manufacturing — News Grasp">
+<meta property="og:description" content="製造 (Manufacturing) カテゴリの直近ダイジェストとアーカイブ。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/manufacturing/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="製造 / Manufacturing — News Grasp">
+<meta name="twitter:description" content="製造 (Manufacturing) カテゴリのダイジェストとアーカイブ。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+
+<style>
+/* カテゴリーランディング: ブランドヘッダー内の記事検索フィルター
+ * (アーカイブの検索フィルターを流用。配色は site.css の DESIGN.md トークン参照) */
+.brand-zone__inner { gap: 20px; }
+.brand-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; max-width: 440px; }
+.brand-search__icon { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--color-ink-dim); pointer-events: none; }
+.brand-search input {
+  width: 100%; background: var(--color-cream);
+  border: 1px solid var(--color-border); color: var(--color-ink);
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em;
+  padding: 9px 12px 9px 30px; outline: none; border-radius: 2px;
+}
+.brand-search input::placeholder { color: var(--color-ink-dim); }
+.brand-search input:focus { border-color: var(--color-gold); box-shadow: 0 0 0 2px rgba(201, 161, 85, 0.35); }
+.cat-search-empty {
+  display: none; font-family: var(--font-mono); font-size: 13px;
+  color: var(--color-ink-dim); letter-spacing: 0.08em; text-align: center; padding: 48px 0;
+}
+.is-search-hidden { display: none !important; }
+/* 「本日のテーマ考察」見出し直下に出すカテゴリ固有 §NN 見出し (例「為替 — …」)。
+ * editorial バンド (navy) 上のゴールド系サブタイトル。site.css 未配備でも効くようテンプレ内に置く。 */
+.editorial__subtitle {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: var(--color-gold);
+  margin: -14px 0 22px;
+}
+.editorial__subtitle .emph-bold { background: rgba(201, 161, 85, 0.32); color: var(--color-gold); }
+.editorial__subtitle .emph-und { border-bottom-color: var(--color-gold); }
+@media (max-width: 720px) {
+  .brand-zone__inner { flex-wrap: wrap; }
+  .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
+  .editorial__subtitle { font-size: 16px; margin: -8px 0 18px; }
+}
+</style>
+</head>
+<body data-category="manufacturing">
+
+<!-- ============= Brand zone (compact navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <label class="brand-search">
+      <span class="brand-search__icon">⌕</span>
+      <input id="cat-search" type="text" autocomplete="off"
+             aria-label="製造カテゴリの記事を検索"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-22)">
+    </label>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (6 lens pills, 現カテゴリは is-active) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill is-active" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-03/summary/" class="lens-pill lens-pill--essay">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+    
+    <span class="lens-nav__meta">1 ENTRIES · ARCHIVE</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px category KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ LENS / MANUFACTURING</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⬢</span>
+      <h1 class="cat-hero__title">製造.</h1>
+    </div>
+    
+    
+    <div class="cat-hero__summary">日本の製造業は再編と量産競争の岐路に。ローム・東芝・三菱電機がパワー半導体で世界2位連合へ動き、全固体電池は台湾・中国勢の量産先行でトヨタに遅れリスク。政府はものづくり白書でAI拠点構想を打ち出し、TDKは新潟に新工場を構える。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">1</div>
+        <div class="stat-label">ENTRIES</div>
+      </div>
+      <div>
+        <div class="stat-num">0</div>
+        <div class="stat-label">PAST 1 WEEK</div>
+      </div>
+      
+      <div>
+        <div class="stat-num">86</div>
+        <div class="stat-label">TOP SCORE</div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">LATEST</div>
+    <div class="cat-hero__date-big">06·03</div>
+    <div class="cat-hero__date-small">2026 · #20260603</div>
+  </div>
+  
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">← ALL ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP feature (最新 1 件) ============= -->
+<section class="top-story" data-search="2026-06-03 3社のパワー半導体事業を切り出し合弁設立で経営統合 ローム・東芝・三菱電機が世界2位連合へ EE Times Japan">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP FEATURE</span>
+    <span>2026-06-03 · EE Times Japan</span>
+    <span class="top-story__score">86</span>
+  </div>
+  <div class="top-story__grid">
+    
+    <div class="top-story__thumb-wrap">
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-03/" aria-label="記事詳細ページを開く"><img src="https://image.itmedia.co.jp/ee/articles/2604/28/cover_news107.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-03/" style="color: inherit;">3社のパワー半導体事業を切り出し合弁設立で経営統合 ローム・東芝・三菱電機が世界2位連合へ</a>
+      </h2>
+      
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">ローム</strong> ・<strong class="emph-bold">東芝</strong> デバイス&amp;ストレージ・<strong class="emph-bold">三菱電機</strong> の3社が各社の<strong>パワー半導体事業を切り出し</strong>、合弁会社を設立して経営統合する協議に入った。<strong>3月27日</strong>に基本合意書を締結</li><li>実現すれば<strong>世界シェア2位</strong>のパワー半導体連合が誕生。EV・AIサーバの電力制御を握る<strong class="emph-bold">SiC</strong> /<strong class="emph-bold">GaN</strong> で<strong class="emph-bold">インフィニオン</strong> や中国勢に対抗し、経産省は最大<strong>1294億円</strong>の助成を見込む</li><li>ただし三菱電機社長は事業領域の違いに懸念を示し、協議は<strong>想定より時間を要する</strong>。<strong class="emph-bold">デンソー</strong> による<strong class="emph-bold">ローム</strong> への買収提案も絡み、<span class="emph-und">日の丸パワー半導体再編の行方は流動的</span></li>
+      </ul>
+      
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⬢ MANUFACTURING</span>
+        <span class="top-story__tag">#LATEST</span>
+        <span class="top-story__tag">#2026-06-03</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid (2col, featured を除く直近) ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⬢ stories</h2>
+    <span class="more-stories__head-meta">3 ITEMS · LATEST FIRST</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card" data-search="2026-06-03 EV向け全固体電池の「量産」いよいよ開始 トヨタは優位を保てるか 日経クロステック">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-03</span>
+        <span>· 日経クロステック</span>
+        
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/03628/052600001/" aria-label="記事詳細ページを開く"><img src="https://xtech.nikkei.com/atcl/nxt/column/18/03628/052600001/top2.jpg?20220512" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/03628/052600001/">EV向け全固体電池の「量産」いよいよ開始 トヨタは優位を保てるか</a>
+      </h3>
+      
+      <p style="font-family: var(--font-serif); font-size: 16px; line-height: 1.8; color: var(--color-ink); margin: 0;">全固体電池の**量産が現実フェーズ**へ突入。台湾の[[ProLogium]] （輝能科技）が**2025年10月**にエンジニアリングサンプルを出荷し、年産GWh級の量産で先行する</p>
+      
+    </article>
+    
+    <article class="more-card" data-search="2026-06-03 2026年版ものづくり白書を閣議決定 「製造AX拠点」で製造業のAI活用を後押し 事業構想オンライン">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-03</span>
+        <span>· 事業構想オンライン</span>
+        
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        <a href="https://www.projectdesign.jp/articles/news/874807b9-713f-420d-805c-5cb66072cf47" aria-label="記事詳細ページを開く"><img src="https://cdn.projectdesign.jp/uploads/2025/12/22/ojN8fg1e4iP8WfWNtMLqEdZo67PWmTFbez5Km1ZB.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.projectdesign.jp/articles/news/874807b9-713f-420d-805c-5cb66072cf47">2026年版ものづくり白書を閣議決定 「製造AX拠点」で製造業のAI活用を後押し</a>
+      </h3>
+      
+      <p style="font-family: var(--font-serif); font-size: 16px; line-height: 1.8; color: var(--color-ink); margin: 0;">政府は**5月29日**、経産省・厚労省・文科省が共同作成した[[2026年版ものづくり白書]] を閣議決定。**設備投資**とAI活用による収益力向上を中長期戦略の柱に据えた</p>
+      
+    </article>
+    
+    <article class="more-card" data-search="2026-06-03 TDKが新潟・小千谷に新工場 知事「産業の競争力強化に」 日本経済新聞">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-03</span>
+        <span>· 日本経済新聞</span>
+        
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        <a href="https://www.nikkei.com/article/DGXZQOCC016R50R00C26A6000000/" aria-label="記事詳細ページを開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3104044001062026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=062ed5474c80ebd01a646398109467a8" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOCC016R50R00C26A6000000/">TDKが新潟・小千谷に新工場 知事「産業の競争力強化に」</a>
+      </h3>
+      
+      <p style="font-family: var(--font-serif); font-size: 16px; line-height: 1.8; color: var(--color-ink); margin: 0;">[[TDK]] が**新潟県小千谷市**に進出。半導体受託製造[[JSファンダリ]] の工場跡地を取得し、**数十億円**を投じて新工場を建設する</p>
+      
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (本日のテーマ考察 navy band / page-template と統一) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">MANUFACTURING · 2026-06-03</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>日本の製造業は再編と量産競争の岐路に。ローム・東芝・三菱電機がパワー半導体で世界2位連合へ動き、全固体電池は台湾・中国勢の量産先行でトヨタに遅れリスク。政府はものづくり白書でAI拠点構想を打ち出し、TDKは新潟に新工場を構える。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-03/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<div id="cat-search-empty" class="cat-search-empty">該当する記事がありません。検索条件を変えてください。</div>
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MANUFACTURING · 1 entries
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+/* カテゴリーランディング: ブランドヘッダー検索で記事カードを絞り込み (素 JS / 無効でも全件表示) */
+(function () {
+  var input = document.getElementById('cat-search');
+  if (!input) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('[data-search]'));
+  var containers = Array.prototype.slice.call(document.querySelectorAll('.more-stories, .past-week'));
+  var editorial = document.querySelector('.editorial');
+  var empty = document.getElementById('cat-search-empty');
+
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (c) {
+      var hit = !q || (c.getAttribute('data-search') || '').toLowerCase().indexOf(q) >= 0;
+      c.classList.toggle('is-search-hidden', !hit);
+      if (hit) anyVisible = true;
+    });
+    // 記事カードを内包するセクションは、可視カードが 0 件なら見出しごと隠す
+    containers.forEach(function (s) {
+      if (!q) { s.classList.remove('is-search-hidden'); return; }
+      s.classList.toggle('is-search-hidden', !s.querySelector('[data-search]:not(.is-search-hidden)'));
+    });
+    // 考察(プロセクション)は検索中は隠す
+    if (editorial) editorial.classList.toggle('is-search-hidden', !!q);
+    if (empty) empty.style.display = (q && !anyVisible) ? 'block' : 'none';
+  }
+  input.addEventListener('input', apply);
+})();
+</script>
+</body>
+</html>
