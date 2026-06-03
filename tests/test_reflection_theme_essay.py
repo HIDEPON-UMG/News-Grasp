@@ -94,15 +94,19 @@ theme: "1兆ドルとCPI3.8%の衝突"
 
 [[Waymo]]の第6世代ロボタクシー「Ojai」が公開開放された。
 
-### §06 経済 — S&P最高値・Goldman 8000
+### §06 製造 — ギガキャスト量産・全固体電池ライン
+
+[[トヨタ]]がギガキャストの量産適用を前倒しし、[[デンソー]]の車載半導体特許出願が前年比で急増した。
+
+### §07 経済 — S&P最高値・Goldman 8000
 
 [[S&P500]]が最高値更新を継続する一方、[[日経平均]]は1,000円超安と乱高下した。
 
-### §07 ゲーム — Forza 30万人・スクエニ10億円
+### §08 ゲーム — Forza 30万人・スクエニ10億円
 
 [[Forza Horizon 6]]がSteam最高同接302,645人を記録した。
 
-### §08 明日へ — 6月の焦点：日銀会合・Anthropic IPO観測
+### §09 明日へ — 6月の焦点：日銀会合・Anthropic IPO観測
 
 来週6月は日銀会合とOpenAI上場スケジュールが焦点となる。
 
@@ -200,10 +204,11 @@ def test_parse_reflection_extracts_all_blocks():
     assert "交差した一日" in r["subtitle"]
     # pull_quote
     assert "単一のAI企業の評価額" in r["pull_quote"]["text"]
-    # sections: §01-§08 (モビリティ含む 8 件)
-    assert len(r["sections"]) == 8
+    # sections: §01-§09 (モビリティ §05・製造 §06 含む 9 件)
+    assert len(r["sections"]) == 9
     assert "モビリティ" in r["sections"][5]["heading"]
-    assert "明日" in r["sections"][8]["heading"]
+    assert "製造" in r["sections"][6]["heading"]
+    assert "明日" in r["sections"][9]["heading"]
     assert "9,650億ドル" in r["sections"][1]["body"]
     # takeaways: 3 件、tag 付き
     assert len(r["takeaways"]) == 3
@@ -278,12 +283,14 @@ def test_summary_pull_quote_renders_emph(built):
     assert "__金融政策の天井とAIの底なし井戸__" not in summary
 
 
-def test_summary_renders_8_sections_with_mobility(built):
-    """digest の §01-§08 を data-driven 描画。モビリティ・明日へが出る。"""
+def test_summary_renders_9_sections_with_mobility_and_manufacturing(built):
+    """digest の §01-§09 を data-driven 描画。モビリティ・製造・明日へが出る。"""
     summary = built["summary"]
-    assert "§08" in summary
+    assert "§09" in summary
+    assert "§06" in summary
     assert "§05" in summary
     assert ">モビリティ<" in summary
+    assert ">製造<" in summary
     assert ">明日へ<" in summary
     # §01 総論本文 (全文表示)。9,650億ドルは <strong> で囲まれるため後続テキストで確認。
     assert "に到達した同じ日" in summary

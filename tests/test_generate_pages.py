@@ -61,9 +61,9 @@ def test_base_url_is_https():
     assert BASE_URL.startswith("https://"), f"BASE_URL must be HTTPS: {BASE_URL!r}"
 
 
-def test_categories_include_all_six():
-    """カテゴリは fx / ai / it / economy / game / summary の 6 種を含む。"""
-    expected = {"fx", "ai", "it", "economy", "game", "summary"}
+def test_categories_include_all_eight():
+    """カテゴリは fx / ai / it / mobility / manufacturing / economy / game / summary の 8 種を含む。"""
+    expected = {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game", "summary"}
     assert expected.issubset(set(CATEGORIES.keys())), (
         f"missing categories: {expected - set(CATEGORIES.keys())}"
     )

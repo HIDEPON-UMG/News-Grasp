@@ -29,7 +29,7 @@ UI モック側の参考実装は
 | 種別 | プレフィクス | 値の規則 | 例 |
 | --- | --- | --- | --- |
 | 共通固定 | （なし） | 4 種・英字 | `daily` / `newsletter` / `news-grasp` / `issue-{号番号}` |
-| カテゴリー | `cat/` | News Grasp の 6 カテゴリ id（既存） | `cat/fx` `cat/ai` `cat/it` `cat/mobility` `cat/economy` `cat/game` |
+| カテゴリー | `cat/` | News Grasp の 7 カテゴリ id（既存） | `cat/fx` `cat/ai` `cat/it` `cat/mobility` `cat/manufacturing` `cat/economy` `cat/game` |
 | 企業 | `co/` | 日本での一般通用表記 | `co/トヨタ` `co/任天堂` `co/NTTデータ` `co/OpenAI` `co/NVIDIA` `co/アクセンチュア` |
 | 国 | `country/` | 日本語国名。EU は `EU` を許容 | `country/日本` `country/米国` `country/中国` `country/EU` `country/トルコ` |
 | サービス／製品 | `svc/` | 固有名詞は原文、和名がある場合は日本語 | `svc/Claude` `svc/ChatGPT` `svc/iPhone` `svc/Switch-2` `svc/ウィッチャー` |

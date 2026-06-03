@@ -52,12 +52,13 @@ BORDER: str = "#E2DED4"
 # カテゴリ定義: digest frontmatter の categoryId をキーに引く。
 # economy キーは公開済 URL `/economy/` 互換のため維持 (Claude Design 仕様の `econ` は内部慣用名)。
 # accent / glyph / name_en は Claude Design Handoff README に整合させた値。
-# 並び順: ナビバー・メール・γ schema 全てで fx → ai → it → mobility → economy → game の順で表示する。
+# 並び順: ナビバー・メール・γ schema 全てで fx → ai → it → mobility → manufacturing → economy → game の順で表示する。
 CATEGORIES: dict[str, dict[str, str]] = {
     "fx":       {"label": "Foreign Exchange",        "jp": "為替",          "accent": "#B8860B", "glyph": "¥"},
     "ai":       {"label": "Artificial Intelligence", "jp": "AI",            "accent": "#2D5BB8", "glyph": "◆"},
     "it":       {"label": "IT & Consulting",         "jp": "IT-Consulting", "accent": "#2E6B52", "glyph": "⌗"},
     "mobility": {"label": "Mobility",                "jp": "モビリティ",     "accent": "#3A7B8C", "glyph": "◎"},
+    "manufacturing": {"label": "Manufacturing",      "jp": "製造",          "accent": "#5A6B7B", "glyph": "⬢"},
     "economy":  {"label": "Economy",                 "jp": "経済",          "accent": "#8E2A19", "glyph": "■"},
     "game":     {"label": "Gaming",                  "jp": "ゲーム",         "accent": "#5E3D8C", "glyph": "▶"},
     "summary":  {"label": "Summary",                 "jp": "総括",          "accent": "#475569", "glyph": "★"},

@@ -135,8 +135,8 @@ def built(tmp_path_factory):
     docs = root / "docs"
     sources: list[Path] = []
     for cat_id, label in [("fx", "FX"), ("ai", "AI"), ("it", "IT-Consulting"),
-                          ("mobility", "Mobility"), ("economy", "Economy"),
-                          ("game", "Game")]:
+                          ("mobility", "Mobility"), ("manufacturing", "Manufacturing"),
+                          ("economy", "Economy"), ("game", "Game")]:
         d = root / "digest" / label.upper()
         d.mkdir(parents=True, exist_ok=True)
         p = d / f"2026-05-30-{label}.md"

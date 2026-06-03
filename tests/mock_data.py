@@ -3,7 +3,7 @@
 設計エクスポート (design/untitled/project/data/news-data-full.js) を Python に
 ポートしたサンプル。テンプレートのレイアウト確認や Webhook 経路テストに使う。
 
-6 カテゴリ × 各 5 件（フル 10 件は冗長なので軽量化）。
+6 カテゴリ（fx/ai/it は各 5 件、製造は 3 件、economy/game は各 5 件）。フル 10 件は冗長なので軽量化。
 記事本文は本物っぽい強調記法 [[..]] / __..__ を含む。
 """
 from __future__ import annotations
@@ -172,6 +172,42 @@ CATEGORIES = [
                  "産学 8 団体が [[xIPF コンソーシアム]] 設立。AI スペース構想で国産 AI 基盤連合を形成。",
                  "NTT データは __生成 AI によるシステム開発全面代替__ を 2026 年度導入予定。",
                  "海外 AI 強者への対抗軸を国内連合で作る動き、政府も実証予算で支援姿勢。",
+             ]},
+        ],
+    },
+    {
+        "id": "manufacturing",
+        "name": "製造",
+        "nameEn": "Manufacturing",
+        "accent": "#5A6B7B",
+        "glyph": "⬢",
+        "summary": "トヨタが次世代EVの製品計画を見直し。ギガキャストと全固体電池の量産投資は継続し、Tier1の特許戦略シフトが鮮明に。",
+        "items": [
+            {"score": 92, "time": "06:30", "source": "朝日新聞",
+             "title": "トヨタ、次世代EV「LF-ZC」開発を中止──ギガキャスト・新型電池ラインは継続",
+             "url": "https://example.com/manufacturing/1",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-manufacturing.jpg",
+             "bullets": [
+                 "トヨタは次世代EV [[LF-ZC]] の量産計画を白紙化。__製品計画の意思決定__ としては大きな後退だが、生産技術投資の継続が論点。",
+                 "一方で[[ギガキャスト]]の一体成形ラインと__全固体電池の量産設備__への投資は継続、生産技術の蓄積は止めない方針を明確化。",
+                 "市場では「使う側」ではなく「作る側」の戦略転換として受け止められ、サプライヤーの設備計画にも波及するとの見方。",
+             ]},
+            {"score": 80, "time": "09:10", "source": "日経xTECH",
+             "title": "デンソー・アイシンの特許分析──車載半導体内製化へR&D戦略をシフト",
+             "url": "https://example.com/manufacturing/2",
+             "thumb": "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/sample-manufacturing.jpg",
+             "bullets": [
+                 "[[デンソー]]と[[アイシン]]の特許出願を分析すると、__車載半導体の内製化__に向けたR&D投資の重心移動が読み取れる。",
+                 "拡散量はゼロに近いが、Tier1の[[技術戦略シフト]]は完成車の競争力を中期で左右する構造的シグナル。",
+                 "パワー半導体・SiCの自社設計比率を高め、外部調達依存を下げる動きが各社で並行している。",
+             ]},
+            {"score": 64, "time": "13:40", "source": "静岡新聞SBS",
+             "title": "静岡の地域製造業、EV部品の内製ラインを新設──マザー工場化を狙う",
+             "url": "https://example.com/manufacturing/3", "thumb": None,
+             "bullets": [
+                 "静岡県内の中堅サプライヤーが [[EV部品の内製ライン]] を新設、__マザー工場__として量産技術の起点にする計画。",
+                 "拡散は小さいが、地域製造業の[[設備投資]]と歩留まり改善は国内サプライチェーンの底力を映す。",
+                 "人材確保と自動化投資を同時に進め、車載向け生産能力の拡張を図る。",
              ]},
         ],
     },

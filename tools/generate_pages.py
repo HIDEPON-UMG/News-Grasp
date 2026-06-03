@@ -81,6 +81,7 @@ TAG_TO_CID: dict[str, str] = {
     "IT": "it",
     "IT-Consulting": "it",
     "モビリティ": "mobility",
+    "製造": "manufacturing",
     "経済": "economy",
     "ゲーム": "game",
 }
@@ -1209,11 +1210,12 @@ def build_all_overviews(entries: list[dict[str, Any]], docs_root: Path) -> list[
 
 # ---------- Phase 5: Editorial Summary (Pattern D) ----------
 
-# 7 セクションの固定タグ + accent (Claude Design site/desktop-extra.jsx の DesktopSummaryOnly より)
-_SUMMARY_SECTION_TAGS = ["総論", "為替", "AI", "IT", "経済", "ゲーム", "明日へ"]
-_SUMMARY_SECTION_COLORS = ["#1A1A1A", "#B8860B", "#2D5BB8", "#2E6B52", "#8E2A19", "#5E3D8C", "#C9A155"]
-# §02-06 を担当する category id (順序固定)
-_SUMMARY_CAT_ORDER = [None, "fx", "ai", "it", "economy", "game", None]
+# 9 セクションの固定タグ + accent (Claude Design site/desktop-extra.jsx の DesktopSummaryOnly より)。
+# 2026-06-03: モビリティ (Mobility 追加時の積み残し是正) と製造 (新カテゴリ) を加え 7→9 に拡張。
+_SUMMARY_SECTION_TAGS = ["総論", "為替", "AI", "IT", "モビリティ", "製造", "経済", "ゲーム", "明日へ"]
+_SUMMARY_SECTION_COLORS = ["#1A1A1A", "#B8860B", "#2D5BB8", "#2E6B52", "#3A7B8C", "#5A6B7B", "#8E2A19", "#5E3D8C", "#C9A155"]
+# §02-08 を担当する category id (順序固定)。先頭 (総論) と末尾 (明日へ) は None。
+_SUMMARY_CAT_ORDER = [None, "fx", "ai", "it", "mobility", "manufacturing", "economy", "game", None]
 
 
 def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
@@ -1393,7 +1395,7 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
     """digest の `### §NN` から抽出した考察を summary-template 用 sections に変換。
 
     sections が空 (考察ブロック非対応の digest) なら None を返し、呼び出し側の
-    fallback (7-grid) に委ねる。各 §NN の見出し先頭ラベルからカテゴリを判定し、
+    fallback (9-grid) に委ねる。各 §NN の見出し先頭ラベルからカテゴリを判定し、
     総論/明日へは自己ページ表示なので「詳細を読む」リンク (canonical) を出さない。
     """
     if not sections:
@@ -1432,14 +1434,15 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
 
 def _fallback_sections(editorial: dict[str, Any] | None,
                        by_cat: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    """考察 §NN が取れない digest 用の 7-grid fallback。
+    """考察 §NN が取れない digest 用の 9-grid fallback。
 
-    §01 総論 / §02-06 各カテゴリ Top1 + bullets / §07 明日へ を必ず描画する。
-    §01・§07 は summary_text にフォールバックし、自己ページ表示なので canonical を出さない。
+    §01 総論 / §02-08 各カテゴリ Top1 + bullets / §09 明日へ を必ず描画する。
+    §01・§09 は summary_text にフォールバックし、自己ページ表示なので canonical を出さない。
     """
     summary_text = (editorial.get("summary_text") if editorial else "") or ""
     sections: list[dict[str, Any]] = []
-    for i in range(7):
+    last = len(_SUMMARY_SECTION_TAGS) - 1  # 末尾 = 明日へ。カテゴリ増減に追従させハードコード番号を残さない
+    for i in range(len(_SUMMARY_SECTION_TAGS)):
         tag = _SUMMARY_SECTION_TAGS[i]
         color = _SUMMARY_SECTION_COLORS[i]
         cid = _SUMMARY_CAT_ORDER[i]
@@ -1448,7 +1451,7 @@ def _fallback_sections(editorial: dict[str, Any] | None,
             heading = "本日の総論"
             body = summary_text or "本日の総論データ準備中。"
             canonical = ""
-        elif i == 6:
+        elif i == last:
             heading = "明日への示唆"
             body = (summary_text[-200:] if len(summary_text) > 200 else summary_text) \
                 or "明日への示唆データ準備中。"

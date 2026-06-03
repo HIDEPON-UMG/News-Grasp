@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp Manufacturing カテゴリ追加 — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン継承 (News-Grasp 本体 DESIGN.md と同期)
+       Magazine Spread: navy × gold × paper の編集者的トーン
+       ============================================================ */
+    :root {
+      --color-primary: #1A1A1A;
+      --color-secondary: #5C5A52;
+      --color-tertiary: #C9A155;
+      --color-neutral: #FAF7F0;
+      --color-surface: #FFFFFF;
+      --color-border: #E2DED4;
+      --color-paper-soft: #F2EEE3;
+      --color-on-tertiary: #181C2A;
+      --color-on-primary: #F0EBE0;
+      --color-navy: #181C2A;
+      --color-cream: #F0EBE0;
+      --color-gold: #C9A155;
+      --color-navy-hover: #262B40;
+      --color-gold-hover: #B58D45;
+
+      --color-accent-fx: #B8860B;
+      --color-accent-ai: #2D5BB8;
+      --color-accent-it: #2E6B52;
+      --color-accent-mobility: #3A7B8C;
+      --color-accent-manufacturing: #5A6B7B;
+      --color-accent-economy: #8E2A19;
+      --color-accent-game: #5E3D8C;
+      --color-accent-summary: #475569;
+
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+
+      --font-serif: 'Noto Serif JP', 'Yu Mincho', Georgia, serif;
+      --font-sans: 'Inter', -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+      --rounded-sm: 0px;
+      --rounded-md: 0px;
+      --rounded-lg: 0px;
+      --rounded-full: 9999px;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+
+      --shadow-sm: 0 1px 2px rgba(24, 28, 40, 0.06);
+      --shadow-md: 0 4px 12px rgba(24, 28, 40, 0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-serif);
+      font-size: 0.9375rem;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 72rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 2px solid var(--color-navy); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; font-weight: 700; text-transform: uppercase; }
+    h1 { font-family: var(--font-sans); font-size: 3rem; font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin: var(--space-md) 0 var(--space-sm); color: var(--color-navy); }
+    h2 { font-family: var(--font-sans); font-size: 2rem; font-weight: 900; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--space-md); color: var(--color-navy); }
+    h3 { font-family: var(--font-serif); font-size: 1.375rem; font-weight: 800; line-height: 1.35; letter-spacing: -0.01em; margin: var(--space-xl) 0 var(--space-sm); color: var(--color-navy); }
+    h4 { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; margin: var(--space-lg) 0 var(--space-sm); color: var(--color-primary); }
+    .lead { color: var(--color-secondary); font-size: 1.0625rem; line-height: 1.75; margin: var(--space-sm) 0 var(--space-md); font-style: italic; }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-accent-ai); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+    a:hover { color: var(--color-navy); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: 0; padding: var(--space-md) var(--space-lg); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; text-transform: uppercase; font-weight: 700; }
+    .tab:hover { color: var(--color-navy); background: var(--color-paper-soft); }
+    .tab.active { color: var(--color-navy); border-bottom-color: var(--color-gold); background: var(--color-surface); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-muted { background: var(--color-paper-soft); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy { background: var(--color-navy); color: var(--color-cream); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .card-navy h3 { color: var(--color-gold); }
+    .card-navy a { color: var(--color-gold); }
+
+    /* Badge */
+    .badge { display: inline-block; padding: 4px 12px; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-right: var(--space-xs); }
+    .badge-draft { background: var(--color-warning); color: var(--color-cream); }
+    .badge-confirmed { background: var(--color-success); color: var(--color-cream); }
+    .badge-new { background: var(--color-accent-manufacturing); color: var(--color-cream); }
+    .badge-done { background: var(--color-success); color: var(--color-cream); }
+    .badge-pending { background: var(--color-warning); color: var(--color-cream); }
+    .badge-out-of-scope { background: var(--color-error); color: var(--color-cream); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.875rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 700; color: var(--color-navy); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.15em; text-transform: uppercase; background: var(--color-paper-soft); border-bottom: 2px solid var(--color-navy); }
+    tr:hover td { background: var(--color-paper-soft); }
+    td code { font-size: 0.8125rem; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--color-paper-soft); padding: 2px 6px; border: 1px solid var(--color-border); }
+    pre { background: var(--color-navy); color: var(--color-cream); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.6; margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 12px 20px; border: 0; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 120ms; }
+    .btn-navy { background: var(--color-navy); color: var(--color-cream); }
+    .btn-navy:hover { background: var(--color-navy-hover); }
+    .btn-gold { background: var(--color-gold); color: var(--color-navy); }
+    .btn-gold:hover { background: var(--color-gold-hover); }
+
+    /* Timeline */
+    .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin: var(--space-lg) 0; }
+    .timeline-step { background: var(--color-paper-soft); border-left: 4px solid var(--color-gold); padding: var(--space-md) var(--space-lg); }
+    .timeline-step strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: var(--color-gold); text-transform: uppercase; margin-bottom: var(--space-xs); }
+    .timeline-step span { font-family: var(--font-serif); font-size: 1rem; line-height: 1.6; color: var(--color-navy); font-weight: 600; }
+
+    /* Severity */
+    .severity-info { border-left: 4px solid var(--color-accent-ai); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-warn { border-left: 4px solid var(--color-warning); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity-success { border-left: 4px solid var(--color-success); padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0; background: var(--color-paper-soft); }
+    .severity strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: var(--space-xs); color: var(--color-navy); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-top: 4px solid var(--color-gold); padding: var(--space-xl); margin: var(--space-md) 0; }
+    .playground-control { display: grid; grid-template-columns: 200px 1fr 100px; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+    .playground-control input[type="color"] { width: 100%; height: 40px; border: 1px solid var(--color-border); cursor: pointer; }
+    .playground-control input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-surface); color: var(--color-primary); }
+    .playground-control select { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-surface); color: var(--color-primary); }
+    .playground-control output { font-family: var(--font-mono); font-size: 0.875rem; color: var(--color-navy); }
+
+    .playground-preview { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); background: var(--color-paper-soft); margin: var(--space-md) 0; border-left: 4px solid var(--color-gold); }
+    .preview-swatch { width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--color-cream); transition: background 200ms; }
+    .preview-text strong { font-family: var(--font-sans); font-size: 1.5rem; font-weight: 900; color: var(--color-navy); display: block; }
+    .preview-text span { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--color-secondary); text-transform: uppercase; }
+
+    /* Palette grid */
+    .palette { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); margin: var(--space-md) 0; }
+    .palette-cell { display: flex; flex-direction: column; align-items: center; padding: var(--space-md); border: 1px solid var(--color-border); background: var(--color-surface); }
+    .palette-swatch { width: 64px; height: 64px; margin-bottom: var(--space-sm); }
+    .palette-cell strong { font-family: var(--font-sans); font-size: 0.875rem; font-weight: 700; color: var(--color-navy); }
+    .palette-cell span { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--color-secondary); letter-spacing: 0.05em; }
+    .palette-cell.new { border: 2px solid var(--color-accent-manufacturing); position: relative; }
+    .palette-cell.new::after { content: 'NEW'; position: absolute; top: -10px; right: -10px; background: var(--color-accent-manufacturing); color: var(--color-cream); font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; padding: 2px 8px; letter-spacing: 0.1em; }
+
+    /* Compare grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .playground-control { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+    }
+
+    /* Footer */
+    footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); color: var(--color-secondary); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em; }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+      .playground { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · 2026-06-03 · NEWS-GRASP</div>
+      <h1>Manufacturing カテゴリ追加</h1>
+      <p class="lead">7 つ目のカテゴリ「Manufacturing（製造）」を新設する。Mobility が「使う／乗る／サービスを受ける」消費者目線なのに対し、製造は「作る／誰が作る／作る計画をどうするか」という産業・技術観測者の目線で、自動車を核に車載半導体・電池素材まで追跡する。鍵は色やグリフでなく、<strong>重要度スコアの軸そのものを差し替える</strong>こと。</p>
+      <div style="margin-top: var(--space-md);">
+        <span class="badge badge-confirmed">user-approved 2026-06-03</span>
+        <span class="badge badge-new">+1 category</span>
+        <span class="badge badge-done">core impl done</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="comparison">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <!-- ============================================================
+         概要
+         ============================================================ -->
+    <section id="overview" class="tab-panel active">
+      <h2>Context — なぜ Mobility では足りないのか</h2>
+      <p>News-Grasp は現在 6 カテゴリ (FX / AI / IT-Consulting / Mobility / Economy / Game) + Summary で日次メルマガと Obsidian digest を生成している。ところが既存の「Mobility」は Waymo / Tesla / BYD などの<strong>ユーザー向けサービス</strong>寄りニュースに偏り、ユーザーが本当に知りたい「自動車 OEM の社内事例・車開発の新規/中止、Tier1 サプライヤーの技術開発・特許・R&amp;D 戦略シフト、生産技術（ギガキャスト・全固体電池量産）」が拾われていなかった。</p>
+
+      <div class="severity-warn severity">
+        <strong>根本原因 — watchlist でなく「指標」の問題</strong>
+        <p>Mobility の watchlist には既にデンソー・ボッシュ等の Tier1 が入っている。それでも製造ニュースが拾われないのは、現行の重要度スコア（<code>routine-system.md</code> 3-A.1）が「影響範囲 35%＝読者の行動が変わる人数」＋「話題性 30%＝拡散量」で計 65% を占め、<strong>消費者/投資家目線</strong>に最適化されているため。製造・技術・サプライチェーンの「地味だが構造を変える」ニュースは定義上この指標で負ける。よって watchlist 拡充では解決せず、<strong>指標そのものを変える</strong>必要がある（これがユーザーの「異なる指標が必要」という直感の正体）。</p>
+      </div>
+
+      <h3>検証に使った 3 記事（ユーザー提示）</h3>
+      <table>
+        <thead><tr><th>記事</th><th>性質</th><th>現行 Mobility 指標での評価</th></tr></thead>
+        <tbody>
+          <tr><td>朝日「トヨタが次世代EV(LF-ZC)を中止」</td><td>製品計画の中止判断＋ギガキャスト/新型電池継続</td><td>話題性高で拾われ得るが焦点が消費者目線に寄る</td></tr>
+          <tr><td>TBS/SBS（静岡・地域製造業）</td><td>工場・地域製造動向</td><td>拡散小 → ほぼ拾われない</td></tr>
+          <tr><td>日経xTECH「デンソー/アイシン特許分析」</td><td>Tier1 の技術戦略シフト・R&amp;D</td><td>話題性ゼロ・行動変化ゼロ → 構造上絶対に拾われない</td></tr>
+        </tbody>
+      </table>
+
+      <h3>ユーザー確定方針 (2026-06-03)</h3>
+      <table>
+        <thead><tr><th>項目</th><th>確定値</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td>読者像</td><td>産業・技術の観測者</td><td>製造業従事者／技術者／事業・経営企画。「何を買えるか」でなく「製造業の競争力・技術蓄積・サプライチェーンが今どう動いているか」を最上位に</td></tr>
+          <tr><td>スコープ</td><td>自動車を核に隣接部素材まで</td><td>車載半導体・電池素材・パワー半導体などを含む</td></tr>
+          <tr><td>スコア軸</td><td>製造専用（3-A.1-M）</td><td>産業インパクト30 / 技術新規性・深度25 / 戦略シグナル25 / 一次情報度20。<strong>話題性は軸から削除・時間減衰なし・件数下限3</strong></td></tr>
+          <tr><td>Mobility 境界</td><td>作る側 = Manufacturing</td><td>使う/乗る/サービス→Mobility、作る/誰が作る/作る計画→Manufacturing。<code>dedup.py</code> が重複掲載を構造的に防ぐ</td></tr>
+          <tr><td>掲載頻度</td><td>平日のみ（月〜金）</td><td>件数 月水金=6 / 火木=7 / 土日=据え置き5</td></tr>
+          <tr><td>命名・表示</td><td><code>manufacturing</code> / 製造 / Manufacturing</td><td>accent <code>#5A6B7B</code>（スチールグレー）/ glyph <code>⬢</code>（六角形・ボルト/ナット）</td></tr>
+          <tr><td>考察への掲載</td><td>γ schema に含める</td><td>「本日のテーマ考察」sections を 8 → 9 に拡張（製造を §06 に挿入）</td></tr>
+        </tbody>
+      </table>
+
+      <h3>本 PR のスコープ外 <span class="badge badge-out-of-scope">out</span></h3>
+      <ul>
+        <li>Mobility 側の watchlist 縮小（重複容認＋境界ルールで振り分け。Mobility は無変更）</li>
+        <li>メール HTML の Gmail クリップ閾値（102KB）超過対応。<strong>製造追加前から 122% で超過</strong>しており、製造機能とは独立の既存課題（別タスク）</li>
+        <li>既存日 Summary の 9 sections schema へのバックフィル（旧 8 sections は fallback で描画される設計）</li>
+      </ul>
+
+      <div class="severity-info severity">
+        <strong>前提</strong>
+        <p>Runner は <code>news-grasp-runner.ps1</code> → <code>claude --print</code> のローカル CLI 経路。GitHub Pages 公開 URL は <code>https://hidepon-umg.github.io/News-Grasp</code>。サムネ CDN は別 public repo <code>HIDEPON-UMG/news-grasp-assets</code> に分離。push は Runner が Claude 終了後に行う設計（Bash 経由 push は hook で deny）。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         比較
+         ============================================================ -->
+    <section id="comparison" class="tab-panel">
+      <h2>指標の差し替え — 3-A.1 ↔ 3-A.1-M</h2>
+      <p>本カテゴリの本質はここにある。他カテゴリ（FX/AI/IT/Mobility/Economy/Game）は標準スコア 3-A.1 のまま。<strong>Manufacturing だけ</strong>専用軸 3-A.1-M で採点し、<strong>話題性（拡散量）を軸から外す</strong>。</p>
+
+      <div class="compare-grid">
+        <div class="card">
+          <h4>3-A.1（標準・消費者/投資家目線）</h4>
+          <table>
+            <thead><tr><th>軸</th><th>重み</th></tr></thead>
+            <tbody>
+              <tr><td>影響範囲（読者の行動が変わる人数）</td><td>35%</td></tr>
+              <tr><td><strong style="color: var(--color-error);">話題性（拡散量）</strong></td><td>30%</td></tr>
+              <tr><td>その他（新規性・確度 等）</td><td>35%</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size: 0.8125rem; color: var(--color-secondary);">拡散量で測ると、特許分析や地域工場の動向は永遠に埋もれる。</p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--color-accent-manufacturing);">
+          <h4>3-A.1-M（製造専用・産業観測者目線）<span class="badge badge-new">NEW</span></h4>
+          <table>
+            <thead><tr><th>軸</th><th>重み</th></tr></thead>
+            <tbody>
+              <tr><td>産業インパクト</td><td>30%</td></tr>
+              <tr><td>技術的新規性・深度</td><td>25%</td></tr>
+              <tr><td>戦略的シグナル</td><td>25%</td></tr>
+              <tr><td>一次情報度（IR/特許/取材）</td><td>20%</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size: 0.8125rem; color: var(--color-accent-manufacturing); font-weight: 700;">話題性=削除 / 時間減衰=なし / 件数下限=3 件で可</p>
+        </div>
+      </div>
+
+      <h3>3-A.1 との 3 つの差分</h3>
+      <table>
+        <thead><tr><th>差分</th><th>内容</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td>話題性を軸から外す</td><td>拡散量は重要度に直接寄与させない（ガードレール③の相対補正で間接的にのみ効かせる）</td><td>「デンソー/アイシン特許分析」型は拡散しなくても構造的に重要</td></tr>
+          <tr><td>時間減衰を弱める</td><td>3-A.1 ガードレール②「報道から24h超は話題性−10」を適用しない</td><td>特許分析・戦略シフトはストック型で数日遅れても価値が落ちない</td></tr>
+          <tr><td>件数下限を緩める</td><td>1 日の目標件数を無理に埋めず、該当が薄い日は 3 件で可</td><td>質の低い続報で埋めない（3-A.5-F を特に徹底）</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Mobility 境界ルール</h3>
+      <svg viewBox="0 0 800 150" role="img" aria-label="Mobility と Manufacturing の境界" style="width: 100%; height: auto; max-width: 800px;">
+        <rect x="20" y="30" width="350" height="90" fill="#F2EEE3" stroke="#3A7B8C" stroke-width="2"/>
+        <text x="195" y="55" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="800" fill="#3A7B8C">MOBILITY ◎</text>
+        <text x="195" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A">使う / 乗る / サービスを受ける</text>
+        <text x="195" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">Waymo 配車 · Tesla 販売 · 充電サービス</text>
+
+        <rect x="430" y="30" width="350" height="90" fill="#F2EEE3" stroke="#5A6B7B" stroke-width="2"/>
+        <text x="605" y="55" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="800" fill="#5A6B7B">MANUFACTURING ⬢</text>
+        <text x="605" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A">作る / 誰が作る / 作る計画</text>
+        <text x="605" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">ギガキャスト · 特許 · 車載半導体内製</text>
+
+        <text x="400" y="140" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#181C2A" font-weight="700">境界記事は「製品計画の意思決定が主題なら Manufacturing」。dedup.py が重複掲載を構造的に防ぐ</text>
+      </svg>
+
+      <h2 style="margin-top: var(--space-2xl);">現行 6 カテゴリ ↔ 新 7 カテゴリ</h2>
+      <h3>カラーパレット俯瞰</h3>
+      <p>製造スチールグレー <code>#5A6B7B</code> は Mobility ティール <code>#3A7B8C</code> と隣接しないよう、彩度を落とした無彩色寄りに振り「工業・素材」の質感を持たせた。</p>
+      <div class="palette">
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-fx);"></div><strong>FX</strong><span>#B8860B</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-ai);"></div><strong>AI</strong><span>#2D5BB8</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-it);"></div><strong>IT</strong><span>#2E6B52</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-mobility);"></div><strong>Mobility</strong><span>#3A7B8C</span></div>
+        <div class="palette-cell new"><div class="palette-swatch" style="background: var(--color-accent-manufacturing);"></div><strong>Manufacturing</strong><span>#5A6B7B</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-economy);"></div><strong>Economy</strong><span>#8E2A19</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-game);"></div><strong>Game</strong><span>#5E3D8C</span></div>
+        <div class="palette-cell"><div class="palette-swatch" style="background: var(--color-accent-summary);"></div><strong>Summary</strong><span>#475569</span></div>
+      </div>
+
+      <h3>デザインシステム表</h3>
+      <table>
+        <thead><tr><th>id</th><th>和名</th><th>英名</th><th>アクセント</th><th>グリフ</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td><code>fx</code></td><td>為替</td><td>Foreign Exchange</td><td><code>#B8860B</code></td><td>¥</td><td>既存</td></tr>
+          <tr><td><code>ai</code></td><td>AI</td><td>Artificial Intelligence</td><td><code>#2D5BB8</code></td><td>◆</td><td>既存</td></tr>
+          <tr><td><code>it</code></td><td>IT-Consulting</td><td>IT &amp; Consulting</td><td><code>#2E6B52</code></td><td>⌗</td><td>既存</td></tr>
+          <tr><td><code>mobility</code></td><td>モビリティ</td><td>Mobility</td><td><code>#3A7B8C</code></td><td>◎</td><td>既存</td></tr>
+          <tr><td><code>manufacturing</code></td><td>製造</td><td>Manufacturing</td><td><code>#5A6B7B</code></td><td>⬢</td><td><span class="badge badge-new">NEW</span></td></tr>
+          <tr><td><code>economy</code></td><td>経済</td><td>Economy</td><td><code>#8E2A19</code></td><td>■</td><td>既存</td></tr>
+          <tr><td><code>game</code></td><td>ゲーム</td><td>Gaming</td><td><code>#5E3D8C</code></td><td>▶</td><td>既存</td></tr>
+          <tr><td><code>summary</code></td><td>総括</td><td>Summary</td><td><code>#475569</code></td><td>★</td><td>既存</td></tr>
+        </tbody>
+      </table>
+
+      <h3>曜日マトリクスの変化（Mobility=毎日 / Manufacturing=平日のみ）</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <h4>現行（6 カテゴリ）</h4>
+          <table>
+            <thead><tr><th>曜日</th><th>件数</th><th>対象カテゴリ</th></tr></thead>
+            <tbody>
+              <tr><td>月</td><td>5</td><td>FX, AI, IT, Mob, Eco</td></tr>
+              <tr><td>火</td><td>6</td><td>+ Game</td></tr>
+              <tr><td>水</td><td>5</td><td>FX, AI, IT, Mob, Eco</td></tr>
+              <tr><td>木</td><td>6</td><td>+ Game</td></tr>
+              <tr><td>金</td><td>5</td><td>FX, AI, IT, Mob, Eco</td></tr>
+              <tr><td>土</td><td>5</td><td>FX, AI, IT, Mob, Game</td></tr>
+              <tr><td>日</td><td>5</td><td>FX, AI, IT, Mob, Game</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h4>新仕様（Manufacturing 平日のみ）</h4>
+          <table>
+            <thead><tr><th>曜日</th><th>件数</th><th>対象カテゴリ</th></tr></thead>
+            <tbody>
+              <tr><td>月</td><td>6</td><td>FX, AI, IT, Mob, <strong style="color: var(--color-accent-manufacturing);">Mfg</strong>, Eco</td></tr>
+              <tr><td>火</td><td>7</td><td>+ Game</td></tr>
+              <tr><td>水</td><td>6</td><td>FX, AI, IT, Mob, <strong style="color: var(--color-accent-manufacturing);">Mfg</strong>, Eco</td></tr>
+              <tr><td>木</td><td>7</td><td>+ Game</td></tr>
+              <tr><td>金</td><td>6</td><td>FX, AI, IT, Mob, <strong style="color: var(--color-accent-manufacturing);">Mfg</strong>, Eco</td></tr>
+              <tr><td>土</td><td>5</td><td>据え置き（製造なし）</td></tr>
+              <tr><td>日</td><td>5</td><td>据え置き（製造なし）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>γ schema sections 8 → 9</h3>
+      <p>Summary の Editorial 構造（<code>tools/generate_pages.py</code> の <code>_SUMMARY_SECTION_TAGS</code>）を 1 要素拡張し、<strong>製造を §06 に挿入</strong>。経済 §06→§07、ゲーム §07→§08、明日へ §08→§09 へずれる。</p>
+      <svg viewBox="0 0 800 180" role="img" aria-label="γ schema sections 8 vs 9 比較" style="width: 100%; height: auto; max-width: 800px;">
+        <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#181C2A" letter-spacing="1.5">CURRENT · 8 SECTIONS</text>
+        <g transform="translate(10, 30)">
+          <rect x="0" y="0" width="86" height="36" fill="#1A1A1A"/><text x="43" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">総論</text>
+          <rect x="90" y="0" width="86" height="36" fill="#B8860B"/><text x="133" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">為替</text>
+          <rect x="180" y="0" width="86" height="36" fill="#2D5BB8"/><text x="223" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">AI</text>
+          <rect x="270" y="0" width="86" height="36" fill="#2E6B52"/><text x="313" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">IT</text>
+          <rect x="360" y="0" width="86" height="36" fill="#3A7B8C"/><text x="403" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">モビリティ</text>
+          <rect x="450" y="0" width="86" height="36" fill="#8E2A19"/><text x="493" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">経済</text>
+          <rect x="540" y="0" width="86" height="36" fill="#5E3D8C"/><text x="583" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#F0EBE0">ゲーム</text>
+          <rect x="630" y="0" width="86" height="36" fill="#C9A155"/><text x="673" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#181C2A">明日へ</text>
+        </g>
+
+        <text x="10" y="100" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#181C2A" letter-spacing="1.5">NEW · 9 SECTIONS</text>
+        <g transform="translate(10, 110)">
+          <rect x="0" y="0" width="76" height="36" fill="#1A1A1A"/><text x="38" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">総論</text>
+          <rect x="80" y="0" width="76" height="36" fill="#B8860B"/><text x="118" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">為替</text>
+          <rect x="160" y="0" width="76" height="36" fill="#2D5BB8"/><text x="198" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">AI</text>
+          <rect x="240" y="0" width="76" height="36" fill="#2E6B52"/><text x="278" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">IT</text>
+          <rect x="320" y="0" width="76" height="36" fill="#3A7B8C"/><text x="358" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">モビリティ</text>
+          <rect x="400" y="0" width="76" height="36" fill="#5A6B7B" stroke="#181C2A" stroke-width="2"/><text x="438" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">製造</text>
+          <rect x="480" y="0" width="76" height="36" fill="#8E2A19"/><text x="518" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">経済</text>
+          <rect x="560" y="0" width="76" height="36" fill="#5E3D8C"/><text x="598" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">ゲーム</text>
+          <rect x="640" y="0" width="76" height="36" fill="#C9A155"/><text x="678" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#181C2A">明日へ</text>
+          <text x="438" y="58" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="#5A6B7B" letter-spacing="1">NEW · §06</text>
+        </g>
+      </svg>
+    </section>
+
+    <!-- ============================================================
+         データフロー
+         ============================================================ -->
+    <section id="dataflow" class="tab-panel">
+      <h2>Runner パイプラインと製造で触る経路</h2>
+      <p>パイプライン全体は Mobility 追加時と同じ。製造で増える/触る経路は <strong style="color: var(--color-accent-manufacturing);">スチールグレーで強調</strong>。特徴は (1) スコア採点が製造だけ 3-A.1-M に分岐する点、(2) Web 経路は <code>CATEGORIES</code> dict 駆動でほぼ自動対応・メール経路は routine 手組みで <code>.acMf</code> とデザイン表が要る点。</p>
+
+      <svg viewBox="0 0 1000 470" role="img" aria-label="News-Grasp Runner パイプライン（製造追加）" style="width: 100%; height: auto; max-width: 1000px;">
+        <defs>
+          <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto"><path d="M 0 0 L 10 4 L 0 8 Z" fill="#181C2A"/></marker>
+          <marker id="arrow-mfg" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto"><path d="M 0 0 L 10 4 L 0 8 Z" fill="#5A6B7B"/></marker>
+        </defs>
+
+        <line x1="0" y1="80" x2="1000" y2="80" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <line x1="0" y1="240" x2="1000" y2="240" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+        <line x1="0" y1="380" x2="1000" y2="380" stroke="#E2DED4" stroke-width="1" stroke-dasharray="4 4"/>
+
+        <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 1 · TRIGGER &amp; CLI</text>
+        <text x="10" y="100" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 2 · SEARCH · SCORE · DEDUP</text>
+        <text x="10" y="260" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 3 · ARTIFACT GENERATION</text>
+        <text x="10" y="400" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5C5A52" letter-spacing="1.5">LAYER 4 · DELIVERY</text>
+
+        <!-- Layer 1 -->
+        <rect x="20" y="30" width="180" height="38" fill="#181C2A"/>
+        <text x="110" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#F0EBE0" font-weight="700">Task Scheduler (平日)</text>
+        <path d="M 200 49 L 240 49" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="240" y="30" width="200" height="38" fill="#181C2A"/>
+        <text x="340" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#F0EBE0" font-weight="700">news-grasp-runner.ps1</text>
+        <path d="M 440 49 L 480 49" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <rect x="480" y="30" width="200" height="38" fill="#C9A155"/>
+        <text x="580" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#181C2A" font-weight="700">claude --print</text>
+
+        <!-- Layer 2 -->
+        <rect x="20" y="120" width="180" height="48" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="110" y="142" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">watchlist.md</text>
+        <text x="110" y="158" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">6 → 7 カテゴリ</text>
+
+        <rect x="20" y="178" width="180" height="48" fill="#F2EEE3" stroke="#5A6B7B" stroke-width="2"/>
+        <text x="110" y="200" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#5A6B7B" font-weight="700">## Manufacturing</text>
+        <text x="110" y="216" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B">媒体/OEM/Tier1/素材</text>
+
+        <path d="M 200 144 L 240 150" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+        <path d="M 200 202 L 240 162" stroke="#5A6B7B" stroke-width="2" marker-end="url(#arrow-mfg)"/>
+
+        <rect x="240" y="120" width="200" height="106" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="340" y="142" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">3-A · WebSearch</text>
+        <text x="340" y="160" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">直近・カテゴリ毎に収集</text>
+        <text x="340" y="180" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#5A6B7B">3-A.1-M · 製造スコア</text>
+        <text x="340" y="196" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B">話題性除外・時間減衰なし</text>
+        <text x="340" y="214" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">他カテゴリは 3-A.1 のまま</text>
+
+        <path d="M 440 173 L 480 173" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="480" y="120" width="200" height="106" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="580" y="148" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">dedup.py</text>
+        <text x="580" y="168" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">URL/タイトル/トークン</text>
+        <text x="580" y="186" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3D7E60" font-weight="700">カテゴリ非依存</text>
+        <text x="580" y="204" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3D7E60" font-weight="700">→ Mob/Mfg 重複を構造防止</text>
+
+        <path d="M 680 173 L 720 173" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="720" y="120" width="200" height="106" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="820" y="148" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">Step 4 · γ schema</text>
+        <text x="820" y="168" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B" font-weight="700">8 → 9 sections</text>
+        <text x="820" y="186" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">製造を §06 に挿入</text>
+
+        <!-- Layer 3 -->
+        <rect x="20" y="280" width="220" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="130" y="304" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">digest/{Genre}/*.md</text>
+        <text x="130" y="324" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">FX / AI / IT / Mob / Eco / Game</text>
+        <text x="130" y="342" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B" font-weight="700">+ digest/Manufacturing/*.md</text>
+
+        <path d="M 240 320 L 290 320" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="290" y="280" width="200" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="390" y="312" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">config.py CATEGORIES</text>
+        <text x="390" y="332" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B" font-weight="700">+ "manufacturing" 行</text>
+
+        <path d="M 490 320 L 540 320" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="540" y="280" width="200" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="640" y="304" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">generate_pages.py</text>
+        <text x="640" y="322" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">CATEGORIES iterate</text>
+        <text x="640" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3D7E60" font-weight="700">→ Web はほぼ自動対応</text>
+
+        <path d="M 740 320 L 790 320" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="790" y="280" width="180" height="80" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="880" y="312" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">git commit</text>
+        <text x="880" y="332" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">push は Runner 側</text>
+
+        <!-- Layer 4 -->
+        <rect x="20" y="410" width="220" height="48" fill="#FFFFFF" stroke="#5A6B7B" stroke-width="2"/>
+        <text x="130" y="432" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#5A6B7B" font-weight="700">email-template.html</text>
+        <text x="130" y="448" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B">+ .acMf { #5A6B7B }</text>
+
+        <path d="M 240 434 L 290 434" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="290" y="410" width="200" height="48" fill="#FFFFFF" stroke="#E2DED4"/>
+        <text x="390" y="432" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">routine 手組み</text>
+        <text x="390" y="448" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C5A52">デザイン表 + 製造 table</text>
+
+        <path d="M 490 434 L 540 434" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="540" y="410" width="200" height="48" fill="#FFFFFF" stroke="#5A6B7B" stroke-width="2"/>
+        <text x="640" y="432" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#5A6B7B" font-weight="700">news-grasp-assets CDN</text>
+        <text x="640" y="448" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A6B7B">+ ng-thumb-manufacturing</text>
+
+        <path d="M 740 434 L 790 434" stroke="#181C2A" stroke-width="2" marker-end="url(#arrow-dark)"/>
+
+        <rect x="790" y="410" width="180" height="48" fill="#C9A155"/>
+        <text x="880" y="432" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#181C2A" font-weight="700">SMTP 直送</text>
+        <text x="880" y="448" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#181C2A">smtp.gmail.com:587</text>
+      </svg>
+
+      <h3>触る経路まとめ</h3>
+      <ul>
+        <li><strong>Layer 1 (CLI)</strong>: 変更なし。曜日判定で平日のみ製造を対象に。</li>
+        <li><strong>Layer 2 (Search/Score/Dedup)</strong>: <code>watchlist.md</code> に <code>## Manufacturing</code> 追加 + <code>routine-system.md</code> に <strong>3-A.1-M スコア特則</strong>と曜日マトリクス追記。<code>dedup.py</code> はカテゴリ非依存で<strong>変更不要</strong>。</li>
+        <li><strong>Layer 3 (Artifact)</strong>: <code>config.py</code> CATEGORIES に 1 行 → <code>generate_pages.py</code> は iterate 自動拡張。<code>TAG_TO_CID</code> に <code>製造→manufacturing</code>、γ schema 8→9 で fallback 定数を <strong>リスト長連動</strong>化（今後の増減に自動追従）。</li>
+        <li><strong>Layer 4 (Delivery)</strong>: メールは routine 手組みなので <code>.acMf</code> クラスとデザイン表が必須。サムネは別 repo <code>news-grasp-assets</code> に画像 push。</li>
+      </ul>
+
+      <div class="severity-info severity">
+        <strong>技術メモ（踏むと事故る点）</strong>
+        <p>① <code>sections</code> は dict[int]（1始まり）。製造を §06 に挿入したのでテストの期待 index がずれる。② fallback 定数の Mobility 抜けは積み残しバグだった（digest 正常時は動的パースが使われ顕在化していなかった）→ 今回是正。③ <code>_fallback_sections</code> は <code>range(len(...))</code> と <code>last = len-1</code> でカテゴリ増減に自動追従させ、ハードコード番号を残さない。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         実装ステップ
+         ============================================================ -->
+    <section id="impl" class="tab-panel">
+      <h2>実装順序（仕様書 → 実装 → アセット → コミット）</h2>
+      <div class="timeline">
+        <div class="timeline-step"><strong>0 · 仕様確定</strong><span>§2 設計判断をユーザー承認（本仕様書が道標）</span></div>
+        <div class="timeline-step"><strong>1 · 設定/プロンプト</strong><span>config.py / routine-system.md / watchlist.md 等</span></div>
+        <div class="timeline-step"><strong>2 · 生成スクリプト</strong><span>generate_pages.py（TAG_TO_CID・fallback 9 要素化）</span></div>
+        <div class="timeline-step"><strong>3 · テスト</strong><span>4 テストファイル更新 → pytest</span></div>
+        <div class="timeline-step"><strong>4 · アセット</strong><span>gimp-cli で製造サムネ 3 枚生成</span></div>
+        <div class="timeline-step"><strong>5 · コミット</strong><span>safe-commit ゲート通過（push しない）</span></div>
+        <div class="timeline-step"><strong>6 · 実機検証</strong><span>平日 Runner で受信メール / Obsidian / ナビバー確認</span></div>
+      </div>
+
+      <h3>A · 設定・プロンプト系 <span class="badge badge-done">done</span></h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>変更内容</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>tools/config.py</code></td><td><code>CATEGORIES</code> に <code>"manufacturing"</code> を mobility の直後に追加（accent #5A6B7B / glyph ⬢）</td><td>✓</td></tr>
+          <tr><td>2</td><td><code>prompts/routine-system.md</code></td><td>デザイン表に製造行・曜日マトリクス（平日）・<strong>新節 3-A.1-M スコア特則</strong>・γ schema 8→9・NG プレースホルダ・Genre 例・takeaways color</td><td>✓</td></tr>
+          <tr><td>3</td><td><code>prompts/obsidian-tagging-spec.md</code></td><td><code>cat/manufacturing</code> を例示に追加（6→7 カテゴリ）</td><td>✓</td></tr>
+          <tr><td>4</td><td><code>data/watchlist.md</code></td><td><code>## Manufacturing</code> 新設（媒体 / 完成車 OEM / Tier1-2 / 車載半導体・電池素材 / 生産技術 KW）</td><td>✓</td></tr>
+          <tr><td>5</td><td><code>prompts/email-template.html</code></td><td>製造アクセント <code>#5A6B7B</code> の atomic クラス <code>.acMf</code> を acMb の直後に追加</td><td>✓</td></tr>
+        </tbody>
+      </table>
+
+      <h3>B · Python 生成スクリプト <span class="badge badge-done">done</span></h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>変更内容</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td><code>tools/generate_pages.py</code></td><td><code>TAG_TO_CID</code> に <code>"製造": "manufacturing"</code>。fallback 定数 3 つ（<code>_SUMMARY_SECTION_TAGS / _COLORS / _CAT_ORDER</code>）を 7→9 要素化（Mobility 積み残しも是正）。<code>_fallback_sections</code> を <code>range(len(...))</code> / <code>last=len-1</code> でカテゴリ増減連動化</td><td>✓</td></tr>
+        </tbody>
+      </table>
+
+      <h3>C · テスト <span class="badge badge-done">done</span></h3>
+      <table>
+        <thead><tr><th>#</th><th>ファイル</th><th>変更内容</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td>7</td><td><code>tests/test_reflection_theme_essay.py</code></td><td>mock digest に <code>### §06 製造</code> 挿入＋経済/ゲーム/明日へを §07/§08/§09 へ繰下げ。<code>len(sections)==9</code>・製造 [6]・明日へ [9] を契約化。summary 描画テストを 9 sections + <code>&gt;製造&lt;</code> に拡張</td><td>✓</td></tr>
+          <tr><td>8</td><td><code>tests/test_generate_pages.py</code></td><td><code>test_categories_include_all_eight</code> に rename、expected に mobility + manufacturing</td><td>✓</td></tr>
+          <tr><td>9</td><td><code>tests/test_category_editorial_essay.py</code></td><td>fixture カテゴリループに <code>("manufacturing", "Manufacturing")</code> 追加</td><td>✓</td></tr>
+          <tr><td>10</td><td><code>tests/mock_data.py</code></td><td>CATEGORIES に製造カテゴリ（検証 3 記事ベース・3 件）を it と economy の間に追加</td><td>✓</td></tr>
+        </tbody>
+      </table>
+
+      <div class="severity-success severity">
+        <strong>検証実測（2026-06-03）</strong>
+        <p><code>NEWS_GRASP_SKIP_URL_CHECK=1 pytest</code> → <strong>198 passed / 3 skipped</strong>（skip は外部 URL ライブ検証）。製造メール描画は <code>製造</code> / <code>#5A6B7B</code> / <code>Manufacturing</code> すべて出力確認。DeepDive 3 件の FAIL は外部 URL（MUFG FX_Monthly PDF）の 404 起因で製造とは無関係。</p>
+      </div>
+
+      <h3>D · アセット（別 public repo <code>HIDEPON-UMG/news-grasp-assets</code> + docs/assets/og） <span class="badge badge-pending">pending</span></h3>
+      <table>
+        <thead><tr><th>#</th><th>成果物</th><th>配置先</th></tr></thead>
+        <tbody>
+          <tr><td>11</td><td><code>ng-thumb-manufacturing.jpg</code>（568×220・FEATURED 用）</td><td><code>news-grasp-assets</code> main</td></tr>
+          <tr><td>12</td><td><code>ng-thumb-common-manufacturing.jpg</code>（140×90・サイドサムネ）</td><td><code>news-grasp-assets</code> main</td></tr>
+          <tr><td>13</td><td><code>manufacturing.jpg</code>（OG デフォルト・1120×587）</td><td>News-Grasp <code>docs/assets/og/</code></td></tr>
+        </tbody>
+      </table>
+      <p>gimp-cli skill で生成。スチールグレー <code>#5A6B7B</code> 基調。既存 <code>ng-thumb-mobility.jpg</code> のサイズ・トンマナを参照。</p>
+
+      <h3>E · 仕様書 + コミット</h3>
+      <table>
+        <thead><tr><th>#</th><th>内容</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td>14</td><td><code>docs/specs/2026-06-03_newsgrasp-manufacturing-category.html</code>（本書）</td><td>✓</td></tr>
+          <tr><td>15</td><td><code>safe-commit</code> ゲート通過でコミット（config.py / generate_pages.py / routine-system.md / watchlist.md / obsidian-tagging-spec.md / email-template.html / tests/ / docs/specs/ + handoff）。<strong>push しない</strong>。画像 repo は別コミット</td><td><span class="badge badge-pending">pending</span></td></tr>
+        </tbody>
+      </table>
+
+      <h3>config.py 追記スニペット（実装済）</h3>
+      <pre><code>CATEGORIES: dict[str, dict[str, str]] = {
+    "fx":       {"label": "Foreign Exchange",        "jp": "為替",          "accent": "#B8860B", "glyph": "¥"},
+    "ai":       {"label": "Artificial Intelligence", "jp": "AI",            "accent": "#2D5BB8", "glyph": "◆"},
+    "it":       {"label": "IT &amp; Consulting",         "jp": "IT-Consulting", "accent": "#2E6B52", "glyph": "⌗"},
+    "mobility": {"label": "Mobility",                "jp": "モビリティ",     "accent": "#3A7B8C", "glyph": "◎"},
+    "manufacturing": {"label": "Manufacturing",      "jp": "製造",          "accent": "#5A6B7B", "glyph": "⬢"},  # NEW
+    "economy":  {"label": "Economy",                 "jp": "経済",          "accent": "#8E2A19", "glyph": "■"},
+    "game":     {"label": "Gaming",                  "jp": "ゲーム",         "accent": "#5E3D8C", "glyph": "▶"},
+    "summary":  {"label": "Summary",                 "jp": "総括",          "accent": "#475569", "glyph": "★"},
+}</code></pre>
+    </section>
+
+    <!-- ============================================================
+         パラメータ playground
+         ============================================================ -->
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ playground</h2>
+      <p>Manufacturing カテゴリのアクセント色・グリフ・id を試行し、納得した値で「<strong>config.py 行をコピー</strong>」を押すと <code>tools/config.py</code> の <code>CATEGORIES</code> に追加すべき 1 行が clipboard に入る。確定値は <code>#5A6B7B</code> / <code>⬢</code>。</p>
+
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-id">id (lowercase)</label>
+          <input type="text" id="param-id" value="manufacturing" maxlength="16" pattern="[a-z0-9_-]+">
+          <output for="param-id">URL: /manufacturing/</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-jp">和名</label>
+          <input type="text" id="param-jp" value="製造" maxlength="12">
+          <output></output>
+        </div>
+        <div class="playground-control">
+          <label for="param-label">英名 (label)</label>
+          <input type="text" id="param-label" value="Manufacturing" maxlength="32">
+          <output></output>
+        </div>
+        <div class="playground-control">
+          <label for="param-accent">アクセント色</label>
+          <input type="color" id="param-accent" value="#5A6B7B">
+          <output for="param-accent">#5A6B7B</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-glyph">グリフ</label>
+          <select id="param-glyph">
+            <option value="⬢" selected>⬢ (六角形 / ボルト・ナット)</option>
+            <option value="⚙">⚙ (歯車 / 機械)</option>
+            <option value="⬡">⬡ (六角形・線)</option>
+            <option value="▤">▤ (生産ライン)</option>
+            <option value="◫">◫ (金型 / 一体成形)</option>
+            <option value="⛭">⛭ (設定歯車)</option>
+          </select>
+          <output></output>
+        </div>
+
+        <h4>プレビュー</h4>
+        <div class="playground-preview">
+          <div class="preview-swatch" id="preview-swatch">⬢</div>
+          <div class="preview-text">
+            <strong id="preview-jp">製造</strong>
+            <span id="preview-label">MANUFACTURING · #5A6B7B</span>
+          </div>
+        </div>
+
+        <h4>γ schema 製造挿入位置のプレビュー（§06）</h4>
+        <svg viewBox="0 0 800 60" role="img" aria-label="γ schema 9 sections preview" style="width: 100%; height: auto; max-width: 800px;">
+          <g transform="translate(0, 10)">
+            <rect x="0" y="0" width="76" height="36" fill="#1A1A1A"/><text x="38" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">総論</text>
+            <rect x="80" y="0" width="76" height="36" fill="#B8860B"/><text x="118" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">為替</text>
+            <rect x="160" y="0" width="76" height="36" fill="#2D5BB8"/><text x="198" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">AI</text>
+            <rect x="240" y="0" width="76" height="36" fill="#2E6B52"/><text x="278" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">IT</text>
+            <rect x="320" y="0" width="76" height="36" fill="#3A7B8C"/><text x="358" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">モビリティ</text>
+            <rect id="preview-rect-mfg" x="400" y="0" width="76" height="36" fill="#5A6B7B" stroke="#181C2A" stroke-width="2"/><text id="preview-text-mfg" x="438" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">製造</text>
+            <rect x="480" y="0" width="76" height="36" fill="#8E2A19"/><text x="518" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">経済</text>
+            <rect x="560" y="0" width="76" height="36" fill="#5E3D8C"/><text x="598" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#F0EBE0">ゲーム</text>
+            <rect x="640" y="0" width="76" height="36" fill="#C9A155"/><text x="678" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#181C2A">明日へ</text>
+          </g>
+        </svg>
+
+        <div style="margin-top: var(--space-xl); display: flex; gap: var(--space-md); flex-wrap: wrap;">
+          <button class="btn btn-navy" id="copy-config">config.py 行をコピー</button>
+          <button class="btn btn-gold" id="copy-prompt">Claude Code 用プロンプトをコピー</button>
+        </div>
+
+        <h4>生成スニペットプレビュー</h4>
+        <pre><code id="snippet-preview">"manufacturing": {"label": "Manufacturing", "jp": "製造", "accent": "#5A6B7B", "glyph": "⬢"},</code></pre>
+      </div>
+    </section>
+
+    <footer>
+      <p>News-Grasp · Manufacturing カテゴリ追加仕様書 · 2026-06-03 · DESIGN.md 同期 · handoff: <code>prompts/handoff/manufacturing-category-handoff-2026-06-03.md</code></p>
+    </footer>
+  </main>
+
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    // Playground state
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      id: $('param-id'),
+      jp: $('param-jp'),
+      label: $('param-label'),
+      accent: $('param-accent'),
+      glyph: $('param-glyph'),
+      swatch: $('preview-swatch'),
+      previewJp: $('preview-jp'),
+      previewLabel: $('preview-label'),
+      previewRect: $('preview-rect-mfg'),
+      previewText: $('preview-text-mfg'),
+      snippet: $('snippet-preview'),
+      copyConfig: $('copy-config'),
+      copyPrompt: $('copy-prompt'),
+      accentOut: document.querySelector('output[for="param-accent"]'),
+      idOut: document.querySelector('output[for="param-id"]'),
+    };
+
+    function refreshPreview() {
+      const id = els.id.value || 'manufacturing';
+      const jp = els.jp.value || '製造';
+      const label = els.label.value || 'Manufacturing';
+      const accent = els.accent.value || '#5A6B7B';
+      const glyph = els.glyph.value || '⬢';
+
+      els.swatch.style.background = accent;
+      els.swatch.textContent = glyph;
+      els.previewJp.textContent = jp;
+      els.previewLabel.textContent = `${label.toUpperCase()} · ${accent.toUpperCase()}`;
+      els.previewRect.setAttribute('fill', accent);
+      els.previewText.textContent = jp;
+      els.snippet.textContent = `"${id}": {"label": "${label}", "jp": "${jp}", "accent": "${accent.toUpperCase()}", "glyph": "${glyph}"},`;
+      els.accentOut.textContent = accent.toUpperCase();
+      els.idOut.textContent = `URL: /${id}/`;
+    }
+
+    ['id', 'jp', 'label', 'accent', 'glyph'].forEach(k => {
+      els[k].addEventListener('input', refreshPreview);
+      els[k].addEventListener('change', refreshPreview);
+    });
+
+    function copy(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'コピーしました';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }).catch(() => alert('クリップボードに書き込めませんでした:\n\n' + text));
+    }
+
+    els.copyConfig.addEventListener('click', () => {
+      copy(els.snippet.textContent, els.copyConfig);
+    });
+
+    els.copyPrompt.addEventListener('click', () => {
+      const prompt = `News-Grasp に Manufacturing カテゴリを以下のパラメータで追加してください。
+
+- id: ${els.id.value}
+- 和名: ${els.jp.value}
+- 英名 (label): ${els.label.value}
+- アクセント色: ${els.accent.value.toUpperCase()}
+- グリフ: ${els.glyph.value}
+- スコア軸: 製造専用 3-A.1-M（産業インパクト30/技術新規性25/戦略シグナル25/一次情報度20・話題性削除・時間減衰なし・件数下限3）
+- 掲載: 平日のみ / γ schema は製造を §06 に挿入し 8→9 sections
+
+handoff prompts/handoff/manufacturing-category-handoff-2026-06-03.md の残タスクから順に進めてください。`;
+      copy(prompt, els.copyPrompt);
+    });
+
+    refreshPreview();
+  </script>
+</body>
+</html>

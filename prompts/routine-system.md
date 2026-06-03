@@ -26,6 +26,7 @@ watchlist で指定された企業・タイトル・キーワードと、ジャ�
 | `ai` | AI | Artificial Intelligence | `#2D5BB8`（電子青） | `◆` |
 | `it` | IT-Consulting | IT & Consulting | `#2E6B52`（苔緑） | `▲` |
 | `mobility` | モビリティ | Mobility | `#3A7B8C`（ティール） | `◎` |
+| `manufacturing` | 製造 | Manufacturing | `#5A6B7B`（スチールグレー） | `⬢` |
 | `economy` | 経済 | Economy | `#8E2A19`（深紅） | `■` |
 | `game` | ゲーム | Gaming | `#5E3D8C`（洋紫） | `●` |
 
@@ -71,17 +72,19 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 ### ステップ 1: 当日情報の準備
 
 1. 現在時刻を JST で取得し、当日の **YYYY-MM-DD** と **曜日** を確定する
-2. 曜日に応じて対象カテゴリを決定（**FX と Mobility は毎日固定、Economy は平日のみ、Game は火木土日のみ**）：
+2. 曜日に応じて対象カテゴリを決定（**FX と Mobility は毎日固定、Economy と Manufacturing は平日のみ、Game は火木土日のみ**）：
 
 | 曜日 | 対象カテゴリ | 件数 |
 |---|---|---|
-| 月 | FX, AI, IT-Consulting, Mobility, Economy | 5 |
-| 火 | FX, AI, IT-Consulting, Mobility, Economy, Game | 6 |
-| 水 | FX, AI, IT-Consulting, Mobility, Economy | 5 |
-| 木 | FX, AI, IT-Consulting, Mobility, Economy, Game | 6 |
-| 金 | FX, AI, IT-Consulting, Mobility, Economy | 5 |
+| 月 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy | 6 |
+| 火 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy, Game | 7 |
+| 水 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy | 6 |
+| 木 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy, Game | 7 |
+| 金 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy | 6 |
 | 土 | FX, AI, IT-Consulting, Mobility, Game | 5 |
 | 日 | FX, AI, IT-Consulting, Mobility, Game | 5 |
+
+> **Manufacturing は平日のみ・件数は下限緩め**。製造/技術の深いニュースは週末に出にくいため土日は対象外。平日も無理に件数を埋めず、該当が薄い日は 3 件で可（3-A.1-M 参照）。
 
 3. **issue 番号**: `YYYYMMDD` 形式（例: 20260428）
 
@@ -127,6 +130,31 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 2. **報道から 24 時間超の記事は話題性を −10**（時間減衰。3-A.5 dedup の 24h 続報ルールと整合）
 3. **カテゴリ内候補が全件 60 台に集中したら相対スコアで序列を再調整**（絶対評価の硬直を防ぐ）
 4. **セレブ言及だけ／プレスリリース転載／新事実なき焼き直しは明示的に減点**（バズや PR 臭で序列が歪むのを防ぐ）
+
+#### 3-A.1-M Manufacturing（製造）カテゴリの重要度スコア特則
+
+**Manufacturing は他カテゴリと読者価値が根本的に異なる**ため、3-A.1 の 4 軸をそのまま使わず、本節の軸で採点する（他カテゴリ FX/AI/IT/Mobility/Economy/Game は 3-A.1 のまま）。
+
+**想定読者（Manufacturing 専用）**：自動車・部素材・半導体の **製造業従事者／技術者／事業・経営企画**。消費者として「何を買えるか」ではなく、**「日本／世界の製造業の競争力・技術蓄積・サプライチェーンが今どう動いているか」**を知りたい産業観測者。3-A.1 の「自分の仕事・投資判断への直結」は最上位に置かない。
+
+| 軸 | 目安ウェイト | 評価の手がかり |
+|---|---|---|
+| 産業インパクト | **30%** | 生産能力・サプライチェーン・競争力の構造変化の大きさ。**読者の行動が変わる人数ではなく、産業構造が変わる度合い**で測る。工場新設/閉鎖・内製化・量産移行・調達網再編は大 |
+| 技術的新規性・深度 | **25%** | 新工法・新素材・新生産技術・特許・歩留まり・量産化の到達度。**地味でも技術的に非連続なら高評価**（特許分析・R&D 戦略シフト型を拾うための軸） |
+| 戦略的シグナル | **25%** | 計画の新規/中止/停止・設備投資・工場立地・提携/撤退・人事。**「作る計画をどう決めたか」という意思決定**を評価（例: 次世代 EV 開発中止、ギガキャスト量産判断） |
+| 一次情報度 | **20%** | IR・適時開示・プレスリリース・特許（J-PlatPat / Google Patents）・現地取材・専門誌。製造は一次源が命なので **3-A.1 より重視（15%→20%）** |
+
+**3-A.1 との差分（必ず守る）**：
+
+- **「話題性（拡散量）」を軸から外す**。製造・技術ニュースは拡散しなくても構造的に重要なものが多く、拡散量で測ると永遠に埋もれる（提示記事の「デンソー/アイシン特許分析」型がこれ）。拡散量はガードレール③（相対補正）でのみ間接的に効かせる。
+- **時間減衰を弱める**。3-A.1 ガードレール②「報道から 24 時間超は話題性 −10」は **Manufacturing には適用しない**。特許分析・戦略シフトのようなストック型ニュースは数日遅れても価値が落ちないため。
+- **件数下限を緩める**。1 日の目標件数を無理に埋めず、**該当が薄い日は 3 件で可**（質の低い続報で埋めない。3-A.5-F の「満たなくても OK」を Manufacturing では特に徹底）。
+
+**Mobility との境界ルール**（対象企業が重なる＝トヨタ / BYD / デンソー等のため必須）：
+
+- **使う／乗る／サービスを受ける視点 → Mobility**（Robotaxi 拡大、新型車の発売・販売台数、充電サービス、自動運転の乗車体験）
+- **作る／誰が作る／作る計画をどうするか視点 → Manufacturing**（工場、生産技術、サプライヤーの技術開発、製品計画の新規/中止/停止、設備投資、特許、車載半導体・電池素材の量産）
+- 境界記事（例: 次世代 EV 開発中止）は **製品計画の意思決定そのものが主題なら Manufacturing** に振る。`tools/dedup.py` が全カテゴリ横断で URL/タイトル照合するので同一記事の両カテゴリ重複掲載は構造的に起きない（どちらに入れるかだけ上記基準で決める）。
 
 #### 3-A.5 重複除外フェーズ（**`tools/dedup.py` に必ず通す**）
 
@@ -347,7 +375,7 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
     "from": "§06 GAME"
   },
 
-  // **ちょうど 8 セクション**: 総論 / 為替 / AI / IT / モビリティ / 経済 / ゲーム / 明日へ
+  // **ちょうど 9 セクション**: 総論 / 為替 / AI / IT / モビリティ / 製造 / 経済 / ゲーム / 明日へ
   // 順序固定、color はテンプレ側で固定値 (_SUMMARY_SECTION_COLORS) を当てるので不要
   "sections": [
     { "number": 1, "tag": "総論",       "heading": "本日の総論",       "body": "..." },
@@ -355,14 +383,15 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
     { "number": 3, "tag": "AI",         "heading": "...",             "body": "..." },
     { "number": 4, "tag": "IT",         "heading": "...",             "body": "..." },
     { "number": 5, "tag": "モビリティ", "heading": "...",             "body": "..." },
-    { "number": 6, "tag": "経済",       "heading": "...",             "body": "..." },
-    { "number": 7, "tag": "ゲーム",     "heading": "...",             "body": "..." },
-    { "number": 8, "tag": "明日へ",     "heading": "明日への示唆",     "body": "..." }
+    { "number": 6, "tag": "製造",       "heading": "...",             "body": "..." },
+    { "number": 7, "tag": "経済",       "heading": "...",             "body": "..." },
+    { "number": 8, "tag": "ゲーム",     "heading": "...",             "body": "..." },
+    { "number": 9, "tag": "明日へ",     "heading": "明日への示唆",     "body": "..." }
   ],
 
   // **ちょうど 3 件**: KEY TAKEAWAYS (3 カラム / 64px 番号バー + tag + 本文)
   // n は 01-03。color はカテゴリ accent を当てる
-  // color 候補: #B8860B(FX) / #2D5BB8(AI) / #2E6B52(IT) / #3A7B8C(モビリティ) / #8E2A19(経済) / #5E3D8C(ゲーム) / #475569(総括)
+  // color 候補: #B8860B(FX) / #2D5BB8(AI) / #2E6B52(IT) / #3A7B8C(モビリティ) / #5A6B7B(製造) / #8E2A19(経済) / #5E3D8C(ゲーム) / #475569(総括)
   "takeaways": [
     { "n": 1, "tag": "為替", "color": "#B8860B", "text": "..." },
     { "n": 2, "tag": "AI",   "color": "#2D5BB8", "text": "..." },
@@ -378,12 +407,12 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### γ schema の必須ルール
 
-- **sections は必ず 8 件**。順序は 総論 → 為替 → AI → IT → モビリティ → 経済 → ゲーム → 明日へ で固定。
+- **sections は必ず 9 件**。順序は 総論 → 為替 → AI → IT → モビリティ → 製造 → 経済 → ゲーム → 明日へ で固定。
   これは Pattern D のセクションタグ（`_SUMMARY_SECTION_TAGS` in `tools/generate_pages.py`）と
-  揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし）でも 8 件は守り、該当カテゴリは
-  「ゲーム関連は本日休載」のように 1 文で繋ぐ
+  揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし、土日は 製造・Economy なし）でも 9 件は守り、
+  該当カテゴリは「ゲーム関連は本日休載」「製造は本日休載（平日のみ）」のように 1 文で繋ぐ
 - **takeaways は必ず 3 件**。`n` は 1/2/3 の番号、`tag` は本文中で最も強調したい軸、`color` は対応する
-  カテゴリ accent (`#B8860B` / `#2D5BB8` / `#2E6B52` / `#3A7B8C` / `#8E2A19` / `#5E3D8C` / `#475569`) から選ぶ
+  カテゴリ accent (`#B8860B` / `#2D5BB8` / `#2E6B52` / `#3A7B8C` / `#5A6B7B` / `#8E2A19` / `#5E3D8C` / `#475569`) から選ぶ
 - **pull_quote.text** は **40〜80 字** が目安。Georgia 120px の大型引用符と並ぶので長すぎると改行が乱れる。
   `emphasis` 部分は `[[ ]]` で囲まなくてよい (テンプレ側で gold underline を当てる)
 - **lead は 150〜250 字（最低 150 字を厳守）**。**3 階層の強調をすべて使う**: `[[ ]]` を 2-4 箇所 + `**太字**` を 1-2 箇所 + `__下線__` を 1 箇所（この lead は LP 上部「TODAY'S THEME」本文に `render_emph` でマーカー/太字/下線として描画されるため、`[[ ]]` だけだと太字・下線が出ず単調になる。2026-05-30 に lead がマーカーのみで「強調が効いていない」と指摘された）。
@@ -409,7 +438,7 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### 5-A. Markdown digest の生成
 
-**カテゴリ別フォルダ構造**で出力する。`Genre` は `FX` / `AI` / `IT-Consulting` / `Mobility` / `Economy` / `Game`：
+**カテゴリ別フォルダ構造**で出力する。`Genre` は `FX` / `AI` / `IT-Consulting` / `Mobility` / `Manufacturing` / `Economy` / `Game`：
 
 | ファイル | 内容 |
 |---|---|
@@ -520,8 +549,8 @@ OGP 取得結果と NG プレースホルダで分岐する：
 
 利用可能な NG プレースホルダ keys：
 
-- **FEATURED**（TOP 記事、568×220 想定）: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-mobility`, `ng-thumb-economy`, `ng-thumb-game`
-- **サイドサムネ**（2 件目以降、140×90 想定）: `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-mobility`, `ng-thumb-common-economy`, `ng-thumb-common-game`
+- **FEATURED**（TOP 記事、568×220 想定）: `ng-thumb-fx`, `ng-thumb-ai`, `ng-thumb-it`, `ng-thumb-mobility`, `ng-thumb-manufacturing`, `ng-thumb-economy`, `ng-thumb-game`
+- **サイドサムネ**（2 件目以降、140×90 想定）: `ng-thumb-common-fx`, `ng-thumb-common-ai`, `ng-thumb-common-it`, `ng-thumb-common-mobility`, `ng-thumb-common-manufacturing`, `ng-thumb-common-economy`, `ng-thumb-common-game`
 
 #### 画像クリックで記事 URL に飛ばす
 
