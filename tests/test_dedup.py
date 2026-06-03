@@ -223,6 +223,50 @@ def test_different_events_same_company_survive() -> list[str]:
     return errs
 
 
+def test_japanese_katakana_title_same_event() -> list[str]:
+    """カタカナ日本語タイトルの固有名詞を英日エイリアスで英語見出しと照合する。
+
+    なぜ重要か (2026-06-03 Game 重複整理): significant_tokens が英字ランしか拾わず、
+    「ヨッシー」(日) と「Yoshi」(英) が別トークンになり同一発売の連日再掲を検出できな
+    かった。カタカナ固有名詞抽出 + エイリアス (ヨッシー→yoshi) で同一イベントを照合の
+    土俵に乗せる。実際に取りこぼした 05-01(英)/05-18(日) のヨッシー発売ペアをロックする。
+    """
+    errs: list[str] = []
+    a = "Yoshi and the Mysterious Book Switch2専用 5月21日確定"  # 05-01 #78 (英語)
+    b = "ヨッシーと不思議な本、Switch2で5月21日発売 — ファースト新作でファミリー層確保"  # 05-18 #75 (日本語)
+    existing = [{"title": b, "url": "https://example.com/exist",
+                 "url_norm": "https://example.com/exist", "seen_at": _ts(5.0)}]
+    match, mtype = dedup.find_match({"title": a, "url": "https://example.com/cand"}, existing)
+    if mtype != "title":
+        wa, na = dedup.significant_tokens(a)
+        wb, nb = dedup.significant_tokens(b)
+        errs.append(
+            f"ヨッシー(英/日)同一発売が未検知: match_type={mtype} "
+            f"(wa={sorted(wa)} na={sorted(na)} / wb={sorted(wb)} nb={sorted(nb)})"
+        )
+    return errs
+
+
+def test_japanese_general_katakana_no_false_match() -> list[str]:
+    """一般カタカナ語だけ共通の別タイトルを same_event 誤検知しない (トークン直接検証)。
+
+    固有名詞でないカタカナ語 (ゲーム/リリース等) を words に混ぜると同カテゴリの別記事を
+    潰す。stopword 除外と「固有名詞 1 語のみ共通では発火しない」ガードで、別タイトルが
+    生き残ることを same_event_by_tokens レベルでロックする (jaccard を介さず純検証)。
+    """
+    errs: list[str] = []
+    cases_false = [
+        ("ポケモン新作 Switch2 2026年冬", "ゼルダ新作 Switch2 2027年春"),
+        ("スプラトゥーン レイダース 7月23日発売", "スターフォックス 6月25日発売"),
+    ]
+    for a, b in cases_false:
+        wa, na = dedup.significant_tokens(a)
+        wb, nb = dedup.significant_tokens(b)
+        if dedup.same_event_by_tokens(wa, na, wb, nb):
+            errs.append(f"別タイトル誤検知: {a!r} ⇔ {b!r} (wa={sorted(wa)} wb={sorted(wb)})")
+    return errs
+
+
 def test_batch_internal_dedup() -> list[str]:
     errs: list[str] = []
     existing: list[dict] = []
@@ -242,21 +286,33 @@ def test_batch_internal_dedup() -> list[str]:
     return errs
 
 
+_CONTRACT_CASES = [
+    ("URL 正規化",            test_url_normalization),
+    ("タイトル正規化",        test_title_normalization),
+    ("Jaccard 類似度",        test_jaccard_similarity),
+    ("24 時間ウィンドウ除外", test_24h_window),
+    ("24 時間超は続報扱い",   test_followup_after_24h),
+    ("URL 完全マッチ除外",    test_url_exact_match),
+    ("同一URLは常に除外(数日後も)", test_same_url_old_still_dropped),
+    ("cross-language 同一イベント検知", test_cross_language_same_event_detected),
+    ("別イベントは誤検知しない", test_different_events_same_company_survive),
+    ("カタカナ日本語タイトル同一イベント検知", test_japanese_katakana_title_same_event),
+    ("一般カタカナ語は誤検知しない", test_japanese_general_katakana_no_false_match),
+    ("batch 内重複除外",      test_batch_internal_dedup),
+]
+
+
+def test_all_dedup_contracts() -> None:
+    """pytest 集約ゲート: 上の各 test_* は list[str] 返却の手動実行形式 (main で集計) の
+    ため pytest 単体では assert されず「ノーオペ pass」になる。この 1 件で全契約を実評価
+    し、errs を返すものがあれば fail させる (safe-commit の pytest ゲートで回帰を捕捉)。"""
+    failures = {label: errs for label, fn in _CONTRACT_CASES if (errs := fn())}
+    assert not failures, f"dedup 契約違反: {failures}"
+
+
 def main() -> int:
-    cases = [
-        ("URL 正規化",            test_url_normalization),
-        ("タイトル正規化",        test_title_normalization),
-        ("Jaccard 類似度",        test_jaccard_similarity),
-        ("24 時間ウィンドウ除外", test_24h_window),
-        ("24 時間超は続報扱い",   test_followup_after_24h),
-        ("URL 完全マッチ除外",    test_url_exact_match),
-        ("同一URLは常に除外(数日後も)", test_same_url_old_still_dropped),
-        ("cross-language 同一イベント検知", test_cross_language_same_event_detected),
-        ("別イベントは誤検知しない", test_different_events_same_company_survive),
-        ("batch 内重複除外",      test_batch_internal_dedup),
-    ]
     overall_ok = True
-    for label, fn in cases:
+    for label, fn in _CONTRACT_CASES:
         errs = fn()
         if errs:
             overall_ok = False
