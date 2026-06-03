@@ -703,51 +703,95 @@ def _resolve_cat_from_dirname(dirname: str) -> str | None:
 
 
 def _articles_as_grid_entries(cat_id: str, date: str,
-                               skip_url: str | None = None) -> list[dict[str, Any]]:
-    """data/articles.jsonl から同日同カテゴリ記事を more-card 用 entry-like dict に変換。
+                               skip_url: str | None = None,
+                               digests: Iterable[Path] | None = None) -> list[dict[str, Any]]:
+    """同日同カテゴリの digest md を解析し more-card 用 entry-like dict に変換する fallback。
 
-    backfill 未着手の新設カテゴリ (Mobility 等) で 1 entry しか持たない場合の fallback。
-    score 降順で最大 9 件返す。featured 記事 (top_source_url) は skip。
+    backfill 直後の新設カテゴリ (Manufacturing 等) は digest が 1 日分しか無く、通常の
+    grid (他日付の featured を並べる) を埋められない。その場合に同日 digest の全記事を
+    grid に展開する。bullets は inline_html 済みを保持し、テンプレ側 ``{{ b|safe }}`` で
+    強調が描画される。featured (skip_url) は除外し score 降順で最大 9 件返す。
+
+    2026-06-04 修正: 旧実装は articles.jsonl の raw summary をそのまま summary_text に
+    渡し top_bullets を空にしていたため、カテゴリ索引ページ (/{cat}/) の grid カードで
+    ``**bold**`` / ``[[wikilink]]`` が生 markdown のまま表示されていた (Manufacturing
+    初回 backfill で露見)。digest md から整形済み bullets を取り直すことで根治する。
     """
-    import json as _json
-    p = _PKG_ROOT / "data" / "articles.jsonl"
-    if not p.exists():
-        return []
-    aliases = _GENRE_ALIASES.get(cat_id, set())
-    out: list[dict[str, Any]] = []
     cat_meta = CATEGORIES.get(cat_id, {})
-    with p.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                o = _json.loads(line)
-            except _json.JSONDecodeError:
-                continue
-            genre = o.get("genre", "")
-            if genre not in aliases and o.get("category_id") != cat_id:
-                continue
-            if o.get("date") != date:
-                continue
-            if skip_url and o.get("url") == skip_url:
+
+    def _score_int(v: Any) -> int:
+        return int(v) if str(v).strip().isdigit() else 0
+
+    # 1) 本筋: 同日同カテゴリの digest md を探し、整形済み bullets ごと grid 化する。
+    for src in (list(digests) if digests is not None else scan_digests()):
+        try:
+            fm, body = parse_frontmatter(src.read_text(encoding="utf-8"))
+        except OSError:
+            continue
+        if fm.get("categoryId") != cat_id or fm.get("date") != date:
+            continue
+        out: list[dict[str, Any]] = []
+        for a in parse_articles(body):
+            url = a.get("source_url", "")
+            if skip_url and url == skip_url:
                 continue
             out.append({
-                "date": o.get("date", date),
-                "top_title": o.get("title", ""),
-                "top_thumb": o.get("thumb"),
-                "top_source": o.get("source"),
-                "top_source_url": o.get("url"),
-                "top_score": o.get("score"),
-                "summary_text": o.get("summary", "") or "",
-                "top_bullets": [],
-                "canonical": o.get("url", ""),
+                "date": date,
+                "top_title": a.get("title", ""),
+                "top_thumb": a.get("thumb"),
+                "top_source": a.get("source"),
+                "top_source_url": url,
+                "top_score": _score_int(a.get("score")),
+                "summary_text": "",
+                "top_bullets": a.get("bullets", []),
+                "canonical": url,
                 "category_id": cat_id,
                 "category_label": cat_meta.get("label", cat_id),
                 "category_jp": cat_meta.get("jp", cat_id),
                 "accent": cat_meta.get("accent", ""),
                 "glyph": cat_meta.get("glyph", ""),
             })
+        out.sort(key=lambda x: x.get("top_score") or 0, reverse=True)
+        return out[:9]
+
+    # 2) digest 不在の異常時のみ articles.jsonl で埋める。装飾記法は strip_inline で
+    #    剥がし、raw markdown が画面に出ないようにする (bullets は持てないので素テキスト)。
+    import json as _json
+    p = _PKG_ROOT / "data" / "articles.jsonl"
+    if not p.exists():
+        return []
+    aliases = _GENRE_ALIASES.get(cat_id, set())
+    out = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            o = _json.loads(line)
+        except _json.JSONDecodeError:
+            continue
+        if o.get("genre", "") not in aliases and o.get("category_id") != cat_id:
+            continue
+        if o.get("date") != date:
+            continue
+        if skip_url and o.get("url") == skip_url:
+            continue
+        out.append({
+            "date": o.get("date", date),
+            "top_title": o.get("title", ""),
+            "top_thumb": o.get("thumb"),
+            "top_source": o.get("source"),
+            "top_source_url": o.get("url"),
+            "top_score": _score_int(o.get("score")),
+            "summary_text": strip_inline(o.get("summary", "") or ""),
+            "top_bullets": [],
+            "canonical": o.get("url", ""),
+            "category_id": cat_id,
+            "category_label": cat_meta.get("label", cat_id),
+            "category_jp": cat_meta.get("jp", cat_id),
+            "accent": cat_meta.get("accent", ""),
+            "glyph": cat_meta.get("glyph", ""),
+        })
     out.sort(key=lambda x: x.get("top_score") or 0, reverse=True)
     return out[:9]
 
@@ -1620,7 +1664,8 @@ def build_all_summaries(entries: list[dict[str, Any]], docs_root: Path,
     return written
 
 
-def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list[Path]:
+def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
+                         *, digests: Iterable[Path] | None = None) -> list[Path]:
     """カテゴリ別アーカイブ docs/{cat}/index.html を生成 (v2 Magazine Spread)。
 
     v2 リデザイン (Phase 3 / 2026-05-28): リスト型 71 行から B Magazine Spread
@@ -1668,7 +1713,8 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path) -> list
             # data 不足 (= backfill 未着手の新設カテゴリ) の fallback:
             # data/articles.jsonl の同日 5 記事を grid に展開して、他カテゴリと粒度を揃える
             grid_9 = _articles_as_grid_entries(
-                cat_id, featured["date"], skip_url=featured.get("top_source_url")
+                cat_id, featured["date"],
+                skip_url=featured.get("top_source_url"), digests=digests
             )
             past_7 = []
         # 「本日のテーマ考察」は summary digest の §NN のうち、見出しラベルが当該カテゴリに
@@ -1912,7 +1958,7 @@ def main(argv: list[str] | None = None) -> int:
         digests_all = scan_digests()
         entries = _collect_entries(digests_all)
         idx = build_index(entries, docs_root)
-        cat_pages = build_category_pages(entries, docs_root)
+        cat_pages = build_category_pages(entries, docs_root, digests=digests_all)
         dd = collect_archive_items()
         arc = build_archive(entries, docs_root,
                             deepdive_items=dd["items"], lens_chips=dd["chips"])
