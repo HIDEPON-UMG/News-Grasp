@@ -46,3 +46,4 @@
 | 2026-06-02 | ✅DeepDive | AIラボ評価額レース(AnthropicがOpenAI逆転で1兆ドル目前) | 約20分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch4件(CNBC403は検索要約で補完) |
 | 2026-06-03 | ✅成功 | FX, AI, IT-Consulting, Mobility, Economy | - | 0 | 記事24件 |
 | 2026-06-03 | ✅DeepDive | USD/JPY 160円攻防(日米金融政策の逆行・介入か利上げか) | 約25分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch3件(CNBC403は検索要約で補完) |
+| 2026-06-04 | ✅成功 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy, Game | - | 0 | 記事31件 |
