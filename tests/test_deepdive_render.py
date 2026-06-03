@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tools.render_deepdive import (  # noqa: E402
+    INK,
     DeepDiveIncompleteError,
     build_deepdive_context,
     build_deepdive_pages,
@@ -467,3 +468,95 @@ def test_deepdive_output_is_isolated_from_daily_pipeline(tmp_path: Path) -> None
         assert "deepdive" in p.parts, f"DeepDive が deepdive/ 外に出力された: {p}"
     # index.html (LP) は生成されない
     assert not (tmp_path / "index.html").exists()
+
+
+# ── related (続報の過去参照 + 変化点) ★2026-06-03 ユーザー指示 ────────────────────
+
+def _complete_md_with_related(tmp_path: Path, *, with_related: bool) -> Path:
+    """必須ブロックを全て備えた完全な DeepDive md。with_related で related の有無を切替える。"""
+    rel = (
+        '```related\n'
+        '[{"date":"2026-06-01","title":"ロボタクシー覇権、Waymo独走とTeslaの量産反攻",'
+        '"relation":"波及","link":"規制強化 → 競争再編",'
+        '"change":"前回は規模と資金調達の競争を扱った。今回の変化点は量産が安全データを動かしたか"}]\n'
+        '```\n\n'
+        if with_related else ""
+    )
+    src = tmp_path / "2026-06-20-DeepDive.md"
+    src.write_text(
+        '---\ntitle: "テスト深掘り"\ndate: "2026-06-20"\nissue: "20260620"\n'
+        'kind: deepdive\nlens: ai\n---\n\n'
+        "## 背景\n\n" + rel +
+        "```timeline\n[]\n```\n\n```players\n[]\n```\n\n"
+        '```relations\n{"nodes":[{"id":"a","label":"A"},{"id":"b","label":"B"}],'
+        '"edges":[{"from":"a","to":"b","label":"x","kind":"競合"}],"source":"s"}\n```\n\n本文\n\n'
+        "## 深掘り\n\n"
+        '```chart\n{"type":"line","title":"x","series":[{"name":"a","data":[1,2,3]}],'
+        '"categories":["FY24","FY25","FY26"],"source":"s"}\n```\n\n'
+        '```chart\n{"type":"bar","title":"y","series":[{"name":"b","data":[3,4,5]}],'
+        '"categories":["FY24","FY25","FY26"],"source":"s"}\n```\n\n'
+        '```table\n{"columns":["a","b"],"rows":[["1","2"]],"source":"s"}\n```\n\n本文\n\n'
+        "## 注目点\n\n"
+        '```decision\n{"issue":"x","options":["a"],"deadline":"d","decider":"w"}\n```\n',
+        encoding="utf-8",
+    )
+    return src
+
+
+def test_related_url_is_derived_from_date_not_handwritten(tmp_path: Path) -> None:
+    """related の公開 URL は date から自動生成し、手書きさせない (誤 URL を構造的に排除)。
+
+    なぜ重要か: 過去レポートへのリンク URL を Agent に手書きさせると、ドメイン・パス・
+    日付フォーマットの取り違えで 404 リンクを量産する。md には date/title/change だけ
+    書かせ、URL は build 側が `{BASE_URL}/deepdive/{date}/` で導出する不変条件を固定する。
+    """
+    from tools.config import BASE_URL
+
+    ctx = build_deepdive_context(_complete_md_with_related(tmp_path, with_related=True))
+    assert len(ctx["related"]) == 1
+    r = ctx["related"][0]
+    assert r["title"].startswith("ロボタクシー覇権")
+    assert r["change"], "変化点 (change) が空"
+    assert r["url"] == f"{BASE_URL}/deepdive/2026-06-01/", r["url"]
+    # 関連の種類・根拠と、種類バッジ色 (関係図 EDGE_KINDS のトーンに揃える)
+    assert r["relation"] == "波及"
+    assert r["relation_color"] == "#2D5BB8", r["relation_color"]  # 波及 = 供給の青
+    assert r["link"] == "規制強化 → 競争再編"
+    # ① カテゴリ色: tmp には過去 md (2026-06-01) が無いので near-black に退避する
+    assert r["accent"] == INK, r["accent"]
+
+
+def test_related_absent_is_empty_list_backward_compatible() -> None:
+    """related ブロックの無い既存記事は ctx['related']==[] で、render が壊れない (後方互換)。
+
+    related は任意ブロック。必須化すると related を持たない既存 4 本が全て hard fail
+    するので、欠落時は空リストに退避させ、テンプレ側で非表示にする。
+    """
+    ctx = build_deepdive_context(_FIXTURE)  # _FIXTURE は related を持たない
+    assert ctx["related"] == []
+
+
+def test_related_renders_link_and_change_in_html(tmp_path: Path) -> None:
+    """related があると、生成 HTML に過去レポートへのリンクと変化点が出る。"""
+    src = _complete_md_with_related(tmp_path, with_related=True)
+    pages = build_deepdive_pages(
+        docs_root=tmp_path / "out", full=True, digest_dir=src.parent,
+    )
+    html = pages[0].read_text(encoding="utf-8")
+    assert "/deepdive/2026-06-01/" in html, "過去レポートへのリンクが無い"
+    assert "ロボタクシー覇権" in html, "過去レポートのタイトルが無い"
+    assert "前回" in html, "変化点 (change) の文言が無い"
+    assert "波及" in html, "関連種類バッジが無い"
+    assert "規制強化" in html, "関連根拠チップが無い"
+    assert "#2D5BB8" in html, "種類バッジ色 (インライン) が無い"
+
+
+def test_related_absent_renders_without_related_block(tmp_path: Path) -> None:
+    """related が無い記事の HTML には関連レポート枠が出ない (空枠を描かない)。"""
+    src = _complete_md_with_related(tmp_path, with_related=False)
+    pages = build_deepdive_pages(
+        docs_root=tmp_path / "out", full=True, digest_dir=src.parent,
+    )
+    html = pages[0].read_text(encoding="utf-8")
+    # CSS 定義 (.dd-related {...}) は常駐するので、描画された要素 (<aside>) の有無で判定する。
+    assert '<aside class="dd-related"' not in html, "related が無いのに関連レポート枠が描画された"

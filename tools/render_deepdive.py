@@ -89,6 +89,16 @@ _FLOW_KINDS = {"出資", "供給", "規制"}
 _FRENEMY_COOP_COLOR = "#2E6B52"
 _FRENEMY_RIVAL_COLOR = "#8E2A19"
 
+# 関連レポート (related) の種類 → バッジ色。関係図 EDGE_KINDS のトーンに揃え、News-Grasp
+# 内で色の意味を一貫させる: 続報=基調 navy / 主役共有=提携の緑 / 波及=供給の青 / 対比=競合の赤。
+_RELATION_STYLE: dict[str, str] = {
+    "続報": "#181C2A",
+    "主役共有": EDGE_KINDS["提携"]["color"],
+    "波及": EDGE_KINDS["供給"]["color"],
+    "対比": EDGE_KINDS["競合"]["color"],
+}
+_DEFAULT_RELATION_COLOR = DIM
+
 # 「裏が取れていない」ことを示すセル値 (table の淡色化判定)。
 _UNCONFIRMED_TOKENS = ("未確認", "未開示", "非開示")
 
@@ -121,7 +131,7 @@ def extract_blocks(body: str) -> dict[str, list[Any]]:
     out: dict[str, list[Any]] = {}
     for m in _FENCED_RE.finditer(body):
         lang, raw = m.group(1), m.group(2)
-        if lang not in ("timeline", "players", "relations", "chart", "table", "decision"):
+        if lang not in ("timeline", "players", "relations", "chart", "table", "decision", "related"):
             continue
         try:
             data = json.loads(raw)
@@ -1304,6 +1314,33 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     if table_ctx:
         table_ctx["source"] = _figure_citations(table_ctx.get("source", ""), biblio)
 
+    # 関連レポート (続報時のみ・任意ブロック)。URL と「左バー/下線のカテゴリ色」は date から
+    # 導出し、手書きの誤記を構造的に排除する (md には date/title/relation/link/change だけ書く)。
+    related = []
+    for r in (blocks.get("related", [None])[0] or []):
+        rd = str(r.get("date", "")).strip()
+        # ① カテゴリ色 = 過去レポートの lens 色。date から過去 md を引いて解決し、
+        #    md が見つからなければ near-black に退避する (URL と同じく date 由来で誤記を排除)。
+        cat_accent = INK
+        if rd:
+            past = Path(md_path).parent / f"{rd}-DeepDive.md"
+            if past.exists():
+                ptext = past.read_text(encoding="utf-8")
+                pfm, _ = parse_frontmatter(ptext)
+                cat_accent = resolve_accent(_resolve_lens(pfm, _parse_tags(ptext)))
+        rel_kind = str(r.get("relation", "")).strip()
+        related.append({
+            "date": rd,
+            "date_dot": rd.replace("-", "."),
+            "title": r.get("title", ""),
+            "relation": rel_kind,
+            "relation_color": _RELATION_STYLE.get(rel_kind, _DEFAULT_RELATION_COLOR),
+            "link": r.get("link", ""),
+            "change": r.get("change", ""),
+            "accent": cat_accent,
+            "url": f"{BASE_URL}/deepdive/{rd}/" if rd else "",
+        })
+
     read_min = max(5, round(len(body) / 900))
 
     # アクセント = テーマのカテゴリ (lens) 色。frontmatter `lens:` を一次に、無ければ
@@ -1368,6 +1405,8 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
         "watch_prose": _prose_paragraphs(watch),
         "summary_prose": " ".join(_prose_paragraphs(summary_section)),
         "sources": biblio,
+        # 関連レポート (続報の過去参照 + 変化点)。無い記事では [] でテンプレ非表示。
+        "related": related,
     }
 
 

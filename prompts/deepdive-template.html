@@ -259,6 +259,26 @@ html, body { margin: 0; padding: 0; }
 .dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
 .dd-summary strong { color: var(--cream); }
 
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
 /* sources */
 .dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
 .dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
@@ -287,6 +307,13 @@ html, body { margin: 0; padding: 0; }
   .dd-wrap { padding: 0 18px; }
   .dd-hero { padding: 30px 0 26px; }
   .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
   .dd-sec { padding: 30px 0; }
   .dd-sechead { flex-wrap: wrap; gap: 10px; }
   .dd-sechead .jp { font-size: 26px; }
@@ -362,6 +389,30 @@ html, body { margin: 0; padding: 0; }
       {% if theme %}<p class="dd-hero__theme">{{ theme }}</p>{% endif %}
       {% if tags %}<div class="dd-hero__tags">{% for t in tags %}<span>#{{ t }}</span>{% endfor %}</div>{% endif %}
     </header>
+
+    {% if related %}
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+        {% for r in related %}
+        <li class="dd-related__item" style="border-left-color: {{ r.accent }}">
+          {% if r.relation or r.link %}
+          <div class="dd-related__top">
+            {% if r.relation %}<span class="dd-related__kind" style="background: {{ r.relation_color }}">{{ r.relation }}</span>{% endif %}
+            {% if r.link %}<span class="dd-related__chip">{{ r.link }}</span>{% endif %}
+          </div>
+          {% endif %}
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="{{ r.url }}" style="border-bottom-color: {{ r.accent }}">{{ r.title }}</a>
+            <span class="dd-related__date">{{ r.date_dot }}</span>
+          </div>
+          {% if r.change %}<p class="dd-related__change">{{ r.change|render_emph }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </aside>
+    {% endif %}
 
     <!-- 背景 / BACKGROUND -->
     <section class="dd-sec">
