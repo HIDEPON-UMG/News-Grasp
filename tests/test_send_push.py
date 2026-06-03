@@ -95,12 +95,17 @@ def test_schedule_matches_routine_matrix():
         assert "ゲーム" in categories_for_weekday(wd)
     for wd in (0, 2, 4):
         assert "ゲーム" not in categories_for_weekday(wd)
+    # 製造: 平日(0-4)のみ
+    for wd in (0, 1, 2, 3, 4):
+        assert "製造" in categories_for_weekday(wd)
+    for wd in (5, 6):
+        assert "製造" not in categories_for_weekday(wd)
 
 
 def test_default_body_value_phrasing_and_order():
     """本文は配信順で並び『…の最新情報をまとめています。』で締める（価値訴求型）。"""
-    body_tue = default_body_for_today(1)  # 火 = 全 6 カテゴリ
-    assert body_tue == "為替・AI・IT・モビリティ・経済・ゲームの最新情報をまとめています。"
+    body_tue = default_body_for_today(1)  # 火 = 全 7 カテゴリ
+    assert body_tue == "為替・AI・IT・モビリティ・製造・経済・ゲームの最新情報をまとめています。"
     body_sat = default_body_for_today(5)  # 土 = 経済なし・ゲームあり
     assert body_sat == "為替・AI・IT・モビリティ・ゲームの最新情報をまとめています。"
     assert body_sat.endswith("の最新情報をまとめています。")
