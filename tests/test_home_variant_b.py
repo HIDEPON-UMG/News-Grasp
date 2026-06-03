@@ -242,3 +242,33 @@ def test_today_lp_has_yesterday_link(built_home):
     """当日 LP の sticky nav は TODAY が現在地・YESTERDAY が前日 LP へのリンク。"""
     assert '<span class="home-nav__today">TODAY</span>' in built_home
     assert 'class="home-nav__yesterday">YESTERDAY</a>' in built_home
+
+
+def test_yesterday_lp_deepdive_is_not_today(yesterday_lp):
+    """昨日 LP の DEEP DIVE スライダーは「当日の DeepDive」でなく
+    その日 (昨日) 以前の最新 DeepDive を出す。
+
+    なぜ重要か: build_index は当日 LP と昨日 LP の両方を同じ index テンプレで
+    生成するが、DEEP DIVE pane は entries と独立に digest/DeepDive/*.md を直接読む。
+    回帰前は _latest_deepdive_card() が常に最新 md を読み、昨日 LP の DEEP DIVE にも
+    「当日のテーマ」が出ていた (docs/{昨日}/ を開くと前日でなく今日の深掘りが表示)。
+    本テストは昨日 LP のカード日付が当日 LP と一致しないこと (= 昨日以前で引けること)
+    を pin する。DeepDive が 1 本以下の環境では差を検証できないので skip。
+    """
+    from tools.generate_pages import _PKG_ROOT, _latest_deepdive_card
+
+    dd_dir = _PKG_ROOT / "digest" / "DeepDive"
+    dd_dates = sorted({p.name[:10] for p in dd_dir.glob("*.md")})
+    if len(dd_dates) < 2:
+        pytest.skip("DeepDive が 2 本未満で当日/昨日の差を検証できない")
+    _, yda = yesterday_lp
+    if yda < dd_dates[1]:
+        pytest.skip(f"昨日 ({yda}) 以前に DeepDive が無く差を検証できない")
+
+    card_today = _latest_deepdive_card()        # 当日 LP 相当 (全体の最新)
+    card_yda = _latest_deepdive_card(yda)        # 昨日 LP 相当 (yda 以前の最新)
+    assert card_today and card_yda, "DeepDive カードが構築できていない"
+    assert card_yda["date"] <= yda, \
+        f"昨日 LP の DeepDive 日付 {card_yda['date']} が昨日 {yda} より新しい"
+    assert card_yda["date"] != card_today["date"], \
+        "昨日 LP の DEEP DIVE に当日と同じテーマが出ている (回帰)"

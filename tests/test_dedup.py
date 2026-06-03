@@ -171,6 +171,58 @@ def test_same_url_old_still_dropped() -> list[str]:
     return errs
 
 
+def test_cross_language_same_event_detected() -> list[str]:
+    """英語⇄日本語・別ソースの同一イベントを「同一トピック」として検知する。
+
+    なぜ重要か (2026-06-03 Mobility 重複の主因): 文字 2-gram Jaccard は英語見出しと
+    日本語見出しを 0.1〜0.3 にしか乗せられず、同一イベントの再掲を「新規」として
+    連日通していた。社名・地名・数値は翻訳しても字面が残るため、言語非依存トークンの
+    重なり (same_event_by_tokens) で同一イベントを補足する。実際に重複した 4 ペアが
+    find_match で "title" 判定 (= 同一トピック → 24h 窓 or 続報) になることをロックする。
+    """
+    errs: list[str] = []
+    pairs = [
+        ("Waymo accelerates multi-city rollout: Dallas, Houston, San Antonio, Orlando added, now 10 cities",
+         "Waymo テキサスDallas・Houston・San Antonio他4都市で完全自律ライドシェア一斉開始"),
+        ("Waymo dominates Texas AV registrations: 577台 vs Tesla 42台 — 州法施行で数字が初めて公開",
+         "Tesla has 42 robotaxis in Texas vs Waymo 577: 17 incidents in 10 months, FSD probe opens"),
+        ("Waymo、カバレッジ20%超拡大で1,400平方マイル達成──11都市体制でロードアイランド州超え",
+         "Waymo covers 1,400 sq miles across 11 cities — 週50万件ライド達成、ロンドン・東京展開も視野に"),
+        # 同言語の取りこぼし (2-gram 0.45 前後) も閾値 0.42 で拾えること
+        ("WaymoがOjai第6世代ロボタクシーを一部ライダーに公開開放 — サンディエゴ・ラスベガス展開へ",
+         "WaymoがOjai第6世代ロボタクシーを一部ライダーに公開開放 — Zeekr製・センサー42%減・$20,000以下"),
+    ]
+    for a, b in pairs:
+        existing = [{"title": b, "url": "https://example.com/exist",
+                     "url_norm": "https://example.com/exist", "seen_at": _ts(5.0)}]
+        match, mtype = dedup.find_match({"title": a, "url": "https://example.com/cand"}, existing)
+        if mtype != "title":
+            errs.append(f"同一イベント未検知: {a[:30]!r} ⇔ {b[:30]!r} → match_type={mtype}")
+    return errs
+
+
+def test_different_events_same_company_survive() -> list[str]:
+    """同じ会社の「別イベント」は誤検知で潰さない (固有名詞 1 語の共通では発火しない)。
+
+    same_event_by_tokens は固有名詞 3 語以上 or 2 語以上+数値共通が条件。社名 1 語だけ
+    共通の異なるニュースは新規として通過しなければならない (過剰除外でカテゴリが
+    枯れるのを防ぐ)。"""
+    errs: list[str] = []
+    pairs = [
+        ("Waymo expands robotaxi service to Miami this spring",
+         "Waymo raises $16B to scale fleet internationally"),
+        ("Toyota unveils new solid-state battery roadmap",
+         "Toyota's EV sales jump in Japan as subsidies kick in"),
+    ]
+    for a, b in pairs:
+        existing = [{"title": b, "url": "https://example.com/exist",
+                     "url_norm": "https://example.com/exist", "seen_at": _ts(5.0)}]
+        match, mtype = dedup.find_match({"title": a, "url": "https://example.com/cand"}, existing)
+        if mtype is not None:
+            errs.append(f"別イベントを誤検知: {a[:30]!r} ⇔ {b[:30]!r} → match_type={mtype}")
+    return errs
+
+
 def test_batch_internal_dedup() -> list[str]:
     errs: list[str] = []
     existing: list[dict] = []
@@ -199,6 +251,8 @@ def main() -> int:
         ("24 時間超は続報扱い",   test_followup_after_24h),
         ("URL 完全マッチ除外",    test_url_exact_match),
         ("同一URLは常に除外(数日後も)", test_same_url_old_still_dropped),
+        ("cross-language 同一イベント検知", test_cross_language_same_event_detected),
+        ("別イベントは誤検知しない", test_different_events_same_company_survive),
         ("batch 内重複除外",      test_batch_internal_dedup),
     ]
     overall_ok = True

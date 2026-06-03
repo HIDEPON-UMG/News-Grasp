@@ -876,9 +876,15 @@ def _deepdive_report_items(dd: dict[str, Any]) -> list[str]:
     return items
 
 
-def _latest_deepdive_card() -> dict[str, Any] | None:
+def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | None:
     """最新 DeepDive (週次 TODAY'S THEME) を LP 上部ヒーローの
     SUMMARY ⇆ DEEP DIVE スライダー用に 1 枚分のデータへ整形する。
+
+    `target_date` を渡すと、その日付 **以前 (<=)** に公開された最新 DeepDive を選ぶ。
+    昨日 LP (docs/{昨日}/index.html) で target_date=昨日 を渡すことで、当日 LP と
+    同じ「最新 DeepDive」を載せてしまう不具合 (昨日 LP の DEEP DIVE スライダーに
+    当日のテーマが出る) を防ぐ。DeepDive は休載日があるため「当日ちょうど」でなく
+    「その日以前の最新」で引く。None (当日 LP) なら従来どおり全体の最新を返す。
 
     不変条件 (2026-05-31 事故) の本質は「日次 digest の **entry ストリーム**
     (build_all / _collect_entries) を DeepDive で汚染しない」こと。ここでは
@@ -890,6 +896,9 @@ def _latest_deepdive_card() -> dict[str, Any] | None:
     if not src_dir.exists():
         return None
     mds = sorted(src_dir.glob("*.md"))  # ファイル名 = YYYY-MM-DD 昇順 → 末尾が最新
+    if target_date:
+        # ファイル名先頭の YYYY-MM-DD で「target_date 以前」に絞る (辞書順 = 日付順)。
+        mds = [p for p in mds if p.name[:10] <= target_date]
     if not mds:
         return None
     # 遅延 import (循環回避)
@@ -1088,7 +1097,9 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         "publication_matrix": compute_publication_matrix(entries, today_date, days=30),
         # LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダー用。entry ストリームとは
         # 独立に DeepDive md を直接読んだデータ (不変条件の本質 = entry 非汚染を維持)。
-        "latest_deepdive": _latest_deepdive_card(),
+        # 昨日 LP では target_date(=昨日) 以前の DeepDive を引き、当日のテーマが
+        # 昨日 LP に出る不具合を防ぐ。当日 LP (is_yesterday=False) は従来どおり最新。
+        "latest_deepdive": _latest_deepdive_card(today_date if is_yesterday else None),
     }
     # target_date 指定時は docs/{date}/index.html (昨日 LP)、無指定は docs/index.html (当日 LP)
     out = (Path(docs_root) / target_date / "index.html") if target_date else (Path(docs_root) / "index.html")

@@ -47,6 +47,71 @@ TRACKING_KEYS = {
 PUNCT_RE = re.compile(r"[「」『』\"\"''（）()【】\[\]　・\-—–_/、。,.！!？?：:；;]+")
 SPACE_RE = re.compile(r"\s+")
 
+# タイトル 2-gram Jaccard の既定閾値。2026-06-03 に 0.5 → 0.42 へ引き下げ。
+# Mobility のように主役プールが小さいカテゴリでは、同じイベントを別表現で書いた
+# 同言語の見出し (例「WaymoがOjai第6世代…公開開放 — A」vs「…公開開放 — B」) が
+# Jaccard 0.45 前後に落ち、0.5 では「別記事」として連日再掲されていた (実測)。
+DEFAULT_TITLE_THRESHOLD = 0.42
+
+# ── 言語非依存トークン照合 (cross-language / 別ソースの同一イベント検知) ──────────
+# 文字 2-gram は英語⇄日本語の見出し (例「Waymo accelerates … Dallas, Houston」と
+# 「Waymo テキサスDallas・Houston…」) を Jaccard 0.1〜0.3 にしか乗せられず、同一
+# イベントの再掲を「新規」として通してしまう (2026-06-03 Mobility 重複の主因)。社名・
+# 地名・数値は翻訳しても字面が残るため、それらの重なりで同一イベントを補足する。
+_TOKEN_STOPWORDS = frozenset({
+    "the", "and", "for", "with", "now", "has", "had", "its", "new", "vs", "via",
+    "added", "from", "that", "this", "into", "out", "over", "top", "more", "most",
+    "than", "not", "you", "are", "was", "were", "will", "what", "why", "how",
+    "who", "all", "but", "per", "inc", "ltd", "corp", "ai", "ev", "car", "cars",
+    "city", "cities", "news", "report", "first", "his", "her", "their",
+})
+_ASCII_WORD_RE = re.compile(r"[a-z][a-z]{2,}")   # 3 文字以上の英字ラン (小文字化後)
+_NUM_RE = re.compile(r"\d[\d,]*")
+
+
+def significant_tokens(title: str) -> tuple[set[str], set[str]]:
+    """タイトルから言語非依存トークン (英字固有名詞・数値) を抽出する。
+
+    返り値 (words, nums):
+      words = 3 文字以上の英字語のうち一般語 (stopword) を除いたもの。社名・地名・
+              略号 (waymo / tesla / dallas / nhtsa / byd / fsd 等) を拾う想定。
+      nums  = 2 桁以上の数値 (1 桁はノイズが多いので除外)。「1,400」「$20,000」の
+              桁区切り/記号は除去して 1400 / 20000 に揃える。
+    """
+    t = title.lower().replace("　", " ")
+    words = {w for w in _ASCII_WORD_RE.findall(t) if w not in _TOKEN_STOPWORDS}
+    nums = {n.replace(",", "") for n in _NUM_RE.findall(t)}
+    # 2 桁未満 (1 桁) はノイズが多いので除外。西暦らしき 4 桁 (2000〜2099) も日付として
+    # ほぼ全タイトルに出るため誤一致源になるので除外する (1400 等の実数値は残す)。
+    nums = {n for n in nums if len(n) >= 2 and not (len(n) == 4 and "2000" <= n <= "2099")}
+    return words, nums
+
+
+def same_event_by_tokens(
+    w1: set[str], n1: set[str], w2: set[str], n2: set[str],
+) -> bool:
+    """言語非依存トークンの重なりで「同一イベント (別ソース/別言語の再掲)」を判定する。
+
+    判定 (いずれか成立で同一イベント):
+      ① 固有名詞語が 3 つ以上共通 (例 Waymo×Dallas×Houston)
+      ② 固有名詞語が 2 つ以上共通 かつ 数値が 1 つ以上共通 (例 Waymo×Tesla×577)
+      ③ 固有名詞語が 1 つ以上共通 かつ 数値が 2 つ以上共通 (例 Waymo×1400×11)
+         — 日本語見出しは ASCII 固有名詞が少なく語の重なりが伸びないため、社名 1 語+
+           特徴的な数値 2 つで同一イベントを補足する経路。
+
+    共通が固有名詞 1 語だけ (例: 同じ会社の別ニュース) では発火させない — 誤検知で
+    別イベントを潰さないため。
+    """
+    shared_w = w1 & w2
+    shared_n = n1 & n2
+    if len(shared_w) >= 3:
+        return True
+    if len(shared_w) >= 2 and len(shared_n) >= 1:
+        return True
+    if len(shared_w) >= 1 and len(shared_n) >= 2:
+        return True
+    return False
+
 
 def normalize_url(url: str) -> str:
     """URL 正規化: scheme/host 小文字化、tracking 除去、AMP 解除、末尾 / 統一。"""
@@ -118,14 +183,15 @@ def load_existing(path: Path) -> list[dict]:
 def find_match(
     candidate: dict,
     existing: list[dict],
-    title_threshold: float = 0.5,
+    title_threshold: float = DEFAULT_TITLE_THRESHOLD,
     ngram_n: int = 2,
 ) -> tuple[dict | None, str | None]:
     """候補に対して existing の中から最初にマッチするエントリと種別を返す。
 
     返り値 (entry, match_type):
       - ("url",)   : 正規化 URL が完全一致 = 同一記事そのもの
-      - ("title",) : タイトルが一致/類似 = 同一トピック (続報の可能性あり)
+      - ("title",) : タイトル一致/類似、または言語非依存トークン一致 = 同一トピック
+                     (続報の可能性あり)
       - (None, None): マッチなし
     呼び出し側は match_type で「同一記事の再掲(常に除外)」と
     「続報候補(時間窓で判定)」を区別する。
@@ -135,6 +201,7 @@ def find_match(
     cand_url_norm = normalize_url(candidate.get("url", ""))
     cand_title_norm = normalize_title(candidate.get("title", ""))
     cand_ngrams = char_ngrams(cand_title_norm, n=ngram_n)
+    cand_w, cand_n = significant_tokens(candidate.get("title", ""))
 
     for e in existing:
         # A. URL 正規化マッチ (= 同一記事)
@@ -142,11 +209,16 @@ def find_match(
         if cand_url_norm and cand_url_norm == e_url_norm:
             return e, "url"
         # B. タイトル一致 / 類似 (= 同一トピック・続報候補)
-        e_title_norm = normalize_title(e.get("title", ""))
+        e_title = e.get("title", "")
+        e_title_norm = normalize_title(e_title)
         if cand_title_norm and cand_title_norm == e_title_norm:
             return e, "title"
-        sim = jaccard(cand_ngrams, char_ngrams(e_title_norm, n=ngram_n))
-        if sim >= title_threshold:
+        if jaccard(cand_ngrams, char_ngrams(e_title_norm, n=ngram_n)) >= title_threshold:
+            return e, "title"
+        # C. 言語非依存トークン一致 (英語⇄日本語・別ソースの同一イベント)。
+        #    文字 2-gram では橋渡しできない cross-language の再掲をここで捕捉する。
+        e_w, e_n = significant_tokens(e_title)
+        if same_event_by_tokens(cand_w, cand_n, e_w, e_n):
             return e, "title"
     return None, None
 
@@ -155,7 +227,7 @@ def dedup_candidates(
     candidates: list[dict],
     existing: list[dict],
     window_hours: float = 24.0,
-    title_threshold: float = 0.5,
+    title_threshold: float = DEFAULT_TITLE_THRESHOLD,
 ) -> tuple[list[dict], list[dict]]:
     """重複除外を実行し (passed, dropped) を返す。"""
     now = datetime.now(JST)
@@ -213,8 +285,8 @@ def main() -> int:
                    help="既存記事メタの JSON Lines パス（既定: data/articles.jsonl）")
     p.add_argument("--window-hours", type=float, default=24.0,
                    help="24 時間ウィンドウ（既定: 24）")
-    p.add_argument("--title-threshold", type=float, default=0.5,
-                   help="タイトル N-gram Jaccard 類似度の閾値（既定: 0.5）")
+    p.add_argument("--title-threshold", type=float, default=DEFAULT_TITLE_THRESHOLD,
+                   help=f"タイトル N-gram Jaccard 類似度の閾値（既定: {DEFAULT_TITLE_THRESHOLD}）")
     args = p.parse_args()
 
     candidates = []
