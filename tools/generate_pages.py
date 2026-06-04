@@ -455,7 +455,25 @@ def _get_jinja_env():
             s = _BOLD_RE.sub(r'<strong>\1</strong>', s)
             return Markup(s)
 
+        def _insert_wbr(text: str) -> Markup:
+            """日本語句読点 (、。，．・) の直後に <wbr> を挿入した安全 HTML を返す。
+
+            word-break: keep-all と組み合わせ、CJK の中途改行を禁じつつ
+            文節境界 (句読点) でのみ折り返しを許す。半角空白も <wbr> 同等で
+            break opportunity になるため追加挿入しない。
+            ホーム hero 見出しのように
+            「AI バブルか革命か、円安か利上げか」を 1 行に収まらないときだけ
+            「AI バブルか革命か、」+ 「円安か利上げか」の文節単位で改行する
+            目的で導入 (2026-06-05)。
+            """
+            if text is None:
+                return Markup("")
+            s = _html.escape(str(text), quote=False)
+            s = re.sub(r"([、。，．・])", r"\1<wbr>", s)
+            return Markup(s)
+
         _jinja_env.filters["render_emph"] = _render_emph
+        _jinja_env.filters["insert_wbr"] = _insert_wbr
     return _jinja_env
 
 

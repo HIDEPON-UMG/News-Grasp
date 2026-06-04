@@ -113,8 +113,8 @@
           <div class="home-hero__slide" data-slide="summary">
             <h2 class="home-hero__title">
               {% if hero_phrase_left %}
-                <span class="hl-gold">{{ hero_phrase_left }}</span>
-                {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right }}</span>。{% else %}。{% endif %}
+                <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>
+                {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
               {% else %}
                 <span class="hl-gold">時勢</span>を掴み、<br/><span class="hl-blue">日々</span>に新たに。
               {% endif %}
@@ -150,8 +150,8 @@
       {% else %}
       <h2 class="home-hero__title">
         {% if hero_phrase_left %}
-          <span class="hl-gold">{{ hero_phrase_left }}</span>
-          {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right }}</span>。{% else %}。{% endif %}
+          <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>
+          {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
         {% else %}
           <span class="hl-gold">時勢</span>を掴み、<br/><span class="hl-blue">日々</span>に新たに。
         {% endif %}
@@ -315,8 +315,9 @@
 <script src="/News-Grasp/push.js" defer></script>
 <script>
 // TODAY'S THEME 見出しは hero_phrase の文字数が日替わりで変わるため、
-// フォントを 1px ずつ縮小して「必ず 2 行 (<br/> による 1 改行ぶん)」に収める。
-// 高さ計測方式: 3 行に折り返している間だけ縮小し、グリッド幅・nowrap には触れない。
+// フォントを 1px ずつ縮小して「最大 3 行 (<br/> による 1 改行 + 各 span が最大 2 行に折返し)」に収める。
+// 高さ計測方式: 4 行以上に折り返している間だけ縮小し、グリッド幅・nowrap には触れない。
+// 単語途中での改行は CSS 側 (.home-hero__title の word-break: auto-phrase + overflow-wrap: normal) で抑止する。
 (function () {
   function fitHeroTitle() {
     var el = document.querySelector('.home-hero__title');
@@ -328,7 +329,7 @@
       var size = parseFloat(cs.fontSize);
       var lh = parseFloat(cs.lineHeight);
       if (isNaN(lh)) lh = size * 1.2;
-      if (el.offsetHeight <= lh * 2 + 1 || size <= 28) break;
+      if (el.offsetHeight <= lh * 3 + 1 || size <= 28) break;
       el.style.fontSize = (size - 1) + 'px';
       guard++;
     }

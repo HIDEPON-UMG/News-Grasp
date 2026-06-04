@@ -1130,6 +1130,15 @@ strong {
   line-height: 1.1;
   color: var(--color-navy);
   margin: 0 0 28px;
+  /* 最大 3 行折返しを許容しつつ単語・文節の途中で改行しない (2026-06-05)。
+     keep-all で CJK の中途改行を全面禁止し、テンプレ側 insert_wbr フィルタが
+     句読点 (、。，．・) の直後に挿入した <wbr> でのみ折り返す。半角空白も
+     break opportunity になるため "AI バブル..." の "AI" 後でも切れる。
+     auto-phrase は BudouX が「円安／か利上げか」を別文節と判定して
+     "円安" を孤立させたため不採用 (2026-06-05 ユーザ指摘)。 */
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
 }
 .home-hero__title .hl-gold {
   background: linear-gradient(180deg, transparent 65%, rgba(201, 161, 85, 0.35) 65%);
