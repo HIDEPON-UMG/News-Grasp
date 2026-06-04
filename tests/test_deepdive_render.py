@@ -428,6 +428,44 @@ def test_relations_too_many_edges_hard_fail(tmp_path: Path) -> None:
         build_deepdive_context(md)
 
 
+def test_relations_orphan_node_hard_fail(tmp_path: Path) -> None:
+    """関係図のノードがどの edge にも現れない (=孤立) 場合は build が hard fail。
+
+    なぜ重要か: 2026-06-04 ユーザー指摘「関係図に繋がっていない丸 (BCG) が浮く」事故。
+    edge 上限 8 枚に詰める過程でノードへの接続線が全部落ちると、レンダラはノードを
+    描いてしまい「孤立した丸」が残る。「ノードを置くなら edge を 1 本以上持たせる」は
+    関係図の最小品質保証なので、ビルド時に loud failure させて目視レビュー漏れを
+    封じる ([[feedback_check_design_principles]] 1 段「失敗を表現できない構造」)。
+    """
+    from tools.render_deepdive import build_deepdive_context, DeepDiveIncompleteError
+    import os
+    os.environ["NEWS_GRASP_SKIP_URL_CHECK"] = "1"
+    md = tmp_path / "2026-06-04-DeepDive.md"
+    md.write_text(
+        "---\n"
+        "title: t\nlens: ai\ndate: 2026-06-04\nog_image: /og.jpg\n"
+        "tags: []\n---\n\n"
+        "## 背景\n\n```timeline\n[{\"date\": \"2026-06-04\", \"text\": \"x\"}]\n```\n\n"
+        "```players\n[{\"id\": \"x\", \"label\": \"X\"}]\n```\n\n"
+        "```relations\n"
+        "{\n  \"nodes\": [\n"
+        "    {\"id\": \"a\", \"label\": \"A\", \"group\": \"G1\"},\n"
+        "    {\"id\": \"b\", \"label\": \"B\", \"group\": \"G1\"},\n"
+        "    {\"id\": \"c\", \"label\": \"C\", \"group\": \"G2\"}\n"
+        "  ],\n"
+        "  \"edges\": [\n"
+        "    {\"from\": \"a\", \"to\": \"b\", \"kind\": \"提携\", \"label\": \"L\"}\n"
+        "  ]\n}\n```\n\n"
+        "## 深掘り\n\n```chart\n{\"type\": \"bar\", \"title\": \"c1\", \"x\": [\"a\"], \"series\": [{\"name\": \"s\", \"data\": [1]}]}\n```\n\n"
+        "```chart\n{\"type\": \"bar\", \"title\": \"c2\", \"x\": [\"a\"], \"series\": [{\"name\": \"s\", \"data\": [1]}]}\n```\n\n"
+        "```table\n{\"columns\": [\"c\"], \"rows\": [[\"v\"]]}\n```\n\n"
+        "## 注目点\n\n```decision\n{\"decider\": \"d\", \"options\": [\"o\"]}\n```\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeepDiveIncompleteError, match=r"孤立ノード.*\['c'\]"):
+        build_deepdive_context(md)
+
+
 def test_deepdive_no_empty_href_anchors() -> None:
     """ビルド済み deepdive HTML には href が空の <a> タグが 1 つも存在しない。
 

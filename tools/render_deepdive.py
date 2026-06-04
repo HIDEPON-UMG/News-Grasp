@@ -1454,6 +1454,31 @@ def _require_blocks(md_path: Path, blocks: dict[str, list[Any]]) -> None:
             "本質を絞り込めていない関係図は読めない。主要な対立軸・出資線・供給線に"
             "絞って描き直すこと (協調的競合 frenemy は coop/rival 2 ラベルでカウント)。"
         )
+    # 関係図の孤立ノード (どの edge にも現れないノード) は hard fail。
+    # 2026-06-04 ユーザー指摘: edge 8 枚上限に詰める過程で BCG ノードへの線が
+    # 全部落ち、図の右側に「繋がっていない丸」が浮く事故が発生した。
+    # 「ノードを置くなら edge を 1 本以上持たせる」が関係図の最小品質保証。
+    # feedback_check_design_principles 1 段「失敗を表現できない構造」: 描画後の
+    # 目視ではなく、ビルド時に loud failure させてサイレント公開を封じる。
+    if isinstance(rel, dict):
+        nodes = rel.get("nodes") or []
+        edges = rel.get("edges") or []
+        endpoints = set()
+        for e in edges:
+            if e.get("from"):
+                endpoints.add(e["from"])
+            if e.get("to"):
+                endpoints.add(e["to"])
+        orphans = [n.get("id") for n in nodes if n.get("id") and n.get("id") not in endpoints]
+        if orphans:
+            raise DeepDiveIncompleteError(
+                f"{name}: 関係図に孤立ノード {orphans} (どの edge にも現れない)。"
+                "ノードを置くなら必ず edge を 1 本以上持たせる。出さない理由が無いなら "
+                "nodes から削除、出す理由があるなら edges を追加するか、近接ノードと "
+                "ラベル統合 (例: McKinsey/BCG) して 1 ノードに畳む。edge 上限 "
+                f"{_MAX_RELATION_EDGES} 枚と両立できないなら、独自情報の薄い edge を "
+                "1 本削って枠を作る。"
+            )
 
 
 def build_deepdive_context(md_path: Path) -> dict[str, Any]:
