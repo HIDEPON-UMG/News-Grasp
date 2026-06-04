@@ -1,0 +1,5 @@
+{
+  "_note": "案②-Lite (2026-06-04 導入) の session URL 白リスト。日次 digest セッション → DeepDive セッションの順に、当日 WebSearch/WebFetch で 200 確認した URL のフラットリストを LLM が当日の date で上書き保存する。push 前 gate (tools/audit_all_article_urls.py --gate --match-session) がこのリストと articles.jsonl 直近 7 日 URL を物理照合し、リストに無い URL = LLM の記憶補完で出した捏造扱いで push を中止する。初期 commit のこの値は date が古いため degrade (= 警告のみで従来 HEAD/GET gate に降りる) で通過する。",
+  "date": "1970-01-01",
+  "urls": []
+}
