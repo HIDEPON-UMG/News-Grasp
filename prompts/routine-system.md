@@ -656,12 +656,7 @@ SMTP 経路は htmlBody サイズ制限が極めて緩いため、minify は必�
 ## 守るべき原則
 
 - **URL は WebSearch / WebFetch / fetch_ogp.py で実際にアクセスし 200 が返ったものだけ書く**（2026-06-03 三菱UFJ FX_Monthly 捏造事故の恒久対策）。「ありそうな URL」「過去に見た URL の記憶」「サイトのトップから推測したパス」を `articles.jsonl` の `url` フィールド・Markdown の `[元記事]` リンクに書くことは絶対禁止。アクセスしていない URL を埋めるくらいなら**カテゴリから当該候補ごと落とす**ことを選ぶ。`news-grasp-runner.ps1` は push 前に `tools/audit_all_article_urls.py --gate --match-session` を必ず呼び、404/410 等の捏造 URL または下記 session 白リスト未登録の URL を 1 件でも検出すると push が阻止される（hard fail）。この時間ロスを発生させないために、**LLM の記憶を一切信用せず、`WebSearch` 結果に明示的に出てきた URL だけを使う**こと
-- **生成完了直前に必ず `data/_session_urls.json` を上書き保存する**（2026-06-04 案②-Lite 恒久対策・上の原則を物理化する仕組み）。今回の収集で `WebSearch` または `WebFetch` で 200 確認した URL のフラットリストを **`{"date": "YYYY-MM-DD", "urls": ["https://...", ...]}` 形式**で書き出す。push 前 gate (`tools/audit_all_article_urls.py --gate --match-session`) がこのリストと `articles.jsonl` 直近 7 日の URL を物理照合し、**リストに無い URL = 記憶補完で出した捏造扱いで push を中止**する。
-  - `date` は当日（JST YYYY-MM-DD）
-  - `urls` は重複排除した URL の配列（順序不問）
-  - **上書き保存**（前日のリストを残さない＝当日 fresh で書き直し）
-  - DeepDive の Claude セッションは別プロセスで後段に走り、**既存ファイルを読んで DeepDive で参照した URL を追記**する設計（日次 digest 側はまず上書きで開始）
-  - ファイル書き忘れた場合は gate が degrade して従来 HEAD/GET 検証のみで通すので朝のバッチは止まらないが、**捏造防止は無効化される**ので必ず書く
+- **`data/_session_urls.json` は触らない**（2026-06-05 案②-Lite 案③: hook 化で恒久対策）。本リポは `.claude/settings.json` + `.claude/hooks/append_session_urls.py` で **PostToolUse:WebSearch/WebFetch** を hook 化済み。LLM が `WebSearch` または `WebFetch` を呼ぶたびに **Claude Code ハーネス層が自動で**観測 URL を session 白リストに append する。LLM はこのファイルを**読む必要も書く必要も無い**。手動で書いた内容は次の hook 発火で union される（古い偽 URL は date 切替時に消える）。push 前 gate (`tools/audit_all_article_urls.py --gate --match-session`) がこの白リストと `articles.jsonl` 当日 URL を物理照合し、**リストに無い URL = WebSearch/WebFetch を通さず記憶から書いた捏造扱いで push を中止**する
 - **毎回必ず watchlist.md を最新で読む**（前日の編集が翌朝反映される）
 - **5 軸の関連付けは無理に当てはめない**。該当しなければ単純な解説で構わない
 - **NewsPicks 有料部分・認証ゲートのある記事は深追いしない**

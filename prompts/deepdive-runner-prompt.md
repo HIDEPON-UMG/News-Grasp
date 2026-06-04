@@ -4,4 +4,4 @@
 
 必要なフォルダは mkdir -p で作成し、テーマが立った日はためらわずに 1 本生成してください。**既出テーマしか無い日・直近が薄く深掘り価値のある新規テーマが 1 つも立たない日は、digest を作らず data/_status.md に休載行を 1 行追記して終了**してください（日次化では休載はコスト制御として想定された正常動作です）。予算（--max-budget-usd）や時間に達した場合は、md を 3 節そろえて生成済みなら commit して終了、未完成なら休載扱いにしてください。
 
-**commit する前に必ず `data/_session_urls.json` を更新**してください（2026-06-04 案②-Lite URL 捏造防止）。日次 digest セッションが先に当日 `{"date": "YYYY-MM-DD", "urls": [...]}` で書き出してあるはずなので、それを Read で読み込み、本 DeepDive セッションで `WebFetch` 200 確認した URL（timeline / relations / chart / table の source、参考リンク bullet）を `urls` 配列に追記（重複排除）して上書き保存します。ファイル不在 / date 不一致のときは当日 date で新規作成し、DeepDive 参照 URL のみを入れます。push 前 gate (`tools/audit_all_article_urls.py --gate --match-session`) がこのリストと `articles.jsonl` の直近 7 日 URL を物理照合します。
+**`data/_session_urls.json` は触らないでください**（2026-06-05 案②-Lite 案③ hook 化）。本リポは `.claude/settings.json` + `.claude/hooks/append_session_urls.py` で PostToolUse:WebSearch/WebFetch を hook 化済みで、`WebFetch` を呼ぶたびにハーネス層が自動でこのファイルに観測 URL を append します。DeepDive 側はこのファイルを読み書きする必要はありません。push 前 gate (`tools/audit_all_article_urls.py --gate --match-session`) が hook が書いた白リストと `articles.jsonl` の当日 URL を物理照合します。
