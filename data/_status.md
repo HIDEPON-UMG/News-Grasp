@@ -50,3 +50,4 @@
 | 2026-06-04 | ✅DeepDive | OpenAI、コンサル市場へ直接参入の衝撃 | 約30分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch成功1(CIO Dive)・OpenAI/SEC/BusinessWireは403/timeout |
 
 | 2026-06-05 | ✅成功 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy | - | 0 | 記事22件 / mobility: The Next Web記事1件を同一イベント3報のため除外 |
+| 2026-06-05 | ✅DeepDive | Switch 2 爆売れの陰、サード大作が来ない(ハード約2,000万台の歴史的普及とサードのアタッチ不在) | 約20分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch成功4(任天堂IR・Nintendo Everything・Gematsu・ファミ通)・CNBC403は不採用 |
