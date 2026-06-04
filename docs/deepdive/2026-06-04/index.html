@@ -161,12 +161,17 @@ html { background: #FAF7F0; }
 .dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
 .dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
                font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
-               align-items: baseline; }
-.dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
-.dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
 .dd-fig__src a { color: inherit; text-decoration: none; }
 .dd-fig__src a:hover { text-decoration: underline; }
-.dd-fig__src .cite { white-space: nowrap; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
 
 /* timeline */
 .dd-tl { position: relative; padding: 20px 22px; }
@@ -179,8 +184,12 @@ html { background: #FAF7F0; }
 .dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
 .dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
                    border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
 .dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
-                 font-weight: 500; text-wrap: pretty; }
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
 .dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
                  font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
                  text-decoration: none; }
@@ -309,6 +318,14 @@ html { background: #FAF7F0; }
 .dd-source__pub { color: var(--accent); font-weight: 700; }
 .dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
 
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
 /* footer */
 .dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
            font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
@@ -345,11 +362,16 @@ html { background: #FAF7F0; }
   .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
   .dd-tl__line { left: 84px; }
   .dd-tl__date .d { font-size: 11px; }
-  /* 関係図 SVG は width:100% で縮小すると実効フォントが 3-8px に潰れ判読不能に
-     なるため、モバイルでは横スクロール + ピンチズームで実寸を確保する
-     (一望性より可読性を優先。min-width 760 で実効フォント >=9px) */
+  /* 2026-06-04 ユーザー指示: SVG/TABLE を 375px 画面に全入りさせる (一望性優先)。
+     SVG は viewBox に基づき自動縮小、TABLE は td.val の折り返しで縦に肥大化する。
+     min-width 解除は親の overflow-x:auto より優先 (子の min-width:0 が親の auto を無効化)。
+     旧設計 (min-width 760 で実効フォント >=9px) は「右に隠れて見えない」の方が UX
+     致命傷と判断し撤回 (memory feedback_real_environment_first_verification 2026-06-04)。 */
   .dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .dd-relwrap svg { min-width: 760px; }
+  .dd-relwrap svg { min-width: 0; max-width: 100%; height: auto; }
+  .dd-table-wrap { overflow-x: visible; }
+  .dd-table { min-width: 0; }
+  .dd-table td.val, .dd-table td.src, .dd-table th { white-space: normal; }
   .dd-decision__issue { padding: 20px 18px; }
   .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
   .dd-decision__opts { grid-template-columns: 1fr; }
@@ -583,7 +605,7 @@ html { background: #FAF7F0; }
           <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
           <figure class="dd-fig">
             <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">AIベンダー・グローバルコンサル・国内SIerの関係図</span></figcaption>
-            <div class="dd-relwrap"><svg viewBox="0 0 1080 870" width="100%" style="display:block;background:#FAF7F0" role="img" aria-label="AIベンダー・グローバルコンサル・国内SIerの関係図"><line x1="628.8" y1="156.4" x2="318.3" y2="304.9" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="318.3,304.9 324.5,296.9 328.3,305.0" fill="#2E6B52"/><polygon points="628.8,156.4 622.6,164.3 618.7,156.2" fill="#2E6B52"/><line x1="616.7" y1="131.1" x2="306.2" y2="279.6" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="306.2,279.6 312.4,271.7 316.3,279.8" fill="#8E2A19"/><polygon points="616.7,131.1 610.5,139.1 606.7,131.0" fill="#8E2A19"/><line x1="645.5" y1="170.6" x2="576.0" y2="270.3" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="576.0,270.3 577.5,260.4 584.9,265.5" fill="#2E6B52"/><line x1="724.5" y1="170.6" x2="798.5" y2="276.9" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="798.5,276.9 789.7,272.1 797.1,266.9" fill="#2E6B52"/><line x1="431.0" y1="165.7" x2="504.0" y2="270.3" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="504.0,270.3 495.1,265.5 502.5,260.4" fill="#2E6B52"/><line x1="359.0" y1="165.7" x2="289.5" y2="265.4" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="289.5,265.4 290.9,255.4 298.3,260.6" fill="#2E6B52"/><line x1="685.0" y1="183.0" x2="685.0" y2="467.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="685.0,467.0 680.5,458.0 689.5,458.0" fill="#2E6B52"/><line x1="628.2" y1="502.8" x2="312.2" y2="351.8" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="312.2,351.8 322.3,351.6 318.4,359.7" fill="#8E2A19"/><polygon points="628.2,502.8 618.1,503.0 622.0,494.9" fill="#8E2A19"/><line x1="363.5" y1="484.9" x2="289.5" y2="378.6" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="289.5,378.6 298.3,383.4 290.9,388.6" fill="#8E2A19"/><polygon points="363.5,484.9 354.7,480.1 362.1,474.9" fill="#8E2A19"/><line x1="662.3" y1="179.2" x2="488.2" y2="678.5" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="488.2,678.5 486.9,668.5 495.4,671.5" fill="#2D5BB8"/><line x1="282.0" y1="383.1" x2="438.3" y2="682.2" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="438.3,682.2 430.2,676.3 438.1,672.1" fill="#2D5BB8"/><line x1="757.5" y1="218.0" x2="757.5" y2="196.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(375.9,233.0)"><rect width="274.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances提携(2/23)</text></g><g transform="translate(285.1,177.0)"><rect width="274.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DeployCoが実装受注を侵食(5/12)</text></g><g transform="translate(471.8,221.2)"><rect width="281.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances(戦略・変革)</text></g><g transform="translate(655.5,183.0)"><rect width="204.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances</text></g><g transform="translate(364.2,185.9)"><rect width="206.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 共同変革グループ(6/1)</text></g><g transform="translate(195.5,217.9)"><rect width="254.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> DeepMind実装提携・$750M基金</text></g><g transform="translate(562.1,400.5)"><rect width="254.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> ChatGPT Enterpriseリセラー</text></g><g transform="translate(384.0,400.5)"><rect width="171.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DXコンサルで対抗</text></g><g transform="translate(227.6,431.5)"><rect width="194.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 国産・専有環境で対抗</text></g><g transform="translate(479.5,431.5)"><rect width="191.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> DeployCoで直接実装</text></g><g transform="translate(334.9,621.0)"><rect width="156.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 従来の実装受注</text></g><circle cx="685.0" cy="114.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">OpenAI (DeployCo)</text><text x="685.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AIベンダー</text><circle cx="395.0" cy="114.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="395.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Google (DeepMind/Cloud)</text><text x="395.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AIベンダー</text><circle cx="250.0" cy="322.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="250.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">Accenture</text><text x="250.0" y="338.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコンサル</text><circle cx="540.0" cy="322.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="540.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">McKinsey</text><text x="540.0" y="338.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコンサル</text><circle cx="830.0" cy="322.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="830.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">BCG</text><text x="830.0" y="337.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコン…</text><circle cx="685.0" cy="530.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="526.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.8" fill="#1A1A1A" letter-spacing="-0.5">NTTデータ</text><text x="685.0" y="546.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">国内SIer</text><circle cx="395.0" cy="530.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="526.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">富士通</text><text x="395.0" y="545.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">国内SIer</text><circle cx="467.5" cy="738.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="467.5" y="734.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">発注企業</text><text x="467.5" y="756.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">クライアント</text></svg></div>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 870" width="100%" style="display:block;background:#FAF7F0" role="img" aria-label="AIベンダー・グローバルコンサル・国内SIerの関係図"><line x1="628.8" y1="156.4" x2="318.3" y2="304.9" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="318.3,304.9 324.5,296.9 328.3,305.0" fill="#2E6B52"/><polygon points="628.8,156.4 622.6,164.3 618.7,156.2" fill="#2E6B52"/><line x1="616.7" y1="131.1" x2="306.2" y2="279.6" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="306.2,279.6 312.4,271.7 316.3,279.8" fill="#8E2A19"/><polygon points="616.7,131.1 610.5,139.1 606.7,131.0" fill="#8E2A19"/><line x1="645.5" y1="170.6" x2="571.5" y2="276.9" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="571.5,276.9 572.9,266.9 580.3,272.1" fill="#2E6B52"/><line x1="363.5" y1="159.1" x2="289.5" y2="265.4" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="289.5,265.4 290.9,255.4 298.3,260.6" fill="#2E6B52"/><line x1="685.0" y1="183.0" x2="685.0" y2="467.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="685.0,467.0 680.5,458.0 689.5,458.0" fill="#2E6B52"/><line x1="628.2" y1="502.8" x2="312.2" y2="351.8" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="312.2,351.8 322.3,351.6 318.4,359.7" fill="#8E2A19"/><polygon points="628.2,502.8 618.1,503.0 622.0,494.9" fill="#8E2A19"/><line x1="363.5" y1="484.9" x2="289.5" y2="378.6" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="289.5,378.6 298.3,383.4 290.9,388.6" fill="#8E2A19"/><polygon points="363.5,484.9 354.7,480.1 362.1,474.9" fill="#8E2A19"/><line x1="662.3" y1="179.2" x2="488.2" y2="678.5" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="488.2,678.5 486.9,668.5 495.4,671.5" fill="#2D5BB8"/><line x1="282.0" y1="383.1" x2="438.3" y2="682.2" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="438.3,682.2 430.2,676.3 438.1,672.1" fill="#2D5BB8"/><line x1="612.5" y1="328.0" x2="612.5" y2="390.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="322.5" y1="108.0" x2="322.5" y2="46.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="473.8" y1="374.0" x2="473.8" y2="421.2" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="324.6" y1="264.0" x2="324.6" y2="240.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="575.2" y1="484.0" x2="549.6" y2="468.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(330.5,177.6)"><rect width="274.0" height="44.0" fill="#fff" stroke="#1A1A1A" stroke-width="1" rx="2"/><circle cx="13" cy="13" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances提携(2/23)</text><circle cx="13" cy="31" r="3.5" fill="#8E2A19"/><text x="24" y="35" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DeployCoで実装受注侵食</text></g><g transform="translate(510.5,377.0)"><rect width="204.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Frontier Alliances</text></g><g transform="translate(208.0,33.0)"><rect width="229.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> DeepMind実装提携・$750M</text></g><g transform="translate(558.0,593.0)"><rect width="254.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> ChatGPT Enterpriseリセラー</text></g><g transform="translate(388.0,408.2)"><rect width="171.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DXコンサルで対抗</text></g><g transform="translate(227.6,227.0)"><rect width="194.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 国産・専有環境で対抗</text></g><g transform="translate(453.8,455.0)"><rect width="191.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> DeployCoで直接実装</text></g><g transform="translate(334.9,621.0)"><rect width="156.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 従来の実装受注</text></g><circle cx="685.0" cy="114.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">OpenAI (DeployCo)</text><text x="685.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AIベンダー</text><circle cx="395.0" cy="114.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Google (DeepMind/Cloud)</text><text x="395.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AIベンダー</text><circle cx="250.0" cy="322.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="250.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">Accenture</text><text x="250.0" y="338.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコンサル</text><circle cx="540.0" cy="322.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="540.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="16.1" fill="#1A1A1A" letter-spacing="-0.5">McKinsey</text><text x="540.0" y="336.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコン…</text><circle cx="830.0" cy="322.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="830.0" y="318.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">BCG</text><text x="830.0" y="337.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">グローバルコン…</text><circle cx="685.0" cy="530.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="526.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.8" fill="#1A1A1A" letter-spacing="-0.5">NTTデータ</text><text x="685.0" y="546.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">国内SIer</text><circle cx="395.0" cy="530.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="526.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">富士通</text><text x="395.0" y="545.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">国内SIer</text><circle cx="467.5" cy="738.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="467.5" y="734.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">発注企業</text><text x="467.5" y="756.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">クライアント</text></svg></div>
             
             <div class="dd-rel-legend">
               <span class="hd">EDGE KIND</span>
@@ -596,7 +618,7 @@ html { background: #FAF7F0; }
               
             </div>
             
-            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="">*2 Fortune</a></span></div>
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="https://fortune.com/2026/02/23/openai-partners-with-mckinsey-bcg-accenture-and-capgemini-to-push-its-frontier-ai-agent-platform/">*2 Fortune</a></span></div>
           </figure>
         </div>
         
@@ -617,14 +639,14 @@ html { background: #FAF7F0; }
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Accenture GenAI新規受注の推移（会計年度）</span></figcaption>
           <div class="dd-chart__note">GenAI受注を区分開示</div>
           <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Accenture GenAI新規受注の推移（会計年度）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">十億ドル</text><polyline points="104.0,214.0 280.0,139.0 456.0,66.5" fill="none" stroke="#2E6B52" stroke-width="2.5"/><circle cx="104.0" cy="214.0" r="4" fill="#2E6B52"/><text x="104.0" y="206.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">0</text><circle cx="280.0" cy="139.0" r="4" fill="#2E6B52"/><text x="280.0" y="131.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3.0</text><circle cx="456.0" cy="66.5" r="4" fill="#2E6B52"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5.9</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY23</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY24</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FY25</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ GenAI受注を区分開示</text></svg></div>
-          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="">*3 Accenture / Business Wire</a></span></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="https://newsroom.accenture.com/news/2026/accenture-reports-second-quarter-fiscal-2026-results">*3 Accenture / Business Wire</a></span></div>
         </figure>
         
         <figure class="dd-fig">
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">AI実装を担う体制規模の非対称（公表値）</span></figcaption>
           
           <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="AI実装を担う体制規模の非対称（公表値）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">人</text><rect x="49.4" y="66.5" width="109.1" height="147.5" fill="#2E6B52"/><text x="104.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">85000</text><rect x="225.4" y="213.0" width="109.1" height="1.0" fill="#2E6B52"/><text x="280.0" y="205.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">600</text><rect x="401.4" y="213.7" width="109.1" height="0.3" fill="#2E6B52"/><text x="456.0" y="205.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">150</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Accenture (AI/データ専門家)</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">NTTデータ (AIコンサル組織)</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">OpenAI DeployCo (Tomoro由来FDE)</text></svg></div>
-          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="">*3 Accenture / Business Wire</a></span></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">*1 CIO Dive</a> <a class="cite" href="https://newsroom.accenture.com/news/2026/accenture-reports-second-quarter-fiscal-2026-results">*3 Accenture / Business Wire</a></span></div>
         </figure>
         
       </div>
@@ -772,45 +794,61 @@ html { background: #FAF7F0; }
         </div>
         <div class="dd-sources">
           
+          
           <a class="dd-source" href="https://www.ciodive.com/news/openai-deployment-company-4-billion-ai-consulting-integration/819942/">
             <span class="dd-source__no">01</span>
             <span class="dd-source__txt"><span class="dd-source__pub">CIO Dive</span>「OpenAI spins up standalone consulting business（DeployCo, $4B, Tomoro買収）」(2026-05) <span class="ext">↗</span></span>
           </a>
           
-          <a class="dd-source" >
+          
+          
+          <a class="dd-source" href="https://fortune.com/2026/02/23/openai-partners-with-mckinsey-bcg-accenture-and-capgemini-to-push-its-frontier-ai-agent-platform/">
             <span class="dd-source__no">02</span>
-            <span class="dd-source__txt"><span class="dd-source__pub">Fortune</span>「OpenAI partners with McKinsey, BCG, Accenture, and Capgemini（Frontier Alliances）」(2026-02)</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Fortune</span>「OpenAI partners with McKinsey, BCG, Accenture, and Capgemini（Frontier Alliances）」(2026-02) <span class="ext">↗</span></span>
           </a>
           
-          <a class="dd-source" >
+          
+          
+          <a class="dd-source" href="https://newsroom.accenture.com/news/2026/accenture-reports-second-quarter-fiscal-2026-results">
             <span class="dd-source__no">03</span>
-            <span class="dd-source__txt"><span class="dd-source__pub">Accenture / Business Wire</span>「Accenture Reports Second-Quarter Fiscal 2026 Results（売上$18.0B・受注$22.11B）」(2026-03)</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Accenture / Business Wire</span>「Accenture Reports Second-Quarter Fiscal 2026 Results（売上$18.0B・受注$22.11B）」(2026-03) <span class="ext">↗</span></span>
           </a>
           
-          <a class="dd-source" >
+          
+          
+          <div class="dd-source">
             <span class="dd-source__no">04</span>
             <span class="dd-source__txt"><span class="dd-source__pub">McKinsey / Innovatopia</span>「McKinsey×Google Cloud共同変革グループ発足」(2026-06)</span>
-          </a>
+          </div>
           
-          <a class="dd-source" >
+          
+          
+          <div class="dd-source">
             <span class="dd-source__no">05</span>
             <span class="dd-source__txt"><span class="dd-source__pub">TheStreet</span>「AI is forcing McKinsey, BCG, Bain to rethink consulting fees（成果報酬移行・BCG 40%）」(2026-06)</span>
-          </a>
+          </div>
           
-          <a class="dd-source" >
+          
+          
+          <div class="dd-source">
             <span class="dd-source__no">06</span>
             <span class="dd-source__txt"><span class="dd-source__pub">EnterpriseZine</span>「NTTデータ×OpenAI提携 ChatGPT Enterpriseリセラー 2027年末累計¥1,000億円」(2026-06)</span>
-          </a>
+          </div>
           
-          <a class="dd-source" >
+          
+          
+          <div class="dd-source">
             <span class="dd-source__no">07</span>
             <span class="dd-source__txt"><span class="dd-source__pub">Diamond Online</span>「三菱商事・NTT連合 DXコンサルでアクセンチュアに挑戦／富士通は3000人見直し」(2026-06)</span>
-          </a>
+          </div>
           
-          <a class="dd-source" >
+          
+          
+          <div class="dd-source">
             <span class="dd-source__no">08</span>
             <span class="dd-source__txt"><span class="dd-source__pub">Constellation Research / McKinsey</span>「GenAIプロジェクトの80%が業績改善なし」(2026-05)</span>
-          </a>
+          </div>
+          
           
         </div>
       </div>

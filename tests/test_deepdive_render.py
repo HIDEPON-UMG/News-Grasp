@@ -165,8 +165,9 @@ _MULTICAMP_REL = {
 
 _NODE_CIRCLE_RE = re.compile(
     r'<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([-\d.]+)" fill="#fff" stroke="#1A1A1A"')
+# 2026-06-04: frenemy chip は高さ 44.0 (2 行統合)、それ以外は 26.0 (1 行)。両方を取る。
 _CHIP_RECT_RE = re.compile(
-    r'<g transform="translate\(([-\d.]+),([-\d.]+)\)"><rect width="([-\d.]+)" height="26.0"')
+    r'<g transform="translate\(([-\d.]+),([-\d.]+)\)"><rect width="([-\d.]+)" height="(26\.0|44\.0)"')
 
 
 def _node_circles(svg: str) -> list[tuple[float, float, float]]:
@@ -174,7 +175,7 @@ def _node_circles(svg: str) -> list[tuple[float, float, float]]:
 
 
 def _chip_rects(svg: str) -> list[tuple[float, float, float, float]]:
-    return [(float(x), float(y), float(w), 26.0) for x, y, w in _CHIP_RECT_RE.findall(svg)]
+    return [(float(x), float(y), float(w), float(h)) for x, y, w, h in _CHIP_RECT_RE.findall(svg)]
 
 
 def _rect_circle_hit(rect, circ, tol: float = 0.5) -> bool:
@@ -224,7 +225,8 @@ def test_relations_two_camps_split_left_right_and_no_overlap() -> None:
     circles = _node_circles(svg)
     rects = _chip_rects(svg)
     assert len(circles) == 7, f"ノード円が 7 個でない: {len(circles)}"
-    assert len(rects) == 8, f"ラベルチップが 8 個でない: {len(rects)}"
+    # frenemy は 1 chip 統合 (2 行) になったので、7 chip = 7 base edges
+    assert len(rects) == 7, f"ラベルチップが 7 個でない: {len(rects)}"
     # ラベルチップ vs ノード円: 文字が読めなくなる重なりは 0
     for r in rects:
         for c in circles:
@@ -311,6 +313,252 @@ def test_relations_value_chain_layers_supply_sink_below() -> None:
         for cx, cy, cr in circles:
             assert _seg_point_dist(seg, cx, cy) >= cr - 1.0, \
                 f"エッジ線がノード円を貫通: seg={seg} circle=({cx},{cy},{cr})"
+
+
+# ── relations 3 陣営 + クライアントの高密度ケース (★2026-06-04 ユーザー指摘) ──
+# 2026-06-04 DeepDive (AIベンダー2/コンサル3/SIer2/クライアント1 = 4 役割 8 ノード)
+# で 10 エッジ (11 ラベル) を band 間 gap に詰め込み、ラベル重なり 5 ペアが発生。
+# レンダラ側の力学分離 (preconditioning + vb_h 拡張) では構造的に解けないと観察され、
+# 「関係図の edges は 8 本上限・超過は build が hard fail」を契約に固定した
+# (= [[feedback_check_design_principles]] 1 段「失敗を表現できない構造に変える」)。
+# 本 fixture は 8 エッジ (frenemy 1 + 提携/競合/供給 7) に絞った主要対立軸版で、
+# レンダラが描けば重なり 0 を保証する不変条件として locked-in する。
+_BANDS_HIGH_DENSITY_REL = {
+    "title": "AIベンダー・グローバルコンサルの関係図",
+    "nodes": [
+        {"id": "openai", "label": "OpenAI (DeployCo)", "group": "AIベンダー"},
+        {"id": "google", "label": "Google (DeepMind/Cloud)", "group": "AIベンダー"},
+        {"id": "accenture", "label": "Accenture", "group": "グローバルコンサル"},
+        {"id": "mckinsey", "label": "McKinsey", "group": "グローバルコンサル"},
+        {"id": "bcg", "label": "BCG", "group": "グローバルコンサル"},
+        {"id": "client", "label": "発注企業", "group": "クライアント"},
+    ],
+    # 5 エッジ (frenemy 1 + 普通 4) = 描画 chip 数 5 (frenemy も 1 chip)。
+    # _MAX_RELATION_EDGES=8 上限内で 4 役割 8 ノードの bands モードを最小再現する版。
+    "edges": [
+        {"from": "openai", "to": "accenture", "label": "提携と競合が併存", "kind": "協調的競合",
+         "coop": "Frontier Alliances提携", "rival": "DeployCoで実装受注侵食"},
+        {"from": "openai", "to": "mckinsey", "label": "Frontier Alliances", "kind": "提携"},
+        {"from": "google", "to": "accenture", "label": "DeepMind実装提携", "kind": "提携"},
+        {"from": "openai", "to": "client", "label": "DeployCoで直接実装", "kind": "供給"},
+        {"from": "accenture", "to": "client", "label": "従来の実装受注", "kind": "供給"},
+    ],
+}
+
+
+def test_relations_bands_high_density_no_label_overlap() -> None:
+    """3 陣営以上 + 下流クライアント (bands モード use_camps=True) で 8 エッジに絞れば、
+    ラベル同士・ラベル↔ノード円・エッジ線↔ノード円の重なりは 0 を保つ。
+
+    なぜ重要か: 2026-06-04 DeepDive の実機 SVG で band 間に 6 枚の長尺ラベルが
+    詰め込まれ重なり 5 ペアが発生。memory `feedback_relation_diagram_semantic_layout`
+    の規約と _choose_layout_mode の docstring は「ラベル重なり 0」を明記して
+    いるが、契約テスト fixture が 2 陣営 / バリューチェーンの 2 種に限定され、
+    3 陣営以上の bands モードを覆っていなかった。本テストで 8 エッジに絞った
+    bands 高密度版を locked-in する (= [[feedback_check_design_principles]]
+    4 段「契約テスト 1 件で不変条件を locked-in」の適用)。9 エッジ以上は
+    test_relations_too_many_edges_hard_fail で build が hard fail する契約。
+    """
+    rel = _BANDS_HIGH_DENSITY_REL
+    svg = relations_svg(rel)
+    circles = _node_circles(svg)
+    rects = _chip_rects(svg)
+    # 6 ノード (AIベンダー 2 + コンサル 3 + クライアント 1) の 3 段 bands 構成。
+    assert len(circles) == 6, f"ノード円が 6 個でない: {len(circles)}"
+    # 5 edges (frenemy 1 + 普通 4)、frenemy 1 chip 統合で chip 数 = 5
+    assert len(rects) == 5, f"ラベルチップが 5 個でない: {len(rects)}"
+
+    # ラベル↔ノード円: 文字が読めなくなる重なりは 0
+    for r in rects:
+        for c in circles:
+            assert not _rect_circle_hit(r, c), \
+                f"ラベルがノード円に重なる: rect={r} circle={c}"
+
+    # ラベル同士の重なりも 0
+    for i in range(len(rects)):
+        for j in range(i + 1, len(rects)):
+            assert not _rect_overlap(rects[i], rects[j]), \
+                f"ラベル同士が重なる: {rects[i]} ∩ {rects[j]}"
+
+    # エッジ線は端点以外のノード円を貫通しない
+    segs = [(float(a), float(b), float(c), float(d))
+            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
+    for seg in segs:
+        for ncx, ncy, ncr in circles:
+            assert _seg_point_dist(seg, ncx, ncy) >= ncr - 1.0, \
+                f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
+
+
+def test_relations_too_many_edges_hard_fail(tmp_path: Path) -> None:
+    """関係図の実描画ラベルが 9 枚以上 (上限 8 枚) の DeepDive md は build が hard fail。
+
+    なぜ重要か: レンダラの力学分離は band 間 gap (~84 px) にラベル多数を
+    詰め込めない構造的限界がある。「ラベルを 8 枚以下に絞り込めない関係図」は
+    本質を選別できていない記事のシグナルなので、生成段階で loud failure させて
+    サイレントな破綻描画を封じる ([[feedback_check_design_principles]] 1 段)。
+    frenemy (協調的競合) は coop/rival の 2 ラベルでカウントする。
+    """
+    from tools.render_deepdive import build_deepdive_context, DeepDiveIncompleteError
+    import os
+    os.environ["NEWS_GRASP_SKIP_URL_CHECK"] = "1"   # オフラインで URL 検証スキップ
+    md = tmp_path / "2026-06-04-DeepDive.md"
+    edges_json = ",\n    ".join(
+        f'{{"from": "n{i}", "to": "n{(i + 1) % 9}", "kind": "提携", "label": "L{i}"}}'
+        for i in range(9)
+    )
+    nodes_json = ",\n    ".join(
+        f'{{"id": "n{i}", "label": "Node{i}", "group": "G{i % 2}"}}' for i in range(9)
+    )
+    md.write_text(
+        "---\n"
+        "title: t\nlens: ai\ndate: 2026-06-04\nog_image: /og.jpg\n"
+        "tags: []\n---\n\n"
+        "## 背景\n\n```timeline\n[{\"date\": \"2026-06-04\", \"text\": \"x\"}]\n```\n\n"
+        "```players\n[{\"id\": \"x\", \"label\": \"X\"}]\n```\n\n"
+        "```relations\n"
+        "{\n  \"nodes\": [\n    " + nodes_json + "\n  ],\n"
+        "  \"edges\": [\n    " + edges_json + "\n  ]\n}\n```\n\n"
+        "## 深掘り\n\n```chart\n{\"type\": \"bar\", \"title\": \"c1\", \"x\": [\"a\"], \"series\": [{\"name\": \"s\", \"data\": [1]}]}\n```\n\n"
+        "```chart\n{\"type\": \"bar\", \"title\": \"c2\", \"x\": [\"a\"], \"series\": [{\"name\": \"s\", \"data\": [1]}]}\n```\n\n"
+        "```table\n{\"columns\": [\"c\"], \"rows\": [[\"v\"]]}\n```\n\n"
+        "## 注目点\n\n```decision\n{\"decider\": \"d\", \"options\": [\"o\"]}\n```\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeepDiveIncompleteError, match="ラベルが 9 枚"):
+        build_deepdive_context(md)
+
+
+def test_deepdive_no_empty_href_anchors() -> None:
+    """ビルド済み deepdive HTML には href が空の <a> タグが 1 つも存在しない。
+
+    なぜ重要か: 2026-06-04 ユーザー指摘で「参考リンク 8 件中 7 件 / 図表 SOURCE
+    の *2/*3 がクリックしても自己参照に戻る」事故。md に URL が無い参考リンクを
+    テンプレが `<a class="dd-source" >` (href なし) でラップしていたため、ブラウザが
+    href なし `<a>` を現在 URL で解決 → 自己参照クリックになっていた。テンプレ側で
+    URL 空のとき `<a>` でなく `<div>` / `<span>` を出す構造に変えたうえで、
+    生成済み HTML に `href=""` や href なし `<a class="dd-source">` が混入しない
+    ことを契約として固定する ([[feedback_check_design_principles]] 1 段
+    「失敗を表現できない構造に変える」+ [[feedback_llm_url_fabrication_ban]]
+    「URL の在/不在を 1 種類のレンダリングに圧縮しない」)。
+    """
+    import re as _re
+    for md in (ROOT / "digest" / "DeepDive").glob("*-DeepDive.md"):
+        date = md.stem.replace("-DeepDive", "")
+        html_path = ROOT / "docs" / "deepdive" / date / "index.html"
+        if not html_path.exists():
+            continue
+        html = html_path.read_text(encoding="utf-8")
+        # href="" (空文字列の href)
+        assert 'href=""' not in html, \
+            f"{html_path.name}: href=\"\" が残存 (空 href の <a> は自己参照クリックを生む)"
+        # <a class="dd-source"> で href 属性が無いケース
+        bad = _re.findall(r'<a class="dd-source"[^>]*>', html)
+        for tag in bad:
+            assert "href=" in tag, \
+                f"{html_path.name}: href の無い <a class=\"dd-source\"> が残存: {tag}"
+        # <a class="cite"> も同様 (図表 SOURCE)
+        bad_cite = _re.findall(r'<a class="cite"[^>]*>', html)
+        for tag in bad_cite:
+            assert "href=" in tag and 'href=""' not in tag, \
+                f"{html_path.name}: href が空 or 無い <a class=\"cite\"> が残存: {tag}"
+
+
+def test_deepdive_template_has_mobile_overflow_guards() -> None:
+    """deepdive-template.html がスマホ overflow 用 CSS ガードを物理的に含むことを契約化。
+
+    なぜ重要か: 2026-06-04 ユーザー指摘で TIMELINE の英字連続 (社名・URL) が画面右に
+    溢れる症状が発生。`.dd p, .dd li, .dd td` 等への `overflow-wrap: anywhere` と、
+    grid 1fr 子の `min-width: 0` が欠けると CJK 折り返しが効かず再発する。
+    境界 1 箇所集約 ([[feedback_check_design_principles]] 2 段) でテンプレを正典化し、
+    新規 deepdive ページがビルドされる度にガードが保たれていることを物理的に確認する。
+    """
+    tpl = ROOT / "prompts" / "deepdive-template.html"
+    css = tpl.read_text(encoding="utf-8")
+    # 1) 全テキスト要素グローバルガード
+    assert "overflow-wrap: anywhere" in css, \
+        "deepdive-template.html: overflow-wrap: anywhere が無い (英字連続が画面外に溢れる)"
+    assert ".dd p" in css and "overflow-wrap" in css, \
+        "deepdive-template.html: .dd p への overflow-wrap グローバルガードが無い"
+    # 2) grid 子の min-width:0 (TIMELINE 本文 / プレイヤーカード / decision 等)
+    assert ".dd-tl__body { min-width: 0" in css, \
+        "deepdive-template.html: .dd-tl__body の min-width: 0 が無い (grid 1fr 子が min-content で暴走)"
+    # 3) モバイル @media で SVG/TABLE が 375px 画面に全入りすること (2026-06-04 ユーザー指示)。
+    #    scrollWidth==375 だけでは「親の overflow-x:auto で閉じ込められた長尺要素」が
+    #    右に隠れる症状を検出できないため、子の min-width:0 を契約として固定する。
+    assert ".dd-relwrap svg { min-width: 0" in css, \
+        "deepdive-template.html: モバイル時の .dd-relwrap svg min-width:0 が無い (右に隠れる)"
+    assert ".dd-table { min-width: 0" in css, \
+        "deepdive-template.html: モバイル時の .dd-table min-width:0 が無い (右に隠れる)"
+    # 4) ビルド済み 1 ページにも反映されていることを確認 (テンプレ→生成パイプライン疎通)
+    sample = ROOT / "docs" / "deepdive" / "2026-06-04" / "index.html"
+    if sample.exists():
+        html = sample.read_text(encoding="utf-8")
+        assert "overflow-wrap: anywhere" in html, \
+            "build 後の deepdive HTML に overflow-wrap ガードが反映されていない (テンプレ→build 疎通断)"
+        assert ".dd-relwrap svg { min-width: 0" in html, \
+            "build 後の deepdive HTML にモバイル SVG 縮小ガードが反映されていない"
+
+
+def test_deepdive_fig_src_does_not_force_single_line_citation() -> None:
+    """図表 SOURCE 行 (.dd-fig__src) の citation が長文時も折り返せることを契約化。
+
+    なぜ重要か: 2026-06-04 計測で、過去回 2026-06-01 ページの SOURCE 行
+    "*6 [PONY AI Inc. Reports First Quarter 2026 Financial Result]" が
+    `.dd-fig__src .cite { white-space: nowrap }` で 1 行に伸び、375px viewport
+    に対し +190px 突き出て横スクロールが発生していた。原因は
+    (1) .cite が nowrap で改行不可、
+    (2) .val が flex 子なのに min-width: auto で shrink しない、
+    (3) .dd-fig__src が flex-wrap: nowrap で .val 自身も縮まない、
+    の三点。境界 1 箇所集約 ([[feedback_check_design_principles]] 2 段) で
+    テンプレ CSS の以下 3 項目を物理的に固定し、長文 citation の再発を封じる。
+    """
+    tpl = ROOT / "prompts" / "deepdive-template.html"
+    css = tpl.read_text(encoding="utf-8")
+    # 1) cite が nowrap でないこと (古い nowrap が残ったままだと長文で突き出す)
+    assert ".dd-fig__src .cite { white-space: nowrap" not in css, \
+        "deepdive-template.html: .dd-fig__src .cite の white-space:nowrap が残存 (長文 citation で横突き出し)"
+    # 2) cite に overflow-wrap:anywhere があること
+    assert ".dd-fig__src .cite { white-space: normal" in css, \
+        "deepdive-template.html: .dd-fig__src .cite の white-space:normal が無い"
+    # 3) val が flex 子として shrink できるよう min-width:0 を持つこと
+    assert ".dd-fig__src .val { min-width: 0" in css, \
+        "deepdive-template.html: .dd-fig__src .val の min-width:0 が無い (flex 子が縮まず突き出る)"
+    # 4) 親 flex に flex-wrap: wrap が指定され、SOURCE 全体が折り返せること
+    assert "flex-wrap: wrap" in css, \
+        "deepdive-template.html: .dd-fig__src の flex-wrap:wrap が無い (子要素が縦に積めない)"
+
+    # 5) ビルド済み HTML (citation 長文を含む 2026-06-01) にも反映されている
+    sample = ROOT / "docs" / "deepdive" / "2026-06-01" / "index.html"
+    if sample.exists():
+        html = sample.read_text(encoding="utf-8")
+        assert ".dd-fig__src .cite { white-space: normal" in html, \
+            "build 後の 2026-06-01 deepdive に cite normal 化が反映されていない"
+        assert ".dd-fig__src .val { min-width: 0" in html, \
+            "build 後の 2026-06-01 deepdive に val min-width:0 が反映されていない"
+
+
+def test_relations_label_text_width_bounded() -> None:
+    """ラベル本文 (label) は全角換算 18 字相当を上限とし、超過は省略 (…) する。
+
+    なぜ重要か: 「Frontier Alliances提携(2/23)」「DeepMind実装提携・$750M基金」など
+    25 文字級の長尺ラベルがそのまま渡されると、1080px 幅の関係図 1 段に 6 枚並べる
+    余地が物理的に無くなり、_resolve_labels が AABB 分離を完了できない (= 重なり残存)。
+    プロンプト側でも「ラベルは短く」と書いてあるが守られないことがあるため、生成側を
+    待たずレンダラ側で省略のセーフネットを敷く。
+    """
+    long_label = "Frontier Alliances提携(2/23) 戦略変革・実装受注を侵食する大型協業"  # 35 字超
+    rel = {
+        "title": "長尺ラベル省略テスト",
+        "nodes": [
+            {"id": "a", "label": "A", "group": "陣営1"},
+            {"id": "b", "label": "B", "group": "陣営2"},
+        ],
+        "edges": [{"from": "a", "to": "b", "label": long_label, "kind": "提携"}],
+    }
+    svg = relations_svg(rel)
+    # SVG 内の <text> に「…」が現れ、元のラベル全文は乗らない
+    assert "…" in svg, "長尺ラベルが省略 (…) されていない"
+    assert long_label not in svg, "省略なしの長尺ラベルがそのまま SVG に乗っている"
 
 
 # ── table 未確認セル検出 (★新規描画) ─────────────────────────────────────────

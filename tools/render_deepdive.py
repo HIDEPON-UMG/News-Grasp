@@ -769,6 +769,37 @@ def _text_w(s: str, fs: float, ascii_factor: float = 0.6) -> float:
     return sum(fs * (1.0 if _is_cjk(ch) else ascii_factor) for ch in s)
 
 
+# relations のラベル本文 (frenemy の coop/rival も同様) の全角換算上限。
+# 1080px 幅の関係図 1 段に長尺ラベルが密集すると _resolve_labels が AABB 分離を
+# 収束できないため、レンダラ側の最後の砦として physical な truncate を入れる。
+# 全角換算は CJK=1.0 / ASCII=0.5 で測り、超過分は末尾を「…」に置換する。
+# プロンプト規約 (prompts/deepdive-research-system.md) でも「ラベルは短く」と
+# 指示するが、生成側を待たずレンダラで保証する設計 (= [[feedback_check_design_principles]]
+# 「失敗を表現できない構造に変える」)。2026-06-04 ユーザー指摘で恒久化。
+LABEL_MAX_FULLWIDTH_UNITS: float = 18.0
+
+
+def _label_width_units(s: str) -> float:
+    """全角換算の文字数 (CJK=1.0 / それ以外=0.5)。LABEL_MAX_FULLWIDTH_UNITS の判定用。"""
+    return sum(1.0 if _is_cjk(ch) else 0.5 for ch in s)
+
+
+def _truncate_label(s: str, limit: float = LABEL_MAX_FULLWIDTH_UNITS) -> str:
+    """全角換算で limit を超えるラベルを「…」付きで切り詰める (関係図の見栄えと
+    _resolve_labels の収束を守るため)。limit 内なら何もしない。"""
+    if not s or _label_width_units(s) <= limit:
+        return s
+    acc, out = 0.0, []
+    cap = max(1.0, limit - 1.0)   # 末尾の「…」分 (CJK 1.0 相当) を確保
+    for ch in s:
+        unit = 1.0 if _is_cjk(ch) else 0.5
+        if acc + unit > cap:
+            break
+        out.append(ch)
+        acc += unit
+    return "".join(out).rstrip() + "…"
+
+
 def resolve_accent(lens_id: str) -> str:
     """lens (カテゴリ id) からアクセント色を引く。未知なら near-black に退避。"""
     cat = CATEGORIES.get((lens_id or "").lower())
@@ -778,16 +809,57 @@ def resolve_accent(lens_id: str) -> str:
 def _resolve_labels(
     specs: list[dict[str, Any]], circles: list[tuple[float, float, float]],
     vb_w: float, vb_h: float,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], float]:
     """ラベルチップ同士・チップとノード円の重なりを反復で 0 にする (決定論的な力学分離)。
 
     各 spec は中心 (cx,cy)・寸法 (w,h)・アンカー (ax,ay = エッジ上の初期位置) を持つ。
     アンカーへ弱いバネで引き戻しつつ、(1) 他チップとの AABB 重なり、(2) ノード円との
     重なりを押し離す。仕上げにバネ無しの分離パスを回し、残留重なりを潰す。乱数なし。
+
+    縦余地不足で AABB 分離が収束しないとき (高密度な bands モード) は、viewBox の高さを
+    段階的に拡張して specs を初期位置へ戻し再収束を試みる。返り値は (specs, 確定 vb_h)。
+    呼び出し側はこの vb_h を SVG ヘッダーに反映する (= [[feedback_check_design_principles]]
+    「失敗を表現できない構造に変える」: クランプに挟まれて重なり残存する状態を物理的に消す)。
     """
     n = len(specs)
 
-    def _separate() -> bool:
+    # ── anchor preconditioning ──
+    # _anchor() は同じ zone_center (band 間の空白帯) に複数ラベルを集中投入する。
+    # vb_h を後で拡張しても、引き戻しのバネ (ax,ay) が同じ y に集中していると
+    # specs は再収束で結局同じ場所に戻り重なりが解けない (2026-06-04 観察)。
+    # ここでクラスタを検出して anchor を chip_h より広い pitch で段差付け、初期分散を
+    # 確保する (pitch は _separate の oy 押し合い閾値 h+5 を必ず超える 12 マージン)。
+    if n >= 2:
+        cluster_h = max((s["h"] for s in specs), default=26.0)
+        # 連鎖クラスタ判定: ay 差がこれ以下なら同クラスタ。
+        cluster_th = cluster_h + 24
+        # 配分ピッチ: 多数 specs を band 間 gap に詰め込めないため、cluster は band 円
+        # 範囲外 (上方向・下方向) まで広がる前提。pitch を大きく取ることで _separate の
+        # oy 押し合い閾値 (h+5) を確実に上回り、引き戻しバネと衝突しても元に戻らない。
+        pitch = cluster_h * 2.5
+        idx = sorted(range(n), key=lambda i: (specs[i]["ay"], specs[i]["ax"]))
+        i = 0
+        while i < len(idx):
+            cluster = [idx[i]]
+            j = i + 1
+            # クラスタは連鎖で拡張する (最後尾との ay 差で判定)。先頭固定だと
+            # 中央集中した specs 群が分断され、境界の specs 同士が分離されないまま残る。
+            while j < len(idx) and abs(specs[idx[j]]["ay"] - specs[cluster[-1]]["ay"]) <= cluster_th:
+                cluster.append(idx[j])
+                j += 1
+            if len(cluster) >= 2:
+                # クラスタを cx 順に並べ替え、cy を中心からピッチで上下対称に再配置
+                cluster.sort(key=lambda k: specs[k]["ax"])
+                base_y = sum(specs[k]["ay"] for k in cluster) / len(cluster)
+                m = len(cluster)
+                for o, k in enumerate(cluster):
+                    new_y = base_y + (o - (m - 1) / 2) * pitch
+                    specs[k]["ay"] = specs[k]["cy"] = new_y
+            i = j
+
+    init = [(s["cx"], s["cy"], s["ax"], s["ay"]) for s in specs]
+
+    def _separate(local_vb_h: float) -> bool:
         moved = False
         for a in range(n):
             s = specs[a]
@@ -822,34 +894,70 @@ def _resolve_labels(
                     moved = True
         for s in specs:
             s["cx"] = min(max(s["cx"], s["w"] / 2 + 5), vb_w - s["w"] / 2 - 5)
-            s["cy"] = min(max(s["cy"], s["h"] / 2 + 5), vb_h - s["h"] / 2 - 5)
+            s["cy"] = min(max(s["cy"], s["h"] / 2 + 5), local_vb_h - s["h"] / 2 - 5)
         return moved
 
-    for _ in range(400):
-        for s in specs:  # アンカーへ弱いバネ
-            s["cx"] += (s["ax"] - s["cx"]) * 0.015
-            s["cy"] += (s["ay"] - s["cy"]) * 0.03
-        _separate()
-    for _ in range(200):  # 仕上げ: バネ無しで残留重なりを潰し切る
-        if not _separate():
+    def _has_residual_overlap() -> bool:
+        for a in range(n):
+            s = specs[a]
+            for b in range(a + 1, n):
+                t = specs[b]
+                ox = (s["w"] + t["w"]) / 2 + 1 - abs(s["cx"] - t["cx"])
+                oy = (s["h"] + t["h"]) / 2 + 1 - abs(s["cy"] - t["cy"])
+                if ox > 0 and oy > 0:
+                    return True
+            hw, hh = s["w"] / 2, s["h"] / 2
+            for (ncx, ncy, nr) in circles:
+                qx = min(max(ncx, s["cx"] - hw), s["cx"] + hw)
+                qy = min(max(ncy, s["cy"] - hh), s["cy"] + hh)
+                if math.hypot(qx - ncx, qy - ncy) < nr - 0.5:
+                    return True
+        return False
+
+    def _run(current_vb_h: float) -> None:
+        for _ in range(400):
+            for s in specs:  # アンカーへ弱いバネ
+                s["cx"] += (s["ax"] - s["cx"]) * 0.015
+                s["cy"] += (s["ay"] - s["cy"]) * 0.03
+            _separate(current_vb_h)
+        for _ in range(200):  # 仕上げ: バネ無しで残留重なりを潰し切る
+            if not _separate(current_vb_h):
+                break
+
+    _run(vb_h)
+    # 残留重なりがあれば vb_h を 1.18 倍ずつ拡張し、specs を初期位置へ戻して再収束。
+    # 最大 4 回 (上限 vb_h * 1.94) で打ち切り (それでも解けないのは生成側の問題)。
+    grow = 1.0
+    for _ in range(4):
+        if not _has_residual_overlap():
             break
-    return specs
+        grow *= 1.18
+        for s, (cx0, cy0, ax0, ay0) in zip(specs, init):
+            s["cx"], s["cy"], s["ax"], s["ay"] = cx0, cy0, ax0, ay0
+        vb_h *= 1.18
+        _run(vb_h)
+    return specs, vb_h
 
 
 def relations_svg(rel: dict[str, Any]) -> str:
-    """relations を SVG ネットワーク図 (ノード円 + ラベル付き有向エッジ) に描く。"""
+    """relations を SVG ネットワーク図 (ノード円 + ラベル付き有向エッジ) に描く。
+
+    viewBox の高さ vb_h はラベル分離 (_resolve_labels) の結果で動的に拡張される
+    ことがあるため、SVG ヘッダーは末尾で最終 vb_h を反映して parts[0] に prepend する
+    ([[feedback_check_design_principles]] 1 段「失敗を表現できない構造に変える」)。
+    """
     lay = layout_relations(rel)
     nodes = lay["nodes"]
     by_id = {nd["id"]: nd for nd in nodes if "id" in nd}
     vb_w, vb_h = lay["vb_w"], lay["vb_h"]
-    parts: list[str] = [
-        f'<svg viewBox="0 0 {vb_w} {vb_h}" width="100%" '
-        f'style="display:block;background:{PAPER}" role="img" '
-        f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
-    ]
+    parts: list[str] = []   # SVG ヘッダーは末尾で最終 vb_h を反映して prepend する
 
     fs = 12.5
     chip_h = 26.0
+    # frenemy (協調的競合) 用の 2 行 chip 高さ。提携(緑) + 競合(赤) を 1 chip 内に
+    # 並列表示することで、coop/rival が独立 chip として近接配置され band 間 gap で
+    # 重なる構造的問題を解消する (2026-06-04 ユーザー指示で恒久化)。
+    chip_h_dual = 44.0
 
     def _label_chip(gx: float, gy: float, chip_w: float,
                     color: str, kind: str, label: str) -> str:
@@ -861,6 +969,28 @@ def relations_svg(rel: dict[str, Any]) -> str:
             f'<text x="24" y="{chip_h / 2 + 4:.0f}" font-family="\'JetBrains Mono\',monospace" '
             f'font-size="{fs:.0f}" font-weight="600" fill="{INK}">'
             f'<tspan font-weight="700" fill="{color}">{_esc(kind)}</tspan> {_esc(label)}'
+            f'</text></g>'
+        )
+
+    def _label_chip_dual(gx: float, gy: float, chip_w: float,
+                         coop_color: str, coop_label: str,
+                         rival_color: str, rival_label: str) -> str:
+        """frenemy (協調的競合) 用の 2 行 chip: 上=提携(緑) / 下=競合(赤)。"""
+        return (
+            f'<g transform="translate({gx:.1f},{gy:.1f})">'
+            f'<rect width="{chip_w:.1f}" height="{chip_h_dual}" fill="#fff" stroke="{INK}" '
+            f'stroke-width="1" rx="2"/>'
+            # 上段 (提携)
+            f'<circle cx="13" cy="13" r="3.5" fill="{coop_color}"/>'
+            f'<text x="24" y="17" font-family="\'JetBrains Mono\',monospace" '
+            f'font-size="{fs:.0f}" font-weight="600" fill="{INK}">'
+            f'<tspan font-weight="700" fill="{coop_color}">提携</tspan> {_esc(coop_label)}'
+            f'</text>'
+            # 下段 (競合)
+            f'<circle cx="13" cy="31" r="3.5" fill="{rival_color}"/>'
+            f'<text x="24" y="35" font-family="\'JetBrains Mono\',monospace" '
+            f'font-size="{fs:.0f}" font-weight="600" fill="{INK}">'
+            f'<tspan font-weight="700" fill="{rival_color}">競合</tspan> {_esc(rival_label)}'
             f'</text></g>'
         )
 
@@ -908,8 +1038,10 @@ def relations_svg(rel: dict[str, Any]) -> str:
         a, b = by_id.get(e.get("from")), by_id.get(e.get("to"))
         if not a or not b:
             continue
-        # frenemy (協調的競合): 協力線(緑)と競合線(赤)を併走させ、各々に双方向矢印と
-        # ラベルを付ける。供給(提携)でありつつ競合する二面性を 1 本に潰さない。
+        # frenemy (協調的競合): 協力線(緑)と競合線(赤)を併走させ各々に双方向矢印を付ける。
+        # ラベルは 1 chip 内に「提携: coop / 競合: rival」の 2 行で統合表示する。
+        # 旧 (coop/rival を独立 chip 2 個に分割) は band 間 gap に必ず近接配置されて
+        # 重なる構造的問題があったため、2026-06-04 ユーザー指示で 1 chip 統合に変更。
         if e.get("kind") in _FRENEMY_KINDS:
             ax, ay, bx, by = a["x"], a["y"], b["x"], b["y"]
             dx, dy = bx - ax, by - ay
@@ -917,11 +1049,8 @@ def relations_svg(rel: dict[str, Any]) -> str:
             ux, uy = dx / length, dy / length
             px, py = -uy, ux
             gap, off = 7, 14
-            faces = (
-                (-1, _FRENEMY_COOP_COLOR, "提携", e.get("coop") or "協力（提携）"),
-                (1, _FRENEMY_RIVAL_COLOR, "競合", e.get("rival") or "競合"),
-            )
-            for sign, color, kind, label in faces:
+            # 2 本の併走線 (緑=提携 / 赤=競合)
+            for sign, color in ((-1, _FRENEMY_COOP_COLOR), (1, _FRENEMY_RIVAL_COLOR)):
                 ox, oy = px * off * sign, py * off * sign
                 x1, y1 = ax + ux * (a["r"] + gap) + ox, ay + uy * (a["r"] + gap) + oy
                 x2, y2 = bx - ux * (b["r"] + gap) + ox, by - uy * (b["r"] + gap) + oy
@@ -931,12 +1060,19 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 )
                 parts.append(_arrow(x2, y2, ux, uy, color))   # 協力も競合も相互 = 双方向
                 parts.append(_arrow(x1, y1, -ux, -uy, color))
-                anx, an_y = _anchor(x1, y1, x2, y2)
-                anx += px * sign * (chip_h + 4)   # 2 面を上下にずらして初期分離
-                an_y += py * sign * (chip_h + 4)
-                specs.append({"cx": anx, "cy": an_y, "ax": anx, "ay": an_y,
-                              "w": _chip_w(kind, label), "h": chip_h,
-                              "color": color, "kind": kind, "label": label})
+            # 1 chip 統合のラベル spec (素線中央でアンカー)
+            coop_label = _truncate_label(e.get("coop") or "協力（提携）")
+            rival_label = _truncate_label(e.get("rival") or "競合")
+            sx1, sy1 = ax + ux * (a["r"] + gap), ay + uy * (a["r"] + gap)
+            sx2, sy2 = bx - ux * (b["r"] + gap), by - uy * (b["r"] + gap)
+            anx, an_y = _anchor(sx1, sy1, sx2, sy2)
+            specs.append({
+                "cx": anx, "cy": an_y, "ax": anx, "ay": an_y,
+                "w": max(_chip_w("提携", coop_label), _chip_w("競合", rival_label)),
+                "h": chip_h_dual, "dual": True,
+                "coop_color": _FRENEMY_COOP_COLOR, "coop_label": coop_label,
+                "rival_color": _FRENEMY_RIVAL_COLOR, "rival_label": rival_label,
+            })
             continue
         ks = EDGE_KINDS.get(e.get("kind", ""), _DEFAULT_EDGE)
         color, dash = ks["color"], ks["dash"]
@@ -960,7 +1096,9 @@ def relations_svg(rel: dict[str, Any]) -> str:
         if bidirectional:
             parts.append(_arrow(x1, y1, -ux, -uy, color))
         # 同一 (from, kind, label) のエッジ群はラベルを 1 回だけ束ねる。
-        kind, label = e.get("kind", ""), e.get("label", "")
+        # 物理的な _resolve_labels の収束を守るため、レンダラ側で truncate を確定させる。
+        kind = e.get("kind", "")
+        label = _truncate_label(e.get("label", ""))
         g = groups.setdefault(
             (e.get("from"), kind, label),
             {"color": color, "kind": kind, "label": label, "mids": [], "segs": []},
@@ -981,7 +1119,9 @@ def relations_svg(rel: dict[str, Any]) -> str:
 
     # ── ラベル重なり解消 → リーダ線 → チップ描画 ──
     circles = [(float(nd["x"]), float(nd["y"]), float(nd["r"])) for nd in nodes]
-    _resolve_labels(specs, circles, vb_w, vb_h)
+    # _resolve_labels は縦余地不足で AABB 分離が収束しないとき vb_h を動的に拡張する。
+    # 確定後の vb_h で SVG ヘッダーを後置 prepend する (parts.insert(0, ...) は最後の手前)。
+    _, vb_h = _resolve_labels(specs, circles, vb_w, vb_h)
     for s in specs:   # アンカーから離れたチップは細いリーダ線で対応エッジを示す
         if math.hypot(s["cx"] - s["ax"], s["cy"] - s["ay"]) > 22:
             parts.append(
@@ -989,8 +1129,15 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 f'y2="{s["cy"]:.1f}" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/>'
             )
     for s in specs:
-        parts.append(_label_chip(s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2,
-                                 s["w"], s["color"], s["kind"], s["label"]))
+        if s.get("dual"):
+            parts.append(_label_chip_dual(
+                s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2, s["w"],
+                s["coop_color"], s["coop_label"],
+                s["rival_color"], s["rival_label"],
+            ))
+        else:
+            parts.append(_label_chip(s["cx"] - s["w"] / 2, s["cy"] - s["h"] / 2,
+                                     s["w"], s["color"], s["kind"], s["label"]))
 
     # ── nodes (テキストは円内に収まるようフォントを自動縮小) ──
     for nd in nodes:
@@ -1022,6 +1169,12 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 f'font-family="\'Noto Serif JP\',serif" font-size="{sfs}" '
                 f'fill="{DIM}">{_esc(sub)}</text>'
             )
+    # SVG ヘッダーを最終 vb_h で確定 (動的拡張済み) して先頭に挿入する。
+    parts.insert(0,
+        f'<svg viewBox="0 0 {vb_w} {vb_h:.0f}" width="100%" '
+        f'style="display:block;background:{PAPER}" role="img" '
+        f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
+    )
     parts.append("</svg>")
     return "".join(parts)
 
@@ -1253,9 +1406,26 @@ _MANDATORY_BLOCKS: tuple[str, ...] = (
 # 深掘りの図表 (chart) の最低本数。1 つでは論点を多面的に示せない (2026-05-31 ユーザー指示)。
 _MIN_CHARTS = 2
 
+# 関係図 (relations) の実描画ラベル数の上限。レンダラの _resolve_labels は band 間 gap
+# に対しラベル数が多すぎると物理的にラベル重なりを 0 にできない (高密度クラスタの構造的限界)。
+# 2026-06-04 ユーザー指示で「8 本以下に絞り込めない関係図は本質を選別できていない記事」
+# と定義し、生成段階で hard fail させる ([[feedback_check_design_principles]] 1 段
+# 「失敗を表現できない構造に変える」)。frenemy (協調的競合) は描画上 coop/rival の 2
+# ラベルに展開されるため、エッジ数でなく「実描画ラベル数」で数える。
+_MAX_RELATION_EDGES = 8
+
+
+def _relation_label_count(rel: dict[str, Any]) -> int:
+    """関係図の実描画ラベル数 (frenemy は 2 行統合 chip 1 つ = 1 でカウント) を返す。
+
+    2026-06-04 改: frenemy を 1 chip 内に 2 行統合表示するため、描画 chip 数 =
+    エッジ本数。旧 (frenemy = coop/rival 2 chip) からカウント方法も更新。
+    """
+    return len([e for e in (rel or {}).get("edges", []) if e.get("from") and e.get("to")])
+
 
 def _require_blocks(md_path: Path, blocks: dict[str, list[Any]]) -> None:
-    """必須ブロックの欠落を loud に弾く (= サイレントな空描画を許さない)。"""
+    """必須ブロックの欠落・関係図エッジ過剰を loud に弾く (= サイレントな空/破綻描画を許さない)。"""
     name = Path(md_path).name
     missing = [b for b in _MANDATORY_BLOCKS if not blocks.get(b)]
     if missing:
@@ -1272,6 +1442,17 @@ def _require_blocks(md_path: Path, blocks: dict[str, list[Any]]) -> None:
         raise DeepDiveIncompleteError(
             f"{name}: 深掘りの chart が {n_chart} 本。最低 {_MIN_CHARTS} 本必要 "
             "(図表 1 つでは論点を多面的に示せない)。異なる切り口の図を 2 本以上置く。"
+        )
+    # 関係図 (relations) の実描画ラベル数は最大 _MAX_RELATION_EDGES。これを超えるとレンダラの
+    # 力学分離が解けない (band 間 gap にラベルが収まらない・2026-06-04 ユーザー指摘)。
+    # frenemy は描画上 coop/rival の 2 ラベルに展開されるため実描画数でカウントする。
+    rel = (blocks.get("relations") or [None])[0]
+    n_labels = _relation_label_count(rel) if isinstance(rel, dict) else 0
+    if n_labels > _MAX_RELATION_EDGES:
+        raise DeepDiveIncompleteError(
+            f"{name}: 関係図の実描画ラベルが {n_labels} 枚 (上限 {_MAX_RELATION_EDGES} 枚)。"
+            "本質を絞り込めていない関係図は読めない。主要な対立軸・出資線・供給線に"
+            "絞って描き直すこと (協調的競合 frenemy は coop/rival 2 ラベルでカウント)。"
         )
 
 

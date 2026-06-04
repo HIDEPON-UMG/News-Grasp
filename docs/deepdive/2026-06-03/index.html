@@ -161,12 +161,17 @@ html { background: #FAF7F0; }
 .dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
 .dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
                font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
-               align-items: baseline; }
-.dd-fig__src .lbl { color: var(--accent); font-weight: 700; }
-.dd-fig__src .val { text-wrap: pretty; word-break: break-word; }
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
 .dd-fig__src a { color: inherit; text-decoration: none; }
 .dd-fig__src a:hover { text-decoration: underline; }
-.dd-fig__src .cite { white-space: nowrap; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
 
 /* timeline */
 .dd-tl { position: relative; padding: 20px 22px; }
@@ -179,8 +184,12 @@ html { background: #FAF7F0; }
 .dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
 .dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
                    border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
 .dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
-                 font-weight: 500; text-wrap: pretty; }
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
 .dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
                  font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
                  text-decoration: none; }
@@ -309,6 +318,14 @@ html { background: #FAF7F0; }
 .dd-source__pub { color: var(--accent); font-weight: 700; }
 .dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
 
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
 /* footer */
 .dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
            font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
@@ -345,11 +362,16 @@ html { background: #FAF7F0; }
   .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
   .dd-tl__line { left: 84px; }
   .dd-tl__date .d { font-size: 11px; }
-  /* 関係図 SVG は width:100% で縮小すると実効フォントが 3-8px に潰れ判読不能に
-     なるため、モバイルでは横スクロール + ピンチズームで実寸を確保する
-     (一望性より可読性を優先。min-width 760 で実効フォント >=9px) */
+  /* 2026-06-04 ユーザー指示: SVG/TABLE を 375px 画面に全入りさせる (一望性優先)。
+     SVG は viewBox に基づき自動縮小、TABLE は td.val の折り返しで縦に肥大化する。
+     min-width 解除は親の overflow-x:auto より優先 (子の min-width:0 が親の auto を無効化)。
+     旧設計 (min-width 760 で実効フォント >=9px) は「右に隠れて見えない」の方が UX
+     致命傷と判断し撤回 (memory feedback_real_environment_first_verification 2026-06-04)。 */
   .dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .dd-relwrap svg { min-width: 760px; }
+  .dd-relwrap svg { min-width: 0; max-width: 100%; height: auto; }
+  .dd-table-wrap { overflow-x: visible; }
+  .dd-table { min-width: 0; }
+  .dd-table td.val, .dd-table td.src, .dd-table th { white-space: normal; }
   .dd-decision__issue { padding: 20px 18px; }
   .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
   .dd-decision__opts { grid-template-columns: 1fr; }
@@ -552,7 +574,7 @@ html { background: #FAF7F0; }
           <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
           <figure class="dd-fig">
             <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">USD/JPY 160円攻防の当事者関係図(金利差・介入・日米連携)</span></figcaption>
-            <div class="dd-relwrap"><svg viewBox="0 0 1080 560" width="100%" style="display:block;background:#FAF7F0" role="img" aria-label="USD/JPY 160円攻防の当事者関係図(金利差・介入・日米連携)"><line x1="597.7" y1="434.0" x2="611.7" y2="434.0" stroke="#8E2A19" stroke-width="2" opacity="0.85" stroke-dasharray="6 5"/><polygon points="611.7,434.0 602.7,438.5 602.7,429.5" fill="#8E2A19"/><polygon points="597.7,434.0 606.7,429.5 606.7,438.5" fill="#8E2A19"/><line x1="429.5" y1="153.0" x2="522.8" y2="370.6" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="522.8,370.6 515.1,364.1 523.3,360.5" fill="#2E6B52"/><polygon points="429.5,153.0 437.2,159.5 428.9,163.1" fill="#2E6B52"/><line x1="403.8" y1="164.1" x2="497.0" y2="381.6" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="497.0,381.6 489.3,375.1 497.6,371.6" fill="#8E2A19"/><polygon points="403.8,164.1 411.5,170.6 403.2,174.1" fill="#8E2A19"/><line x1="737.7" y1="434.0" x2="751.7" y2="434.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="751.7,434.0 742.7,438.5 742.7,429.5" fill="#2E6B52"/><line x1="791.4" y1="375.5" x2="705.3" y2="159.1" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="705.3,159.1 712.8,165.8 704.5,169.1" fill="#181C2A"/><line x1="505.9" y1="255.2" x2="505.9" y2="204.1" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="420.3" y1="278.8" x2="420.3" y2="329.6" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="604.7" y1="267.0" x2="604.7" y2="235.4" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="744.7" y1="267.0" x2="744.7" y2="298.6" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(390.2,191.1)"><rect width="231.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> トランプがウォーシュを指名</text></g><g transform="translate(272.1,316.6)"><rect width="296.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> CPI3.8%再加速で利下げ不可・据え置き</text></g><g transform="translate(345.2,222.4)"><rect width="519.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">対立</tspan> 高金利3.5–3.75%維持 vs 0.75%で利上げ躊躇 → 金利差約2.9%が円安を駆動</text></g><g transform="translate(542.7,285.6)"><rect width="404.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 円安阻止で協調 — 日銀は利上げ、財務省は介入で役割分担</text></g><g transform="translate(538.8,254.4)"><rect width="419.0" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 160円で円買い介入(4月末 約5兆円)、ただし効果は1〜2週間</text></g><circle cx="534.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="534.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">FRB(ウォーシュ議長)</text><text x="534.7" y="444.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米金融当局</text><circle cx="395.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.3" fill="#1A1A1A" letter-spacing="-0.5">トランプ政権</text><text x="395.0" y="120.3" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米政権</text><circle cx="674.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="674.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.3" fill="#1A1A1A" letter-spacing="-0.5">日銀(植田総裁)</text><text x="674.7" y="446.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日本・通貨当局</text><circle cx="814.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="814.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.7" fill="#1A1A1A" letter-spacing="-0.5">財務省(通貨当局)</text><text x="814.7" y="445.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日本・通貨当局</text><circle cx="685.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="685.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">投機筋・円キャリー</text><text x="685.0" y="118.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">市場</text></svg></div>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 560" width="100%" style="display:block;background:#FAF7F0" role="img" aria-label="USD/JPY 160円攻防の当事者関係図(金利差・介入・日米連携)"><line x1="597.7" y1="434.0" x2="611.7" y2="434.0" stroke="#8E2A19" stroke-width="2" opacity="0.85" stroke-dasharray="6 5"/><polygon points="611.7,434.0 602.7,438.5 602.7,429.5" fill="#8E2A19"/><polygon points="597.7,434.0 606.7,429.5 606.7,438.5" fill="#8E2A19"/><line x1="429.5" y1="153.0" x2="522.8" y2="370.6" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="522.8,370.6 515.1,364.1 523.3,360.5" fill="#2E6B52"/><polygon points="429.5,153.0 437.2,159.5 428.9,163.1" fill="#2E6B52"/><line x1="403.8" y1="164.1" x2="497.0" y2="381.6" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="497.0,381.6 489.3,375.1 497.6,371.6" fill="#8E2A19"/><polygon points="403.8,164.1 411.5,170.6 403.2,174.1" fill="#8E2A19"/><line x1="737.7" y1="434.0" x2="751.7" y2="434.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="751.7,434.0 742.7,438.5 742.7,429.5" fill="#2E6B52"/><line x1="791.4" y1="375.5" x2="705.3" y2="159.1" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="705.3,159.1 712.8,165.8 704.5,169.1" fill="#181C2A"/><line x1="463.1" y1="102.0" x2="463.1" y2="31.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="748.3" y1="432.0" x2="748.3" y2="358.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(314.9,9.0)"><rect width="296.5" height="44.0" fill="#fff" stroke="#1A1A1A" stroke-width="1" rx="2"/><circle cx="13" cy="13" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> トランプがウォーシュを指名</text><circle cx="13" cy="31" r="3.5" fill="#8E2A19"/><text x="24" y="35" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> CPI3.8%再加速で利下げ不可・据え置き</text></g><g transform="translate(449.0,199.0)"><rect width="311.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">対立</tspan> 高金利3.5–3.75%維持 vs 0.75%で利上…</text></g><g transform="translate(601.5,309.0)"><rect width="286.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 円安阻止で協調 — 日銀は利上げ、財…</text></g><g transform="translate(598.8,345.0)"><rect width="299.0" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 160円で円買い介入(4月末 約5兆円)、…</text></g><circle cx="534.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="534.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">FRB(ウォーシュ議長)</text><text x="534.7" y="444.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米金融当局</text><circle cx="395.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="395.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.3" fill="#1A1A1A" letter-spacing="-0.5">トランプ政権</text><text x="395.0" y="120.3" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米政権</text><circle cx="674.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="674.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.3" fill="#1A1A1A" letter-spacing="-0.5">日銀(植田総裁)</text><text x="674.7" y="446.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日本・通貨当局</text><circle cx="814.7" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="814.7" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.7" fill="#1A1A1A" letter-spacing="-0.5">財務省(通貨当局)</text><text x="814.7" y="445.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日本・通貨当局</text><circle cx="685.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="685.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">投機筋・円キャリー</text><text x="685.0" y="118.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">市場</text></svg></div>
             
             <div class="dd-rel-legend">
               <span class="hd">EDGE KIND</span>
@@ -755,55 +777,75 @@ html { background: #FAF7F0; }
         </div>
         <div class="dd-sources">
           
+          
           <a class="dd-source" href="https://www.dlri.co.jp/report/macro/588082.html">
             <span class="dd-source__no">01</span>
             <span class="dd-source__txt"><span class="dd-source__pub">第一生命経済研究所・熊野英生</span>「1ドル160円台で為替介入の警戒ラインへ〜為替介入か、日銀の追加利上げか〜」(2026-05) <span class="ext">↗</span></span>
           </a>
+          
+          
           
           <a class="dd-source" href="https://www.nomura.co.jp/wealthstyle/article/0676/">
             <span class="dd-source__no">02</span>
             <span class="dd-source__txt"><span class="dd-source__pub">野村證券・後藤祐二朗</span>「2026年末の米ドル円見通しを152.5円に引き上げ」(NOMURA ウェルスタイル) <span class="ext">↗</span></span>
           </a>
           
+          
+          
           <a class="dd-source" href="https://www.cnbc.com/2026/04/28/bank-of-japan-keeps-policy-rate-steady-cpi-iran-war-gdp.html">
             <span class="dd-source__no">03</span>
             <span class="dd-source__txt"><span class="dd-source__pub">CNBC</span>「Bank of Japan keeps policy rate steady at 0.75% — raises inflation forecast」(2026-04-28) <span class="ext">↗</span></span>
           </a>
+          
+          
           
           <a class="dd-source" href="https://www.cbsnews.com/news/kevin-warsh-federal-reserve-chair-interest-rates/">
             <span class="dd-source__no">04</span>
             <span class="dd-source__txt"><span class="dd-source__pub">CBS News</span>「How much sway will newly sworn-in Fed Chair Kevin Warsh really have over interest rates?」(2026-05) <span class="ext">↗</span></span>
           </a>
           
+          
+          
           <a class="dd-source" href="https://www.heygotrade.com/en/blog/may-2026-fomc-minutes-two-sided-framework-oil-inflation/">
             <span class="dd-source__no">05</span>
             <span class="dd-source__txt"><span class="dd-source__pub">HeyGoTrade</span>「FOMC議事録『石油主導インフレ長期化』懸念──6月利下げなしほぼ確定」(2026-05-28) <span class="ext">↗</span></span>
           </a>
+          
+          
           
           <a class="dd-source" href="https://www.nikkei.com/article/DGXZQOUB013C00R00C26A5000000/">
             <span class="dd-source__no">06</span>
             <span class="dd-source__txt"><span class="dd-source__pub">日本経済新聞</span>「30日の円買い介入、5兆円規模か 市場推計」(2026-05) <span class="ext">↗</span></span>
           </a>
           
+          
+          
           <a class="dd-source" href="https://www.nikkei.com/article/DGXZQOUB014UN0R00C26A4000000/">
             <span class="dd-source__no">07</span>
             <span class="dd-source__txt"><span class="dd-source__pub">日本経済新聞</span>「円160円突破も売り続かず 介入リスク瀬踏み、日銀利上げ観測も重荷」(2026-06-01) <span class="ext">↗</span></span>
           </a>
+          
+          
           
           <a class="dd-source" href="https://www.nikkei.com/article/DGXZQOUB1523T0V10C26A2000000/">
             <span class="dd-source__no">08</span>
             <span class="dd-source__txt"><span class="dd-source__pub">日本経済新聞</span>「円相場、年末に1ドル=146円 三菱UFJ銀行の横尾氏」(2026-02) — MUFG・横尾明彦氏による2026年末ドル円146円予測の一次裏取り <span class="ext">↗</span></span>
           </a>
           
+          
+          
           <a class="dd-source" href="https://tradingeconomics.com/united-states/inflation-cpi">
             <span class="dd-source__no">09</span>
             <span class="dd-source__txt"><span class="dd-source__pub">Trading Economics</span>「United States Inflation Rate(米4月CPI 3.8%)」 <span class="ext">↗</span></span>
           </a>
           
+          
+          
           <a class="dd-source" href="https://think.ing.com/snaps/bank-of-japan-further-hikes-expected-but-not-imminent/">
             <span class="dd-source__no">10</span>
             <span class="dd-source__txt"><span class="dd-source__pub">ING Think</span>「Bank of Japan: further hikes expected but not imminent(日米金利差300bps)」 <span class="ext">↗</span></span>
           </a>
+          
           
         </div>
       </div>
