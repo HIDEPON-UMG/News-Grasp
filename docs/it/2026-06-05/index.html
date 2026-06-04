@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260605 — IT &amp; Consulting</title>
+<meta name="description" content="OpenAI が IT コンサル市場に直接参入する「DeployCo」を設立し、Accenture・McKinsey の牙城を崩しにかかる。マッキンゼー×Google Cloud 連合が 3.6 億ドル EBITDA 効果を謳うエンタープライズ AI 変革グループを始動。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-06-05/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260605 — IT &amp; Consulting">
+<meta property="og:description" content="OpenAI が IT コンサル市場に直接参入する「DeployCo」を設立し、Accenture・McKinsey の牙城を崩しにかかる。マッキンゼー×Google Cloud 連合が 3.6 億ドル EBITDA 効果を謳うエンタープライズ AI 変革グループを始動。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-06-05/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260605 — IT &amp; Consulting">
+<meta name="twitter:description" content="OpenAI が IT コンサル市場に直接参入する「DeployCo」を設立し、Accenture・McKinsey の牙城を崩しにかかる。マッキンゼー×Google Cloud 連合が 3.6 億ドル EBITDA 効果を謳うエンタープライズ AI 変革グループを始動。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-05 · #20260605</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">▲</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">OpenAI が IT コンサル市場に直接参入する「DeployCo」を設立し、Accenture・McKinsey の牙城を崩しにかかる。マッキンゼー×Google Cloud 連合が 3.6 億ドル EBITDA 効果を謳うエンタープライズ AI 変革グループを始動。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">85</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·05</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260605</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-05 08:00 · OpenAI</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://openai.com/index/openai-launches-the-deployment-company" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://images.ctfassets.net/kftzwdyauwt9/31rjlet3neWRz6pY1AzuTd/b48667a68f2e86d0fa1f7a890060bbbe/Frame__7_.png?w=1600&amp;h=900&amp;fit=fill" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://openai.com/index/openai-launches-the-deployment-company" rel="noopener nofollow" target="_blank" style="color: inherit;">OpenAI Launches the Deployment Company (DeployCo) targeting IT consulting market</a>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">OpenAI</strong> が「<strong>Deployment Company（DeployCo）</strong>」を設立。ChatGPT エンタープライズ導入の<strong>SI/コンサル機能</strong>を内製化し、<strong class="emph-bold">Accenture</strong>・<strong class="emph-bold">マッキンゼー</strong> が担ってきた実装支援領域に直接参入。</li><li>DeployCo は現在 <strong>50 社超</strong>の Fortune 500 企業に採用担当者を派遣し、既存 IT 投資の AI 活用を支援。年内に <strong>1,000 名体制</strong>を目指すとされる。</li><li><span class="emph-und">AI 開発会社がインテグレーターを兼ねる時代</span>。モデル + 実装のワンストップ化は SI 大手のマージン圧迫を直接的に意味する。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">▲ IT &amp; CONSULTING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-05</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ▲ stories</h2>
+    <span class="more-stories__head-meta">2 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-05 07:00</span>
+        <span>· McKinsey</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.mckinsey.com/about-us/new-at-mckinsey-blog/mckinsey-and-google-cloud-launch-the-mckinsey-google-transformation-group-to-scale-enterprise-impact-for-the-ai-era" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.mckinsey.com/about-us/new-at-mckinsey-blog/mckinsey-and-google-cloud-launch-the-mckinsey-google-transformation-group-to-scale-enterprise-impact-for-the-ai-era" rel="noopener nofollow" target="_blank">McKinsey and Google Cloud launch McKinsey Google Transformation Group to scale enterprise AI impact</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">マッキンゼー</strong> と <strong class="emph-bold">Google Cloud</strong> が <strong>4/22</strong> の Cloud Next '26 で「<strong>McKinsey Google Transformation Group</strong>」を設立。McKinsey の変革実行力と Gemini/AI スタックを組み合わせ、成果連動型モデルで大企業の AI 変革を加速。</li><li>2027 年までに累計 <strong>3.6 億ドルの EBITDA 改善</strong>を目標とし、<strong>80 超の AI ユースケース</strong>を同時並行で展開。全従業員の <strong>90%以上</strong>を定常的 AI ユーザーにする計画。</li><li><span class="emph-und">マッキンゼー×Google のバンドルが新しい「実行力の軸」</span>。OpenAI DeployCo とは好対照で、ストラテジー + テクノロジー + 変革の三位一体を標榜する。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-05 07:30</span>
+        <span>· Fortune</span>
+        <span class="more-card__score">77</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://fortune.com/2026/05/29/microsoft-working-on-super-app/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://fortune.com/img-assets/wp-content/uploads/2026/05/GettyImages-1132529735-e1780064099241.jpg?resize=1200,600" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://fortune.com/2026/05/29/microsoft-working-on-super-app/" rel="noopener nofollow" target="_blank">Microsoft is building a super app that combines coding, chat, and other Copilot AI tools</a>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Microsoft</strong> が AI コーディング・チャット・生産性ツールを統合した「<strong>Copilot Super App</strong>」を開発中。Build 2026 での発表を視野に入れ、GitHub・Microsoft 365・Azure AI Foundry を一元化したインターフェイスを目指す。</li><li>企業向けには <strong>Windows Copilot Runtime</strong> を経由した<strong>ローカル AI 処理</strong>も提供。クラウドとオンプレミスのハイブリッド AI 戦略の一環。</li><li><span class="emph-und">スーパーアプリ化は Azure 契約の粘着性を高める戦略</span>。エンタープライズが Copilot を使うほど Microsoft エコシステムへの依存が深まる構造。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">OpenAI</strong> が「DeployCo」を設立、Fortune 500 の 50 社超に従業員を派遣して AI 実装支援を提供。<strong class="emph-bold">マッキンゼー</strong>×<strong class="emph-bold">Google Cloud</strong> は <strong>3.6 億ドル EBITDA</strong> を謳う変革グループを始動。<span class="emph-und">AI 開発会社がコンサルの「実装フェーズ」を取り込む動きは、Accenture など大手 SI の高マージン領域への直接圧力</span>。Accenture は 6/18 Q3 決算でこの変化をどう語るかが注目点。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-05/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-06-05
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-06-05</title>
+<meta name="description" content="2026-06-05 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-06-05/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-06-05">
+<meta property="og:description" content="2026-06-05 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-06-05/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-06-05">
+<meta name="twitter:description" content="2026-06-05 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-05/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-06-05/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260605</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260605</span></h2>
+      
+      <div class="summary-hero__subtitle">「AI バブルか革命か、円安か利上げか」</div>
+      
+      <div class="summary-hero__lead"><strong>本日 6 分野・22 本のニュースを貫く通底テーマは <strong class="emph-bold">Anthropic IPO</strong> と <strong class="emph-bold">USD/JPY 160 円</strong> の同時進行である。</strong> AI の価値化が <strong>IPO 市場</strong>という形で可視化される一方、円安 160 円突破は<strong>日銀 6 月利上げ</strong>への圧力を増す。<span class="emph-und">どちらが先に「実弾」を放つかが週明け以降の相場を決める</span>。モビリティでは <strong>Waymo 対 Tesla</strong> の格差が公文書で露呈し、製造ではトヨタが <strong>LF-ZC 中止</strong>という大きな方向転換を示した。以下、各カテゴリ…</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">9</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">23</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">「単一モデルの優位」から「<strong class="emph-bold">Claude Code でコードベースを支配する</strong>」へ──AI コンペティションの戦場が変わった日。</div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — 本日の総論</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Anthropic</strong> の S-1 秘密提出が <strong>AI IPO 三つ巴</strong>を本格化させた。USD/JPY が再び <strong>160 円</strong>突破し、BOJ 利上げへの圧力が高まる。モビリティでは Waymo と Tesla の<strong>実力差が公文書で可視化</strong>、製造ではトヨタが Lexus LF-ZC の<strong>量産を断念</strong>する戦略転換を示した。<span class="emph-und">6 分野のニュースが「AI 資本集中と実体経済の再調整」という一つの物語を語る</span>。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">為替 — USD/JPY 160 円突破と BOJ・Warsh の方程式</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">USD/JPY</strong> が再び <strong>160 円台</strong>に到達。5 月の <strong>11 兆円介入</strong>効果が薄れ、中東緊張によるドル需要が持続。<strong class="emph-bold">BOJ</strong> は 6/15-16 会合で <strong>0.75%→1.0%</strong> への利上げを市場が約 60% の確率で織り込む。一方 <strong class="emph-bold">ウォーシュ</strong> 新 FRB 議長下の 6/17 FOMC は<strong>据え置き濃厚</strong>。本日 21:30 の<strong>米雇用統計</strong>（予想 8 万人）が強ければドル高・円安の追い風となり、弱ければ FRB 早期利下げ観測で円高に振れる<span class="emph-und">2 分岐のヤマ場</span>。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">USD/JPY</strong> が再び <strong>160 円</strong>台に到達。5月に使った <strong>11 兆円規模</strong>の介入効果が薄れ、市場は当局の次の一手を待つ構え。</li>
+          
+          <li>BOJ は 6/15-16 会合で <strong>0.75%→1.0%</strong> への追加利上げを観測。ウォーシュ新 FRB 議長下の 6/16-17 FOMC は金利<strong>据え置き濃厚</strong>で、日米金利差が焦点。</li>
+          
+          <li><span class="emph-und">円安是正の鍵は BOJ の利上げ実行にかかる</span>。介入だけでは上昇圧力を抑えきれず、市場は構造的な政策転換を待つ。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — Anthropic の「IPO 先着争い」と AI コーディング戦争</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Anthropic</strong> が SEC に S-1 秘密提出、評価額 <strong>9,650 億ドル</strong>で OpenAI を逆転。Claude Code 主導で月次収益は <strong>470 億ドル年換算</strong>に達し、コードベースの 80% 超を AI が書く水準に到達。<strong class="emph-bold">Microsoft</strong> と <strong class="emph-bold">Google</strong> は Build 2026・Google I/O でコーディング AI を相次いで投入するも「やや遅れた」（Google CEO）。<span class="emph-und">6/15 の Anthropic 課金モデル変更</span>はエコシステム成熟の象徴で、収益の持続可能性を示す動き。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Anthropic</strong> が <strong>6/1 に S-1 を SEC に秘密提出</strong>。年間収益レート <strong>470 億ドル</strong>（1 ヵ月前比 +157%）、評価額は <strong>9,650 億ドル</strong>と OpenAI を初めて逆転。</li>
+          
+          <li>成長の主軸は <strong class="emph-bold">Claude Code</strong>。Anthropic 自身のコードベースの <strong>80%以上</strong>が Claude により書かれ、コーディング市場でのリーダーポジションを確立。</li>
+          
+          <li><span class="emph-und">IPO はスペースX（6/12 上場予定）・OpenAI（Q4 予定）と並ぶ 2026 年最大級の案件</span>。公開 S-1 は 60-90 日後、7-8 月の公表を想定。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — OpenAI DeployCo：AI 開発会社がインテグレーターを内製化</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">OpenAI</strong> が「DeployCo」を設立、Fortune 500 の 50 社超に従業員を派遣して AI 実装支援を提供。<strong class="emph-bold">マッキンゼー</strong>×<strong class="emph-bold">Google Cloud</strong> は <strong>3.6 億ドル EBITDA</strong> を謳う変革グループを始動。<span class="emph-und">AI 開発会社がコンサルの「実装フェーズ」を取り込む動きは、Accenture など大手 SI の高マージン領域への直接圧力</span>。Accenture は 6/18 Q3 決算でこの変化をどう語るかが注目点。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">OpenAI</strong> が「<strong>Deployment Company（DeployCo）</strong>」を設立。ChatGPT エンタープライズ導入の<strong>SI/コンサル機能</strong>を内製化し、<strong class="emph-bold">Accenture</strong>・<strong class="emph-bold">マッキンゼー</strong> が担ってきた実装支援領域に直接参入。</li>
+          
+          <li>DeployCo は現在 <strong>50 社超</strong>の Fortune 500 企業に採用担当者を派遣し、既存 IT 投資の AI 活用を支援。年内に <strong>1,000 名体制</strong>を目指すとされる。</li>
+          
+          <li><span class="emph-und">AI 開発会社がインテグレーターを兼ねる時代</span>。モデル + 実装のワンストップ化は SI 大手のマージン圧迫を直接的に意味する。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #3A7B8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #3A7B8C;">§05</span>
+          <span class="summary-sec__tag" style="background: #3A7B8C;">モビリティ</span>
+        </div>
+        <h3 class="summary-sec__title">モビリティ — Waymo 577 台 vs Tesla 42 台：格差が公文書で明示</h3>
+        <p class="summary-sec__body">テキサス州規制提出書類が示した数字は <strong class="emph-bold">Waymo</strong> <strong>577 台</strong>対 <strong class="emph-bold">Tesla</strong> <strong>42 台</strong>。Waymo は週 50 万ライドを達成しロンドン・東京への国際展開を進めるのに対し、Tesla の FSD 安全統計の<strong>不適切な手法</strong>疑惑も浮上。<span class="emph-und">「約束 vs. 実績」の乖離が資本市場に問いを投げかけている</span>。Tesla 株主は Musk の「年内広範展開」発言を公文書と突き合わせて評価し直す必要がある。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li>テキサス州公文書が示す Robotaxi 台数：<strong class="emph-bold">Waymo</strong> <strong>577 台</strong>対 <strong class="emph-bold">Tesla</strong> <strong>42 台</strong>。Waymo が 10 倍超の優位。Tesla は Austin・Dallas・Houston に約 25 台を実運用中。</li>
+          
+          <li>Waymo は全米既存フリートが約 <strong>3,000 台</strong>、週 <strong>50 万回</strong>のライドを提供。Tesla の Musk CEO は「<strong>年内に広範なフリートを構築</strong>」と発言するも進捗は遅い。</li>
+          
+          <li><span class="emph-und">「Scale vs. Promise」の構図が数字で可視化された</span>。規制提出の実台数が Musk のロードマップ発言と乖離し、投資家の懸念が高まっている。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/" style="color: #3A7B8C;">→ §05 モビリティ 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5A6B7B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5A6B7B;">§06</span>
+          <span class="summary-sec__tag" style="background: #5A6B7B;">製造</span>
+        </div>
+        <h3 class="summary-sec__title">製造 — トヨタ LF-ZC 中止と デンソー SiC 半導体 —「作る側」の選択</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">トヨタ</strong> は Lexus LF-ZC（全固体電池 EV セダン）の<strong>量産中止</strong>を決定、SUV リソース集中へ転換。全固体電池・ギガキャストの研究は継続するが、商用化時期は後退した。<strong class="emph-bold">デンソー</strong> は SiC パワー半導体で<strong>電力損失 70% 削減</strong>を実証、2030 年度売上 <strong>8 兆円超</strong>を目指す中計を発表。<span class="emph-und">LF-ZC 中止は「見せた技術を止める」重い判断</span>であり、部品サプライヤーの設備投資計画にも波及する。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">トヨタ</strong> が <strong class="emph-bold">Lexus</strong> LF-ZC の量産計画を<strong>中止</strong>。2023 年の Japan Mobility Show で発表、2026 年末発売・<strong>全固体電池</strong>搭載・ギガキャスト採用のコンセプトカーだったが、開発中止を決定。</li>
+          
+          <li>代替として <strong>SUV ライン強化</strong>に経営資源を集中。全固体電池・ギガキャストの<strong>研究は継続</strong>し、次世代モデルに転用する方針（量産移行時期は未定）。</li>
+          
+          <li><span class="emph-und">「見せた技術を諦める」意思決定は重い</span>。EV 戦略の見直しはトヨタ単体にとどまらず、LF-ZC 向けサプライヤー（電池・素材・鋳造装置）の受注計画にも波及する。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" style="color: #5A6B7B;">→ §06 製造 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§07</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済 — 日経 68,000 円台 と SoftBank AI 超投資</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">日経平均</strong> が 6/3 に史上初の <strong>68,402 円</strong>でクローズ。<strong class="emph-bold">東京エレクトロン</strong> が +13.4% で 723 ポイントを一日で稼いだ。年初来 +33% という驚異的なパフォーマンスの主役は AI 半導体関連株。<strong class="emph-bold">SoftBank</strong> は仏に 750 億ユーロの AI DC 投資を発表し国内時価総額首位に浮上。<span class="emph-und">AI バブル懸念をよそに実績数値が積み上がっており、ドットコム時代との違いは「ROI が可視化されていること」とアナリストは指摘</span>。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">日経平均</strong> が <strong>6/3 に 68,402 円</strong>でクローズ（初の 68,000 台、年初来 <strong>+33%</strong>）。<strong class="emph-bold">東京エレクトロン</strong> が <strong>+13.4%</strong> で単独 723 ポイント寄与し過去最高値を更新。</li>
+          
+          <li>AI 関連株が主役：東京エレクトロン・<strong class="emph-bold">Advantest</strong> など<strong>半導体製造装置</strong>セクターが急騰。台湾・韓国の AI 半導体需要急増が日本の装置・素材メーカーに波及。</li>
+          
+          <li><span class="emph-und">ドル安・円安 + AI 投資ブームの相乗効果</span>。円安で輸出企業の円換算収益が嵩上げされつつ、AI への資本集中が東証のバリュエーションを押し上げている。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §07 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§08</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">ゲーム — ゲームは本日休載（火木土日掲載）</h3>
+        <p class="summary-sec__body">本日金曜日はゲームカテゴリの掲載日外です（Game は火木土日のみ）。昨日 6/4 の<strong class="emph-bold">2026-06-04-Game</strong>では Nintendo Switch 2 関連の最新情報をお届けしました。</p>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/" style="color: #5E3D8C;">→ §08 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§09</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日への示唆 — 明日への示唆</h3>
+        <p class="summary-sec__body">週明け月曜に向けて注目点は三つ：①本日 <strong>21:30（JST）</strong>発表の米 5 月雇用統計（予想 8 万人）。強弱でドル円が 159〜161 円を往来しうる。②<strong>6/11 ECB 会合</strong>（25bp 利上げ確率 90%）でユーロ買い加速の可能性。③<strong class="emph-bold">Anthropic</strong> S-1 の続報と <strong class="emph-bold">OpenAI</strong> IPO スケジュール確定次第。<span class="emph-und">AI IPO レースと円安圧力の双方が来週前半に最大の注目イベントを迎える</span>。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">為替</div>
+          <div class="summary-take__text">USD/JPY が再び <strong>160 円台</strong>。BOJ 6月利上げ（0.75%→1.0%）と本日の米雇用統計が今週の最大変数。<strong class="emph-bold">ウォーシュ</strong> FRB のタカ派姿勢が重なり、円高転換は日銀の「実弾」待ち。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">AI</div>
+          <div class="summary-take__text"><strong class="emph-bold">Anthropic</strong> S-1 提出で AI IPO 三つ巴（Anthropic・OpenAI・SpaceX）が本格化。Claude Code 主導の収益 470 億ドル/年は「AI バブル」ではなく「ROI が可視化された革命」と市場は評価している。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2E6B52;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2E6B52;">産業</div>
+          <div class="summary-take__text"><strong class="emph-bold">トヨタ</strong> の Lexus LF-ZC 中止と <strong class="emph-bold">Waymo</strong> 577 台 vs Tesla 42 台の格差は、「約束」より「実績」が資本を動かす時代の到来を示す。</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-06-05/">全23本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-06-05 · #20260605
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-05/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
