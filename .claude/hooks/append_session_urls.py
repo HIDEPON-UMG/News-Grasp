@@ -53,7 +53,7 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 
@@ -63,6 +63,10 @@ from pathlib import Path
 # あるため、ファイル位置基準が最も安定)。
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _SESSION_FILE = _REPO_ROOT / "data" / "_session_urls.json"
+# 発火痕跡ログ。2026-06-05 朝バッチで hook が一度も発火しなかった (= session 空のまま)
+# 真因調査の証拠取り用。明日朝以降のバッチでこのファイルを Read することで、
+# 「hook は呼ばれたが URL 抽出が空だった」/「hook が一度も呼ばれなかった」の区別がつく。
+_AUDIT_LOG = _REPO_ROOT / "data" / "_session_urls.audit.log"
 
 # tool_response 形式が dict/list でない場合の URL 抽出用正規表現。
 # trailing punctuation は剥がす (validate_deepdive_urls._strip_url_tail と同方針)。
@@ -169,39 +173,70 @@ def merge_into_session_file(new_urls: set[str], today_str: str, session_path: Pa
     return payload
 
 
+def _append_audit(tool_name: str, n_urls: int, note: str = "") -> None:
+    """発火痕跡を audit ログに 1 行 append (claude を止めないよう任意例外で握りつぶす)。
+
+    フォーマット: ``YYYY-MM-DDTHH:MM:SS+09:00 tool=WebSearch urls=5 note=...``
+    明日朝以降のバッチでこのファイルを Read することで、hook 発火状況が判定できる:
+      - audit log が当日分で増えていれば hook 発火している
+      - 増えていなければ hook 自体が呼ばれていない (Claude Code 側設定 / matcher / cwd 問題)
+    """
+    try:
+        ts = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+        line = f"{ts} tool={tool_name} urls={n_urls}"
+        if note:
+            line += f" note={note}"
+        _AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with _AUDIT_LOG.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def main() -> int:
     try:
         raw = sys.stdin.read()
     except Exception as e:  # noqa: BLE001
         print(f"append_session_urls: stdin read failed: {e}", file=sys.stderr)
+        _append_audit("?", 0, note=f"stdin_read_failed:{e}")
         return 0
 
     if not raw or not raw.strip():
+        _append_audit("?", 0, note="empty_stdin")
         return 0
 
     try:
         event = json.loads(raw)
     except json.JSONDecodeError as e:
         print(f"append_session_urls: invalid stdin JSON: {e}", file=sys.stderr)
+        _append_audit("?", 0, note=f"invalid_json:{e}")
         return 0
 
     if not isinstance(event, dict):
+        _append_audit("?", 0, note="event_not_dict")
         return 0
+
+    tool_name = event.get("tool_name", "?")
 
     try:
         urls = extract_urls_from_event(event)
     except Exception as e:  # noqa: BLE001
         print(f"append_session_urls: extract failed: {e}", file=sys.stderr)
+        _append_audit(tool_name, 0, note=f"extract_failed:{e}")
         return 0
 
     if not urls:
+        # 発火はしたが URL が抽出できなかった (= 対象外ツール / response 空) → 痕跡だけ残す
+        _append_audit(tool_name, 0, note="no_urls_extracted")
         return 0
 
     try:
         today_str = date.today().strftime("%Y-%m-%d")
         merge_into_session_file(urls, today_str, _SESSION_FILE)
+        _append_audit(tool_name, len(urls))
     except Exception as e:  # noqa: BLE001
         print(f"append_session_urls: write failed: {e}", file=sys.stderr)
+        _append_audit(tool_name, len(urls), note=f"write_failed:{e}")
         return 0
 
     return 0

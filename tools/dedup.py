@@ -269,13 +269,40 @@ def find_match(
     return None, None
 
 
+def _new_material_tokens(candidate: dict, matched: dict) -> tuple[set[str], set[str]]:
+    """続報候補が前回掲載時から持ち込んだ「新規 token / 新規数値」を抽出する。
+
+    続報ゲート (3-A.5 E) の機械判定用。LLM の意味判断に頼らず、タイトル + summary
+    の significant_tokens を `(候補 - 既存)` で差分するだけ。
+
+    - 新規 token (英字固有名詞 / カタカナ固有名詞のエイリアス済み) が 1 個以上 か
+      新規数値 が 1 個以上 → 新材料あり
+    - 両方とも 0 個 → 「前回と同じ情報の言い換え」 = 新材料なし = 続報採用すべきでない
+
+    `title` だけでなく `summary` (= digest md の `bullets` を結合した 100×3 字)
+    も対象にすることで、見出しは違うが本文が同じ ニュースを取りこぼさない。
+    """
+    cand_text = f"{candidate.get('title', '')} {candidate.get('summary', '')}"
+    matched_text = f"{matched.get('title', '')} {matched.get('summary', '')}"
+    cand_w, cand_n = significant_tokens(cand_text)
+    m_w, m_n = significant_tokens(matched_text)
+    return (cand_w - m_w, cand_n - m_n)
+
+
 def dedup_candidates(
     candidates: list[dict],
     existing: list[dict],
     window_hours: float = 24.0,
     title_threshold: float = DEFAULT_TITLE_THRESHOLD,
+    followup_gate: bool = False,
 ) -> tuple[list[dict], list[dict]]:
-    """重複除外を実行し (passed, dropped) を返す。"""
+    """重複除外を実行し (passed, dropped) を返す。
+
+    ``followup_gate=True`` のとき、URL 別 + タイトル類似マッチ + 24h 超で「続報」
+    扱いになった候補について、新規 token / 新規数値が 0 個なら drop する (= LLM の
+    意味判断に頼らない構造ゲート / feedback_check_design_principles Lv2 境界 1 箇所集約 /
+    routine-system.md 3-A.5 E の機械化版・2026-06-05 導入)。
+    """
     now = datetime.now(JST)
     now_iso = now.isoformat()
     window = timedelta(hours=window_hours)
@@ -316,12 +343,27 @@ def dedup_candidates(
                 f"delta={delta.total_seconds()/3600:.1f}h <= {window_hours}h"
             )
             dropped.append(c)
-        else:
-            c["is_followup"] = True
-            c["matched_with"] = match.get("url")
-            c.setdefault("seen_at", now_iso)
-            passed.append(c)
-            pool.append(c)
+            continue
+        # 24h 超 = 続報候補。followup_gate が ON なら新材料 token diff を機械判定。
+        if followup_gate:
+            new_w, new_n = _new_material_tokens(c, match)
+            if not new_w and not new_n:
+                # 新材料 0 個 = 前回と同じ情報の言い換え。3-A.5 E ゲートで落とす。
+                c["dedup_reason"] = (
+                    f"followup gate: 新材料 0 (前回掲載と同じ情報) "
+                    f"matched url={(match.get('url') or '')[:50]} "
+                    f"delta={delta.total_seconds()/3600:.1f}h > {window_hours}h"
+                )
+                dropped.append(c)
+                continue
+            # 通過。dedup_reason に新材料を記録 (後段の編集判断と監査用)
+            c["followup_new_words"] = sorted(new_w)
+            c["followup_new_nums"] = sorted(new_n)
+        c["is_followup"] = True
+        c["matched_with"] = match.get("url")
+        c.setdefault("seen_at", now_iso)
+        passed.append(c)
+        pool.append(c)
     return passed, dropped
 
 
@@ -333,6 +375,9 @@ def main() -> int:
                    help="24 時間ウィンドウ（既定: 24）")
     p.add_argument("--title-threshold", type=float, default=DEFAULT_TITLE_THRESHOLD,
                    help=f"タイトル N-gram Jaccard 類似度の閾値（既定: {DEFAULT_TITLE_THRESHOLD}）")
+    p.add_argument("--followup-gate", action="store_true",
+                   help="続報候補について「新規 token 0 個 = 落とす」機械判定を有効化 "
+                        "(routine-system 3-A.5 E の LLM 任せを境界 1 箇所集約・2026-06-05 導入)")
     args = p.parse_args()
 
     candidates = []
@@ -346,6 +391,7 @@ def main() -> int:
         candidates, existing,
         window_hours=args.window_hours,
         title_threshold=args.title_threshold,
+        followup_gate=args.followup_gate,
     )
 
     for c in passed:

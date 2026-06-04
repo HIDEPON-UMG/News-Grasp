@@ -164,9 +164,11 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 
 ```bash
 # candidates.jsonl に当該カテゴリの全候補を書き出してから
-.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl < candidates.jsonl > filtered.jsonl
-# stderr に「N passed, M dropped」と各 DROP の理由（url match / title similarity）が出る。
+.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate < candidates.jsonl > filtered.jsonl
+# stderr に「N passed, M dropped」と各 DROP の理由（url match / title similarity / 新材料 0）が出る。
 # filtered.jsonl が採用候補。落ちた件数と理由は必ず目視で確認する。
+# --followup-gate は 3-A.5 E (続報の新材料判定) を機械化する境界フラグ。
+# 2026-06-05 から本番では必須 (06-05 AI トップが 06-03 同一イベントで再採用された事故の恒久対策)。
 ```
 
 `tools/dedup.py` は `articles.jsonl` の **全エントリ**（直近 7 日に限らない。過去何日でも）と照合する。判定ロジックは以下のとおりで、**実装（tools/dedup.py）が唯一の正本**。本文はその要約：

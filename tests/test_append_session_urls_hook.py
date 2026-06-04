@@ -272,6 +272,42 @@ def test_cli_broken_json_stdin_exit_zero(tmp_path: Path):
     assert not (tmp_path / "data" / "_session_urls.json").exists()
 
 
+def test_cli_writes_audit_log_on_fire(tmp_path: Path):
+    """hook 発火時は data/_session_urls.audit.log に痕跡が書かれる契約。
+
+    2026-06-05 朝バッチで hook が一度も発火しなかった事故の証拠取り用。
+    audit log の更新有無で「hook が呼ばれたか」「呼ばれたが URL を抽出できなかったか」
+    の区別がつく必要がある。
+    """
+    r = _run_hook(
+        {"tool_name": "WebSearch",
+         "tool_input": {"query": "x"},
+         "tool_response": {"results": [{"url": "https://example.com/audit"}]}},
+        tmp_path,
+    )
+    assert r.returncode == 0
+    audit = tmp_path / "data" / "_session_urls.audit.log"
+    assert audit.exists(), "発火痕跡 audit log が書かれるはず"
+    text = audit.read_text(encoding="utf-8")
+    assert "tool=WebSearch" in text
+    assert "urls=1" in text
+
+
+def test_cli_writes_audit_log_on_empty_extract(tmp_path: Path):
+    """URL を抽出できなかった発火でも audit log に痕跡が残る契約 (= 沈黙発火を可視化)。"""
+    r = _run_hook(
+        {"tool_name": "WebSearch",
+         "tool_input": {"query": "x"},
+         "tool_response": {}},  # 結果空 = 抽出 0 件
+        tmp_path,
+    )
+    assert r.returncode == 0
+    audit = tmp_path / "data" / "_session_urls.audit.log"
+    assert audit.exists(), "URL 0 件でも発火痕跡は残る契約"
+    text = audit.read_text(encoding="utf-8")
+    assert "urls=0" in text or "no_urls_extracted" in text
+
+
 def test_cli_unrelated_tool_does_not_create_file(tmp_path: Path):
     r = _run_hook(
         {"tool_name": "Bash",

@@ -45,6 +45,8 @@ build/test_avatar.html
 build/email_preview.png
 # セッション引き継ぎメモ（ローカル参照のみ・履歴には残さない）
 /handoff_*.md
+# 2026-06-05 追加: PostToolUse:WebSearch/WebFetch hook の発火痕跡 (ローカル運用ログ)
+data/_session_urls.audit.log
 # 2026-06-01 追加: digest/DeepDive スパイクの生成物・中間データ・ワンオフスクリプト
 build/preview-*/
 build/_verify_*.png

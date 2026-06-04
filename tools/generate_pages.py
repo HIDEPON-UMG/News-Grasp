@@ -848,27 +848,63 @@ def compute_publication_matrix(entries: list[dict[str, Any]],
     }
 
 
+_THEME_SPLIT_MAX_LEN = 22  # 2026-06-05 14→22 緩和。LLM の長文 theme で fallback 常態化対策。
+# 2026-06-05 強化: em dash ` — ` / 中黒 `・` / em dash 等を sep に追加。
+# 旧 (sep=(と)) のみ だと 7 日中 2 日 fallback 発火していた:
+#   06-04: 「BOJとWarshの6月決戦・AIの内製化と自動運転の量戦」(left 候補が 14 字超で空)
+#   06-05: 「IPO 三つ巴と160円の壁 — AI バブルか革命か、円安か利上げか」(right 候補が 22 字超で空)
+# 長すぎる right は更に内側の sep (「、」「・」「と」) で二次短縮を試みる。
+_THEME_PRIMARY_SEPS = (" — ", " ― ", "—", "―", " と ", "・", "と", "、")
+_THEME_SECONDARY_SEPS = ("、", "・", " と ", "と")
+
+
 def _split_theme_phrases(summary_text: str) -> tuple[str, str]:
     """summary_text から Hero 用の 2 フレーズ ("金利の天井" "AIの底入れ" 風) を抽出。
 
-    句読点 (「、」「。」) で切り、最初の名詞句 2 つを返す。最大 9 文字程度に揃える。
-    取れなければ ("", "") を返し、テンプレ側のフォールバックに任せる。
+    句読点 (「。」「、」「・」)・em dash (「 — 」「—」) で切り、最初の名詞句 2 つを返す。
+    上限は左右各 ``_THEME_SPLIT_MAX_LEN`` 文字。取れなければ ("", "") を返し、
+    テンプレ側のフォールバックに任せる。
+
+    2026-06-05 強化 (Lv2 境界 1 箇所集約):
+      - sep に em dash と中黒を追加し、LLM が書く長文 theme (例「X — Y」「X・Y」) に対応
+      - 上限を 14 → 22 に緩和
+      - 一次分割で right が長すぎたら内側 sep で更に二次短縮を試みる
+      - 契約テスト ``tests/test_split_theme_phrases.py`` が直近 7 日 theme + 典型
+        LLM パターンで空を返さないことを locked-in (= class of bugs 再発防止)
     """
     if not summary_text:
         return ("", "")
-    # 最初の「。」までを切り、それを「、」「と」で分ける
-    head = summary_text.split("。", 1)[0]
-    # 「と」で挟まれた 2 句がある場合
-    for sep in (" と ", "と", "、"):
+    # 最初の「。」までを切る
+    head = summary_text.split("。", 1)[0].strip()
+    # 一次分割: 強い sep (em dash → 「と」「・」「、」の順) で 2 句に切る
+    for sep in _THEME_PRIMARY_SEPS:
         if sep in head:
             parts = [p.strip() for p in head.split(sep, 1)]
-            if len(parts) == 2 and parts[0] and parts[1]:
-                left = parts[0]
-                # 末尾の英文節 (". Read more" 等) だけを落とす。小数点 (3.8% 等) は残す
-                # ため、"." の後ろが空白/英字のときのみ分割する。
-                right = re.split(r"\.(?=\s|[A-Za-z])", parts[1].split("。", 1)[0], maxsplit=1)[0]
-                if 2 <= len(left) <= 14 and 2 <= len(right) <= 14:
-                    return (left, right)
+            if len(parts) != 2 or not (parts[0] and parts[1]):
+                continue
+            left = parts[0]
+            # 末尾の英文節 (". Read more" 等) だけを落とす。小数点 (3.8% 等) は残す
+            # ため、"." の後ろが空白/英字のときのみ分割する。
+            right = re.split(r"\.(?=\s|[A-Za-z])", parts[1].split("。", 1)[0], maxsplit=1)[0].strip()
+            # 二次短縮: 一次分割で取れた right が長すぎる場合、内側 sep で更に短縮を試みる。
+            # 「AI バブルか革命か、円安か利上げか」→ 「AI バブルか革命か」
+            if len(right) > _THEME_SPLIT_MAX_LEN:
+                for sub in _THEME_SECONDARY_SEPS:
+                    if sub in right:
+                        sub_first = right.split(sub, 1)[0].strip()
+                        if 2 <= len(sub_first) <= _THEME_SPLIT_MAX_LEN:
+                            right = sub_first
+                            break
+            # left も同様に長すぎる場合は二次短縮 (但しレアケース。06-04 では left 側で発生)
+            if len(left) > _THEME_SPLIT_MAX_LEN:
+                for sub in _THEME_SECONDARY_SEPS:
+                    if sub in left:
+                        sub_first = left.split(sub, 1)[0].strip()
+                        if 2 <= len(sub_first) <= _THEME_SPLIT_MAX_LEN:
+                            left = sub_first
+                            break
+            if 2 <= len(left) <= _THEME_SPLIT_MAX_LEN and 2 <= len(right) <= _THEME_SPLIT_MAX_LEN:
+                return (left, right)
     return ("", "")
 
 
