@@ -48,3 +48,5 @@
 | 2026-06-03 | ✅DeepDive | USD/JPY 160円攻防(日米金融政策の逆行・介入か利上げか) | 約25分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch3件(CNBC403は検索要約で補完) |
 | 2026-06-04 | ✅成功 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy, Game | - | 0 | 記事31件 |
 | 2026-06-04 | ✅DeepDive | OpenAI、コンサル市場へ直接参入の衝撃 | 約30分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch成功1(CIO Dive)・OpenAI/SEC/BusinessWireは403/timeout |
+
+| 2026-06-05 | ✅成功 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy | - | 0 | 記事22件 / mobility: The Next Web記事1件を同一イベント3報のため除外 |
