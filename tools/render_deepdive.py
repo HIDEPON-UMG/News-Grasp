@@ -175,6 +175,13 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
 
     name = メディア名 (「記事タイトル」より前)、rest = それ以降 (タイトル+日付)。テンプレ側で
     name をカテゴリ色に着色しメディアを認知しやすくする (rest は本文色のまま)。
+
+    URL 無しの参考リンクは silent drop する (2026-06-04 ユーザー指摘の恒久対策)。理由:
+    md に URL を書けないものを通すと、テンプレが <div> フォールバックでクリック不能な
+    「押せない参考リンク」を出力し UX が破綻する。memory feedback_llm_url_fabrication_ban
+    の「200 確認できない URL は採用しない」原則とも整合し、参考リンクは「全件クリック可能」
+    を境界 1 箇所で保証する (feedback_check_design_principles 2 段)。drop は stderr に
+    記録し、生成段階で URL を取り損なった事案が後段の参考リンク欠落で気付ける形にする。
     """
     sources: list[dict[str, str]] = []
     for line in section_text.splitlines():
@@ -188,6 +195,12 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
         bm = re.search(r"[「『（(]", text)
         name = text[: bm.start()].strip() if bm else text
         rest = text[bm.start():] if bm else ""
+        if not url:
+            print(
+                f"[drop] DeepDive 参考リンク: URL 無しのため除外 (押せないリンクを出さない): {text[:80]}",
+                file=sys.stderr,
+            )
+            continue
         sources.append({"text": text, "url": url, "name": name, "rest": rest})
     return sources
 
@@ -1170,8 +1183,15 @@ def relations_svg(rel: dict[str, Any]) -> str:
                 f'fill="{DIM}">{_esc(sub)}</text>'
             )
     # SVG ヘッダーを最終 vb_h で確定 (動的拡張済み) して先頭に挿入する。
+    # width/height はピクセル固定 (vb_w × vb_h) で出す。SVG デフォルト sizing は
+    # 「width/height 属性が無いとコンテナ 100%」のためサイズ保持にならない。旧設計の
+    # width="100%" だとモバイル時にノードラベルが極小化して読めない。固定 px なら親の
+    # 幅に依らず viewBox の自然サイズで描画され、はみ出した分は親 .dd-relwrap の
+    # overflow-x:auto で横スクロール閲覧させる (2026-06-04 PM ユーザー確定、memory
+    # feedback_intent_over_wording)。デスクトップでは vb_w (1080 等) が .dd-fig 内に
+    # 収まり既存見た目を維持、はみ出す環境では親側で横スクロールで救う。
     parts.insert(0,
-        f'<svg viewBox="0 0 {vb_w} {vb_h:.0f}" width="100%" '
+        f'<svg viewBox="0 0 {vb_w} {vb_h:.0f}" width="{vb_w}" height="{vb_h:.0f}" '
         f'style="display:block;background:{PAPER}" role="img" '
         f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
     )

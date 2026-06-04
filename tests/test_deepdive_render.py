@@ -501,6 +501,60 @@ def test_deepdive_no_empty_href_anchors() -> None:
                 f"{html_path.name}: href が空 or 無い <a class=\"cite\"> が残存: {tag}"
 
 
+def test_parse_sources_drops_url_less_bullets() -> None:
+    """parse_sources が URL 無し bullet を silent drop する境界保証。
+
+    なぜ重要か: 2026-06-04 本番 (hidepon-umg.github.io/News-Grasp/deepdive/2026-06-04/)
+    で「参考リンク 04-08 が押せない」とユーザー指摘。URL 無しの bullet をテンプレが
+    <div class="dd-source"> で出してしまい、クリック不能な「リンクっぽい見た目だが押せない」
+    UX バグになっていた。memory feedback_llm_url_fabrication_ban の「200 確認できない
+    URL は省略」原則と整合させるため、parser の境界で URL 無しを drop する
+    (feedback_check_design_principles 2 段「境界 1 箇所集約」)。テンプレの <div>
+    フォールバックは保険として残すが、ここで物理的に sources に空 url が混入しないことを
+    locked-in し、3 層ガード (parser drop / テンプレ <div> 保険 / ビルド HTML 契約) の
+    最上流を担保する。
+    """
+    from tools.render_deepdive import parse_sources  # noqa: E402
+    section = (
+        "- 媒体A「タイトル付き URL あり」(2026-06) https://example.com/a/\n"
+        "- 媒体B「タイトルあり URL 無し」(2026-06)\n"
+        "- 媒体C「日本語 URL 後置」(2026-05) https://example.jp/c\n"
+        "- 媒体D（カッコ違い URL 無し）(2026-04)\n"
+    )
+    out = parse_sources(section)
+    # URL 付き 2 件のみ残ること
+    assert len(out) == 2, f"URL 無し bullet が drop されていない: {out}"
+    assert all(s["url"] for s in out), \
+        f"sources に url 空文字列が混入: {[s for s in out if not s['url']]}"
+    assert out[0]["url"] == "https://example.com/a/"
+    assert out[1]["url"] == "https://example.jp/c"
+
+
+def test_deepdive_no_unclickable_div_sources() -> None:
+    """ビルド済み deepdive HTML に <div class="dd-source"> が存在しないこと。
+
+    なぜ重要か: parse_sources の URL 無し drop と組み合わせた 3 層ガードの最終層。
+    parser で取りこぼしてもテンプレで <div> フォールバックされるが、ユーザーから見ると
+    「リンクと同じ見た目で押せない」UX バグになるため、最終ビルド HTML に div 形式の
+    dd-source が 1 件でもあれば fail する (feedback_check_design_principles 2 段の
+    境界 1 箇所集約をテストで locked-in)。新規 deepdive ビルドで parse_sources の
+    drop ロジックが消えても、この契約が検出する。
+    """
+    import re as _re
+    for md in (ROOT / "digest" / "DeepDive").glob("*-DeepDive.md"):
+        date = md.stem.replace("-DeepDive", "")
+        html_path = ROOT / "docs" / "deepdive" / date / "index.html"
+        if not html_path.exists():
+            continue
+        html = html_path.read_text(encoding="utf-8")
+        bad = _re.findall(r'<div\s+class="dd-source"', html)
+        assert not bad, (
+            f"{html_path.name}: <div class=\"dd-source\"> が {len(bad)} 件残存 "
+            f"(押せない参考リンクが出力されている。parse_sources の URL 無し drop が"
+            f"効いていない可能性)"
+        )
+
+
 def test_deepdive_template_has_mobile_overflow_guards() -> None:
     """deepdive-template.html がスマホ overflow 用 CSS ガードを物理的に含むことを契約化。
 
@@ -520,21 +574,35 @@ def test_deepdive_template_has_mobile_overflow_guards() -> None:
     # 2) grid 子の min-width:0 (TIMELINE 本文 / プレイヤーカード / decision 等)
     assert ".dd-tl__body { min-width: 0" in css, \
         "deepdive-template.html: .dd-tl__body の min-width: 0 が無い (grid 1fr 子が min-content で暴走)"
-    # 3) モバイル @media で SVG/TABLE が 375px 画面に全入りすること (2026-06-04 ユーザー指示)。
-    #    scrollWidth==375 だけでは「親の overflow-x:auto で閉じ込められた長尺要素」が
-    #    右に隠れる症状を検出できないため、子の min-width:0 を契約として固定する。
-    assert ".dd-relwrap svg { min-width: 0" in css, \
-        "deepdive-template.html: モバイル時の .dd-relwrap svg min-width:0 が無い (右に隠れる)"
-    assert ".dd-table { min-width: 0" in css, \
-        "deepdive-template.html: モバイル時の .dd-table min-width:0 が無い (右に隠れる)"
+    # 3) モバイルで TABLE / RELATIONS SVG は「サイズ保持 × 横スクロール」仕様であること
+    #    (2026-06-04 PM ユーザー再指示で「全入り化」設計を撤回)。
+    #    - .dd-table-wrap の overflow-x:auto と .dd-table の min-width:720 が保たれている
+    #      = TABLE は 720px を維持し、375px 画面ではユーザーが横スワイプして閲覧する。
+    #    - .dd-relwrap の overflow-x:auto が保たれている
+    #      = 関係図 SVG は viewBox 自然幅を維持し、ユーザーが横スワイプで全体を見る。
+    #    旧契約「.dd-relwrap svg { min-width: 0 } / .dd-table { min-width: 0 }」は
+    #    CJK 1 文字折り返し + SVG ラベル不可読の UX 破綻を生んだため撤回
+    #    ([[feedback_intent_over_wording]] 違反の恒久対策: 字面 "右に隠れて見えない" を
+    #    "全入りにせよ" と取り違えた経緯を構造的に二度と再発させない)。
+    assert ".dd-table-wrap { overflow-x: auto" in css, \
+        "deepdive-template.html: .dd-table-wrap の overflow-x:auto が無い (TABLE 横スクロール不能)"
+    assert ".dd-table { width: 100%; min-width: 720px" in css, \
+        "deepdive-template.html: .dd-table の min-width:720px が消えている (CJK 1 文字折り返しになる)"
+    assert ".dd-relwrap { overflow-x: auto" in css, \
+        "deepdive-template.html: .dd-relwrap の overflow-x:auto が無い (関係図 SVG 横スクロール不能)"
+    # 「全入り化」設計の残骸が再混入していないことを negative assert で固定
+    assert ".dd-relwrap svg { min-width: 0" not in css, \
+        "deepdive-template.html: 撤回済の .dd-relwrap svg { min-width: 0 } が再混入 (SVG ラベル不可読の再発)"
+    assert ".dd-table-wrap { overflow-x: visible" not in css, \
+        "deepdive-template.html: 撤回済の .dd-table-wrap { overflow-x: visible } が再混入 (TABLE 横スクロール阻害)"
     # 4) ビルド済み 1 ページにも反映されていることを確認 (テンプレ→生成パイプライン疎通)
     sample = ROOT / "docs" / "deepdive" / "2026-06-04" / "index.html"
     if sample.exists():
         html = sample.read_text(encoding="utf-8")
         assert "overflow-wrap: anywhere" in html, \
             "build 後の deepdive HTML に overflow-wrap ガードが反映されていない (テンプレ→build 疎通断)"
-        assert ".dd-relwrap svg { min-width: 0" in html, \
-            "build 後の deepdive HTML にモバイル SVG 縮小ガードが反映されていない"
+        assert ".dd-table-wrap { overflow-x: auto" in html, \
+            "build 後の deepdive HTML に TABLE 横スクロールガードが反映されていない"
 
 
 def test_deepdive_fig_src_does_not_force_single_line_citation() -> None:
