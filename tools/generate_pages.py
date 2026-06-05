@@ -500,6 +500,56 @@ def render_page(ctx: dict[str, Any], out_path: Path, template_name: str = "page-
 
 # ---------- digest scanner ----------
 
+def validate_ja_callout_coverage() -> list[str]:
+    """全 digest md (DeepDive 除く) の「メタ行を持つ英文 ### 記事」に
+    `> [!ja] 和訳` callout が必ず付いていることを確認。欠落リストを返す。
+
+    feedback_check_design_principles Lv1 (illegal state unrepresentable):
+    付与漏れがある状態を「ビルド成功」として表現できない構造にする。
+    本関数は main() の冒頭で呼び、欠落があれば即 exit 1。
+
+    Lv4 契約テスト (tests/test_title_ja_coverage.py) と同じルールを build パイプライン
+    にも組み込むことで、pytest をスキップした手動 push 等の抜け道を塞ぐ。
+    """
+    digest_root = _PKG_ROOT / "digest"
+    if not digest_root.exists():
+        return []
+    missing: list[str] = []
+    article_split = re.compile(r"^(?=### )", re.MULTILINE)
+    title_re = re.compile(r"^###\s*(?:\[(\d+)\]\s*)?(.+?)\s*$", re.MULTILINE)
+    ja_re = re.compile(r"^>\s*\[!ja\]\s*(.+?)\s*$", re.MULTILINE)
+    meta_re = re.compile(r"📅|🔗|📰")
+
+    def _is_english(title: str) -> bool:
+        return not any(
+            "぀" <= c <= "ヿ"
+            or "一" <= c <= "鿿"
+            or "＀" <= c <= "￯"
+            for c in title
+        )
+
+    for md in sorted(digest_root.rglob("*.md")):
+        if "DeepDive" in md.name:
+            continue
+        try:
+            text = md.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for block in article_split.split(text):
+            tm = title_re.match(block)
+            if not tm:
+                continue
+            title = tm.group(2).strip()
+            if not _is_english(title):
+                continue
+            if not meta_re.search(block):
+                continue
+            if not ja_re.search(block):
+                rel = md.relative_to(digest_root).as_posix()
+                missing.append(f"  - {rel}: {title[:80]}")
+    return missing
+
+
 def scan_digests(root: Path | None = None) -> list[Path]:
     """digest/**/*.md を全て列挙して mtime 昇順で返す (古い → 新しい)。"""
     base = Path(root) if root else (_PKG_ROOT / "digest")
@@ -1994,6 +2044,26 @@ def main(argv: list[str] | None = None) -> int:
             pass
 
     docs_root = args.docs_root or (_PKG_ROOT / "docs")
+
+    # Lv1 illegal state guard: 英文 ### 記事に > [!ja] 和訳 callout が欠落していれば
+    # SSG ビルドを中止する。docs/ への反映を物理的に止めることで「和訳ない記事が公開
+    # される」状態を構造的に不可能化する (feedback_check_design_principles Lv1)。
+    missing_ja = validate_ja_callout_coverage()
+    if missing_ja:
+        print(
+            f"[ERROR] 英文 ### 記事に > [!ja] 和訳 callout が欠落: {len(missing_ja)} 件",
+            file=sys.stderr,
+        )
+        for m in missing_ja[:30]:
+            print(m, file=sys.stderr)
+        if len(missing_ja) > 30:
+            print(f"  ... ({len(missing_ja) - 30} 件略)", file=sys.stderr)
+        print(
+            "\nビルドを中止します。digest md に `> [!ja] {和訳}` を付与してから再実行してください。",
+            file=sys.stderr,
+        )
+        return 1
+
     written = build_all(full=args.full, docs_root=docs_root)
     print(f"wrote {len(written)} article page(s)")
 
