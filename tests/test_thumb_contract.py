@@ -22,7 +22,7 @@ JSONL = ROOT / "data" / "articles.jsonl"
 CUTOFF_DATE = "2026-05-11"
 
 
-def test_thumb_key_present_after_cutoff() -> list[str]:
+def _collect_thumb_key_present_after_cutoff() -> list[str]:
     errs: list[str] = []
     if not JSONL.exists():
         errs.append(f"articles.jsonl not found: {JSONL}")
@@ -49,6 +49,11 @@ def test_thumb_key_present_after_cutoff() -> list[str]:
     return errs
 
 
+def test_thumb_key_present_after_cutoff() -> None:
+    errs = _collect_thumb_key_present_after_cutoff()
+    assert not errs, "\n".join(errs[:20]) + (f"\n... and {len(errs) - 20} more" if len(errs) > 20 else "")
+
+
 def main() -> int:
     # 日本語版 Windows の既定 cp932 では、エラー文中の em-dash 等で print が
     # UnicodeEncodeError を起こしテスト自体がクラッシュする。標準出力を UTF-8/replace
@@ -59,7 +64,7 @@ def main() -> int:
         pass
 
     cases = [
-        (f"thumb キー必須 (date >= {CUTOFF_DATE})", test_thumb_key_present_after_cutoff),
+        (f"thumb キー必須 (date >= {CUTOFF_DATE})", _collect_thumb_key_present_after_cutoff),
     ]
     overall_ok = True
     for label, fn in cases:

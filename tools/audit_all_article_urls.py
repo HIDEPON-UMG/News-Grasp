@@ -106,6 +106,15 @@ def _load_session_urls(repo_root: Path) -> tuple[set[str], Path, str | None]:
 
 
 def main() -> int:
+    # 日本語版 Windows の cp932 では em-dash (—) や ✓ などの記号で print が
+    # UnicodeEncodeError を起こし、NG URL 一覧の表示前にプロセスがクラッシュする。
+    # 標準出力/エラーを UTF-8/replace に再構成して落ちないようにする (境界 1 箇所集約)。
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--recent", type=int, default=0,
                     help="直近 N 日に絞る (0 = 全件)")

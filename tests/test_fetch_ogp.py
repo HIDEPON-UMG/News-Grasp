@@ -21,7 +21,7 @@ def _parse(html: str) -> tuple[str | None, str | None]:
     return parser.og_image, parser.twitter_image
 
 
-def test_og_image_basic() -> list[str]:
+def _collect_og_image_basic() -> list[str]:
     errs: list[str] = []
     html = '''<html><head>
         <meta property="og:image" content="https://example.com/og.jpg">
@@ -34,7 +34,7 @@ def test_og_image_basic() -> list[str]:
     return errs
 
 
-def test_twitter_image_basic() -> list[str]:
+def _collect_twitter_image_basic() -> list[str]:
     errs: list[str] = []
     html = '''<head><meta name="twitter:image" content="https://example.com/tw.jpg"></head>'''
     og, tw = _parse(html)
@@ -45,7 +45,7 @@ def test_twitter_image_basic() -> list[str]:
     return errs
 
 
-def test_twitter_image_src_alias() -> list[str]:
+def _collect_twitter_image_src_alias() -> list[str]:
     """旧仕様 twitter:image:src も拾えること。"""
     errs: list[str] = []
     html = '''<head><meta name="twitter:image:src" content="https://example.com/tw2.jpg"></head>'''
@@ -55,7 +55,7 @@ def test_twitter_image_src_alias() -> list[str]:
     return errs
 
 
-def test_both_meta_present() -> list[str]:
+def _collect_both_meta_present() -> list[str]:
     errs: list[str] = []
     html = '''<head>
         <meta property="og:image" content="https://example.com/og.jpg">
@@ -69,7 +69,7 @@ def test_both_meta_present() -> list[str]:
     return errs
 
 
-def test_first_match_wins() -> list[str]:
+def _collect_first_match_wins() -> list[str]:
     """同じプロパティが複数あるとき、最初の値だけ採用。"""
     errs: list[str] = []
     html = '''<head>
@@ -82,7 +82,7 @@ def test_first_match_wins() -> list[str]:
     return errs
 
 
-def test_head_meta_preferred_over_body() -> list[str]:
+def _collect_head_meta_preferred_over_body() -> list[str]:
     """<head> と <body> の両方に og:image があるときは <head> (= 最初の 1 件) が勝つ。
 
     かつては <body> 突入で解析停止していたが、SSR 系サイトが SEO meta を body 後方に
@@ -101,24 +101,7 @@ def test_head_meta_preferred_over_body() -> list[str]:
     return errs
 
 
-def test_body_only_og_image_found() -> None:
-    """<head> に og:image が無く <body> より後ろにしか無い場合でも拾えること。
-
-    Next.js / React SSR (anthropic.com 等) は og:image を <body> 後方に出力する。
-    旧 body-stop 実装はこれを取り逃して no_meta に落ち、News-Grasp トップ記事の
-    サムネが汎用プレースホルダに化けた (2026-05-31 事故)。回帰を loud に封じる契約。
-    """
-    html = '''<html><head><title>t</title></head><body>
-        <div>article</div>
-        <meta property="og:image" content="https://example.com/body-only.jpg">
-        <meta name="twitter:image" content="https://example.com/tw-body.jpg">
-    </body></html>'''
-    og, tw = _parse(html)
-    assert og == "https://example.com/body-only.jpg", f"body の og:image を拾えていない: {og!r}"
-    assert tw == "https://example.com/tw-body.jpg", f"body の twitter:image を拾えていない: {tw!r}"
-
-
-def test_no_meta() -> list[str]:
+def _collect_no_meta() -> list[str]:
     errs: list[str] = []
     html = '''<html><head><title>x</title></head><body>plain</body></html>'''
     og, tw = _parse(html)
@@ -127,7 +110,7 @@ def test_no_meta() -> list[str]:
     return errs
 
 
-def test_absolutize() -> list[str]:
+def _collect_absolutize() -> list[str]:
     errs: list[str] = []
     f = fetch_ogp._absolutize
     cases = [
@@ -146,7 +129,7 @@ def test_absolutize() -> list[str]:
     return errs
 
 
-def test_looks_non_html() -> list[str]:
+def _collect_looks_non_html() -> list[str]:
     errs: list[str] = []
     f = fetch_ogp._looks_non_html
     truthy = [
@@ -168,7 +151,7 @@ def test_looks_non_html() -> list[str]:
     return errs
 
 
-def test_decode_html() -> list[str]:
+def _collect_decode_html() -> list[str]:
     errs: list[str] = []
     raw = "テスト本文".encode("utf-8")
     out = fetch_ogp._decode_html(raw, "text/html; charset=UTF-8")
@@ -182,18 +165,85 @@ def test_decode_html() -> list[str]:
     return errs
 
 
+def test_og_image_basic() -> None:
+    errs = _collect_og_image_basic()
+    assert not errs, "\n".join(errs)
+
+
+def test_twitter_image_basic() -> None:
+    errs = _collect_twitter_image_basic()
+    assert not errs, "\n".join(errs)
+
+
+def test_twitter_image_src_alias() -> None:
+    errs = _collect_twitter_image_src_alias()
+    assert not errs, "\n".join(errs)
+
+
+def test_both_meta_present() -> None:
+    errs = _collect_both_meta_present()
+    assert not errs, "\n".join(errs)
+
+
+def test_first_match_wins() -> None:
+    errs = _collect_first_match_wins()
+    assert not errs, "\n".join(errs)
+
+
+def test_head_meta_preferred_over_body() -> None:
+    errs = _collect_head_meta_preferred_over_body()
+    assert not errs, "\n".join(errs)
+
+
+def test_body_only_og_image_found() -> None:
+    """<head> に og:image が無く <body> より後ろにしか無い場合でも拾えること。
+
+    Next.js / React SSR (anthropic.com 等) は og:image を <body> 後方に出力する。
+    旧 body-stop 実装はこれを取り逃して no_meta に落ち、News-Grasp トップ記事の
+    サムネが汎用プレースホルダに化けた (2026-05-31 事故)。回帰を loud に封じる契約。
+    """
+    html = '''<html><head><title>t</title></head><body>
+        <div>article</div>
+        <meta property="og:image" content="https://example.com/body-only.jpg">
+        <meta name="twitter:image" content="https://example.com/tw-body.jpg">
+    </body></html>'''
+    og, tw = _parse(html)
+    assert og == "https://example.com/body-only.jpg", f"body の og:image を拾えていない: {og!r}"
+    assert tw == "https://example.com/tw-body.jpg", f"body の twitter:image を拾えていない: {tw!r}"
+
+
+def test_no_meta() -> None:
+    errs = _collect_no_meta()
+    assert not errs, "\n".join(errs)
+
+
+def test_absolutize() -> None:
+    errs = _collect_absolutize()
+    assert not errs, "\n".join(errs)
+
+
+def test_looks_non_html() -> None:
+    errs = _collect_looks_non_html()
+    assert not errs, "\n".join(errs)
+
+
+def test_decode_html() -> None:
+    errs = _collect_decode_html()
+    assert not errs, "\n".join(errs)
+
+
 def main() -> int:
     cases = [
-        ("og:image 抽出 (基本)",            test_og_image_basic),
-        ("twitter:image 抽出 (基本)",       test_twitter_image_basic),
-        ("twitter:image:src 旧仕様",         test_twitter_image_src_alias),
-        ("og + twitter 両取り",              test_both_meta_present),
-        ("最初の og:image を採用",          test_first_match_wins),
-        ("<body> 突入で停止",                test_stops_at_body),
-        ("meta が無いケース",                test_no_meta),
-        ("URL 絶対化",                       test_absolutize),
-        ("非 HTML 拡張子のスキップ判定",    test_looks_non_html),
-        ("HTML decode (utf-8 / cp932)",      test_decode_html),
+        ("og:image 抽出 (基本)",            _collect_og_image_basic),
+        ("twitter:image 抽出 (基本)",       _collect_twitter_image_basic),
+        ("twitter:image:src 旧仕様",         _collect_twitter_image_src_alias),
+        ("og + twitter 両取り",              _collect_both_meta_present),
+        ("最初の og:image を採用",          _collect_first_match_wins),
+        ("<head> 優先 (<body> meta も拾う)",  _collect_head_meta_preferred_over_body),
+        ("meta が無いケース",                _collect_no_meta),
+        ("URL 絶対化",                       _collect_absolutize),
+        ("非 HTML 拡張子のスキップ判定",    _collect_looks_non_html),
+        ("HTML decode (utf-8 / cp932)",      _collect_decode_html),
     ]
     overall_ok = True
     for label, fn in cases:

@@ -6,6 +6,13 @@
 2. タイトル類似度（正規化・N-gram Jaccard）
 3. 24 時間ウィンドウ判定（境界値・続報扱い・除外）
 4. バッチ内重複（同じ batch 内の重複候補も弾く）
+
+設計メモ:
+- 個別検査は `_check_*` 関数として実装し、`_CONTRACT_CASES` に登録する
+- pytest 経路では `test_all_dedup_contracts` が集約ゲートとして全契約を実評価する
+- main() 経路 (CLI 直接実行) は各 _check_* を順に呼び出して FAIL/PASS を表示する
+- `_check_*` プレフィックスにすることで pytest discover が個別関数を test として
+  拾わなくなり、PytestReturnNotNoneWarning も発生しない
 """
 from __future__ import annotations
 
@@ -21,7 +28,7 @@ import dedup  # type: ignore
 JST = timezone(timedelta(hours=9))
 
 
-def test_url_normalization() -> list[str]:
+def _check_url_normalization() -> list[str]:
     errs: list[str] = []
     cases = [
         # (input, expected)
@@ -41,7 +48,7 @@ def test_url_normalization() -> list[str]:
     return errs
 
 
-def test_title_normalization() -> list[str]:
+def _check_title_normalization() -> list[str]:
     errs: list[str] = []
     cases = [
         ("【速報】日銀、政策金利 0.75% 据え置き", "速報 日銀 政策金利 0.75% 据え置き"),
@@ -60,7 +67,7 @@ def test_title_normalization() -> list[str]:
     return errs
 
 
-def test_jaccard_similarity() -> list[str]:
+def _check_jaccard_similarity() -> list[str]:
     errs: list[str] = []
     a = "日銀総裁が利上げを示唆"
     b = "日銀総裁、追加利上げを示唆"
@@ -81,7 +88,7 @@ def _ts(hours_ago: float) -> str:
     return (datetime.now(JST) - timedelta(hours=hours_ago)).isoformat()
 
 
-def test_24h_window() -> list[str]:
+def _check_24h_window() -> list[str]:
     errs: list[str] = []
     existing = [{
         "title": "日銀総裁、追加利上げを示唆",
@@ -101,7 +108,7 @@ def test_24h_window() -> list[str]:
     return errs
 
 
-def test_followup_after_24h() -> list[str]:
+def _check_followup_after_24h() -> list[str]:
     errs: list[str] = []
     existing = [{
         "title": "日銀総裁、追加利上げを示唆",
@@ -122,7 +129,7 @@ def test_followup_after_24h() -> list[str]:
     return errs
 
 
-def test_url_exact_match() -> list[str]:
+def _check_url_exact_match() -> list[str]:
     errs: list[str] = []
     existing = [{
         "title": "ABC",
@@ -142,7 +149,7 @@ def test_url_exact_match() -> list[str]:
     return errs
 
 
-def test_same_url_old_still_dropped() -> list[str]:
+def _check_same_url_old_still_dropped() -> list[str]:
     """同一記事 (URL 一致) は何日前でも常に除外される (続報は別 URL なので影響なし)。
 
     なぜ重要か: Mobility の Waymo 記事が 3 日連続で再掲された事象の再発防止。
@@ -171,7 +178,7 @@ def test_same_url_old_still_dropped() -> list[str]:
     return errs
 
 
-def test_cross_language_same_event_detected() -> list[str]:
+def _check_cross_language_same_event_detected() -> list[str]:
     """英語⇄日本語・別ソースの同一イベントを「同一トピック」として検知する。
 
     なぜ重要か (2026-06-03 Mobility 重複の主因): 文字 2-gram Jaccard は英語見出しと
@@ -201,7 +208,7 @@ def test_cross_language_same_event_detected() -> list[str]:
     return errs
 
 
-def test_different_events_same_company_survive() -> list[str]:
+def _check_different_events_same_company_survive() -> list[str]:
     """同じ会社の「別イベント」は誤検知で潰さない (固有名詞 1 語の共通では発火しない)。
 
     same_event_by_tokens は固有名詞 3 語以上 or 2 語以上+数値共通が条件。社名 1 語だけ
@@ -223,7 +230,7 @@ def test_different_events_same_company_survive() -> list[str]:
     return errs
 
 
-def test_japanese_katakana_title_same_event() -> list[str]:
+def _check_japanese_katakana_title_same_event() -> list[str]:
     """カタカナ日本語タイトルの固有名詞を英日エイリアスで英語見出しと照合する。
 
     なぜ重要か (2026-06-03 Game 重複整理): significant_tokens が英字ランしか拾わず、
@@ -247,7 +254,7 @@ def test_japanese_katakana_title_same_event() -> list[str]:
     return errs
 
 
-def test_japanese_general_katakana_no_false_match() -> list[str]:
+def _check_japanese_general_katakana_no_false_match() -> list[str]:
     """一般カタカナ語だけ共通の別タイトルを same_event 誤検知しない (トークン直接検証)。
 
     固有名詞でないカタカナ語 (ゲーム/リリース等) を words に混ぜると同カテゴリの別記事を
@@ -267,7 +274,7 @@ def test_japanese_general_katakana_no_false_match() -> list[str]:
     return errs
 
 
-def test_batch_internal_dedup() -> list[str]:
+def _check_batch_internal_dedup() -> list[str]:
     errs: list[str] = []
     existing: list[dict] = []
     # 同じ batch 内に類似 2 件
@@ -287,25 +294,25 @@ def test_batch_internal_dedup() -> list[str]:
 
 
 _CONTRACT_CASES = [
-    ("URL 正規化",            test_url_normalization),
-    ("タイトル正規化",        test_title_normalization),
-    ("Jaccard 類似度",        test_jaccard_similarity),
-    ("24 時間ウィンドウ除外", test_24h_window),
-    ("24 時間超は続報扱い",   test_followup_after_24h),
-    ("URL 完全マッチ除外",    test_url_exact_match),
-    ("同一URLは常に除外(数日後も)", test_same_url_old_still_dropped),
-    ("cross-language 同一イベント検知", test_cross_language_same_event_detected),
-    ("別イベントは誤検知しない", test_different_events_same_company_survive),
-    ("カタカナ日本語タイトル同一イベント検知", test_japanese_katakana_title_same_event),
-    ("一般カタカナ語は誤検知しない", test_japanese_general_katakana_no_false_match),
-    ("batch 内重複除外",      test_batch_internal_dedup),
+    ("URL 正規化",            _check_url_normalization),
+    ("タイトル正規化",        _check_title_normalization),
+    ("Jaccard 類似度",        _check_jaccard_similarity),
+    ("24 時間ウィンドウ除外", _check_24h_window),
+    ("24 時間超は続報扱い",   _check_followup_after_24h),
+    ("URL 完全マッチ除外",    _check_url_exact_match),
+    ("同一URLは常に除外(数日後も)", _check_same_url_old_still_dropped),
+    ("cross-language 同一イベント検知", _check_cross_language_same_event_detected),
+    ("別イベントは誤検知しない", _check_different_events_same_company_survive),
+    ("カタカナ日本語タイトル同一イベント検知", _check_japanese_katakana_title_same_event),
+    ("一般カタカナ語は誤検知しない", _check_japanese_general_katakana_no_false_match),
+    ("batch 内重複除外",      _check_batch_internal_dedup),
 ]
 
 
 def test_all_dedup_contracts() -> None:
-    """pytest 集約ゲート: 上の各 test_* は list[str] 返却の手動実行形式 (main で集計) の
-    ため pytest 単体では assert されず「ノーオペ pass」になる。この 1 件で全契約を実評価
-    し、errs を返すものがあれば fail させる (safe-commit の pytest ゲートで回帰を捕捉)。"""
+    """pytest 集約ゲート: 上の各 _check_* は list[str] 返却の手動実行形式 (main で集計)。
+    この 1 件で全契約を実評価し、errs を返すものがあれば fail させる
+    (safe-commit の pytest ゲートで回帰を捕捉)。"""
     failures = {label: errs for label, fn in _CONTRACT_CASES if (errs := fn())}
     assert not failures, f"dedup 契約違反: {failures}"
 

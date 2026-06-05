@@ -51,7 +51,7 @@ def html() -> str:
     return render_for_send()
 
 
-def test_all_categories_present(html: str) -> list[str]:
+def _collect_all_categories_present(html: str) -> list[str]:
     errs: list[str] = []
     for name in REQUIRED_CATEGORY_NAMES:
         if name not in html:
@@ -59,7 +59,7 @@ def test_all_categories_present(html: str) -> list[str]:
     return errs
 
 
-def test_category_accents_present(html: str) -> list[str]:
+def _collect_category_accents_present(html: str) -> list[str]:
     errs: list[str] = []
     for accent in REQUIRED_CATEGORY_ACCENTS:
         if accent not in html:
@@ -67,7 +67,7 @@ def test_category_accents_present(html: str) -> list[str]:
     return errs
 
 
-def test_reflection_sections_present(html: str) -> list[str]:
+def _collect_reflection_sections_present(html: str) -> list[str]:
     errs: list[str] = []
     for marker in REQUIRED_SECTION_MARKERS:
         if marker not in html:
@@ -75,7 +75,7 @@ def test_reflection_sections_present(html: str) -> list[str]:
     return errs
 
 
-def test_required_blocks_present(html: str) -> list[str]:
+def _collect_required_blocks_present(html: str) -> list[str]:
     errs: list[str] = []
     for label in REQUIRED_BLOCK_LABELS:
         if label not in html:
@@ -83,7 +83,7 @@ def test_required_blocks_present(html: str) -> list[str]:
     return errs
 
 
-def test_body_within_gmail_clip_threshold(html: str) -> list[str]:
+def _collect_body_within_gmail_clip_threshold(html: str) -> list[str]:
     errs: list[str] = []
     size = len(html.encode("utf-8"))
     if size > GMAIL_CLIP_THRESHOLD:
@@ -96,27 +96,52 @@ def test_body_within_gmail_clip_threshold(html: str) -> list[str]:
     return errs
 
 
+def test_all_categories_present(html: str) -> None:
+    errs = _collect_all_categories_present(html)
+    assert not errs, "\n".join(errs)
+
+
+def test_category_accents_present(html: str) -> None:
+    errs = _collect_category_accents_present(html)
+    assert not errs, "\n".join(errs)
+
+
+def test_reflection_sections_present(html: str) -> None:
+    errs = _collect_reflection_sections_present(html)
+    assert not errs, "\n".join(errs)
+
+
+def test_required_blocks_present(html: str) -> None:
+    errs = _collect_required_blocks_present(html)
+    assert not errs, "\n".join(errs)
+
+
+def test_body_within_gmail_clip_threshold(html: str) -> None:
+    errs = _collect_body_within_gmail_clip_threshold(html)
+    assert not errs, "\n".join(errs)
+
+
 def main() -> int:
     print(f"Mock data: {len(mock_data.CATEGORIES)} categories, "
           f"{sum(len(c['items']) for c in mock_data.CATEGORIES)} articles")
     print()
 
-    html = render_for_send()
-    size = len(html.encode("utf-8"))
+    html_text = render_for_send()
+    size = len(html_text.encode("utf-8"))
     print(f"HTML size (minified, send-mode): {size:,} bytes  "
           f"({size / GMAIL_CLIP_THRESHOLD:.0%} of Gmail clip threshold)")
     print()
 
     cases = [
-        ("全カテゴリ名の出現",        test_all_categories_present),
-        ("全カテゴリアクセント色の出現", test_category_accents_present),
-        ("全 5 考察セクションの出現",  test_reflection_sections_present),
-        ("必須ブロックの出現",         test_required_blocks_present),
-        ("Gmail クリップ閾値内 (102KB)", test_body_within_gmail_clip_threshold),
+        ("全カテゴリ名の出現",        _collect_all_categories_present),
+        ("全カテゴリアクセント色の出現", _collect_category_accents_present),
+        ("全 5 考察セクションの出現",  _collect_reflection_sections_present),
+        ("必須ブロックの出現",         _collect_required_blocks_present),
+        ("Gmail クリップ閾値内 (102KB)", _collect_body_within_gmail_clip_threshold),
     ]
     overall_ok = True
     for label, fn in cases:
-        errs = fn(html)
+        errs = fn(html_text)
         if errs:
             overall_ok = False
             print(f"FAIL: {label}")

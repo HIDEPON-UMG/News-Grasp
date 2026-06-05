@@ -14,13 +14,27 @@ cid: モードでの inline registry 投入挙動が正しく分岐するか検�
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests"))
 
 import render_email
 
 
-def test_ogp_url_passes_through() -> list[str]:
+@pytest.fixture(autouse=True)
+def _reset_render_email_state():
+    """test_email_full_render が set_cdn_mode(True) を残すと thumb_url が CDN URL 分岐に
+    流れ registry が空になる。各 test 開始時に CDN を OFF・CID を ON で初期化し、
+    set_cid_mode が internally _CID_REGISTRY={} もリセットすることに依拠する。
+    """
+    render_email.set_cdn_mode(False)
+    render_email.set_cid_mode(True)
+    yield
+    render_email.set_cdn_mode(False)
+
+
+def _collect_ogp_url_passes_through() -> list[str]:
     errors: list[str] = []
     render_email.set_cid_mode(True)
     item_with_ogp = {"thumb": "https://example.com/article-og.jpg"}
@@ -35,7 +49,7 @@ def test_ogp_url_passes_through() -> list[str]:
     return errors
 
 
-def test_ng_fallback_registers_cid() -> list[str]:
+def _collect_ng_fallback_registers_cid() -> list[str]:
     errors: list[str] = []
     render_email.set_cid_mode(True)
     item_no_thumb = {"thumb": None}
@@ -57,7 +71,7 @@ def test_ng_fallback_registers_cid() -> list[str]:
     return errors
 
 
-def test_dedup() -> list[str]:
+def _collect_dedup() -> list[str]:
     errors: list[str] = []
     render_email.set_cid_mode(True)
     item_no_thumb = {"thumb": None}
@@ -72,7 +86,7 @@ def test_dedup() -> list[str]:
     return errors
 
 
-def test_mixed_realistic_mix() -> list[str]:
+def _collect_mixed_realistic_mix() -> list[str]:
     """OGP 5 件 + NG 5 件のリアル混合。inline は 5 → ぐっと減る想定。"""
     errors: list[str] = []
     render_email.set_cid_mode(True)
@@ -94,15 +108,40 @@ def test_mixed_realistic_mix() -> list[str]:
     return errors
 
 
+def test_ogp_url_passes_through() -> None:
+    errors = _collect_ogp_url_passes_through()
+    assert not errors, "\n".join(errors)
+
+
+def test_ng_fallback_registers_cid() -> None:
+    errors = _collect_ng_fallback_registers_cid()
+    assert not errors, "\n".join(errors)
+
+
+def test_dedup() -> None:
+    errors = _collect_dedup()
+    assert not errors, "\n".join(errors)
+
+
+def test_mixed_realistic_mix() -> None:
+    errors = _collect_mixed_realistic_mix()
+    assert not errors, "\n".join(errors)
+
+
 def main() -> int:
     cases = [
-        ("OGP URL passthrough",      test_ogp_url_passes_through),
-        ("NG fallback → cid 登録",   test_ng_fallback_registers_cid),
-        ("同一キー de-dup",          test_dedup),
-        ("OGP/NG 混合シナリオ",      test_mixed_realistic_mix),
+        ("OGP URL passthrough",      _collect_ogp_url_passes_through),
+        ("NG fallback → cid 登録",   _collect_ng_fallback_registers_cid),
+        ("同一キー de-dup",          _collect_dedup),
+        ("OGP/NG 混合シナリオ",      _collect_mixed_realistic_mix),
     ]
     overall_ok = True
     for label, fn in cases:
+        # main 経路でも registry を都度 clear して相互干渉を防ぐ
+        if hasattr(render_email, "reset_inline_images"):
+            render_email.reset_inline_images()
+        else:
+            render_email.get_inline_images().clear()
         errs = fn()
         if errs:
             overall_ok = False

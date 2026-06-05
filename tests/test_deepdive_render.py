@@ -389,7 +389,7 @@ def test_relations_bands_high_density_no_label_overlap() -> None:
                 f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
 
 
-def test_relations_too_many_edges_hard_fail(tmp_path: Path) -> None:
+def test_relations_too_many_edges_hard_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """関係図の実描画ラベルが 9 枚以上 (上限 8 枚) の DeepDive md は build が hard fail。
 
     なぜ重要か: レンダラの力学分離は band 間 gap (~84 px) にラベル多数を
@@ -399,8 +399,7 @@ def test_relations_too_many_edges_hard_fail(tmp_path: Path) -> None:
     frenemy (協調的競合) は coop/rival の 2 ラベルでカウントする。
     """
     from tools.render_deepdive import build_deepdive_context, DeepDiveIncompleteError
-    import os
-    os.environ["NEWS_GRASP_SKIP_URL_CHECK"] = "1"   # オフラインで URL 検証スキップ
+    monkeypatch.setenv("NEWS_GRASP_SKIP_URL_CHECK", "1")   # オフラインで URL 検証スキップ (test 終了で自動 restore)
     md = tmp_path / "2026-06-04-DeepDive.md"
     edges_json = ",\n    ".join(
         f'{{"from": "n{i}", "to": "n{(i + 1) % 9}", "kind": "提携", "label": "L{i}"}}'
@@ -428,7 +427,7 @@ def test_relations_too_many_edges_hard_fail(tmp_path: Path) -> None:
         build_deepdive_context(md)
 
 
-def test_relations_orphan_node_hard_fail(tmp_path: Path) -> None:
+def test_relations_orphan_node_hard_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """関係図のノードがどの edge にも現れない (=孤立) 場合は build が hard fail。
 
     なぜ重要か: 2026-06-04 ユーザー指摘「関係図に繋がっていない丸 (BCG) が浮く」事故。
@@ -438,8 +437,7 @@ def test_relations_orphan_node_hard_fail(tmp_path: Path) -> None:
     封じる ([[feedback_check_design_principles]] 1 段「失敗を表現できない構造」)。
     """
     from tools.render_deepdive import build_deepdive_context, DeepDiveIncompleteError
-    import os
-    os.environ["NEWS_GRASP_SKIP_URL_CHECK"] = "1"
+    monkeypatch.setenv("NEWS_GRASP_SKIP_URL_CHECK", "1")
     md = tmp_path / "2026-06-04-DeepDive.md"
     md.write_text(
         "---\n"

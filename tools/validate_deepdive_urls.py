@@ -270,8 +270,12 @@ def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
     # ここまで来たら 3 プローブとも非 2xx 非 404。
     valid_codes = [s for s in statuses if s is not None]
     if valid_codes:
-        # 403/405/501 系のみで終わるなら anti-bot 継続。ambiguous OK (Bloomberg/theinformation 系)。
-        if all(s in (403, 405, 501) for s in valid_codes):
+        # 403/405/429/501 系のみで終わるなら anti-bot 継続。ambiguous OK
+        # (Bloomberg/theinformation 系 = 403/405、techxplore 系 = 429 レート制限)。
+        # 429 は永続死リンクではなく一時的レート制限なので、404/410 が観測されない限り
+        # 偽陽性 fatal を出さない (techxplore.com で実機 WebFetch で生存確認済の URL を
+        # 死リンク扱いしないため・2026-06-05)。
+        if all(s in (403, 405, 429, 501) for s in valid_codes):
             return UrlVerdict(ref, valid_codes[-1], True,
                               f"{' → '.join(details)} (anti-bot 全段継続・ambiguous)")
         # それ以外 (4xx の別 / 5xx) は fatal 寄せ
