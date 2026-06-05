@@ -29,6 +29,8 @@ tags:
 
 ### [91] Toyota cancels Lexus LF-ZC flagship next-generation EV as Japanese automakers retreat from EV plans
 
+> [!ja] トヨタ、Lexus LF-ZC フラッグシップ次世代 EV を中止 — 日本メーカーが EV 計画から後退
+
 📅 2026-06-05 07:00 · 📰 Automotive News · 🔗 [元記事](https://www.autonews.com/toyota/an-toyota-lexus-cancels-next-generation-electric-vehicle-development-lf-zc-ev-0531/)
 
 #cat/manufacturing #co/トヨタ #country/日本 #topic/全固体電池 #event/製品発表 #score/高

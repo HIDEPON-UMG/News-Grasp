@@ -31,6 +31,8 @@ tags:
 
 ### [92] OpenAI Launches the Deployment Company (DeployCo) targeting IT consulting market
 
+> [!ja] OpenAI、IT コンサル市場狙う「DeployCo」を設立
+
 📅 2026-06-05 08:00 · 📰 OpenAI · 🔗 [元記事](https://openai.com/index/openai-launches-the-deployment-company)
 
 #cat/it #co/OpenAI #co/Accenture #country/米国 #topic/AI導入 #score/高
@@ -45,6 +47,8 @@ tags:
 
 ### [87] McKinsey and Google Cloud launch McKinsey Google Transformation Group to scale enterprise AI impact
 
+> [!ja] マッキンゼーと Google Cloud、エンタープライズ AI 拡大へ「McKinsey Google Transformation Group」を発足
+
 📅 2026-06-05 07:00 · 📰 McKinsey · 🔗 [元記事](https://www.mckinsey.com/about-us/new-at-mckinsey-blog/mckinsey-and-google-cloud-launch-the-mckinsey-google-transformation-group-to-scale-enterprise-impact-for-the-ai-era)
 
 #cat/it #co/マッキンゼー #co/Google #country/米国 #topic/DX #score/高
@@ -58,6 +62,8 @@ tags:
 ---
 
 ### [77] Microsoft is building a super app that combines coding, chat, and other Copilot AI tools
+
+> [!ja] マイクロソフト、コーディング・チャット・他 Copilot AI ツールを統合するスーパーアプリを開発中
 
 📅 2026-06-05 07:30 · 📰 Fortune · 🔗 [元記事](https://fortune.com/2026/05/29/microsoft-working-on-super-app/)
 
