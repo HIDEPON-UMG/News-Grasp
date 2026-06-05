@@ -1,7 +1,7 @@
-"""News-Grasp 公開 web 配信 / メール生成の設定一元化。
+"""News-Grasp 公開 web 配信の設定一元化。
 
-実装ステップ 6 (2026-05-21): tools/generate_pages.py と tools/generate_email.py が
-共通で参照する定数を集約。ベース URL は環境変数で上書き可能。
+実装ステップ 6 (2026-05-21): tools/generate_pages.py が
+参照する定数を集約。ベース URL は環境変数で上書き可能。
 
 ユーザー決定パラメータ (2026-05-21):
     - OG_DESCRIPTION_MAX = 180  ... og:description 上限文字数

@@ -45,13 +45,15 @@ watchlist の Mobility セクション (`data/watchlist.md` の `## Mobility` �
 
 ### 6. routine-system.md ステップ範囲
 
-以下のステップのみ実行し、Summary 生成 / メール生成 / SMTP 送信 / page 生成は**全てスキップ**:
+以下のステップのみ実行し、Summary 生成 / page 生成は**全てスキップ**:
 
 - ステップ 1 (当日情報の準備) — 引数で上書き
 - ステップ 2 (状態ファイル取得)
 - ステップ 3 (Mobility カテゴリ 1 つのみ)
-- **スキップ**: ステップ 4 (テーマ考察 γ schema) / ステップ 5 (メール生成) / `tools/generate_pages.py` / `tools/generate_email.py` / `tools/send_email.py`
+- **スキップ**: ステップ 4 (テーマ考察 γ schema) / `tools/generate_pages.py`
 - ステップ 6 (commit) — 下記 7 番参照
+
+> **メール配信は 2026-06-05 廃止**: ステップ 5/7 (メール生成・SMTP 送信) と `tools/send_email.py` / `tools/generate_email.py` / `build/email.html` は機能ごと削除済み。
 
 ### 7. commit
 
@@ -61,15 +63,10 @@ routine-system.md ステップ 6 通り、1 ファイル単位で commit:
 git -c user.name="HIDEPON" -c user.email="hideki.kusunoki@gmail.com" add \
   digest/Mobility/<TARGET_DATE>-Mobility.md data/articles.jsonl
 git -c user.name="HIDEPON" -c user.email="hideki.kusunoki@gmail.com" commit \
-  -m "daily: <TARGET_DATE> Mobility backfill (5 articles, no-send)"
+  -m "daily: <TARGET_DATE> Mobility backfill (5 articles)"
 ```
 
 **git push は絶対に実行しない** (後段で別プロセスがまとめて push する設計)。
-**メール送信は絶対に実行しない** (`tools/send_email.py` を呼ばない)。
-
-### 8. GAS Webhook 経路は廃止済み
-
-`hidepontrainer@gmail.com` 配下の旧経路は使わない (SMTP もそもそも今回叩かないため無関係)。
 
 ## 最終出力フォーマット
 
@@ -83,8 +80,6 @@ git -c user.name="HIDEPON" -c user.email="hideki.kusunoki@gmail.com" commit \
 - `digest/Summary/<TARGET_DATE>.md` (= γ schema 7 sections の旧版で残置)
 - `digest/{FX,AI,IT-Consulting,Economy,Game}/<TARGET_DATE>-*.md` (他カテゴリ)
 - `tools/generate_pages.py` / `docs/` 配下 (page 生成は後段で親 Claude が一括実行)
-- `tools/generate_email.py` / `build/email.html` (メールは不要)
-- `tools/send_email.py` (SMTP 送信は不要)
 
 ---
 

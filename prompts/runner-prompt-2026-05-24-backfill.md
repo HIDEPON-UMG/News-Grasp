@@ -27,12 +27,6 @@
 
 5. **commit**: routine-system.md ステップ 6 通り、`git -c user.name="HIDEPON" -c user.email="hideki.kusunoki@gmail.com" commit -m "daily: 2026-05-24 digest (backfill, FX, AI, IT-Consulting, Game)"` まで実行。**git push は絶対に実行しない** (block_remote_git.ps1 hook に deny される + 後段で別プロセスが push する設計)。
 
-6. **メール送信**: `tools/send_email.py` で Gmail SMTP 直送。
-   - 差出人: `tools/send_email.py:35` の `DEFAULT_SENDER` 固定 (`news.grasp.magazine@gmail.com`)
-   - 宛先: `hideki.kusunoki@gmail.com,h2-hiramatsu@nri.co.jp`
-   - 件名: `News Grasp #20260524 — 時勢を掴み、日々に新たに。`
-   - 本文 HTML は backfill 用に通常通り `build/email.html` を生成して送信
+> **本ファイルは 2026-05-24 backfill 用の歴史的プロンプト**。2026-06-05 にメール配信機能ごと削除済みのため、旧 step 6 (`tools/send_email.py` Gmail SMTP 直送) と step 7 (GAS Webhook 旧経路) は実行できない。再実行する場合は commit までで停止。
 
-7. **GAS Webhook 経路は廃止済み**。`hidepontrainer@gmail.com` 配下の旧経路は絶対に使わない。
-
-完了後、commit hash と SMTP 送信結果を **末尾サマリ** として明示してください (例: "✅ commit: <sha>" / "✅ SMTP sent to 2 recipients")。
+完了後、commit hash を **末尾サマリ** として明示してください (例: "✅ commit: <sha>")。

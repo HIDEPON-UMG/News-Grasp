@@ -86,12 +86,11 @@ Mobility の次（economy の前）に追加。**Mobility の「電池・サプ�
 ### ⑤ [prompts/obsidian-tagging-spec.md](../obsidian-tagging-spec.md)
 - `cat/` 一覧（§4 付近）に `cat/manufacturing` を追記。Grep で `cat/mobility` の所在を確認し、その隣に1行追加
 
-### ⑥ [prompts/email-template.html](../email-template.html)
-- `<head><style>` の 98-103 行付近（`.acMb { color: #3A7B8C; }` の隣）に **`.acMf { color: #5A6B7B; }`** を追加
-- ※ atomic クラス名は `acFx/acAi/acIt/acMb/acEc/acGm` の規則に従い `acMf`（Manufacturing）とする
+### ⑥ ~~prompts/email-template.html~~ (2026-06-05 削除)
+
+- メール配信機能ごと削除されたため、本ステップはスキップ。`.acMf` クラスは公開 Web 側 (`docs/assets/site.css`) でのみ管理する
 
 ### ⑦ テスト更新
-- [tests/mock_data.py](../../tests/mock_data.py): `CATEGORIES`（list）に製造カテゴリのモックを1件追加（メールフルレンダリング用）
 - [tests/test_reflection_theme_essay.py](../../tests/test_reflection_theme_essay.py) **L203-206**: `len(r["sections"]) == 8` → **`== 9`**。sections は dict[int]（1始まり）。モビリティは `[5]` のまま、**製造が `[6]`、明日へが `[8]`→`[9]`** にずれる。期待 index を要調整（mock digest 側に §06 製造を足す必要あり）
 - [tests/test_generate_pages.py](../../tests/test_generate_pages.py) **L64-69**: `test_categories_include_all_six` の `expected` に `manufacturing`（と積み残しの `mobility`）を追加。`issubset` 判定なので現状は落ちないが、テスト名/docstring「six」も実態（8）に合わせて是正
 - [tests/test_category_editorial_essay.py](../../tests/test_category_editorial_essay.py) **L138 付近**: parametrize リストに `("manufacturing", "Manufacturing")` を追加
@@ -101,7 +100,7 @@ Mobility の次（economy の前）に追加。**Mobility の「電池・サプ�
 cd "C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp"
 .venv\Scripts\python.exe -m pytest -q
 ```
-全 PASS を確認（特に test_reflection_theme_essay / test_generate_pages / test_category_editorial_essay / test_email_full_render）。**完了報告には PASS 件数と実測を含める**（feedback_test_before_report）。
+全 PASS を確認（特に test_reflection_theme_essay / test_generate_pages / test_category_editorial_essay）。**完了報告には PASS 件数と実測を含める**（feedback_test_before_report）。
 
 ### ⑨ gimp-cli で NG プレースホルダ画像3枚（スチールグレー #5A6B7B 基調）
 - `ng-thumb-manufacturing.jpg`（568×220、FEATURED 用）→ **public repo `HIDEPON-UMG/news-grasp-assets`** の main に配置
@@ -116,14 +115,14 @@ cd "C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp"
 
 ### ⑪ commit（safe-commit 経由）
 - `safe-commit` skill のゲートを通す。**push は実行しない**（News-Grasp は `news-grasp-runner.ps1` が Claude 終了後に push する設計。Bash 経由 push は hook で deny される）
-- commit 対象: config.py / generate_pages.py / routine-system.md / watchlist.md / obsidian-tagging-spec.md / email-template.html / tests/ / docs/specs/ + handoff。画像 repo は別 commit
+- commit 対象: config.py / generate_pages.py / routine-system.md / watchlist.md / obsidian-tagging-spec.md / tests/ / docs/specs/ + handoff。画像 repo は別 commit (※ 旧版では email-template.html も対象だったが 2026-06-05 メール配信機能ごと削除済み)
 
 ---
 
 ## 5. 重要な技術メモ（次セッションで踏むと事故る点）
 
 - **dedup.py はカテゴリ非依存**（URL/タイトル/トークンで判定）。変更不要・影響なし
-- **メール経路と Web 経路は別**：Web（docs）は `generate_pages.py` が `CATEGORIES` を dict 駆動で回すので config.py 追加でほぼ自動対応。メールは routine（Claude）が routine-system.md のデザイン表 + email-template.html を見て手組みするので `.acMf` クラスとデザイン表が要る
+- ~~**メール経路と Web 経路は別**~~ (2026-06-05 メール経路削除): Web（docs）は `generate_pages.py` が `CATEGORIES` を dict 駆動で回すので config.py 追加でほぼ自動対応。**メール経路は機能ごと廃止済み**のため `.acMf` クラスは公開 Web 側 (`docs/assets/site.css`) でのみ管理
 - **fallback 定数の mobility 抜けは積み残しバグ**だった（digest 正常時は `parse_essay_sections` の動的パースが使われ、定数は使われないため顕在化していなかった）。今回是正済み
 - **sections は dict[int]（1始まり）**。製造を §06 に挿入したので、テストの期待 index がずれる（経済 §06→§07、ゲーム §07→§08、明日へ §08→§09）。mock digest にも §06 製造セクションを足さないとテストが通らない
 - 次セッション開始時、**グループA（実装）の必読 memory** を Read: `feedback_impact_analysis_before_modification` / `feedback_pre_implementation_checklist` / `feedback_japanese_env_first_scripting`

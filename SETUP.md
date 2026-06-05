@@ -6,7 +6,7 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 
 | 項目 | 値 |
 |---|---|
-| 実行方式 | Windows タスクスケジューラ → `news-grasp-runner.bat` → `claude.exe --print` |
+| 実行方式 | Windows タスクスケジューラ → `news-grasp-runner.ps1` → `claude.exe --print` |
 | 実行時刻 | 毎朝 06:00 JST |
 | モデル | Claude Sonnet 4.6（Max サブスク内認証） |
 | GitHub repo（記事本体） | `HIDEPON-UMG/News-Grasp`（プライベート、Runner が直接 commit/push） |
@@ -15,11 +15,8 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 | Repo の実体 | `C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp\`（**2026-05-28 に Vault 内から ProjectFolders へ物理移管**。旧構成は Vault 直下にネストしていた） |
 | Obsidian で digest を見る経路 | 旧 Vault パス `C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp` を実体へのディレクトリ junction にして表示（移管後の再リンク方式） |
 | Vault 同期方式 | **Obsidian Git プラグイン**（Remotely Save は 2026-05-21 に廃止） |
-| メール送信 | `tools/send_email.py`（Gmail SMTP `smtp.gmail.com:587` STARTTLS） |
-| 差出人 | `news.grasp.magazine@gmail.com`（専用アカウント、`tools/send_email.py:35` の `DEFAULT_SENDER` で集約・正本） |
-| App Password | `~/.secrets/news-grasp-smtp.txt`（差出人アカウントの Gmail App Password） |
-| 配信宛先 | `hideki.kusunoki@gmail.com` / `h2-hiramatsu@nri.co.jp` |
-| 旧 GAS Webhook 経路 | **2026-04 末で廃止**（旧 `hidepontrainer@gmail.com` 配下の web app。本番未使用） |
+| 配信経路 | 公開 Web (GitHub Pages + PWA) + Web Push 通知 (Cloudflare Worker + KV) |
+| 旧メール配信 | **2026-06-05 廃止**（旧 `tools/send_email.py` Gmail SMTP 直送と旧 GAS Webhook 経路は機能ごと削除済み。`~/.secrets/news-grasp-smtp.txt` と `news.grasp.magazine@gmail.com` アカウントは未使用化、ユーザー手動で App Password 失効・アカウント整理） |
 | 旧 Remotely Save 同期 | **2026-05-21 で廃止**（GitHub 経由 Obsidian Git に切替） |
 
 ## 0. 前提環境
@@ -29,10 +26,7 @@ D 案（ローカル Claude Code via Windows タスクスケジューラ）の�
 - Claude Code CLI（`C:\Users\hidek\.local\bin\claude.exe`、Max サブスクで認証済み）
 - Python 3.13+（テスト実行用）
 - `gh` CLI（HIDEPON-UMG でログイン済み）
-- Gmail App Password を `~/.secrets/news-grasp-smtp.txt` に保存済み（差出人 `news.grasp.magazine@gmail.com` の 2FA → App Password 発行画面で生成）
 - Obsidian Desktop（任意・閲覧用）
-
-> **旧経路**: `clasp` v3.x（`hidepontrainer@gmail.com` 配下の GAS web app `news-grasp-mailer` 管理用）は 2026-04 末で廃止のため新規環境では不要。
 
 ## 1. リポジトリの clone（2 段階）
 
@@ -80,27 +74,7 @@ C:\Users\hidek\Obsidian\New's Grasp\               # Vault root (obsidian-newsgr
 Runner は **サブリポ側（`News-Grasp\.git`）に対してのみ commit/push** する。
 Vault root の同期は別途 Obsidian Git プラグインが担当する（後述）。
 
-## 2. Gmail SMTP の認証設定
-
-`tools/send_email.py` は Gmail SMTP（`smtp.gmail.com:587` STARTTLS）で **`news.grasp.magazine@gmail.com` から直送**する。差出人は `tools/send_email.py:35` の `DEFAULT_SENDER` 1 箇所で集約済みなので、本番では `--from` フラグを指定しないこと（指定すると先祖返りリスクがある）。
-
-新規環境でのセットアップ：
-
-1. `news.grasp.magazine@gmail.com` に Google アカウントでログイン → 2 段階認証を有効化
-2. <https://myaccount.google.com/apppasswords> で App Password を発行（用途名: `News-Grasp SMTP`）
-3. 発行された 16 文字のパスワードを `~/.secrets/news-grasp-smtp.txt` に **改行なしで保存**：
-
-   ```powershell
-   New-Item -ItemType Directory -Force -Path "$HOME\.secrets" | Out-Null
-   # 16文字のパスワードを貼り付け（末尾改行なし）
-   notepad "$HOME\.secrets\news-grasp-smtp.txt"
-   ```
-
-4. パーミッション制限（任意・PC 共有時のみ）：エクスプローラ → プロパティ → セキュリティで自分以外をアクセス拒否
-
-> **旧 GAS Webhook 経路**: `hidepontrainer@gmail.com` 配下の `news-grasp-mailer` web app は 2026-04 末で廃止。`tests/render_email.py --send` 内の Webhook 系コードは互換のため残しているが本番は使わない。誤って `--send` を実行すると差出人が旧アドレスに先祖返りするので注意。
-
-## 2-B. Web Push の VAPID 鍵設定（1 回だけ）
+## 2. Web Push の VAPID 鍵設定（1 回だけ）
 
 PWA へのプッシュ通知（`tools/send_push.py`）は VAPID 鍵ペアで本人性を担保する。新規環境では 1 回だけ以下を行う。
 
@@ -113,7 +87,7 @@ PWA へのプッシュ通知（`tools/send_push.py`）は VAPID 鍵ペアで本�
 2. 表示された公開鍵（base64url の 1 行）を `docs/push.js` の `VAPID_PUBLIC_KEY` 定数に貼る。
 3. 鍵を作り直すと既存の全購読が無効化される（全端末の再登録が必要）。`~/.secrets/news-grasp-vapid.pem` が既にある環境では再生成しない。
 
-## 2-C. Web Push 購読ストア Worker のデプロイ（1 回だけ）
+## 2-B. Web Push 購読ストア Worker のデプロイ（1 回だけ）
 
 読者が「許可」を押すだけで購読を完結させるには、購読情報を保存する受け口が要る。静的サイトには書き込み口が無いため、極小の Cloudflare Worker (+ KV) を 1 つ立てる（無料枠）。
 
@@ -144,60 +118,20 @@ npx wrangler secret put LIST_TOKEN
 仕上げ:
 
 1. 控えた Worker URL を `docs/push.js` の `WORKER_URL` 定数に貼る（末尾スラッシュ無し）。
-2. 同じ URL を Runner に環境変数 `NEWS_GRASP_PUSH_WORKER_URL` として渡す（`news-grasp-runner.bat` に `set NEWS_GRASP_PUSH_WORKER_URL=https://...` を追記）。
+2. 同じ URL を Runner に環境変数 `NEWS_GRASP_PUSH_WORKER_URL` として渡す（`news-grasp-runner.ps1` に `$env:NEWS_GRASP_PUSH_WORKER_URL = "https://..."` を追記）。
 3. 動作確認: `python tools/send_push.py --dry-run`（`取得元: worker` と購読者数が表示されれば疎通 OK）。
 
 > ローカル検証だけなら `cd worker && npx wrangler dev`（CF 認証不要・local KV）。`worker/.dev.vars` に `LIST_TOKEN` を置けば `/list` も叩ける。`.dev.vars` は git 管理外。
 
 読者の購読手順は [README.md](README.md) の「Web Push 通知 (PWA)」節を参照。`data/push_subscriptions.secret.json` は Worker 未設定時の手元テスト用 fallback（`*.secret.json` で git 管理外）。
 
-## 3. `news-grasp-runner.bat` 配置
+## 3. `news-grasp-runner.ps1` 配置
 
-`C:\Users\hidek\bin\news-grasp-runner.bat` に以下を配置。**ASCII のみ・CRLF・goto ベース**で書く（Windows の cmd.exe 互換性確保のため）：
+`%USERPROFILE%\bin\news-grasp-runner.ps1` に PowerShell スクリプトとして配置する。要点:
 
-```bat
-@echo off
-echo [%DATE% %TIME%] runner-invoked >> "%USERPROFILE%\bin\news-grasp-invoked.log"
-
-set REPO_DIR=C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp
-set LOG_DIR=%USERPROFILE%\bin\news-grasp-logs
-set GIT=C:\Program Files\Git\cmd\git.exe
-set CLAUDE=C:\Users\hidek\.local\bin\claude.exe
-
-if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
-for /f "tokens=2 delims==" %%i in ('wmic os get LocalDateTime /value 2^>NUL ^| find "="') do set DT=%%i
-set DATESTAMP=%DT:~0,4%-%DT:~4,2%-%DT:~6,2%
-set LOG=%LOG_DIR%\%DATESTAMP%.log
-
-echo. >> "%LOG%"
-echo [%DATE% %TIME%] news-grasp-runner start >> "%LOG%"
-
-if not exist "%REPO_DIR%\.git" goto err_repo
-"%GIT%" -C "%REPO_DIR%" fetch --quiet origin main >> "%LOG%" 2>&1
-if errorlevel 1 goto err_fetch
-"%GIT%" -C "%REPO_DIR%" pull --ff-only origin main >> "%LOG%" 2>&1
-if errorlevel 1 goto err_pull
-
-pushd "%REPO_DIR%"
-"%CLAUDE%" --print --dangerously-skip-permissions --tools default --model sonnet "本リポジトリ内の prompts/routine-system.md を Read で読み込み、その指示に厳密に従って当日（JST）の News-Grasp 日次 digest を生成してください..." >> "%LOG%" 2>&1
-set CLAUDE_RC=%errorlevel%
-popd
-if not %CLAUDE_RC%==0 goto err_claude
-
-echo [%DATE% %TIME%] news-grasp-runner OK >> "%LOG%"
-exit /b 0
-
-:err_repo & echo ERROR: repo not found >> "%LOG%" & exit /b 1
-:err_fetch & echo ERROR: fetch failed >> "%LOG%" & exit /b 1
-:err_pull & echo ERROR: pull failed >> "%LOG%" & exit /b 1
-:err_claude & echo ERROR: claude exited %CLAUDE_RC% >> "%LOG%" & exit /b 1
-```
-
-**注意**: 改行コードは **CRLF 必須**。Write tool で書いた直後に：
-
-```bash
-sed -i 's/$/\r/' "/c/Users/hidek/bin/news-grasp-runner.bat"
-```
+- 当日 digest 生成は `claude.exe --print --dangerously-skip-permissions --tools default --model sonnet "<runner-prompt.md 本文>"` で実行
+- Claude 終了後に ps1 が継続して `git push origin main` → `tools/generate_pages.py` → `git push docs/` → `tools/send_push.py` を順に走らせる
+- ファイルは **UTF-8 BOM 必須**（PS5.1 が BOM 無しを CP932 解釈して日本語コメントごと壊す既知問題。`enforce_script_encoding.ps1` hook が自動付与する）
 
 ## 4. Windows タスクスケジューラ登録
 
@@ -206,17 +140,13 @@ sed -i 's/$/\r/' "/c/Users/hidek/bin/news-grasp-runner.bat"
 | 名前 | `News-Grasp Runner` |
 | 全般 | **「ユーザーがログオンしている時にだけ実行する」** を選択（claude の OAuth キーチェーン認証のため） |
 | トリガー | 毎日 06:00:00 |
-| 操作 | プログラム開始：`C:\Users\hidek\bin\news-grasp-runner.bat` |
+| 操作 | プログラム開始：`pwsh.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\hidek\bin\news-grasp-runner.ps1"` |
 | 条件 | 「タスクを実行するためにスリープを解除する」チェック、AC 電源条件のチェック外す |
 | 設定 | 失敗時 5 分間隔で 3 回リトライ |
 
 ## 5. 動作確認
 
 ```powershell
-# 疎通テスト（SMTP 直送・自分宛のみ、本番経路と同じ）
-cd "C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp"
-python tests/render_email.py --smtp
-
 # Runner の手動起動（実機の本番フロー）
 # タスクスケジューラから「News-Grasp Runner」を右クリック → 「実行する」
 ```
@@ -232,7 +162,8 @@ Get-Content "C:\Users\hidek\bin\news-grasp-logs\2026-04-28.log" -Wait -Tail 100
 - `digest/{Genre}/{YYYY-MM-DD}-{Genre}.md` 各ファイルが repo に push されている
 - `digest/Summary/{YYYY-MM-DD}.md` も生成されている
 - `data/articles.jsonl` に 20〜25 件のメタが追記されている
-- Gmail 2 宛先に HTML メールが届いている
+- 公開 Web (GitHub Pages) に当日分が反映されている
+- Web Push 通知が購読端末に届いている
 
 ## 6. watchlist の更新（運用作業）
 
@@ -253,12 +184,9 @@ git push
 | 症状 | 対処 |
 |---|---|
 | 黒い画面が開いてすぐ閉じる | ログに `ERROR: ...` が出る → `news-grasp-invoked.log` から原因切り分け |
-| `'sks' は内部コマンド〜` | bat の改行が LF。`sed -i 's/$/\r/' news-grasp-runner.bat` で CRLF 化 |
-| `claude` が見つからない | bat 内で `set CLAUDE=` をフルパスに（`where claude` で確認） |
-| メールが届かない | `tests/render_email.py --smtp` で SMTP 単体テスト → 失敗時は `~/.secrets/news-grasp-smtp.txt` の App Password が有効か Google アカウントの App Passwords ページで確認（古い App Password は revoke して再発行） |
-| 差出人が `hidepontrainer@gmail.com` に先祖返り | `news-grasp-runner.bat` の `claude --print` 引数に「GAS Webhook」が残っていないか確認。`tools/send_email.py` の `DEFAULT_SENDER` が正本（`news.grasp.magazine@gmail.com`） |
-| NRI 宛だけ届かない | NRI セキュリティ部のメールフィルタ。`news.grasp.magazine@gmail.com` のホワイトリスト依頼か、`hideki.kusunoki@gmail.com` から手動転送運用へ |
-| 画像が壊れる（メール内） | `assets/` の JPG が repo にあるか確認 → `routine-system.md` の base64 化指示が守られているか確認 |
+| `claude` が見つからない | ps1 内のフルパスを `where claude` で確認した結果に差し替え |
+| 画像が壊れる（公開 Web 内） | `assets/` の JPG が repo にあるか確認 → `tools/generate_pages.py` の thumb fallback 処理を確認 |
+| Web Push が届かない | `python tools/send_push.py --dry-run` で疎通確認 → Worker URL / `LIST_TOKEN` / VAPID 公開鍵の食い違いを点検 |
 | Obsidian で digest（記事 .md）が反映されない | サブリポ `News-Grasp/` 担当の Runner が `git pull` を内包しているので、サブリポは自動更新。手動なら `git -C "...\News-Grasp" pull` |
 | Obsidian の Vault 設定（テーマ・CSS スニペット）が反映されない | 親 Vault リポ `obsidian-newsgrasp-vault` 担当の Obsidian Git が auto-pull (10 分) で更新。起動時 pull を ON にしていれば即時取得。手動なら `Ctrl + P` → 「Obsidian Git: Pull」 |
 | 親 Vault リポとサブリポの責任が分からない | 親（`obsidian-newsgrasp-vault`）= Vault 設定・CSS スニペット・ルートメモ。サブ（`News-Grasp`）= 記事 .md・Runner プロンプト・テスト。Vault root の `.gitignore` で `News-Grasp/` を除外しているので 2 つの git 履歴は混ざらない |
@@ -319,8 +247,5 @@ Obsidian で `Ctrl + P` → `Obsidian Git: Commit-and-sync` を手動実行。
 - [prompts/routine-system.md](prompts/routine-system.md) — Runner プロンプトの完全仕様
 - [prompts/obsidian-tagging-spec.md](prompts/obsidian-tagging-spec.md) — Obsidian タグ階層仕様（正本）
 - [prompts/obsidian-template.md](prompts/obsidian-template.md) — Obsidian Markdown テンプレート + **CSS スニペット連動の必須要素契約**（2026-05-21〜）
-- [tests/README.md](tests/README.md) — 単体テストの使い方
 - [docs/architecture.pptx](docs/architecture.pptx) — アーキテクチャ図と仕様まとめ（プレゼン用）
-- [memory/feedback_windows_bat_gotchas.md](../../../.claude/projects/c--Users-hidek-OneDrive--------ProjectFolders/memory/feedback_windows_bat_gotchas.md) — Windows .bat 落とし穴チェックリスト
-- [memory/feedback_email_html_image_inline.md](../../../.claude/projects/c--Users-hidek-OneDrive--------ProjectFolders/memory/feedback_email_html_image_inline.md) — メール HTML 画像 base64 必須ルール
 - [memory/reference_newsgrasp_vault_github_sync.md](../../../.claude/projects/c--Users-hidek-OneDrive--------ProjectFolders/memory/reference_newsgrasp_vault_github_sync.md) — Vault root GitHub 同期方式と除外ルール

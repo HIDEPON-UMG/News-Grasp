@@ -145,7 +145,7 @@ layouts.add_cover_slide(
     presenter_title="毎日 Web 情報収集 + 関連付け解説 Agent",
     presenter="",
     date="2026年4月28日 / 最終運用形態",
-    tagline="Local Claude Code × GitHub × GAS Webhook · D-plan",
+    tagline="Local Claude Code × GitHub Pages × PWA Web Push · D-plan",
     cover_image=COVER_IMAGE,
 )
 
@@ -220,15 +220,15 @@ add_block(slide3, "GitHub\nHIDEPON-UMG/News-Grasp\n(private repo)",
 add_label(slide3, "digest/  data/  prompts/  assets/",
           x=6.8, y=3.18, w=2.7, h=0.3, font_size=9, color=NRI_THEME["ir_text_muted"])
 
-# GAS Webhook
-add_block(slide3, "GAS Web App\nnews-grasp-mailer\n(hidepontrainer@gmail)",
+# Cloudflare Worker (Web Push 購読ストア)
+add_block(slide3, "Cloudflare Worker\nnews-grasp-push\n+ KV (購読保存)",
           x=10.0, y=1.85, w=2.7, h=1.3,
           fill=NRI_THEME["ir_navy_deep"], color=NRI_THEME["white"], font_size=12)
-add_label(slide3, "client + 宛先ホワイトリスト",
+add_label(slide3, "/subscribe /unsubscribe /list",
           x=10.0, y=3.18, w=2.7, h=0.3, font_size=9, color=NRI_THEME["ir_text_muted"])
 
-# Gmail（×2）
-add_block(slide3, "Gmail\nhideki.kusunoki@gmail.com\nh2-hiramatsu@nri.co.jp",
+# PWA 端末（×N）
+add_block(slide3, "PWA 端末\n(iOS/Android)\nnotificationclick → Home",
           x=10.0, y=3.7, w=2.7, h=1.3,
           fill=NRI_THEME["ir_blue_light"], color=NRI_THEME["ir_navy"], font_size=11)
 
@@ -240,15 +240,15 @@ add_arrow(slide3, x1=5.85, y1=3.4, x2=6.8, y2=2.3, color=NRI_THEME["ir_navy"])
 add_arrow(slide3, x1=6.8, y1=2.7, x2=5.85, y2=3.7, color=NRI_THEME["ir_navy"])
 add_label(slide3, "git pull / push",
           x=5.6, y=2.55, w=1.6, h=0.25, font_size=9)
-# Claude → GAS
+# Runner → Worker
 add_arrow(slide3, x1=5.85, y1=3.55, x2=10.0, y2=2.3, color=NRI_THEME["ir_navy"])
-add_label(slide3, "Webhook POST\n(client=news-grasp-routine)",
+add_label(slide3, "send_push.py\n(GET /list → pywebpush)",
           x=7.5, y=2.55, w=2.0, h=0.4, font_size=9, color=NRI_THEME["ir_text_muted"])
-# GAS → Gmail
+# Worker → PWA 端末
 add_arrow(slide3, x1=11.35, y1=3.18, x2=11.35, y2=3.7, color=NRI_THEME["ir_navy"])
-add_label(slide3, "GmailApp.sendEmail",
+add_label(slide3, "VAPID push\n(FCM/APNs)",
           x=12.7, y=3.35, w=0.3, h=0.25, font_size=9)
-# GitHub → Obsidian (runner.bat 内 git pull)
+# GitHub → Obsidian (runner.ps1 内 git pull)
 add_arrow(slide3, x1=6.8, y1=3.1, x2=5.85, y2=4.7,
           color=NRI_THEME["ir_navy_deep"], dash=True)
 add_label(slide3, "Runner 内 git pull で同期",
@@ -261,14 +261,14 @@ slide4 = layouts.add_chart_slide(
     page_num=3, org=ORG,
 )
 steps = [
-    ("①", "曜日判定",  "対象カテゴリ\n(4 or 5)"),
+    ("①", "曜日判定",  "対象カテゴリ\n(5〜7)"),
     ("②", "状態 Read", "watchlist /\narticles.jsonl"),
     ("③", "WebSearch", "5 件 / カテゴリ\nスコア降順"),
     ("④", "OGP 取得",  "WebFetch x N\n失敗→NG画像"),
     ("⑤", "関連照合",  "過去90日 ×\n5 軸マッチ"),
     ("⑥", "digest 生成", "MD + JSONL\n(Summary 含)"),
     ("⑦", "commit/push", "per-category\nfolders"),
-    ("⑧", "メール送信",  "GAS Webhook\n→ Gmail x 2"),
+    ("⑧", "Web Push 配信", "Worker /list\n→ pywebpush"),
 ]
 n = len(steps)
 total_w = 12.4
@@ -306,7 +306,7 @@ for i, (idx, label, detail) in enumerate(steps):
                   color=NRI_THEME["ir_navy"], width_pt=2.0)
 
 add_label(slide4,
-    "失敗時は最大 3 回リトライ（30s → 60s → 120s）。最終失敗時は data/_status.md に追記し、Webhook で件名「[News-Grasp 失敗] YYYY-MM-DD」のメールを送信。",
+    "失敗時は最大 3 回リトライ（30s → 60s → 120s）。最終失敗時は data/_status.md に「❌失敗」行を追記して exit（旧 Webhook メール通知は 2026-06-05 廃止）。",
     x=0.6, y=4.9, w=12.2, h=0.4, font_size=11, color=NRI_THEME["ir_text"], align=PP_ALIGN.LEFT)
 
 
@@ -391,7 +391,7 @@ layouts.add_points_slide(
         {"title": "D 案（採用版）への移行と利点", "bullets": [
             "Windows タスクスケジューラ → claude.exe --print --tools default で本番運用",
             "Max サブスク内で完結（追加 API 課金 $0、5h 枠 15〜25%/回）",
-            "GitHub repo・GAS Webhook・Obsidian ボルト・watchlist は ② から流用、無駄なし",
+            "GitHub repo・Cloudflare Worker (Web Push 購読ストア)・Obsidian ボルト・watchlist は ② から流用、無駄なし",
             "PC オン時のみ動くが、毎朝起動の習慣があれば実用上問題なし",
         ]},
     ],
@@ -406,8 +406,7 @@ layouts.add_data_table_slide(
     rows=[
         ["Claude Sonnet 4.6 実行", "Max サブスク内", "$0", "5h 枠の 15〜25%/回"],
         ["GitHub プライベート repo", "個人プラン無料枠", "$0", "Contents R/W、PAT 不要" ],
-        ["GAS Webhook", "Workspace 無料枠", "$0", "Gmail 送信は 100 通/日まで"],
-        ["メール配信", "Gmail (GAS 経由)", "$0", "送信元 hidepontrainer@gmail.com"],
+        ["Web Push 配信", "Cloudflare Worker + KV", "$0", "無料枠内・送信元 VAPID 本人鍵"],
         ["合計", "—", "$0", "Max 既存契約のみで完結"],
     ],
     current_col_index=2,
@@ -424,18 +423,18 @@ layouts.add_points_slide(
     prs, period="ファイル\n構造",
     sections=[
         {"title": "リポジトリ構成", "bullets": [
-            "digest/{FX,AI,IT-Consulting,Economy,Game}/ — カテゴリ別フォルダで管理",
+            "digest/{FX,AI,IT-Consulting,Mobility,Manufacturing,Economy,Game}/ — カテゴリ別フォルダで管理",
             "digest/Summary/ — 日次サマリー（テーマ考察ハブ）",
             "data/watchlist.md — ★ ユーザー編集可、トラッキング対象一覧",
             "data/articles.jsonl — 過去 90 日の記事メタ（自動ローテート、entities/topics/tags 拡張済み）",
-            "prompts/routine-system.md / obsidian-tagging-spec.md / email-template.html / obsidian-template.md",
-            "assets/ng-thumb-{cat}.jpg + ng-thumb-common-{cat}.jpg（v2 Claude Design 提供 10 枚）",
+            "prompts/routine-system.md / obsidian-tagging-spec.md / obsidian-template.md",
+            "assets/ng-thumb-{cat}.jpg + ng-thumb-common-{cat}.jpg（公開 Web fallback 画像、計 14 枚）",
         ]},
         {"title": "単体テスト機構", "bullets": [
-            "tests/render_email.py — Claude を呼ばずに HTML テンプレートだけ確認",
-            "A) python tests/render_email.py — preview.html 生成（$0 / 1-2 秒）",
-            "C) python tests/render_email.py --send — Webhook 経由で実送信（$0 / 5-10 秒）",
-            "tests/mock_data.py に 5 カテゴリ × 5 件のサンプル（強調記法 [[]] / __ 含む）",
+            "tests/test_generate_pages*.py — SSG 出力の E2E 契約",
+            "tests/test_thumb_contract.py — articles.jsonl の thumb キー必須契約",
+            "tests/test_send_push.py — Web Push TTL / Urgency の退行防止契約",
+            "tests/test_dedup.py / test_fetch_ogp*.py — dedup と OGP 取得の契約",
         ]},
     ],
     page_num=9, org=ORG,
@@ -448,14 +447,14 @@ layouts.add_points_slide(
     sections=[
         {"title": "情報源・配信の制約", "bullets": [
             "NewsPicks 有料記事は認証ゲートのため公開部分のみ参照",
-            "NRI 宛メール（h2-hiramatsu@nri.co.jp）は外部メールフィルタで弾かれる可能性",
-            "→ 不達時は hideki.kusunoki@gmail.com で受信し、必要時に手動転送",
+            "iOS PWA の Web Push は Safari「ホーム画面に追加」が必須（タブのままは届かない）",
+            "→ 端末側の集中モード / 通知要約 / 低電力モードで朝の通知が抑制されることがある",
         ]},
         {"title": "運用上の依存・恒久ルール", "bullets": [
             "Max サブスクの 5h 枠を朝 6 時に消費（日中の作業と時間帯競合させない）",
             "PC オン時に Runner が動く前提（土日 PC オフだとその日はスキップされる）",
-            "Windows .bat は CRLF 必須・ASCII のみ・goto 構造（feedback memory に恒久ルール記録済み）",
-            "メール HTML 内画像は base64 inline 必須（private repo の raw URL は受信側からアクセス不可）",
+            "Windows .ps1 は UTF-8 BOM 必須・.bat は CRLF + CP932 必須（feedback memory に恒久ルール記録済み）",
+            "メール配信は 2026-06-05 廃止（公開 Web + Web Push のみで運用）",
         ]},
     ],
     page_num=10, org=ORG,
