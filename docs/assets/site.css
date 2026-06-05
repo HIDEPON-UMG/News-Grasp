@@ -516,6 +516,31 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   font-size: 13px; /* .more-card__title 27px の約 48% */
   margin-top: 6px;
 }
+.home-featured__title .story-title-ja {
+  font-size: 15px; /* 親 32px の約 47% */
+  margin-top: 8px;
+}
+.home-top3__title .story-title-ja {
+  font-size: 12px; /* 親 17px。リスト密度のため小さく */
+  margin-top: 4px;
+  font-weight: 400;
+}
+.overview-top3__title .story-title-ja {
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 400;
+}
+.ng-lead__title .story-title-ja {
+  font-size: 12px; /* 親 18-21px。アーカイブ lead */
+  margin-top: 4px;
+  font-weight: 400;
+}
+.ng-lens-item__t .story-title-ja {
+  font-size: 10px; /* 親 13.5px。アーカイブ lens 1 行表示の補助 */
+  margin-top: 3px;
+  font-weight: 400;
+  line-height: 1.4;
+}
 .top-story__bullets {
   list-style: none;
   padding: 0;
@@ -2632,6 +2657,11 @@ strong {
   .top-story__thumb-wrap { height: 200px; }
   .top-story__title { font-size: 24px; }
   .top-story__title .story-title-ja { font-size: 12px; margin-top: 6px; }
+  .home-featured__title .story-title-ja { font-size: 11px; margin-top: 4px; }
+  .home-top3__title .story-title-ja { font-size: 10px; margin-top: 3px; }
+  .overview-top3__title .story-title-ja { font-size: 10px; margin-top: 3px; }
+  .ng-lead__title .story-title-ja { font-size: 10px; margin-top: 3px; }
+  .ng-lens-item__t .story-title-ja { font-size: 9px; margin-top: 2px; }
   .top-story__bullets li { font-size: 16px; line-height: 1.8; padding-left: 18px; }
   .more-stories { padding: 24px 16px; }
   .more-stories__head h2 { font-size: 22px; }

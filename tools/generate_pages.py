@@ -612,6 +612,7 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
     top3 = [
         {
             "title": a.get("title", ""),
+            "title_ja": a.get("title_ja", ""),
             "score": a.get("score") or "",
             "date": a.get("date", ""),
             "source": a.get("source", ""),
@@ -634,6 +635,7 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         # Variant B Home 用
         "top_score": top_score_int,
         "top_title": top.get("title", ""),
+        "top_title_ja": top.get("title_ja", ""),
         "top_thumb": top.get("thumb", ""),
         "top_source": top.get("source", ""),
         "top_source_url": top.get("source_url", ""),
@@ -767,6 +769,7 @@ def _articles_as_grid_entries(cat_id: str, date: str,
             out.append({
                 "date": date,
                 "top_title": a.get("title", ""),
+                "top_title_ja": a.get("title_ja", ""),
                 "top_thumb": a.get("thumb"),
                 "top_source": a.get("source"),
                 "top_source_url": url,
@@ -1885,6 +1888,7 @@ def build_archive(entries: list[dict[str, Any]], docs_root: Path,
             stories.append({
                 "cat": cid,
                 "title": e.get("top_title") or e.get("title") or meta["jp"],
+                "title_ja": e.get("top_title_ja", ""),
                 "score": _score_int(e.get("top_score")),
                 "accent": meta["accent"],
                 "glyph": meta["glyph"],

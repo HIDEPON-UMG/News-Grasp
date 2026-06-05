@@ -181,6 +181,7 @@
     <div>
       <h2 class="top-story__title">
         <a href="{{ featured.canonical }}" style="color: inherit;">{{ featured.top_title or featured.title }}</a>
+        {% if featured.top_title_ja %}<span class="story-title-ja">{{ featured.top_title_ja }}</span>{% endif %}
       </h2>
       {% if featured.top_bullets %}
       <ul class="top-story__bullets">
@@ -221,6 +222,7 @@
       </div>
       <h3 class="more-card__title">
         <a href="{{ e.canonical }}">{{ e.top_title or e.title }}</a>
+        {% if e.top_title_ja %}<span class="story-title-ja">{{ e.top_title_ja }}</span>{% endif %}
       </h3>
       {% if e.top_bullets %}
       <ul class="more-card__bullets">

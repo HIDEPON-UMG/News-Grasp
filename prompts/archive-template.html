@@ -459,7 +459,10 @@
                   <div class="ng-lead__badge"><span>{{ it.lead.glyph }}</span>{{ it.lead.en }}</div>
                   <div class="ng-lead__star">★ LEAD STORY</div>
                 </div>
-                <a href="{{ it.lead.href }}" class="ng-lead__title" style="text-decoration: none;">{{ it.lead.title }}</a>
+                <a href="{{ it.lead.href }}" class="ng-lead__title" style="text-decoration: none;">
+                  {{ it.lead.title }}
+                  {% if it.lead.title_ja %}<span class="story-title-ja">{{ it.lead.title_ja }}</span>{% endif %}
+                </a>
                 {% if it.lead.score %}
                 <div class="ng-lead__score"><b>{{ it.lead.score }}</b><small>SCORE</small></div>
                 {% else %}
@@ -481,7 +484,10 @@
                   {% for s in it.rest %}
                   <a class="ng-lens-item" href="{{ s.href }}" style="--lens: var(--color-accent-{{ s.cat }}); text-decoration: none;">
                     <span class="ng-lens-item__ico"><b>{{ s.glyph }}</b><small>{{ s.en[:4] }}</small></span>
-                    <span class="ng-lens-item__t">{{ s.title }}</span>
+                    <span class="ng-lens-item__t">
+                      {{ s.title }}
+                      {% if s.title_ja %}<span class="story-title-ja">{{ s.title_ja }}</span>{% endif %}
+                    </span>
                     {% if s.score %}<span class="ng-lens-item__s">{{ s.score }}</span>{% else %}<span></span>{% endif %}
                   </a>
                   {% endfor %}

@@ -181,7 +181,10 @@
               <span class="home-top3__badge cat-{{ it.category_id }}">{{ it.glyph }} {{ it.category_label|upper }}</span>
               {% if it.top_date %}<span class="home-top3__time">{{ it.top_date }}</span>{% endif %}
             </div>
-            <h3 class="home-top3__title">{{ it.top_title }}</h3>
+            <h3 class="home-top3__title">
+              {{ it.top_title }}
+              {% if it.top_title_ja %}<span class="story-title-ja">{{ it.top_title_ja }}</span>{% endif %}
+            </h3>
           </div>
           <span class="home-top3__score cat-{{ it.category_id }}">{{ it.top_score }}</span>
         </a>
@@ -235,6 +238,7 @@
       <div>
         <h2 class="home-featured__title">
           {% if hero_story.top_source_url %}<a href="{{ hero_story.top_source_url }}" rel="noopener nofollow" target="_blank">{{ hero_story.top_title }}</a>{% else %}{{ hero_story.top_title }}{% endif %}
+          {% if hero_story.top_title_ja %}<span class="story-title-ja">{{ hero_story.top_title_ja }}</span>{% endif %}
         </h2>
         <ul class="home-featured__bullets">
           {% for b in hero_story.top_bullets[:3] %}<li>{{ b|safe }}</li>{% endfor %}

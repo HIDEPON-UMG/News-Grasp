@@ -137,7 +137,10 @@
             <span class="overview-top3__no">{{ "%02d"|format(loop.index) }}</span>
             <div>
               <div class="overview-top3__meta">{% if it.date %}{{ it.date }}{% endif %}{% if it.source %} · {{ it.source }}{% endif %}</div>
-              <h4 class="overview-top3__title">{{ it.title }}</h4>
+              <h4 class="overview-top3__title">
+                {{ it.title }}
+                {% if it.title_ja %}<span class="story-title-ja">{{ it.title_ja }}</span>{% endif %}
+              </h4>
             </div>
             <div class="overview-top3__score-cell">
               <div class="overview-top3__score">{{ it.score or '—' }}</div>
