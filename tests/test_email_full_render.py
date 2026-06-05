@@ -11,6 +11,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests"))
 
@@ -37,6 +39,16 @@ def render_for_send() -> str:
     render_email.set_cid_mode(False)
     render_email.set_cdn_mode(True)
     return render_email.minify_html(render_email.render_email_html())
+
+
+@pytest.fixture(scope="module")
+def html() -> str:
+    """pytest 経由実行時に test_* 関数へ渡す HTML フィクスチャ。
+
+    main() 経路 (CLI 直接実行) は render_for_send() を直接呼ぶため不要だが、
+    pytest discover 時には test_*(html) が引数として要求するため module スコープで提供する。
+    """
+    return render_for_send()
 
 
 def test_all_categories_present(html: str) -> list[str]:
