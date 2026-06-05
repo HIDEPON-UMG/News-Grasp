@@ -497,6 +497,26 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   background: color-mix(in srgb, var(--accent-current) 14%, transparent);
   border-left: 5px solid var(--accent-current);
 }
+/* 英文タイトル直下の和訳サブタイトル (top-story / more-card 共用)。
+   親 (.top-story__title / .more-card__title) のフォントサイズ約 60% を兄弟要素として
+   配置するため、コンテキスト別に絶対値で指定 (`em` は親が <div> のため使えない)。
+   本文と同色 (--color-text) を維持して subtle すぎないバランスにする。 */
+.story-title-ja {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--color-text);
+  margin: -16px 0 22px;
+  padding: 0 22px;
+}
+.top-story .story-title-ja {
+  font-size: 25px; /* .top-story__title 42px の 60% */
+}
+.more-card .story-title-ja {
+  font-size: 16px; /* .more-card__title 27px の 60% */
+  padding: 0 12px;
+  margin: -10px 0 16px;
+}
 .top-story__bullets {
   list-style: none;
   padding: 0;
@@ -2612,12 +2632,14 @@ strong {
   .top-story__grid { grid-template-columns: 1fr; gap: 16px; }
   .top-story__thumb-wrap { height: 200px; }
   .top-story__title { font-size: 24px; }
+  .top-story .story-title-ja { font-size: 14px; margin: -8px 0 14px; padding: 0 12px; }
   .top-story__bullets li { font-size: 16px; line-height: 1.8; padding-left: 18px; }
   .more-stories { padding: 24px 16px; }
   .more-stories__head h2 { font-size: 22px; }
   .more-stories__grid { grid-template-columns: 1fr; gap: 24px; }
   .more-card__thumb-wrap { height: 140px; }
   .more-card__title { font-size: 21px; padding: 8px 12px; }
+  .more-card .story-title-ja { font-size: 13px; margin: -6px 0 12px; padding: 0 8px; }
   .more-card__bullets li { font-size: 16px; line-height: 1.8; padding-left: 18px; }
   .editorial { padding: 24px 16px; }
   .editorial__grid { grid-template-columns: 1fr; gap: 16px; }

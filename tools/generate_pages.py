@@ -55,6 +55,10 @@ _META_SOURCE_RE = re.compile(r"📰\s*([^··\n]+?)(?=\s*[··]|\s*🔗|\s*$)")
 _META_LINK_RE = re.compile(r"🔗\s*\[[^\]]+\]\((https?://[^)]+)\)")
 # タグ行: `#cat/fx #country/日本 ...`
 _TAG_LINE_RE = re.compile(r"^(?:#[\w/\-぀-ヿ一-鿿]+\s*){2,}$", re.MULTILINE)
+# 英文タイトル直下の和訳サブタイトル: `> [!ja] マイクロソフト、…` (Obsidian / GitHub callout)
+# 全文英文の記事に対してのみ digest md で 1 行付与し、page-template.html で
+# `<p class="story-title-ja">` として英文タイトル直下に小サイズ表示する。
+_TITLE_JA_RE = re.compile(r"^>\s*\[!ja\]\s*(.+?)\s*$", re.MULTILINE)
 # bullet
 _BULLET_RE = re.compile(r"^-\s+(.+)$", re.MULTILINE)
 # inline 装飾
@@ -246,6 +250,12 @@ def _parse_article_block(block: str) -> dict[str, Any] | None:
     if tm:
         thumb = tm.group(1)
 
+    # 英文タイトル直下の和訳サブタイトル (任意・英文タイトルのみ付与)
+    title_ja = ""
+    jm = _TITLE_JA_RE.search(block)
+    if jm:
+        title_ja = jm.group(1).strip()
+
     # bullets (HTML inline 変換済み)
     bullets: list[str] = []
     for bm in _BULLET_RE.finditer(block):
@@ -253,6 +263,7 @@ def _parse_article_block(block: str) -> dict[str, Any] | None:
 
     return {
         "title": title,
+        "title_ja": title_ja,
         "score": score,
         "date": date,
         "source": source,

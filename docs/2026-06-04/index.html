@@ -495,7 +495,8 @@
 // TODAY'S THEME 見出しは hero_phrase の文字数が日替わりで変わるため、
 // フォントを 1px ずつ縮小して「最大 3 行 (<br/> による 1 改行 + 各 span が最大 2 行に折返し)」に収める。
 // 高さ計測方式: 4 行以上に折り返している間だけ縮小し、グリッド幅・nowrap には触れない。
-// 単語途中での改行は CSS 側 (.home-hero__title の word-break: auto-phrase + overflow-wrap: normal) で抑止する。
+// 単語途中での改行は CSS 側 (.home-hero__title の word-break: keep-all + overflow-wrap: normal) で抑止し、
+// 句読点後の `<wbr>` (insert_wbr フィルタで挿入) と半角空白のみが break opportunity になる設計。
 (function () {
   function fitHeroTitle() {
     var el = document.querySelector('.home-hero__title');
