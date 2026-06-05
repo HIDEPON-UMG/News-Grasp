@@ -49,14 +49,26 @@ build/email_preview.png
 data/_session_urls.audit.log
 # 2026-06-01 追加: digest/DeepDive スパイクの生成物・中間データ・ワンオフスクリプト
 build/preview-*/
+build/_preview/
 build/_verify_*.png
 build/*_candidates.jsonl
 build/*_filtered.jsonl
 build/candidates_*.jsonl
+build/cands_*.jsonl
+build/filtered_*.jsonl
+build/dedup_*_stderr.txt
+build/dedup_work/
+build/candidates/
 build/gen_*_2026*.py
 build/gen_candidates.py
+build/gen_digest.py
+build/make_candidates.py
+build/update_articles.py
 build/append_2026*.py
 build/run_dedup.py
+build/_oneshot_*
+build/detect_dups.py
+build/apply_*_dedup.py
 tools/_*
 _poc_*/
 prompts/_poc-*
