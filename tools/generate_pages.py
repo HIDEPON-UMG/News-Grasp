@@ -1160,8 +1160,9 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         hero_lead = strip_inline(hero_story["summary_text"])
     if not hero_lead:
         hero_lead = f"本日 {len(same_day)} カテゴリのダイジェストをお届けします。"
-    if len(hero_lead) > 200:
-        hero_lead = hero_lead[:198] + "…"
+    # 切詰禁止: 「…」省略は読者に不全感を与えるため絶対 NG (2026-06-05 指摘)。
+    # `.home-hero__lead` は max-width: 560px の横固定だが縦は flex で伸びる設計なので、
+    # 長文でも枠がそのまま下に広がる。長すぎる lead は digest md オーサ側で短く書く方針。
 
     # Stats
     stories_total = sum(e.get("articles_count", 0) for e in same_day)
@@ -1623,8 +1624,9 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         reflection.get("lead")
         or (editorial["summary_text"] if editorial else "")
     ) or "本日の Editorial Digest 準備中。"
-    if len(hero_lead) > 260:
-        hero_lead = hero_lead[:258] + "…"
+    # 切詰禁止: 「…」省略は読者に不全感を与えるため絶対 NG (2026-06-05 指摘)。
+    # `.summary-hero__lead` の CSS は max-height / line-clamp なしで縦に flex する設計なので、
+    # 長文でも枠がそのまま下に広がる。長すぎる lead は digest md オーサ側で短く書く方針。
 
     # フレーズは frontmatter `theme:` 由来 (為替偏重だった summary_text から変更)。
     theme_phrase = (editorial.get("theme") if editorial else "") or ""
