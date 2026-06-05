@@ -19,9 +19,11 @@
 
 実装 commit (全て `HIDEPON-UMG/News-Grasp` `origin/main` push 済):
 
-- **`5f07ed3`** — 英文タイトル直下に和訳サブタイトル表示 + E2 + E3 + 前 handoff md 同梱 + SW_VERSION 2026-06-05-1
+- **`5f07ed3`** — 英文タイトル直下に和訳サブタイトル表示 (AI 5 件) + E2 + E3 + 前 handoff md 同梱 + SW_VERSION 2026-06-05-1
 - **`c02eeff`** — summary/home lead「…」省略撤廃 + SW_VERSION 2026-06-05-2
 - **`e71dcd3`** — 和訳を `<h2>/<h3>` 内 `<span>` に移動して背景枠内に格納 + フォント縮小 + SW_VERSION 2026-06-05-3
+- **`3c67f7b`** — 引継ぎ md `handoff_2026-06-05_title-ja-and-lead-fix.md` 同梱 (本ファイルの初版)
+- **`f123733`** — 本日全カテゴリ 15 件 (Mobility 3 / IT 3 / FX 5 / Manufacturing 1 / Economy 3) の英文記事に和訳サブタイトル遡及付与 + SW_VERSION 2026-06-05-4。当初 Q2 で「AI 5 記事のみ」スコープに絞ったのがユーザー意図と乖離していたとセッション後半で判明したため
 
 ---
 
@@ -216,7 +218,10 @@ home (`.home-hero__lead`) の `hero_lead` は実は `editorial_essay` 優先表�
 | D10 | フォントサイズ縮小 (top 25→18px / more 16→13px / モバイル top 14→12px / more 13→11px) | e71dcd3 | ユーザー要望「もう少し小さく」 |
 | D11 | SW_VERSION 3 回 bump (2026-06-04-7 → -1 → -2 → -3) | 全 commit | safe-commit ゲート 6 通過 |
 | D12 | ブラウザ実機検証 (chrome-devtools MCP) | e71dcd3 | AI ページ + summary ページ両方視認 OK |
-| D13 | URL gate 208/208 + pytest 265 passed (回帰ゼロ) | 全 commit | 3 回連続 |
+| D13 | URL gate 208/208 + pytest 265 passed (回帰ゼロ) | 全 commit | 4 回連続 |
+| D14 | 本日全カテゴリ 15 件の英文記事に和訳 callout 遡及付与 (Mobility 3 / IT 3 / FX 5 / Manufacturing 1 / Economy 3) | f123733 | story-title-ja 出力 grep で各カテゴリ詳細 HTML 確認 |
+| D15 | FX Write 一括で半角化した全角括弧 4 箇所を Edit で復元 | f123733 | git diff で意図せぬ変更ゼロ確認 |
+| D16 | ブラウザ実機検証 (chrome-devtools MCP で FX ページスクショ) | f123733 | 5 件全件 黄色背景枠内に和訳サブタイトル表示確認 |
 
 ---
 
@@ -290,6 +295,8 @@ home (`.home-hero__lead`) の `hero_lead` は実は `editorial_essay` 優先表�
   - `5f07ed3` — `home: 英文タイトル直下に和訳サブタイトル表示 + thumb/コメント整合化`
   - `c02eeff` — `home: hero/summary lead の「…」省略を撤廃 (枠を縦に flex で広げる設計)`
   - `e71dcd3` — `home: 和訳サブタイトルをタイトル背景枠内に格納 + フォント縮小`
+  - `3c67f7b` — `docs: 本セッション 3 commit (和訳併記/省略撤廃/背景枠内格納) の引継ぎ md 同梱`
+  - `f123733` — `home: 本日全カテゴリ 15 件の英文記事に和訳サブタイトル付与` (本ファイルの D14-D16 で追記)
 - 関連 git (前セッション基盤):
   - `b9ef540` — `home: 2026-06-05 AI digest の MS MAI / Codex thumb を実 OGP に置換 (handoff R5)`
   - `16ade3a` — `home: 2026-06-05 editorial theme と AI archive を本日 AI 主題に同期`
