@@ -271,6 +271,7 @@ DESIGN.md を一次ソースとし、`docs/assets/site.css` で実装。色 / �
 | watchlist 編集 | 管理人 (`data/watchlist.md` を編集 → push) | 必要に応じて |
 | Runner 起動 | Windows タスクスケジューラ | 毎朝 06:30 JST |
 | digest 生成・commit | Claude Code (Sonnet 4.6) | 毎朝 06:30〜06:45 JST |
+| pre-push 契約ゲート | Runner 内で URL liveness + `[!ja]` 和訳 callout 必須テスト (`tests/test_title_ja_coverage.py::test_english_articles_require_ja_callout`) を強制発火。fail なら push を阻止 (2026-06-06 SSG 失敗を受けて追加) | 自動 |
 | git push | Runner (Claude 終了後の ps1) | 自動 |
 | SSG ビルド | Runner 内で `tools/generate_pages.py` を実行 | 自動 |
 | Obsidian 同期 | Runner 内で `git pull/push` | 自動 |
