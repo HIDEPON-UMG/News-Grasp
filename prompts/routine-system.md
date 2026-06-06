@@ -362,6 +362,12 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   "title": "金利の天井とAIの底入れ",       // 大見出し（10〜20 字）
   "subtitle": "...",                     // サブタイトル（30〜50 字）
 
+  // ↓ frontmatter に出力する LP / overview banner の 2 トーン Hero 見出し。
+  // hl-gold「{hero_left}」と hl-blue「{hero_right}」を「{left} と {right}。」の 1 文に組む。
+  // 各 ≤14 字・単独で意味が通る名詞句。"AI" 等の裸の英略語 1 語で終わらせない。
+  "hero_left": "金利の天井",
+  "hero_right": "AIの底入れ",
+
   // ===== γ schema (Pattern D Editorial Summary 用) =====
 
   // Hero リード (150〜250 字。gold 12% 半透明ボックス + LP「本日のテーマ考察」に再利用)。
@@ -408,6 +414,10 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### γ schema の必須ルール
 
+- **`hero_left` / `hero_right` を必ず frontmatter に出力**。各 ≤14 字・それぞれ単独で意味が
+  通る名詞句で、「{hero_left} と {hero_right}。」が日本語の 1 文として成立させる。`"AI"` `"GPT-5"`
+  のような裸の英略語 1 語で終わらせない (LP hero が「Gemma 4 12B と AI」と断片化し意味不明改行に
+  なった 2026-06-06 事故を人手オーサで防ぐ)。frontmatter `title`/`theme` (長文可) とは別物。
 - **sections は必ず 9 件**。順序は 総論 → 為替 → AI → IT → モビリティ → 製造 → 経済 → ゲーム → 明日へ で固定。
   これは Pattern D のセクションタグ（`_SUMMARY_SECTION_TAGS` in `tools/generate_pages.py`）と
   揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし、土日は 製造・Economy なし）でも 9 件は守り、

@@ -411,6 +411,8 @@ def build_context(digest_path: Path) -> dict[str, Any]:
         "site_title": SITE_TITLE,
         "summary_text": summary_text,
         "theme": fm.get("theme", ""),
+        "hero_left": fm.get("hero_left", ""),
+        "hero_right": fm.get("hero_right", ""),
         "reflection": reflection,
         "articles": articles,
         # ----- Magazine Spread 追加 context -----
@@ -679,6 +681,8 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "canonical": ctx["canonical"],
         "summary_text": ctx.get("summary_text", ""),
         "theme": ctx.get("theme", ""),
+        "hero_left": ctx.get("hero_left", ""),
+        "hero_right": ctx.get("hero_right", ""),
         "reflection": ctx.get("reflection") or {},
         "og_image": ctx["og_image"],
         "accent": ctx["accent"],
@@ -991,6 +995,26 @@ def _split_theme_phrases(summary_text: str) -> tuple[str, str]:
     return ("", "")
 
 
+def _hero_phrases(editorial: dict[str, Any] | None) -> tuple[str, str]:
+    """Hero 2 トーン見出し (hl-gold / hl-blue) 用の左右フレーズを取得する。
+
+    frontmatter `hero_left` / `hero_right` (LLM が当日オーサする短い 2 句) を
+    最優先で使い、両方揃うときだけ採用する。欠ける過去 digest では従来の
+    ``_split_theme_phrases`` (theme の機械分割) にフォールバックする。
+
+    2026-06-06: 機械分割が長文 theme を断片化し「Gemma 4 12B と AI」のように
+    文意を失う事故 (LP hero の意味不明改行) を受け、LLM 直接出力を一次ソース化。
+    機械分割は過去 digest 互換のためフォールバックとして温存する。
+    """
+    if editorial:
+        left = (editorial.get("hero_left") or "").strip()
+        right = (editorial.get("hero_right") or "").strip()
+        if left and right:
+            return (left, right)
+    theme_phrase = (editorial.get("theme") if editorial else "") or ""
+    return _split_theme_phrases(theme_phrase)
+
+
 def _emphasize_entities(text: str, tags: list[str]) -> str:
     """text 内に出現する固有名詞 (tags 由来) を hl-gold マーカーで強調した安全 HTML。
 
@@ -1197,8 +1221,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     # 旧実装は editorial.summary_text (= 本文先頭の [!summary] = 為替カテゴリ要約) を使い
     # 為替語句しか出なかったため、日全体を表す theme 由来に変更。
     reflection = (editorial.get("reflection") if editorial else None) or {}
-    theme_phrase = (editorial.get("theme") if editorial else "") or ""
-    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_phrase)
+    hero_phrase_left, hero_phrase_right = _hero_phrases(editorial)
 
     # 本日のテーマ考察 (多カテゴリ横断・150〜250字)。考察 lead の末尾遷移句だけ除去し、
     # 装飾記法 (`[[ ]]` `__ __` `**`) は保持 → テンプレ側で render_emph により
@@ -1316,9 +1339,8 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
 
     # Theme banner: 同日 summary digest から 2 フレーズ抽出
     editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
-    # フレーズは frontmatter `theme:` 由来 (日全体を表す)。為替偏重だった summary_text から変更。
-    theme_phrase = (editorial.get("theme") if editorial else "") or ""
-    hero_phrase_left, hero_phrase_right = _split_theme_phrases(theme_phrase)
+    # フレーズは frontmatter `hero_left`/`hero_right` (LLM オーサ) 優先、無ければ theme 機械分割。
+    hero_phrase_left, hero_phrase_right = _hero_phrases(editorial)
 
     # Stats
     stories_total = sum(r["articles_count"] for r in cat_rows)
@@ -1682,9 +1704,8 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     # `.summary-hero__lead` の CSS は max-height / line-clamp なしで縦に flex する設計なので、
     # 長文でも枠がそのまま下に広がる。長すぎる lead は digest md オーサ側で短く書く方針。
 
-    # フレーズは frontmatter `theme:` 由来 (為替偏重だった summary_text から変更)。
-    theme_phrase = (editorial.get("theme") if editorial else "") or ""
-    left, right = _split_theme_phrases(theme_phrase)
+    # フレーズは frontmatter `hero_left`/`hero_right` 優先、無ければ theme 機械分割 (summary subtitle fallback 用)。
+    left, right = _hero_phrases(editorial)
     hero_subtitle = reflection.get("subtitle") or (
         f"{left}と{right}" if left and right else ""
     )

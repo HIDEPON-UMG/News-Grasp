@@ -30,7 +30,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
-from generate_pages import _split_theme_phrases  # noqa: E402
+from generate_pages import _hero_phrases, _split_theme_phrases  # noqa: E402
 
 
 # ── 過去 7 日 (実 theme) で必ず非空を locked-in ────────────────────────────────
@@ -104,3 +104,55 @@ def test_returns_within_upper_limit():
     left, right = _split_theme_phrases(theme)
     assert 2 <= len(left) <= 22
     assert 2 <= len(right) <= 22
+
+
+# ── _hero_phrases: frontmatter 優先 + theme 機械分割フォールバック ──────────────
+#
+# 2026-06-06: 長文 theme を _split_theme_phrases に通すと断片化し「Gemma 4 12B と AI」の
+# ように文意を失う事故 (LP hero の意味不明改行) が発生。frontmatter hero_left/right を
+# 一次ソース化し、欠ける過去 digest だけ機械分割にフォールバックする設計を locked-in する。
+
+# 事故当日 (06-06) の実 theme。これ自体が機械分割で断片化する = バグの再現データ。
+_ACCIDENT_THEME = "Gemma 4 12B とロボタクシー一般開放 — AI と MaaS が同じ日に民主化の扉を開いた"
+
+
+def test_split_fragments_long_theme():
+    """回帰の証拠: 長文 theme を機械分割すると「Gemma 4 12B」「AI」に断片化する。
+
+    この断片化こそが _hero_phrases (frontmatter 優先) を導入した動機。前提が崩れたら
+    _split の挙動が変わったということなので、_hero_phrases の存在意義を再確認する。
+    """
+    assert _split_theme_phrases(_ACCIDENT_THEME) == ("Gemma 4 12B", "AI")
+
+
+def test_hero_phrases_prefers_frontmatter():
+    """frontmatter hero_left/right が揃えば _split を一切通さず人手フレーズを返す。"""
+    editorial = {
+        "hero_left": "Gemmaのオープン化",
+        "hero_right": "ロボタクシー開放",
+        "theme": _ACCIDENT_THEME,  # 断片化する theme があっても hero が優先される
+    }
+    assert _hero_phrases(editorial) == ("Gemmaのオープン化", "ロボタクシー開放")
+
+
+def test_hero_phrases_falls_back_when_missing():
+    """hero_left/right が無い過去 digest は従来の theme 機械分割にフォールバックする。"""
+    editorial = {"theme": _ACCIDENT_THEME}
+    assert _hero_phrases(editorial) == _split_theme_phrases(_ACCIDENT_THEME)
+
+
+def test_hero_phrases_falls_back_when_partial():
+    """片側だけ (hero_left のみ等) では不完全とみなし機械分割にフォールバックする。"""
+    editorial = {"hero_left": "Gemmaのオープン化", "theme": _ACCIDENT_THEME}
+    assert _hero_phrases(editorial) == _split_theme_phrases(_ACCIDENT_THEME)
+
+
+def test_hero_phrases_none_editorial():
+    """editorial 不在 (summary digest 無し) は空を返しテンプレ fallback に委ねる。"""
+    assert _hero_phrases(None) == ("", "")
+
+
+def test_hero_phrases_strips_whitespace():
+    """前後空白は除去して採用する (YAML スカラーの揺れ吸収)。"""
+    editorial = {"hero_left": "  AIの民主化  ", "hero_right": " 自動運転の解放 "}
+    assert _hero_phrases(editorial) == ("AIの民主化", "自動運転の解放")

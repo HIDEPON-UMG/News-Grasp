@@ -24,6 +24,8 @@ tags:
 {{DYNAMIC_TAGS_LIST}}
 categories: [{{CATEGORY_IDS_CSV}}]
 theme: "{{REFLECTION_TITLE}}"
+hero_left: "{{HERO_LEFT}}"
+hero_right: "{{HERO_RIGHT}}"
 ---
 
 # News Grasp #{{ISSUE_NO}} — 時勢を掴み、日々に新たに。
