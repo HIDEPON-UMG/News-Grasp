@@ -81,6 +81,15 @@ Codex 移行を理由に巻き込まない ([[feedback_delete_scope_stay_within_
 - ルーチン構造 (digest → DeepDive → URL gate → push → docs → push → send_push)
 - `data/articles.jsonl` スキーマ / 採点軸 (4 軸+ガードレール・Manufacturing 特則・DeepDive 3 軸ゲート・R1-R5) / 強調記法 3 階層 / Pattern D γ schema
 
+> **2026-06-06 追記 (commit `e9fa284`)**: 上記温存対象の「Pattern D γ schema」「`prompts/obsidian-template.md`」
+> 「`tools/generate_pages.py`」に LP hero 見出し用の `hero_left` / `hero_right` (frontmatter・各 ≤14 字・
+> 「{left} と {right}。」で 1 文になる 2 句) を追加した。`generate_pages.py` の `_hero_phrases` が一次ソースで、
+> 欠落時のみ旧 `_split_theme_phrases` (theme 機械分割) にフォールバックする。
+> **A 項目 (§3) で `prompts/routine-system.md` を Codex 流に書き換える際、γ schema 必須ルールの
+> `hero_left` / `hero_right` 出力指示を必ず保持すること** (A 項目の改修対象はツール記述のみなので通常は保持されるが、
+> 明示的に申し送る)。落とすと Codex 生成 digest の frontmatter に hero 2 句が出ず、`generate_pages.py` が機械分割
+> フォールバックに戻って「Gemma 4 12B と AI」型の意味不明改行 (LP hero の 3 行バラけ) が再発する。
+
 ## 6. 実行に効く環境事実
 
 - **secrets パス** (sandbox `--add-dir` 対象・workspace 外・生フルパス): `C:\Users\hidek\.secrets\news-grasp-smtp.txt` (Gmail App Password) / `C:\Users\hidek\.secrets\news-grasp-vapid.pem` (Web Push VAPID 秘密鍵)
