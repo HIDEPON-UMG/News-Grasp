@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260607 --- AI</title>
+<meta name="description" content="AnthropicがOpenAIを抜いて最大AI企業の地位に就きIPO申請でAI投資の勢力図が一変。AI CEOらが生物兵器悪用リスクを議会に警告し産業界横断のガバナンス議論が加速。Boston Dynamics×DeepMindのロボット統合はエージェントAIが工場フロアに降りてきた象徴。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-07/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260607 --- AI">
+<meta property="og:description" content="AnthropicがOpenAIを抜いて最大AI企業の地位に就きIPO申請でAI投資の勢力図が一変。AI CEOらが生物兵器悪用リスクを議会に警告し産業界横断のガバナンス議論が加速。Boston Dynamics×DeepMindのロボット統合はエージェントAIが工場フロアに降りてきた象徴。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-07/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260607 --- AI">
+<meta name="twitter:description" content="AnthropicがOpenAIを抜いて最大AI企業の地位に就きIPO申請でAI投資の勢力図が一変。AI CEOらが生物兵器悪用リスクを議会に警告し産業界横断のガバナンス議論が加速。Boston Dynamics×DeepMindのロボット統合はエージェントAIが工場フロアに降りてきた象徴。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-07 · #20260607</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">🤖</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">AnthropicがOpenAIを抜いて最大AI企業の地位に就きIPO申請でAI投資の勢力図が一変。AI CEOらが生物兵器悪用リスクを議会に警告し産業界横断のガバナンス議論が加速。Boston Dynamics×DeepMindのロボット統合はエージェントAIが工場フロアに降りてきた象徴。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">83</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·07</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260607</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-07 06:30 · Fortune</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://fortune.com/2026/06/05/openai-anthropic-microsoft-ceos-congress-bioweapon-safeguards/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://fortune.com/img-assets/wp-content/uploads/2026/06/GettyImages-2265991617-1-e1780603648257.jpg?resize=1200,600" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://fortune.com/2026/06/05/openai-anthropic-microsoft-ceos-congress-bioweapon-safeguards/" rel="noopener nofollow" target="_blank" style="color: inherit;">AI CEO連名でAIによる生物兵器脅威を議会に警告——合成DNA規制を要求</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>・<strong class="emph-bold">OpenAI</strong>・<strong class="emph-bold">Microsoft AI</strong>・<strong class="emph-bold">Google DeepMind</strong>の4CEO（アモデイ/アルトマン/スレイマン/ハサビス）が連名で米議会に書簡——「<strong>AIが生物兵器設計の技術的障壁を侵食している</strong>」と警鐘。</li><li>合成DNAの<strong>オンライン注文・AI支援設計</strong>への強制スクリーニングを求め、Twist BioscienceやAnsa Biotechnologiesも署名——<strong>産業界横断の規制要求</strong>として異例。</li><li><span class="emph-und">競合4社が脅威で連帯した日——AIリスクガバナンスが新局面に入った。</span></li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">🤖 ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-07</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More 🤖 stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-07 07:00</span>
+        <span>· 24/7 Wall St.</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://247wallst.com/investing/2026/06/04/960-billion-anthropic-beats-openai-to-the-ipo-filing-in-a-race-that-could-reshape-ai-investing/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://247wallst.com/wp-content/uploads/2026/06/960-billion-anthropic-beats-openai-to-the-ipo-fili-featured-1780422576781.webp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://247wallst.com/investing/2026/06/04/960-billion-anthropic-beats-openai-to-the-ipo-filing-in-a-race-that-could-reshape-ai-investing/" rel="noopener nofollow" target="_blank">Anthropic、9600億ドル評価額でOpenAI先行してIPO申請——AI投資の勢力図一変</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>が65BドルシリーズH（評価額965Bドル）完了後4日でSECに機密IPO申請——2ヶ月前の350Bドル評価から<strong>約3倍</strong>にまで急騰した驚異的なバリュエーション。</li><li><strong class="emph-bold">OpenAI</strong>は122Bドル調達で<strong>852Bドル評価</strong>で後追いの公算大。秋2026のIPO市場で<strong class="emph-bold">SpaceX</strong>含め<strong>3社合計200B超</strong>の新規公開価値が生まれる見通し。</li><li><span class="emph-und">ドットコムバブルとの比較論が飛び交う中、AI IPO戦争の火蓋が切られた。</span></li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-07 07:30</span>
+        <span>· CNBC</span>
+        <span class="more-card__score">83</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cnbc.com/2026/05/28/anthropic-open-ai-startup-value.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.cnbcfm.com/api/v1/image/108267419-1771518692466-gettyimages-2261864825-INDIA_AI_SUMMIT.jpeg?v=1776348710&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cnbc.com/2026/05/28/anthropic-open-ai-startup-value.html" rel="noopener nofollow" target="_blank">Anthropic、OpenAIを抜いて最大AI企業へ——1兆ドル評価に接近</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Anthropic</strong>の最新ラウンド後評価額が<strong class="emph-bold">OpenAI</strong>の852Bドルを上回り、<strong>Claude</strong>を軸に企業利用で圧倒的な成長——2026年初来のエージェントブームが追い風。</li><li><strong>Googleによる400億ドル追加投資</strong>（今回ラウンド含む累積）が評価額急騰の構造的要因。<strong class="emph-bold">Amazon</strong>のAWS分も合わせ超大手2社の戦略資産化が確定。</li><li><span class="emph-und">投資家の格付けでAnthropicはOpenAIの上位互換——次の1兆ドルクラブ入りは時間の問題か。</span></li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-07 08:00</span>
+        <span>· Robotics and Automation News</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://roboticsandautomationnews.com/2026/04/15/boston-dynamics-integrates-google-deepminds-gemini-robotics-model-into-spot-inspection-platform/100585/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://roboticsandautomationnews.com/wp-content/uploads/2026/04/boston-dynamics-aivi-5sboard.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://roboticsandautomationnews.com/2026/04/15/boston-dynamics-integrates-google-deepminds-gemini-robotics-model-into-spot-inspection-platform/100585/" rel="noopener nofollow" target="_blank">ボストン・ダイナミクス、Google DeepMindのGemini Robotics-ERをSpotに統合</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Boston Dynamics</strong>が<strong class="emph-bold">Google DeepMind</strong>の<strong>Gemini Robotics-ER 1.6</strong>（高度空間推論モデル）をSpotの<strong>AIVI（AI Visual Inspection）</strong>システムに組み込み——危険なデブリ検出・ゲージ読み取り・VLAモデル呼び出しを自律化。</li><li><strong class="emph-bold">Orbit</strong>ソフトウェアとの統合により、従来は人間の判断が必要だった<strong>現場判断の80%以上をエッジAIで自動化</strong>。産業用途での実績が自動車製造・プラント保守に拡張中。</li><li><span class="emph-und">ロボット×基盤モデルの産業化が現実になった——AIエージェント化の最前線は工場フロアに移った。</span></li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-07 08:30</span>
+        <span>· CNBC</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cnbc.com/2026/02/17/meta-nvidia-deal-ai-data-center-chips.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.cnbcfm.com/api/v1/image/108256656-1771364504826-108256656-1769211369860-Met_Hyperion_Louisiana_data_center_Jan_9_2026.png?v=1773173259&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cnbc.com/2026/02/17/meta-nvidia-deal-ai-data-center-chips.html" rel="noopener nofollow" target="_blank">MetaとNVIDIAがAIチップ大型契約拡大——Blackwell数百万基でLlama次世代学習基盤を強化</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Meta</strong>が<strong class="emph-bold">NVIDIA</strong>とマルチイヤー・マルチ世代の戦略パートナーシップを締結——<strong>Blackwell GPU数百万基</strong>＋Rubin GPU＋Spectrum-X Ethernetスイッチを組み合わせた<strong>超大規模データセンター</strong>をルイジアナ州に構築中。</li><li>パートナーシップには<strong>NVIDIAのCPU</strong>も含まれ、GPU以外の計算基盤でもNVIDIA依存が拡大。一方でMetaはGoogleのTPUとも交渉——<strong>NVIDIA依存リスクの分散</strong>が経営課題化。</li><li><span class="emph-und">Metaの計算予算増大は<strong class="emph-bold">Llama 4</strong>トレーニングの規模をGPT-5レベルに引き上げるシグナル。</span></li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Anthropic</strong>の$965B評価は<strong>2ヶ月で3倍</strong>というフィンテックバブル超えのペース。同時にOpenAI・Anthropic・MicrosoftのCEOが連名で生物兵器リスクを議会に警告した——<strong>成長と危機が同居する構造</strong>がAI産業の現実だ。<span class="emph-und">AIは今、資本・規制・産業実装の3軸が同時に動く。</span></p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-07/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-07
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260607 --- IT-Consulting</title>
+<meta name="description" content="AccentureのQ3は増収+10%・AI予約受注倍増で通年ガイダンスを上方修正。Google Cloud 750Mドルパートナーファンドで NTT DATAが5000人体制。McKinsey/BCG/BainはAIで人時コスト30-50%削減しフィー体系を解体中。DX需要は本格拡大フェーズへ。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-06-07/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260607 --- IT-Consulting">
+<meta property="og:description" content="AccentureのQ3は増収+10%・AI予約受注倍増で通年ガイダンスを上方修正。Google Cloud 750Mドルパートナーファンドで NTT DATAが5000人体制。McKinsey/BCG/BainはAIで人時コスト30-50%削減しフィー体系を解体中。DX需要は本格拡大フェーズへ。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-06-07/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260607 --- IT-Consulting">
+<meta name="twitter:description" content="AccentureのQ3は増収+10%・AI予約受注倍増で通年ガイダンスを上方修正。Google Cloud 750Mドルパートナーファンドで NTT DATAが5000人体制。McKinsey/BCG/BainはAIで人時コスト30-50%削減しフィー体系を解体中。DX需要は本格拡大フェーズへ。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-07 · #20260607</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">💼</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">AccentureのQ3は増収+10%・AI予約受注倍増で通年ガイダンスを上方修正。Google Cloud 750Mドルパートナーファンドで NTT DATAが5000人体制。McKinsey/BCG/BainはAIで人時コスト30-50%削減しフィー体系を解体中。DX需要は本格拡大フェーズへ。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">80</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·07</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260607</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-07 07:00 · ad-hoc-news.de</span>
+    <span class="top-story__score">85</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.ad-hoc-news.de/boerse/news/ueberblick/accenture-plc-stock-ie00b4bnmy34-consulting-giant-reports-solid-q3/69297123" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://mdb.ad-hoc-news.de/bild/bild-2404982_1200_800.webp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.ad-hoc-news.de/boerse/news/ueberblick/accenture-plc-stock-ie00b4bnmy34-consulting-giant-reports-solid-q3/69297123" rel="noopener nofollow" target="_blank" style="color: inherit;">Accenture Q3 FY2026：増収+10%・EPS上振れで通期ガイダンス引き上げ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Accenture</strong>のQ3 FY2026売上高は<strong>16.1Bドル（前年比+10%）</strong>、EPS 3.15ドルでコンセンサス上振れ——AI・クラウド・エンタープライズプラットフォーム需要が強く<strong>DX案件バックログ65Bドルに膨張</strong>。</li><li>通年ガイダンスを<strong>定数通貨ベース+8-9%</strong>に上方修正（前回+7-8%）。<strong>AI・データ予約受注が前年比2倍以上</strong>のペースで拡大中で、生成AIが「実験→本番」フェーズへの移行を牽引。</li><li><span class="emph-und">AIコンサルが産業横断需要を独占しつつある——Accentureは実質「エンタープライズAI SIer」に変身した。</span></li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">💼 IT &amp; CONSULTING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-07</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More 💼 stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-07 07:30</span>
+        <span>· The Next Web</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://media.thenextweb.com/2026/04/google-cloud-750m-partner-fund-agentic-ai.avif" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai" rel="noopener nofollow" target="_blank">Google Cloud、エージェントAI展開に750M規模のパートナーファンド——Accenture・Deloitte・NTT DATAが5000人投入</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Google Cloud</strong>がCloud Next 2026でパートナーのエージェントAI展開支援に<strong>750Mドル投資</strong>を発表——超大型ハイパースケーラーとしては最大規模のパートナー投資。<strong class="emph-bold">Accenture</strong>は450+エージェント、<strong class="emph-bold">KPMG</strong>100Mドル、<strong class="emph-bold">PwC</strong>400Mドルを誓約。</li><li><strong class="emph-bold">NTT DATA</strong>は<strong>5000人のGoogleクラウドエンジニア認定</strong>を目標に設定し、製造・金融・ヘルスケア向け業界特化エージェントを開発——大規模SIのAI武装化が加速。</li><li><span class="emph-und">「AIエージェント時代」の戦場はハイパースケーラー×SIのエコシステム形成——NTT DATAの5000人誓約がその象徴。</span></li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-07 08:00</span>
+        <span>· Accenture Newsroom</span>
+        <span class="more-card__score">80</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://newsroom.accenture.com/news/2026/ntt-docomo-global-and-accenture-launch-universal-wallet-infrastructure-powering-the-trusted-future-of-a-data-led-ai-driven-digital-society" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://newsroom.accenture.com/default-meta-image.png?width=1200&amp;format=pjpg&amp;optimize=medium" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://newsroom.accenture.com/news/2026/ntt-docomo-global-and-accenture-launch-universal-wallet-infrastructure-powering-the-trusted-future-of-a-data-led-ai-driven-digital-society" rel="noopener nofollow" target="_blank">NTT DOCOMO GLOBAL×AccentureがUniversal Wallet Infrastructure始動——デジタル信頼の新基盤</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NTT DOCOMO GLOBAL</strong>と<strong class="emph-bold">Accenture</strong>が<strong>Universal Wallet Infrastructure（UWI）</strong>を共同開発・展開——デジタルアイデンティティ・マネー・資産・書類をひとつのウォレットで<strong>発行・検証・管理</strong>できるエンタープライズ基盤。</li><li>AIドリブン社会においてデジタル信頼の<strong>インフラ層</strong>を握る狙いで、金融・行政・企業間サプライチェーンの<strong>クロスドメイン認証</strong>を統合。日本発のグローバルデジタルインフラ案件として注目。</li><li><span class="emph-und">AI時代のデジタル信頼をDocomoとAccentureが担う——インフラ所有者が次の競争優位を決める。</span></li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-07 08:30</span>
+        <span>· AOL Finance</span>
+        <span class="more-card__score">75</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.aol.com/finance/ai-forcing-mckinsey-bcg-bain-063300951.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://s.yimg.com/lo/mysterio/api/C60CDC0356908C5C8476D5E5CC919FB9693718AD2270E04C973627C5478EB424/subgraphmysterio/resizefill_w1200_h675;quality_80;format_webp/https:%2F%2Fmedia.zenfs.com%2Fen%2Faol_thestreet_articles_772%2F5cfdb4cdac382a412d031c77c0d866df" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.aol.com/finance/ai-forcing-mckinsey-bcg-bain-063300951.html" rel="noopener nofollow" target="_blank">AIがマッキンゼー・BCG・ベインのコンサルフィー体系を揺さぶる</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">マッキンゼー</strong>・<strong class="emph-bold">BCG</strong>・<strong class="emph-bold">ベイン</strong>がAIツール（Lilli・GreenAI等）を内製展開し<strong>人時コストを30〜50%削減</strong>——これが<strong>クライアントへのフィー転嫁圧力</strong>に直結し、従来の「人月課金」モデルが崩壊しつつある。</li><li>BCGのコンサルタントの<strong>72%以上</strong>がAI活用中、<strong class="emph-bold">ベイン</strong>は収益の30%がAI関連で<strong>2年内に50%超</strong>を目指す——フィー体系の再設計がコンサル業界の最大経営課題に。</li><li><span class="emph-und">人を削る→フィーを下げる→再投資でAIに張る——コンサルの新たな収益循環モデルが始動した。</span></li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>AccentureのQ3は増収+10%・AI予約受注倍増で通年ガイダンスを上方修正。Google Cloud 750Mドルパートナーファンドで NTT DATAが5000人体制。McKinsey/BCG/BainはAIで人時コスト30-50%削減しフィー体系を解体中。DX需要は本格拡大フェーズへ。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-07/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-06-07
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
