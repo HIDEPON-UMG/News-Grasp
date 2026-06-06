@@ -50,6 +50,7 @@ needs_network = pytest.mark.skipif(
 )
 
 
+@pytest.mark.network
 @needs_network
 def test_recent_article_urls_are_alive():
     """直近 7 日の articles.jsonl URL がすべて生存している契約。

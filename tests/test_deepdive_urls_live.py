@@ -126,6 +126,7 @@ needs_network = pytest.mark.skipif(
 )
 
 
+@pytest.mark.network
 @needs_network
 def test_require_live_urls_raises_on_fabricated_url(tmp_path: Path):
     """捏造 URL (確実に 404 になるパス) を含む md が DeepDiveUrlError で弾かれる契約。"""
@@ -145,6 +146,7 @@ date: "2026-06-03"
     assert "[refs]" in str(ei.value)
 
 
+@pytest.mark.network
 @needs_network
 def test_require_live_urls_passes_on_normal_urls(tmp_path: Path):
     """安定して生存する公開 URL のみなら通る契約 (anti-bot 復旧含む)。"""
@@ -164,6 +166,7 @@ date: "2026-06-03"
     assert all(v.ok for v in verdicts)
 
 
+@pytest.mark.network
 @needs_network
 def test_all_published_deepdives_have_live_urls():
     """公開済み DeepDive md 全件 (digest/DeepDive/*.md) は生存 URL のみで構成されている。
