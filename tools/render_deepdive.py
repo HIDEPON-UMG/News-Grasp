@@ -618,6 +618,59 @@ def _band_layout(
 
     x: dict[str, float] = {}
 
+    def _peer_aware_row(row: list[str]) -> list[str]:
+        """同段 peer エッジ (競合/対立/協調的競合) で結ばれたノードが隣接する順列に並べ替える。
+
+        2026-06-06 BYD↔NVIDIA 競合線が同段中央の Tesla を貫通した事故の構造解決。
+        bands モードで anchor row を出現順 (例: [byd, tesla, nvidia]) で `_even_slots`
+        すると、hub-and-spoke (hub=BYD, spokes=Tesla/NVIDIA) のとき hub が端に置かれ、
+        両端 spoke を結ぶ peer 線が中央の他ノードを真っ二つに貫通する宿命になる。
+
+        対策: row 内の peer エッジを集計し、(1) 全 peer を 1 ノードが抱える星型なら
+        hub を中央、spokes を左右対称に振り分ける / (2) それ以外は最大 peer-degree
+        ノードから BFS 連結展開して path 状に並べる。peer 接続のないノードは末尾に
+        元の出現順で追加する。これにより peer 線が他ノードを貫通する配置を
+        `_even_slots` 段階で構造的に排除する ([[feedback_relation_diagram_semantic_layout]]
+        「エッジ線がノード円を貫通しない」を境界 1 箇所で保証 / [[feedback_check_design_principles]]
+        1 段「失敗を表現できない構造に変える」)。
+        """
+        rs = set(row)
+        nbr_peer: dict[str, list[str]] = {i: [] for i in row}
+        for e in rival_edges:
+            a, b = str(e.get("from", "")), str(e.get("to", ""))
+            if a in rs and b in rs and a != b:
+                nbr_peer[a].append(b)
+                nbr_peer[b].append(a)
+        if all(not v for v in nbr_peer.values()):
+            return list(row)
+        total_pairs = sum(len(v) for v in nbr_peer.values()) // 2
+        hubs = [i for i in row
+                if len(nbr_peer[i]) == total_pairs and total_pairs >= 2]
+        if hubs:
+            hub = hubs[0]
+            spokes = sorted(nbr_peer[hub], key=lambda j: row.index(j))
+            left, right = [], []
+            for j, sp in enumerate(spokes):
+                (left if j % 2 == 0 else right).append(sp)
+            ordered = list(reversed(left)) + [hub] + right
+        else:
+            start = max(row, key=lambda i: (len(nbr_peer[i]), -row.index(i)))
+            ordered, seen = [], {start}
+            cur = [start]
+            while cur:
+                nxt = []
+                for u in cur:
+                    ordered.append(u)
+                    for v in nbr_peer[u]:
+                        if v not in seen:
+                            seen.add(v)
+                            nxt.append(v)
+                cur = nxt
+        for i in row:
+            if i not in ordered:
+                ordered.append(i)
+        return ordered
+
     def _even_slots(order_ids: list[str]) -> None:
         m = len(order_ids)
         if m == 1:
@@ -645,6 +698,17 @@ def _band_layout(
             xs = [v + shift for v in xs]
         for i, v in zip(items, xs):
             x[i] = v
+
+    # anchor row (事業者段) の row 自体を peer-aware 順に置換する。初期 _even_slots
+    # だけでなく、後段の barycenter sweep で tie-break として元 row 順が参照される
+    # (`sorted(row, key=desired)` は stable) ため、rows 自体を置換しないと sweep で
+    # 順序が元に戻ってしまう。rows を更新することで初期配置と sweep の両方が同じ
+    # peer-aware 順序を保ち、hub-and-spoke 型の peer 線が同段他ノードを貫通する
+    # 配置が構造的に排除される (2026-06-06 BYD↔NVIDIA 線が Tesla を貫通した事故の
+    # 境界 1 箇所集約)。single_op_band は別系統 (L/R 二分) なので対象外。
+    if not single_op_band:
+        rows = [_peer_aware_row(list(row)) if k in anchor_rows else row
+                for k, row in enumerate(rows)]
 
     # 初期 x: 全 band を均等スロット (単一事業者 band のみ競合 2-color で L→R)
     for k, row in enumerate(rows):

@@ -389,6 +389,72 @@ def test_relations_bands_high_density_no_label_overlap() -> None:
                 f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
 
 
+# ── relations 同段 peer エッジが他ノード貫通禁止 (★2026-06-06 ユーザー指摘) ──────
+# 2026-06-06 DeepDive の関係図で BYD↔NVIDIA 競合線が同段中央の Tesla ノードを
+# 完全貫通 (距離 0.0) する事故が発生。bands モードで上段事業者を出現順で
+# `_even_slots` した結果、hub-and-spoke の peer 関係 (hub=BYD, spokes=Tesla/NVIDIA)
+# が [byd, tesla, nvidia] と並び、両端 byd-nvidia 線が中央 tesla を真っ二つに貫通した。
+# レンダラ側で band 内順序を peer 隣接で決定論的に並べ直す ([[feedback_relation_diagram_semantic_layout]]
+# 「エッジ線がノード円を貫通しない」を _band_layout の境界 1 箇所で構造的に保証する
+# = [[feedback_check_design_principles]] 1 段「失敗を表現できない構造に変える」)。
+_SAME_BAND_PEER_REL = {
+    "title": "上段 3 事業者 + 中段クライアント + 下段規制 (今日の DeepDive 同構造)",
+    "nodes": [
+        {"id": "byd", "label": "BYD", "group": "中国EV勢"},
+        {"id": "tesla", "label": "Tesla", "group": "米EV勢"},
+        {"id": "jp", "label": "トヨタ / ホンダ", "group": "日系メーカー"},
+        {"id": "gov", "label": "中国当局(工信部)", "group": "規制"},
+        {"id": "nvidia", "label": "NVIDIA", "group": "半導体サプライヤ"},
+    ],
+    "edges": [
+        # hub=BYD の星型 peer (上段内): BYD↔Tesla と BYD↔NVIDIA の 2 本
+        {"from": "byd", "to": "tesla", "label": "正面衝突", "kind": "競合"},
+        {"from": "byd", "to": "nvidia", "label": "内製で外部依存脱却", "kind": "競合"},
+        # 段跨ぎ (bands rank に効く)
+        {"from": "byd", "to": "jp", "label": "中国でシェア奪取", "kind": "競合"},
+        {"from": "nvidia", "to": "jp", "label": "ADAS供給", "kind": "供給"},
+        # 規制 (下段 gov → 上段 2 社)
+        {"from": "gov", "to": "byd", "label": "NEV政策で後押し", "kind": "規制"},
+        {"from": "gov", "to": "tesla", "label": "FSDは制約下", "kind": "規制"},
+    ],
+}
+
+
+def test_relations_same_band_peer_edge_no_pierce() -> None:
+    """同段に並ぶ事業者の peer エッジ (競合/対立) 線は、端点以外のノード円を貫通しない。
+
+    なぜ重要か: 2026-06-06 DeepDive で BYD↔NVIDIA 競合線が同段中央の Tesla ノードを
+    距離 0.0 で完全貫通した実害。bands モードで anchor row を出現順で配置すると、
+    hub-and-spoke 型の peer 関係 (hub=BYD, spokes=Tesla/NVIDIA) のとき hub が
+    端に置かれ、両端 spoke を結ぶ peer 線が中央の他ノードを貫通する宿命になる。
+    `_peer_aware_row` で hub を中央、spokes を左右対称に振り分ければ構造的に
+    貫通しない (= [[feedback_relation_diagram_semantic_layout]] 規約の境界 1 箇所集約)。
+    """
+    from tools.render_deepdive import layout_relations
+    rel = _SAME_BAND_PEER_REL
+    lay = layout_relations(rel)
+    pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
+    # hub (BYD) と spokes (Tesla, NVIDIA) は同段
+    assert pos["byd"][1] == pos["tesla"][1] == pos["nvidia"][1], \
+        "上段 3 事業者が同段にない"
+    # hub は spokes 2 つの x 座標の間に置かれる (= 端でない中央配置)
+    spoke_xs = sorted([pos["tesla"][0], pos["nvidia"][0]])
+    assert spoke_xs[0] < pos["byd"][0] < spoke_xs[1], \
+        f"hub (BYD x={pos['byd'][0]}) が spokes (Tesla x={pos['tesla'][0]}, " \
+        f"NVIDIA x={pos['nvidia'][0]}) の間に無い (= 中央配置されていない)"
+
+    svg = relations_svg(rel)
+    circles = _node_circles(svg)
+    segs = [(float(a), float(b), float(c), float(d))
+            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
+    assert len(circles) == 5 and len(segs) >= 6
+    # 全エッジ線が、端点以外のノード円を貫通しない (今日の事故の直接固定)
+    for seg in segs:
+        for ncx, ncy, ncr in circles:
+            assert _seg_point_dist(seg, ncx, ncy) >= ncr - 1.0, \
+                f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
+
+
 def test_relations_too_many_edges_hard_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """関係図の実描画ラベルが 9 枚以上 (上限 8 枚) の DeepDive md は build が hard fail。
 
