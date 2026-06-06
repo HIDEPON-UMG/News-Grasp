@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260606 — Game</title>
+<meta name="description" content="ポケモン チャンピオンズが6月17日に iOS/Android 同時配信決定。Nintendo Direct が6月9日に開催確定（内部情報リーク）で Switch 2 向けタイトルラインが明らかになる見通し。バイオハザード レクイエムは690万本を突破しカプコン決算は2ケタ増収増益。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/game/2026-06-06/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260606 — Game">
+<meta property="og:description" content="ポケモン チャンピオンズが6月17日に iOS/Android 同時配信決定。Nintendo Direct が6月9日に開催確定（内部情報リーク）で Switch 2 向けタイトルラインが明らかになる見通し。バイオハザード レクイエムは690万本を突破しカプコン決算は2ケタ増収増益。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/game/2026-06-06/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260606 — Game">
+<meta name="twitter:description" content="ポケモン チャンピオンズが6月17日に iOS/Android 同時配信決定。Nintendo Direct が6月9日に開催確定（内部情報リーク）で Switch 2 向けタイトルラインが明らかになる見通し。バイオハザード レクイエムは690万本を突破しカプコン決算は2ケタ増収増益。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="game">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill is-active" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-06 · #20260606</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ GAMING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">🎮</span>
+      <h1 class="cat-hero__title">ゲーム.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">ポケモン チャンピオンズが6月17日に iOS/Android 同時配信決定。Nintendo Direct が6月9日に開催確定（内部情報リーク）で Switch 2 向けタイトルラインが明らかになる見通し。バイオハザード レクイエムは690万本を突破しカプコン決算は2ケタ増収増益。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">82</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·06</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260606</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">← BACK TO GAMING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-06 09:00 · My Nintendo News</span>
+    <span class="top-story__score">88</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://mynintendonews.com/2026/06/03/pokemon-champions-launches-17th-june-on-ios-and-android/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/mynintendonews.com/wp-content/uploads/2026/02/pokemon_champions.jpg?fit=1280%2C720&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://mynintendonews.com/2026/06/03/pokemon-champions-launches-17th-june-on-ios-and-android/" rel="noopener nofollow" target="_blank" style="color: inherit;">Pokémon Champions launches 17th June on iOS and Android</a>
+        <span class="story-title-ja">ポケモン チャンピオンズ、6月17日に iOS・Android で配信開始</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">任天堂</strong>・<strong class="emph-bold">The Pokémon Company</strong> が <strong class="emph-bold">ポケモン チャンピオンズ</strong> の正式リリース日を <strong>6月17日 (火)</strong> と発表。iOS と Android に<strong>同時配信</strong>し、基本無料の対戦型コレクションゲームとして展開される。</li><li>メインゲームプレイは1対1のターン制バトルで、歴代ポケモンを収集・強化しリーグ戦を勝ち抜くシステム。TCG (ポケモンカード) を意識したデジタル実装で<strong>カード連動機能</strong>も確認されている。</li><li><span class="emph-und">モバイル×コレクション×対戦の三重構造は長期マネタイズに最適化された設計</span>。ポケモン GO の位置情報路線と異なる純粋対戦軸で、コアゲーマー層への訴求を狙う。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">🎮 GAMING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-06</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More 🎮 stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-06 08:00</span>
+        <span>· 9to5Toys</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://9to5toys.com/2026/06/04/june-nintendo-direct-leak/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/9to5toys.com/wp-content/uploads/sites/5/2025/07/Nintendo-Switch-2-Direct.jpg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://9to5toys.com/2026/06/04/june-nintendo-direct-leak/" rel="noopener nofollow" target="_blank">Insider Leaks Big June Nintendo Direct, Reportedly Slated for Early Next Week</a>
+        <span class="story-title-ja">信頼性の高いリーカーが6月9日 Nintendo Direct を確信的にリーク</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>信頼実績のあるリーカーが「<strong class="emph-bold">Nintendo Direct</strong> は <strong>6月9日 (月)</strong> に開催」と明言。複数の独立情報筋から裏取りが取れているとされ、過去の E3 週に相当するゲーム最大商戦前の大型発表会と見られている。</li><li>Switch 2 の1周年（6月5日）直後のタイミングであり、<strong>年末商戦向け Switch 2 タイトル</strong>のロードマップが一挙公開される可能性が高い。ゼルダのリメイク・続編情報にも注目が集まる。</li><li><span class="emph-und">任天堂の情報コントロールが崩れ始めたのは Switch 2 発売後から顕著</span>。Direct 前日のリークは株価にも影響を与えるため、今後の情報管理強化が課題として浮上するだろう。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-06 07:30</span>
+        <span>· GameSpark</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.gamespark.jp/article/2026/05/13/166355.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.gamespark.jp/imgs/ogp_f/1128322.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.gamespark.jp/article/2026/05/13/166355.html" rel="noopener nofollow" target="_blank">バイオハザード レクイエム 全世界売上が 690 万本突破 — カプコン 2026 年3月度決算資料で判明</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">カプコン</strong> の 2026 年3月期決算説明資料で <strong class="emph-bold">バイオハザード レクイエム</strong> の<strong>累計販売本数が 690 万本</strong>に達したと開示。発売から約6ヶ月でのマイルストーン達成。</li><li>サブスクサービス（Game Pass / PS Plus） への展開前の<strong>フルプライス累計</strong>として 690 万本は同シリーズ歴代トップクラスのペース。PC / PS5 / Xbox に加えてアジア市場での需要が想定を上回った。</li><li><span class="emph-und">IP の継続力と新規ファン獲得の両立がカプコンの強みとして再確認</span>。決算数値が先行する市場センチメントを上回ったことが、株価にもポジティブに作用した。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-06 06:00</span>
+        <span>· 9to5Toys</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://9to5toys.com/2026/05/28/nintendo-direct-june-2026/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i0.wp.com/9to5toys.com/wp-content/uploads/sites/5/2026/05/Nintendo-Direct-June.jpg?resize=1200%2C628&amp;quality=82&amp;strip=all&amp;ssl=1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://9to5toys.com/2026/05/28/nintendo-direct-june-2026/" rel="noopener nofollow" target="_blank">Nintendo Direct June 2026: Zelda Remake, New Switch 2 Hardware and More</a>
+        <span class="story-title-ja">Nintendo Direct 2026年6月号の期待コンテンツ: ゼルダリメイク・Switch 2 新ハード他</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>情報源を複数持つ9to5Toysが「ゼルダの伝説 新作リメイク」「新規 IP の Switch 2 独占タイトル」「Switch 2 周辺機器ライン拡充」の3点が今回の Direct の主軸と分析。</li><li><strong class="emph-bold">ゼルダの伝説</strong> シリーズは直近の Echoes of Wisdom（Switch 向け）の好調を受け、<strong>次の数作がロードマップに存在</strong>することが内部情報として流れていた。リメイク候補は風のタクト / トワイライトプリンセスが有力。</li><li><span class="emph-und">Direct 発表内容が事前リーク通りであれば、任天堂は年末に向けて IPを効率的に積み重ねる戦略</span>。新規 IP の追加は「Switch 1 時代の息切れ」批判への直接的な回答になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-06 05:00</span>
+        <span>· Nikkei X TREND</span>
+        <span class="more-card__score">76</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://xtrend.nikkei.com/atcl/contents/18/01182/00079/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://xtrend.nikkei.com/atcl/contents/18/01182/00079/nxr_m.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://xtrend.nikkei.com/atcl/contents/18/01182/00079/" rel="noopener nofollow" target="_blank">ゲーム大手企業の2026年3月期決算 — カプコン・バンナム・スクエニ編</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">カプコン</strong> は 2ケタ増収増益（売上 +14.2% YoY）。<strong class="emph-bold">SQUARE ENIX</strong> は海外 IP の低迷が続き小幅減収だが FF XVI のダウンロード売上が下支え。<strong class="emph-bold">バンダイナムコ</strong> はアミューズメント部門の回復が牽引し営業益 +8%。</li><li>カプコンのドル箱 IP（バイオハザード・モンスターハンター）が高水準を維持する一方、スクエニは<strong>新作ラインの再構築</strong>が急務。原神・崩壊スターレイルを擁するミホヨとの比較でコンテンツ量の差が鮮明。</li><li><span class="emph-und">国内ゲーム 3 社の明暗は「IP 資産の更新頻度と品質」という共通軸で説明できる</span>。継続して新タイトルに投資するカプコンモデルが業界のベンチマークになりつつある。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§06 OF 7 · GAMING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">ポケモン チャンピオンズ</strong> が <strong>6月17日</strong>に iOS/Android 同時配信。<strong><strong class="emph-bold">Nintendo Direct</strong> 6月9日開催</strong>のリークが複数情報源から裏取り済みで、Switch 2 向けゼルダリメイクや新 IP の発表が期待される。<strong class="emph-bold">カプコン</strong> は <strong class="emph-bold">バイオハザード レクイエム</strong> の累計 <strong>690 万本</strong>を決算で確定し、2ケタ増収増益。<span class="emph-und">任天堂がゲーム情報のコントロールを失いつつある変化は、投資家とファンの両方がリアルタイムで情報を追う「情報経済の新局面」を示す</span>。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-06/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · GAMING · 2026-06-06
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

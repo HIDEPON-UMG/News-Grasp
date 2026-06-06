@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>BYD、事故も賠償する中国EVの三正面攻勢 — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="BYDがGod&#39;s Eye 5.0で都市自動運転のクラッシュ責任を全額負担し、中国初の4nm車載チップXuanji A3を量産する『コスト＋自動運転＋責任』の三正面攻勢は、Teslaと日系メーカー（トヨタ・ホンダ）の競争地図をどう塗り替えるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-06/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="BYD、事故も賠償する中国EVの三正面攻勢">
+<meta property="og:description" content="BYDがGod&#39;s Eye 5.0で都市自動運転のクラッシュ責任を全額負担し、中国初の4nm車載チップXuanji A3を量産する『コスト＋自動運転＋責任』の三正面攻勢は、Teslaと日系メーカー（トヨタ・ホンダ）の競争地図をどう塗り替えるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-06/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BYD、事故も賠償する中国EVの三正面攻勢">
+<meta name="twitter:description" content="BYDがGod&#39;s Eye 5.0で都市自動運転のクラッシュ責任を全額負担し、中国初の4nm車載チップXuanji A3を量産する『コスト＋自動運転＋責任』の三正面攻勢は、Teslaと日系メーカー（トヨタ・ホンダ）の競争地図をどう塗り替えるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #3A7B8C;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(58,123,140,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(58,123,140,0.22);
+  --accent-underline: rgba(58,123,140,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260606</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">◎</span>MOBILITY · モビリティ</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.06.06</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260606</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">10 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">BYD、事故も賠償する中国EVの三正面攻勢</h1>
+      <p class="dd-hero__theme">BYDがGod&#39;s Eye 5.0で都市自動運転のクラッシュ責任を全額負担し、中国初の4nm車載チップXuanji A3を量産する『コスト＋自動運転＋責任』の三正面攻勢は、Teslaと日系メーカー（トヨタ・ホンダ）の競争地図をどう塗り替えるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260606</span><span>#BYD</span><span>#Tesla</span><span>#トヨタ</span><span>#EV</span><span>#自動運転</span></div>
+    </header>
+
+    
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+        
+        <li class="dd-related__item" style="border-left-color: #3A7B8C">
+          
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #8E2A19">対比</span>
+            <span class="dd-related__chip">自動運転覇権の別軸</span>
+          </div>
+          
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-01/" style="border-bottom-color: #3A7B8C">ロボタクシー覇権、Waymo独走とTeslaの量産反攻</a>
+            <span class="dd-related__date">2026.06.01</span>
+          </div>
+          <p class="dd-related__change">前回は米ロボタクシー二強(Waymo/Tesla)のサービス競争を扱った。今回の変化点は、中国BYDがEV量販＋自社チップ＋事故全額賠償という『製造・責任』の側から自動運転覇権を取りに来た構図である</p>
+        </li>
+        
+      </ul>
+    </aside>
+    
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><strong class="emph-bold">ロボタクシー覇権</strong>を扱った<span class="emph-und">前回（6/1）</span>は、<strong>WaymoとTesla</strong>という米国二強の*サービス*競争が主役だった。<span class="emph-und">今回の変化点</span>は、覇権の土俵が<strong>サービス</strong>から<strong>製造・コスト、そして「事故の責任」</strong>へ移ったことにある。<strong class="emph-bold">BYD</strong>は<strong>2026年5月28日</strong>の「Intelligence Strategy Launch Event」で、自動運転中の事故損害を<strong>全額肩代わりする世界初の保証</strong>と、中国初の<strong>4nm車載チップ</strong>を同時に打ち出した。<span class="emph-und">自動運転の勝敗を決めるのが走行性能だけでなく「誰が事故の責任を負うか」になり始めた</span>、という地殻変動である。</p><p>直近1週間の収集記事はこの転換を裏づける。<strong>5月28日</strong>にBYDがチップと賠償保証を発表し、<strong>6月1日</strong>には<strong class="emph-bold">トヨタ</strong>が次世代EVの旗艦<strong class="emph-bold">Lexus LF-ZC</strong>の開発中止を、<strong>Honda・日産に続く形</strong>で発表した（[Electrek](https://electrek.co/2026/05/29/toyota-scraps-plans-launch-most-important-evs/)）。<span class="emph-und">中国勢が攻勢を強めるのと同じ週に、日系がEV専業化の旗を降ろした</span>——この同時性が、いまの構図を象徴する。<strong>Tesla</strong>は2026 Q1に純EVで四半期首位を奪い返したが、それは<span class="emph-und">BYDの国内失速という追い風</span>に支えられた僅差にすぎない。</p><p>関係図が示すのは、<span class="emph-und">単純な一対一の勝負ではなく「陣営×インフラ」の重層構造</span>である。<strong class="emph-bold">BYD</strong>は<strong>Tesla</strong>と純EV・自動運転で正面衝突しつつ、<strong class="emph-bold">トヨタ・ホンダ</strong>の中国シェアを削り取る<strong>二正面の競合</strong>を抱える。一方で<strong>中国当局</strong>は都市NOAの運用枠組とNEV政策で<span class="emph-und">自国勢を制度面から後押し</span>し、Teslaの中国でのFSD展開は逆に制約下に置かれている。さらにチップ供給の軸では、<span class="emph-und">日系がNVIDIAなど外部に「自動運転の頭脳」を依存</span>するのに対し、BYDは<strong>Xuanji A3</strong>で内製化し供給網ごと囲い込んだ。<strong>誰が支え、誰が縛り、誰が自前で持つか</strong>——この非対称が次節の論点を決める。</p></div>
+      <div class="dd-exhibits">
+        
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">01.02</div><div class="y">2024</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>BYDが純BEVで初めてTeslaに四半期首位（2023 Q4）、年間でも肉薄</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">01.02</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>BYDが2025通年で純BEV 225万台、Teslaの164万台を約60万台上回り世界首位</p>
+                  <a href="https://electrek.co/2026/01/02/byd-crushes-tesla-all-electric-sales-for-2025-secures-global-bev-crown/"><span class="src">Electrek</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">04.02</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>2026 Q1、Teslaが純EV35.8万台でBYD31.0万台を上回り四半期首位を奪還</p>
+                  <a href="https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/"><span class="src">InsideEVs</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.28</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>BYD、God&#39;s Eye 5.0で都市NOAの事故損害を全額賠償（世界初）＋4nmチップXuanji A3を発表</p>
+                  <a href="https://bydukmedia.com/en/news-articles/byd-becomes-world%E2%80%99s-first-automaker-to-provide-full-damage-coverage-for-both-intelligent-parking-and-urban-noa.html"><span class="src">BYD公式</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.01</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>トヨタ、次世代EV旗艦Lexus LF-ZCの開発中止（Honda・日産に続く）</p>
+                  <a href="https://electrek.co/2026/05/29/toyota-scraps-plans-launch-most-important-evs/"><span class="src">Electrek</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+            </div>
+          </figure>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+            
+            <div class="dd-player">
+              <div class="dd-player__name">BYD</div>
+              <div class="dd-player__role">中国EV最大手・垂直統合企業</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">God&#39;s Eye 5.0で都市NOA事故を全額賠償＋4nmチップXuanji A3を量産</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">コスト・自動運転・責任の三正面で攻勢、自社製チップで外部依存を脱却</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">Tesla</div>
+              <div class="dd-player__role">米EV・FSD先駆者</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">2026 Q1に純EVで四半期首位を奪還、ロボタクシー商用化を加速</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">純EV量販ではBYDに後塵、FSDの事故は依然『運転者責任』で免責</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">トヨタ・ホンダ</div>
+              <div class="dd-player__role">日系最大手メーカー</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Lexus LF-ZC開発中止、中国販売が急減</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">EV専業化を後退させHV・大型SUVへ回帰、中国市場では守勢</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">中国当局(工信部)</div>
+              <div class="dd-player__role">NEV政策・自動運転規制の所管</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">都市NOAの運用枠組と補助で自国EV勢を後押し</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">垂直統合の国産勢を国家戦略として支援、自動運転の責任ルールを主導</p>
+            </div>
+            
+          </div>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">中国EV勢・米EV勢・日系メーカーの関係図（競合×規制×チップ供給）</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 695" width="1080" height="695" style="display:block;background:#FAF7F0" role="img" aria-label="中国EV勢・米EV勢・日系メーカーの関係図（競合×規制×チップ供給）"><line x1="319.0" y1="114.0" x2="477.0" y2="114.0" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="477.0,114.0 468.0,118.5 468.0,109.5" fill="#8E2A19"/><polygon points="319.0,114.0 328.0,109.5 328.0,118.5" fill="#8E2A19"/><line x1="304.6" y1="156.2" x2="490.2" y2="299.9" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="490.2,299.9 480.3,298.0 485.8,290.9" fill="#8E2A19"/><polygon points="304.6,156.2 314.4,158.2 308.9,165.3" fill="#8E2A19"/><line x1="375.6" y1="503.0" x2="271.2" y2="179.7" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="271.2,179.7 278.3,186.8 269.7,189.6" fill="#181C2A"/><line x1="414.4" y1="503.0" x2="520.6" y2="174.0" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="520.6,174.0 522.2,183.9 513.6,181.1" fill="#181C2A"/><line x1="780.2" y1="152.6" x2="589.8" y2="299.9" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="589.8,299.9 594.2,290.9 599.7,298.0" fill="#2D5BB8"/><line x1="319.0" y1="114.0" x2="767.0" y2="114.0" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="767.0,114.0 758.0,118.5 758.0,109.5" fill="#8E2A19"/><polygon points="319.0,114.0 328.0,109.5 328.0,118.5" fill="#8E2A19"/><line x1="398.0" y1="114.0" x2="407.4" y2="189.3" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="398.9" y1="164.2" x2="398.9" y2="220.6" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="502.8" y1="229.2" x2="502.8" y2="251.8" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(284.2,176.3)"><rect width="246.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 純EV首位と自動運転で正面衝突</text></g><g transform="translate(270.7,207.6)"><rect width="256.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 中国でシェアを奪取、日系は守勢</text></g><g transform="translate(226.8,437.8)"><rect width="264.0" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 都市NOA合法化・NEV政策で後押し</text></g><g transform="translate(382.0,238.8)"><rect width="241.5" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 中国でのFSD・データは制約下</text></g><g transform="translate(592.5,277.6)"><rect width="199.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> ADASの頭脳を外部供給</text></g><g transform="translate(412.2,13.0)"><rect width="261.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> Xuanji A3内製で外部依存を脱却</text></g><circle cx="250.0" cy="114.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="250.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">BYD</text><text x="250.0" y="132.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">中国EV勢</text><circle cx="540.0" cy="114.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="540.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">Tesla</text><text x="540.0" y="132.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">米EV勢</text><circle cx="540.0" cy="338.5" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="540.0" y="334.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="12.2" fill="#1A1A1A" letter-spacing="-0.5">トヨタ / ホンダ</text><text x="540.0" y="350.1" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">日系メーカー</text><circle cx="395.0" cy="563.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="395.0" y="559.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.7" fill="#1A1A1A" letter-spacing="-0.5">中国当局(工信部)</text><text x="395.0" y="574.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">規制</text><circle cx="830.0" cy="114.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="830.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">NVIDIA</text><text x="830.0" y="132.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">半導体サプライヤ</text></svg></div>
+            
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#181C2A"></span>規制</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+              
+            </div>
+            
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://bydukmedia.com/en/news-articles/byd-becomes-world%E2%80%99s-first-automaker-to-provide-full-damage-coverage-for-both-intelligent-parking-and-urban-noa.html)">*1 BYD公式</a> <a class="cite" href="https://electrek.co/2026/05/28/byd-reveals-chinas-first-in-house-4nm-smart-driving-chip/)">*2 Electrek</a> <a class="cite" href="https://electrek.co/2026/01/02/byd-crushes-tesla-all-electric-sales-for-2025-secures-global-bev-crown/)">*3 Electrek</a> <a class="cite" href="https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/)">*4 InsideEVs</a> <a class="cite" href="https://electrek.co/2026/05/29/toyota-scraps-plans-launch-most-important-evs/)">*5 Electrek</a></span></div>
+          </figure>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>数字が語るのは<span class="emph-und">「量で抜き、次は質の土俵を作り替える」</span>という<strong class="emph-bold">BYD</strong>の戦略である。年間純BEV販売は<strong>2023年にTesla 181万台・BYD 157万台</strong>だったのが、<strong>2025年にはBYD 225万台・Tesla 164万台</strong>と完全逆転した（[Electrek](https://electrek.co/2026/01/02/byd-crushes-tesla-all-electric-sales-for-2025-secures-global-bev-crown/)）。<span class="emph-und">もはや勝負はコスト・量産では決していない</span>。だからこそBYDは、4nmの<strong class="emph-bold">Xuanji A3</strong>（3枚構成で<strong>2,100 TOPS超</strong>、L3/L4対応、すでに量産入り）と、<strong>都市NOAの事故を全額賠償する保証</strong>という<span class="emph-und">「技術と信頼」の新しい土俵</span>を自ら敷いた（[Electrek](https://electrek.co/2026/05/28/byd-reveals-chinas-first-in-house-4nm-smart-driving-chip/)、[BYD公式](https://bydukmedia.com/en/news-articles/byd-becomes-world%E2%80%99s-first-automaker-to-provide-full-damage-coverage-for-both-intelligent-parking-and-urban-noa.html)）。</p><p>ただし<span class="emph-und">足元の数字は単純な独走ではない</span>。<strong>2026 Q1</strong>は<strong class="emph-bold">BYD</strong>の国内失速で純EVが<strong>31.0万台（前年比−25%）</strong>に落ち、<strong class="emph-bold">Tesla</strong>の<strong>35.8万台（+6.5%）</strong>に四半期首位を譲った。それでも<strong>新エネ車（PHEV込み）では695,772台</strong>と<span class="emph-und">Teslaのほぼ2倍</span>を売っており（[InsideEVs](https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/)）、<span class="emph-und">「純EV単体ではTeslaに分があるが、車種の幅と総量ではBYDが圧倒する」</span>という非対称が論点になる。なお報道ではBYDの輸出急増やGod's Eye Bの価格（約1.2万元）も伝わるが、本セッションでは一次確認できず<strong>未確認</strong>として扱う。</p></div>
+      
+      <div class="dd-charts">
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">BYD vs Tesla 年間純BEV販売台数の逆転（2023→2025）</span></figcaption>
+          <div class="dd-chart__note">2025にBYDが通年首位を確定</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="BYD vs Tesla 年間純BEV販売台数の逆転（2023→2025）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">万台</text><polyline points="104.0,111.1 280.0,98.7 456.0,66.5" fill="none" stroke="#3A7B8C" stroke-width="2.5"/><circle cx="104.0" cy="111.1" r="4" fill="#3A7B8C"/><text x="104.0" y="103.1" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">157</text><circle cx="280.0" cy="98.7" r="4" fill="#3A7B8C"/><text x="280.0" y="90.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">176</text><circle cx="456.0" cy="66.5" r="4" fill="#3A7B8C"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">225</text><polyline points="104.0,95.4 280.0,96.7 456.0,106.5" fill="none" stroke="#C9A155" stroke-width="2.5"/><circle cx="104.0" cy="95.4" r="4" fill="#C9A155"/><text x="104.0" y="87.4" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">181</text><circle cx="280.0" cy="96.7" r="4" fill="#C9A155"/><text x="280.0" y="88.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">179</text><circle cx="456.0" cy="106.5" r="4" fill="#C9A155"/><text x="456.0" y="98.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">164</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2023</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2024</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2025</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 2025にBYDが通年首位を確定</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#3A7B8C"></span>BYD</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>Tesla</span></div></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://electrek.co/2026/05/28/byd-reveals-chinas-first-in-house-4nm-smart-driving-chip/)">*2 Electrek</a> <a class="cite" href="https://electrek.co/2026/01/02/byd-crushes-tesla-all-electric-sales-for-2025-secures-global-bev-crown/)">*3 Electrek</a> <a class="cite" href="https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/)">*4 InsideEVs</a> <a class="cite" href="https://electrek.co/2026/05/29/toyota-scraps-plans-launch-most-important-evs/)">*5 Electrek</a></span></div>
+        </figure>
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">2026 Q1の販売構図 — 純EVは僅差、総NEVではBYDが約2倍</span></figcaption>
+          <div class="dd-chart__note">純EVはTeslaが僅差で首位、総NEVではBYDが圧倒</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="2026 Q1の販売構図 — 純EVは僅差、総NEVではBYDが約2倍"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">台</text><rect x="220.0" y="138.1" width="40.0" height="75.9" fill="#3A7B8C"/><rect x="260.0" y="148.2" width="40.0" height="65.8" fill="#C9A155"/><rect x="300.0" y="66.5" width="40.0" height="147.5" fill="#2D5BB8"/><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026 Q1 販売台数</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 純EVはTeslaが僅差で首位、総NEVではBYDが圧倒</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#3A7B8C"></span>Tesla 純EV</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>BYD 純EV</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#2D5BB8"></span>BYD 新エネ車(NEV・PHEV込)</span></div></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/)">*4 InsideEVs</a></span></div>
+        </figure>
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">ホンダの中国新車販売の崩落（2020→2025）</span></figcaption>
+          <div class="dd-chart__note">中国EV勢の台頭で5年で半分以下に</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="ホンダの中国新車販売の崩落（2020→2025）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">万台</text><rect x="88.0" y="66.5" width="120.0" height="147.5" fill="#3A7B8C"/><text x="148.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">160</text><rect x="352.0" y="155.0" width="120.0" height="59.0" fill="#3A7B8C"/><text x="412.0" y="147.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">64</text><text x="148.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2020</text><text x="412.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2025</text><text x="412.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 中国EV勢の台頭で5年で半分以下に</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val">Reuters分析・Automotive News（2026-05、報道ベース</span></div>
+        </figure>
+        
+      </div>
+      
+      
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">三陣営の比較 — 販売・自動運転・チップ・中国市場</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>指標</th><th>BYD（中国EV勢）</th><th>Tesla（米EV勢）</th><th>トヨタ・ホンダ（日系）</th><th>出典</th></tr></thead>
+              <tbody>
+                
+                <tr>
+                  
+                  <td class="head">2025 純BEV販売</td>
+                  
+                  <td class="val">225万台 (+27.9%)</td>
+                  
+                  <td class="val">164万台 (−9%)</td>
+                  
+                  <td class="val">EV専業化を後退（BEVは僅少）</td>
+                  
+                  <td class="src">Electrek</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">2026 Q1 純EV</td>
+                  
+                  <td class="val">31.0万台 (−25% YoY)</td>
+                  
+                  <td class="val">35.8万台 (+6.5% YoY)</td>
+                  
+                  <td class="val unconf">未開示=未確認<span class="dd-badge">未確認</span></td>
+                  
+                  <td class="src">InsideEVs</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">自動運転の事故賠償</td>
+                  
+                  <td class="val">都市NOAで全額負担（中国・1年保証・上限なし）</td>
+                  
+                  <td class="val">FSDは運転者責任（免責）</td>
+                  
+                  <td class="val">該当機能なし</td>
+                  
+                  <td class="src">BYD公式</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">自社製ADASチップ</td>
+                  
+                  <td class="val">Xuanji A3 4nm量産・2,100 TOPS超(3枚)</td>
+                  
+                  <td class="val">FSD用チップを自社設計（外部製造）</td>
+                  
+                  <td class="val">外部サプライヤ依存</td>
+                  
+                  <td class="src">Electrek / 一般情報</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">次世代EV戦略</td>
+                  
+                  <td class="val">垂直統合で量販継続</td>
+                  
+                  <td class="val">ロボタクシー商用化に注力</td>
+                  
+                  <td class="val">Lexus LF-ZC開発中止</td>
+                  
+                  <td class="src">Electrek</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">中国市場</td>
+                  
+                  <td class="val">首位（NEV総数で他を圧倒）</td>
+                  
+                  <td class="val">苦戦</td>
+                  
+                  <td class="val">急減（Honda 2020 160万→2025 64万）</td>
+                  
+                  <td class="src">Reuters/Automotive News（報道）</td>
+                  
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://bydukmedia.com/en/news-articles/byd-becomes-world%E2%80%99s-first-automaker-to-provide-full-damage-coverage-for-both-intelligent-parking-and-urban-noa.html)">*1 BYD公式</a> <a class="cite" href="https://electrek.co/2026/05/28/byd-reveals-chinas-first-in-house-4nm-smart-driving-chip/)">*2 Electrek</a> <a class="cite" href="https://electrek.co/2026/01/02/byd-crushes-tesla-all-electric-sales-for-2025-secures-global-bev-crown/)">*3 Electrek</a> <a class="cite" href="https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/)">*4 InsideEVs</a> <a class="cite" href="https://electrek.co/2026/05/29/toyota-scraps-plans-launch-most-important-evs/)">*5 Electrek</a></span></div>
+        </figure>
+      </div>
+      
+      <div class="dd-prose"><p>この攻勢の真の標的は、実は<span class="emph-und">Teslaよりも日系メーカー</span>かもしれない。<strong class="emph-bold">ホンダ</strong>の中国新車販売は<strong>2020年の約160万台から2025年に約64万台へ</strong>と5年で半分以下に崩落し（Reuters・Automotive News報道）、同じ局面で<strong class="emph-bold">トヨタ</strong>は<strong>Lexus LF-ZCの開発を中止</strong>した。<span class="emph-und">BYDが「事故の責任まで負う」一方で、日系は「次世代EVそのものを降ろす」</span>——この対照は、<strong>自動運転の頭脳（チップ）を内製するBYD</strong>と<strong>外部供給に頼る日系</strong>という構造の差に根を持つ。<span class="emph-und">責任を負えるのは、技術の全層を自分で握っている者だけ</span>だという力学が透けて見える。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+      
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>BYDの『コスト＋自動運転＋事故賠償』の三正面攻勢に、Teslaと日系メーカーはどう応じるか</p>
+          </div>
+          <div class="dd-decision__opts">
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">日系: EV専業化を撤回しHV/PHEVで時間を稼ぐ（短期防御）</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">Tesla: ロボタクシー商用化で自動運転の収益化を先行（土俵を移す）</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">日系: 中国勢との提携・現地特化で残存（パートナー依存で延命）</p>
+            </div>
+            
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026 Q2決算(7月)・中国NEV補助の次期方針・God&#39;s Eye 5.0の事故賠償実績（1年保証の検証）</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+              
+              <ul class="dd-decision__deciders"><li>BYD経営陣(王伝福)</li><li>Tesla(イーロン・マスク)</li><li>トヨタ・ホンダ経営陣</li></ul>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dd-prose"><p>三つの選択肢はどれも<span class="emph-und">「時間と土俵」のトレードオフ</span>を抱える。日系の<strong>HV/PHEV回帰</strong>は短期の利益を守るが、<span class="emph-und">自動運転チップを内製しない限り「責任を負える車」の土俵には上がれない</span>——Lexus LF-ZC中止はその撤退ラインを露呈した。<strong class="emph-bold">Tesla</strong>はロボタクシーへ<strong>土俵を移す</strong>ことで<strong class="emph-bold">BYD</strong>の量産攻勢を回避できるが、<span class="emph-und">FSDの事故を依然『運転者責任』にとどめる限り</span>、BYDの「全額賠償」が突きつける*信頼*の問いには答えていない。<span class="emph-und">私の読み筋</span>では、勝敗を分けるのは販売台数ではなく、<strong>God's Eye 5.0の1年保証が実際の事故でどう機能するか</strong>だ。<span class="emph-und">賠償の約束が「絵に描いた餅」でないと実証された瞬間</span>、自動運転の競争軸は走行データから「責任を引き受ける覚悟」へ一段ジャンプする。<strong>7月のQ2決算</strong>と中国の次期補助方針が、その最初の試金石になる。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+      
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">BYD</strong>は<strong>2026年5月28日</strong>、自動運転中の事故損害を<strong>全額賠償する世界初の保証</strong>（都市NOA・中国・1年）と、中国初の<strong>4nm車載チップXuanji A3</strong>（3枚で2,100 TOPS超）を同時に発表し、<span class="emph-und">コスト・自動運転・責任の三正面攻勢</span>に出た。純BEV販売は<strong>2025年にBYD 225万台がTesla 164万台を逆転</strong>、同じ週に<strong>トヨタはLexus LF-ZCを開発中止</strong>した。<strong>Tesla</strong>はQ1に純EV首位を奪い返したが、<span class="emph-und">総NEVではBYDがほぼ2倍</span>。<strong>自動運転の勝敗が「誰が事故の責任を負うか」へ移る</strong>なか、<span class="emph-und">チップを内製し責任まで握れる者</span>が次の覇権を取る。</p>
+        <div class="watermark">❖</div>
+      </div>
+      
+      
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+          
+          
+          <a class="dd-source" href="https://bydukmedia.com/en/news-articles/byd-becomes-world%E2%80%99s-first-automaker-to-provide-full-damage-coverage-for-both-intelligent-parking-and-urban-noa.html)">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">BYD公式</span>「BYD Becomes World&#39;s First Automaker to Provide Full Damage Coverage for Intelligent Parking and Urban NOA」(2026-05) — [リンク]( <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://electrek.co/2026/05/28/byd-reveals-chinas-first-in-house-4nm-smart-driving-chip/)">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Electrek</span>「BYD reveals China&#39;s first in-house 4nm smart driving chip」(2026-05-28) — [リンク]( <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://electrek.co/2026/01/02/byd-crushes-tesla-all-electric-sales-for-2025-secures-global-bev-crown/)">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Electrek</span>「BYD crushes Tesla in all-electric sales for 2025, secures global BEV crown」(2026-01-02) — [リンク]( <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://insideevs.com/news/792143/tesla-no1-ev-maker-q1-2026/)">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">InsideEVs</span>「Tesla Snatches Back World&#39;s Top EV Spot After BYD Sales Plummet 25%」(2026) — [リンク]( <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://electrek.co/2026/05/29/toyota-scraps-plans-launch-most-important-evs/)">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Electrek</span>「Toyota is scrapping plans to launch one of its most important EVs」(2026-05) — [リンク]( <span class="ext">↗</span></span>
+          </a>
+          
+          
+        </div>
+      </div>
+      
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+</body>
+</html>

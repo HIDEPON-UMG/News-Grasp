@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260606 — Mobility</title>
+<meta name="description" content="Waymo がマイアミ・オーランドを含む5都市で一般開放を加速。BYD が EV 販売で Tesla を圧倒する中、2026 年世界 EV 市場は前年比 32% 増の見通し。韓国勢 EV の品質懸念がオーナー離れを引き起こしている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-06/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260606 — Mobility">
+<meta property="og:description" content="Waymo がマイアミ・オーランドを含む5都市で一般開放を加速。BYD が EV 販売で Tesla を圧倒する中、2026 年世界 EV 市場は前年比 32% 増の見通し。韓国勢 EV の品質懸念がオーナー離れを引き起こしている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-06/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260606 — Mobility">
+<meta name="twitter:description" content="Waymo がマイアミ・オーランドを含む5都市で一般開放を加速。BYD が EV 販売で Tesla を圧倒する中、2026 年世界 EV 市場は前年比 32% 増の見通し。韓国勢 EV の品質懸念がオーナー離れを引き起こしている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-06 · #20260606</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">🚗</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Waymo がマイアミ・オーランドを含む5都市で一般開放を加速。BYD が EV 販売で Tesla を圧倒する中、2026 年世界 EV 市場は前年比 32% 増の見通し。韓国勢 EV の品質懸念がオーナー離れを引き起こしている。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">78</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·06</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260606</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-06 08:00 · The Outpost AI</span>
+    <span class="top-story__score">87</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://theoutpost.ai/news-story/waymo-expands-highway-operations-to-three-major-cities-gaining-edge-over-tesla-s-robotaxi-service-21674/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.theoutpost.ai/files/article_385366_069jk_Gmj_Xuavirso_X_Tv_Gmjk_1_fit_lim_size_1200x630_v1_1763032157854_bb1bd86f5f.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://theoutpost.ai/news-story/waymo-expands-highway-operations-to-three-major-cities-gaining-edge-over-tesla-s-robotaxi-service-21674/" rel="noopener nofollow" target="_blank" style="color: inherit;">Waymo Accelerates Autonomous Vehicle Expansion with Five New Cities in 2026</a>
+        <span class="story-title-ja">Waymo、2026年に5都市へ自動運転車展開を加速</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Waymo</strong> は 2026 年内にマイアミ・オーランド・ダラス・ナッシュビル・アトランタを含む <strong>5 都市以上</strong>での商業ロボタクシー運行を開始。既存のサンフランシスコ・ロサンゼルス・フェニックス・オースティンに続く大規模拡張。</li><li><strong class="emph-bold">Tesla</strong> の Cybercab ロボタクシーサービスはテキサスの限定エリアで試験中にとどまり、都市展開の<strong>速度差が顕在化</strong>。Waymo の走行データ蓄積量は現時点で最も競争力の高い参入障壁と見られている。</li><li><span class="emph-und">自動運転の「都市カバレッジ競争」が本格化した転換点</span>。運行都市数が増えるほど学習データが積み上がり、安全性と信頼性の優位が指数的に拡大する構造が確立しつつある。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">🚗 MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-06</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More 🚗 stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-06 07:00</span>
+        <span>· Futurum Group</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://futurumgroup.com/insights/waymo-opens-miami-and-orlando-to-all-will-universal-access-accelerate-robotaxi-adoption/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://futurumgroup.com/wp-content/uploads/2026/04/stock_0422.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://futurumgroup.com/insights/waymo-opens-miami-and-orlando-to-all-will-universal-access-accelerate-robotaxi-adoption/" rel="noopener nofollow" target="_blank">Waymo Opens Miami and Orlando to All: Will Universal Access Accelerate Robotaxi Adoption?</a>
+        <span class="story-title-ja">Waymo がマイアミ・オーランドを一般開放 — ロボタクシー普及に拍車か</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Waymo One</strong> がマイアミとオーランドでウェイトリストを廃止し<strong>一般開放</strong>。招待制から完全オープンへの移行は、商業展開の自信と運行キャパシティの拡大を示す重要なシグナル。</li><li>観光客が多いオーランド（テーマパーク送迎需要）とマイアミ（都市内短距離移動）という組み合わせで、多様なユースケースデータを同時に収集できる点で<strong>戦略的選択</strong>だと分析されている。</li><li><span class="emph-und">「招待制→一般開放」は消費者信頼の臨界点を超えた合図</span>。配車アプリを超える利便性（定時・無人・安全）を体験した乗客がリピーターになれば、口コミ普及が加速する。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-06 06:30</span>
+        <span>· Cryptopolitan</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cryptopolitan.com/how-waymo-may-dominate-2026-while-byd-crushes-tesla-in-the-ev-race/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.cryptopolitan.com/wp-content/uploads/2026/01/Waymo-robotaxis.webp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cryptopolitan.com/how-waymo-may-dominate-2026-while-byd-crushes-tesla-in-the-ev-race/" rel="noopener nofollow" target="_blank">How Waymo May Dominate 2026 While BYD Crushes Tesla in the EV Race</a>
+        <span class="story-title-ja">Waymo が自動運転で独走する一方、BYD が EV 競争でテスラを圧倒するシナリオ</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">BYD</strong> は 2026 年Q1 グローバル EV 販売台数で <strong>50 万台以上</strong>を記録し、<strong class="emph-bold">Tesla</strong> の約 37 万台を大幅に上回る。価格帯と充電インフラの両面で BYD が中国・東南アジア・欧州で優位に立つ。</li><li><strong class="emph-bold">Tesla</strong> はモデル刷新とロボタクシー展開を急ぐが、<strong class="emph-bold">イーロン・マスク</strong> の政治活動による<strong>ブランドイメージ毀損</strong>が欧州・米国リベラル層での販売に影を落としている。</li><li><span class="emph-und">モビリティ市場の覇権は EV と自動運転で二股に分かれた</span>。BYD は量販 EV で、Waymo は高付加価値 MaaS でそれぞれ独走する構図が固まりつつある。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-06 05:30</span>
+        <span>· Recharged</span>
+        <span class="more-card__score">73</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://recharged.com/articles/ev-sales-statistics-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://d365moeqy2c2l.cloudfront.net/images/hero/d1c4c8f37037d71bdce1a04ec136fc73-hero.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://recharged.com/articles/ev-sales-statistics-2026" rel="noopener nofollow" target="_blank">EV Sales Statistics 2026: Global and US Market Trends</a>
+        <span class="story-title-ja">2026年 EV 販売統計 — グローバルおよび米国市場トレンド</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>2026 年世界 EV 販売は前年比 <strong>+32%</strong>、累計約 <strong>2,400 万台</strong>が見込まれる。中国が世界シェアの <strong>56%</strong> を占め、欧州 19%、米国 13% と続く。</li><li>米国では連邦 EV 税控除の縮小懸念がありながらも、州レベルの補助が維持されている地域でのシェアは堅調。中間価格帯（3 万〜4 万ドル）の新規モデル投入が購買層の底上げに寄与。</li><li><span class="emph-und">データ的裏付け: 2026 年上半期は「EV 普及ティッピングポイント」通過後の急成長期</span>。販売チャネルの多様化（サブスク・フリート）と充電インフラの拡張速度が次の成長上限を規定する。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-06 05:00</span>
+        <span>· InsideEVs</span>
+        <span class="more-card__score">68</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://insideevs.com/features/796357/kia-hyundai-ev-owner-experience-2026/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.motor1.com/images/mgl/vx8evQ/s1/kia-ev9-problems.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://insideevs.com/features/796357/kia-hyundai-ev-owner-experience-2026/" rel="noopener nofollow" target="_blank">I Love EVs, But Kia and Hyundai Are Making That Harder</a>
+        <span class="story-title-ja">EV は好きだが、キアと現代はそれを難しくしている</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Kia EV9 / EV6 オーナーが報告するソフトウェアバグ（OTA 失敗・ナビ誤動作）と充電互換性問題が SNS で拡散。<strong>リコール対応の遅さ</strong>が米国消費者の信頼を毀損している。</li><li><strong class="emph-bold">Hyundai</strong> の IONIQ 6/9 も類似の品質問題を抱え、前向きな価格設定とデザイン評価が<strong>アフターサービスの不満</strong>で相殺される構図が続いている。</li><li><span class="emph-und">EV 市場の「第二段階」はスペックではなくサービス品質が差別化要因になる</span>。先行した韓国勢が品質問題を解決しないと、日本・欧州勢の追い上げにシェアを明け渡すリスクが現実化する。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Waymo</strong> がマイアミ・オーランドでウェイトリストを廃止し<strong>一般開放</strong>。2026年内に<strong>5都市</strong>超への商業展開を加速し、<strong class="emph-bold">Tesla</strong> の Austin 限定展開との格差が毎週広がる。EV 市場では <strong class="emph-bold">BYD</strong> が世界販売で <strong>50 万台超</strong>（Q1）を記録し Tesla の 37 万台を大幅に上回る。韓国勢（<strong class="emph-bold">Kia</strong>・<strong class="emph-bold">Hyundai</strong>）は品質問題がブランド毀損へ直結している。<span class="emph-und">2026年世界EV市場は +32% の見通しで「ティッピングポイント通過後の急成長期」に入ったが、充電インフラと品質サービスが次の上限を決める</span>。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-06/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-06
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
