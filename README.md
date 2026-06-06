@@ -271,7 +271,8 @@ DESIGN.md を一次ソースとし、`docs/assets/site.css` で実装。色 / �
 | watchlist 編集 | 管理人 (`data/watchlist.md` を編集 → push) | 必要に応じて |
 | Runner 起動 | Windows タスクスケジューラ | 毎朝 06:30 JST |
 | digest 生成・commit | Claude Code (Sonnet 4.6) | 毎朝 06:30〜06:45 JST |
-| pre-push 契約ゲート | Runner 内で URL liveness + `[!ja]` 和訳 callout 必須テスト (`tests/test_title_ja_coverage.py::test_english_articles_require_ja_callout`) を強制発火。fail なら push を阻止 (2026-06-06 SSG 失敗を受けて追加) | 自動 |
+| pre-push 契約ゲート | Runner 内で 3 段ゲート (① URL liveness ② `[!ja]` 和訳 callout 必須テスト ③ pytest 全件 PASS `NEWS_GRASP_SKIP_URL_CHECK=1`) を強制発火。fail なら push を阻止。「別件」judgement での bypass は禁止 (2026-06-06 plan v2 で B-1 ロックダウン追加。同日セッションで thumb FAIL bypass 事故が発覚) | 自動 |
+| build 時層 2 品質ゲート | `tools/output_quality.py` で関係図 SVG の幾何違反 (線がノード貫通) と カテゴリトップ連続同テーマを生成段階で検出。違反時は `OutputQualityError` で `generate_pages.py` を中止し docs/ への書き込みを物理ブロック (2026-06-06 plan v2 で A 軸追加。同日セッションで関係図貫通 / カテゴリ重複の 2 件公開後検知事故への構造解決) | 自動 |
 | git push | Runner (Claude 終了後の ps1) | 自動 |
 | SSG ビルド | Runner 内で `tools/generate_pages.py` を実行 | 自動 |
 | Obsidian 同期 | Runner 内で `git pull/push` | 自動 |

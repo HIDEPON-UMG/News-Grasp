@@ -1904,6 +1904,17 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
             deduped_tail = _dedupe_by_theme(cat_entries_sorted[1:], max_window=10)
             grid_9 = deduped_tail[:9]
             past_7 = deduped_tail[:7]
+            # 層 2 出力品質ゲート (plan v2): _dedupe_by_theme が漏れた場合の
+            # 最終 assert。is_same_theme は _is_same_theme_for_display を inject。
+            from tools.output_quality import assert_quality, check_category_top_dedup
+            _same = lambda a, b: _is_same_theme_for_display(
+                *_theme_tokens(a), *_theme_tokens(b))
+            assert_quality([
+                (f"{cat_id}/grid_9", check_category_top_dedup(
+                    grid_9, kind=f"{cat_id}/grid_9", is_same_theme=_same)),
+                (f"{cat_id}/past_7", check_category_top_dedup(
+                    past_7, kind=f"{cat_id}/past_7", is_same_theme=_same)),
+            ])
         else:
             # data 不足 (= backfill 未着手の新設カテゴリ) の fallback:
             # data/articles.jsonl の同日 5 記事を grid に展開して、他カテゴリと粒度を揃える

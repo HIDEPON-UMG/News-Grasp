@@ -1260,7 +1260,14 @@ def relations_svg(rel: dict[str, Any]) -> str:
         f'aria-label="{_esc(rel.get("title", "当事者の関係図"))}">'
     )
     parts.append("</svg>")
-    return "".join(parts)
+    svg = "".join(parts)
+    # ── 層 2 出力品質ゲート (2026-06-06 plan v2): 線がノード貫通 / ラベル衝突を
+    # 検出して build を中止する loud failure ([[feedback_check_design_principles]]
+    # 1 段 + 2 段)。境界 1 箇所集約は tools/output_quality.py。
+    from tools.output_quality import assert_quality, check_relations_svg
+    title = rel.get("title", "(no title)")
+    assert_quality([(f"relations:{title}", check_relations_svg(svg, src=title))])
+    return svg
 
 
 def _arrow(x: float, y: float, ux: float, uy: float, color: str) -> str:
