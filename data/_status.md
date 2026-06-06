@@ -54,3 +54,4 @@
 | 2026-06-06 | ✅成功 | FX, AI, IT-Consulting, Mobility, Game | - | 0 | 記事23件 / it: 土曜のため3件(5件未満ルール適用) / manufacturing・economy: 週末休載 |
 | 2026-06-06 | ✅DeepDive | BYD、事故も賠償する中国EVの三正面攻勢 | 約25分 | 0 | daily deepdive / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch成功5(BYD公式・Electrek×3・InsideEVs)・Autoblog403は不採用 |
 | 2026-06-07 | ✅成功 | FX, AI, IT-Consulting, Mobility, Game | - | 0 | 記事22件 / manufacturing・economy: 週末休載 |
+| 2026-06-07 | ✅DeepDive | Anthropic 先行上場、AI IPOバブルの号砲 | 約25分 | 0 | daily deepdive / 続報(06-02評価額レース) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件全200(Anthropic公式×2・TechCrunch・Crunchbase・The Register・Fortune) |
