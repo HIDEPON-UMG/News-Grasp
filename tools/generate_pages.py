@@ -38,6 +38,7 @@ from tools.config import (  # noqa: E402
     SITE_TITLE,
     TOP_RECENT_DAYS,
 )
+from tools.dedup import same_event_by_tokens, significant_tokens  # noqa: E402  (表示層 dedup で再利用)
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
@@ -1784,6 +1785,73 @@ def build_all_summaries(entries: list[dict[str, Any]], docs_root: Path,
     return written
 
 
+def _theme_tokens(entry: dict[str, Any]) -> tuple[set[str], set[str]]:
+    """カテゴリトップ表示用の同テーマ判定トークン (proper, numerics)。
+
+    entry["top_title"] (= digest 内 TOP score の個別記事タイトル) を一次に、無ければ
+    entry["title"] (= digest ヘッダ「News Grasp #YYYYMMDD — カテゴリ名」) に fallback。
+    digest ヘッダだけだと全 entry に「News」「Grasp」「Artificial」「Intelligence」が
+    共通で乗り全 entry が同テーマ判定されてしまうため、必ず top_title を見る。
+
+    dedup.py の `significant_tokens` を再利用 (英字固有名詞 + 2 桁以上の数値)。
+    日本語タイトルでも英字固有名詞 (Microsoft/Anthropic/OpenAI 等) と数値は拾える。
+    """
+    return significant_tokens(entry.get("top_title") or entry.get("title", ""))
+
+
+def _is_same_theme_for_display(
+    cw: set[str], cn: set[str], pw: set[str], pn: set[str],
+) -> bool:
+    r"""カテゴリトップ表示用「同テーマ」判定 (`_dedupe_by_theme` の核)。
+
+    判定:
+      ① dedup.py の `same_event_by_tokens` で同一イベント判定 (固有 3 共通 /
+         固有 2 + 数値 1 / 固有 1 + 数値 2) → True
+      ② 製品名+バージョン番号 (例: Claude Opus 4.8) は `significant_tokens` の
+         `_NUM_RE = \d[\d,]*` がドット非対応で `4.8` を `4`/`8` に分解し 1 桁
+         除外 → 数値共通 0 で ① を抜ける。これを補うため、共通固有名詞が
+         2 つ以上ある場合は表示段だけ同テーマ扱いする緩和判定を追加する。
+
+    なぜ表示段限定か: dedup.py 本体に同じ緩和を入れると「同社別ニュース 2 日連続
+    の正当な続報」も別 URL で落としてしまう。表示段なら片方を最終出力 (grid_9 /
+    past_7) から外すだけで data/digest 本体は残り、別エンドポイント (記事個別ページ /
+    archive) は依然到達可能 ([[feedback_check_design_principles]] 2 段「境界 1
+    箇所集約」を表示層で守る)。誤検出のリスク (同社別四半期決算 2 連続表示など)
+    は AI トップでの実害が小さく、同テーマ続報の連続表示を防ぐ価値を優先する。
+    """
+    if same_event_by_tokens(cw, cn, pw, pn):
+        return True
+    return len(cw & pw) >= 2
+
+
+def _dedupe_by_theme(entries: list[dict[str, Any]], *,
+                     max_window: int = 10) -> list[dict[str, Any]]:
+    """直前採用 entry と同テーマの entry を skip し、次の entry を順次補充する。
+
+    判定は `_is_same_theme_for_display` (= dedup.py の same_event 基準 + 共通固有 2 緩和)。
+    dedup.py 本体は「24h 超は続報扱い」で意図通り通すため、別 URL の同社・同論点記事は
+    ストリームに残る。これがカテゴリトップ (grid_9 / past_7) で並ぶと「同テーマ続報が
+    日替わりで再掲」されてしまうので、最終出力段で連続出現だけを構造的に弾く
+    (digest md / data/articles.jsonl は不変、歴史保存)。
+
+    フェイルセーフ: 固有名詞が取れない entry (純カタカナ stopword のみ等) は
+    同テーマ判定が False を返すので落とさない (誤検出回避)。
+    """
+    out: list[dict[str, Any]] = []
+    for e in entries:
+        if not out:
+            out.append(e)
+        else:
+            cw, cn = _theme_tokens(e)
+            pw, pn = _theme_tokens(out[-1])
+            if _is_same_theme_for_display(cw, cn, pw, pn):
+                continue  # 直前と同テーマ → skip し次の entry を採用
+            out.append(e)
+        if len(out) >= max_window:
+            break
+    return out
+
+
 def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
                          *, digests: Iterable[Path] | None = None) -> list[Path]:
     """カテゴリ別アーカイブ docs/{cat}/index.html を生成 (v2 Magazine Spread)。
@@ -1827,8 +1895,15 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
         cat_entries_sorted = sorted(cat_entries, key=lambda e: e["date"], reverse=True)
         featured = cat_entries_sorted[0]
         if len(cat_entries_sorted) >= 2:
-            grid_9 = cat_entries_sorted[1:10]
-            past_7 = cat_entries_sorted[1:8]
+            # featured 除く直近を theme dedup pass で連続同テーマを抑止してから切り出す。
+            # 2026-06-06 AI トップ事故: dedup.py が「24h 超は続報扱い」で同社別 URL の
+            # 続報を通すため、past_7/grid_9 に「Microsoft AI モデル新発表」が 2 日連続、
+            # 「Anthropic IPO 申請」が 2 日連続のように同テーマが並んだ。表示段で
+            # 連続出現を構造的に弾く ([[feedback_check_design_principles]] 1 段+2 段)。
+            # featured は 1 件なので対象外。
+            deduped_tail = _dedupe_by_theme(cat_entries_sorted[1:], max_window=10)
+            grid_9 = deduped_tail[:9]
+            past_7 = deduped_tail[:7]
         else:
             # data 不足 (= backfill 未着手の新設カテゴリ) の fallback:
             # data/articles.jsonl の同日 5 記事を grid に展開して、他カテゴリと粒度を揃える
