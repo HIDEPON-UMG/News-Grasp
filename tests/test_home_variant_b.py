@@ -11,6 +11,8 @@ Variant B の認識: site/variant-b.jsx (Claude Design Handoff) を権威ソー�
 """
 from __future__ import annotations
 
+import html
+import re
 import sys
 from pathlib import Path
 
@@ -26,6 +28,7 @@ from tools.generate_pages import (  # noqa: E402
     scan_digests,
     _collect_entries,
 )
+from tools.config import CATEGORIES  # noqa: E402
 
 
 # ============================================================
@@ -88,13 +91,37 @@ def test_hero_2col_structure(built_home: str):
 
 def test_editors_top_uses_canonical_category_glyphs(built_home: str):
     """Editor's Top 5 のカテゴリーマークは CATEGORIES 正本に揃える。"""
-    assert "🚗 MOBILITY" not in built_home
-    assert "💼 IT &amp; CONSULTING" not in built_home
-    assert "🤖 ARTIFICIAL INTELLIGENCE" not in built_home
-    assert "🎮 GAMING" not in built_home
-    assert "💱 FOREIGN EXCHANGE" not in built_home
+    forbidden = (
+        "🚗 MOBILITY",
+        "💼 IT &amp; CONSULTING",
+        "🤖 ARTIFICIAL INTELLIGENCE",
+        "🎮 GAMING",
+        "💱 FOREIGN EXCHANGE",
+    )
+    for marker in forbidden:
+        assert marker not in built_home
+
+    badges = re.findall(r'class="home-top3__badge cat-([^"]+)">([^<]+)</span>', built_home)
+    assert badges, "Editor's Top のカテゴリーバッジが見つからない"
+    for cat_id, text in badges:
+        meta = CATEGORIES[cat_id]
+        expected = f"{meta['glyph']} {meta['label'].upper()}"
+        assert html.unescape(text) == expected
     assert "◎ MOBILITY" in built_home
     assert "⌗ IT &amp; CONSULTING" in built_home
+
+
+def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
+    """LP の nav / category cards / publication matrix は canonical glyph を使う。"""
+    for cat_id, meta in CATEGORIES.items():
+        if cat_id == "summary":
+            continue
+        label_html = html.escape(meta["label"].upper())
+        assert f"home-nav__lens-{cat_id}" in built_home
+        assert f"{meta['glyph']}</span>{label_html}" in built_home
+        assert f'class="home-cat-card cat-{cat_id}"' in built_home
+        assert f'<div class="home-cat-card__glyph">{meta["glyph"]}</div>' in built_home
+        assert f'<span class="pub-matrix__cat-glyph">{meta["glyph"]}</span>{meta["jp"]}' in built_home
 
 
 def test_featured_story_section(built_home: str):
@@ -103,10 +130,10 @@ def test_featured_story_section(built_home: str):
     assert "TOP STORY" in built_home
 
 
-def test_categories_6col(built_home: str):
-    """home-cats__grid が repeat(6, 1fr) クラスを当てており 6 lens card が並ぶ (v2: Mobility 追加)。"""
+def test_categories_7_lens_cards(built_home: str):
+    """home-cats__grid に 7 lens card が並ぶ。"""
     assert 'class="home-cats__grid"' in built_home
-    for lens in ("fx", "ai", "it", "mobility", "economy", "game"):
+    for lens in ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game"):
         assert f'class="home-cat-card cat-{lens}"' in built_home, \
             f"home-cat-card for {lens} missing"
 

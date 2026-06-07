@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: News-Grasp
-description: Magazine Spread デザインシステム — navy×gold×paper の編集者的トーン。明朝×Inter×JetBrains Mono の 3 フォント体系で 6 カテゴリ accent を切替
+description: Magazine Spread デザインシステム — navy×gold×paper の硬質な編集誌トーン。明朝×Inter×JetBrains Mono の 3 フォント体系で 7 カテゴリ accent を切替
 colors:
   primary: "#1A1A1A"
   secondary: "#5C5A52"
@@ -20,6 +20,7 @@ colors:
   accent-ai: "#2D5BB8"
   accent-it: "#2E6B52"
   accent-mobility: "#3A7B8C"
+  accent-manufacturing: "#5A6B7B"
   accent-economy: "#8E2A19"
   accent-game: "#5E3D8C"
   accent-summary: "#475569"
@@ -143,15 +144,17 @@ components:
 
 Magazine Spread 編集者トーンのデザインシステム。**navy (`#181C2A`) × gold (`#C9A155`) × paper (`#FAF7F0`)** の 3 軸で「新聞・雑誌の紙面」のような情報密度と落ち着きを作る。本文は明朝 (Noto Serif JP)、見出し巨大数値は Inter Black 900、ラベル / メタは JetBrains Mono の **3 フォント鼎立**。角丸は全廃 (`rounded.sm = 0`) でフラット・エッジィな仕上げ。
 
+News-Grasp の人格は **硬質な編集誌**。速報アプリの賑やかさではなく、編集者が選び抜いた論点を紙面に組む緊張感を持つ。視覚表現は「記号的・構造的・非キャラクター的」であることを原則とし、カテゴリーは絵文字や具象アイコンではなく、抽象的なグリフと抑制された accent で識別する。
+
 主な性格:
 
 - **navy ヘッダー + gold underline rule** で誌名 zone を強く立てる
 - **明朝主体の長文読み物 UI**: body は Noto Serif JP、`line-height` 1.85–1.9 で 220 字級の長文ブロックを耐える
-- **6 カテゴリ accent**: FX 琥珀 / AI 電子青 / IT 苔緑 / Economy 深紅 / Game 洋紫 / Summary 鉄灰。1 ページ 1 accent が原則
+- **7 カテゴリ accent**: FX 琥珀 / AI 電子青 / IT 苔緑 / Mobility 青緑 / Manufacturing 鋼灰 / Economy 深紅 / Game 洋紫。1 ページ 1 accent が原則
 - **角丸 0px**: news-thumb プレースホルダのみ例外で 4px (アセット側に閉じる)
 - **大型グリフ装飾**: editorial § や hero glyph を 96-200px の serif で gold 18% opacity 透過させる
 
-> **意図的に component から参照していないトークン**: `secondary` / `border` / `paper-soft` / `cream` / `gold` / `navy` / `accent-fx/ai/it/economy/game/summary` / `on-tertiary` / `on-primary` / `success` / `warning` / `error` は実装側で**直接参照** (CSS 変数 / Jinja2 経由) する設計。component slot に固定すると Magazine の表現幅 (1 ページ 1 accent / dark Editorial / pull quote ハイライト) が痩せる。lint で `orphaned-tokens` warning が出るが意図通り。
+> **意図的に component から参照していないトークン**: `secondary` / `border` / `paper-soft` / `cream` / `gold` / `navy` / `accent-fx/ai/it/mobility/manufacturing/economy/game/summary` / `on-tertiary` / `on-primary` / `success` / `warning` / `error` は実装側で**直接参照** (CSS 変数 / Jinja2 経由) する設計。component slot に固定すると Magazine の表現幅 (1 ページ 1 accent / dark Editorial / pull quote ハイライト) が痩せる。lint で `orphaned-tokens` warning が出るが意図通り。
 
 ## Colors
 
@@ -178,9 +181,28 @@ Magazine Spread 編集者トーンのデザインシステム。**navy (`#181C2A
 | `accent-fx` | `#B8860B` | 為替 (琥珀) |
 | `accent-ai` | `#2D5BB8` | AI (電子青) |
 | `accent-it` | `#2E6B52` | IT/コンサル (苔緑) |
+| `accent-mobility` | `#3A7B8C` | モビリティ (青緑) |
+| `accent-manufacturing` | `#5A6B7B` | 製造 (鋼灰) |
 | `accent-economy` | `#8E2A19` | 経済 (深紅) |
 | `accent-game` | `#5E3D8C` | ゲーム (洋紫) |
 | `accent-summary` | `#475569` | 総括 (鉄灰) |
+
+### カテゴリー記号レジストリ
+
+公開 UI のカテゴリー記号は `tools/config.py` の `CATEGORIES` を正本とし、digest frontmatter の `glyph` / `accent` は標準カテゴリでは採用しない。LP、レンズナビ、Editor's Top、カテゴリーヒーロー、カテゴリーバッジ、アーカイブの全てで下表を使う。
+
+| ID | Label | JP | Accent token | Glyph |
+|:--|:--|:--|:--|:--|
+| `fx` | Foreign Exchange | 為替 | `accent-fx` | `¥` |
+| `ai` | Artificial Intelligence | AI | `accent-ai` | `◆` |
+| `it` | IT & Consulting | IT-Consulting | `accent-it` | `⌗` |
+| `mobility` | Mobility | モビリティ | `accent-mobility` | `◎` |
+| `manufacturing` | Manufacturing | 製造 | `accent-manufacturing` | `⬢` |
+| `economy` | Economy | 経済 | `accent-economy` | `■` |
+| `game` | Gaming | ゲーム | `accent-game` | `▶` |
+| `summary` | Summary | 総括 | `accent-summary` | `★` |
+
+公開 UI でカテゴリーを表すために絵文字を使わない。特に `🚗` / `💼` / `🤖` / `🎮` / `💱` は過去の事故由来の禁止例であり、標準カテゴリ表示に出てはならない。digest Markdown 内の記事メタ (`📅` / `📰` / `🔗` / `🤖`) は parser の運用記号なので、この禁止の対象外とする。
 
 ### gold tint (Editorial / underline 装飾)
 
@@ -350,6 +372,8 @@ surface 背景 + 0 角丸。focus 時は `border: 2px solid gold` で囲む (実
 - 本文は明朝 1.85-1.9 行間。120 字以上のブロックは line-height を緩める
 - ラベル / メタは mono 大文字 + letter-spacing 0.15em で「新聞風」を作る
 - 角丸は 0px 維持 (Magazine の鋭利さが命)
+- カテゴリー表示は `tools/config.py` の canonical glyph / accent に必ず寄せる
+- 抽象グリフ、罫線、紙面分割、余白で意味を作り、キャラクター性や説明的な飾りに頼らない
 
 ### ❌ Don't
 
@@ -360,3 +384,6 @@ surface 背景 + 0 角丸。focus 時は `border: 2px solid gold` で囲む (実
 - 影を 2 段以上重ねない (本デザインは原則 shadow 無し)
 - カテゴリ accent をボタン背景に使わない (CTA は navy / gold / outline の 3 種に限定)
 - Hero の巨大グリフ・editorial § を accent カラーで塗らない (gold opacity 0.18 で抑える)
+- 公開 UI のカテゴリーマークに絵文字や具象アイコンを使わない
+- ポップなステッカー、キャラクター的なアイコン、過剰なグラデーション、説明のためだけの装飾を足さない
+- digest frontmatter の `glyph` / `accent` を標準カテゴリの公開表示へ直接流し込まない
