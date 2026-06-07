@@ -130,7 +130,8 @@ npx wrangler secret put LIST_TOKEN
 `%USERPROFILE%\bin\news-grasp-runner.ps1` に PowerShell スクリプトとして配置する。要点:
 
 - 当日 digest 生成は `claude.exe --print --dangerously-skip-permissions --tools default --model sonnet "<runner-prompt.md 本文>"` で実行
-- Claude 終了後に ps1 が継続して `git push origin main` → `tools/generate_pages.py` → `git push docs/` → `tools/send_push.py` を順に走らせる
+- Claude 終了後に ps1 が継続して pre-push gate 群 → `tools/generate_pages.py` → docs commit → `git push origin main` → `tools/send_push.py` を順に走らせる
+- gate failed 後の復旧は `-RecoverOnly` を使う。Claude / DeepDive を再実行せず、手修正済みのローカル状態から gate 群 → docs 再生成 → docs commit → push → Web Push だけを再開する
 - ファイルは **UTF-8 BOM 必須**（PS5.1 が BOM 無しを CP932 解釈して日本語コメントごと壊す既知問題。`enforce_script_encoding.ps1` hook が自動付与する）
 
 ## 4. Windows タスクスケジューラ登録
@@ -186,6 +187,8 @@ git push
 | 黒い画面が開いてすぐ閉じる | ログに `ERROR: ...` が出る → `news-grasp-invoked.log` から原因切り分け |
 | `claude` が見つからない | ps1 内のフルパスを `where claude` で確認した結果に差し替え |
 | 画像が壊れる（公開 Web 内） | `assets/` の JPG が repo にあるか確認 → `tools/generate_pages.py` の thumb fallback 処理を確認 |
+| pre-push gate / `generate_pages.py` で止まる | ログの `ERROR:` が示す md/jsonl/test を修正 → 対象 gate を単体確認 → `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$HOME\bin\news-grasp-runner.ps1" -RecoverOnly` で Claude / DeepDive を再実行せず gate 群・docs 再生成・push だけ再開 |
+| `summary reflection gate failed` で止まる | `digest/Summary/YYYY-MM-DD.md` に `## § 本日のテーマ考察` / `### §01 ...` を補修 → `python -m tools.validate_summary_reflection --date YYYY-MM-DD` で確認 → `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$HOME\bin\news-grasp-runner.ps1" -RecoverOnly` で gate 群・docs 再生成・push だけ再開 |
 | Web Push が届かない | `python tools/send_push.py --dry-run` で疎通確認 → Worker URL / `LIST_TOKEN` / VAPID 公開鍵の食い違いを点検 |
 | Obsidian で digest（記事 .md）が反映されない | サブリポ `News-Grasp/` 担当の Runner が `git pull` を内包しているので、サブリポは自動更新。手動なら `git -C "...\News-Grasp" pull` |
 | Obsidian の Vault 設定（テーマ・CSS スニペット）が反映されない | 親 Vault リポ `obsidian-newsgrasp-vault` 担当の Obsidian Git が auto-pull (10 分) で更新。起動時 pull を ON にしていれば即時取得。手動なら `Ctrl + P` → 「Obsidian Git: Pull」 |
