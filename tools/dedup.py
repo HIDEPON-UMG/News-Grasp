@@ -28,10 +28,11 @@ Routine の 3-A.5 フェーズで呼び出される。新規候補を articles.j
 from __future__ import annotations
 
 import argparse
+import calendar
 import json
 import re
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
@@ -52,6 +53,18 @@ SPACE_RE = re.compile(r"\s+")
 # 同言語の見出し (例「WaymoがOjai第6世代…公開開放 — A」vs「…公開開放 — B」) が
 # Jaccard 0.45 前後に落ち、0.5 では「別記事」として連日再掲されていた (実測)。
 DEFAULT_TITLE_THRESHOLD = 0.42
+DEFAULT_MAX_SOURCE_AGE_DAYS = 7
+
+_URL_DATE_PATTERNS = (
+    re.compile(r"/(?P<y>20\d{2})/(?P<m>\d{1,2})/(?P<d>\d{1,2})(?:/|$)"),
+    re.compile(r"/(?P<y>20\d{2})-(?P<m>\d{1,2})-(?P<d>\d{1,2})(?:[-_/]|$)"),
+    re.compile(r"/(?P<y>20\d{2})(?P<m>\d{2})(?P<d>\d{2})(?:[-_/]|$)"),
+)
+_URL_MONTH_DATE_RE = re.compile(
+    r"/(?P<y>20\d{2})/(?P<mon>jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/(?P<d>\d{1,2})(?:/|$)",
+    re.IGNORECASE,
+)
+_MONTH_ALIASES = {name.lower(): idx for idx, name in enumerate(calendar.month_abbr) if name}
 
 # ── 言語非依存トークン照合 (cross-language / 別ソースの同一イベント検知) ──────────
 # 文字 2-gram は英語⇄日本語の見出し (例「Waymo accelerates … Dallas, Houston」と
@@ -250,10 +263,13 @@ def find_match(
     cand_w, cand_n = significant_tokens(candidate.get("title", ""))
 
     for e in existing:
-        # A. URL 正規化マッチ (= 同一記事)
+        # A. URL 正規化マッチ (= 同一記事)。最優先で全 existing を走査する。
+        # 同一 URL より前に古いタイトル/トークン一致が見つかると続報扱いで通過するため。
         e_url_norm = normalize_url(e["url"]) if e.get("url") else e.get("url_norm", "")
         if cand_url_norm and cand_url_norm == e_url_norm:
             return e, "url"
+
+    for e in existing:
         # B. タイトル一致 / 類似 (= 同一トピック・続報候補)
         e_title = e.get("title", "")
         e_title_norm = normalize_title(e_title)
@@ -267,6 +283,53 @@ def find_match(
         if same_event_by_tokens(cand_w, cand_n, e_w, e_n):
             return e, "title"
     return None, None
+
+
+def extract_source_date_from_url(url: str) -> date | None:
+    """URL パス内の発行日らしき日付を抽出する。
+
+    CNBC/TechCrunch/新聞系に多い ``/2026/06/01/``、``/2026-06-01-...``、
+    ``/20260601-...``、``/2026/jun/04/`` を対象にする。URL に日付が無い場合は
+    取得不能として None を返し、鮮度ゲートでは落とさない。
+    """
+    try:
+        path = urlsplit(url).path
+    except ValueError:
+        return None
+    for pat in _URL_DATE_PATTERNS:
+        m = pat.search(path)
+        if not m:
+            continue
+        try:
+            return date(int(m.group("y")), int(m.group("m")), int(m.group("d")))
+        except ValueError:
+            return None
+    m2 = _URL_MONTH_DATE_RE.search(path)
+    if m2:
+        mon = _MONTH_ALIASES.get(m2.group("mon").lower())
+        if mon:
+            try:
+                return date(int(m2.group("y")), mon, int(m2.group("d")))
+            except ValueError:
+                return None
+    return None
+
+
+def _freshness_drop_reason(
+    candidate: dict,
+    now_date: date,
+    max_source_age_days: int,
+) -> str | None:
+    src_date = extract_source_date_from_url(candidate.get("url", ""))
+    if src_date is None:
+        return None
+    age_days = (now_date - src_date).days
+    if age_days > max_source_age_days:
+        return (
+            f"freshness gate: source date {src_date.isoformat()} "
+            f"age={age_days}d > {max_source_age_days}d"
+        )
+    return None
 
 
 def _new_material_tokens(candidate: dict, matched: dict) -> tuple[set[str], set[str]]:
@@ -295,6 +358,9 @@ def dedup_candidates(
     window_hours: float = 24.0,
     title_threshold: float = DEFAULT_TITLE_THRESHOLD,
     followup_gate: bool = False,
+    freshness_gate: bool = False,
+    max_source_age_days: int = DEFAULT_MAX_SOURCE_AGE_DAYS,
+    now: datetime | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """重複除外を実行し (passed, dropped) を返す。
 
@@ -303,7 +369,7 @@ def dedup_candidates(
     意味判断に頼らない構造ゲート / feedback_check_design_principles Lv2 境界 1 箇所集約 /
     routine-system.md 3-A.5 E の機械化版・2026-06-05 導入)。
     """
-    now = datetime.now(JST)
+    now = (now or datetime.now(JST)).astimezone(JST)
     now_iso = now.isoformat()
     window = timedelta(hours=window_hours)
     # 候補側を順に評価しつつ、合格分を「既存」に積み増して同 batch 内重複も弾く
@@ -312,6 +378,12 @@ def dedup_candidates(
     pool = list(existing)
     for c in candidates:
         c["url_norm"] = normalize_url(c.get("url", ""))
+        if freshness_gate:
+            reason = _freshness_drop_reason(c, now.date(), max_source_age_days)
+            if reason:
+                c["dedup_reason"] = reason
+                dropped.append(c)
+                continue
         match, match_type = find_match(c, pool, title_threshold=title_threshold)
         if match is None:
             c["is_followup"] = False
@@ -378,6 +450,10 @@ def main() -> int:
     p.add_argument("--followup-gate", action="store_true",
                    help="続報候補について「新規 token 0 個 = 落とす」機械判定を有効化 "
                         "(routine-system 3-A.5 E の LLM 任せを境界 1 箇所集約・2026-06-05 導入)")
+    p.add_argument("--freshness-gate", action="store_true",
+                   help="URL パス上の発行日が古すぎる候補を除外する鮮度ゲートを有効化")
+    p.add_argument("--max-source-age-days", type=int, default=DEFAULT_MAX_SOURCE_AGE_DAYS,
+                   help=f"鮮度ゲートで許容する URL 発行日からの経過日数（既定: {DEFAULT_MAX_SOURCE_AGE_DAYS}）")
     args = p.parse_args()
 
     candidates = []
@@ -392,13 +468,16 @@ def main() -> int:
         window_hours=args.window_hours,
         title_threshold=args.title_threshold,
         followup_gate=args.followup_gate,
+        freshness_gate=args.freshness_gate,
+        max_source_age_days=args.max_source_age_days,
     )
 
     for c in passed:
         print(json.dumps(c, ensure_ascii=False))
     print(
         f"dedup: {len(passed)} passed, {len(dropped)} dropped "
-        f"(window={args.window_hours}h, threshold={args.title_threshold})",
+        f"(window={args.window_hours}h, threshold={args.title_threshold}, "
+        f"freshness_gate={args.freshness_gate}, max_source_age_days={args.max_source_age_days})",
         file=sys.stderr,
     )
     for c in dropped:

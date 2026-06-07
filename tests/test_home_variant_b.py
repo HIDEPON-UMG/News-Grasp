@@ -86,6 +86,17 @@ def test_hero_2col_structure(built_home: str):
     assert "home-stats2x2" in built_home
 
 
+def test_editors_top_uses_canonical_category_glyphs(built_home: str):
+    """Editor's Top 5 のカテゴリーマークは CATEGORIES 正本に揃える。"""
+    assert "🚗 MOBILITY" not in built_home
+    assert "💼 IT &amp; CONSULTING" not in built_home
+    assert "🤖 ARTIFICIAL INTELLIGENCE" not in built_home
+    assert "🎮 GAMING" not in built_home
+    assert "💱 FOREIGN EXCHANGE" not in built_home
+    assert "◎ MOBILITY" in built_home
+    assert "⌗ IT &amp; CONSULTING" in built_home
+
+
 def test_featured_story_section(built_home: str):
     """home-featured (TOP STORY badge + 1.4fr:1fr grid) がある。実 digest があれば必ず出る。"""
     assert "home-featured" in built_home, "Featured Story section missing"

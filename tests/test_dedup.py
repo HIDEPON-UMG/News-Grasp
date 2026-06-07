@@ -178,6 +178,42 @@ def _check_same_url_old_still_dropped() -> list[str]:
     return errs
 
 
+def _check_url_match_has_priority_over_old_token_match() -> list[str]:
+    """同一 URL は、より古いタイトル/トークン一致より必ず優先して除外する。
+
+    なぜ重要か (2026-06-07 AI 再掲の主因): existing を時系列順に走査すると、
+    先に古い TechCrunch の Google/Anthropic 記事が token match し、後段にある
+    CNBC の同一 URL 既存記事へ到達しなかった。その結果、同一 URL なのに
+    followup_gate の「新材料あり」扱いで通過していた。
+    """
+    errs: list[str] = []
+    old_token_match = {
+        "title": "Google 米DoD機密ネットワーク向けAI全面解放 — Anthropic拒否後にxAI・OpenAI・Googleが相次ぎ受注",
+        "url": "https://techcrunch.com/2026/04/28/google-expands-pentagons-access-to-its-ai-after-anthropics-refusal/",
+        "seen_at": "2026-04-30T06:00:00+09:00",
+    }
+    same_url_existing = {
+        "title": "Microsoft and Google are late to AI coding, but absolutely critical they compete for growth",
+        "url": "https://www.cnbc.com/2026/06/01/microsoft-and-google-take-on-anthropic-and-openai-in-ai-coding-models.html",
+        "seen_at": "2026-06-05T06:00:00+09:00",
+    }
+    candidate = {
+        "title": "Microsoft and Google take on Anthropic and OpenAI in AI coding models",
+        "url": "https://www.cnbc.com/2026/06/01/microsoft-and-google-take-on-anthropic-and-openai-in-ai-coding-models.html?utm_source=x",
+        "score": 90,
+    }
+    passed, dropped = dedup.dedup_candidates(
+        [candidate], [old_token_match, same_url_existing],
+        followup_gate=True,
+        now=datetime(2026, 6, 7, 6, 0, tzinfo=JST),
+    )
+    if passed or len(dropped) != 1:
+        errs.append(f"同一 URL が token match より優先されない: passed={len(passed)}, dropped={len(dropped)}")
+    elif "url match" not in dropped[0].get("dedup_reason", ""):
+        errs.append(f"drop 理由が URL match ではない: {dropped[0].get('dedup_reason')}")
+    return errs
+
+
 def _check_cross_language_same_event_detected() -> list[str]:
     """英語⇄日本語・別ソースの同一イベントを「同一トピック」として検知する。
 
@@ -293,6 +329,49 @@ def _check_batch_internal_dedup() -> list[str]:
     return errs
 
 
+def _check_source_date_extraction_and_freshness_gate() -> list[str]:
+    """URL パスの日付が古い候補は、本日記事として採用しない。
+
+    取得日 `seen_at` ではなく source URL の発行日が古い場合に落とすことで、
+    「今日のニュース」枠へ 2 月/4 月の記事が混入するのを防ぐ。URL に日付が無い
+    候補は偽陽性を避けるため鮮度ゲートでは落とさない。
+    """
+    errs: list[str] = []
+    cases = {
+        "https://www.cnbc.com/2026/02/17/sample.html": "2026-02-17",
+        "https://fortune.com/2026-06-05/sample/": "2026-06-05",
+        "https://www.newstribune.com/news/2026/jun/04/sample/": "2026-06-04",
+        "https://example.com/news/20260603-sample": "2026-06-03",
+    }
+    for url, expected in cases.items():
+        got = dedup.extract_source_date_from_url(url)
+        if got is None or got.isoformat() != expected:
+            errs.append(f"source date 抽出失敗: {url} -> {got}, expected={expected}")
+    candidates = [
+        {
+            "title": "Old source date should be dropped",
+            "url": "https://www.cnbc.com/2026/02/17/old-ai-news.html",
+            "score": 88,
+        },
+        {
+            "title": "URL without date survives freshness gate",
+            "url": "https://example.com/topic/latest-ai-news",
+            "score": 80,
+        },
+    ]
+    passed, dropped = dedup.dedup_candidates(
+        candidates, [],
+        freshness_gate=True,
+        max_source_age_days=7,
+        now=datetime(2026, 6, 7, 6, 0, tzinfo=JST),
+    )
+    if len(passed) != 1 or passed[0]["url"] != "https://example.com/topic/latest-ai-news":
+        errs.append(f"日付なし URL は鮮度ゲートで落とさないべき: passed={passed}")
+    if len(dropped) != 1 or "freshness gate" not in dropped[0].get("dedup_reason", ""):
+        errs.append(f"古い source date が鮮度ゲートで落ちない: dropped={dropped}")
+    return errs
+
+
 _CONTRACT_CASES = [
     ("URL 正規化",            _check_url_normalization),
     ("タイトル正規化",        _check_title_normalization),
@@ -301,11 +380,13 @@ _CONTRACT_CASES = [
     ("24 時間超は続報扱い",   _check_followup_after_24h),
     ("URL 完全マッチ除外",    _check_url_exact_match),
     ("同一URLは常に除外(数日後も)", _check_same_url_old_still_dropped),
+    ("URL一致は古いtoken一致より優先", _check_url_match_has_priority_over_old_token_match),
     ("cross-language 同一イベント検知", _check_cross_language_same_event_detected),
     ("別イベントは誤検知しない", _check_different_events_same_company_survive),
     ("カタカナ日本語タイトル同一イベント検知", _check_japanese_katakana_title_same_event),
     ("一般カタカナ語は誤検知しない", _check_japanese_general_katakana_no_false_match),
     ("batch 内重複除外",      _check_batch_internal_dedup),
+    ("source date 鮮度ゲート", _check_source_date_extraction_and_freshness_gate),
 ]
 
 

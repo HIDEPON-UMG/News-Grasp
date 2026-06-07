@@ -398,8 +398,8 @@ def build_context(digest_path: Path) -> dict[str, Any]:
         "category_id": category_id,
         "category_label": cat["label"],
         "category_jp": cat["jp"],
-        "accent": fm.get("accent", cat["accent"]),
-        "glyph": fm.get("glyph", cat["glyph"]),
+        "accent": cat["accent"],
+        "glyph": cat["glyph"],
         "og_type": "article",
         "og_title": title,
         "og_description": og_description,
@@ -648,6 +648,7 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
     Hero Featured / Editor's Top 3 / category 件数表示で使用。
     """
     top = ctx.get("top") or {}
+    cat_meta = CATEGORIES.get(ctx["category_id"], {})
     raw_score = top.get("score", "")
     try:
         top_score_int = int(raw_score) if str(raw_score).strip().isdigit() else 0
@@ -676,8 +677,8 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "title": ctx["title"],
         "date": ctx["date"],
         "category_id": ctx["category_id"],
-        "category_label": ctx["category_label"],
-        "category_jp": ctx["category_jp"],
+        "category_label": cat_meta.get("label", ctx["category_label"]),
+        "category_jp": cat_meta.get("jp", ctx["category_jp"]),
         "canonical": ctx["canonical"],
         "summary_text": ctx.get("summary_text", ""),
         "theme": ctx.get("theme", ""),
@@ -685,8 +686,8 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "hero_right": ctx.get("hero_right", ""),
         "reflection": ctx.get("reflection") or {},
         "og_image": ctx["og_image"],
-        "accent": ctx["accent"],
-        "glyph": ctx["glyph"],
+        "accent": cat_meta.get("accent", ctx["accent"]),
+        "glyph": cat_meta.get("glyph", ctx["glyph"]),
         # Variant B Home 用
         "top_score": top_score_int,
         "top_title": top.get("title", ""),
@@ -755,6 +756,32 @@ _PUBLICATION_SCHEDULE: dict[int, set[str]] = {
     5: {"fx", "ai", "it", "mobility", "game"},             # 土
     6: {"fx", "ai", "it", "mobility", "game"},             # 日
 }
+
+
+def is_category_scheduled_on(cat_id: str, date_str: str) -> bool:
+    """指定日がカテゴリの配信日なら True。"""
+    from datetime import date as _date
+    if not date_str or len(date_str) < 10:
+        return True
+    try:
+        weekday = _date(int(date_str[0:4]), int(date_str[5:7]), int(date_str[8:10])).weekday()
+    except (ValueError, IndexError):
+        return True
+    return cat_id in _PUBLICATION_SCHEDULE.get(weekday, set())
+
+
+def _category_pause_notice(cat_id: str, today_date: str) -> dict[str, str] | None:
+    """今日の配信対象外カテゴリならカテゴリトップ用の休載表示を返す。"""
+    if is_category_scheduled_on(cat_id, today_date):
+        return None
+    weekday = _date_weekday_jp(today_date)
+    return {
+        "title": "本日は休載です。",
+        "label": "REST DAY",
+        "date": today_date,
+        "weekday": weekday,
+        "body": "このカテゴリは本日の配信対象外です。直近の掲載号を下に表示しています。",
+    }
 
 
 # cat_id → data/articles.jsonl の "genre" 表記揺れ吸収マッピング
@@ -1904,6 +1931,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
     summary_by_date = {
         e["date"]: e for e in entries if e["category_id"] == "summary"
     }
+    today_date = max((e["date"] for e in entries if e.get("date")), default="")
     for cat_id, cat in CATEGORIES.items():
         # 統合方針 (2026-05-26): summary カテゴリのアーカイブ /summary/ は廃止
         # (日付別考察 /{date}/summary/ に統合)。
@@ -1971,6 +1999,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
             "grid_9": grid_9,
             "past_7": past_7,
             "nav_categories": nav_categories,
+            "pause_notice": _category_pause_notice(cat_id, today_date),
         }
         out = Path(docs_root) / cat_id / "index.html"
         written.append(render_page(ctx, out, template_name="category-template.html"))

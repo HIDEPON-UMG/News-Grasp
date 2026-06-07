@@ -233,6 +233,49 @@ glyph: "¥"
     )
 
 
+def test_standard_category_glyph_uses_config_not_frontmatter(tmp_path):
+    """標準カテゴリの glyph/accent は CATEGORIES を正本にし、digest の emoji を使わない。
+
+    なぜ重要か: 2026-06-07 の LP Editor's Top 5 と日別カテゴリページで、
+    Mobility/IT などが frontmatter の 🚗/💼 を拾い、カテゴリトップの正しい ◎/⌗ と
+    表示が分岐した。入力 digest が揺れても生成コンテキストで統一する。
+    """
+    digest = tmp_path / "2026-06-07-Mobility.md"
+    digest.write_text(
+        """---
+title: "News Grasp #20260607 — Mobility"
+date: 2026-06-07
+issue: 20260607
+weekday: 日
+category: Mobility
+categoryId: mobility
+accent: "#FF00FF"
+glyph: "🚗"
+---
+
+# 🚗 Mobility
+
+> [!summary]
+> テスト用サマリ本文。
+
+---
+
+### [88] テスト記事
+
+📅 2026-06-07 · 📰 Test · 🔗 [元記事](https://example.com)
+
+- a
+- b
+- c
+""",
+        encoding="utf-8",
+    )
+    ctx = build_context(digest)
+    assert ctx["glyph"] == CATEGORIES["mobility"]["glyph"]
+    assert ctx["accent"] == CATEGORIES["mobility"]["accent"]
+    assert ctx["glyph"] == "◎"
+
+
 def test_og_description_truncates_at_180_chars(tmp_path):
     """200 文字超の summary callout でも og:description は 180 文字以下に truncate される。"""
     long_summary = "あ" * 250  # 250 chars

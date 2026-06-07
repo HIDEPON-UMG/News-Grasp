@@ -94,6 +94,38 @@ edition: Morning Edition
 ---
 """
 
+_SUNDAY_AI_DIGEST = """---
+title: "News Grasp #20260607 — Artificial Intelligence"
+date: 2026-06-07
+issue: 20260607
+weekday: 日
+category: Artificial Intelligence
+categoryId: ai
+accent: "#2D5BB8"
+glyph: "◆"
+edition: Morning Edition
+---
+
+# ◆ AI — Artificial Intelligence
+
+> [!summary]
+> 日曜の AI サマリ。
+
+---
+
+### [90] 日曜 AI 記事 SENT_AI_SUN
+
+📅 2026-06-07 07:30 · 📰 AI Source · 🔗 [元記事](https://example.com/ai-sun)
+
+#cat/ai #co/AI #score/高
+
+- AI の bullet
+- 2 本目
+- 3 本目
+
+---
+"""
+
 
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
@@ -161,3 +193,27 @@ def test_articles_as_grid_entries_fills_bullets():
         assert "[[" not in joined and "**" not in joined and "__" not in joined
     # score 降順 (G2=80 が先頭)
     assert rows[0]["top_score"] == 80 and rows[1]["top_score"] == 70
+
+
+def test_category_rest_day_notice_appears_on_unscheduled_today(tmp_path: Path):
+    """本日休載カテゴリは、カテゴリトップのヒーローで休載を明示する。"""
+    docs = tmp_path / "docs"
+    d_man = tmp_path / "digest" / "Manufacturing"
+    d_ai = tmp_path / "digest" / "Artificial Intelligence"
+    d_man.mkdir(parents=True)
+    d_ai.mkdir(parents=True)
+    man = d_man / "2026-06-05-Manufacturing.md"
+    ai = d_ai / "2026-06-07-Artificial-Intelligence.md"
+    man.write_text(_DIGEST.replace("2026-06-03", "2026-06-05"), encoding="utf-8")
+    ai.write_text(_SUNDAY_AI_DIGEST, encoding="utf-8")
+
+    sources = [man, ai]
+    entries = _collect_entries(sources)
+    build_category_pages(entries, docs, digests=sources)
+
+    manufacturing_html = (docs / "manufacturing" / "index.html").read_text(encoding="utf-8")
+    ai_html = (docs / "ai" / "index.html").read_text(encoding="utf-8")
+    assert "本日は休載です。" in manufacturing_html
+    assert "このカテゴリは本日の配信対象外です" in manufacturing_html
+    assert "SENT_FEAT" in manufacturing_html
+    assert "本日は休載です。" not in ai_html

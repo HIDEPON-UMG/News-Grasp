@@ -112,10 +112,43 @@
 }
 .editorial__subtitle .emph-bold { background: rgba(201, 161, 85, 0.32); color: var(--color-gold); }
 .editorial__subtitle .emph-und { border-bottom-color: var(--color-gold); }
+.cat-break-notice {
+  max-width: 680px;
+  margin-top: 18px;
+  padding: 18px 20px;
+  background: color-mix(in srgb, var(--color-navy) 72%, var(--color-surface));
+  border-left: 4px solid var(--color-gold);
+  color: var(--color-cream);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+}
+.cat-break-notice__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--color-gold);
+  margin-bottom: 8px;
+}
+.cat-break-notice__title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+.cat-break-notice p {
+  margin: 0;
+  color: var(--color-cream);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.75;
+}
 @media (max-width: 720px) {
   .brand-zone__inner { flex-wrap: wrap; }
   .brand-search { order: 3; flex-basis: 100%; max-width: none; margin-top: 10px; }
   .editorial__subtitle { font-size: 16px; margin: -8px 0 18px; }
+  .cat-break-notice { padding: 16px; }
+  .cat-break-notice__title { font-size: 22px; }
 }
 </style>
 </head>
@@ -198,8 +231,11 @@
       <h1 class="cat-hero__title">経済.</h1>
     </div>
     
-    
-    <div class="cat-hero__summary">日経平均が 6/3 に初の 68,000 円台を記録（年初来 +33%）。AI 半導体ブームが東京エレクトロンなど関連株を牽引。SoftBank は仏 AI データセンターに 750 億ユーロ計画を発表し時価総額で国内首位に躍り出た。</div>
+    <div class="cat-break-notice" role="status" aria-live="polite">
+      <div class="cat-break-notice__label">REST DAY · 2026-06-07 日</div>
+      <div class="cat-break-notice__title">本日は休載です。</div>
+      <p>このカテゴリは本日の配信対象外です。直近の掲載号を下に表示しています。</p>
+    </div>
     
     <div class="cat-hero__stats">
       <div>
@@ -220,9 +256,9 @@
   </div>
   
   <div class="cat-hero__date">
-    <div class="cat-hero__date-label">LATEST</div>
-    <div class="cat-hero__date-big">06·05</div>
-    <div class="cat-hero__date-small">2026 · #20260605</div>
+    <div class="cat-hero__date-label">TODAY</div>
+    <div class="cat-hero__date-big">06·07</div>
+    <div class="cat-hero__date-small">休載日 · 日</div>
   </div>
   
   <div class="cat-hero__bottom-bar">

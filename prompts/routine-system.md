@@ -163,11 +163,13 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 
 ```bash
 # candidates.jsonl に当該カテゴリの全候補を書き出してから
-.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate < candidates.jsonl > filtered.jsonl
-# stderr に「N passed, M dropped」と各 DROP の理由（url match / title similarity / 新材料 0）が出る。
+.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate --freshness-gate --max-source-age-days 7 < candidates.jsonl > filtered.jsonl
+# stderr に「N passed, M dropped」と各 DROP の理由（url match / title similarity / 新材料 0 / freshness gate）が出る。
 # filtered.jsonl が採用候補。落ちた件数と理由は必ず目視で確認する。
 # --followup-gate は 3-A.5 E (続報の新材料判定) を機械化する境界フラグ。
 # 2026-06-05 から本番では必須 (06-05 AI トップが 06-03 同一イベントで再採用された事故の恒久対策)。
+# --freshness-gate は URL パス上の発行日が古い候補を落とす境界フラグ。
+# 2026-06-07 から本番では必須 (seen_at だけ今日で、実記事は 2 月/4 月の再掲だった事故の恒久対策)。
 ```
 
 `tools/dedup.py` は `articles.jsonl` の **全エントリ**（直近 7 日に限らない。過去何日でも）と照合する。判定ロジックは以下のとおりで、**実装（tools/dedup.py）が唯一の正本**。本文はその要約：
@@ -209,6 +211,10 @@ A・B のどちらでマッチしたかで扱いが分かれる（**2026-05-30 �
   - `now - seen_at <= 24 時間` → 重複として除外（articles.jsonl への追記もしない）
   - `now - seen_at > 24 時間` → **続報扱い（採用）**。3-C の 5 軸関連付けで「復状/進展」軸として記事カードの「関連過去号」欄にリンク
 - マッチ無し → 新規記事として採用
+
+##### D. 鮮度ゲート（URL 発行日）
+
+`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。URL パスに `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような発行日が含まれる場合は、`--freshness-gate --max-source-age-days 7` で **JST 今日から 7 日超前の記事を除外**する。URL に日付が無い候補は偽陽性を避けるため、このゲートだけでは落とさない。
 
 ##### E. イベント単位の最終確認（**dedup.py 通過後の続報ゲート**・小プールカテゴリ向け）
 
@@ -478,7 +484,13 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### 5-B. articles.jsonl の更新
 
-3-A.5 dedup を通過した記事のみ、新規メタを `data/articles.jsonl` に append。スキーマ：
+3-A.5 dedup を通過した記事のみ、新規メタを `data/articles.jsonl` に append。**追記は必ず `tools/append_after_dedup.py` 経由で行い、直接ファイルへ append しない**。この境界スクリプトは `--followup-gate` と `--freshness-gate` を既定で有効化し、通過したレコードだけを追記する：
+
+```bash
+.venv\Scripts\python.exe tools\append_after_dedup.py --jsonl data/articles.jsonl --max-source-age-days 7 < final_articles.jsonl
+```
+
+スキーマ：
 
 ```json
 {
@@ -512,7 +524,7 @@ URL 正規化とタイトル類似度で行うため、`tags` 構造の変更は
 - `url_norm`: 3-A.5-A の正規化規則を適用した URL（次回の dedup で照合用）
 - 他は従来通り
 
-dedup ですでに同じ url_norm or 正規化タイトルが見つかったが時系列で 24 時間超えていた場合（続報扱い）も append する。同事象でも時間が経って新しい記事として扱う場合だけ追記される。
+dedup ですでに同じ url_norm or 正規化タイトルが見つかったが時系列で 24 時間超えていた場合（続報扱い）も append する。同事象でも時間が経って新しい記事として扱う場合だけ追記される。ただし URL 発行日が 7 日超前と判定できる候補は鮮度ゲートで append しない。
 
 90 日超のエントリは `data/archive/YYYY-MM.jsonl` に移動して main から削除（ローテート）。
 

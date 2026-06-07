@@ -205,7 +205,8 @@ News-Grasp/
 │   ├── send_push.py         # Web Push 送信 (Worker から購読取得 → pywebpush)
 │   ├── gen_vapid_keys.py    # VAPID 鍵ペア生成 (1 回だけ)
 │   ├── fetch_ogp.py         # OGP 画像取得 (urllib + html.parser)
-│   ├── append_articles.py   # articles.jsonl への追記
+│   ├── append_after_dedup.py # dedup/鮮度ゲート通過後の articles.jsonl 追記
+│   ├── append_articles.py   # 旧単発追記スクリプト
 │   ├── append_today.py      # 当日分だけ追記
 │   ├── build_pwa_icons.py   # favicon / apple-touch-icon / 192/512 PNG 生成
 │   ├── dedup.py             # 過去 90 日と照合する重複排除
