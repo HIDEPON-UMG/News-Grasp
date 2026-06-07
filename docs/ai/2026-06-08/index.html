@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260608 — Artificial Intelligence</title>
+<meta name="description" content="本日の最大トピックは Apple WWDC 2026 キーノート（6/8 10:00PT）。Google Gemini 搭載の全面刷新Siri と iOS 27 を発表。同時に OpenAI が IPO向け機密申請を SEC に提出、9月上場・評価額 850 億ドルを目指す。AI プラットフォーム競争が &#34;産業再編から株式市場へ&#34; の段階に移行した一日。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-08/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260608 — Artificial Intelligence">
+<meta property="og:description" content="本日の最大トピックは Apple WWDC 2026 キーノート（6/8 10:00PT）。Google Gemini 搭載の全面刷新Siri と iOS 27 を発表。同時に OpenAI が IPO向け機密申請を SEC に提出、9月上場・評価額 850 億ドルを目指す。AI プラットフォーム競争が &#34;産業再編から株式市場へ&#34; の段階に移行した一日。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-08/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260608 — Artificial Intelligence">
+<meta name="twitter:description" content="本日の最大トピックは Apple WWDC 2026 キーノート（6/8 10:00PT）。Google Gemini 搭載の全面刷新Siri と iOS 27 を発表。同時に OpenAI が IPO向け機密申請を SEC に提出、9月上場・評価額 850 億ドルを目指す。AI プラットフォーム競争が &#34;産業再編から株式市場へ&#34; の段階に移行した一日。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-08 · #20260608</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">本日の最大トピックは <strong class="emph-bold">Apple</strong> WWDC 2026 キーノート（6/8 10:00PT）。<strong class="emph-bold">Google</strong> Gemini 搭載の全面刷新Siri と iOS 27 を発表。同時に <strong class="emph-bold">OpenAI</strong> が IPO向け機密申請を SEC に提出、9月上場・評価額 850 億ドルを目指す。AI プラットフォーム競争が "産業再編から株式市場へ" の段階に移行した一日。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">86</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·08</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260608</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-08 10:00 · Tom&#39;s Guide (LIVE)</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.tomsguide.com/news/live/wwdc-2026-live-news-updates" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.mos.cms.futurecdn.net/V68cPddtQtEjwHP7qqv82b-2000-80.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.tomsguide.com/news/live/wwdc-2026-live-news-updates" rel="noopener nofollow" target="_blank" style="color: inherit;">WWDC 2026: Google Gemini搭載の新Siri・iOS 27 発表 — Tim Cook ラストキーノート</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Apple</strong> は WWDC 2026 キーノートで、<strong>Google Gemini</strong> の1.2兆パラメータカスタムモデルを基盤にした全面刷新 Siri を発表。Chat 形式の専用アプリが登場し <strong>Dynamic Island</strong> にも統合。Apple・Google 間のライセンス料は<strong>年間約10億ドル</strong>と報じられる。</li><li><strong>iOS 27 / macOS 27 / watchOS 27</strong> では Apple Intelligence が拡充。Visual Intelligence でカメラから栄養ラベル・連絡先・チケットをスキャン、Safari Tab Group の<strong>自動命名</strong>など生活密着 AI 機能が追加される。</li><li><strong class="emph-bold">Tim Cook</strong> は9月1日に CEO 退任（後継：<strong>John Ternus</strong>）で、本イベントはラストキーノート。<span class="emph-und">Gemini との連携が Apple の AI 遅れを巻き返せるか</span>、年内 iOS 27 配信後のユーザー反応が評価軸。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-08</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">2 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-08 06:00</span>
+        <span>· TechTimes</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.techtimes.com/articles/317955/20260607/openai-targets-ipo-soon-september-850-billion.htm" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://d.techtimes.com/en/full/466218/openai.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.techtimes.com/articles/317955/20260607/openai-targets-ipo-soon-september-850-billion.htm" rel="noopener nofollow" target="_blank">OpenAI、IPO向け機密申請 — 評価額 850 億ドル・ゴールドマン主幹・9月上場目標</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong> は <strong>ゴールドマン・サックス</strong> と <strong>モルガン・スタンレー</strong> を主幹事に 5/22 SEC へ機密 S-1 を提出。ターゲット上場は <strong>9月 NYSE/NASDAQ</strong>、評価額は最大 <strong>8,500 億ドル</strong>（約130兆円）で AI 史上最大規模の IPO となる見通し。</li><li>2026年3月時点の年換算売上高は <strong>250 億ドル</strong>（前年末比 +25%）、シティグループと JPモルガンが追加引受候補として交渉中。PBC（パブリック・ベネフィット・コーポレーション）への転換完了が上場前提条件。</li><li>Anthropic が6/1に機密 S-1 を先行提出（評価額 <strong>9,600 億ドル</strong>）しており、<span class="emph-und">AI「二大 IPO」が2026年後半に同時並行</span>。公開市場が AI の高評価を受け入れるかの最初の試金石となる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-08 06:30</span>
+        <span>· OpenTools.ai</span>
+        <span class="more-card__score">78</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://opentools.ai/news/openai-confidential-ipo-filing-september-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://imagedelivery.net/FCiXvK7dG4mSm_W_033WNA/260a6d73-c143-4796-7b8d-afbe453e4d00/contentbanner" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://opentools.ai/news/openai-confidential-ipo-filing-september-2026" rel="noopener nofollow" target="_blank">OpenAI IPO の全容 — Goldman &amp; Morgan が両輪、8月 S-1 公開→9月上場のロードマップ</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong> の IPO ロードマップ：<strong>5/22 機密提出</strong> → <strong>8月 S-1 公開</strong> → <strong>9月上場</strong> のスケジュール。Goldman Sachs が主幹事、Morgan Stanley が共同主幹事で Wall Street 最強布陣。Citi・JPMorgan も参加交渉中。</li><li>評価額の幅は <strong>7,300〜8,500 億ドル</strong>（プライベート市場の7,300億ドルから成長プレミアム上乗せ）。アナリストは売上成長率と赤字幅のバランスを最大の評価分岐点と指摘する。</li><li>Anthropic との「二大 AI IPO」競争で、<span class="emph-und">誰が先に1兆ドル評価を達成するかが関心の焦点</span>。ChatGPT のプレミアム価格改定・エンタープライズ普及率が機関投資家説得の鍵。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Apple</strong>・<strong class="emph-bold">Google</strong> 連合は、OpenAI との蜜月を前提にした AI 競争図を崩した。同時に <strong class="emph-bold">OpenAI</strong> と <strong class="emph-bold">Anthropic</strong> が公開市場へ向かうことで、AI の評価は私募市場の期待から上場企業としての説明責任へ移る。<strong>モデル性能だけでなく、配布面と資本調達面の両方を取れる企業が強くなる</strong>。<span class="emph-und">AI 競争は研究所間競争から市場構造競争へ移った。</span></p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-08/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-08
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

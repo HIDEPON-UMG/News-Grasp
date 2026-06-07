@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>コンサル『人月』の崩落、AIが値付けを書き換える — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="生成AIがコンサル大手の人月（タイムチャージ）課金を掘り崩し、Google型『取り込み（$750Mファンド・JV）』とOpenAI型『代替（DeployCo）』の二経路で収益構造が成果報酬へ転換する流れは、各社の価格体系と序列をどう塗り替えるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-08/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="コンサル『人月』の崩落、AIが値付けを書き換える">
+<meta property="og:description" content="生成AIがコンサル大手の人月（タイムチャージ）課金を掘り崩し、Google型『取り込み（$750Mファンド・JV）』とOpenAI型『代替（DeployCo）』の二経路で収益構造が成果報酬へ転換する流れは、各社の価格体系と序列をどう塗り替えるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-08/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="コンサル『人月』の崩落、AIが値付けを書き換える">
+<meta name="twitter:description" content="生成AIがコンサル大手の人月（タイムチャージ）課金を掘り崩し、Google型『取り込み（$750Mファンド・JV）』とOpenAI型『代替（DeployCo）』の二経路で収益構造が成果報酬へ転換する流れは、各社の価格体系と序列をどう塗り替えるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #2E6B52;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(46,107,82,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(46,107,82,0.22);
+  --accent-underline: rgba(46,107,82,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260608</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">⌗</span>IT &amp; CONSULTING · IT-Consulting</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.06.08</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260608</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">11 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">コンサル『人月』の崩落、AIが値付けを書き換える</h1>
+      <p class="dd-hero__theme">生成AIがコンサル大手の人月（タイムチャージ）課金を掘り崩し、Google型『取り込み（$750Mファンド・JV）』とOpenAI型『代替（DeployCo）』の二経路で収益構造が成果報酬へ転換する流れは、各社の価格体系と序列をどう塗り替えるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260608</span><span>#コンサル</span><span>#Accenture</span><span>#McKinsey</span><span>#OpenAI</span><span>#Google</span><span>#人月課金</span></div>
+    </header>
+
+    
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+        
+        <li class="dd-related__item" style="border-left-color: #2E6B52">
+          
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #181C2A">続報</span>
+            <span class="dd-related__chip">競争地図の塗り替え → 価格体系(人月)の崩落</span>
+          </div>
+          
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-04/" style="border-bottom-color: #2E6B52">OpenAI、コンサル市場へ直接参入の衝撃</a>
+            <span class="dd-related__date">2026.06.04</span>
+          </div>
+          <p class="dd-related__change">前回(6/4)はOpenAIがDeployCoで実装受注に直接参入し競争地図を塗り替える構図を扱った。今回の変化点は、McKinseyが既にフィーの約25%を成果報酬へ移し、BCGがAI関連売上20%→40%、BainがAI関連売上30%→50%と人月課金の崩落が定量化され、さらにGoogleが$750Mファンドで『取り込み』、OpenAIがDeployCoで『代替』という二経路の分岐が鮮明になったこと</p>
+        </li>
+        
+        <li class="dd-related__item" style="border-left-color: #2D5BB8">
+          
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #2E6B52">主役共有</span>
+            <span class="dd-related__chip">OpenAI / Google</span>
+          </div>
+          
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-07/" style="border-bottom-color: #2D5BB8">Anthropic 先行上場、AI IPOバブルの号砲</a>
+            <span class="dd-related__date">2026.06.07</span>
+          </div>
+          <p class="dd-related__change">前回(6/7)は同じAIラボの資本市場(IPO)競争が焦点だった。今回はその資金が向かう先——コンサル/実装サービス市場での『取り込みvs代替』——へ論点が移った</p>
+        </li>
+        
+      </ul>
+    </aside>
+    
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><span class="emph-und">値付けの足場が抜け始めた。</span> <strong class="emph-bold">McKinsey</strong> の英国マネージングパートナー <strong class="emph-bold">Michael Birshan</strong> によれば、同社のグローバル報酬の <strong>約25%が既に成果報酬（outcome-based）型</strong>に移っている（<strong class="emph-bold">AOL</strong>/<strong class="emph-bold">Fortune</strong>、2026-05-26）。<span class="emph-und">前回（6/4）の本欄</span>は、<strong class="emph-bold">OpenAI</strong> が <strong class="emph-bold">DeployCo</strong> で実装受注に直接参入し<strong>競争地図を塗り替える</strong>構図を扱った。<strong>今回の変化点</strong>は、その先で <span class="emph-und">コンサルの収益の土台である「人月（タイムチャージ）課金」そのもの</span>が崩れ始め、しかも崩しにかかる <strong class="emph-bold">AI事業者</strong> が <strong>「取り込み」と「代替」の二経路に割れた</strong>ことにある。</p><p>関係図が示すのは、<span class="emph-und">同じコンサル大手を前にして <strong class="emph-bold">AI事業者</strong> が真逆の手を打っている</span>という構造だ。<strong class="emph-bold">OpenAI</strong> は <strong class="emph-bold">DeployCo</strong> で <strong><strong class="emph-bold">Accenture</strong> や <strong class="emph-bold">Deloitte</strong> の実装受注を正面から代替</strong>しに行き、<strong class="emph-bold">McKinsey</strong>・<strong class="emph-bold">Bain</strong> とは <strong>出資で結ばれながら助言市場では競合</strong>するという <span class="emph-und">協調的競合（frenemy）</span>に立つ。対する <strong class="emph-bold">Google Cloud</strong> は、敵対ではなく <strong>$750Mのファンドでコンサルを束ね</strong>、<strong class="emph-bold">McKinsey</strong> とは共同変革グループまで組んで <span class="emph-und">自陣の実装部隊として取り込む</span>。<strong>代替（置換）か、取り込み（束ね）か</strong>——この二経路の分岐が、今回の力学の核心である。</p><p>その分岐が刺さる先は、いずれも <span class="emph-und">コンサルの「人月」という値付けの根拠</span>だ。<strong class="emph-bold">OpenAI</strong> の <strong class="emph-bold">FDE</strong>（Forward Deployed Engineer）が <strong>人手の工数をAI工数へ置換</strong>すれば、稼働時間に比例した請求は痩せていく。<strong class="emph-bold">Google</strong> の取り込みも、<strong>クラウド消費とエージェント本数で価値を測る</strong>モデルへ顧客を移し、<span class="emph-und">「何人が何時間働いたか」から「成果が出たか」</span>へ評価軸をずらす。<strong>供給側のどちらの経路を通っても</strong>、行き着くのは <span class="emph-und">タイムチャージから成果報酬への移行</span>という同じ出口である。</p><p>そして既存コンサルは、この圧力に <strong>守りと攻めの二正面</strong>で応じている。<strong class="emph-bold">Accenture</strong> は <strong>Q2 FY26で過去最高Q2の新規受注$22.11B</strong>を積み上げ本丸を守りながら、<span class="emph-und">人員最適化（severance）を並行</span>させてAI前提の体制へ組み替える。<strong class="emph-bold">McKinsey</strong>・<strong class="emph-bold">Bain</strong> は <strong>DeployCoへ出資して敵を半身で味方に変え</strong>、<strong class="emph-bold">BCG</strong> は <strong>AI関連売上を倍増</strong>させて工数収益の目減りを補う。<span class="emph-und">誰も静観していない</span>という事実が、価格体系の地殻変動が既に始まっていることを物語る。</p></div>
+      <div class="dd-exhibits">
+        
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">02.23</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>OpenAIがFrontier Alliances発表（BCG/McKinsey/Accenture/Capgemini）</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">03.19</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Accenture Q2 FY26決算 売上$18.04B(+8%)・新規受注$22.11B(過去最高Q2)</p>
+                  <a href="https://newsroom.accenture.com/content/2qfy26-earnings/accenture-reports-second-quarter-fiscal-2026-results.pdf"><span class="src">Accenture</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">04.22</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Google CloudがCloud Next 26で$750MのエージェントAIパートナーファンド発表</p>
+                  <a href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai"><span class="src">TheNextWeb</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.11</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>OpenAIがDeployCo立ち上げ $4B調達・Tomoro買収で約150名のFDE</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.26</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>『AIがMcKinsey/BCG/Bainのフィー体系を揺さぶる』McKinseyフィーの25%が成果報酬へ</p>
+                  <a href="https://www.aol.com/finance/ai-forcing-mckinsey-bcg-bain-063300951.html"><span class="src">AOL / Fortune</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.05</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>McKinsey×Google Cloudが共同変革グループ発足 成果連動を志向</p>
+                  
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.18</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Accenture Q3 FY26決算予定 AI需要と価格圧力の実数が出る節目</p>
+                  
+                </div>
+              </div>
+              
+            </div>
+          </figure>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+            
+            <div class="dd-player">
+              <div class="dd-player__name">OpenAI (DeployCo)</div>
+              <div class="dd-player__role">モデルベンダー／実装の新規参入者（代替）</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">DeployCoで$4B調達・Tomoro買収で約150名のFDEを即日投入。並行してFrontier Alliancesで4大コンサルと提携</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">提携で販路を広げつつ実装受注を自ら受け、人月をAI工数へ置換する</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">Google Cloud</div>
+              <div class="dd-player__role">AIプラットフォーム（取り込み）</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">$750MのエージェントAIパートナーファンドでコンサルを束ね、McKinseyと共同変革グループ。$1の支出で$7.05のサービス売上を約束</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">コンサルを自陣に取り込みクラウド消費を最大化、敵に回さず束ねる</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">Accenture</div>
+              <div class="dd-player__role">実装受注で最大手の既存コンサル</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Q2 FY26は売上$18.04B(+8%)・新規受注$22.11B(過去最高Q2)・EPS$2.93。FY25Q4〜FY26Q1に人員最適化(severance)を並行</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">提携で取り込みつつ、DeployCoに最も侵食されうる本丸の実装を防衛</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">McKinsey / Bain</div>
+              <div class="dd-player__role">戦略系コンサル（両建て）</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">McKinseyはフィーの約25%を成果報酬化・Lilliが月50万超prompt。BainはAI関連売上が約30%→将来50%へ。両社ともDeployCoに出資</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">上流の戦略を握りつつ、敵対より出資で囲い込み、人月依存を下げる</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">BCG</div>
+              <div class="dd-player__role">戦略系コンサル</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">AI関連業務が2024年の売上20%から2026年に40%へ倍増の見込み</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">AIを売上源に転換し、工数ベース収益の目減りを補う</p>
+            </div>
+            
+          </div>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">AI事業者『取り込みvs代替』とコンサル大手の関係図</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 570" width="1080" height="570" style="display:block;background:#FAF7F0" role="img" aria-label="AI事業者『取り込みvs代替』とコンサル大手の関係図"><line x1="725.4" y1="444.0" x2="354.6" y2="444.0" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="354.6,444.0 363.6,439.5 363.6,448.5" fill="#8E2A19"/><polygon points="725.4,444.0 716.4,448.5 716.4,439.5" fill="#8E2A19"/><line x1="728.2" y1="420.6" x2="336.2" y2="158.6" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="336.2,158.6 346.2,159.9 341.2,167.4" fill="#2E6B52"/><polygon points="728.2,420.6 718.3,419.4 723.3,411.9" fill="#2E6B52"/><line x1="743.8" y1="397.4" x2="351.8" y2="135.4" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="351.8,135.4 361.7,136.6 356.7,144.1" fill="#8E2A19"/><polygon points="743.8,397.4 733.8,396.1 738.8,388.6" fill="#8E2A19"/><line x1="736.0" y1="147.0" x2="344.0" y2="409.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="344.0,409.0 349.0,400.3 354.0,407.7" fill="#2E6B52"/><line x1="725.4" y1="112.0" x2="354.6" y2="112.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="354.6,112.0 363.6,107.5 363.6,116.5" fill="#2E6B52"/><g transform="translate(456.8,201.0)"><rect width="166.5" height="44.0" fill="#fff" stroke="#1A1A1A" stroke-width="1" rx="2"/><circle cx="13" cy="13" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> DeployCoに出資</text><circle cx="13" cy="31" r="3.5" fill="#8E2A19"/><text x="24" y="35" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 助言市場で競合</text></g><g transform="translate(425.5,431.0)"><rect width="229.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> DeployCoで実装受注を代替</text></g><g transform="translate(418.0,320.0)"><rect width="244.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> $750Mファンド・450 agents</text></g><g transform="translate(423.0,99.0)"><rect width="234.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 共同変革グループ(成果連動)</text></g><circle cx="788.4" cy="444.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="788.4" y="440.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">OpenAI (DeployCo)</text><text x="788.4" y="454.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AI事業者</text><circle cx="788.4" cy="112.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="788.4" y="108.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="12.9" fill="#1A1A1A" letter-spacing="-0.5">Google Cloud</text><text x="788.4" y="124.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AI事業者</text><circle cx="291.6" cy="444.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="291.6" y="440.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Accenture (実装本丸)</text><text x="291.6" y="454.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">コンサル大手</text><circle cx="291.6" cy="112.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="291.6" y="108.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">McKinsey / Bain (戦略)</text><text x="291.6" y="122.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">コンサル大手</text></svg></div>
+            
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+              
+            </div>
+            
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai">*1 TheNextWeb</a> <a class="cite" href="https://www.aol.com/finance/ai-forcing-mckinsey-bcg-bain-063300951.html">*2 AOL / Fortune</a></span></div>
+          </figure>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p><span class="emph-und">数字が映すのは、需要は伸びているのに値付けの根拠が痩せていく逆説である。</span> <strong class="emph-bold">Accenture</strong> の売上は <strong>1年前の四半期$16.66Bから直近$18.04Bへ前年比+8%</strong>で増え（チャート①）、新規受注も <strong>$22.11Bと過去最高Q2</strong>を記録した。にもかかわらず同社は <span class="emph-und">FY25Q4〜FY26Q1にかけ人員最適化（severance）を計上</span>している。<strong>AIが需要を押し上げつつ、同じAIが人手＝請求の源泉を削る</strong>——この <span class="emph-und">増収と人員圧縮の同居</span>こそ、人月モデルが内側から崩れている何よりの証拠だ。</p><p>崩落は既に <strong>価格の数字</strong>として現れている。<strong class="emph-bold">McKinsey</strong> は <strong>フィーの約25%を成果報酬型へ移し</strong>、社内AI <strong class="emph-bold">Lilli</strong> は <span class="emph-und">月50万超のpromptで最大30%の知的労働を時短</span>する。<strong class="emph-bold">Bain</strong> は <strong>AI・技術起点の売上を約30%から将来50%へ</strong>、<strong class="emph-bold">BCG</strong> は <strong>AI関連業務を2024年の20%から2026年に40%へ倍増</strong>させる見込みだ。<span class="emph-und">稼働時間に比例した請求が縮み、成果に連動する請求が膨らむ</span>という置換が、複数社で同時に進んでいる。</p></div>
+      
+      <div class="dd-charts">
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Accenture 四半期売上：AI需要が支える増収（人員最適化と並行）</span></figcaption>
+          <div class="dd-chart__note">前年比+8%・新規受注$22.11B(過去最高Q2)</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Accenture 四半期売上：AI需要が支える増収（人員最適化と並行）"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">十億ドル</text><rect x="49.4" y="82.9" width="109.1" height="131.1" fill="#2E6B52"/><text x="104.0" y="74.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">16.66</text><rect x="225.4" y="66.5" width="109.1" height="147.5" fill="#2E6B52"/><text x="280.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">18.74</text><rect x="401.4" y="72.1" width="109.1" height="141.9" fill="#2E6B52"/><text x="456.0" y="64.1" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">18.04</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Q2 FY25</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Q1 FY26</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Q2 FY26</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 前年比+8%・新規受注$22.11B(過去最高Q2)</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://newsroom.accenture.com/content/2qfy26-earnings/accenture-reports-second-quarter-fiscal-2026-results.pdf">*3 Accenture</a></span></div>
+        </figure>
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">二経路の賭け金：Google『取り込み』ファンド vs OpenAI『代替』調達</span></figcaption>
+          <div class="dd-chart__note">$1支出→$7.05のサービス売上</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="二経路の賭け金：Google『取り込み』ファンド vs OpenAI『代替』調達"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">百万ドル</text><rect x="41.1" y="186.4" width="81.8" height="27.6" fill="#2E6B52"/><text x="82.0" y="178.4" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">750</text><rect x="173.1" y="199.3" width="81.8" height="14.7" fill="#2E6B52"/><text x="214.0" y="191.3" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">400</text><rect x="305.1" y="210.3" width="81.8" height="3.7" fill="#2E6B52"/><text x="346.0" y="202.3" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">100</text><rect x="437.1" y="66.5" width="81.8" height="147.5" fill="#2E6B52"/><text x="478.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4000</text><text x="82.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Google ファンド総額</text><text x="214.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">PwC コミット</text><text x="346.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">KPMG コミット</text><text x="478.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">OpenAI DeployCo 調達</text><text x="82.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ $1支出→$7.05のサービス売上</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai">*1 TheNextWeb</a></span></div>
+        </figure>
+        
+      </div>
+      
+      
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">コンサル大手・AI事業者の立ち位置と直近の実数</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>当事者</th><th>AIへの立ち位置</th><th>直近の具体的な手と数値</th><th>出典</th></tr></thead>
+              <tbody>
+                
+                <tr>
+                  
+                  <td class="head">OpenAI (DeployCo)</td>
+                  
+                  <td class="val">代替（実装に直接参入）</td>
+                  
+                  <td class="val">$4B調達・Tomoro買収で約150名のFDE。McKinsey/Bain/Capgemini等が出資</td>
+                  
+                  <td class="src">OpenAI / 報道</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">Google Cloud</td>
+                  
+                  <td class="val">取り込み（束ねる）</td>
+                  
+                  <td class="val">$750Mファンド。$1の支出で$7.05のサービス売上。Accentureは450 agents、Deloitteは100 agents、NTTデータは5000名を投入</td>
+                  
+                  <td class="src">TheNextWeb</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">Accenture</td>
+                  
+                  <td class="val">防衛＋取り込み</td>
+                  
+                  <td class="val">Q2 FY26 売上$18.04B(+8%)・新規受注$22.11B・EPS$2.93・営業益率13.8%。FY26成長見通し3〜5%(現地通貨)、人員最適化を並行</td>
+                  
+                  <td class="src">Accenture Q2 8-K</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">McKinsey</td>
+                  
+                  <td class="val">両建て（上流＋出資）</td>
+                  
+                  <td class="val">フィーの約25%が成果報酬型(Birshan)。社内AI Lilliが月50万超promptで最大30%の時短。Google変革JV＋DeployCo出資</td>
+                  
+                  <td class="src">AOL / Fortune</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">Bain</td>
+                  
+                  <td class="val">AI売上源化＋出資</td>
+                  
+                  <td class="val">AI・技術起点の売上が現状約30%→将来50%へ。DeployCoに出資</td>
+                  
+                  <td class="src">AOL / Fortune</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">BCG</td>
+                  
+                  <td class="val">AI売上源化</td>
+                  
+                  <td class="val">AI関連業務が2024年の売上20%→2026年に40%へ倍増見込み</td>
+                  
+                  <td class="src">AOL / Fortune</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">元コンサル約150名</td>
+                  
+                  <td class="val">代替の人的コスト</td>
+                  
+                  <td class="val unconf">3社の元コンサルがAIに初級コンサル業務を学習させる委託に回ったと報道(規模は未確認)<span class="dd-badge">未確認</span></td>
+                  
+                  <td class="src">AOL / Fortune</td>
+                  
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai">*1 TheNextWeb</a> <a class="cite" href="https://www.aol.com/finance/ai-forcing-mckinsey-bcg-bain-063300951.html">*2 AOL / Fortune</a> <a class="cite" href="https://newsroom.accenture.com/content/2qfy26-earnings/accenture-reports-second-quarter-fiscal-2026-results.pdf">*3 Accenture</a></span></div>
+        </figure>
+      </div>
+      
+      <div class="dd-prose"><p>ここで背景の <strong>二経路</strong>が論点に直結する（チャート②）。<strong class="emph-bold">Google</strong> は <strong>$750Mを賭けてコンサルを束ね</strong>、<span class="emph-und">$1のクラウド支出が$7.05のサービス売上を生む</span>経済圏に取り込む。一方 <strong class="emph-bold">OpenAI</strong> は <strong>DeployCoに$4B</strong>を投じ、<span class="emph-und">実装そのものを自ら受ける</span>代替に賭ける。<strong>取り込まれる側は販路と需要を得るが値付けの主導権を渡し</strong>、<strong>代替される側は本丸の受注を失う</strong>。<span class="emph-und">どちらの経路でも、コンサルが守ってきた「人月の値付け」は手放さざるを得ない</span>——これが定量データから follow する中核の論点である。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+      
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>AIが壊す人月課金モデルに対し、コンサル各社は値付けをどう作り直し、Google型『取り込み』とOpenAI型『代替』のどちらに賭けるか</p>
+          </div>
+          <div class="dd-decision__opts">
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">成果報酬・価値ベース課金へ全面転換し人月から脱却する</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">AIベンダー(Google/OpenAI)のファンド・JVに乗り『取り込まれる側』で再販と実装を握る</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">独自AI・専有環境で垂直統合し実装を自社で抱え込む(防衛)</p>
+            </div>
+            
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-06-18 Accenture Q3 FY26決算(AI需要と価格圧力の実数)、および各社FY26通期ガイダンス更新</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+              
+              <ul class="dd-decision__deciders"><li>Accenture経営陣</li><li>McKinsey/Bain/BCGのマネージングパートナー</li><li>Google Cloud・OpenAIの事業責任者</li><li>発注企業のCFO・調達部門</li></ul>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dd-prose"><p><span class="emph-und">読み筋はこうだ。</span> 三つの選択肢は排他ではなく、<strong>規模で本丸を守る <strong class="emph-bold">Accenture</strong></strong>、<strong>出資で敵を束ねる <strong class="emph-bold">McKinsey</strong>・<strong class="emph-bold">Bain</strong></strong>、<strong>AI売上比率を上げる <strong class="emph-bold">BCG</strong></strong> と、各社が <span class="emph-und">既に別々の賭け方</span>を始めている。共通するのは、<strong>人月という単一の物差しを手放す</strong>点だ。<span class="emph-und">値付けの根拠が「投入工数」から「実現した成果」へ移る</span>とき、勝つのは <span class="emph-und">成果を定義し計測する側</span>——すなわち成果連動契約の設計力を握る陣営になる。</p><p><span class="emph-und">私見では</span>、次の決定的シグナルは <strong><strong class="emph-bold">Accenture</strong> の6月18日Q3決算</strong>である。<strong>AI需要で受注が伸び続けるか</strong>、それとも <strong>価格圧力で利益率が削れるか</strong>が初めて実数で出る。ここで <span class="emph-und">増収と margin の両立</span>が崩れれば、市場は「取り込み・代替の二経路がコンサルの値付け権を奪い始めた」と読み、<strong>成果報酬への転換が一段加速</strong>する。<span class="emph-und">人月の黄昏は、決算の一行に最初に現れる。</span></p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+      
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">McKinsey</strong> は <strong>フィーの約25%を成果報酬型</strong>へ移し、<strong class="emph-bold">BCG</strong> は <strong>AI関連売上を20%→40%</strong>へ倍増させる——コンサルの <strong>人月（タイムチャージ）課金</strong>が定量データの上で崩れ始めた。崩しにかかる <strong class="emph-bold">AI事業者</strong> は二経路に割れ、<strong class="emph-bold">Google</strong> は <strong>$750Mファンドで「取り込み」</strong>、<strong class="emph-bold">OpenAI</strong> は <strong>DeployCoで「代替」</strong>を狙う。<strong class="emph-bold">Accenture</strong> は <strong>Q2 FY26で過去最高Q2受注$22.11B</strong>を守りつつ <span class="emph-und">人員最適化を並行</span>させた。<span class="emph-und">焦点は、値付けが「工数」から「成果」へ移る転換に各社がどう賭けるかに尽きる。</span>次の実数は <strong>6/18のAccenture Q3決算</strong>で出る。</p>
+        <div class="watermark">❖</div>
+      </div>
+      
+      
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+          
+          
+          <a class="dd-source" href="https://thenextweb.com/news/google-cloud-750m-partner-fund-agentic-ai">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">TheNextWeb</span>「Google Cloud commits $750M partner fund for agentic AI」(2026-04) <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://www.aol.com/finance/ai-forcing-mckinsey-bcg-bain-063300951.html">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">AOL / Fortune</span>「AI is forcing McKinsey, BCG and Bain to rethink their consulting fees」(2026-05-26) <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://newsroom.accenture.com/content/2qfy26-earnings/accenture-reports-second-quarter-fiscal-2026-results.pdf">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Accenture</span>「Reports Second-Quarter Fiscal 2026 Results」(2026-03) <span class="ext">↗</span></span>
+          </a>
+          
+          
+        </div>
+      </div>
+      
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+</body>
+</html>
