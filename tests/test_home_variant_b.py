@@ -130,6 +130,19 @@ def test_featured_story_section(built_home: str):
     assert "TOP STORY" in built_home
 
 
+def test_featured_story_thumb_falls_back_to_og_image(built_home: str):
+    """TOP STORY が thumb 無しでも色面だけに退化せずカテゴリ OG 画像を出す。"""
+    featured = re.search(
+        r'<section class="home-featured.*?</section>',
+        built_home,
+        flags=re.DOTALL,
+    )
+    assert featured, "home-featured section missing"
+    html_block = featured.group(0)
+    assert "/assets/og/" in html_block
+    assert "width: 100%; height: 100%;" not in html_block
+
+
 def test_categories_7_lens_cards(built_home: str):
     """home-cats__grid に 7 lens card が並ぶ。"""
     assert 'class="home-cats__grid"' in built_home

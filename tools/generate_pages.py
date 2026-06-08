@@ -1493,6 +1493,8 @@ def _parse_theme_intro(body: str) -> tuple[str, str]:
         if s.startswith(">"):
             content = s[1:].strip()
             if content.startswith("[!"):
+                if content.lower().startswith("[!quote]"):
+                    break
                 if in_block:
                     break  # lead は callout の手前まで
                 continue
@@ -1505,6 +1507,10 @@ def _parse_theme_intro(body: str) -> tuple[str, str]:
         elif in_block:
             break
     lead = " ".join(lead_lines).strip()
+    if not lead and len(subtitle) >= 80:
+        # 誤って長い本文を subtitle 斜体に入れた場合でも、LP の TODAY'S THEME が
+        # 短文 fallback に退化しないようにする。正規形は subtitle + blockquote lead。
+        lead = subtitle
     return (subtitle, lead)
 
 

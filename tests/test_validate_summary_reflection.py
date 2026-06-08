@@ -36,13 +36,34 @@ def test_validate_summary_reflection_accepts_theme_block(tmp_path: Path) -> None
         "# News Grasp #20260608\n\n"
         "## § 本日のテーマ考察\n\n"
         "*AI と市場が同時に動いた一日*\n\n"
-        "> [[AI]] と __為替__ の変化が同じ方向を向き、**投資判断**と産業戦略が同時に更新された。\n\n"
+        "> [[AI]] と __為替__ の変化が同じ方向を向き、**投資判断**と産業戦略が同時に更新された。"
+        "今日は単一カテゴリの速報ではなく、政策イベント、企業AI、半導体供給網、ゲーム供給計画が同時に読まれる日だった。"
+        "短期の市場反応と中期の実装力を分けて読み、どの材料が継続して運用できるかを確認する必要がある。"
+        "LPではこの段落が読者の入口になるため、単なる一文要約ではなく、複数カテゴリの関係を十分に説明する。\n\n"
         "### §01 総論 — AI と市場の同時進行\n\n"
         "[[AI]] と __市場__ が相互に影響した。\n",
         encoding="utf-8",
     )
 
     assert validate_summary_reflection(summary) == []
+
+
+def test_validate_summary_reflection_rejects_short_lead_even_with_sections(tmp_path: Path) -> None:
+    """§ セクションがあっても、LP に出る lead が短すぎれば落とす。"""
+    summary = tmp_path / "2026-06-08.md"
+    summary.write_text(
+        "# News Grasp #20260608\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "*AI と市場が同時に動いた一日*\n\n"
+        "> 今日の焦点は実装力だ。\n\n"
+        "### §01 総論 — AI と市場の同時進行\n\n"
+        "本文はある。\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_summary_reflection(summary)
+
+    assert any("短すぎます" in e for e in errs)
 
 
 def test_find_latest_summary_uses_yyyy_mm_dd_name(tmp_path: Path) -> None:

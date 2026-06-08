@@ -28,13 +28,19 @@ def validate_summary_reflection(path: Path) -> list[str]:
     reflection = parse_reflection(body)
     lead = reflection.get("lead") or ""
     sections = reflection.get("sections") or {}
-    if lead or sections:
-        return []
-    return [
-        f"{path}: reflection が空です。",
-        "期待形式: `## § 本日のテーマ考察` 直下に lead blockquote、または `### §01 ...` セクションを出力してください。",
-        "このままでは LP の TODAY'S THEME / 本日のテーマ考察が空欄またはフォールバックになります。",
-    ]
+    errs: list[str] = []
+    if not lead and not sections:
+        errs.extend([
+            f"{path}: reflection が空です。",
+            "期待形式: `## § 本日のテーマ考察` 直下に lead blockquote、または `### §01 ...` セクションを出力してください。",
+            "このままでは LP の TODAY'S THEME / 本日のテーマ考察が空欄またはフォールバックになります。",
+        ])
+    if len(lead.strip()) < 180:
+        errs.extend([
+            f"{path}: reflection lead が短すぎます ({len(lead.strip())} chars)。",
+            "LP の TODAY'S THEME に出る本文として、`## § 本日のテーマ考察` 直下へ180文字以上の blockquote lead を置いてください。",
+        ])
+    return errs
 
 
 def main(argv: list[str] | None = None) -> int:

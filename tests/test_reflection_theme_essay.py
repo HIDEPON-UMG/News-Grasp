@@ -216,6 +216,21 @@ def test_parse_reflection_extracts_all_blocks():
     assert r["takeaways"][2]["tag"] == "産業"
 
 
+def test_parse_reflection_uses_long_subtitle_as_lead_fallback():
+    """長文本文を誤って斜体 subtitle に入れても、LP lead を短文 fallback にしない。"""
+    body = (
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "*これは80文字を大きく超える長い本文であり、本来はblockquoteに置くべきだが、"
+        "誤ってsubtitleへ入ってもホームのリード文として拾うための回帰テストである。"
+        "市場、AI、供給網、政策を横断して説明する。*\n\n"
+        "> [!quote]\n"
+        "> 短い引用\n"
+    )
+    r = parse_reflection(body)
+    assert "市場、AI、供給網、政策" in r["lead"]
+
+
 def test_parse_reflection_empty_on_plain_digest():
     """考察ブロックの無い digest では各値が空 (fallback に委ねる)。"""
     r = parse_reflection("# foo\n\n> [!summary]\n> bar\n")

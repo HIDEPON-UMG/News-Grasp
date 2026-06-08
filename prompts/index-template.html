@@ -232,7 +232,7 @@
           <img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
           {% endif %}
         {% else %}
-          <div style="background: {{ hero_story.accent }}; width: 100%; height: 100%;"></div>
+          <a href="{{ hero_story.canonical }}" aria-label="記事詳細ページを開く"><img src="{{ base_url }}/assets/og/{{ hero_story.category_id }}.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
         {% endif %}
       </div>
       <div>
