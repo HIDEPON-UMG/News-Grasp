@@ -1,0 +1,19 @@
+{
+  "date": "2026-06-09",
+  "category_id": "mobility",
+  "queries": [
+    "Tesla Austin robotaxi June 2026",
+    "Waymo Tesla robotaxi fleet Texas June 2026",
+    "BYD April 2026 overseas sales EV"
+  ],
+  "raw_results_total": 18,
+  "candidates_total": 6,
+  "selected_total": 3,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber", "robotaxi", "EV sales"],
+  "dropped": [
+    {"title": "NotATeslaApp Austin robotaxi follow-up", "reason": "Tesla Oracle と同一イベントのため重複除外"},
+    {"title": "Older BYD monthly recap", "reason": "前週以前の再掲で新材料が薄いため除外"},
+    {"title": "Generic autonomous vehicle roundup", "reason": "当日性と企業固有性が弱いため除外"}
+  ],
+  "quality_shortfall_reason": "Tesla Austin Robotaxi 展開は重複記事を除外し、BYD は最新鮮度記事のみ採用したため3件確定。"
+}

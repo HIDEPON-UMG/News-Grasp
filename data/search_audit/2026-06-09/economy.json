@@ -1,0 +1,20 @@
+{
+  "date": "2026-06-09",
+  "category_id": "economy",
+  "queries": [
+    "Japan Q1 2026 GDP revised lower June 9",
+    "Nikkei 225 falls June 9 2026 risk aversion",
+    "Nikkei 225 forecast AI boom Japan stocks 2026"
+  ],
+  "raw_results_total": 14,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": ["Japan GDP", "Nikkei 225", "Nikkei", "BOJ", "Fed", "S&P 500", "SoftBank", "NVIDIA", "AI stocks", "risk aversion"],
+  "dropped": [
+    {"title": "Japan Revises Q1 GDP Growth Down to 1.8% on Weak Capital Investment", "reason": "GDP 下方修正テーマで EconoTimes と重複"},
+    {"title": "Japan Q1 GDP revised lower on weak business spending, M.East headwinds", "reason": "GDP 下方修正テーマで重複"},
+    {"title": "Japan's stock market hits new record as AI boom gathers steam", "reason": "6月3日の前週記事で当日性不足"},
+    {"title": "Nikkei Index Drops Nearly 4% at Open, Kioxia and SoftBank Both Slump", "reason": "候補化後、当日採用済みの日経リスクオフ記事と重複度が高いため除外"}
+  ],
+  "quality_shortfall_reason": "日本 GDP・日経平均関連の重複報道と前週記事を除外し、当日性の高い3件に絞って採用。"
+}

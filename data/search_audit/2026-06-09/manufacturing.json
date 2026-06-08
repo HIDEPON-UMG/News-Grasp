@@ -1,0 +1,20 @@
+{
+  "date": "2026-06-09",
+  "category_id": "manufacturing",
+  "queries": [
+    "Denso Rohm acquisition SiC June 2026",
+    "Rohm Toshiba Mitsubishi power semiconductor venture",
+    "Toyota TSMC Denso Kumamoto second fab"
+  ],
+  "raw_results_total": 16,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "coverage_terms_checked": ["Denso", "Rohm", "Toshiba", "Mitsubishi Electric", "Toyota", "TSMC", "SiC", "Foxconn", "Intel", "NVIDIA", "Samsung"],
+  "dropped": [
+    {"title": "Denso mulls withdrawing acquisition offer for chipmaker Rohm", "reason": "4月記事で鮮度が低く、SemiMedia の当日記事と重複"},
+    {"title": "Rohm reportedly warns of delays in talks with Toshiba and Mitsubishi Electric after Denso exit", "reason": "5月記事で当日性不足"},
+    {"title": "Denso Pulls Plug on ROHM Acquisition Proposal", "reason": "同一イベントの重複報道"},
+    {"title": "Inside Mitsubishi Electric, Rohm, Toshiba Talks and Denso's Move", "reason": "3月記事で背景資料扱い"}
+  ],
+  "quality_shortfall_reason": "Denso/ROHM 周辺の重複報道と過去日付記事を除外し、当日確認できた4件を採用。"
+}

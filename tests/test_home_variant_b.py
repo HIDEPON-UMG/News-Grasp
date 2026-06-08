@@ -308,5 +308,7 @@ def test_yesterday_lp_deepdive_is_not_today(yesterday_lp):
     assert card_today and card_yda, "DeepDive カードが構築できていない"
     assert card_yda["date"] <= yda, \
         f"昨日 LP の DeepDive 日付 {card_yda['date']} が昨日 {yda} より新しい"
+    if card_today["date"] <= yda:
+        pytest.skip("当日 DeepDive が無い日は、当日 LP と昨日 LP の DeepDive が同一になり得る")
     assert card_yda["date"] != card_today["date"], \
         "昨日 LP の DEEP DIVE に当日と同じテーマが出ている (回帰)"
