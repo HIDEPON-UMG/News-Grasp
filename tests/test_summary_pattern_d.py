@@ -167,6 +167,42 @@ def test_cta_band(built_summary: str):
     assert "過去の考察を見る" in built_summary
 
 
+def test_summary_digest_not_counted_as_news_source(tmp_path: Path):
+    """Summary digest 内の [NN] 見出しは、日別ニュース総数に混ぜない。"""
+    docs = tmp_path / "docs"
+    sources: list[Path] = []
+    for cat_id, label in [("fx", "FX"), ("ai", "AI")]:
+        digest_dir = tmp_path / "digest" / label
+        digest_dir.mkdir(parents=True, exist_ok=True)
+        path = digest_dir / f"2026-05-20-{label}.md"
+        path.write_text(
+            DIGEST_TEMPLATE.format(label=label, LABEL=label.upper(), cat_id=cat_id),
+            encoding="utf-8",
+        )
+        sources.append(path)
+
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    summary = summary_dir / "2026-05-20.md"
+    summary.write_text(
+        _SUMMARY_DIGEST_WITH_ESSAY
+        + "\n\n**本日の主要記事**（2 件）\n"
+        + "- [88] [再掲されてはいけない summary 内リンク](../AI/2026-05-20-AI.md#x)\n"
+        + "- [76] [これも記事総数に含めない](../FX/2026-05-20-FX.md#y)\n",
+        encoding="utf-8",
+    )
+    sources.append(summary)
+
+    entries = _collect_entries(sources)
+    summary_entry = next(e for e in entries if e["category_id"] == "summary")
+    assert summary_entry["articles_count"] == 0
+
+    out = build_summary("2026-05-20", entries, docs)
+    html = out.read_text(encoding="utf-8")
+    assert "全6本のニュースを読む" in html
+    assert "全8本のニュースを読む" not in html
+
+
 def test_canonical_under_date_summary(built_summary: str):
     """canonical = {BASE_URL}/2026-05-20/summary/"""
     from tools.config import BASE_URL

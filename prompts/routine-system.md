@@ -163,7 +163,7 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 
 ```bash
 # candidates.jsonl に当該カテゴリの全候補を書き出してから
-.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate --freshness-gate --max-source-age-days 0 < candidates.jsonl > filtered.jsonl
+.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate --freshness-gate --max-source-age-days 1 < candidates.jsonl > filtered.jsonl
 # stderr に「N passed, M dropped」と各 DROP の理由（url match / title similarity / 新材料 0 / freshness gate）が出る。
 # filtered.jsonl が採用候補。落ちた件数と理由は必ず目視で確認する。
 # --followup-gate は 3-A.5 E (続報の新材料判定) を機械化する境界フラグ。
@@ -214,7 +214,7 @@ A・B のどちらでマッチしたかで扱いが分かれる（**2026-05-30 �
 
 ##### D. 鮮度ゲート（URL 発行日）
 
-`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。URL パスに `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような発行日が含まれる場合は、`--freshness-gate --max-source-age-days 0` で **JST 今日より前の記事を除外**する。URL に日付が無い候補は偽陽性を避けるため、このゲートだけでは落とさない。前日以前の記事を「続報」として採用したい場合は、今日付の新規 URL または一次ソースに切り替え、本文で差分を明示する。
+`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。URL パスに `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような発行日が含まれる場合は、`--freshness-gate --max-source-age-days 1` で **JST 今日または前日公開の記事だけを許容**する。JST 朝刊では前日 US 時間の大ニュース（例: Reuters/FT の OpenAI superapp 報道）が本日号の対象になるため、1 日の edition window を持つ。URL に日付が無い候補は偽陽性を避けるため、このゲートだけでは落とさない。2 日以上前の記事を「続報」として採用したい場合は、今日付/前日付の新規 URL または一次ソースに切り替え、本文で差分を明示する。
 
 ##### E. イベント単位の最終確認（**dedup.py 通過後の続報ゲート**・小プールカテゴリ向け）
 
@@ -232,7 +232,30 @@ A・B のどちらでマッチしたかで扱いが分かれる（**2026-05-30 �
 
 ##### F. 結果
 
-dedup を通過した候補から最終的に **カテゴリあたり 5 件**をスコア降順で確定。5 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
+dedup を通過した候補から最終的に **カテゴリあたり 5 件**をスコア降順で確定。5 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。ただし 5 件未満で確定する場合は、カテゴリ digest の frontmatter に `quality_shortfall_reason` を必ず入れ、何を落としたのかを短く残す（例: `quality_shortfall_reason: "新材料の薄い follow-up を除外し、当日性の高い3件のみ採用"`）。理由なしの不足は `tools/validate_daily_quality.py` が公開前に落とす。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
+
+##### G. 検索監査ログ（5件未満時は必須）
+
+各カテゴリの検索後、`data/search_audit/{YYYY-MM-DD}/{category_id}.json` に検索監査ログを保存する。特に 5 件未満で確定するカテゴリは、この監査ログが無いと `tools/validate_daily_quality.py` が公開前に落とす。目的は「ニュース性が低いので載せなかった」と「検索が薄くて拾えていない」を区別すること。
+
+必須フィールド:
+
+```jsonc
+{
+  "date": "2026-06-08",
+  "category_id": "ai",
+  "queries": ["実行した検索クエリを3件以上"],
+  "raw_results_total": 12,
+  "candidates_total": 6,
+  "selected_total": 3,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title": "...", "url": "...", "reason": "新材料が薄い / 前日以前の再掲 / 一次情報性が低い"}
+  ]
+}
+```
+
+`coverage_terms_checked` は、カテゴリごとの主要軸を検索確認した証跡として残す。AI なら `OpenAI / Anthropic / Google / Apple / Microsoft / Meta / NVIDIA` を必ず含める。候補が 5 件未満のとき、検索クエリが 3 件未満、取得結果が 10 件未満、候補化が 5 件未満、または主要軸の確認漏れがある場合は、収集漏れリスクとして公開前 gate が落ちる。
 
 **実装は `tools/dedup.py` のみを正本とする**（自前のワンライナーや目視判定で代替しないこと）。タイトル類似閾値は `--title-threshold`（既定 0.42）、続報の時間窓は `--window-hours`（既定 24）で調整できるが、本番は既定のまま使う。`tests/test_dedup.py` がこのロジック（URL 一致は常に除外 / タイトル類似は時間窓 / cross-language トークン一致）を固定しているので、挙動を変えたいときは先にテストを直す。
 
@@ -340,6 +363,10 @@ py tools/fetch_ogp.py "https://example.com/article"
   //   industries         → industry/{値}
   //   events             → event/{値}
   //   score              → score/高（>=85）/ score/中（65-84）/ score/低（<65）
+  // 古い matched_with を持つ続報を採用する場合のみ:
+  //   followup_review_note → 旧記事との差分が何かを 1 文で明示。
+  //   URL 日付のある matched_with が号日より古く、followup_review_note が無い record は
+  //   tools/validate_daily_quality.py が公開前に落とす。
 }
 ```
 
@@ -353,7 +380,7 @@ py tools/fetch_ogp.py "https://example.com/article"
   "accent": "#2D5BB8",
   "glyph": "◆",
   "summary": "...",                // カテゴリ全体の 1 文要約（80 字程度）
-  "items": [ /* 5 件、score 降順 */ ]
+  "items": [ /* 原則5件、ニュース性の低い候補で埋めない場合は5件未満可 */ ]
 }
 ```
 

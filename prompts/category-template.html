@@ -324,6 +324,7 @@
       </div>
       <div class="past-card__body">
         <h3 class="past-card__title">{{ (p.top_title or p.title)|truncate(50, true, '…') }}</h3>
+        {% if p.top_title_ja %}<span class="story-title-ja">{{ p.top_title_ja }}</span>{% endif %}
       </div>
     </a>
     {% endfor %}

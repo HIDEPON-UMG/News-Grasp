@@ -1,0 +1,29 @@
+{
+  "date": "2026-06-08",
+  "category_id": "fx",
+  "queries": [
+    "USDJPY BOJ Fed CPI forex June 8 2026",
+    "EURUSD ECB weekly forecast June 8 2026",
+    "BOJ intervention yen 160 June 2026 DBS"
+  ],
+  "raw_results_total": 16,
+  "candidates_total": 6,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "Generic weekend forex technical outlook",
+      "reason": "当日イベントとの結びつきが弱く、薄いテクニカル解説に留まる"
+    },
+    {
+      "title": "Broker recap of last week's dollar moves",
+      "reason": "前週相場の再掲中心で、BOJ/ECB/CPI週の新規示唆が乏しい"
+    }
+  ]
+}

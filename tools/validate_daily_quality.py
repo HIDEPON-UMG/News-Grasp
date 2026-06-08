@@ -15,6 +15,16 @@ from tools.generate_pages import parse_articles, parse_frontmatter
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
+    "ai": {"OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"},
+    "fx": {"USDJPY", "EURUSD", "BOJ", "Fed", "ECB"},
+    "it": {"McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"},
+    "mobility": {"Tesla", "Waymo", "BYD", "Toyota", "Uber"},
+    "game": {"Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix"},
+    "manufacturing": {"TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"},
+    "economy": {"Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"},
+}
+
 
 def _parse_issue_date(value: str) -> date:
     if not _DATE_RE.match(value):
@@ -39,12 +49,32 @@ def validate_summary_hero(summary_path: Path) -> list[str]:
 
 def _stale_source_url_errors(*, issue: date, label: str, title: str, url: str) -> list[str]:
     src_date = extract_source_date_from_url(url)
-    if src_date is None or src_date >= issue:
+    allowed_oldest = date.fromordinal(issue.toordinal() - 1)
+    if src_date is None or src_date >= allowed_oldest:
         return []
     age = (issue - src_date).days
     return [
-        f"{label}: source URL date {src_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()}: {title}",
+        f"{label}: source URL date {src_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()} and outside the 1-day edition window: {title}",
         f"  url={url}",
+    ]
+
+
+def _stale_followup_errors(*, issue: date, label: str, title: str, record: dict[str, Any]) -> list[str]:
+    """古い記事を follow-up 扱いで当日掲載する再掲を検出する。"""
+    if not record.get("is_followup"):
+        return []
+    matched_with = str(record.get("matched_with") or "").strip()
+    matched_date = extract_source_date_from_url(matched_with)
+    if matched_date is None or matched_date >= issue:
+        return []
+    review_note = str(record.get("followup_review_note") or "").strip()
+    if review_note:
+        return []
+    age = (issue - matched_date).days
+    return [
+        f"{label}: follow-up matched_with URL date {matched_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()}: {title}",
+        f"  matched_with={matched_with}",
+        "  add followup_review_note for a verified new-material follow-up, or remove the record as stale.",
     ]
 
 
@@ -64,6 +94,97 @@ def validate_digest_source_freshness(digest_root: Path, issue: date) -> list[str
                 title=article.get("title") or "",
                 url=url,
             ))
+    return errs
+
+
+def validate_digest_article_counts(digest_root: Path, issue: date, *, min_articles: int = 5) -> list[str]:
+    """当日カテゴリ digest が5件目標または品質理由付き不足を満たすか検査する。"""
+    errs: list[str] = []
+    for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+        count = len(parse_articles(body))
+        reason = str(fm.get("quality_shortfall_reason") or "").strip()
+        if count < min_articles and not reason:
+            errs.append(
+                f"{md}: has {count} article(s); target is {min_articles}. "
+                "Add quality_shortfall_reason when low-newsworthiness candidates were intentionally excluded."
+            )
+    return errs
+
+
+def _search_audit_path(audit_root: Path, issue: date, cat_id: str) -> Path:
+    return audit_root / issue.isoformat() / f"{cat_id}.json"
+
+
+def _as_int(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def validate_search_audit_for_shortfall(
+    *,
+    digest_root: Path,
+    audit_root: Path,
+    issue: date,
+    min_articles: int = 5,
+) -> list[str]:
+    """5件未満カテゴリは、検索監査ログで収集漏れでないことを検査する。"""
+    errs: list[str] = []
+    for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+        articles_count = len(parse_articles(body))
+        if articles_count >= min_articles:
+            continue
+        cat_id = str(fm.get("categoryId") or fm.get("category") or md.parent.name).strip()
+        audit_path = _search_audit_path(audit_root, issue, cat_id)
+        if not audit_path.exists():
+            errs.append(
+                f"{md}: has {articles_count} article(s); search audit missing: {audit_path}"
+            )
+            continue
+        try:
+            audit = json.loads(audit_path.read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError as exc:
+            errs.append(f"{audit_path}: JSON decode error: {exc}")
+            continue
+
+        queries = audit.get("queries") or []
+        if not isinstance(queries, list) or len(queries) < 3:
+            errs.append(f"{audit_path}: queries must contain at least 3 search queries for shortfall review.")
+
+        raw_results_total = _as_int(audit.get("raw_results_total"))
+        candidates_total = _as_int(audit.get("candidates_total"))
+        selected_total = _as_int(audit.get("selected_total"))
+        dropped = audit.get("dropped") or []
+        if raw_results_total < min_articles * 2:
+            errs.append(
+                f"{audit_path}: raw_results_total={raw_results_total}; expected at least {min_articles * 2}."
+            )
+        if candidates_total < min_articles:
+            errs.append(
+                f"{audit_path}: candidates_total={candidates_total}; expected at least {min_articles} before quality filtering."
+            )
+        if selected_total != articles_count:
+            errs.append(
+                f"{audit_path}: selected_total={selected_total} does not match digest article count {articles_count}."
+            )
+        if candidates_total > selected_total and not dropped:
+            errs.append(f"{audit_path}: dropped reasons are required when candidates were excluded.")
+
+        checked = {str(v).strip() for v in (audit.get("coverage_terms_checked") or []) if str(v).strip()}
+        required = REQUIRED_COVERAGE_TERMS.get(cat_id.casefold())
+        if required:
+            missing = sorted(required - checked)
+            if missing:
+                errs.append(
+                    f"{audit_path}: coverage_terms_checked missing required terms: {', '.join(missing)}"
+                )
     return errs
 
 
@@ -87,6 +208,12 @@ def validate_jsonl_source_freshness(jsonl_path: Path, issue: date) -> list[str]:
             title=record.get("title") or "",
             url=record.get("url") or "",
         ))
+        errs.extend(_stale_followup_errors(
+            issue=issue,
+            label=f"{jsonl_path}:{lineno} [{record.get('genre', '')}]",
+            title=record.get("title") or "",
+            record=record,
+        ))
     return errs
 
 
@@ -95,11 +222,18 @@ def validate_daily_quality(
     issue_date: str,
     digest_root: Path = Path("digest"),
     jsonl_path: Path = Path("data") / "articles.jsonl",
+    audit_root: Path = Path("data") / "search_audit",
 ) -> list[str]:
     """指定日の Summary hero と記事 URL 鮮度をまとめて検査する。"""
     issue = _parse_issue_date(issue_date)
     errs: list[str] = []
     errs.extend(validate_summary_hero(digest_root / "Summary" / f"{issue.isoformat()}.md"))
+    errs.extend(validate_digest_article_counts(digest_root, issue))
+    errs.extend(validate_search_audit_for_shortfall(
+        digest_root=digest_root,
+        audit_root=audit_root,
+        issue=issue,
+    ))
     errs.extend(validate_digest_source_freshness(digest_root, issue))
     errs.extend(validate_jsonl_source_freshness(jsonl_path, issue))
     return errs
@@ -110,12 +244,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", required=True, help="検査対象日 YYYY-MM-DD")
     parser.add_argument("--digest-root", type=Path, default=Path("digest"))
     parser.add_argument("--jsonl", type=Path, default=Path("data") / "articles.jsonl")
+    parser.add_argument("--audit-root", type=Path, default=Path("data") / "search_audit")
     args = parser.parse_args(argv)
 
     errs = validate_daily_quality(
         issue_date=args.date,
         digest_root=args.digest_root,
         jsonl_path=args.jsonl,
+        audit_root=args.audit_root,
     )
     if errs:
         for err in errs:

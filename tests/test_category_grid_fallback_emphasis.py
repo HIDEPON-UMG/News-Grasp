@@ -126,6 +126,62 @@ edition: Morning Edition
 ---
 """
 
+_MONDAY_AI_DIGEST = """---
+title: "News Grasp #20260608 — Artificial Intelligence"
+date: 2026-06-08
+issue: 20260608
+weekday: 月
+category: Artificial Intelligence
+categoryId: ai
+accent: "#2D5BB8"
+glyph: "◆"
+edition: Morning Edition
+---
+
+# ◆ AI — Artificial Intelligence
+
+> [!summary]
+> 月曜の AI サマリ。
+
+---
+
+### [95] 月曜 AI トップ SENT_AI_MON_TOP
+
+📅 2026-06-08 07:30 · 📰 AI Source · 🔗 [元記事](https://example.com/2026/06/08/ai-mon-top)
+
+#cat/ai #co/AI #score/高
+
+- AI の bullet
+- 2 本目
+- 3 本目
+
+---
+
+### [88] Gemini Cloud Console SENT_GEMINI_CLOUD
+
+📅 2026-06-08 08:00 · 📰 AI Source · 🔗 [元記事](https://example.com/2026/06/08/ai-mon-two)
+
+#cat/ai #co/AI #score/高
+
+- AI の bullet
+- 2 本目
+- 3 本目
+
+---
+
+### [82] Robotics Dataset Governance SENT_ROBOTICS_DATA
+
+📅 2026-06-08 08:30 · 📰 AI Source · 🔗 [元記事](https://example.com/2026/06/08/ai-mon-three)
+
+#cat/ai #co/AI #score/中
+
+- AI の bullet
+- 2 本目
+- 3 本目
+
+---
+"""
+
 
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
@@ -217,3 +273,24 @@ def test_category_rest_day_notice_appears_on_unscheduled_today(tmp_path: Path):
     assert "このカテゴリは本日の配信対象外です" in manufacturing_html
     assert "SENT_FEAT" in manufacturing_html
     assert "本日は休載です。" not in ai_html
+
+
+def test_category_top_more_stories_uses_same_day_articles_not_previous_issues(tmp_path: Path):
+    """最新カテゴリトップの More stories は過去号ではなく同日記事を表示する。"""
+    docs = tmp_path / "docs"
+    d_ai = tmp_path / "digest" / "Artificial Intelligence"
+    d_ai.mkdir(parents=True)
+    sun = d_ai / "2026-06-07-Artificial-Intelligence.md"
+    mon = d_ai / "2026-06-08-Artificial-Intelligence.md"
+    sun.write_text(_SUNDAY_AI_DIGEST, encoding="utf-8")
+    mon.write_text(_MONDAY_AI_DIGEST, encoding="utf-8")
+
+    sources = [sun, mon]
+    entries = _collect_entries(sources)
+    build_category_pages(entries, docs, digests=sources)
+
+    html = (docs / "ai" / "index.html").read_text(encoding="utf-8")
+    more = html.split('<section class="more-stories">', 1)[1].split("</section>", 1)[0]
+    assert "SENT_GEMINI_CLOUD" in more
+    assert "SENT_ROBOTICS_DATA" in more
+    assert "SENT_AI_SUN" not in more

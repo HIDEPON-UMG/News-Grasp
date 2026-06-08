@@ -1,0 +1,43 @@
+{
+  "date": "2026-06-08",
+  "category_id": "ai",
+  "queries": [
+    "OpenAI ChatGPT superapp Codex AI agents June 7 2026",
+    "Apple Google Gemini Siri WWDC 2026 AI June 8 2026",
+    "Anthropic Google Microsoft Meta NVIDIA AI news June 8 2026"
+  ],
+  "raw_results_total": 18,
+  "candidates_total": 7,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAI IPO preparation recap",
+      "reason": "2日以上前の再掲で、当日/前日付の新規材料に乏しい"
+    },
+    {
+      "title": "OpenTools OpenAI weekly roundup",
+      "reason": "過去ニュースのまとめで、2026-06-08号の新規ニュース性が低い"
+    },
+    {
+      "title": "Anthropic IPO backgrounder",
+      "reason": "前号以前の材料の再整理で、当日差分が薄い"
+    },
+    {
+      "title": "Google DeepMind Gemma 4 recap",
+      "reason": "2026-06-06掲載済み記事で、再掲除外"
+    },
+    {
+      "title": "NVIDIA analyst note",
+      "reason": "株価解説中心でカテゴリTOP級の技術/製品新材料ではない"
+    }
+  ]
+}

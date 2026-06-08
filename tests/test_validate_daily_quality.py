@@ -23,24 +23,39 @@ def _write_summary(root: Path, *, hero: bool = True) -> None:
     (summary_dir / "2026-06-08.md").write_text(frontmatter, encoding="utf-8")
 
 
-def _write_category(root: Path, url: str) -> None:
+def _write_category(
+    root: Path,
+    url: str,
+    *,
+    count: int = 5,
+    quality_shortfall_reason: str | None = None,
+) -> None:
     cat_dir = root / "digest" / "AI"
     cat_dir.mkdir(parents=True)
-    (cat_dir / "2026-06-08-AI.md").write_text(
+    articles = []
+    for i in range(count):
+        articles.append(
+            f"### [{90 - i}] Freshness test article {i + 1}\n\n"
+            f"📅 2026-06-08 06:0{i} · 📰 Example · 🔗 [元記事]({url})\n\n"
+            "- test\n\n"
+            "---\n"
+        )
+    frontmatter = (
         "---\n"
         "title: AI\n"
         "date: 2026-06-08\n"
         "categoryId: ai\n"
-        "---\n\n"
-        "### [90] Freshness test article\n\n"
-        f"📅 2026-06-08 06:00 · 📰 Example · 🔗 [元記事]({url})\n\n"
-        "- test\n\n"
-        "---\n",
+    )
+    if quality_shortfall_reason:
+        frontmatter += f"quality_shortfall_reason: {quality_shortfall_reason}\n"
+    frontmatter += "---\n\n"
+    (cat_dir / "2026-06-08-AI.md").write_text(
+        frontmatter + "\n".join(articles),
         encoding="utf-8",
     )
 
 
-def _write_jsonl(root: Path, url: str) -> None:
+def _write_jsonl(root: Path, url: str, *, extra: dict | None = None) -> None:
     data_dir = root / "data"
     data_dir.mkdir()
     record = {
@@ -49,8 +64,51 @@ def _write_jsonl(root: Path, url: str) -> None:
         "title": "Freshness test article",
         "url": url,
     }
+    if extra:
+        record.update(extra)
     (data_dir / "articles.jsonl").write_text(
         json.dumps(record, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_search_audit(
+    root: Path,
+    *,
+    selected_total: int,
+    candidates_total: int = 6,
+    raw_results_total: int = 12,
+    coverage_terms_checked: list[str] | None = None,
+    dropped: list[dict] | None = None,
+) -> None:
+    audit_dir = root / "data" / "search_audit" / "2026-06-08"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    audit = {
+        "date": "2026-06-08",
+        "category_id": "ai",
+        "queries": [
+            "AI news June 8 2026",
+            "OpenAI Anthropic Google Apple Microsoft AI June 8 2026",
+            "site:techcrunch.com AI June 8 2026",
+        ],
+        "raw_results_total": raw_results_total,
+        "candidates_total": candidates_total,
+        "selected_total": selected_total,
+        "coverage_terms_checked": coverage_terms_checked or [
+            "OpenAI",
+            "Anthropic",
+            "Google",
+            "Apple",
+            "Microsoft",
+            "Meta",
+            "NVIDIA",
+        ],
+        "dropped": dropped if dropped is not None else [
+            {"title": "Low-newsworthiness candidate", "reason": "新材料が薄いため除外"}
+        ],
+    }
+    (audit_dir / "ai.json").write_text(
+        json.dumps(audit, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -74,7 +132,7 @@ def test_daily_quality_rejects_missing_summary_hero(tmp_path: Path) -> None:
 def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path) -> None:
     """URL パス日付が号日より古ければ、digest と jsonl の両方で落とす。"""
     _write_summary(tmp_path)
-    stale_url = "https://example.com/2026/06/07/stale-news"
+    stale_url = "https://example.com/2026/06/06/stale-news"
     _write_category(tmp_path, stale_url)
     _write_jsonl(tmp_path, stale_url)
 
@@ -85,16 +143,16 @@ def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path
     )
 
     joined = "\n".join(errs)
-    assert "source URL date 2026-06-07" in joined
+    assert "source URL date 2026-06-06" in joined
     assert "digest" in joined
     assert "articles.jsonl" in joined
 
 
-def test_daily_quality_accepts_issue_day_or_unknown_url_date(tmp_path: Path) -> None:
-    """当日 URL と日付が取れない URL は偽陽性防止のため通す。"""
+def test_daily_quality_accepts_issue_day_previous_day_or_unknown_url_date(tmp_path: Path) -> None:
+    """当日・前日 URL と日付が取れない URL は通す。"""
     _write_summary(tmp_path)
     _write_category(tmp_path, "https://example.com/no-date/fresh-topic")
-    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_jsonl(tmp_path, "https://example.com/2026/06/07/us-time-news")
 
     assert validate_daily_quality(
         issue_date="2026-06-08",
@@ -103,10 +161,169 @@ def test_daily_quality_accepts_issue_day_or_unknown_url_date(tmp_path: Path) -> 
     ) == []
 
 
+def test_daily_quality_rejects_stale_matched_followup(tmp_path: Path) -> None:
+    """URL 日付なしの記事でも、古い matched_with への未レビュー follow-up は落とす。"""
+    _write_summary(tmp_path)
+    _write_category(tmp_path, "https://example.com/no-date/followup-topic")
+    _write_jsonl(
+        tmp_path,
+        "https://example.com/no-date/followup-topic",
+        extra={
+            "is_followup": True,
+            "matched_with": "https://example.com/2026/05/20/original-topic",
+        },
+    )
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "follow-up matched_with URL date 2026-05-20" in joined
+    assert "followup_review_note" in joined
+    assert "articles.jsonl" in joined
+
+
+def test_daily_quality_accepts_reviewed_stale_matched_followup(tmp_path: Path) -> None:
+    """古い matched_with でも、新材料レビュー済みの続報は通す。"""
+    _write_summary(tmp_path)
+    _write_category(tmp_path, "https://example.com/no-date/followup-topic")
+    _write_jsonl(
+        tmp_path,
+        "https://example.com/no-date/followup-topic",
+        extra={
+            "is_followup": True,
+            "matched_with": "https://example.com/2026/05/20/original-topic",
+            "followup_review_note": "地域が異なる新規展開であり旧記事の再掲ではない",
+        },
+    )
+
+    assert validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    ) == []
+
+
+def test_daily_quality_rejects_shortfall_without_quality_reason(tmp_path: Path) -> None:
+    """5件未満でも可だが、低品質記事を避けた理由が無い不足は落とす。"""
+    _write_summary(tmp_path)
+    _write_category(tmp_path, "https://example.com/2026/06/08/fresh-news", count=4)
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "has 4 article(s); target is 5" in joined
+    assert "quality_shortfall_reason" in joined
+    assert "2026-06-08-AI.md" in joined
+
+
+def test_daily_quality_accepts_shortfall_with_quality_reason(tmp_path: Path) -> None:
+    """ニュース性の低い記事を避けた明示理由と検索監査ログがあれば、5件未満でも通す。"""
+    _write_summary(tmp_path)
+    _write_category(
+        tmp_path,
+        "https://example.com/2026/06/08/fresh-news",
+        count=3,
+        quality_shortfall_reason="当日候補のうち新材料がある記事のみ採用",
+    )
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_search_audit(tmp_path, selected_total=3)
+
+    assert validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+        audit_root=tmp_path / "data" / "search_audit",
+    ) == []
+
+
+def test_daily_quality_rejects_shortfall_without_search_audit(tmp_path: Path) -> None:
+    """5件未満のカテゴリは、品質不足理由だけでなく検索監査ログも必須。"""
+    _write_summary(tmp_path)
+    _write_category(
+        tmp_path,
+        "https://example.com/2026/06/08/fresh-news",
+        count=3,
+        quality_shortfall_reason="当日候補のうち新材料がある記事のみ採用",
+    )
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+        audit_root=tmp_path / "data" / "search_audit",
+    )
+
+    joined = "\n".join(errs)
+    assert "search audit missing" in joined
+    assert "data" in joined and "search_audit" in joined
+
+
+def test_daily_quality_rejects_search_audit_missing_ai_coverage_terms(tmp_path: Path) -> None:
+    """AI短縮号では主要AI企業を検索確認していない監査ログを落とす。"""
+    _write_summary(tmp_path)
+    _write_category(
+        tmp_path,
+        "https://example.com/2026/06/08/fresh-news",
+        count=3,
+        quality_shortfall_reason="当日候補のうち新材料がある記事のみ採用",
+    )
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_search_audit(
+        tmp_path,
+        selected_total=3,
+        coverage_terms_checked=["Google", "Apple"],
+    )
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+        audit_root=tmp_path / "data" / "search_audit",
+    )
+
+    joined = "\n".join(errs)
+    assert "coverage_terms_checked missing required terms" in joined
+    assert "OpenAI" in joined
+
+
+def test_daily_quality_rejects_thin_search_audit(tmp_path: Path) -> None:
+    """候補数や検索結果数が薄い監査ログは、収集漏れリスクとして落とす。"""
+    _write_summary(tmp_path)
+    _write_category(
+        tmp_path,
+        "https://example.com/2026/06/08/fresh-news",
+        count=3,
+        quality_shortfall_reason="当日候補のうち新材料がある記事のみ採用",
+    )
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_search_audit(tmp_path, selected_total=3, candidates_total=3, raw_results_total=4)
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+        audit_root=tmp_path / "data" / "search_audit",
+    )
+
+    joined = "\n".join(errs)
+    assert "raw_results_total=4" in joined
+    assert "candidates_total=3" in joined
+
+
 def test_daily_quality_cli_returns_nonzero_for_stale_url(tmp_path: Path, capsys) -> None:
     """runner から呼ぶ CLI は stale URL を stderr ERROR と exit 1 で返す。"""
     _write_summary(tmp_path)
-    stale_url = "https://example.com/2026/06/07/stale-news"
+    stale_url = "https://example.com/2026/06/06/stale-news"
     _write_category(tmp_path, stale_url)
     _write_jsonl(tmp_path, stale_url)
 
@@ -119,4 +336,4 @@ def test_daily_quality_cli_returns_nonzero_for_stale_url(tmp_path: Path, capsys)
     captured = capsys.readouterr()
     assert rc == 1
     assert "ERROR:" in captured.err
-    assert "2026-06-07" in captured.err
+    assert "2026-06-06" in captured.err

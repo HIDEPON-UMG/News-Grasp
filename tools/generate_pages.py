@@ -663,6 +663,7 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
             scores.append(int(s))
         else:
             scores.append(0)
+    articles_count = 0 if ctx["category_id"] == "summary" else len(all_articles)
     top3 = [
         {
             "title": a.get("title", ""),
@@ -697,7 +698,7 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "top_source_url": top.get("source_url", ""),
         "top_date": top.get("date", ""),
         "top_bullets": top.get("bullets", []),
-        "articles_count": len(all_articles),
+        "articles_count": articles_count,
         # Overview C 用
         "scores": scores,
         "top3": top3,
@@ -1943,15 +1944,21 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
         # 日付降順は _collect_entries で保証済だが、念のため
         cat_entries_sorted = sorted(cat_entries, key=lambda e: e["date"], reverse=True)
         featured = cat_entries_sorted[0]
+        same_day_grid = _articles_as_grid_entries(
+            cat_id, featured["date"],
+            skip_url=featured.get("top_source_url"), digests=digests
+        )
         if len(cat_entries_sorted) >= 2:
-            # featured 除く直近を theme dedup pass で連続同テーマを抑止してから切り出す。
+            # featured 除く過去号を theme dedup pass で連続同テーマを抑止してから切り出す。
             # 2026-06-06 AI トップ事故: dedup.py が「24h 超は続報扱い」で同社別 URL の
             # 続報を通すため、past_7/grid_9 に「Microsoft AI モデル新発表」が 2 日連続、
             # 「Anthropic IPO 申請」が 2 日連続のように同テーマが並んだ。表示段で
             # 連続出現を構造的に弾く ([[feedback_check_design_principles]] 1 段+2 段)。
             # featured は 1 件なので対象外。
             deduped_tail = _dedupe_by_theme(cat_entries_sorted[1:], max_window=10)
-            grid_9 = deduped_tail[:9]
+            # More stories は「本日号の残り記事」。過去号は past_7 だけに出す。
+            # 2026-06-08 AI トップで過去号カードが本日の記事に見える事故を固定する。
+            grid_9 = same_day_grid[:9]
             past_7 = deduped_tail[:7]
             # 層 2 出力品質ゲート (plan v2): _dedupe_by_theme が漏れた場合の
             # 最終 assert。is_same_theme は _is_same_theme_for_display を inject。
@@ -1959,18 +1966,13 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
             _same = lambda a, b: _is_same_theme_for_display(
                 *_theme_tokens(a), *_theme_tokens(b))
             assert_quality([
-                (f"{cat_id}/grid_9", check_category_top_dedup(
-                    grid_9, kind=f"{cat_id}/grid_9", is_same_theme=_same)),
                 (f"{cat_id}/past_7", check_category_top_dedup(
                     past_7, kind=f"{cat_id}/past_7", is_same_theme=_same)),
             ])
         else:
             # data 不足 (= backfill 未着手の新設カテゴリ) の fallback:
             # data/articles.jsonl の同日 5 記事を grid に展開して、他カテゴリと粒度を揃える
-            grid_9 = _articles_as_grid_entries(
-                cat_id, featured["date"],
-                skip_url=featured.get("top_source_url"), digests=digests
-            )
+            grid_9 = same_day_grid[:9]
             past_7 = []
         # 「本日のテーマ考察」は summary digest の §NN のうち、見出しラベルが当該カテゴリに
         # 一致する節の body (= カテゴリ固有の考察)。装飾記法は保持しテンプレ側で render_emph 描画。
