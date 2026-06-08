@@ -1333,7 +1333,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
     if not same_day:
         raise ValueError(f"build_overview: entries に date={date} が無い")
 
-    # 各カテゴリ (summary 除く 6 lens) を CATEGORIES 順に並べる
+    # 各カテゴリを配信スケジュールに沿って CATEGORIES 順に並べる。
     by_cat: dict[str, dict[str, Any]] = {}
     for e in same_day:
         cid = e["category_id"]
@@ -1341,7 +1341,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
             by_cat[cid] = e
     cat_rows: list[dict[str, Any]] = []
     for cid, meta in CATEGORIES.items():
-        if cid == "summary":
+        if cid == "summary" or not is_category_scheduled_on(cid, date):
             continue
         e = by_cat.get(cid)
         scores = e.get("scores", []) if e else []
@@ -1397,7 +1397,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
         "cat_rows": cat_rows,
         "stats": {
             "stories": stories_total,
-            "categories": 6,
+            "categories": len(cat_rows),
             "essay": 7,
             "full_read_min": full_read_min,
         },

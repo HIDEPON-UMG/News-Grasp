@@ -8,7 +8,7 @@ from pathlib import Path
 from tools.validate_daily_quality import main, validate_daily_quality
 
 
-def _write_summary(root: Path, *, hero: bool = True) -> None:
+def _write_summary(root: Path, *, hero: bool = True, weekday: str | None = None) -> None:
     summary_dir = root / "digest" / "Summary"
     summary_dir.mkdir(parents=True)
     frontmatter = (
@@ -19,6 +19,8 @@ def _write_summary(root: Path, *, hero: bool = True) -> None:
     )
     if hero:
         frontmatter += "hero_left: プラットフォーム再編\nhero_right: 市場へ波及\n"
+    if weekday:
+        frontmatter += f"weekday: {weekday}\n"
     frontmatter += "---\n\n# Summary\n"
     (summary_dir / "2026-06-08.md").write_text(frontmatter, encoding="utf-8")
 
@@ -53,6 +55,40 @@ def _write_category(
         frontmatter + "\n".join(articles),
         encoding="utf-8",
     )
+
+
+def _write_category_digest(root: Path, cat_id: str, folder: str, *, count: int = 5) -> None:
+    cat_dir = root / "digest" / folder
+    cat_dir.mkdir(parents=True, exist_ok=True)
+    articles = []
+    for i in range(count):
+        articles.append(
+            f"### [{90 - i}] {cat_id} article {i + 1}\n\n"
+            f"📅 2026-06-08 06:0{i} · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/{cat_id}-{i})\n\n"
+            "- test\n\n"
+            "---\n"
+        )
+    (cat_dir / f"2026-06-08-{folder}.md").write_text(
+        "---\n"
+        f"title: {folder}\n"
+        "date: 2026-06-08\n"
+        f"categoryId: {cat_id}\n"
+        "---\n\n"
+        + "\n".join(articles),
+        encoding="utf-8",
+    )
+
+
+def _write_monday_scheduled_digests(root: Path) -> None:
+    for cat_id, folder in [
+        ("fx", "FX"),
+        ("ai", "AI"),
+        ("it", "IT-Consulting"),
+        ("mobility", "Mobility"),
+        ("manufacturing", "Manufacturing"),
+        ("economy", "Economy"),
+    ]:
+        _write_category_digest(root, cat_id, folder)
 
 
 def _write_jsonl(root: Path, url: str, *, extra: dict | None = None) -> None:
@@ -127,6 +163,50 @@ def test_daily_quality_rejects_missing_summary_hero(tmp_path: Path) -> None:
     )
 
     assert any("hero_left / hero_right" in e for e in errs)
+
+
+def test_daily_quality_rejects_weekday_mismatch(tmp_path: Path) -> None:
+    """Summary の曜日が date と矛盾したら、配信対象カテゴリ以前に落とす。"""
+    _write_summary(tmp_path, weekday="日曜日")
+    _write_monday_scheduled_digests(tmp_path)
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "weekday=日曜日" in joined
+    assert "月曜日" in joined
+
+
+def test_daily_quality_rejects_scheduled_category_gap_and_extra(tmp_path: Path) -> None:
+    """月曜に必須の製造・経済欠落と、月曜非対象の Game 混入を同時に落とす。"""
+    _write_summary(tmp_path, weekday="月曜日")
+    for cat_id, folder in [
+        ("fx", "FX"),
+        ("ai", "AI"),
+        ("it", "IT-Consulting"),
+        ("mobility", "Mobility"),
+        ("game", "Game"),
+    ]:
+        _write_category_digest(tmp_path, cat_id, folder)
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "scheduled category digest missing" in joined
+    assert "manufacturing" in joined
+    assert "economy" in joined
+    assert "unscheduled category digest present" in joined
+    assert "game" in joined
 
 
 def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path) -> None:

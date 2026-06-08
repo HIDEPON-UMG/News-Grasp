@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-08",
+  "category_id": "manufacturing",
+  "queries": [
+    "NVIDIA Foxconn MediaTek AI rack optical interconnect June 8 2026",
+    "NVIDIA SK hynix HBM4 Vera Rubin Samsung June 8 2026",
+    "TSMC Samsung Intel Foxconn Toyota manufacturing news June 8 2026"
+  ],
+  "raw_results_total": 16,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": ["TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"],
+  "dropped": [
+    {
+      "title": "Foxconn and Intel expand manufacturing collaboration",
+      "url": "https://www.foxconn.com/en-us/press-center/press-releases/latest-news",
+      "reason": "2026-06-04 公開で2日超過。既出/週次再掲リスクが高いため除外"
+    },
+    {
+      "title": "Foxconn, Nvidia, BASF: Top Manufacturing News This Week",
+      "url": "https://manufacturingdigital.com/articles/foxconn-nvidia-basf-top-manufacturing-news-this-week",
+      "reason": "2026-06-06 の週次まとめで、当日新規材料ではないため除外"
+    },
+    {
+      "title": "Toyota supplier investment recap",
+      "url": "https://newswitch.jp/",
+      "reason": "新規性が既存トヨタ/デンソー記事より低く、当日主要ニュースとしては採用しない"
+    },
+    {
+      "title": "Intel foundry outlook commentary",
+      "url": "https://www.reuters.com/",
+      "reason": "検索結果上は関連するが当日公開本文を確認できず、URL品質を担保できないため除外"
+    }
+  ],
+  "quality_shortfall_reason": "5件埋めを優先すると2日以上前のFoxconn/Intel再掲や週次まとめが混入するため、当日性とニュース性が確認できた3件に絞った"
+}

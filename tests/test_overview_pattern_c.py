@@ -147,12 +147,12 @@ def test_favicon_links_present(built_overview: str):
     assert 'rel="apple-touch-icon"' in built_overview
 
 
-def test_5_category_rows(built_overview: str):
-    """fx / ai / it / economy / game の overview-row が 5 行並ぶ (summary は除く)。"""
-    for cid in ("fx", "ai", "it", "economy", "game"):
+def test_scheduled_category_rows_only(built_overview: str):
+    """overview は当日の配信対象カテゴリだけを出し、非対象カテゴリは0件でも出さない。"""
+    for cid in ("fx", "ai", "it", "mobility", "manufacturing", "economy"):
         assert f'class="overview-row cat-{cid}"' in built_overview, \
             f"overview-row for {cid} missing"
-    # summary はパターン C には出ない
+    assert 'class="overview-row cat-game"' not in built_overview
     assert 'class="overview-row cat-summary"' not in built_overview
 
 

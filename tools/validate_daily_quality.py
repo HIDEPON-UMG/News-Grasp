@@ -11,9 +11,10 @@ from pathlib import Path
 from typing import Any
 
 from tools.dedup import extract_source_date_from_url
-from tools.generate_pages import parse_articles, parse_frontmatter
+from tools.generate_pages import CATEGORIES, is_category_scheduled_on, parse_articles, parse_frontmatter
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"]
 
 REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
     "ai": {"OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"},
@@ -45,6 +46,49 @@ def validate_summary_hero(summary_path: Path) -> list[str]:
         f"{summary_path}: frontmatter hero_left / hero_right が不足しています。",
         "このままでは LP TODAY'S THEME 見出しが「時勢を掴み、日々に新たに。」へ fallback します。",
     ]
+
+
+def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
+    """日付の曜日と配信スケジュールに対してカテゴリ過不足を検査する。"""
+    summary_path = digest_root / "Summary" / f"{issue.isoformat()}.md"
+    if not summary_path.exists():
+        return []
+    fm, _body = parse_frontmatter(summary_path.read_text(encoding="utf-8-sig", errors="replace"))
+    weekday = str(fm.get("weekday") or "").strip()
+    if not weekday:
+        return []
+
+    errs: list[str] = []
+    expected_weekday = _WEEKDAY_JA[issue.weekday()]
+    if weekday != expected_weekday:
+        errs.append(
+            f"{summary_path}: weekday={weekday} does not match date {issue.isoformat()} ({expected_weekday})."
+        )
+
+    expected = {
+        cat_id for cat_id in CATEGORIES
+        if cat_id != "summary" and is_category_scheduled_on(cat_id, issue.isoformat())
+    }
+    present: set[str] = set()
+    for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        cat_fm, _body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+        cat_id = str(cat_fm.get("categoryId") or "").strip().casefold()
+        if cat_id:
+            present.add(cat_id)
+
+    missing = sorted(expected - present)
+    extra = sorted(present - expected)
+    if missing:
+        errs.append(
+            f"{issue.isoformat()}: scheduled category digest missing: {', '.join(missing)}"
+        )
+    if extra:
+        errs.append(
+            f"{issue.isoformat()}: unscheduled category digest present: {', '.join(extra)}"
+        )
+    return errs
 
 
 def _stale_source_url_errors(*, issue: date, label: str, title: str, url: str) -> list[str]:
@@ -228,6 +272,7 @@ def validate_daily_quality(
     issue = _parse_issue_date(issue_date)
     errs: list[str] = []
     errs.extend(validate_summary_hero(digest_root / "Summary" / f"{issue.isoformat()}.md"))
+    errs.extend(validate_issue_schedule(digest_root, issue))
     errs.extend(validate_digest_article_counts(digest_root, issue))
     errs.extend(validate_search_audit_for_shortfall(
         digest_root=digest_root,

@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-08",
+  "category_id": "economy",
+  "queries": [
+    "Nikkei SoftBank Kioxia tech selloff BOJ June 8 2026",
+    "S&P 500 Nasdaq Fed AI stocks NVIDIA June 8 2026",
+    "BOJ Fed SoftBank NVIDIA economy market June 8 2026"
+  ],
+  "raw_results_total": 18,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "coverage_terms_checked": ["Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"],
+  "dropped": [
+    {
+      "title": "Nikkei tops 68,000 for first time on AI-driven chip stock surge",
+      "url": "https://www.business-standard.com/markets/news/japan-s-nikkei-tops-68-000-for-first-time-on-ai-driven-chip-stock-surge-126060300335_1.html",
+      "reason": "2026-06-03/05 系の前週材料で、本日の市場反転を説明する記事ではないため除外"
+    },
+    {
+      "title": "SoftBank becomes Japan's most valuable company",
+      "url": "https://www.cnbc.com/2026/05/31/softbank-to-build-up-ai-data-centers-in-france-with-major-investment.html",
+      "reason": "2026-05-31 公開で古く、既掲載記事の再掲に該当するため除外"
+    },
+    {
+      "title": "S&P 500 AI trade stumbles",
+      "url": "https://www.fxempire.com/",
+      "reason": "2026-06-05 公開で2日超過。6/8の市場反応記事を優先"
+    },
+    {
+      "title": "Reuters Japan market preview",
+      "url": "https://www.reuters.com/",
+      "reason": "検索結果上は関連するが本文到達性を確認できず、URL品質を担保できないため除外"
+    }
+  ],
+  "quality_shortfall_reason": "5件埋めを優先すると前週のNikkei高値・SoftBank時価総額記事が再掲されるため、当日性と市場インパクトが確認できた4件に絞った"
+}
