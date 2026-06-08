@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>BOJ前夜、日本市場はAI供給網で持ちこたえられるか — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="GDP下方修正、USD/JPY 160円接近、日経平均のリスクオフが重なる中で、AI・半導体・車載供給網への投資は日本市場の支えになるのか、それとも政策イベント前の脆さを増幅するのか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-09/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="BOJ前夜、日本市場はAI供給網で持ちこたえられるか">
+<meta property="og:description" content="GDP下方修正、USD/JPY 160円接近、日経平均のリスクオフが重なる中で、AI・半導体・車載供給網への投資は日本市場の支えになるのか、それとも政策イベント前の脆さを増幅するのか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-09/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BOJ前夜、日本市場はAI供給網で持ちこたえられるか">
+<meta name="twitter:description" content="GDP下方修正、USD/JPY 160円接近、日経平均のリスクオフが重なる中で、AI・半導体・車載供給網への投資は日本市場の支えになるのか、それとも政策イベント前の脆さを増幅するのか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #8E2A19;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(142,42,25,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(142,42,25,0.22);
+  --accent-underline: rgba(142,42,25,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260609</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">■</span>ECONOMY · 経済</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.06.09</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260609</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">9 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">BOJ前夜、日本市場はAI供給網で持ちこたえられるか</h1>
+      <p class="dd-hero__theme">GDP下方修正、USD/JPY 160円接近、日経平均のリスクオフが重なる中で、AI・半導体・車載供給網への投資は日本市場の支えになるのか、それとも政策イベント前の脆さを増幅するのか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260609</span><span>#BOJ</span><span>#USDJPY</span><span>#Nikkei</span><span>#AI供給網</span><span>#半導体</span><span>#Robotaxi</span></div>
+    </header>
+
+    
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+        
+        <li class="dd-related__item" style="border-left-color: #2E6B52">
+          
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #5C5A52">前日からの継続</span>
+            <span class="dd-related__chip">AI期待と日本株の脆さ</span>
+          </div>
+          
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-08/" style="border-bottom-color: #2E6B52">プラットフォーム再編と市場波及</a>
+            <span class="dd-related__date">2026.06.08</span>
+          </div>
+          <p class="dd-related__change">前日はApple/Google/OpenAIと米ハイテク売りが日本株へ波及する構図を扱った。今日は日本GDP下方修正とBOJ前夜の為替圧力が加わり、AI期待が市場を支えるのか、逆に巻き戻しを増幅するのかが焦点になった</p>
+        </li>
+        
+        <li class="dd-related__item" style="border-left-color: #8E2A19">
+          
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #5C5A52">同日横断</span>
+            <span class="dd-related__chip">為替・経済・製造・AIの接続</span>
+          </div>
+          
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-09/" style="border-bottom-color: #8E2A19">本日号 Summary</a>
+            <span class="dd-related__date">2026.06.09</span>
+          </div>
+          <p class="dd-related__change">為替ではBOJ利上げ観測、経済ではGDP下方修正、製造ではDenso/ROHMと熊本ファブ、AIではAnthropic/Fujitsu/NTT DATAが並び、政策と供給網の接点が明確になった</p>
+        </li>
+        
+      </ul>
+    </aside>
+    
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><span class="emph-und">日本市場は、景気の弱さと産業投資の強さを同時に織り込まされている。</span> 6月9日の本日号では、<strong class="emph-bold">日本Q1 GDP</strong> の下方修正、<strong class="emph-bold">USD/JPY</strong> 160円接近、日経平均のリスクオフ、そして <strong class="emph-bold">Denso</strong> / <strong class="emph-bold">ROHM</strong> / <strong class="emph-bold">Toyota</strong> / <strong class="emph-bold">TSMC</strong> / <strong class="emph-bold">Fujitsu</strong> / <strong class="emph-bold">NTT DATA</strong> のAI・半導体投資が同じ紙面に並んだ。単純な「景気悪化で弱い日」ではない。むしろ、<span class="emph-und">マクロは弱いが、AI供給網と企業実装は厚くなる</span>というねじれが今日の特徴である。</p><p>関係図の中心にあるのは、<span class="emph-und">市場が政策と供給網の間に挟まれている</span>という構造だ。<strong class="emph-bold">BOJ</strong> は利上げ観測と円安対応で市場へ圧力をかける。一方、市場の側も <strong class="emph-bold">USD/JPY</strong> 160円接近や日経平均の下落を通じて政策へ圧力を返す。ここに <strong class="emph-bold">Fujitsu</strong> / <strong class="emph-bold">NTT DATA</strong> のAI実装、<strong class="emph-bold">Denso</strong> / <strong class="emph-bold">ROHM</strong> / <strong class="emph-bold">Toyota</strong> / <strong class="emph-bold">TSMC</strong> の半導体供給網が下支えとして入る。<strong>今日の日本市場は、政策イベントだけでなく、AIと半導体の実装能力を同時に見ている。</strong></p></div>
+      <div class="dd-exhibits">
+        
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.09</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>日本Q1 GDPが下方修正、設備投資の弱さが焦点に</p>
+                  <a href="http://www.econotimes.com/Japan-Q1-2026-GDP-Growth-Revised-Lower-as-Weak-Investment-and-Middle-East-War-Pressure-Economy-1743708"><span class="src">EconoTimes</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.09</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>BOJ利上げ観測とUSD/JPY 160円接近が継続</p>
+                  <a href="https://think.ing.com/snaps/stronger-than-expected-1q26-gdp-to-support-the-bojs-rate-hike-in-june-a/"><span class="src">ING Think / FX Empire</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.09</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>日経平均がリスクオフで下落、AI期待との綱引きへ</p>
+                  <a href="https://www.bbntimes.com/financial/nikkei-225-tokyo-s-benchmark-index-falls-1-36-as-asia-wide-risk-aversion-intensifies"><span class="src">BBN Times</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.09</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Denso/ROHM、Toyota/TSMC/Densoの半導体投資が供給網テーマを補強</p>
+                  <a href="https://www.semimedia.cc/20990.html"><span class="src">SemiMedia / Toyota</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.09</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Fujitsu×Anthropic、NTT DATA×NVIDIAが企業AI実装の受け皿を拡張</p>
+                  <a href="https://global.fujitsu/en-global/pr/news/2026/05/27-01"><span class="src">Fujitsu / NTT DATA</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+              
+            </div>
+          </figure>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+            
+            <div class="dd-player">
+              <div class="dd-player__name">BOJ / 政策当局</div>
+              <div class="dd-player__role">為替・金利の政策決定者</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">GDP下方修正でも利上げ観測が残り、USD/JPY 160円接近への対応が焦点</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">景気下振れと円安・物価対応の板挟み</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">日本株市場</div>
+              <div class="dd-player__role">マクロとAI期待の評価装置</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">日経平均はリスクオフで下落しつつ、AIブームによる中期強気シナリオも残る</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">短期は政策イベント、長期はAI供給網を評価</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">AI導入企業 (Fujitsu / NTT DATA)</div>
+              <div class="dd-player__role">企業AIの実装側</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Anthropic / Google Cloud と連携し、大規模導入と agentic AI の本番展開を進める</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">日本企業の生産性期待を支える実装基盤</p>
+            </div>
+            
+            <div class="dd-player">
+              <div class="dd-player__name">半導体供給網 (Denso / ROHM / Toyota / TSMC)</div>
+              <div class="dd-player__role">AI・EV・車載の物理基盤</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">SiC協業、パワー半導体連携、熊本ファブ投資で国内供給力を厚くする</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">円安・地政学リスク下で国内製造力を支える</p>
+            </div>
+            
+          </div>
+        </div>
+        
+        
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">日本市場を挟む政策圧力とAI供給網の関係図</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 560" width="1080" height="560" style="display:block;background:#FAF7F0" role="img" aria-label="日本市場を挟む政策圧力とAI供給網の関係図"><line x1="305.0" y1="108.0" x2="477.0" y2="108.0" stroke="#1A1A1A" stroke-width="2" opacity="0.85"/><polygon points="477.0,108.0 468.0,112.5 468.0,103.5" fill="#1A1A1A"/><line x1="659.4" y1="376.4" x2="565.6" y2="165.6" stroke="#1A1A1A" stroke-width="2" opacity="0.85"/><polygon points="565.6,165.6 573.4,172.0 565.1,175.6" fill="#1A1A1A"/><line x1="807.6" y1="158.3" x2="710.6" y2="376.4" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="710.6,376.4 710.1,366.4 718.4,370.0" fill="#2D5BB8"/><line x1="391.0" y1="108.0" x2="381.6" y2="176.3" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(253.4,163.3)"><rect width="256.5" height="26.0" fill="#fff" stroke="#1A1A1A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#1A1A1A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#1A1A1A">影響</tspan> 利上げ観測・円安対応・市場圧力</text></g><g transform="translate(521.8,225.5)"><rect width="181.5" height="26.0" fill="#fff" stroke="#1A1A1A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#1A1A1A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#1A1A1A">支援</tspan> 生産性期待を支える</text></g><g transform="translate(641.8,290.5)"><rect width="231.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 計算資源と車載半導体を供給</text></g><circle cx="250.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="250.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">BOJ / 政策当局</text><text x="250.0" y="118.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">政策</text><circle cx="540.0" cy="108.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="540.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.7" fill="#1A1A1A" letter-spacing="-0.5">日本株・円相場</text><text x="540.0" y="120.5" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">市場</text><circle cx="685.0" cy="434.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="685.0" y="430.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Fujitsu / NTT DATA</text><text x="685.0" y="444.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AI実装</text><circle cx="830.0" cy="108.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="830.0" y="104.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Denso / ROHM / Toyota / TSMC</text><text x="830.0" y="118.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">供給網</text></svg></div>
+            
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#1A1A1A"></span>影響</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#1A1A1A"></span>支援</span>
+              
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+              
+            </div>
+            
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://think.ing.com/snaps/stronger-than-expected-1q26-gdp-to-support-the-bojs-rate-hike-in-june-a/">*1 ING Think</a> <a class="cite" href="https://www.bbntimes.com/financial/nikkei-225-tokyo-s-benchmark-index-falls-1-36-as-asia-wide-risk-aversion-intensifies">*3 BBN Times</a></span></div>
+          </figure>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p><span class="emph-und">今日のリスクは、政策イベントが市場の短期評価を支配していることだ。</span> GDP下方修正は景気の鈍さを示す一方、為替市場ではBOJ利上げ観測が残る。これは投資家にとって分かりやすい「弱い経済だから金融緩和」ではない。円安・物価・成長鈍化が同時に存在し、<span class="emph-und">どの変数を政策が優先するかが見えにくい</span>。そのため日経平均はAI期待を持ちながらも、地政学や金利イベントで売られやすい。</p><p><span class="emph-und">一方で、供給網側のニュースは中期の下支えである。</span> Denso が ROHM 買収案から距離を置きながら SiC 協業を維持すること、ROHM・東芝・三菱電機のパワー半導体連携、Toyota / TSMC / Denso の熊本投資は、車載・AI・EV の物理基盤を国内に厚くする動きだ。AIモデルや企業導入のニュースが増えても、電力、半導体、車載制御がなければ実装は続かない。<strong>供給網投資は、市場が短期で荒れる日にこそ中期の評価軸になる。</strong></p></div>
+      
+      <div class="dd-charts">
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">本日号の主要テーマ別採用記事数</span></figcaption>
+          <div class="dd-chart__note">政策・AI・供給網が同時に厚い</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="本日号の主要テーマ別採用記事数"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">本</text><rect x="30.3" y="66.5" width="46.8" height="147.5" fill="#8E2A19"/><text x="53.7" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><rect x="105.8" y="66.5" width="46.8" height="147.5" fill="#8E2A19"/><text x="129.1" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><rect x="181.2" y="66.5" width="46.8" height="147.5" fill="#8E2A19"/><text x="204.6" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><rect x="256.6" y="125.5" width="46.8" height="88.5" fill="#8E2A19"/><text x="280.0" y="117.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3</text><rect x="332.0" y="96.0" width="46.8" height="118.0" fill="#8E2A19"/><text x="355.4" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4</text><rect x="407.5" y="125.5" width="46.8" height="88.5" fill="#8E2A19"/><text x="430.9" y="117.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3</text><rect x="482.9" y="66.5" width="46.8" height="147.5" fill="#8E2A19"/><text x="506.3" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><text x="53.7" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">為替</text><text x="129.1" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">AI</text><text x="204.6" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">IT</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">モビリティ</text><text x="355.4" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">製造</text><text x="430.9" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">経済</text><text x="506.3" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">ゲーム</text><text x="129.1" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 政策・AI・供給網が同時に厚い</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://hidepon-umg.github.io/News-Grasp/2026-06-09/">News-Grasp 2026-06-09 digest <span class="ext">↗</span></a></span></div>
+        </figure>
+        
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">ロボタクシー公的台数比較：Tesla と Waymo</span></figcaption>
+          <div class="dd-chart__note">WaymoはTeslaの約13.7倍</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="ロボタクシー公的台数比較：Tesla と Waymo"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">台</text><rect x="88.0" y="203.3" width="120.0" height="10.7" fill="#8E2A19"/><text x="148.0" y="195.3" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">42</text><rect x="352.0" y="66.5" width="120.0" height="147.5" fill="#8E2A19"/><text x="412.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">577</text><text x="148.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Tesla</text><text x="412.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Waymo</text><text x="412.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ WaymoはTeslaの約13.7倍</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://thenextweb.com/news/tesla-robotaxi-fleet-42-vehicles-waymo-577-texas">*8 The Next Web</a></span></div>
+        </figure>
+        
+      </div>
+      
+      
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">政策不安と供給網期待の対照表</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>領域</th><th>今日の材料</th><th>市場への意味</th><th>注視点</th></tr></thead>
+              <tbody>
+                
+                <tr>
+                  
+                  <td class="head">為替・政策</td>
+                  
+                  <td class="val">GDP下方修正とBOJ利上げ観測が同時進行</td>
+                  
+                  <td class="val">成長鈍化でも円安対応を優先するかが焦点</td>
+                  
+                  <td class="src">BOJ会合前のUSD/JPY 160円攻防</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">株式市場</td>
+                  
+                  <td class="val">日経平均がリスクオフで下落</td>
+                  
+                  <td class="val">AI期待は残るが短期は金利・地政学で振られやすい</td>
+                  
+                  <td class="src">AI関連株の調整幅</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">AI実装</td>
+                  
+                  <td class="val">Fujitsu×Anthropic、NTT DATA×Google Cloud</td>
+                  
+                  <td class="val">企業AIがPoCから標準業務基盤へ移る</td>
+                  
+                  <td class="src">生産性改善が利益率に出るか</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">半導体供給網</td>
+                  
+                  <td class="val">Denso/ROHM、Toyota/TSMC/Densoの熊本投資</td>
+                  
+                  <td class="val">車載・AIの国内供給力を補強</td>
+                  
+                  <td class="src">投資が国内製造の収益へつながるか</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td class="head">ロボタクシー</td>
+                  
+                  <td class="val">Tesla 42台 vs Waymo 577台</td>
+                  
+                  <td class="val">ソフトだけでなく運用台数と安全実績が評価軸</td>
+                  
+                  <td class="src">都市実装の速度差</td>
+                  
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://think.ing.com/snaps/stronger-than-expected-1q26-gdp-to-support-the-bojs-rate-hike-in-june-a/">*1 ING Think</a> <a class="cite" href="https://thenextweb.com/news/tesla-robotaxi-fleet-42-vehicles-waymo-577-texas">*8 The Next Web</a></span></div>
+        </figure>
+      </div>
+      
+      <div class="dd-prose"><p><span class="emph-und">問題は、その下支えが市場の短期不安を相殺できるほど速く数字に出るかだ。</span> Fujitsu と Anthropic、NTT DATA と Google Cloud の動きは企業AIの受け皿を広げるが、収益・生産性・利益率に反映されるには時間がかかる。ロボタクシーでも、Tesla のFSD物語より Waymo の台数と運用実績が説得力を持ち始めている。<strong>2026年の投資家は、発表ではなく「何台動いたか」「何社導入したか」「どれだけ利益率が上がったか」を見る。</strong></p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+      
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>BOJ前夜の日本市場は、GDP下方修正と円安圧力を受けながら、AI・半導体供給網への中期期待を維持できるか</p>
+          </div>
+          <div class="dd-decision__opts">
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">BOJが円安・物価対応を優先し、短期は株式に重いが円安抑制で信認を守る</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">景気下振れを重視し、利上げ観測が後退して円安と輸入インフレの懸念が残る</p>
+            </div>
+            
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">AI・半導体投資が中期テーマとして残り、短期の政策不安を吸収する</p>
+            </div>
+            
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-06-16 BOJ会合、および同週の米金利・日本株反応</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+              
+              <ul class="dd-decision__deciders"><li>BOJ政策委員</li><li>日本株投資家</li><li>輸出企業</li><li>AI・半導体投資企業</li><li>為替市場参加者</li></ul>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dd-prose"><p><span class="emph-und">読み筋は、短期は政策、中期は供給網である。</span> 今日のGDP下方修正と日経平均下落だけを見れば、日本市場は弱い。しかし同じ日に、企業AIの導入基盤、車載半導体の国内供給、熊本ファブ、ロボタクシー運用台数の比較が出ている。これは、日本市場の評価軸が「マクロで買うか売るか」だけでなく、<span class="emph-und">AIと半導体をどこまで国内産業の実装力へ変えられるか</span>へ広がっていることを示す。</p><p><span class="emph-und">私見では</span>、BOJ前夜の市場で最も危ないのは、AI期待が短期の政策不安をすべて吸収できると見なすことだ。AI・半導体投資は確かに中期の支えになるが、利益率や生産性に出るまでは時間差がある。<strong>来週見るべきは、円相場の反応だけでなく、AI・半導体関連株が政策イベント後にどれだけ崩れず残るか</strong>である。残れば、日本市場は「政策不安を供給網期待で吸収できる」段階に入る。崩れれば、AIプレミアムはまだ脆い。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+      
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p>6月9日の日本市場は、<span class="emph-und">GDP下方修正、BOJ利上げ観測、USD/JPY 160円接近、日経平均のリスクオフ</span>が重なった。一方で、<strong class="emph-bold">Fujitsu</strong> / <strong class="emph-bold">NTT DATA</strong> の企業AI、<strong class="emph-bold">Denso</strong> / <strong class="emph-bold">ROHM</strong> / <strong class="emph-bold">Toyota</strong> / <strong class="emph-bold">TSMC</strong> の半導体供給網、<strong class="emph-bold">Tesla</strong> / <strong class="emph-bold">Waymo</strong> のロボタクシー台数差が、実装力を問う中期テーマとして並んだ。<span class="emph-und">短期は政策イベントが支配し、中期はAI・半導体供給網が支える</span>という二重構造が今日の本質である。来週の焦点は、BOJ後に円相場だけでなく、AI・半導体関連株がどれだけ持ちこたえるかだ。</p>
+        <div class="watermark">❖</div>
+      </div>
+      
+      
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+          
+          
+          <a class="dd-source" href="https://think.ing.com/snaps/stronger-than-expected-1q26-gdp-to-support-the-bojs-rate-hike-in-june-a/">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">ING Think</span>「Japan&#39;s stronger-than-expected GDP supports June BoJ rate hike」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="http://www.econotimes.com/Japan-Q1-2026-GDP-Growth-Revised-Lower-as-Weak-Investment-and-Middle-East-War-Pressure-Economy-1743708">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">EconoTimes</span>「Japan Q1 2026 GDP Growth Revised Lower...」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://www.bbntimes.com/financial/nikkei-225-tokyo-s-benchmark-index-falls-1-36-as-asia-wide-risk-aversion-intensifies">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">BBN Times</span>「Nikkei 225 falls 1.36%」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://global.fujitsu/en-global/pr/news/2026/05/27-01">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Fujitsu</span>「Strategic partnership with Anthropic」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://www.businesswire.com/news/home/20260608420229/en/NTT-DATA-Expands-Collaboration-with-Google-Cloud-to-Accelerate-Enterprise-AI-from-Pilots-to-Production">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">NTT DATA / Business Wire</span>「Expands Collaboration with Google Cloud」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://www.semimedia.cc/20990.html">
+            <span class="dd-source__no">06</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">SemiMedia</span>「Denso drops Rohm acquisition plan」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://global.toyota/en/newsroom/corporate/40410568.html">
+            <span class="dd-source__no">07</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Toyota Global Newsroom</span>「JASM Set to Expand in Kumamoto」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+          
+          <a class="dd-source" href="https://thenextweb.com/news/tesla-robotaxi-fleet-42-vehicles-waymo-577-texas">
+            <span class="dd-source__no">08</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">The Next Web</span>「Tesla has 42 robotaxis in Texas. Waymo has 577」 <span class="ext">↗</span></span>
+          </a>
+          
+          
+        </div>
+      </div>
+      
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+</body>
+</html>

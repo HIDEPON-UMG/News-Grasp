@@ -103,6 +103,37 @@ def _stale_source_url_errors(*, issue: date, label: str, title: str, url: str) -
     ]
 
 
+def _article_meta_date(value: str) -> date | None:
+    """digest のメタ行から parse_articles が抜いた `YYYY-MM-DD ...` の日付部分を返す。"""
+    if not value or len(value) < 10:
+        return None
+    head = value[:10]
+    if not _DATE_RE.match(head):
+        return None
+    try:
+        return date.fromisoformat(head)
+    except ValueError:
+        return None
+
+
+def _stale_top_article_errors(*, issue: date, label: str, article: dict[str, Any]) -> list[str]:
+    """カテゴリ先頭記事が当日/前日窓を外れていれば落とす。
+
+    LP/カテゴリページの TOP STORY は digest の先頭記事を大きく表示するため、
+    ここに古い再掲が入ると「今日号なのに一週間前の記事が主役」になる。
+    URL に日付が無いソースでも、digest メタ行の日付で防ぐ。
+    """
+    meta_date = _article_meta_date(str(article.get("date") or ""))
+    allowed_oldest = date.fromordinal(issue.toordinal() - 1)
+    if meta_date is None or meta_date >= allowed_oldest:
+        return []
+    age = (issue - meta_date).days
+    return [
+        f"{label}: top article date {meta_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()}: {article.get('title') or ''}",
+        "  TOP STORY must be today's or yesterday's article. Move the item down, replace it with a fresh article, or mark the digest as intentionally short.",
+    ]
+
+
 def _stale_followup_errors(*, issue: date, label: str, title: str, record: dict[str, Any]) -> list[str]:
     """古い記事を follow-up 扱いで当日掲載する再掲を検出する。"""
     if not record.get("is_followup"):
@@ -130,7 +161,14 @@ def validate_digest_source_freshness(digest_root: Path, issue: date) -> list[str
             continue
         fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         cat = fm.get("categoryId") or fm.get("category") or md.parent.name
-        for idx, article in enumerate(parse_articles(body), 1):
+        articles = parse_articles(body)
+        if articles:
+            errs.extend(_stale_top_article_errors(
+                issue=issue,
+                label=f"{md} [{cat} TOP]",
+                article=articles[0],
+            ))
+        for idx, article in enumerate(articles, 1):
             url = article.get("source_url") or ""
             errs.extend(_stale_source_url_errors(
                 issue=issue,

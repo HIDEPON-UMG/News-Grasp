@@ -25,23 +25,23 @@ tags:
 # 💼 ITコンサル — IT-Consulting
 
 > [!summary]
-> 富士通×Anthropicの戦略提携が日本最大エンタープライズAI案件として始動。__NTT DataはNVIDIAとAIファクトリー__を展開し、日系コンサル各社のAI競争が白熱。
+> NTT DATA が Google Cloud との連携を拡大し、Gemini Enterprise を軸に実証から本番展開へ踏み込む。__富士通×Anthropic / OpenAI、NVIDIA連携__と合わせ、日系ITサービス各社のAI実装競争が白熱。
 
 ---
 
-### [92] Fujitsu signs strategic partnership with Anthropic
+### [92] NTT DATA Expands Collaboration with Google Cloud to Accelerate Enterprise AI from Pilots to Production
 
-> [!ja] 富士通、Anthropic と戦略的提携を締結
+> [!ja] NTT DATA、Google Cloud との連携を拡大し企業AIを実証から本番へ
 
-📅 2026-05-27 09:00 · 📰 Fujitsu Global · 🔗 [元記事](https://global.fujitsu/en-global/pr/news/2026/05/27-01)
+📅 2026-06-08 09:00 · 📰 Business Wire · 🔗 [元記事](https://www.businesswire.com/news/home/20260608420229/en/NTT-DATA-Expands-Collaboration-with-Google-Cloud-to-Accelerate-Enterprise-AI-from-Pilots-to-Production)
 
-#co/fujitsu #co/anthropic #country/japan #topic/enterprise-ai #event/fujitsu-anthropic #score/高
+#co/ntt-data #co/google-cloud #country/japan #topic/agentic-ai #event/gemini-enterprise #score/高
 
-![thumb](https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/pr/news/2026/05/27-01/news-20260527-01th.png?rev=ded1d13bd820408f974a042498060fc0)
+![thumb](null)
 
-- 富士通とAnthropicが__戦略的提携__を発表（2026年5月27日）、日本最大規模のエンタープライズAI契約として業界が注目。
-- 富士通社員__10万人__にClaude APIを展開、まず「Fujitsu Kozuchi AI」プラットフォームに統合し段階的にロールアウト。
-- 5年間の複数年契約、業界推定__500〜700億円規模__のライセンス＋エンジニアリングパッケージと報じられる。
+- NTT DATA は Google Cloud との連携拡大を発表し、Gemini Enterprise を使った agentic AI を実証から本番展開へ移す方針を示した。
+- 専任の Gemini Enterprise practice を立ち上げ、__5,000人の認定エキスパート__育成と最大500件の業界別AIエージェント共創を掲げる。
+- 企業AIの焦点はモデル選定から、ガバナンス・業務導入・マネージドサービスを含む__実装運用体制__へ移っている。
 ---
 
 ### [90] Fujitsu deploys Anthropic's Claude to 100,000 employees in Japan's largest enterprise AI deal
@@ -59,19 +59,19 @@ tags:
 - 競合他社（NTT Data・NEC・IBM Japan）の追随が6〜12ヶ月以内に不可避とアナリストが予測している。
 ---
 
-### [85] NTT DATA unveils NVIDIA-powered enterprise AI factories to support secure AI adoption
+### [86] Fujitsu signs strategic partnership with Anthropic
 
-> [!ja] NTT DATA、セキュアな AI 導入を支える NVIDIA 搭載 AI factory を発表
+> [!ja] 富士通、Anthropic と戦略的提携を締結
 
-📅 2026-06-09 09:00 · 📰 NTT DATA · 🔗 [元記事](https://www.nttdata.com/global/en/news/press-release/2026/march/031200)
+📅 2026-05-27 09:00 · 📰 Fujitsu Global · 🔗 [元記事](https://global.fujitsu/en-global/pr/news/2026/05/27-01)
 
-#co/ntt-data #co/nvidia #country/japan #topic/ai-factory #score/高
+#co/fujitsu #co/anthropic #country/japan #topic/enterprise-ai #event/fujitsu-anthropic #score/高
 
-![thumb](https://www.nttdata.com/global/en/-/media/assets/images/sns_share.png)
+![thumb](https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/pr/news/2026/05/27-01/news-20260527-01th.png?rev=ded1d13bd820408f974a042498060fc0)
 
-- NTT DATAがNVIDIA DGX SuperPOD搭載の__「AIファクトリー」__を東西2拠点で本格稼働—6月9日発表。
-- 800TB/秒のNVLink、NVIDIA NIM＋NeMo Guardrailsをコンプライアンス層に採用し金融・官公庁の規制要件に対応。
-- 金融・製造・官公庁の3業種向け専用AIフォージュを提供、__初年度50社契約__を目標に受注活動を開始。
+- 富士通とAnthropicが__戦略的提携__を発表（2026年5月27日）、日本のエンタープライズAI案件として継続注目。
+- 富士通は Claude を自社AIサービスラインアップに組み込み、ミッションクリティカル領域でのAI活用を進める。
+- NTT DATA の Google Cloud 拡大と並び、国内ITサービス大手が外部AIモデルを実装力へ変える競争が強まっている。
 ---
 
 ### [84] NVIDIA and Global Consulting Leaders Speed AI Adoption Across Japan's Industries

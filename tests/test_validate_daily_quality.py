@@ -228,6 +228,33 @@ def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path
     assert "articles.jsonl" in joined
 
 
+def test_daily_quality_rejects_stale_top_article_meta_date(tmp_path: Path) -> None:
+    """URL 日付なしでも、カテゴリ TOP のメタ日付が古ければ落とす。"""
+    _write_summary(tmp_path)
+    fresh_url = "https://example.com/no-date/high-score-old-topic"
+    _write_category(tmp_path, fresh_url)
+    ai_md = tmp_path / "digest" / "AI" / "2026-06-08-AI.md"
+    ai_md.write_text(
+        ai_md.read_text(encoding="utf-8").replace(
+            "📅 2026-06-08 06:00",
+            "📅 2026-06-01 09:00",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    _write_jsonl(tmp_path, fresh_url)
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "top article date 2026-06-01" in joined
+    assert "TOP STORY" in joined
+
+
 def test_daily_quality_accepts_issue_day_previous_day_or_unknown_url_date(tmp_path: Path) -> None:
     """当日・前日 URL と日付が取れない URL は通す。"""
     _write_summary(tmp_path)
