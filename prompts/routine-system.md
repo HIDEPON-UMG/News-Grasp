@@ -163,7 +163,7 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 
 ```bash
 # candidates.jsonl に当該カテゴリの全候補を書き出してから
-.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate --freshness-gate --max-source-age-days 7 < candidates.jsonl > filtered.jsonl
+.venv\Scripts\python.exe tools\dedup.py --jsonl data/articles.jsonl --followup-gate --freshness-gate --max-source-age-days 0 < candidates.jsonl > filtered.jsonl
 # stderr に「N passed, M dropped」と各 DROP の理由（url match / title similarity / 新材料 0 / freshness gate）が出る。
 # filtered.jsonl が採用候補。落ちた件数と理由は必ず目視で確認する。
 # --followup-gate は 3-A.5 E (続報の新材料判定) を機械化する境界フラグ。
@@ -214,7 +214,7 @@ A・B のどちらでマッチしたかで扱いが分かれる（**2026-05-30 �
 
 ##### D. 鮮度ゲート（URL 発行日）
 
-`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。URL パスに `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような発行日が含まれる場合は、`--freshness-gate --max-source-age-days 7` で **JST 今日から 7 日超前の記事を除外**する。URL に日付が無い候補は偽陽性を避けるため、このゲートだけでは落とさない。
+`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。URL パスに `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような発行日が含まれる場合は、`--freshness-gate --max-source-age-days 0` で **JST 今日より前の記事を除外**する。URL に日付が無い候補は偽陽性を避けるため、このゲートだけでは落とさない。前日以前の記事を「続報」として採用したい場合は、今日付の新規 URL または一次ソースに切り替え、本文で差分を明示する。
 
 ##### E. イベント単位の最終確認（**dedup.py 通過後の続報ゲート**・小プールカテゴリ向け）
 
@@ -556,6 +556,7 @@ git -c user.name="HIDEPON" -c user.email="hideki.kusunoki@gmail.com" commit -m "
 - 購読者は管理人が手動収集したローカルの `data/push_subscriptions.secret.json`（`*.secret.json` で git 管理外）を参照する。**購読者が 0 人でも鍵が無くても exit 0** で、毎朝の処理を絶対に止めない（push は付随機能）。
 - 失効した購読（HTTP 404/410）はこのスクリプトが自動で同ファイルから除去する。
 - VAPID 秘密鍵は `~/.secrets/news-grasp-vapid.pem`。これが無く購読者がいる場合のみ exit 1 で設定漏れを表面化するので、その時は `_status.md` に追記する。
+- runner 外で手動公開するときは `python tools/publish_update.py` を使う。通知が必要な更新だけ `--notify` を付け、微細修正では付けない。
 
 ---
 
