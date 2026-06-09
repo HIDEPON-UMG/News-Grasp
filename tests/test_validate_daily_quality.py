@@ -25,6 +25,27 @@ def _write_summary(root: Path, *, hero: bool = True, weekday: str | None = None)
     (summary_dir / "2026-06-08.md").write_text(frontmatter, encoding="utf-8")
 
 
+def _write_summary_with_reflection(root: Path, *, lead: str, section_body: str) -> None:
+    summary_dir = root / "digest" / "Summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    (summary_dir / "2026-06-08.md").write_text(
+        "---\n"
+        "title: Summary\n"
+        "date: 2026-06-08\n"
+        "category: Daily Summary\n"
+        "hero_left: プラットフォーム再編\n"
+        "hero_right: 市場へ波及\n"
+        "---\n\n"
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "*政策と市場の接点*\n\n"
+        f"> {lead}\n\n"
+        "### §01 総論 — 実装力を見る日\n\n"
+        f"{section_body}\n",
+        encoding="utf-8",
+    )
+
+
 def _write_category(
     root: Path,
     url: str,
@@ -163,6 +184,47 @@ def test_daily_quality_rejects_missing_summary_hero(tmp_path: Path) -> None:
     )
 
     assert any("hero_left / hero_right" in e for e in errs)
+
+
+def test_daily_quality_rejects_summary_reflection_without_three_tier_emphasis(tmp_path: Path) -> None:
+    """Summary 考察があるのに太字・下線・マーカーが不足していれば落とす。"""
+    _write_summary_with_reflection(
+        tmp_path,
+        lead="政策イベントと企業実装が同じ日に並んだ。",
+        section_body="市場は発表ではなく実装能力を見ている。",
+    )
+    _write_category(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "reflection lead lacks required emphasis" in joined
+    assert "reflection section §01 lacks required emphasis" in joined
+    assert "[[ ]] marker" in joined
+    assert "** ** bold" in joined
+    assert "__ __ underline" in joined
+
+
+def test_daily_quality_accepts_summary_reflection_with_three_tier_emphasis(tmp_path: Path) -> None:
+    """Summary 考察 lead / § 本文が 3 階層強調を含めば通す。"""
+    _write_summary_with_reflection(
+        tmp_path,
+        lead="[[政策イベント]] と **企業実装** が同じ日に並び、__運用力の差__ が見えた。",
+        section_body="[[AI導入]] は **発表数** ではなく、__継続運用できる体制__ で評価される。",
+    )
+    _write_category(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    assert validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    ) == []
 
 
 def test_daily_quality_rejects_weekday_mismatch(tmp_path: Path) -> None:

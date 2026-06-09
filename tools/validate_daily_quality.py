@@ -11,7 +11,13 @@ from pathlib import Path
 from typing import Any
 
 from tools.dedup import extract_source_date_from_url
-from tools.generate_pages import CATEGORIES, is_category_scheduled_on, parse_articles, parse_frontmatter
+from tools.generate_pages import (
+    CATEGORIES,
+    is_category_scheduled_on,
+    parse_articles,
+    parse_frontmatter,
+    parse_reflection,
+)
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"]
@@ -46,6 +52,44 @@ def validate_summary_hero(summary_path: Path) -> list[str]:
         f"{summary_path}: frontmatter hero_left / hero_right が不足しています。",
         "このままでは LP TODAY'S THEME 見出しが「時勢を掴み、日々に新たに。」へ fallback します。",
     ]
+
+
+def _missing_emphasis_kinds(text: str) -> list[str]:
+    missing: list[str] = []
+    if "[[" not in text or "]]" not in text:
+        missing.append("[[ ]] marker")
+    if "**" not in text:
+        missing.append("** ** bold")
+    if "__" not in text:
+        missing.append("__ __ underline")
+    return missing
+
+
+def validate_summary_emphasis(summary_path: Path) -> list[str]:
+    """考察 lead / § 本文が 3 階層の強調記法を使っているか検査する。"""
+    if not summary_path.exists():
+        return []
+    _fm, body = parse_frontmatter(summary_path.read_text(encoding="utf-8-sig", errors="replace"))
+    reflection = parse_reflection(body)
+    lead = str(reflection.get("lead") or "")
+    sections = reflection.get("sections") or {}
+    if not lead and not sections:
+        return []
+
+    errs: list[str] = []
+    missing = _missing_emphasis_kinds(lead)
+    if missing:
+        errs.append(
+            f"{summary_path}: reflection lead lacks required emphasis: {', '.join(missing)}"
+        )
+    for num, sec in sorted(sections.items()):
+        body_text = str((sec or {}).get("body") or "")
+        missing = _missing_emphasis_kinds(body_text)
+        if missing:
+            errs.append(
+                f"{summary_path}: reflection section §{num:02d} lacks required emphasis: {', '.join(missing)}"
+            )
+    return errs
 
 
 def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
@@ -309,7 +353,9 @@ def validate_daily_quality(
     """指定日の Summary hero と記事 URL 鮮度をまとめて検査する。"""
     issue = _parse_issue_date(issue_date)
     errs: list[str] = []
-    errs.extend(validate_summary_hero(digest_root / "Summary" / f"{issue.isoformat()}.md"))
+    summary_path = digest_root / "Summary" / f"{issue.isoformat()}.md"
+    errs.extend(validate_summary_hero(summary_path))
+    errs.extend(validate_summary_emphasis(summary_path))
     errs.extend(validate_issue_schedule(digest_root, issue))
     errs.extend(validate_digest_article_counts(digest_root, issue))
     errs.extend(validate_search_audit_for_shortfall(
