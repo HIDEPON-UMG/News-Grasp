@@ -1,341 +1,333 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>News-Grasp Gate Convergence Spec</title>
-<style>
-:root {
-  --color-primary: #1A1A1A;
-  --color-secondary: #5C5A52;
-  --color-tertiary: #C9A155;
-  --color-neutral: #FAF7F0;
-  --color-surface: #FFFFFF;
-  --color-border: #E2DED4;
-  --color-paper-soft: #F2EEE3;
-  --color-paper-dim: #EAE3D3;
-  --color-on-primary: #F0EBE0;
-  --color-navy: #181C2A;
-  --color-cream: #F0EBE0;
-  --color-gold: #C9A155;
-  --color-success: #3D7E60;
-  --color-warning: #B7773D;
-  --color-error: #B83A2D;
-  --font-sans: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Noto Serif JP", "Yu Mincho", serif;
-  --font-mono: "JetBrains Mono", Consolas, monospace;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--color-neutral);
-  color: var(--color-primary);
-  font-family: var(--font-serif);
-  line-height: 1.75;
-}
-header {
-  background: var(--color-navy);
-  color: var(--color-cream);
-  padding: var(--space-2xl) max(var(--space-lg), calc((100vw - 1180px) / 2));
-  border-bottom: 6px solid var(--color-gold);
-}
-main {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--space-xl) var(--space-lg) var(--space-2xl);
-}
-h1, h2, h3 {
-  font-family: var(--font-sans);
-  letter-spacing: 0;
-  line-height: 1.15;
-}
-h1 { margin: 0 0 var(--space-md); font-size: 2.6rem; }
-h2 { margin: var(--space-2xl) 0 var(--space-md); font-size: 1.7rem; }
-h3 { margin: var(--space-xl) 0 var(--space-sm); font-size: 1.15rem; }
-p { margin: 0 0 var(--space-md); }
-.lede {
-  max-width: 880px;
-  color: var(--color-cream);
-  font-size: 1.04rem;
-}
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  margin: var(--space-xl) 0;
-}
-.tabs a {
-  display: inline-flex;
-  align-items: center;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: .74rem;
-  font-weight: 700;
-}
-.panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  padding: var(--space-lg);
-  margin-bottom: var(--space-lg);
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-md);
-}
-.badge {
-  display: inline-flex;
-  padding: 3px 7px;
-  background: var(--color-paper-soft);
-  border-left: 4px solid var(--color-gold);
-  font-family: var(--font-mono);
-  font-size: .72rem;
-  font-weight: 700;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--color-surface);
-  margin: var(--space-md) 0;
-  font-size: .92rem;
-}
-th, td {
-  border: 1px solid var(--color-border);
-  padding: 10px;
-  vertical-align: top;
-}
-th {
-  background: var(--color-paper-soft);
-  font-family: var(--font-sans);
-  text-align: left;
-}
-code {
-  font-family: var(--font-mono);
-  background: var(--color-paper-soft);
-  padding: 1px 4px;
-}
-pre {
-  overflow: auto;
-  background: var(--color-navy);
-  color: var(--color-cream);
-  padding: var(--space-md);
-  font-family: var(--font-mono);
-  font-size: .82rem;
-}
-.warn { border-left: 5px solid var(--color-warning); }
-.ok { border-left: 5px solid var(--color-success); }
-.bad { border-left: 5px solid var(--color-error); }
-.flow {
-  width: 100%;
-  max-width: 920px;
-  height: auto;
-  display: block;
-  margin: var(--space-md) auto;
-}
-.playground {
-  display: grid;
-  gap: var(--space-md);
-}
-.playground label {
-  display: grid;
-  gap: 6px;
-  font-family: var(--font-sans);
-  font-weight: 700;
-}
-.playground input, .playground textarea {
-  width: 100%;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  padding: 10px;
-  font: inherit;
-}
-.playground button {
-  justify-self: start;
-  border: 0;
-  background: var(--color-navy);
-  color: var(--color-cream);
-  padding: 11px 14px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-}
-@media (max-width: 720px) {
-  h1 { font-size: 2rem; }
-  main { padding-inline: var(--space-md); }
-  th, td { font-size: .86rem; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp Gate Convergence — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン (Claude.ai 公式トンマナ準拠)
+       - 色直書き禁止: ここで定義した CSS 変数のみを使うこと
+       - 同期元: ~/.claude/templates/DESIGN.md
+       ============================================================ */
+    :root {
+      /* Colors — core */
+      --color-primary: #141413;
+      --color-secondary: #6A6A6A;
+      --color-tertiary: #CC785C;   /* Claude Orange */
+      --color-neutral: #F8F6F3;    /* warm cream */
+      --color-surface: #FFFFFF;
+      --color-border: #E8E6E3;
+      --color-on-tertiary: #FFFFFF;
+      --color-on-primary: #FAF9F5;
+      /* Colors — accents */
+      --color-accent-blue: #A8C5E6;
+      --color-accent-teal: #9DD4C7;
+      --color-accent-beige: #F4E4C1;
+      /* Colors — semantic */
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+      /* Typography */
+      --font-serif: Copernicus, 'Source Serif 4', Georgia, serif;
+      --font-sans: 'Styrene B', Söhne, Inter, system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+      /* Rounded */
+      --rounded-sm: 6px;
+      --rounded-md: 10px;
+      --rounded-lg: 16px;
+      --rounded-full: 9999px;
+      /* Spacing (8 の倍数) */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      /* Elevation */
+      --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04);
+      --shadow-md: 0 4px 12px rgba(20, 20, 19, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 64rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; font-weight: 500; text-transform: uppercase; }
+    h1 { font-family: var(--font-serif); font-size: 3rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; margin: var(--space-md) 0 var(--space-sm); }
+    h2 { font-family: var(--font-serif); font-size: 2rem; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 var(--space-md); }
+    h3 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; line-height: 1.3; margin: var(--space-xl) 0 var(--space-sm); }
+    .lead { color: var(--color-secondary); font-size: 1.125rem; line-height: 1.6; margin: var(--space-sm) 0 var(--space-md); }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-tertiary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: var(--space-xs); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: none; padding: var(--space-sm) var(--space-md); font-family: var(--font-sans); font-size: 0.875rem; color: var(--color-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+    .tab:hover { color: var(--color-primary); }
+    .tab.active { color: var(--color-primary); border-bottom-color: var(--color-tertiary); font-weight: 500; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+    .card-muted { background: var(--color-surface); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+
+    /* Badge */
+    .badge { display: inline-block; background: var(--color-accent-beige); color: var(--color-primary); border-radius: var(--rounded-full); padding: 4px 12px; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; }
+    .badge-success { background: var(--color-success); color: var(--color-on-primary); }
+    .badge-warning { background: var(--color-warning); color: var(--color-on-primary); }
+    .badge-error { background: var(--color-error); color: var(--color-on-primary); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.9375rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 500; color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; text-transform: uppercase; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-neutral); padding: 2px 6px; border-radius: var(--rounded-sm); border: 1px solid var(--color-border); }
+    pre { background: var(--color-primary); color: var(--color-on-primary); border-radius: var(--rounded-md); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.5; margin: var(--space-md) 0; }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 10px 18px; border-radius: var(--rounded-md); border: 0; font-family: var(--font-sans); font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: background 120ms; }
+    .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+    .btn-primary:hover { background: var(--color-primary); }
+    .btn-accent { background: var(--color-tertiary); color: var(--color-on-tertiary); }
+    .btn-accent:hover { background: var(--color-tertiary); }
+    .btn-secondary { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); }
+    .btn-secondary:hover { background: var(--color-neutral); }
+
+    /* Checklist */
+    .checklist { list-style: none; padding: 0; margin: 0; }
+    .checklist li { display: flex; align-items: flex-start; gap: var(--space-sm); padding: var(--space-sm) 0; border-bottom: 1px solid var(--color-border); }
+    .checklist li:last-child { border-bottom: 0; }
+    .checklist input[type="checkbox"] { margin-top: 5px; accent-color: var(--color-tertiary); width: 16px; height: 16px; flex-shrink: 0; }
+    .checklist label { cursor: pointer; flex: 1; }
+    .checklist li.done label { text-decoration: line-through; color: var(--color-secondary); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .playground-control { display: flex; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { min-width: 180px; font-size: 0.875rem; color: var(--color-secondary); }
+    .playground-control input[type="range"] { flex: 1; accent-color: var(--color-tertiary); }
+    .playground-control output { min-width: 72px; font-family: var(--font-mono); font-size: 0.875rem; text-align: right; }
+
+    /* Timeline */
+    .timeline { display: flex; gap: var(--space-lg); margin: var(--space-lg) 0; flex-wrap: wrap; }
+    .timeline-step { flex: 1 1 200px; background: var(--color-accent-beige); border-radius: var(--rounded-md); padding: var(--space-md); position: relative; }
+    .timeline-step strong { display: block; font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: var(--space-xs); }
+
+    /* Severity */
+    .severity-info { border-left: 3px solid var(--color-accent-blue); padding-left: var(--space-md); margin: var(--space-md) 0; }
+    .severity-warn { border-left: 3px solid var(--color-warning); padding-left: var(--space-md); margin: var(--space-md) 0; }
+    .severity-error { border-left: 3px solid var(--color-error); padding-left: var(--space-md); margin: var(--space-md) 0; }
+
+    /* Comparison grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+    }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>News-Grasp Gate Convergence Spec</h1>
-  <p class="lede">2026-06-09 日次バッチ障害の再発防止仕様。品質 gate を緩めず、同じ失敗の無制限再生成を止め、本日号が出せない朝でも公開面を破綻させない。</p>
-</header>
-<main>
-  <nav class="tabs" aria-label="仕様タブ">
-    <a href="#overview">概要</a>
-    <a href="#comparison">比較</a>
-    <a href="#flow">データフロー</a>
-    <a href="#steps">実装ステップ</a>
-    <a href="#parameters">パラメータ</a>
-  </nav>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · <span id="spec-date">2026-06-09</span></div>
+      <h1>News-Grasp Gate Convergence</h1>
+      <p class="lead">品質 gate を緩めず、同じ失敗の無制限再生成と朝の公開面破綻を防ぐ日次 runner 仕様。</p>
+      <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md);">
+        <span class="badge">draft</span>
+        <span class="badge">News-Grasp daily runner</span>
+      </div>
+    </header>
 
-  <section id="overview" class="panel">
-    <span class="badge">OVERVIEW</span>
-    <h2>目的と成功条件</h2>
-    <p>今回の根本原因候補は timeout そのものではない。通常 30 分程度で終わる処理が 1 時間に達し、記事の半分も作られなかったことから、収集、要約、gate 修復のどこかで同じ失敗を繰り返せる構造が疑われる。</p>
-    <p>成功条件は三つに分ける。Content Gate を通った本日号だけを通常公開する。本日号が通らない場合は fallback notice 付きで直近成功号を維持する。secret、security、破壊的変更の疑いだけは自動公開せず停止する。</p>
-  </section>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="alternatives">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
 
-  <section id="comparison" class="panel">
-    <span class="badge">COMPARISON</span>
-    <h2>前後比較</h2>
-    <table>
-      <thead>
-        <tr><th>論点</th><th>修正前</th><th>修正後</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Claude の責務</td>
-          <td>digest 生成に加え commit まで prompt で要求され、gate を意識した自己修復が膨らみ得る。</td>
-          <td>Claude は生成 worker と bounded repair worker に限定する。commit、push、docs 生成、publish gate は runner が管理する。</td>
-        </tr>
-        <tr>
-          <td>gate 失敗</td>
-          <td>失敗メッセージは人間向けで、同じ失敗署名を何度繰り返したかが runner に残らない。</td>
-          <td><code>failure_signature</code> と artifact hash を記録し、同一失敗は 1 回だけ修復、カテゴリ最大 2 回で fail-fast する。</td>
-        </tr>
-        <tr>
-          <td>公開保証</td>
-          <td>Content Gate 失敗時は push 前に止まり、朝に公開面が更新されない可能性が残る。</td>
-          <td>Content Gate 失敗時は通常号を出さず、直近成功号に品質確認中 notice を入れて Availability Gate を通して公開する。</td>
-        </tr>
-        <tr>
-          <td>session URL</td>
-          <td><code>data/_session_urls.json</code> が空なら silent degrade し、hook 欠落が目立ちにくい。</td>
-          <td>当日 URL が十分含まれる場合だけ strict。空、古い、破損は強警告として runner ログに残し、原因調査対象にする。</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
+    <section id="overview" class="tab-panel active">
+      <h2>概要</h2>
+      <p>2026-06-09 日次バッチ障害の再発防止仕様。目的は gate を緩めることではなく、gate 失敗が 1〜2 回で収束し、収束しない場合も朝の公開面が破綻しない構造にすること。</p>
+      <div class="severity-info">
+        <strong>成功条件</strong>
+        <ul>
+          <li>Content Gate を通った本日号だけを通常公開する。</li>
+          <li>Content Gate を通らない本日号の記事コンテンツは公開・commit・pushしない。</li>
+          <li>本日号が出せない場合は、直近成功号を維持し、設定に応じて notice または status file だけを出す。</li>
+          <li>secret / security / 破壊的変更の疑いは自動修復せず停止する。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>今回の根本論点</h3>
+        <p>通常 30 分程度で終わる処理が 1 時間に達し、記事の半分も作られなかった。timeout そのものではなく、収集、要約、gate 修復のどこかで同じ失敗を繰り返せる構造が疑われる。</p>
+      </div>
+    </section>
+    <section id="alternatives" class="tab-panel">
+      <h2>比較</h2>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">無制限自己修復</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>Claude が gate を見ながら全体生成を何度も繰り返す方式。失敗が収束しない場合に 1 時間 timeout まで進み、どこで詰まったかも runner が把握できない。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">runner 管理の bounded repair</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>runner が失敗署名と artifact hash を記録し、同一失敗は 1 回だけ targeted repair に戻す。別 failure_signature なら段階的修復を許す余地を残す。</p>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>論点</th><th>修正前</th><th>修正後</th></tr></thead>
+        <tbody>
+          <tr><td>Claude の責務</td><td>生成と commit まで抱える。</td><td>生成専用。repair は runner から渡された failure report の範囲だけ。</td></tr>
+          <tr><td>gate 失敗</td><td>同じ失敗を繰り返せる。</td><td><code>failure_signature</code> と artifact hash で再発を止める。</td></tr>
+          <tr><td>公開保証</td><td>push 前停止で朝の公開面が更新されない。</td><td>未検証記事は出さず、直近成功号を維持する。</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="dataflow" class="tab-panel">
+      <h2>データフロー</h2>
+      <p>Claude は一時生成領域で digest/jsonl を作る。runner が Content Gate を通し、通過した場合だけ docs 生成と commit/push へ進む。失敗時は retry budget を確認し、収束しなければ last-known-good を維持する。</p>
+      <div class="fig">
+        <svg viewBox="0 0 860 300" role="img" aria-label="News-Grasp daily gate flow">
+          <defs>
+            <marker id="ng-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0 L9 3 L0 6 Z" fill="#6A6A6A"/></marker>
+          </defs>
+          <rect x="20" y="70" width="140" height="54" rx="10" fill="#A8C5E6"/>
+          <text x="90" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#141413">Claude生成</text>
+          <path d="M160 97 L250 97" stroke="#6A6A6A" stroke-width="2" marker-end="url(#ng-arrow)"/>
+          <rect x="250" y="70" width="150" height="54" rx="10" fill="#9DD4C7"/>
+          <text x="325" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#141413">Content Gate</text>
+          <path d="M400 97 L500 97" stroke="#6A6A6A" stroke-width="2" marker-end="url(#ng-arrow)"/>
+          <rect x="500" y="70" width="140" height="54" rx="10" fill="#F4E4C1"/>
+          <text x="570" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#141413">通常公開</text>
+          <path d="M325 124 L325 190" stroke="#6A6A6A" stroke-width="2" marker-end="url(#ng-arrow)"/>
+          <rect x="230" y="190" width="190" height="54" rx="10" fill="#F4E4C1"/>
+          <text x="325" y="212" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#141413">Retry Budget</text>
+          <text x="325" y="231" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">same signature once</text>
+          <path d="M420 217 L535 217" stroke="#6A6A6A" stroke-width="2" marker-end="url(#ng-arrow)"/>
+          <rect x="535" y="190" width="190" height="54" rx="10" fill="#A8C5E6"/>
+          <text x="630" y="212" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#141413">Last-known-good</text>
+          <text x="630" y="231" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">notice/status only</text>
+        </svg>
+        <div class="fig-caption">未検証の本日号は fallback publish に含めない。fallback は記事更新ではなく公開状態の維持である。</div>
+      </div>
+    </section>
+    <section id="impl" class="tab-panel">
+      <h2>実装ステップ</h2>
+      <div class="timeline">
+        <div class="timeline-step"><strong>1.</strong>HTML仕様書を SPEC.html 形式で作成し、承認後に実装へ進む。</div>
+        <div class="timeline-step"><strong>2.</strong>gate failure contract を実装し、失敗署名と artifact hash を記録する。</div>
+        <div class="timeline-step"><strong>3.</strong>runner が bounded repair と Availability Gate を管理する。</div>
+      </div>
+      <h3>変更ファイル</h3>
+      <table>
+        <thead><tr><th>パス</th><th>変更種別</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td><code>tools/gate_contract.py</code></td><td>add</td><td>同一失敗の再発を runner が判断できるようにする。</td></tr>
+          <tr><td><code>tools/publish_fallback.py</code></td><td>add</td><td>本日号を出せない場合に公開面を last-known-good へ維持する。</td></tr>
+          <tr><td><code>prompts/runner-prompt.md</code></td><td>edit</td><td>Claude の責務を生成専用へ縮小する。</td></tr>
+        </tbody>
+      </table>
+      <h3>判定ルール</h3>
+      <pre><code>same_failure_signature_retry_limit = 1
+category_attempt_limit = 2
+fallback_mode = notice_keep_last_success
+non_retryable = secret | security | destructive</code></pre>
+    </section>
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ</h2>
+      <p>fallback 表示方式と retry budget を調整し、承認後の実装プロンプトとして戻す。</p>
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-1">同一失敗署名の再試行上限</label>
+          <input type="range" id="param-1" min="0" max="3" value="1" step="1" data-unit="回">
+          <output for="param-1">1回</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-2">カテゴリ最大試行回数</label>
+          <input type="range" id="param-2" min="1" max="4" value="2" step="1" data-unit="回">
+          <output for="param-2">2回</output>
+        </div>
+        <div style="margin-top: var(--space-lg);">
+          <button class="btn btn-accent" id="copy-prompt">プロンプトとしてコピー</button>
+        </div>
+      </div>
+    </section>
+  </main>
 
-  <section id="flow" class="panel">
-    <span class="badge">DATA FLOW</span>
-    <h2>収束と fallback の流れ</h2>
-    <svg class="flow" viewBox="0 0 920 360" role="img" aria-label="News-Grasp daily gate flow">
-      <defs>
-        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-          <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-navy)"></path>
-        </marker>
-      </defs>
-      <rect x="20" y="40" width="160" height="58" fill="var(--color-paper-soft)" stroke="var(--color-border)"></rect>
-      <text x="100" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Claude</text>
-      <text x="100" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">md/jsonl only</text>
-      <line x1="180" y1="69" x2="265" y2="69" stroke="var(--color-navy)" stroke-width="2" marker-end="url(#arrow)"></line>
-      <rect x="265" y="40" width="170" height="58" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
-      <text x="350" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Content Gate</text>
-      <text x="350" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">strict quality</text>
-      <line x1="435" y1="69" x2="520" y2="69" stroke="var(--color-success)" stroke-width="2" marker-end="url(#arrow)"></line>
-      <rect x="520" y="40" width="170" height="58" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
-      <text x="605" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Docs Build</text>
-      <text x="605" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">generate_pages</text>
-      <line x1="690" y1="69" x2="775" y2="69" stroke="var(--color-success)" stroke-width="2" marker-end="url(#arrow)"></line>
-      <rect x="775" y="40" width="125" height="58" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
-      <text x="838" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Publish</text>
-      <text x="838" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">today</text>
-      <line x1="350" y1="98" x2="350" y2="160" stroke="var(--color-warning)" stroke-width="2" marker-end="url(#arrow)"></line>
-      <rect x="250" y="160" width="200" height="68" fill="var(--color-paper-soft)" stroke="var(--color-border)"></rect>
-      <text x="350" y="186" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Repair Budget</text>
-      <text x="350" y="207" text-anchor="middle" font-family="var(--font-mono)" font-size="11">same signature once</text>
-      <path d="M250,194 C130,194 130,98 100,98" fill="none" stroke="var(--color-warning)" stroke-width="2" marker-end="url(#arrow)"></path>
-      <line x1="450" y1="194" x2="555" y2="194" stroke="var(--color-error)" stroke-width="2" marker-end="url(#arrow)"></line>
-      <rect x="555" y="160" width="210" height="68" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
-      <text x="660" y="186" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Fallback Publish</text>
-      <text x="660" y="207" text-anchor="middle" font-family="var(--font-mono)" font-size="11">notice + last success</text>
-      <line x1="660" y1="228" x2="660" y2="282" stroke="var(--color-navy)" stroke-width="2" marker-end="url(#arrow)"></line>
-      <rect x="555" y="282" width="210" height="58" fill="var(--color-paper-soft)" stroke="var(--color-border)"></rect>
-      <text x="660" y="306" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Availability Gate</text>
-      <text x="660" y="326" text-anchor="middle" font-family="var(--font-mono)" font-size="11">site is not blank</text>
-    </svg>
-  </section>
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
 
-  <section id="steps" class="panel">
-    <span class="badge">IMPLEMENTATION</span>
-    <h2>実装ステップ</h2>
-    <div class="grid">
-      <div class="panel ok">
-        <h3>Phase 0</h3>
-        <p>本仕様書を作成し、HTML 仕様書が実装前の判断材料になる状態を固定する。</p>
-      </div>
-      <div class="panel">
-        <h3>Phase 1</h3>
-        <p>既存 runner、wrapper、prompt、hook、gate 出力を棚卸しし、同じ失敗を繰り返せる場所を runner 境界へ移す。</p>
-      </div>
-      <div class="panel">
-        <h3>Phase 2</h3>
-        <p>gate failure contract と attempt state を実装し、失敗署名、対象 artifact、修復可否を記録する。</p>
-      </div>
-      <div class="panel">
-        <h3>Phase 3</h3>
-        <p>runner に bounded retry と fallback publish を追加し、Content Gate と Availability Gate を分離する。</p>
-      </div>
-      <div class="panel">
-        <h3>Phase 4</h3>
-        <p>Claude prompt を生成専用へ縮小し、commit/push/docs 生成を runner 側に戻す。</p>
-      </div>
-      <div class="panel warn">
-        <h3>Phase 5</h3>
-        <p>session URL 欠落は silent skip にせず、強警告と audit log の存在確認を runner ログへ出す。</p>
-      </div>
-    </div>
-  </section>
+    // Playground 値同期
+    document.querySelectorAll('.playground-control input[type="range"]').forEach(r => {
+      const out = document.querySelector(`output[for="${r.id}"]`);
+      const unit = r.dataset.unit || '';
+      r.addEventListener('input', () => { if (out) out.textContent = r.value + unit; });
+    });
 
-  <section id="parameters" class="panel">
-    <span class="badge">PARAMETERS</span>
-    <h2>調整パラメータ</h2>
-    <div class="playground">
-      <label>同一失敗署名の再試行上限
-        <input id="sameSig" type="range" min="0" max="3" value="1">
-      </label>
-      <label>カテゴリ単位の最大試行回数
-        <input id="catMax" type="range" min="1" max="4" value="2">
-      </label>
-      <label>Fallback notice 文面
-        <textarea id="notice" rows="3">本日の更新は品質確認中です。直近の公開済み号を表示しています。</textarea>
-      </label>
-      <pre id="promptOut"></pre>
-      <button type="button" id="copyBtn">プロンプトとしてコピー</button>
-    </div>
-  </section>
-</main>
-<script>
-const sameSig = document.getElementById('sameSig');
-const catMax = document.getElementById('catMax');
-const notice = document.getElementById('notice');
-const out = document.getElementById('promptOut');
-function render() {
-  out.textContent = [
-    'News-Grasp gate convergence parameters:',
-    '- same_failure_signature_retry_limit=' + sameSig.value,
-    '- category_attempt_limit=' + catMax.value,
-    '- fallback_notice=' + notice.value
-  ].join('\n');
-}
-[sameSig, catMax, notice].forEach((el) => el.addEventListener('input', render));
-document.getElementById('copyBtn').addEventListener('click', async () => {
-  render();
-  try { await navigator.clipboard.writeText(out.textContent); } catch (e) {}
-});
-render();
-</script>
+    // プロンプトコピー
+    const copyBtn = document.getElementById('copy-prompt');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const values = Array.from(document.querySelectorAll('.playground-control')).map(c => {
+          const label = c.querySelector('label')?.textContent?.trim() || '';
+          const range = c.querySelector('input[type="range"]');
+          const unit = range?.dataset.unit || '';
+          return `${label}: ${range.value}${unit}`;
+        }).join('\n');
+        const prompt = `以下のパラメータで進めてください。\n\n${values}`;
+        try {
+          await navigator.clipboard.writeText(prompt);
+          const orig = copyBtn.textContent;
+          copyBtn.textContent = 'コピーしました';
+          setTimeout(() => copyBtn.textContent = orig, 1500);
+        } catch (e) {
+          alert('クリップボードに書き込めませんでした。\n\n' + prompt);
+        }
+      });
+    }
+
+  </script>
 </body>
 </html>
