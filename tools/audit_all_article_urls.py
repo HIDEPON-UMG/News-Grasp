@@ -176,9 +176,10 @@ def main() -> int:
         if not session_norm:
             # degrade: session ファイル無し / 空 / 破損 → 物理照合は無効化して従来 gate のみで進む
             print(
-                f"WARN: --match-session 指定だが {session_path.relative_to(_PKG_ROOT)} "
+                f"STRONG WARN: --match-session 指定だが {session_path.relative_to(_PKG_ROOT)} "
                 f"が不在 or 空 or 破損のため session 照合を skip (従来 gate のみで継続)。"
-                f"LLM が WebSearch 結果を書き出していない可能性があるので runner ログを確認すること",
+                f"PostToolUse hook が発火していない可能性が高い。"
+                f"data/_session_urls.audit.log と runner の WorkingDirectory / PromptFile loaded を確認すること",
                 file=sys.stderr,
             )
         else:
@@ -186,8 +187,9 @@ def main() -> int:
             if session_date and session_date != today_str:
                 # session date が当日でない (前日のまま残ってる等) → degrade と同じ扱い
                 print(
-                    f"WARN: _session_urls.json の date={session_date} が当日 {today_str} と "
-                    f"不一致のため session 照合を skip (古い session を誤検知に使わないため)",
+                    f"STRONG WARN: _session_urls.json の date={session_date} が当日 {today_str} と "
+                    f"不一致のため session 照合を skip (古い session を誤検知に使わないため)。"
+                    f"hook が当日セッションを書けていない可能性があるため data/_session_urls.audit.log を確認すること",
                     file=sys.stderr,
                 )
             else:

@@ -129,8 +129,9 @@ npx wrangler secret put LIST_TOKEN
 
 `%USERPROFILE%\bin\news-grasp-runner.ps1` に PowerShell スクリプトとして配置する。要点:
 
-- 当日 digest 生成は `run_claude_with_timeout.ps1` 経由で、`runner-prompt.md` を `-PromptFile` から stdin に流して実行する。wrapper は `WorkingDirectory=$RepoDir` を明示し、`.claude/settings.json` の hook 解決が cwd ずれで外れないようにする
-- Claude 終了後に ps1 が継続して pre-push gate 群 → `tools/generate_pages.py` → `tools.validate_public_home` → docs commit → `git push origin main` → `tools/send_push.py` を順に走らせる
+- 当日 digest 生成は `run_claude_with_timeout.ps1` 経由で、`runner-prompt.md` を `-PromptFile` から stdin に流して実行する。Claude は `md/jsonl` 生成だけを担当し、`git commit` / `git push` / docs 生成 / publish gate は実行しない
+- Claude 終了後に ps1 が継続して Content Gate 群 → bounded repair worker (同一失敗 1 回だけ) → `tools/generate_pages.py` → `tools.validate_public_home` → Availability Gate → docs commit → `git push origin main` → `tools/send_push.py` を順に走らせる
+- Content Gate が収束しない場合、本日号は通常公開せず、`tools.publish_fallback` で直近成功号に「本日の更新は品質確認中」notice を挿入し、`tools.validate_availability` を通して fallback publish する
 - wrapper は hard timeout に加えて短縮 timeout を持つ。標準設定では `TimeoutSec=2400`、`IdleTimeoutSec=900` で、15分間完了しない場合は40分の hard timeout を待たずに kill する。heartbeat は途中ログに elapsed 秒を残す
 - gate failed 後の復旧は `-RecoverOnly` を使う。Claude / DeepDive を再実行せず、手修正済みのローカル状態から gate 群 → docs 再生成 → docs commit → push → Web Push だけを再開する
 - 手動公開で runner を通さない場合は `python tools/publish_update.py` を使う。Web Push 通知が必要な更新だけ `--notify` を付ける（微細修正では付けない）
@@ -189,10 +190,10 @@ git push
 | 黒い画面が開いてすぐ閉じる | ログに `ERROR: ...` が出る → `news-grasp-invoked.log` から原因切り分け |
 | `claude` が見つからない | ps1 内のフルパスを `where claude` で確認した結果に差し替え |
 | 画像が壊れる（公開 Web 内） | `assets/` の JPG が repo にあるか確認 → `tools/generate_pages.py` の thumb fallback 処理を確認 |
-| `public HTML gate failed` で止まる | `docs/index.html` の TOP STORY 画像、色面 fallback、`home-hero__lead`、当日 `docs/YYYY-MM-DD/summary/index.html` の `summary-hero__lead` を確認 → `python -m tools.validate_public_home --date YYYY-MM-DD` で単体確認 → `-RecoverOnly` |
-| `claude TIMEOUT` / `IDLE TIMEOUT` で止まる | ログの `PromptFile loaded`、`WorkingDirectory resolved`、heartbeat / elapsed 秒数を確認。partial artifacts があれば `git status` と当日 `digest/` / `data/articles.jsonl` を点検し、修正後に `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$HOME\bin\news-grasp-runner.ps1" -RecoverOnly` |
-| pre-push gate / `generate_pages.py` で止まる | ログの `ERROR:` が示す md/jsonl/test を修正 → 対象 gate を単体確認 → `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$HOME\bin\news-grasp-runner.ps1" -RecoverOnly` で Claude / DeepDive を再実行せず gate 群・docs 再生成・push だけ再開 |
-| `summary reflection gate failed` で止まる | `digest/Summary/YYYY-MM-DD.md` に `## § 本日のテーマ考察` / `### §01 ...` を補修 → `python -m tools.validate_summary_reflection --date YYYY-MM-DD` で確認 → `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$HOME\bin\news-grasp-runner.ps1" -RecoverOnly` で gate 群・docs 再生成・push だけ再開 |
+| `public HTML gate failed` | runner が同一失敗を 1 回だけ targeted repair worker に戻す。再発時は通常号を出さず fallback notice 付き公開へ切替。手動調査は `python -m tools.validate_public_home --date YYYY-MM-DD` |
+| `claude TIMEOUT` / `IDLE TIMEOUT` | ログの `PromptFile loaded`、`WorkingDirectory resolved`、heartbeat / elapsed 秒数を確認。partial artifacts は未検証なので通常公開せず、必要なら手修正後に `-RecoverOnly` |
+| pre-push gate / `generate_pages.py` 失敗 | runner が bounded repair を試し、収束しなければ `published_fallback_with_notice` として直近成功号を公開維持。`failed_before_push` は secret/security/破壊的リスク時だけを原則にする |
+| `summary reflection gate failed` | runner が `digest/Summary/YYYY-MM-DD.md` を対象に 1 回だけ repair worker を呼ぶ。再発時は fallback publish し、同一 `failure_signature` は `data/gate_attempts/YYYY-MM-DD.json` に残る |
 | 手動 push 後に Web Push が届かない | runner 外の `git push` では `tools/send_push.py` が走らない。手動公開は `python tools/publish_update.py` を使い、通知が必要な更新だけ `--notify` を付ける |
 | Web Push が届かない | `python tools/send_push.py --dry-run` で疎通確認 → Worker URL / `LIST_TOKEN` / VAPID 公開鍵の食い違いを点検 |
 | Obsidian で digest（記事 .md）が反映されない | サブリポ `News-Grasp/` 担当の Runner が `git pull` を内包しているので、サブリポは自動更新。手動なら `git -C "...\News-Grasp" pull` |

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>News-Grasp Gate Convergence Spec</title>
+<style>
+:root {
+  --color-primary: #1A1A1A;
+  --color-secondary: #5C5A52;
+  --color-tertiary: #C9A155;
+  --color-neutral: #FAF7F0;
+  --color-surface: #FFFFFF;
+  --color-border: #E2DED4;
+  --color-paper-soft: #F2EEE3;
+  --color-paper-dim: #EAE3D3;
+  --color-on-primary: #F0EBE0;
+  --color-navy: #181C2A;
+  --color-cream: #F0EBE0;
+  --color-gold: #C9A155;
+  --color-success: #3D7E60;
+  --color-warning: #B7773D;
+  --color-error: #B83A2D;
+  --font-sans: "Inter", -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Noto Serif JP", "Yu Mincho", serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--color-neutral);
+  color: var(--color-primary);
+  font-family: var(--font-serif);
+  line-height: 1.75;
+}
+header {
+  background: var(--color-navy);
+  color: var(--color-cream);
+  padding: var(--space-2xl) max(var(--space-lg), calc((100vw - 1180px) / 2));
+  border-bottom: 6px solid var(--color-gold);
+}
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-2xl);
+}
+h1, h2, h3 {
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+h1 { margin: 0 0 var(--space-md); font-size: 2.6rem; }
+h2 { margin: var(--space-2xl) 0 var(--space-md); font-size: 1.7rem; }
+h3 { margin: var(--space-xl) 0 var(--space-sm); font-size: 1.15rem; }
+p { margin: 0 0 var(--space-md); }
+.lede {
+  max-width: 880px;
+  color: var(--color-cream);
+  font-size: 1.04rem;
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: var(--space-xl) 0;
+}
+.tabs a {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: .74rem;
+  font-weight: 700;
+}
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-md);
+}
+.badge {
+  display: inline-flex;
+  padding: 3px 7px;
+  background: var(--color-paper-soft);
+  border-left: 4px solid var(--color-gold);
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  font-weight: 700;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  margin: var(--space-md) 0;
+  font-size: .92rem;
+}
+th, td {
+  border: 1px solid var(--color-border);
+  padding: 10px;
+  vertical-align: top;
+}
+th {
+  background: var(--color-paper-soft);
+  font-family: var(--font-sans);
+  text-align: left;
+}
+code {
+  font-family: var(--font-mono);
+  background: var(--color-paper-soft);
+  padding: 1px 4px;
+}
+pre {
+  overflow: auto;
+  background: var(--color-navy);
+  color: var(--color-cream);
+  padding: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: .82rem;
+}
+.warn { border-left: 5px solid var(--color-warning); }
+.ok { border-left: 5px solid var(--color-success); }
+.bad { border-left: 5px solid var(--color-error); }
+.flow {
+  width: 100%;
+  max-width: 920px;
+  height: auto;
+  display: block;
+  margin: var(--space-md) auto;
+}
+.playground {
+  display: grid;
+  gap: var(--space-md);
+}
+.playground label {
+  display: grid;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+.playground input, .playground textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  padding: 10px;
+  font: inherit;
+}
+.playground button {
+  justify-self: start;
+  border: 0;
+  background: var(--color-navy);
+  color: var(--color-cream);
+  padding: 11px 14px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  h1 { font-size: 2rem; }
+  main { padding-inline: var(--space-md); }
+  th, td { font-size: .86rem; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>News-Grasp Gate Convergence Spec</h1>
+  <p class="lede">2026-06-09 日次バッチ障害の再発防止仕様。品質 gate を緩めず、同じ失敗の無制限再生成を止め、本日号が出せない朝でも公開面を破綻させない。</p>
+</header>
+<main>
+  <nav class="tabs" aria-label="仕様タブ">
+    <a href="#overview">概要</a>
+    <a href="#comparison">比較</a>
+    <a href="#flow">データフロー</a>
+    <a href="#steps">実装ステップ</a>
+    <a href="#parameters">パラメータ</a>
+  </nav>
+
+  <section id="overview" class="panel">
+    <span class="badge">OVERVIEW</span>
+    <h2>目的と成功条件</h2>
+    <p>今回の根本原因候補は timeout そのものではない。通常 30 分程度で終わる処理が 1 時間に達し、記事の半分も作られなかったことから、収集、要約、gate 修復のどこかで同じ失敗を繰り返せる構造が疑われる。</p>
+    <p>成功条件は三つに分ける。Content Gate を通った本日号だけを通常公開する。本日号が通らない場合は fallback notice 付きで直近成功号を維持する。secret、security、破壊的変更の疑いだけは自動公開せず停止する。</p>
+  </section>
+
+  <section id="comparison" class="panel">
+    <span class="badge">COMPARISON</span>
+    <h2>前後比較</h2>
+    <table>
+      <thead>
+        <tr><th>論点</th><th>修正前</th><th>修正後</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Claude の責務</td>
+          <td>digest 生成に加え commit まで prompt で要求され、gate を意識した自己修復が膨らみ得る。</td>
+          <td>Claude は生成 worker と bounded repair worker に限定する。commit、push、docs 生成、publish gate は runner が管理する。</td>
+        </tr>
+        <tr>
+          <td>gate 失敗</td>
+          <td>失敗メッセージは人間向けで、同じ失敗署名を何度繰り返したかが runner に残らない。</td>
+          <td><code>failure_signature</code> と artifact hash を記録し、同一失敗は 1 回だけ修復、カテゴリ最大 2 回で fail-fast する。</td>
+        </tr>
+        <tr>
+          <td>公開保証</td>
+          <td>Content Gate 失敗時は push 前に止まり、朝に公開面が更新されない可能性が残る。</td>
+          <td>Content Gate 失敗時は通常号を出さず、直近成功号に品質確認中 notice を入れて Availability Gate を通して公開する。</td>
+        </tr>
+        <tr>
+          <td>session URL</td>
+          <td><code>data/_session_urls.json</code> が空なら silent degrade し、hook 欠落が目立ちにくい。</td>
+          <td>当日 URL が十分含まれる場合だけ strict。空、古い、破損は強警告として runner ログに残し、原因調査対象にする。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="flow" class="panel">
+    <span class="badge">DATA FLOW</span>
+    <h2>収束と fallback の流れ</h2>
+    <svg class="flow" viewBox="0 0 920 360" role="img" aria-label="News-Grasp daily gate flow">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-navy)"></path>
+        </marker>
+      </defs>
+      <rect x="20" y="40" width="160" height="58" fill="var(--color-paper-soft)" stroke="var(--color-border)"></rect>
+      <text x="100" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Claude</text>
+      <text x="100" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">md/jsonl only</text>
+      <line x1="180" y1="69" x2="265" y2="69" stroke="var(--color-navy)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <rect x="265" y="40" width="170" height="58" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
+      <text x="350" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Content Gate</text>
+      <text x="350" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">strict quality</text>
+      <line x1="435" y1="69" x2="520" y2="69" stroke="var(--color-success)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <rect x="520" y="40" width="170" height="58" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
+      <text x="605" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Docs Build</text>
+      <text x="605" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">generate_pages</text>
+      <line x1="690" y1="69" x2="775" y2="69" stroke="var(--color-success)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <rect x="775" y="40" width="125" height="58" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
+      <text x="838" y="64" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Publish</text>
+      <text x="838" y="84" text-anchor="middle" font-family="var(--font-mono)" font-size="11">today</text>
+      <line x1="350" y1="98" x2="350" y2="160" stroke="var(--color-warning)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <rect x="250" y="160" width="200" height="68" fill="var(--color-paper-soft)" stroke="var(--color-border)"></rect>
+      <text x="350" y="186" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Repair Budget</text>
+      <text x="350" y="207" text-anchor="middle" font-family="var(--font-mono)" font-size="11">same signature once</text>
+      <path d="M250,194 C130,194 130,98 100,98" fill="none" stroke="var(--color-warning)" stroke-width="2" marker-end="url(#arrow)"></path>
+      <line x1="450" y1="194" x2="555" y2="194" stroke="var(--color-error)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <rect x="555" y="160" width="210" height="68" fill="var(--color-surface)" stroke="var(--color-border)"></rect>
+      <text x="660" y="186" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Fallback Publish</text>
+      <text x="660" y="207" text-anchor="middle" font-family="var(--font-mono)" font-size="11">notice + last success</text>
+      <line x1="660" y1="228" x2="660" y2="282" stroke="var(--color-navy)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <rect x="555" y="282" width="210" height="58" fill="var(--color-paper-soft)" stroke="var(--color-border)"></rect>
+      <text x="660" y="306" text-anchor="middle" font-family="var(--font-sans)" font-size="14">Availability Gate</text>
+      <text x="660" y="326" text-anchor="middle" font-family="var(--font-mono)" font-size="11">site is not blank</text>
+    </svg>
+  </section>
+
+  <section id="steps" class="panel">
+    <span class="badge">IMPLEMENTATION</span>
+    <h2>実装ステップ</h2>
+    <div class="grid">
+      <div class="panel ok">
+        <h3>Phase 0</h3>
+        <p>本仕様書を作成し、HTML 仕様書が実装前の判断材料になる状態を固定する。</p>
+      </div>
+      <div class="panel">
+        <h3>Phase 1</h3>
+        <p>既存 runner、wrapper、prompt、hook、gate 出力を棚卸しし、同じ失敗を繰り返せる場所を runner 境界へ移す。</p>
+      </div>
+      <div class="panel">
+        <h3>Phase 2</h3>
+        <p>gate failure contract と attempt state を実装し、失敗署名、対象 artifact、修復可否を記録する。</p>
+      </div>
+      <div class="panel">
+        <h3>Phase 3</h3>
+        <p>runner に bounded retry と fallback publish を追加し、Content Gate と Availability Gate を分離する。</p>
+      </div>
+      <div class="panel">
+        <h3>Phase 4</h3>
+        <p>Claude prompt を生成専用へ縮小し、commit/push/docs 生成を runner 側に戻す。</p>
+      </div>
+      <div class="panel warn">
+        <h3>Phase 5</h3>
+        <p>session URL 欠落は silent skip にせず、強警告と audit log の存在確認を runner ログへ出す。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="parameters" class="panel">
+    <span class="badge">PARAMETERS</span>
+    <h2>調整パラメータ</h2>
+    <div class="playground">
+      <label>同一失敗署名の再試行上限
+        <input id="sameSig" type="range" min="0" max="3" value="1">
+      </label>
+      <label>カテゴリ単位の最大試行回数
+        <input id="catMax" type="range" min="1" max="4" value="2">
+      </label>
+      <label>Fallback notice 文面
+        <textarea id="notice" rows="3">本日の更新は品質確認中です。直近の公開済み号を表示しています。</textarea>
+      </label>
+      <pre id="promptOut"></pre>
+      <button type="button" id="copyBtn">プロンプトとしてコピー</button>
+    </div>
+  </section>
+</main>
+<script>
+const sameSig = document.getElementById('sameSig');
+const catMax = document.getElementById('catMax');
+const notice = document.getElementById('notice');
+const out = document.getElementById('promptOut');
+function render() {
+  out.textContent = [
+    'News-Grasp gate convergence parameters:',
+    '- same_failure_signature_retry_limit=' + sameSig.value,
+    '- category_attempt_limit=' + catMax.value,
+    '- fallback_notice=' + notice.value
+  ].join('\n');
+}
+[sameSig, catMax, notice].forEach((el) => el.addEventListener('input', render));
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  render();
+  try { await navigator.clipboard.writeText(out.textContent); } catch (e) {}
+});
+render();
+</script>
+</body>
+</html>
