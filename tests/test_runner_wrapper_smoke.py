@@ -32,6 +32,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -45,6 +46,7 @@ CLAUDE = Path(os.environ.get(
     r"C:\Users\hidek\.local\bin\claude.exe",
 ))
 POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
+ROOT = Path(__file__).resolve().parent.parent
 
 # 「encoding 問題」を示す語 (claude が検出すると返してくる典型語)
 ENCODING_ERROR_TOKENS = [
@@ -99,6 +101,7 @@ def smoke_run_via_promptfile(tmp_path) -> tuple[int, str]:
             "-PromptFile", str(prompt_file),
             "-LogFile", str(log_file),
             "-TimeoutSec", "120",
+            "-WorkingDirectory", str(ROOT),
         ],
         capture_output=True,
         text=True,
@@ -188,3 +191,76 @@ def test_string_prompt_with_nonascii_is_rejected(smoke_run_via_string_prompt_non
         f"非 ASCII を含む -Prompt は exit 126 で拒否される想定だが、rc={rc}\n"
         f"wrapper.ps1 のガード処理が壊れている疑い。\n--- log ---\n{log[:1500]}"
     )
+
+
+def test_wrapper_logs_working_directory_resolution(tmp_path):
+    """wrapper が claude 子プロセス用の作業ディレクトリを明示解決すること。
+
+    なぜ重要か: `.claude/settings.json` の hook 解決は project cwd に依存するため、
+    Task Scheduler 経由で cwd がずれると session URL hook が発火しない。
+    """
+    prompt_file = tmp_path / "prompt.md"
+    prompt_file.write_text("hello", encoding="utf-8")
+    log_file = tmp_path / "wrapper_cwd.log"
+    work_dir = tmp_path / "project"
+    work_dir.mkdir()
+
+    python_exe = shutil.which("py") or shutil.which("python") or sys.executable
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-ClaudeExe", python_exe,
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "20",
+            "-WorkingDirectory", str(work_dir),
+            "-ClaudeArgs", "-c \"import os; print('FAKE_CWD=' + os.getcwd())\"",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+    )
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+
+    assert f"WorkingDirectory resolved: {work_dir}" in log
+
+
+def test_wrapper_idle_timeout_kills_silent_child(tmp_path):
+    """長時間完了しない子プロセスはhard timeout前に短いidle timeoutで止める。"""
+    fake_claude = tmp_path / "fake_silent_claude.cmd"
+    fake_claude.write_text(
+        "@echo off\r\n"
+        "powershell -NoProfile -Command \"Start-Sleep -Seconds 5\"\r\n"
+        "exit /b 0\r\n",
+        encoding="cp932",
+        newline="",
+    )
+    prompt_file = tmp_path / "prompt.md"
+    prompt_file.write_text("hello", encoding="utf-8")
+    log_file = tmp_path / "wrapper_idle.log"
+
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-ClaudeExe", str(fake_claude),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "20",
+            "-IdleTimeoutSec", "1",
+            "-HeartbeatSec", "0",
+            "-WorkingDirectory", str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+    )
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+
+    assert result.returncode == 124, f"silent child should be killed by idle timeout\nlog:\n{log}"
+    assert "IDLE TIMEOUT after 1 sec" in log
