@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260610 — Economy</title>
+<meta name="description" content="6月10日の米5月CPI発表で予測（+4.2%）を下回る冷却数値が出て、Dow・S&amp;P・Nasdaqが揃って急伸しAIトレードが再点火。日経平均は68,402円と過去最高値を更新し70,000円台が射程に入った。BOJ6月利上げ観測は揺るがず、Fed次期議長候補ウォーシュのタカ派発言がリスクとして残る。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-10/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260610 — Economy">
+<meta property="og:description" content="6月10日の米5月CPI発表で予測（+4.2%）を下回る冷却数値が出て、Dow・S&amp;P・Nasdaqが揃って急伸しAIトレードが再点火。日経平均は68,402円と過去最高値を更新し70,000円台が射程に入った。BOJ6月利上げ観測は揺るがず、Fed次期議長候補ウォーシュのタカ派発言がリスクとして残る。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-10/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260610 — Economy">
+<meta name="twitter:description" content="6月10日の米5月CPI発表で予測（+4.2%）を下回る冷却数値が出て、Dow・S&amp;P・Nasdaqが揃って急伸しAIトレードが再点火。日経平均は68,402円と過去最高値を更新し70,000円台が射程に入った。BOJ6月利上げ観測は揺るがず、Fed次期議長候補ウォーシュのタカ派発言がリスクとして残る。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-10 · #20260610</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">6月10日の米5月CPI発表で予測（+4.2%）を下回る冷却数値が出て、Dow・S&amp;P・Nasdaqが揃って急伸しAIトレードが再点火。日経平均は<span class="emph-und">68,402円</span>と過去最高値を更新し70,000円台が射程に入った。BOJ6月利上げ観測は揺るがず、Fed次期議長候補ウォーシュのタカ派発言がリスクとして残る。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">85</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·10</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260610</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-10 22:00 · Yahoo Finance</span>
+    <span class="top-story__score">90</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://finance.yahoo.com/news/live/stock-market-today-dow-sp-500-nasdaq-jump-after-cooler-cpi-inflation-reading-as-ai-trade-reignites-210127820.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://s.yimg.com/lo/mysterio/api/0CC892FB6B874A404FC91EB066BC368787B7E406A0F3EB6553C877C54228E81D/subgraphmysterio/resizefill_w1200_h800;quality_80;format_webp/https:%2F%2Fs.yimg.com%2Fos%2Fcreatr-uploaded-images%2F2025-12%2F8d6ad5b0-d61d-11f0-9fea-96c3ce700aef" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://finance.yahoo.com/news/live/stock-market-today-dow-sp-500-nasdaq-jump-after-cooler-cpi-inflation-reading-as-ai-trade-reignites-210127820.html" rel="noopener nofollow" target="_blank" style="color: inherit;">Stock market today: Dow, S&amp;P 500, Nasdaq jump after cooler CPI inflation reading as AI trade reignites</a>
+        <span class="story-title-ja">米CPI冷却でNY市場急伸、AIトレード再点火 — Dow・S&amp;P・Nasdaq揃って大幅高</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li>米5月CPI（6月10日発表）は事前予測+4.2%を下回る冷却数値で、<strong class="emph-bold">S&amp;P500</strong>は+1.8%・Nasdaq+2.4%と急伸。高金利長期化懸念が和らいだ。</li><li><strong class="emph-bold">Claude Fable 5</strong>公開と重なりAIセクターが相場をリード。NVDA・META・GOOGが牽引し、<span class="emph-und">AIトレードの再点火</span>が7ヶ月ぶりの勢いを示した。</li><li>Fed 6月FOMC（16〜17日）は据え置き確定だが、CPI冷却で9月以降の利下げ転換シナリオが再浮上。長期金利は4.3%台に低下。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">■ ECONOMY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-10</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-10 15:30</span>
+        <span>· Nikkei</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.nikkei.com/article/DGXZQOUB02C1LTS6A600C2000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3115408003062026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=319efa990ffd9e592f2abf1e200d2420" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOUB02C1LTS6A600C2000000/" rel="noopener nofollow" target="_blank">日経平均、AI・半導体株高で68,402円の過去最高値を更新</a>
+        <span class="story-title-ja">日経平均 68,402円でバブル後最高値更新、70,000円台が視野に</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">日経平均</strong>が6月10日終値で<span class="emph-und">68,402円</span>を記録し過去最高値を更新。AI半導体（東京エレクトロン・アドバンテスト）と輸出大手が相場を牽引。</li><li>前日比+2.17%の上昇幅で、米CPI冷却・Fable 5リリース・円安維持という三重の追い風が重なった結果。</li><li><span class="emph-und">70,000円台</span>を視野に入れたアナリストの強気見通しが増え、年内の節目として注目が集まる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-09 08:30</span>
+        <span>· Kiplinger</span>
+        <span class="more-card__score">84</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.kiplinger.com/investing/economy/cpi-report-may-2026-what-to-expect" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.mos.cms.futurecdn.net/6iKXSViFhaXLMsh6oNEAN-2121-80.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.kiplinger.com/investing/economy/cpi-report-may-2026-what-to-expect" rel="noopener nofollow" target="_blank">What to Expect From the May CPI Report — inflation to rise 4.2%</a>
+        <span class="story-title-ja">米5月CPI報告プレビュー — インフレは+4.2%上昇見通し</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Kiplingerは米5月CPI前年比+<span class="emph-und">4.2%</span>（4月+4.3%から鈍化）と事前予測。コアCPIは+3.8%、住宅コストの鈍化がカギ。</li><li>今回の冷却が確認された場合でも、<strong class="emph-bold">Fed</strong>の利下げ転換には複数月の継続確認が必要とされ、「1回の改善でテーゼは変わらない」がコンセンサス。</li><li>予測を上回れば長期金利再上昇・株式調整のトリガーになる可能性があり、<span class="emph-und">「CPI発表後30分の市場反応が週全体を決める」</span>という状況が続く。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-09 09:00</span>
+        <span>· TradingKey</span>
+        <span class="more-card__score">83</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.tradingkey.com/analysis/economic/central-banks/261924394-fed-fomc-kevin-warsh-hawkish-shift-inflation-cpi-treasury-yields-rate-hike-pricing-labor-resilience-policy-pivot-tradingkey" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://resource.tradingkey.com/cms_uploads/img/20231116/2c1ddf838fb54c80bf544f304a03c8b9.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.tradingkey.com/analysis/economic/central-banks/261924394-fed-fomc-kevin-warsh-hawkish-shift-inflation-cpi-treasury-yields-rate-hike-pricing-labor-resilience-policy-pivot-tradingkey" rel="noopener nofollow" target="_blank">June Fed Rate Decision Preview: Warsh hawkish shift, inflation CPI, treasury yields, rate hike pricing</a>
+        <span class="story-title-ja">Fed 6月会合プレビュー：ウォーシュのタカ派転換、インフレと国債利回りの行方</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Fed次期議長有力候補の<strong class="emph-bold">ケビン・ウォーシュ</strong>はタカ派スタンスを鮮明にし、利下げ転換ではなく「<span class="emph-und">次の利上げも選択肢</span>」と示唆するような発言が市場に緊張をもたらした。</li><li>6月FOMC（16〜17日）は5.25%据え置きがコンセンサスだが、ウォーシュ登用観測でターミナルレートの再上昇リスクが意識される。</li><li>労働市場の底堅さ（失業率4.1%）とCPIの高止まりが続く限り、Fed内タカ派の主張は論理的一貫性を保ち続ける。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-10 09:00</span>
+        <span>· Nikkei Asia</span>
+        <span class="more-card__score">79</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://asia.nikkei.com/economy/east-asia/japan" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://images.ft.com/v3/image/raw/https%3A%2F%2Fasia.nikkei.com%2Fimages%2Ffrontend%2Ffavicons%2F630x630.png?fit=cover&amp;gravity=faces&amp;dpr=2&amp;quality=medium&amp;source=nar-cms&amp;format=auto&amp;width=630&amp;height=630" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://asia.nikkei.com/economy/east-asia/japan" rel="noopener nofollow" target="_blank">Investors expect Bank of Japan to raise interest rates later this month</a>
+        <span class="story-title-ja">投資家、日銀が今月の利上げを実施すると予想</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>市場参加者の過半数が<strong class="emph-bold">BOJ</strong>の6月16日金融政策決定会合での<span class="emph-und">0.75%→1.0%利上げ</span>を織り込んでいるとNikkei Asiaが整理。</li><li>春闘+3.82%の賃上げが実質賃金をプラスに押し上げており、日銀が政策正常化を進める環境が整っていると判断される。</li><li>米CPIが冷却し米ドル安・円高方向への圧力が加わる中、BOJ利上げ+Fed据え置きの組み合わせがUSD/JPYの転換点を生む可能性がある。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>米CPI冷却と<strong class="emph-bold">Claude Fable 5</strong>公開が重なった日に日経平均が最高値を更新したことは、「AIブームの恩恵を受ける日本株」というテーマが本格稼働し始めたことを意味する。東京エレクトロン・アドバンテストなどの半導体関連に加え、円安維持による輸出収益増が追い風となっている。<strong>ただしBOJ利上げが円高に転じれば輸出株のプレミアムは剥落するリスクもあり、日経70,000円への道は一直線ではない。</strong><span class="emph-und">相場の高値は期待を先食いする。その余白が将来の調整幅になる。</span></p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-10/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-06-10
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
