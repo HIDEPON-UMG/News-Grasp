@@ -1153,7 +1153,10 @@ strong {
   max-width: var(--container-max);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* 1fr (= minmax(auto,1fr)) だとスライダー track (200%) の min-content が列を
+     コンテナ超えに押し広げ、狭幅端末 (CSS 360px 等) で右余白が消える。
+     minmax(0,1fr) で列幅をコンテナに物理固定する (2026-06-10 スマホ右切れ修正) */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 48px;
   align-items: flex-start;
 }
@@ -2709,7 +2712,7 @@ strong {
   .home-nav__links { gap: 12px; font-size: 10px; }
   .home-nav__right { display: none; }
   .home-hero { padding: 24px 16px 24px; }
-  .home-hero__inner { grid-template-columns: 1fr; gap: 24px; }
+  .home-hero__inner { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .home-hero__title { font-size: 38px; }
   .home-hero__lead { font-size: 14px; line-height: 1.7; }
   .home-hero__switch { margin-bottom: 18px; }
