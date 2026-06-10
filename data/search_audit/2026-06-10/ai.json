@@ -1,0 +1,19 @@
+{
+  "date": "2026-06-10",
+  "category_id": "ai",
+  "queries": [
+    "Claude Fable 5 Anthropic 2026年6月",
+    "Anthropic IPO 2026",
+    "Anthropic Google Broadcom compute partnership",
+    "GPT-5.5 OpenAI 2026年6月",
+    "Gemini 3.5 Pro Google Cloud 2026年6月",
+    "GitHub Copilot Claude Fable 5"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 10,
+  "selected_total": 8,
+  "coverage_terms_checked": ["Claude Fable 5", "Anthropic", "GPT-5.5", "Gemini 3.5 Pro", "GitHub Copilot", "IPO", "Mythos"],
+  "dropped": [
+    {"url": "https://www.aboutamazon.com/news/aws/claude-fable-5-anthropic-available-amazon-bedrock", "reason": "dedup: high similarity with VentureBeat Fable 5 article (title Jaccard threshold exceeded)"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "date": "2026-06-10",
+  "category_id": "economy",
+  "queries": [
+    "米CPI May 2026 Consumer Price Index 発表",
+    "日経平均 最高値 2026年6月",
+    "Fed FOMC 利上げ 2026年6月 ウォーシュ",
+    "日銀 BOJ 利上げ 2026年6月16日",
+    "Japan GDP economy 2026年6月"
+  ],
+  "raw_results_total": 26,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": ["CPI", "Nikkei 225", "日経平均", "Fed", "FOMC", "BOJ", "日銀", "GDP", "Kevin Warsh"],
+  "dropped": [
+    {"url": "https://www.gurufocus.com/news/8904727/japans-gdp-growth-surpasses-expectations-in-q1-2026", "reason": "editorial: superseded by 2026-06-09 'Japan Q1 2026 GDP Growth Revised Lower' (confirmed revision, older beat now stale)"},
+    {"url": "https://www.devere-group.com/japans-stock-market-outlook-2026-analysts-bullish-on-the-nikkei/", "reason": "editorial: low-quality opinion piece (score 77), Nikkei outlook already covered by Nikkei/Nikkei Asia articles"},
+    {"url": "https://www.fool.com/investing/2026/06/05/heres-why-june-10-could-be-a-big-day-stock-market/", "reason": "freshness: pre-CPI preview from June 5, superseded by actual CPI result on June 10"},
+    {"url": "https://tradingeconomics.com/japan/stock-market", "reason": "dedup: generic stock market tracker, less informative than Nikkei article"},
+    {"url": "https://tradingkey.com/analysis/economic/central-banks/...", "reason": "NOTE: assigned from FX cross-category to Economy (primary: macro Fed policy focus)"}
+  ]
+}

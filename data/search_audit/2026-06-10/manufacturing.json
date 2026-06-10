@@ -1,0 +1,24 @@
+{
+  "date": "2026-06-10",
+  "category_id": "manufacturing",
+  "queries": [
+    "TSMC 熊本 Japan fab 4nm upgrade 2026年6月",
+    "Toyota Denso TSMC JASM investment 2026",
+    "Rohm Toshiba Mitsubishi power semiconductor merger 2026",
+    "Japan semiconductor supply chain 2026",
+    "TSMC Kumamoto security geopolitics"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 10,
+  "selected_total": 3,
+  "quality_shortfall_reason": "Rohm/Toshiba/三菱電機のパワー半導体再編（3月27日発表）は6月9日号で既報。本日の新着は熊本TSMC 4nm昇格観測・Toyota/Denso追加投資・安保視点の分析記事の3件に絞って採用した（製造業ルール：3件可）。",
+  "coverage_terms_checked": ["TSMC", "Toyota", "Denso", "Rohm", "Toshiba", "Mitsubishi", "JASM", "熊本", "semiconductor", "SiC", "Foxconn", "Intel", "NVIDIA", "Samsung"],
+  "dropped": [
+    {"url": "https://www.digitimes.com/news/a20260327VL204/rohm-denso-mitsubishi-electric-toshiba-power-semiconductors.html", "reason": "freshness: URL contains 2026-03-27, exceeds max-source-age-days 1; already covered in 2026-06-09"},
+    {"url": "https://www.semicone.com/article-419.html", "reason": "editorial: March 2026 equivalent content, already in articles.jsonl via 2026-06-09"},
+    {"url": "https://www.taipeitimes.com/News/biz/archives/2026/04/01/2003854797", "reason": "freshness: published 2026-04-01, exceeds window; Taiwan approval context already in Diplomat article"},
+    {"url": "https://eastasiaforum.org/2026/01/15/why-japan-matters-in-tsmcs-global-expansion/", "reason": "freshness: published 2026-01-15, exceeds max-source-age-days 1"},
+    {"url": "https://www.aftermarketnews.com/denso-toyota-invest-semiconductor-manufacturing-japan/", "reason": "dedup: near-duplicate of just-auto Toyota/Denso TSMC article"},
+    {"url": "https://global.toyota/en/newsroom/corporate/40410568.html", "reason": "already in articles.jsonl from 2026-06-09 (JASM Phase 2 newsroom)"}
+  ]
+}

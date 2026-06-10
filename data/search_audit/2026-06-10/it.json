@@ -1,0 +1,25 @@
+{
+  "date": "2026-06-10",
+  "category_id": "it",
+  "queries": [
+    "Microsoft Azure AI Foundry Claude Fable 5 2026",
+    "Microsoft Claude Code GitHub Copilot CLI 2026",
+    "NTT DATA AI 2026年6月",
+    "Accenture AI adoption 2026",
+    "Fujitsu Anthropic IT consulting 2026年6月",
+    "McKinsey BCG AI consulting fees 2026"
+  ],
+  "raw_results_total": 28,
+  "candidates_total": 10,
+  "selected_total": 4,
+  "quality_shortfall_reason": "Fujitsu/Anthropic連携や主要コンサル各社のAI ROI・費用モデル転換は6月9日号に収録済み。6月10日新着の中でFujitsu/Accenture/NTT系の鮮度基準を通過したIT-Consulting関連記事が4件にとどまった。",
+  "coverage_terms_checked": ["Accenture", "Fujitsu", "NTT DATA", "NTT", "McKinsey", "BCG", "Microsoft", "Deloitte", "Claude Fable 5", "PwC"],
+  "dropped": [
+    {"url": "https://www.cnbc.com/2026/02/23/open-ai-consulting-accenture-boston-capgemini-mckinsey-frontier.html", "reason": "freshness: published 2026-02-23, exceeds max-source-age-days 1"},
+    {"url": "https://www.metaintro.com/blog/bcg-25-percent-ai-revenue-consulting-jobs-2026", "reason": "freshness: no clear publication date, older content"},
+    {"url": "https://newsroom.accenture.com/news/2026/ntt-docomo-global-and-accenture-launch-universal-wallet-infrastructure-powering-the-trusted-future-of-a-data-led-ai-driven-digital-society", "reason": "freshness: published before 2026-06-09 window"},
+    {"url": "https://www.thestreet.com/markets/ai-is-forcing-mckinsey-bcg-bain-to-rethink-consulting-fees", "reason": "freshness: no clear recent date"},
+    {"url": "https://opentools.ai/news/microsoft-cancels-claude-code-licenses-copilot-cli", "reason": "dedup: high similarity with developer-tech.com Claude Code article"},
+    {"url": "https://www.crowdfundinsider.com/2026/01/257330-accenture-prioritizes-ai-adoption-with-strategic-investments-and-partnerships/", "reason": "editorial: January 2026 article kept as background context (score 72, lowest in category)"}
+  ]
+}

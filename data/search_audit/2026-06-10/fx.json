@@ -1,0 +1,19 @@
+{
+  "date": "2026-06-10",
+  "category_id": "fx",
+  "queries": [
+    "ドル円 USD/JPY 2026年6月10日 為替",
+    "ECB 利上げ 2026年6月11日",
+    "米CPI May 2026 Consumer Price Index",
+    "EUR/USD GBP/USD ECB BOE 2026年6月",
+    "日銀 BOJ 利上げ 2026年6月16日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 10,
+  "selected_total": 6,
+  "coverage_terms_checked": ["USD/JPY", "ECB", "BOJ", "CPI", "EUR/USD", "GBP/USD", "OANDA", "FactSet"],
+  "dropped": [
+    {"url": "https://finance.yahoo.com/news/live/stock-market-today-dow-sp-500-nasdaq-jump-after-cooler-cpi-inflation-reading-as-ai-trade-reignites-210127820.html", "reason": "cross-category duplicate: assigned to Economy"},
+    {"url": "https://www.tradingkey.com/analysis/economic/central-banks/261924394-fed-fomc-kevin-warsh-hawkish-shift-inflation-cpi-treasury-yields-rate-hike-pricing-labor-resilience-policy-pivot-tradingkey", "reason": "cross-category duplicate: assigned to Economy (Fed policy = macro focus)"}
+  ]
+}

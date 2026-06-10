@@ -57,3 +57,4 @@
 | 2026-06-07 | ✅DeepDive | Anthropic 先行上場、AI IPOバブルの号砲 | 約25分 | 0 | daily deepdive / 続報(06-02評価額レース) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件全200(Anthropic公式×2・TechCrunch・Crunchbase・The Register・Fortune) |
 | 2026-06-08 | ✅成功 | FX, AI, IT-Consulting, Mobility, Game | - | 0 | 記事22件 / manufacturing・economy: 週末休載 / WWDC 2026 Apple×Google Gemini Siri・OpenAI IPO 850B SEC申請 |
 | 2026-06-08 | ✅DeepDive | コンサル『人月』の崩落、AIが値付けを書き換える | 約30分 | 0 | daily deepdive / 続報(06-04 OpenAIコンサル参入・価格モデルへ論点シフト) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件: TheNextWeb・AOL/Fortune が200、Accenture Q2決算PDFは200をpypdfでローカル抽出、OpenAI/BCG 403・McKinsey socket切断は不採用(出典名のみ) |
+| 2026-06-10 | ✅成功 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy | - | 0 | 記事29件 / it: 4件(quality_shortfall) / manufacturing: 3件(quality_shortfall, 3件可ルール適用) / Fable-5一般公開・米CPI冷却・日経平均最高値更新が重なる注目日 |

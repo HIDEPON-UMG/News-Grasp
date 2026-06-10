@@ -1,0 +1,22 @@
+{
+  "date": "2026-06-10",
+  "category_id": "mobility",
+  "queries": [
+    "Waymo Apple proving ground 2026年6月",
+    "BYD sales 2026年6月 overseas",
+    "autonomous driving robotaxi 2026",
+    "Honda EV HEV platform 2026",
+    "Tesla FSD robotaxi 2026"
+  ],
+  "raw_results_total": 26,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Waymo", "Tesla", "BYD", "Honda", "autonomous driving", "robotaxi", "EV"],
+  "dropped": [
+    {"url": "https://techcrunch.com/2026/06/08/waymo-bought-apples-self-driving-car-proving-ground-for-220m/", "reason": "dedup: near-duplicate of Electrek article (same event, Jaccard threshold)"},
+    {"url": "https://cnevpost.com/2026/06/01/byd-may-2026-sales/", "reason": "dedup: high similarity with InsideEVs BYD article"},
+    {"url": "https://insideevs.com/news/788284/waymo-expansion-tesla-cities-2026/", "reason": "dedup: similar topic to HUMAI/VaaSBlock Waymo-Tesla comparison articles"},
+    {"url": "https://stockpil.com/waymo-buys-apple-proving-ground-arizona-220-million", "reason": "dedup: near-duplicate of Electrek Waymo article"},
+    {"url": "https://www.autoconnectedcar.com/2026/05/autonomous-self-driving-vehicle-news-tesla-waymo-weride-helm-ai-torc-more/", "reason": "freshness: published May 2026, roundup article with no new 6月10日材料"}
+  ]
+}
