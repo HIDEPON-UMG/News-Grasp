@@ -264,3 +264,55 @@ def test_wrapper_idle_timeout_kills_silent_child(tmp_path):
 
     assert result.returncode == 124, f"silent child should be killed by idle timeout\nlog:\n{log}"
     assert "IDLE TIMEOUT after 1 sec" in log
+
+
+def test_wrapper_default_args_use_stream_json(tmp_path):
+    """wrapper の既定 argList が `--output-format stream-json --verbose` を含むこと。
+
+    なぜ重要か (2026-06-10 朝の無出力ハング事故の構造的再発防止):
+    旧既定 `--print` (text 出力) は最終応答まで stdout が完全沈黙するため、
+    Task Scheduler 配下で「ハング / 迷走 / 生成中」をログから区別できず、
+    digest 0 件のまま TimeoutSec=2400 まで放置された。既定が stream-json で
+    ある限り、claude が動いていれば必ず stdout に JSONL イベントが流れ、
+    runner 側の IdleTimeoutSec が「真のハング検知」として機能する。
+    """
+    fake_claude = tmp_path / "fake_argv_echo_claude.cmd"
+    fake_claude.write_text(
+        "@echo off\r\n"
+        "echo CLAUDE_ARGV=%*\r\n"
+        "exit /b 0\r\n",
+        encoding="cp932",
+        newline="",
+    )
+    prompt_file = tmp_path / "prompt.md"
+    prompt_file.write_text("hello", encoding="utf-8")
+    log_file = tmp_path / "wrapper_default_args.log"
+
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-ClaudeExe", str(fake_claude),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "20",
+            "-HeartbeatSec", "0",
+            "-WorkingDirectory", str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+    )
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+
+    assert result.returncode == 0, f"fake claude should exit 0\nlog:\n{log[:2000]}"
+    argv_lines = [ln for ln in log.splitlines() if "CLAUDE_ARGV=" in ln]
+    assert argv_lines, f"fake claude の argv echo がログに無い\nlog:\n{log[:2000]}"
+    argv = argv_lines[0]
+    assert "--print" in argv, f"既定 argList から --print が消えている: {argv}"
+    assert "--output-format stream-json --verbose" in argv, (
+        f"既定 argList が stream-json 可視化になっていない: {argv}\n"
+        f"= 無出力ハングをログから区別できない旧 --print (text) に退行している。"
+    )

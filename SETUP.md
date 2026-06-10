@@ -130,9 +130,10 @@ npx wrangler secret put LIST_TOKEN
 `%USERPROFILE%\bin\news-grasp-runner.ps1` に PowerShell スクリプトとして配置する。要点:
 
 - 当日 digest 生成は `run_claude_with_timeout.ps1` 経由で、`runner-prompt.md` を `-PromptFile` から stdin に流して実行する。Claude は `md/jsonl` 生成だけを担当し、`git commit` / `git push` / docs 生成 / publish gate は実行しない
+- wrapper の claude 既定引数は `--print --output-format stream-json --verbose`（2026-06-10 無出力ハング事故対策）。init / assistant / tool 各イベントが JSONL でログに流れるため、「ハング（init 後沈黙）/ 迷走（tool_use の内訳）/ 生成中（イベント継続）」を日次ログから区別できる。既定退行は `tests/test_runner_wrapper_smoke.py::test_wrapper_default_args_use_stream_json` が物理検知する
 - Claude 終了後に ps1 が継続して Content Gate 群 → bounded repair worker (同一失敗 1 回だけ) → `tools/generate_pages.py` → `tools.validate_public_home` → Availability Gate → docs commit → `git push origin main` → `tools/send_push.py` を順に走らせる
 - Content Gate が収束しない場合、本日号は通常公開せず、`tools.publish_fallback` で直近成功号に「本日の更新は品質確認中」notice を挿入し、`tools.validate_availability` を通して fallback publish する
-- wrapper は hard timeout に加えて短縮 timeout を持つ。標準設定では `TimeoutSec=2400`、`IdleTimeoutSec=900` で、15分間完了しない場合は40分の hard timeout を待たずに kill する。heartbeat は途中ログに elapsed 秒を残す
+- wrapper は hard timeout に加えて idle timeout を持つ。標準設定では `TimeoutSec=2400`、`IdleTimeoutSec=900`。stream-json 既定化により「動いている限り stdout が継続する」前提が成立するため、15 分無出力 = 真のハングとして 40 分の hard timeout を待たずに kill する。heartbeat は途中ログに elapsed/idle 秒を残す
 - gate failed 後の復旧は `-RecoverOnly` を使う。Claude / DeepDive を再実行せず、手修正済みのローカル状態から gate 群 → docs 再生成 → docs commit → push → Web Push だけを再開する
 - 手動公開で runner を通さない場合は `python tools/publish_update.py` を使う。Web Push 通知が必要な更新だけ `--notify` を付ける（微細修正では付けない）
 - ファイルは **UTF-8 BOM 必須**（PS5.1 が BOM 無しを CP932 解釈して日本語コメントごと壊す既知問題。`enforce_script_encoding.ps1` hook が自動付与する）
