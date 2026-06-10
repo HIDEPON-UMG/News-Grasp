@@ -1,7 +1,7 @@
 {
   "result": "published_fallback_with_notice",
-  "date": "2026-06-10",
-  "reason": "url-liveness-gate-failed",
+  "date": "2026-06-11",
+  "reason": "daily-quality-gate-failed",
   "notice": "本日の更新は品質確認中です。直近の公開済み号を表示しています。",
-  "updated_at": "2026-06-10T13:04:15"
+  "updated_at": "2026-06-11T07:34:30"
 }
