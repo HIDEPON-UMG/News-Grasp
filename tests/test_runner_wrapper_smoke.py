@@ -266,6 +266,63 @@ def test_wrapper_idle_timeout_kills_silent_child(tmp_path):
     assert "IDLE TIMEOUT after 1 sec" in log
 
 
+def test_wrapper_result_is_error_returns_123(tmp_path):
+    """stream-json の result イベントが is_error:true なら、claude 本体の exit 0 を
+    そのまま forward せず wrapper が専用 exit code 123 を返すこと。
+
+    なぜ重要か (2026-06-10 10:47 便の構造的再発防止):
+    claude は 5h セッション上限 429 / out_of_credits でも **プロセスとしては exit 0**
+    で返す。旧 wrapper はそれをそのまま forward したため、runner は「rc=0 なのに
+    digest 0 件」を後段ゲートまで検知できず、84 ターン $3.4 を空転させた。
+    wrapper が result 行を parse して 123 に変換する限り、runner の rc=123 分岐
+    (API 上限/クレジット切れ ERROR + RECOVER 案内・リトライ抑止) が即座に発火する。
+    """
+    fake_claude = tmp_path / "fake_api_error_claude.cmd"
+    fake_claude.write_text(
+        "@echo off\r\n"
+        'echo {"type":"system","subtype":"init","session_id":"fake"}\r\n'
+        'echo {"type":"result","subtype":"success","is_error":true,'
+        '"api_error_status":429,'
+        '"result":"You have hit your session limit - resets 1pm out_of_credits",'
+        '"num_turns":84}\r\n'
+        "exit /b 0\r\n",
+        encoding="cp932",
+        newline="",
+    )
+    prompt_file = tmp_path / "prompt.md"
+    prompt_file.write_text("hello", encoding="utf-8")
+    log_file = tmp_path / "wrapper_is_error.log"
+
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-ClaudeExe", str(fake_claude),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "20",
+            "-HeartbeatSec", "0",
+            "-WorkingDirectory", str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+    )
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+
+    assert result.returncode == 123, (
+        f"result is_error:true は claude exit 0 でも wrapper exit 123 に変換される想定"
+        f"だが、rc={result.returncode}\n= 「rc=0 なのに digest 0 件」検知遅延 (06-10 "
+        f"10:47 空転事故) への退行。\n--- log ---\n{log[:2000]}"
+    )
+    assert "RESULT is_error=true" in log and "api_error_status=429" in log, (
+        f"wrapper が api_error_status / result をログに 1 行記録していない\n"
+        f"--- log ---\n{log[:2000]}"
+    )
+
+
 def test_wrapper_default_args_use_stream_json(tmp_path):
     """wrapper の既定 argList が `--output-format stream-json --verbose` を含むこと。
 
