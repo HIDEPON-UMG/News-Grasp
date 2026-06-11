@@ -4,7 +4,6 @@
 
 | 日付 | 状態 | 対象ジャンル | 所要 | リトライ | 備考 |
 |---|---|---|---|---|---|
-| 2026-06-11 | ✅成功 | FX, AI, IT-Consulting, Mobility, Manufacturing, Economy, Game | 2セッション | 0 | 記事41件追記 / Game新規追加 / weekday・accent・glyph修正 |
 | 2026-05-26 | ✅成功 | FX, AI, IT-Consulting, Economy, Game | 約75分 | 0 | 記事25件 |
 | 2026-05-25 | ✅成功 | FX, AI, IT-Consulting, Economy | 約65分 | 0 | 記事20件 |
 | 2026-05-24 | ✅成功 | FX, AI, IT-Consulting, Game | backfill | 0 | 記事20件 |
