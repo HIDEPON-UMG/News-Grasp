@@ -1,0 +1,18 @@
+{
+  "date": "2026-06-11",
+  "category_id": "mobility",
+  "queries": [
+    "Waymo Tesla BYD EV autonomous vehicle June 2026",
+    "Tesla Cybercab robotaxi BYD EV sales June 2026 news"
+  ],
+  "raw_results_total": 16,
+  "candidates_total": 9,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Waymo", "Tesla", "BYD", "robotaxi", "自動運転", "EV販売", "Cybercab", "autonomous"],
+  "dropped": [
+    {"url": "https://www.roadtoautonomy.com/waymo-accelerates-multi-city-rollout/", "reason": "url_match_any_age"},
+    {"url": "https://www.cbtnews.com/waymo-launches-miami-service-amid-safety-probe/", "reason": "url_match_any_age"},
+    {"url": "https://electrek.co/2026/05/13/waymo-expands-coverage-1400-square-miles-11-cities/", "reason": "freshness_gate_29d"},
+    {"url": "https://www.cryptopolitan.com/how-waymo-may-dominate-2026-while-byd-crushes-tesla-in-the-ev-race/", "reason": "url_match_any_age"}
+  ]
+}

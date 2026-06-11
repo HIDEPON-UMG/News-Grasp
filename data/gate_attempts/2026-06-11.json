@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "gates": {
+    "daily-quality": {
+      "signatures": {
+        "46ea19383144fcf8": {
+          "failures": 1,
+          "artifact_hashes": [
+            "62b2ae2596d4a9ae"
+          ]
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    }
+  }
+}
