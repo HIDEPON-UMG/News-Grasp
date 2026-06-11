@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-06-11</title>
+<meta name="description" content="2026-06-11 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-06-11">
+<meta property="og:description" content="2026-06-11 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-06-11/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-06-11">
+<meta name="twitter:description" content="2026-06-11 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260611</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260611</span></h2>
+      
+      <div class="summary-hero__subtitle">「BOJ利上げ前夜のリスクとAI新モデルラッシュ、Nintendo Directの祭りが交錯した木曜日。」</div>
+      
+      <div class="summary-hero__lead">6月15〜16日の<strong class="emph-bold">BOJ</strong>利上げを4日後に控え、USD/JPYは160円台で為替介入が炸裂した。同日、GoogleはGemma 4 12Bをオープンソース公開し、OpenAIはGPT-5.4でネイティブコンピュータ操作を実現。<strong>金融のリスクサイクルとAI能力の加速サイクルが同時に最高潮を迎えている。</strong><span class="emph-und">キャリートレードの終焉とエージェントAIの夜明けが同じ週に起きる。これが2026年の複雑な現実だ。</span></div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">8</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">35</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">BOJ利上げ前夜の160円台と、Gemma 4 12B・GPT-5.4の同週公開。金融のサイクルとAIの能力曲線が同時に急峻な勾配に達した。2026年の転換点は静かに、しかし確実に積み上がっている。</div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — リスクとチャンスが同時に臨界点に近づく週</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">BOJ</strong>の0.75%→1.0%利上げが「ほぼ確実」として接近する一方、AI新モデル（Gemma 4 12B・GPT-5.4）の公開が同週に重なった。金融サイクルのリスク（キャリー巻き戻し）とAI能力の機会（エージェント化・オープン化）がどちらも「最高潮の状態」で交差している。<strong>2つのサイクルを同時に読まなければならない難局</strong>。<span class="emph-und">どちらかに集中するだけでは見誤る。</span></p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">為替 — 介入は「時間稼ぎ」、根本解は利上げかFed転換のみ</h3>
+        <p class="summary-sec__body">財務省の<strong class="emph-bold">為替介入</strong>が160→155円への一時押し下げに成功したが、短時間で159円台に戻った。<strong>介入は持続的な円高をもたらす手段ではなく、「投機筋へのシグナル」として機能するに過ぎない。</strong> BOJ利上げ後にUeda総裁が7月以降の追加利上げを示唆するか、FRBが利下げに転じるかのどちらかが根本的な日米金利差縮小につながる。介入だけで160円台を止めることはできない。<span class="emph-und">為替の転換点は「介入」ではなく「政策の転換」によって生じる。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li>NY市場でUSD/JPYは160円台前半。政府・日銀は6月15〜16日の<span class="emph-und">BOJ会合結果を見極めてから</span>介入判断をするとの見方が市場コンセンサスを形成している。</li>
+          
+          <li>日米金利差は依然300bp超。BOJ利上げが0.75%→1.0%となっても差は275bpと縮まるが、ドル高基調の<span class="emph-und">構造的解消</span>には至らないとの分析が支配的。</li>
+          
+          <li>CFTCデータではネット<strong class="emph-bold">円ショート</strong>が101億ドル規模。会合後の「売り仕掛け」と「損失確定の円買い」が交錯する<span class="emph-und">ポジションの双方向リスク</span>を市場参加者が警戒。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — オープン化と超人化が同時進行する非線形の加速</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Gemma 4 12B</strong>（オープンソース・12B・16GB VRAM・マルチモーダル）とGPT-5.4（クローズド・コンピュータ操作・OSWorld 75%）は対極の方向性を持つが、どちらも「AIの使える用途の幅」を同時に広げている。<strong>一方がコスト0のオープン選択肢を拡大し、もう一方が人間を超える操作能力を実装する。</strong> この非線形の加速はどちらかが「勝つ」ではなく「両方が異なる需要を引き出す」という多極化の構図。<span class="emph-und">AIの競争軸は「誰が最強か」から「誰がどの用途で一番安く使えるか」に分岐している。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">OpenAI</strong>がGPT-5.4を発表。ブラウザ・デスクトップを直接操作する<span class="emph-und">ネイティブコンピュータユース</span>機能をAPIに統合し、外部ツール依存なしでOSレベル操作が可能に。</li>
+          
+          <li>OSWorldベンチマークで<span class="emph-und">75%達成</span>（人間平均72%超）の超人的スコア。1Mトークンの大容量コンテキストは「丸ごとコードベース解析」「長期プロジェクト管理」を一撃で処理。</li>
+          
+          <li>Anthropic Claude / Google Geminiとの競合で「コンピュータ操作エージェント」が主戦場に。GPT-5.4はOpenAIの<span class="emph-und">DeployCo（エンタープライズAI展開）</span>と組み合わせて本格展開。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — 「AIコンサルの量産体制」が整いつつある</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">NTTデータ</strong>・IBM・Accenture・富士通が同週にAIエージェント展開を発表したことは、個社の取り組みではなく業界全体としての「パイロットから本番移行フェーズへの突入」を意味する。<strong>コンサル各社が同じ週に同じ方向の発表をする時、それは市場全体が転換点を越えたシグナルだ。</strong> 競合がほぼ同時に動く局面では、差別化の勝負は「何を発表するか」ではなく「どれだけ速く顧客の本番環境に根を張るか」で決まる。<span class="emph-und">AIコンサルの差別化は、発表から実装への速度に移った。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Accenture</strong>がAlphaSenseに戦略的投資を実施し、パートナーシップを締結。企業のマーケットインテリジェンス業務に<span class="emph-und">エージェント型ワークフロー</span>を組み込む共同ソリューションを提供。</li>
+          
+          <li>AlphaSenseは金融データ・競合情報・サプライヤー分析に強みを持つAIプラットフォーム。Accentureの10万超のクライアントネットワークと組み合わせて<span class="emph-und">「調査の自動化」</span>を大規模展開。</li>
+          
+          <li>AccentureのAI生成・エージェント収益はYoY3倍増（29億ドル）、受注は2倍増（59億ドル）と急拡大中。戦略投資は「コンサルとSaaS AIの融合」モデルへの転換を加速させる。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #3A7B8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #3A7B8C;">§05</span>
+          <span class="summary-sec__tag" style="background: #3A7B8C;">モビリティ</span>
+        </div>
+        <h3 class="summary-sec__title">モビリティ — Waymoの安全性データが「許認可の速度」を変える</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Waymo</strong>の92%クラッシュ削減・91%負傷削減という数字は、自動運転の安全性議論を「感覚論・将来論」から「統計的事実」に転換した。これにより規制当局・保険会社・自治体が「ロボタクシーを許可するかどうか」の判断に使える確固たる根拠が生まれた。<strong>許認可の速度が上がれば、Waymoのスケール拡大のペースも加速する。</strong> Teslaが「量産」で追いかける一方、Waymoは「安全規制の突破」で先行する。<span class="emph-und">自動運転の競争は技術だけでなく、規制と統計の戦いでもある。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Waymo</strong>が自律走行中の170万マイルデータを分析し、<span class="emph-und">人間ドライバー比92%のクラッシュ削減</span>、91%の負傷削減を公表。衝突回避だけでなくペデストリアン・サイクリストとの接触ゼロも達成。</li>
+          
+          <li>査読付き論文（New England Journal of Medicine相当）で承認された実績。保険業界・規制当局・自治体が自動運転許可を加速する<span class="emph-und">科学的根拠として採用</span>されつつある。</li>
+          
+          <li>統計上は「Waymo車1台が人間ドライバー8人分の安全性」に相当。この数値がライドシェア市場での保険料コスト優位へ直結し、Uberとの競合で<span class="emph-und">構造的有利性</span>を生む。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/" style="color: #3A7B8C;">→ §05 モビリティ 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5A6B7B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5A6B7B;">§06</span>
+          <span class="summary-sec__tag" style="background: #5A6B7B;">製造</span>
+        </div>
+        <h3 class="summary-sec__title">製造 — TSMC「需要が供給を上回り続ける」発言の意味</h3>
+        <p class="summary-sec__body">C.C. Wei CEOが「AI需要は供給を上回り続けている」と発言したことは、<strong class="emph-bold">TSMC</strong>が単に業績好調を報告したのではなく、<strong>「どれだけ設備投資を増やしても当面は需給逼迫が解消されない」という構造的宣言</strong>だ。これはNVIDIA・AMD・Apple・Broadcomにとってはコンピュートの希少性が続くことを意味し、AI半導体への投資テーマが長期継続することを裏付ける。<span class="emph-und">「モデルの能力曲線」が急であるほど、「半導体の供給制約」という重力が効いてくる。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">TSMC</strong>が2026年5月の連結売上NT$4,169.8億（約1.9兆円）を発表。前月比+2.4%、前年同月比<span class="emph-und">+30%増</span>という驚異的な伸びを記録し、AI半導体需要の持続的拡大を再確認。</li>
+          
+          <li>5nm・3nm・2nmの先端プロセスが全体の<span class="emph-und">60%超</span>を占める。Apple・NVIDIA・AMD・Broadcomなど主要顧客からの受注が積み上がり、工場稼働率はほぼ満杯の状態が続く。</li>
+          
+          <li>2026年1〜5月累計売上はNT$1.9兆（約8.7兆円）を超え、通年で過去最高の更新が確実視される。TSMCの独占的地位（市場シェア〜70%）がさらに強固になりつつある。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" style="color: #5A6B7B;">→ §06 製造 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§07</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済 — 「植田総裁の一言」が週内最大のリスクイベント</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Goldman Sachs</strong>の強気見通し（日本株・新高値更新）もSeeking Alphaの警戒感（S&amp;P500への蝶の羽ばたき）も、どちらも「BOJ利上げそのものより植田総裁の記者会見での発言」が最大の変数だと指摘している。<strong>97%織り込まれた利上げは材料にならない。「7月以降どうするか」という一言が次の市場の方向性を決める。</strong> 情報が価格に素早く織り込まれる現代市場では、「予測通りの出来事」は何も引き起こさない。<span class="emph-und">サプライズは「何が起きたか」ではなく「何が違ったか」にある。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li>IG分析：日経平均は年初来<span class="emph-und">+30%台</span>と世界株の中でも突出したパフォーマンスを記録。バリュエーション面（PER15倍前後）はS&amp;P500（22倍）に比べ依然割安で追加上昇余地あり。</li>
+          
+          <li>6月16日のBOJ利上げ確率は97%と市場はほぼ織り込み済み。利上げ自体よりも<span class="emph-und">Ueda総裁の7月以降の追加利上げシグナル</span>が日経の方向性を左右する。</li>
+          
+          <li>キャリートレード残高は推計20兆ドル超。2024年8月のBOJショック（日経-12%）の再現リスクを投資家は意識しながらも、「利上げ後の正常化は株にプラス」との見方が拮抗している。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §07 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§08</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">ゲーム — Nintendo Directの「祭り」に価格ショックが重なった木曜日</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Nintendo Direct</strong>で50本超のゲームを発表した同日、任天堂は米国向けSwitch 2を$499.99に値上げすることも発表した。ファンを熱狂させたコンテンツ面の充実と、消費者の財布へのインパクトが同一日に届く複雑な構図となった。<strong>価格耐性のカギは「発売後半年で2,000万台」という販売実績と、ゼルダOoTリメイクのような引力タイトルの存在だ。</strong> 一方Cygamesは英語版ウマ娘で海外売上3.5倍増を達成し、日本IPのグローバル化に「実績」という裏付けを与えた。<span class="emph-und">コンソールの価値はハードの価格ではなく、ソフトのラインナップが証明する。</span></p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">Nintendo</strong>が米国でのSwitch 2本体希望小売価格を<span class="emph-und">$449.99から$499.99へ値上げ</span>（+$50）すると正式発表。2026年9月1日適用。関税・原材料コスト上昇への対応と説明。</li>
+          
+          <li>日本・欧州・その他市場への影響は「市場ごとに判断する」として現時点では改定なし。米国のみの措置として<span class="emph-und">輸出入コスト上昇を直接転嫁</span>したかたちとなった。</li>
+          
+          <li>本体価格$500超えは任天堂のフラグシップ機として歴史的高水準。一方で「ソフトラインナップの充実が証明されれば価格耐性あり」とアナリストは評価。2026年末商戦に影響を与えそうだ。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/" style="color: #5E3D8C;">→ §08 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">FX</div>
+          <div class="summary-take__text">日本が160円台でFX介入を発動したが短時間で159円台に戻り、「介入は時間稼ぎ」の構図が再確認された。BOJ利上げ後のUeda総裁発言（7月追加利上げ示唆の有無）が円の中期方向を決定する。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">AI</div>
+          <div class="summary-take__text">GoogleのGemma 4 12B（オープン・マルチモーダル）とOpenAIのGPT-5.4（クローズド・コンピュータ操作）が同週公開。AIのオープン化と超人化が同時進行し、選択肢と能力の両方が急拡大している。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2E6B52;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2E6B52;">製造×経済</div>
+          <div class="summary-take__text">TSMCの「需要が供給を上回り続ける」発言とWaymoの「92%クラッシュ削減」データは、AI半導体と自動運転の2大テーマが「将来の期待」から「現在の実績」に転換したことを示す。</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/">全35本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-06-11 · #20260611
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

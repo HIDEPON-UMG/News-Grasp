@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260611 — Mobility</title>
+<meta name="description" content="Waymoの安全実績が定量化され、人間ドライバー比92%のクラッシュ削減が公的データで裏付けられた。週間ライド数は50万回・週間走行距離400万マイルを突破し、スケール拡大フェーズへ移行。一方でTeslaがCybercab量産を開始。Q1 2026の純EV販売台数でBYDを抜き返しトップを奪還（35.8万台）。「Waymoの安全性 vs Teslaのコスト…">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-11/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260611 — Mobility">
+<meta property="og:description" content="Waymoの安全実績が定量化され、人間ドライバー比92%のクラッシュ削減が公的データで裏付けられた。週間ライド数は50万回・週間走行距離400万マイルを突破し、スケール拡大フェーズへ移行。一方でTeslaがCybercab量産を開始。Q1 2026の純EV販売台数でBYDを抜き返しトップを奪還（35.8万台）。「Waymoの安全性 vs Teslaのコスト…">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-11/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260611 — Mobility">
+<meta name="twitter:description" content="Waymoの安全実績が定量化され、人間ドライバー比92%のクラッシュ削減が公的データで裏付けられた。週間ライド数は50万回・週間走行距離400万マイルを突破し、スケール拡大フェーズへ移行。一方でTeslaがCybercab量産を開始。Q1 2026の純EV販売台数でBYDを抜き返しトップを奪還（35.8万台）。「Waymoの安全性 vs Teslaのコスト…">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-11 · #20260611</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary"><strong class="emph-bold">Waymo</strong>の安全実績が定量化され、人間ドライバー比<span class="emph-und">92%のクラッシュ削減</span>が公的データで裏付けられた。週間ライド数は50万回・週間走行距離400万マイルを突破し、スケール拡大フェーズへ移行。一方で<strong class="emph-bold">Tesla</strong>がCybercab量産を開始。Q1 2026の純EV販売台数でBYDを抜き返しトップを奪還（35.8万台）。「Waymoの安全性 vs Teslaのコスト」という自動運転ロボタクシーの主戦場が鮮明になってきた。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">82</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·11</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260611</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-11 09:00 · Fifth Level Consulting</span>
+    <span class="top-story__score">90</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://fifthlevelconsulting.com/waymo-safety-impact/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://fifthlevelconsulting.com/wp-content/uploads/2025/12/cover-image-1-1024x576.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://fifthlevelconsulting.com/waymo-safety-impact/" rel="noopener nofollow" target="_blank" style="color: inherit;">Waymo Safety Impact 2026 — 92% Fewer Crashes vs Human Drivers</a>
+        <span class="story-title-ja">Waymo安全実績2026：人間比92%のクラッシュ削減を170万マイルの実データで証明</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Waymo</strong>が自律走行中の170万マイルデータを分析し、<span class="emph-und">人間ドライバー比92%のクラッシュ削減</span>、91%の負傷削減を公表。衝突回避だけでなくペデストリアン・サイクリストとの接触ゼロも達成。</li><li>査読付き論文（New England Journal of Medicine相当）で承認された実績。保険業界・規制当局・自治体が自動運転許可を加速する<span class="emph-und">科学的根拠として採用</span>されつつある。</li><li>統計上は「Waymo車1台が人間ドライバー8人分の安全性」に相当。この数値がライドシェア市場での保険料コスト優位へ直結し、Uberとの競合で<span class="emph-und">構造的有利性</span>を生む。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-11</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-11 09:00</span>
+        <span>· The Driverless Digest</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.thedriverlessdigest.com/p/waymo-hits-500000-weekly-rides-and" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://substackcdn.com/image/fetch/$s_!nLYF!,w_1200,h_675,c_fill,f_jpg,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbd8bf97a-f7a0-46dd-a95b-fe0a63e03617_1600x900.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.thedriverlessdigest.com/p/waymo-hits-500000-weekly-rides-and" rel="noopener nofollow" target="_blank">Waymo Hits 500,000 Weekly Rides and Over 4 Million Miles Per Week</a>
+        <span class="story-title-ja">Waymo：週間ライド50万回・週400万マイル走行を突破 — スケール拡大フェーズへ</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Waymo</strong>の週間ライド数が<span class="emph-und">50万回</span>を突破し、週間走行距離も400万マイル超へ。サンフランシスコ・ロサンゼルス・フェニックス・オースティンの4都市で同時拡大が進む。</li><li>Alphabetのハードウェア工場（アリゾナ州）での増産により2026年末までに<span class="emph-und">2,000台体制</span>を計画。年間1億ライドへの道筋が見えてきた。</li><li>Uberとの提携（アトランタ・オースティン）でプラットフォーム相乗りも進行中。「自前ネットワーク×Uberプール」の<span class="emph-und">二重展開</span>でカバレッジを急速拡大している。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-11 09:00</span>
+        <span>· Whalesbook</span>
+        <span class="more-card__score">84</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.whalesbook.com/news/English/auto/Tesla-Begins-Cybercab-Robotaxi-Production-Amid-Sales-Slide/69eb4948bca97ee106aeff4a" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://images.whalesbook.com/images/thumbnail_69eb4948bca97ee106aeff49_1536_864.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.whalesbook.com/news/English/auto/Tesla-Begins-Cybercab-Robotaxi-Production-Amid-Sales-Slide/69eb4948bca97ee106aeff4a" rel="noopener nofollow" target="_blank">Tesla Begins Cybercab Robotaxi Production Amid Sales Slide</a>
+        <span class="story-title-ja">Tesla：Cybercabロボタクシーの量産開始 — 販売スライドの中でEV競争の新局面へ</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Tesla</strong>がギガ・テキサスでCybercabの量産を開始。2人乗り専用設計・ステアリングホイールなしの<span class="emph-und">ハードウェア3.0</span>搭載で、Waymo Jaguar I-PACEより低コストを目指す。</li><li>同時に消費者向け直接販売（30,000ドル以下）を確認。ロボタクシーフリートとして展開するだけでなく、<span class="emph-und">個人所有ロボタクシー</span>という新たなビジネスモデルを創出。</li><li>2024年〜2025年の販売スライド（BYDに年間1位を譲渡）の中でのCybercab量産は「プレミアムEV路線からスケーラブルなロボタクシーへのピボット」を象徴する転換点。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-11 09:00</span>
+        <span>· Autoblog</span>
+        <span class="more-card__score">80</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://www.autoblog.com/news/tesla-reclaims-global-ev-sales-crown-from-byd" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.autoblog.com/news/tesla-reclaims-global-ev-sales-crown-from-byd" rel="noopener nofollow" target="_blank">Tesla Reclaims Global EV Sales Crown from BYD in Q1 2026</a>
+        <span class="story-title-ja">TeslaがQ1 2026にBYDから純EV販売世界首位を奪還 — 35.8万台で辛勝</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Tesla</strong>がQ1 2026の純バッテリーEV販売で35.8万台を記録し、BYDの31.0万台を上回って世界首位を奪還。2025年通年では逆転を許していたが、年明けから反撃を開始。</li><li>Cybertruck拡大・Model YリフレッシュによるASP改善が奏功。一方<strong class="emph-bold">BYD</strong>は中国市場での根強い基盤に加えてPHEVを合算すると<span class="emph-und">全EV台数では依然BYDが優勢</span>という構図。</li><li>Teslaの純EV首位奪還は「ブランド回復の第一歩」だが、BYDの海外展開（150万台超出荷計画）が本格化すれば2026年下半期での再逆転シナリオも残る。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-11 09:00</span>
+        <span>· Futurism</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://futurism.com/advanced-transport/new-data-shows-waymos-safe" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://futurism.com/wp-content/uploads/2025/10/new-data-shows-waymos-safe.jpg?quality=85&amp;w=1200" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://futurism.com/advanced-transport/new-data-shows-waymos-safe" rel="noopener nofollow" target="_blank">New Data Shows Waymos Are So Safe It&#39;s Almost Comical — 91% Injury Reduction</a>
+        <span class="story-title-ja">Waymoの安全データが「コミカルなほど安全」と評される理由</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Futurismによる分析記事：<strong class="emph-bold">Waymo</strong>の安全統計が「統計的に笑えるレベルで人間より安全」という見出しで拡散。91%の負傷削減・空走行ゼロ事故継続記録が根拠。</li><li>比較基準として「アメリカの交通事故死者年間4万人」を挙げ、Waymoが全国規模で展開されれば<span class="emph-und">年間数万人の命が救われる計算</span>という試算を提示。</li><li>懐疑派が指摘する「低速・限定エリアでの実績バイアス」への反論として、高速道路・悪天候条件での実績データも充実し始めている。安全議論の<span class="emph-und">質が変わりつつある</span>ことを示す。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Waymo</strong>の92%クラッシュ削減・91%負傷削減という数字は、自動運転の安全性議論を「感覚論・将来論」から「統計的事実」に転換した。これにより規制当局・保険会社・自治体が「ロボタクシーを許可するかどうか」の判断に使える確固たる根拠が生まれた。<strong>許認可の速度が上がれば、Waymoのスケール拡大のペースも加速する。</strong> Teslaが「量産」で追いかける一方、Waymoは「安全規制の突破」で先行する。<span class="emph-und">自動運転の競争は技術だけでなく、規制と統計の戦いでもある。</span></p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-11
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
