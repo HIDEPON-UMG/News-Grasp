@@ -5,15 +5,16 @@
 
 LLM の規律破り (= prompts で「session ファイル書け」と命じても破る) を構造的に封じる
 ため、Claude Code ハーネスが WebSearch / WebFetch 後に本 hook を発火させ、ハーネス層
-が直接 `data/_session_urls.json` に URL を append する設計。本テストは以下を locked-in:
+が直接 session 白リストに URL を append する設計。2026-06-12 にフラグメント方式
+(発火 1 回 = `data/_session_urls.d/{date}/{uuid}.json` を 1 ファイル新規作成) へ移行し、
+並列発火の後勝ち消失 race を構造的に消した。本テストは以下を locked-in:
 
-  1. WebFetch event の `tool_input.url` が拾われて session に入る
-  2. WebSearch event の `tool_response.results[].url` が拾われて session に入る
+  1. WebFetch event の `tool_input.url` が拾われてフラグメントに入る
+  2. WebSearch event の `tool_response.results[].url` が拾われてフラグメントに入る
   3. WebSearch event の results 不明形式でも JSON dump → 正規表現フォールバックで URL を拾う
-  4. 既存 session (当日 date) に union で append される (重複排除・sorted)
-  5. 既存 session の date が他日 → 当日 fresh で上書き (= 古い URL を残さない)
-  6. session ファイル不在 → 当日 date で新規作成
-  7. 不正な stdin (空 / 壊れた JSON) でも例外で落ちず exit 0
+  4. write_fragment が発火ごとに別ファイル (uuid) を新規作成し、相互上書きしない
+  5. URL 0 件ではフラグメントを作らない
+  6. 不正な stdin (空 / 壊れた JSON) でも例外で落ちず exit 0
 
 実行:
   pytest tests/test_append_session_urls_hook.py -v
@@ -24,7 +25,7 @@ import importlib.util
 import json
 import subprocess
 import sys
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -109,94 +110,40 @@ def test_extract_unrelated_tool_returns_empty():
     assert urls == set()
 
 
-# ── merge_into_session_file の挙動 ────────────────────────────────────────────
+# ── write_fragment の挙動 (フラグメント方式) ──────────────────────────────────
 
 
-def test_merge_creates_new_file_when_missing(tmp_path: Path):
-    p = tmp_path / "data" / "_session_urls.json"
+def test_write_fragment_creates_file(tmp_path: Path):
+    """発火 1 回でフラグメント 1 ファイルが当日ディレクトリ配下に作られる。"""
+    fragments_root = tmp_path / "data" / "_session_urls.d"
     today = date.today().strftime("%Y-%m-%d")
-    payload = hook.merge_into_session_file({"https://example.com/a"}, today, p)
-    assert payload == {"date": today, "urls": ["https://example.com/a"]}
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved == payload
+    frag = hook.write_fragment({"https://example.com/a"}, today, fragments_root)
+    assert frag.parent == fragments_root / today
+    saved = json.loads(frag.read_text(encoding="utf-8"))
+    assert saved == {"date": today, "urls": ["https://example.com/a"]}
 
 
-def test_merge_unions_when_same_date(tmp_path: Path):
-    p = tmp_path / "_session_urls.json"
+def test_write_fragment_sorts_urls(tmp_path: Path):
+    """フラグメント内の urls は sorted で書かれる (照合の決定性確保)。"""
+    fragments_root = tmp_path / "data" / "_session_urls.d"
     today = date.today().strftime("%Y-%m-%d")
-    p.write_text(
-        json.dumps({"date": today, "urls": ["https://example.com/old"]}),
-        encoding="utf-8",
+    frag = hook.write_fragment(
+        {"https://example.com/b", "https://example.com/a"}, today, fragments_root
     )
-    hook.merge_into_session_file({"https://example.com/new"}, today, p)
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved["date"] == today
-    assert saved["urls"] == sorted(["https://example.com/old", "https://example.com/new"])
-
-
-def test_merge_overwrites_when_date_differs(tmp_path: Path):
-    """日付が変わったら古い URL は捨てる (前日の白リストを残さない契約)。"""
-    p = tmp_path / "_session_urls.json"
-    today = date.today().strftime("%Y-%m-%d")
-    yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
-    p.write_text(
-        json.dumps({"date": yesterday, "urls": ["https://example.com/old-day"]}),
-        encoding="utf-8",
-    )
-    hook.merge_into_session_file({"https://example.com/today"}, today, p)
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved["date"] == today
-    assert saved["urls"] == ["https://example.com/today"], (
-        "date が変わったら前日の URL を捨てる契約"
-    )
-
-
-def test_merge_dedupes(tmp_path: Path):
-    p = tmp_path / "_session_urls.json"
-    today = date.today().strftime("%Y-%m-%d")
-    p.write_text(
-        json.dumps({"date": today, "urls": ["https://example.com/a"]}),
-        encoding="utf-8",
-    )
-    hook.merge_into_session_file({"https://example.com/a", "https://example.com/b"}, today, p)
-    saved = json.loads(p.read_text(encoding="utf-8"))
+    saved = json.loads(frag.read_text(encoding="utf-8"))
     assert saved["urls"] == ["https://example.com/a", "https://example.com/b"]
 
 
-def test_merge_carries_over_note_field(tmp_path: Path):
-    """`_note` (運用説明) は date が変わっても carry over される契約。
-
-    リポ初期サンプルの `_note` 説明文が朝バッチの初回 hook 発火で消えると、
-    将来チーム共有時に「このファイルは何か」が読めなくなる。だから保持する。
-    """
-    p = tmp_path / "_session_urls.json"
-    yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+def test_write_fragment_two_fires_no_overwrite(tmp_path: Path):
+    """2 連続発火で別ファイルが作られ、相互上書きしない (= 並列 race を表現不能化)。"""
+    fragments_root = tmp_path / "data" / "_session_urls.d"
     today = date.today().strftime("%Y-%m-%d")
-    p.write_text(
-        json.dumps({
-            "_note": "運用説明テキスト",
-            "date": yesterday,
-            "urls": ["https://example.com/old"],
-        }),
-        encoding="utf-8",
-    )
-    payload = hook.merge_into_session_file({"https://example.com/new"}, today, p)
-    assert payload["_note"] == "運用説明テキスト"
-    assert payload["date"] == today
-    assert payload["urls"] == ["https://example.com/new"], (
-        "date が変わったら urls は新規分のみ (= 古い URL は持ち越さない)"
-    )
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved["_note"] == "運用説明テキスト"
-
-
-def test_merge_recovers_from_broken_json(tmp_path: Path):
-    p = tmp_path / "_session_urls.json"
-    p.write_text("{not json", encoding="utf-8")
-    today = date.today().strftime("%Y-%m-%d")
-    hook.merge_into_session_file({"https://example.com/x"}, today, p)
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved == {"date": today, "urls": ["https://example.com/x"]}
+    f1 = hook.write_fragment({"https://example.com/a"}, today, fragments_root)
+    f2 = hook.write_fragment({"https://example.com/b"}, today, fragments_root)
+    assert f1 != f2
+    assert json.loads(f1.read_text(encoding="utf-8"))["urls"] == ["https://example.com/a"]
+    assert json.loads(f2.read_text(encoding="utf-8"))["urls"] == ["https://example.com/b"]
+    assert len(list((fragments_root / today).glob("*.json"))) == 2
 
 
 # ── CLI 統合テスト (stdin → 副作用) ──────────────────────────────────────────
@@ -227,6 +174,21 @@ def _run_hook(stdin_payload: str | dict, tmp_repo: Path) -> subprocess.Completed
     )
 
 
+def _read_fragment_urls(tmp_repo: Path) -> list[str]:
+    """当日フラグメントディレクトリの全 *.json を union した urls を sorted で返す。"""
+    today = date.today().strftime("%Y-%m-%d")
+    frag_dir = tmp_repo / "data" / "_session_urls.d" / today
+    urls: set[str] = set()
+    for frag in frag_dir.glob("*.json"):
+        urls |= set(json.loads(frag.read_text(encoding="utf-8")).get("urls", []))
+    return sorted(urls)
+
+
+def _fragment_dir_exists(tmp_repo: Path) -> bool:
+    today = date.today().strftime("%Y-%m-%d")
+    return (tmp_repo / "data" / "_session_urls.d" / today).exists()
+
+
 def test_cli_webfetch_event_appends_to_session(tmp_path: Path):
     r = _run_hook(
         {"tool_name": "WebFetch",
@@ -235,10 +197,8 @@ def test_cli_webfetch_event_appends_to_session(tmp_path: Path):
         tmp_path,
     )
     assert r.returncode == 0, f"hook should exit 0.\nstderr:\n{r.stderr}"
-    p = tmp_path / "data" / "_session_urls.json"
-    assert p.exists(), "session ファイルが新規作成されるはず"
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved["urls"] == ["https://example.com/cli-fetch"]
+    assert _fragment_dir_exists(tmp_path), "当日フラグメントディレクトリが作られるはず"
+    assert _read_fragment_urls(tmp_path) == ["https://example.com/cli-fetch"]
 
 
 def test_cli_websearch_event_appends_to_session(tmp_path: Path):
@@ -252,15 +212,13 @@ def test_cli_websearch_event_appends_to_session(tmp_path: Path):
         tmp_path,
     )
     assert r.returncode == 0, f"hook should exit 0.\nstderr:\n{r.stderr}"
-    p = tmp_path / "data" / "_session_urls.json"
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    assert saved["urls"] == ["https://example.com/s1", "https://example.com/s2"]
+    assert _read_fragment_urls(tmp_path) == ["https://example.com/s1", "https://example.com/s2"]
 
 
 def test_cli_empty_stdin_exit_zero(tmp_path: Path):
     r = _run_hook("", tmp_path)
     assert r.returncode == 0
-    assert not (tmp_path / "data" / "_session_urls.json").exists()
+    assert not _fragment_dir_exists(tmp_path)
 
 
 def test_cli_broken_json_stdin_exit_zero(tmp_path: Path):
@@ -269,7 +227,7 @@ def test_cli_broken_json_stdin_exit_zero(tmp_path: Path):
         f"壊れた JSON でも hook は exit 0 で落ちない契約 (claude を止めないため)\n"
         f"stderr:\n{r.stderr}"
     )
-    assert not (tmp_path / "data" / "_session_urls.json").exists()
+    assert not _fragment_dir_exists(tmp_path)
 
 
 def test_cli_writes_audit_log_on_fire(tmp_path: Path):
@@ -316,6 +274,6 @@ def test_cli_unrelated_tool_does_not_create_file(tmp_path: Path):
         tmp_path,
     )
     assert r.returncode == 0
-    assert not (tmp_path / "data" / "_session_urls.json").exists(), (
-        "対象外ツールでは session ファイルを作らない契約"
+    assert not _fragment_dir_exists(tmp_path), (
+        "対象外ツールではフラグメントを作らない契約"
     )

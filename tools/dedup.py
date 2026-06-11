@@ -409,6 +409,56 @@ def _month_floor(d: date) -> date:
     return date(d.year, d.month, 1)
 
 
+def _evaluate_from_annotation(
+    candidate: dict,
+    now_date: date,
+    max_source_age_days: int,
+) -> tuple[str | None, str] | None:
+    """既に注釈 (date_evidence_source + published_date) を持つ候補を fetch なしで判定する。
+
+    第 1 パスで注釈済みの候補が第 2 パス (カテゴリ間 dedup) で htmldate を再フェッチ
+    しないよう、注釈値だけで鮮度を判定する carry-over early-return。注釈が無い (= 第 1
+    パス未通過) 候補には何もせず None を返し、通常の URL/htmldate 経路に委ねる。
+
+    返り値:
+        - 注釈あり → (drop_reason or None, "none")  ※ fetch を消費しないので disposition は "none"
+        - 注釈なし / 注釈が壊れている → None (= 通常経路へフォールバック)
+
+    粒度別の鮮度判定:
+        - "url-path-month": 月単位比較 (第 1 パスの月粒度ロジックと一致させ、当月以降は pass)
+        - その他 ("url-path" / "htmldate" 等): 日単位比較
+    """
+    source = candidate.get(_DATE_EVIDENCE_SOURCE)
+    published = candidate.get(_DATE_EVIDENCE_PUBLISHED)
+    if not isinstance(source, str) or not isinstance(published, str):
+        return None
+    try:
+        pub_date = datetime.strptime(published, "%Y-%m-%d").date()
+    except ValueError:
+        # 注釈が壊れている → 通常経路で再評価させる (注釈を信用しない)
+        return None
+
+    if source == "url-path-month":
+        # 月単位どまり (確定ではない) の carry-over。第 1 パスの月粒度判定を再現する。
+        allowed_oldest = now_date - timedelta(days=max_source_age_days)
+        if _month_floor(pub_date) < _month_floor(allowed_oldest):
+            return (
+                f"freshness gate: source month {pub_date.strftime('%Y-%m')} "
+                f"older than allowed month {allowed_oldest.strftime('%Y-%m')} "
+                f"(max_source_age_days={max_source_age_days}d, carried-over annotation)"
+            ), "none"
+        return None, "none"
+
+    # 日単位確定の carry-over (url-path / htmldate)。
+    age_days = (now_date - pub_date).days
+    if age_days > max_source_age_days:
+        return (
+            f"freshness gate: published {pub_date.isoformat()} via {source} "
+            f"(carried-over annotation), age={age_days}d > {max_source_age_days}d"
+        ), "none"
+    return None, "none"
+
+
 def _evaluate_freshness(
     candidate: dict,
     now_date: date,
@@ -428,7 +478,17 @@ def _evaluate_freshness(
 
     URL 日単位日付が取れれば fetch 不要で即判定。日付なし・月粒度どまりの候補のみ
     htmldate 補完 (fetch_fn) に回す (ユーザー決定 B: 月粒度は確定扱いにしない)。
+
+    第 1 パスで既に ``date_evidence_source`` + ``published_date`` 注釈が付いた候補は、
+    htmldate を再フェッチせず注釈値で鮮度を判定して early-return する (carry-over)。
+    編集長の「カテゴリ間 dedup 第 2 パス」(全カテゴリ records 連結 → dedup.py 1 回) を
+    冪等・安価にするため (第 1 パスで注釈済みの候補が第 2 パスでネットワークフェッチを
+    起こさないことを保証する)。
     """
+    carry = _evaluate_from_annotation(candidate, now_date, max_source_age_days)
+    if carry is not None:
+        return carry
+
     url = candidate.get("url", "")
     src_date, granularity = extract_source_date_from_url_with_granularity(url)
 

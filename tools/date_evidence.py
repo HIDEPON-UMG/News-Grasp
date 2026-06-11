@@ -19,8 +19,6 @@
 """
 from __future__ import annotations
 
-import gzip
-import io
 import json
 import re
 import sys
@@ -74,31 +72,21 @@ def fetch_html(url: str, *, timeout: float = 15.0) -> str | None:
 
     audit_all_article_urls の liveness 検証 (HEAD / GET range 4KB) は body を
     持たないため、日付証拠が必要な当日分のみ本関数で全文を取る。
-    UA は validate_deepdive_urls と同じ 2 段フォールバック (anti-bot 剥がし)。
-    取得不能なら None (呼び出し側で Wayback フォールバックへ)。
+
+    2026-06-12 収集改善: 旧 UA 2 段フォールバックを fetch 昇格ラダー (_fetch) に
+    置換。urllib → Scrapling Fetcher → StealthyFetcher の 3 段で bloomberg/nikkei 等の
+    anti-bot を剥がし、偽日付検証の死角 (anti-bot で HTML が取れず Wayback 単独頼みに
+    なる経路) を減らす。取得不能なら None (呼び出し側で Wayback フォールバックへ)。
     """
-    for ua in _UAS:
-        try:
-            req = urllib.request.Request(url, headers={
-                "User-Agent": ua,
-                "Accept": "text/html,application/xhtml+xml",
-                "Accept-Language": "en-US,en;q=0.9,ja;q=0.8",
-            })
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw = resp.read()
-                if resp.headers.get("Content-Encoding") == "gzip":
-                    try:
-                        raw = gzip.GzipFile(fileobj=io.BytesIO(raw)).read()
-                    except OSError:
-                        pass
-                charset = resp.headers.get_content_charset() or "utf-8"
-                try:
-                    return raw.decode(charset, errors="replace")
-                except LookupError:
-                    return raw.decode("utf-8", errors="replace")
-        except (urllib.error.URLError, OSError, ValueError):
-            continue
-    return None
+    # 遅延 import (date_evidence の純関数テストは fetch_html を呼ばないため、_fetch /
+    # scrapling 未導入でも import 自体は壊さない)。tools パッケージ・flat 実行両対応。
+    try:
+        from tools._fetch import fetch_with_escalation
+    except ModuleNotFoundError:
+        from _fetch import fetch_with_escalation
+
+    res = fetch_with_escalation(url, timeout=timeout)
+    return res.html if res.ok else None
 
 
 def extract_published_date(html: str, *, max_date: date) -> date | None:

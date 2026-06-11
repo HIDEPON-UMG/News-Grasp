@@ -125,11 +125,25 @@ def iter_records(jsonl_path: Path) -> Iterable[tuple[int, dict[str, Any]]]:
                 ) from e
 
 
+def _seen_at_date_part(rec: dict[str, Any]) -> str | None:
+    """record の `seen_at` (例 `2026-06-11T06:00:00+09:00`) から日付部分のみを取り出す。
+
+    `seen_at` が無い / str でない / `YYYY-MM-DD` で始まらない場合は None を返す
+    (= issue-date 検証の対象外として扱う)。
+    """
+    seen = rec.get("seen_at")
+    if not isinstance(seen, str) or len(seen) < 10:
+        return None
+    head = seen[:10]
+    return head if _DATE_RE.match(head) else None
+
+
 def validate_jsonl(
     jsonl_path: Path,
     *,
     recent_days: int | None = None,
     today: date | None = None,
+    issue_date: str | None = None,
 ) -> list[str]:
     """articles.jsonl 全体 (or 直近 N 日) を validate。違反一覧を str list で返す。
 
@@ -137,6 +151,12 @@ def validate_jsonl(
         jsonl_path: articles.jsonl のパス。
         recent_days: None なら全件、int なら今日から N 日前以降の record のみ。
         today: 既定 `date.today()`。テストから固定値で渡す用。
+        issue_date: 号日 (`YYYY-MM-DD`)。指定時は「`seen_at` の日付部分 == issue_date
+            なのに `date != issue_date`」の record を fatal にする (2026-06-11 21 件
+            誤記事故の機械検査)。articles.jsonl の `date` は号日 (= digest ファイル名と
+            一致) であって記事公開日ではないため、当日生成 record の `date` を号日に
+            揃える契約を locked-in する。`seen_at` の日付部分が issue_date と異なる
+            過去 record は対象外 (当日生成でないため誤記とは言えない)。
 
     Returns:
         違反メッセージの list。空なら全件 PASS。
@@ -164,6 +184,18 @@ def validate_jsonl(
         except RecordSchemaError as e:
             title = str(rec.get("title", ""))[:50]
             errs.append(f"line {lineno}: {e} (title={title!r})")
+            continue
+        # 号日整合チェック: 当日生成 (seen_at の日付部分 == issue_date) の record は
+        # date が号日と一致していなければ誤記扱い (fatal)。過去 record は対象外。
+        if issue_date is not None and isinstance(rec, dict):
+            seen_day = _seen_at_date_part(rec)
+            if seen_day == issue_date and rec.get("date") != issue_date:
+                title = str(rec.get("title", ""))[:50]
+                errs.append(
+                    f"line {lineno}: 号日不整合: seen_at={seen_day} (当日生成) なのに "
+                    f"date={rec.get('date')!r} != issue-date={issue_date!r} "
+                    f"(articles.jsonl の date は号日に揃えること) (title={title!r})"
+                )
     return errs
 
 
@@ -190,7 +222,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="全件 validate (cutoff 前の legacy 含む)。",
     )
+    parser.add_argument(
+        "--issue-date",
+        type=str,
+        default=None,
+        help="号日 (YYYY-MM-DD)。指定時は seen_at が当日 (= issue-date) の record の "
+             "date が号日と一致しなければ fatal にする (2026-06-11 21 件誤記事故対策)。",
+    )
     args = parser.parse_args(argv)
+
+    if args.issue_date is not None and not _DATE_RE.match(args.issue_date):
+        print(
+            f"FATAL: --issue-date は 'YYYY-MM-DD' 形式: got {args.issue_date!r}",
+            file=sys.stderr,
+        )
+        return 2
 
     jsonl_path = args.articles
     if jsonl_path is None:
@@ -204,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
 
     recent = None if args.all else args.recent
     try:
-        errs = validate_jsonl(jsonl_path, recent_days=recent)
+        errs = validate_jsonl(jsonl_path, recent_days=recent, issue_date=args.issue_date)
     except RecordSchemaError as e:
         print(f"FATAL: {e}", file=sys.stderr)
         return 1

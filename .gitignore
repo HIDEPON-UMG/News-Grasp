@@ -70,6 +70,8 @@ build/_oneshot_*
 build/detect_dups.py
 build/apply_*_dedup.py
 tools/_*
+# _fetch.py は本番境界モジュール (fetch 昇格ラダー)。tools/_* の使い捨てスクリプト除外から明示的に救う
+!tools/_fetch.py
 _poc_*/
 prompts/_poc-*
 data/_spike_*
@@ -79,3 +81,6 @@ tmp/
 
 # CodeGraph ローカル索引 (2026-06-11)
 .codegraph/
+
+# session URL フラグメント (発火 1 回 = 1 ファイル。push 前 gate のローカル白リスト・追跡不要) (2026-06-12)
+data/_session_urls.d/

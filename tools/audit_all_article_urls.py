@@ -83,31 +83,77 @@ def _normalize_url_for_match(url: str) -> str:
     return s
 
 
-def _load_session_urls(repo_root: Path) -> tuple[set[str], Path, str | None]:
-    """`data/_session_urls.json` から当日 LLM が WebSearch 200 確認した URL の白リストを読む。
+def _extract_norm_urls(data: object) -> set[str]:
+    """session payload dict から正規化済み URL set を取り出す純粋ヘルパ。
+
+    `{"date": ..., "urls": [...]}` の `urls` から http(s) URL のみを拾い、
+    `_normalize_url_for_match` で照合用に正規化する。形式不正なら空 set。
+    """
+    if not isinstance(data, dict):
+        return set()
+    urls_raw = data.get("urls")
+    if not isinstance(urls_raw, list):
+        return set()
+    return {
+        _normalize_url_for_match(u)
+        for u in urls_raw
+        if isinstance(u, str) and u.startswith("http")
+    }
+
+
+def _load_session_urls(
+    repo_root: Path, today_str: str | None = None
+) -> tuple[set[str], Path, str | None]:
+    """当日 LLM が WebSearch 200 確認した URL の白リストを union 読みする。
+
+    2026-06-12 フラグメント化対応: 共有ファイル 1 本ではなく、当日フラグメント群
+    `data/_session_urls.d/{today}/*.json` と legacy `data/_session_urls.json`
+    (date が当日のときのみ) を **union** して 1 つの白リストにまとめる。
 
     返り値:
-        (正規化 URL set, ファイルパス, 当日 date 文字列 or None)
+        (正規化 URL set, 代表パス, 当日 date 文字列 or None)
+        - URL が 1 件でも集まれば date は ``today_str`` を返す (= 当日白リスト)。
+        - フラグメント・legacy 両方不在/空/破損なら (空 set, パス, None) を返し、
+          呼び出し側で degrade (= 警告のみで通過) させる。「session を書き忘れて
+          gate が全件 fatal で push 失敗 → 朝の配信が止まる事故」を避ける fallback。
 
-    ファイル不在/JSON 不正/空の場合は (空 set, パス, None) を返し、呼び出し側で
-    degrade (= 警告のみで通過) させる。これは「session ファイルを書き忘れて gate が
-    全件 fatal で push 失敗 → 朝のニュース配信が止まる事故」を避けるための fallback
-    (本 handoff 3-4 副作用注意の意図的選択)。
+    破損フラグメントは 1 件単位で stderr に WARN を出して skip する (全体は止めない)。
     """
-    p = repo_root / "data" / "_session_urls.json"
-    if not p.exists():
-        return set(), p, None
-    try:
-        with p.open(encoding="utf-8") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return set(), p, None
-    urls_raw = data.get("urls") if isinstance(data, dict) else None
-    if not isinstance(urls_raw, list):
-        return set(), p, None
-    norm = {_normalize_url_for_match(u) for u in urls_raw if isinstance(u, str) and u.startswith("http")}
-    sess_date = data.get("date") if isinstance(data, dict) else None
-    return norm, p, sess_date if isinstance(sess_date, str) else None
+    if today_str is None:
+        today_str = date.today().strftime("%Y-%m-%d")
+    legacy = repo_root / "data" / "_session_urls.json"
+    frag_dir = repo_root / "data" / "_session_urls.d" / today_str
+
+    norm: set[str] = set()
+
+    # 1) 当日フラグメント群を union (発火 1 回 = 1 ファイルなので並列 race なし)
+    if frag_dir.is_dir():
+        for frag in sorted(frag_dir.glob("*.json")):
+            try:
+                with frag.open(encoding="utf-8") as f:
+                    data = json.load(f)
+            except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
+                print(
+                    f"WARN: 破損 session フラグメントを skip: {frag.name} ({e})",
+                    file=sys.stderr,
+                )
+                continue
+            norm |= _extract_norm_urls(data)
+
+    # 2) legacy 共有ファイル (date が当日のときのみ union。後方互換)
+    if legacy.exists():
+        try:
+            with legacy.open(encoding="utf-8") as f:
+                ldata = json.load(f)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+            ldata = None
+        if isinstance(ldata, dict) and ldata.get("date") == today_str:
+            norm |= _extract_norm_urls(ldata)
+
+    # 代表パスは legacy パス (degrade 警告メッセージの relative_to 基準に使われる)
+    if not norm:
+        return set(), legacy, None
+    return norm, legacy, today_str
 
 
 def main() -> int:
@@ -184,7 +230,8 @@ def main() -> int:
     # 案②-Lite: session 白リスト照合 (gate と独立に動かせるが、本番運用は --gate と同時指定)
     session_fatal: list[tuple[str, str, str]] = []  # (date, title, url)
     if args.match_session:
-        session_norm, session_path, session_date = _load_session_urls(_PKG_ROOT)
+        today_str = today.strftime("%Y-%m-%d")
+        session_norm, session_path, session_date = _load_session_urls(_PKG_ROOT, today_str)
         if not session_norm:
             # degrade: session ファイル無し / 空 / 破損 → 物理照合は無効化して従来 gate のみで進む
             print(
@@ -195,7 +242,6 @@ def main() -> int:
                 file=sys.stderr,
             )
         else:
-            today_str = today.strftime("%Y-%m-%d")
             if session_date and session_date != today_str:
                 # session date が当日でない (前日のまま残ってる等) → degrade と同じ扱い
                 print(
@@ -287,8 +333,39 @@ def main() -> int:
         verdicts = verify_urls(refs, max_workers=args.max_workers)
 
     fatal = [v for v in verdicts if not v.ok]
+
+    # 2026-06-12 収集改善: HEAD/GET (urllib) で fatal 判定された URL を fetch 昇格ラダー
+    # (_fetch: Scrapling Fetcher → StealthyFetcher) で再検証し、anti-bot 由来の false-fatal を
+    # 救済する。urllib では 403/blocked だが curl_cffi 偽装やヘッドレスブラウザでは 200 が
+    # 返る発行元 (bloomberg/nikkei 等) の生存 URL を「捏造/死リンク」と誤って push 阻止する
+    # 事故を防ぐ。404/410 由来の fatal は _verify_one で既に確定済みなので救済しない
+    # (detail に 404/410 を含む verdict は対象外 = 真の死リンクは昇格でも復活させない)。
+    if fatal and os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") != "1":
+        from tools._fetch import fetch_with_escalation
+
+        rescued: list = []
+        for v in fatal:
+            d = (v.detail or "")
+            if "404" in d or "410" in d:
+                continue  # 真の死リンクは昇格ラダーでも救済しない
+            res = fetch_with_escalation(v.ref.url, allow_stealthy=True)
+            if res.ok:
+                rescued.append(v)
+                print(
+                    f"  RESCUED (escalation {res.stage} {res.status}): "
+                    f"[{v.ref.location}] {v.ref.url}",
+                    file=sys.stderr,
+                )
+        if rescued:
+            rescued_set = {id(v) for v in rescued}
+            fatal = [v for v in fatal if id(v) not in rescued_set]
+            print(
+                f"escalation 救済: {len(rescued)} 件を anti-bot false-fatal として除外",
+                file=sys.stderr,
+            )
+
     if verdicts:
-        print(f"\n結果: {len(verdicts) - len(fatal)}/{len(verdicts)} OK (HEAD/GET), {len(fatal)} NG (HEAD/GET)")
+        print(f"\n結果: {len(verdicts) - len(fatal)}/{len(verdicts)} OK (HEAD/GET+escalation), {len(fatal)} NG")
 
     if fatal:
         print("\n=== NG URL 一覧 (要差し替え) ===")

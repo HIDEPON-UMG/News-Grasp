@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News-Grasp Newsroom Architecture — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン (Claude.ai 公式トンマナ準拠)
+       - 色直書き禁止: ここで定義した CSS 変数のみを使うこと
+       - 同期元: ~/.claude/templates/DESIGN.md
+       ============================================================ */
+    :root {
+      /* Colors — core */
+      --color-primary: #141413;
+      --color-secondary: #6A6A6A;
+      --color-tertiary: #CC785C;   /* Claude Orange */
+      --color-neutral: #F8F6F3;    /* warm cream */
+      --color-surface: #FFFFFF;
+      --color-border: #E8E6E3;
+      --color-on-tertiary: #FFFFFF;
+      --color-on-primary: #FAF9F5;
+      /* Colors — accents */
+      --color-accent-blue: #A8C5E6;
+      --color-accent-teal: #9DD4C7;
+      --color-accent-beige: #F4E4C1;
+      /* Colors — semantic */
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+      /* Typography */
+      --font-serif: Copernicus, 'Source Serif 4', Georgia, serif;
+      --font-sans: 'Styrene B', Söhne, Inter, system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+      /* Rounded */
+      --rounded-sm: 6px;
+      --rounded-md: 10px;
+      --rounded-lg: 16px;
+      --rounded-full: 9999px;
+      /* Spacing (8 の倍数) */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      /* Elevation */
+      --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04);
+      --shadow-md: 0 4px 12px rgba(20, 20, 19, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 64rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; font-weight: 500; text-transform: uppercase; }
+    h1 { font-family: var(--font-serif); font-size: 3rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; margin: var(--space-md) 0 var(--space-sm); }
+    h2 { font-family: var(--font-serif); font-size: 2rem; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 var(--space-md); }
+    h3 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; line-height: 1.3; margin: var(--space-xl) 0 var(--space-sm); }
+    .lead { color: var(--color-secondary); font-size: 1.125rem; line-height: 1.6; margin: var(--space-sm) 0 var(--space-md); }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-tertiary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: var(--space-xs); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: none; padding: var(--space-sm) var(--space-md); font-family: var(--font-sans); font-size: 0.875rem; color: var(--color-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+    .tab:hover { color: var(--color-primary); }
+    .tab.active { color: var(--color-primary); border-bottom-color: var(--color-tertiary); font-weight: 500; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+    .card-muted { background: var(--color-surface); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+
+    /* Badge */
+    .badge { display: inline-block; background: var(--color-accent-beige); color: var(--color-primary); border-radius: var(--rounded-full); padding: 4px 12px; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; }
+    .badge-success { background: var(--color-success); color: var(--color-on-primary); }
+    .badge-warning { background: var(--color-warning); color: var(--color-on-primary); }
+    .badge-error { background: var(--color-error); color: var(--color-on-primary); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.9375rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 500; color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; text-transform: uppercase; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-neutral); padding: 2px 6px; border-radius: var(--rounded-sm); border: 1px solid var(--color-border); }
+    pre { background: var(--color-primary); color: var(--color-on-primary); border-radius: var(--rounded-md); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.5; margin: var(--space-md) 0; }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 10px 18px; border-radius: var(--rounded-md); border: 0; font-family: var(--font-sans); font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: opacity 120ms; }
+    .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-accent { background: var(--color-tertiary); color: var(--color-on-tertiary); }
+    .btn-accent:hover { opacity: 0.85; }
+    .btn-secondary { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); }
+    .btn-secondary:hover { background: var(--color-neutral); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .playground-control { display: flex; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { min-width: 220px; font-size: 0.875rem; color: var(--color-secondary); }
+    .playground-control input[type="range"] { flex: 1; accent-color: var(--color-tertiary); }
+    .playground-control output { min-width: 88px; font-family: var(--font-mono); font-size: 0.875rem; text-align: right; }
+    .playground-note { font-size: 0.8125rem; color: var(--color-secondary); margin: var(--space-xs) 0 0 236px; }
+
+    /* Timeline */
+    .timeline { display: flex; gap: var(--space-lg); margin: var(--space-lg) 0; flex-wrap: wrap; }
+    .timeline-step { flex: 1 1 200px; background: var(--color-accent-beige); border-radius: var(--rounded-md); padding: var(--space-md); position: relative; }
+    .timeline-step strong { display: block; font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: var(--space-xs); }
+
+    /* Severity */
+    .severity-info { border-left: 3px solid var(--color-accent-blue); padding-left: var(--space-md); margin: var(--space-md) 0; }
+    .severity-warn { border-left: 3px solid var(--color-warning); padding-left: var(--space-md); margin: var(--space-md) 0; }
+    .severity-error { border-left: 3px solid var(--color-error); padding-left: var(--space-md); margin: var(--space-md) 0; }
+
+    /* Comparison grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid, .compare-grid-3 { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+      .playground-note { margin-left: 0; }
+    }
+
+    /* SVG 図共通 */
+    .diagram { width: 100%; height: auto; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); margin: var(--space-md) 0; }
+    .svg-label { font-family: var(--font-sans); font-size: 13px; fill: var(--color-primary); }
+    .svg-label-sm { font-family: var(--font-sans); font-size: 11px; fill: var(--color-secondary); }
+    .svg-label-on-dark { font-family: var(--font-sans); font-size: 13px; fill: var(--color-on-primary); }
+    .svg-mono { font-family: var(--font-mono); font-size: 11px; fill: var(--color-secondary); }
+    .svg-edge { stroke: var(--color-secondary); stroke-width: 1.5; fill: none; }
+    .svg-edge-accent { stroke: var(--color-tertiary); stroke-width: 2; fill: none; }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · <span id="spec-date">2026-06-11 · updated 2026-06-12</span></div>
+      <h1>News-Grasp Newsroom Architecture</h1>
+      <p class="lead">日次 digest 生成を「編集長 (Sonnet メイン) + カテゴリ記者 (Sonnet サブエージェント並列 ×7) + エース記者 (Opus サブエージェント)」体制へ移行し、所要 70 分超 → 30-35 分と品質構造（横断 dedup・date=号日 gate・白リスト hook race 封じ）を同時に実現する。あわせて収集改善（RSS ハーベスタ + クエリ規約改訂 + Scrapling fetch 昇格ラダー）を統合する。</p>
+      <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md); flex-wrap: wrap;">
+        <span class="badge">draft</span>
+        <span class="badge">News-Grasp</span>
+        <span class="badge badge-warning">ユーザー確認待ち（実装は確認後）</span>
+        <span class="badge">収集改善 A+B+Scrapling</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="alternatives">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <section id="overview" class="tab-panel active">
+      <h2>概要</h2>
+      <p>現行の日次 digest 生成は、1 つの <code>claude -p</code> セッションが 7 カテゴリ（fx / ai / it / mobility / manufacturing / economy / game）を直列処理しており、鮮度ゲート工程の追加で所要時間が 70 分を超え <code>TimeoutSec 3600</code> に接近している。本仕様は処理をニュース編集部のメタファーで再構成する。</p>
+
+      <h3>体制図</h3>
+      <svg class="diagram" viewBox="0 0 880 430" role="img" aria-label="Newsroom 体制図: runner.ps1 が編集長セッションを起動し、編集長がカテゴリ記者 7 体とエース記者 1 体を spawn する">
+        <defs>
+          <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="var(--color-secondary)"/>
+          </marker>
+          <marker id="arr-accent" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="var(--color-tertiary)"/>
+          </marker>
+        </defs>
+        <!-- runner -->
+        <rect x="20" y="30" width="190" height="64" rx="10" fill="var(--color-primary)"/>
+        <text x="115" y="56" text-anchor="middle" class="svg-label-on-dark">Task Scheduler</text>
+        <text x="115" y="76" text-anchor="middle" class="svg-label-on-dark">news-grasp-runner.ps1</text>
+        <path class="svg-edge" d="M 210 62 L 280 62" marker-end="url(#arr)"/>
+        <text x="245" y="52" text-anchor="middle" class="svg-label-sm">wrapper 不変</text>
+        <!-- 編集長 -->
+        <rect x="280" y="30" width="220" height="64" rx="10" fill="var(--color-tertiary)"/>
+        <text x="390" y="56" text-anchor="middle" style="font-family: var(--font-sans); font-size: 14px; font-weight: 600;" fill="var(--color-on-tertiary)">編集長 (Sonnet)</text>
+        <text x="390" y="76" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px;" fill="var(--color-on-tertiary)">claude -p メインセッション</text>
+        <!-- 記者群 -->
+        <path class="svg-edge-accent" d="M 390 94 L 390 130" marker-end="url(#arr-accent)"/>
+        <text x="500" y="120" text-anchor="middle" class="svg-label-sm">Agent ツールで並列 spawn（返却はコンパクト JSON のみ）</text>
+        <g>
+          <rect x="40" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="95" y="162" text-anchor="middle" class="svg-label">記者 FX</text>
+          <rect x="158" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="213" y="162" text-anchor="middle" class="svg-label">記者 AI</text>
+          <rect x="276" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="331" y="162" text-anchor="middle" class="svg-label">記者 IT</text>
+          <rect x="394" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="449" y="162" text-anchor="middle" class="svg-label">記者 Mobility</text>
+          <rect x="512" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="567" y="162" text-anchor="middle" class="svg-label">記者 Manuf.</text>
+          <rect x="630" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="685" y="162" text-anchor="middle" class="svg-label">記者 Economy</text>
+          <rect x="748" y="140" width="110" height="52" rx="8" fill="var(--color-accent-blue)"/>
+          <text x="803" y="162" text-anchor="middle" class="svg-label">記者 Game</text>
+          <text x="449" y="184" text-anchor="middle" class="svg-label-sm">各自: WebSearch 収集 → dedup.py → 選別 → fetch_ogp → digest md 執筆 (Sonnet ×7 並列)</text>
+        </g>
+        <!-- 編集長の後工程 -->
+        <path class="svg-edge" d="M 449 192 L 449 226" marker-end="url(#arr)"/>
+        <rect x="120" y="230" width="660" height="56" rx="10" fill="var(--color-accent-teal)"/>
+        <text x="450" y="253" text-anchor="middle" class="svg-label">編集長の統合工程: verify_reporter_output.py 機械検証 → 1 回差し戻し → カテゴリ間 dedup 第 2 パス</text>
+        <text x="450" y="273" text-anchor="middle" class="svg-label">→ Summary γ schema 執筆 → articles.jsonl 一括 append（単一ライター）</text>
+        <!-- エース記者 -->
+        <path class="svg-edge" d="M 450 286 L 450 320" marker-end="url(#arr)"/>
+        <rect x="290" y="324" width="320" height="52" rx="8" fill="var(--color-accent-beige)"/>
+        <text x="450" y="346" text-anchor="middle" class="svg-label">エース記者 (Opus) — DeepDive</text>
+        <text x="450" y="364" text-anchor="middle" class="svg-label-sm">編集長提示テーマ・失敗/休載は非致命（digest を巻き込まない）</text>
+        <!-- gate帯 -->
+        <path class="svg-edge" d="M 610 350 L 700 350" marker-end="url(#arr)"/>
+        <rect x="704" y="324" width="156" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-border)"/>
+        <text x="782" y="346" text-anchor="middle" class="svg-label">gate 帯 → push</text>
+        <text x="782" y="364" text-anchor="middle" class="svg-label-sm">runner.ps1 一元管理</text>
+      </svg>
+
+      <div class="severity-info">
+        <strong>前提・制約（公式根拠取得済み）</strong>
+        <ul>
+          <li>headless (<code>claude -p</code>) で Agent ツール利用可。PermissionRequest は発火しないが、wrapper は <code>--dangerously-skip-permissions --tools default</code> 起動のため permission 設計は現状のままで足りる。</li>
+          <li>hooks はサブエージェント内のツール実行にも発火する（白リスト hook が記者の WebSearch を捕捉できる根拠）。</li>
+          <li><code>.claude/agents/*.md</code> frontmatter でサブエージェント毎に model 指定可（記者 = sonnet / エース = opus）。</li>
+          <li>runner.ps1 の呼び出し形態（wrapper / cwd=リポ / PromptFile / 日付ヘッダ注入）は不変。cwd=News-Grasp 以外では session URL hook が発火しないことを実測済み。</li>
+          <li>並列規模は公式想定の「数個」レンジに収める（既定 7 体同時、429 発生時は段階投入へ）。</li>
+        </ul>
+      </div>
+
+      <div class="severity-error">
+        <strong>06-11 号で実害が確定した構造課題（本仕様で封じる）</strong>
+        <ul>
+          <li>カテゴリ別分割 dedup がカテゴリ間重複を素通し（Decart が AI+Mobility、indexbox が FX+Economy の 2 組）。</li>
+          <li>articles.jsonl の date=号日 規約が機械検査されず 21 件誤記。</li>
+          <li>白リスト hook (<code>append_session_urls.py</code>) は read→union→replace 構造のため、並列サブエージェント同時発火で後勝ち消失する（atomic replace でも union 元が古い）。</li>
+          <li>上流収集が古記事を引く（search_audit 集計: raw 144 → 候補 65 → 採用 27。drop 42 件中 36 件 = 86% が freshness gate。WebSearch に日付・鮮度フィルタが構造的に存在せず、当月日付語クエリ（"CPI inflation report May 2026" 等）が古記事を能動的に引いた実害がある）。</li>
+        </ul>
+      </div>
+
+      <div class="severity-warn">
+        <strong>本調査での新規発見リスク</strong>
+        <p>並列サブエージェント待機中、メインセッションの stream-json stdout が長時間沈黙する可能性があり、<code>IdleTimeoutSec 900</code>（15 分無出力 kill）が偽発動し得る。V1 検証で wrapper の heartbeat ログ（60 秒毎 <code>idle=Ns</code>）から max idle を実測し、初週は 1800 へ引き上げてから実測値で確定する。</p>
+      </div>
+
+      <h3>成功条件</h3>
+      <ul>
+        <li>三段検証（V1 / V2 / V3）PASS 後、翌朝の Task Scheduler 本番で publish gate 全 PASS。</li>
+        <li>公開サイト（GitHub Pages）の当日号が 200 で見える（ユーザー可視成果で完了判定）。</li>
+        <li>digest 生成の所要時間が 30-35 分（TimeoutSec 3600 に余裕）。</li>
+        <li>カテゴリ間重複 0 件・date=号日 違反 0 件・session 白リスト欠落 0 件が gate で機械保証される。</li>
+        <li>freshness gate での drop 率が大幅減少する（RSS ハーベスタ + when:1d クエリで収集段階で直近 24h に絞られており、dedup の freshness gate は最後の防衛線に降格している）。</li>
+      </ul>
+    </section>
+
+    <section id="alternatives" class="tab-panel">
+      <h2>採用しなかった案</h2>
+
+      <h3>論点 1: 白リスト hook の並列 race 対策</h3>
+      <div class="compare-grid-3">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">フラグメント方式</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>hook は発火毎に <code>data/_session_urls.d/{日付}/{uuid4}.json</code> を<strong>新規作成のみ</strong>行う。共有可変状態が消えるため race が表現不能（Lv1: illegal state unrepresentable）。読み側 (<code>audit_all_article_urls.py --match-session</code>) がフラグメント群 + legacy ファイルを union。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">ファイルロック</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>msvcrt.locking 等で read-modify-write を排他。race を「縮める」だけの Lv2 止まりで、Windows 特有のロック待ち / orphan lock / AV 干渉という新しい失敗モードを hook（timeout 30 秒）に持ち込む。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">編集長の最終照合</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>編集長が記者の報告 URL を白リストへ再集約する案。白リスト生成が LLM の規律に戻り、hook 化（2026-06-05 案③ = ハーネス層が直接記録するから捏造を封じられる）の存在理由そのものを破壊する。</p>
+        </div>
+      </div>
+
+      <h3>論点 2: カテゴリ間重複の封じ方</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">編集長の dedup 第 2 パス</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>dedup.py は既にバッチ内重複を弾く（合格分を既存プールに積み増す実装）ため、全記者の records を連結して 1 回通すだけでカテゴリ間照合が成立する。判定は機械（dedup CLI）であり LLM 判断に依存しない。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">記者間の相互参照</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>各記者に他カテゴリの採用 URL を渡して自主回避させる案。並列実行中は他記者の選定が未確定のため原理的に不完全で、記者間の依存（待ち合わせ）が並列化の利得を壊す。頻発カテゴリ対だけの事前ヒントとしては将来検討余地（V2 で頻度観測）。</p>
+        </div>
+      </div>
+
+      <h3>論点 3: DeepDive の移行方式（ユーザー判断確定済み）</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">一斉移行</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>V3 切替と同時にエース記者サブエージェントを有効化し、runner.ps1 step 2.5（別プロセス Opus DeepDive）を削除する。移行が 1 回で済む。エース記者の spawn は Summary 執筆 + append 完了後なので、失敗しても digest 成果物は確定済み = 構造的に非致命。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">段階移行</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>初週は step 2.5 を温存し記者並列だけ先に安定させる案。切替変数が 1 つずつになり障害切り分けは容易だが、移行が 2 回になり、デュアル経路の維持コストが掛かる。ユーザー判断で一斉移行を選択（2026-06-11）。</p>
+        </div>
+      </div>
+
+      <h3>論点 4: 基盤 4 点の投入タイミング（ユーザー判断確定済み）</h3>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">先行デプロイ</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>hook フラグメント化 / validate_record --issue-date / dedup 注釈 carry-over / verify_reporter_output.py は旧直列体制でも後方互換で動くため、新体制切替前に投入して翌朝の本番で慣らす。切替日の変更点を「プロンプト + 並列化」だけに絞れる。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">一括切替</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>基盤も新体制と同日に投入する案。デプロイ回数は 1 回で済むが、切替日に問題が出たとき基盤起因か並列化起因かの切り分けが難しくなる。</p>
+        </div>
+      </div>
+
+      <h3>論点 5: 上流収集の改善方式（2026-06-12 確定）</h3>
+      <div class="compare-grid-3">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">A+B 併用（採用）</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>RSS ハーベスタ（<code>tools/harvest_candidates.py</code>）が Google News RSS + <code>when:1d</code> で pubDate 付き候補 jsonl を事前生成（決定論 CLI・claude 起動前に runner.ps1 が実行）。取得前に pubDate で鮮度を機械判定できるため freshness gate は最後の防衛線に降格。WebSearch はイベント・エンティティ駆動クエリの補完に限定する。クエリ規約改訂（B）で過去月日付語を禁止し、当日・前日のみ許可。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">鮮度ゲート強化のみ</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>既存の freshness gate のしきい値を厳しくする案。ゲートは既に誤爆ゼロで正常動作している（86% drop は正しく古記事を弾いている）。真因の上流収集を放置したまま強化しても候補が痩せるだけで根本解決にならない。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">WebSearch クエリ工夫のみ</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>クエリへの日付語追加・言い換えで鮮度を改善する案。WebSearch ツールの schema には <code>allowed_domains</code> / <code>blocked_domains</code> しかなく、日付・鮮度フィルタが構造的に存在しない。"CPI inflation report May 2026" 型の当月日付語が古記事を能動的に引いた実害があり、クエリ側の工夫は構造的限界がある。</p>
+        </div>
+      </div>
+
+      <h3>論点 6: Google News RSS の canonical URL 解決方式（2026-06-12 確定）</h3>
+      <div class="compare-grid-3">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">site: 限定 WebSearch</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>RSS の <code>&lt;source url&gt;</code> 属性で媒体ドメイン・タイトルを取得し、<code>site:reuters.com "記事タイトル"</code> 形式の WebSearch で実 URL を確定する。session URL 白リスト hook が WebSearch URL を自動捕捉する既存フローと完全整合し、捏造防止フロー（audit --match-session）がそのまま機能する。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">googlenewsdecoder</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>PyPI に存在する <code>googlenewsdecoder</code> ライブラリで Google 内部 API を呼ぶ方式。Google の内部 API 変更で予告なく破壊されるリスクがある。依存度が高く、障害時に代替手段がない。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">link 直接 GET</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>RSS の <code>&lt;link&gt;</code> 要素を直接 GET する方式。<code>&lt;link&gt;</code> は JS 必須のエンコード URL（<code>news.google.com/rss/articles/CBMi…</code>）で、単純 GET では媒体ページへ解決されないことを実測確認済み。</p>
+        </div>
+      </div>
+
+      <h3>論点 7: BOT 対策ドメインの fetch 方式（2026-06-12 実打確認・採用確定）</h3>
+      <div class="compare-grid-3">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">Scrapling 昇格ラダー境界集約</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p><code>tools/_fetch.py</code> に <code>fetch_with_escalation()</code> を 1 箇所集約（境界モジュール）。urllib → Fetcher（curl_cffi 偽装・ブラウザ不要） → StealthyFetcher（ヘッドレスブラウザ）の昇格ラダー。403 / blocked 検知時のみ昇格し、StealthyFetcher は最終段限定。<strong>0.4.9 に pin</strong>（0.4.x で css_first 廃止 → css() に変更）。適用 4 箇所（fetch_ogp / date_evidence / audit_all_article_urls / ハーベスタ canonical 解決補助）はすべてこの関数を呼ぶ。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">各ツール個別導入</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>fetch_ogp / date_evidence / audit / ハーベスタの 4 箇所に Scrapling 呼び出しを個別実装する案。境界集約原則に違反し、Scrapling API 変更（css_first → css() のような）が 4 箇所の個別修正を要求する。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0; font-size: 1.125rem;">ヘッドレスブラウザ常用</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>StealthyFetcher を全リクエストに常用する案。1 fetch 数秒〜十数秒かかるため、日次 run の全 OGP 取得・生存確認に適用すると所要時間を破壊する。urllib で 200 が返るリクエストに重量フェッチャーを使う必要はない。</p>
+        </div>
+      </div>
+      <div class="severity-info">
+        <strong>コンプライアンス注記（Scrapling 利用範囲）</strong>
+        <p>Scrapling の用途は OGP メタ取得・発行日メタ取得・URL 生存確認に限定する。paywall 本文の取得回避には使わない。<code>robots_txt_obey</code> フラグの利用を検討する。</p>
+      </div>
+    </section>
+
+    <section id="dataflow" class="tab-panel">
+      <h2>データフロー</h2>
+      <p>記者の成果物はすべて<strong>ファイル経由</strong>で編集長に渡る。Task 返却（メイン文脈に載るもの）はコンパクト JSON（約 2KB）のみ。記事本文・フル record・digest md 本文はメイン文脈に一度も載らない（2026-05 の 415 万トークン破綻の構造的再発防止）。</p>
+      <p><strong>収集の上流化（2026-06-12 追加）:</strong> runner.ps1 が claude 起動前に <code>tools/harvest_candidates.py</code> を決定論 CLI として実行し、Google News RSS + <code>when:1d</code> クエリで pubDate 付き候補 jsonl を生成する。06-11 実測: raw 144 → 候補 65 → 採用 27。drop 42 件中 36 件（86%）が freshness gate（古記事）だった。RSS の各 item に pubDate (RFC822) が付くため、<strong>取得前に鮮度を機械判定できる</strong>（freshness gate は最後の防衛線に降格）。</p>
+
+      <h3>収集フロー（ハーベスタ → 記者 → dedup）</h3>
+      <svg class="diagram" viewBox="0 0 760 130" role="img" aria-label="収集フロー: RSS ハーベスタが候補 jsonl を生成し、カテゴリ記者が候補を引き継ぎ、dedup 第 1 パスへ渡す">
+        <defs>
+          <marker id="arr-h" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="var(--color-secondary)"/>
+          </marker>
+        </defs>
+        <!-- ハーベスタ -->
+        <rect x="10" y="20" width="230" height="80" rx="10" fill="var(--color-accent-beige)"/>
+        <text x="125" y="44" text-anchor="middle" class="svg-label" style="font-weight: 600;">RSS ハーベスタ</text>
+        <text x="125" y="62" text-anchor="middle" class="svg-label-sm">tools/harvest_candidates.py</text>
+        <text x="125" y="78" text-anchor="middle" class="svg-mono">Google News RSS + when:1d</text>
+        <text x="125" y="94" text-anchor="middle" class="svg-mono">pubDate 付き候補 jsonl 生成</text>
+        <!-- 矢印 1 -->
+        <path class="svg-edge" d="M 240 60 L 300 60" marker-end="url(#arr-h)"/>
+        <text x="270" y="52" text-anchor="middle" class="svg-label-sm">候補 jsonl</text>
+        <!-- 記者 -->
+        <rect x="300" y="20" width="210" height="80" rx="10" fill="var(--color-accent-blue)"/>
+        <text x="405" y="44" text-anchor="middle" class="svg-label" style="font-weight: 600;">カテゴリ記者 ×7</text>
+        <text x="405" y="62" text-anchor="middle" class="svg-label-sm">WebSearch（イベント/エンティティ補完）</text>
+        <text x="405" y="78" text-anchor="middle" class="svg-label-sm">候補引き継ぎ + site: WebSearch で</text>
+        <text x="405" y="94" text-anchor="middle" class="svg-label-sm">canonical URL 確定</text>
+        <!-- 矢印 2 -->
+        <path class="svg-edge" d="M 510 60 L 570 60" marker-end="url(#arr-h)"/>
+        <text x="540" y="52" text-anchor="middle" class="svg-label-sm">records</text>
+        <!-- dedup -->
+        <rect x="570" y="20" width="175" height="80" rx="10" fill="var(--color-accent-teal)"/>
+        <text x="657" y="44" text-anchor="middle" class="svg-label" style="font-weight: 600;">dedup 第 1 パス</text>
+        <text x="657" y="62" text-anchor="middle" class="svg-label-sm">カテゴリ内重複除去</text>
+        <text x="657" y="78" text-anchor="middle" class="svg-label-sm">followup-gate + freshness-gate</text>
+        <text x="657" y="94" text-anchor="middle" class="svg-label-sm">（最後の防衛線）</text>
+      </svg>
+      <p class="svg-label-sm" style="font-size: 0.8rem; color: var(--color-secondary); margin-top: 0;">注: watchlist 主要媒体の公式 RSS も候補ソースとして併用（link 直接取得・canonical 解決不要）。</p>
+
+      <svg class="diagram" viewBox="0 0 880 560" role="img" aria-label="データフロー図: 記者の出力ファイル 3 種が編集長の検証・統合 dedup・一括 append を経て gate 帯に到達する">
+        <defs>
+          <marker id="arr2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="var(--color-secondary)"/>
+          </marker>
+        </defs>
+        <!-- 記者 -->
+        <rect x="20" y="20" width="200" height="120" rx="10" fill="var(--color-accent-blue)"/>
+        <text x="120" y="44" text-anchor="middle" class="svg-label" style="font-weight: 600;">カテゴリ記者 ×7</text>
+        <text x="120" y="66" text-anchor="middle" class="svg-label-sm">WebSearch / WebFetch</text>
+        <text x="120" y="84" text-anchor="middle" class="svg-label-sm">dedup.py（第 1 パス・カテゴリ内）</text>
+        <text x="120" y="102" text-anchor="middle" class="svg-label-sm">fetch_ogp.py（thumb 3 段階）</text>
+        <text x="120" y="120" text-anchor="middle" class="svg-label-sm">digest md 執筆</text>
+        <!-- hook -->
+        <rect x="20" y="170" width="200" height="74" rx="10" fill="var(--color-accent-beige)"/>
+        <text x="120" y="194" text-anchor="middle" class="svg-label" style="font-weight: 600;">PostToolUse hook（自動）</text>
+        <text x="120" y="214" text-anchor="middle" class="svg-mono">_session_urls.d/{date}/</text>
+        <text x="120" y="230" text-anchor="middle" class="svg-mono">{uuid4}.json 新規作成のみ</text>
+        <!-- 記者出力ファイル -->
+        <path class="svg-edge" d="M 220 80 L 300 80" marker-end="url(#arr2)"/>
+        <rect x="300" y="20" width="250" height="124" rx="10" fill="var(--color-surface)" stroke="var(--color-border)"/>
+        <text x="425" y="44" text-anchor="middle" class="svg-label" style="font-weight: 600;">記者の出力（カテゴリ毎・競合なし）</text>
+        <text x="425" y="68" text-anchor="middle" class="svg-mono">digest/{Genre}/{date}-{Genre}.md</text>
+        <text x="425" y="88" text-anchor="middle" class="svg-mono">tmp/newsroom/{date}/{cat}.records.jsonl</text>
+        <text x="425" y="108" text-anchor="middle" class="svg-mono">data/search_audit/{date}/{cat}.json</text>
+        <text x="425" y="130" text-anchor="middle" class="svg-label-sm">+ Task 返却 = コンパクト JSON（~2KB）</text>
+        <!-- 編集長検証 -->
+        <path class="svg-edge" d="M 550 80 L 630 80" marker-end="url(#arr2)"/>
+        <rect x="630" y="20" width="230" height="124" rx="10" fill="var(--color-accent-teal)"/>
+        <text x="745" y="44" text-anchor="middle" class="svg-label" style="font-weight: 600;">編集長: 機械検証</text>
+        <text x="745" y="66" text-anchor="middle" class="svg-mono">verify_reporter_output.py</text>
+        <text x="745" y="88" text-anchor="middle" class="svg-label-sm">①record schema + date=号日 ②件数</text>
+        <text x="745" y="106" text-anchor="middle" class="svg-label-sm">③search_audit ④カード数一致</text>
+        <text x="745" y="124" text-anchor="middle" class="svg-label-sm">⑤thumb 直書きなし</text>
+        <!-- 差し戻し -->
+        <path class="svg-edge-accent" d="M 745 144 C 745 200, 425 190, 240 110" marker-end="url(#arr2)" stroke-dasharray="6 4"/>
+        <text x="600" y="190" text-anchor="middle" class="svg-label-sm" style="fill: var(--color-tertiary);">FAIL → 理由全文を埋めて同カテゴリ記者を 1 回だけ再 spawn</text>
+        <text x="600" y="208" text-anchor="middle" class="svg-label-sm">2 回目 FAIL → PASS 分のみ採用 + quality_shortfall_reason 確定 + _status.md 記録</text>
+        <!-- dedup 第2パス -->
+        <path class="svg-edge" d="M 745 144 L 745 250 L 450 250 L 450 270" marker-end="url(#arr2)"/>
+        <rect x="180" y="274" width="540" height="78" rx="10" fill="var(--color-accent-teal)"/>
+        <text x="450" y="298" text-anchor="middle" class="svg-label" style="font-weight: 600;">編集長: カテゴリ間 dedup 第 2 パス（全カテゴリ records 連結 → dedup.py 1 回）</text>
+        <text x="450" y="318" text-anchor="middle" class="svg-mono">cat tmp/newsroom/{date}/*.records.jsonl | dedup.py --followup-gate --freshness-gate</text>
+        <text x="450" y="338" text-anchor="middle" class="svg-label-sm">注釈 carry-over（published_date / date_evidence_source があれば htmldate 再フェッチしない）で冪等・安価</text>
+        <!-- append -->
+        <path class="svg-edge" d="M 450 352 L 450 380" marker-end="url(#arr2)"/>
+        <rect x="180" y="384" width="540" height="58" rx="10" fill="var(--color-tertiary)"/>
+        <text x="450" y="408" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 600;" fill="var(--color-on-tertiary)">編集長: Summary γ schema 執筆 → articles.jsonl 一括 append（単一ライター・衝突解消後のみ）</text>
+        <text x="450" y="428" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px;" fill="var(--color-on-tertiary)">記者は articles.jsonl への append 絶対禁止（プロンプト規律 + 後段 gate が網）</text>
+        <!-- gate -->
+        <path class="svg-edge" d="M 450 442 L 450 470" marker-end="url(#arr2)"/>
+        <rect x="100" y="474" width="700" height="64" rx="10" fill="var(--color-primary)"/>
+        <text x="450" y="498" text-anchor="middle" class="svg-label-on-dark" style="font-weight: 600;">runner.ps1 gate 帯（不変）: 2.1 reflection → 2.2 daily quality → 2.6 URL liveness（フラグメント∪legacy 照合）</text>
+        <text x="450" y="520" text-anchor="middle" class="svg-label-on-dark">→ 2.65 record schema（--issue-date 追加）→ 2.7 ja-callout → 2.8 pytest → commit → docs 生成 → push → send_push</text>
+      </svg>
+
+      <h3>ハーベスタ出力 jsonl（1 行例）</h3>
+      <pre><code>{"category": "ai", "title": "...", "source_domain": "reuters.com",
+ "gnews_link": "https://news.google.com/rss/articles/CBMi...",
+ "pub_date": "2026-06-12T05:30:00Z", "age_hours": 3.2}</code></pre>
+      <p>pubDate (RFC822) を ISO 化した <code>pub_date</code> と <code>age_hours</code> により、取得前に鮮度を機械判定できる。dedup.py の鮮度ゲートは最後の防衛線に降格する。<code>gnews_link</code> はそのままでは媒体へ解決されないため、記者が <code>source_domain</code> + タイトルの site: 限定 WebSearch で canonical URL を確定する（session URL 白リスト hook が自動捕捉）。</p>
+
+      <h3>B: クエリ規約改訂（routine-system.md 3-A + 新 reporter プロンプトの両方に適用）</h3>
+      <table>
+        <thead><tr><th>観点</th><th>旧規約</th><th>新規約</th></tr></thead>
+        <tbody>
+          <tr><td>日付語</td><td>全クエリに当月日付語必須（May 2026 型を許容）</td><td>過去月の日付語を<strong>禁止</strong>。日付語は当日・前日のみ許可</td></tr>
+          <tr><td>クエリ設計</td><td>キーワード + 日付語中心</td><td>イベント・エンティティ駆動（ECB decision / Summer Game Fest 等。06-11 実測で鮮度良好だった型）を優先</td></tr>
+          <tr><td>根拠</td><td>—</td><td>economy の「CPI inflation report May 2026」が古記事を能動的に引いた実害。06-11 実データ: drop 42 件中 36 件（86%）が freshness gate</td></tr>
+        </tbody>
+      </table>
+
+      <h3>記者 → 編集長の返却 JSON 契約</h3>
+      <pre><code>{
+  "category": "ai",
+  "count": 5,
+  "quality_shortfall_reason": null,
+  "category_summary": "80 字以内のカテゴリ総括（Summary 執筆の材料）",
+  "items": [
+    { "title": "≤80字", "url": "https://…", "score": 17,
+      "thumb_ok": true, "published_date": "2026-06-11", "is_followup": false }
+  ],
+  "paths": {
+    "md": "digest/AI/2026-06-12-AI.md",
+    "records": "tmp/newsroom/2026-06-12/ai.records.jsonl",
+    "audit": "data/search_audit/2026-06-12/ai.json"
+  }
+}</code></pre>
+
+      <h3>白リスト hook の新旧</h3>
+      <table>
+        <thead><tr><th>観点</th><th>旧（read→union→replace）</th><th>新（フラグメント）</th></tr></thead>
+        <tbody>
+          <tr><td>書き込み</td><td><code>_session_urls.json</code> 1 ファイルを上書き</td><td><code>_session_urls.d/{date}/{uuid4}.json</code> を発火毎に新規作成</td></tr>
+          <tr><td>並列安全性</td><td>union 元が古いと後勝ち消失</td><td>共有可変状態なし = race が表現不能</td></tr>
+          <tr><td>読み側</td><td>1 ファイルを読む</td><td>当日フラグメント群 ∪ legacy を union（破損は 1 件単位 warn-skip）</td></tr>
+          <tr><td>git</td><td>.gitignore 済み</td><td><code>data/_session_urls.d/</code> を .gitignore 追加（step 2.9 の <code>git add data/</code> 巻き込み防止）</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="impl" class="tab-panel">
+      <h2>実装ステップ</h2>
+      <div class="timeline">
+        <div class="timeline-step"><strong>0.</strong>本仕様書の確認（いまここ）。playground でパラメータ確定 → 「プロンプトとしてコピー」で Claude に戻す</div>
+        <div class="timeline-step"><strong>1.</strong>基盤先行デプロイ: hook フラグメント化 / --issue-date / dedup 注釈 carry-over / verify CLI + 契約テスト → 旧体制のまま翌朝慣らし</div>
+        <div class="timeline-step"><strong>1.5</strong>収集改善: harvest_candidates.py + tools/_fetch.py 昇格ラダー + fetch_ogp / date_evidence / audit の _fetch 接続 + クエリ規約改訂（B）+ 契約テスト</div>
+        <div class="timeline-step"><strong>2.</strong>プロンプト群: editor / reporter system・agents 2 定義・legacy 退避（runner-prompt.md は未差し替え）</div>
+        <div class="timeline-step"><strong>3.</strong>runner.ps1: -NoPush / IdleTimeoutSec 変数化（step 2.5 削除は V3 切替と同時）</div>
+        <div class="timeline-step"><strong>4.</strong>三段検証 V1→V2→V3 → 翌朝 Task Scheduler 本適用</div>
+        <div class="timeline-step"><strong>5.</strong>安定後調整: IdleTimeoutSec 確定 / legacy 読み削除判断</div>
+      </div>
+
+      <h3>三段検証</h3>
+      <table>
+        <thead><tr><th>段</th><th>内容</th><th>確認項目</th></tr></thead>
+        <tbody>
+          <tr><td><strong>V1</strong> 最小 headless 実機（~10 分）</td><td>サブエージェント 1 体に WebSearch 1 回だけさせる一時プロンプトを wrapper 経由（IdleTimeoutSec 0）で実行</td><td>サブエージェント内 hook 発火（フラグメント生成 + audit log 増分）/ heartbeat ログから max idle 実測 / stream-json の Task イベント間隔</td></tr>
+          <tr><td><strong>V2</strong> 1 カテゴリドライラン</td><td>categories=["ai"]・出力先 tmp/newsroom_v2/・append はコピー jsonl 宛の検証バリアントプロンプト</td><td>返却 JSON 契約 / verify_reporter_output.py の PASS・FAIL 両系 / 差し戻し再 spawn の動作 / search_audit 生成</td></tr>
+          <tr><td><strong>V3</strong> フル実打 = 当該朝の本番を手動代替</td><td>Task Scheduler 一時停止 → runner-prompt.md 差し替え + step 2.5 削除 → 朝に手動 <code>news-grasp-runner.ps1 -NoPush</code>（gate 帯・commit まで全部走る）</td><td>docs/ ローカル確認 → 良ければ手動 push + send_push / 悪ければ <code>git reset --hard origin/main</code> + runner-prompt.md 1 行ロールバックで旧体制再実行。dedup の性質上、同日 2 回実行は候補全滅のため夕方リハは不可</td></tr>
+        </tbody>
+      </table>
+
+      <h3>変更ファイル</h3>
+      <table>
+        <thead><tr><th>パス</th><th>種別</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td><code>prompts/newsroom-editor-system.md</code></td><td>add</td><td>編集長 system。責務境界 / 記者 spawn 計画 / 返却契約と verify 実行 / 差し戻し / dedup 第 2 パス / γ schema Summary（routine-system ステップ 4 移植）/ 一括 append / エース記者 spawn / 文脈予算規律（articles.jsonl・digest md の全文 Read 禁止）</td></tr>
+          <tr><td><code>prompts/newsroom-reporter-system.md</code></td><td>add</td><td>記者 system。routine-system 3-A〜3-D, 5-A をカテゴリパラメタ化して移植 + 出力契約 + 書込み白リスト + articles.jsonl append 絶対禁止</td></tr>
+          <tr><td><code>.claude/agents/ng-reporter.md</code></td><td>add</td><td>model: sonnet。reporter-system.md を Read させる薄いローダ</td></tr>
+          <tr><td><code>.claude/agents/ng-deepdive.md</code></td><td>add</td><td>model: opus。deepdive-research-system.md を Read。commit はしない（step 2.9 の git add が拾う）</td></tr>
+          <tr><td><code>tools/verify_reporter_output.py</code></td><td>add</td><td>記者返却の機械検証 CLI（検証 5 項目・exit 0/1）</td></tr>
+          <tr><td><code>.claude/hooks/append_session_urls.py</code></td><td>modify</td><td>フラグメント書き出し化（audit ログ機構は維持）</td></tr>
+          <tr><td><code>tools/audit_all_article_urls.py</code></td><td>modify</td><td>--match-session をフラグメント∪legacy の union 読みに / 生存検証 GET を _fetch 経由化（false-fatal 防止）</td></tr>
+          <tr><td><code>tools/validate_record.py</code></td><td>modify</td><td>--issue-date 追加（seen_at が号日のレコードは date==号日 を fatal 化）</td></tr>
+          <tr><td><code>tools/dedup.py</code></td><td>modify</td><td>_evaluate_freshness() に注釈 carry-over の early-return（第 2 パスの htmldate 再フェッチ抑制）</td></tr>
+          <tr><td><code>tools/harvest_candidates.py</code></td><td>add</td><td>Google News RSS（when:1d）+ watchlist 公式 RSS の決定論ハーベスタ CLI。pubDate 付き候補 jsonl を出力し dedup.py へ接続</td></tr>
+          <tr><td><code>tools/_fetch.py</code></td><td>add</td><td>fetch_with_escalation() 境界モジュール。urllib → Scrapling Fetcher → StealthyFetcher（403/blocked 検知時の最終段限定）。scrapling[fetchers]==0.4.9 pin</td></tr>
+          <tr><td><code>tools/fetch_ogp.py</code></td><td>modify</td><td>fetch を _fetch 経由化（bloomberg/nikkei/cnbc/newspicks/nri の thumb null 解消）</td></tr>
+          <tr><td><code>tools/date_evidence.py</code></td><td>modify</td><td>UA 2 段フォールバックを _fetch 昇格ラダーで置換</td></tr>
+          <tr><td><code>prompts/routine-system.md</code></td><td>modify</td><td>3-A クエリ規約改訂（B。旧体制温存方針の例外として 3-A のみ改訂）</td></tr>
+          <tr><td><code>requirements*.txt（または .venv 管理手順）</code></td><td>modify</td><td>scrapling[fetchers]==0.4.9 追加（scrapling.exe install は本機完走済み）</td></tr>
+          <tr><td><code>~/bin/news-grasp-runner.ps1</code></td><td>modify</td><td>step 2.65 に --issue-date $DateStamp / IdleTimeoutSec 変数化（初週 1800）/ -NoPush switch / V3 切替と同時に step 2.5 削除</td></tr>
+          <tr><td><code>prompts/runner-prompt.md</code></td><td>modify</td><td>1 行ローダ差し替え（ロールバックは参照先 1 行を routine-system.md に戻すだけ。旧文面は runner-prompt-legacy.md に退避）</td></tr>
+          <tr><td><code>.gitignore</code></td><td>modify</td><td>data/_session_urls.d/ 追加</td></tr>
+          <tr><td><code>tests/（8 群）</code></td><td>add/modify</td><td>契約テスト: フラグメント無共有性 / match-session union / --issue-date 4 ケース / dedup 注釈 carry-over + カテゴリ間 drop / verify 5 項目 PASS・FAIL / runner 静的契約（--issue-date・-NoPush 存在）/ fetch ラダー（403 検知で昇格・StealthyFetcher は最終段限定）/ ハーベスタ（pubDate parse + when:1d クエリ生成）</td></tr>
+        </tbody>
+      </table>
+
+      <h3>主要コード断片（hook フラグメント化の核）</h3>
+      <pre><code># append_session_urls.py — merge_into_session_file() を置き換え
+def write_fragment(new_urls: set[str], today_str: str, fragments_root: Path) -> Path:
+    """発火 1 回 = フラグメント 1 ファイル新規作成。共有可変状態なし = race 表現不能。"""
+    day_dir = fragments_root / today_str          # data/_session_urls.d/2026-06-12/
+    day_dir.mkdir(parents=True, exist_ok=True)
+    frag = day_dir / f"{uuid.uuid4().hex}.json"   # 衝突しない一意名・上書きなし
+    frag.write_text(
+        json.dumps({"date": today_str, "urls": sorted(new_urls)}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return frag
+
+# audit_all_article_urls.py — 読み側は union（破損フラグメントは 1 件単位 warn-skip）
+def load_session_urls(repo: Path, today_str: str) -> set[str]:
+    urls: set[str] = set()
+    for frag in sorted((repo / "data" / "_session_urls.d" / today_str).glob("*.json")):
+        try:
+            urls |= set(json.loads(frag.read_text(encoding="utf-8")).get("urls", []))
+        except (json.JSONDecodeError, OSError):
+            print(f"WARN: broken fragment skipped: {frag}", file=sys.stderr)
+    # legacy _session_urls.json も当日 date なら union（移行期互換）
+    ...
+    return urls</code></pre>
+    </section>
+
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ</h2>
+      <p>新体制の運用パラメータをスライダーで確定し、最後に「プロンプトとしてコピー」で Claude Code に戻してください。実装はこの値で進めます。</p>
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-parallel">記者の同時並列数（初期値）</label>
+          <input type="range" id="param-parallel" min="2" max="7" value="7" step="1" data-unit=" 体">
+          <output for="param-parallel">7 体</output>
+        </div>
+        <p class="playground-note">7 = 全カテゴリ同時（最速・429 リスク高め）。4 以下 = 段階投入（4+3 の 2 wave。wave 間に編集長イベントが入り IdleTimeout にも安全側）。</p>
+        <div class="playground-control">
+          <label for="param-idle">IdleTimeoutSec（初週の暫定値）</label>
+          <input type="range" id="param-idle" min="900" max="3600" value="1800" step="300" data-unit=" 秒">
+          <output for="param-idle">1800 秒</output>
+        </div>
+        <p class="playground-note">並列サブエージェント待機中の stream-json 沈黙による偽 kill 回避。V1 実測 max idle &lt; 300 秒なら安定後 900 へ戻す。</p>
+        <div class="playground-control">
+          <label for="param-redo">差し戻し回数（記者 1 カテゴリあたり）</label>
+          <input type="range" id="param-redo" min="0" max="2" value="1" step="1" data-unit=" 回">
+          <output for="param-redo">1 回</output>
+        </div>
+        <p class="playground-note">超過後は PASS 分のみ採用 + quality_shortfall_reason 確定（既存 fallback 経路）。2 にすると品質は上がるが所要時間 +10-15 分のリスク。</p>
+        <div class="playground-control">
+          <label for="param-percat">カテゴリあたり採用記事数（上限）</label>
+          <input type="range" id="param-percat" min="3" max="7" value="5" step="1" data-unit=" 件">
+          <output for="param-percat">5 件</output>
+        </div>
+        <p class="playground-note">現行運用は 5 件。変更すると validate_daily_quality の件数基準も連動改修が必要。</p>
+        <div class="playground-control">
+          <label for="param-ddtimeout">エース記者 DeepDive の予算（分）</label>
+          <input type="range" id="param-ddtimeout" min="10" max="30" value="20" step="5" data-unit=" 分">
+          <output for="param-ddtimeout">20 分</output>
+        </div>
+        <p class="playground-note">編集長がエース記者 spawn 時にプロンプトで指示する目安時間。超過しても digest は確定済みのため非致命（セッション全体は TimeoutSec 3600 が上限）。</p>
+        <div class="playground-control">
+          <label for="param-harvest-limit">ハーベスタ候補上限（カテゴリあたり）</label>
+          <input type="range" id="param-harvest-limit" min="10" max="100" value="50" step="10" data-unit=" 件">
+          <output for="param-harvest-limit">50 件</output>
+        </div>
+        <p class="playground-note">Google News RSS は 1 feed 最大 100 件。多いほど選択肢が増えるが canonical 解決（site: 限定 WebSearch）の件数も増える。</p>
+        <div class="playground-control">
+          <label for="param-stealthy-limit">StealthyFetcher 使用上限（号あたり）</label>
+          <input type="range" id="param-stealthy-limit" min="0" max="20" value="10" step="5" data-unit=" 件">
+          <output for="param-stealthy-limit">10 件</output>
+        </div>
+        <p class="playground-note">1 fetch 数秒〜十数秒。0 = Fetcher までで打ち切り（bloomberg 等は thumb null 継続）。</p>
+        <div style="margin-top: var(--space-lg);">
+          <button class="btn btn-accent" id="copy-prompt">プロンプトとしてコピー</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    // Playground 値同期
+    document.querySelectorAll('.playground-control input[type="range"]').forEach(r => {
+      const out = document.querySelector(`output[for="${r.id}"]`);
+      const unit = r.dataset.unit || '';
+      r.addEventListener('input', () => { if (out) out.textContent = r.value + unit; });
+    });
+
+    // プロンプトコピー
+    const copyBtn = document.getElementById('copy-prompt');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const values = Array.from(document.querySelectorAll('.playground-control')).map(c => {
+          const label = c.querySelector('label')?.textContent?.trim() || '';
+          const range = c.querySelector('input[type="range"]');
+          const unit = range?.dataset.unit || '';
+          return `${label}: ${range.value}${unit}`;
+        }).join('\n');
+        const prompt = `Newsroom Architecture を以下のパラメータで実装してください。\n\n${values}`;
+        try {
+          await navigator.clipboard.writeText(prompt);
+          const orig = copyBtn.textContent;
+          copyBtn.textContent = 'コピーしました';
+          setTimeout(() => copyBtn.textContent = orig, 1500);
+        } catch (e) {
+          alert('クリップボードに書き込めませんでした。\n\n' + prompt);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

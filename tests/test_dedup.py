@@ -398,6 +398,99 @@ def test_all_dedup_contracts() -> None:
     assert not failures, f"dedup 契約違反: {failures}"
 
 
+# ── 注釈 carry-over (第 2 パスでネットワークフェッチを起こさない) ───────────────
+#
+# 編集長の「カテゴリ間 dedup 第 2 パス」(全カテゴリ records 連結 → dedup.py 1 回) を
+# 冪等・安価にするため、第 1 パスで date_evidence_source + published_date 注釈が付いた
+# 候補は htmldate を再フェッチせず注釈値で鮮度判定する。
+
+from datetime import date  # noqa: E402
+
+_NOW_CARRY = datetime(2026, 6, 11, 6, 0, tzinfo=JST)
+
+
+def test_annotation_carry_over_skips_fetch(monkeypatch):
+    """注釈済み候補は htmldate fetch を一切呼ばずに鮮度判定する (冪等・安価)。"""
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+
+    def _explode(url):  # noqa: ARG001
+        raise AssertionError("注釈済み候補で fetch が呼ばれてはいけない (carry-over 違反)")
+
+    # 第 1 パスで htmldate により published 注釈が付いた状態を再現 (新しい公開日)
+    annotated = {
+        "title": "Carried over fresh story",
+        "url": "https://example.com/topic/carried-fresh",
+        "score": 90,
+        "published_date": "2026-06-11",
+        "date_evidence_source": "htmldate",
+    }
+    passed, dropped = dedup.dedup_candidates(
+        [annotated], [], freshness_gate=True, max_source_age_days=1,
+        now=_NOW_CARRY, date_fetch_fn=_explode,
+    )
+    assert len(dropped) == 0, f"新しい注釈は drop しない: {dropped}"
+    assert len(passed) == 1
+    # 注釈はそのまま保持される
+    assert passed[0]["date_evidence_source"] == "htmldate"
+
+
+def test_annotation_carry_over_old_is_dropped_without_fetch(monkeypatch):
+    """注釈済みでも公開日が古ければ fetch せず drop する (第 2 パスで再判定)。"""
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+
+    def _explode(url):  # noqa: ARG001
+        raise AssertionError("注釈済み候補で fetch が呼ばれてはいけない (carry-over 違反)")
+
+    annotated = {
+        "title": "Carried over old story",
+        "url": "https://example.com/topic/carried-old",
+        "score": 90,
+        "published_date": "2026-03-05",  # 古い
+        "date_evidence_source": "htmldate",
+    }
+    passed, dropped = dedup.dedup_candidates(
+        [annotated], [], freshness_gate=True, max_source_age_days=1,
+        now=_NOW_CARRY, date_fetch_fn=_explode,
+    )
+    assert len(passed) == 0
+    assert len(dropped) == 1
+    assert "carried-over annotation" in dropped[0].get("dedup_reason", "")
+
+
+# ── バッチ内カテゴリ間重複の後勝ち drop ──────────────────────────────────────
+#
+# 第 2 パスで全カテゴリ records を連結して dedup.py に 1 回通すとき、同一記事
+# (正規化 URL 一致) が複数カテゴリに跨って入っていても 2 つ目以降を drop する。
+
+
+def test_cross_category_batch_internal_dedup_drops_later(monkeypatch):
+    """連結バッチ内で同一 URL の 2 件目以降は drop される (後勝ち drop)。
+
+    第 1 パスで注釈済みの候補を連結する想定なので、注釈付きにして fetch を起こさない。
+    """
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+
+    def _ann(title: str, url: str) -> dict:
+        return {
+            "title": title, "url": url, "score": 90,
+            "published_date": "2026-06-11", "date_evidence_source": "htmldate",
+        }
+
+    cands = [
+        _ann("Same article from AI category", "https://example.com/2026/06/11/shared-story"),
+        _ann("Same article from IT category", "https://example.com/2026/06/11/shared-story"),
+    ]
+    passed, dropped = dedup.dedup_candidates(
+        cands, [], freshness_gate=True, max_source_age_days=3650,
+        now=_NOW_CARRY, date_fetch_fn=lambda url: date(2026, 6, 11),
+    )
+    assert len(passed) == 1, f"同一 URL は 1 件だけ通過するはず: passed={[p['title'] for p in passed]}"
+    assert len(dropped) == 1
+    assert "url match" in dropped[0].get("dedup_reason", ""), (
+        f"後勝ち drop の理由が url match のはず: {dropped[0].get('dedup_reason')}"
+    )
+
+
 def main() -> int:
     overall_ok = True
     for label, fn in _CONTRACT_CASES:

@@ -11,6 +11,13 @@ pytest==9.0.3
 # 記事公開日の独立証拠抽出 (tools/date_evidence.py)。2026-06-11 偽日付事故の恒久対策で導入
 htmldate==1.10.0
 
+# BOT 対策回避 fetch 昇格ラダー (tools/_fetch.py)。urllib が 403/blocked のときのみ
+# Scrapling Fetcher (curl_cffi 偽装) → StealthyFetcher (ヘッドレスブラウザ) へ昇格し、
+# bloomberg/nikkei/cnbc 等の anti-bot で取れなかった OGP/発行日メタ/生存確認を救済する。
+# [fetchers] extra で curl_cffi / playwright 系を同梱。StealthyFetcher 利用前に一度だけ
+# `scrapling.exe install` (ブラウザ取得) が必要 (本機は完走済み)。
+scrapling[fetchers]==0.4.9
+
 # Web Push 送信 (tools/send_push.py)。必ず .venv の python で実行すること
 # (bare python は pywebpush 不在の別 venv に解決され 2026-05-30 朝に push が落ちた)。
 pywebpush==2.3.0

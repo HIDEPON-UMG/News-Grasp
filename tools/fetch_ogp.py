@@ -32,7 +32,14 @@ import time
 from html.parser import HTMLParser
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse
-from urllib.request import Request, urlopen
+
+# fetch 昇格ラダー境界モジュール（urllib → Scrapling Fetcher → StealthyFetcher）。
+# bloomberg/nikkei/cnbc/newspicks/nri 等 anti-bot サイトの thumb null 解消が目的。
+# tools パッケージ経由・flat 実行（python tools/fetch_ogp.py）両対応で import する。
+try:
+    from tools._fetch import fetch_with_escalation
+except ModuleNotFoundError:
+    from _fetch import fetch_with_escalation
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -119,14 +126,32 @@ def _absolutize(base_url: str, maybe_relative: str | None) -> str | None:
 
 
 def fetch_once(url: str, timeout: float) -> tuple[str, str]:
-    """1 回だけ HTTP GET。戻り値: (decoded_html, content_type)。"""
-    req = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/html,*/*;q=0.8"})
-    with urlopen(req, timeout=timeout) as resp:
-        content_type = resp.headers.get("Content-Type", "")
-        if "html" not in content_type.lower() and "xml" not in content_type.lower():
-            raise ValueError(f"non-html content-type: {content_type!r}")
-        raw = resp.read(MAX_BYTES)
-    return _decode_html(raw, content_type), content_type
+    """1 回だけ HTTP GET（fetch 昇格ラダー経由）。戻り値: (decoded_html, content_type)。
+
+    bloomberg/nikkei/cnbc/newspicks/nri 等の anti-bot サイトで urllib が 403/blocked を
+    返す場合に Scrapling Fetcher → StealthyFetcher へ昇格して og:image を取り直す
+    （2026-06-12 実測で nikkei/cnbc は Fetcher、bloomberg は StealthyFetcher で 200）。
+
+    既存の fetch_ogp() ループは HTTPError / URLError / ValueError の status で分岐するため、
+    昇格ラダーの失敗を同じ例外型に翻訳して **呼び出し側の契約を不変に保つ**:
+      - blocked のまま全段失敗 / 4xx → HTTPError(status)
+      - 取得不能（timeout/DNS）→ URLError
+      - HTML が取れたのに content-type が非 HTML 相当 → ValueError（従来同様）
+    """
+    res = fetch_with_escalation(url, timeout=timeout)
+    if res.ok:
+        # content_type は昇格ラダーが個別に持たないため html 既定で扱う（OGP 抽出は
+        # html.parser が担うので content_type は "text/html" 相当で十分）。
+        return res.html or "", "text/html"
+    status = res.status
+    if status is not None and status >= 400:
+        # 403/404/410/451 等は fetch_ogp() が status で分岐して扱う。
+        raise HTTPError(url, status, res.error or "blocked", {}, None)  # type: ignore[arg-type]
+    # status を取れなかった（timeout/DNS/全段例外）→ URLError 扱い。
+    reason = res.error or "fetch failed"
+    if "timed out" in reason.lower() or "timeout" in reason.lower():
+        raise URLError("timed out")
+    raise URLError(reason)
 
 
 def fetch_ogp(url: str, *, timeout: float = DEFAULT_TIMEOUT_SEC, retries: int = DEFAULT_RETRIES) -> dict:

@@ -34,3 +34,24 @@ def test_runner_has_bounded_repair_and_fallback_publish() -> None:
     assert "Invoke-FallbackPublish" in runner
     assert "published_fallback_with_notice" in runner
     assert "tools.validate_availability" in runner
+
+
+def test_daily_runner_timeout_is_80_minutes() -> None:
+    """日次 digest 本体の wall-clock timeout は 80 分に固定する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "$TimeoutSec = 4800" in runner
+    assert "-TimeoutSec $TimeoutSec -IdleTimeoutSec 900" in runner
+
+
+def test_runner_record_gate_passes_issue_date() -> None:
+    """record schema gate は号日整合 (--issue-date) を渡して当日号の date ズレを弾く。
+
+    2026-06-11 に子プロセスが articles.jsonl の date (= 号日) を記事公開日と誤解釈して
+    21 件誤記した class of bugs を、push 前 gate で機械検査するための契約。runner が
+    `tools.validate_record` 呼び出しに `--issue-date` を必ず渡すことを locked-in する。
+    """
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    assert "--issue-date" in runner, (
+        "record schema gate が --issue-date を渡していない (号日整合チェックが効かない)"
+    )

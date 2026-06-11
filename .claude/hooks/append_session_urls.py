@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Claude Code PostToolUse hook: WebSearch / WebFetch で観測した URL を
-   `data/_session_urls.json` に自動 append する。
+   `data/_session_urls.d/{YYYY-MM-DD}/{uuid4}.json` にフラグメントとして書き出す。
 
-# 役割 (案②-Lite 案③: 2026-06-05 導入)
+# 役割 (案②-Lite 案③: 2026-06-05 導入 / 2026-06-12 フラグメント化)
 
 LLM の規律破り (= prompts で「session ファイルを書き出せ」と命じても破る) を構造的に
 封じるための **Lv2 境界 1 箇所集約** (feedback_check_design_principles)。
@@ -13,6 +13,18 @@ LLM が WebSearch / WebFetch を呼ぶたびに Claude Code ハーネスが本 h
   - articles.jsonl に書かれた URL が session 白リストに無い = WebSearch を通さず記憶から
     書いた URL と確定できる (push 前 gate `audit_all_article_urls.py --gate --match-session`
     がそれを fatal 化する境界として既存)
+
+# フラグメント方式 (2026-06-12 導入: 並列発火 race の構造的解消)
+
+旧方式は共有ファイル `data/_session_urls.json` に対する read → union → replace で、
+複数のサブエージェントが並列で WebSearch / WebFetch を呼ぶと「後勝ちで前の URL が消える」
+race を持っていた (= 共有可変状態)。本 hook は発火 1 回につき **新規フラグメント 1 ファイル
+を作成するだけ** に変える。共有可変状態を消すことで race を表現不能にする (Lv1 解決)。
+
+  - 書き出し先: `<repo>/data/_session_urls.d/{YYYY-MM-DD}/{uuid4.hex}.json`
+  - 各フラグメント内容: ``{"date": "YYYY-MM-DD", "urls": ["https://...", ...]}``
+  - 読み側 (`audit_all_article_urls.py --match-session`) が当日フラグメント群と
+    legacy `data/_session_urls.json` を union して白リストを再構成する
 
 # stdin JSON スキーマ (Claude Code PostToolUse hook 公式仕様)
 
@@ -41,18 +53,19 @@ hook が失敗しても session ファイルが古いまま残るだけで、後
 
 # 出力ファイル
 
-`<repo_root>/data/_session_urls.json` を以下スキーマで上書き:
+`<repo_root>/data/_session_urls.d/{YYYY-MM-DD}/{uuid4.hex}.json` を発火 1 回ごとに
+新規作成する (= 共有ファイルへの上書きはしない):
 
   {"date": "YYYY-MM-DD", "urls": ["https://...", ...]}
 
-date が当日でない or ファイル不在 → 新規作成 (urls は本回追加分のみ)。
-date が当日 → 既存 urls に union (重複排除・sorted)。
+URL を 1 件も抽出できなかった発火ではフラグメントを作らない (audit ログには痕跡を残す)。
 """
 from __future__ import annotations
 
 import json
 import re
 import sys
+import uuid
 from datetime import date, datetime
 from pathlib import Path
 
@@ -62,7 +75,8 @@ from pathlib import Path
 # stdin JSON の cwd / 環境変数 CLAUDE_PROJECT_DIR より確実 (Claude が cwd を変える可能性が
 # あるため、ファイル位置基準が最も安定)。
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-_SESSION_FILE = _REPO_ROOT / "data" / "_session_urls.json"
+# フラグメント書き出し先ルート (発火 1 回 = この配下に 1 ファイル新規作成)。
+_FRAGMENTS_ROOT = _REPO_ROOT / "data" / "_session_urls.d"
 # 発火痕跡ログ。2026-06-05 朝バッチで hook が一度も発火しなかった (= session 空のまま)
 # 真因調査の証拠取り用。明日朝以降のバッチでこのファイルを Read することで、
 # 「hook は呼ばれたが URL 抽出が空だった」/「hook が一度も呼ばれなかった」の区別がつく。
@@ -125,52 +139,26 @@ def extract_urls_from_event(event: dict) -> set[str]:
     return urls
 
 
-def merge_into_session_file(new_urls: set[str], today_str: str, session_path: Path) -> dict:
-    """既存 session ファイルに new_urls を union して上書き保存する。
+def write_fragment(new_urls: set[str], today_str: str, fragments_root: Path) -> Path:
+    """発火 1 回分の URL を独立したフラグメント 1 ファイルとして新規作成する。
 
-    date が today と一致 → union
-    date が異なる or ファイル不在 → 当日 date で新規 (urls = new_urls のみ)
-    `_note` 等の運用説明フィールドは date が変わっても **carry over** する
-    (リポ初期サンプルの説明文が朝バッチの初回 hook で消えるのを防ぐ)
+    共有可変状態 (旧 `_session_urls.json` への read-modify-write) を一切持たないので、
+    並列サブエージェントが同時発火しても互いに上書きしない (= race を表現不能化)。
+    ファイル名は uuid4.hex でユニークに採るため衝突しない。
 
-    返り値: 保存した dict (テスト用に明示)
+    書き出し先: ``fragments_root / today_str / {uuid4.hex}.json``
+    内容: ``{"date": today_str, "urls": sorted(new_urls)}`` (ensure_ascii=False, utf-8)
+
+    返り値: 作成したフラグメントのパス (テスト用に明示)。
     """
-    existing_urls: set[str] = set()
-    note: str | None = None
-    if session_path.exists():
-        try:
-            with session_path.open(encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, dict):
-                # _note は date と独立に carry over (運用説明はリポ初期からずっと保持される)
-                n = data.get("_note")
-                if isinstance(n, str):
-                    note = n
-                if data.get("date") == today_str:
-                    raw_urls = data.get("urls")
-                    if isinstance(raw_urls, list):
-                        existing_urls = {
-                            u for u in raw_urls
-                            if isinstance(u, str) and u.startswith("http")
-                        }
-        except (json.JSONDecodeError, OSError):
-            # 破損時は当日 fresh で作り直し (= 安全側に倒す)
-            pass
-
-    merged = sorted(existing_urls | new_urls)
-    # 順序: _note → date → urls (Python 3.7+ dict 挿入順保持で読みやすさ確保)
-    payload: dict = {}
-    if note:
-        payload["_note"] = note
-    payload["date"] = today_str
-    payload["urls"] = merged
-    session_path.parent.mkdir(parents=True, exist_ok=True)
-    # 一時ファイル経由でアトミック書込 (Windows でも os.replace は atomic)
-    tmp = session_path.with_suffix(session_path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-    tmp.replace(session_path)
-    return payload
+    day_dir = fragments_root / today_str
+    day_dir.mkdir(parents=True, exist_ok=True)
+    frag = day_dir / f"{uuid.uuid4().hex}.json"
+    frag.write_text(
+        json.dumps({"date": today_str, "urls": sorted(new_urls)}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return frag
 
 
 def _append_audit(tool_name: str, n_urls: int, note: str = "") -> None:
@@ -232,7 +220,7 @@ def main() -> int:
 
     try:
         today_str = date.today().strftime("%Y-%m-%d")
-        merge_into_session_file(urls, today_str, _SESSION_FILE)
+        write_fragment(urls, today_str, _FRAGMENTS_ROOT)
         _append_audit(tool_name, len(urls))
     except Exception as e:  # noqa: BLE001
         print(f"append_session_urls: write failed: {e}", file=sys.stderr)

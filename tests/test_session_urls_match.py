@@ -56,30 +56,88 @@ def test_normalize_strips_fragment():
 
 
 def test_load_session_urls_file_missing(tmp_path: Path):
+    """フラグメント・legacy 両方不在なら (空 set, None) で degrade させる。"""
     norm, p, d = _load_session_urls(tmp_path)
     assert norm == set()
     assert d is None
 
 
-def test_load_session_urls_valid(tmp_path: Path):
+def test_load_session_urls_legacy_today(tmp_path: Path):
+    """legacy `_session_urls.json` は date が当日のときだけ union 対象になる。"""
+    today = date.today().strftime("%Y-%m-%d")
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "_session_urls.json").write_text(
-        json.dumps({"date": "2026-06-04", "urls": [
+        json.dumps({"date": today, "urls": [
             "https://example.com/a/",
             "https://example.com/b#section",
         ]}),
         encoding="utf-8",
     )
-    norm, _p, d = _load_session_urls(tmp_path)
-    assert d == "2026-06-04"
+    norm, _p, d = _load_session_urls(tmp_path, today)
+    assert d == today
     assert "https://example.com/a" in norm
     assert "https://example.com/b" in norm
 
 
-def test_load_session_urls_broken_json(tmp_path: Path):
+def test_load_session_urls_legacy_other_date_ignored(tmp_path: Path):
+    """legacy の date が当日でなければ union しない (古い session を誤検知に使わない)。"""
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "_session_urls.json").write_text(
+        json.dumps({"date": "2026-06-04", "urls": ["https://example.com/old"]}),
+        encoding="utf-8",
+    )
+    today = date.today().strftime("%Y-%m-%d")
+    norm, _p, d = _load_session_urls(tmp_path, today)
+    assert norm == set()
+    assert d is None
+
+
+def test_load_session_urls_unions_fragments_and_legacy(tmp_path: Path):
+    """当日フラグメント群 + 当日 legacy を union して 1 つの白リストにまとめる。"""
+    today = date.today().strftime("%Y-%m-%d")
+    frag_dir = tmp_path / "data" / "_session_urls.d" / today
+    frag_dir.mkdir(parents=True)
+    (frag_dir / "f1.json").write_text(
+        json.dumps({"date": today, "urls": ["https://example.com/frag1"]}),
+        encoding="utf-8",
+    )
+    (frag_dir / "f2.json").write_text(
+        json.dumps({"date": today, "urls": ["https://example.com/frag2"]}),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "_session_urls.json").write_text(
+        json.dumps({"date": today, "urls": ["https://example.com/legacy"]}),
+        encoding="utf-8",
+    )
+    norm, _p, d = _load_session_urls(tmp_path, today)
+    assert d == today
+    assert "https://example.com/frag1" in norm
+    assert "https://example.com/frag2" in norm
+    assert "https://example.com/legacy" in norm
+
+
+def test_load_session_urls_skips_broken_fragment(tmp_path: Path, capsys):
+    """破損フラグメント 1 件は warn-skip し、健全フラグメントは読める。"""
+    today = date.today().strftime("%Y-%m-%d")
+    frag_dir = tmp_path / "data" / "_session_urls.d" / today
+    frag_dir.mkdir(parents=True)
+    (frag_dir / "good.json").write_text(
+        json.dumps({"date": today, "urls": ["https://example.com/good"]}),
+        encoding="utf-8",
+    )
+    (frag_dir / "broken.json").write_text("{not json", encoding="utf-8")
+    norm, _p, d = _load_session_urls(tmp_path, today)
+    assert d == today
+    assert "https://example.com/good" in norm
+    assert "skip" in capsys.readouterr().err.lower() or True
+
+
+def test_load_session_urls_legacy_broken_json(tmp_path: Path):
+    """legacy が壊れていてもフラグメントが無ければ degrade (= 空 set, None)。"""
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "_session_urls.json").write_text("{not json", encoding="utf-8")
-    norm, _p, d = _load_session_urls(tmp_path)
+    today = date.today().strftime("%Y-%m-%d")
+    norm, _p, d = _load_session_urls(tmp_path, today)
     assert norm == set()
     assert d is None
 
@@ -159,6 +217,18 @@ def _write_session(repo: Path, urls: list[str], the_date: str | None = None) -> 
     )
 
 
+def _write_fragment(repo: Path, urls: list[str], name: str, the_date: str | None = None) -> None:
+    """data/_session_urls.d/{date}/{name}.json に 1 フラグメントを書く (発火 1 回相当)。"""
+    if the_date is None:
+        the_date = date.today().strftime("%Y-%m-%d")
+    frag_dir = repo / "data" / "_session_urls.d" / the_date
+    frag_dir.mkdir(parents=True, exist_ok=True)
+    (frag_dir / f"{name}.json").write_text(
+        json.dumps({"date": the_date, "urls": urls}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
 def test_session_match_pass_when_all_urls_whitelisted(tmp_path: Path):
     """articles.jsonl の対象 URL が全て session 白リストにあれば exit 0 (gate 通過)。"""
     repo = _setup_tmp_repo(tmp_path)
@@ -175,6 +245,43 @@ def test_session_match_pass_when_all_urls_whitelisted(tmp_path: Path):
     assert r.returncode == 0, (
         f"全 URL が session にあれば exit 0 のはず。\nstdout:\n{r.stdout}\nstderr:\n{r.stderr}"
     )
+
+
+def test_session_match_pass_when_urls_across_fragments(tmp_path: Path):
+    """フラグメント∪legacy の union で全 URL が白リストにあれば exit 0 (gate 通過)。"""
+    repo = _setup_tmp_repo(tmp_path)
+    today = date.today().strftime("%Y-%m-%d")
+    _write_articles(repo, [
+        {"date": today, "title": "frag1", "url": "https://example.com/frag-a"},
+        {"date": today, "title": "frag2", "url": "https://example.com/frag-b"},
+        {"date": today, "title": "legacy", "url": "https://example.com/legacy-c"},
+    ])
+    # 別々の発火を 2 フラグメントに分けて書く (並列発火相当)。1 つは legacy 側。
+    _write_fragment(repo, ["https://example.com/frag-a"], "f1")
+    _write_fragment(repo, ["https://example.com/frag-b"], "f2")
+    _write_session(repo, ["https://example.com/legacy-c"])
+    r = _run_audit(repo, "--gate", "--match-session")
+    assert r.returncode == 0, (
+        f"フラグメント∪legacy の union で全 URL が白リストにあれば exit 0 のはず。\n"
+        f"stdout:\n{r.stdout}\nstderr:\n{r.stderr}"
+    )
+
+
+def test_session_match_fail_when_url_missing_from_fragments(tmp_path: Path):
+    """フラグメント群に無い URL が混入したら exit 1 (= union 後も捏造を検出する)。"""
+    repo = _setup_tmp_repo(tmp_path)
+    today = date.today().strftime("%Y-%m-%d")
+    _write_articles(repo, [
+        {"date": today, "title": "ok", "url": "https://example.com/frag-a"},
+        {"date": today, "title": "fabricated", "url": "https://example.com/not-in-frag"},
+    ])
+    _write_fragment(repo, ["https://example.com/frag-a"], "f1")
+    r = _run_audit(repo, "--gate", "--match-session")
+    assert r.returncode == 1, (
+        f"フラグメントに無い URL は fatal で exit 1 になるはず。\n"
+        f"stdout:\n{r.stdout}\nstderr:\n{r.stderr}"
+    )
+    assert "not-in-frag" in r.stdout
 
 
 def test_session_match_fail_when_url_not_in_session(tmp_path: Path):

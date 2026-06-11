@@ -137,3 +137,80 @@ def test_validate_jsonl_recent_catches_recent_break(tmp_path: Path):
     errs = validate_jsonl(p, recent_days=7, today=date(2026, 6, 6))
     assert len(errs) == 1, f"直近の thumb 型違反 1 件を検出するはず: {errs}"
     assert "thumb" in errs[0]
+
+
+# ── --issue-date: 号日整合チェック (2026-06-11 21 件誤記事故の機械検査) ────────
+#
+# articles.jsonl の date は号日 (= digest ファイル名と一致) であって記事公開日ではない。
+# 当日生成 (seen_at の日付部分 == 号日) なのに date が号日とズレた record を fatal 化する。
+
+
+def _issue_record(*, date_v: str, seen_at: str) -> dict:
+    """号日整合チェック用に date / seen_at を差し替えた canonical record を返す。"""
+    rec = _canonical()
+    rec["date"] = date_v
+    rec["seen_at"] = seen_at
+    return rec
+
+
+def _write_jsonl(tmp_path: Path, rec: dict) -> Path:
+    import json
+    p = tmp_path / "articles.jsonl"
+    p.write_text(json.dumps(rec, ensure_ascii=False) + "\n", encoding="utf-8")
+    return p
+
+
+def test_issue_date_fails_when_seen_today_but_date_mismatch(tmp_path: Path):
+    """seen_at が号日 (当日生成) なのに date が号日と違えば fatal。"""
+    issue = "2026-06-11"
+    # 当日生成 (seen_at=2026-06-11) なのに date=2026-06-10 にズレている = 誤記
+    rec = _issue_record(date_v="2026-06-10", seen_at="2026-06-11T06:00:00+09:00")
+    p = _write_jsonl(tmp_path, rec)
+    errs = validate_jsonl(p, recent_days=None, issue_date=issue)
+    assert len(errs) == 1, f"号日不整合 1 件を検出するはず: {errs}"
+    assert "号日不整合" in errs[0]
+
+
+def test_issue_date_passes_when_seen_today_and_date_matches(tmp_path: Path):
+    """seen_at が号日かつ date も号日なら PASS。"""
+    issue = "2026-06-11"
+    rec = _issue_record(date_v="2026-06-11", seen_at="2026-06-11T06:00:00+09:00")
+    p = _write_jsonl(tmp_path, rec)
+    errs = validate_jsonl(p, recent_days=None, issue_date=issue)
+    assert errs == [], f"号日一致なら PASS のはず: {errs}"
+
+
+def test_issue_date_ignores_past_records(tmp_path: Path):
+    """seen_at の日付部分が号日と異なる過去 record は対象外 (date がズレても許容)。"""
+    issue = "2026-06-11"
+    # seen_at=2026-06-09 (過去生成)。date=2026-06-09 で issue とズレるが当日生成でないので対象外
+    rec = _issue_record(date_v="2026-06-09", seen_at="2026-06-09T06:00:00+09:00")
+    p = _write_jsonl(tmp_path, rec)
+    errs = validate_jsonl(p, recent_days=None, issue_date=issue)
+    assert errs == [], f"過去 record は号日チェック対象外のはず: {errs}"
+
+
+def test_issue_date_unspecified_is_backward_compatible(tmp_path: Path):
+    """--issue-date 未指定なら現行挙動と完全に同一 (号日チェックを一切しない)。"""
+    # 当日生成 date ズレの record でも issue_date=None なら検出しない
+    rec = _issue_record(date_v="2026-06-10", seen_at="2026-06-11T06:00:00+09:00")
+    p = _write_jsonl(tmp_path, rec)
+    errs = validate_jsonl(p, recent_days=None, issue_date=None)
+    assert errs == [], f"issue_date 未指定は号日チェックなし (後方互換): {errs}"
+
+
+def test_issue_date_works_with_recent_window(tmp_path: Path):
+    """--recent との併用が壊れないこと (recent 窓内なら号日チェックも効く)。"""
+    import json
+    issue = "2026-06-11"
+    # recent 窓内 (2026-06-11) の当日生成 date ズレ record
+    bad = _issue_record(date_v="2026-06-10", seen_at="2026-06-11T06:00:00+09:00")
+    # recent 窓外 (古い) の record は date がズレていても対象外
+    old = _issue_record(date_v="2025-01-01", seen_at="2025-01-01T06:00:00+09:00")
+    p = tmp_path / "articles.jsonl"
+    with p.open("w", encoding="utf-8") as f:
+        for r in (old, bad):
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    errs = validate_jsonl(p, recent_days=7, today=date(2026, 6, 11), issue_date=issue)
+    assert len(errs) == 1, f"recent 窓内の号日不整合 1 件のみ検出するはず: {errs}"
+    assert "号日不整合" in errs[0]
