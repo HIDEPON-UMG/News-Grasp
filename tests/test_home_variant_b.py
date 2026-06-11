@@ -155,6 +155,25 @@ def test_featured_story_thumb_falls_back_to_og_image(built_home: str):
     assert "width: 100%; height: 100%;" not in html_block
 
 
+def test_home_hero_grid_columns_clamped_to_container():
+    """home-hero のグリッド列は minmax(0, 1fr) でコンテナ幅に物理固定する。
+
+    なぜ重要か (2026-06-10 スマホ右切れ事故): `1fr` は `minmax(auto, 1fr)` の
+    短縮形で、SUMMARY⇆DEEP DIVE スライダーの track (width 200%) の min-content が
+    列をコンテナ超えに押し広げる。CSS 360px 級の端末で右余白 16px が消え、
+    本文が画面右端で切れた (412px 端末では顕在化しないため見逃しやすい)。
+    minmax(0, 1fr) なら列幅がコンテナを超えられない (illegal state unrepresentable)。
+    """
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);" in css, (
+        ".home-hero__inner (desktop) の列が minmax(0, 1fr) でなくなっている。"
+        "1fr に戻すとスライダー min-content で列がコンテナを超え、狭幅端末で右切れが再発する。"
+    )
+    assert "grid-template-columns: minmax(0, 1fr); gap: 24px;" in css, (
+        ".home-hero__inner (mobile @768px) の列が minmax(0, 1fr) でなくなっている。"
+    )
+
+
 def test_categories_7_lens_cards(built_home: str):
     """home-cats__grid に 7 lens card が並ぶ。"""
     assert 'class="home-cats__grid"' in built_home

@@ -1,0 +1,59 @@
+{
+  "date": "2026-06-11",
+  "category_id": "fx",
+  "queries": [
+    "ECB rate hike June 11 2026 EUR/USD",
+    "USD/JPY BOJ rate hike June 2026",
+    "EUR/USD forecast ECB policy June 11 2026",
+    "Japan intervention yen 2026",
+    "FX market June 11 2026 ECB decision"
+  ],
+  "raw_results_total": 20,
+  "candidates_total": 10,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "ECB",
+    "BOJ",
+    "EUR/USD",
+    "GBP/USD",
+    "AUD/USD",
+    "USD/CNH",
+    "intervention",
+    "USDJPY",
+    "EURUSD",
+    "Fed"
+  ],
+  "quality_shortfall_reason": "freshness gate (max-source-age-days 1) でJST 6月10〜11日以外の記事がすべて除外。USD/JPY・BOJ関連の有力候補（Nomura, NikkeiのBOJ利上げ観測記事）はいずれも6月9日以前に公開されdedup drop。ECB 6月11日当日記事4件のみ通過。",
+  "dropped": [
+    {
+      "url": "https://cambridgecurrencies.com/euro-forecast/",
+      "reason": "freshness gate: published 2026-05-30"
+    },
+    {
+      "url": "https://www.investing.com/news/forex-news/japan-2026-intervention-campaign",
+      "reason": "freshness gate: published 2026-05-01"
+    },
+    {
+      "url": "https://www.heygotrade.com/en/news/ecb-rate-hike-eve/",
+      "reason": "freshness gate: published 2026-06-09"
+    },
+    {
+      "url": "https://www.japantimes.co.jp/business/2026/05/30/economy/japan-yen-intervention-73b/",
+      "reason": "freshness gate: source date 2026-05-30"
+    },
+    {
+      "url": "https://www.nomura.com/boj-june-rate-hike/",
+      "reason": "freshness gate: published 2026-05-25"
+    },
+    {
+      "url": "https://www.nikkei.com/article/boj-rate-hike-path/",
+      "reason": "freshness gate: published 2026-06-09"
+    },
+    {
+      "title": "Fed 関連当日ニュース",
+      "url": "",
+      "reason": "2026-06-11 メイン検証で WebSearch 実打確認。FOMC は 6/16-17 開催・stress test 結果は 6/24 発表予告のみで当日級ニュースなし"
+    }
+  ]
+}

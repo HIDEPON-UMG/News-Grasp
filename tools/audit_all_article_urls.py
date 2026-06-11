@@ -31,7 +31,12 @@ URL を捏造することが判明 (DeepDive の捏造 URL は実は日次 diges
                                                                       # 物理照合
 ```
 
-exit 0 = 全 URL 健全 / exit 1 = 1 件以上 fatal (= 捏造または恒久 404 または session 未確認)。
+2026-06-11 偽日付事故対応: `--gate` は日付証拠検証 (--verify-dates) もデフォルトで
+実行する。当日 date のレコードを full GET し htmldate 抽出日と突合 (乖離 > 1 日 =
+fatal)、抽出不能時は Wayback CDX で否定証拠を照合する。無効化は --no-verify-dates。
+
+exit 0 = 全 URL 健全 / exit 1 = 1 件以上 fatal (= 捏造または恒久 404 または
+session 未確認または偽日付疑い)。
 """
 from __future__ import annotations
 
@@ -127,6 +132,13 @@ def main() -> int:
                          "が全て含まれているか物理照合する。含まれない URL は記憶捏造疑い "
                          "として fatal 扱い。session ファイル不在時は degrade (警告のみ・"
                          "従来 gate のみで継続) で朝のバッチを止めない")
+    ap.add_argument("--verify-dates", action="store_true",
+                    help="2026-06-11 偽日付事故の恒久対策: 当日 date のレコード全件を "
+                         "full GET し、htmldate で独立抽出した公開日と自己申告 date を "
+                         "突合する (乖離 > 1 日 = fatal)。htmldate 抽出不能時は Wayback "
+                         "CDX をフォールバック照合。--gate 指定時はデフォルト ON")
+    ap.add_argument("--no-verify-dates", action="store_true",
+                    help="--gate 時の日付証拠検証を無効化する脱出ハッチ (障害時の手動運用用)")
     args = ap.parse_args()
     if args.gate and not args.recent:
         args.recent = 7  # gate は直近 7 日のみ走査 (push 速度のため・歴史的死リンクは別 ad-hoc で)
@@ -215,6 +227,56 @@ def main() -> int:
                         print(f"  [{dt_str}|{title[:40]}] session に未登録")
                         print(f"    {url}")
 
+    # 2026-06-11 偽日付事故の恒久対策: 当日 date のレコード全件について、自己申告
+    # date を独立証拠 (htmldate → Wayback CDX) と突合する最終防衛線。
+    # 既存の URL パス日付チェック (dedup._freshness_drop_reason /
+    # validate_daily_quality._stale_*) は URL に日付が無い記事を素通りさせる
+    # fail-open だったため、本検証が「日付なし URL × 偽メタ日付」の死角を塞ぐ。
+    date_fatal: list = []
+    verify_dates = args.verify_dates or (args.gate and not args.no_verify_dates)
+    if verify_dates and os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") == "1":
+        print("NEWS_GRASP_SKIP_URL_CHECK=1: 日付証拠検証も skip")
+    elif verify_dates:
+        from concurrent.futures import ThreadPoolExecutor as _TPE
+
+        from tools.date_evidence import evaluate_date_evidence, fetch_html
+
+        # 当日 + 前日のレコードを対象にする。当日のみだと「古い記事に date=前日を
+        # 付ける」変種が検証対象外になり、既存 _stale_* (issue-1 まで許容) も
+        # 素通りさせるため。digest 掲載が許される date 範囲 = 検証対象範囲で揃える。
+        target_dates = {today.strftime("%Y-%m-%d"),
+                        (today - timedelta(days=1)).strftime("%Y-%m-%d")}
+        targets = [it for it in items if it[0] in target_dates]
+        if not targets:
+            print(f"日付証拠検証: 当日/前日 ({min(target_dates)}..{max(target_dates)}) "
+                  f"のレコード 0 件 → skip")
+        else:
+            print(f"\n日付証拠検証: 当日/前日の {len(targets)} 件を htmldate/Wayback と突合")
+
+            def _check_date(item):
+                dt_str, title, url = item
+                try:
+                    claimed = datetime.strptime(dt_str, "%Y-%m-%d").date()
+                except ValueError:
+                    return None
+                html = fetch_html(url)
+                return evaluate_date_evidence(claimed, url, html, record_title=title)
+
+            with _TPE(max_workers=8) as ex:
+                evidences = [e for e in ex.map(_check_date, targets) if e is not None]
+            for ev in evidences:
+                for w in ev.warnings:
+                    print(f"  WARN [{ev.claimed}] {w}", file=sys.stderr)
+                    print(f"       {ev.url}", file=sys.stderr)
+            date_fatal = [ev for ev in evidences if not ev.ok]
+            print(f"日付証拠: {len(evidences) - len(date_fatal)}/{len(evidences)} OK, "
+                  f"{len(date_fatal)} NG")
+            if date_fatal:
+                print(f"\n=== 偽日付疑い {len(date_fatal)} 件 (独立証拠と乖離) ===")
+                for ev in date_fatal:
+                    print(f"  [claimed {ev.claimed}|{ev.method}] {ev.fatal_reason}")
+                    print(f"    {ev.url}")
+
     if os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") == "1":
         # validate_deepdive_urls.require_live_urls と同じ環境変数で HEAD/GET を全スキップ。
         # オフライン CI・契約テスト (session 照合だけ見たい場合) の動作合わせのため。
@@ -234,13 +296,14 @@ def main() -> int:
             print(f"  [{v.ref.location}] {v.detail}")
             print(f"    {v.ref.url}")
 
-    # session 未確認 と HEAD/GET fatal の和集合が exit 判定に使われる
-    total_fatal = len(fatal) + len(session_fatal)
+    # session 未確認 / HEAD/GET fatal / 偽日付疑い の和集合が exit 判定に使われる
+    total_fatal = len(fatal) + len(session_fatal) + len(date_fatal)
     if total_fatal:
-        if session_fatal:
+        if session_fatal or date_fatal:
             print(
-                f"\nFATAL: session 未確認 {len(session_fatal)} 件 + HEAD/GET NG {len(fatal)} 件 = "
-                f"{total_fatal} 件。push を中止します。", file=sys.stderr,
+                f"\nFATAL: session 未確認 {len(session_fatal)} 件 + HEAD/GET NG {len(fatal)} 件 + "
+                f"偽日付疑い {len(date_fatal)} 件 = {total_fatal} 件。push を中止します。",
+                file=sys.stderr,
             )
         return 1
     return 0

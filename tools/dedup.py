@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import calendar
 import json
+import os
 import re
 import sys
 from datetime import date, datetime, timezone, timedelta
@@ -65,6 +66,19 @@ _URL_MONTH_DATE_RE = re.compile(
     re.IGNORECASE,
 )
 _MONTH_ALIASES = {name.lower(): idx for idx, name in enumerate(calendar.month_abbr) if name}
+
+# 月単位パターン: `/YYYY/MM/` までしか持たない URL (直後セグメントが日数字でないか終端)。
+# crowdfundinsider 等が `/2026/01/slug` の形で記事を出すため、日まで取れなくても「月」で
+# 鮮度判定できるようにする。日単位パターン (_URL_DATE_PATTERNS) が先に当たればそちらが優先。
+_URL_MONTH_ONLY_RE = re.compile(r"/(?P<y>20\d{2})/(?P<m>\d{1,2})(?:/(?!\d)|/?$)")
+
+# 鮮度判定で公開日が解決できた候補に付与する注釈フィールド名・出所値。
+# date_evidence_source は "url-path" (日単位) / "url-path-month" (月単位) / "htmldate"。
+_DATE_EVIDENCE_PUBLISHED = "published_date"
+_DATE_EVIDENCE_SOURCE = "date_evidence_source"
+
+# htmldate 補完を 1 dedup 実行で行う最大件数 (超過分は fetch せず warn-pass)。
+DEFAULT_DATE_FETCH_CAP = 20
 
 # ── 言語非依存トークン照合 (cross-language / 別ソースの同一イベント検知) ──────────
 # 文字 2-gram は英語⇄日本語の見出し (例「Waymo accelerates … Dallas, Houston」と
@@ -315,11 +329,69 @@ def extract_source_date_from_url(url: str) -> date | None:
     return None
 
 
+def extract_source_date_from_url_with_granularity(
+    url: str,
+) -> tuple[date | None, str | None]:
+    """URL パスから発行日を粒度付きで抽出する (鮮度ゲート専用の拡張版)。
+
+    返り値 (src_date, granularity):
+      - (date, "day")   : 日単位日付が取れた (extract_source_date_from_url と同義)
+      - (date, "month") : 月単位 `/YYYY/MM/` までしか無く、`date(y, m, 1)` を返す
+      - (None, None)    : 日付なし
+
+    **重要**: 既存の ``extract_source_date_from_url`` は日単位日付のみ (None で
+    fail-open) を返す契約を持ち、``tools/audit_all_article_urls.py`` の push 前 gate や
+    ``validate_daily_quality.py`` がそれに依存している。月粒度を ``date(y, m, 1)`` で
+    既存関数に返すと「claimed 06-10 vs URL 由来 06-01 = 9 日古い」と誤判定して新着を
+    fatal にするため、月粒度判定は本関数 (dedup 内部の鮮度判定専用) に隔離する。
+    """
+    day_date = extract_source_date_from_url(url)
+    if day_date is not None:
+        return day_date, "day"
+    try:
+        path = urlsplit(url).path
+    except ValueError:
+        return None, None
+    m = _URL_MONTH_ONLY_RE.search(path)
+    if m:
+        try:
+            return date(int(m.group("y")), int(m.group("m")), 1), "month"
+        except ValueError:
+            return None, None
+    return None, None
+
+
+def _fetch_published_date(url: str, *, timeout: float = 15.0):
+    """htmldate 補完用の fetch + 公開日抽出 (テストで monkeypatch 可能な境界)。
+
+    ``tools/date_evidence.py`` の fetch_html / extract_published_date をそのまま再利用
+    する。max_date は「未来日付の誤抽出を防ぐ上界」で、当日 (JST) を渡す。fetch 失敗 /
+    htmldate None のときは None を返し、呼び出し側が warn-pass に倒す。
+    """
+    # dedup.py は (1) パッケージ `tools.dedup` として import される経路と
+    # (2) `python tools/dedup.py` で直接実行され `tools/` だけが sys.path に乗る経路の
+    # 両方で動く。前者は `tools.date_evidence`、後者は flat `date_evidence` で解決する。
+    try:
+        from tools.date_evidence import extract_published_date, fetch_html
+    except ModuleNotFoundError:
+        from date_evidence import extract_published_date, fetch_html
+
+    html = fetch_html(url, timeout=timeout)
+    if not html:
+        return None
+    return extract_published_date(html, max_date=date.today())
+
+
 def _freshness_drop_reason(
     candidate: dict,
     now_date: date,
     max_source_age_days: int,
 ) -> str | None:
+    """URL パス上の日単位日付だけで鮮度を判定する純関数 (後方互換の薄い経路)。
+
+    月粒度・htmldate 補完を含む完全な判定は ``_evaluate_freshness`` が行う。本関数は
+    日単位日付が古い場合のみ drop 理由を返す (日付なし・月粒度は None = ここでは落とさない)。
+    """
     src_date = extract_source_date_from_url(candidate.get("url", ""))
     if src_date is None:
         return None
@@ -330,6 +402,119 @@ def _freshness_drop_reason(
             f"age={age_days}d > {max_source_age_days}d"
         )
     return None
+
+
+def _month_floor(d: date) -> date:
+    """その日付が属する月の 1 日 (= 月単位比較の下限) を返す。"""
+    return date(d.year, d.month, 1)
+
+
+def _evaluate_freshness(
+    candidate: dict,
+    now_date: date,
+    max_source_age_days: int,
+    *,
+    fetch_fn,
+    skip_fetch: bool,
+) -> tuple[str | None, str]:
+    """1 候補の鮮度を判定する。返り値 (drop_reason, fetch_disposition)。
+
+    - drop_reason が非 None → 鮮度ゲートで落とす (古い)。注釈は付けない。
+    - drop_reason が None → 通過。古くない日単位 / 月粒度確定で公開日が分かれば候補に
+      ``published_date`` / ``date_evidence_source`` 注釈を付与する (副作用)。
+    - fetch_disposition: "none" (fetch 不要) / "fetched" (htmldate fetch を消費した) /
+      "skipped" (上限超過 or SKIP 環境変数で fetch を行わず warn-pass)。呼び出し側が
+      fetch 上限カウンタの加算と stderr 警告に使う。
+
+    URL 日単位日付が取れれば fetch 不要で即判定。日付なし・月粒度どまりの候補のみ
+    htmldate 補完 (fetch_fn) に回す (ユーザー決定 B: 月粒度は確定扱いにしない)。
+    """
+    url = candidate.get("url", "")
+    src_date, granularity = extract_source_date_from_url_with_granularity(url)
+
+    if granularity == "day":
+        age_days = (now_date - src_date).days
+        if age_days > max_source_age_days:
+            return (
+                f"freshness gate: source date {src_date.isoformat()} "
+                f"age={age_days}d > {max_source_age_days}d"
+            ), "none"
+        candidate[_DATE_EVIDENCE_PUBLISHED] = src_date.isoformat()
+        candidate[_DATE_EVIDENCE_SOURCE] = "url-path"
+        return None, "none"
+
+    if granularity == "month":
+        # 月単位: 候補の月が「許容下限日が属する月」より古い月 → drop。
+        # 同月以降は drop しないが確定扱いにせず htmldate 補完へ回す。
+        allowed_oldest = now_date - timedelta(days=max_source_age_days)
+        if _month_floor(src_date) < _month_floor(allowed_oldest):
+            return (
+                f"freshness gate: source month {src_date.strftime('%Y-%m')} "
+                f"older than allowed month {allowed_oldest.strftime('%Y-%m')} "
+                f"(max_source_age_days={max_source_age_days}d)"
+            ), "none"
+        # 同月以降の月粒度 → htmldate 補完対象 (確定扱いにしない)
+        return _resolve_via_htmldate(
+            candidate, now_date, max_source_age_days,
+            fetch_fn=fetch_fn, skip_fetch=skip_fetch,
+            month_note=src_date.strftime("%Y-%m"),
+        )
+
+    # 日付なし → htmldate 補完対象
+    return _resolve_via_htmldate(
+        candidate, now_date, max_source_age_days,
+        fetch_fn=fetch_fn, skip_fetch=skip_fetch,
+        month_note=None,
+    )
+
+
+def _resolve_via_htmldate(
+    candidate: dict,
+    now_date: date,
+    max_source_age_days: int,
+    *,
+    fetch_fn,
+    skip_fetch: bool,
+    month_note: str | None,
+) -> tuple[str | None, str]:
+    """htmldate 補完で公開日を解決し、鮮度判定 + 注釈付与を行う。
+
+    skip_fetch (上限超過 / NEWS_GRASP_SKIP_URL_CHECK=1) のときは fetch せず warn-pass。
+    fetch して古ければ drop / 新しければ pass + 注釈 / None なら warn-pass (注釈なし)。
+    """
+    if skip_fetch:
+        # fetch を行わず warn-pass。月粒度で同月確認済みならその月証拠だけは注釈に残す
+        # (ユーザー決定 B: 確定扱いはしないが、url-path-month の出所は記録する)。
+        _annotate_month_only(candidate, month_note)
+        return None, "skipped"
+    published = fetch_fn(candidate.get("url", ""))
+    if published is None:
+        # fetch 失敗 / htmldate None → warn-pass。日付なしは注釈なし、月粒度確認済みは
+        # url-path-month だけ残す。
+        _annotate_month_only(candidate, month_note)
+        return None, "fetched"
+    age_days = (now_date - published).days
+    if age_days > max_source_age_days:
+        suffix = f" (month {month_note} confirmed)" if month_note else ""
+        return (
+            f"freshness gate: published {published.isoformat()} via htmldate, "
+            f"exceeds max-source-age-days {max_source_age_days}{suffix}"
+        ), "fetched"
+    candidate[_DATE_EVIDENCE_PUBLISHED] = published.isoformat()
+    candidate[_DATE_EVIDENCE_SOURCE] = "htmldate"
+    return None, "fetched"
+
+
+def _annotate_month_only(candidate: dict, month_note: str | None) -> None:
+    """月粒度どまり (htmldate 未解決) の pass 候補に url-path-month 注釈を残す。
+
+    published_date は「YYYY-MM-01」を入れる (月の 1 日 = 月単位下界の便宜表現)。
+    day 単位ではないことを date_evidence_source="url-path-month" で区別する。
+    """
+    if not month_note:
+        return
+    candidate[_DATE_EVIDENCE_PUBLISHED] = f"{month_note}-01"
+    candidate[_DATE_EVIDENCE_SOURCE] = "url-path-month"
 
 
 def _new_material_tokens(candidate: dict, matched: dict) -> tuple[set[str], set[str]]:
@@ -361,6 +546,8 @@ def dedup_candidates(
     freshness_gate: bool = False,
     max_source_age_days: int = DEFAULT_MAX_SOURCE_AGE_DAYS,
     now: datetime | None = None,
+    date_fetch_cap: int = DEFAULT_DATE_FETCH_CAP,
+    date_fetch_fn=None,
 ) -> tuple[list[dict], list[dict]]:
     """重複除外を実行し (passed, dropped) を返す。
 
@@ -368,10 +555,20 @@ def dedup_candidates(
     扱いになった候補について、新規 token / 新規数値が 0 個なら drop する (= LLM の
     意味判断に頼らない構造ゲート / feedback_check_design_principles Lv2 境界 1 箇所集約 /
     routine-system.md 3-A.5 E の機械化版・2026-06-05 導入)。
+
+    ``freshness_gate=True`` のとき、URL パス上の日単位/月単位日付で鮮度を判定し、URL
+    から日付が取れない候補は htmldate 補完 (date_fetch_fn) で公開日を解決する。
+    解決できて古い → drop / 新しい → pass + published_date 注釈 / 解決不能 → warn-pass。
+    htmldate fetch は 1 実行あたり ``date_fetch_cap`` 件まで (超過分は warn-pass)。
+    ``NEWS_GRASP_SKIP_URL_CHECK=1`` のときは fetch を一切行わず全件 warn-pass にする
+    (既存テストがネットワークに出ない保証)。
     """
     now = (now or datetime.now(JST)).astimezone(JST)
     now_iso = now.isoformat()
     window = timedelta(hours=window_hours)
+    fetch_fn = date_fetch_fn or _fetch_published_date
+    skip_all_fetch = os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") == "1"
+    fetch_used = 0
     # 候補側を順に評価しつつ、合格分を「既存」に積み増して同 batch 内重複も弾く
     passed: list[dict] = []
     dropped: list[dict] = []
@@ -379,11 +576,31 @@ def dedup_candidates(
     for c in candidates:
         c["url_norm"] = normalize_url(c.get("url", ""))
         if freshness_gate:
-            reason = _freshness_drop_reason(c, now.date(), max_source_age_days)
+            # htmldate fetch が必要な経路かは事前に分からないため、cap 到達前は fetch 許可、
+            # 到達後は skip にして warn-pass へ倒す。skip_fetch は cap/環境変数の論理和。
+            skip_fetch = skip_all_fetch or fetch_used >= date_fetch_cap
+            reason, disposition = _evaluate_freshness(
+                c, now.date(), max_source_age_days,
+                fetch_fn=fetch_fn, skip_fetch=skip_fetch,
+            )
+            if disposition == "fetched":
+                fetch_used += 1
+            elif disposition == "skipped" and not skip_all_fetch and fetch_used >= date_fetch_cap:
+                print(
+                    f"WARN freshness-unverified (fetch cap {date_fetch_cap} reached): "
+                    f"{c.get('url', '')}",
+                    file=sys.stderr,
+                )
             if reason:
                 c["dedup_reason"] = reason
                 dropped.append(c)
                 continue
+            # 通過したが公開日を解決できなかった候補 (注釈なし) は warn-pass として警告
+            if c.get(_DATE_EVIDENCE_SOURCE) is None:
+                print(
+                    f"WARN freshness-unverified: {c.get('url', '')}",
+                    file=sys.stderr,
+                )
         match, match_type = find_match(c, pool, title_threshold=title_threshold)
         if match is None:
             c["is_followup"] = False
@@ -454,6 +671,9 @@ def main() -> int:
                    help="URL パス上の発行日が古すぎる候補を除外する鮮度ゲートを有効化")
     p.add_argument("--max-source-age-days", type=int, default=DEFAULT_MAX_SOURCE_AGE_DAYS,
                    help=f"鮮度ゲートで許容する URL 発行日からの経過日数（既定: {DEFAULT_MAX_SOURCE_AGE_DAYS}）")
+    p.add_argument("--date-fetch-cap", type=int, default=DEFAULT_DATE_FETCH_CAP,
+                   help=f"鮮度ゲートで htmldate 補完 fetch を行う 1 実行あたりの上限件数"
+                        f"（既定: {DEFAULT_DATE_FETCH_CAP}・超過分は fetch せず warn-pass）")
     args = p.parse_args()
 
     candidates = []
@@ -470,6 +690,7 @@ def main() -> int:
         followup_gate=args.followup_gate,
         freshness_gate=args.freshness_gate,
         max_source_age_days=args.max_source_age_days,
+        date_fetch_cap=args.date_fetch_cap,
     )
 
     for c in passed:
@@ -477,7 +698,8 @@ def main() -> int:
     print(
         f"dedup: {len(passed)} passed, {len(dropped)} dropped "
         f"(window={args.window_hours}h, threshold={args.title_threshold}, "
-        f"freshness_gate={args.freshness_gate}, max_source_age_days={args.max_source_age_days})",
+        f"freshness_gate={args.freshness_gate}, max_source_age_days={args.max_source_age_days}, "
+        f"date_fetch_cap={args.date_fetch_cap})",
         file=sys.stderr,
     )
     for c in dropped:

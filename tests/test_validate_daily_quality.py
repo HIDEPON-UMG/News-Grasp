@@ -5,7 +5,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.validate_daily_quality import main, validate_daily_quality
+from datetime import date
+
+from tools.validate_daily_quality import (
+    main,
+    validate_daily_quality,
+    validate_dedup_annotation_present,
+)
 
 
 def _write_summary(root: Path, *, hero: bool = True, weekday: str | None = None) -> None:
@@ -435,6 +441,58 @@ def test_daily_quality_rejects_shortfall_without_search_audit(tmp_path: Path) ->
     joined = "\n".join(errs)
     assert "search audit missing" in joined
     assert "data" in joined and "search_audit" in joined
+
+
+# ── dedup 強化版の鮮度注釈刻印検証 (2026-06-11) ──────────────────────────────
+
+
+def _write_jsonl_records(path: Path, records: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in records) + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_dedup_annotation_warns_when_all_records_unannotated() -> None:
+    """当日レコード全件に date_evidence_source が無ければ警告する (fatal でない)。"""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        jsonl = Path(td) / "articles.jsonl"
+        _write_jsonl_records(jsonl, [
+            {"date": "2026-06-11", "title": "A", "url": "https://example.com/a"},
+            {"date": "2026-06-11", "title": "B", "url": "https://example.com/b"},
+        ])
+        warns = validate_dedup_annotation_present(jsonl, date(2026, 6, 11))
+        assert len(warns) == 1, f"全件注釈なしは警告 1 件: {warns}"
+        assert "date_evidence_source" in warns[0]
+
+
+def test_dedup_annotation_no_warn_when_one_record_annotated() -> None:
+    """当日レコードのうち 1 件でも注釈があれば警告しない (warn-pass で残り注釈なしは許容)。"""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        jsonl = Path(td) / "articles.jsonl"
+        _write_jsonl_records(jsonl, [
+            {"date": "2026-06-11", "title": "A", "url": "https://example.com/a",
+             "date_evidence_source": "url-path", "published_date": "2026-06-11"},
+            {"date": "2026-06-11", "title": "B", "url": "https://example.com/b"},
+        ])
+        assert validate_dedup_annotation_present(jsonl, date(2026, 6, 11)) == []
+
+
+def test_dedup_annotation_not_applied_before_start_date() -> None:
+    """注釈導入日 (2026-06-11) より前の号には刻印検証を適用しない。"""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        jsonl = Path(td) / "articles.jsonl"
+        _write_jsonl_records(jsonl, [
+            {"date": "2026-06-10", "title": "A", "url": "https://example.com/a"},
+        ])
+        assert validate_dedup_annotation_present(jsonl, date(2026, 6, 10)) == []
 
 
 def test_daily_quality_rejects_search_audit_missing_ai_coverage_terms(tmp_path: Path) -> None:

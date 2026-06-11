@@ -22,6 +22,12 @@ from tools.generate_pages import (
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"]
 
+# dedup 強化版 (鮮度ゲートで published_date / date_evidence_source 注釈を刻印) の
+# 適用開始日。この日より前の articles.jsonl レコードは注釈が無くて当然なので、
+# 「全件注釈ゼロ = 強化版を通っていない疑い」の警告検査を適用しない。
+_DATE_EVIDENCE_ANNOTATION_START = date(2026, 6, 11)
+_DATE_EVIDENCE_SOURCE_FIELD = "date_evidence_source"
+
 REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
     "ai": {"OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"},
     "fx": {"USDJPY", "EURUSD", "BOJ", "Fed", "ECB"},
@@ -343,6 +349,42 @@ def validate_jsonl_source_freshness(jsonl_path: Path, issue: date) -> list[str]:
     return errs
 
 
+def validate_dedup_annotation_present(jsonl_path: Path, issue: date) -> list[str]:
+    """当日レコード群に dedup 強化版の鮮度注釈が 1 件も無ければ警告する (fatal でない)。
+
+    強化版 dedup (2026-06-11〜) は鮮度ゲートを通った pass 候補に
+    ``date_evidence_source`` を刻印する。当日 articles.jsonl の全レコードにこの刻印が
+    皆無 = 旧版 dedup (注釈なし) を通った疑い、を検知する。warn-pass 候補には注釈が
+    付かないため「全件必須」にはできず、「全件ゼロ」だけを警告に留める。
+    注釈導入日 (_DATE_EVIDENCE_ANNOTATION_START) より前の号には適用しない。
+    """
+    if issue < _DATE_EVIDENCE_ANNOTATION_START:
+        return []
+    if not jsonl_path.exists():
+        return []
+    day_records = 0
+    annotated = 0
+    for line in jsonl_path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            record: dict[str, Any] = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if record.get("date") != issue.isoformat():
+            continue
+        day_records += 1
+        if str(record.get(_DATE_EVIDENCE_SOURCE_FIELD) or "").strip():
+            annotated += 1
+    if day_records == 0 or annotated > 0:
+        return []
+    return [
+        f"WARNING: {jsonl_path}: {issue.isoformat()} の {day_records} 件すべてに "
+        f"{_DATE_EVIDENCE_SOURCE_FIELD} 刻印が無い。強化版 dedup (鮮度ゲート) を "
+        "通っていない疑いがある (warn-pass のみで注釈ゼロの可能性もあるため fatal にはしない)。",
+    ]
+
+
 def validate_daily_quality(
     *,
     issue_date: str,
@@ -382,6 +424,9 @@ def main(argv: list[str] | None = None) -> int:
         jsonl_path=args.jsonl,
         audit_root=args.audit_root,
     )
+    # dedup 刻印検証は警告のみ (fatal にしない)。exit code には影響させず stderr に出す。
+    for warn in validate_dedup_annotation_present(args.jsonl, _parse_issue_date(args.date)):
+        print(warn, file=sys.stderr)
     if errs:
         for err in errs:
             print(f"ERROR: {err}", file=sys.stderr)

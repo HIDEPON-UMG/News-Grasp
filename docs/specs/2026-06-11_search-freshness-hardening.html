@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ニュース検索鮮度の構造対策 — 仕様書</title>
+  <style>
+    /* ============================================================
+       DESIGN.md トークン (Claude.ai 公式トンマナ準拠)
+       - 色直書き禁止: ここで定義した CSS 変数のみを使うこと
+       - 同期元: ~/.claude/templates/DESIGN.md
+       ============================================================ */
+    :root {
+      /* Colors — core */
+      --color-primary: #141413;
+      --color-secondary: #6A6A6A;
+      --color-tertiary: #CC785C;   /* Claude Orange */
+      --color-neutral: #F8F6F3;    /* warm cream */
+      --color-surface: #FFFFFF;
+      --color-border: #E8E6E3;
+      --color-on-tertiary: #FFFFFF;
+      --color-on-primary: #FAF9F5;
+      /* Colors — accents */
+      --color-accent-blue: #A8C5E6;
+      --color-accent-teal: #9DD4C7;
+      --color-accent-beige: #F4E4C1;
+      /* Colors — semantic */
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+      /* Typography */
+      --font-serif: Copernicus, 'Source Serif 4', Georgia, serif;
+      --font-sans: 'Styrene B', Söhne, Inter, system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+      /* Rounded */
+      --rounded-sm: 6px;
+      --rounded-md: 10px;
+      --rounded-lg: 16px;
+      --rounded-full: 9999px;
+      /* Spacing (8 の倍数) */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      /* Elevation */
+      --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04);
+      --shadow-md: 0 4px 12px rgba(20, 20, 19, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--color-neutral);
+      color: var(--color-primary);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 64rem; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+
+    /* Header */
+    .spec-header { padding-bottom: var(--space-xl); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); }
+    .spec-eyebrow { color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; font-weight: 500; text-transform: uppercase; }
+    h1 { font-family: var(--font-serif); font-size: 3rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; margin: var(--space-md) 0 var(--space-sm); }
+    h2 { font-family: var(--font-serif); font-size: 2rem; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 var(--space-md); }
+    h3 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; line-height: 1.3; margin: var(--space-xl) 0 var(--space-sm); }
+    .lead { color: var(--color-secondary); font-size: 1.125rem; line-height: 1.6; margin: var(--space-sm) 0 var(--space-md); }
+
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--color-tertiary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: var(--space-xs); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-xl); overflow-x: auto; }
+    .tab { background: none; border: none; padding: var(--space-sm) var(--space-md); font-family: var(--font-sans); font-size: 0.875rem; color: var(--color-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+    .tab:hover { color: var(--color-primary); }
+    .tab.active { color: var(--color-primary); border-bottom-color: var(--color-tertiary); font-weight: 500; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fade 160ms ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Cards */
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+    .card-muted { background: var(--color-surface); border-radius: var(--rounded-lg); padding: var(--space-lg); }
+
+    /* Badge */
+    .badge { display: inline-block; background: var(--color-accent-beige); color: var(--color-primary); border-radius: var(--rounded-full); padding: 4px 12px; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; }
+    .badge-success { background: var(--color-success); color: var(--color-on-primary); }
+    .badge-warning { background: var(--color-warning); color: var(--color-on-primary); }
+    .badge-error { background: var(--color-error); color: var(--color-on-primary); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; font-size: 0.9375rem; }
+    th, td { text-align: left; padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    th { font-weight: 500; color: var(--color-secondary); font-size: 0.75rem; letter-spacing: 0.02em; text-transform: uppercase; }
+
+    /* Code */
+    code { font-family: var(--font-mono); font-size: 0.875rem; background: var(--color-neutral); padding: 2px 6px; border-radius: var(--rounded-sm); border: 1px solid var(--color-border); }
+    pre { background: var(--color-primary); color: var(--color-on-primary); border-radius: var(--rounded-md); padding: var(--space-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.5; margin: var(--space-md) 0; }
+    pre code { background: none; padding: 0; border: 0; color: inherit; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 10px 18px; border-radius: var(--rounded-md); border: 0; font-family: var(--font-sans); font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: background 120ms; }
+    .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+    .btn-primary:hover { background: #262625; }
+    .btn-accent { background: var(--color-tertiary); color: var(--color-on-tertiary); }
+    .btn-accent:hover { background: #B86A50; }
+    .btn-secondary { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); }
+    .btn-secondary:hover { background: var(--color-neutral); }
+
+    /* Checklist */
+    .checklist { list-style: none; padding: 0; margin: 0; }
+    .checklist li { display: flex; align-items: flex-start; gap: var(--space-sm); padding: var(--space-sm) 0; border-bottom: 1px solid var(--color-border); }
+    .checklist li:last-child { border-bottom: 0; }
+    .checklist input[type="checkbox"] { margin-top: 5px; accent-color: var(--color-tertiary); width: 16px; height: 16px; flex-shrink: 0; }
+    .checklist label { cursor: pointer; flex: 1; }
+    .checklist li.done label { text-decoration: line-through; color: var(--color-secondary); }
+
+    /* Playground */
+    .playground { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--rounded-lg); padding: var(--space-lg); margin: var(--space-md) 0; }
+    .playground-control { display: flex; align-items: center; gap: var(--space-md); margin: var(--space-md) 0; }
+    .playground-control label { min-width: 180px; font-size: 0.875rem; color: var(--color-secondary); }
+    .playground-control input[type="range"] { flex: 1; accent-color: var(--color-tertiary); }
+    .playground-control output { min-width: 72px; font-family: var(--font-mono); font-size: 0.875rem; text-align: right; }
+
+    /* Timeline */
+    .timeline { display: flex; gap: var(--space-lg); margin: var(--space-lg) 0; flex-wrap: wrap; }
+    .timeline-step { flex: 1 1 200px; background: var(--color-accent-beige); border-radius: var(--rounded-md); padding: var(--space-md); position: relative; }
+    .timeline-step strong { display: block; font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: var(--space-xs); }
+
+    /* Severity */
+    .severity-info { border-left: 3px solid var(--color-accent-blue); padding-left: var(--space-md); margin: var(--space-md) 0; }
+    .severity-warn { border-left: 3px solid var(--color-warning); padding-left: var(--space-md); margin: var(--space-md) 0; }
+    .severity-error { border-left: 3px solid var(--color-error); padding-left: var(--space-md); margin: var(--space-md) 0; }
+
+    /* Comparison grid */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-md) 0; }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2.25rem; }
+      .container { padding: var(--space-xl) var(--space-md); }
+    }
+
+    /* Print */
+    @media print {
+      .tabs { display: none; }
+      .tab-panel { display: block !important; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="spec-header">
+      <div class="spec-eyebrow">SPEC · <span id="spec-date">2026-06-11</span></div>
+      <h1>ニュース検索鮮度の構造対策</h1>
+      <p class="lead">古い記事が候補選別を素通りするクラスのバグを、選別境界 dedup 1 箇所の強化で構造的に封じる（06-10 号 29 件中 14 件古記事の根本対策）。</p>
+      <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md);">
+        <span class="badge">draft</span>
+        <span class="badge">News-Grasp タスク③</span>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview">概要</button>
+      <button class="tab" data-tab="alternatives">比較</button>
+      <button class="tab" data-tab="dataflow">データフロー</button>
+      <button class="tab" data-tab="impl">実装ステップ</button>
+      <button class="tab" data-tab="playground">パラメータ</button>
+    </nav>
+
+    <section id="overview" class="tab-panel active">
+      <h2>概要</h2>
+      <p>2026-06-10 号は 29 件中 14 件が独立証拠（htmldate / Wayback CDX）と 6〜854 日乖離した古記事だった。push 前 gate（<code>tools/audit_all_article_urls.py --gate --verify-dates</code>、2026-06-11 実装済み）は最終防衛として機能するが、検索・選別段階の歩留まりが悪いままだと号の半分が gate で死に、再発行が成立しない。</p>
+      <p>調査の結果、原因は 3 層に分かれる。</p>
+      <table>
+        <thead><tr><th>層</th><th>実測事実</th><th>素通り条件</th></tr></thead>
+        <tbody>
+          <tr><td>WebSearch ツール</td><td>パラメータは query / allowed_domains / blocked_domains のみ。日付・鮮度パラメータは存在しない（スキーマ実測）</td><td>検索段階では構造的に鮮度を保証できない</td></tr>
+          <tr><td>選別境界 <code>tools/dedup.py</code></td><td>URL パス日付の認識は /YYYY/MM/DD/ 等 4 形式のみ。<strong>/YYYY/MM/（月まで）の URL は None で素通り</strong>。crowdfundinsider /2026/01/・thediplomat /2026/04/ がこの穴</td><td>URL に日付が無い／月までの候補は freshness gate を素通り</td></tr>
+          <tr><td>LLM 選別規律</td><td>06-10 it.json で LLM が自由裁量の「editorial: background context」により 2026-01 の古記事を意図的に採用（プロンプトに規定なし = LLM の発明）</td><td>LLM 裁量が gate 思想と矛盾。新 push gate 下では fatal になり号が落ちる</td></tr>
+        </tbody>
+      </table>
+      <div class="severity-info">
+        <strong>前提</strong>
+        <p><code>tools/append_after_dedup.py</code> は freshness gate がデフォルト ON で、articles.jsonl への唯一の取込経路（決定論的境界として既に機能）。dedup.py の強化 = 実境界の強化になる。1 class of bugs = 1 チェックの原則に従い、push 前 gate（「公開物に載る」の最終防衛）と検査を重複させない。</p>
+      </div>
+      <div class="severity-warn">
+        <strong>ユーザー決定（2026-06-11）</strong>
+        <p>URL でも htmldate でも公開日が取れない候補は <strong>warn-pass</strong>（誤爆ゼロ運用を維持、push 前 gate が最終防衛、運用観察後に厳格化判断）。htmldate 補完と runner 当日日付注入は採用、search_audit クエリ日付語 lint は不採用。</p>
+      </div>
+    </section>
+
+    <section id="alternatives" class="tab-panel">
+      <h2>採用 / 不採用の判断</h2>
+      <div class="compare-grid">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">dedup 境界の強化</h3>
+            <span class="badge badge-success">採用</span>
+          </div>
+          <p>月単位 URL パターン追加 + htmldate 補完 + published_date 注釈。articles.jsonl への唯一の取込経路である決定論コードに集約するため、LLM がバイパスできない。トレードオフ: htmldate 補完は候補 1 件 1 GET で dedup 実行が数十秒〜数分延びる。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">search_audit への鮮度メタ自己申告</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>LLM の自己申告日付は偽日付事故の根本原因そのもので信頼できない。push 前 gate と検証が重複し、1 class 1 チェック原則にも反する。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">LLM 手順への date_evidence 必須化</h3>
+            <span class="badge badge-error">却下</span>
+          </div>
+          <p>routine-system.md の手順指示は LLM セッション内でバイパス可能。dedup 内蔵（決定論コード）で代替する。プロンプトには補助の規律（editorial 禁止・日付語指針）のみ追記。</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm);">
+            <h3 style="margin: 0;">クエリ日付語 lint</h3>
+            <span class="badge badge-error">却下（ユーザー確認済み）</span>
+          </div>
+          <p>クエリは LLM 自己申告で偽装可能なうえ、日付語強制が recall を下げるリスクが未検証。効果が弱い割に誤爆リスクがある。</p>
+        </div>
+      </div>
+      <div class="severity-warn">
+        <strong>WebSearch 鮮度演算子（after: 等）への依存も却下</strong>
+        <p>ツールスキーマに鮮度パラメータは存在せず、クエリ文字列演算子の実効性は未検証。検証コストが効果見込みを上回るため、クエリへの日付語付加（規律・補助）に留める。</p>
+      </div>
+    </section>
+
+    <section id="dataflow" class="tab-panel">
+      <h2>データフロー</h2>
+      <p>強化後の鮮度判定は dedup 内で 3 段（URL 日単位 → URL 月単位 → htmldate 補完）。どこでも解決できなければ warn-pass し、push 前 gate が最終防衛する。</p>
+      <svg viewBox="0 0 860 460" role="img" aria-label="鮮度ゲートのデータフロー図" style="width: 100%; height: auto; max-width: 860px;">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M 0 0 L 9 3 L 0 6 Z" fill="#6A6A6A"/>
+          </marker>
+        </defs>
+        <!-- 上段: 入口 -->
+        <rect x="20" y="30" width="180" height="52" rx="10" fill="#A8C5E6"/>
+        <text x="110" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#141413">WebSearch</text>
+        <text x="110" y="70" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">(クエリに日付語=規律)</text>
+        <path d="M 200 56 L 270 56" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="270" y="30" width="180" height="52" rx="10" fill="#A8C5E6"/>
+        <text x="360" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#141413">candidates.jsonl</text>
+        <text x="360" y="70" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">(title/url/score/source)</text>
+        <path d="M 450 56 L 520 56" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- dedup ボックス -->
+        <rect x="520" y="20" width="320" height="290" rx="16" fill="#FFFFFF" stroke="#CC785C" stroke-width="2"/>
+        <text x="680" y="48" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="#141413">tools/dedup.py freshness gate</text>
+        <rect x="545" y="65" width="270" height="44" rx="8" fill="#9DD4C7"/>
+        <text x="680" y="84" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#141413">① URL 日単位 /YYYY/MM/DD/ 等 4 形式</text>
+        <text x="680" y="100" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">→ 1 日 window 超過で DROP（既存）</text>
+        <path d="M 680 109 L 680 127" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="545" y="130" width="270" height="44" rx="8" fill="#F4E4C1"/>
+        <text x="680" y="149" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#141413">② URL 月単位 /YYYY/MM/（新規）</text>
+        <text x="680" y="165" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">→ 許容下限より古い月は DROP</text>
+        <path d="M 680 174 L 680 192" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="545" y="195" width="270" height="44" rx="8" fill="#F4E4C1"/>
+        <text x="680" y="214" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#141413">③ htmldate 補完（新規・1 件 1 GET）</text>
+        <text x="680" y="230" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">→ 古い日付は DROP / 不明は warn-pass</text>
+        <path d="M 680 239 L 680 257" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="545" y="260" width="270" height="38" rx="8" fill="#9DD4C7"/>
+        <text x="680" y="284" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#141413">published_date + date_evidence_source 注釈</text>
+        <!-- 下段: 出口 -->
+        <path d="M 680 310 L 680 345 L 470 345" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="270" y="320" width="200" height="52" rx="10" fill="#A8C5E6"/>
+        <text x="370" y="342" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#141413">articles.jsonl へ append</text>
+        <text x="370" y="360" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#141413">(append_after_dedup.py 経由)</text>
+        <path d="M 270 346 L 200 346" stroke="#6A6A6A" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="20" y="320" width="180" height="52" rx="10" fill="#CC785C"/>
+        <text x="110" y="342" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#FFFFFF">push 前 gate（最終防衛）</text>
+        <text x="110" y="360" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#FFFFFF">htmldate + Wayback CDX</text>
+        <!-- 入口対策 -->
+        <rect x="20" y="410" width="430" height="38" rx="8" fill="#FFFFFF" stroke="#E8E6E3"/>
+        <text x="235" y="434" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#6A6A6A">入口対策: runner.ps1 がプロンプトへ当日日付を機械注入（日付誤認防止）</text>
+      </svg>
+    </section>
+
+    <section id="impl" class="tab-panel">
+      <h2>実装ステップ</h2>
+      <div class="timeline">
+        <div class="timeline-step"><strong>1.</strong>dedup.py: 月単位パターン + htmldate 補完 + published_date 注釈</div>
+        <div class="timeline-step"><strong>2.</strong>routine-system.md: editorial 禁止・日付確認手順・クエリ日付語指針</div>
+        <div class="timeline-step"><strong>3.</strong>runner.ps1: 当日日付のプロンプト注入</div>
+        <div class="timeline-step"><strong>4.</strong>契約テスト → pytest 全体 → E2E 実測</div>
+      </div>
+      <h3>変更ファイル</h3>
+      <table>
+        <thead><tr><th>パス</th><th>変更種別</th><th>意図</th></tr></thead>
+        <tbody>
+          <tr><td><code>tools/dedup.py</code></td><td>modify</td><td>月単位 URL パターン追加（月粒度判定）／URL 日付なし候補への htmldate 補完（date_evidence.py 再利用）／解決した公開日を published_date + date_evidence_source として候補レコードへ注釈</td></tr>
+          <tr><td><code>tools/append_after_dedup.py</code></td><td>modify（必要時のみ）</td><td>新フラグの透過</td></tr>
+          <tr><td><code>prompts/routine-system.md</code></td><td>modify</td><td>古記事の「background context」採用を明文禁止（push 前 gate で fatal になると明記）／採用前に published_date 注釈を確認する手順／全クエリに日付語を付ける指針</td></tr>
+          <tr><td><code>~/bin/news-grasp-runner.ps1</code></td><td>modify</td><td>プロンプト組み立て箇所に当日日付（JST）を機械注入</td></tr>
+          <tr><td><code>tests/test_dedup_freshness.py</code></td><td>add</td><td>契約テスト: 古い月単位 URL の DROP／当月の pass（誤爆ゼロ locked-in）／htmldate 補完経路（モック HTML）の DROP と warn-pass</td></tr>
+        </tbody>
+      </table>
+      <h3>コード断片（月単位パターンと判定方針）</h3>
+      <pre><code># tools/dedup.py — _URL_DATE_PATTERNS に追加する月単位パターン（月粒度フラグ付きで返す）
+_URL_MONTH_ONLY_RE = re.compile(
+    r"/(?P&lt;y&gt;20\d{2})/(?P&lt;m&gt;\d{1,2})(?:/(?!\d)|/$|$)"  # /2026/01/ の直後が「日」でない
+)
+# 判定方針:
+#   日単位日付 → 既存どおり max-source-age-days で判定
+#   月単位日付 → 候補の月 &lt; 許容下限(min_allowed_date)の月 なら DROP
+#               同月は粒度不足として通す（push 前 gate が日単位で捕捉）
+#   どちらも無し → date_evidence.fetch_html + extract_published_date で補完
+#               古い → DROP / 取れない・fetch 失敗 → warn-pass（stderr に警告）
+#   解決できた公開日は record["published_date"] / record["date_evidence_source"] に注釈</code></pre>
+      <h3>検証</h3>
+      <ul>
+        <li>pytest tests/ 全体 PASS（NEWS_GRASP_SKIP_URL_CHECK=1、契約テスト追加後に既存 336 件 + 新規が全件 PASS であること）</li>
+        <li>E2E: 今朝の検体 data/_tmp_*_candidates.jsonl を強化後 dedup に通し、月単位 URL の古記事が DROP・当月記事が pass（誤爆ゼロ）を実測</li>
+        <li>runner 日付注入はプロンプト組み立ての dry-run で注入文字列を実測確認</li>
+      </ul>
+    </section>
+
+    <section id="playground" class="tab-panel">
+      <h2>パラメータ</h2>
+      <p>調整したい閾値をスライダーで触り、最後に「プロンプトとしてコピー」で Claude Code に戻す。</p>
+      <div class="playground">
+        <div class="playground-control">
+          <label for="param-age">max-source-age-days（許容日数）</label>
+          <input type="range" id="param-age" min="0" max="7" value="1" step="1" data-unit="日">
+          <output for="param-age">1日</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-timeout">htmldate fetch timeout</label>
+          <input type="range" id="param-timeout" min="5" max="60" value="15" step="5" data-unit="秒">
+          <output for="param-timeout">15秒</output>
+        </div>
+        <div class="playground-control">
+          <label for="param-fetch-cap">htmldate 補完の 1 カテゴリ上限件数</label>
+          <input type="range" id="param-fetch-cap" min="5" max="40" value="20" step="5" data-unit="件">
+          <output for="param-fetch-cap">20件</output>
+        </div>
+        <div style="margin-top: var(--space-lg);">
+          <button class="btn btn-accent" id="copy-prompt">プロンプトとしてコピー</button>
+        </div>
+      </div>
+      <div class="severity-info">
+        <strong>既定値の根拠</strong>
+        <p>max-source-age-days=1 は現行運用（当日+前日のみ許容）の踏襲。timeout=15 秒は date_evidence.fetch_html の既定値と同一。上限件数 20 は 1 カテゴリの候補が通常 10〜30 件であることから、dedup の実行時間悪化（1 件 1 GET）を抑える安全弁。</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Tab 切替
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+      });
+    });
+
+    // Playground 値同期
+    document.querySelectorAll('.playground-control input[type="range"]').forEach(r => {
+      const out = document.querySelector(`output[for="${r.id}"]`);
+      const unit = r.dataset.unit || '';
+      r.addEventListener('input', () => { if (out) out.textContent = r.value + unit; });
+    });
+
+    // プロンプトコピー
+    const copyBtn = document.getElementById('copy-prompt');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const values = Array.from(document.querySelectorAll('.playground-control')).map(c => {
+          const label = c.querySelector('label')?.textContent?.trim() || '';
+          const range = c.querySelector('input[type="range"]');
+          const unit = range?.dataset.unit || '';
+          return `${label}: ${range.value}${unit}`;
+        }).join('\n');
+        const prompt = `以下のパラメータで進めてください。\n\n${values}`;
+        try {
+          await navigator.clipboard.writeText(prompt);
+          const orig = copyBtn.textContent;
+          copyBtn.textContent = 'コピーしました';
+          setTimeout(() => copyBtn.textContent = orig, 1500);
+        } catch (e) {
+          alert('クリップボードに書き込めませんでした。\n\n' + prompt);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

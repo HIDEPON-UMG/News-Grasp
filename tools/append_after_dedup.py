@@ -44,6 +44,7 @@ def filter_records(
     followup_gate: bool,
     freshness_gate: bool,
     max_source_age_days: int,
+    date_fetch_cap: int = dedup.DEFAULT_DATE_FETCH_CAP,
 ) -> tuple[list[dict], list[dict]]:
     return dedup.dedup_candidates(
         candidates,
@@ -53,6 +54,7 @@ def filter_records(
         followup_gate=followup_gate,
         freshness_gate=freshness_gate,
         max_source_age_days=max_source_age_days,
+        date_fetch_cap=date_fetch_cap,
     )
 
 
@@ -71,6 +73,8 @@ def main() -> int:
     p.add_argument("--no-freshness-gate", dest="freshness_gate", action="store_false",
                    help="保守用途。鮮度ゲートを無効化")
     p.add_argument("--max-source-age-days", type=int, default=dedup.DEFAULT_MAX_SOURCE_AGE_DAYS)
+    p.add_argument("--date-fetch-cap", type=int, default=dedup.DEFAULT_DATE_FETCH_CAP,
+                   help="鮮度ゲートの htmldate 補完 fetch 上限件数（既定: dedup と同じ）")
     args = p.parse_args()
 
     jsonl_path = Path(args.jsonl)
@@ -84,6 +88,7 @@ def main() -> int:
         followup_gate=args.followup_gate,
         freshness_gate=args.freshness_gate,
         max_source_age_days=args.max_source_age_days,
+        date_fetch_cap=args.date_fetch_cap,
     )
     append_records(jsonl_path, passed)
 

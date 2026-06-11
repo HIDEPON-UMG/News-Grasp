@@ -8,6 +8,9 @@ pluggy==1.6.0
 Pygments==2.20.0
 pytest==9.0.3
 
+# 記事公開日の独立証拠抽出 (tools/date_evidence.py)。2026-06-11 偽日付事故の恒久対策で導入
+htmldate==1.10.0
+
 # Web Push 送信 (tools/send_push.py)。必ず .venv の python で実行すること
 # (bare python は pywebpush 不在の別 venv に解決され 2026-05-30 朝に push が落ちた)。
 pywebpush==2.3.0

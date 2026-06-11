@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-11",
+  "category_id": "it",
+  "queries": [
+    "IT consulting AI digital transformation news June 10 11 2026 McKinsey Accenture Deloitte",
+    "NTT Data Fujitsu CTC consulting AI news June 2026",
+    "Accenture Deloitte McKinsey press release news June 10 2026",
+    "enterprise AI adoption consulting June 2026"
+  ],
+  "raw_results_total": 22,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "EY",
+    "McKinsey",
+    "BCG",
+    "NTT Data",
+    "CTC",
+    "Fujitsu",
+    "NEC",
+    "NTT"
+  ],
+  "quality_shortfall_reason": "IT-Consulting カテゴリは最も freshness gate の影響を受けた。NTT DATA/Google Cloud 連携（6月9日発表）・Accenture 買収（2月発表）・Google Cloud $750M partner fund（4月22日発表）はすべて鮮度基準を超過してdedup drop。直近24時間以内の IT/Consulting 固有プレスリリースが確認できず、TechCrunch の企業AI支出・VivaTech・AI outsourcing 記事3件のみを採用した。",
+  "dropped": [
+    {
+      "url": "https://www.nttdata.com/global/en/news/press-release/2026/june/060900",
+      "reason": "freshness gate: published 2026-06-09"
+    },
+    {
+      "url": "https://newsroom.accenture.com/news/2026/accenture-acquires-advanced-ai-technology-to-help-communications-companies-accelerate-autonomous-network-journeys",
+      "reason": "freshness gate: published 2026-02-24"
+    },
+    {
+      "url": "https://futureofconsulting.ai/ai-leadership/2026-consultings-ai-revolution-update/",
+      "reason": "freshness gate: published 2026-01-25"
+    },
+    {
+      "url": "https://newsroom.accenture.com/news/2026/ntt-docomo-global-and-accenture-launch-universal-wallet-infrastructure-powering-the-trusted-future-of-a-data-led-ai-driven-digital-society",
+      "reason": "freshness gate: published 2026-01-06"
+    },
+    {
+      "url": "https://www.googlecloudpresscorner.com/2026-04-22-Google-Cloud-Commits-750-Million-to-Accelerate-Partners-Agentic-AI-Development",
+      "reason": "freshness gate: published 2026-04-22"
+    }
+  ]
+}

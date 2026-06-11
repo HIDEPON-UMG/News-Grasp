@@ -73,3 +73,9 @@ tools/_*
 _poc_*/
 prompts/_poc-*
 data/_spike_*
+
+# 一時作業ファイル置き場 (2026-06-11)
+tmp/
+
+# CodeGraph ローカル索引 (2026-06-11)
+.codegraph/

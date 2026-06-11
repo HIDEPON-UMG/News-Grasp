@@ -1,0 +1,19 @@
+{
+  "date": "2026-06-11",
+  "category_id": "economy",
+  "queries": [
+    "CPI inflation report May 2026 prices",
+    "ECB Rate Decision AI Stock Rout Market Update June 11 2026",
+    "Nikkei S&P500 stock market June 10 2026",
+    "US inflation gasoline prices June 2026",
+    "Federal Reserve CPI May 2026 interest rate"
+  ],
+  "raw_results_total": 20,
+  "candidates_total": 8,
+  "selected_total": 6,
+  "coverage_terms_checked": ["Nikkei", "Reuters", "S&P500", "CPI", "inflation", "ECB", "Fed", "BOJ", "GDP", "USD/JPY"],
+  "dropped": [
+    {"url": "https://finance.yahoo.com/markets/stocks/articles/stocks-climb-ai-led-rebound-140817607.html", "reason": "freshness gate: published 2026-06-09"},
+    {"url": "https://www.capitalstreetfx.com/daily-blog/nikkei-225-history-bubble-crash-carry-trade-2026/", "reason": "freshness gate: published 2026-05-20"}
+  ]
+}

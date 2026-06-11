@@ -1,0 +1,34 @@
+{
+  "date": "2026-06-11",
+  "category_id": "game",
+  "queries": [
+    "ゲーム 新作 発表 2026年6月11日",
+    "任天堂 Nintendo Switch 2026年6月",
+    "game industry news June 11 2026",
+    "Summer Game Fest 2026 発表まとめ June 2026",
+    "ニンテンドーダイレクト 2026.6.9 発表まとめ ゼルダ キングダムハーツ",
+    "ウマ娘 カプコン miHoYo ゲーム 2026年6月11日",
+    "Final Fantasy VII Revelation Summer Game Fest 2026 June announcement",
+    "Nintendo Switch 2 ゼルダ 時のオカリナ リメイク 2026年6月10日",
+    "Nintendo Direct 2026 June 9 reaction recap Switch 2 lineup"
+  ],
+  "raw_results_total": 17,
+  "candidates_total": 17,
+  "selected_total": 5,
+  "coverage_terms_checked": ["任天堂", "Nintendo", "SQUARE ENIX", "Cygames", "ウマ娘", "カプコン", "miHoYo", "テンセント", "Capcom", "Switch2", "Summer Game Fest"],
+  "dropped": [
+    {"title": "2026年後半に発売されるNintendo Switch 2向けソフトを中心に最新情報を発信しまくる「Nintendo Direct 2026.6.9」まとめ（GIGAZINE）", "url": "https://gigazine.net/news/20260610-nintendo-direct-2026-6-9/", "reason": "followup gate: 新材料0 (前回掲載と同じ情報)"},
+    {"title": "Nintendo Direct June 2026 Full Recap: Ocarina Of Time Remake + KH4 Switch 2 (Dallas Express)", "url": "https://dallasexpress.com/business-markets/nintendo-direct-june-2026-full-recap-ocarina-of-time-remake-kh4-switch-2/", "reason": "freshness gate: published 2026-06-09 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "Here's Everything Announced During Nintendo's 2026 Summer Direct (Game Informer)", "url": "https://gameinformer.com/nintendo-direct/2026/06/09/heres-everything-announced-during-nintendos-2026-summer-direct", "reason": "freshness gate: source date 2026-06-09 age=2d > 1d"},
+    {"title": "Final Fantasy 7 Revelation Gets Its First Trailer At Summer Game Fest (GameSpot)", "url": "https://www.gamespot.com/articles/final-fantasy-7-revelation-gets-its-first-trailer-at-summer-game-fest/", "reason": "freshness gate: published 2026-06-05 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "FINAL FANTASY VII REVELATION ANNOUNCED — EXPERIENCE THE JOURNEY'S END IN SPRING 2027 (Square Enix Press)", "url": "https://press.na.square-enix.com/FINAL-FANTASY-VII-REVELATION-ANNOUNCED-EXPERIENCE-THE-JOURNEYS-END-IN-", "reason": "freshness gate: published 2026-05-06 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "Capcom Dominates Summer Game Fest with Code Veronica Remake (ENEBA)", "url": "https://www.eneba.com/hub/news/capcom-summer-game-fest-2026-resident-evil-veronica-remake/", "reason": "freshness gate: published 2026-06-09 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "Summer Game Fest 2026 Opens With Resident Evil: Code Veronica Remake Reveal (Analytics Insight)", "url": "https://www.analyticsinsight.net/news/summer-game-fest-2026-opens-with-resident-evil-code-veronica-remake-reveal", "reason": "freshness gate: published 2026-06-08 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "「ニンテンドーダイレクト 2026.6.9」発表まとめ（電ファミニコゲーマー）", "url": "https://news.denfaminicogamer.jp/news/2606092x", "reason": "freshness gate: published 2026-06-09 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "33 New Games Confirmed for the Nintendo Switch 2 (Game Rant)", "url": "https://gamerant.com/new-switch-2-games-coming-soon-list-nintendo-direct/", "reason": "freshness gate: published 2026-06-09 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "ウマ娘 プリティーダービー Steam版 英語版 正式サービス開始（gamebiz）", "url": "https://gamebiz.jp/news/408078", "reason": "freshness gate: published 2025-06-26 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "Summer Game Fest 2026 updates — Final Fantasy Revelation, Resident Evil Code Veronica (Tom's Guide)", "url": "https://www.tomsguide.com/news/live/summer-game-fest-2026-live-updates", "reason": "freshness gate: published 2026-06-05 via htmldate, exceeds max-source-age-days 1"},
+    {"title": "Nintendo Direct June 2026: Game-changing Switch 2 Reveals (TechGenyz)", "url": "https://techgenyz.com/nintendo-direct-june-biggest-reveals/", "reason": "score 70 — dedup passed但しスコア降順選別でtop5外（採用候補は6件、5件採用でTechGenyz除外）"}
+  ],
+  "notes": "Nintendo Direct 2026.6.9後の翌日報道（June 10-11）が中心。Summer Game Fest 2026（6/5-8）のCapcom/Square Enix発表は全件freshness gate dropのため掲載不可。再検索も実施したが新鮮な代替候補は出なかった。quality_shortfall なし（5件達成）。"
+}

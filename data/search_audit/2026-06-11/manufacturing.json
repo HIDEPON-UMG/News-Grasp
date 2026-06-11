@@ -1,0 +1,60 @@
+{
+  "date": "2026-06-11",
+  "category_id": "manufacturing",
+  "queries": [
+    "TSMC Renesas Denso semiconductor manufacturing Japan June 2026",
+    "TSMC May 2026 revenue report semiconductor",
+    "Toyota Denso Renesas manufacturing production June 10 11 2026",
+    "semiconductor Japan manufacturing news June 10 2026"
+  ],
+  "raw_results_total": 18,
+  "candidates_total": 7,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Toyota",
+    "Denso",
+    "Aisin",
+    "TSMC",
+    "Renesas",
+    "Sony",
+    "Kyocera",
+    "supply chain",
+    "製造",
+    "Foxconn",
+    "Intel",
+    "NVIDIA",
+    "Samsung"
+  ],
+  "quality_shortfall_reason": "TSMC熊本（JASM）黒字転換（5月18日）・TSMC US/Japan Trusval（5月12日）・Sony TSMC MOU（5月8日）・Toyota BEV METI認定（2024年9月）はすべて鮮度基準を超過。通過したのはTSMC 5月売上高レポート（pr.tsmc.com・SEC 6-K ともに6月10日付）の2件のみ。製造業カテゴリ最低3件に達しない。",
+  "dropped": [
+    {
+      "url": "https://www.taipeitimes.com/News/front/archives/2026/05/18/2003857513",
+      "reason": "freshness gate: source date 2026-05-18"
+    },
+    {
+      "url": "https://www.digitimes.com/news/a20260518PD230/tsmc-fab-jasm-profit.html",
+      "reason": "freshness gate: published 2026-05-18"
+    },
+    {
+      "url": "https://semiwiki.com/semiconductor-manufacturers/tsmc/363007-tsmc-kumamoto-pioneering-japans-semiconductor-revival/",
+      "reason": "freshness gate: published 2025-11-07"
+    },
+    {
+      "url": "https://www.digitimes.com/news/a20260512PD233/trusval-expansion-tsmc-revenue-growth.html",
+      "reason": "freshness gate: published 2026-05-12"
+    },
+    {
+      "url": "https://global.toyota/en/newsroom/corporate/41100223.html",
+      "reason": "freshness gate: published 2024-09-06"
+    },
+    {
+      "url": "https://www.sony-semicon.com/en/news/2026/2026050801.html",
+      "reason": "freshness gate: published 2026-05-08"
+    },
+    {
+      "title": "Foxconn×Intel AI インフラ提携 / Samsung×NVIDIA HBM 協議",
+      "url": "",
+      "reason": "2026-06-11 メイン検証で WebSearch 実打確認。発表日が 6/4-5 (Foxconn×Intel)・6/8-9 (Samsung×NVIDIA) で edition window (max-source-age-days 1) 外のため不採用"
+    }
+  ]
+}

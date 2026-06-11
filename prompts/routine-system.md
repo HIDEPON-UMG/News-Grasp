@@ -103,6 +103,7 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 #### 3-A. Web 検索
 
 - watchlist の各エントリと汎用キーワードで **直近 24 時間** の英語＋日本語ニュースを `WebSearch` ツールで検索
+- **全クエリに当月の日付語を必ず付ける**（例: `2026年6月` / `June 2026`、当日が分かるなら `2026年6月11日` / `June 11 2026`）。日付語を入れないと検索エンジンが過去の高被リンク記事を上位に返し、鮮度ゲートで後段 drop される古記事ばかり拾ってしまう（候補が枯れる主因）。当日日付は runner がプロンプト冒頭に注入する「今日の日付は YYYY-MM-DD (JST)」行を基準にする。
 - 候補は当面 **20-30 件まで広めに収集**（後段の dedup で半分は弾かれる前提）
 - 各候補に **重要度スコア（0-100）** を付ける（採点基準は下の「3-A.1 重要度スコアの採点基準」に従う）
 - **NewsPicks の有料コンテンツは見出し・公開部分のみ**
@@ -170,6 +171,11 @@ DESIGN.md の Typography「強調記法」セクションに同じ規約を一�
 # 2026-06-05 から本番では必須 (06-05 AI トップが 06-03 同一イベントで再採用された事故の恒久対策)。
 # --freshness-gate は URL パス上の発行日が古い候補を落とす境界フラグ。
 # 2026-06-07 から本番では必須 (seen_at だけ今日で、実記事は 2 月/4 月の再掲だった事故の恒久対策)。
+# 2026-06-11 強化: 月単位 URL (/2026/01/) も月粒度で判定し、URL から日付が取れない候補は
+#   htmldate で公開日を補完する (1 実行あたり最大 20 件 = --date-fetch-cap、超過分は warn-pass)。
+#   公開日が解決できた通過候補には published_date と date_evidence_source
+#   (url-path / url-path-month / htmldate) 注釈が付く。
+#   解決できなかった候補は stderr に「WARN freshness-unverified: <url>」が出る (= warn-pass)。
 ```
 
 `tools/dedup.py` は `articles.jsonl` の **全エントリ**（直近 7 日に限らない。過去何日でも）と照合する。判定ロジックは以下のとおりで、**実装（tools/dedup.py）が唯一の正本**。本文はその要約：
@@ -214,7 +220,17 @@ A・B のどちらでマッチしたかで扱いが分かれる（**2026-05-30 �
 
 ##### D. 鮮度ゲート（URL 発行日）
 
-`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。URL パスに `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような発行日が含まれる場合は、`--freshness-gate --max-source-age-days 1` で **JST 今日または前日公開の記事だけを許容**する。JST 朝刊では前日 US 時間の大ニュース（例: Reuters/FT の OpenAI superapp 報道）が本日号の対象になるため、1 日の edition window を持つ。URL に日付が無い候補は偽陽性を避けるため、このゲートだけでは落とさない。2 日以上前の記事を「続報」として採用したい場合は、今日付/前日付の新規 URL または一次ソースに切り替え、本文で差分を明示する。
+`seen_at` は News-Grasp が初めて観測した日時であり、記事そのものの発行日ではない。`--freshness-gate --max-source-age-days 1` で **JST 今日または前日公開の記事だけを許容**する。JST 朝刊では前日 US 時間の大ニュース（例: Reuters/FT の OpenAI superapp 報道）が本日号の対象になるため、1 日の edition window を持つ。発行日の解決は次の 3 段で行う（**実装は `tools/dedup.py` が正本**）：
+
+1. **URL 日単位日付**: `/2026/06/01/`、`/2026-06-01-...`、`/20260601-...`、`/2026/jun/04/` のような日まで取れる発行日。古ければ drop、新しければ通過し `date_evidence_source: url-path` 注釈が付く。
+2. **URL 月単位日付**: `/2026/01/slug` のように月までしか無い URL（crowdfundinsider 型）。候補の**月**が許容下限日の属する月より古ければ drop。同月以降は確定扱いにせず 3 の htmldate 補完に回す。
+3. **htmldate 補完**: URL から日付が取れない候補（日付なし＋月粒度どまり）に限り、記事 HTML から公開日を独立抽出する（1 実行あたり最大 20 件）。解決できて古ければ drop、新しければ通過し `date_evidence_source: htmldate` 注釈が付く。**fetch 失敗 / htmldate None の候補は落とさず通過させる（warn-pass）**。stderr に `WARN freshness-unverified: <url>` が出るので、warn-pass になった候補（注釈なし）は採用前に公開日を目視確認する。
+
+2 日以上前の記事を「続報」として採用したい場合は、今日付/前日付の新規 URL または一次ソースに切り替え、本文で差分を明示する。
+
+**古記事の「背景文脈」採用の禁止**: 「background context」「文脈補強」「editorial 判断で重要だから」等の裁量で、発行日が古い記事を**記事カードとして採用してはならない**。`tools/audit_all_article_urls.py --gate` の独立日付検証（htmldate / Wayback CDX）が当日/前日レコードを再チェックし、古記事が紛れていれば **fatal で号全体の push を止める**。背景となる過去のニュースは記事カードにせず、**本文（カテゴリ digest や考察）の言及に留める**（過去号への `[[関連過去号]]` リンクは可）。
+
+**注釈の確認手順**: dedup 出力の各通過候補には、公開日が解決できた場合 `published_date` と `date_evidence_source`（`url-path` / `url-path-month` / `htmldate`）が付く。採用判断ではこの注釈で発行日を確認する。**注釈が付いていない候補（= warn-pass。stderr に `WARN freshness-unverified` が出ている）だけは、採用前に元記事を開いて公開日を目視確認する**。
 
 ##### E. イベント単位の最終確認（**dedup.py 通過後の続報ゲート**・小プールカテゴリ向け）
 
@@ -232,7 +248,7 @@ A・B のどちらでマッチしたかで扱いが分かれる（**2026-05-30 �
 
 ##### F. 結果
 
-dedup を通過した候補から最終的に **カテゴリあたり 5 件**をスコア降順で確定。5 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。ただし 5 件未満で確定する場合は、カテゴリ digest の frontmatter に `quality_shortfall_reason` を必ず入れ、何を落としたのかを短く残す（例: `quality_shortfall_reason: "新材料の薄い follow-up を除外し、当日性の高い3件のみ採用"`）。理由なしの不足は `tools/validate_daily_quality.py` が公開前に落とす。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
+dedup を通過した候補から最終的に **カテゴリあたり 5 件**をスコア降順で確定。**dedup 後にカテゴリの採用候補が 5 件未満になった場合は、`quality_shortfall_reason` を確定する前に、クエリを変えて（日付語の付け方・watchlist エントリ・媒体 site: 指定を変える）再検索を 1 巡だけ行う**。鮮度ゲートで古記事が大量 drop されたことが原因なら、当日日付語を効かせ直すと候補が復活することが多い。再検索しても 5 件に満たない場合はその数で OK（無理に低スコアの似た話題を入れない）。5 件未満で確定する場合は、カテゴリ digest の frontmatter に `quality_shortfall_reason` を必ず入れ、何を落としたのか（再検索しても出なかった旨を含む）を短く残す（例: `quality_shortfall_reason: "新材料の薄い follow-up を除外し、当日性の高い3件のみ採用。クエリ再設計でも追加候補なし"`）。理由なしの不足は `tools/validate_daily_quality.py` が公開前に落とす。**スコア降順で並べ、最高スコアの記事が「TOP（FEATURED）」になる**。
 
 ##### G. 検索監査ログ（5件未満時は必須）
 
@@ -516,7 +532,7 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 3-A.5 dedup を通過した記事のみ、新規メタを `data/articles.jsonl` に append。**追記は必ず `tools/append_after_dedup.py` 経由で行い、直接ファイルへ append しない**。この境界スクリプトは `--followup-gate` と `--freshness-gate` を既定で有効化し、通過したレコードだけを追記する：
 
 ```bash
-.venv\Scripts\python.exe tools\append_after_dedup.py --jsonl data/articles.jsonl --max-source-age-days 7 < final_articles.jsonl
+.venv\Scripts\python.exe tools\append_after_dedup.py --jsonl data/articles.jsonl --max-source-age-days 1 < final_articles.jsonl
 ```
 
 スキーマ：

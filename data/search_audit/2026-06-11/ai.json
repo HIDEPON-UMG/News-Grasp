@@ -1,0 +1,20 @@
+{
+  "date": "2026-06-11",
+  "category_id": "ai",
+  "queries": [
+    "AI news June 11 2026 OpenAI Anthropic Google",
+    "Claude AI news June 10 2026 Anthropic update",
+    "artificial intelligence news today June 11 2026",
+    "OpenAI GPT release June 2026",
+    "site:techcrunch.com AI June 10 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 8,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Anthropic", "OpenAI", "Google DeepMind", "Meta AI", "NVIDIA", "AMD", "Claude", "Fable", "Gemini", "GPT"],
+  "dropped": [
+    {"url": "https://llm-stats.com/llm-updates", "reason": "same article (url match) - already in articles.jsonl"},
+    {"url": "https://www.bleepingcomputer.com/news/artificial-intelligence/anthropic-rolls-out-claude-fable-5-but-its-available-for-a-limited-time/", "reason": "freshness gate: published 2026-06-09"},
+    {"url": "https://www.heygotrade.com/en/news/semiconductor-selloff-nvidia-chip-rebound/", "reason": "freshness gate: published 2026-06-09"}
+  ]
+}
