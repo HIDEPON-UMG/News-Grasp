@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260611 — Economy</title>
+<meta name="description" content="6月10日（火）は米5月CPI発表が最大の経済イベント。前年比+4.2%は3年ぶりの高水準で、ガソリン価格急騰（中東緊張）が主因。予測通りの数値で米株は前日比での大きな動意なし（Dow-0.3%程度）。FedのJune FOMC（16〜17日）据え置きは確定的。ECBの6月11日25bp利上げを控えた欧州市場も神経質な展開が続いている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-11/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260611 — Economy">
+<meta property="og:description" content="6月10日（火）は米5月CPI発表が最大の経済イベント。前年比+4.2%は3年ぶりの高水準で、ガソリン価格急騰（中東緊張）が主因。予測通りの数値で米株は前日比での大きな動意なし（Dow-0.3%程度）。FedのJune FOMC（16〜17日）据え置きは確定的。ECBの6月11日25bp利上げを控えた欧州市場も神経質な展開が続いている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-11/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260611 — Economy">
+<meta name="twitter:description" content="6月10日（火）は米5月CPI発表が最大の経済イベント。前年比+4.2%は3年ぶりの高水準で、ガソリン価格急騰（中東緊張）が主因。予測通りの数値で米株は前日比での大きな動意なし（Dow-0.3%程度）。FedのJune FOMC（16〜17日）据え置きは確定的。ECBの6月11日25bp利上げを控えた欧州市場も神経質な展開が続いている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-11 · #20260611</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">6月10日（火）は米5月CPI発表が最大の経済イベント。前年比<span class="emph-und">+4.2%</span>は3年ぶりの高水準で、ガソリン価格急騰（中東緊張）が主因。予測通りの数値で米株は前日比での大きな動意なし（Dow-0.3%程度）。FedのJune FOMC（16〜17日）据え置きは確定的。ECBの6月11日25bp利上げを控えた欧州市場も神経質な展開が続いている。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">86</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·11</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260611</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-10 08:30 · CNBC</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.cnbc.com/2026/06/10/cpi-inflation-report-may-2026.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.cnbcfm.com/api/v1/image/108305303-1781099652244-108305303-1778534533413-gettyimages-2275673952-l1081522_6ucd6cvg.jpg?v=1781099674&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.cnbc.com/2026/06/10/cpi-inflation-report-may-2026.html" rel="noopener nofollow" target="_blank" style="color: inherit;">CPI inflation report May 2026: Prices rose 4.2% annually, three-year high</a>
+        <span class="story-title-ja">米5月CPI：前年比+4.2%、3年ぶり高水準 — ガソリン急騰が主因</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li>米BLS発表の5月CPI（消費者物価指数）は前年比<span class="emph-und">+4.2%</span>（4月+4.3%から小幅鈍化）。3年ぶりの高水準で、中東紛争に伴うガソリン価格急騰が主因。</li><li>コアCPI（食品・エネルギー除く）は+3.4%と落ち着いており、エネルギー価格が一時的に剥落すれば<strong>インフレ鈍化トレンドは維持</strong>との見方が優勢。</li><li>Fed は6月FOMCで据え置き確定済み。7月以降の利上げ再開シナリオは後退したが、<strong class="emph-bold">高金利長期化</strong>シナリオは維持される。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">■ ECONOMY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-11</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-10 08:30</span>
+        <span>· NPR</span>
+        <span class="more-card__score">91</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.npr.org/2026/06/10/nx-s1-5853077/inflation-over-4-cpi-gasoline-prices" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://npr.brightspotcdn.com/dims3/default/strip/false/crop/6000x3375+0+313/resize/1400/quality/85/format/jpeg/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fb2%2Fa3%2F0494c0e14d2383f9881b486ed623%2Fgettyimages-2270119940.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.npr.org/2026/06/10/nx-s1-5853077/inflation-over-4-cpi-gasoline-prices" rel="noopener nofollow" target="_blank">Inflation tops 4% for the first time in 3 years on spike in gasoline prices</a>
+        <span class="story-title-ja">インフレが3年ぶりに4%超え — ガソリン価格急騰が押し上げ</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>米国のCPIが<span class="emph-und">4%超え</span>に達したのは2023年以来3年ぶり。NPR分析では中東情勢による供給不安がガソリン先物を急騰させ、輸送コストが全物価を底上げしたと解説。</li><li>低所得層への打撃が顕著。ガソリン・食品は生活必需支出に占める比率が高く、<strong>実質賃金の伸びが物価上昇に追いつかない</strong>状況が続く。</li><li>政治的影響として、中間選挙前のバイデン政権的記憶が蘇り、生活費問題が有権者の関心トップ3に再浮上している。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-10 08:30</span>
+        <span>· U.S. Bureau of Labor Statistics</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://www.bls.gov/news.release/cpi.nr0.htm" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.bls.gov/news.release/cpi.nr0.htm" rel="noopener nofollow" target="_blank">Consumer Price Index Summary — May 2026 Results</a>
+        <span class="story-title-ja">BLS 公式 CPI サマリー：2026年5月結果</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">BLS</strong>（米国労働統計局）の公式発表：5月CPI前年比+4.2%、前月比+0.4%（4月+0.3%から加速）。エネルギー分は前月比+2.0%が全体を牽引。</li><li>住居費（Shelter）は前年比+5.1%と依然高止まりで、コアCPIを押し上げる構造的要因として継続中。</li><li>医療サービス費は前月比+0.2%と落ち着きを見せており、<strong>コアインフレの鈍化傾向</strong>は維持されていると読める。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-10 08:30</span>
+        <span>· CBS News</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.cbsnews.com/news/cpi-report-today-may-2026-inflation-iran-war-trump/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://assets3.cbsnewsstatic.com/hub/i/r/2026/04/10/b7466000-2b2b-46f1-a807-27cee767e381/thumbnail/1200x630/05b8aa1bf5008996cba025f682e446bf/gettyimages-2270117635.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.cbsnews.com/news/cpi-report-today-may-2026-inflation-iran-war-trump/" rel="noopener nofollow" target="_blank">Inflation topped 4% in May as CPI surged to its highest level in more than 3 years</a>
+        <span class="story-title-ja">5月CPIが3年超ぶり最高水準へ急騰 — CBS Newsが背景を解説</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>CBS News は5月CPIを「イラン問題とトランプ政権のエネルギー政策の複合効果」として分析。関税によるコスト転嫁が製造品価格を+0.6%押し上げた。</li><li>「インフレが3年超ぶりの最高水準」という表現が国民の心理に影響。<strong>消費者信頼感指数</strong>は2024年以来最低水準に落ちた可能性がある。</li><li>Fed議長の「高い不確実性が続く」という発言が繰り返され、市場では<span class="emph-und">9月以降の政策転換</span>を見通す動きが出始めている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-10 09:00</span>
+        <span>· Wichita Liberty</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.wichitaliberty.org/economics/may-2026-cpi-inflation-report-4-percent/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.wichitaliberty.org/wp-content/uploads/2026/06/12-month-percentage-chan-2026-05.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.wichitaliberty.org/economics/may-2026-cpi-inflation-report-4-percent/" rel="noopener nofollow" target="_blank">May 2026 CPI Report: Inflation Hits 4.2%, a Three-Year High</a>
+        <span class="story-title-ja">2026年5月CPI：インフレ4.2%で3年ぶり高水準 — FRBの対応は？</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>独立系経済分析メディアWichita Libertyによる5月CPIの図解解説。12ヶ月変化率グラフで+4.2%のトレンドを可視化。</li><li><strong class="emph-bold">Fed</strong>の責務（デュアルマンデート：物価安定+雇用最大化）の観点から、インフレ4%超は利下げどころか<strong>利上げ再開の議論</strong>を呼ぶ可能性があると指摘。</li><li>分析ではエネルギー・住居費・食品の3要素が高止まりしており、Fed の早期利下げを封じる「インフレのトライアングル」が継続中。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>米5月CPI前年比<span class="emph-und">+4.2%</span>は3年ぶりの高水準で、市場が織り込んでいた「インフレ鈍化シナリオ」を修正させた。コアCPIは+3.4%で落ち着いているが、ガソリン急騰（<strong>中東情勢起因</strong>）が全体を押し上げており、エネルギー価格の動向が今後の方向を左右する。Fed 6月据え置きは確定済みで、次の焦点は7月・9月FOMC。<strong class="emph-bold">ウォーシュ議長</strong>のタカ派発言と市場の利下げ期待剥落が続くなか、<span class="emph-und">米国経済の「ソフトランディング」シナリオは静かに書き直されている。</span></p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-06-11
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

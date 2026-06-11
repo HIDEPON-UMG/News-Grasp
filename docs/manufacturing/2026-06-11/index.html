@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260611 — Manufacturing</title>
+<meta name="description" content="6月10日（火）の製造業領域はTSMCの5月月次売上高が主要ニュース。売上高NT$416.98Bは前年同月比+30.1%増と強い成長が続いており、AI向けの先端プロセス（3nm/5nm）需要が牽引役。SEC 6-K提出書類でも同じデータが確認された。freshness gate の制約により、熊本JASM黒字転換や Sony TSMC MOU等の重要記事は…">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-11/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260611 — Manufacturing">
+<meta property="og:description" content="6月10日（火）の製造業領域はTSMCの5月月次売上高が主要ニュース。売上高NT$416.98Bは前年同月比+30.1%増と強い成長が続いており、AI向けの先端プロセス（3nm/5nm）需要が牽引役。SEC 6-K提出書類でも同じデータが確認された。freshness gate の制約により、熊本JASM黒字転換や Sony TSMC MOU等の重要記事は…">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-11/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260611 — Manufacturing">
+<meta name="twitter:description" content="6月10日（火）の製造業領域はTSMCの5月月次売上高が主要ニュース。売上高NT$416.98Bは前年同月比+30.1%増と強い成長が続いており、AI向けの先端プロセス（3nm/5nm）需要が牽引役。SEC 6-K提出書類でも同じデータが確認された。freshness gate の制約により、熊本JASM黒字転換や Sony TSMC MOU等の重要記事は…">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="manufacturing">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill is-active" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-11 · #20260611</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MANUFACTURING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⬢</span>
+      <h1 class="cat-hero__title">製造.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">6月10日（火）の製造業領域は<strong class="emph-bold">TSMC</strong>の5月月次売上高が主要ニュース。売上高NT$416.98Bは前年同月比<span class="emph-und">+30.1%</span>増と強い成長が続いており、AI向けの先端プロセス（3nm/5nm）需要が牽引役。SEC 6-K提出書類でも同じデータが確認された。freshness gate の制約により、熊本JASM黒字転換や Sony TSMC MOU等の重要記事は今号では掲載不可（6月9日以前公開のため）。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">2</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">88</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·11</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260611</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">← BACK TO MANUFACTURING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-10 09:00 · TSMC Press Release</span>
+    <span class="top-story__score">90</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+      
+      <a href="https://pr.tsmc.com/english/news/3320" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://pr.tsmc.com/english/news/3320" rel="noopener nofollow" target="_blank" style="color: inherit;">TSMC May 2026 Revenue Report: NT$416.98 billion, up 30.1% year-over-year</a>
+        <span class="story-title-ja">TSMC 2026年5月売上高：NT$4169.8億、前年比+30.1%増</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">TSMC</strong>の2026年5月売上高はNT$416.98B（約16.3B USD）。前月（4月）比+1.5%、前年同月比<span class="emph-und">+30.1%</span>の力強い成長。</li><li>AI向け先端プロセス（N3/N5）の需要が好調で、Apple・NVIDIA・Anthropic/Google向けのTPU/GPU製造がフル稼働を継続。</li><li>2026年通年売上高ガイダンスは前年比+25〜30%成長を維持。<strong>熊本第2工場（JASM 2）</strong>の建設加速も追い風になる見込み。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⬢ MANUFACTURING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-11</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⬢ stories</h2>
+    <span class="more-stories__head-meta">1 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-10 09:30</span>
+        <span>· SEC EDGAR</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://www.sec.gov/Archives/edgar/data/0001046179/000104617926000367/tsm-revenue20260610.htm" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.sec.gov/Archives/edgar/data/0001046179/000104617926000367/tsm-revenue20260610.htm" rel="noopener nofollow" target="_blank">TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD — Form 6-K, May 2026 Revenue</a>
+        <span class="story-title-ja">TSMC SEC提出 Form 6-K：2026年5月売上高を公式確認</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">TSMC</strong>がSEC（米国証券取引委員会）に提出したForm 6-Kで、2026年5月売上高NT$416.98B（前年比+30.1%）を公式に確認。</li><li>米国上場外国企業としてのIR開示義務に基づく定期報告。株主・機関投資家向けに英語で財務データを正確に開示。</li><li><strong>前月比+1.5%</strong>で加速傾向が継続。下半期は次世代iPhone（A21）・NVIDIA Blackwell Ultra の本格量産でさらなる上積みが見込まれる。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MANUFACTURING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">TSMC</strong>の5月売上高NT$416.98B（前年比+30.1%）はAI向け先端チップ需要の強さを裏付けた。6月9日に開示されたSEC Form 6-Kでも公式確認され、<strong>台湾の半導体製造能力</strong>に対する市場の信頼が維持されている。熊本JASM黒字・SonyとのMOU等の日本展開案件は当日鮮度外となったが、半導体の地政学的再配置は着実に進行している。<span class="emph-und">TSMCの売上成長は、AI・HPC・自動車の需要が重なって初めて出る数字だ——どれか一つが崩れてもこの軌道は維持できない。</span></p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-11/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MANUFACTURING · 2026-06-11
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
