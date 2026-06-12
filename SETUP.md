@@ -136,6 +136,7 @@ npx wrangler secret put LIST_TOKEN
 - Content Gate が収束しない場合、本日号は通常公開せず、`tools.publish_fallback` で直近成功号に「本日の更新は品質確認中」notice を挿入し、`tools.validate_availability` を通して fallback publish する
 - wrapper は hard timeout に加えて idle timeout を持つ。標準設定では `TimeoutSec=4800`、`IdleTimeoutSec=900`。stream-json 既定化により「動いている限り stdout が継続する」前提が成立するため、15 分無出力 = 真のハングとして 80 分の hard timeout を待たずに kill する。heartbeat は途中ログに elapsed/idle 秒を残す
 - gate failed 後の復旧は `-RecoverOnly` を使う。Claude / DeepDive を再実行せず、手修正済みのローカル状態から gate 群 → docs 再生成 → docs commit → push → Web Push だけを再開する
+- 手動慣らし運転や Codex からの実行では `news-grasp-runner.ps1` を foreground で直接待たない。`watch-news-grasp-runner.ps1` が runner を hidden 起動し、`news-grasp-runner-state.json` と日次ログを poll して `ok` / `fallback_ok` / `error` / stale を機械判定する
 - 手動公開で runner を通さない場合は `python tools/publish_update.py` を使う。Web Push 通知が必要な更新だけ `--notify` を付ける（微細修正では付けない）
 - ファイルは **UTF-8 BOM 必須**（PS5.1 が BOM 無しを CP932 解釈して日本語コメントごと壊す既知問題。`enforce_script_encoding.ps1` hook が自動付与する）
 
@@ -157,10 +158,15 @@ npx wrangler secret put LIST_TOKEN
 # タスクスケジューラから「News-Grasp Runner」を右クリック → 「実行する」
 ```
 
-ログは `C:\Users\hidek\bin\news-grasp-logs\YYYY-MM-DD.log` に出る。リアルタイム監視は別 PowerShell で：
+ログは `C:\Users\hidek\bin\news-grasp-logs\YYYY-MM-DD.log` に出る。Codex / 手動慣らしでは foreground 直実行ではなく watcher を使う：
 
 ```powershell
-Get-Content "C:\Users\hidek\bin\news-grasp-logs\2026-04-28.log" -Wait -Tail 100
+# 起動だけ行い、以後は短い status poll で完了検知する（Codex 推奨）
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\bin\watch-news-grasp-runner.ps1" -StartOnly
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\bin\watch-news-grasp-runner.ps1" -Status
+
+# 手元で最後まで待つ場合（終端マーカーを検知して JSON を返す）
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\bin\watch-news-grasp-runner.ps1" -Start -PollSeconds 30 -StaleMinutes 15 -TimeoutMinutes 120
 ```
 
 成功条件：
