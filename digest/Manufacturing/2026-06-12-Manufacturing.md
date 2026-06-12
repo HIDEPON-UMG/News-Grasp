@@ -8,7 +8,7 @@ categoryId: manufacturing
 accent: "#5A6B7B"
 glyph: "⬢"
 edition: Morning Edition
-quality_shortfall_reason: "Rohm/東芝/三菱電機パワー半導体JV協議が主要ストーリーだが、最新更新は5〜6月上旬付け記事。TSMCの熊本JASM第2工場・ルネサス/GFパートナーシップは既掲載でdrop。6月11〜12日の製造業新報が限られ、確認記事2件。最低3件基準に未達。"
+quality_shortfall_reason: "Rohm/東芝/三菱電機パワー半導体JV協議が主要ストーリー（EE Times・6月12日付）。TSMCの熊本JASM第2工場・ルネサス/GFパートナーシップは既掲載でdrop、digitimes記事は実発表4月の古記事と判明したため除外。6月11〜12日の製造業新報が限られ、確認記事は当日新着1件。最低3件基準に未達。"
 tags:
   - daily
   - newsletter

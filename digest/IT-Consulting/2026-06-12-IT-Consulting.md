@@ -8,7 +8,7 @@ categoryId: it
 accent: "#2E6B52"
 glyph: "▲"
 edition: Morning Edition
-quality_shortfall_reason: "鮮度ゲート（max-source-age-days 1）で通過3件のうちWindows Forum記事が実際には404（記事削除済み）のため確認記事は2件のみ。6月11〜12日のIT・コンサル領域で新規記事が少なく、複数追加検索でも補完不可。"
+quality_shortfall_reason: "鮮度ゲート（max-source-age-days 1）通過分のうち、Windows Forum記事は実際には404（記事削除済み）、Accenture×Ookla買収記事は実発表が3月3日の古記事と判明したため除外。確認記事は当日新着のWhalar買収1件のみ。6月11〜12日のIT・コンサル領域で新規記事が少なく、複数追加検索でも補完不可。"
 tags:
   - daily
   - newsletter
@@ -22,7 +22,7 @@ tags:
 # 💼 IT & Consulting — IT-Consulting
 
 > [!summary]
-> 6月11日（木）の IT/Consulting 領域は[[アクセンチュア]]による二つのM&Aが目を引く。**Whalar**（クリエイターエコノミーデータ）と**Ookla**（ネットワークインテリジェンス/Speedtest.net）を相次いで買収し、データと AI の組み合わせによる差別化戦略を加速している。鮮度ゲート通過記事が限られ今号は__2件構成__での公開となる。
+> 6月11日（木）の IT/Consulting 領域は[[アクセンチュア]]による M&A が目を引く。クリエイターエージェンシー**Whalar**（クリエイターエコノミーデータ）を買収し、データと AI の組み合わせによる差別化戦略を加速している。鮮度ゲート通過記事が限られ今号は__1件構成__での公開となる。
 
 ---
 
