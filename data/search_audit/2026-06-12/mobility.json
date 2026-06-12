@@ -1,0 +1,43 @@
+{
+  "date": "2026-06-12",
+  "category_id": "mobility",
+  "queries": [
+    "Waymo expansion cities 2026 June",
+    "Waymo vs Tesla robotaxi comparison June 2026",
+    "BYD overseas sales 2026 global expansion",
+    "BYD China domestic sales decline 2026",
+    "autonomous vehicle news June 11 12 2026",
+    "EV electric vehicle news June 2026",
+    "Toyota Honda EV news June 2026",
+    "Waymo highway autonomous driving June 2026",
+    "BYD 150万台 海外 2026",
+    "自動運転 ニュース 2026年6月"
+  ],
+  "raw_results_total": 44,
+  "candidates_total": 11,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Waymo",
+    "Tesla",
+    "BYD",
+    "Toyota",
+    "Uber",
+    "Waymo 10都市展開",
+    "Waymo vs Tesla 577台 42台",
+    "BYD 150万台海外目標",
+    "BYD国内7カ月連続減",
+    "自律走行転換点"
+  ],
+  "dropped": [
+    {"url": "https://www.humai.blog/2026-is-the-year-of-autonomous-driving-waymo-in-10-cities-tesla-expanding-where-you-can-already-get-a-robotaxi/", "reason": "dedup: followup matched (Waymo拡大記事の既掲載)"},
+    {"url": "https://electriccarsreport.com/2026/05/byd-april-2026-sales-overseas-surge-offsets-china-slowdown/", "reason": "dedup: followup matched (BYD海外成長記事の既掲載)"},
+    {"url": "https://theoutpost.ai/news-story/waymo-expands-highway-operations-to-three-major-cities-gaining-edge-over-tesla-s-robotaxi-service-21674/", "reason": "dedup: followup matched (Waymo高速道路展開の既掲載)"},
+    {"url": "https://electrek.co/2026/05/21/waymo-highway-pause/", "reason": "freshness: 5月21日付け記事、max-source-age-days 1超過"},
+    {"url": "https://www.reuters.com/waymo-benchmark-jun10/", "reason": "freshness: 6月10日付け記事、max-source-age-days 1超過"},
+    {"url": "https://carnewschina.com/2026/06/10/byd-sales/", "reason": "freshness: 6月10日付け記事、max-source-age-days 1超過"},
+    {"url": "https://evspecifications.com/byd-global-target/", "reason": "freshness-unverified: date ambiguous"}
+  ],
+  "quality_shortfall": true,
+  "quality_shortfall_reason": "鮮度ゲート（max-source-age-days 1）でWaymo高速道路一時停止（5月21〜22日）・Waymoベンチマーク比較（6月10日）・BYD記事複数（6月10日）が除外。6月11〜12日の新規モビリティ報道が限られ、通過は4件。",
+  "notes": "11件候補のうち鮮度ゲート通過4件。WaymoとBYDが6月12日号のモビリティ主役。5件基準未達だが4件は質的に充実している。"
+}

@@ -1,0 +1,44 @@
+{
+  "date": "2026-06-12",
+  "category_id": "manufacturing",
+  "queries": [
+    "Rohm Toshiba Mitsubishi power semiconductor JV 2026",
+    "パワー半導体 ローム 東芝 三菱電機 JV 2026",
+    "TSMC JASM Kumamoto Japan 2026",
+    "Renesas GlobalFoundries semiconductor 2026",
+    "Japan semiconductor manufacturing news June 2026",
+    "SiC power chip Japan 2026 June",
+    "製造業 ニュース 2026年6月12日",
+    "semiconductor news Japan June 11 12 2026",
+    "Infineon STMicro power semiconductor June 2026"
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 9,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota",
+    "ローム東芝三菱JV",
+    "SiC MOSFET IGBT",
+    "TSMC熊本JASM第2工場",
+    "ルネサスGF",
+    "インフィニオンSTマイクロ",
+    "日本半導体産業政策"
+  ],
+  "dropped": [
+    {"url": "https://www.electronicsforyou.biz/industry-buzz/rohm-toshiba-mitsubishi-plan-power-semiconductor-venture-to-boost-global-competitiveness/", "reason": "dedup: followup matched (JV交渉基記事の既掲載)"},
+    {"url": "https://www.reuters.com/tsmc-jasm-kumamoto-phase2/", "reason": "既掲載（articles.jsonl dedup by url_norm）"},
+    {"url": "https://www.renesas.com/globalfoundries-partnership-2026/", "reason": "既掲載（articles.jsonl dedup by url_norm）"},
+    {"url": "https://asia.nikkei.com/Business/Technology/Power-chip-giant-Japan-May-2026", "reason": "freshness: 5月付け記事、max-source-age-days 1超過"},
+    {"url": "https://techcrunch.com/rohm-toshiba-june10/", "reason": "freshness: 6月10日付け記事、max-source-age-days 1超過"},
+    {"url": "https://www.infineon.com/cms/en/about-infineon/press/market-news/2026/", "reason": "freshness-unverified: date ambiguous"},
+    {"url": "https://semiconductor.samsung.com/news/2026-06/", "reason": "freshness-unverified: date ambiguous"}
+  ],
+  "quality_shortfall": true,
+  "quality_shortfall_reason": "Rohm/東芝/三菱電機パワー半導体JV協議が主要ストーリーだが、最新更新は5〜6月上旬付け記事。TSMCの熊本JASM第2工場・ルネサス/GFパートナーシップは既掲載でdrop。6月11〜12日の製造業新報が限られ、確認記事2件。最低3件基準に未達。",
+  "notes": "9件候補のうち鮮度・dedup通過2件のみ。パワー半導体JVが製造業の主要テーマだが記事の更新が6月12日に集中しておらず補充不可。"
+}

@@ -1,0 +1,34 @@
+{
+  "date": "2026-06-12",
+  "category_id": "fx",
+  "queries": [
+    "ECB interest rate decision June 2026",
+    "Lagarde ECB press conference June 11 2026",
+    "BOJ Bank of Japan rate hike June 2026",
+    "USD JPY 160 intervention risk 2026",
+    "Fed FOMC June 2026 CPI inflation rate cut",
+    "US CPI May 2026 inflation data",
+    "dollar yen exchange rate June 12 2026",
+    "EUR USD ECB hike June 2026"
+  ],
+  "raw_results_total": 47,
+  "candidates_total": 8,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "ECB利上げ",
+    "ラガルド",
+    "BOJ利上げ",
+    "USD/JPY 160",
+    "介入リスク",
+    "CPI +4.2%",
+    "FOMC据え置き",
+    "EUR/USD"
+  ],
+  "dropped": [
+    {"url": "https://www.fxstreet.com/analysis/usd-jpy-outlook-usd-jpy-cracks-160-barrier-traders-cautious-of-potential-intervention-202606031343", "reason": "dedup: followup matched (ActionForex記事と内容重複)"},
+    {"url": "https://think.ing.com/snaps/bank-of-japan-further-hikes-expected-but-not-imminent/", "reason": "dedup: followup matched (BOJ記事と内容重複)"},
+    {"url": "https://www.dailyfx.com/news/ecb-hike-2026-june", "reason": "freshness-unverified: source age > 1 day estimate"}
+  ],
+  "quality_shortfall": false,
+  "notes": "ECB利上げ（6/11）・BOJ前夜（6/16）・CPI+4.2%の3大テーマが同日集中。鮮度ゲート通過5件で基準充足。"
+}

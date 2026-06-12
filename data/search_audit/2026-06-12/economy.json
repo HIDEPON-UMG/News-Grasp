@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-12",
+  "category_id": "economy",
+  "queries": [
+    "US CPI inflation May 2026 report",
+    "Federal Reserve FOMC June 2026 rate decision",
+    "ECB rate hike June 11 2026 economy impact",
+    "Bank of Japan rate hike June 2026 economy",
+    "global central bank tightening 2026",
+    "US inflation 4.2 percent May 2026",
+    "Fed funds rate outlook 2026 hold",
+    "global economy news June 12 2026",
+    "米国 インフレ 2026年6月 CPI",
+    "世界経済 中央銀行 利上げ 2026年6月"
+  ],
+  "raw_results_total": 49,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "米CPI +4.2%",
+    "FOMC据え置き",
+    "ECB利上げ（Economy視点）",
+    "BOJ利上げ予想",
+    "FF金利見通し",
+    "グローバル引き締め"
+  ],
+  "dropped": [
+    {"url": "https://www.cbsnews.com/news/cpi-report-today-may-2026-inflation-iran-war-trump/", "reason": "dedup: followup matched (Benzinga CPI記事と内容重複)"},
+    {"url": "https://markets.businessinsider.com/news/cpi-may-2026-fomc/", "reason": "dedup: url_norm / followup match"},
+    {"url": "https://seekingalpha.com/article/fed-june-2026-hold/", "reason": "freshness-unverified: date ambiguous"},
+    {"url": "https://www.marketwatch.com/story/global-rate-cycle-2026/", "reason": "freshness: 6月10日付け記事、max-source-age-days 1超過"},
+    {"url": "https://ft.com/content/boj-rate-hike-preview/", "reason": "freshness-unverified: paywall / date ambiguous"}
+  ],
+  "quality_shortfall": false,
+  "notes": "10件候補のうち5件が鮮度・dedup通過。ECBとFedのCPIが重複テーマのためFXカテゴリと記事が一部共有（articles.jsonl dedup済）。"
+}

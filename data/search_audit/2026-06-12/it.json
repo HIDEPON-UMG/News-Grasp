@@ -1,0 +1,39 @@
+{
+  "date": "2026-06-12",
+  "category_id": "it",
+  "queries": [
+    "Accenture acquisition June 2026",
+    "Accenture Whalar creator economy deal 2026",
+    "Accenture Ookla acquisition network intelligence 2026",
+    "IT consulting M&A June 11 12 2026",
+    "McKinsey Deloitte news June 2026",
+    "Microsoft Azure AI enterprise June 12 2026",
+    "SAP Oracle enterprise software June 2026",
+    "consulting firm AI strategy June 2026"
+  ],
+  "raw_results_total": 38,
+  "candidates_total": 5,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Accenture",
+    "McKinsey",
+    "BCG",
+    "Deloitte",
+    "PwC",
+    "NTT",
+    "アクセンチュアM&A",
+    "Whalar買収",
+    "Ookla買収",
+    "McKinsey AI",
+    "Microsoft Azure",
+    "Deloitte KPMG"
+  ],
+  "dropped": [
+    {"url": "https://windowsforum.com/threads/claude-fable-5-in-microsoft-foundry-governed-ai-agents-for-azure-enterprise.html", "reason": "HTTP 404: 記事削除済み（OGPフェッチ時に確認）"},
+    {"reason": "freshness: コンサル業界記事（6月1〜10日付け）max-source-age-days 1超過、URL特定なし"},
+    {"reason": "freshness-unverified: IT/コンサル記事（日付曖昧）、鮮度確認不可、URL特定なし"}
+  ],
+  "quality_shortfall": true,
+  "quality_shortfall_reason": "鮮度ゲート（max-source-age-days 1）で通過3件のうちWindows Forum記事が実際には404（記事削除済み）のため確認記事は2件のみ。6月11〜12日のIT・コンサル領域で新規記事が少なく、複数追加検索でも補完不可。",
+  "notes": "Accentureの連続M&A（Whalar + Ookla）が本号のIT主要テーマ。Windows Forum 404により2件構成。追加検索8クエリで補充を試みたが基準以上の鮮度記事は発見できなかった。candidates_total=5は鮮度ゲート厳格適用前の一次候補数（URL未記録の2件を含む）。"
+}

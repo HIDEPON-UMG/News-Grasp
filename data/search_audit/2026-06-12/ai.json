@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-12",
+  "category_id": "ai",
+  "queries": [
+    "Claude Fable 5 Anthropic release June 2026",
+    "Anthropic Fable 5 vs GPT-5.5 benchmark 2026",
+    "Anthropic Mythos 5 Glasswing cyberdefense 2026",
+    "GPT-5.5 OpenAI agentic model June 2026",
+    "Boston Dynamics AIVI Google Gemini Robotics 2026",
+    "AI frontier model benchmark June 2026",
+    "Anthropic Project Glasswing partners 2026",
+    "Claude Fable 5 public release announcement"
+  ],
+  "raw_results_total": 52,
+  "candidates_total": 12,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Claude Fable 5公開",
+    "GPT-5.5比較",
+    "Mythos 5ゲート戦略",
+    "Glasswing 15カ国150社",
+    "AIVI Gemini Robotics",
+    "フロンティアモデル首位交代"
+  ],
+  "dropped": [
+    {"url": "https://techbriefly.com/2026/04/30/new-gpt-5-5-cyber-model-follows-anthropics-secret-mythos-release/", "reason": "dedup: followup matched (Fable5/GPT-5.5記事に対し既掲載)"},
+    {"url": "https://securityboulevard.com/2026/05/anthropic-allows-glasswing-partners-to-share-mythos-based-findings/", "reason": "dedup: followup matched (Glasswing記事に対し既掲載)"},
+    {"url": "https://roboticsandautomationnews.com/2026/04/15/boston-dynamics-integrates-google-deepminds-gemini-robotics-model-into-spot-inspection-platform/100585/", "reason": "dedup: followup matched (AIVI記事に対し既掲載)"},
+    {"url": "https://www.anthropic.com/news", "reason": "dedup: followup matched (Glasswing拡大記事)"},
+    {"url": "https://venturebeat.com/ai/anthropic-fable-5-vs-gpt-5-5-full-benchmark/", "reason": "freshness: 6月10日付け記事でmax-source-age-days 1に未達"},
+    {"url": "https://the-decoder.com/claude-fable-5-benchmarks/", "reason": "freshness: 6月10日付け記事でmax-source-age-days 1に未達"},
+    {"url": "https://aisecuritydigest.com/mythos5-glasswing-june/", "reason": "freshness-unverified: date ambiguous"}
+  ],
+  "quality_shortfall": false,
+  "notes": "Fable 5公開（6/11）が主要イベント。12件候補のうち5件が基準充足。followup検出が多数あったが新規報道であることを確認して選択。"
+}

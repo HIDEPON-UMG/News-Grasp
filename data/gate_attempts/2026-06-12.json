@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "gates": {
+    "summary-reflection": {
+      "signatures": {
+        "a9e9182dc7cf20fb": {
+          "failures": 1,
+          "artifact_hashes": [
+            "735dbd98fd800e8a"
+          ]
+        }
+      },
+      "categories": {
+        "summary": 1
+      }
+    },
+    "daily-quality": {
+      "signatures": {
+        "7511dcf34623ff4a": {
+          "failures": 1,
+          "artifact_hashes": [
+            "1982ee261c39f047"
+          ]
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    },
+    "url-liveness": {
+      "signatures": {
+        "9b8f8dc94ec826d1": {
+          "failures": 1,
+          "artifact_hashes": [
+            "8a25707536f73b3d"
+          ]
+        }
+      },
+      "categories": {
+        "urls": 1
+      }
+    },
+    "record-schema": {
+      "signatures": {
+        "bf3d676fe2f73f9b": {
+          "failures": 1,
+          "artifact_hashes": [
+            "0977be9f7406bafd"
+          ]
+        },
+        "8b39a356e9976806": {
+          "failures": 1,
+          "artifact_hashes": [
+            "f3472a7cd3823e38"
+          ]
+        }
+      },
+      "categories": {
+        "records": 2
+      }
+    }
+  }
+}
