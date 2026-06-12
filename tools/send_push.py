@@ -43,6 +43,9 @@ from tools.config import BASE_URL, PUSH_WORKER_URL  # noqa: E402  URL の単一�
 DEFAULT_VAPID_KEY_FILE = Path.home() / ".secrets" / "news-grasp-vapid.pem"
 DEFAULT_TOKEN_FILE = Path.home() / ".secrets" / "news-grasp-push-token.txt"
 DEFAULT_SUBSCRIPTIONS_FILE = ROOT / "data" / "push_subscriptions.secret.json"
+# fallback 公開状態の単一ソース (publish_fallback.py が所有)。当日が fallback 公開
+# (品質確認中 notice) のとき、通常文面の push で旧号へ誘導するのを抑止する。
+PUBLISH_STATUS_FILE = ROOT / "docs" / "publish-status.json"
 # VAPID の "sub" クレーム: push サービスが送信者に連絡するための識別子（mailto: か https:）
 VAPID_CLAIMS_SUB = "mailto:hideki.kusunoki@gmail.com"
 
@@ -200,6 +203,40 @@ def build_payload(title: str, body: str, url: str) -> str:
     return json.dumps({"title": title, "body": body, "url": url}, ensure_ascii=False)
 
 
+def _today_jst_str() -> str:
+    """当日 (JST) を YYYY-MM-DD で返す。tz 取得失敗時はローカル時刻。"""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d")
+    except Exception:  # noqa: BLE001  tz 取得失敗時はローカル時刻にフォールバック
+        return datetime.now().strftime("%Y-%m-%d")
+
+
+def publish_status_is_fallback(status_path: str | Path, today_str: str) -> bool:
+    """docs/publish-status.json が「当日 fallback 公開中」を示すなら True。
+
+    Content Gate 失敗で fallback publish (品質確認中 notice) になった日は、サイトが
+    旧号を表示しているため、通常文面の push (「今日の News Grasp / …の最新情報」) で
+    そこへ誘導すると誤誘導になる (2026-06-12 実測で fallback 中も通常 push が飛んだ)。
+    本関数が True を返す間、send_push は送信を抑止する。
+
+    成功公開時は runner が `publish_fallback mark-ok` で result=published_ok を書くため
+    抑止は解除される。status ファイルが無い / JSON 不正 / result が fallback でない /
+    date が当日でない場合は False (= 通常どおり送信)。前日以前の stale fallback を
+    当日の手動送信が誤って抑止しないよう date == 当日 を必須にする。
+    """
+    try:
+        status = json.loads(Path(status_path).read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError, ValueError):
+        return False
+    if not isinstance(status, dict):
+        return False
+    return (
+        status.get("result") == "published_fallback_with_notice"
+        and status.get("date") == today_str
+    )
+
+
 def send_one(subscription: dict, payload: str, vapid_key_file: str, claims_sub: str):
     """1 購読へ送信。(ok: bool, gone: bool, detail: str) を返す。
 
@@ -269,6 +306,14 @@ def main() -> int:
 
     if args.dry_run:
         print("DRY-RUN: 送信せず終了")
+        return 0
+
+    # fallback 公開中 (品質確認中 notice) は通常文面の push で旧号へ誘導すると誤誘導に
+    # なるため送信を抑止する。成功公開時は runner が publish_fallback mark-ok で
+    # published_ok に戻すため抑止は解除される (2026-06-12 疑義 C の状態同期)。
+    if publish_status_is_fallback(PUBLISH_STATUS_FILE, _today_jst_str()):
+        print("fallback 公開中 (品質確認中 notice) のため push を抑止します (exit 0)。"
+              "通常号が確定すれば publish_fallback mark-ok で抑止が解除されます。")
         return 0
 
     key_file = Path(args.vapid_key_file)

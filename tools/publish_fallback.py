@@ -66,6 +66,25 @@ def write_fallback(docs_dir: Path, *, date: str, reason: str, notice: str = DEFA
     (docs_dir / STATUS_FILE).write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def mark_ok(docs_dir: Path, *, date: str) -> None:
+    """通常号の成功公開時に publish-status.json を published_ok へリセットする。
+
+    fallback publish は publish-status.json に published_fallback_with_notice を残すが、
+    通常号が成功公開されても誰もこれを戻さず stale なままだった (2026-06-12 発覚)。
+    send_push.py はこの状態を読んで「fallback 公開中は通知を抑止」するため、成功経路で
+    必ず本関数を呼び published_ok に戻すことが fallback 抑止を解除する状態同期点になる
+    (publish-status.json の所有者を本モジュールに一本化 = 境界 1 箇所集約)。
+    """
+    status = {
+        "result": "published_ok",
+        "date": date,
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    (docs_dir / STATUS_FILE).write_text(
+        json.dumps(status, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def validate_availability(docs_dir: Path, *, expect_fallback: bool = False) -> list[str]:
     errors: list[str] = []
     index_path = docs_dir / "index.html"
@@ -101,6 +120,9 @@ def main(argv: list[str] | None = None) -> int:
     fb.add_argument("--date", required=True)
     fb.add_argument("--reason", required=True)
     fb.add_argument("--notice", default=DEFAULT_NOTICE)
+    ok = sub.add_parser("mark-ok")
+    ok.add_argument("--docs-dir", type=Path, default=Path("docs"))
+    ok.add_argument("--date", required=True)
     val = sub.add_parser("validate")
     val.add_argument("--docs-dir", type=Path, default=Path("docs"))
     val.add_argument("--expect-fallback", action="store_true")
@@ -109,6 +131,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "fallback":
         write_fallback(args.docs_dir, date=args.date, reason=args.reason, notice=args.notice)
         print(f"PASS: fallback notice written ({args.docs_dir / 'index.html'})")
+        return 0
+
+    if args.cmd == "mark-ok":
+        mark_ok(args.docs_dir, date=args.date)
+        print(f"PASS: publish-status marked ok ({args.docs_dir / STATUS_FILE})")
         return 0
 
     errors = validate_availability(args.docs_dir, expect_fallback=args.expect_fallback)

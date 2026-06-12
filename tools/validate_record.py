@@ -184,9 +184,12 @@ def validate_jsonl(
         except RecordSchemaError as e:
             title = str(rec.get("title", ""))[:50]
             errs.append(f"line {lineno}: {e} (title={title!r})")
-            continue
         # 号日整合チェック: 当日生成 (seen_at の日付部分 == issue_date) の record は
         # date が号日と一致していなければ誤記扱い (fatal)。過去 record は対象外。
+        # schema 違反があっても continue で隠さず独立に報告する: 2026-06-12 慣らしで
+        # thumb 欠落が号日エラーをマスクし、bounded repair (予算 1 回) に全エラーが
+        # 渡らず attempt 2 で新エラーが露出 → 予算切れ → fallback publish に落ちた。
+        # gate は 1 attempt で全違反クラスを開示しないと修復予算が機能しない。
         if issue_date is not None and isinstance(rec, dict):
             seen_day = _seen_at_date_part(rec)
             if seen_day == issue_date and rec.get("date") != issue_date:

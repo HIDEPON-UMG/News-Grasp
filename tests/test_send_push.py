@@ -232,6 +232,70 @@ def test_load_subscriptions_from_worker(monkeypatch):
     assert "tok%20en" in captured["url"], "token が URL エンコードされていない"
 
 
+# --- fallback 公開中の push 抑止 (2026-06-12 疑義 C) --------------------------
+
+def test_publish_status_is_fallback_pure(tmp_path):
+    """当日 fallback 公開中のみ True を返す純関数契約。
+
+    なぜ重要か: fallback publish は旧号を表示しているため、通常文面の push で誘導すると
+    誤誘導になる (2026-06-12 実測で fallback 中も通常 push が飛んだ)。当日 fallback のみ
+    抑止し、published_ok / ファイル無し / 壊れた JSON / 別日付の stale fallback では送信を
+    止めない (前日の残骸で当日の手動送信を誤抑止しないため)。
+    """
+    f = tmp_path / "publish-status.json"
+    # 当日 fallback → True
+    f.write_text(json.dumps({"result": "published_fallback_with_notice", "date": "2026-06-12"}),
+                 encoding="utf-8")
+    assert sp.publish_status_is_fallback(f, "2026-06-12") is True
+    # 別日付の fallback (stale) → False
+    assert sp.publish_status_is_fallback(f, "2026-06-13") is False
+    # published_ok → False
+    f.write_text(json.dumps({"result": "published_ok", "date": "2026-06-12"}), encoding="utf-8")
+    assert sp.publish_status_is_fallback(f, "2026-06-12") is False
+    # ファイル無し → False
+    assert sp.publish_status_is_fallback(tmp_path / "nope.json", "2026-06-12") is False
+    # 壊れた JSON → False
+    f.write_text("{ broken", encoding="utf-8")
+    assert sp.publish_status_is_fallback(f, "2026-06-12") is False
+
+
+def test_main_suppresses_push_during_fallback(tmp_path, monkeypatch, capsys):
+    """当日 fallback 公開中は購読者がいても send_one を呼ばず exit 0 (疑義 C)。
+
+    なぜ重要か: 2026-06-12 実測で fallback 中も通常文面の push が飛び、品質確認中の旧号へ
+    誤誘導した。fallback 状態を読んで送信を抑止し、成功公開 (mark-ok で published_ok) 後に
+    だけ通常 push が飛ぶことを locked-in する。
+    """
+    f = tmp_path / "subs.json"
+    f.write_text(json.dumps([SAMPLE_SUB]), encoding="utf-8")
+    no_token = tmp_path / "no_token.txt"  # token 無し → file 経路を強制
+    status = tmp_path / "publish-status.json"
+    today = sp._today_jst_str()
+    status.write_text(
+        json.dumps({"result": "published_fallback_with_notice", "date": today}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(sp, "PUBLISH_STATUS_FILE", status)
+    called = {"n": 0}
+
+    def _boom(*a, **k):
+        called["n"] += 1
+        return True, False, "ok"
+
+    monkeypatch.setattr(sp, "send_one", _boom)
+    monkeypatch.setattr(
+        sys, "argv",
+        ["send_push.py",
+         "--subscriptions-file", str(f),
+         "--token-file", str(no_token),
+         "--vapid-key-file", str(tmp_path / "key.pem")],
+    )
+    assert main() == 0
+    out = capsys.readouterr().out
+    assert "抑止" in out
+    assert called["n"] == 0, "fallback 中に send_one が呼ばれた (抑止が効いていない)"
+
+
 def test_main_prefers_worker_when_configured(tmp_path, monkeypatch, capsys):
     """worker-url と token が揃えば Worker を取得元に選ぶ（dry-run で送信せず確認）。"""
     tok = tmp_path / "tok.txt"

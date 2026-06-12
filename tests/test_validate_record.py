@@ -214,3 +214,22 @@ def test_issue_date_works_with_recent_window(tmp_path: Path):
     errs = validate_jsonl(p, recent_days=7, today=date(2026, 6, 11), issue_date=issue)
     assert len(errs) == 1, f"recent 窓内の号日不整合 1 件のみ検出するはず: {errs}"
     assert "号日不整合" in errs[0]
+
+
+def test_schema_error_does_not_mask_issue_date_error(tmp_path: Path):
+    """schema 違反 (thumb 欠落) と号日不整合は同一 attempt で両方報告される。
+
+    なぜ重要か: 2026-06-12 慣らし運転で thumb 欠落が号日エラーをマスクし、
+    bounded repair (予算 1 回) が attempt 1 のエラー一覧だけを修復 →
+    attempt 2 で初めて号日エラーが露出 → 予算切れ → fallback publish に落ちた。
+    gate が 1 attempt で全違反クラスを開示しないと修復予算は構造的に機能しない。
+    """
+    issue = "2026-06-12"
+    rec = _issue_record(date_v="2026-06-11", seen_at="2026-06-12T06:12:00+09:00")
+    del rec["thumb"]  # schema 違反 (必須キー欠落) を同時に仕込む
+    p = _write_jsonl(tmp_path, rec)
+    errs = validate_jsonl(p, recent_days=None, issue_date=issue)
+    assert len(errs) == 2, f"schema 違反と号日不整合の両方を報告するはず: {errs}"
+    joined = "\n".join(errs)
+    assert "必須キー欠落" in joined and "thumb" in joined
+    assert "号日不整合" in joined

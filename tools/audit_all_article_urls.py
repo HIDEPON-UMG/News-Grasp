@@ -156,6 +156,25 @@ def _load_session_urls(
     return norm, legacy, today_str
 
 
+def claimed_publication_date(published_date: object) -> str | None:
+    """日付証拠検証に使う「自己申告公開日」を返す純関数。無ければ None。
+
+    2026-06-12 意味論確定: record の date は号日 (digest 掲載日)、published_date が
+    記事の実公開日。独立証拠 (htmldate/Wayback) と突合すべきは published_date のみ。
+    published_date が無い record は「公開日の自己申告が無い」ため日付証拠検証の対象外
+    とし None を返す (呼び出し側で skip)。
+
+    旧実装は published_date が無いとき号日 (issue_date) にフォールバックしていたが、
+    号日を公開日として htmldate と突合すると「前々日公開の記事を号日に載せた」だけで
+    偽日付 fatal になり、record-schema gate (date == 号日) と同時に満たせない矛盾を
+    生んだ (2026-06-12 復旧で実証)。号日は公開日の主張ではないので突合対象にしない
+    ([[feedback_check_design_principles]] の category error 根絶)。
+    """
+    if isinstance(published_date, str) and published_date.strip():
+        return published_date.strip()
+    return None
+
+
 def main() -> int:
     # 日本語版 Windows の cp932 では em-dash (—) や ✓ などの記号で print が
     # UnicodeEncodeError を起こし、NG URL 一覧の表示前にプロセスがクラッシュする。
@@ -198,6 +217,12 @@ def main() -> int:
     cutoff = today - timedelta(days=args.recent) if args.recent else None
 
     items: list[tuple[str, str, str]] = []  # (date, title, url)
+    # date は号日 (= digest 掲載日)、published_date は記事の実公開日 (2026-06-12 意味論確定)。
+    # 日付証拠検証の「自己申告公開日」は published_date のみを使う。published_date が無い
+    # record は公開日の自己申告が無いため日付証拠検証の対象外 (skip)。号日を公開日として
+    # htmldate と突合すると、前々日公開の記事を号日に載せただけで偽日付扱いになり
+    # record-schema gate (date==号日) と矛盾するため (2026-06-12 gate 矛盾の構造対策)。
+    pub_by_url: dict[str, str] = {}
     with jsonl.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -219,6 +244,9 @@ def main() -> int:
                     continue
                 if dt < cutoff:
                     continue
+            pub = d.get("published_date")
+            if isinstance(pub, str) and pub.strip():
+                pub_by_url[url] = pub.strip()
             items.append((dt_str, title, url))
 
     if not items:
@@ -301,8 +329,14 @@ def main() -> int:
 
             def _check_date(item):
                 dt_str, title, url = item
+                claimed_str = claimed_publication_date(pub_by_url.get(url))
+                if claimed_str is None:
+                    # published_date が無い = 公開日の自己申告なし → 日付証拠検証の対象外。
+                    # 号日 (dt_str) を公開日扱いして htmldate と突合すると偽 fatal になり
+                    # record-schema gate と矛盾するため skip (2026-06-12 gate 矛盾の構造対策)。
+                    return None
                 try:
-                    claimed = datetime.strptime(dt_str, "%Y-%m-%d").date()
+                    claimed = datetime.strptime(claimed_str, "%Y-%m-%d").date()
                 except ValueError:
                     return None
                 html = fetch_html(url)
