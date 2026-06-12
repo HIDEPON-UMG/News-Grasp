@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-06-13</title>
+<meta name="description" content="2026-06-13 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-06-13/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-06-13">
+<meta property="og:description" content="2026-06-13 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-06-13/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-06-13">
+<meta name="twitter:description" content="2026-06-13 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-13/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-06-13/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260613</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260613</span></h2>
+      
+      <div class="summary-hero__subtitle">「中銀利上げ転換点とAI価格戦争の勃発」</div>
+      
+      <div class="summary-hero__lead"><strong class="emph-bold">ECB</strong>が4年ぶり利上げを断行した翌週末、<strong class="emph-bold">日銀</strong>が月曜6月16日に<strong>1%利上げ</strong>を秒読みする中、<strong class="emph-bold">OpenAI</strong>は競合<strong class="emph-bold">Anthropic</strong>のClaudeトラフィック急増という現実に価格で応じようとしている。金融秩序の転換とAI産業の価格競争が同一週に可視化されたこの土曜日は、<strong class="emph-bold">丸紅</strong>・<strong class="emph-bold">デジタル庁</strong>・freeeが示す企業AIの実装フェーズ本格化とともに、<span class="emph-und">数量から価格へ</span>、能力から実用へと競争の文法が書き換えられる起点として記憶されるだろう。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">9</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">16</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">「<strong class="emph-bold">OpenAI</strong>の値下げ検討は<strong class="emph-bold">Anthropic</strong> Claudeのトラフィック急増という事実への反応だ。<span class="emph-und">数量から価格へ</span>戦場が移り、フロンティアAIは新しい競争局面に入った。」</div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — 利上げ一巡と価格競争が交差するクロスポイント</h3>
+        <p class="summary-sec__body">6月第2週末は「<strong>中央銀行利上げの連鎖</strong>」と「<strong>AI産業の価格競争移行</strong>」が同時に可視化された日だ。<strong class="emph-bold">ECB</strong>が4年ぶりの利上げを断行した翌週末、<strong class="emph-bold">日銀</strong>が月曜16日に1%利上げを控え市場は次のステップを模索している。その一方で<strong class="emph-bold">OpenAI</strong>は値下げ検討を表明し、<strong class="emph-bold">Anthropic</strong>のトラフィック急増という脅威に価格で応じようとしている。IT分野では丸紅・デジタル庁・freeeが企業AIの実装フェーズ到達を示し、<span class="emph-und">金融・AI・ITの三軸が同時に曲がり角</span>を迎えた土曜日の構造を読み解く。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">為替 — ECBデータ依存と日銀秒読みで円安圧力継続</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ECB</strong>利上げ（<span class="emph-und">3.50%→3.75%</span>）の翌日、<strong class="emph-bold">レーン</strong>フィンランド中銀総裁が「追加引き締めは既定路線でない」と発言し、ECBのフォワードガイダンス不在が確認された。日本では<strong class="emph-bold">植田和男</strong>総裁が入院し、6月15〜16日の決定会合を<strong>内田副総裁が議長代行</strong>として主導する異例の態勢になっている。ドル円は160円台を維持、企業の想定為替レートとの乖離は10円超に拡大し<span class="emph-und">中小企業の収益圧迫が深刻化</span>している。FRBは<strong class="emph-bold">ウォーシュ</strong>議長の17日FOMC発言が次のグローバル金利の方向を左右する。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">ECB</strong>（欧州中央銀行）が<strong class="emph-bold">イラン</strong>情勢悪化に伴うエネルギー価格上昇を受け、約4年ぶりの利上げを決定。<strong class="emph-bold">ラガルド</strong>総裁は<strong>「予防的措置であり強力・持続的な引き締めではない」</strong>と強調し過度の引き締め懸念を払拭。</li>
+          
+          <li>ヘッドラインインフレは4%台前半でピークアウトする見込みで、9月に追加利上げ後は様子見に転じる見通し。前回2022〜23年の利上げ局面と異なり<strong>物価の二次波及が限定的</strong>と分析し、比較的早期の対応が功を奏すると評価。</li>
+          
+          <li><span class="emph-und">ユーロ円・ユーロドルへの影響</span>として、ECBが利上げ継続を確約しない姿勢を維持しつつ日銀・FRBも動く週は、ユーロの方向感が定まりにくく<strong>ドル円・クロス円の乱高下リスク</strong>が高まる局面と位置付けられる。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — OpenAI値下げvs Anthropicトラフィック急増</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">OpenAI</strong>がBloomberg報道で<strong>大幅値下げ検討</strong>を表明した背景には、<strong class="emph-bold">Anthropic</strong>のClaude利用が過去最高トラフィックを記録したことがある。Fable 5投入とIPO準備を同時進行させるAnthropicは企業向け・API需要の両面で攻勢をかけている。OpenAIの値下げが実現すれば、フロンティアモデルの競争軸が「能力」から「価格」へシフトし、<span class="emph-und">AIの民主化と収益性のトレードオフ</span>が鮮明になる局面だ。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">OpenAI</strong>はAnthropicが同様の値下げに踏み切った場合、<strong>トークン料金を含む複数のコスト引き下げ</strong>を検討中とWSJが報道——協議は初期段階と関係者</li>
+          
+          <li>両社はともに<strong class="emph-bold">IPO</strong>を控えており、<span class="emph-und">Anthropicは9650億ドル評価でIPO申請草案をSECに非公開提出</span>——価格競争はコスト増と株主への説明責任という二重のジレンマを生む</li>
+          
+          <li>AI市場での覇権争いは<strong>Gemini・Claude・GPT</strong>の三つ巴の構図から価格軸の競争に移行しつつあり、開発者・企業ユーザーの調達コスト低下が現実味を帯びてきた</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — 企業AIの実装フェーズへ本格移行</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">丸紅</strong>が「まるちゃ」をSaaS化して月額3万円から外部提供を開始したことは、大企業内製AIが一般市場に降りてくる動きの嚆矢だ。<strong class="emph-bold">デジタル庁</strong>のガバメントクラウド<strong>平均30分払い出し</strong>は行政DXの速度が官民競争の水準に近づいたことを示す。<strong class="emph-bold">freee</strong>のSaaS逆張り戦略はAIエージェントが「アプリを代替する」時代に、<span class="emph-und">使われ続ける根拠を持つソフトウェアの価値</span>を問い直している。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">PwCコンサルティング</strong>は7月1日付で<strong>樋崎充副代表（51）が社長に昇格</strong>する人事を発表。安井正樹CEOは会長に就任し、<span class="emph-und">2年ぶりの経営体制刷新</span>となる。</li>
+          
+          <li>樋崎氏はSAPジャパン出身で複数のコンサルファームを経て<strong>2016年にPwCコンサルティング入社</strong>、2026年1月から副代表として地政学リスク・AI活用支援を牽引してきた実務型リーダー。</li>
+          
+          <li>企業の課題が地政学リスク・AI・ESGと多様化するなか、<span class="emph-und">テクノロジー×経営変革の双輪</span>を回せる体制への移行がBig4全体のトレンドとなりつつある。競合各社の人事動向に波及する可能性がある。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #3A7B8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #3A7B8C;">§05</span>
+          <span class="summary-sec__tag" style="background: #3A7B8C;">モビリティ</span>
+        </div>
+        <h3 class="summary-sec__title">モビリティ — 次世代技術の「展示フェーズ」</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">アステモ</strong>が人とくるまのテクノロジー展でSDV・ADAS・<strong>脱レアアース</strong>・二輪EVという4軸を示したことは、電動化・自動化・素材代替が同時進行する次世代モビリティの設計思想が固まりつつあることを意味する。鮮度ゲートで多くの海外ニュースが除外された今日号のモビリティは<span class="emph-und">1件構成</span>だが、技術展示という構造イベントは週明けの実装ニュースの前哨として読める。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">アステモ</strong>（日立・ホンダ・JIC Capital出資）が<strong class="emph-bold">人とくるまのテクノロジー展2026</strong>で5つの技術柱を展示。<strong><strong class="emph-bold">SDV</strong>向けクラウド開発プラットフォーム</strong>と<strong class="emph-bold">ADAS</strong>カメラシステムを中核に据え、<strong class="emph-bold">IoVプラットフォーム</strong>との統合を訴求</li>
+          
+          <li><strong class="emph-bold">脱レアアース</strong>モーターと<strong class="emph-bold">インホイールモーター</strong>を「環境ドメイン」の核に据え、レアアース依存を断ち切ったEV駆動技術の量産化ロードマップを提示。<span class="emph-und">サプライチェーン地政学リスクへの実装的回答</span>として注目</li>
+          
+          <li>二輪車向けにインホイールモーター・ADAS（カメラ）を初公開。<strong>四輪技術の二輪転用</strong>は市場規模が大きい新興国EV二輪市場を見据えた戦略的展開で、ホンダとの連携深化の一環</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/" style="color: #3A7B8C;">→ §05 モビリティ 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5A6B7B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5A6B7B;">§06</span>
+          <span class="summary-sec__tag" style="background: #5A6B7B;">製造</span>
+        </div>
+        <h3 class="summary-sec__title">製造 — 本日休載（平日のみ）</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">製造</strong>カテゴリは<strong>本日（土曜日）休載</strong>。次回は月曜6月16日号で再開し、<span class="emph-und">国内製造業の最新動向</span>を取り上げる予定。</p>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" style="color: #5A6B7B;">→ §06 製造 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§07</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済 — 本日休載（平日のみ）</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">経済</strong>カテゴリは<strong>本日（土曜日）休載</strong>。次回は月曜6月16日号で再開する。<span class="emph-und">日銀利上げ決定後の消費・物価への影響</span>は来週号で取り上げる予定。</p>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §07 経済 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§08</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">ゲーム — インディーの爆発力と大作IPの週末</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">FF7リベレーション</strong>がSteamストアページを公開し2027年春の完結を確定させ、メガIPの集客力が改めて確認された。一方でインディー「めっちゃカメレオン」が<strong>リリース2日で50万本</strong>突破という驚異的な普及速度を記録し、プラットフォームを問わないタイトルの発見性向上を示している。<strong class="emph-bold">Nintendo Switch 2</strong>の購入制限復活は<span class="emph-und">需要管理の難しさ</span>を再提示し、市場の過熱が続いている。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">FF7リメイク三部作</strong>の完結編『<strong>ファイナルファンタジーVII リベレーション</strong>』の Steam ストアページが Summer Game Fest 2026 で公開。<span class="emph-und">2027 年春に Switch 2 / PS5 / Xbox Series X|S / PC（Steam・Epic Games Store）でマルチプラットフォーム同時発売</span> 予定</li>
+          
+          <li>プレイアブルキャラクターにヴィンセント・ヴァレンタイン（声優: 鈴木省吾）とシド・ハイウインド（声優: 山路和弘）が加わり全パーティメンバーが集合。飛空艇<strong class="emph-bold">ハイウインド</strong>で星全体を巡る<strong class="emph-bold">オープンワールド</strong>構成が明らかに</li>
+          
+          <li>前作『<strong class="emph-bold">リバース</strong>』から規模をさらに拡大し、新バトルシステム・新エリアを搭載予定。現時点では<span class="emph-und">価格未発表</span>だが Steam ウィッシュリスト登録が解禁されている</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/" style="color: #5E3D8C;">→ §08 ゲーム 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§09</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日への示唆</h3>
+        <p class="summary-sec__body">月曜6月16日に<strong class="emph-bold">日銀</strong>が1%利上げを決定すれば、<strong>円安圧力の一時的緩和</strong>と輸出株への影響が週明け相場の焦点となる。AIでは<strong class="emph-bold">OpenAI</strong>値下げの具体的数字が出るかどうかが今後数週間の業界トピックになり、Anthropicのトラフィック急増との対比が注目される。ゲーム分野は夏のSummer Game Festシーズンに向けてIPニュースが加速する見通しだ。<span class="emph-und">「金利・AI・ゲーム」の三転換点が重なる夏</span>が始まる。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">為替</div>
+          <div class="summary-take__text"><strong class="emph-bold">ECB</strong>利上げ一巡でデータ依存フェーズへ移行、<strong class="emph-bold">日銀</strong>は6月16日に<strong>1%利上げ</strong>確実視。<strong class="emph-bold">ウォーシュ</strong>FRB議長の17日FOMC発言がグローバル金利の方向を決める3連投の週末。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">AI</div>
+          <div class="summary-take__text"><strong class="emph-bold">OpenAI</strong>値下げ検討は<strong class="emph-bold">Anthropic</strong> Claude<strong>急増トラフィック</strong>への防衛反応。フロンティアAIの競争軸が「能力」から「価格」へシフトし始めた転換点。</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2E6B52;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2E6B52;">IT</div>
+          <div class="summary-take__text"><strong class="emph-bold">丸紅</strong>まるちゃSaaS化・<strong class="emph-bold">デジタル庁</strong>30分払い出し・freeeのエージェント逆張り——AIの実装フェーズへの本格移行が企業・官公庁双方で同時進行している。</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-06-13/">全16本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-06-13 · #20260613
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-13/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
