@@ -19,6 +19,7 @@ coming in weeks」を新材料と判断したが実は 06-03 で既出。
   3. ``followup_gate=False`` (既定) のときは従来挙動 (= 続報は全て通過) を維持
   4. URL 完全一致 (= 同一記事) は経過時間に関係なく常に除外 (既存仕様維持)
   5. 24h 以内のタイトル類似マッチは ``followup_gate`` の有無に関係なく除外 (既存仕様維持)
+  6. 候補側が今日の ``date`` を名乗っても、既報と同一トピックで新材料 0 なら落とす
 
 実行:
   pytest tests/test_dedup_followup_gate.py -v
@@ -91,6 +92,39 @@ def test_followup_gate_drops_when_no_new_material():
     assert "新材料 0" in dropped[0].get("dedup_reason", ""), (
         f"dedup_reason に新材料 0 の旨が含まれるはず: {dropped[0].get('dedup_reason')}"
     )
+
+
+def test_followup_gate_drops_rewrite_with_new_issue_date():
+    """古い記事に今日の date を付けた焼き直しは、新材料 0 なら落とす。
+
+    freshness gate は「記事公開日が古い」候補を落とすが、別 URL の焼き直し記事や
+    LLM が号日を付け直した record は別クラス。dedup の followup gate 境界で、
+    同一トピック・新材料無しを落とす契約として固定する。
+    """
+    today = datetime.now(JST)
+    old_date = (today - timedelta(days=4)).strftime("%Y-%m-%d")
+    issue_date = today.strftime("%Y-%m-%d")
+    existing = [_existing(
+        date=old_date,
+        title="Tesla Waymo NHTSA robotaxi safety investigation update",
+        url="https://example.com/old-robotaxi-investigation",
+        summary="Tesla Waymo NHTSA robotaxi safety investigation update",
+    )]
+    candidate = _candidate(
+        title="Tesla Waymo NHTSA robotaxi safety investigation update",
+        url="https://example.com/new-date-rewrite",
+        summary="Tesla Waymo NHTSA robotaxi safety investigation update",
+    )
+    candidate["date"] = issue_date
+
+    passed, dropped = dedup_candidates(
+        [candidate], existing, followup_gate=True,
+    )
+
+    assert passed == []
+    assert len(dropped) == 1
+    assert dropped[0]["date"] == issue_date
+    assert "新材料 0" in dropped[0].get("dedup_reason", "")
 
 
 def test_followup_gate_passes_when_new_material_present():

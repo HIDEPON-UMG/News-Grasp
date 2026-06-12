@@ -3,10 +3,10 @@
 
 # 検証する「なぜ重要か」
 
-2026-06-12 号で filtered 34 件中 23 件が digest md には掲載されたのに articles.jsonl へ
-append 漏れし、どの gate も検出できなかった (record-schema/url-liveness は jsonl 内しか
-見ない)。本テストは「digest md カード URL ⊆ articles.jsonl URL」を破る append 漏れを
-gate が fatal にし、完全一致なら PASS することを locked-in する。
+2026-06-12 号で digest md と articles.jsonl がずれ、片方向の突合だけでは
+「freshness gate が古記事を jsonl から正しく落としたのに md に残った」ケースを
+append 漏れと誤検出し得ることが分かった。本テストは digest md カード URL と
+articles.jsonl 当日 URL の完全一致を locked-in する。
 """
 from __future__ import annotations
 
@@ -34,14 +34,16 @@ def _write_digest(digest_dir: Path, genre: str, issue_date: str, urls: list[str]
 def _write_articles(articles_path: Path, issue_date: str, urls: list[str]) -> None:
     articles_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        json.dumps({"date": issue_date, "title": f"t{i}", "url": u, "thumb": None}, ensure_ascii=False)
+        json.dumps({
+            "date": issue_date, "genre": "AI", "title": f"t{i}", "url": u, "thumb": None,
+        }, ensure_ascii=False)
         for i, u in enumerate(urls)
     ]
     articles_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def test_reconcile_detects_append_drop(tmp_path: Path) -> None:
-    """digest md にあり articles.jsonl に無い URL を append 漏れとして検出する。"""
+def test_reconcile_detects_digest_only_url(tmp_path: Path) -> None:
+    """digest md にだけある URL を古記事残存または append 漏れとして検出する。"""
     issue = "2026-06-12"
     digest = tmp_path / "digest"
     articles = tmp_path / "data" / "articles.jsonl"
@@ -50,22 +52,43 @@ def test_reconcile_detects_append_drop(tmp_path: Path) -> None:
     # 3 件中 1 件 (…/2) を articles.jsonl から欠落させる = 23 件追記漏れの class
     _write_articles(articles, issue, ["https://a.example.com/1", "https://a.example.com/3"])
 
-    missing = reconcile(digest, articles, issue)
-    assert missing == ["AI: https://a.example.com/2"]
+    result = reconcile(digest, articles, issue)
+    assert result == {
+        "digest_only": ["AI: https://a.example.com/2"],
+        "articles_only": [],
+    }
 
     rc = main(["--issue-date", issue, "--digest-dir", str(digest), "--articles", str(articles)])
     assert rc == 1, "append 漏れがあれば exit 1 のはず"
 
 
+def test_reconcile_detects_articles_only_url(tmp_path: Path) -> None:
+    """articles.jsonl にだけある URL をカード生成漏れとして検出する。"""
+    issue = "2026-06-12"
+    digest = tmp_path / "digest"
+    articles = tmp_path / "data" / "articles.jsonl"
+    _write_digest(digest, "AI", issue, ["https://a.example.com/1"])
+    _write_articles(articles, issue, ["https://a.example.com/1", "https://a.example.com/2"])
+
+    result = reconcile(digest, articles, issue)
+    assert result == {
+        "digest_only": [],
+        "articles_only": ["AI: https://a.example.com/2"],
+    }
+
+    rc = main(["--issue-date", issue, "--digest-dir", str(digest), "--articles", str(articles)])
+    assert rc == 1, "カード生成漏れがあれば exit 1 のはず"
+
+
 def test_reconcile_passes_when_complete(tmp_path: Path) -> None:
-    """全カード URL が articles.jsonl に存在すれば PASS (末尾スラッシュ差は正規化吸収)。"""
+    """カード URL と articles.jsonl URL が完全一致すれば PASS (末尾スラッシュ差は吸収)。"""
     issue = "2026-06-12"
     digest = tmp_path / "digest"
     articles = tmp_path / "data" / "articles.jsonl"
     _write_digest(digest, "AI", issue, ["https://a.example.com/1", "https://a.example.com/2/"])
     _write_articles(articles, issue, ["https://a.example.com/1", "https://a.example.com/2"])
 
-    assert reconcile(digest, articles, issue) == []
+    assert reconcile(digest, articles, issue) == {"digest_only": [], "articles_only": []}
     rc = main(["--issue-date", issue, "--digest-dir", str(digest), "--articles", str(articles)])
     assert rc == 0
 
@@ -80,5 +103,7 @@ def test_reconcile_excludes_deepdive_and_thumb(tmp_path: Path) -> None:
     _write_digest(digest, "DeepDive", issue, ["https://deepdive.example.com/x"])
     _write_articles(articles, issue, ["https://a.example.com/1"])
 
-    missing = reconcile(digest, articles, issue)
-    assert missing == [], f"DeepDive / thumb を誤検出した: {missing}"
+    result = reconcile(digest, articles, issue)
+    assert result == {"digest_only": [], "articles_only": []}, (
+        f"DeepDive / thumb を誤検出した: {result}"
+    )

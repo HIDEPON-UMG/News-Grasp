@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""digest md の記事カード URL が articles.jsonl に全て append されているか突合する gate。
+"""digest md の記事カード URL と articles.jsonl の当日 URL が一致するか突合する gate。
 
 # 検証する「なぜ重要か」
 
-2026-06-12 号で filtered 34 件中 23 件が、digest md には記事カードとして掲載された
-のに `data/articles.jsonl` への append 漏れし archive 側で欠落した。どの既存 gate も
-この「md には出たが jsonl に無い」サイレント欠落を検出できなかった: record-schema /
-url-liveness gate は articles.jsonl の中身しか見ず、md と突合しないためである
-(= 鮮度ゲートでは原理的に検出できない append 漏れの class)。
+2026-06-12 号で digest md と `data/articles.jsonl` がずれた。片方向だけ見ると
+「md には出たが jsonl に無い」append 漏れは検出できるが、freshness gate が正しく
+古記事を jsonl から落としたのに digest md だけに古記事が残るケースを append 漏れと
+誤判定してしまう。
 
 本 gate は当日号のカテゴリ digest md からカード URL (`[元記事](URL)`) を抽出し、
-当日号 (date == issue_date) の articles.jsonl URL 集合に **全て含まれる** ことを突合する。
-含まれない URL = append 漏れ = fatal。([[feedback_check_design_principles]] Lv4 契約 +
-将来 runner.ps1 push gate へ配線して Lv3 化する想定。)
+当日号 (date == issue_date) の articles.jsonl URL 集合と **完全一致** することを突合する。
+digest-only URL は「古記事が md に残った / append 漏れ」のどちらもあり得るため fatal。
+articles-only URL は「jsonl にはあるがカード生成漏れ」として fatal。
+freshness 済み append 集合と公開 md を一致させる境界 gate である。
 
 対象は articles.jsonl の category record と対応するカテゴリ digest md のみ
 (AI / FX / IT-Consulting / Mobility / Manufacturing / Economy / Game)。DeepDive / Summary
@@ -62,9 +62,9 @@ def digest_card_urls(digest_dir: Path, issue_date: str) -> dict[str, list[str]]:
     return out
 
 
-def articles_urls_for_issue(articles_path: Path, issue_date: str) -> set[str]:
-    """当日号 (date == issue_date) の articles.jsonl URL 集合 (正規化済)。"""
-    urls: set[str] = set()
+def articles_urls_for_issue(articles_path: Path, issue_date: str) -> dict[str, str]:
+    """当日号 (date == issue_date) の articles.jsonl URL -> genre (正規化済)。"""
+    urls: dict[str, str] = {}
     with articles_path.open(encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
@@ -78,24 +78,38 @@ def articles_urls_for_issue(articles_path: Path, issue_date: str) -> set[str]:
                 continue
             u = rec.get("url")
             if isinstance(u, str) and u.strip():
-                urls.add(_normalize_url(u))
+                urls[_normalize_url(u)] = str(rec.get("genre") or "unknown")
     return urls
 
 
-def reconcile(digest_dir: Path, articles_path: Path, issue_date: str) -> list[str]:
-    """digest md カード URL ⊆ articles.jsonl URL を検査。
+def reconcile(digest_dir: Path, articles_path: Path, issue_date: str) -> dict[str, list[str]]:
+    """digest md カード URL と articles.jsonl URL の完全一致を検査。
 
-    md にあり jsonl に無い URL (= append 漏れ) を `"{genre}: {url}"` の list で返す。
-    空なら全カード URL が articles.jsonl に存在 = 突合 OK。
+    Returns:
+        {
+          "digest_only": md にあり jsonl に無い URL,
+          "articles_only": jsonl にあり md に無い URL,
+        }
+        両方空なら公開 md と freshness 済み articles.jsonl が一致 = 突合 OK。
     """
     card_urls = digest_card_urls(digest_dir, issue_date)
-    jsonl_urls = articles_urls_for_issue(articles_path, issue_date)
-    missing: list[str] = []
+    digest_index: dict[str, str] = {}
     for genre, urls in card_urls.items():
         for u in urls:
-            if u not in jsonl_urls:
-                missing.append(f"{genre}: {u}")
-    return missing
+            digest_index[u] = genre
+
+    jsonl_urls = articles_urls_for_issue(articles_path, issue_date)
+    digest_only = [
+        f"{genre}: {u}"
+        for u, genre in sorted(digest_index.items(), key=lambda item: (item[1], item[0]))
+        if u not in jsonl_urls
+    ]
+    articles_only = [
+        f"{genre}: {u}"
+        for u, genre in sorted(jsonl_urls.items(), key=lambda item: (item[1], item[0]))
+        if u not in digest_index
+    ]
+    return {"digest_only": digest_only, "articles_only": articles_only}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -106,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
         pass
 
     ap = argparse.ArgumentParser(
-        description="digest md カード URL が articles.jsonl に全て append されているか突合する gate"
+        description="digest md カード URL と articles.jsonl 当日 URL が一致するか突合する gate"
     )
     ap.add_argument("--issue-date", required=True, help="号日 (YYYY-MM-DD)")
     ap.add_argument("--digest-dir", type=Path, default=_PKG_ROOT / "digest")
@@ -120,20 +134,30 @@ def main(argv: list[str] | None = None) -> int:
         print(f"FATAL: articles.jsonl not found: {args.articles}", file=sys.stderr)
         return 2
 
-    missing = reconcile(args.digest_dir, args.articles, args.issue_date)
-    if missing:
+    result = reconcile(args.digest_dir, args.articles, args.issue_date)
+    digest_only = result["digest_only"]
+    articles_only = result["articles_only"]
+    if digest_only or articles_only:
         print(
-            f"FAIL: digest md に掲載されたが articles.jsonl に append 漏れの URL {len(missing)} 件 "
-            f"(号日 {args.issue_date}):",
+            f"FAIL: digest md と articles.jsonl の当日 URL が一致しません "
+            f"(号日 {args.issue_date}, digest-only={len(digest_only)}, articles-only={len(articles_only)}):",
             file=sys.stderr,
         )
-        for m in missing[:40]:
-            print(f"  - {m}", file=sys.stderr)
-        if len(missing) > 40:
-            print(f"  ... and {len(missing) - 40} more", file=sys.stderr)
+        if digest_only:
+            print("  digest-only (md だけに存在。古記事残存または append 漏れの疑い):", file=sys.stderr)
+            for m in digest_only[:40]:
+                print(f"    - {m}", file=sys.stderr)
+            if len(digest_only) > 40:
+                print(f"    ... and {len(digest_only) - 40} more", file=sys.stderr)
+        if articles_only:
+            print("  articles-only (articles.jsonl だけに存在。カード生成漏れの疑い):", file=sys.stderr)
+            for m in articles_only[:40]:
+                print(f"    - {m}", file=sys.stderr)
+            if len(articles_only) > 40:
+                print(f"    ... and {len(articles_only) - 40} more", file=sys.stderr)
         return 1
 
-    print(f"PASS: digest md カード URL は全て articles.jsonl に存在 (号日 {args.issue_date})")
+    print(f"PASS: digest md カード URL と articles.jsonl 当日 URL は一致 (号日 {args.issue_date})")
     return 0
 
 

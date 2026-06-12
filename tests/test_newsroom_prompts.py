@@ -14,8 +14,7 @@ Claude が commit/push まで実行) が再発する。本テストは、その�
   (b) reporter prompt に articles.jsonl append 禁止文言がある
   (c) ng-reporter.md frontmatter が model: sonnet
   (d) ng-deepdive.md frontmatter が model: opus
-  (e) runner-prompt.md が変更されていない (routine-system.md 参照のまま
-      = Phase 2 では未切替。差し替えは Phase 4 V3)
+  (e) runner-prompt.md が newsroom-editor-system.md を入口にする
   (f) reporter prompt に thumb キー必須 / date=号日 の規約文言がある
 
 実行:
@@ -122,32 +121,27 @@ def test_ng_deepdive_agent_model_opus() -> None:
     assert "commit" in text and "しない" in text
 
 
-# ── (e) runner-prompt.md が Phase 2 で未切替であること ────────────────────────
+# ── (e) runner-prompt.md が Newsroom 入口へ切替済みであること ────────────────
 
 
-def test_runner_prompt_not_switched_in_phase2() -> None:
-    """runner-prompt.md は routine-system.md を参照したまま (新体制へ未切替)。
-
-    Phase 2 ではプロンプト群を新設するだけで、runner のエントリポイント差し替えは
-    しない (差し替えは Phase 4 V3)。誤って editor-system へ切替えていないことを固定。
-    """
+def test_runner_prompt_uses_newsroom_editor_entrypoint() -> None:
+    """runner-prompt.md は Newsroom 編集長を唯一の生成入口にする。"""
     text = _read(RUNNER_PROMPT)
-    assert "prompts/routine-system.md" in text
-    assert "newsroom-editor-system.md" not in text
+    assert "prompts/newsroom-editor-system.md" in text
+    assert "tools.harvest_candidates --category" in text
+    assert "date` は号日" in text
+    assert "published_date` は記事公開日" in text
+    assert "git commit / git push / docs 生成 / publish gate 実行は絶対に行わない" in text
+    assert "Web Push も絶対に行わない" in text
+    assert "prompts/routine-system.md` を runner の入口として直接読んではいけません" in text
 
 
-def test_legacy_prompt_is_retreat_copy_of_runner_prompt() -> None:
-    """runner-prompt-legacy.md は現行 runner-prompt.md の退避コピーであること。
-
-    先頭 1 行注記を除いた本文が runner-prompt.md と一致する (Phase 4 で戻せる)。
-    """
-    runner = _read(RUNNER_PROMPT).strip()
+def test_legacy_prompt_keeps_old_routine_entrypoint() -> None:
+    """runner-prompt-legacy.md は切替前の旧 routine 入口を退避している。"""
     legacy = _read(LEGACY_PROMPT)
-    # 先頭の退避注記行 (# 旧体制退避 ...) を除いた本文を取り出す
     legacy_body = re.sub(r"^#\s*旧体制退避.*?\n+", "", legacy, count=1).strip()
-    assert legacy_body == runner, (
-        "legacy 退避コピーの本文が現行 runner-prompt.md と一致しない"
-    )
+    assert "prompts/routine-system.md" in legacy_body
+    assert "prompts/newsroom-editor-system.md" not in legacy_body
 
 
 # ── (f) reporter prompt: thumb キー必須 / date=号日 の規約 ────────────────────
