@@ -1,0 +1,30 @@
+{
+  "date": "2026-06-13",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d (harvest_candidates)",
+    "ECB利上げ G7中銀初 6月2026 ドル円 影響",
+    "日銀 植田総裁不在 利上げ 2026年6月 FRB ウォーシュ",
+    "FRB ウォーシュ 緩和撤回 利下げなし 2026年6月",
+    "企業想定為替 147円 円安 2026年度 TDB帝国データ",
+    "ECB追加利上げ 既定路線でない フィンランド 6月12日 2026",
+    "ドル円見通し 6月日銀会合 FOMC 160円攻防 ウォーシュFRB議長 site:gaitame.com 2026",
+    "FRB 緩和姿勢を撤回 年内利下げなし NY為替 site:fx.minkabu.jp 2026年6月12日",
+    "日銀利上げ 植田総裁不在 6月会合 内田副総裁 site:nikkei.com"
+  ],
+  "raw_results_total": 59,
+  "candidates_total": 50,
+  "selected_total": 4,
+  "coverage_terms_checked": ["BOJ","日銀（BOJ）","Fed","米FRB","USDJPY","USD/JPY","EURUSD","EUR/USD","ECB","BOE","人民銀行","RBA","EUR/JPY","GBP/USD","USD/CNH","AUD/USD","為替介入","金利差","ヘッジファンドポジション"],
+  "dropped": [
+    {"title": "米ドル/円【USDJPY】：外国為替相場FXレートをリアルタイム表示", "url": "https://finance.yahoo.co.jp/...", "reason": "レートページ（ニュース記事でない）"},
+    {"title": "欧米為替見通し:ドル・円は伸び悩みか（訂正）(フィスコ)", "url": "...", "reason": "dedup DROP: 重複URL（delta=0.0h）"},
+    {"title": "欧州為替：ドル・円は下げ一服、160円台を回復(フィスコ)", "url": "...", "reason": "dedup DROP: 重複URL（delta=0.0h）"},
+    {"title": "商社の株主資本、円安で2兆円増 ROE改善の重荷に", "url": "...", "reason": "dedup DROP: 重複URL（delta=0.0h）"},
+    {"title": "FX/為替「ドル/円今日の予想」 外為どっとコム 2026年6月12日号", "url": "...", "reason": "デイリー予想タイトル・速報系で一次情報度低い"},
+    {"title": "ドル円のピボットは160.19円付近＝NY為替", "url": "https://fx.minkabu.jp/news/370103", "reason": "技術的ピボット分析記事・独自一次情報なし"},
+    {"title": "東京為替：ドル・円は高値圏、米金利にらみ", "url": "...", "reason": "市況速報・一次情報性低い"},
+    {"title": "欧州外国為替市場概況・22時 ドル円、小高い", "url": "...", "reason": "市況速報・記事として情報価値低い"},
+    {"title": "想定為替レートを読む！？", "url": "https://online.nikkei-cnbc.co.jp/...", "reason": "解説コンテンツだが情報の新規性・深度が低い"}
+  ]
+}

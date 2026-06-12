@@ -1,0 +1,43 @@
+{
+  "date": "2026-06-13",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "OpenAI 大幅値下げ検討 アンソロピック 競争激化 June 2026",
+    "Google Gemini Live Translation リアルタイム音声翻訳 発表 June 2026",
+    "NEC Anthropic 金融機関 三井住友 大和証券 Claude AI 連携 June 2026 発表内容",
+    "Kimi K2.7 Code LLM MCP 1兆パラメータ 公開 June 2026",
+    "OpenSSL 脆弱性 Claude AI 発見 June 2026",
+    "Anthropic Claude トラフィック急増 IPO準備 2026年6月"
+  ],
+  "raw_results_total": 50,
+  "candidates_total": 50,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Google DeepMind",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA",
+    "Claude",
+    "Gemini",
+    "GPT"
+  ],
+  "dropped": [
+    {"title": "粗悪論文の増加と生成AIの学習データ枯渇問題", "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTFBDUnNabGRqNGFLTXpWaEp0TXdOM2NLRzluRUNXR1lNNTFWZGozZkhGdjFOajBEby1JYk9IelB1R0RsNThlV2dyQWlQMG5zcU1IQkd4TWpLWVZMYlFkY2tNeVMzbnZ5OFdTRmpwX1NwQlVnc3NvcDB5LUlQYw?oc=5", "reason": "一次情報度が低く読者の業務判断への影響が限定的"},
+    {"title": "生成AI 業務変革カオスマップを公開！", "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOR0RBalpBQ1lwLXJkLUh6V09IQzRXeHMtTDN3VmVDc05TWjdSYlFfSmhaQXo3TkU1Z0Z0RlZiTTUxcDhRaF9rS3RENUNKcWkyZlNZQXFac2ZFejRhaXJuWmtZaU1mODBFNnNBUGk4N0t0ZkdoblRLQXVpcFhKMFV4X1YwOA?oc=5", "reason": "PR由来・孫引き多数で一次情報性低"},
+    {"title": "Anthropic、AI研究者への見えない性能制限を撤回──Claude Fable 5", "url": "https://wired.jp/article/anthropic-invisible-performance-limit-claude-fable-5/", "reason": "dedup followup gate: 新材料なし（前日以前の既掲載）"},
+    {"title": "Claude Fable 5とは？性能・料金・使い方やMythos 5との違いを解説", "url": "https://aismiley.co.jp/ai_news/claude-fable-5/", "reason": "dedup followup gate: 新材料なし（前日以前の既掲載）"},
+    {"title": "生成AIで病院領収書を偽造", "url": "https://news.google.com/rss/articles/CBMif0FVX3lxT...", "reason": "dedup: URL重複（同一記事・delta 0h）"},
+    {"title": "OpenAIが大幅値下げ検討（TBS/Bloomberg重複）", "url": "https://news.yahoo.co.jp/articles/4ef96e29b47bf6e1576f2bb0bc96ee8d0d6265e8", "reason": "dedup: URL重複（同一記事・delta 0h）"},
+    {"title": "アンソロピックやOpenAI幹部、G7首脳会議で先端AI巡り議論へ（重複）", "url": "https://news.yahoo.co.jp/articles/...", "reason": "dedup: URL重複（delta 0h）"},
+    {"title": "Kimi K2.7 Code", "url": "https://pc.watch.impress.co.jp/...", "reason": "スコア評価で上位5件に入らず（話題性・一次情報度でOpenSSL/Anthropic IPO記事に劣後）"},
+    {"title": "丸紅 社内生成AI基盤まるちゃ 外部解禁", "url": "https://news.yahoo.co.jp/...", "reason": "影響範囲が限定的（単一企業の製品告知）"},
+    {"title": "生成AI 音声と画像OK 政府職員活用指針改定", "url": "https://www.jiji.com/...", "reason": "dedup: URL重複（同一記事・delta 0h）"},
+    {"title": "文科省 生成AI発展踏まえ高専新設を促進", "url": "https://s.mxtv.jp/...", "reason": "読者（SWE/PM/DS）の業務判断への直接影響が薄い"},
+    {"title": "Claude Maxと ChatGPT Pro 月額200ドルでそれぞれ8000ドル/14000ドル相当のトークンが使えると指摘", "url": "https://gigazine.net/...", "reason": "二次分析記事・スコアで他記事に劣後"}
+  ]
+}

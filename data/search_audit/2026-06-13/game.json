@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-13",
+  "category_id": "game",
+  "queries": [
+    "harvest_candidates --category game (Google News RSS when:1d)",
+    "FF7 リベレーション Steam ストアページ公開 2027年春 site:famitsu.com OR site:gamespark.jp",
+    "Nintendo Switch 2 多言語版 買い占め 購入制限 任天堂 2026年6月",
+    "めっちゃカメレオン Steam 50万本 リリース2日 2026年6月",
+    "Call of Duty Modern Warfare 4 2026年10月発売 site:gizmodo.jp OR site:famitsu.com",
+    "日本ゲーム大賞 2026 年間作品部門 一般投票 開始 2026年6月12日",
+    "ゲームエンタメ株概況 6月12日 GENDA イナイレクロス ANYCOLOR 2026"
+  ],
+  "raw_results_total": 60,
+  "candidates_total": 6,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "任天堂",
+    "SQUARE ENIX",
+    "SIE",
+    "Cygames",
+    "カプコン",
+    "コナミ",
+    "テンセント",
+    "miHoYo",
+    "Steam",
+    "Switch-2",
+    "PlayStation"
+  ],
+  "dropped": [
+    {
+      "title": "Call of Duty Modern Warfare 4 DMZモードのプレイ映像公開",
+      "url": "https://www.famitsu.com/article/202606/77516",
+      "reason": "freshness gate: published 2026-06-08 via htmldate, exceeds max-source-age-days 2"
+    }
+  ]
+}

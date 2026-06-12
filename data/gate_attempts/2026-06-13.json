@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "gates": {
+    "summary-reflection": {
+      "signatures": {
+        "04dbb8459c1ff600": {
+          "failures": 1,
+          "artifact_hashes": [
+            "77498ac0e49cfe49"
+          ]
+        }
+      },
+      "categories": {
+        "summary": 1
+      }
+    },
+    "daily-quality": {
+      "signatures": {
+        "20de33990241e6bf": {
+          "failures": 1,
+          "artifact_hashes": [
+            "a66441534413f0fa"
+          ]
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    },
+    "url-liveness": {
+      "signatures": {
+        "512da11d0e3428c7": {
+          "failures": 1,
+          "artifact_hashes": [
+            "ace0a5b4abab7481"
+          ]
+        }
+      },
+      "categories": {
+        "urls": 1
+      }
+    },
+    "digest-articles-reconcile": {
+      "signatures": {
+        "356f4d655e2907e5": {
+          "failures": 1,
+          "artifact_hashes": [
+            "0d7acf489f92e39f"
+          ]
+        }
+      },
+      "categories": {
+        "digest": 1
+      }
+    },
+    "pytest-static": {
+      "signatures": {
+        "3817d26c06e11180": {
+          "failures": 1,
+          "artifact_hashes": [
+            "5404a990ca1e6a15"
+          ]
+        }
+      },
+      "categories": {
+        "tests": 1
+      }
+    }
+  }
+}

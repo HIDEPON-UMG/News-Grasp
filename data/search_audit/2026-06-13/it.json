@@ -1,0 +1,41 @@
+{
+  "date": "2026-06-13",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "PwCコンサルティング 樋崎充 新社長 2026年6月",
+    "デジタル庁 ガバメントクラウド 30分 環境払い出し 2026年6月",
+    "丸紅 まるちゃ 生成AI SaaS 外部提供 2026年6月",
+    "三菱重工 Preferred Networks PFN 国産AI 共同開発 業務提携 2026年6月",
+    "EU CADA クラウドAI開発法案 産業界 声明 2026年6月",
+    "Accenture NTTデータ 富士通 DX IT投資 2026年6月13日",
+    "サイバーセキュリティ 能動的防御 ECONOSEC JAPAN 政府 2026年6月",
+    "freee AIエージェント SaaS課金モデル Code with Claude 2026年6月"
+  ],
+  "raw_results_total": 58,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Accenture",
+    "BCG",
+    "Deloitte",
+    "McKinsey",
+    "NTT",
+    "PwC",
+    "EY",
+    "CTC",
+    "富士通",
+    "NEC",
+    "DX",
+    "生成AI",
+    "コンサル",
+    "IT投資"
+  ],
+  "dropped": [
+    {"title": "PwCコンサルティング、パーソルテンプスタッフのIT・DX人材ポートフォリオ推進事例", "url": "https://www.pwc.com/jp/ja/knowledge/column/2025/07/persol-tempstaff.html", "reason": "freshness gate: source month 2025-07、号日から1日以上古い記事"},
+    {"title": "EUクラウド・AI開発法案（CADA）産業界共同声明署名", "url": "https://jane.or.jp/topics/20260612.html", "reason": "OGP画像がサイトロゴのみで記事固有サムネなし。CADA内容はIT-Consultingよりも規制・政策面が強く、採用5件の閾値に達せず"},
+    {"title": "サイバーセキュリティ・能動的防御 ECONOSEC JAPAN", "url": "https://www.jiji.com/jc/v8?id=202606econosec", "reason": "スコア70で採用5件確保のため6位に留まり除外。能動的防御法は2026年施行済み情報の解説色が強く新材料薄い"},
+    {"title": "熊本城クラウドファンディング等カテゴリ無関係記事", "url": "", "reason": "harvest候補50件のうち、IT-Consultingと無関係な記事（クラウドファンディング・エンタメ・文化財等）多数を除外"},
+    {"title": "アイエスエフネット J-Productサービス開始", "url": "https://news.nicovideo.jp/...", "reason": "中小IT企業のAPAC展開サービス発表。話題性・影響範囲スコア低く採用5件に達したため除外"}
+  ]
+}

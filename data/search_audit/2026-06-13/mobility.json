@@ -1,0 +1,91 @@
+{
+  "date": "2026-06-13",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "Waymo Premier subscription robotaxi June 2026",
+    "Tesla FSD Belgium Denmark approval Europe autonomous driving 2026",
+    "VW Volkswagen ID.Polo SiC LFP battery cheapest EV June 2026",
+    "Subaru mixed production EV gasoline flexible line Toyota 2026",
+    "Einride autonomous EV truck NASDAQ IPO listing 2026",
+    "site:response.jp アステモ SDV ADAS 脱レアアース 二輪EV 人とくるまのテクノロジー展 2026"
+  ],
+  "raw_results_total": 56,
+  "candidates_total": 49,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "Toyota",
+    "Uber",
+    "BYD",
+    "トヨタ",
+    "ホンダ",
+    "スバル",
+    "日産",
+    "VW",
+    "Einride",
+    "Rivian",
+    "アステモ",
+    "CATL",
+    "自動運転",
+    "EV販売台数",
+    "ロボタクシー",
+    "Robotaxi",
+    "SDV",
+    "ADAS",
+    "eVTOL"
+  ],
+  "dropped": [
+    {
+      "title": "自動運転車、「時速180km」に到達",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFBtY19BajJDZEU3OFB6eF9RR25QQW5lUllWaFBDdUx3cEkxTjhCSUcyejExYnp6WFJ6YmVnVXVvdlJyVnAzTWpsR9IBTkFVX3lxTFBfR2N5UFh5Ry05OGo3emVwZWU2dWJiOXdWcFlHOGJDdWI3RjJmWF8ydTNzUUR2MURCZDhTQmJoeTRfY0U4QmtlaDMyUk94QQ",
+      "reason": "jidounten-lab.comの解説コンテンツ。一次情報性が低くPR的。スコア低"
+    },
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0",
+      "reason": "株価情報ページ。記事コンテンツでない"
+    },
+    {
+      "title": "レクサスES グローバル基幹モデルを発売 EVとハイブリッドをラインアップ",
+      "url": "https://autoprove.net/",
+      "reason": "レクサスESの試乗インプレ。影響範囲狭い・読者体験低い"
+    },
+    {
+      "title": "ホンダの新型「スーパーワン」試乗 本気のEVスポーツは一度体験してみる価値あり",
+      "url": "https://car.watch.impress.co.jp/",
+      "reason": "試乗インプレ記事。一般消費者向け・読者体験中だが影響範囲狭い"
+    },
+    {
+      "title": "2026年5月度 外国車ブランド 車種別No.1は、テスラ Model Y",
+      "url": "https://prtimes.jp/",
+      "reason": "プレスリリース1社のみ。PR転載で話題性低。5月度データで旬でない"
+    },
+    {
+      "title": "無人EVトラックのアインライド、ナスダック上場へ",
+      "url": "https://www.logi-today.com/",
+      "reason": "Einride上場記事の日本語翻訳版。CNBC英語版をスコア上位に採用済み・重複"
+    },
+    {
+      "title": "筑波精工 Research Memo（複数）",
+      "url": "https://finance.yahoo.co.jp/",
+      "reason": "アナリストレポート。Mobility直接関連性が低く、製造・投資カテゴリ"
+    },
+    {
+      "title": "ＣＲＩ・ＭＷ Research Memo（7）：コアはモビリティ、ゲーム、オンラインコミュニケーション",
+      "url": "https://finance.yahoo.co.jp/",
+      "reason": "決算アナリストレポート。Mobility実態と無関係"
+    },
+    {
+      "title": "盛土工事に自動運転ローラ、敷均し／転圧作業人員を半減 前田建設工業",
+      "url": "https://built.itmedia.co.jp/",
+      "reason": "建設業向け自動運転。Mobility（乗用・物流）の主軸テーマから外れる"
+    },
+    {
+      "title": "EVモーターズ・ジャパン経営破綻",
+      "url": "https://www.webcartop.jp/",
+      "reason": "地方事業者の破綻。影響範囲狭い・二次情報性高い"
+    }
+  ]
+}
