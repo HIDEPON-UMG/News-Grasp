@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260612 — Economy</title>
+<meta name="description" content="6月11〜12日の経済領域は「インフレの壁」が中央銀行政策を縛り続けるという共通テーマが浮かぶ。米5月CPI+4.2%（3年ぶり高水準）でFedのJune FOMC利下げは完全消滅。ECBは6月11日に3年ぶりの利上げを断行し、ラガルド総裁は追加利上げも排除せずと表明。日銀は6月16日に0.75%→1.0%の利上げが確実視されており、グローバルな引き締め継…">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-12/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260612 — Economy">
+<meta property="og:description" content="6月11〜12日の経済領域は「インフレの壁」が中央銀行政策を縛り続けるという共通テーマが浮かぶ。米5月CPI+4.2%（3年ぶり高水準）でFedのJune FOMC利下げは完全消滅。ECBは6月11日に3年ぶりの利上げを断行し、ラガルド総裁は追加利上げも排除せずと表明。日銀は6月16日に0.75%→1.0%の利上げが確実視されており、グローバルな引き締め継…">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-12/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260612 — Economy">
+<meta name="twitter:description" content="6月11〜12日の経済領域は「インフレの壁」が中央銀行政策を縛り続けるという共通テーマが浮かぶ。米5月CPI+4.2%（3年ぶり高水準）でFedのJune FOMC利下げは完全消滅。ECBは6月11日に3年ぶりの利上げを断行し、ラガルド総裁は追加利上げも排除せずと表明。日銀は6月16日に0.75%→1.0%の利上げが確実視されており、グローバルな引き締め継…">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-12 · #20260612</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">6月11〜12日の経済領域は「<strong>インフレの壁</strong>」が中央銀行政策を縛り続けるという共通テーマが浮かぶ。米5月CPI<span class="emph-und">+4.2%</span>（3年ぶり高水準）でFedのJune FOMC利下げは完全消滅。<strong class="emph-bold">ECB</strong>は6月11日に3年ぶりの利上げを断行し、<strong class="emph-bold">ラガルド</strong>総裁は追加利上げも排除せずと表明。<strong class="emph-bold">日銀</strong>は6月16日に0.75%→1.0%の利上げが確実視されており、グローバルな<strong>引き締め継続</strong>局面が確認された。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">87</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·12</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260612</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-11 09:30 · The Street</span>
+    <span class="top-story__score">91</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+      
+      <a href="https://www.thestreet.com/fed/hot-may-cpi-sticks-a-pin-in-fed-rate-cut-bets" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.thestreet.com/fed/hot-may-cpi-sticks-a-pin-in-fed-rate-cut-bets" rel="noopener nofollow" target="_blank" style="color: inherit;">Hot May CPI sticks a pin in Fed rate-cut bets</a>
+        <span class="story-title-ja">米5月CPI+4.2%が利下げ期待に終止符 — Fed据え置き路線が固まる</span>
+      </h2>
+      <ul class="top-story__bullets">
+        <li>米5月CPI前年比<strong>+4.2%</strong>は2023年以来の最高水準。ガソリン（+8.5%）・住居費（+5.1%）・食品（+3.2%）が広範に上昇しており、【エネルギー価格急騰（中東緊張）】が直接要因。</li><li>FedのJune FOMC（16〜17日）での利下げ確率は実質ゼロ。<strong>FF金利5.25〜5.50%の据え置き</strong>が確定的。2026年内の利下げも市場から「ゼロ回」シナリオが浮上している。</li><li>The Street分析: 「利下げではなく<span class="emph-und">次の利上げ</span>がいつになるかが市場の新しい論点」と指摘。FedがQ3に政策変更するためには、CPI<strong>2カ月連続+3%台以下</strong>への急低下が最低条件となる。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">■ ECONOMY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-12</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-11 22:30</span>
+        <span>· ING Think</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://think.ing.com/articles/ecb-after-press-conference-jun26-meeting/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://think.ing.com/uploads/hero/_w800h450/shutterstock_editorial_16922665q.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://think.ing.com/articles/ecb-after-press-conference-jun26-meeting/" rel="noopener nofollow" target="_blank">Lagarde keeps the door open for further ECB rate hikes</a>
+        <span class="story-title-ja">ラガルド総裁、ECBの追加利上げを排除せず — 会見後分析</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">ECB</strong>は6月11日の理事会で<span class="emph-und">25bp利上げ</span>（3.50%→3.75%）を実施し、<strong>ラガルド</strong>総裁は会見で「7月の追加利上げも選択肢に残る」と表明した。データ依存スタンスを維持しつつ、ユーロ圏インフレ（+3.1%）が目標2%を超え続ける限り引き締め継続。</li><li>ING分析: ユーロ圏経済は減速（Q1 GDP+0.3%）しており、ECBは「インフレ対策とリセッション回避」の綱引きに入った。<span class="emph-und">ターミナルレート</span>は3.75〜4.00%が現時点のコンセンサスで、FedとECBの政策収束がドルとユーロのせめぎ合いを生む。</li><li>ECBの利上げはEU企業の借入コスト上昇に直結。特に不動産・自動車・設備投資分野での企業支出抑制圧力が高まり、<strong>欧州株</strong>への影響は当面ネガティブバイアスとなる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-11 21:45</span>
+        <span>· US News</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://money.usnews.com/investing/news/articles/2026-06-11/ecb-raises-interest-rates-in-long-telegraphed-move" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://money.usnews.com/investing/news/articles/2026-06-11/ecb-raises-interest-rates-in-long-telegraphed-move" rel="noopener nofollow" target="_blank">ECB Raises Interest Rates in Long-Telegraphed Move</a>
+        <span class="story-title-ja">ECB、「予告された利上げ」実施 — 3年ぶりの引き締め再開</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>US Newsによる速報: <strong class="emph-bold">ECB</strong>が6月11日の理事会で政策金利を<strong>3.50%→3.75%</strong>に引き上げ。市場の予想通り（コンセンサス確率90%超）で、「long-telegraphed（予告済みの）」移動と評された。</li><li>利上げの主因はユーロ圏CPI<strong>+3.1%</strong>の持続とエネルギーコスト上昇。2023年9月に利上げサイクルを停止して以来の再開で、世界の主要中銀が揃って「インフレ最終段階」の戦いに臨む姿勢を鮮明にした。</li><li>EUR/USDは声明発表後に<span class="emph-und">一時1.1520へ反落</span>（材料出尽くし）後、ラガルドの追加利上げ示唆で1.1550台を回復。<strong>世界的な金利高止まり</strong>という構造が確認された一日だった。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-11 08:30</span>
+        <span>· Benzinga</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.benzinga.com/markets/economic-data/26/06/53112443/us-cpi-inflation-report-may-2026-fed-interest-rates" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.benzinga.com/cdn-cgi/image/width=1200,height=800,fit=crop/files/images/story/2026/06/10/Inflation-Increases--Commodities-With-Fi.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.benzinga.com/markets/economic-data/26/06/53112443/us-cpi-inflation-report-may-2026-fed-interest-rates" rel="noopener nofollow" target="_blank">May Inflation Jumps To 4.2% — Highest Since 2023, Fueling Fed Hike Odds</a>
+        <span class="story-title-ja">米5月インフレ4.2%：2023年以来最高 — Fed利上げ確率が上昇</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Benzinga分析: 米5月CPI<strong>+4.2%</strong>は市場予想（+3.9%）を上回り、ショックを与えた。前月比でも+0.4%と加速しており、「インフレピークアウト」という前提シナリオが覆された形。</li><li>債券市場では2年債利回りが<span class="emph-und">5.10%</span>超へ上昇（利下げ期待の後退）。<strong>Fed Funds先物</strong>では2026年内の利下げ確率が50%台から20%台へ急落し、Fedの利上げ再開を織り込む動きが出始めている。</li><li>エコノミストはこれを「最後の一マイル問題（Last Mile Problem）の深刻化」と呼ぶ。インフレ2%台への復帰に向けた<strong class="emph-bold">Fed</strong>の政策余地が想定より狭まっており、<span class="emph-und">景気後退なきインフレ抑制</span>が困難になっている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-11 10:00</span>
+        <span>· Interactive Crypto</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.interactivecrypto.com/cpi-surges-to-4-2-repricing-fed-funds-to-holds-not-cuts-jun-2026" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://storage.googleapis.com/interactivecrypto-covers/interactivecrypto-covers/2026/06/10/macro-fedfunds-cpi-surges-to-4-2-repricing-fed-funds-to-holds-not-cuts-755b50d1303ec431.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.interactivecrypto.com/cpi-surges-to-4-2-repricing-fed-funds-to-holds-not-cuts-jun-2026" rel="noopener nofollow" target="_blank">CPI Surges to 4.2% — Repricing Fed Funds to Holds, Not Cuts</a>
+        <span class="story-title-ja">CPI4.2%急騰でFF金利再評価 — 利下げなし・据え置き長期化が新コンセンサス</span>
+      </h3>
+      <ul class="more-card__bullets">
+        <li>Interactive Cryptoのマクロ分析: CPI<strong>+4.2%</strong>を受け、市場がFF金利見通しを<strong>「利下げ → 据え置き長期化」</strong>に再評価。<strong>Fed Funds Futures</strong>の2026年12月限は5.00%前後で取引されており、実質的な「利下げゼロ年」シナリオが台頭。</li><li>リスク資産への影響: ビットコインを含む投機資産は金利高止まりで重い展開が続く。一方、<span class="emph-und">ゴールド</span>はインフレヘッジ需要から$3,200超を維持しており、リスクオフとインフレ期待の交差点にある。</li><li>「2025年型のFed pivot を期待した買いポジションが全て外れた2026年上半期」と総括。<strong class="emph-bold">Fed</strong>がデータ依存で動く限り、<span class="emph-und">次回の重要CPI</span>（7月11日発表予定）まで市場の方向感は定まらない。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>6月11〜12日の経済領域は「<strong>インフレの壁</strong>」が中央銀行政策を縛り続けるという共通テーマが浮かぶ。米5月CPI<span class="emph-und">+4.2%</span>（3年ぶり高水準）でFedのJune FOMC利下げは完全消滅。<strong class="emph-bold">ECB</strong>は6月11日に3年ぶりの利上げを断行し、<strong class="emph-bold">ラガルド</strong>総裁は追加利上げも排除せずと表明。<strong class="emph-bold">日銀</strong>は6月16日に0.75%→1.0%の利上げが確実視されており、グローバルな<strong>引き締め継続</strong>局面が確認された。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-12/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-06-12
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
