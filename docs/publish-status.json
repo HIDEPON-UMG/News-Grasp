@@ -1,5 +1,7 @@
 {
-  "result": "published_ok",
+  "result": "published_fallback_with_notice",
   "date": "2026-06-13",
-  "updated_at": "2026-06-13T05:00:37"
+  "reason": "daily-quality-gate-failed",
+  "notice": "本日の更新は品質確認中です。直近の公開済み号を表示しています。",
+  "updated_at": "2026-06-13T06:35:43"
 }
