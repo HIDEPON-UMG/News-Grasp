@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260614 — IT-Consulting</title>
+<meta name="description" content="セールスフォースのHeadless 360論考がAI時代のSaaS防衛線を示し、クラウドストライクのフレームワーク記事はAI統制を財務リスクまで拡張した。Windows 11運用の警鐘、インドのデータセンター急拡大、葛尾村のAI新拠点始動が並び、IT部門の重心が「画面」から「統制・基盤・人材」へ移っている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-06-14/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260614 — IT-Consulting">
+<meta property="og:description" content="セールスフォースのHeadless 360論考がAI時代のSaaS防衛線を示し、クラウドストライクのフレームワーク記事はAI統制を財務リスクまで拡張した。Windows 11運用の警鐘、インドのデータセンター急拡大、葛尾村のAI新拠点始動が並び、IT部門の重心が「画面」から「統制・基盤・人材」へ移っている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-06-14/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260614 — IT-Consulting">
+<meta name="twitter:description" content="セールスフォースのHeadless 360論考がAI時代のSaaS防衛線を示し、クラウドストライクのフレームワーク記事はAI統制を財務リスクまで拡張した。Windows 11運用の警鐘、インドのデータセンター急拡大、葛尾村のAI新拠点始動が並び、IT部門の重心が「画面」から「統制・基盤・人材」へ移っている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-14 · #20260614</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⌗</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">セールスフォースのHeadless 360論考がAI時代のSaaS防衛線を示し、クラウドストライクのフレームワーク記事はAI統制を財務リスクまで拡張した。Windows 11運用の警鐘、インドのデータセンター急拡大、葛尾村のAI新拠点始動が並び、IT部門の重心が「画面」から「統制・基盤・人材」へ移っている。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">79</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·14</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260614</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-13 22:00 · EnterpriseZine</span>
+    <span class="top-story__score">84</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+      
+      <a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBjREVMX284SFp0LUJ6bTV2MjJ4OG81a095RGRwTmdTMHczamlpQWttdXR3YW9Tcm0tUDhuOWRWQ29icUdIOTBURVF2Q2l4SW02ZmxxVmVlSmNYUQ?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBjREVMX284SFp0LUJ6bTV2MjJ4OG81a095RGRwTmdTMHczamlpQWttdXR3YW9Tcm0tUDhuOWRWQ29icUdIOTBURVF2Q2l4SW02ZmxxVmVlSmNYUQ?oc=5" rel="noopener nofollow" target="_blank" style="color: inherit;">セールスフォースのHeadless 360、AI時代のSaaS防衛線を示す</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">セールスフォース</strong>のHeadless 360は、<strong>顧客接点を前面UIから切り離し</strong>、業務ロジックとデータ基盤を中核に置き直す発想として語られている。</li><li>AIエージェントが比較・入力・提案を代行するほど、SaaSは画面の使いやすさだけでは守れない。<span class="emph-und">API・権限・データ整合性</span>が収益防衛線になる。</li><li>CRMや基幹SaaS各社にとっての次の争点は、<strong class="emph-bold">顧客データ</strong>を誰が保持し、どの層でエージェントを制御するかだ。<strong>裏側の支配力</strong>が競争軸に寄る。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⌗ IT &amp; CONSULTING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-14</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⌗ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-13 17:23</span>
+        <span>· EnterpriseZine</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiVkFVX3lxTE1NR1Z4YVhfWTVacWQyN0ltenVsVm1iZjlMY0ozQXliTkY1emZhTnVUWV9CcVhmQmtKSTFua0YzaWNqN2dzSGNyXzNnaVRSNmN2WUUwbXFB?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiVkFVX3lxTE1NR1Z4YVhfWTVacWQyN0ltenVsVm1iZjlMY0ozQXliTkY1emZhTnVUWV9CcVhmQmtKSTFua0YzaWNqN2dzSGNyXzNnaVRSNmN2WUUwbXFB?oc=5" rel="noopener nofollow" target="_blank">クラウドストライク、フロンティアAI対応フレームワークで財務リスクまで可視化</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">クラウドストライク</strong>主導のフレームワークは、<strong>生成AIの利用をセキュリティ設定だけで終わらせず</strong>、運用・監査・財務影響まで一体で見る視点を前面に出した。</li><li>AI活用では情報漏えいだけでなく、誤回答や権限逸脱が契約違反・監査指摘・追加コストに直結する。<span class="emph-und">リスクの金額換算</span>がCIOとCFOの共通言語になる。</li><li>2026年後半の企業導入では、<strong class="emph-bold">AIガバナンス</strong>を単独製品ではなく統制モデルとして整備できるかが差になる。<strong>PoC止まりを越える設計力</strong>が問われる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-13 08:00</span>
+        <span>· @IT</span>
+        <span class="more-card__score">79</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMickFVX3lxTFB3dEUwODdNOHhreUdqSlEwS05VcFBUTUFSZ2wteEFXOHNDYV9xZk90NnlJNks5YThPOWllQmNDZWtiZ3NQSHU0WDRGSmhyeUhlMDJjS01aZkpoTU1qRTB5YzRRamRpV1Y3TklBUjNuaWZZdw?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMickFVX3lxTFB3dEUwODdNOHhreUdqSlEwS05VcFBUTUFSZ2wteEFXOHNDYV9xZk90NnlJNks5YThPOWllQmNDZWtiZ3NQSHU0WDRGSmhyeUhlMDJjS01aZkpoTU1qRTB5YzRRamRpV1Y3TklBUjNuaWZZdw?oc=5" rel="noopener nofollow" target="_blank">Windows 11起動不能リスクとEDR無効化慣行、@ITがIT運用再点検を促す</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Windows 11</strong>の起動不能リスクと、<strong>EDRを無効化したまま運用する慣行</strong>が同列に語られており、端末管理の基礎が崩れると障害と侵害が一緒に来ることを示す。</li><li>アップデート適用、ドライバ管理、セキュリティ例外の承認経路が属人化すると、<span class="emph-und">障害復旧の速さより事前統制の弱さ</span>が先に露呈する。</li><li>情シスやMSPは<strong class="emph-bold">端末運用</strong>を『パッチ適用』だけで済ませず、<strong>EDR例外・回復手順・検証環境</strong>を束ねた運用標準へ更新できるかが焦点になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-13 06:30</span>
+        <span>· TBS NEWS DIG</span>
+        <span class="more-card__score">76</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5Zb3N0NWtLTV9naXdKLUwtTVZvQTgzWmFSRFdYWjBQRG9nb2ZTaDJMREcyYnpTSG5UMGRiaW9ZZzhySURyUEVqZHNIOERrdm9zWVdxekhBanZjd3JyV1l5YmJlWG0wYm8?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5Zb3N0NWtLTV9naXdKLUwtTVZvQTgzWmFSRFdYWjBQRG9nb2ZTaDJMREcyYnpTSG5UMGRiaW9ZZzhySURyUEVqZHNIOERrdm9zWVdxekhBanZjd3JyV1l5YmJlWG0wYm8?oc=5" rel="noopener nofollow" target="_blank">インド、AI・クラウド需要でデータセンター拡張が加速</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">インド</strong>ではAIとクラウド需要の膨張を受け、<strong>データセンターが単なる不動産ではなく国家級インフラ</strong>として扱われ始めている。</li><li>計算資源の確保はGPUやサーバーだけで完結せず、送配電・海底ケーブル・都市開発までを巻き込む。<span class="emph-und">IT投資が産業政策になる段階</span>に入った。</li><li>国内SIやクラウド事業者にとっても、<strong class="emph-bold">データセンター</strong>をどこに置くかはコスト論だけではない。<strong>主権・遅延・規制対応</strong>まで含めた設計が必要になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-13 09:30</span>
+        <span>· 福島民友</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiaEFVX3lxTE0zcGFNb2hYQ25Mc3RzZHpDY1BmNG1pa0Z6M3dQV25DSzZxZXpsX3EyY1hvb19ITEF5bkFqeHluc2xyZm8xWl9VSHZlSTg2LXVaZVpQRUdYOUR4ODY4Vm9uYzdLQ3FMT0Zx?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiaEFVX3lxTE0zcGFNb2hYQ25Mc3RzZHpDY1BmNG1pa0Z6M3dQV25DSzZxZXpsX3EyY1hvb19ITEF5bkFqeHluc2xyZm8xWl9VSHZlSTg2LXVaZVpQRUdYOUR4ODY4Vm9uYzdLQ3FMT0Zx?oc=5" rel="noopener nofollow" target="_blank">葛尾村にAI新拠点、高度IT人材育成を今夏始動</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">葛尾村</strong>のAI新拠点は、<strong>震災復興をIT人材育成へ接続する実装フェーズ</strong>に入ったことを示す。地方で学びと仕事を同時につくる試みだ。</li><li>地方拠点が成立すれば、首都圏集中だったAI教育や開発受託の一部を分散できる。<span class="emph-und">人材確保と地域定着</span>を同じ政策で進められる余地がある。</li><li>自治体DXや企業研修の受け皿として広がるなら、<strong class="emph-bold">地方IT基盤</strong>は補助金頼みから脱しうる。<strong>拠点運営の継続性</strong>が次の見どころになる。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">セールスフォース</strong>のHeadless 360は、見やすい画面より<strong>API・権限・データ整合性</strong>を守る発想を示した。<strong class="emph-bold">クラウドストライク</strong>のフレームワーク、Windows 11運用の警鐘、インドのデータセンター拡張、葛尾村のAI拠点も、<span class="emph-und">ITの価値が統制と基盤へ寄る</span>流れでつながる。PoCではなく運用力が評価軸になった。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-14/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-06-14
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

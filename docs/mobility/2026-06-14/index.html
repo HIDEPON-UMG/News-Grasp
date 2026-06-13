@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260614 — Mobility</title>
+<meta name="description" content="トヨタは次世代EVの一部計画を見直す一方で、bZ4X Touringと独自充電サービスを同時公開し、EV戦略を「量の拡大」から選別投入と体験設計へ寄せ始めた。供給側ではロボセンスがLiDARの主戦場をロボットへ広げ、需要の逃げ道を確保。物流ではEinrideがナスダック上場へ進み、自動運転トラックが実証テーマから資本市場の拡張案件へ移りつつある。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-14/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260614 — Mobility">
+<meta property="og:description" content="トヨタは次世代EVの一部計画を見直す一方で、bZ4X Touringと独自充電サービスを同時公開し、EV戦略を「量の拡大」から選別投入と体験設計へ寄せ始めた。供給側ではロボセンスがLiDARの主戦場をロボットへ広げ、需要の逃げ道を確保。物流ではEinrideがナスダック上場へ進み、自動運転トラックが実証テーマから資本市場の拡張案件へ移りつつある。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-14/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260614 — Mobility">
+<meta name="twitter:description" content="トヨタは次世代EVの一部計画を見直す一方で、bZ4X Touringと独自充電サービスを同時公開し、EV戦略を「量の拡大」から選別投入と体験設計へ寄せ始めた。供給側ではロボセンスがLiDARの主戦場をロボットへ広げ、需要の逃げ道を確保。物流ではEinrideがナスダック上場へ進み、自動運転トラックが実証テーマから資本市場の拡張案件へ移りつつある。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-14 · #20260614</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">トヨタは次世代EVの一部計画を見直す一方で、<strong class="emph-bold">bZ4X Touring</strong>と独自充電サービスを同時公開し、EV戦略を「量の拡大」から<strong>選別投入と体験設計</strong>へ寄せ始めた。供給側では<strong class="emph-bold">ロボセンス</strong>がLiDARの主戦場をロボットへ広げ、需要の逃げ道を確保。物流では<strong class="emph-bold">Einride</strong>がナスダック上場へ進み、自動運転トラックが実証テーマから資本市場の拡張案件へ移りつつある。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">87</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·14</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260614</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-13 20:44 · biz.chunichi.co.jp</span>
+    <span class="top-story__score">93</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+      
+      <a href="https://news.google.com/rss/articles/CBMiX0FVX3lxTE9wU0xScjE0U3lHMEVKZzJ1RHdxa3pXRzN5VGU5M3dSclhGanI4bkhtLTk3S3dyWDYzOG83VHlwTlhWMi1TYXZzS09JUW1NUlhHMWZ3XzdTeW4zTUxLT0U0?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://news.google.com/rss/articles/CBMiX0FVX3lxTE9wU0xScjE0U3lHMEVKZzJ1RHdxa3pXRzN5VGU5M3dSclhGanI4bkhtLTk3S3dyWDYzOG83VHlwTlhWMi1TYXZzS09JUW1NUlhHMWZ3XzdTeW4zTUxLT0U0?oc=5" rel="noopener nofollow" target="_blank" style="color: inherit;">トヨタ、次世代EVを見直し 後継車へ技術転用し投入時期は再設定へ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">トヨタ</strong>は<strong>次世代EVの計画をいったん止め</strong>、後継車種へ技術を転用する方向へ舵を切った。投入時期を決め打ちしない点も含め、慎重姿勢が鮮明だ。</li><li>焦点は販売台数の上積みより、<span class="emph-und">どの技術をどの車種で先に回収するか</span>へ移った。EV専用車を増やすより、採算の立つ投入順を組み直す判断と読める。</li><li>日本勢のEV戦略は遅れだけで測れなくなった。<strong class="emph-bold">後継車種</strong>に<strong>要素技術を先回しで載せる</strong>なら、次に見るべきは電池調達と価格設定がどこまで変わるかだ。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-14</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-13 22:45</span>
+        <span>· newsdig.tbs.co.jp</span>
+        <span class="more-card__score">89</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiX0FVX3lxTE1QQmNKQVl4VkowcHVhR05QLXktamdGTHBfZkNFYWJpQjVpZm1ITjMtSy1BdmZac1JsMDV5MFVEZXV2OFptMlVlckdINDczZ2pPZVVpd1JkN3JxcC15dk1N?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiX0FVX3lxTE1QQmNKQVl4VkowcHVhR05QLXktamdGTHBfZkNFYWJpQjVpZm1ITjMtSy1BdmZac1JsMDV5MFVEZXV2OFptMlVlckdINDczZ2pPZVVpd1JkN3JxcC15dk1N?oc=5" rel="noopener nofollow" target="_blank">トヨタ、「bZ4X Touring」と独自充電サービスを同時公開 EV普及を体験面からてこ入れ</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">トヨタ</strong>は<strong>新モデル「bZ4X Touring」</strong>と独自の充電サービスを同時に打ち出し、EVを車両だけでなく利用体験ごと売る姿勢を強めた。</li><li>ポイントは<span class="emph-und">新車投入だけではなく、充電不安を自社接点で減らす</span>設計にある。価格競争へ一直線に向かわず、継続利用の障壁を先に崩しにきた。</li><li>国内勢のEV勝負は航続距離だけでは決まらない。<strong class="emph-bold">充電サービス</strong>まで束ねて<strong>日常利用の不便を下げられるか</strong>が、販売台数の次の差になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-13 18:31</span>
+        <span>· 36kr.jp</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiO0FVX3lxTE9OYUs2Z1VBcC1wYmdqOHZqdGw4dVJMUFVXVHNKU2RtV0xfeElHMFR0MXJBM0g0b1Q2WHVV?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiO0FVX3lxTE9OYUs2Z1VBcC1wYmdqOHZqdGw4dVJMUFVXVHNKU2RtV0xfeElHMFR0MXJBM0g0b1Q2WHVV?oc=5" rel="noopener nofollow" target="_blank">ロボセンス、LiDARの主戦場が自動運転からロボットへ 1Q出荷15倍増</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">ロボセンス</strong>は<strong>LiDARの主戦場が自動運転車からロボットへ移った</strong>と示し、1Q出荷が15倍増えた。需要の中心が車外へ広がり始めている。</li><li>これは車載量産の遅れを補う守りではなく、<span class="emph-und">センサー企業が販路を複線化して景気変動をならす</span>攻めでもある。ロボット需要が新たな成長線になる。</li><li>モビリティ産業にとっても無関係ではない。<strong class="emph-bold">LiDAR</strong>の量産が<strong>車以外で先に進めば部材コストの低下が車載側へ波及する</strong>可能性がある。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-13 03:28</span>
+        <span>· www.logi-today.com</span>
+        <span class="more-card__score">81</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiSEFVX3lxTE05QzJoTUxUYUZ3cTVmMl8zcmVuU21GOE5CNEdtYk10VlI3Nzh2R1BaTG5HY2lCV3ZTWFlOR0RpNXdxMkNiMmVNeQ?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiSEFVX3lxTE05QzJoTUxUYUZ3cTVmMl8zcmVuU21GOE5CNEdtYk10VlI3Nzh2R1BaTG5HY2lCV3ZTWFlOR0RpNXdxMkNiMmVNeQ?oc=5" rel="noopener nofollow" target="_blank">Einride、無人EVトラックでナスダック上場へ 自動運転物流を資本市場で拡張</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Einride</strong>が<strong>ナスダック上場へ</strong>進み、無人EVトラック企業が研究開発テーマではなく資本市場の成長案件として評価を受ける局面に入った。</li><li>上場の意味は資金調達だけではない。<span class="emph-und">自動運転物流を北米・欧州へ横展開できる運営企業か</span>を問われ、事業の見せ方がプロダクト単体からネットワーク全体へ移る。</li><li>商用化の本当の勝負はこれからだ。<strong class="emph-bold">自動運転トラック</strong>が<strong>許認可と稼働率を積み上げられるか</strong>で、物流の脱炭素と省人化の期待値が決まる。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">トヨタ</strong>は次世代EVを見直しつつ<strong class="emph-bold">bZ4X Touring</strong>と独自充電サービスを前面に出し、量の拡大から<strong>選別投入と体験設計</strong>へ軸足を移した。<strong class="emph-bold">ロボセンス</strong>はLiDARの主戦場をロボットへ広げ、<strong class="emph-bold">Einride</strong>は上場で物流を資本市場へつなぐ。<span class="emph-und">車だけでなく周辺事業</span>を束ねる側が次の勝者になりやすい。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-14/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-14
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

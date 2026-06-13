@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260614 — Game</title>
+<meta name="description" content="Stage1 済みプール 40 件はセール告知や周辺グッズが多く、業界の次の打ち手が読める題材は限られた。残ったのは、PlayStation の配信面拡張、Steam のモバイル接続、ホラー系インディーの発掘導線、協力探索インディーの初動という 4 本だった。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/game/2026-06-14/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260614 — Game">
+<meta property="og:description" content="Stage1 済みプール 40 件はセール告知や周辺グッズが多く、業界の次の打ち手が読める題材は限られた。残ったのは、PlayStation の配信面拡張、Steam のモバイル接続、ホラー系インディーの発掘導線、協力探索インディーの初動という 4 本だった。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/game/2026-06-14/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260614 — Game">
+<meta name="twitter:description" content="Stage1 済みプール 40 件はセール告知や周辺グッズが多く、業界の次の打ち手が読める題材は限られた。残ったのは、PlayStation の配信面拡張、Steam のモバイル接続、ホラー系インディーの発掘導線、協力探索インディーの初動という 4 本だった。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="game">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill is-active" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-14 · #20260614</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ GAMING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">▶</span>
+      <h1 class="cat-hero__title">ゲーム.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">Stage1 済みプール 40 件はセール告知や周辺グッズが多く、業界の次の打ち手が読める題材は限られた。残ったのは、<strong class="emph-bold">PlayStation</strong> の配信面拡張、<strong class="emph-bold">Steam</strong> のモバイル接続、ホラー系インディーの発掘導線、協力探索インディーの初動という 4 本だった。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">76</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·14</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260614</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">← BACK TO GAMING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-14 05:36 · TOY PEOPLE</span>
+    <span class="top-story__score">86</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+      
+      <a href="https://news.google.com/rss/articles/CBMiUEFVX3lxTFBRbnExVFN4ejU2cEZLdjFZWEJ1TE9mZDlvblFtR2VTN3BsMTJsbUFvSlppUTZSMTFSQkVOSV9MMk00NTlrdWFxM2lFamFEYVA1?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://news.google.com/rss/articles/CBMiUEFVX3lxTFBRbnExVFN4ejU2cEZLdjFZWEJ1TE9mZDlvblFtR2VTN3BsMTJsbUFvSlppUTZSMTFSQkVOSV9MMk00NTlrdWFxM2lFamFEYVA1?oc=5" rel="noopener nofollow" target="_blank" style="color: inherit;">ソニー幹部、PlayStation 事業の長期目標にクロスプラットフォームを明示</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">PlayStation事業</strong> の長期目標として <strong>クロスプラットフォーム</strong> が示され、<span class="emph-und">専用ハード中心から接点拡大型へ重心を移す</span> 方向が鮮明になった</li><li>発言の射程は、<strong class="emph-bold">SIE</strong> がハード販売だけでなく <strong>IP の到達面と継続課金面</strong> を広げたいという意思表示として読める</li><li>次に見るべき論点は <span class="emph-und">ファーストパーティ作品をどこまで外部面へ開くか</span> で、PC 同発やライブ運営との結び付きが収益構造を左右する</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">▶ GAMING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-14</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ▶ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-13 06:18</span>
+        <span>· PC Watch</span>
+        <span class="more-card__score">79</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMickFVX3lxTE43WHJhUWx4QkR1YlRMWGZQekU4clFnaW9BRk8zdW1fRTc3STFVaVROQkhDS3ZyclBROHQ1RkxpeC1TREJqM2RJV05SLWk3cmEwZ0pvZ3VCNDdjSTNJZ280eF9QOHBINHV3dEw3VUUwWWFLZw?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMickFVX3lxTE43WHJhUWx4QkR1YlRMWGZQekU4clFnaW9BRk8zdW1fRTc3STFVaVROQkhDS3ZyclBROHQ1RkxpeC1TREJqM2RJV05SLWk3cmEwZ0pvZ3VCNDdjSTNJZ280eF9QOHBINHV3dEw3VUUwWWFLZw?oc=5" rel="noopener nofollow" target="_blank">Android 端末で Steam ライブラリを遊ぶ検証記事が浮上、携帯 PC ゲームの裾野を測る材料に</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">GameHub</strong> を使って Android で <strong>Steam ライブラリを遊べるか</strong> を検証する記事が出たことで、<span class="emph-und">モバイル端末を PC ゲームの受け皿にする流れ</span> が改めて可視化された</li><li>注目点は単なる動作可否より、<strong class="emph-bold">Steam-Deck</strong> に近い体験を <strong>スマートフォンや携帯端末で代替できるか</strong> という市場拡張の可能性にある</li><li>次に見るべき論点は <span class="emph-und">互換性・操作系・権利処理のどこが普及の壁になるか</span> で、成功すれば携帯ハードの競争軸がさらにぼやける</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-13 15:00</span>
+        <span>· ファミ通</span>
+        <span class="more-card__score">72</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTFBORzZCVTI2LTF5Q3l2MXphTWZEa2JVZE1KLVBNQldFMm84dl9OamR2SVc2d0xCZlR5ODVKUGNFY3g1eERMeHFaZG5VQlp4dXZhMDN2WVdCZw?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTFBORzZCVTI2LTF5Q3l2MXphTWZEa2JVZE1KLVBNQldFMm84dl9OamR2SVc2d0xCZlR5ODVKUGNFY3g1eERMeHFaZG5VQlp4dXZhMDN2WVdCZw?oc=5" rel="noopener nofollow" target="_blank">日本ホラーゲーム大賞、審査員と来場者投票企画を公開 インディー発掘の窓口を拡充</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">日本ホラーゲーム大賞</strong> が審査員陣と来場者投票企画を前に出したことで、<strong>商業化前のホラー系インディーを見つける導線</strong> が一段と太くなった</li><li>外山圭一郎、<strong class="emph-bold">木村祥朗</strong>、<strong class="emph-bold">黒史郎</strong> らの名前が並ぶことで、<span class="emph-und">小規模企画でも作家性と話題性を乗せやすい場</span> としての性格が強まる</li><li>次に見るべき論点は <span class="emph-und">どの作品が投票と配信で伸びるか</span> で、ホラーは依然として少人数開発から商機へ届きやすいジャンルだ</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-13 15:59</span>
+        <span>· AUTOMATON</span>
+        <span class="more-card__score">68</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://news.google.com/rss/articles/CBMif0FVX3lxTE9tZEdwNUhYdFJRZUp6U3hscDJPdk5QdlBYMWNlc2d2dUNXZjFkTnM3RGk0aVZVSjhyTGFtOUZ6dkdoZXh1aWpicE0xNUh1OFlya2draVgxLXptNW5Xdi04emJjb1hId1RhN2QxVHZaOFpveDJBdDA0RW00U2pSRVk?oc=5" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.google.com/rss/articles/CBMif0FVX3lxTE9tZEdwNUhYdFJRZUp6U3hscDJPdk5QdlBYMWNlc2d2dUNXZjFkTnM3RGk0aVZVSjhyTGFtOUZ6dkdoZXh1aWpicE0xNUh1OFlya2draVgxLXptNW5Xdi04emJjb1hId1RhN2QxVHZaOFpveDJBdDA0RW00U2pSRVk?oc=5" rel="noopener nofollow" target="_blank">『over the hill』体験版が好感触、協力探索インディーの初動を測る試金石に</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">over-the-hill</strong> の体験版がさっそく好評と報じられ、<strong>最大 4 人協力の探索ゲーム</strong> が今のインディー需要に合うかを測る初動シグナルになった</li><li>派手な競争よりも景観と移動体験を前に出す設計は、<span class="emph-und">配信映えと口コミで伸ばす近年の協力ゲーム文脈</span> と相性がよい</li><li>次に見るべき論点は <span class="emph-und">ウィッシュリストの伸びと継続試遊の熱量</span> で、好意的な第一印象を発売需要へ変換できるかが焦点になる</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§06 OF 7 · GAMING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">Phantom Blade Zero</strong>は発売時期を動かさず完成度を優先し、<strong class="emph-bold">STARSEEKER</strong>は協力探索へ軸足を移した。<strong class="emph-bold">任天堂</strong>のSwitch 2リメイク発表はハード後半の看板づくりを示し、ゲームは<strong>新作の数</strong>より<span class="emph-und">何を長く遊ばせるか</span>が問われる。流通、話題化、継続接触の三層で勝負が決まる。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-14/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · GAMING · 2026-06-14
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
