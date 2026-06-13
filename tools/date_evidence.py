@@ -147,6 +147,23 @@ def date_discrepancy_verdict(
     return None
 
 
+def _claimed_date_corroborated(url: str, html: str, claimed: date) -> bool:
+    """URL と HTML の両方が claimed 日付を明示しているかを確認する。"""
+    ymd_compact = claimed.strftime("%Y%m%d")
+    ymd_dash = claimed.strftime("%Y-%m-%d")
+    ymd_slash = claimed.strftime("%Y/%m/%d")
+    jp_padded = claimed.strftime("%Y年%m月%d日")
+    jp_unpadded = f"{claimed.year}年{claimed.month}月{claimed.day}日"
+
+    url_path = urllib.parse.urlparse(url).path
+    url_has_date = any(token in url_path for token in (ymd_compact, ymd_dash, ymd_slash))
+    html_has_date = any(
+        token in html
+        for token in (ymd_dash, ymd_slash, jp_padded, jp_unpadded)
+    )
+    return url_has_date and html_has_date
+
+
 def wayback_earliest_snapshot(url: str, *, timeout: float = 60.0):
     """Wayback CDX API で最古スナップショット日を取る。
 
@@ -269,6 +286,12 @@ def evaluate_date_evidence(
             ev.fatal_reason = date_discrepancy_verdict(
                 claimed, extracted, allowed_lag_days=allowed_lag_days
             )
+            if ev.fatal_reason and _claimed_date_corroborated(url, html, claimed):
+                ev.warnings.append(
+                    "htmldate は古い日付を返したが、URL と HTML に claimed 日付の明示証拠あり。"
+                    f" extracted={extracted.isoformat()} claimed={claimed.isoformat()}"
+                )
+                ev.fatal_reason = None
         if record_title:
             page_title = extract_page_title(html)
             if page_title:

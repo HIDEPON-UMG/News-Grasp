@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
+import tools.date_evidence as date_evidence
 
 from tools.date_evidence import (
     AMBIGUOUS,
@@ -116,6 +117,34 @@ def test_living_page_with_recent_update_passes() -> None:
     )
     assert ev.ok
     assert ev.extracted == date(2026, 6, 9)
+
+
+def test_claimed_date_corroboration_suppresses_htmldate_false_positive(monkeypatch) -> None:
+    """URL と本文が claimed 日付を裏付ける場合、htmldate の別日付誤抽出は fatal にしない。"""
+    html = """<html><head>
+<title>企業の想定為替レートに関する動向調査（2026年度）</title>
+</head><body>
+<h1>企業の想定為替レートに関する動向調査（2026年度）</h1>
+<p>2026/06/12</p>
+</body></html>"""
+    monkeypatch.setattr(
+        date_evidence,
+        "extract_published_date",
+        lambda html, *, max_date: date(2026, 1, 1),
+    )
+
+    ev = evaluate_date_evidence(
+        date(2026, 6, 12),
+        "https://www.tdb.co.jp/report/economic/20260612-exchangerate2026/",
+        html,
+        record_title="企業の想定為替レートに関する動向調査（2026年度）",
+        wayback_fn=lambda url: pytest.fail("htmldate 成功時は Wayback を呼ばない契約"),
+    )
+
+    assert ev.ok
+    assert ev.method == "htmldate"
+    assert ev.extracted == date(2026, 1, 1)
+    assert any("claimed 日付の明示証拠" in w for w in ev.warnings)
 
 
 def test_fresh_article_passes() -> None:
