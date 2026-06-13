@@ -21,10 +21,16 @@
           "artifact_hashes": [
             "a66441534413f0fa"
           ]
+        },
+        "7a56d6bf81edd253": {
+          "failures": 1,
+          "artifact_hashes": [
+            "d25e439d8d8dfbca"
+          ]
         }
       },
       "categories": {
-        "daily": 1
+        "daily": 2
       }
     },
     "url-liveness": {
@@ -64,6 +70,19 @@
       },
       "categories": {
         "tests": 1
+      }
+    },
+    "record-schema": {
+      "signatures": {
+        "06126111511c75ef": {
+          "failures": 1,
+          "artifact_hashes": [
+            "10bf824f058ecc3d"
+          ]
+        }
+      },
+      "categories": {
+        "records": 1
       }
     }
   }
