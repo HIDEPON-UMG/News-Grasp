@@ -58,6 +58,8 @@ build/cands_*.jsonl
 build/filtered_*.jsonl
 build/dedup_*_stderr.txt
 build/dedup_work/
+build/deduped-candidates/
+build/model-eval/
 build/candidates/
 build/gen_*_2026*.py
 build/gen_candidates.py

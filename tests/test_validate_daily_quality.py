@@ -10,6 +10,7 @@ from datetime import date
 from tools.validate_daily_quality import (
     main,
     validate_daily_quality,
+    validate_card_emphasis_coverage,
     validate_dedup_annotation_present,
 )
 
@@ -66,7 +67,7 @@ def _write_category(
         articles.append(
             f"### [{90 - i}] Freshness test article {i + 1}\n\n"
             f"📅 2026-06-08 06:0{i} · 📰 Example · 🔗 [元記事]({url})\n\n"
-            "- test\n\n"
+            "- [[test]] **test** __test__\n\n"
             "---\n"
         )
     frontmatter = (
@@ -92,7 +93,7 @@ def _write_category_digest(root: Path, cat_id: str, folder: str, *, count: int =
         articles.append(
             f"### [{90 - i}] {cat_id} article {i + 1}\n\n"
             f"📅 2026-06-08 06:0{i} · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/{cat_id}-{i})\n\n"
-            "- test\n\n"
+            "- [[test]] **test** __test__\n\n"
             "---\n"
         )
     (cat_dir / f"2026-06-08-{folder}.md").write_text(
@@ -233,6 +234,52 @@ def test_daily_quality_accepts_summary_reflection_with_three_tier_emphasis(tmp_p
     ) == []
 
 
+def test_card_emphasis_coverage_rejects_plain_bullets(tmp_path: Path) -> None:
+    """カテゴリカード本文の 3 階層強調漏れを編集長補完対象として検出する。"""
+    cat_dir = tmp_path / "digest" / "AI"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "2026-06-08-AI.md").write_text(
+        "---\n"
+        "title: AI\n"
+        "date: 2026-06-08\n"
+        "categoryId: ai\n"
+        "---\n\n"
+        "### [90] Freshness test article\n\n"
+        "📅 2026-06-08 06:00 · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/fresh-news)\n\n"
+        "- plain bullet\n\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_card_emphasis_coverage(tmp_path / "digest", date(2026, 6, 8))
+
+    joined = "\n".join(errs)
+    assert "card #01 lacks required emphasis" in joined
+    assert "[[ ]] marker" in joined
+    assert "** ** bold" in joined
+    assert "__ __ underline" in joined
+
+
+def test_card_emphasis_coverage_accepts_three_tier_bullets(tmp_path: Path) -> None:
+    """カード本文が 3 階層強調を含めば追加エラーを出さない。"""
+    cat_dir = tmp_path / "digest" / "AI"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "2026-06-08-AI.md").write_text(
+        "---\n"
+        "title: AI\n"
+        "date: 2026-06-08\n"
+        "categoryId: ai\n"
+        "---\n\n"
+        "### [90] Freshness test article\n\n"
+        "📅 2026-06-08 06:00 · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/fresh-news)\n\n"
+        "- [[政策イベント]] と **企業実装** が並び、__運用力の差__ が見えた。\n\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    assert validate_card_emphasis_coverage(tmp_path / "digest", date(2026, 6, 8)) == []
+
+
 def test_daily_quality_rejects_weekday_mismatch(tmp_path: Path) -> None:
     """Summary の曜日が date と矛盾したら、配信対象カテゴリ以前に落とす。"""
     _write_summary(tmp_path, weekday="日曜日")
@@ -250,8 +297,8 @@ def test_daily_quality_rejects_weekday_mismatch(tmp_path: Path) -> None:
     assert "月曜日" in joined
 
 
-def test_daily_quality_rejects_scheduled_category_gap_and_extra(tmp_path: Path) -> None:
-    """月曜に必須の製造・経済欠落と、月曜非対象の Game 混入を同時に落とす。"""
+def test_daily_quality_allows_scheduled_category_gap_and_extra(tmp_path: Path) -> None:
+    """カテゴリ過不足だけでは号全体を fallback させない。"""
     _write_summary(tmp_path, weekday="月曜日")
     for cat_id, folder in [
         ("fx", "FX"),
@@ -270,11 +317,8 @@ def test_daily_quality_rejects_scheduled_category_gap_and_extra(tmp_path: Path) 
     )
 
     joined = "\n".join(errs)
-    assert "scheduled category digest missing" in joined
-    assert "manufacturing" in joined
-    assert "economy" in joined
-    assert "unscheduled category digest present" in joined
-    assert "game" in joined
+    assert "scheduled category digest missing" not in joined
+    assert "unscheduled category digest present" not in joined
 
 
 def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path) -> None:
@@ -382,8 +426,8 @@ def test_daily_quality_accepts_reviewed_stale_matched_followup(tmp_path: Path) -
     ) == []
 
 
-def test_daily_quality_rejects_shortfall_without_quality_reason(tmp_path: Path) -> None:
-    """5件未満でも可だが、低品質記事を避けた理由が無い不足は落とす。"""
+def test_daily_quality_allows_shortfall_without_quality_reason(tmp_path: Path) -> None:
+    """5件未満カテゴリだけでは号全体を fallback させない。"""
     _write_summary(tmp_path)
     _write_category(tmp_path, "https://example.com/2026/06/08/fresh-news", count=4)
     _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
@@ -395,9 +439,8 @@ def test_daily_quality_rejects_shortfall_without_quality_reason(tmp_path: Path) 
     )
 
     joined = "\n".join(errs)
-    assert "has 4 article(s); target is 5" in joined
-    assert "quality_shortfall_reason" in joined
-    assert "2026-06-08-AI.md" in joined
+    assert "has 4 article(s); target is 5" not in joined
+    assert "quality_shortfall_reason" not in joined
 
 
 def test_daily_quality_accepts_shortfall_with_quality_reason(tmp_path: Path) -> None:

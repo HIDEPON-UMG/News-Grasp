@@ -38,10 +38,16 @@ class GateFailure:
     artifact_paths: tuple[str, ...]
     output: str
     retryable: bool = True
+    artifact_identity: str = ""
     next_action: str = "対象 artifact を修正して gate を再実行してください。"
 
     def signature(self) -> str:
-        return failure_signature(self.gate_id, self.category, self.output)
+        return failure_signature(
+            self.gate_id,
+            self.category,
+            self.output,
+            artifact_identity=self.artifact_identity,
+        )
 
     def artifact_hash(self, repo_root: Path) -> str:
         return hash_artifacts(repo_root, self.artifact_paths)
@@ -68,12 +74,19 @@ def _normalize_output(output: str) -> str:
     return text[:1200]
 
 
-def failure_signature(gate_id: str, category: str, output: str) -> str:
+def failure_signature(
+    gate_id: str,
+    category: str,
+    output: str,
+    *,
+    artifact_identity: str = "",
+) -> str:
     """同じ gate 失敗を再認識するための安定署名を返す。"""
     payload = json.dumps(
         {
             "gate_id": gate_id,
             "category": category,
+            "artifact_identity": artifact_identity,
             "output": _normalize_output(output),
         },
         ensure_ascii=False,

@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model", "items"],
+  "properties": {
+    "model": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "title_ja", "summary", "bullets", "self_score"],
+        "properties": {
+          "url": { "type": "string" },
+          "title_ja": { "type": "string" },
+          "summary": { "type": "string" },
+          "bullets": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "self_score": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["fact_retention", "naturalness", "news_grasp_style", "compression", "emphasis_ready"],
+            "properties": {
+              "fact_retention": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "naturalness": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "news_grasp_style": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "compression": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "emphasis_ready": { "type": "integer", "minimum": 1, "maximum": 5 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

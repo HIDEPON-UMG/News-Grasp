@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+"""Codex runner 移行の静的契約テスト。"""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+CODEX_WRAPPER = Path(os.environ.get("NEWS_GRASP_CODEX_WRAPPER", str(Path.home() / "bin" / "run_codex_with_timeout.ps1")))
+RUNNER = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
+
+
+def test_codex_timeout_wrapper_uses_codex_exec_schema_and_last_message() -> None:
+    wrapper = CODEX_WRAPPER.read_text(encoding="utf-8-sig")
+
+    assert "codex" in wrapper.lower()
+    assert "exec" in wrapper
+    assert "--output-schema" in wrapper
+    assert "--output-last-message" in wrapper or "-o" in wrapper
+    assert "--search" in wrapper
+    assert "IdleTimeoutSec" in wrapper
+    assert "WorkingDirectory" in wrapper
+
+
+def test_runner_exposes_codex_mode_without_claude_print() -> None:
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    assert "run_codex_with_timeout.ps1" in runner
+    assert "codex exec" in runner.lower() or "-CodexExe" in runner
+    assert "claude --print" not in runner.lower()

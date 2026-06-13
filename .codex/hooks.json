@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^web_search$",
+        "hooks": [
+          {
+            "type": "command",
+          "commandWindows": "py -3 \".codex\\hooks\\append_session_urls.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

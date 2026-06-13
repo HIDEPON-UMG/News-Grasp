@@ -37,6 +37,7 @@ def _canonical() -> dict:
         "seen_at": "2026-06-05T06:00:00+09:00",
         "genre": "AI",
         "title": "Anthropic Claude 4.8 公開",
+        "title_ja": "Anthropic Claude 4.8 公開",
         "url": "https://www.anthropic.com/news/claude-4-8",
         "url_norm": "anthropic.com/news/claude-4-8",
         "source": "Anthropic",
@@ -92,6 +93,24 @@ def test_validate_record_rejects_missing_thumb_key():
     with pytest.raises(RecordSchemaError) as ei:
         validate_record(rec)
     assert "thumb" in str(ei.value)
+
+
+def test_validate_record_rejects_missing_title_ja_key():
+    """title_ja キー欠落は pytest 後段ではなく schema 境界で弾く。"""
+    rec = _canonical()
+    del rec["title_ja"]
+    with pytest.raises(RecordSchemaError) as ei:
+        validate_record(rec)
+    assert "title_ja" in str(ei.value)
+
+
+def test_validate_record_rejects_blank_title_ja():
+    """title_ja は存在だけでなく非空であることを要求する。"""
+    rec = _canonical()
+    rec["title_ja"] = "  "
+    with pytest.raises(RecordSchemaError) as ei:
+        validate_record(rec)
+    assert "title_ja" in str(ei.value)
 
 
 def test_validate_record_accepts_thumb_none():

@@ -124,6 +124,45 @@ def test_max_per_category_default_is_50() -> None:
     assert h.DEFAULT_MAX_PER_CATEGORY == 50
 
 
+def test_category_query_list_exposes_multiple_focus_queries() -> None:
+    """カテゴリごとに複数フォーカスクエリを持てる構造にする。"""
+    queries = h.category_queries("ai")
+    assert len(queries) >= 3
+    assert all("when:" not in q for q in queries)
+
+
+def test_harvest_category_fetches_all_focus_queries(monkeypatch) -> None:
+    """1カテゴリ1 OR クエリだけでなく複数クエリを順に収集する。"""
+    seen_urls: list[str] = []
+
+    def fake_fetch(url: str, timeout: float = 15.0) -> str:
+        seen_urls.append(url)
+        return _big_rss(1)
+
+    monkeypatch.setattr(h, "fetch_feed", fake_fetch)
+    rows = h.harvest_category("ai", max_per_category=10)
+
+    assert len(seen_urls) >= 3
+    assert rows
+
+
+def test_harvest_category_includes_registered_rss(monkeypatch) -> None:
+    """媒体別 RSS 登録簿の feed も Google News RSS と同じ候補プールに入る。"""
+    rss_url = "https://feeds.example.com/ai.xml"
+    monkeypatch.setattr(h, "RSS_FEEDS_BY_CATEGORY", {"ai": [rss_url]})
+    seen_urls: list[str] = []
+
+    def fake_fetch(url: str, timeout: float = 15.0) -> str:
+        seen_urls.append(url)
+        return _big_rss(1)
+
+    monkeypatch.setattr(h, "fetch_feed", fake_fetch)
+    rows = h.harvest_category("ai", max_per_category=10)
+
+    assert rss_url in seen_urls
+    assert any(row.get("feed_url") == rss_url for row in rows)
+
+
 def test_harvest_category_custom_cap(monkeypatch) -> None:
     monkeypatch.setattr(h, "fetch_feed", lambda url, timeout=15.0: _big_rss(80))
     rows = h.harvest_category("fx", max_per_category=30)

@@ -41,6 +41,7 @@ def _record(idx: int, *, date_v: str = ISSUE, extra: dict | None = None) -> dict
         "seen_at": f"{ISSUE}T06:00:00+09:00",
         "genre": "AI",
         "title": f"Sample AI story number {idx}",
+        "title_ja": f"AI サンプル記事 {idx}",
         "url": f"https://example.com/ai/story-{idx}",
         "thumb": f"https://example.com/ai/thumb-{idx}.png",
     }

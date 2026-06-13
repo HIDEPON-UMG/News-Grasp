@@ -118,8 +118,62 @@ CATEGORY_QUERIES: dict[str, str] = {
     ),
 }
 
+CATEGORY_QUERY_SETS: dict[str, list[str]] = {
+    "fx": [
+        CATEGORY_QUERIES["fx"],
+        "ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入",
+        "FRB OR Fed OR ECB OR 金利 OR forex",
+    ],
+    "ai": [
+        CATEGORY_QUERIES["ai"],
+        "OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini",
+        "AIエージェント OR RAG OR LLM OR 生成AI",
+    ],
+    "it": [
+        CATEGORY_QUERIES["it"],
+        "SaaS OR クラウド OR enterprise software OR cybersecurity",
+        "コンサルティング OR DX OR ガバメントクラウド OR IT投資",
+    ],
+    "mobility": [
+        CATEGORY_QUERIES["mobility"],
+        "EV OR SDV OR ADAS OR 自動運転 OR robotaxi",
+        "Toyota OR Tesla OR Waymo OR BYD OR ホンダ",
+    ],
+    "manufacturing": [
+        CATEGORY_QUERIES["manufacturing"],
+        "半導体 OR TSMC OR Samsung OR Intel OR 量産",
+        "工場 OR サプライチェーン OR 製造業 OR 特許",
+    ],
+    "economy": [
+        CATEGORY_QUERIES["economy"],
+        "GDP OR インフレ OR 金融政策 OR 決算 OR 日経平均",
+        "景気 OR 雇用統計 OR 消費者物価 OR interest rate",
+    ],
+    "game": [
+        CATEGORY_QUERIES["game"],
+        "Nintendo OR Switch 2 OR PlayStation OR Steam",
+        "ゲーム株 OR gamebiz OR ファミ通 OR Game Watch",
+    ],
+}
+
+# 実 URL は実装・運用時に 200 を確認してから追加する。空登録簿でも構造は有効。
+RSS_FEEDS_BY_CATEGORY: dict[str, list[str]] = {
+    cat: [] for cat in CATEGORY_QUERIES
+}
+
 # 収集対象カテゴリ（config の summary を除く順序保持リスト）。
 HARVEST_CATEGORIES: list[str] = [c for c in CATEGORIES if c != "summary"]
+
+
+def category_queries(category: str) -> list[str]:
+    """カテゴリの複数フォーカスクエリを返す。"""
+    queries = CATEGORY_QUERY_SETS.get(category)
+    if queries is None:
+        base = CATEGORY_QUERIES.get(category)
+        if base is None:
+            raise KeyError(f"未知のカテゴリ: {category}（CATEGORY_QUERIES に未定義）")
+        return [base]
+    return list(queries)
 
 
 # ── クエリ URL 生成（純関数）─────────────────────────────────────────────────
@@ -266,16 +320,29 @@ def harvest_category(
 
     クエリは CATEGORY_QUERIES から引く。上限 max_per_category 件で切る。
     """
-    base_query = CATEGORY_QUERIES.get(category)
-    if base_query is None:
-        raise KeyError(f"未知のカテゴリ: {category}（CATEGORY_QUERIES に未定義）")
-    url = build_feed_url(base_query)
-    query = build_query(base_query)
-    xml_text = fetch_feed(url, timeout=timeout)
-    if not xml_text:
-        print(f"WARN: feed 取得失敗 category={category} url={url}", file=sys.stderr)
-        return []
-    items = parse_rss(xml_text, category, query)
+    items: list[dict] = []
+    for base_query in category_queries(category):
+        url = build_feed_url(base_query)
+        query = build_query(base_query)
+        xml_text = fetch_feed(url, timeout=timeout)
+        if not xml_text:
+            print(f"WARN: feed 取得失敗 category={category} url={url}", file=sys.stderr)
+            continue
+        rows = parse_rss(xml_text, category, query)
+        for row in rows:
+            row["feed_url"] = url
+        items.extend(rows)
+
+    for feed_url in RSS_FEEDS_BY_CATEGORY.get(category, []):
+        xml_text = fetch_feed(feed_url, timeout=timeout)
+        if not xml_text:
+            print(f"WARN: RSS 取得失敗 category={category} url={feed_url}", file=sys.stderr)
+            continue
+        rows = parse_rss(xml_text, category, feed_url)
+        for row in rows:
+            row["feed_url"] = feed_url
+        items.extend(rows)
+
     return items[:max_per_category]
 
 

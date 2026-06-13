@@ -37,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gate-id", required=True)
     parser.add_argument("--category", default="global")
     parser.add_argument("--artifact", action="append", default=[])
+    parser.add_argument("--artifact-identity", default="")
     parser.add_argument("--output-file", type=Path, required=True)
     parser.add_argument("--non-retryable", action="store_true")
     parser.add_argument("--max-same-signature-retries", type=int, default=DEFAULT_MAX_SAME_SIGNATURE_RETRIES)
@@ -50,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         artifact_paths=tuple(args.artifact),
         output=output,
         retryable=not args.non_retryable,
+        artifact_identity=args.artifact_identity,
     )
     state = _load_state(args.state)
     decision = record_gate_failure(

@@ -53,7 +53,7 @@ _VALID_GENRES: frozenset[str] = frozenset({
 # 必須キー: 1 件でも欠落で fatal。
 #   - date / title / url / thumb は値の不在自体が後段の KeyError 源になる。
 #   - thumb はキー必須 (= 2026-06-06 23 件欠落事故の class of bugs)、値は str / None どちらでも OK。
-_REQUIRED_KEYS: tuple[str, ...] = ("date", "title", "url", "thumb")
+_REQUIRED_KEYS: tuple[str, ...] = ("date", "title", "title_ja", "url", "thumb")
 
 
 def validate_record(record: Any) -> None:
@@ -95,6 +95,10 @@ def validate_record(record: Any) -> None:
     title = record["title"]
     if not isinstance(title, str) or not title.strip():
         raise RecordSchemaError(f"title は非空 str: got {title!r}")
+
+    title_ja = record["title_ja"]
+    if not isinstance(title_ja, str) or not title_ja.strip():
+        raise RecordSchemaError(f"title_ja は非空 str: got {title_ja!r}")
 
     thumb = record["thumb"]
     if thumb is not None:

@@ -44,6 +44,7 @@ import argparse
 import json
 import os
 import sys
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -52,6 +53,15 @@ if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
 from tools.validate_deepdive_urls import UrlRef, verify_urls  # noqa: E402
+
+
+@dataclass(frozen=True)
+class DropResult:
+    """per-article quarantine の反映件数。"""
+
+    jsonl_dropped: int
+    digest_cards_dropped: int
+    touched_digest_files: int
 
 
 def _normalize_url_for_match(url: str) -> str:
@@ -175,6 +185,80 @@ def claimed_publication_date(published_date: object) -> str | None:
     return None
 
 
+def _drop_cards_from_markdown(text: str, urls: set[str]) -> tuple[str, int]:
+    """指定 URL を含む記事カードブロックだけを Markdown から削除する。"""
+    if not urls:
+        return text, 0
+    parts = text.splitlines(keepends=True)
+    out: list[str] = []
+    i = 0
+    dropped = 0
+    while i < len(parts):
+        if parts[i].lstrip().startswith("### ["):
+            start = i
+            i += 1
+            while i < len(parts) and not parts[i].lstrip().startswith("### ["):
+                i += 1
+            block = "".join(parts[start:i])
+            if any(url in block for url in urls):
+                dropped += 1
+                continue
+            out.append(block)
+            continue
+        out.append(parts[i])
+        i += 1
+    return "".join(out), dropped
+
+
+def drop_article_urls(
+    *,
+    repo_root: Path,
+    urls: set[str],
+    issue_date: str,
+    apply: bool = False,
+) -> DropResult:
+    """articles.jsonl と当日 digest から指定 URL の記事だけを削除する。"""
+    if not urls:
+        return DropResult(0, 0, 0)
+
+    jsonl = repo_root / "data" / "articles.jsonl"
+    jsonl_dropped = 0
+    if jsonl.exists():
+        kept: list[str] = []
+        with jsonl.open(encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                try:
+                    row = json.loads(stripped)
+                except json.JSONDecodeError:
+                    kept.append(line)
+                    continue
+                if str(row.get("url") or "") in urls:
+                    jsonl_dropped += 1
+                    continue
+                kept.append(json.dumps(row, ensure_ascii=False) + "\n")
+        if apply and jsonl_dropped:
+            jsonl.write_text("".join(kept), encoding="utf-8")
+
+    digest_root = repo_root / "digest"
+    digest_cards_dropped = 0
+    touched = 0
+    for md in sorted(digest_root.glob(f"*/*{issue_date}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        original = md.read_text(encoding="utf-8-sig", errors="replace")
+        updated, dropped = _drop_cards_from_markdown(original, urls)
+        if dropped:
+            digest_cards_dropped += dropped
+            touched += 1
+            if apply:
+                md.write_text(updated, encoding="utf-8")
+
+    return DropResult(jsonl_dropped, digest_cards_dropped, touched)
+
+
 def main() -> int:
     # 日本語版 Windows の cp932 では em-dash (—) や ✓ などの記号で print が
     # UnicodeEncodeError を起こし、NG URL 一覧の表示前にプロセスがクラッシュする。
@@ -204,6 +288,10 @@ def main() -> int:
                          "CDX をフォールバック照合。--gate 指定時はデフォルト ON")
     ap.add_argument("--no-verify-dates", action="store_true",
                     help="--gate 時の日付証拠検証を無効化する脱出ハッチ (障害時の手動運用用)")
+    ap.add_argument("--quarantine-articles", action="store_true",
+                    help="NG URL の記事だけを articles.jsonl / digest から隔離する")
+    ap.add_argument("--apply", action="store_true",
+                    help="--quarantine-articles の変更を実反映する (既定は dry-run)")
     args = ap.parse_args()
     if args.gate and not args.recent:
         args.recent = 7  # gate は直近 7 日のみ走査 (push 速度のため・歴史的死リンクは別 ad-hoc で)
@@ -410,6 +498,25 @@ def main() -> int:
     # session 未確認 / HEAD/GET fatal / 偽日付疑い の和集合が exit 判定に使われる
     total_fatal = len(fatal) + len(session_fatal) + len(date_fatal)
     if total_fatal:
+        if args.quarantine_articles:
+            bad_urls = {v.ref.url for v in fatal}
+            bad_urls |= {url for _dt, _title, url in session_fatal}
+            bad_urls |= {ev.url for ev in date_fatal}
+            result = drop_article_urls(
+                repo_root=_PKG_ROOT,
+                urls=bad_urls,
+                issue_date=today.strftime("%Y-%m-%d"),
+                apply=args.apply,
+            )
+            print(
+                "quarantine: "
+                f"jsonl_dropped={result.jsonl_dropped}, "
+                f"digest_cards_dropped={result.digest_cards_dropped}, "
+                f"touched_digest_files={result.touched_digest_files}, "
+                f"apply={args.apply}"
+            )
+            if args.apply and (result.jsonl_dropped or result.digest_cards_dropped):
+                return 0
         if session_fatal or date_fatal:
             print(
                 f"\nFATAL: session 未確認 {len(session_fatal)} 件 + HEAD/GET NG {len(fatal)} 件 + "
