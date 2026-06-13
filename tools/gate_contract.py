@@ -140,7 +140,7 @@ def record_gate_failure(
     elif same_signature_failures > max_same_signature_retries:
         retry_allowed = False
         reason = "same failure_signature repeated"
-    elif category_failures >= max_category_failures:
+    elif category_failures > max_category_failures:
         retry_allowed = False
         reason = "category attempt budget exhausted"
     elif unchanged_artifact:

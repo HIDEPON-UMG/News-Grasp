@@ -37,6 +37,20 @@ def test_runner_has_bounded_repair_and_fallback_publish() -> None:
     assert "tools.validate_availability" in runner
 
 
+def test_fallback_publish_restores_unverified_generated_artifacts() -> None:
+    """fallback は公開 notice だけを残し、未検証 digest/data 差分を作業ツリーに残さない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    fallback_body = runner.split("function Invoke-FallbackPublish", 1)[1].split("# ===== sentinel", 1)[0]
+
+    assert "function Restore-UnverifiedGeneratedArtifacts" in runner
+    assert "function Resolve-LastGoodDocsRef" in runner
+    assert "Restore-UnverifiedGeneratedArtifacts" in fallback_body
+    assert "Resolve-LastGoodDocsRef" in fallback_body
+    assert "checkout $lastGoodDocsRef -- 'docs/'" in fallback_body
+    assert "data/articles.jsonl" in runner
+    assert "digest/" in runner
+
+
 def test_daily_runner_timeout_is_80_minutes() -> None:
     """日次 digest 本体の wall-clock timeout は 80 分、idle 既定は 15 分に固定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")

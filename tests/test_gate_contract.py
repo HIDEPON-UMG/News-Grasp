@@ -45,6 +45,42 @@ def test_same_failure_signature_stops_second_loop(tmp_path: Path) -> None:
     assert second.reason == "same failure_signature repeated"
 
 
+def test_category_budget_allows_configured_number_of_distinct_failures(tmp_path: Path) -> None:
+    """同じ gate/category でも別失敗なら上限回数までは修復を許可する。"""
+    artifact = tmp_path / "digest" / "Summary" / "2026-06-13.md"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("first state", encoding="utf-8")
+    state: dict = {"version": 1, "gates": {}}
+
+    first = record_gate_failure(
+        state,
+        GateFailure(
+            gate_id="daily-quality",
+            category="daily",
+            artifact_paths=("digest/Summary/2026-06-13.md",),
+            output="ERROR: reflection section §06 lacks required emphasis",
+        ),
+        repo_root=tmp_path,
+        max_category_failures=2,
+    )
+    artifact.write_text("second state", encoding="utf-8")
+    second = record_gate_failure(
+        state,
+        GateFailure(
+            gate_id="daily-quality",
+            category="daily",
+            artifact_paths=("digest/Summary/2026-06-13.md",),
+            output="ERROR: selected_total does not match digest article count",
+        ),
+        repo_root=tmp_path,
+        max_category_failures=2,
+    )
+
+    assert first.retry_allowed is True
+    assert second.retry_allowed is True
+    assert second.category_failures == 2
+
+
 def test_non_retryable_security_failure_never_calls_repair(tmp_path: Path) -> None:
     state: dict = {"version": 1, "gates": {}}
     failure = GateFailure(
