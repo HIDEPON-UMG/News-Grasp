@@ -28,3 +28,14 @@ def test_runner_exposes_codex_mode_without_claude_print() -> None:
     assert "run_codex_with_timeout.ps1" in runner
     assert "codex exec" in runner.lower() or "-CodexExe" in runner
     assert "claude --print" not in runner.lower()
+
+
+def test_codex_mode_routes_repair_and_deepdive_to_codex_wrapper() -> None:
+    """Codex移行後に補修/DeepDiveだけClaudeへ戻らないことをpinする。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    assert "function Invoke-AgentWrapper" in runner
+    assert "repair wrapper invoke START (agent=$AgentName" in runner
+    assert "deepdive wrapper invoke START (agent=$AgentName" in runner
+    assert "& $Wrapper -ClaudeExe $ClaudeExe -PromptFile $repairPrompt" not in runner
+    assert "& $Wrapper -ClaudeExe $ClaudeExe -PromptFile $DeepDivePromptFile" not in runner
