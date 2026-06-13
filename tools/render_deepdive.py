@@ -676,7 +676,10 @@ def _band_layout(
         if m == 1:
             x[order_ids[0]] = vb_w / 2.0
             return
-        step = min((hi - lo) / (m - 1), 290.0)
+        # 2 ノード段は中央ラベルが両円へ食い込みやすい。横幅を使って左右へ広げる。
+        # 3 ノード以上は peer-aware 順序と線貫通回避を優先し、従来寄りの密度を保つ。
+        max_step = 480.0 if m == 2 else 290.0
+        step = min((hi - lo) / (m - 1), max_step)
         start = (vb_w - step * (m - 1)) / 2.0
         for j, i in enumerate(order_ids):
             x[i] = start + step * j
@@ -1198,7 +1201,17 @@ def relations_svg(rel: dict[str, Any]) -> str:
     circles = [(float(nd["x"]), float(nd["y"]), float(nd["r"])) for nd in nodes]
     # _resolve_labels は縦余地不足で AABB 分離が収束しないとき vb_h を動的に拡張する。
     # 確定後の vb_h で SVG ヘッダーを後置 prepend する (parts.insert(0, ...) は最後の手前)。
+    base_vb_h = vb_h
     _, vb_h = _resolve_labels(specs, circles, vb_w, vb_h)
+    if specs or circles:
+        content_bottom = max(
+            [cy + cr for _cx, cy, cr in circles]
+            + [s["cy"] + s["h"] / 2 for s in specs]
+        )
+        # _resolve_labels は衝突回避のため一時的に高さを伸ばすが、解消後に
+        # 実描画範囲外の巨大な下余白を残す必要はない。公開 SVG は本文中の
+        # 図版として自然な余白へ trim する。
+        vb_h = min(vb_h, max(base_vb_h, content_bottom + 48))
     for s in specs:   # アンカーから離れたチップは細いリーダ線で対応エッジを示す
         if math.hypot(s["cx"] - s["ax"], s["cy"] - s["ay"]) > 22:
             parts.append(

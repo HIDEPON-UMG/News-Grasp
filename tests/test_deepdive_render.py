@@ -346,6 +346,65 @@ _BANDS_HIGH_DENSITY_REL = {
 }
 
 
+_AI_PRICE_REL = {
+    "title": "AI価格競争をめぐる当事者の関係図",
+    "nodes": [
+        {"id": "openai", "label": "OpenAI", "group": "フロンティア2強"},
+        {"id": "anthropic", "label": "Anthropic", "group": "フロンティア2強"},
+        {"id": "google", "label": "Google/Gemini", "group": "価格攻勢勢"},
+        {"id": "buyers", "label": "Fujitsu/MS等 需要側", "group": "需要側"},
+        {"id": "investors", "label": "IPO投資家・引受幹事", "group": "資本市場"},
+    ],
+    "edges": [
+        {"from": "openai", "to": "anthropic", "label": "能力と価格の二重競争", "kind": "競合"},
+        {"from": "google", "to": "openai", "label": "20%値下げで価格戦に誘導", "kind": "競合"},
+        {"from": "google", "to": "anthropic", "label": "20%値下げで価格戦に誘導", "kind": "競合"},
+        {"from": "buyers", "to": "openai", "label": "マルチLLMで価格を比較・圧力", "kind": "供給"},
+        {"from": "buyers", "to": "anthropic", "label": "Claude大口採用で需要供給", "kind": "供給"},
+        {"from": "investors", "to": "anthropic", "label": "上場前に収益と評価額の整合を要求", "kind": "出資"},
+        {"from": "investors", "to": "openai", "label": "上場前に収益と評価額の整合を要求", "kind": "出資"},
+    ],
+}
+
+
+def test_relations_svg_trims_unused_vertical_space_after_label_resolution() -> None:
+    """ラベル分離で一時的に viewBox を伸ばしても、実描画範囲外の巨大な下余白は残さない。
+
+    なぜ重要か: 2026-06-13 DeepDive の関係図はラベル重なり回避のため `_resolve_labels`
+    が vb_h を 870 → 1687 まで拡張したが、実際の円・線・ラベルは y=58..794 に
+    収まっていた。下部に 800px 超の空白だけが残り、記事中で関係図の縦幅が異常に
+    大きくなった。重なり 0 のために内部拡張すること自体は許すが、公開 SVG は
+    実コンテンツの下端 + 通常余白へ trim する契約に固定する。
+    """
+    svg = relations_svg(_AI_PRICE_REL)
+    view_m = re.search(r'viewBox="0 0 ([-\d.]+) ([-\d.]+)"', svg)
+    assert view_m, "viewBox が出力されていない"
+    view_h = float(view_m.group(2))
+
+    ys: list[float] = []
+    circles: list[tuple[float, float, float]] = []
+    rects: list[tuple[float, float, float, float]] = []
+    for _x, y, r in _NODE_CIRCLE_RE.findall(svg):
+        cy, cr = float(y), float(r)
+        circles.append((float(_x), cy, cr))
+        ys.extend([cy - cr, cy + cr])
+    for _x, y, _w, h in _CHIP_RECT_RE.findall(svg):
+        gx, gy, gw, gh = float(_x), float(y), float(_w), float(h)
+        rects.append((gx, gy, gw, gh))
+        ys.extend([gy, gy + gh])
+    for _x1, y1, _x2, y2, _stroke, _w in _EDGE_LINE_RE.findall(svg):
+        ys.extend([float(y1), float(y2)])
+
+    assert ys, "関係図の実描画要素が抽出できない"
+    for rect in rects:
+        for circ in circles:
+            assert not _rect_circle_hit(rect, circ), \
+                f"ラベルがノード円に重なる: rect={rect} circle={circ}"
+    bottom_blank = view_h - max(ys)
+    assert bottom_blank <= 96, f"関係図の下余白が過剰: {bottom_blank:.1f}px"
+    assert view_h <= 920, f"5ノード/7エッジの関係図として縦幅が過剰: {view_h:.1f}px"
+
+
 def test_relations_bands_high_density_no_label_overlap() -> None:
     """3 陣営以上 + 下流クライアント (bands モード use_camps=True) で 8 エッジに絞れば、
     ラベル同士・ラベル↔ノード円・エッジ線↔ノード円の重なりは 0 を保つ。
