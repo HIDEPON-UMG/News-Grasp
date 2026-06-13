@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-14",
+  "category_id": "fx",
+  "queries": [
+    "build/deduped-candidates/fx.jsonl (stage1 dedup済み候補を起点に選別)",
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "USD/JPY / EUR/JPY / 日銀 / ECB / FOMC / 植田総裁入院 / 利上げ"
+  ],
+  "raw_results_total": 37,
+  "candidates_total": 37,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "EUR/JPY",
+    "日銀",
+    "FOMC",
+    "ECB",
+    "円安",
+    "利上げ",
+    "植田総裁"
+  ],
+  "dropped": [
+    {
+      "title": "アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBQa1U5NTk2aS1xRjBZb0dxSzJocWtGel9GdVBUTEx4TVhJY0R1cHB1aGlFZnltb1dpQ3lYVmd2M09TUnMxXzV2cE1GR1kxbGhHWXNGUQ?oc=5",
+      "reason": "レートページでニュース記事ではない"
+    },
+    {
+      "title": "豪ドル/円【AUDJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE05OFVuTURyMlFlNEM3WUpGTUFMWE92YU5yYjBSNm9Pc3NkeHplX0diaU9mVm5IRFIteUN6dzJOU1lFRXByX1BfVFhUdVh0YUdlbExySm5B?oc=5",
+      "reason": "レートページでニュース性がない"
+    },
+    {
+      "title": "FX/為替「注目のFX週間イベント 来週の為替はどう動く？」6/15～6/21【来週の為替予想】",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBhVFU2TGxwRDk0ZkxZLXV6aXR2d3lnYUFpN1pUcnEydGJDWWZ5N1pzTHJsVVlRSU1kQjQ3a19iUzkzWEVuMXQ0V0RiZ01DaVVEMnB3U1ZMUzVlNmwwbVdmQ2RDNA?oc=5",
+      "reason": "is_followup=true で新材料が薄い週間予告"
+    },
+    {
+      "title": "為替週間見通し：ドルは伸び悩みか、米インフレ圧力も日本の介入なら急落に警戒(フィスコ)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPVFpYQUtsMk80WC1TSG4welpDaHExWHFnalFPemc1N1lYamxkVUVlRUxXSGhkc3V2OU80ZjAxUTk5RU1qV3RmeldrMEpWNFR3cFEzOFBiMkpEeUhsaU9lVGJkNHpKbExPSC1GZTlocEkxcUlyZXhWUGJJUEg4TEhsZDg4Y0tMT00?oc=5",
+      "reason": "週間見通しの再整理で一次情報度が低い"
+    },
+    {
+      "title": "日米金融政策会合で…株＆為替は？【マーケット先読み】",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTFBQdXo5M3hzZlNuZVd5aXBrZ3hOcDljOWl2M3FYZElZM3NxUjhiRW5tTEc4RDNZRXBMS1dLXy1FTXJCOVNreTNlbk52WWRhbFBIU0RrY1BpUTBBcGg0d3JXaHBR?oc=5",
+      "reason": "論点が広すぎ、為替専属カテゴリとしては焦点が散る"
+    }
+  ]
+}

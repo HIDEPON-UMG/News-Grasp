@@ -1,0 +1,44 @@
+{
+  "date": "2026-06-14",
+  "category_id": "ai",
+  "queries": [
+    "stage1-file build/deduped-candidates/ai.jsonl",
+    "OpenAI Investigated by Coalition of State Attorneys General WSJ June 2026",
+    "Anthropic cuts off Fable 5 Mythos 5 access government order June 13 2026",
+    "iPhone Siri AI Gemini June 13 2026"
+  ],
+  "raw_results_total": 37,
+  "candidates_total": 37,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Anthropic、Claude Fable 5／Mythos 5へのアクセスを停止、米政府の輸出管理指示で全ユーザーに影響",
+      "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE5XOWJBTENhZ3Z6ck1NYkYxbE1KdFlOLVZDZTBTcGU4TTdyRkduYnJKYzVUQ200dnFrTFlqLV9ENkJQMzUxQ1pNUnU2NnJEd1dkY1YxWGl5TFFua1ViYW12eGU1WTFqYmxtOGJIcXVEaEFUdHE0bUkxdFo2MA?oc=5",
+      "reason": "同一テーマの重複報道。The Verge採用で代表化"
+    },
+    {
+      "title": "富士通、OpenAIおよびAnthropicと提携──FDE事業／サイバーセキュリティを強化へ",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE51MkIxYXpadnBEbmdaei1XVERGWFhUdGhjTEhOQ2dzWGFZUVdNb3BhU2dGWmJXLVIyQnRMQlUyVVRkcEVfdzVHTV81NnM0Vk03dDd2RV9n?oc=5",
+      "reason": "鮮度は高いが、当日確認できた一次・準一次ソースの詳細が不足し、上位3件より検証強度が低い"
+    },
+    {
+      "title": "G7サミットにAIトップ集結へ、アンソロピックやOpenAI首脳が初参加",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFBsU0tMbUpJWU10WTh1UVUwZlZjdHhkbmxjcjVuNmtjekJTU2JTcC1Hd1BMSHBhZTdST1QwSDVUekNKRTRYWkREdG96RHlNN2lWaWZtUXZ2VVB0MGZUbzlz?oc=5",
+      "reason": "AIが議題である点は確認できたが、候補見出しの『AIトップ初参加』まで当日裏取りが届かなかった"
+    },
+    {
+      "title": "東北地方の企業 ３割が業務に生成ＡＩ活用 民間調査",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1LMW1qTmdWZklRbnNLNHNHS2d2MHRpVkpRb3k1SmtucDg4WHlnTW9xd0M0U3E3elI2T0dVVUNDZnhHRHB1T1JUNWdzeEc5STlLS0N2UmJGSno?oc=5",
+      "reason": "地域調査として有用だが、全国インパクトが上位3件より限定的"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-14",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "watchlist: Accenture / デロイトトーマツ / PwC / EY / マッキンゼー / BCG / NTTデータ / CTC / 富士通 / NEC",
+    "filter: AI|クラウド|SaaS|セキュリティ|IT運用|データセンター|人材育成"
+  ],
+  "raw_results_total": 44,
+  "candidates_total": 7,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "PwC",
+    "セールスフォース",
+    "クラウドストライク",
+    "Windows 11",
+    "インド",
+    "葛尾",
+    "データセンター"
+  ],
+  "dropped": [
+    {
+      "title": "在庫管理をもっと簡単に。中小企業向けクラウドサービス「カカナイ在庫管理システム」をリリース",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE5EOHcyQzhaMXR4ellNR0N2WlFmbzV6ZlJIMmpHU18wbU9Gb09hVHItS19UWXJvUlR2SThnZVFYams4WnVITFNhRnVfVQ?oc=5",
+      "reason": "単独プロダクトPRで影響範囲が狭い"
+    },
+    {
+      "title": "クラウド梱包アシストツール『梱包アシストAI』、はぴロジ『logiec』と標準API連携を開始",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE5nOWY1ekFRUm52ZWtQUjNLSE4yMHVaYzBNNFFOakFQaW84bUwzQktMU1dBTlczSGpuUGRJVVhzcDVxeTEyNlU5MzZwQQ?oc=5",
+      "reason": "物流SaaSの個別連携で当日カテゴリ全体への波及が弱い"
+    }
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl"
+}

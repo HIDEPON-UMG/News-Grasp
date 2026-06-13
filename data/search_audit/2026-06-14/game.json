@@ -1,0 +1,59 @@
+{
+  "date": "2026-06-14",
+  "category_id": "game",
+  "queries": [
+    "stage1: build/deduped-candidates/game.jsonl",
+    "watchlist: 任天堂 / SIE (Sony Interactive Entertainment) / Steam / Square Enix",
+    "theme filter: platform strategy / Android-Steam / horror indie awards / co-op demo"
+  ],
+  "raw_results_total": 40,
+  "candidates_total": 40,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "任天堂",
+    "SIE (Sony Interactive Entertainment)",
+    "Steam",
+    "SQUARE ENIX",
+    "Cygames",
+    "カプコン",
+    "コナミ",
+    "テンセント",
+    "ネットイース",
+    "miHoYo",
+    "Capcom",
+    "Nintendo",
+    "Sony",
+    "Square Enix",
+    "Switch 2"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ニンテンドーeショップ新作ソフト情報 6/12（金）号。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxOTkxDR2JZZTFNUGdSYVVmNXlkRVNvVTl0QWtselpfTm5aRHVVSkllUlh6a2lTaWJWMVJhSHBVQThzU2RzR2g0OThGakYwcFJSQlhka09VNjFqRWluZk1jNEZlWTZVWkxORXJoVFhQaVFUZHlBREpOUWdzWFBCT1RMcWoyVmwzUQ?oc=5",
+      "reason": "定例の新作一覧で、当日号の業界インパクトとしては弱い"
+    },
+    {
+      "title": "Steam版「ファイナルファンタジー」シリーズ作品が30～70%OFF！ 「スクエニ JUNE SALE Part 1」開催",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE5pTGthUHJ4QWpnSWlqZXVCdjdxb1VpTThjcXk3Z2lEUWkzdG5FaG9IZ2ROc1dmMzgwRDVMbElQOS1WMmZ2N1RsNTBBZDBiSjFqaUE4Szllcng1UQ?oc=5",
+      "reason": "販促としては有意だが、戦略転換や新規供給の情報量では採用 4 件に劣後"
+    },
+    {
+      "title": "カイロソフトのお得Steamバンドル3弾が販売中。『ゆうえんち夢物語』『洞窟ぼうけん団』など4作品セットで960円（82％オフ）",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE1PVzVzV2Z0MTlHTG5LUzZudWhMVEEwV25lZDNXLS1fdU5TbkN4eTlfQy1BcTcxYUI5VUVzN1daa0lldFhWTlptdXRQcEY5end6SW1YLXJfNA?oc=5",
+      "reason": "値引き幅は大きいが、単発セール色が強く産業トレンドとしては弱い"
+    },
+    {
+      "title": "対戦型将棋ゲーム『棋桜（KIOU）』Steam（PC）版、2026年6月14日（日）配信決定",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE1pMnhlQkhGR2dIcW1NVVlkTFQ5T0xhTDU1bjFoMXRrSHNHdzR2N19LVWVzSXhlNGhrM2xrbHhHbW5lazByOWZabHgzSEdYRFFuOFloTzNnMVNfbFlWajFHZVlYZGJHMW1iRWc?oc=5",
+      "reason": "新作配信の題材としては成立するが、プラットフォーム戦略や市場波及の観点では優先度が下がる"
+    },
+    {
+      "title": "令和の携帯ゲーム機競争で勝者となるのは？ 値上げの波に襲われるSwitch 2とSteam Deck（リアルサウンド）",
+      "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNaGYxTTczWkZTcDBFdk5fOXZRbWhSelN3MHNHbGNZSGNJNm8yaUZPeElIQWdQRWc3OGZPdkxqdkt1dkpNY2I5TlFRcjZDQlNZQW12Z1AtUHZfVWdTVlk1Y3ExODhieTFyRXhEZ0xpZE94ZWJ6UWdOX1BWT2ZFa1RVNlJIZ3hBRXFlSmtXQ0hR?oc=5",
+      "reason": "論考寄りで一次情報性が薄く、当日号の採用基準では見送った"
+    }
+  ]
+}

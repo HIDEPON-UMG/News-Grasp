@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-14",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "stage1選別: Google AI半導体 / 韓国 パワー半導体 / JAL 整備工場 / Canon コラート / タタ電子",
+    "stage1除外: 株価・投信・イベント告知・学校紹介・工場見学会・消費者向け表示問題"
+  ],
+  "raw_results_total": 43,
+  "candidates_total": 43,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Google AI半導体 分散生産",
+    "韓国 パワー半導体 R&D",
+    "JAL ランディングギア 整備工場",
+    "Canon コラート工場 閉鎖",
+    "タタ電子 iPhone部品工場 規制"
+  ],
+  "dropped": [
+    {
+      "title": "あの企業も？意外性に富む「隠れ半導体株」有望候補リストアップ ＜株探トップ特集＞",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE1CWERObjRybk9oWEVLVEFBcHk1Q19zNGVQVW1IQUUySFBiRjZXTmpsdU9Lc2RNMDQ5TW0tYlJ4azBnTUx0REVLdHVWMmc1UGQ2eE5FRmdUN1p4ZkF4UlJWYg?oc=5",
+      "reason": "株式テーマ特集で、生産能力や供給網の新しい材料が薄い"
+    },
+    {
+      "title": "野村 世界業種別投資シリーズ(世界半導体株投資)【01313098】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE13U2tSeDgwM2x6NWhvM3FQd3VfcU94dTd0MFRoUFVUZVZGOGNpWDdXQ1FoQk5kSmkxWHpxNkZyWDJoWjVrcVNZNWh4WWlVMUkxMDZHRA?oc=5",
+      "reason": "投信情報であり、作り手視点の構造変化を扱っていない"
+    },
+    {
+      "title": "《群馬のイベント情報》親子工場見学会（館林市）",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTFBCZmxJVmljMEEwQ2gzODNndjNjN05FUUZBaURIa0dFS3VuWmdBbmlEbjBUVzA5cVlKRGJJb3lfQTNpX3dpT1d6QWRSOExyUDUxZXA4Mnk2T0M?oc=5",
+      "reason": "イベント告知で、産業シグナルや量産判断に結びつかない"
+    },
+    {
+      "title": "【学校イチ押し図鑑】企画、製造、販売を実践 岡山ビジネスカレッジ ファッションクリエイター学科",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE16eHZMNUU5YUxnV2lWMFNBeXVMSUQzeWU1ZW9ET1lPQWQ5Z2RuRDQ3OEk1Xzd5MVkwUXZJYkJ2a0F1c1pkRW1mU2ZmeWNTblJrVUI4REhTaXJrOWNocHdsNzkwMldfdjltSW1JaQ?oc=5",
+      "reason": "教育紹介であり、製造拠点やサプライチェーンの当日変化がない"
+    },
+    {
+      "title": "食パンの小麦粉「国内製造」表記、「国産小麦使用」と誤解招く…一部の消費者らが表示ルールの改善求める",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFB1ZlUwbmpaeTRpcU5BalpYR1pvQ3lkakZKUHFXQ1lFYXFpRk9rdUp6a2RILXlMVjRMWTlpUFJTVkNUM2JZRENtSlM0MTlERWZjZzlKUWwxN19rX1d3X2p3N0VDX1A0RlVKY0lQVVgxX1J1UQ?oc=5",
+      "reason": "表示制度の論点が中心で、設備投資や量産計画の変化から外れる"
+    }
+  ],
+  "notes": "ユーザー指示に従い、build/deduped-candidates/manufacturing.jsonl の stage1 dedup 済み候補のみを使用。広域収集と横断 dedup の再実行は行っていない。"
+}

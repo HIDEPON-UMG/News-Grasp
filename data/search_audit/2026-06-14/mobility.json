@@ -1,0 +1,48 @@
+{
+  "date": "2026-06-14",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "\"bZ4X Touring\" トヨタ 充電サービス",
+    "\"中国LiDARの主戦場、自動運転からロボットへ\" ロボセンス",
+    "Einride Nasdaq listing autonomous truck June 2026"
+  ],
+  "raw_results_total": 46,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "トヨタ",
+    "EV戦略",
+    "充電インフラ",
+    "LiDAR",
+    "自動運転トラック",
+    "商用EV",
+    "BYD",
+    "Tesla",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ],
+  "dropped": [
+    {
+      "title": "Googleの新型ロボタクシーに「ファミリータイプ」登場　テスラより快適性重視",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1IdTNHMEMzeng2U1h4dlBNSXJ6bmFIMzVGRHFCQjFUbl83ZThqNC1JQVBXbmxLazlTdEdzX2RBVlBXbU1LQ1pxedIBTkFVX3lxTFBhVFdyWDNnb051bzJSQy1ZVEsyU0djc3hJWnNQWkVnNkhpWE9JZi1PVlRMbU9XRzZ1YmFqTzBnU1o1U2F4WEt3dUE2aW9OZw?oc=5",
+      "reason": "専門媒体の二次解説色が強く、当日の一次材料や数値更新が薄い"
+    },
+    {
+      "title": "ＥＶスクーターを観光客らの移動手段に…長崎県壱岐市で新出光がシェアリングサービスの実証実験（読売新聞オンライン）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE8tZDRuUkxSdGhrSUEtNmhvOHZudTF4bm8tbVRTVnctSE42cUd5OWNlZWV4U0E3R25qZ0FsbkNvb0JaTFJVcGc2MGFYNlZQN0JSYk1zQkFjc3lYaXVndVFrRWlwdjBXZk53ZzFQcWs2b2dJNDYydmEzeUJFcmhUczA?oc=5",
+      "reason": "地域実証としては興味深いが、影響範囲が限定的でカテゴリ上位には届かない"
+    },
+    {
+      "title": "名古屋市本庁舎 ＥＶ用充電設備２台を設置…南側駐車場に：地域ニュース",
+      "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE5vVWhhRm9uZFRPOEx5YlZaRjFQZ3lyRlE5dDNSeHNQbGRHbVpHMEdTclcxb2xET245M2YxcUw0d1NGUTVtaFY3dzNlQnFPWlZLNUdWdXZKSWFmWXZRMkswQll6MGc1NndKNTJNQURkQ3M?oc=5",
+      "reason": "施設整備の規模が小さく、産業・投資インパクトが限定的"
+    },
+    {
+      "title": "Acura-Hybrid-SUV-Prototype-1s",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE1tVFR0eFRlOEp0aWd4OHZGLTlwRC1YTEs2RDJqR3FGM1FCNGJIVjA1X2l3ejZWVU85TkdhT1huMjdYT1hVSC12azZwMlhJb3pHZV81LUk3a1lHZmRCZXJHX2FEVzJDRjJvZnpDa2J0VFZTcFNpTVdTUQ?oc=5",
+      "reason": "タイトル断片のみで記事情報が不足し、採用判断に必要な文脈を満たさない"
+    }
+  ]
+}

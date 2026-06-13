@@ -1,0 +1,45 @@
+{
+  "date": "2026-06-14",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "世界経済成長率予想 下方修正 中東情勢 大幅減速",
+    "ホルムズ海峡 日本経済 影響 野村證券",
+    "タイ 消費支援 財政負担 景気",
+    "ふるさと納税 800億円赤字 自治体全体",
+    "中国 投信 外資 シェア 0.1%"
+  ],
+  "raw_results_total": 35,
+  "candidates_total": 35,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "世界経済",
+    "資源価格",
+    "日本経済",
+    "地方財政",
+    "中国金融",
+    "タイ景気"
+  ],
+  "dropped": [
+    {
+      "title": "インフレクション【INFQ】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5XNDd3WVNkRFRQU2F6WU41UnZmTnFrV0hkcUpuOGVBVThvV3hlbnlpNFotSnU3UUpGWldBbGhoaHp4RFZsazdqaUNxNzNiLTA?oc=5",
+      "reason": "個別株ページであり、当日のマクロニュースとしての独立性が低い"
+    },
+    {
+      "title": "13日の高市首相の動静",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBPcllTZjE3UzlzLTdMYjJtM0VueXFMM283Y3k3TWJyR1ZsU1o1Ykg5R1lSSExXajR4QWhTamVJOVA2M3Zjc3N0TDNuNzlVdnJZaVg3aGM5MksybC10S0VhY3g1UHdpUjlhSUFmSA?oc=5",
+      "reason": "政治動静としては重要でも、当日の経済インパクトを直接示す材料が薄い"
+    },
+    {
+      "title": "［社説］誰もが産休を取れる社会に",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5Cc2Y3d3JoNWdoanNUcWVrTml3RUNjNEZkNjYyUnB1VFpZZWduTWI5Ul9BRXUyQVdORmJwOW5XcVlIZUFMV1Ayd1B1b0UtR1lYNHdvMXhyVFVuVTVnWlFSSTVlV1JaMXAzMmc1Zw?oc=5",
+      "reason": "社説であり一次的なマクロ・市場材料ではない"
+    },
+    {
+      "title": "錦糸町マルイでポルトガル式エッグタルト 本国直送で焼きたて販売（みんなの経済新聞ネットワーク）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBhbDRYc1VUcHM3cFhNNl92SXZNNmpIaEh0cjBXalllVXBnM0xId3MzbXh4NFFPemQzNG10aTZLZ2pMTXBUTXdsRzB2NzlOeGZmdTRYYXE4d3U1QmFMd0VQVm1mYWVkRTYzcFM4UVJsS2MwYXBqaTU0U3ZYS0NDY3M?oc=5",
+      "reason": "地域消費の話題としては面白いが、カテゴリ上位に置くには影響範囲が限定的"
+    }
+  ]
+}
