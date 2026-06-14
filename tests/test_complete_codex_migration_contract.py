@@ -57,7 +57,27 @@ def test_runner_physically_fans_out_reporters_before_editor_integration() -> Non
     assert "$ReporterModel = Get-ModelPolicyValue -Role 'reporter' -Key 'default'" in stage
     assert "role=reporter" in stage
     assert "tools.verify_reporter_output" in stage
-    assert "foreach ($cat in $Categories)" in stage
+    assert "$MaxParallelReporterJobs = 7" in runner
+    assert "Start-Job" in stage
+    assert "Wait-Job" in stage
+    assert "Receive-Job" in stage
+    assert "reporter job START" in stage
+    assert "reporter job END" in stage
+    assert "foreach ($cat in $Categories)" not in stage
+
+
+def test_runner_retries_only_failed_reporters_with_signature_gate() -> None:
+    """Stage2 retry は失敗カテゴリだけに限定し、同一 failure signature の焼き直しを止める。"""
+    runner = _read(RUNNER)
+    stage = runner.split("Stage2 reporter fan-out", 1)[1].split("Stage4: Codex DeepDive", 1)[0]
+
+    assert "$ReporterMaxAttempts = 3" in stage
+    assert "Get-ReporterFailureSignature" in stage
+    assert "Clear-ReporterCategoryArtifacts" in stage
+    assert "same failure signature" in stage
+    assert "$failedCategories" in stage
+    assert "$retryCategories" in stage
+    assert "Invoke-ReporterWave -Attempt $attempt -WaveCategories $retryCategories" in stage
 
 
 def test_runner_editor_uses_reporter_artifacts_as_explicit_input() -> None:
@@ -89,7 +109,7 @@ def test_runner_executes_stage0_stage1_before_any_codex_wrapper() -> None:
     stage1 = runner.index("cross_category_dedup.py")
     stage2 = runner.index("Stage2 reporter fan-out")
     assert stage0 < stage1 < stage2
-    assert "MaxParallelReporterJobs = 3" in runner
+    assert "MaxParallelReporterJobs = 7" in runner
     assert "Stage2 reporter fan-out" in runner
 
 
@@ -126,7 +146,7 @@ def test_runner_records_codex_usage_by_flow() -> None:
     runner = _read(RUNNER)
     assert "$CodexUsageLog = Join-Path $RepoDir \"build\\codex-usage\\$DateStamp.jsonl\"" in runner
     for flow in [
-        '-FlowName "reporter:$cat"',
+        '-FlowName "reporter:$Category"',
         "-FlowName 'newsroom_editor'",
         "-FlowName 'deepdive'",
         '-FlowName "repair:$GateId"',
