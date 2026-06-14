@@ -38,11 +38,11 @@ tags:
 
 ### [90] Google、次世代AI半導体をSamsung・TSMCへ分散 2nm供給網の複線化が進む
 
-📅 2026-06-13 16:55 · 📰 finance.biggo.jp · 🔗 [元記事](https://news.google.com/rss/articles/CBMiX0FVX3lxTE1HZl9mM2JJSFdTWlUxc1diQmh2QXJGX0M2SHRnQVZLa2ttQU9lVWdyWG9rVlE5RUdkUmJHbFJ2dlVpS1RGVWlIZXV5VF9oUkNSOGZaQ28tM3NXOTE0TXJj?oc=5)
+📅 2026-06-13 16:55 · 📰 finance.biggo.jp · 🔗 [元記事](https://finance.biggo.jp/news/wRj6v54BjNmBQNsNi7-d)
 
 #cat/manufacturing #co/Google #co/Samsung #co/TSMC #country/米国 #topic/AI半導体 #event/供給網再編 #score/高
 
-![thumb](null)
+![thumb](https://img.biggo.com/Vxwo2QA9QS0dxdCCoGWviT6VY5ODrfO0H5rvTCb1HtI/fit/1720/0/sm/1/aHR0cHM6Ly9pbWcuYmdvLm9uZS9uZXdzLWltYWdlL2FpX2dlbmVyYXRlZC8yMDI2LTA2L3dSajZ2NTRCak5tQlFOc05pNy1kXzE3ODEzMzc2MzhfZGVmYXVsdC5qcGc.jpg)
 
 - [[Google]]が**次世代AI半導体の生産をSamsungとTSMCへ振り分ける構え**を見せ、先端ノード調達を一社依存から外し始めた。
 - 焦点は価格よりも、__2nm世代で生産余力を複線化できるか__にある。AI向け半導体は需要の波が大きく、供給網の詰まりがそのままサービス競争力に跳ね返る。
@@ -52,11 +52,11 @@ tags:
 
 ### [87] 韓国、次世代パワー半導体R&Dに7500億ウォン 量産主導権へ政策資金を厚くする
 
-📅 2026-06-13 13:55 · 📰 finance.biggo.jp · 🔗 [元記事](https://news.google.com/rss/articles/CBMiX0FVX3lxTE5LZjZsS3k2d0lmMXIyMkVOUWh5ZGl3TklEeHZxbUhNYUdpNnk3U2pkMWJXMmo0eXlhOE1ieFV3VUJBNGJ6N1BPcUROUWdMM2ZuYXhuQThwSE9IUUVIUlBF?oc=5)
+📅 2026-06-13 13:55 · 📰 finance.biggo.jp · 🔗 [元記事](https://finance.biggo.jp/news/N9NVv54BFVfA5plgx9aC)
 
 #cat/manufacturing #country/韓国 #topic/パワー半導体 #event/政策支援 #score/高
 
-![thumb](null)
+![thumb](https://img.biggo.com/SoHNbYalatIKmmpP4FpcApF9rpySc4LHVLBQusdj1Lg/fit/1720/0/sm/1/aHR0cHM6Ly9pbWcuYmdvLm9uZS9uZXdzLWltYWdlL2FpX2dlbmVyYXRlZC8yMDI2LTA2L045TlZ2NTRCRlZmQTVwbGd4OWFDXzE3ODEzMjY5MDZfZGVmYXVsdC5qcGc.jpg)
 
 - [[韓国]]政府が**次世代パワー半導体の研究開発へ7500億ウォンを投じる方針**を打ち出し、車載・電力分野の基盤技術を国家案件として押し上げる。
 - ここで狙うのはメモリー偏重の補完だ。__SiCや高耐圧デバイスの量産力__を厚くできれば、EVと送配電の両方で国内サプライチェーンの厚みが増す。
@@ -66,11 +66,11 @@ tags:
 
 ### [83] JAL、羽田にランディングギア新整備工場 重要部位の内製整備能力を増強へ
 
-📅 2026-06-13 17:22 · 📰 www.traicy.com · 🔗 [元記事](https://news.google.com/rss/articles/CBMiR0FVX3lxTE83c242OHA5TFhMXy1rOXZabDlQbW1BeHI0LW1pbUY3a0hPM3hJZkNOcTRoU28yTlBiUkU1WV9SS0ViSjFURWlB?oc=5)
+📅 2026-06-13 17:22 · 📰 www.traicy.com · 🔗 [元記事](https://www.traicy.com/?p=373038)
 
 #cat/manufacturing #co/JAL #country/日本 #topic/整備工場 #event/工場新設 #score/中
 
-![thumb](null)
+![thumb](https://www.traicy.com/wp-content/uploads/2026/06/JL.jpg)
 
 - [[JAL]]が**羽田空港にランディングギアの新整備工場を整備**し、機体の重要保全部位を自前で回す能力を増やす。
 - ランディングギアは整備停滞が運航制約へ直結しやすい。__処理能力を空港近接で積み増す判断__は、外部委託だけでは吸収しにくい需要を見込んだ動きだ。
@@ -80,11 +80,11 @@ tags:
 
 ### [79] Canonコラート工場が閉鎖 タイ拠点の全生産ライン終了で再編が一段進む
 
-📅 2026-06-13 23:46 · 📰 www.thaich.net · 🔗 [元記事](https://news.google.com/rss/articles/CBMiVEFVX3lxTE9MUTlpbE4yZUR4V3JfUUYzYUlrMTlQVFh3b3pTYVhfTzJQREEyQktGLXNGTU93by15WHV4TjlzNURYYnVfeVhzMUlkajlEUUk4SmNOUw?oc=5)
+📅 2026-06-13 23:46 · 📰 www.thaich.net · 🔗 [元記事](https://www.thaich.net/news/20260613sz.htm)
 
 #cat/manufacturing #co/Canon #country/タイ #topic/工場閉鎖 #event/工場閉鎖 #score/中
 
-![thumb](null)
+![thumb](https://www.thaich.net/wp-content/uploads/2026/06/Canon-AI.jpg)
 
 - [[Canon]]のコラート工場が**最後の出荷を終えて全生産ラインを閉じた**。東南アジア拠点の役割分担を見直す再編が一段進んだ形だ。
 - 工場閉鎖は単なる縮小ではなく、__どの製品をどの国で作るかの再設計__を伴う。需要構成や物流費、為替を踏まえた拠点再配置の可能性が高い。
@@ -94,11 +94,11 @@ tags:
 
 ### [76] タタ電子のiPhone部品工場に廃水警告 環境規制が操業リスクとして浮上
 
-📅 2026-06-13 18:56 · 📰 jp.investing.com · 🔗 [元記事](https://news.google.com/rss/articles/CBMiakFVX3lxTE5CeDNsZWJqYUlwTjNFa29zUFo2X011aEd3VTRNMUUwYkxYU1BWUmZmWEpncVdRYk1icFhmeDVOMktlUkFUUVNCSkVfS3FRaFdDWE9HMVJQZGl1SHpla2k4dDc3dU1oRTZURVE?oc=5)
+📅 2026-06-13 18:56 · 📰 jp.investing.com · 🔗 [元記事](https://jp.investing.com/news/company-news/article-1571574)
 
 #cat/manufacturing #co/タタ電子 #co/Apple #country/インド #topic/環境規制 #event/行政警告 #score/中
 
-![thumb](null)
+![thumb](https://i-invdn-com.investing.com/redesign/images/seo/investing_300X300.png)
 
 - [[タタ電子]]のiPhone部品工場が**廃水汚染を巡る警告**を受け、環境対応がそのまま操業継続リスクになる構図が見えた。
 - インド生産の拡大局面では、__コスト優位だけでなく環境コンプライアンス__が供給網の安定度を決める。行政指摘が長引けば顧客側の調達計画にも響く。

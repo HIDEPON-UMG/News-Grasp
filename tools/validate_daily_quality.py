@@ -60,6 +60,42 @@ def validate_summary_hero(summary_path: Path) -> list[str]:
     ]
 
 
+def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str]:
+    """当日号の全カードがサムネ fallback へ退化しないことを検査する。"""
+    if not jsonl_path.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for lineno, line in enumerate(jsonl_path.read_text(encoding="utf-8-sig").splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError as e:
+            return [f"{jsonl_path}: line {lineno}: JSON decode error: {e}"]
+        if isinstance(rec, dict) and rec.get("date") == issue.isoformat():
+            records.append(rec)
+    if not records:
+        return []
+    google_news_urls = [
+        rec.get("url")
+        for rec in records
+        if isinstance(rec.get("url"), str)
+        and "news.google.com/rss/articles/" in rec["url"]
+    ]
+    if google_news_urls:
+        return [
+            f"{jsonl_path}: {issue.isoformat()} に Google News RSS URL のままです: {len(google_news_urls)} 件",
+            "元記事 URL へ解決してから公開してください。Google News URL のままだと元記事 OGP を取り逃し、fallback サムネ化します。",
+        ]
+    if all("thumb" in rec for rec in records) and all(rec.get("thumb") is None for rec in records):
+        return [
+            f"{jsonl_path}: {issue.isoformat()} の thumb が全件 null です。",
+            "このままでは公開ページが全件 fallback サムネになります。fetch_ogp / WebSearch thumbnail の取得結果を反映してください。",
+        ]
+    return []
+
+
 def _missing_emphasis_kinds(text: str) -> list[str]:
     missing: list[str] = []
     if "[[" not in text or "]]" not in text:
@@ -411,6 +447,7 @@ def validate_daily_quality(
         audit_root=audit_root,
         issue=issue,
     ))
+    errs.extend(validate_issue_thumbnail_coverage(jsonl_path, issue))
     errs.extend(validate_digest_source_freshness(digest_root, issue))
     errs.extend(validate_jsonl_source_freshness(jsonl_path, issue))
     return errs

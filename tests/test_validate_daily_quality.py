@@ -193,6 +193,49 @@ def test_daily_quality_rejects_missing_summary_hero(tmp_path: Path) -> None:
     assert any("hero_left / hero_right" in e for e in errs)
 
 
+def test_daily_quality_rejects_all_null_thumbnails_for_issue(tmp_path: Path) -> None:
+    """当日号の全記事が thumb=null なら、全カード fallback 表示になるため公開前に落とす。"""
+    _write_summary(tmp_path)
+    url = "https://example.com/2026/06/08/fresh-news"
+    _write_category(tmp_path, url)
+    _write_jsonl(tmp_path, url, extra={"title_ja": "Freshness test article", "thumb": None})
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "thumb が全件 null" in joined
+    assert "公開ページが全件 fallback サムネになります" in joined
+
+
+def test_daily_quality_rejects_google_news_rss_urls_for_issue(tmp_path: Path) -> None:
+    """当日 record の url が Google News RSS のままなら、元記事 OGP 取得漏れとして落とす。"""
+    _write_summary(tmp_path)
+    url = "https://news.google.com/rss/articles/CBMiExample?oc=5"
+    _write_category(tmp_path, url)
+    _write_jsonl(
+        tmp_path,
+        url,
+        extra={
+            "title_ja": "Freshness test article",
+            "thumb": "https://example.com/thumb.jpg",
+        },
+    )
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "Google News RSS URL のままです" in joined
+    assert "元記事 URL へ解決してから公開してください" in joined
+
+
 def test_daily_quality_rejects_summary_reflection_without_three_tier_emphasis(tmp_path: Path) -> None:
     """Summary 考察があるのに太字・下線・マーカーが不足していれば落とす。"""
     _write_summary_with_reflection(

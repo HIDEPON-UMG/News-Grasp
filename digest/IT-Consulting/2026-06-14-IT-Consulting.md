@@ -31,11 +31,11 @@ tags:
 
 ### [84] セールスフォースのHeadless 360、AI時代のSaaS防衛線を示す
 
-📅 2026-06-13 22:00 · 📰 EnterpriseZine · 🔗 [元記事](https://news.google.com/rss/articles/CBMiWkFVX3lxTFBjREVMX284SFp0LUJ6bTV2MjJ4OG81a095RGRwTmdTMHczamlpQWttdXR3YW9Tcm0tUDhuOWRWQ29icUdIOTBURVF2Q2l4SW02ZmxxVmVlSmNYUQ?oc=5)
+📅 2026-06-13 22:00 · 📰 EnterpriseZine · 🔗 [元記事](https://enterprisezine.jp/article/detail/24439)
 
 #cat/it #co/セールスフォース #country/米国 #topic/SaaS #event/戦略分析 #score/中
 
-![thumb](null)
+![thumb](https://ez-cdn.shoeisha.jp/static/images/article/24439/24439_00.jpg)
 
 - [[セールスフォース]]のHeadless 360は、**顧客接点を前面UIから切り離し**、業務ロジックとデータ基盤を中核に置き直す発想として語られている。
 - AIエージェントが比較・入力・提案を代行するほど、SaaSは画面の使いやすさだけでは守れない。__API・権限・データ整合性__が収益防衛線になる。
@@ -45,11 +45,11 @@ tags:
 
 ### [82] クラウドストライク、フロンティアAI対応フレームワークで財務リスクまで可視化
 
-📅 2026-06-13 17:23 · 📰 EnterpriseZine · 🔗 [元記事](https://news.google.com/rss/articles/CBMiVkFVX3lxTE1NR1Z4YVhfWTVacWQyN0ltenVsVm1iZjlMY0ozQXliTkY1emZhTnVUWV9CcVhmQmtKSTFua0YzaWNqN2dzSGNyXzNnaVRSNmN2WUUwbXFB?oc=5)
+📅 2026-06-13 17:23 · 📰 EnterpriseZine · 🔗 [元記事](https://enterprisezine.jp/news/detail/24457)
 
 #cat/it #co/クラウドストライク #country/米国 #topic/AIガバナンス #event/フレームワーク発表 #score/中
 
-![thumb](null)
+![thumb](https://ez-cdn.shoeisha.jp/static/images/article/24457/24457-top.jpg)
 
 - [[クラウドストライク]]主導のフレームワークは、**生成AIの利用をセキュリティ設定だけで終わらせず**、運用・監査・財務影響まで一体で見る視点を前面に出した。
 - AI活用では情報漏えいだけでなく、誤回答や権限逸脱が契約違反・監査指摘・追加コストに直結する。__リスクの金額換算__がCIOとCFOの共通言語になる。
@@ -59,11 +59,11 @@ tags:
 
 ### [79] Windows 11起動不能リスクとEDR無効化慣行、@ITがIT運用再点検を促す
 
-📅 2026-06-13 08:00 · 📰 @IT · 🔗 [元記事](https://news.google.com/rss/articles/CBMickFVX3lxTFB3dEUwODdNOHhreUdqSlEwS05VcFBUTUFSZ2wteEFXOHNDYV9xZk90NnlJNks5YThPOWllQmNDZWtiZ3NQSHU0WDRGSmhyeUhlMDJjS01aZkpoTU1qRTB5YzRRamRpV1Y3TklBUjNuaWZZdw?oc=5)
+📅 2026-06-13 08:00 · 📰 @IT · 🔗 [元記事](https://atmarkit.itmedia.co.jp/ait/articles/2606/13/news005.html)
 
 #cat/it #co/Microsoft #country/米国 #topic/IT運用 #event/運用警鐘 #score/中
 
-![thumb](null)
+![thumb](https://image.itmedia.co.jp/ait/articles/2606/13/cover_news005.jpg)
 
 - [[Windows 11]]の起動不能リスクと、**EDRを無効化したまま運用する慣行**が同列に語られており、端末管理の基礎が崩れると障害と侵害が一緒に来ることを示す。
 - アップデート適用、ドライバ管理、セキュリティ例外の承認経路が属人化すると、__障害復旧の速さより事前統制の弱さ__が先に露呈する。
@@ -73,11 +73,11 @@ tags:
 
 ### [76] インド、AI・クラウド需要でデータセンター拡張が加速
 
-📅 2026-06-13 06:30 · 📰 TBS NEWS DIG · 🔗 [元記事](https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5Zb3N0NWtLTV9naXdKLUwtTVZvQTgzWmFSRFdYWjBQRG9nb2ZTaDJMREcyYnpTSG5UMGRiaW9ZZzhySURyUEVqZHNIOERrdm9zWVdxekhBanZjd3JyV1l5YmJlWG0wYm8?oc=5)
+📅 2026-06-13 06:30 · 📰 TBS NEWS DIG · 🔗 [元記事](https://newsdig.tbs.co.jp/articles/withbloomberg/2727316)
 
 #cat/it #country/インド #topic/データセンター #event/投資動向 #score/中
 
-![thumb](null)
+![thumb](https://newsdig.ismcdn.jp/mwimgs/2/6/1200w/img_2633440f7fb00ebe9118455ad8d5739d313270.jpg)
 
 - [[インド]]ではAIとクラウド需要の膨張を受け、**データセンターが単なる不動産ではなく国家級インフラ**として扱われ始めている。
 - 計算資源の確保はGPUやサーバーだけで完結せず、送配電・海底ケーブル・都市開発までを巻き込む。__IT投資が産業政策になる段階__に入った。
@@ -87,11 +87,11 @@ tags:
 
 ### [72] 葛尾村にAI新拠点、高度IT人材育成を今夏始動
 
-📅 2026-06-13 09:30 · 📰 福島民友 · 🔗 [元記事](https://news.google.com/rss/articles/CBMiaEFVX3lxTE0zcGFNb2hYQ25Mc3RzZHpDY1BmNG1pa0Z6M3dQV25DSzZxZXpsX3EyY1hvb19ITEF5bkFqeHluc2xyZm8xWl9VSHZlSTg2LXVaZVpQRUdYOUR4ODY4Vm9uYzdLQ3FMT0Zx?oc=5)
+📅 2026-06-13 09:30 · 📰 福島民友 · 🔗 [元記事](https://www.minyu-net.com/news/detail/2026061310244451013)
 
 #cat/it #country/日本 #topic/IT人材育成 #event/拠点開設 #score/中
 
-![thumb](null)
+![thumb](https://www.minyu-net.com/common/news/2026061310244451013_0.jpg)
 
 - [[葛尾村]]のAI新拠点は、**震災復興をIT人材育成へ接続する実装フェーズ**に入ったことを示す。地方で学びと仕事を同時につくる試みだ。
 - 地方拠点が成立すれば、首都圏集中だったAI教育や開発受託の一部を分散できる。__人材確保と地域定着__を同じ政策で進められる余地がある。
