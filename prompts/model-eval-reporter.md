@@ -1,5 +1,7 @@
 # News-Grasp reporter model evaluation
 
+文体は prompts/style-guide.md を正本として参照し、翻訳調・文末反復・冗長さを避ける。
+
 You are evaluating article-card writing quality for News-Grasp.
 
 Input is a JSON fixture with article records. For each item, rewrite only:

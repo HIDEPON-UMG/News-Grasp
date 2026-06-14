@@ -37,27 +37,30 @@
 | EVID-132 | `rg UseClaude|ClaudeExe|run_claude...` found only negative contract-test strings; `.claude` directory is absent and `.codex` exists. |
 | EVID-109 | Stage0 verification generated 50 UTF-8 JSONL candidates each for `fx`, `ai`, `it`, `mobility`, `manufacturing`, `economy`, `game`. |
 | EVID-111 | Stage1 verification read 350 candidates and produced 287 passed / 63 dropped candidates in `build/verify-deduped-candidates`. |
-| EVID-120 | Operational Claude execution remnants are absent from runner/wrapper/prompts/tools; remaining matches are negative contract tests only. |
-| EVID-121 | Runtime path has no OpenAI API key / SDK usage; matches are gate/test strings only. |
+| EVID-120 | Operational Claude execution remnants are absent from runner/tools/prompts/schemas/.codex; command-pattern scan returned 0 Claude executable/wrapper hits. |
+| EVID-121 | Runtime path has no OpenAI API key / SDK usage; runtime scan returned 0 API/SDK hits after excluding explicit `uses_openai_api_key: False` metadata. |
 | EVID-122 | `powershell.exe ... news-grasp-runner.ps1 -SmokeTest` exited 0 and logged `news-grasp-runner.ps1 SMOKE OK` after newsroom model-policy wiring. |
-| EVID-123 | `.venv\Scripts\python.exe -m pytest tests/ -q -m "not network"` passed on the current tree. |
+| EVID-123 | `.venv\Scripts\python.exe -m pytest tests/ -q --tb=line --no-header -m "not network"` passed after URL quarantine and thumb restore. |
 | EVID-133 | `RSS_FEEDS_BY_CATEGORY` now contains one verified feed per harvest category; `tools.verify_rss_registry` wrote `build/rss-registry-verification.json` with 7/7 feeds OK. |
 | EVID-134 | Stage2 runner contract now requires category reporter prompts, reporter model policy, `tools.verify_reporter_output`, and reporter artifact paths; `tests/test_complete_codex_migration_contract.py` passed. |
 | EVID-135 | Stage3 runner contract now writes `$EditorInputManifest` with `reporter_artifacts`, `dedup_file`, `source_policy` and invokes newsroom editor with `schemas/editor_summary.schema.json`. |
-| EVID-136 | URL liveness failure now runs `audit_all_article_urls.py --gate --match-session --quarantine-articles --apply`, then rechecks before fallback. |
+| EVID-136 | URL liveness failure now runs `audit_all_article_urls.py --gate --match-session --quarantine-articles --apply`, then rechecks before fallback; 2026-06-14 manual gate quarantined 12 session-unverified URLs and final `--gate --match-session` exited 0. |
 | EVID-137 | `tools/fetch_article_body.py` exists and is scoped in `prompts/newsroom-reporter-system.md` to reporter-local use only; tests passed. |
 | EVID-138 | Codex hook URL extraction accepts snake_case/camelCase and WebSearch/web_search payloads; hook subprocess tests passed. |
 | EVID-139 | E2E前 no-Codex preflight was added: `tools.newsroom_preflight`, `schemas/reporter_fanout_return.schema.json`, runner `-PreflightOnly`; `-PreflightOnly -NoPush` exited 0 before git pull/Codex. |
+| EVID-140 | `tools/audit_all_article_urls.py` quarantine drop now synchronizes `data/search_audit/<issue>/<category>.json` `selected_total` with surviving digest cards; AM-17 contract tests passed. |
+| EVID-141 | 2026-06-14 downstream gate recovered from `thumb` all-null by fetching 19/19 OGP images with `tools.fetch_ogp`, updating `data/articles.jsonl` and 4 digest files, then passing daily-quality/public HTML gates. |
+| EVID-142 | `C:\Users\hidek\bin\news-grasp-runner.ps1` now routes content gate failures through `Stop-ContentGateWithoutFallback` instead of publishing fallback notice; `tests/test_runner_convergence_contract.py::test_content_gates_do_not_publish_fallback_notice` passed. |
+| EVID-143 | PowerShell syntax pitfalls are blocked in `C:\Users\hidek\.codex\hooks\pre_shell_guard.ps1`: bash heredoc (`<<EOF`) and `Select-Object -Index N..M`; hook contract tests passed. |
 
 ## Blocked Results
 
 | Evidence ID | Blocker |
 | --- | --- |
-| EVID-116 | Publish-always is still partial; URL liveness is quarantine-first, but several non-URL gates still fallback by design or pending policy split. |
-| EVID-117 | URL quarantine branch is contract-tested, but full runner `-NoPush` E2E is not proven after the fan-out rewrite. |
-| EVID-124 | Full `-NoPush` E2E is blocked while the worktree is dirty, because runner may create local commits. |
-| EVID-125 | public HTML gate is blocked until full E2E creates the candidate public artifact. |
-| EVID-126 | Acceptance Matrix cannot be all Green while EVID-116/117/124/125 remain Yellow/Blocked. |
+| EVID-116 | AM-17 is complete for this non-E2E scope: URL/session/date liveness is quarantine-first, metadata is resynchronized after drops, and content gate failures no longer publish fallback notice. |
+| EVID-117 | URL quarantine branch is contract-tested and manually proven on 2026-06-14 artifacts, but full runner `-NoPush` E2E was waived by user instruction and is not claimed. |
+| EVID-124 | Full `-NoPush` E2E is explicitly waived for this continuation by 2026-06-14 user instruction; do not use it as cutover evidence. |
+| EVID-126 | Acceptance Matrix cannot be all Green while AM-24 remains Blocked; scheduler cutover is still out of scope. |
 
 ## Source Documents
 
@@ -71,7 +74,7 @@
 | EVID-006 | `C:\Users\hidek\bin\run_codex_with_timeout.ps1` | Codex CLI wrapper uses `codex exec` through `Start-Process`; no OpenAI SDK path. |
 | EVID-007 | `.codex/hooks.json`, `.codex/hooks/append_session_urls.py` | Codex hook exists and must be verified with Codex payload shape, not Claude payload shape. |
 | EVID-008 | `tools/harvest_candidates.py` | Google News RSS harvest exists; `RSS_FEEDS_BY_CATEGORY` currently has empty lists. |
-| EVID-009 | `tools/audit_all_article_urls.py`, `tools/gate_policy.py` | URL quarantine primitives exist; runner integration is not proven complete. |
+| EVID-009 | `tools/audit_all_article_urls.py`, `tools/gate_policy.py` | URL/session/date quarantine path is proven for 2026-06-14 artifacts; full publish-always coverage across non-URL gates remains incomplete. |
 | EVID-010 | `tests/test_complete_codex_migration_contract.py` | Existing contract covers Claude execution removal, Stage0/1 order, style-guide, model eval variants. |
 
 ## TODO Evidence Map
@@ -94,17 +97,17 @@
 | EVID-113 | T13 | `schemas/reporter_records.schema.json` | Reporter schema now exists as a boundary. | Reporter artifacts must validate. |
 | EVID-114 | T14 | runner/editor contract | Editor manifest now constrains input to reporter artifacts and Stage1 dedup. | Done; full E2E still required. |
 | EVID-115 | T15 | `schemas/editor_summary.schema.json` | Editor schema now exists as a boundary. | Editor artifacts must validate. |
-| EVID-116 | T16 | runner/gate contract | URL gate is quarantine-first; broader publish-always policy remains partial. | Further policy work required. |
-| EVID-117 | T17 | quarantine fixture | Runner branch is contract-tested; full E2E not proven. | E2E required. |
+| EVID-116 | T16 | runner/gate contract | URL/session/date gate is quarantine-first; content gates do not publish fallback notice. | Done for non-E2E scope. |
+| EVID-117 | T17 | quarantine fixture | Runner branch is contract-tested; 2026-06-14 artifacts were manually quarantined/rechecked; full E2E waived and not claimed. | E2E no longer required for this continuation; still not cutover evidence. |
 | EVID-118 | T18 | handoff Step A | `fetch_article_body.py` implemented for reporter-local body snippets. | Done. |
 | EVID-119 | T19 | Codex hook payload | Snake/camel payload fixtures and subprocess hook execution passed. | Done. |
-| EVID-120 | T20 | `rg claude|Claude|...` | Operational Claude remnants must be zero or classified. | Review required. |
-| EVID-121 | T21 | `rg OPENAI_API|api_key|...` | API/SDK fallback must be zero in runtime path. | Review required. |
+| EVID-120 | T20 | command-pattern `rg` audit | Claude executable/wrapper command hits are 0 in runner/tools/prompts/schemas/.codex. | Done. |
+| EVID-121 | T21 | OpenAI API/SDK `rg` audit | API key / SDK runtime hits are 0 after excluding false metadata. | Done. |
 | EVID-122 | T22 | runner smoke log | `-SmokeTest` must pass on Windows PowerShell 5.1. | Smoke required. |
 | EVID-123 | T23 | pytest output | Current dirty tree must pass non-network tests. | Required. |
 | EVID-139 | T24 | runner preflight log | `-PreflightOnly` must pass before Full E2E. | Done. |
-| EVID-124 | T25 | runner NoPush log | Full category E2E must skip push/send_push. | Required before cutover. |
-| EVID-125 | T26 | HTML gate output | Local/public HTML gates must not be conflated. | Required. |
-| EVID-126 | T26 | Acceptance Matrix | All rows must be Green with evidence. | Required before completion claim. |
+| EVID-124 | T25 | runner NoPush log | Full category E2E was waived by user instruction and is not cutover evidence. | Waived for this continuation. |
+| EVID-125 | T26 | HTML gate output | Local/public HTML gates passed after manual artifact repair and page generation. | Done. |
+| EVID-126 | T26 | Acceptance Matrix | Matrix still has AM-24 Blocked because scheduler cutover is out of scope. | Required before cutover claim. |
 | EVID-127 | T27 | `rg` review output | runner/prompts/tests/tools/.codex/.claude must be reviewed. | Required. |
 | EVID-128 | T28 | scheduler/push evidence | Cutover is last and only after T00-T27 Green. | Blocked until Matrix Green. |

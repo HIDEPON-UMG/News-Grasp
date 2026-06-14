@@ -4,7 +4,7 @@
 これは当日ではなく、**過去日（試験対象 = 2026-06-03）の Manufacturing digest を遡及生成する backfill** です。
 製造カテゴリは 2026-06-03 に新設したばかりで本番運用記事がまだ無いため、これは**初回の試験生成**です。
 
-> **実行前提**: 本 prompt はローカル runner（`claude --print`、リポジトリを Read できる環境）で実行します。ブラウザ版 Claude では使えません（ローカルファイルにアクセスできないため）。
+> **実行前提**: 本 prompt はローカル runner（`codex exec`、リポジトリを Read できる環境）で実行します。ブラウザ版 Claude では使えません（ローカルファイルにアクセスできないため）。
 
 ## 日付パラメータ
 
@@ -106,4 +106,4 @@ backfill 自体は digest md と articles.jsonl までで止める。生成後�
 
 ## 実行方法（参考）
 
-ローカル runner で、本ファイル内容を prompt として `claude --print` に渡して実行する（既存 backfill 運用と同じ）。試験のため SMTP・page 生成は上記のとおりスキップされる。
+ローカル runner で、本ファイル内容を prompt として `codex exec` に渡して実行する（既存 backfill 運用と同じ）。試験のため SMTP・page 生成は上記のとおりスキップされる。

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "issue_date": "2026-06-14",
+  "weekday": "Sunday",
+  "categories": ["fx", "ai", "it", "mobility", "game"],
+  "constraints": {
+    "source_policy": "no_recollection",
+    "max_repair_attempts_per_category": 1,
+    "append_boundary": "tools/append_after_dedup.py",
+    "summary_schema": "gamma",
+    "context_budget": "compact reporter artifacts only"
+  },
+  "forbidden_actions": [
+    "full articles.jsonl read",
+    "full digest markdown read",
+    "article body recollection",
+    "git commit",
+    "git push",
+    "publish gate",
+    "web push"
+  ],
+  "reporter_artifacts": [
+    {
+      "category": "ai",
+      "status": "pass",
+      "record_file": "tmp/newsroom/2026-06-14/ai.records.jsonl",
+      "compact_titles": ["AI platform earnings show agent ROI", "Open model benchmark shifts enterprise routing"],
+      "card_count": 2,
+      "record_count": 2
+    },
+    {
+      "category": "mobility",
+      "status": "pass",
+      "record_file": "tmp/newsroom/2026-06-14/mobility.records.jsonl",
+      "compact_titles": ["Robotaxi supplier consolidation accelerates", "AI platform earnings show agent ROI"],
+      "card_count": 2,
+      "record_count": 2
+    },
+    {
+      "category": "game",
+      "status": "fail",
+      "record_file": "tmp/newsroom/2026-06-14/game.records.jsonl",
+      "compact_titles": ["Console supply chain update lacks source date"],
+      "card_count": 1,
+      "record_count": 1,
+      "verify_failures": [
+        "record[0].published_date missing",
+        "search_audit missing required query_log"
+      ]
+    }
+  ],
+  "dedup_hints": [
+    {
+      "duplicate_title": "AI platform earnings show agent ROI",
+      "categories": ["ai", "mobility"],
+      "preferred_category": "ai",
+      "reason": "AI article is primary source; mobility card is derivative context"
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "orchestration",
+      "prompt": "Plan reporter spawn order and concurrency for five Sunday categories. Avoid unbounded retry if one category fails."
+    },
+    {
+      "task_id": "gate_repair",
+      "prompt": "Classify the game category failure as one bounded repair or quarantine. Explain the stop condition."
+    },
+    {
+      "task_id": "cross_category_dedup",
+      "prompt": "Resolve the AI/Mobility duplicate before append and state which digest card must be removed."
+    },
+    {
+      "task_id": "summary_planning",
+      "prompt": "Plan Summary sections from compact titles only. Include categoryId and mention how absent weekday-only categories are handled."
+    },
+    {
+      "task_id": "append_safety",
+      "prompt": "List the exact append input set after validation, repair/quarantine, and dedup. Do not append failed records."
+    },
+    {
+      "task_id": "context_budget",
+      "prompt": "State what files must not be read in full and what compact evidence is sufficient."
+    },
+    {
+      "task_id": "deepdive_direction",
+      "prompt": "Choose one DeepDive direction or explicitly skip if the theme is weak."
+    }
+  ]
+}

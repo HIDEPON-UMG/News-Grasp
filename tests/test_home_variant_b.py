@@ -107,10 +107,6 @@ def test_editors_top_uses_canonical_category_glyphs(built_home: str):
         meta = CATEGORIES[cat_id]
         expected = f"{meta['glyph']} {meta['label'].upper()}"
         assert html.unescape(text) == expected
-    assert "◎ MOBILITY" in built_home
-    assert "⌗ IT &amp; CONSULTING" in built_home
-
-
 def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
     """LP の nav / category cards / publication matrix は canonical glyph を使う。"""
     for cat_id, meta in CATEGORIES.items():

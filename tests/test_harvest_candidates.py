@@ -163,6 +163,16 @@ def test_harvest_category_includes_registered_rss(monkeypatch) -> None:
     assert any(row.get("feed_url") == rss_url for row in rows)
 
 
+def test_registered_rss_registry_covers_all_harvest_categories() -> None:
+    """全 harvest 対象カテゴリに、検証済み RSS 登録簿の入口を持つ。"""
+    assert set(h.RSS_FEEDS_BY_CATEGORY) == set(h.CATEGORY_QUERIES)
+    for category in h.HARVEST_CATEGORIES:
+        urls = h.RSS_FEEDS_BY_CATEGORY[category]
+        assert urls, category
+        assert len(urls) == len(set(urls)), category
+        assert all(url.startswith(("https://", "http://")) for url in urls)
+
+
 def test_harvest_category_custom_cap(monkeypatch) -> None:
     monkeypatch.setattr(h, "fetch_feed", lambda url, timeout=15.0: _big_rss(80))
     rows = h.harvest_category("fx", max_per_category=30)

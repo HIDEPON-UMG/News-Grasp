@@ -46,6 +46,19 @@ def test_extract_codex_web_search_urls() -> None:
     assert hook.extract_urls_from_event(ev) == {"https://example.com/a", "https://example.com/b"}
 
 
+def test_extract_codex_web_search_urls_from_camel_case_payload() -> None:
+    hook = _load_hook_module()
+    ev = {
+        "toolName": "WebSearch",
+        "toolResponse": {
+            "results": [
+                {"url": "https://example.com/camel"},
+            ]
+        },
+    }
+    assert hook.extract_urls_from_event(ev) == {"https://example.com/camel"}
+
+
 def test_codex_cli_event_writes_fragment(tmp_path: Path) -> None:
     hooks_dir = tmp_path / ".codex" / "hooks"
     hooks_dir.mkdir(parents=True)

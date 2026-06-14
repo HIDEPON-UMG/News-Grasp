@@ -1,7 +1,7 @@
 # News Grasp — Obsidian タグ設計仕様
 
 Obsidian Vault に取り込む際の `frontmatter` タグ生成ルールを定義する。
-News-Grasp Runner（Windows タスクスケジューラ → `news-grasp-runner.bat` → `claude --print`）
+News-Grasp Runner（Windows タスクスケジューラ → `news-grasp-runner.bat` → `codex exec`）
 が記事 JSON を生成するときは、本仕様の `entities` / `topics` / `industries` /
 `events` フィールドを必ず埋めること。
 

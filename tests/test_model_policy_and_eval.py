@@ -7,7 +7,9 @@ from pathlib import Path
 
 from tools.model_policy import (
     DEFAULT_MODEL_POLICY,
+    select_newsroom_editor_model,
     should_escalate_reporter,
+    should_escalate_newsroom_editor,
     should_rewrite_with_editor,
 )
 from tools.prepare_model_eval_fixture import build_eval_fixture
@@ -26,9 +28,12 @@ def _record(cat: str, idx: int) -> dict:
     }
 
 
-def test_default_model_policy_uses_mini_for_reporters() -> None:
-    assert DEFAULT_MODEL_POLICY["reporter"]["default"] == "gpt-5.4-mini"
+def test_default_model_policy_uses_evaluated_reporter_selection() -> None:
+    assert DEFAULT_MODEL_POLICY["reporter"]["default"] == "gpt-5.4"
     assert DEFAULT_MODEL_POLICY["reporter"]["escalate"] == "gpt-5.4"
+    assert DEFAULT_MODEL_POLICY["reporter"]["selection_variant"] == "full"
+    assert DEFAULT_MODEL_POLICY["reporter"]["selection_summary"] == "build/model-eval-selection/combo_summary.json"
+    assert DEFAULT_MODEL_POLICY["reporter"]["selection_combo"] == "full__mini-editor"
     assert "fx" not in DEFAULT_MODEL_POLICY["reporter"].get("always_escalate_categories", [])
 
 
@@ -39,14 +44,86 @@ def test_reporter_escalation_is_condition_based_not_category_based() -> None:
     assert should_escalate_reporter(category="mobility", candidate_count=10, english_ratio=0.2, validator_failed=True) is True
 
 
-def test_editor_policy_adopts_mini_editor_without_full_rewrite_by_default() -> None:
+def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default() -> None:
     editor = DEFAULT_MODEL_POLICY["editor"]
     assert editor["default"] == "gpt-5.4-mini"
+    assert editor["selection_variant"] == "mini-editor"
+    assert editor["selection_summary"] == "build/model-eval-selection/combo_summary.json"
+    assert editor["selection_combo"] == "full__mini-editor"
+    assert editor["scope"] == "style_rewrite_only"
     assert editor["mode"] == "selective_rewrite"
     assert editor["rewrite_all"] is False
     assert should_rewrite_with_editor(naturalness_score=3, style_score=5, validator_failed=False) is True
     assert should_rewrite_with_editor(naturalness_score=4, style_score=4, validator_failed=False) is False
     assert should_rewrite_with_editor(naturalness_score=5, style_score=5, validator_failed=True) is True
+
+
+def test_newsroom_editor_policy_uses_full_duty_eval_not_style_rewrite() -> None:
+    """編集長モデルは full-duty 評価で決め、文体 rewrite 評価では決めない。"""
+    newsroom_editor = DEFAULT_MODEL_POLICY["newsroom_editor"]
+    assert newsroom_editor["selection_summary"] == "build/model-eval-newsroom-editor/newsroom_editor_summary.json"
+    assert newsroom_editor["selection_status"] == "selected"
+    assert newsroom_editor["default"] == "gpt-5.4-mini"
+    assert newsroom_editor["selection_variant"] == "newsroom-editor-mini"
+    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-54"
+    assert newsroom_editor["escalate"] == "gpt-5.4"
+    assert newsroom_editor["selection_source"] == "full_duty_newsroom_editor_eval"
+
+
+def test_newsroom_editor_escalation_uses_machine_signals() -> None:
+    """編集長の昇格は曖昧な気分ではなく runner が出せる機械シグナルで決める。"""
+    assert should_escalate_newsroom_editor(
+        gate_fail_count=0,
+        dedup_conflict_count=0,
+        append_mismatch=False,
+        summary_quality_score=5,
+        deepdive_theme_count=1,
+    ) is False
+    assert should_escalate_newsroom_editor(
+        gate_fail_count=2,
+        dedup_conflict_count=0,
+        append_mismatch=False,
+        summary_quality_score=5,
+        deepdive_theme_count=1,
+    ) is True
+    assert should_escalate_newsroom_editor(
+        gate_fail_count=0,
+        dedup_conflict_count=1,
+        append_mismatch=False,
+        summary_quality_score=5,
+        deepdive_theme_count=1,
+    ) is True
+    assert should_escalate_newsroom_editor(
+        gate_fail_count=0,
+        dedup_conflict_count=0,
+        append_mismatch=True,
+        summary_quality_score=5,
+        deepdive_theme_count=1,
+    ) is True
+    assert should_escalate_newsroom_editor(
+        gate_fail_count=0,
+        dedup_conflict_count=0,
+        append_mismatch=False,
+        summary_quality_score=3,
+        deepdive_theme_count=1,
+    ) is True
+
+
+def test_select_newsroom_editor_model_returns_default_or_quality_leader() -> None:
+    assert select_newsroom_editor_model(
+        gate_fail_count=0,
+        dedup_conflict_count=0,
+        append_mismatch=False,
+        summary_quality_score=5,
+        deepdive_theme_count=1,
+    ) == "gpt-5.4-mini"
+    assert select_newsroom_editor_model(
+        gate_fail_count=1,
+        dedup_conflict_count=0,
+        append_mismatch=False,
+        summary_quality_score=5,
+        deepdive_theme_count=1,
+    ) == "gpt-5.4"
 
 
 def test_build_eval_fixture_samples_three_per_category(tmp_path: Path) -> None:

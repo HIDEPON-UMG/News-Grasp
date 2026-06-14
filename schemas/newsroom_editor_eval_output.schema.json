@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "News-Grasp newsroom editor-in-chief evaluation output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model", "tasks"],
+  "properties": {
+    "model": { "type": "string" },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "decision", "self_score"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "enum": [
+              "orchestration",
+              "gate_repair",
+              "cross_category_dedup",
+              "summary_planning",
+              "append_safety",
+              "context_budget",
+              "deepdive_direction"
+            ]
+          },
+          "decision": { "type": "string", "minLength": 1 },
+          "self_score": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "orchestration",
+              "gate_decision",
+              "dedup_resolution",
+              "summary_planning",
+              "append_safety",
+              "context_budget",
+              "deepdive_direction"
+            ],
+            "properties": {
+              "orchestration": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "gate_decision": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "dedup_resolution": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "summary_planning": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "append_safety": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "context_budget": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "deepdive_direction": { "type": "integer", "minimum": 1, "maximum": 5 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

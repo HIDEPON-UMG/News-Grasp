@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """digest md 内の `ng-thumb-common-*` フォールバック URL を実 OGP URL に置き換える。
 
-routine (runner.bat の Sonnet 4.6) が `tools/fetch_ogp.py` を呼ばず最初から
+routine (runner.bat の Codex 4.6) が `tools/fetch_ogp.py` を呼ばず最初から
 共通フォールバックを digest に書き込んでしまうケースに対する事後リカバリ。
 (2026-05-25 検証で 40〜80% の記事で発生していることが判明)
 

@@ -121,3 +121,38 @@ def test_runner_record_gate_passes_issue_date() -> None:
     assert "--issue-date" in runner, (
         "record schema gate が --issue-date を渡していない (号日整合チェックが効かない)"
     )
+
+
+def test_runner_quarantines_bad_urls_before_fallback_publish() -> None:
+    """URL gate 失敗は号全体 fallback 直行ではなく、記事単位隔離を先に試す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("URL liveness gate start", 1)[1].split("record schema gate start", 1)[0]
+
+    assert "--quarantine-articles" in block
+    assert "--apply" in block
+    assert "URL liveness quarantine start" in block
+    assert "URL liveness gate recheck after quarantine" in block
+    assert block.index("URL liveness quarantine start") < block.index("Invoke-FallbackPublish")
+    assert "search_audit_updated" in (ROOT / "tools" / "audit_all_article_urls.py").read_text(encoding="utf-8")
+
+
+def test_content_gates_do_not_publish_fallback_notice() -> None:
+    """内容系 gate の未収束は fallback notice 公開ではなく、通常公開を止める。
+
+    なぜ重要か: publish-always 化の過渡期でも、内容系 gate の失敗で旧号 fallback notice を
+    publish すると「本日分が存在するのに品質確認中へ落ちる」事故が再発する。
+    """
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    assert "function Stop-ContentGateWithoutFallback" in runner
+
+    content_gate_markers = [
+        ("summary reflection gate start", "daily quality gate start"),
+        ("daily quality gate start", "Stage4: Codex DeepDive"),
+        ("record schema gate start", "digest/articles reconcile gate start"),
+        ("digest/articles reconcile gate start", "ja-callout gate start"),
+        ("ja-callout gate start", "pytest gate start"),
+    ]
+    for start, end in content_gate_markers:
+        block = runner.split(start, 1)[1].split(end, 1)[0]
+        assert "Stop-ContentGateWithoutFallback" in block
+        assert "Invoke-FallbackPublish" not in block

@@ -11,6 +11,7 @@ from tools.validate_daily_quality import (
     main,
     validate_daily_quality,
     validate_card_emphasis_coverage,
+    validate_digest_style_quality,
     validate_dedup_annotation_present,
 )
 
@@ -321,6 +322,33 @@ def test_card_emphasis_coverage_accepts_three_tier_bullets(tmp_path: Path) -> No
     )
 
     assert validate_card_emphasis_coverage(tmp_path / "digest", date(2026, 6, 8)) == []
+
+
+def test_digest_style_quality_rejects_translationese_and_repetition(tmp_path: Path) -> None:
+    """翻訳調・文末反復・冗長接続句・未翻訳 title_ja を記事単位で検出する。"""
+    cat_dir = tmp_path / "digest" / "AI"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "2026-06-08-AI.md").write_text(
+        "---\n"
+        "title: AI\n"
+        "date: 2026-06-08\n"
+        "categoryId: ai\n"
+        "---\n\n"
+        "### [90] OpenAI Microsoft\n\n"
+        "- [[企業]] は **新製品** を発表した。\n"
+        "- 一方で、また、さらに、加えて、投資家は様子見となった。\n"
+        "- [[市場]] が **同じ文末** となった。\n"
+        "- [[政策]] も **同じ文末** となった。\n"
+        "- [[需給]] も **同じ文末** となった。\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    joined = "\n".join(validate_digest_style_quality(tmp_path / "digest", date(2026, 6, 8)))
+
+    assert "title_ja appears untranslated" in joined
+    assert "repetitive sentence endings" in joined
+    assert "redundant connectors" in joined
 
 
 def test_daily_quality_rejects_weekday_mismatch(tmp_path: Path) -> None:

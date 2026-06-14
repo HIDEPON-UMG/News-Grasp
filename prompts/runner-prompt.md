@@ -1,6 +1,6 @@
-本リポジトリ内の `prompts/newsroom-editor-system.md` を Read で読み込み、その指示に厳密に従って当日（JST）の News-Grasp 日次 digest を生成してください。`prompts/routine-system.md` を runner の入口として直接読んではいけません（旧体制の退避コピーは `prompts/runner-prompt-legacy.md`）。
+本リポジトリ内の `prompts/newsroom-editor-system.md` と `prompts/style-guide.md` を Read で読み込み、その指示に厳密に従って当日（JST）の News-Grasp 日次 digest を生成してください。`prompts/routine-system.md` を runner の入口として直接読んではいけません（旧体制の退避コピーは `prompts/runner-prompt-legacy.md`）。
 
-モデル方針は `tools/model_policy.py` の `mini-editor` 採用を正本とします。記者は原則 `gpt-5.4-mini` 品質で、カテゴリ固定では昇格しません。編集長の文体調整は全記事一律ではなく、自然さ・News-Grasp らしさ・validator fail のいずれかで弱い記事だけに限定してください。
+モデル方針は `tools/model_policy.py` を正本とします。現在の小型 fixture 実測では、記者は `full` (`gpt-5.4`)、必要時の文体調整は `mini-editor` (`gpt-5.4-mini`) です。編集長本体は `build/model-eval-newsroom-editor/newsroom_editor_summary.json` の full-duty 評価に基づき、既定 `newsroom-editor-mini` (`gpt-5.4-mini`)、複雑な gate repair / 横断 dedup / Summary planning では quality leader の `newsroom-editor-54` (`gpt-5.4`) へ昇格します。文体調整は全記事一律ではなく、自然さ・News-Grasp らしさ・validator fail のいずれかで弱い記事だけに限定してください。
 
 収集・dedup・鮮度・URL 生存確認を LLM 判断で代替してはいけません。WebSearch 前に候補収集を広げる場合も、`tools.harvest_candidates` と `tools.cross_category_dedup` の決定論出力を優先し、LLM は候補からの選定・要約・文体調整だけを担当してください。
 

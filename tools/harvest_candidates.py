@@ -156,9 +156,28 @@ CATEGORY_QUERY_SETS: dict[str, list[str]] = {
     ],
 }
 
-# 実 URL は実装・運用時に 200 を確認してから追加する。空登録簿でも構造は有効。
 RSS_FEEDS_BY_CATEGORY: dict[str, list[str]] = {
-    cat: [] for cat in CATEGORY_QUERIES
+    "fx": [
+        "https://www.forexlive.com/feed/",
+    ],
+    "ai": [
+        "https://techcrunch.com/category/artificial-intelligence/feed/",
+    ],
+    "it": [
+        "https://www.infoq.com/feed/",
+    ],
+    "mobility": [
+        "https://electrek.co/feed/",
+    ],
+    "manufacturing": [
+        "https://semiengineering.com/feed/",
+    ],
+    "economy": [
+        "https://feeds.bbci.co.uk/news/business/rss.xml",
+    ],
+    "game": [
+        "https://www.gematsu.com/feed/",
+    ],
 }
 
 # 収集対象カテゴリ（config の summary を除く順序保持リスト）。

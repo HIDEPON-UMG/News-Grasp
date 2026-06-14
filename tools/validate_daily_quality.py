@@ -159,6 +159,40 @@ def validate_card_emphasis_coverage(digest_root: Path, issue: date) -> list[str]
     return errs
 
 
+def validate_digest_style_quality(digest_root: Path, issue: date) -> list[str]:
+    """翻訳調・文末反復・冗長さ・title_ja 不自然を記事単位で検出する。"""
+    errs: list[str] = []
+    redundant = ("一方で", "また、", "さらに、", "加えて、")
+    translationese = ("することを発表した", "であると述べた", "することを明らかにした")
+    for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+        blocks = re.split(r"\r?\n---\r?\n", body)
+        card_idx = 0
+        for block in blocks:
+            if "### " not in block:
+                continue
+            card_idx += 1
+            title = next((line[4:].strip() for line in block.splitlines() if line.startswith("### ")), "")
+            bullets = [line.strip()[2:].strip() for line in block.splitlines() if line.lstrip().startswith("- ")]
+            endings = [
+                re.sub(r"[。.!?）)」』]*$", "", b)[-4:]
+                for b in bullets
+                if re.search(r"[ぁ-んァ-ン一-龥]", b)
+            ]
+            if title and re.search(r"\b[A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+", title) and not re.search(r"[ぁ-んァ-ン一-龥]", title):
+                errs.append(f"{md}: card #{card_idx:02d} title_ja appears untranslated: {title}")
+            if len(endings) >= 3 and len(set(endings[-3:])) == 1:
+                errs.append(f"{md}: card #{card_idx:02d} has repetitive sentence endings")
+            joined = "\n".join(bullets)
+            if sum(joined.count(word) for word in redundant) >= 3:
+                errs.append(f"{md}: card #{card_idx:02d} has redundant connectors")
+            if any(word in joined for word in translationese):
+                errs.append(f"{md}: card #{card_idx:02d} has translationese wording")
+    return errs
+
+
 def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
     """日付の曜日と配信スケジュールに対してカテゴリ過不足を検査する。"""
     summary_path = digest_root / "Summary" / f"{issue.isoformat()}.md"
@@ -440,6 +474,7 @@ def validate_daily_quality(
     errs.extend(validate_summary_hero(summary_path))
     errs.extend(validate_summary_emphasis(summary_path))
     errs.extend(validate_card_emphasis_coverage(digest_root, issue))
+    errs.extend(validate_digest_style_quality(digest_root, issue))
     errs.extend(validate_issue_schedule(digest_root, issue))
     errs.extend(validate_digest_article_counts(digest_root, issue))
     errs.extend(validate_search_audit_for_shortfall(

@@ -13,21 +13,21 @@
 | AM-07 | Stage0 harvest 全カテゴリ UTF-8 実測 | Green | 7 categories x 50 rows in `build/verify-candidates` |
 | AM-08 | Stage1 cross-category dedup 実測 | Green | 350 input / 287 passed / 63 dropped |
 | AM-09 | reporter/editor schema 境界を作る | Green | `schemas/reporter_records.schema.json`, `schemas/editor_summary.schema.json` |
-| AM-10 | Claude 実行依存ゼロ | Green | runner/wrapper/prompts/tools scan; only negative test strings remain |
-| AM-11 | OpenAI API key / SDK 不使用 | Green | runtime scan; only gate/test strings remain |
+| AM-10 | Claude 実行依存ゼロ | Green | command-pattern scan over runner/tools/prompts/schemas/.codex returned 0 Claude executable/wrapper hits |
+| AM-11 | OpenAI API key / SDK 不使用 | Green | runtime scan over runner/tools/prompts/schemas/.codex returned 0 API/SDK hits after excluding `uses_openai_api_key: False` metadata |
 | AM-12 | `-SmokeTest` pass | Green | 2026-06-14 runner log `SMOKE OK` after newsroom model-policy wiring |
-| AM-13 | non-network pytest pass | Green | 2026-06-14 rerun: `.venv\Scripts\python.exe -m pytest tests/ -q --tb=line --no-header -m "not network"` rc=0 |
+| AM-13 | non-network pytest pass | Green | 2026-06-14 rerun after quarantine/thumb restore: `.venv\Scripts\python.exe -m pytest tests/ -q --tb=line --no-header -m "not network"` rc=0 |
 | AM-14 | RSS registry 根拠付き登録 | Green | `tools/harvest_candidates.py`, `build/rss-registry-verification.json`; 7 feeds HTTP 200 / parsed_items > 0 |
 | AM-15 | Stage2 reporter fan-out | Green | runner now invokes category reporter prompts; `tests/test_complete_codex_migration_contract.py` passed |
 | AM-16 | Stage3 editor artifact integration | Green | runner writes `$EditorInputManifest` and invokes newsroom editor with `schemas/editor_summary.schema.json` |
-| AM-17 | Publish-always per-article quarantine | Yellow | URL gate now quarantines before fallback; other gate classes still use fallback policy |
-| AM-18 | URL quarantine / liveness gate | Red | 2026-06-14 manual gate: `audit_all_article_urls.py --gate --match-session` rc=1; HEAD/GET 188/188 OK, but date verification flagged 31 suspected stale records |
+| AM-17 | Publish-always per-article quarantine | Green | URL/session/date gate is quarantine-first and syncs `search_audit.selected_total`; content gates now stop without fallback notice, leaving existing public state unchanged |
+| AM-18 | URL quarantine / liveness gate | Green | 2026-06-14 manual gate: restored `published_date`, skipped htmldate for `news.google.com/rss/articles/` + `rss-pubdate`, quarantined 12 session-unverified URLs; final `audit_all_article_urls.py --gate --match-session` rc=0 |
 | AM-19 | `fetch_article_body.py` decision | Green | `tools/fetch_article_body.py`, `tests/test_fetch_article_body.py`, reporter prompt scoped to reporter-only use |
 | AM-20 | Codex hook live payload verification | Green | camelCase/snake_case payload fixture and subprocess hook tests passed |
 | AM-21 | E2E 前 no-Codex preflight | Green | `tools.newsroom_preflight`, `-PreflightOnly -NoPush`, prompt/schema/manifest contract tests |
 | AM-22 | Full category `-NoPush` E2E | Waived | 2026-06-14 user instruction: Full E2E is unnecessary; verification scope narrowed to reporter artifact resume + editor/downstream gates |
-| AM-23 | public HTML gate | Green | 2026-06-14 manual gate: `generate_pages.py` rc=0, `validate_public_home --date 2026-06-14` rc=0, `validate_availability` rc=0 |
-| AM-24 | scheduler / push cutover | Blocked | only allowed after all rows Green |
+| AM-23 | public HTML gate | Green | 2026-06-14 manual gate after thumb restore: `generate_pages.py` rc=0, `validate_public_home --date 2026-06-14` rc=0, `validate_availability` rc=0 |
+| AM-24 | scheduler / push cutover | Blocked | scheduler cutover remains out of scope; resource-only push is allowed separately and must not publish today's article artifacts |
 
 ## Completion Rule
 

@@ -160,6 +160,53 @@ def test_date_evidence_skips_record_without_published_date(monkeypatch, tmp_path
     )
 
 
+def test_date_evidence_skips_google_news_rss_pubdate(monkeypatch, tmp_path):
+    """Google News RSS pubDate は中継ページ htmldate で再検証しない。
+
+    Google News RSS の `link` は canonical 記事ではなく encoded 中継 URL であり、
+    htmldate が Google 側ページの日付を拾うと RSS pubDate と衝突する。RSS 収集は
+    `when:1d` と pubDate を鮮度境界にしているため、`rss-pubdate` 注釈付き Google
+    News URL は date_evidence の full GET 対象から外す。
+    """
+    import json as _json
+    from datetime import date as _date
+    from types import SimpleNamespace
+
+    from tools import audit_all_article_urls as mod
+    from tools import date_evidence as de
+
+    today = _date.today()
+    record = {
+        "date": today.strftime("%Y-%m-%d"),
+        "published_date": today.strftime("%Y-%m-%d"),
+        "date_evidence_source": "rss-pubdate",
+        "title": "google news rss fixture",
+        "url": "https://news.google.com/rss/articles/CBMiTEST?oc=5",
+    }
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        _json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+    captured: list = []
+
+    def _fake_evaluate(claimed, url, html, *, record_title=None, **kw):
+        captured.append((claimed, url))
+        return SimpleNamespace(ok=False, warnings=[], claimed=claimed, url=url,
+                               method="htmldate", fatal_reason="should not run")
+
+    monkeypatch.setattr(mod, "_PKG_ROOT", tmp_path)
+    monkeypatch.setattr(de, "fetch_html", lambda url, **kw: "<html></html>")
+    monkeypatch.setattr(de, "evaluate_date_evidence", _fake_evaluate)
+    monkeypatch.setattr(mod, "verify_urls", lambda refs, max_workers=0: [])
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(sys, "argv", ["audit_all_article_urls", "--verify-dates", "--recent", "7"])
+
+    rc = mod.main()
+    assert rc == 0
+    assert captured == []
+
+
 @pytest.mark.network
 @needs_network
 def test_recent_article_urls_are_alive():

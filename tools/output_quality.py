@@ -14,7 +14,7 @@
 
 依存: stdlib のみ (math + re)。プロジェクト固有判定ロジック (例: 同テーマ判定式)
 は呼出側 (generate_pages.py / render_deepdive.py) が `is_same_theme` 等として inject
-する設計で、他プロジェクトへ ~/.claude/templates/output_quality.py のコピーだけで
+する設計で、他プロジェクトへ ~/.codex/templates/output_quality.py のコピーだけで
 横展開可能にする (Capstone / AI-Pulse / DriveSwipe / ITStr-StudyApp 等)。
 
 公開 API:

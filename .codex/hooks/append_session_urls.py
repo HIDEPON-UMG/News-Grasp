@@ -22,18 +22,19 @@ def _strip_tail(url: str) -> str:
 
 def extract_urls_from_event(event: dict) -> set[str]:
     """Codex hook payload から URL を抽出する。"""
-    tool_name = str(event.get("tool_name") or "")
-    tool_input = event.get("tool_input") or {}
-    tool_response = event.get("tool_response")
+    tool_name_raw = str(event.get("tool_name") or event.get("toolName") or "")
+    tool_name = tool_name_raw.replace("-", "_").lower()
+    tool_input = event.get("tool_input") or event.get("toolInput") or {}
+    tool_response = event.get("tool_response") if "tool_response" in event else event.get("toolResponse")
     urls: set[str] = set()
 
-    if tool_name in {"web_fetch", "fetch"} and isinstance(tool_input, dict):
+    if tool_name in {"web_fetch", "webfetch", "fetch"} and isinstance(tool_input, dict):
         url = tool_input.get("url")
         if isinstance(url, str) and url.startswith("http"):
             urls.add(_strip_tail(url))
         return urls
 
-    if tool_name != "web_search":
+    if tool_name not in {"web_search", "websearch"}:
         return urls
 
     if isinstance(tool_response, dict):

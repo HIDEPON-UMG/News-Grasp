@@ -28,7 +28,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-HOOK_PATH = ROOT / ".claude" / "hooks" / "append_session_urls.py"
+HOOK_PATH = ROOT / ".codex" / "hooks" / "append_session_urls.py"
 
 from tools.audit_all_article_urls import _load_session_urls  # noqa: E402
 

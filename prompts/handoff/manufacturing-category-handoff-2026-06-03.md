@@ -110,7 +110,7 @@ cd "C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp"
 
 ### ⑩ docs/specs/2026-06-03_newsgrasp-manufacturing-category.html
 - 既存 [docs/specs/2026-05-28_newsgrasp-mobility-category.html](../../docs/specs/2026-05-28_newsgrasp-mobility-category.html) をベース構成に
-- `~/.claude/templates/SPEC.html` 継承、DESIGN.md トークン（または News-Grasp の配色）を CSS 変数で。本セッションの設計判断（§2）・3記事の論点・指標差分を記録
+- Codex 側の HTML 仕様書テンプレートと DESIGN.md トークン（または News-Grasp の配色）を CSS 変数で継承。本セッションの設計判断（§2）・3記事の論点・指標差分を記録
 - 色直書き禁止 / 外部CDN禁止 / 画像はSVG（safe-commit ゲート4'）
 
 ### ⑪ commit（safe-commit 経由）

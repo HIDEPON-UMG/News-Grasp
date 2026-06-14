@@ -17,7 +17,7 @@ def test_codex_timeout_wrapper_uses_codex_exec_schema_and_last_message() -> None
     assert "exec" in wrapper
     assert "--output-schema" in wrapper
     assert "--output-last-message" in wrapper or "-o" in wrapper
-    assert "--search" in wrapper
+    assert "--search" not in wrapper
     assert "IdleTimeoutSec" in wrapper
     assert "WorkingDirectory" in wrapper
 
@@ -34,8 +34,8 @@ def test_codex_mode_routes_repair_and_deepdive_to_codex_wrapper() -> None:
     """Codex移行後に補修/DeepDiveだけClaudeへ戻らないことをpinする。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
 
-    assert "function Invoke-AgentWrapper" in runner
-    assert "repair wrapper invoke START (agent=$AgentName" in runner
-    assert "deepdive wrapper invoke START (agent=$AgentName" in runner
+    assert "function Invoke-CodexWrapper" in runner
+    assert "repair wrapper invoke START (agent=codex" in runner
+    assert "deepdive wrapper invoke START (agent=codex" in runner
     assert "& $Wrapper -ClaudeExe $ClaudeExe -PromptFile $repairPrompt" not in runner
     assert "& $Wrapper -ClaudeExe $ClaudeExe -PromptFile $DeepDivePromptFile" not in runner

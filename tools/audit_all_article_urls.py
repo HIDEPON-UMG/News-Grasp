@@ -62,6 +62,7 @@ class DropResult:
     jsonl_dropped: int
     digest_cards_dropped: int
     touched_digest_files: int
+    search_audit_updated: int = 0
 
 
 def _normalize_url_for_match(url: str) -> str:
@@ -185,6 +186,18 @@ def claimed_publication_date(published_date: object) -> str | None:
     return None
 
 
+def should_skip_date_evidence(url: str, date_evidence_source: object) -> bool:
+    """htmldate 再検証が不適切な URL/source の日付証拠検証を skip する。
+
+    Google News RSS の encoded URL は canonical 記事本文ではなく中継ページであり、
+    harvest_candidates.py の `when:1d` + RSS pubDate が鮮度境界になる。中継ページへ
+    htmldate をかけると Google 側ページの日付を拾い、正当な RSS pubDate と衝突する。
+    """
+    if "://news.google.com/rss/articles/" not in url:
+        return False
+    return isinstance(date_evidence_source, str) and date_evidence_source == "rss-pubdate"
+
+
 def _drop_cards_from_markdown(text: str, urls: set[str]) -> tuple[str, int]:
     """指定 URL を含む記事カードブロックだけを Markdown から削除する。"""
     if not urls:
@@ -208,6 +221,25 @@ def _drop_cards_from_markdown(text: str, urls: set[str]) -> tuple[str, int]:
         out.append(parts[i])
         i += 1
     return "".join(out), dropped
+
+
+def _frontmatter_value(text: str, key: str) -> str | None:
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end < 0:
+        return None
+    for line in text[3:end].splitlines():
+        if ":" not in line:
+            continue
+        k, v = line.split(":", 1)
+        if k.strip() == key:
+            return v.strip().strip('"').strip("'")
+    return None
+
+
+def _count_digest_cards(text: str) -> int:
+    return sum(1 for line in text.splitlines() if line.startswith("### ["))
 
 
 def drop_article_urls(
@@ -245,6 +277,7 @@ def drop_article_urls(
     digest_root = repo_root / "digest"
     digest_cards_dropped = 0
     touched = 0
+    search_audit_updated = 0
     for md in sorted(digest_root.glob(f"*/*{issue_date}*.md")):
         if md.parent.name in {"Summary", "DeepDive"}:
             continue
@@ -255,8 +288,26 @@ def drop_article_urls(
             touched += 1
             if apply:
                 md.write_text(updated, encoding="utf-8")
+                cat_id = (
+                    _frontmatter_value(updated, "categoryId")
+                    or _frontmatter_value(updated, "category")
+                    or md.parent.name
+                ).strip().casefold()
+                audit_path = repo_root / "data" / "search_audit" / issue_date / f"{cat_id}.json"
+                if audit_path.exists():
+                    try:
+                        audit = json.loads(audit_path.read_text(encoding="utf-8-sig"))
+                    except json.JSONDecodeError:
+                        audit = None
+                    if isinstance(audit, dict):
+                        audit["selected_total"] = _count_digest_cards(updated)
+                        audit_path.write_text(
+                            json.dumps(audit, ensure_ascii=False, indent=2) + "\n",
+                            encoding="utf-8",
+                        )
+                        search_audit_updated += 1
 
-    return DropResult(jsonl_dropped, digest_cards_dropped, touched)
+    return DropResult(jsonl_dropped, digest_cards_dropped, touched, search_audit_updated)
 
 
 def main() -> int:
@@ -311,6 +362,7 @@ def main() -> int:
     # htmldate と突合すると、前々日公開の記事を号日に載せただけで偽日付扱いになり
     # record-schema gate (date==号日) と矛盾するため (2026-06-12 gate 矛盾の構造対策)。
     pub_by_url: dict[str, str] = {}
+    date_source_by_url: dict[str, object] = {}
     with jsonl.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -335,6 +387,7 @@ def main() -> int:
             pub = d.get("published_date")
             if isinstance(pub, str) and pub.strip():
                 pub_by_url[url] = pub.strip()
+            date_source_by_url[url] = d.get("date_evidence_source")
             items.append((dt_str, title, url))
 
     if not items:
@@ -422,6 +475,8 @@ def main() -> int:
                     # published_date が無い = 公開日の自己申告なし → 日付証拠検証の対象外。
                     # 号日 (dt_str) を公開日扱いして htmldate と突合すると偽 fatal になり
                     # record-schema gate と矛盾するため skip (2026-06-12 gate 矛盾の構造対策)。
+                    return None
+                if should_skip_date_evidence(url, date_source_by_url.get(url)):
                     return None
                 try:
                     claimed = datetime.strptime(claimed_str, "%Y-%m-%d").date()
@@ -513,6 +568,7 @@ def main() -> int:
                 f"jsonl_dropped={result.jsonl_dropped}, "
                 f"digest_cards_dropped={result.digest_cards_dropped}, "
                 f"touched_digest_files={result.touched_digest_files}, "
+                f"search_audit_updated={result.search_audit_updated}, "
                 f"apply={args.apply}"
             )
             if args.apply and (result.jsonl_dropped or result.digest_cards_dropped):

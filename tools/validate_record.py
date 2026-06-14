@@ -8,7 +8,7 @@
 事後検出だけでは「digest md 生成後 → articles.jsonl append → 翌日 build」の流れで
 silently に skip / KeyError / 型エラーが起こり得る。
 
-本モジュールは `tools/append_*` や本番 daily pipeline (claude セッション直 append) が
+本モジュールは `tools/append_*` や本番 daily pipeline (Codex セッション直 append) が
 書き出した record に対して push 前 gate (`runner.ps1` step 2.65) で境界 1 箇所集約
 ([[feedback_check_design_principles]] §2) を担う:
 
@@ -19,8 +19,8 @@ silently に skip / KeyError / 型エラーが起こり得る。
 `runner.ps1` は `--recent 7` で発火させ「直近 7 日に 1 件でも違反があれば push 阻止」。
 歴史的 (cutoff 前) record は対象外で legacy 互換を維持する。
 
-Plan v3 (`~/.claude/plans/quiet-foraging-floyd.md`) P0-B で「append_articles.py 入口の
-境界」と書かれていたが、本番 append 経路は claude セッション直 append で Python script
+Plan v3 (`~/.codex/plans/quiet-foraging-floyd.md`) P0-B で「append_articles.py 入口の
+境界」と書かれていたが、本番 append 経路は Codex セッション直 append で Python script
 を経由しない事実を発見し、共通モジュール + 本番 gate 方式に進路変更した
 (harness_mapping.md 2026-06-06 章「実装上の進路変更」参照)。
 """
