@@ -79,3 +79,67 @@ def test_append_boundary_drops_stale_source_date(tmp_path: Path) -> None:
     assert len(dropped) == 1
     assert "freshness gate" in dropped[0]["dedup_reason"]
     assert jsonl.read_text(encoding="utf-8") == ""
+
+
+def test_append_boundary_hydrates_google_news_url_and_thumb() -> None:
+    """append 境界で Google News URL を元記事 URL に解決し、OGP thumb を補完する。"""
+    candidate = {
+        "date": "2026-06-14",
+        "genre": "AI",
+        "title": "Fresh AI item",
+        "title_ja": "新しい AI ニュース",
+        "url": "https://news.google.com/rss/articles/CBMiExample?oc=5",
+        "url_norm": "news.google.com/rss/articles/cbmiexample",
+        "thumb": None,
+        "score": 91,
+    }
+
+    def fake_decoder(url: str, interval=None, proxy=None):  # noqa: ANN001
+        assert url == candidate["url"]
+        return {"status": True, "decoded_url": "https://example.com/fresh-ai-item"}
+
+    def fake_fetch_ogp(url: str, *, timeout: float, retries: int) -> dict:
+        assert url == "https://example.com/fresh-ai-item"
+        return {
+            "url": url,
+            "og_image": "https://example.com/fresh-ai-item.jpg",
+            "twitter_image": None,
+            "status": "ok",
+        }
+
+    hydrated, dropped = append_after_dedup.hydrate_thumbnails(
+        [candidate],
+        google_decoder=fake_decoder,
+        fetch_ogp_func=fake_fetch_ogp,
+    )
+
+    assert dropped == []
+    assert hydrated[0]["url"] == "https://example.com/fresh-ai-item"
+    assert hydrated[0]["url_norm"] == "https://example.com/fresh-ai-item"
+    assert hydrated[0]["thumb"] == "https://example.com/fresh-ai-item.jpg"
+
+
+def test_append_boundary_drops_unresolved_google_news_url() -> None:
+    """Google News RSS URL を元記事 URL に解決できない候補は append しない。"""
+    candidate = {
+        "date": "2026-06-14",
+        "genre": "AI",
+        "title": "Fresh AI item",
+        "title_ja": "新しい AI ニュース",
+        "url": "https://news.google.com/rss/articles/CBMiExample?oc=5",
+        "thumb": None,
+        "score": 91,
+    }
+
+    def fake_decoder(url: str, interval=None, proxy=None):  # noqa: ANN001
+        return {"status": False, "message": "decode failed"}
+
+    hydrated, dropped = append_after_dedup.hydrate_thumbnails(
+        [candidate],
+        google_decoder=fake_decoder,
+        fetch_ogp_func=lambda *args, **kwargs: {"og_image": None, "twitter_image": None},
+    )
+
+    assert hydrated == []
+    assert len(dropped) == 1
+    assert "google_news_unresolved" in dropped[0]["dedup_reason"]

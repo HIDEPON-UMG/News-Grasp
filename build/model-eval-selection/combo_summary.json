@@ -1,0 +1,14 @@
+{
+  "selection_status": "selected",
+  "coverage_status": "complete",
+  "source_of_truth": "reporter_editor_combo_final_quality_and_total_cost",
+  "uses_openai_api_key": false,
+  "uses_openai_sdk": false,
+  "expected_combos": [
+    "full__no-editor",
+    "full__mini-editor",
+    "full__mini-editor-55"
+  ],
+  "missing_combos": [],
+  "recommended_combo": "full__mini-editor"
+}

@@ -11,6 +11,10 @@ pytest==9.0.3
 # 記事公開日の独立証拠抽出 (tools/date_evidence.py)。2026-06-11 偽日付事故の恒久対策で導入
 htmldate==1.10.0
 
+# Google News RSS の encoded URL を元記事 URL に解決する。
+# append_after_dedup.py のサムネ恒久対応で、OGP 取得前に canonical URL 化する。
+googlenewsdecoder==0.1.7
+
 # BOT 対策回避 fetch 昇格ラダー (tools/_fetch.py)。urllib が 403/blocked のときのみ
 # Scrapling Fetcher (curl_cffi 偽装) → StealthyFetcher (ヘッドレスブラウザ) へ昇格し、
 # bloomberg/nikkei/cnbc 等の anti-bot で取れなかった OGP/発行日メタ/生存確認を救済する。
