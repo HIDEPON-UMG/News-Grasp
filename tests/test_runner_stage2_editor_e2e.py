@@ -264,3 +264,5 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     assert sentinel_text.count(".records.jsonl") == 7
     manifest = repo / "build" / "reporter-artifacts" / ISSUE / "editor-input-manifest.json"
     assert manifest.exists()
+    assert (repo / "build" / "codex-last-message.txt").exists()
+    assert not (ROOT / "build" / "codex-last-message.txt").exists()
