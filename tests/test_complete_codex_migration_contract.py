@@ -154,6 +154,21 @@ def test_runner_records_codex_usage_by_flow() -> None:
         assert flow in runner
 
 
+def test_runner_records_codex_usage_window_snapshots() -> None:
+    """日次バッチ開始/終了時の5時間・週次Usageを後日分析用JSONLへ残す。"""
+    runner = _read(RUNNER)
+
+    assert "$CodexUsageWindowLog = Join-Path $RepoDir \"build\\codex-usage\\$DateStamp.windows.jsonl\"" in runner
+    assert "function Write-CodexUsageWindowSnapshot" in runner
+    assert "https://chatgpt.com/backend-api/wham/usage" in runner
+    assert "primary_window" in runner
+    assert "secondary_window" in runner
+    assert "Write-CodexUsageWindowSnapshot -Phase 'start'" in runner
+    assert "Write-CodexUsageWindowSnapshot -Phase 'end'" in runner
+    assert "access_token" in runner
+    assert "usage window snapshot failed" in runner
+
+
 def test_active_prompts_use_codex_terms_and_style_guide() -> None:
     prompt_paths = [
         ROOT / "prompts" / "newsroom-editor-system.md",
