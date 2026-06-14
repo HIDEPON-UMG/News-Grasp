@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CODEX_WRAPPER = Path(os.environ.get("NEWS_GRASP_CODEX_WRAPPER", str(Path.home() / "bin" / "run_codex_with_timeout.ps1")))
 RUNNER = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
+BACKFILL_MOBILITY = ROOT / "build" / "run_backfill_mobility.ps1"
 
 
 def test_codex_timeout_wrapper_uses_codex_exec_schema_and_last_message() -> None:
@@ -28,6 +29,17 @@ def test_runner_exposes_codex_mode_without_claude_print() -> None:
     assert "run_codex_with_timeout.ps1" in runner
     assert "codex exec" in runner.lower() or "-CodexExe" in runner
     assert "claude --print" not in runner.lower()
+
+
+def test_mobility_backfill_does_not_keep_claude_print_path() -> None:
+    """完了済み一時backfillからClaude CLI課金経路を残さない。"""
+    if not BACKFILL_MOBILITY.exists():
+        return
+
+    script = BACKFILL_MOBILITY.read_text(encoding="utf-8-sig").lower()
+
+    assert "claude --print" not in script
+    assert "claude -p" not in script
 
 
 def test_codex_mode_routes_repair_and_deepdive_to_codex_wrapper() -> None:
