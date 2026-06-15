@@ -91,7 +91,7 @@ def _rect_overlap(r1: tuple[float, float, float, float],
     return ox > tol and oy > tol
 
 
-def check_relations_svg(svg: str, *, src: str) -> list[str]:
+def check_relations_svg(svg: str, *, src: str, strict_objects: bool = False) -> list[str]:
     """関係図 SVG の幾何的品質を検査し、build を中止すべき重大違反のリストを返す。
 
     関係図の三原則:
@@ -102,6 +102,8 @@ def check_relations_svg(svg: str, *, src: str) -> list[str]:
     検出対象 (build 全断):
       ① 線がノード円 (端点以外) を貫通 (= 2026-06-06 BYD↔NVIDIA 線が Tesla を距離 0.0
          で直撃した事故クラス。図の読解不能で公開してはならない)
+      ② strict_objects=True のとき、ノード円同士・ラベル矩形↔ノード円・ラベル矩形同士の
+         重なりも重大違反として扱う。明示座標つき図など、編集済み配置にだけ使う。
 
     スコープ外 (本ゲートでは raise しない):
       ・ラベル矩形 ↔ ノード円の軽微重なり、ラベル矩形 ↔ ラベル矩形の軽微重なり
@@ -124,6 +126,8 @@ def check_relations_svg(svg: str, *, src: str) -> list[str]:
     segs = [(float(a), float(b), float(c), float(d))
             for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg)
             if float(w) >= 2.0]
+    rects = [(float(x), float(y), float(w), float(h))
+             for x, y, w, h in _CHIP_RECT_RE.findall(svg)]
 
     # ① 線↔ノード貫通 (build 全断する重大違反)
     for si, seg in enumerate(segs):
@@ -135,6 +139,28 @@ def check_relations_svg(svg: str, *, src: str) -> list[str]:
                     f"[{src}] エッジ線 #{si} がノード円 #{ci} "
                     f"({cx:.0f},{cy:.0f},r={cr:.0f}) を距離 {d:.1f} で貫通"
                 )
+
+    if strict_objects:
+        for i, c1 in enumerate(circles):
+            for j, c2 in enumerate(circles[i + 1:], i + 1):
+                dist = math.hypot(c1[0] - c2[0], c1[1] - c2[1])
+                if dist < c1[2] + c2[2] + 2.0:
+                    errors.append(
+                        f"[{src}] ノード円 #{i} と #{j} が近接/重なり "
+                        f"(distance={dist:.1f}, required>={c1[2] + c2[2] + 2.0:.1f})"
+                    )
+        for ri, rect in enumerate(rects):
+            for ci, circ in enumerate(circles):
+                if _rect_circle_hit(rect, circ):
+                    errors.append(
+                        f"[{src}] ラベル矩形 #{ri} がノード円 #{ci} に重なっています"
+                    )
+        for i, r1 in enumerate(rects):
+            for j, r2 in enumerate(rects[i + 1:], i + 1):
+                if _rect_overlap(r1, r2):
+                    errors.append(
+                        f"[{src}] ラベル矩形 #{i} と #{j} が重なっています"
+                    )
 
     return errors
 

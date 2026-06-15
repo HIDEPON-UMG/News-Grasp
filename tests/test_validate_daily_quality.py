@@ -14,6 +14,7 @@ from tools.validate_daily_quality import (
     validate_digest_style_quality,
     validate_dedup_annotation_present,
     validate_deepdive_presence,
+    validate_deepdive_relations_layout,
 )
 
 
@@ -737,3 +738,67 @@ def test_daily_quality_cli_can_require_deepdive(tmp_path: Path, capsys) -> None:
     captured = capsys.readouterr()
     assert rc == 1
     assert "DeepDive digest が存在しません" in captured.err
+
+
+def test_deepdive_relations_layout_rejects_explicit_crossing(tmp_path: Path) -> None:
+    """明示座標つき関係図は、避けられる線交差を daily gate で落とす。"""
+    dd_dir = tmp_path / "digest" / "DeepDive"
+    dd_dir.mkdir(parents=True)
+    (dd_dir / "2026-06-08-DeepDive.md").write_text(
+        "---\ntitle: test\ndate: 2026-06-08\n---\n\n"
+        "```relations\n"
+        "{\n"
+        '  "title": "交差検出",\n'
+        '  "nodes": [\n'
+        '    {"id": "a", "label": "A", "x": 100, "y": 100},\n'
+        '    {"id": "b", "label": "B", "x": 500, "y": 100},\n'
+        '    {"id": "c", "label": "C", "x": 100, "y": 500},\n'
+        '    {"id": "d", "label": "D", "x": 500, "y": 500}\n'
+        "  ],\n"
+        '  "edges": [\n'
+        '    {"from": "a", "to": "d", "label": "ad", "kind": "供給"},\n'
+        '    {"from": "c", "to": "b", "label": "cb", "kind": "供給"}\n'
+        "  ]\n"
+        "}\n"
+        "```\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_deepdive_relations_layout(
+        digest_root=tmp_path / "digest",
+        issue=date(2026, 6, 8),
+    )
+
+    assert "線交差" in "\n".join(errs)
+
+
+def test_deepdive_relations_layout_rejects_row_group_mismatch(tmp_path: Path) -> None:
+    """rowGroups で同役割指定したノードは、同じ y 行でなければ daily gate が落とす。"""
+    dd_dir = tmp_path / "digest" / "DeepDive"
+    dd_dir.mkdir(parents=True)
+    (dd_dir / "2026-06-08-DeepDive.md").write_text(
+        "---\ntitle: test\ndate: 2026-06-08\n---\n\n"
+        "```relations\n"
+        "{\n"
+        '  "title": "行揃え検出",\n'
+        '  "rowGroups": [["boj", "fed"]],\n'
+        '  "nodes": [\n'
+        '    {"id": "boj", "label": "日銀", "x": 100, "y": 200},\n'
+        '    {"id": "fed", "label": "Fed", "x": 500, "y": 260},\n'
+        '    {"id": "market", "label": "市場", "x": 300, "y": 500}\n'
+        "  ],\n"
+        '  "edges": [\n'
+        '    {"from": "boj", "to": "market", "label": "円", "kind": "規制"},\n'
+        '    {"from": "fed", "to": "market", "label": "ドル", "kind": "供給"}\n'
+        "  ]\n"
+        "}\n"
+        "```\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_deepdive_relations_layout(
+        digest_root=tmp_path / "digest",
+        issue=date(2026, 6, 8),
+    )
+
+    assert "同じ行" in "\n".join(errs)

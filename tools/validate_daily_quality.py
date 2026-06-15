@@ -497,6 +497,100 @@ def validate_deepdive_presence(*, digest_root: Path, docs_root: Path, issue: dat
     return errs
 
 
+def _proper_cross(
+    p: tuple[float, float],
+    q: tuple[float, float],
+    r: tuple[float, float],
+    s: tuple[float, float],
+) -> bool:
+    def orient(a: tuple[float, float], b: tuple[float, float], c: tuple[float, float]) -> float:
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+    return orient(p, q, r) * orient(p, q, s) < 0 and orient(r, s, p) * orient(r, s, q) < 0
+
+
+def _relation_row_groups(rel: dict[str, Any]) -> list[list[str]]:
+    raw = (
+        rel.get("rowGroups")
+        or rel.get("row_groups")
+        or rel.get("roleRows")
+        or rel.get("role_rows")
+        or []
+    )
+    groups: list[list[str]] = []
+    if not isinstance(raw, list):
+        return groups
+    for item in raw:
+        if isinstance(item, list):
+            ids = [str(v) for v in item if str(v).strip()]
+            if len(ids) >= 2:
+                groups.append(ids)
+    return groups
+
+
+def validate_deepdive_relations_layout(*, digest_root: Path, issue: date) -> list[str]:
+    """当日 DeepDive の関係図に三原則違反が無いか検査する。
+
+    既存 DeepDive 全件へ交差ゼロを一律適用すると、過去図の legitimate/legacy 配置まで
+    落ちるため、明示座標つき relations を「編集済み配置」として厳格監査する。
+    rowGroups / row_groups / roleRows / role_rows があれば、指定ノードの y 行揃えも見る。
+    """
+    md_path = digest_root / "DeepDive" / f"{issue.isoformat()}-DeepDive.md"
+    if not md_path.exists():
+        return []
+
+    from tools.output_quality import check_relations_svg
+    from tools.render_deepdive import extract_blocks, layout_relations, relations_svg
+
+    text = md_path.read_text(encoding="utf-8-sig", errors="replace")
+    rels = extract_blocks(text).get("relations") or []
+    errs: list[str] = []
+    for idx, rel in enumerate(rels, 1):
+        title = str(rel.get("title") or f"relations#{idx}")
+        src = f"{md_path.name}:{title}"
+        nodes = list(rel.get("nodes") or [])
+        explicit_xy = bool(nodes) and all(
+            isinstance(nd.get("x"), (int, float)) and isinstance(nd.get("y"), (int, float))
+            for nd in nodes
+        )
+        try:
+            lay = layout_relations(rel)
+            svg = relations_svg(rel)
+        except Exception as exc:  # noqa: BLE001 - gate では文脈付きで返す
+            errs.append(f"{src}: 関係図レイアウト構築に失敗: {exc}")
+            continue
+
+        errs.extend(check_relations_svg(svg, src=src, strict_objects=explicit_xy))
+
+        points = {str(n.get("id")): (float(n["x"]), float(n["y"])) for n in lay.get("nodes", [])}
+        if explicit_xy:
+            segments: list[tuple[str, str, tuple[float, float], tuple[float, float], str]] = []
+            for e in lay.get("edges", []):
+                a, b = str(e.get("from")), str(e.get("to"))
+                if a in points and b in points:
+                    segments.append((a, b, points[a], points[b], str(e.get("label") or "")))
+            for i, (a1, a2, p, q, label_a) in enumerate(segments):
+                for b1, b2, r, s, label_b in segments[i + 1:]:
+                    if len({a1, a2, b1, b2}) < 4:
+                        continue
+                    if _proper_cross(p, q, r, s):
+                        errs.append(
+                            f"{src}: 明示座標つき関係図で線交差があります: "
+                            f"{label_a or a1 + '->' + a2} / {label_b or b1 + '->' + b2}"
+                        )
+
+        for group in _relation_row_groups(rel):
+            ys = [(node_id, points[node_id][1]) for node_id in group if node_id in points]
+            if len(ys) < 2:
+                continue
+            y_values = [y for _node_id, y in ys]
+            if max(y_values) - min(y_values) > 1.0:
+                detail = ", ".join(f"{node_id}:y={y:.1f}" for node_id, y in ys)
+                errs.append(f"{src}: rowGroups の同役割ノードが同じ行にありません: {detail}")
+
+    return errs
+
+
 def validate_daily_quality(
     *,
     issue_date: str,
@@ -528,6 +622,10 @@ def validate_daily_quality(
         errs.extend(validate_deepdive_presence(
             digest_root=digest_root,
             docs_root=docs_root,
+            issue=issue,
+        ))
+        errs.extend(validate_deepdive_relations_layout(
+            digest_root=digest_root,
             issue=issue,
         ))
     return errs
