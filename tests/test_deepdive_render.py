@@ -437,12 +437,14 @@ def test_relations_layout_respects_explicit_coordinates() -> None:
     assert by_id["market"]["x"] == 750
 
 
-def test_2026_06_15_relations_has_no_avoidable_edge_crossing() -> None:
-    """06/15 関係図は、外部要因を右側へ置けば線交差ゼロで表現できる。
+def test_2026_06_15_relations_has_no_avoidable_edge_crossing_or_overlap() -> None:
+    """06/15 関係図は、線交差ゼロ・被りゼロ・同役割同一行で表現できる。
 
     なぜ重要か: 関係図は可読性のための図であり、交差せずに置ける配置があるなら
     交差を残してよい理由はない。2026-06-15 は Fed / 米イラン・原油を右側にまとめる
-    ことで、ノード間エッジの不要な交差を 0 にできるため、この配置を locked-in する。
+    ことで、ノード間エッジの不要な交差を 0 にできる。さらに日銀と Fed は政策当局/
+    海外金利という政策レイヤーの比較対象なので同じ y 行に置き、ノード円・ラベル
+    チップも互いに被せない。この三条件を実日付 fixture で locked-in する。
     """
     md = ROOT / "digest" / "DeepDive" / "2026-06-15-DeepDive.md"
     rel = extract_blocks(md.read_text(encoding="utf-8"))["relations"][0]
@@ -470,6 +472,25 @@ def test_2026_06_15_relations_has_no_avoidable_edge_crossing() -> None:
                 crossings.append((label_a, label_b))
 
     assert crossings == []
+
+    svg = relations_svg(rel)
+    circles = _node_circles(svg)
+    rects = _chip_rects(svg)
+    for i, c1 in enumerate(circles):
+        for c2 in circles[i + 1:]:
+            dx = c1[0] - c2[0]
+            dy = c1[1] - c2[1]
+            dist = (dx * dx + dy * dy) ** 0.5
+            assert dist >= c1[2] + c2[2] + 4.0, \
+                f"ノード円同士が被る: {c1} ∩ {c2}"
+    for r in rects:
+        for c in circles:
+            assert not _rect_circle_hit(r, c), \
+                f"ラベルがノード円に重なる: rect={r} circle={c}"
+    for i in range(len(rects)):
+        for j in range(i + 1, len(rects)):
+            assert not _rect_overlap(rects[i], rects[j]), \
+                f"ラベル同士が重なる: {rects[i]} ∩ {rects[j]}"
 
 
 def test_relations_bands_high_density_no_label_overlap() -> None:

@@ -326,7 +326,9 @@ def _choose_layout_mode(
       "camps" 判定とは異なる。完全統一すると出資元の段が反転して挙動が変わるので統一しない。
 
     配置の不変条件 (競合=左右 / 協力=縦 / 規制=最下段 / 2 陣営=左右カラム+主役対峙+中立最下段 /
-    バリューチェーン=供給先を下段 / ラベルの重なり 0 / エッジ線がノード円を貫通しない) は
+    バリューチェーン=供給先を下段 / ラベルの重なり 0 / ノード同士を被せない /
+    エッジ線がノード円を貫通しない / 線交差は意味を壊さない範囲で最小化 /
+    同じ役割・同じレイヤーのノードは、読み手が同列と分かるよう極力同じ y 行に揃える) は
     tests/test_deepdive_render.py の relations 系 3 件 (test_relations_layout_is_semantic_not_circular
     / test_relations_two_camps_split_left_right_and_no_overlap /
     test_relations_value_chain_layers_supply_sink_below) で契約として固定する。
@@ -781,6 +783,8 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
     # 生成側が x/y を明示した場合は、その編集判断を尊重する。
     # 「政策当局」が主役の回では自動 band 判定が最下段へ落としてしまい、図の重心が
     # 右下に寄ることがある。明示座標はその例外を data 側で表現するための逃げ道。
+    # ただし明示座標も上の関係図規約から免除されない。ノード/ラベルを被せず、不要な
+    # 線交差を避け、同じ役割・同じレイヤーは極力同じ y 行に揃えること。
     explicit_xy = all(
         isinstance(nd.get("x"), (int, float)) and isinstance(nd.get("y"), (int, float))
         for nd in nodes

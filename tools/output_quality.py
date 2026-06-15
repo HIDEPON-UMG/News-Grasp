@@ -94,17 +94,23 @@ def _rect_overlap(r1: tuple[float, float, float, float],
 def check_relations_svg(svg: str, *, src: str) -> list[str]:
     """関係図 SVG の幾何的品質を検査し、build を中止すべき重大違反のリストを返す。
 
+    関係図の三原則:
+      ・オブジェクトを被せない (ノード円、ラベルチップ、エッジ線の読解を邪魔しない)
+      ・線はクロスが最小限になる配置を採る (避けられる交差は残さない)
+      ・同じ役割のノードは、読み手が同列と分かるよう極力同じ行に揃える
+
     検出対象 (build 全断):
       ① 線がノード円 (端点以外) を貫通 (= 2026-06-06 BYD↔NVIDIA 線が Tesla を距離 0.0
          で直撃した事故クラス。図の読解不能で公開してはならない)
 
     スコープ外 (本ゲートでは raise しない):
       ・ラベル矩形 ↔ ノード円の軽微重なり、ラベル矩形 ↔ ラベル矩形の軽微重なり
+      ・線交差数の大域最適化、同役割ノードの y 行揃え
         — legacy fixture (deepdive_robotaxi.md / 2026-05-31-DeepDive.md 等) で
         1-2px 程度の許容範囲な重なりが運用上残っており、ゲートで raise すると
         既存の正常な build まで全断してしまう。これらは別経路 (契約テスト
-        test_relations_two_camps_split_left_right_and_no_overlap で fixture 単位
-        に pin、または将来 warn 出力) で監視する。
+        test_relations_two_camps_split_left_right_and_no_overlap や実日付 fixture で
+        pin、または将来 warn 出力) で監視する。
 
     本ゲートの設計思想: 「重大な事故 (= pierce) を loud failure で公開阻止」に絞り、
     軽微な美観違反まで含めて build 全断する過剰検出を避ける (= ユーザー指摘
