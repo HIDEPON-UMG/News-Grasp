@@ -69,6 +69,13 @@ def test_reporter_prompt_date_and_thumb_contracts() -> None:
     assert "記事公開日ではない" in text
 
 
+def test_reporter_prompt_forbids_homepage_rounded_urls() -> None:
+    text = _read(REPORTER_PROMPT)
+    assert "媒体トップ URL" in text
+    assert "カテゴリトップ URL" in text
+    assert "元記事単位の canonical URL" in text
+
+
 def test_reporter_prompt_allows_article_body_fetch_only_inside_reporter_context() -> None:
     text = _read(REPORTER_PROMPT)
     assert "tools/fetch_article_body.py" in text

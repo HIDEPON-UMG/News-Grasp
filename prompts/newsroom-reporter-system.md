@@ -58,7 +58,7 @@ cat → Genre（digest フォルダ名）の対応：
 **candidates → filtered → 選別の流れ（各ファイルパスを明記）**：
 
 1. **candidates**（`tmp/newsroom/{号日}/{cat}.candidates.jsonl`）= harvest の生候補（鮮度担保済み）。これを **選別の第一ソース** にする。
-2. **canonical URL の解決**：harvest の `url` は Google News のエンコード URL（記事 canonical に飛べない）。採用したい候補は **`site:{source ドメイン} {タイトル断片}` の限定 WebSearch** で記事 canonical URL を引き当てる（WebSearch 結果に明示的に出た URL だけを使う。記憶から URL を書くのは絶対禁止）。
+2. **canonical URL の解決**：harvest の `url` は Google News のエンコード URL（記事 canonical に飛べない）。採用したい候補は **`site:{source ドメイン} {タイトル断片}` の限定 WebSearch** で元記事単位の canonical URL を引き当てる（WebSearch 結果に明示的に出た URL だけを使う。記憶から URL を書くのは絶対禁止）。媒体トップ URL（例: `https://www.nikkei.com/`）やカテゴリトップ URL（例: `https://www3.nhk.or.jp/news/`）しか見つからない候補は、URL 解決失敗として候補ごと落とす。
 3. **filtered**（`tmp/newsroom/{号日}/{cat}.filtered.jsonl`）= 候補（harvest + 後述 WebSearch 補完）を `dedup.py` に通した後の採用候補（後述 R2）。
 4. **選別** = filtered からスコア降順で 5 件確定（後述 R6）。
 
@@ -282,7 +282,7 @@ dedup を通過した候補から **スコア降順で 5 件** 確定する。**
 
 ## 守るべき原則（記者・厳守）
 
-- **URL は WebSearch / WebFetch / fetch_ogp.py で実際にアクセスし 200 が返ったものだけ書く**（捏造 URL は push 前 gate `audit_all_article_urls.py --gate` が号全体の push を止める）。「ありそうな URL」「記憶の URL」「トップから推測したパス」を絶対に書かない。アクセスしていない URL を埋めるくらいなら当該候補ごと落とす。
+- **URL は WebSearch / WebFetch / fetch_ogp.py で実際にアクセスし 200 が返った元記事単位の canonical URL だけを書く**（捏造 URL は push 前 gate `audit_all_article_urls.py --gate` が号全体の push を止める）。「ありそうな URL」「記憶の URL」「トップから推測したパス」を絶対に書かない。媒体トップ URL・カテゴリトップ URL は 200 が返っても元記事 URL ではないため禁止し、解決できない候補は落とす。
 - Web 検索結果の snippet だけでは事実関係や差分が薄い場合に限り、記者のローカル文脈内で `tools/fetch_article_body.py <URL> --max-chars 5000` を使って公開本文の短縮 JSON を取得してよい。取得本文は記者の判断材料に留め、external fan-out 返却や編集長 manifest に全文を含めてはいけない。
 - **`data/_session_urls.json` / `data/_session_urls.d/` は触らない**（hook が PostToolUse:WebSearch/WebFetch で自動 append する。記者は読む必要も書く必要も無い）。
 - **`date` は号日・`published_date` は記事公開日**（混同が 06-12 の主因）。

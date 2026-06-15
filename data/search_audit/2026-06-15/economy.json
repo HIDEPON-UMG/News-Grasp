@@ -1,0 +1,44 @@
+{
+  "date": "2026-06-15",
+  "category_id": "economy",
+  "queries": [
+    "stage1: build/deduped-candidates/economy.jsonl",
+    "harvest query: 経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "selection focus: 日英経済安保 / 米イラン・ホルムズ / イタリア中銀GDP / 日銀会合 / AIインフラ投資"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "日銀 金融政策",
+    "マクロ経済 指標",
+    "決算速報",
+    "景気",
+    "経済安全保障"
+  ],
+  "dropped": [
+    {
+      "title": "NZAM 日本好配当株オープン(3カ月決算型)【25311083】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/25311083",
+      "reason": "投信の基準価額更新で当日の広い経済インパクトが薄い"
+    },
+    {
+      "title": "サッカーW杯日本代表、初戦オランダと引き分け : 映像",
+      "url": "https://www.nikkei.com/video/6398424272112",
+      "reason": "スポーツ動画でカテゴリ不一致"
+    },
+    {
+      "title": "インド国際経済関係研究所（ICRIER）との包括連携に関する基本合意書の締結について",
+      "url": "https://www.jri.co.jp/company/release/2026/0615/",
+      "reason": "個社リリースでマクロ経済への波及が限定的"
+    },
+    {
+      "title": "決算マイナス・インパクト銘柄 【東証プライム】寄付 … 神戸物産、ＨＩＳ、丹青社 (6月12日発表分)",
+      "url": "https://kabutan.jp/news/marketnews/?b=n202606150211",
+      "reason": "個別株の寄り前整理で経済カテゴリ全体の主題としては狭い"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

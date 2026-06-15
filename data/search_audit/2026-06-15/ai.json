@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-15",
+  "category_id": "ai",
+  "queries": [
+    "stage1-file build/deduped-candidates/ai.jsonl",
+    "cluster Google Gemini abuse scam lawsuit",
+    "cluster Visa OpenAI agentic commerce payment",
+    "cluster OpenAI Anthropic token price war",
+    "cluster NEC Anthropic financial institutions",
+    "cluster MIXI genAI cost reduction"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「Claude Fable」の制限措置をめぐるAIとセキュリティ--双方の見解",
+      "url": "https://japan.zdnet.com/article/35248916/",
+      "reason": "Anthropic規制クラスタの補足解説で、供給停止そのものを扱う候補より新規性が弱い"
+    },
+    {
+      "title": "DXCとAnthropic、ミッションクリティカルな企業システムへのAI導入を目指す複数年にわたるグローバル提携を発表",
+      "url": "https://kyodonewsprwire.jp/release/202606120809",
+      "reason": "企業発表としては大きいが、当日号ではPR色が強く読者の意思決定に直結しにくい"
+    },
+    {
+      "title": "Geminiの共有機能が進化。チャットやファイルを安全・簡単シェア可能に",
+      "url": "https://www.gizmodo.jp/article/sharing-gemini-chats-via-google-drive/",
+      "reason": "機能改善として有用だが、法務・決済・価格競争より影響範囲が狭い"
+    },
+    {
+      "title": "生成AIに関する実態調査2026 春 6カ国比較―AI変革は選択肢から生存条件へ 変わりゆく世界に日本企業は追いつけるのか",
+      "url": "https://www.pwc.com/jp/ja/knowledge/thoughtleadership/generative-ai-survey2026.html",
+      "reason": "一次調査だがストック性の高い調査記事で、当日ニュースとしての変化量は上位5件に劣る"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

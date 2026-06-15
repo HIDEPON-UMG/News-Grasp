@@ -18,6 +18,7 @@ from tools.generate_pages import (
     parse_frontmatter,
     parse_reflection,
 )
+from tools.url_quality import is_google_news_rss_url, looks_homepage_or_section_landing
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"]
@@ -27,7 +28,6 @@ _WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", 
 # 「全件注釈ゼロ = 強化版を通っていない疑い」の警告検査を適用しない。
 _DATE_EVIDENCE_ANNOTATION_START = date(2026, 6, 11)
 _DATE_EVIDENCE_SOURCE_FIELD = "date_evidence_source"
-
 REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
     "ai": {"OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"},
     "fx": {"USDJPY", "EURUSD", "BOJ", "Fed", "ECB"},
@@ -81,19 +81,32 @@ def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str
         rec.get("url")
         for rec in records
         if isinstance(rec.get("url"), str)
-        and "news.google.com/rss/articles/" in rec["url"]
+        and is_google_news_rss_url(rec["url"])
     ]
+    rounded_urls = [
+        rec.get("url")
+        for rec in records
+        if isinstance(rec.get("url"), str)
+        and looks_homepage_or_section_landing(rec["url"])
+    ]
+    errs: list[str] = []
     if google_news_urls:
-        return [
+        errs.extend([
             f"{jsonl_path}: {issue.isoformat()} に Google News RSS URL のままです: {len(google_news_urls)} 件",
             "元記事 URL へ解決してから公開してください。Google News URL のままだと元記事 OGP を取り逃し、fallback サムネ化します。",
-        ]
+        ])
+    if rounded_urls:
+        sample = ", ".join(str(url) for url in rounded_urls[:5])
+        errs.extend([
+            f"{jsonl_path}: {issue.isoformat()} に媒体トップまたはカテゴリトップに丸まった URL があります: {len(rounded_urls)} 件",
+            f"元記事単位の URL へ解決してから公開してください。例: {sample}",
+        ])
     if all("thumb" in rec for rec in records) and all(rec.get("thumb") is None for rec in records):
-        return [
+        errs.extend([
             f"{jsonl_path}: {issue.isoformat()} の thumb が全件 null です。",
             "このままでは公開ページが全件 fallback サムネになります。fetch_ogp / WebSearch thumbnail の取得結果を反映してください。",
-        ]
-    return []
+        ])
+    return errs
 
 
 def _missing_emphasis_kinds(text: str) -> list[str]:

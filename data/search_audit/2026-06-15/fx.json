@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-15",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "USD/JPY OR 日銀 OR 利上げ when:1d",
+    "FOMC OR 米金利 OR ドル円 when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "日銀",
+    "FOMC",
+    "米イラン合意",
+    "インフレ期待",
+    "為替介入"
+  ],
+  "source_policy": "stage1_dedup_only",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dropped": [
+    {
+      "title": "欧州 ユーロ / 日本 円【EURJPY=X】：為替レート・相場",
+      "url": "https://finance.yahoo.co.jp/quote/EURJPY=X",
+      "reason": "相場ページで記事ではない"
+    },
+    {
+      "title": "FX/為替「ドル/円今日の予想」 外為どっとコム トゥデイ 2026年6月15日号",
+      "url": "https://www.gaitame.com/media/entry/2026/06/15/090610",
+      "reason": "当日見通し記事。政策判断と期待インフレを優先"
+    },
+    {
+      "title": "ドル/円見通し(為替/FX ニュース )：先週末のドル円は円安で160円台前半｜米国とイランが戦闘終結で合意(2026年6月15日)",
+      "url": "https://www.oanda.jp/lab-education/market_news/2026_06_15_usdjpy/",
+      "reason": "相場見通しの重複。Reuters記事で同テーマを採用"
+    },
+    {
+      "title": "ドル円予想レンジ158.00～162.00円 注目通貨は豪ドル（6/15週）",
+      "url": "https://online.nikkei-cnbc.co.jp/vod/66085",
+      "reason": "週間レンジ記事。政策イベントの即時性を優先"
+    },
+    {
+      "title": "外為：スイスフラン、201円57銭前後とフラン高・円安で推移(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/155c0c1641012dd5c8bf5736fde8eca73fe71e2f",
+      "reason": "単一通貨の値動き速報で横断性が低い"
+    }
+  ]
+}

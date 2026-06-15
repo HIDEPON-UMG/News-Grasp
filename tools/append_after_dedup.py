@@ -12,7 +12,10 @@ import sys
 from pathlib import Path
 from typing import Any, Callable
 
-import dedup
+try:
+    from tools import dedup
+except ModuleNotFoundError:
+    import dedup
 
 try:
     from googlenewsdecoder import gnewsdecoder
@@ -24,8 +27,10 @@ try:
 except ModuleNotFoundError:
     from fetch_ogp import fetch_ogp
 
-
-GOOGLE_NEWS_RSS_MARKER = "news.google.com/rss/articles/"
+try:
+    from tools.url_quality import is_google_news_rss_url
+except ModuleNotFoundError:
+    from url_quality import is_google_news_rss_url
 
 
 def read_candidates(stdin) -> list[dict]:
@@ -47,10 +52,6 @@ def append_records(path: Path, records: list[dict]) -> None:
     payload = "\n".join(json.dumps(r, ensure_ascii=False) for r in records)
     with path.open("a", encoding="utf-8", newline="\n") as f:
         f.write(prefix + payload)
-
-
-def is_google_news_rss_url(url: str) -> bool:
-    return GOOGLE_NEWS_RSS_MARKER in url
 
 
 def _decode_status_ok(value: Any) -> bool:

@@ -107,10 +107,13 @@ def test_runner_executes_stage0_stage1_before_any_codex_wrapper() -> None:
 
     stage0 = runner.index("harvest_candidates.py")
     stage1 = runner.index("cross_category_dedup.py")
+    prepare = runner.index("tools.prepare_reporter_candidates")
     stage2 = runner.index("Stage2 reporter fan-out")
-    assert stage0 < stage1 < stage2
+    assert stage0 < stage1 < prepare < stage2
     assert "MaxParallelReporterJobs = 7" in runner
     assert "Stage2 reporter fan-out" in runner
+    assert "--max-rows-per-file 25" in runner
+    assert "--thumb-limit-per-file 5" in runner
 
 
 def test_runner_stage0_stdout_writer_is_windows_powershell_51_compatible() -> None:

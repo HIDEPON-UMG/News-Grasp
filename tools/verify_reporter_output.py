@@ -45,6 +45,7 @@ from tools.validate_record import (  # noqa: E402
     _DATE_RE,
     validate_record,
 )
+from tools.url_quality import is_google_news_rss_url, looks_homepage_or_section_landing
 
 # cat (category_id) → digest フォルダ名 (= Genre = digest frontmatter の category)。
 # digest/{Genre}/{date}-{Genre}.md の Genre 部分。data/search_audit と digest の
@@ -116,6 +117,16 @@ def _check_records(
         except RecordSchemaError as e:
             errs.append(f"record #{i}: schema 違反: {e}")
             continue
+        url = rec.get("url")
+        if isinstance(url, str) and is_google_news_rss_url(url):
+            errs.append(
+                f"record #{i}: Google News RSS URL のままです。"
+                "元記事 URL へ解決してから記者出力に含めること。"
+            )
+        if isinstance(url, str) and looks_homepage_or_section_landing(url):
+            errs.append(
+                f"record #{i}: 媒体トップまたはカテゴリトップに丸まった URL です: {url}"
+            )
         if rec.get("date") != issue_date:
             errs.append(
                 f"record #{i}: date={rec.get('date')!r} != 号日 {issue_date!r} "
@@ -139,6 +150,13 @@ def _check_records(
                 f"records が {count} 件 (5 件未満) だが quality_shortfall_reason が "
                 f"どの行にも無い (低ニュース性で意図的に絞ったなら理由を明記すること)"
             )
+    if count > 0 and all("thumb" in rec for rec in records) and all(
+        rec.get("thumb") is None for rec in records
+    ):
+        errs.append(
+            "records の thumb が全件 null です。"
+            "fetch_ogp / WebSearch thumbnail の取得結果を反映してから記者出力に含めること。"
+        )
     return count, errs
 
 

@@ -163,6 +163,39 @@ def test_fail_record_schema_violation(tmp_path: Path):
     assert any("schema" in e for e in errs), f"schema 違反を検出するはず: {errs}"
 
 
+def test_fail_google_news_rss_url_in_records(tmp_path: Path):
+    """Google News RSS URL のままなら元記事 URL 未解決として FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0]["url"] = "https://news.google.com/rss/articles/CBMiExample?oc=5"
+    recs[0]["url_norm"] = "news.google.com/rss/articles/cbmiexample"
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+    assert any("Google News RSS URL" in e for e in errs), (
+        f"Google News RSS URL を検出するはず: {errs}"
+    )
+
+
+def test_fail_homepage_rounded_url_in_records(tmp_path: Path):
+    """媒体トップやカテゴリトップに丸まった URL は記事 URL ではないため FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0]["url"] = "https://www.nikkei.com/"
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+    assert any("媒体トップまたはカテゴリトップ" in e for e in errs), (
+        f"丸まり URL を検出するはず: {errs}"
+    )
+
+
+def test_fail_all_null_thumbnails_in_records(tmp_path: Path):
+    """記者 1 カテゴリの全記事が thumb=null なら、低品質な一括 fallback を招くため FAIL。"""
+    recs = [_record(i, extra={"thumb": None}) for i in range(1, 6)]
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+    assert any("thumb が全件 null" in e for e in errs), (
+        f"全件 thumb=null を検出するはず: {errs}"
+    )
+
+
 # ── 2. 件数 1〜5 + quality_shortfall_reason ──────────────────────────────────
 
 

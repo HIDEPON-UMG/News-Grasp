@@ -1,0 +1,47 @@
+{
+  "date": "2026-06-15",
+  "category_id": "game",
+  "queries": [
+    "Stage1 pool: ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "Stage1 review: Nintendo OR Xbox",
+    "Stage1 review: Steam",
+    "Stage1 review: 体験版 OR 売上 OR アップデート"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "任天堂",
+    "Xbox",
+    "Steam",
+    "体験版",
+    "売上"
+  ],
+  "dropped": [
+    {
+      "title": "MLB Gameday: Astros 0, Royals 4 Final Score (06/14/2026)",
+      "url": "https://www.mlb.com/ja/gameday/824099/final/wrap",
+      "reason": "スポーツ試合結果でゲーム業界ニュースではない"
+    },
+    {
+      "title": "ゲーム理論があぶり出す「温暖化適応」優先論のわな 希望の道も",
+      "url": "https://mainichi.jp/articles/20260611/k00/00m/040/033000c",
+      "reason": "ゲーム理論の一般論でゲーム産業の話ではない"
+    },
+    {
+      "title": "プレシーズンゲーム2026 開催決定",
+      "url": "https://www.icebucks.jp/news/2026/06/15/31005/",
+      "reason": "スポーツイベント告知でカテゴリ不一致"
+    },
+    {
+      "title": "【マジンガーZを殴ったことがないのか】『チェイサーゲーム』シーズン2 第69話 運命の引力（4）",
+      "url": "https://www.famitsu.com/article/202606/78119",
+      "reason": "連載コンテンツで業界インパクトが限定的"
+    },
+    {
+      "title": "ゲーム好き必見！【しまむら】でGETできる懐かしの『プレイステーション』グッズがユニークで実用的！ポーチやタオルなど全15種類（LIMO）",
+      "url": "https://news.yahoo.co.jp/articles/3d74b0686a58da762514015a7703612d9e0c32c9",
+      "reason": "周辺グッズ紹介で市場構造の変化が薄い"
+    }
+  ]
+}

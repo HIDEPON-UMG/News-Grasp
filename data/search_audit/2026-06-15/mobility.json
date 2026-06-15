@@ -1,0 +1,59 @@
+{
+  "date": "2026-06-15",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "stage1-review: ロボタクシー 越境運行 規制整備",
+    "stage1-review: GM Redwood EV battery reuse storage",
+    "stage1-review: Toyota Tier IV autonomous driving investment",
+    "stage1-review: JTEKT Syncusteer steer-by-wire",
+    "stage1-review: Analog Devices EV slowdown supplier impact"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "ロボタクシー",
+    "越境規制",
+    "GM",
+    "Redwood",
+    "トヨタ",
+    "ティアフォー",
+    "ジェイテクト",
+    "アナログ・デバイセズ",
+    "EV需要",
+    "車載半導体"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://finance.yahoo.co.jp/quote/TSLA",
+      "reason": "記事ではなく株価ページで、当日ニュースの一次材料にならない"
+    },
+    {
+      "title": "Googleロボタクシー、金持ち優遇の「優先パス」を発表",
+      "url": "https://jidounten-lab.com/u_63573",
+      "reason": "6月13日号のWaymo Premier系統と論点が近く、新材料が薄い"
+    },
+    {
+      "title": "EVの普及に向け 群馬県の4施設に一般向け充電設備 事業者公募へ",
+      "url": "https://www.jomo-news.co.jp/articles/-/957759",
+      "reason": "地域施策としては有益だが、全国波及や産業インパクトは上位5件に届かない"
+    },
+    {
+      "title": "「充電大丈夫かよ…」EV乗り最大の不安を終わらせる？日産新型リーフ「地球70万周のデータ」が生んだ答え",
+      "url": "https://diamond.jp/articles/-/392397?page=7",
+      "reason": "消費者向け解説色が強く、当日の新規決定や制度変更より優先度が下がる"
+    },
+    {
+      "title": "米国EV「テスラ」直営店、イオンモール仙台上杉に12日オープン 周辺の公道で試走も（河北新報）",
+      "url": "https://news.yahoo.co.jp/articles/2a20375b76b08ec7e3bdbe7dd3f14d1e0f49ea8d",
+      "reason": "店舗開設は地域ニュースとしては有意だが、カテゴリ全体を動かす材料としては限定的"
+    },
+    {
+      "title": "韓国に中国ブランド続々進出 EVから飲料・化粧品まで＝製品の信頼度向上",
+      "url": "https://news.yahoo.co.jp/articles/960233ca83d58009cdf56600b8fdf27d1eff02d8",
+      "reason": "主題が消費財全般で、モビリティ単独の焦点が弱い"
+    }
+  ]
+}

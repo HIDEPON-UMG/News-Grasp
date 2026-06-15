@@ -30,6 +30,7 @@ def _copy_minimal_repo(dst: Path) -> None:
     (dst / "tools").mkdir()
     for name in [
         "model_policy.py",
+        "url_quality.py",
         "validate_record.py",
         "verify_reporter_output.py",
     ]:

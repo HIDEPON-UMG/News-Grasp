@@ -1,0 +1,42 @@
+{
+  "date": "2026-06-15",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "stage1-manual-select: SMBC NEC 日本総研 / 弥生 Next / Keeper Security / SaaS契約 / IT資格マップ",
+    "watchlist-filter: DX / 生成AI導入 / システムインテグレーター / IT投資 / サイバーセキュリティ"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 9,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "DX",
+    "生成AI導入",
+    "システムインテグレーター",
+    "IT投資",
+    "サイバーセキュリティ",
+    "SaaS"
+  ],
+  "dropped": [
+    {
+      "title": "熊本城｜2052年の完全復旧へ、みなさまと共に歩み続けるために",
+      "url": "https://readyfor.jp/projects/kumamoto-castle2026",
+      "reason": "IT-Consultingカテゴリとの関連がなくクラウドファンディング案件"
+    },
+    {
+      "title": "サウナを次のステージへ！水着着用で男女共に楽しめる湯らっくす2号店を福岡に開店",
+      "url": "https://camp-fire.jp/projects/935618/view",
+      "reason": "カテゴリ外の一般クラウドファンディング"
+    },
+    {
+      "title": "＜次回予告＞「乃木坂工事中」",
+      "url": "https://www.nogizaka46.com/s/n46/news/detail/101996",
+      "reason": "IT・クラウド・コンサル領域と無関係"
+    },
+    {
+      "title": "貸付型クラウドファンディング「Funvest」6/17より新ファンド「ＰＩＭ 不動産事業ファンド１－２号」の募集開始",
+      "url": "https://prtimes.jp/main/html/rd/p/000000338.000056375.html",
+      "reason": "金融商品PRでIT-Consultingの主題から外れる"
+    }
+  ]
+}

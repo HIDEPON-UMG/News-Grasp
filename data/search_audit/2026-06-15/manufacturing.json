@@ -1,0 +1,55 @@
+{
+  "date": "2026-06-15",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-deduped-candidates:build/deduped-candidates/manufacturing.jsonl",
+    "filter:manufacturing-industrial-impact-first",
+    "filter:exclude-opinion-pr-wire-stock-picks"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Foxconn",
+    "Intel",
+    "NVIDIA",
+    "Samsung",
+    "TSMC",
+    "Toyota",
+    "半導体量産",
+    "後工程",
+    "工場新設・稼働",
+    "医薬品製造",
+    "自動車部品の現地化"
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "製造業の未来を切り開くエンジニアリングチェーンのDX 第3回 AIドリブンによる日本の製造業の真の変革",
+      "url": "https://www.pwc.com/jp/ja/knowledge/column/engineering-chain-dx-demia.html",
+      "reason": "コラムで当日の新規投資・量産・供給網変化を伴わないため除外"
+    },
+    {
+      "title": "理研計器－野村が目標株価引き上げ 国内外の半導体関連工場案件が寄与へ〔DZH 個別株情報〕(時事通信)",
+      "url": "https://finance.yahoo.co.jp/news/detail/210db42968bc34f25bce1a822c7b83c2886f7a69",
+      "reason": "株価材料中心で製造現場の新材料が薄いため除外"
+    },
+    {
+      "title": "Tulip InnovationとSunwodaが特許ライセンス契約を締結",
+      "url": "https://kyodonewsprwire.jp/release/202606120805",
+      "reason": "PRワイヤー単独で量産・供給網への具体波及が見えにくいため除外"
+    },
+    {
+      "title": "精密板金加工の芝原工業が新工場 供給力1.5倍､溶接技術共有しやすく",
+      "url": "https://www.nikkei.com/article/DGXZQOCC28CRU0Y6A520C2000000/",
+      "reason": "ローカル工場増強として有意だが、半導体・医薬・自動車供給網再編の5件を優先して次点"
+    },
+    {
+      "title": "エーザイ、英国政府のライフサイエンス革新的製造基金による支援のもと、英国ハットフィールド拠点への戦略投資を実施",
+      "url": "https://www.jcnnewswire.com/pressrelease/107748/3/%E3%82%A8%E3%83%BC%E3%82%B6%E3%82%A4%E3%80%81%E8%8B%B1%E5%9B%BD%E6%94%BF%E5%BA%9C%E3%81%AE%E3%83%A9%E3%82%A4%E3%83%95%E3%82%B5%E3%82%A4%E3%82%A8%E3%83%B3%E3%82%B9%E9%9D%A9%E6%96%B0%E7%9A%84%E8%A3%BD%E9%80%A0%E5%9F%BA%E9%87%91%E3%81%AB%E3%82%88%E3%82%8B%E6%94%AF%E6%8F%B4%E3%81%AE%E3%82%82%E3%81%A8%E3%80%81%E8%8B%B1%E5%9B%BD%E3%83%8F%E3%83%83%E3%83%88%E3%83%95%E3%82%A3%E3%83%BC%E3%83%AB%E3%83%89%E6%8B%A0%E7%82%B9%E3%81%B8%E3%81%AE%E6%88%A6%E7%95%A5%E6%8A%95%E8%B3%87%E3%82%92%E5%AE%9F%E6%96%BD",
+      "reason": "戦略投資案件だが、国内拠点拡張と自動車部品現地化の優先度を上位に置いて次点"
+    }
+  ]
+}
