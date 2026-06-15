@@ -778,13 +778,32 @@ def layout_relations(rel: dict[str, Any]) -> dict[str, Any]:
 
     max_r = max((_node_r(i) for i in ids), default=50.0)
 
-    # 配置モードは _choose_layout_mode の docstring が正典 (camps=2 陣営左右カラム / bands=その他)。
-    cc = _camp_columns(nodes, edges, ids, deg, _node_r) \
-        if _choose_layout_mode(nodes, edges) == "camps" else None
-    if cc is not None:
-        placed, vb_w, vb_h = cc["nodes"], cc["vb_w"], cc["vb_h"]
+    # 生成側が x/y を明示した場合は、その編集判断を尊重する。
+    # 「政策当局」が主役の回では自動 band 判定が最下段へ落としてしまい、図の重心が
+    # 右下に寄ることがある。明示座標はその例外を data 側で表現するための逃げ道。
+    explicit_xy = all(
+        isinstance(nd.get("x"), (int, float)) and isinstance(nd.get("y"), (int, float))
+        for nd in nodes
+    )
+    if explicit_xy:
+        vb_w = int(rel.get("width") or 1080)
+        vb_h = int(rel.get("height") or 640)
+        placed = []
+        for nd in nodes:
+            i = str(nd.get("id", ""))
+            r = float(nd.get("r") or _node_r(i))
+            xx = min(max(float(nd["x"]), r + 8), vb_w - r - 8)
+            yy = min(max(float(nd["y"]), r + 8), vb_h - r - 8)
+            placed.append({**nd, "x": round(xx, 1), "y": round(yy, 1),
+                           "r": r, "deg": deg.get(i, 1)})
     else:
-        placed, vb_w, vb_h = _band_layout(nodes, edges, ids, deg, _node_r, max_r)
+        # 配置モードは _choose_layout_mode の docstring が正典 (camps=2 陣営左右カラム / bands=その他)。
+        cc = _camp_columns(nodes, edges, ids, deg, _node_r) \
+            if _choose_layout_mode(nodes, edges) == "camps" else None
+        if cc is not None:
+            placed, vb_w, vb_h = cc["nodes"], cc["vb_w"], cc["vb_h"]
+        else:
+            placed, vb_w, vb_h = _band_layout(nodes, edges, ids, deg, _node_r, max_r)
 
     layout = dict(rel)
     layout["nodes"] = placed

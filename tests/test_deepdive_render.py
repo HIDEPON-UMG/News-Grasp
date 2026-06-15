@@ -405,6 +405,73 @@ def test_relations_svg_trims_unused_vertical_space_after_label_resolution() -> N
     assert view_h <= 920, f"5ノード/7エッジの関係図として縦幅が過剰: {view_h:.1f}px"
 
 
+def test_relations_layout_respects_explicit_coordinates() -> None:
+    """主役ノードが自動 band 判定で下段へ落ちる図は、明示座標で中央配置できる。
+
+    なぜ重要か: 2026-06-15 DeepDive では `日銀` / `会見担当` が group=政策当局かつ
+    kind=規制の source だったため、自動配置が両ノードを最下段へ落とし、関係図全体が
+    右下寄りになった。relations nodes に x/y がある場合は編集済み座標を優先する契約に
+    して、主役を中央へ置く例外を data 側で表現できるようにする。
+    """
+    rel = {
+        "width": 1080,
+        "height": 640,
+        "nodes": [
+            {"id": "boj", "label": "日銀", "group": "政策当局", "x": 540, "y": 205},
+            {"id": "comms", "label": "会見担当", "group": "政策当局", "x": 330, "y": 500},
+            {"id": "market", "label": "円・JGB市場", "group": "市場", "x": 750, "y": 500},
+        ],
+        "edges": [
+            {"from": "boj", "to": "market", "label": "1%利上げを価格化", "kind": "規制"},
+            {"from": "boj", "to": "comms", "label": "政策意図を委ねる", "kind": "提携"},
+            {"from": "comms", "to": "market", "label": "次の一手を読ませる", "kind": "規制"},
+        ],
+    }
+
+    lay = layout_relations(rel)
+    by_id = {n["id"]: n for n in lay["nodes"]}
+    assert (lay["vb_w"], lay["vb_h"]) == (1080, 640)
+    assert by_id["boj"]["x"] == 540
+    assert by_id["boj"]["y"] == 205
+    assert by_id["comms"]["y"] == 500
+    assert by_id["market"]["x"] == 750
+
+
+def test_2026_06_15_relations_has_no_avoidable_edge_crossing() -> None:
+    """06/15 関係図は、外部要因を右側へ置けば線交差ゼロで表現できる。
+
+    なぜ重要か: 関係図は可読性のための図であり、交差せずに置ける配置があるなら
+    交差を残してよい理由はない。2026-06-15 は Fed / 米イラン・原油を右側にまとめる
+    ことで、ノード間エッジの不要な交差を 0 にできるため、この配置を locked-in する。
+    """
+    md = ROOT / "digest" / "DeepDive" / "2026-06-15-DeepDive.md"
+    rel = extract_blocks(md.read_text(encoding="utf-8"))["relations"][0]
+    lay = layout_relations(rel)
+    points = {n["id"]: (float(n["x"]), float(n["y"])) for n in lay["nodes"]}
+    assert points["boj"][1] == points["fed"][1], "日銀と Fed は政策当局レイヤーとして同じ行に置く"
+    segments = []
+    for e in lay["edges"]:
+        a, b = str(e["from"]), str(e["to"])
+        segments.append((a, b, points[a], points[b], e.get("label", "")))
+
+    def orient(p: tuple[float, float], q: tuple[float, float], r: tuple[float, float]) -> float:
+        return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+
+    def proper_cross(p: tuple[float, float], q: tuple[float, float],
+                     r: tuple[float, float], s: tuple[float, float]) -> bool:
+        return orient(p, q, r) * orient(p, q, s) < 0 and orient(r, s, p) * orient(r, s, q) < 0
+
+    crossings = []
+    for i, (a1, a2, p, q, label_a) in enumerate(segments):
+        for b1, b2, r, s, label_b in segments[i + 1:]:
+            if len({a1, a2, b1, b2}) < 4:
+                continue
+            if proper_cross(p, q, r, s):
+                crossings.append((label_a, label_b))
+
+    assert crossings == []
+
+
 def test_relations_bands_high_density_no_label_overlap() -> None:
     """3 陣営以上 + 下流クライアント (bands モード use_camps=True) で 8 エッジに絞れば、
     ラベル同士・ラベル↔ノード円・エッジ線↔ノード円の重なりは 0 を保つ。

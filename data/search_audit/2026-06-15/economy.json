@@ -8,13 +8,19 @@
   ],
   "raw_results_total": 25,
   "candidates_total": 5,
-  "selected_total": 5,
+  "selected_total": 4,
   "coverage_terms_checked": [
     "日銀 金融政策",
     "マクロ経済 指標",
     "決算速報",
     "景気",
-    "経済安全保障"
+    "経済安全保障",
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
   ],
   "dropped": [
     {
