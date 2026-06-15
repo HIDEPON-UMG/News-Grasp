@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import json
+import subprocess
 from pathlib import Path
 
 
@@ -11,6 +13,8 @@ RUNNER_PROMPT = ROOT / "prompts" / "runner-prompt.md"
 ROUTINE_SYSTEM = ROOT / "prompts" / "routine-system.md"
 RUNNER_PS1 = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
 WATCHER_PS1 = Path(os.environ.get("NEWS_GRASP_WATCHER", str(Path.home() / "bin" / "watch-news-grasp-runner.ps1")))
+POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
+OPS_DIR = ROOT / "scripts" / "ops"
 
 
 def test_claude_prompt_does_not_delegate_commit_to_claude() -> None:
@@ -94,6 +98,49 @@ def test_runner_writes_machine_readable_state() -> None:
     assert "-Status 'error' -Message $Text -ExitCode 1" in runner
 
 
+def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
+    """bin 実行体 drift を起動前に検知する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    repo_runner = OPS_DIR / "news-grasp-runner.ps1"
+    repo_watcher = OPS_DIR / "watch-news-grasp-runner.ps1"
+
+    assert repo_runner.exists()
+    assert repo_watcher.exists()
+    forbidden_local_user_path = "C:" + "\\Users\\" + "hide" + "k"
+    assert forbidden_local_user_path not in runner
+    assert "function Assert-RunnerBinaryInSync" in runner
+    assert "scripts\\ops\\news-grasp-runner.ps1" in runner
+    assert "runner binary drift" in runner
+
+
+def test_runner_only_marks_ok_after_publish_verification() -> None:
+    """ok marker は push 後の公開反映確認より後にしか書けない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "tools.daily_self_heal' 'verify-publish'" in runner
+    assert runner.index("publish verification start") < runner.index("send_push start")
+    assert runner.index("publish verification start") < runner.rindex("news-grasp-runner.ps1 OK")
+
+
+def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
+    """Web Push 以外の dead-man alert 経路を repo 管理下に置く。"""
+    script = OPS_DIR / "news-grasp-deadman.ps1"
+
+    assert script.exists()
+    text = script.read_text(encoding="utf-8-sig")
+    forbidden_local_user_path = "C:" + "\\Users\\" + "hide" + "k"
+    assert forbidden_local_user_path not in text
+    assert "tools.daily_self_heal" in text
+    assert "deadman" in text
+    assert "news-grasp-alerts" in text
+    assert "$exitCode -eq 2" in text
+    assert "exit 0" in text
+    assert "Invoke-RecoverOnlyIfStaleDeadPid" in text
+    assert "watch-news-grasp-runner.ps1" in text
+    assert "-StartOnly" in text
+    assert "-RecoverOnly" in text
+
+
 def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     """watcher は runner を hidden 起動し、state/log の終端状態で完了判定する。"""
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
@@ -108,6 +155,59 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     assert "runner process exited without ok marker" in watcher
     assert "log has not changed for" in watcher
     assert "watch timeout after" in watcher
+
+
+def test_watcher_status_reports_stale_when_running_pid_is_dead(tmp_path: Path) -> None:
+    """Status 表示は stale running を「まだ実行中」と誤表示しない。"""
+    state_file = tmp_path / "state.json"
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    log_path = log_dir / "2026-06-15.log"
+    log_path.write_text("stale\n", encoding="utf-8")
+    state_file.write_text(
+        json.dumps(
+            {
+                "status": "running",
+                "message": "runner started",
+                "exit_code": -1,
+                "updated_at": "2026-06-15T20:07:40.343+09:00",
+                "date": "2026-06-15",
+                "pid": 999999,
+                "repo_dir": str(tmp_path / "repo"),
+                "log_path": str(log_path),
+                "started_at": "2026-06-15T20:07:40.343+09:00",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(WATCHER_PS1),
+            "-Status",
+            "-StateFile",
+            str(state_file),
+            "-LogDir",
+            str(log_dir),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "stale"
+    assert payload["process_alive"] is False
+    assert "process is not alive" in payload["message"]
 
 
 def test_runner_record_gate_passes_issue_date() -> None:

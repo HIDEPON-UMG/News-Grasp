@@ -332,6 +332,9 @@ def main() -> int:
                          "が全て含まれているか物理照合する。含まれない URL は記憶捏造疑い "
                          "として fatal 扱い。session ファイル不在時は degrade (警告のみ・"
                          "従来 gate のみで継続) で朝のバッチを止めない")
+    ap.add_argument("--require-session", action="store_true",
+                    help="--match-session の白リストが不在/空/日付不一致なら fatal にする "
+                         "(本番 runner 用。ad-hoc 監査の既定 degrade は維持)")
     ap.add_argument("--verify-dates", action="store_true",
                     help="2026-06-11 偽日付事故の恒久対策: 当日 date のレコード全件を "
                          "full GET し、htmldate で独立抽出した公開日と自己申告 date を "
@@ -398,6 +401,7 @@ def main() -> int:
 
     # 案②-Lite: session 白リスト照合 (gate と独立に動かせるが、本番運用は --gate と同時指定)
     session_fatal: list[tuple[str, str, str]] = []  # (date, title, url)
+    session_gate_errors: list[str] = []
     if args.match_session:
         today_str = today.strftime("%Y-%m-%d")
         session_norm, session_path, session_date = _load_session_urls(_PKG_ROOT, today_str)
@@ -410,6 +414,8 @@ def main() -> int:
                 f"data/_session_urls.audit.log と runner の WorkingDirectory / PromptFile loaded を確認すること",
                 file=sys.stderr,
             )
+            if args.require_session:
+                session_gate_errors.append("session whitelist missing or empty")
         else:
             if session_date and session_date != today_str:
                 # session date が当日でない (前日のまま残ってる等) → degrade と同じ扱い
@@ -419,6 +425,10 @@ def main() -> int:
                     f"hook が当日セッションを書けていない可能性があるため data/_session_urls.audit.log を確認すること",
                     file=sys.stderr,
                 )
+                if args.require_session:
+                    session_gate_errors.append(
+                        f"session date mismatch: {session_date} != {today_str}"
+                    )
             else:
                 # session の date と同じ date の articles.jsonl エントリのみを照合対象にする。
                 # 7 日窓全体ではなく当日分だけ照合する理由:
@@ -550,8 +560,8 @@ def main() -> int:
             print(f"  [{v.ref.location}] {v.detail}")
             print(f"    {v.ref.url}")
 
-    # session 未確認 / HEAD/GET fatal / 偽日付疑い の和集合が exit 判定に使われる
-    total_fatal = len(fatal) + len(session_fatal) + len(date_fatal)
+    # session 未確認 / session gate degraded / HEAD/GET fatal / 偽日付疑い の和集合が exit 判定に使われる
+    total_fatal = len(fatal) + len(session_fatal) + len(session_gate_errors) + len(date_fatal)
     if total_fatal:
         if args.quarantine_articles:
             bad_urls = {v.ref.url for v in fatal}
@@ -573,12 +583,15 @@ def main() -> int:
             )
             if args.apply and (result.jsonl_dropped or result.digest_cards_dropped):
                 return 0
-        if session_fatal or date_fatal:
+        if session_fatal or session_gate_errors or date_fatal:
             print(
-                f"\nFATAL: session 未確認 {len(session_fatal)} 件 + HEAD/GET NG {len(fatal)} 件 + "
+                f"\nFATAL: session gate {len(session_gate_errors)} 件 + "
+                f"session 未確認 {len(session_fatal)} 件 + HEAD/GET NG {len(fatal)} 件 + "
                 f"偽日付疑い {len(date_fatal)} 件 = {total_fatal} 件。push を中止します。",
                 file=sys.stderr,
             )
+            for err in session_gate_errors:
+                print(f"  session gate: {err}", file=sys.stderr)
         return 1
     return 0
 

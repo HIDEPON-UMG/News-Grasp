@@ -327,6 +327,21 @@ def test_session_match_degrades_when_session_file_missing(tmp_path: Path):
     )
 
 
+def test_session_match_require_session_fails_when_session_file_missing(tmp_path: Path):
+    """本番 runner の厳格モードでは session 照合 skip を完走扱いしない。"""
+    repo = _setup_tmp_repo(tmp_path)
+    today = date.today().strftime("%Y-%m-%d")
+    _write_articles(repo, [
+        {"date": today, "title": "ok", "url": "https://example.com/a"},
+    ])
+
+    r = _run_audit(repo, "--gate", "--match-session", "--require-session")
+    assert r.returncode == 1, (
+        f"--require-session では session 不在を fatal にするはず。\nstdout:\n{r.stdout}\nstderr:\n{r.stderr}"
+    )
+    assert "session 照合を skip" in r.stderr
+
+
 def test_session_match_ignores_articles_from_other_dates(tmp_path: Path):
     """session.date と異なる date の articles.jsonl エントリは照合対象外 (ロールアウト互換)。
 

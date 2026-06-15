@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+import json
 import shutil
 import subprocess
 import sys
@@ -213,6 +214,8 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     wrapper = tmp_path / "fake_codex_wrapper.ps1"
     trace = tmp_path / "trace.log"
     sentinel = tmp_path / "editor-sentinel.json"
+    log_dir = tmp_path / "runner-logs"
+    state_file = tmp_path / "runner-state.json"
     _fake_codex_wrapper(wrapper)
 
     env = os.environ.copy()
@@ -240,6 +243,10 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
             sys.executable,
             "-DateStampOverride",
             ISSUE,
+            "-LogDirOverride",
+            str(log_dir),
+            "-StateFileOverride",
+            str(state_file),
             "-IdleTimeoutSec",
             "30",
         ],
@@ -267,3 +274,7 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     assert manifest.exists()
     assert (repo / "build" / "codex-last-message.txt").exists()
     assert not (ROOT / "build" / "codex-last-message.txt").exists()
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    assert state["status"] == "smoke_ok"
+    assert state["repo_dir"] == str(repo)
+    assert state["log_path"] == str(log_dir / f"{ISSUE}.log")

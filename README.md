@@ -27,17 +27,21 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 - 「7 つの § セクション」見出しは 768px 以下で「7 つの」「§ セクション」の 2 行に強制改行
 - Home の subscribe band は「毎朝 6:30 更新 / 土日祝日も毎朝公開」に統一 (メール購読を前提とした旧表現は撤去)
 
-## アーキテクチャ概要 (D 案：ローカル Claude Code)
+## アーキテクチャ概要 (ローカル Codex runner + dead-man)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │ Windows タスクスケジューラ「News-Grasp Runner」 06:30 JST 毎日   │
 │   └─→ %USERPROFILE%\bin\news-grasp-runner.ps1                    │
+│         ├─ repo 管理版 scripts/ops/news-grasp-runner.ps1 と同期確認 │
 │         ├─ git fetch / pull origin main                           │
-│         └─ claude.exe --print --dangerously-skip-permissions ... │
+│         └─ codex exec による newsroom fan-out / editor 統合         │
+│ Windows タスクスケジューラ「News-Grasp Deadman」 1 時間ごと       │
+│   └─→ %USERPROFILE%\bin\news-grasp-deadman.ps1                    │
+│         └─ stale / no ok / publish_failed を検知し RecoverOnly 起動 │
 └──────────────────────────────────────────────────────────────────┘
                           │
-                  Sonnet 4.6 が以下を自律実行
+                  runner が以下を段階実行
                           │
    ┌────────────────────────────────────────────────────────────┐
    │ ① 当日 (JST) の対象カテゴリを曜日マトリクスで決定          │
@@ -183,6 +187,12 @@ News-Grasp/
 │   ├── archive-template.html     # Archive (Editorial Timeline)
 │   ├── page-template.html        # 旧汎用テンプレート
 │   └── _partials/
+├── scripts/
+│   └── ops/
+│       ├── news-grasp-runner.ps1       # repo 管理版 runner
+│       ├── watch-news-grasp-runner.ps1 # runner watcher / RecoverOnly 起動
+│       ├── news-grasp-deadman.ps1      # dead-man switch
+│       └── install-news-grasp-ops.ps1  # %USERPROFILE%\bin へ同期
 │       └── pwa-head.html         # PWA <head> include (manifest / theme-color / apple-touch-icon / sw)
 ├── assets/                  # OGP 不足時の NG プレースホルダ (公開 Web 用、計 14 JPG)
 │   ├── ng-thumb-{cat}.jpg          # FEATURED 横長 1136×400
