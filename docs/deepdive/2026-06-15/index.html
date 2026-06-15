@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>日銀1%会合、説明なき利上げは円を守れない — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="日銀が31年ぶりの1%利上げを最終判断する局面で、総裁不在・米金利据え置き・米イラン和平が円相場の読み筋をどう変えるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-15/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="日銀1%会合、説明なき利上げは円を守れない">
+<meta property="og:description" content="日銀が31年ぶりの1%利上げを最終判断する局面で、総裁不在・米金利据え置き・米イラン和平が円相場の読み筋をどう変えるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-15/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="日銀1%会合、説明なき利上げは円を守れない">
+<meta name="twitter:description" content="日銀が31年ぶりの1%利上げを最終判断する局面で、総裁不在・米金利据え置き・米イラン和平が円相場の読み筋をどう変えるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #B8860B;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(184,134,11,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(184,134,11,0.22);
+  --accent-underline: rgba(184,134,11,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260615</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">¥</span>FOREIGN EXCHANGE · 為替</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.06.15</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260615</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">8 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">日銀1%会合、説明なき利上げは円を守れない</h1>
+      <p class="dd-hero__theme">日銀が31年ぶりの1%利上げを最終判断する局面で、総裁不在・米金利据え置き・米イラン和平が円相場の読み筋をどう変えるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260615</span><span>#BOJ</span><span>#USDJPY</span><span>#inflation</span><span>#FOMC</span><span>#Hormuz</span><span>#fx</span></div>
+    </header>
+
+
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+
+        <li class="dd-related__item" style="border-left-color: #B8860B">
+
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #181C2A">続報</span>
+            <span class="dd-related__chip">1%観測 → 会合当日の説明責任</span>
+          </div>
+
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-14/" style="border-bottom-color: #B8860B">BOJ 1%前夜、植田不在の円防衛</a>
+            <span class="dd-related__date">2026.06.14</span>
+          </div>
+          <p class="dd-related__change">前回は植田総裁不在とホルムズ由来のエネルギー高が、1%利上げ前夜の円防衛を難しくする構図を扱った。今回の変化点は、日銀会合が実際に始まり、米イラン和平と米金利据え置き観測が加わったことで、利上げの有無より会見で次の一手をどう示すかが焦点になったことだ</p>
+        </li>
+
+        <li class="dd-related__item" style="border-left-color: #B8860B">
+
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #5C5A52">基調継続</span>
+            <span class="dd-related__chip">金利差と円防衛</span>
+          </div>
+
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-03/" style="border-bottom-color: #B8860B">USD/JPY 160円攻防、日米金融政策の逆行</a>
+            <span class="dd-related__date">2026.06.03</span>
+          </div>
+          <p class="dd-related__change">前回は日米金利差が160円攻防を作る構図を見た。今回は日本側が1%へ動いても、米側が利下げに傾かなければ金利差は残り、円高方向の反応は会見の強さ次第になる</p>
+        </li>
+
+      </ul>
+    </aside>
+
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><strong class="emph-bold">日銀</strong>は<strong>6月15日</strong>から金融政策決定会合に入り、31年ぶりとなる<strong>政策金利1%</strong>への利上げを最終判断する局面に入った。前日までの論点は「1%へ上げるか」だったが、当日になると焦点は<span class="emph-und">上げたあとに何を言うか</span>へ移った。<strong class="emph-bold">植田和男総裁</strong>が欠席するなかで、会見の一語一句が<strong class="emph-bold">USD/JPY</strong>と日本国債の値動きを左右する。</p><p>この関係図で重要なのは、<strong class="emph-bold">日銀</strong>の利上げ判断が単独で完結していないことだ。<strong class="emph-bold">Fed</strong>が据え置き方向ならドル金利は高止まりし、<strong class="emph-bold">米イラン和平</strong>で原油高の緊急度が下がれば、日銀がタカ派化する理由は一部薄れる。<span class="emph-und">1%利上げは円防衛の入口であって、出口ではない</span>。</p><p>一方で、<strong class="emph-bold">日本</strong>側の期待インフレは無視できない。日経は、日米の予想インフレ率の逆転が迫り、「日銀の歯止めが効かない」懸念が増していると報じた。つまり日銀は、海外要因が和らいだから慎重でよい、とは言い切れない。<span class="emph-und">国内の物価観が変わるなら、利上げ後の経路を曖昧にするほど市場は円安再燃を疑う</span>。</p></div>
+      <div class="dd-exhibits">
+
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.03</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>日米金利差と円安圧力を背景に、USD/JPY 160円攻防が市場の主題になる</p>
+                  <a href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-03/"><span class="src">News-Grasp DeepDive</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.14</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>日銀1%利上げ観測と植田総裁欠席が重なり、利上げ後の説明力が論点化</p>
+                  <a href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-14/"><span class="src">News-Grasp DeepDive</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.15</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>日銀が金融政策決定会合を開始し、利上げの最終判断へ入る</p>
+                  <a href="https://news.web.nhk/newsweb/na/na-k10015149881000"><span class="src">NHK</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.15</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Bloomberg は、31年ぶり1%利上げ後に市場が次のヒントを探る局面だと整理</p>
+                  <a href="https://www.bloomberg.com/jp/news/articles/2026-06-14/TGG0HTT96OSH00?srnd=jp-homepage"><span class="src">Bloomberg</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.15</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>米イラン和平合意観測で原油・地政学リスクが後退し、日銀の利上げ路線への見方も揺れる</p>
+                  <a href="https://jp.reuters.com/world/us/4ZDC7ECELNL3VFWFINWXWZEMFM-2026-06-14/"><span class="src">Reuters</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">06.15</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>米FOMC は4会合連続据え置きが有力視され、年内利下げ見送り観測も残る</p>
+                  <a href="https://news.yahoo.co.jp/articles/9b37c558eaef709e9ad752ff74a8af2671ff445a"><span class="src">時事通信/Yahoo!ニュース</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+            </div>
+          </figure>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+
+            <div class="dd-player">
+              <div class="dd-player__name">日銀</div>
+              <div class="dd-player__role">日本の金融政策決定主体</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">6月15日から会合を開始し、1%利上げを最終判断</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">利上げそのものより、追加利上げの余地をどう示すかで円相場に影響する</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">内田眞一副総裁ら会見担当</div>
+              <div class="dd-player__role">総裁不在時の政策コミュニケーション</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">植田総裁欠席下で市場への説明を担う</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">慎重すぎれば円安が残り、強すぎれば債券・株式に圧力が出る</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">Fed</div>
+              <div class="dd-player__role">ドル金利の方向を決める中央銀行</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">4会合連続据え置き、年内利下げ見送り観測が残る</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">日銀が利上げしても米金利が下がらなければ金利差は残る</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">米イラン和平・原油市場</div>
+              <div class="dd-player__role">輸入物価とリスク選好を動かす外部要因</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">和平合意観測でホルムズ不安が後退</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">エネルギー高の緊急度を下げる一方、日銀のタカ派理由を弱める</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">為替・債券市場</div>
+              <div class="dd-player__role">政策変更を即時に価格へ反映する市場</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">利上げの有無より声明と会見の含みを読む</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">1%が織り込み済みなら、追加経路が弱いだけで円売りへ戻りうる</p>
+            </div>
+
+          </div>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">1%利上げ会合をめぐる説明責任の関係図</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 695" width="1080" height="695" style="display:block;background:#FAF7F0" role="img" aria-label="1%利上げ会合をめぐる説明責任の関係図"><line x1="774.7" y1="508.4" x2="685.3" y2="393.1" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="685.3,393.1 694.4,397.4 687.3,402.9" fill="#181C2A"/><line x1="663.2" y1="500.5" x2="651.6" y2="407.0" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="651.6,407.0 657.2,415.4 648.2,416.5" fill="#181C2A"/><line x1="346.0" y1="144.1" x2="585.4" y2="300.7" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="585.4,300.7 575.4,299.6 580.3,292.0" fill="#2D5BB8"/><line x1="785.2" y1="176.8" x2="811.2" y2="494.2" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="811.2,494.2 806.0,485.6 815.0,484.9" fill="#2D5BB8"/><line x1="747.2" y1="167.8" x2="679.0" y2="279.6" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="679.0,279.6 679.9,269.6 687.6,274.2" fill="#2D5BB8"/><line x1="747.9" y1="563.0" x2="733.9" y2="563.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="733.9,563.0 742.9,558.5 742.9,567.5" fill="#2E6B52"/><line x1="657.0" y1="385.8" x2="657.0" y2="420.5" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="740.9" y1="515.8" x2="740.9" y2="481.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(644.2,437.2)"><rect width="171.5" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 1%利上げを価格化</text></g><g transform="translate(566.2,407.5)"><rect width="181.5" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 次の一手を読ませる</text></g><g transform="translate(382.5,145.2)"><rect width="169.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> ドル高圧力を残す</text></g><g transform="translate(700.7,274.4)"><rect width="181.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 利上げ理由を揺らす</text></g><g transform="translate(628.9,210.2)"><rect width="169.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> リスク選好を戻す</text></g><g transform="translate(656.4,468.0)"><rect width="169.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 政策意図を委ねる</text></g><circle cx="816.9" cy="563.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="816.9" y="559.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">日銀</text><text x="816.9" y="581.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">政策当局</text><circle cx="670.9" cy="563.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5" stroke-dasharray="5 4"/><text x="670.9" y="559.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">会見担当</text><text x="670.9" y="581.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">政策当局</text><circle cx="300.0" cy="114.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="300.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">Fed</text><text x="300.0" y="129.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">海外金利</text><circle cx="780.0" cy="114.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="780.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.7" fill="#1A1A1A" letter-spacing="-0.5">米イラン・原油</text><text x="780.0" y="126.5" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">外部環境</text><circle cx="643.1" cy="338.5" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="643.1" y="334.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.4" fill="#1A1A1A" letter-spacing="-0.5">円・JGB市場</text><text x="643.1" y="353.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">市場</text></svg></div>
+
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#181C2A"></span>規制</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+
+            </div>
+
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://news.web.nhk/newsweb/na/na-k10015149881000">*1 NHK</a> <a class="cite" href="https://www.bloomberg.com/jp/news/articles/2026-06-14/TGG0HTT96OSH00?srnd=jp-homepage">*2 Bloomberg</a> <a class="cite" href="https://jp.reuters.com/world/us/4ZDC7ECELNL3VFWFINWXWZEMFM-2026-06-14/">*3 Reuters</a></span></div>
+          </figure>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>会合当日の市場は、政策変更を二段階で読む。第一段階は<strong>1%利上げの有無</strong>で、ここはかなり織り込まれている。第二段階は、声明と会見が<span class="emph-und">次回以降の利上げをどれだけ残すか</span>だ。Bloomberg が「次のヒント」を焦点に置いたのはこのためである。1%は節目だが、円相場にとっては「そこが天井か、通過点か」の方が大きい。</p><p><strong class="emph-bold">Fed</strong>の据え置き観測は、日銀の効果を薄める。米金利が下がらないなら、日米金利差は圧縮されても消えない。日銀が1%へ動いても、会見が「しばらく様子見」と読まれれば、為替市場は<span class="emph-und">利上げ材料の出尽くし</span>として反応しうる。逆に、追加経路を条件付きで残せば、円安再燃を抑える時間を買える。</p></div>
+
+      <div class="dd-charts">
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">政策イベントが円相場へ伝わる経路</span></figcaption>
+          <div class="dd-chart__note">会見で追加経路が弱いと反転</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="政策イベントが円相場へ伝わる経路"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">圧力指数</text><polyline points="68.8,140.3 174.4,83.4 280.0,66.5 385.6,91.8 491.2,112.9" fill="none" stroke="#B8860B" stroke-width="2.5"/><circle cx="68.8" cy="140.3" r="4" fill="#B8860B"/><text x="68.8" y="132.3" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">35</text><circle cx="174.4" cy="83.4" r="4" fill="#B8860B"/><text x="174.4" y="75.4" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">62</text><circle cx="280.0" cy="66.5" r="4" fill="#B8860B"/><text x="280.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">70</text><circle cx="385.6" cy="91.8" r="4" fill="#B8860B"/><text x="385.6" y="83.8" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">58</text><circle cx="491.2" cy="112.9" r="4" fill="#B8860B"/><text x="491.2" y="104.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">48</text><polyline points="68.8,77.1 174.4,119.2 280.0,129.7 385.6,98.1 491.2,83.4" fill="none" stroke="#C9A155" stroke-width="2.5"/><circle cx="68.8" cy="77.1" r="4" fill="#C9A155"/><text x="68.8" y="69.1" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">65</text><circle cx="174.4" cy="119.2" r="4" fill="#C9A155"/><text x="174.4" y="111.2" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">45</text><circle cx="280.0" cy="129.7" r="4" fill="#C9A155"/><text x="280.0" y="121.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">40</text><circle cx="385.6" cy="98.1" r="4" fill="#C9A155"/><text x="385.6" y="90.1" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">55</text><circle cx="491.2" cy="83.4" r="4" fill="#C9A155"/><text x="491.2" y="75.4" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">62</text><text x="68.8" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">会合前</text><text x="174.4" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">1%利上げ判断</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">声明発表</text><text x="385.6" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">会見</text><text x="491.2" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">FOMC確認</text><text x="385.6" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 会見で追加経路が弱いと反転</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#B8860B"></span>円高圧力</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>円安再燃リスク</span></div></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.bloomberg.com/jp/news/articles/2026-06-14/TGG0HTT96OSH00?srnd=jp-homepage">*2 Bloomberg</a></span></div>
+        </figure>
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">日銀会合を動かす三つの外圧</span></figcaption>
+          <div class="dd-chart__note">原油リスク後退はタカ派理由を弱める</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="日銀会合を動かす三つの外圧"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">影響度</text><rect x="49.4" y="66.5" width="54.6" height="147.5" fill="#B8860B"/><text x="76.7" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">85</text><rect x="104.0" y="162.0" width="54.6" height="52.0" fill="#C9A155"/><text x="131.3" y="154.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">30</text><rect x="225.4" y="92.6" width="54.6" height="121.4" fill="#B8860B"/><text x="252.7" y="84.6" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">70</text><rect x="280.0" y="135.9" width="54.6" height="78.1" fill="#C9A155"/><text x="307.3" y="127.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">45</text><rect x="401.4" y="153.3" width="54.6" height="60.7" fill="#B8860B"/><text x="428.7" y="145.3" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">35</text><rect x="456.0" y="101.2" width="54.6" height="112.8" fill="#C9A155"/><text x="483.3" y="93.2" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">65</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">国内期待インフレ</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">米金利据え置き</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">原油リスク後退</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 原油リスク後退はタカ派理由を弱める</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#B8860B"></span>利上げを促す力</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>慎重化させる力</span></div></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://jp.reuters.com/world/us/4ZDC7ECELNL3VFWFINWXWZEMFM-2026-06-14/">*3 Reuters</a> <a class="cite" href="https://www.nikkei.com/article/DGXZQOFL1132ITR10C26A6000000/">*4 日本経済新聞</a></span></div>
+        </figure>
+
+      </div>
+
+
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">日銀1%会合の主要論点</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>論点</th><th>足元の事実</th><th>市場が読むポイント</th><th>出典</th></tr></thead>
+              <tbody>
+
+                <tr>
+
+                  <td class="head">政策金利</td>
+
+                  <td class="val">31年ぶり1%利上げが有力視される</td>
+
+                  <td class="val">利上げ自体は織り込み済みで、追加利上げのヒントが焦点</td>
+
+                  <td class="src">Bloomberg</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">会合日程</td>
+
+                  <td class="val">6月15日から金融政策決定会合を開始</td>
+
+                  <td class="val">声明と会見で円相場の方向感が決まる</td>
+
+                  <td class="src">NHK</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">総裁不在</td>
+
+                  <td class="val">植田総裁欠席下で説明責任が重くなる</td>
+
+                  <td class="val">会見担当が慎重すぎると円安が残る</td>
+
+                  <td class="src">Bloomberg / News-Grasp</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">米金利</td>
+
+                  <td class="val">FOMCは4会合連続据え置き、年内利下げ見送り観測</td>
+
+                  <td class="val">ドル高圧力が残り、日銀単独では円高が続きにくい</td>
+
+                  <td class="src">時事通信</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">地政学・原油</td>
+
+                  <td class="val">米イラン和平合意観測でホルムズ不安が後退</td>
+
+                  <td class="val">輸入物価リスクは和らぐが、日銀のタカ派説明も弱まる</td>
+
+                  <td class="src">Reuters</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">期待インフレ</td>
+
+                  <td class="val">日米の予想インフレ率逆転が迫ると報道</td>
+
+                  <td class="val">国内物価観の変化は追加利上げの根拠になる</td>
+
+                  <td class="src">日本経済新聞</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://news.web.nhk/newsweb/na/na-k10015149881000">*1 NHK</a> <a class="cite" href="https://www.bloomberg.com/jp/news/articles/2026-06-14/TGG0HTT96OSH00?srnd=jp-homepage">*2 Bloomberg</a> <a class="cite" href="https://jp.reuters.com/world/us/4ZDC7ECELNL3VFWFINWXWZEMFM-2026-06-14/">*3 Reuters</a> <a class="cite" href="https://www.nikkei.com/article/DGXZQOFL1132ITR10C26A6000000/">*4 日本経済新聞</a></span></div>
+        </figure>
+      </div>
+
+      <div class="dd-prose"><p>米イラン和平の観測は、日銀にとって両刃だ。原油・ホルムズ不安が後退すれば、輸入物価の緊急度は下がる。しかしそれは同時に、「急いで引き締める理由」を弱める。<span class="emph-und">地政学リスク後退は市場には好材料だが、日銀の説明材料としてはタカ派色を薄める</span>。ここで期待インフレの上振れをどう扱うかが、今回の会見の質を決める。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>日銀は1%利上げ後に、円安再燃を防ぐだけの追加経路を示せるか</p>
+          </div>
+          <div class="dd-decision__opts">
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">1%利上げに加え、期待インフレと円安を理由に追加利上げの余地を明確に残す</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">1%利上げは実施するが、景気と原油リスク後退を理由に次回以降は慎重姿勢を強める</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">利上げを見送り、米イラン和平と市場安定を理由に様子見へ回る</p>
+            </div>
+
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-06-15〜16 日銀金融政策決定会合、同週の会見、続く FOMC</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+
+              <ul class="dd-decision__deciders"><li>日銀政策委員会</li><li>会見担当副総裁</li><li>為替・債券市場</li><li>Fed</li></ul>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dd-prose"><p>最も筋が通る読みは、<strong class="emph-bold">日銀</strong>が<strong>1%利上げ</strong>を実施しつつ、追加利上げは<span class="emph-und">データ次第として明確に残す</span>形だ。原油リスクが和らいだからといって慎重姿勢に寄りすぎれば、期待インフレと米金利据え置きの前で円安圧力が残る。逆に強すぎるタカ派姿勢は、JGBと株式を揺らす。</p><p>したがって、今回の分岐点は政策金利そのものではなく、会見が<strong>1%を終点に見せないこと</strong>だ。市場が「利上げはここまで」と読めば、円安は戻る。市場が「次も条件次第である」と読めば、日銀は少なくとも時間を買える。<span class="emph-und">説明なき利上げは、円を守る政策ではなく、単なるイベント消化で終わる</span>。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">日銀</strong>は<strong>6月15日</strong>から金融政策決定会合に入り、31年ぶりの<strong>1%利上げ</strong>を最終判断する。だが当日の焦点は、利上げの有無より<span class="emph-und">利上げ後の説明</span>へ移った。<strong class="emph-bold">Fed</strong>は据え置き観測が強く、<strong class="emph-bold">米イラン和平</strong>で原油リスクが後退する一方、国内の期待インフレ懸念は残る。1%は円防衛の必要条件だが、<span class="emph-und">追加経路を示せなければ市場は出尽くしと読み、円安再燃を許す</span>。</p>
+        <div class="watermark">❖</div>
+      </div>
+
+
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+
+
+          <a class="dd-source" href="https://news.web.nhk/newsweb/na/na-k10015149881000">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">NHK</span>「日銀 きょうから金融政策決定会合 利上げを最終判断へ」(2026-06-15) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://www.bloomberg.com/jp/news/articles/2026-06-14/TGG0HTT96OSH00?srnd=jp-homepage">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Bloomberg</span>「日銀会合注目点:31年ぶり1%に利上げへ、次のヒント探る-植田総裁欠席」(2026-06-15) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://jp.reuters.com/world/us/4ZDC7ECELNL3VFWFINWXWZEMFM-2026-06-14/">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Reuters</span>「『高市首相は賭けに勝利』と政府関係者、米イラン和平合意 利上げ路線に影響との見方も」(2026-06-15) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://www.nikkei.com/article/DGXZQOFL1132ITR10C26A6000000/">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">日本経済新聞</span>「日米の予想インフレ率逆転迫る 『日銀の歯止め効かぬ』懸念増大」(2026-06-15) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://news.yahoo.co.jp/articles/9b37c558eaef709e9ad752ff74a8af2671ff445a">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">時事通信/Yahoo!ニュース</span>「米金利、4会合連続据え置きへ 年内利下げ見送りも 新議長初のFOMC」(2026-06-15) <span class="ext">↗</span></span>
+          </a>
+
+
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+</body>
+</html>

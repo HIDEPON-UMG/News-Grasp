@@ -156,3 +156,13 @@ def test_content_gates_do_not_publish_fallback_notice() -> None:
         block = runner.split(start, 1)[1].split(end, 1)[0]
         assert "Stop-ContentGateWithoutFallback" in block
         assert "Invoke-FallbackPublish" not in block
+
+
+def test_runner_requires_deepdive_after_pages_generation() -> None:
+    """通常公開前に当日 DeepDive md/html の存在を gate する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    assert "deepdive required gate start" in runner
+    assert "--require-deepdive" in runner
+    assert "--docs-root" in runner
+    assert runner.index("generate_pages.py done") < runner.index("deepdive required gate start")
+    assert runner.index("deepdive required gate start") < runner.index("public HTML gate start")

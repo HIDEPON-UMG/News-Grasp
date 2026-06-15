@@ -473,12 +473,38 @@ def validate_dedup_annotation_present(jsonl_path: Path, issue: date) -> list[str
     ]
 
 
+def validate_deepdive_presence(*, digest_root: Path, docs_root: Path, issue: date) -> list[str]:
+    """当日 DeepDive の md/html 欠落を publish 前に落とす。"""
+    issue_str = issue.isoformat()
+    md_path = digest_root / "DeepDive" / f"{issue_str}-DeepDive.md"
+    html_path = docs_root / "deepdive" / issue_str / "index.html"
+    errs: list[str] = []
+    if not md_path.exists():
+        errs.append(
+            f"DeepDive digest が存在しません: {md_path}。"
+            "日次公開は Summary/カテゴリだけでなく当日 DeepDive まで生成してから完了扱いにしてください。"
+        )
+    if not html_path.exists():
+        errs.append(
+            f"DeepDive HTML が存在しません: {html_path}。"
+            "tools.render_deepdive または tools.generate_pages で docs/deepdive/{date}/index.html を生成してください。"
+        )
+    elif issue_str not in html_path.read_text(encoding="utf-8-sig", errors="replace"):
+        errs.append(
+            f"{html_path}: 対象日 {issue_str} の sentinel が HTML 内にありません。"
+            "前日以前の DeepDive を誤って最新扱いしている可能性があります。"
+        )
+    return errs
+
+
 def validate_daily_quality(
     *,
     issue_date: str,
     digest_root: Path = Path("digest"),
     jsonl_path: Path = Path("data") / "articles.jsonl",
     audit_root: Path = Path("data") / "search_audit",
+    docs_root: Path = Path("docs"),
+    require_deepdive: bool = False,
 ) -> list[str]:
     """指定日の Summary hero と記事 URL 鮮度をまとめて検査する。"""
     issue = _parse_issue_date(issue_date)
@@ -498,6 +524,12 @@ def validate_daily_quality(
     errs.extend(validate_issue_thumbnail_coverage(jsonl_path, issue))
     errs.extend(validate_digest_source_freshness(digest_root, issue))
     errs.extend(validate_jsonl_source_freshness(jsonl_path, issue))
+    if require_deepdive:
+        errs.extend(validate_deepdive_presence(
+            digest_root=digest_root,
+            docs_root=docs_root,
+            issue=issue,
+        ))
     return errs
 
 
@@ -507,6 +539,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--digest-root", type=Path, default=Path("digest"))
     parser.add_argument("--jsonl", type=Path, default=Path("data") / "articles.jsonl")
     parser.add_argument("--audit-root", type=Path, default=Path("data") / "search_audit")
+    parser.add_argument("--docs-root", type=Path, default=Path("docs"))
+    parser.add_argument("--require-deepdive", action="store_true")
     args = parser.parse_args(argv)
 
     errs = validate_daily_quality(
@@ -514,6 +548,8 @@ def main(argv: list[str] | None = None) -> int:
         digest_root=args.digest_root,
         jsonl_path=args.jsonl,
         audit_root=args.audit_root,
+        docs_root=args.docs_root,
+        require_deepdive=args.require_deepdive,
     )
     # dedup 刻印検証は警告のみ (fatal にしない)。exit code には影響させず stderr に出す。
     for warn in validate_dedup_annotation_present(args.jsonl, _parse_issue_date(args.date)):

@@ -13,6 +13,7 @@ from tools.validate_daily_quality import (
     validate_card_emphasis_coverage,
     validate_digest_style_quality,
     validate_dedup_annotation_present,
+    validate_deepdive_presence,
 )
 
 
@@ -703,3 +704,36 @@ def test_daily_quality_cli_returns_nonzero_for_stale_url(tmp_path: Path, capsys)
     assert rc == 1
     assert "ERROR:" in captured.err
     assert "2026-06-06" in captured.err
+
+
+def test_deepdive_presence_rejects_missing_issue_deepdive(tmp_path: Path) -> None:
+    """当日 DeepDive md/html が無い号を publish 完了扱いにしない。"""
+    errs = validate_deepdive_presence(
+        digest_root=tmp_path / "digest",
+        docs_root=tmp_path / "docs",
+        issue=date(2026, 6, 8),
+    )
+
+    joined = "\n".join(errs)
+    assert "DeepDive digest が存在しません" in joined
+    assert "DeepDive HTML が存在しません" in joined
+
+
+def test_daily_quality_cli_can_require_deepdive(tmp_path: Path, capsys) -> None:
+    """publish 前 gate は --require-deepdive で当日 DeepDive 欠落を exit 1 にする。"""
+    _write_summary(tmp_path)
+    url = "https://example.com/2026/06/08/fresh-news"
+    _write_category(tmp_path, url)
+    _write_jsonl(tmp_path, url)
+
+    rc = main([
+        "--date", "2026-06-08",
+        "--digest-root", str(tmp_path / "digest"),
+        "--jsonl", str(tmp_path / "data" / "articles.jsonl"),
+        "--docs-root", str(tmp_path / "docs"),
+        "--require-deepdive",
+    ])
+
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "DeepDive digest が存在しません" in captured.err
