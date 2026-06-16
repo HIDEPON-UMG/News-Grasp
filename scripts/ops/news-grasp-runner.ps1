@@ -690,6 +690,29 @@ function Get-RepairStatusPath {
     return $path.Trim('"').Replace('\', '/')
 }
 
+function Test-RepairStatusPathAllowed {
+    param(
+        [string] $Path,
+        [string[]] $AllowedArtifacts
+    )
+    if (-not $Path) { return $true }
+    foreach ($artifact in @($AllowedArtifacts)) {
+        if ($Path -eq $artifact -or $Path.StartsWith("$artifact/")) {
+            return $true
+        }
+    }
+    # runner-owned state: bounded retry budget は repair 前後で更新されるため artifact 違反にしない。
+    if ($Path -eq "data/gate_attempts/$DateStamp.json") { return $true }
+    # 一時・観測系出力: pytest / wrapper / usage の副産物は永続 artifact ではない。
+    foreach ($prefix in @('.pytest-tmp/', 'build/codex-usage/', 'build/reporter-artifacts/', 'build/reporter-prompts/')) {
+        if ($Path.StartsWith($prefix)) { return $true }
+    }
+    foreach ($exact in @('build/codex-last-message.txt', 'build/codex-last-message.json')) {
+        if ($Path -eq $exact) { return $true }
+    }
+    return $false
+}
+
 function Test-RepairArtifactScope {
     param(
         [string[]] $BeforeStatus,
@@ -711,14 +734,7 @@ function Test-RepairArtifactScope {
         if (-not $path) {
             continue
         }
-        $inScope = $false
-        foreach ($artifact in $allowed) {
-            if ($path -eq $artifact -or $path.StartsWith("$artifact/")) {
-                $inScope = $true
-                break
-            }
-        }
-        if (-not $inScope) {
+        if (-not (Test-RepairStatusPathAllowed -Path $path -AllowedArtifacts $allowed)) {
             [void]$violations.Add($path)
         }
     }
@@ -785,8 +801,12 @@ function Invoke-PythonGateWithRepair {
     return 1
 }
 
-function Restore-UnverifiedGeneratedArtifacts {
-    # fallback 公開時は docs notice だけを残し、未検証の当日 digest/data を次回 run に持ち越さない。
+function Preserve-UnverifiedGeneratedArtifacts {
+    # fallback 公開時も、復旧可能な当日 digest/data は削除しない。
+    # 未検証 artifact は build\quarantine\$DateStamp に退避し、tracked 差分だけ HEAD に戻す。
+    # 虚偽記事など本当に破棄が必要な場合は、gate の理由に応じた個別 quarantine / 修復で扱う。
+    $quarantineDir = Join-Path $RepoDir "build\quarantine\$DateStamp"
+    New-Item -ItemType Directory -Force -Path $quarantineDir | Out-Null
     $generatedPaths = @(
         'data/articles.jsonl',
         'data/_status.md',
@@ -805,15 +825,17 @@ function Restore-UnverifiedGeneratedArtifacts {
 
     foreach ($rel in $generatedPaths) {
         $full = Join-Path $RepoDir $rel
+        if (Test-Path $full) {
+            $dest = Join-Path $quarantineDir ($rel -replace '[:\\/]+', '__')
+            Copy-Item -LiteralPath $full -Destination $dest -Recurse -Force
+            Write-Log "preserved unverified generated artifact: $rel -> $dest"
+        }
         $tracked = & $GitExe -C $RepoDir ls-files -- $rel
         if ($tracked) {
             Invoke-Logged { & $GitExe -C $RepoDir checkout -- $rel }
             if ($LASTEXITCODE -ne 0) {
                 Write-Log "WARN: failed to restore tracked generated artifact: $rel (rc=$LASTEXITCODE)"
             }
-        } elseif (Test-Path $full) {
-            Remove-Item -LiteralPath $full -Recurse -Force
-            Write-Log "removed untracked generated artifact: $rel"
         }
     }
 }
@@ -839,7 +861,7 @@ function Resolve-LastGoodDocsRef {
 function Invoke-FallbackPublish {
     param([string] $Reason)
     Write-Log "fallback publish start (reason=$Reason)"
-    Restore-UnverifiedGeneratedArtifacts
+    Preserve-UnverifiedGeneratedArtifacts
     $lastGoodDocsRef = Resolve-LastGoodDocsRef
     if ($lastGoodDocsRef) {
         Write-Log "fallback docs restore from last-good ref $lastGoodDocsRef"

@@ -226,18 +226,34 @@ def test_preflight_only_writes_terminal_state() -> None:
     assert "Exit-Runner -Status 'preflight_ok'" in preflight_block
 
 
-def test_fallback_publish_restores_unverified_generated_artifacts() -> None:
-    """fallback は公開 notice だけを残し、未検証 digest/data 差分を作業ツリーに残さない。"""
+def test_fallback_publish_quarantines_unverified_generated_artifacts() -> None:
+    """fallback は復旧可能な当日 artifact を削除せず quarantine に保存する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     fallback_body = runner.split("function Invoke-FallbackPublish", 1)[1].split("# ===== sentinel", 1)[0]
 
-    assert "function Restore-UnverifiedGeneratedArtifacts" in runner
+    assert "function Preserve-UnverifiedGeneratedArtifacts" in runner
     assert "function Resolve-LastGoodDocsRef" in runner
-    assert "Restore-UnverifiedGeneratedArtifacts" in fallback_body
+    assert "Preserve-UnverifiedGeneratedArtifacts" in fallback_body
     assert "Resolve-LastGoodDocsRef" in fallback_body
     assert "checkout $lastGoodDocsRef -- 'docs/'" in fallback_body
+    assert "build\\quarantine\\$DateStamp" in runner
+    assert "Copy-Item" in runner
+    assert "Remove-Item -LiteralPath $full -Recurse -Force" not in runner
     assert "data/articles.jsonl" in runner
     assert "digest/" in runner
+
+
+def test_repair_scope_allows_runner_state_and_ignores_temp_outputs() -> None:
+    """repair scope は runner 管理 state と pytest 一時生成物を artifact 違反にしない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    scope_body = runner.split("function Test-RepairArtifactScope", 1)[1].split("function Test-GenerationExternalReadiness", 1)[0]
+
+    assert "Test-RepairStatusPathAllowed" in runner
+    assert "data/gate_attempts/$DateStamp.json" in runner
+    assert ".pytest-tmp/" in runner
+    assert "build/codex-usage/" in runner
+    assert "runner-owned state" in runner
+    assert "Test-RepairStatusPathAllowed -Path $path" in scope_body
 
 
 def test_fallback_publish_never_sends_web_push() -> None:

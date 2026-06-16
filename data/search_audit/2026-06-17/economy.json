@@ -1,0 +1,44 @@
+{
+  "date": "2026-06-17",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "2026年6月17日 日銀 内田副総裁 2% 上振れリスク 利上げ",
+    "2026年6月17日 日本 ブラジル EPA 交渉入り 経済安保",
+    "2026年6月17日 ZEW 景気期待指数 6月 プラス転換",
+    "2026年6月17日 豪中銀 政策金利 据え置き インフレ 上振れリスク",
+    "2026年6月17日 イラン 合意 原油輸出 即時可能"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "日銀 金融政策",
+    "マクロ経済 指標",
+    "インフレ",
+    "経済安保",
+    "原油供給"
+  ],
+  "dropped": [
+    {
+      "title": "会社四季報2026年3集 夏号",
+      "url": "https://str.toyokeizai.net/magazine/shikiho/",
+      "reason": "雑誌告知で当日の政策・需給変化が弱い"
+    },
+    {
+      "title": "ミニ論点：日銀利上げ 第一ライフ資産運用経済研究所 熊野首席エコノミスト／明治安田総合研究所 小玉チーフエコノミスト",
+      "url": "https://mainichi.jp/articles/20260617/ddm/008/070/079000c",
+      "reason": "利上げ論点が上位2本と重複し新材料が薄い"
+    },
+    {
+      "title": "経済安保は備蓄、備蓄、備蓄",
+      "url": "https://www.nikkei.com/article/DGXZQOFK122IQ0S6A610C2000000/",
+      "reason": "論説色が強く当日ニュースの変化量で上位記事に劣後"
+    },
+    {
+      "title": "豪中銀、政策金利据え置き 総裁「インフレには依然上振れリスク」",
+      "url": "https://jp.reuters.com/opinion/Q6QAWG2ONFLWZE4QUJWYWBN7BM-2026-06-16/",
+      "reason": "候補として有力だったが日本・欧州・資源安保の5本を優先"
+    }
+  ]
+}

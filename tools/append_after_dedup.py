@@ -18,11 +18,6 @@ except ModuleNotFoundError:
     import dedup
 
 try:
-    from googlenewsdecoder import gnewsdecoder
-except ModuleNotFoundError:  # pragma: no cover - dependency gate is exercised by runtime
-    gnewsdecoder = None  # type: ignore[assignment]
-
-try:
     from tools.fetch_ogp import fetch_ogp
 except ModuleNotFoundError:
     from fetch_ogp import fetch_ogp
@@ -58,12 +53,21 @@ def _decode_status_ok(value: Any) -> bool:
     return value is True or str(value).lower() in {"ok", "success", "true"}
 
 
+def _load_google_news_decoder() -> Callable[..., dict[str, Any]] | None:
+    """googlenewsdecoder を必要時だけ読み込む。"""
+    try:
+        from googlenewsdecoder import gnewsdecoder
+    except Exception:  # pragma: no cover - dependency gate is exercised by runtime
+        return None
+    return gnewsdecoder
+
+
 def decode_google_news_url(
     url: str,
     *,
     google_decoder: Callable[..., dict[str, Any]] | None = None,
 ) -> str | None:
-    decoder = google_decoder if google_decoder is not None else gnewsdecoder
+    decoder = google_decoder if google_decoder is not None else _load_google_news_decoder()
     if decoder is None:
         return None
     try:

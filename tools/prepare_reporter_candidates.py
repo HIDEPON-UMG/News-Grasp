@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import multiprocessing as mp
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -22,11 +21,15 @@ except Exception:  # pragma: no cover - dependency absence is handled at runtime
 _SKIP_FILES = {"all.jsonl", "dropped.jsonl"}
 
 
-def _decode_worker(url: str, queue: Any) -> None:
-    queue.put(decode_google_news_url(url))
-
-
 def _decode_google_news_url_with_timeout(url: str, timeout_sec: float) -> str | None:
+    """Google News RSS URL を元記事 URL へ解決する。
+
+    以前は `googlenewsdecoder` がハングした場合に備えて multiprocessing で
+    timeout を掛けていたが、Windows のタスク環境で Queue/Semaphore 作成が
+    PermissionError になり、候補生成が全件空になる事故が起きた。decode 失敗は
+    1 候補の drop に閉じればよいので、プロセス分離せず例外を None に丸める。
+    """
+    _ = timeout_sec
     if _local_google_news_decode is not None:
         try:
             decoded = _local_google_news_decode(url)
@@ -35,20 +38,8 @@ def _decode_google_news_url_with_timeout(url: str, timeout_sec: float) -> str | 
         if isinstance(decoded, str) and decoded.startswith(("http://", "https://")):
             return decoded
 
-    ctx = mp.get_context("spawn")
-    queue = ctx.Queue(maxsize=1)
-    proc = ctx.Process(target=_decode_worker, args=(url, queue))
-    proc.daemon = True
-    proc.start()
-    proc.join(timeout_sec)
-    if proc.is_alive():
-        proc.terminate()
-        proc.join(1)
-        return None
-    if proc.exitcode != 0:
-        return None
     try:
-        value = queue.get_nowait()
+        value = decode_google_news_url(url)
     except Exception:
         return None
     return value if isinstance(value, str) else None
@@ -104,13 +95,15 @@ def prepare_rows(
             else:
                 decoded = _decode_google_news_url_with_timeout(url, decode_timeout)
             if not decoded:
-                item["drop_reason"] = "google_news_unresolved"
-                dropped.append(item)
-                continue
-            item["url"] = decoded
-            item["url_norm"] = dedup.normalize_url(decoded)
-            item["google_news_url"] = url
-            url = decoded
+                item["google_news_decode_status"] = "unresolved"
+                item["url_norm"] = dedup.normalize_url(url)
+                item["google_news_url"] = url
+                decoded = None
+            else:
+                item["url"] = decoded
+                item["url_norm"] = dedup.normalize_url(decoded)
+                item["google_news_url"] = url
+                url = decoded
         elif url:
             item["url_norm"] = dedup.normalize_url(url)
 

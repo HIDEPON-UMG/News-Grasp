@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-17",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "GO ロボタクシー 構築先手 日経",
+    "Rivian supervised self-driving Tesla FSD Business Insider",
+    "osakagas EV活用 新たな価値創出 住友三井オートサービス"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Tesla",
+    "GO",
+    "Rivian",
+    "ロボタクシー",
+    "EV普及",
+    "商用EV",
+    "BYD",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "自動運転AIの実力、国が採点　レベル2++で「優良認定制度」",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9pdTIzODU4b1VfQVdjZ3EwNkljS0E1M3BvazJOV2dKcUxOWGFCbTByWWJpVVlRdnlBSXEtU2t6M2xaeW9FM2lzbdIBTkFVX3lxTE8xSnl4Q3pmbmZxeWJaRll6dVFXelpMaUR0NmZwMWo5d3lBUEF0dlNsV3E3ZVZRUUtiWXh3aHZoUFZkQVR5Qzh3d2djNWM5Zw?oc=5",
+      "reason": "Stage1候補では重要度が高いが Google News URL から元記事 canonical を確認できず採用保留"
+    },
+    {
+      "title": "国交省　自動運転に向けた道路づくりに向け本格整備",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE5Ja0lyTkFrNjRJQUltb2N0bUpqZU5GZWFZMm5CVmRkYmNZelk5c2QxQnZEZzcyRlYwc3I5cm1OQVlXVV9hRm9rNdIBTkFVX3lxTFBwYTlwckRoS21VOWFlLVVWcHNOOEctTzdmSmtqdWl2X3RjRWlSUXY0T2V0Z0xWM0Nabk5wbVozcVlxY0FWc0xUaE9RMTFjQQ?oc=5",
+      "reason": "政策テーマとして有望だが canonical 解決未了で URL 契約を満たせなかった"
+    },
+    {
+      "title": "EV販売伸び悩むBYD、王伝福氏が強気宣言「5年で規模世界一」へ",
+      "url": "https://news.google.com/rss/articles/CBMiO0FVX3lxTE9CQ3JTS2xNZjdFQlh6MkJPUGNKOU0yMzh1bUJsZkljdS15X2RBbHgtemxoRHVtanRZaEJj?oc=5",
+      "reason": "経営姿勢の話題性はあるが Stage1内では定量更新や制度変更より投資判断への直結度が一段落ちる"
+    },
+    {
+      "title": "Apple Carの開発施設、Googleが「300億円買収」　自動運転試験用",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9JbmFBZmUxWFc4Q2NPV1AzMExLXy1waXpEYWc4TXRGUkxUUVg0SUR3WXVUbGRyZ0J5dTRFUDg5S08zRmZILXREN9IBTkFVX3lxTE5BaEhaU2xCYjJlVVdJRk1uMTlZaDRoR014ZkhSTS1BRmZSWnRYcGpLN2M1UmhyYThjTnBTbFZHUUtyX041YUw5dGw4MWQ1dw?oc=5",
+      "reason": "テーマ性は高いが元記事URL確認ができず、現時点では採用よりURL契約遵守を優先"
+    }
+  ]
+}

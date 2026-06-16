@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-17",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d",
+    "FRB OR Fed OR ECB OR 金利 OR forex when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "日銀",
+    "FOMC",
+    "円安",
+    "預金金利"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ＮＹ外為市場＝ドル下落、ウォーシュ新議長の初ＦＯＭＣに注目",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFBRRzRUeGJ2REpKWFFocDlfZ0xqZk5iSkFSNERlQ0g2UG8tbWxscDZ1SXdRM1NzWmd5MVRpeDJSUE4ya08tTTZzYlBpaVJMVmpiNkJpUE1SRHVDZVY0X3djSmowVUl1SEVNX1FlNG84ekgxRTNlbUcwbA?oc=5",
+      "reason": "同日のFOMC材料としては採用したUBS見通し記事と論点が重なり、canonical未解決のまま残ったため除外"
+    },
+    {
+      "title": "｢インフレ育てる利上げ｣じわり転換 通貨の信認守る戦いの始まりか",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1Rd0RIQ1M4dWFBbHpkWFpKdGYtY0hYUnRIeGlKTktTcWJPWW1lWFh5S2Rjb2xEb0hnWkk5OEVxZHBhUDVCakpHQzZlSGRDdEtETzNsaGZYTmNUb1NJSlFUUjZXT2VLdk0?oc=5",
+      "reason": "論説寄りで当日フローの新材料が薄い"
+    },
+    {
+      "title": "マクロスコープ：日銀利上げ決定、高市首相なぜ「静観」 透ける二つの事情",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQRE1yMlBoZ0hWVzdYbk1RUDhkOUl0c00tcm1yUVVuYzlmVC0yMlFOVllBeGFvMXlFTklHTWVZU3JyNlZHV3pCSFVyQUlqenl4eGxkNC1pR3VKNzJYZjFmZXpGbERGdkhjd0R0cUhEZFdQRWZmSUNFR1NtdWRuRW1udk1jbGNLd3NseWQ0?oc=5",
+      "reason": "政治コラム色が強く、FX読者向けの価格・金利材料としては優先度を下げた"
+    },
+    {
+      "title": "（社説）日銀利上げ１％ リスクを見定め着実に",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE5mQU9NeDgzSFNLSkVvdTBmV21wOVRMTDQ1R2c4MkRVSWotT3lLQTZtSnVwWWVIdmE0a1NjcG80cEEtaERsTUU3U3o3NEJkZzRBanFtZGE5TUJfSXRj?oc=5",
+      "reason": "社説で新規の事実材料がなく、採用記事群と重複"
+    },
+    {
+      "title": "【詳しく】利上げで暮らしへの影響は？金利どこまで上がる？",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE0wd1Q5T2k5MzlvZnpOdVhxOWlzVWRIVlc2NnBLV3BZa2V5NE1rS3lNMlI2R0wwUG8waWlSamZ1akk5dTVIYkU1bmxGOHpvYmUwd084S1FWYmgxVWwxbV93?oc=5",
+      "reason": "生活実用の説明記事で、為替・金利見通しの一次材料としては弱い"
+    }
+  ]
+}

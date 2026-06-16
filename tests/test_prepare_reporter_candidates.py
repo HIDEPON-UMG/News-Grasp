@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import tools.prepare_reporter_candidates as prc
 from tools.prepare_reporter_candidates import prepare_directory
 
 
@@ -54,7 +55,7 @@ def test_prepare_directory_decodes_google_news_url_and_hydrates_thumb(tmp_path: 
 
 
 def test_prepare_directory_drops_unresolved_google_news_url(tmp_path: Path) -> None:
-    """Google News URL を解決できない候補は reporter に渡さない。"""
+    """Google News URL を解決できなくても候補全滅にせず reporter に渡す。"""
     input_dir = tmp_path / "deduped"
     _write_jsonl(
         input_dir / "fx.jsonl",
@@ -74,6 +75,28 @@ def test_prepare_directory_drops_unresolved_google_news_url(tmp_path: Path) -> N
     )
 
     assert summary["input_count"] == 1
-    assert summary["prepared_count"] == 0
-    assert summary["dropped_count"] == 1
-    assert _read_jsonl(input_dir / "fx.jsonl") == []
+    rows = _read_jsonl(input_dir / "fx.jsonl")
+    assert summary["prepared_count"] == 1
+    assert summary["dropped_count"] == 0
+    assert rows[0]["url"] == "https://news.google.com/rss/articles/CBMiExample?oc=5"
+    assert rows[0]["url_norm"] == "https://news.google.com/rss/articles/CBMiExample?oc=5"
+    assert rows[0]["google_news_decode_status"] == "unresolved"
+
+
+def test_decode_fallback_does_not_require_multiprocessing(monkeypatch) -> None:
+    """Windows の Queue/Semaphore 権限問題で候補生成全体を空にしない。"""
+
+    monkeypatch.setattr(prc, "_local_google_news_decode", None)
+    monkeypatch.setattr(
+        prc,
+        "decode_google_news_url",
+        lambda _url: "https://example.com/decoded/story",
+    )
+
+    assert (
+        prc._decode_google_news_url_with_timeout(
+            "https://news.google.com/rss/articles/CBMiExample?oc=5",
+            0.01,
+        )
+        == "https://example.com/decoded/story"
+    )

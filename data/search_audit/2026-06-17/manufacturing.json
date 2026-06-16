@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-17",
+  "category_id": "manufacturing",
+  "queries": [
+    "Stage1 file: build/deduped-candidates/manufacturing.jsonl",
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:www.chukei-news.co.jp ラピダス 英伊機関と連携 半導体製造で政府後押し",
+    "site:news.yahoo.co.jp ニコン 半導体後工程向け新材料 ガラス基板",
+    "site:chemicaldaily.com 富士フイルム 欧州 半導体材料 強化",
+    "site:www.nikkei.com オーブレー ダイヤモンド基板 量産技術",
+    "site:www.nikkan.co.jp 日精樹脂 インド 電動射出機 新工場"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "ラピダス",
+    "ニコン",
+    "富士フイルム",
+    "オーブレー",
+    "日精樹脂",
+    "半導体材料",
+    "後工程",
+    "量産技術",
+    "現地生産"
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "【速報】「産廃が爆発」通報 金属加工工場で男性作業員３人が病院搬送 全員意識あり 金属粉使って作業中に爆発か 大阪・松原市",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE9KdmRwaGJ3LS1ZOVZTaUF1RFh1R3NwVXNtcnlDZno4NU9qckJzRFR4T2xZSVE5LVZTOUNCTTgxb2NqeTk4Z3ZrT2Vvc0RQcFVCSzZyUQ?oc=5",
+      "reason": "事故速報で産業構造の変化や生産計画の論点が薄い"
+    },
+    {
+      "title": "アイシン安城工場跡地に夢のアリーナ誕生へ【愛知県安城市三河安城町1丁目11-2】：ニュース",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE5WTGtNb2lMOWVPcXJabnJ3WFNrRmdrT29VcFZ5aVpGcG1hZEE1TGExU1Z2Nnh5bDZxMzI2OXhJdTRyRWQ0VEVLTUhYN0pERXlDSkNUOHNUUG1DSlNDZlA4?oc=5",
+      "reason": "跡地再開発が主題で製造現場の競争力や供給網の論点から外れる"
+    },
+    {
+      "title": "半導体装置部品など増産…理想精密、新棟稼働",
+      "url": "https://news.google.com/rss/articles/CBMiQkFVX3lxTE9GNWRCYktFU3B4MXh3UnBJMW9JRlk1Z3pjdzcyLUxGMXV4TTJoaUVianpOaVhjNHVMR3FZeWdiZzlEdw?oc=5",
+      "reason": "候補として強かったが最終5件に対し新規性と波及範囲で次点"
+    },
+    {
+      "title": "特許審査、24カ月に延長 標準戦略対応",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBBZWU0MmhqZGdHWlRCMEF3TVFSMS1Sc2JnYmhsWFhqb3BSQi1UTWRKT0w0UGVzeVBBMFlpYlJmRkdBbDUxcEdpVjkwTjF0WHh6Ul9tbHhBQnRMVEE4dUZac3dNemhYNkt6M0ZobmZQYjlUZVMx?oc=5",
+      "reason": "制度変更として重要だが当日号では製造各社の具体投資案件を優先"
+    }
+  ]
+}

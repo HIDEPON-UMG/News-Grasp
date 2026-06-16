@@ -1,0 +1,39 @@
+{
+  "date": "2026-06-17",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "\"6 月の Pixel Drop\" Gemini",
+    "\"Claudeのエージェント別枠化が撤回\"",
+    "\"2カ月の業務、生成AIでひと月に\" 日立 500人 AI リーダー"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「2カ月の業務、生成AIでひと月に」 日立、500人のAIリーダーの成果",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE8xdE5QS3pTZFQ0aWdIVGFvZC1zZ09rbWhrbnFtcXNVdF9Pcml1T1lWMXc0TEl2ck5FSUppTVJ3d1NTVmJxclphb3dEaEhzZFpQdzBEZkMzZGZodVllZHJ0M1RtUVU4TFlqTjBreDIydms3Zw?oc=5",
+      "reason": "企業内導入の成功事例として有益だが、当日の採用5本に比べると業界横断インパクトが一段弱い"
+    },
+    {
+      "title": "中国の開発者が米国のLLMも積極活用する理由",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFA5cDBsME4zZmk1RVQ0ZzlfRDRPaE5hTmQ5TmdZY3ExZmJXenV0cnRIUzBFZmdZTjg5Z3JpaU9rOHVkU3RYZF9aSEhsQTl3MnVxMlM0NU0zbWJxeXFucmM4WF83ZzVUNXpaQVZwbWhFVHM1Zl95ZU5mMkxTcUVfbjA?oc=5",
+      "reason": "示唆はあるが、地域分析色が強く、政策・製品・課金の即時インパクトを優先して見送った"
+    },
+    {
+      "title": "ドメイン知識こそがAI時代の開発力になる──Anthropic「Code with Claude」で語られたソフトウェア民主化の現在地",
+      "url": "https://codezine.jp/article/detail/24532",
+      "reason": "論点は重要だが既報との連続性が強く、当日号では新しい制度変更・製品更新を優先した"
+    }
+  ]
+}

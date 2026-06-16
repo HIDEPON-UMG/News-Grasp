@@ -1,0 +1,46 @@
+{
+  "date": "2026-06-17",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "NTTデータ",
+    "CTC",
+    "生成AI導入",
+    "サイバーセキュリティ",
+    "IT投資"
+  ],
+  "dropped": [
+    {
+      "title": "オランウータンの未来に向けて！ジェニファー＆ハヤト応援プロジェクト",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTFBRME9fc21wUHZzbWNPdTBTRUNsN3VqTFRrcDdPZnliaVZNYmFPX1ZnaXNPbDBwMWZ6V2R3d3FCdGJ5WWE5cEM5MXFBX1hLUjNZcmc?oc=5",
+      "reason": "カテゴリ不一致のクラウドファンディング"
+    },
+    {
+      "title": "劇団青年座｜池袋で創造拠点を拓く。悲願の劇場再開への一歩を共に",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFBvRmFkOWs2N29WSXg4eEFoeXhQMFRZUVR2VEcwanM0VXJzTHJSaUdjXzkycHBoa1d6ME1JRFVaZ2JxSU1hX09ZYTdlaHdCQQ?oc=5",
+      "reason": "カテゴリ不一致のクラウドファンディング"
+    },
+    {
+      "title": "教員に役立つIT関連書が最大70％OFF、「Kindle本 夏の超大セール 第1弾」【今日のAmazonセール】",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE0xQUVadXd0ek12bEVSaVNjQ0FKOUtMTjZKNlpWa29RaUJCbERlN2FlaEhMRFFqbzZQWGVvOVV2TE5wVUctdmd0UnVOWjNwVENfRHRIaC02S04tUngtdGVDN0FQYUNjeDRuLUxpUmQ3TklFYWRCYXZB?oc=5",
+      "reason": "コンシューマー販促で企業ITの読者価値が低い"
+    },
+    {
+      "title": "Worldwide Cybersecurity Governance, Risk, and Compliance Consulting Services 2025–2026においてリーダーに選出",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFBXZUpJSGNrMk1qNXVvejdaOEswdU9SVVFaVWNYMTkxcXBWWm9wS0dPX29SdTZDVy1RYzBWNW51QjVRSDhQYUFGYXVjQjdrVXVIOWNfREtyOFN0Y3UzWGRuMTNKbE93eF9OdWs3cnNKajljdw?oc=5",
+      "reason": "受賞PRで新しい業界材料が薄い"
+    },
+    {
+      "title": "サービスとして情報技術（IT）セキュリティ市場、2035年ら770億2000万米ドルへ｜CAGR12.4％が示すクラウド防御需要の拡大",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE1Uc3JTNVExM1JnZ2hxY0xqRUw1d01LbW1wZFlvT1JUR1Zic1N4elpnSG50Z1JCcmVfRUp4S0tpNGx6RlF5cXJPODFHcW1SRkU?oc=5",
+      "reason": "市場予測系PRで一次情報性が低い"
+    }
+  ]
+}

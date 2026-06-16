@@ -1,0 +1,68 @@
+{
+  "date": "2026-06-17",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "Steam Nextフェス",
+    "ゼンレスゾーンゼロ Steam版",
+    "サンリオ ゲーム参入",
+    "Mistfall Hunter 体験版",
+    "ポケモンカード AIエージェント"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Steam",
+    "任天堂",
+    "PlayStation",
+    "miHoYo",
+    "ポケモン",
+    "サンリオ"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "【ただ今より！オンライン限定受注スタート】「サヨナラゲームTシャツ＆フェイスタオル 」発売！！",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5WaWZfT0xQVldNaDlOVVBYTVg2UFR0cE8zcmZ5RFQxbm5WNlAzblRiNHREN3cxNzBKSzZfdGo2bVF2NmQzVkRjaGViQnZqWUhSOWlnVEVSQXNvZVd3cndfQUhTdXBoRVB4?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "アジア初、LED搭載フロア「VISIONフロア」にてホームゲームを開催",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFA2bl9MUWNxYUZ5Y3RIcUd0NGJ5RWVROVV2S0pfemVPbUNGdzZELVFIamJOOHhCckxSRmxPYWFEN01xZERNUjlrSXlvYjJmUQ?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "【6月発売Switch/Switch2新作ゲーム】『スターフォックス』『FF7リバース』『パワプロ2026-2027』『メダロット カードロボトルRB』などの最新ゲームソフトを紹介！",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFBPQ0VncU5UQjk1c2ktUERGTGhZZXNwWWtnb2JlbF9SVHg0Q0lGdEpMZmtHTEI5dTJ3aDNxaEh3ak5qR2NoaksxM2g1X1U0NU5PTWdENDdTUQ?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "イエスに感謝してゲームをする ドイツの新世代が運営する教会の挑戦",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1pZ2xwS2hiZDljWGkxeVMzbDhNc1VfOUo1ODJOQjZBYVVOUVZlcjVfeERRLXNLSmExN3cwSk0zbGRHdGhhMS1ZNVpIMXJuRXItTEw0?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "200円でメロンゲット!進化するクレーンゲーム 景品は“生鮮品”物価高で大人気（TUFテレビユー福島）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1xZXlScHBvdjQwZUhoOFJLZ3E5Rm1hUzZEOVgzWXJzYkt3Y0tISy1rLVE0eXJxdnJwbUZTaFJEVGIzNGFkSGNBUDRua25NeUdiUHpuQUltRnVqWllpUVNVNFhtSHFMSDRTX0hRbTZ6emtuM0ZhOXFIeWpfZl9GZnM?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "内蔵GPUで十分？ ポイントは本格的な3Dゲームと生成AIのローカル実行",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9tcGZlZnpEOXpuRjVLcGxVSDFlOGlWQVo1X2I4VFZQYmd1RXIzRVU5OHdpVkVhYnRmdmxwbHhBSkxaT0JNU3pyMXBFNkpwdk1zdFJwUUxnNVpNc1BQRGxYeVcwYnF3akQ1RGFmSw?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "Dead by Daylight: Jasonエディション を購入 | Xbox",
+      "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxPUGVScGJCU2s4bTNPVTRUZWQyZWlFRXk1QklKNDdDcVlhS29yYURPSzRFRUYzQW5qa0xZZGhjWjJPY1FHWV8zN0xlX0wwQmFhNExRZlE1dHBtZDZVX3l2aGZCRW5FWWlGTm1PMWlQSm1UTUUxcHZkQnVOQmtPMUNNUGl5Vjk5VFVvYUoxWFpnOTNXWmxfN28xTUdrY3JtcmpuQmo1bXR5MVZMN2ktSjQxS0hKTjVKWXloUEJhcU9Ra3k?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    },
+    {
+      "title": "「ファミコン時代にクソゲー量産も」東映、ゲーム事業リベンジなるか",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFBwbnNwV0MyeFdUYWhiM3Y4UFVXLTZXQm9vbTBmOUU2TFhZWmt1NHF5RFdhSFFjcV9tVjRwaENqaFg4UkJyYmcwb2RLT2o4Zmc?oc=5",
+      "reason": "ゲーム業界の構造変化より個別販促・周辺話題の比重が高く優先度を下げた"
+    }
+  ]
+}
