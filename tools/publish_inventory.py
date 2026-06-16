@@ -103,6 +103,25 @@ def required_deepdive_artifacts(issue: str | date) -> list[str]:
     ]
 
 
+def required_generated_artifacts(issue: str | date) -> list[str]:
+    """生成直後 gate と repair prompt が見る公開前 artifact。"""
+    day = _issue(issue)
+    issue_str = day.isoformat()
+    return (
+        [
+            digest_artifact_for_category(cat_id, day)
+            for cat_id in sorted(scheduled_category_ids(day), key=lambda c: CATEGORY_PATHS[c]["digest_folder"])
+        ]
+        + [
+            f"digest/Summary/{issue_str}.md",
+            f"digest/DeepDive/{issue_str}-DeepDive.md",
+            "data/articles.jsonl",
+            "data/_status.md",
+            f"data/search_audit/{issue_str}",
+        ]
+    )
+
+
 def required_published_artifacts(issue: str | date) -> list[str]:
     """通常公開前の必須 docs + DeepDive artifact。"""
     return required_published_docs_artifacts(issue) + required_deepdive_artifacts(issue)
@@ -115,12 +134,14 @@ def missing_artifacts(repo_root: Path, artifacts: list[str]) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="News-Grasp publish inventory manifest")
     parser.add_argument("--date", required=True)
-    parser.add_argument("--kind", choices=["digest", "published-docs", "deepdive", "published"], required=True)
+    parser.add_argument("--kind", choices=["digest", "generated", "published-docs", "deepdive", "published"], required=True)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
     if args.kind == "digest":
         artifacts = required_digest_artifacts(args.date)
+    elif args.kind == "generated":
+        artifacts = required_generated_artifacts(args.date)
     elif args.kind == "published-docs":
         artifacts = required_published_docs_artifacts(args.date)
     elif args.kind == "deepdive":

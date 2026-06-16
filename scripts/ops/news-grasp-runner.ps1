@@ -157,7 +157,7 @@ $script:CodexUsageEndSnapshotWritten = $false
 $NormalPublishVerified = $false
 
 function Get-PublishInventoryArtifacts {
-    param([ValidateSet('digest', 'published')] [string] $Kind)
+    param([ValidateSet('digest', 'generated', 'published')] [string] $Kind)
     Push-Location $RepoDir
     try {
         $json = & $PyExe '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
@@ -594,8 +594,8 @@ News-Grasp RecoverOnly targeted repair.
 - gate 失敗を 1 回だけ修復する。
 - 欠落成果物を再生成し、同じ gate を再実行したときに PASS するまでの最小修復に限定する。
 - repair は runner の bounded retry 内でだけ実行される。無制限 loop にしない。
-- commit / push / 全体再生成は禁止。docs 欠落が失敗原因の場合だけ、指定 artifact の docs を作る最小 build は許可する。
-- 変更してよいのは下記 artifact と、その修復に必須の最小ファイルだけ。
+- commit / push / full rerun / 全体再生成 / publish 実行は禁止。docs 欠落が失敗原因の場合だけ、指定 artifact の docs を作る最小 build は許可する。
+- 変更してよいのは下記 artifact と、その修復に必須の最小ファイルだけ。対象 artifact 以外へ作業を広げない。
 
 gate_id: $GateId
 category: $Category
@@ -1316,9 +1316,35 @@ if ($RecoverOnly) {
     } elseif ($ddRc -ne 0) {
         Write-Log "WARN: deepdive codex exited with $ddRc (non-fatal, digest は続行)"
     } else {
-        Write-Log "deepdive $AgentName OK (1 本生成 or テーマゲート休載)"
+    Write-Log "deepdive $AgentName OK (1 本生成 or テーマゲート休載)"
     }
 }
+
+$GeneratedArtifacts = Get-PublishInventoryArtifacts -Kind 'generated'
+
+Write-Log 'generation artifact normalize start (normalize_generated_artifacts)'
+Push-Location $RepoDir
+try {
+    Invoke-Logged { & $PyExe '-m' 'tools.normalize_generated_artifacts' '--date' $DateStamp '--repo-root' $RepoDir }
+    $generationNormalizeRc = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+if ($generationNormalizeRc -ne 0) {
+    Write-Log "generation artifact normalize failed (rc=$generationNormalizeRc)"
+    Set-RunnerState -Status 'content_repair_failed' -Message 'generation artifact normalize failed' -ExitCode 1
+    exit 1
+}
+Write-Log 'generation artifact normalize OK'
+
+Write-Log 'generation quality gate start (validate_generation_quality)'
+$generationQualityRc = Invoke-PythonGateWithRepair -GateId 'generation-quality' -Category 'generated' -PythonArgs @('-m', 'tools.validate_generation_quality', '--date', $DateStamp, '--repo-root', $RepoDir, '--json') -Artifacts $GeneratedArtifacts
+if ($generationQualityRc -ne 0) {
+    Write-Log "generation quality repair failed (rc=$generationQualityRc)"
+    Set-RunnerState -Status 'content_repair_failed' -Message 'generation quality repair failed' -ExitCode 1
+    exit 1
+}
+Write-Log 'generation quality gate OK'
 
 # ===== 2.6 URL 生存検証ゲート (commit 後・push 前) =====
 # 2026-06-03 三菱UFJ FX_Monthly 捏造事故 + 33 件の死リンク発覚を受けた構造防止。

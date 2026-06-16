@@ -148,6 +148,51 @@ def test_inventory_repair_artifacts_cover_required_digest_and_docs() -> None:
     assert "-Artifacts $PublishedDocsArtifacts" in runner
 
 
+def test_runner_runs_generation_quality_before_url_and_record_gates() -> None:
+    """生成物品質 gate は URL / record gate より前に normalize 済み artifact を検査する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "$GeneratedArtifacts = Get-PublishInventoryArtifacts -Kind 'generated'" in runner
+    assert runner.index("generation artifact normalize start") < runner.index("generation quality gate start")
+    assert runner.index("generation quality gate start") < runner.index("URL liveness gate start")
+    assert runner.index("generation quality gate start") < runner.index("record schema gate start")
+
+
+def test_generation_quality_gate_uses_bounded_repair() -> None:
+    """generation-quality は独自 loop でなく既存 bounded repair gate に乗せる。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    block = runner.split("generation quality gate start", 1)[1].split("URL liveness gate start", 1)[0]
+
+    assert "Invoke-PythonGateWithRepair" in block
+    assert "-GateId 'generation-quality'" in block
+    assert "-Category 'generated'" in block
+    assert "-Artifacts $GeneratedArtifacts" in block
+    assert "tools.validate_generation_quality" in block
+
+
+def test_generation_quality_repair_failure_sets_content_repair_failed() -> None:
+    """生成品質 repair が収束しない場合は publish 系 state と混ぜない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    block = runner.split("generation quality gate start", 1)[1].split("URL liveness gate start", 1)[0]
+
+    assert "content_repair_failed" in block
+    assert "generation quality repair failed" in block
+    assert "Invoke-FallbackPublish" not in block
+    assert "send_push" not in block
+
+
+def test_generation_quality_repair_prompt_is_item_scoped() -> None:
+    """repair prompt は error JSON と artifact scope を見せ、無関係 artifact へ広げない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-PythonGateWithRepair", 1)[0]
+
+    assert "gate_id: $GateId" in repair_body
+    assert "失敗ログ" in repair_body
+    assert "対象 artifact 以外" in repair_body
+    assert "full rerun" in repair_body
+    assert "publish 実行は禁止" in repair_body
+
+
 def test_preflight_only_writes_terminal_state() -> None:
     """PreflightOnly 成功は running のままにせず preflight_ok を state に残す。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
