@@ -1,0 +1,55 @@
+{
+  "date": "2026-06-16",
+  "category_id": "mobility",
+  "queries": [
+    "stage1-deduped-candidates:build/deduped-candidates/mobility.jsonl",
+    "filter:mobility-impact-policy-readiness",
+    "filter:exclude-opinion-pr-wire-single-model"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber",
+    "ホンダ",
+    "自動運転トラック",
+    "EV廃電池",
+    "EV販売台数",
+    "中国EV価格競争",
+    "物流"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "大阪ガス：Daigasグループと住友三井オートサービス、EV活用の新たな価値創出に向けた共創を開始～EV車両運用・電力コスト最適化の両立とバッテリー状態の可視化を通じ、EVの運用高度化とリユース価値向上を目指す新たなサービスの実現に向けた提携に合意～",
+      "url": "https://www.osakagas.co.jp/company/press/pr2026/1823675_60968.html",
+      "reason": "提携発表としては有意だが、政策・需要・物流の構造変化を優先して次点"
+    },
+    {
+      "title": "【知事会見】あいちモビリティイノベーションプロジェクト「空と道がつながる愛知モデル2030」 今年度の事業概要及び物流ドローン長期事業化調査について",
+      "url": "https://www.pref.aichi.jp/press-release/soramichi2026.html",
+      "reason": "地域実証の更新で新規性はあるが、全国需給や商用化ボトルネックを動かす5件を優先"
+    },
+    {
+      "title": "Apple Carの開発施設、Googleが「300億円買収」　自動運転試験用",
+      "url": "https://jidounten-lab.com/u_63584",
+      "reason": "興味深いが二次情報色が強く、一次性と事業インパクトで上位5件に届かず"
+    },
+    {
+      "title": "ホンダ新型EV「スーパーワン」が受注1万台超え 想定外ヒットの要因は",
+      "url": "https://news.yahoo.co.jp/articles/2e5dabcecc45f0909323af5da9c7da967ff5d71d",
+      "reason": "単一車種の販売動向より、政策・供給網・価格競争の全体論点を優先"
+    },
+    {
+      "title": "自動運転車をAI通じた対話で制御 慶応義塾大学など開発",
+      "url": "https://www.nikkei.com/article/DGXZQOSG083L80Y6A600C2000000/",
+      "reason": "研究段階で商用化距離があり、当日の実装・制度・収益インパクトが相対的に薄い"
+    }
+  ]
+}

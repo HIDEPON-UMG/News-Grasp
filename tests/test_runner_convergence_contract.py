@@ -11,6 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RUNNER_PROMPT = ROOT / "prompts" / "runner-prompt.md"
 ROUTINE_SYSTEM = ROOT / "prompts" / "routine-system.md"
+DEEPDIVE_PROMPT = ROOT / "prompts" / "deepdive-runner-prompt.md"
+SETUP_DOC = ROOT / "SETUP.md"
 RUNNER_PS1 = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
 WATCHER_PS1 = Path(os.environ.get("NEWS_GRASP_WATCHER", str(Path.home() / "bin" / "watch-news-grasp-runner.ps1")))
 POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
@@ -30,6 +32,17 @@ def test_claude_prompt_does_not_delegate_commit_to_claude() -> None:
     assert "git -c user.name" not in step6
 
 
+def test_deepdive_prompt_does_not_delegate_git_to_agent() -> None:
+    """DeepDive agent も生成専用で、git 操作は runner 側にだけ置く。"""
+    prompt = DEEPDIVE_PROMPT.read_text(encoding="utf-8")
+
+    assert "git -c user.name" not in prompt
+    assert "add → commit" not in prompt
+    assert "commit まで実行" not in prompt
+    assert "git add / git commit / git push は絶対に実行しない" in prompt
+    assert "runner が DeepDive / data/_status.md の commit と publish を一元管理" in prompt
+
+
 def test_runner_has_bounded_repair_and_fallback_publish() -> None:
     """gate 失敗後の戻り先が無制限 loop ではなく bounded repair + fallback であること。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
@@ -39,6 +52,44 @@ def test_runner_has_bounded_repair_and_fallback_publish() -> None:
     assert "Invoke-FallbackPublish" in runner
     assert "published_fallback_with_notice" in runner
     assert "tools.validate_availability" in runner
+
+
+def test_setup_defines_daily_fix_completion_as_full_activation_path() -> None:
+    """修正完了は fallback 保護ではなく、上流契約を満たした Activation Path で判定する。"""
+    setup = SETUP_DOC.read_text(encoding="utf-8")
+
+    assert "通常公開完了条件" in setup
+    assert "fallback_ok は復旧完了ではなく本線保護" in setup
+    assert "上流契約で防げる漏れを高コスト E2E に委ねない" in setup
+    assert "E2E は省略せず必要な統合検証として残す" in setup
+    assert "E2E を設計漏れのバグ発見機として濫用しない" in setup
+    assert "E2E が見つけた前提漏れは runner / watcher / prompt / publish の責務境界" in setup
+    assert "live runner と repo runner の checksum 一致" in setup
+    assert "Task Scheduler が指す live runner" in setup
+    assert "docs/YYYY-MM-DD/index.html" in setup
+    assert "docs/publish-status.json の published_ok" in setup
+    assert "公開 URL の sentinel" in setup
+
+
+def test_runner_refuses_full_rerun_when_daily_artifacts_exist() -> None:
+    """既存成果物がある日付で、明示 force なしに頭から回す経路を禁止する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "ForceFullRerun" in runner
+    assert "Test-DailyArtifactsExist" in runner
+    assert "existing daily artifacts detected; refusing full rerun" in runner
+    assert "Use -ForceFullRerun only after explicit user approval" in runner
+
+
+def test_targeted_repair_prompt_is_bounded_to_runner_owned_tools() -> None:
+    """repair agent が bare python/uv/git/広域検索へ逃げず、runner の境界内だけで直す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "検証コマンドは必ず次の Python 実行体だけを使う" in runner
+    assert "python / py / uv / .venv\\Scripts\\python.exe の直書きは禁止" in runner
+    assert "git add / git commit / git push / git checkout / git reset は絶対に実行しない" in runner
+    assert "rg / Get-ChildItem -Recurse / 広域 Select-String は禁止" in runner
+    assert "runner_python:" in runner
 
 
 def test_fallback_publish_restores_unverified_generated_artifacts() -> None:
@@ -99,7 +150,7 @@ def test_runner_writes_machine_readable_state() -> None:
 
 
 def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
-    """bin 実行体 drift を起動前に検知する。"""
+    """bin 実行体 drift は手動 install 待ちにせず自己同期して再起動する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     repo_runner = OPS_DIR / "news-grasp-runner.ps1"
     repo_watcher = OPS_DIR / "watch-news-grasp-runner.ps1"
@@ -109,8 +160,12 @@ def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
     forbidden_local_user_path = "C:" + "\\Users\\" + "hide" + "k"
     assert forbidden_local_user_path not in runner
     assert "function Assert-RunnerBinaryInSync" in runner
+    assert "function Invoke-RunnerBinarySelfUpdate" in runner
+    assert "NEWS_GRASP_RUNNER_SYNC_REEXEC" in runner
+    assert "runner binary drift repaired; relaunching synced runner" in runner
     assert "scripts\\ops\\news-grasp-runner.ps1" in runner
     assert "runner binary drift" in runner
+    assert "Run scripts/ops/install-news-grasp-ops.ps1 before scheduled execution" not in runner
 
 
 def test_runner_only_marks_ok_after_publish_verification() -> None:

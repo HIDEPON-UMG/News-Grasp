@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260616 — Economy</title>
+<meta name="description" content="IMFが世界景気の底堅さを維持する一方、米イラン合意後も物価と物流の遅行圧力が残る構図が鮮明になった。日本では4-6月GDP見通しの上方修正と財政赤字継続が並び、足元の景気耐性と中長期の政策余地の細さが同時に意識されている。市場ではインフレ鈍化と長期金利低下が安心感を生んだが、日銀会合と米指標の同日通過で解釈が反転しやすい。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-16/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260616 — Economy">
+<meta property="og:description" content="IMFが世界景気の底堅さを維持する一方、米イラン合意後も物価と物流の遅行圧力が残る構図が鮮明になった。日本では4-6月GDP見通しの上方修正と財政赤字継続が並び、足元の景気耐性と中長期の政策余地の細さが同時に意識されている。市場ではインフレ鈍化と長期金利低下が安心感を生んだが、日銀会合と米指標の同日通過で解釈が反転しやすい。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-16/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260616 — Economy">
+<meta name="twitter:description" content="IMFが世界景気の底堅さを維持する一方、米イラン合意後も物価と物流の遅行圧力が残る構図が鮮明になった。日本では4-6月GDP見通しの上方修正と財政赤字継続が並び、足元の景気耐性と中長期の政策余地の細さが同時に意識されている。市場ではインフレ鈍化と長期金利低下が安心感を生んだが、日銀会合と米指標の同日通過で解釈が反転しやすい。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-16 · #20260616</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+    
+    <div class="cat-hero__summary"><strong class="emph-bold">IMF</strong>が世界景気の底堅さを維持する一方、<strong class="emph-bold">米イラン合意</strong>後も物価と物流の遅行圧力が残る構図が鮮明になった。日本では<strong class="emph-bold">4-6月GDP</strong>見通しの上方修正と財政赤字継続が並び、足元の景気耐性と中長期の政策余地の細さが同時に意識されている。市場では<strong>インフレ鈍化と長期金利低下</strong>が安心感を生んだが、日銀会合と米指標の同日通過で解釈が反転しやすい。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">88</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·16</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260616</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-16 07:25 · ロイター</span>
+    <span class="top-story__score">94</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap top-story__thumb-wrap--fallback">
+      
+      <a href="https://jp.reuters.com/markets/japan/7G4DWPHHVNOWHEQX5UD3U6T36A-2026-06-15/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://jp.reuters.com/markets/japan/7G4DWPHHVNOWHEQX5UD3U6T36A-2026-06-15/" rel="noopener nofollow" target="_blank" style="color: inherit;">IMF専務理事、世界経済は減速回避と指摘　中東発のリスク管理は継続</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">IMF</strong>は<strong>世界経済に減速の兆しは見えない</strong>としつつ、中東情勢が再び物価と物流を揺らすリスクには高警戒を崩していない。景気の底堅さと地政学リスクが同居する局面だ。</li><li>市場にとって重要なのは、成長鈍化の心配が薄れた一方で<span class="emph-und">エネルギーと輸送の供給障害がインフレ再燃の火種として残る</span>点だ。利下げ期待だけで相場を組み立てにくい。</li><li>読者が次に見るべきは<strong class="emph-bold">世界経済</strong>の強さそのものより、<strong>原油・運賃・期待インフレがどこで落ち着くか</strong>だ。景気の主役は需要ではなく供給制約へ戻りつつある。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">■ ECONOMY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-16</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-16 06:00</span>
+        <span>· 毎日新聞</span>
+        <span class="more-card__score">92</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://mainichi.jp/articles/20260615/k00/00m/020/263000c" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.mainichi.jp/vol1/2026/06/15/20260615k0000m020259000p/0c10.jpg?1" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://mainichi.jp/articles/20260615/k00/00m/020/263000c" rel="noopener nofollow" target="_blank">米イラン合意でもインフレ圧力は残存　物流正常化には数カ月</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">米イラン合意</strong>で市場の最悪想定は後退したが、<strong>海上物流と供給網の正常化には時間差が残る</strong>ため、エネルギー安がすぐ消費者物価に効く局面ではない。</li><li>焦点は停戦そのものより、<span class="emph-und">輸送再開や保険料低下が実務でどこまで進むか</span>だ。原油価格が下がってもガソリンや輸入品の価格転嫁は遅れやすい。</li><li>景気にとっては朗報でも、<strong class="emph-bold">インフレ圧力</strong>はなお粘る。<strong>中銀の利下げ期待をどこまで支え直せるか</strong>が、今週の金利と株価の分かれ目になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-15 21:04</span>
+        <span>· 日本経済研究センター</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://www.jcer.or.jp/esp/20260615.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.jcer.or.jp/esp/20260615.html" rel="noopener nofollow" target="_blank">JCER、4-6月GDP見通しを年率0.52％へ上方修正　財政赤字は継続</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">4-6月GDP</strong>見通しが<strong>年率0.52％へ上方修正</strong>されたことで、日本景気は外部ショック下でも直ちに失速していない構図が確認された。</li><li>ただし改善は成長加速を意味しない。<span class="emph-und">基礎的財政収支の赤字が26・27年度も続く</span>見通しで、金利上昇局面の財政運営はなお重い。</li><li>読者にとっての要点は、<strong class="emph-bold">GDP見通し</strong>の底堅さと<strong>財政余力の細さが同時進行</strong>していることだ。日銀正常化が進むほど、政策協調の難易度は上がる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-16 08:18</span>
+        <span>· 日経CNBC</span>
+        <span class="more-card__score">85</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://online.nikkei-cnbc.co.jp/vod/66105" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://dc3hn7hly4eqd.cloudfront.net/image/thumb/202606160820.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://online.nikkei-cnbc.co.jp/vod/66105" rel="noopener nofollow" target="_blank">インフレ懸念後退で長期金利低下　買い安心感が株式市場に波及</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">長期金利低下</strong>が進んだことで、<strong>市場の主題は景気失速懸念よりも割引率の低下恩恵</strong>へ移った。金利が下がるだけで株の見え方が変わる局面だ。</li><li>背景にあるのは、エネルギーと期待インフレの落ち着きだ。<span class="emph-und">金利低下が一時的なショートカバーか、持続的な安心感か</span>を見極める必要がある。</li><li>経済面では<strong class="emph-bold">インフレ懸念後退</strong>が朗報でも、<strong>日銀会合や米指標次第で流れはすぐ反転しうる</strong>。金利と株の両方を同時に追う日になった。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-16 06:30</span>
+        <span>· 株探</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://kabutan.jp/news/marketnews/?b=n202606160068" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://kabutan.jp/news/marketnews/?b=n202606160068" rel="noopener nofollow" target="_blank">日銀会合と米小売・住宅指標が集中　今週の金利観測を左右</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">日銀金融政策決定会合</strong>と米小売売上高、住宅着工件数が同日に並び、<strong>日米の金利観測を一気に更新する日程</strong>になった。イベント密度が高い。</li><li>注目点は個別結果より、<span class="emph-und">日銀の正常化観測と米消費・住宅の強弱がどう噛み合うか</span>だ。片方だけでなく組み合わせで市場の解釈が決まる。</li><li>きょうの経済は<strong class="emph-bold">政策会合</strong>と<strong>実体指標の同時判定</strong>が軸になる。為替、長期金利、内需株が連鎖して動くかを見たい。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">IMF</strong>は世界経済の減速回避を指摘したが、<strong class="emph-bold">米イラン合意</strong>後も物流正常化には時間がかかる。日本では<strong class="emph-bold">4-6月GDP</strong>見通しが上方修正された一方、財政赤字は続く。長期金利の低下は安心感を生んだが、日銀会合と米指標が重なれば解釈はすぐ揺れる。<strong>景気の強さ</strong>より<span class="emph-und">供給制約と政策余地</span>を追う日だ。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-16/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-06-16
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

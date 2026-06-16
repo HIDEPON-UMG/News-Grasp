@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260616 — Mobility</title>
+<meta name="description" content="きょうのモビリティは、EVの需要そのものより採算と後処理、物流実装、契約責任が前面に出た。ホンダの開発中止余波、EV廃電池回収の制度論点、世界の登録台数増、中国の値下げ競争、T2の料金所実証が並び、成長局面の裏で「誰が負担し、どこで儲けるか」を詰めるフェーズへ入っている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-16/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260616 — Mobility">
+<meta property="og:description" content="きょうのモビリティは、EVの需要そのものより採算と後処理、物流実装、契約責任が前面に出た。ホンダの開発中止余波、EV廃電池回収の制度論点、世界の登録台数増、中国の値下げ競争、T2の料金所実証が並び、成長局面の裏で「誰が負担し、どこで儲けるか」を詰めるフェーズへ入っている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-16/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260616 — Mobility">
+<meta name="twitter:description" content="きょうのモビリティは、EVの需要そのものより採算と後処理、物流実装、契約責任が前面に出た。ホンダの開発中止余波、EV廃電池回収の制度論点、世界の登録台数増、中国の値下げ競争、T2の料金所実証が並び、成長局面の裏で「誰が負担し、どこで儲けるか」を詰めるフェーズへ入っている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-16 · #20260616</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">きょうのモビリティは、<strong class="emph-bold">EV</strong>の需要そのものより<strong>採算と後処理、物流実装、契約責任</strong>が前面に出た。<strong class="emph-bold">ホンダ</strong>の開発中止余波、<strong class="emph-bold">EV廃電池</strong>回収の制度論点、世界の登録台数増、中国の値下げ競争、<strong class="emph-bold">T2</strong>の料金所実証が並び、成長局面の裏で「誰が負担し、どこで儲けるか」を詰めるフェーズへ入っている。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">91</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·16</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260616</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-16 05:00 · 日経クロステック</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://xtech.nikkei.com/atcl/nxt/column/18/03647/061200001/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://xtech.nikkei.com/atcl/nxt/column/18/03647/061200001/topm.jpg?20220512" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/03647/061200001/" rel="noopener nofollow" target="_blank" style="color: inherit;">ホンダEV中止の余波、部品19社が補償請求へ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">ホンダ</strong>のEV計画中止が<strong>部品19社の補償請求</strong>に発展し、完成車の戦略変更コストが系列外まで波及した。</li><li>争点は試作費ではなく、<span class="emph-und">全量受注を前提に積んだ生産・投資計画を誰が負担するか</span>に移っている。</li><li>読者視点では<strong class="emph-bold">サプライチェーン</strong>契約が<strong>開発中止リスクをどう織り込むか</strong>が次の焦点だ。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-16</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">2 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-16 02:00</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">92</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap more-card__thumb-wrap--fallback">
+        
+        
+        <a href="https://www.nikkei.com/article/DGKKZO96933870V10C26A6EP0000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGKKZO96933870V10C26A6EP0000/" rel="noopener nofollow" target="_blank">EV廃電池回収を強化へ、メーカー義務化も論点</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">EV廃電池</strong>の回収強化が政策論点に上がり、<strong>メーカー義務化や購入時負担</strong>まで選択肢に入ってきた。</li><li>量が本格化する前に、<span class="emph-und">回収・再資源化コストを誰が先に負担するか</span>を制度で固める段階へ進んでいる。</li><li>読者は<strong class="emph-bold">EV</strong>の販売台数だけでなく、<strong>使用後コストを価格へどう転嫁するか</strong>で普及の採算を見たい。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-16 08:48</span>
+        <span>· Yahoo!ニュース</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://news.yahoo.co.jp/articles/2411255480bf38e34eb13bff17a031dd851c94c9" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://newsatcl-pctr.c.yimg.jp/t/amd-img/20260616-00010000-krjapan-000-1-view.jpg?exp=10800" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://news.yahoo.co.jp/articles/2411255480bf38e34eb13bff17a031dd851c94c9" rel="noopener nofollow" target="_blank">中国EVの消耗戦、価格競争が収益を空洞化</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">中国EV</strong>市場では<strong>値下げで台数を積んでも利益が残らない</strong>構図が露わになり、首脳発言も消耗戦の終息へ傾いた。</li><li>論点はシェア争いではなく、<span class="emph-und">価格競争から技術・輸出・高付加価値へどう逃がすか</span>に移っている。</li><li>読者は<strong class="emph-bold">EV価格競争</strong>を景気減速の副産物で片づけず、<strong>世界市場向け投資の原資が細る兆候</strong>として見たい。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">ホンダ</strong>EV中止の余波で部品19社が補償請求へ進み、<strong class="emph-bold">EV廃電池</strong>の回収義務化も論点化した。世界のEV登録は5月に3%増だったが、中国では価格競争が収益を削る。<strong class="emph-bold">T2</strong>の料金所実証は、派手な完全自動化より<span class="emph-und">止まる場所をどう消すか</span>に踏み込んだ。<strong>採算と後処理</strong>が普及の条件になった。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-16/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-16
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

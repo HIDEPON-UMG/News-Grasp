@@ -1,0 +1,55 @@
+{
+  "date": "2026-06-16",
+  "category_id": "game",
+  "queries": [
+    "stage1_reuse: ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "stage1_reuse_note: build/deduped-candidates/game.jsonl を再利用し、広域収集と横断 dedup は再実行していない",
+    "local_filter: tools/dedup.py --jsonl data/articles.jsonl --followup-gate --freshness-gate --max-source-age-days 1"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 24,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix",
+    "Steam",
+    "任天堂",
+    "SIE (Sony Interactive Entertainment)",
+    "Cygames",
+    "カプコン",
+    "コナミ",
+    "esports",
+    "ゲーム業界 M&A",
+    "新作 発表"
+  ],
+  "dropped": [
+    {
+      "title": "Steam新作サイバーパンクACT『ナイトブラッドW：断罪の狼』は“ドット絵版『DMC』”なスタイリッシュゲーム。「平面の制限を打ち破る」気持ちよさ青天井の無限空中コンボ、デモ版配信中",
+      "url": "https://automaton-media.com/articles/reportjp/20260609-448587/",
+      "reason": "freshness gate: source date 2026-06-09 age=7d > 1d"
+    },
+    {
+      "title": "マイナビオールスターゲーム THE FESTIVAL 2026 公式特設サイト",
+      "url": "https://www.giants.jp/sp/allstarthefestival2026/",
+      "reason": "野球オールスターの周辺イベントで、ゲーム業界ニュースとしての編集適合が低い"
+    },
+    {
+      "title": "マイナビオールスターゲーム THE FESTIVAL 2026 in TOKYO-TOYAMA イベント内容決定！～東京は6月20日先行販売、6月27日一般販売開始",
+      "url": "https://npb.jp/news/detail/20260615_02.html",
+      "reason": "スポーツイベント告知であり、video game カテゴリの読者価値が薄い"
+    },
+    {
+      "title": "ゲームセンターで“スプレー噴射”…客23人がのどの痛み訴え8人搬送 営業妨害疑いで27歳男逮捕 愛知・名古屋市",
+      "url": "https://news.yahoo.co.jp/articles/ad932c11b56223f2a3b9e66d99bf45b4772c8a6f",
+      "reason": "事件報であり、ゲーム産業・プラットフォーム・IP動向としての汎用性が低い"
+    },
+    {
+      "title": "中央市のＮＰＯ 四則演算ゲーム開発",
+      "url": "https://www.sannichi.co.jp/article/2026/06/16/80704712",
+      "reason": "ローカル教育トピックで影響範囲が狭く、上位5件に届かなかった"
+    }
+  ]
+}

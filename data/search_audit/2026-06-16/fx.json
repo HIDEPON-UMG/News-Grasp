@@ -1,0 +1,48 @@
+{
+  "date": "2026-06-16",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "\"円、米イラン合意でも軟調 市場が身構える『日銀会見で売り』\"",
+    "\"【日本市況】円は160円前半、日銀利上げペース警戒が重し－TOPIX反落\"",
+    "\"一読してわかる｢日銀、きょう利上げ｣データで見る物価上昇リスク\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB",
+    "USD/JPY",
+    "日銀",
+    "米FRB",
+    "円安",
+    "金利差",
+    "為替介入"
+  ],
+  "dropped": [
+    {
+      "title": "FX/為替「ドル/円今日の予想」 外為どっとコム トゥデイ 2026年6月16日号",
+      "url": "https://www.gaitame.com/media/entry/2026/06/16/081949",
+      "reason": "日次予想の定型色が強く、一次情報性と影響範囲が弱い"
+    },
+    {
+      "title": "アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場",
+      "url": "https://finance.yahoo.co.jp/quote/USDJPY=X",
+      "reason": "レートページで独立記事ではない"
+    },
+    {
+      "title": "金利だけでない円安の要因",
+      "url": "https://www.pictet.co.jp/investment-information/market/deep-insight/20260616.html",
+      "reason": "構造論として有用だが、当日イベントの新規性で上位5件に届かなかった"
+    },
+    {
+      "title": "日銀には、物価目標実現に向け適切な政策運営強く期待＝城内経財相",
+      "url": "https://jp.reuters.com/markets/japan/3OXQH3QQLNNUHAWPN6IGMKJ6NA-2026-06-16/",
+      "reason": "政府コメントとして補足的で、会合本体と市場反応を優先した"
+    }
+  ]
+}

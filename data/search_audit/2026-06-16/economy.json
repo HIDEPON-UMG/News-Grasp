@@ -1,0 +1,39 @@
+{
+  "date": "2026-06-16",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:jp.reuters.com IMF 専務理事 世界経済 減速の兆しなし 2026-06-15",
+    "site:jcer.or.jp 26年4～6月期GDP 年率0.52％へ上方修正 20260615",
+    "site:online.nikkei-cnbc.co.jp インフレ懸念が後退し長期金利が低下 2026-06-16",
+    "日銀 金融政策 米小売売上高 米住宅着工件数 2026-06-16"
+  ],
+  "raw_results_total": 28,
+  "candidates_total": 8,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "IMF",
+    "インフレ",
+    "GDP",
+    "長期金利",
+    "日銀",
+    "米小売売上高"
+  ],
+  "dropped": [
+    {
+      "title": "原油反落、予想インフレ率も低下 過度な警戒和らぐ",
+      "url": "https://www.nikkei.com/article/DGXZQOFL158ARTV10C26A6000000/",
+      "reason": "長期金利低下の記事と論点が重複したため非採用"
+    },
+    {
+      "title": "スペースＸ、自社サイトとＸのみで決算公表へ 通信社経由せず",
+      "url": "https://jp.reuters.com/markets/world-indices/MYGRTJ2CJ5PU3LWJCLY2CTT3LY-2026-06-15/",
+      "reason": "市場構造の論点はあるが当日のマクロ重要度で上位5件に届かず"
+    },
+    {
+      "title": "ムーディーズのマーク・ザンディ氏、GDPが成長を続ける中でも経済が警告サインを発していると指摘",
+      "url": "https://www.businessinsider.jp/article/2606-recession-economy-warning-iran-war-mark-zandi-inflation-interest-rates/",
+      "reason": "見解記事で一次情報性が相対的に低いため非採用"
+    }
+  ]
+}

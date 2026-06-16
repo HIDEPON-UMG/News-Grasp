@@ -1,0 +1,44 @@
+{
+  "date": "2026-06-16",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1_dedup: 製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "watchlist_review: 完成車OEM / Tier1・Tier2 / 車載半導体・電池素材 / 生産技術キーワード",
+    "selection_focus: 工場新設・再編 / 半導体材料増産 / 量産準備の設計連携"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 0,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota",
+    "ラピダス",
+    "日産",
+    "平田機工",
+    "トクヤマ",
+    "JX金属",
+    "半導体材料",
+    "工場再編"
+  ],
+  "dropped": [
+    {
+      "title": "ステランティスとアクセンチュア、NVIDIAのテクノロジーを活用し AIを中心に据えた製造の実現に向け、戦略的パートナーシップを発表へ",
+      "url": "https://newsroom.accenture.jp/jp/news/2026/stellantis-and-accenture-announce-plans-for-a-strategic-partnership-to-advance-ai-driven-manufacturing-with-nvidia",
+      "reason": "製造ソフト寄りの提携で、当日の工場・材料・供給網再編ニュースより産業インパクトが一段低い"
+    },
+    {
+      "title": "印ケインズ、半導体の組み立て受託で日本進出 アオイ電子と技術連携",
+      "url": "https://www.nikkei.com/article/DGXZQOUC092BW0Z00C26A6000000/",
+      "reason": "日本進出案件として重要だが、同日の材料増産・工場稼働・拠点再編ニュースを優先して次点"
+    },
+    {
+      "title": "直径1nm…東大など、「半導体ナノチューブ」合成成功",
+      "url": "https://newswitch.jp/p/49466",
+      "reason": "技術的新規性は高いが、量産・供給網・設備投資への接続が当日記事だけではまだ薄い"
+    }
+  ]
+}

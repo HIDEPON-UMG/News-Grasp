@@ -140,6 +140,25 @@ npx wrangler secret put LIST_TOKEN
 - 手動公開で runner を通さない場合は `python tools/publish_update.py` を使う。Web Push 通知が必要な更新だけ `--notify` を付ける（微細修正では付けない）
 - ファイルは **UTF-8 BOM 必須**（PS5.1 が BOM 無しを CP932 解釈して日本語コメントごと壊す既知問題。`enforce_script_encoding.ps1` hook が自動付与する）
 
+### 3-1. 通常公開完了条件
+
+News-Grasp の自走修正で「直った」と言ってよいのは、Activation Path 全体が通ったときだけ。
+fallback_ok は復旧完了ではなく本線保護であり、直近成功号に notice を出しただけなら通常公開未達として扱う。
+上流契約で防げる漏れを高コスト E2E に委ねない。E2E は省略せず必要な統合検証として残すが、E2E を設計漏れのバグ発見機として濫用しない。E2E が見つけた前提漏れは runner / watcher / prompt / publish の責務境界、静的契約、文面契約、bounded dry-run へ戻して固定する。
+
+通常公開完了条件:
+
+- live runner と repo runner の checksum 一致を確認する
+- Task Scheduler が指す live runner で起動する
+- agent prompt が git / docs 生成 / publish / bare python を担当しない
+- repair worker が runner_python 以外の bare `python` / `py` / `uv` / git / 広域検索へ逃げない
+- `digest/Summary/YYYY-MM-DD.md` と各カテゴリ digest が生成される
+- `docs/YYYY-MM-DD/index.html` と `docs/YYYY-MM-DD/summary/index.html` が生成される
+- docs/publish-status.json の published_ok と当日日付を確認する
+- remote HEAD と local HEAD が一致する
+- 公開 URL の sentinel で当日日付が見えることを確認する
+- Web Push は付随機能。送信失敗だけで通常公開を失敗扱いにしないが、失敗はログに残す
+
 ## 4. Windows タスクスケジューラ登録
 
 | 設定 | 値 |

@@ -51,7 +51,8 @@ param(
     [string] $LogDirOverride = '',
     [string] $StateFileOverride = '',
     [int] $PublishVerifyWaitSec = 600,
-    [int] $PublishVerifyPollSec = 30
+    [int] $PublishVerifyPollSec = 30,
+    [switch] $ForceFullRerun
 )
 
 # PS 5.1 で $ErrorActionPreference = 'Stop' にすると、native command (git 等) の
@@ -97,10 +98,30 @@ function Resolve-NewsGraspRepoDir {
     throw 'News-Grasp repo not found. Set NEWS_GRASP_REPO_DIR or pass -RepoDirOverride.'
 }
 
+function Resolve-CodexCliExe {
+    param([string] $Override)
+    if ($Override) {
+        return (Resolve-Path -LiteralPath $Override).Path
+    }
+    if ($env:NEWS_GRASP_CODEX_EXE) {
+        return (Resolve-Path -LiteralPath $env:NEWS_GRASP_CODEX_EXE).Path
+    }
+    $extensionRoot = Join-Path $env:USERPROFILE '.vscode\extensions'
+    $candidate = Get-ChildItem -LiteralPath $extensionRoot -Filter 'openai.chatgpt-*' -Directory -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending |
+        ForEach-Object { Join-Path $_.FullName 'bin\windows-x86_64\codex.exe' } |
+        Where-Object { Test-Path -LiteralPath $_ } |
+        Select-Object -First 1
+    if ($candidate) {
+        return (Resolve-Path -LiteralPath $candidate).Path
+    }
+    throw "codex.exe not found under: $extensionRoot. Set NEWS_GRASP_CODEX_EXE or pass -CodexExeOverride."
+}
+
 $RepoDir   = Resolve-NewsGraspRepoDir -Override $RepoDirOverride
 $LogDir    = Join-Path $env:USERPROFILE 'bin\news-grasp-logs'
 $GitExe    = 'C:\Program Files\Git\cmd\git.exe'
-$CodexExe  = Join-Path $env:USERPROFILE 'bin\codex.ps1'
+$CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride
 $PyExe     = Join-Path $RepoDir '.venv\Scripts\python.exe'
 $CodexWrapper = Join-Path $env:USERPROFILE 'bin\run_codex_with_timeout.ps1'
 $TimeoutSec = 4800  # 2026-06-12: 3600→4800。日次 digest の wall-clock timeout を 80 分へ延長。真の暴走は IdleTimeoutSec 900 が先に検知する
@@ -115,7 +136,6 @@ $StateFile  = Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'
 $MaxParallelReporterJobs = 7
 
 if ($CodexWrapperOverride) { $CodexWrapper = $CodexWrapperOverride }
-if ($CodexExeOverride) { $CodexExe = $CodexExeOverride }
 if ($PyExeOverride) { $PyExe = $PyExeOverride }
 if ($LogDirOverride) { $LogDir = $LogDirOverride }
 if ($StateFileOverride) { $StateFile = $StateFileOverride }
@@ -288,6 +308,64 @@ function Get-ScheduledTaskActionSummary {
     }
 }
 
+function Get-RunnerScriptArguments {
+    $runnerArgs = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
+    if ($SmokeTest) { $runnerArgs += '-SmokeTest' }
+    if ($PreflightOnly) { $runnerArgs += '-PreflightOnly' }
+    if ($RecoverOnly) { $runnerArgs += '-RecoverOnly' }
+    if ($NoPush) { $runnerArgs += '-NoPush' }
+    if ($UseCodex) { $runnerArgs += '-UseCodex' }
+    if ($IdleTimeoutSec -ne 900) { $runnerArgs += @('-IdleTimeoutSec', [string]$IdleTimeoutSec) }
+    if ($Stage2EditorSmokeOnly) { $runnerArgs += '-Stage2EditorSmokeOnly' }
+    if ($StopAfterEditorStart) { $runnerArgs += '-StopAfterEditorStart' }
+    if ($RepoDirOverride) { $runnerArgs += @('-RepoDirOverride', $RepoDirOverride) }
+    if ($CodexWrapperOverride) { $runnerArgs += @('-CodexWrapperOverride', $CodexWrapperOverride) }
+    if ($CodexExeOverride) { $runnerArgs += @('-CodexExeOverride', $CodexExeOverride) }
+    if ($PyExeOverride) { $runnerArgs += @('-PyExeOverride', $PyExeOverride) }
+    if ($DateStampOverride) { $runnerArgs += @('-DateStampOverride', $DateStampOverride) }
+    if ($LogDirOverride) { $runnerArgs += @('-LogDirOverride', $LogDirOverride) }
+    if ($StateFileOverride) { $runnerArgs += @('-StateFileOverride', $StateFileOverride) }
+    if ($PublishVerifyWaitSec -ne 600) { $runnerArgs += @('-PublishVerifyWaitSec', [string]$PublishVerifyWaitSec) }
+    if ($PublishVerifyPollSec -ne 30) { $runnerArgs += @('-PublishVerifyPollSec', [string]$PublishVerifyPollSec) }
+    return $runnerArgs
+}
+
+function Invoke-RunnerBinarySelfUpdate {
+    param(
+        [string] $LiveRunnerSha,
+        [string] $RepoRunnerSha
+    )
+    if ($env:NEWS_GRASP_RUNNER_SYNC_REEXEC -eq '1') {
+        Write-Log "ERROR: runner binary drift remains after self update (live=$LiveRunnerSha repo=$RepoRunnerSha)."
+        Set-RunnerState -Status 'failed' -Message 'runner binary drift' -ExitCode 1
+        exit 1
+    }
+
+    $binDir = Split-Path -Parent $PSCommandPath
+    Write-Log "WARN: runner binary drift detected (live=$LiveRunnerSha repo=$RepoRunnerSha); self-updating ops scripts from repo."
+    Copy-Item -LiteralPath $RepoManagedRunner -Destination $PSCommandPath -Force
+    Copy-Item -LiteralPath $RepoManagedWatcher -Destination (Join-Path $binDir 'watch-news-grasp-runner.ps1') -Force
+    $repoManagedDeadman = Join-Path (Split-Path -Parent $RepoManagedRunner) 'news-grasp-deadman.ps1'
+    if (Test-Path -LiteralPath $repoManagedDeadman) {
+        Copy-Item -LiteralPath $repoManagedDeadman -Destination (Join-Path $binDir 'news-grasp-deadman.ps1') -Force
+    }
+
+    $updatedLiveSha = Get-FileSha256Hex -Path $PSCommandPath
+    if ($updatedLiveSha -ne $RepoRunnerSha) {
+        Write-Log "ERROR: runner binary drift self update failed (live=$updatedLiveSha repo=$RepoRunnerSha)."
+        Set-RunnerState -Status 'failed' -Message 'runner binary drift' -ExitCode 1
+        exit 1
+    }
+
+    Write-Log 'runner binary drift repaired; relaunching synced runner'
+    $env:NEWS_GRASP_RUNNER_SYNC_REEXEC = '1'
+    $powershellExe = (Get-Process -Id $PID).Path
+    $scriptArgs = Get-RunnerScriptArguments
+    & $powershellExe @scriptArgs
+    $childExitCode = if ($LASTEXITCODE -ne $null) { $LASTEXITCODE } else { 1 }
+    exit $childExitCode
+}
+
 function Assert-RunnerBinaryInSync {
     if ($RepoDirOverride) {
         Write-Log 'runner sync check skipped: RepoDirOverride is set'
@@ -304,9 +382,7 @@ function Assert-RunnerBinaryInSync {
     $taskAction = Get-ScheduledTaskActionSummary
     Write-Log "runner launch snapshot repo_dir=$RepoDir repo_head=$(& $GitExe -C $RepoDir rev-parse --short HEAD 2>$null) live_runner_sha=$liveRunnerSha repo_runner_sha=$repoRunnerSha repo_watcher_sha=$repoWatcherSha task_action=$taskAction"
     if ($liveRunnerSha -ne $repoRunnerSha) {
-        Write-Log "ERROR: runner binary drift detected (live=$liveRunnerSha repo=$repoRunnerSha). Run scripts/ops/install-news-grasp-ops.ps1 before scheduled execution."
-        Set-RunnerState -Status 'failed' -Message 'runner binary drift' -ExitCode 1
-        exit 1
+        Invoke-RunnerBinarySelfUpdate -LiveRunnerSha $liveRunnerSha -RepoRunnerSha $repoRunnerSha
     }
 }
 
@@ -494,6 +570,13 @@ $failureText
 2. 同じ gate を通すための最小修正に留める。
 3. git commit / git push は絶対に実行しない。
 4. 修正したら停止する。
+
+制約:
+- 検証コマンドは必ず次の Python 実行体だけを使う。
+- runner_python: $PyExe
+- python / py / uv / .venv\Scripts\python.exe の直書きは禁止。WindowsApps python や uv cache に流れる経路を作らない。
+- git add / git commit / git push / git checkout / git reset は絶対に実行しない。
+- rg / Get-ChildItem -Recurse / 広域 Select-String は禁止。読む場合は失敗ログと artifacts に列挙された最小ファイルだけに限定する。
 "@
     [System.IO.File]::WriteAllText($repairPrompt, $prompt, [System.Text.UTF8Encoding]::new($false))
     $repairModel = Get-ModelPolicyValue -Role 'editor' -Key 'default'
@@ -659,6 +742,21 @@ function Stop-ContentGateWithoutFallback {
     exit 1
 }
 
+function Test-DailyArtifactsExist {
+    param([Parameter(Mandatory=$true)][string] $TargetDate)
+    $patterns = @(
+        "digest\*\$TargetDate-*.md",
+        "digest\Summary\$TargetDate.md",
+        "docs\$TargetDate\index.html",
+        "build\reporter-artifacts\$TargetDate\*"
+    )
+    foreach ($pattern in $patterns) {
+        $matches = Get-ChildItem -Path (Join-Path $RepoDir $pattern) -ErrorAction SilentlyContinue
+        if ($matches) { return $true }
+    }
+    return $false
+}
+
 # ===== sentinel: 起動できた事実 =====
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
 Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly" -Encoding UTF8
@@ -668,6 +766,11 @@ Add-Content -Path $LogPath -Value '==========================================' -
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, pid=$PID)"
 Assert-RunnerBinaryInSync
+if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
+    Write-Log "ERROR: existing daily artifacts detected; refusing full rerun for date=$DateStamp. Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts."
+    Set-RunnerState -Status 'failed' -Message 'existing daily artifacts detected; refusing full rerun' -ExitCode 64
+    exit 64
+}
 Write-CodexUsageWindowSnapshot -Phase 'start'
 Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
 

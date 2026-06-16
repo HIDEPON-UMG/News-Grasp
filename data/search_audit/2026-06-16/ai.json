@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-16",
+  "category_id": "ai",
+  "queries": [
+    "stage1-file build/deduped-candidates/ai.jsonl",
+    "cluster OpenAI state investigation child safety",
+    "cluster OpenAI Codex ChatGPT super app",
+    "cluster Anthropic Claude Max plan lawsuit",
+    "cluster Google Gemini Live image editing",
+    "cluster Perplexity 2028 IPO"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 0,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "【PR】生成AIの価格破壊、アリババクラウドの戦略",
+      "url": "https://xtech.nikkei.com/atcl/nxt/special/18/00001/060300084/",
+      "reason": "PR表記が明示されており、当日号の主役に置くには一次報道性が弱い"
+    },
+    {
+      "title": "Claude Codeとは？機能・料金・比較・最新アップデートまで",
+      "url": "https://exawizards.com/column/article/ai/claude-code/",
+      "reason": "解説記事であり、当日の新規事実よりハウツー色が強い"
+    },
+    {
+      "title": "生成AIの全社導入に限界か 8割が実務レベル不足を痛感する実態",
+      "url": "https://forbesjapan.com/articles/detail/98849",
+      "reason": "重要な調査だがストック性が高く、規制・製品導線・課金訴訟の当日性に劣る"
+    },
+    {
+      "title": "日立、「AIリーダー」500人育成 営業部門の生成AI普及率90%超に",
+      "url": "https://reskill.nikkei.com/article/DGXZQOLM126IR0S6A610C2000000/",
+      "reason": "国内実装事例として有力だが、当日上位5件では市場全体への波及が一段小さい"
+    },
+    {
+      "title": "NICT、タチコマが育つ「WarpDrive」新機能やLLMの「AIセキュリティ評価基盤」などを展示",
+      "url": "https://cloud.watch.impress.co.jp/docs/event/2117410.html",
+      "reason": "展示会ベースの紹介で、新制度や大型プロダクト更新ほどの即時性が薄い"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

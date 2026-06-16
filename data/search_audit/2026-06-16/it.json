@@ -1,0 +1,46 @@
+{
+  "date": "2026-06-16",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d"
+  ],
+  "raw_results_total": 50,
+  "candidates_total": 50,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT",
+    "NTTデータ",
+    "NEC",
+    "SaaS",
+    "クラウド",
+    "サイバーセキュリティ",
+    "IT投資"
+  ],
+  "dropped": [
+    {
+      "title": "「複業クラウド for Public」の実証実験を開始しました",
+      "url": "https://www.city.hashimoto.lg.jp/guide/sogoseisakubu/seisaku_kikaku/sankangakurenkei/22373.html",
+      "reason": "自治体実証で影響範囲が限定的"
+    },
+    {
+      "title": "中堅企業に向けてPMI実践セミナーを開催",
+      "url": "https://prtimes.jp/main/html/rd/p/000000040.000054241.html",
+      "reason": "イベント告知色が強く一次情報でもニュース性が弱い"
+    },
+    {
+      "title": "矢崎部品株式会社がサプライチェーン・リスク管理クラウド「Spectee SCR」を導入決定",
+      "url": "https://spectee.co.jp/pr20260616/",
+      "reason": "導入PRとしては有意だが他候補より波及範囲が狭い"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

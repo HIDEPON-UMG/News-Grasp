@@ -222,42 +222,53 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     env["NEWS_GRASP_E2E_DATE"] = ISSUE
     env["NEWS_GRASP_E2E_TRACE"] = str(trace)
     env["NEWS_GRASP_E2E_SENTINEL"] = str(sentinel)
-    result = subprocess.run(
-        [
-            POWERSHELL,
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            str(RUNNER),
-            "-Stage2EditorSmokeOnly",
-            "-StopAfterEditorStart",
-            "-NoPush",
-            "-RepoDirOverride",
-            str(repo),
-            "-CodexWrapperOverride",
-            str(wrapper),
-            "-CodexExeOverride",
-            str(tmp_path / "fake_codex.cmd"),
-            "-PyExeOverride",
-            sys.executable,
-            "-DateStampOverride",
-            ISSUE,
-            "-LogDirOverride",
-            str(log_dir),
-            "-StateFileOverride",
-            str(state_file),
-            "-IdleTimeoutSec",
-            "30",
-        ],
-        cwd=repo,
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=120,
-    )
+    root_last_message = ROOT / "build" / "codex-last-message.txt"
+    root_last_message_backup = tmp_path / "root-codex-last-message.txt"
+    if root_last_message.exists():
+        shutil.move(str(root_last_message), str(root_last_message_backup))
+    root_last_message_written_during_test = False
+    try:
+        result = subprocess.run(
+            [
+                POWERSHELL,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(RUNNER),
+                "-Stage2EditorSmokeOnly",
+                "-StopAfterEditorStart",
+                "-NoPush",
+                "-RepoDirOverride",
+                str(repo),
+                "-CodexWrapperOverride",
+                str(wrapper),
+                "-CodexExeOverride",
+                str(tmp_path / "fake_codex.cmd"),
+                "-PyExeOverride",
+                sys.executable,
+                "-DateStampOverride",
+                ISSUE,
+                "-LogDirOverride",
+                str(log_dir),
+                "-StateFileOverride",
+                str(state_file),
+                "-IdleTimeoutSec",
+                "30",
+            ],
+            cwd=repo,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+        root_last_message_written_during_test = root_last_message.exists()
+    finally:
+        if root_last_message_backup.exists():
+            root_last_message.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(root_last_message_backup), str(root_last_message))
 
     assert result.returncode == 0, result.stdout + result.stderr
     trace_text = trace.read_text(encoding="utf-8")
@@ -273,7 +284,7 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     manifest = repo / "build" / "reporter-artifacts" / ISSUE / "editor-input-manifest.json"
     assert manifest.exists()
     assert (repo / "build" / "codex-last-message.txt").exists()
-    assert not (ROOT / "build" / "codex-last-message.txt").exists()
+    assert not root_last_message_written_during_test
     state = json.loads(state_file.read_text(encoding="utf-8"))
     assert state["status"] == "smoke_ok"
     assert state["repo_dir"] == str(repo)

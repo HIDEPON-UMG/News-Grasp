@@ -31,6 +31,16 @@ def test_runner_exposes_codex_mode_without_claude_print() -> None:
     assert "claude --print" not in runner.lower()
 
 
+def test_runner_uses_direct_codex_exe_not_preflight_capturing_wrapper() -> None:
+    """日次 runner は stdout/stderr を捕捉する codex.ps1 経由で idle 監視を壊さない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    assert "function Resolve-CodexCliExe" in runner
+    assert "$CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride" in runner
+    assert "codex_exec_preflight_wrapper.ps1" not in runner
+    assert "Join-Path $env:USERPROFILE 'bin\\codex.ps1'" not in runner
+
+
 def test_mobility_backfill_does_not_keep_claude_print_path() -> None:
     """完了済み一時backfillからClaude CLI課金経路を残さない。"""
     if not BACKFILL_MOBILITY.exists():
