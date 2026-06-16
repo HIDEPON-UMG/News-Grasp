@@ -130,6 +130,8 @@
 </section>
 
 
+
+
 <!-- ============= Pull quote ============= -->
 <section class="summary-pull">
   <div class="summary-pull__inner">
@@ -286,6 +288,25 @@
     <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
   </div>
 </footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+})();
+</script>
 
 </body>
 </html>

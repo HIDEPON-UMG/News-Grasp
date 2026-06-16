@@ -158,6 +158,8 @@
   </div>
 </nav>
 
+
+
 <!-- ============= Hero (2 col: theme + Editor's Top 3 + Stats) ============= -->
 <section class="home-hero">
   <div class="home-hero__inner">
@@ -507,6 +509,24 @@
   </div>
 </section>
 <script src="/News-Grasp/push.js" defer></script>
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+})();
+</script>
 <script>
 // TODAY'S THEME 見出しは hero_phrase の文字数が日替わりで変わるため、
 // フォントを 1px ずつ縮小して「最大 3 行 (<br/> による 1 改行 + 各 span が最大 2 行に折返し)」に収める。

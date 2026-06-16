@@ -130,6 +130,27 @@
 </section>
 
 
+<section class="daily-audio daily-audio--summary" aria-label="本日の音声朗読">
+  <div class="daily-audio__inner">
+    <div class="daily-audio__meta">
+      <span class="daily-audio__kicker">LISTEN</span>
+      <span class="daily-audio__title">今日のニュース朗読</span>
+      <span class="daily-audio__date">2026-06-16</span>
+    </div>
+    <div class="daily-audio__controls">
+      <audio preload="none" controls src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3"></audio>
+      <div class="daily-audio__rates" role="group" aria-label="再生速度">
+        <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.25">1.25x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+        <button type="button" class="daily-audio__rate" data-rate="2">2x</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
 <!-- ============= Pull quote ============= -->
 <section class="summary-pull">
   <div class="summary-pull__inner">
@@ -406,6 +427,25 @@
     <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
   </div>
 </footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
