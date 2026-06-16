@@ -154,6 +154,30 @@ $LogPath = Join-Path $LogDir ("$DateStamp.log")
 $CodexUsageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.jsonl"
 $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.jsonl"
 $script:CodexUsageEndSnapshotWritten = $false
+$DailyDigestArtifacts = @(
+    "digest/AI/$DateStamp-AI.md",
+    "digest/Economy/$DateStamp-Economy.md",
+    "digest/FX/$DateStamp-FX.md",
+    "digest/Game/$DateStamp-Game.md",
+    "digest/IT-Consulting/$DateStamp-IT-Consulting.md",
+    "digest/Manufacturing/$DateStamp-Manufacturing.md",
+    "digest/Mobility/$DateStamp-Mobility.md",
+    "digest/Summary/$DateStamp.md",
+    "data/articles.jsonl"
+)
+$PublishedDocsArtifacts = @(
+    "docs/$DateStamp/index.html",
+    "docs/$DateStamp/summary/index.html",
+    "docs/ai/$DateStamp/index.html",
+    "docs/economy/$DateStamp/index.html",
+    "docs/fx/$DateStamp/index.html",
+    "docs/game/$DateStamp/index.html",
+    "docs/it-consulting/$DateStamp/index.html",
+    "docs/manufacturing/$DateStamp/index.html",
+    "docs/mobility/$DateStamp/index.html",
+    "digest/DeepDive/$DateStamp-DeepDive.md",
+    "docs/deepdive/$DateStamp/index.html"
+)
 
 function Set-RunnerState {
     param(
@@ -505,11 +529,6 @@ function Invoke-TargetedRepair {
         [string] $CapturePath,
         [string[]] $Artifacts
     )
-    if ($RecoverOnly) {
-        Write-Log "repair worker skipped: RecoverOnly mode (gate=$GateId)"
-        return 1
-    }
-
     $attemptState = Join-Path $RepoDir ("data\gate_attempts\$DateStamp.json")
     # 2026-06-10: 変数名を $args から $gateAttemptArgs に変更 (致命バグ修正)。
     #   $args は PowerShell 自動変数。`Invoke-Logged { & $PyExe @args }` の
@@ -555,7 +574,9 @@ News-Grasp RecoverOnly targeted repair.
 
 目的:
 - gate 失敗を 1 回だけ修復する。
-- commit / push / docs 生成 / 全体再生成は禁止。
+- 欠落成果物を再生成し、同じ gate を再実行したときに PASS するまでの最小修復に限定する。
+- repair は runner の bounded retry 内でだけ実行される。無制限 loop にしない。
+- commit / push / 全体再生成は禁止。docs 欠落が失敗原因の場合だけ、指定 artifact の docs を作る最小 build は許可する。
 - 変更してよいのは下記 artifact と、その修復に必須の最小ファイルだけ。
 
 gate_id: $GateId
@@ -567,9 +588,11 @@ $failureText
 
 作業:
 1. 失敗ログが示す不備だけを修正する。
-2. 同じ gate を通すための最小修正に留める。
-3. git commit / git push は絶対に実行しない。
-4. 修正したら停止する。
+2. 欠落成果物を再生成する。fatal で終わるだけにしない。
+3. runner_python を使い、同じ gate を再実行して PASS するまで確認する。
+4. 同じ gate が PASS しない場合は、追加で別作業へ広げず失敗理由を最小 artifact に残して停止する。
+5. git commit / git push は絶対に実行しない。
+6. 修正したら停止する。
 
 制約:
 - 検証コマンドは必ず次の Python 実行体だけを使う。
@@ -1253,7 +1276,7 @@ Write-Log 'summary reflection gate OK'
 # 落ちた。また、記事 record の date は収集日であり、URL パス上の発行日が前日以前
 # でも pre-push gate が検出できなかった。日次公開境界で両方を fail loud にする。
 Write-Log "daily quality gate start (validate_daily_quality --date $DateStamp)"
-$dailyQualityRc = Invoke-PythonGateWithRepair -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp) -Artifacts @("digest/Summary/$DateStamp.md", "data/articles.jsonl")
+$dailyQualityRc = Invoke-PythonGateWithRepair -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp) -Artifacts $DailyDigestArtifacts
 if ($dailyQualityRc -ne 0) {
     Stop-ContentGateWithoutFallback -GateId 'daily-quality' -ExitCode $dailyQualityRc
 }
@@ -1448,7 +1471,7 @@ Write-Log 'generate_pages.py done'
 # 公開完了扱いにしてしまった。通常公開の完了条件は digest + docs + 当日 DeepDive まで
 # 揃っていることなので、generate_pages.py 後に md/html の存在を fail loud にする。
 Write-Log "deepdive required gate start (validate_daily_quality --date $DateStamp --require-deepdive)"
-$deepDiveRequiredRc = Invoke-PythonGateWithRepair -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts @("digest/DeepDive/$DateStamp-DeepDive.md", "docs/deepdive/$DateStamp/index.html")
+$deepDiveRequiredRc = Invoke-PythonGateWithRepair -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts $PublishedDocsArtifacts
 if ($deepDiveRequiredRc -ne 0) {
     Stop-ContentGateWithoutFallback -GateId 'deepdive-required' -ExitCode $deepDiveRequiredRc
 }

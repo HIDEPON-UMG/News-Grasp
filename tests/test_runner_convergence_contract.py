@@ -92,6 +92,60 @@ def test_targeted_repair_prompt_is_bounded_to_runner_owned_tools() -> None:
     assert "runner_python:" in runner
 
 
+def test_recover_only_does_not_disable_targeted_repair() -> None:
+    """RecoverOnly でも欠落 inventory を fatal 終了だけにせず bounded repair へ進む。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-PythonGateWithRepair", 1)[0]
+
+    assert "repair worker skipped: RecoverOnly mode" not in repair_body
+    assert "if ($RecoverOnly)" not in repair_body
+    assert "tools.gate_attempts" in repair_body
+    assert "Invoke-CodexWrapper" in repair_body
+
+
+def test_targeted_repair_prompt_regenerates_until_same_gate_passes() -> None:
+    """欠落時の repair は fatal で終わらず、成果物再生成→同一 gate 再検証を要求する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "欠落成果物を再生成" in runner
+    assert "同じ gate を再実行" in runner
+    assert "PASS するまで" in runner
+    assert "bounded retry" in runner
+
+
+def test_inventory_repair_artifacts_cover_required_digest_and_docs() -> None:
+    """repair prompt に欠落 inventory の実ファイルが渡るよう artifact scope を固定する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "$DailyDigestArtifacts = @(" in runner
+    for rel in [
+        "digest/AI/$DateStamp-AI.md",
+        "digest/Economy/$DateStamp-Economy.md",
+        "digest/FX/$DateStamp-FX.md",
+        "digest/Game/$DateStamp-Game.md",
+        "digest/IT-Consulting/$DateStamp-IT-Consulting.md",
+        "digest/Manufacturing/$DateStamp-Manufacturing.md",
+        "digest/Mobility/$DateStamp-Mobility.md",
+        "digest/Summary/$DateStamp.md",
+        "data/articles.jsonl",
+    ]:
+        assert rel in runner
+    assert "-GateId 'daily-quality'" in runner
+    assert "-Artifacts $DailyDigestArtifacts" in runner
+
+    assert "$PublishedDocsArtifacts = @(" in runner
+    for rel in [
+        "docs/$DateStamp/index.html",
+        "docs/$DateStamp/summary/index.html",
+        "docs/game/$DateStamp/index.html",
+        "digest/DeepDive/$DateStamp-DeepDive.md",
+        "docs/deepdive/$DateStamp/index.html",
+    ]:
+        assert rel in runner
+    assert "-GateId 'deepdive-required'" in runner
+    assert "-Artifacts $PublishedDocsArtifacts" in runner
+
+
 def test_fallback_publish_restores_unverified_generated_artifacts() -> None:
     """fallback は公開 notice だけを残し、未検証 digest/data 差分を作業ツリーに残さない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
