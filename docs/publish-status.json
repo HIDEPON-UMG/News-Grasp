@@ -1,7 +1,7 @@
 {
   "result": "published_fallback_with_notice",
-  "date": "2026-06-15",
-  "reason": "url-liveness-quarantine-failed",
+  "date": "2026-06-16",
+  "reason": "pytest-static-gate-failed",
   "notice": "本日の更新は品質確認中です。直近の公開済み号を表示しています。",
-  "updated_at": "2026-06-15T23:02:48"
+  "updated_at": "2026-06-16T10:45:49"
 }
