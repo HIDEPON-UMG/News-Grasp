@@ -127,6 +127,24 @@ def hydrate_thumbnails(
     return hydrated, dropped
 
 
+def require_date_evidence_source(records: list[dict]) -> tuple[list[dict], list[dict]]:
+    """freshness source が無い record を append 前に落とす。
+
+    `published_date` だけでは、どの根拠で採用日を確認したかが後段 repair で追えない。
+    ここでは source を創作せず、欠落 record を混入させない。
+    """
+    passed: list[dict] = []
+    dropped: list[dict] = []
+    for rec in records:
+        item = dict(rec)
+        if not item.get("date_evidence_source"):
+            item["dedup_reason"] = "date_evidence_source_missing"
+            dropped.append(item)
+            continue
+        passed.append(item)
+    return passed, dropped
+
+
 def filter_records(
     candidates: list[dict],
     existing: list[dict],
@@ -197,6 +215,8 @@ def main() -> int:
             retries=args.thumb_retries,
         )
         dropped.extend(thumb_dropped)
+    passed, evidence_dropped = require_date_evidence_source(passed)
+    dropped.extend(evidence_dropped)
     append_records(jsonl_path, passed)
 
     for r in passed:

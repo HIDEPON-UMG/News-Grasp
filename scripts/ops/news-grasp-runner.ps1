@@ -627,6 +627,88 @@ $failureText
     return $repairRc
 }
 
+function Snapshot-RepairWorkspace {
+    $lines = @(& $GitExe -C $RepoDir status --porcelain --untracked-files=all)
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "WARN: failed to snapshot repair workspace (rc=$LASTEXITCODE)"
+        return @()
+    }
+    return @($lines | ForEach-Object { [string]$_ })
+}
+
+function Get-RepairStatusPath {
+    param([string] $StatusLine)
+    if (-not $StatusLine -or $StatusLine.Length -lt 4) {
+        return ''
+    }
+    $path = $StatusLine.Substring(3).Trim()
+    if ($path -like '* -> *') {
+        $path = ($path -split ' -> ')[-1].Trim()
+    }
+    return $path.Trim('"').Replace('\', '/')
+}
+
+function Test-RepairArtifactScope {
+    param(
+        [string[]] $BeforeStatus,
+        [string[]] $Artifacts
+    )
+    $beforeSet = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($line in @($BeforeStatus)) {
+        [void]$beforeSet.Add([string]$line)
+    }
+    $allowed = @($Artifacts | ForEach-Object { ([string]$_).Trim().Replace('\', '/') } | Where-Object { $_ })
+    $afterStatus = Snapshot-RepairWorkspace
+    $violations = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($line in @($afterStatus)) {
+        $statusLine = [string]$line
+        if ($beforeSet.Contains($statusLine)) {
+            continue
+        }
+        $path = Get-RepairStatusPath -StatusLine $statusLine
+        if (-not $path) {
+            continue
+        }
+        $inScope = $false
+        foreach ($artifact in $allowed) {
+            if ($path -eq $artifact -or $path.StartsWith("$artifact/")) {
+                $inScope = $true
+                break
+            }
+        }
+        if (-not $inScope) {
+            [void]$violations.Add($path)
+        }
+    }
+    if ($violations.Count -gt 0) {
+        Write-Log ("repair worker changed files outside artifact scope: " + ([string]::Join(', ', @($violations))))
+        return $false
+    }
+    return $true
+}
+
+function Test-GenerationExternalReadiness {
+    $requiredPaths = @(
+        'data\articles.jsonl',
+        'data\_status.md',
+        "data\search_audit\$DateStamp"
+    )
+    foreach ($rel in $requiredPaths) {
+        $path = Join-Path $RepoDir $rel
+        if (-not (Test-Path -LiteralPath $path)) {
+            Write-Log "generation external readiness missing: $rel"
+            return $false
+        }
+    }
+    $auditDir = Join-Path $RepoDir "data\search_audit\$DateStamp"
+    $auditFiles = @(Get-ChildItem -LiteralPath $auditDir -File -ErrorAction SilentlyContinue)
+    if ($auditFiles.Count -eq 0) {
+        Write-Log "generation external readiness missing: data\search_audit\$DateStamp has no files"
+        return $false
+    }
+    return $true
+}
+
 function Invoke-PythonGateWithRepair {
     param(
         [string] $GateId,
@@ -649,8 +731,12 @@ function Invoke-PythonGateWithRepair {
             return 0
         }
         Write-Log "$GateId gate failed (attempt=$attempt, rc=$gateRc)"
+        $repairBeforeStatus = Snapshot-RepairWorkspace
         $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts
         if ($repairRc -ne 0) {
+            return $gateRc
+        }
+        if (-not (Test-RepairArtifactScope -BeforeStatus $repairBeforeStatus -Artifacts $Artifacts)) {
             return $gateRc
         }
     }
@@ -1322,6 +1408,13 @@ if ($RecoverOnly) {
 
 $GeneratedArtifacts = Get-PublishInventoryArtifacts -Kind 'generated'
 
+Write-Log 'generation external readiness gate start'
+if (-not (Test-GenerationExternalReadiness)) {
+    Set-RunnerState -Status 'blocked_external_readiness' -Message 'generation external readiness failed' -ExitCode 71
+    exit 71
+}
+Write-Log 'generation external readiness gate OK'
+
 Write-Log 'generation artifact normalize start (normalize_generated_artifacts)'
 Push-Location $RepoDir
 try {
@@ -1459,6 +1552,34 @@ if ($pytestGateRc -ne 0) {
     Invoke-FallbackPublish -Reason 'pytest-static-gate-failed'
 }
 Write-Log 'pytest gate OK'
+
+# ===== 2.85 Daily TTS audio (non-fatal, editor 後・generate_pages 前) =====
+# 2026-06-16: 編集長が生成した digest/Summary/{date}-audio-script.md を AivisSpeech で
+# mp3 化し、GitHub Releases audio-daily へ公開する。音声は additive な導線なので、
+# AivisSpeech / ffmpeg / gh のどこで失敗しても digest 公開は止めない。
+foreach ($ttsStep in @(
+    @{ Name = 'tts build_script'; Args = @('-m', 'tools.tts.build_script', $DateStamp) },
+    @{ Name = 'tts synthesize_daily'; Args = @('-m', 'tools.tts.synthesize_daily', $DateStamp) },
+    @{ Name = 'tts publish_audio'; Args = @('-m', 'tools.tts.publish_audio', $DateStamp) }
+)) {
+    Write-Log "$($ttsStep.Name) start (non-fatal)"
+    try {
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe @($ttsStep.Args) }
+            $ttsRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($ttsRc -ne 0) {
+            Write-Log "WARN: $($ttsStep.Name) exited with $ttsRc (non-fatal, digest は続行)"
+        } else {
+            Write-Log "$($ttsStep.Name) done"
+        }
+    } catch {
+        Write-Log "WARN: $($ttsStep.Name) failed: $($_.Exception.Message) (non-fatal, digest は続行)"
+    }
+}
 
 # ===== 2.9 digest/data commit (全 content gate 通過後・docs 生成前) =====
 # 2026-06-09 改定で生成側は commit しなくなった (routine-system.md ステップ 6:

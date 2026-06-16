@@ -44,6 +44,8 @@ def _record(idx: int, *, date_v: str = ISSUE, extra: dict | None = None) -> dict
         "title_ja": f"AI サンプル記事 {idx}",
         "url": f"https://example.com/ai/story-{idx}",
         "thumb": f"https://example.com/ai/thumb-{idx}.png",
+        "published_date": ISSUE,
+        "date_evidence_source": "fixture",
     }
     if extra:
         rec.update(extra)
@@ -161,6 +163,17 @@ def test_fail_record_schema_violation(tmp_path: Path):
     repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
     errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
     assert any("schema" in e for e in errs), f"schema 違反を検出するはず: {errs}"
+
+
+def test_fail_record_without_date_evidence_source(tmp_path: Path):
+    """published_date だけで date_evidence_source が無い記者 record は FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0].pop("date_evidence_source")
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+    assert any("date_evidence_source" in e for e in errs), (
+        f"date_evidence_source 欠落を検出するはず: {errs}"
+    )
 
 
 def test_fail_google_news_rss_url_in_records(tmp_path: Path):

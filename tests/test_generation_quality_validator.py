@@ -39,7 +39,18 @@ def _write_complete_fixture(root: Path) -> None:
             + "- body line\n",
             encoding="utf-8",
         )
-        article_lines.append(json.dumps({"date": ISSUE, "title": f"{folder} article", "url": url}, ensure_ascii=False))
+        article_lines.append(
+            json.dumps(
+                {
+                    "date": ISSUE,
+                    "title": f"{folder} article",
+                    "url": url,
+                    "published_date": ISSUE,
+                    "date_evidence_source": "fixture",
+                },
+                ensure_ascii=False,
+            )
+        )
 
     summary = root / "digest" / "Summary" / f"{ISSUE}.md"
     summary.parent.mkdir(parents=True, exist_ok=True)
@@ -150,6 +161,44 @@ def test_generation_quality_rejects_zero_issue_articles(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert any(err.code == "articles_issue_empty" for err in result.errors)
+
+
+def test_generation_quality_rejects_missing_date_evidence_source(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    records = []
+    for line in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8").splitlines():
+        rec = json.loads(line)
+        rec.pop("date_evidence_source", None)
+        records.append(json.dumps(rec, ensure_ascii=False))
+    (tmp_path / "data" / "articles.jsonl").write_text("\n".join(records) + "\n", encoding="utf-8")
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 1
+    assert any(
+        err.code == "date_evidence_source_missing"
+        and err.artifact == "data/articles.jsonl"
+        and err.retryable is True
+        for err in result.errors
+    )
+
+
+def test_generation_quality_rejects_category_article_without_body(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    target = tmp_path / "digest" / "AI" / f"{ISSUE}-AI.md"
+    target.write_text(
+        _frontmatter("AI", "AI", "ai")
+        + "# AI\n\n"
+        + "### [01] body missing\n\n"
+        + "📅 2026-06-16 · 📰 Example · 🔗 [元記事](https://example.com/ai/1)\n\n"
+        + "#tag/only\n",
+        encoding="utf-8",
+    )
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 1
+    assert any(err.code == "category_article_body_missing" and err.category == "ai" for err in result.errors)
 
 
 def test_generation_quality_json_errors_are_machine_readable(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

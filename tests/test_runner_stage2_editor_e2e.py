@@ -117,6 +117,8 @@ if ($FlowName.StartsWith('reporter:')) {
             title_ja = "Smoke $cat story $i ja"
             url = "https://example.com/$cat/story-$i"
             thumb = "https://example.com/$cat/thumb-$i.png"
+            published_date = $date
+            date_evidence_source = "fixture"
         }
         $lines += ($rec | ConvertTo-Json -Compress)
         $cards += "### [88] Smoke $cat story $i"

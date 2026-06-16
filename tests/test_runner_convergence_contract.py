@@ -193,6 +193,29 @@ def test_generation_quality_repair_prompt_is_item_scoped() -> None:
     assert "publish 実行は禁止" in repair_body
 
 
+def test_targeted_repair_rejects_changes_outside_artifact_scope() -> None:
+    """repair worker が対象 artifact 以外を触ったら同じ gate の再試行へ進ませない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Restore-UnverifiedGeneratedArtifacts", 1)[0]
+
+    assert "Test-RepairArtifactScope" in runner
+    assert "Snapshot-RepairWorkspace" in runner
+    assert "repair worker changed files outside artifact scope" in runner
+    assert "if (-not (Test-RepairArtifactScope" in gate_body
+
+
+def test_generation_quality_runs_after_external_readiness_precheck() -> None:
+    """外部 readiness 不足は生成品質 failure と混ぜず、generation-quality 前に止める。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "generation external readiness gate start" in runner
+    assert "Test-GenerationExternalReadiness" in runner
+    assert runner.index("generation external readiness gate start") < runner.index("generation quality gate start")
+    readiness_block = runner.split("generation external readiness gate start", 1)[1].split("generation artifact normalize start", 1)[0]
+    assert "blocked_external_readiness" in readiness_block
+    assert "content_repair_failed" not in readiness_block
+
+
 def test_preflight_only_writes_terminal_state() -> None:
     """PreflightOnly 成功は running のままにせず preflight_ok を state に残す。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")

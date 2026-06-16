@@ -66,6 +66,7 @@ def test_reporter_prompt_date_and_thumb_contracts() -> None:
     assert "fetch_ogp" in text
     assert "号日" in text
     assert "published_date" in text
+    assert "date_evidence_source" in text
     assert "記事公開日ではない" in text
 
 

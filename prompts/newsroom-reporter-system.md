@@ -135,7 +135,7 @@ cat → Genre（digest フォルダ名）の対応：
 
 - `dedup.py` は `articles.jsonl` の **全エントリ**（過去何日でも）と照合する。判定ロジック（URL 正規化一致は経過時間に関係なく常に除外 / タイトル類似 0.42 / cross-language トークン一致 / 鮮度ゲート）は **`tools/dedup.py` が唯一の正本**。自前のワンライナーや目視で代替しないこと。
 - **古記事の「背景文脈」採用の禁止**：発行日が古い記事を「文脈補強」「重要だから」等の裁量で記事カードに採用してはならない（背景は本文の言及に留める。過去号への `[[関連過去号]]` リンクは可）。
-- **注釈の確認**：通過候補には公開日が解決できた場合 `published_date` と `date_evidence_source`（`url-path` / `url-path-month` / `htmldate`）が付く。注釈が付かない候補（warn-pass。stderr に `WARN freshness-unverified`）だけは採用前に元記事を開いて公開日を目視確認する。
+- **注釈の確認**：通過候補には公開日が解決できた場合 `published_date` と `date_evidence_source`（`url-path` / `url-path-month` / `htmldate`）が付く。`date_evidence_source` が無い候補は、採用前に元記事を開いて公開日を確認し、根拠種別を記録できない限り採用しない。`published_date` だけを書いて source を省略した record は `verify_reporter_output` と generation-quality gate が FAIL にする。
 
 ### R2-E. 続報の新材料確認（dedup.py 通過後・小プールカテゴリ向け）
 
@@ -218,7 +218,8 @@ dedup を通過した候補から **スコア降順で 5 件** 確定する。**
 {
   "date": "{号日}",                  // ← 号日（YYYY-MM-DD）。記事公開日ではない！（下記注意）
   "seen_at": "{号日}T06:12:34+09:00", // News-Grasp が初めて観測した ISO 8601（JST）。dedup の 24h 判定基準
-  "published_date": "2026-06-11",    // ← 記事の実公開日はこちらに保持（dedup の date_evidence_source 注釈由来 / 取れなければ省略可）
+  "published_date": "2026-06-11",    // ← 記事の実公開日はこちらに保持（dedup の date_evidence_source 注釈由来）
+  "date_evidence_source": "url-path", // ← 必須。url-path / url-path-month / htmldate / 目視確認した根拠種別
   "genre": "{Genre}",                // 大文字表記（FX / AI / IT-Consulting / ...）
   "title": "...",                    // 非空 str（日本語タイトルなら title_ja も）
   "title_ja": "...",                 // 日本語タイトル（日本語）

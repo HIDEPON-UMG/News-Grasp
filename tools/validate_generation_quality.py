@@ -18,6 +18,7 @@ PLACEHOLDER_RE = re.compile(r"(準備中|TODO|TBD|placeholder|coming soon|本文
 URL_RE = re.compile(r"https?://[^\s)\]\">]+")
 SOURCE_LINK_RE = re.compile(r"元記事\]\((https?://[^)\s]+)\)")
 ARTICLE_HEADING_RE = re.compile(r"^###\s+\[\d+\]", re.MULTILINE)
+ARTICLE_SECTION_RE = re.compile(r"^###\s+\[\d+\].*$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -226,6 +227,19 @@ def _validate_category_digest(
                 actual="0 article headings",
             )
         )
+    for section in _article_sections(text):
+        if not _article_section_has_body(section):
+            errors.append(
+                _error(
+                    "category_article_body_missing",
+                    rel,
+                    category=cat_id,
+                    reason="article block has no generated body bullet",
+                    expected="at least one non-empty article body bullet",
+                    actual="heading/link/tag only",
+                )
+            )
+            break
     digest_urls = {url.rstrip(".,") for url in SOURCE_LINK_RE.findall(text)}
     missing_in_articles = sorted(url for url in digest_urls if url not in article_urls)
     if missing_in_articles:
@@ -240,6 +254,25 @@ def _validate_category_digest(
             )
         )
     return errors
+
+
+def _article_sections(text: str) -> list[str]:
+    matches = list(ARTICLE_SECTION_RE.finditer(text))
+    sections: list[str] = []
+    for idx, match in enumerate(matches):
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+        sections.append(text[match.start() : end])
+    return sections
+
+
+def _article_section_has_body(section: str) -> bool:
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("- ") and len(stripped) > 4:
+            return True
+    return False
 
 
 def _validate_summary(repo_root: Path, rel: str, issue: str) -> list[GenerationQualityError]:
@@ -341,14 +374,13 @@ def validate_generation_quality(repo_root: Path, issue: str) -> GenerationQualit
             )
         )
     if issue_records and not any(rec.get("date_evidence_source") for rec in issue_records):
-        warnings.append(
+        errors.append(
             _error(
                 "date_evidence_source_missing",
                 "data/articles.jsonl",
                 reason="issue records have no date_evidence_source",
                 expected="at least one freshness annotation",
                 actual="none",
-                retryable=False,
             )
         )
 

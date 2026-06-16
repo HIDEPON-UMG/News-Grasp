@@ -144,6 +144,11 @@ def _check_records(
                 f"record #{i}: date={rec.get('date')!r} != 号日 {issue_date!r} "
                 f"(records.jsonl の date は号日に揃えること)"
             )
+        if not rec.get("date_evidence_source"):
+            errs.append(
+                f"record #{i}: date_evidence_source が無い "
+                f"(published_date の根拠種別を記者出力に含めること)"
+            )
 
     count = len(records)
     if count < 1:

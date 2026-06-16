@@ -81,6 +81,24 @@ def test_append_boundary_drops_stale_source_date(tmp_path: Path) -> None:
     assert jsonl.read_text(encoding="utf-8") == ""
 
 
+def test_append_boundary_drops_record_without_date_evidence_source() -> None:
+    """published_date だけで source 欠落の record は append 境界で混入させない。"""
+    candidate = {
+        "date": "2026-06-16",
+        "genre": "AI",
+        "title": "Fresh but unverifiable",
+        "url": "https://example.com/2026/06/16/fresh",
+        "published_date": "2026-06-16",
+        "score": 80,
+    }
+
+    passed, dropped = append_after_dedup.require_date_evidence_source([candidate])
+
+    assert passed == []
+    assert len(dropped) == 1
+    assert dropped[0]["dedup_reason"] == "date_evidence_source_missing"
+
+
 def test_append_boundary_hydrates_google_news_url_and_thumb() -> None:
     """append 境界で Google News URL を元記事 URL に解決し、OGP thumb を補完する。"""
     candidate = {
