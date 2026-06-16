@@ -29,6 +29,11 @@ KANA_REPLACEMENTS = {
     "FX": "エフエックス",
 }
 
+PRONUNCIATION_REPLACEMENTS = {
+    "後工程": "あとこうてい",
+    "上方修正": "じょうほうしゅうせい",
+}
+
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n.*?\r?\n---\r?\n", re.DOTALL)
 _URL_RE = re.compile(r"https?://\S+")
 _WIKILINK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]")
@@ -115,6 +120,8 @@ def normalize_for_tts(text: str) -> str:
             dst,
             text,
         )
+    for src, dst in PRONUNCIATION_REPLACEMENTS.items():
+        text = text.replace(src, dst)
     lines = [line.strip() for line in text.splitlines()]
     text = "\n".join(line for line in lines if line)
     return re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
@@ -143,8 +150,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="日次朗読原稿を検査し TTS 用 plain text を生成します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     args = parser.parse_args(argv)
-    build(args.date)
-    return 0
+    return 0 if build(args.date) is not None else 1
 
 
 if __name__ == "__main__":

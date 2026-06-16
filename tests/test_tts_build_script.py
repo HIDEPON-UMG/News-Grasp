@@ -30,6 +30,21 @@ def test_too_short_reports_length_shortage():
     assert any("字数不足" in issue for issue in issues)
 
 
+def test_cli_returns_nonzero_when_audio_script_validation_fails(tmp_path, monkeypatch):
+    script_dir = tmp_path / "Summary"
+    script_dir.mkdir()
+    (script_dir / "2026-06-16-audio-script.md").write_text(
+        "---\ndate: 2026-06-16\n---\n\n"
+        "今日は6月16日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(build_script, "SCRIPT_DIR", script_dir)
+    monkeypatch.setattr(build_script, "BUILD_DIR", tmp_path / "build")
+
+    assert build_script.main(["2026-06-16"]) == 1
+
+
 def test_effective_length_requires_at_least_2500_chars():
     text = "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム\n" + ("今日は条件設計を確認する日でした。" * 95)
 
@@ -120,3 +135,12 @@ def test_normalize_for_tts_reads_news_grasp_as_japanese():
 
     assert "ニュース グラスプ" in normalized
     assert "News Grasp" not in normalized
+
+
+def test_normalize_for_tts_applies_pronunciation_overrides_for_known_misreads():
+    normalized = build_script.normalize_for_tts("後工程の設計と上方修正が焦点です。")
+
+    assert "あとこうてい" in normalized
+    assert "じょうほうしゅうせい" in normalized
+    assert "後工程" not in normalized
+    assert "上方修正" not in normalized

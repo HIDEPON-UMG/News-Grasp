@@ -1,9 +1,46 @@
 from __future__ import annotations
 
+import io
+import wave
 from pathlib import Path
 from unittest.mock import patch
 
 from tools.tts import synthesize_daily
+
+
+def _wav_bytes(frames: bytes, *, framerate: int = 1000, channels: int = 1, sampwidth: int = 2) -> bytes:
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as writer:
+        writer.setnchannels(channels)
+        writer.setsampwidth(sampwidth)
+        writer.setframerate(framerate)
+        writer.writeframes(frames)
+    return buf.getvalue()
+
+
+def test_split_text_keeps_sentence_boundaries_for_breathing_pause():
+    chunks = synthesize_daily.split_text("一文目です。二文目です。三文目です。")
+
+    assert chunks == ["一文目です。", "二文目です。", "三文目です。"]
+
+
+def test_inter_chunk_silence_is_fixed_to_reviewed_breathing_pause():
+    assert synthesize_daily.INTER_CHUNK_SILENCE_SECONDS == 0.28
+
+
+def test_combine_wavs_inserts_short_silence_between_chunks(tmp_path):
+    first = _wav_bytes(b"\x01\x00" * 3)
+    second = _wav_bytes(b"\x02\x00" * 2)
+    out = tmp_path / "combined.wav"
+
+    synthesize_daily.combine_wavs([first, second], out, silence_seconds=0.003)
+
+    with wave.open(str(out), "rb") as reader:
+        assert reader.getframerate() == 1000
+        assert reader.getsampwidth() == 2
+        frames = reader.readframes(reader.getnframes())
+
+    assert frames == (b"\x01\x00" * 3) + (b"\x00\x00" * 3) + (b"\x02\x00" * 2)
 
 
 def test_convert_wav_to_mp3_returns_elapsed_seconds_and_uses_quiet_run(tmp_path):

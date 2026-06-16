@@ -20,6 +20,7 @@ MAX_SECONDS = 10 * 60
 FFMPEG_TIMEOUT_SEC = 180
 FFPROBE_TIMEOUT_SEC = 30
 MAX_SYNTHESIS_SECONDS = 15 * 60
+INTER_CHUNK_SILENCE_SECONDS = 0.28
 
 
 def _warn(message: str) -> None:
@@ -31,6 +32,12 @@ def split_text(text: str, max_chars: int = 220) -> list[str]:
     chunks: list[str] = []
     current = ""
     for part in parts:
+        if len(part) <= max_chars:
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(part)
+            continue
         candidate = f"{current}{part}" if not current else f"{current}\n{part}"
         if current and len(candidate) > max_chars:
             chunks.append(current)
@@ -42,7 +49,14 @@ def split_text(text: str, max_chars: int = 220) -> list[str]:
     return chunks
 
 
-def combine_wavs(wavs: list[bytes], out_path: Path) -> None:
+def _silence_frames(params: wave._wave_params, seconds: float) -> bytes:
+    if seconds <= 0:
+        return b""
+    nframes = int(params.framerate * seconds)
+    return b"\x00" * nframes * params.nchannels * params.sampwidth
+
+
+def combine_wavs(wavs: list[bytes], out_path: Path, *, silence_seconds: float = INTER_CHUNK_SILENCE_SECONDS) -> None:
     params = None
     frames: list[bytes] = []
     for wav_bytes in wavs:
@@ -57,7 +71,10 @@ def combine_wavs(wavs: list[bytes], out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(out_path), "wb") as writer:
         writer.setparams(params)
-        for frame in frames:
+        silence = _silence_frames(params, silence_seconds)
+        for index, frame in enumerate(frames):
+            if index:
+                writer.writeframes(silence)
             writer.writeframes(frame)
 
 

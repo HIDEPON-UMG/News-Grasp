@@ -34,6 +34,17 @@ def test_editor_prompt_defines_warm_speaker_strategy():
     assert "カテゴリ間の橋渡し" in text
 
 
+def test_editor_prompt_defines_speaker_as_peer_with_self_relevant_reactions():
+    text = PROMPT.read_text(encoding="utf-8")
+
+    assert "話者本人のペルソナ" in text
+    assert "リスナーと同じ立場" in text
+    assert "同僚" in text
+    assert "自分事" in text
+    assert "どう感じ、どうするべきと考えたか" in text
+    assert "小さなエピソード" in text
+
+
 def test_editor_prompt_requires_opening_news_greeting_and_no_heading_reading():
     text = PROMPT.read_text(encoding="utf-8")
 
