@@ -154,30 +154,24 @@ $LogPath = Join-Path $LogDir ("$DateStamp.log")
 $CodexUsageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.jsonl"
 $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.jsonl"
 $script:CodexUsageEndSnapshotWritten = $false
-$DailyDigestArtifacts = @(
-    "digest/AI/$DateStamp-AI.md",
-    "digest/Economy/$DateStamp-Economy.md",
-    "digest/FX/$DateStamp-FX.md",
-    "digest/Game/$DateStamp-Game.md",
-    "digest/IT-Consulting/$DateStamp-IT-Consulting.md",
-    "digest/Manufacturing/$DateStamp-Manufacturing.md",
-    "digest/Mobility/$DateStamp-Mobility.md",
-    "digest/Summary/$DateStamp.md",
-    "data/articles.jsonl"
-)
-$PublishedDocsArtifacts = @(
-    "docs/$DateStamp/index.html",
-    "docs/$DateStamp/summary/index.html",
-    "docs/ai/$DateStamp/index.html",
-    "docs/economy/$DateStamp/index.html",
-    "docs/fx/$DateStamp/index.html",
-    "docs/game/$DateStamp/index.html",
-    "docs/it-consulting/$DateStamp/index.html",
-    "docs/manufacturing/$DateStamp/index.html",
-    "docs/mobility/$DateStamp/index.html",
-    "digest/DeepDive/$DateStamp-DeepDive.md",
-    "docs/deepdive/$DateStamp/index.html"
-)
+
+function Get-PublishInventoryArtifacts {
+    param([ValidateSet('digest', 'published')] [string] $Kind)
+    Push-Location $RepoDir
+    try {
+        $json = & $PyExe '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
+        if ($LASTEXITCODE -ne 0) {
+            throw "tools.publish_inventory failed (kind=$Kind, rc=$LASTEXITCODE)"
+        }
+        $items = @($json | ConvertFrom-Json)
+        return @($items | ForEach-Object { [string]$_ })
+    } finally {
+        Pop-Location
+    }
+}
+
+$DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'
+$PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'
 
 function Set-RunnerState {
     param(
@@ -213,6 +207,16 @@ function Set-RunnerState {
     }
     $json = $state | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($StateFile, $json, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Exit-Runner {
+    param(
+        [string] $Status,
+        [string] $Message,
+        [int] $ExitCode
+    )
+    Set-RunnerState -Status $Status -Message $Message -ExitCode $ExitCode
+    exit $ExitCode
 }
 
 function Write-Log {
@@ -814,10 +818,10 @@ if ($PreflightOnly) {
     }
     if ($preflightRc -ne 0) {
         Write-Log "ERROR: newsroom preflight failed (rc=$preflightRc)"
-        exit $preflightRc
+        Exit-Runner -Status 'preflight_failed' -Message 'newsroom preflight failed' -ExitCode $preflightRc
     }
     Write-Log 'news-grasp-runner.ps1 PREFLIGHT OK'
-    exit 0
+    Exit-Runner -Status 'preflight_ok' -Message 'news-grasp-runner.ps1 PREFLIGHT OK' -ExitCode 0
 }
 
 # ===== 0.5 ネット到達性待ち (再起動直後のネット未確立で git fetch 即死を防ぐ) =====

@@ -117,33 +117,45 @@ def test_inventory_repair_artifacts_cover_required_digest_and_docs() -> None:
     """repair prompt に欠落 inventory の実ファイルが渡るよう artifact scope を固定する。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
 
-    assert "$DailyDigestArtifacts = @(" in runner
+    assert "Get-PublishInventoryArtifacts" in runner
+    assert "tools.publish_inventory" in runner
+    assert "$DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'" in runner
+    assert "$PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'" in runner
     for rel in [
-        "digest/AI/$DateStamp-AI.md",
-        "digest/Economy/$DateStamp-Economy.md",
-        "digest/FX/$DateStamp-FX.md",
-        "digest/Game/$DateStamp-Game.md",
-        "digest/IT-Consulting/$DateStamp-IT-Consulting.md",
-        "digest/Manufacturing/$DateStamp-Manufacturing.md",
-        "digest/Mobility/$DateStamp-Mobility.md",
-        "digest/Summary/$DateStamp.md",
+        "digest/AI/",
+        "digest/Economy/",
+        "digest/FX/",
+        "digest/Game/",
+        "digest/IT-Consulting/",
+        "digest/Manufacturing/",
+        "digest/Mobility/",
+        "digest/Summary/",
         "data/articles.jsonl",
     ]:
-        assert rel in runner
+        assert rel in runner or rel in (ROOT / "tools" / "publish_inventory.py").read_text(encoding="utf-8")
     assert "-GateId 'daily-quality'" in runner
     assert "-Artifacts $DailyDigestArtifacts" in runner
 
-    assert "$PublishedDocsArtifacts = @(" in runner
     for rel in [
-        "docs/$DateStamp/index.html",
-        "docs/$DateStamp/summary/index.html",
-        "docs/game/$DateStamp/index.html",
-        "digest/DeepDive/$DateStamp-DeepDive.md",
-        "docs/deepdive/$DateStamp/index.html",
+        "docs/{date}/index.html",
+        "docs/{date}/summary/index.html",
+        "docs/{cat_id}/{date}/index.html",
+        "digest/DeepDive/{date}-DeepDive.md",
+        "docs/deepdive/{date}/index.html",
     ]:
-        assert rel in runner
+        assert rel in (ROOT / "tools" / "publish_inventory.py").read_text(encoding="utf-8")
     assert "-GateId 'deepdive-required'" in runner
     assert "-Artifacts $PublishedDocsArtifacts" in runner
+
+
+def test_preflight_only_writes_terminal_state() -> None:
+    """PreflightOnly 成功は running のままにせず preflight_ok を state に残す。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    preflight_block = runner.split("PreflightOnly mode: skipping codex / git pull / push / generate_pages", 1)[1].split("# ===== 0.5", 1)[0]
+
+    exit_runner_body = runner.split("function Exit-Runner", 1)[1].split("function Write-Log", 1)[0]
+    assert "Set-RunnerState -Status $Status -Message $Message -ExitCode $ExitCode" in exit_runner_body
+    assert "Exit-Runner -Status 'preflight_ok'" in preflight_block
 
 
 def test_fallback_publish_restores_unverified_generated_artifacts() -> None:

@@ -18,6 +18,7 @@ from tools.generate_pages import (
     parse_frontmatter,
     parse_reflection,
 )
+from tools.publish_inventory import required_published_docs_artifacts
 from tools.url_quality import is_google_news_rss_url, looks_homepage_or_section_landing
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -565,22 +566,18 @@ def validate_deepdive_presence(*, digest_root: Path, docs_root: Path, issue: dat
 
 def validate_published_docs_presence(*, docs_root: Path, issue: date) -> list[str]:
     """当日の日付 docs と配信対象カテゴリ docs の欠落を publish 前に落とす。"""
-    issue_str = issue.isoformat()
-    required: list[tuple[str, Path]] = [
-        ("日付 docs index が存在しません", docs_root / issue_str / "index.html"),
-        ("Summary 日付 docs が存在しません", docs_root / issue_str / "summary" / "index.html"),
-    ]
-    for cat_id in sorted(CATEGORIES):
-        if cat_id == "summary" or not is_category_scheduled_on(cat_id, issue_str):
-            continue
-        required.append((
-            f"カテゴリ日付 docs が存在しません ({cat_id})",
-            docs_root / cat_id / issue_str / "index.html",
-        ))
-
     errs: list[str] = []
-    for label, path in required:
+    for rel in required_published_docs_artifacts(issue):
+        path = docs_root / rel.removeprefix("docs/")
         if not path.exists():
+            issue_str = issue.isoformat()
+            if rel == f"docs/{issue_str}/index.html":
+                label = "日付 docs index が存在しません"
+            elif rel == f"docs/{issue_str}/summary/index.html":
+                label = "Summary 日付 docs が存在しません"
+            else:
+                cat_id = rel.split("/", 2)[1] if rel.startswith("docs/") else "unknown"
+                label = f"カテゴリ日付 docs が存在しません ({cat_id})"
             errs.append(
                 f"{label}: {path}。"
                 "tools.generate_pages で docs/<date>/index.html、summary、per-category docs を生成してから公開してください。"
