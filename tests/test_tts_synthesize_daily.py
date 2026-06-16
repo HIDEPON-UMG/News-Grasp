@@ -92,3 +92,76 @@ def test_synthesize_stops_before_unbounded_chunk_loop(tmp_path, monkeypatch):
 
     assert synthesize_daily.synthesize("2026-06-17") is None
     assert calls == []
+
+
+def test_synthesize_shuts_down_engine_started_by_this_process_on_success(tmp_path, monkeypatch):
+    build_dir = tmp_path / "tts"
+    build_dir.mkdir()
+    (build_dir / "2026-06-17.script.txt").write_text("本文です。", encoding="utf-8")
+    calls: list[str] = []
+
+    monkeypatch.setattr(synthesize_daily, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "ensure_engine", lambda: True)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "resolve_style_id", lambda: 1)
+    monkeypatch.setattr(synthesize_daily, "split_text", lambda _text: ["本文です。"])
+    monkeypatch.setattr(synthesize_daily.aivis_client, "synthesize", lambda _chunk, _style_id: _wav_bytes(b"\x01\x00"))
+    monkeypatch.setattr(synthesize_daily, "convert_wav_to_mp3", lambda _wav, mp3: mp3.write_bytes(b"ID3") or 1.0)
+    monkeypatch.setattr(synthesize_daily, "probe_duration_seconds", lambda _mp3: 420.0)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "engine_started_by_this_process", lambda: True)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "shutdown_started_engine", lambda: calls.append("shutdown") or True)
+
+    assert synthesize_daily.synthesize("2026-06-17") == build_dir / "2026-06-17.mp3"
+    assert calls == ["shutdown"]
+
+
+def test_synthesize_shuts_down_engine_started_by_this_process_on_failure(tmp_path, monkeypatch):
+    build_dir = tmp_path / "tts"
+    build_dir.mkdir()
+    (build_dir / "2026-06-17.script.txt").write_text("本文です。", encoding="utf-8")
+    calls: list[str] = []
+
+    monkeypatch.setattr(synthesize_daily, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "ensure_engine", lambda: True)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "resolve_style_id", lambda: 1)
+    monkeypatch.setattr(synthesize_daily, "split_text", lambda _text: ["本文です。"])
+    monkeypatch.setattr(synthesize_daily.aivis_client, "synthesize", lambda _chunk, _style_id: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(synthesize_daily.aivis_client, "engine_started_by_this_process", lambda: True)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "shutdown_started_engine", lambda: calls.append("shutdown") or True)
+
+    assert synthesize_daily.synthesize("2026-06-17") is None
+    assert calls == ["shutdown"]
+
+
+def test_synthesize_keeps_preexisting_engine_running(tmp_path, monkeypatch):
+    build_dir = tmp_path / "tts"
+    build_dir.mkdir()
+    (build_dir / "2026-06-17.script.txt").write_text("本文です。", encoding="utf-8")
+    calls: list[str] = []
+
+    monkeypatch.setattr(synthesize_daily, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "ensure_engine", lambda: True)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "resolve_style_id", lambda: 1)
+    monkeypatch.setattr(synthesize_daily, "split_text", lambda _text: ["本文です。"])
+    monkeypatch.setattr(synthesize_daily.aivis_client, "synthesize", lambda _chunk, _style_id: _wav_bytes(b"\x01\x00"))
+    monkeypatch.setattr(synthesize_daily, "convert_wav_to_mp3", lambda _wav, mp3: mp3.write_bytes(b"ID3") or 1.0)
+    monkeypatch.setattr(synthesize_daily, "probe_duration_seconds", lambda _mp3: 420.0)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "engine_started_by_this_process", lambda: False)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "shutdown_started_engine", lambda: calls.append("shutdown") or True)
+
+    assert synthesize_daily.synthesize("2026-06-17") == build_dir / "2026-06-17.mp3"
+    assert calls == []
+
+
+def test_synthesize_shuts_down_owned_engine_when_engine_readiness_fails(tmp_path, monkeypatch):
+    build_dir = tmp_path / "tts"
+    build_dir.mkdir()
+    (build_dir / "2026-06-17.script.txt").write_text("本文です。", encoding="utf-8")
+    calls: list[str] = []
+
+    monkeypatch.setattr(synthesize_daily, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "ensure_engine", lambda: False)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "engine_started_by_this_process", lambda: True)
+    monkeypatch.setattr(synthesize_daily.aivis_client, "shutdown_started_engine", lambda: calls.append("shutdown") or True)
+
+    assert synthesize_daily.synthesize("2026-06-17") is None
+    assert calls == ["shutdown"]

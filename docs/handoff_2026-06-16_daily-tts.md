@@ -110,6 +110,7 @@ News-Grasp の日次配信（7カテゴリ×各5記事＝最大35記事＋横断
   - 実行ファイルパスは環境変数 `AIVISSPEECH_ENGINE_EXE` を最優先。未設定時は既知の既定パスを順に探索（**要確認**: 実機の実インストールパス。AivisSpeech GUI アプリ本体 or 同梱 `AivisSpeech-Engine\run.exe`。Codex は実機で `Get-ChildItem` 等で実パスを特定し、既定探索リストに追記すること）。
 - 起動後 `GET /speakers` が 200 を返すまでポーリング（タイムアウト 60s、間隔 1s）。
 - タイムアウト/起動失敗 → **非致命スキップ**（例外を握りつぶさず WARN ログを出し、音声ステップ全体を skip。digest 公開は継続）。
+- バッチ前から起動していた AivisSpeech は終了しない。未起動だったため本ステップが起動した AivisSpeech だけ、TTS ステップ終了時に best-effort で終了する。ready 待ち失敗・合成失敗・時間超過でも、今回起動したプロセスは `finally` 相当で cleanup する。
 
 ---
 
@@ -196,6 +197,7 @@ News-Grasp/
   - 定数: `BASE = "http://127.0.0.1:10101"`、`PORT = 10101`、`MODEL_UUID = "47e53151-a378-46f3-abee-ce13aa07feb1"`、`DEFAULT_PARAMS`（§2 表の初期値）。
   - `is_engine_up() -> bool`: `socket.connect_ex(("127.0.0.1", PORT)) == 0`。
   - `ensure_engine(timeout=60) -> bool`: up なら True。down なら `AIVISSPEECH_ENGINE_EXE`(env)→既定探索でパス決定→`proc.spawn_detached` で起動→`/speakers` を 200 までポーリング。起動不可/タイムアウトは False（例外を投げず WARN）。
+  - `engine_started_by_this_process() -> bool` / `shutdown_started_engine(timeout=10) -> bool`: この Python プロセスが自動起動した AivisSpeech だけを終了する。既存起動エンジンはユーザー利用中の可能性があるため終了しない。
   - `resolve_style_id(uuid=MODEL_UUID) -> int`: `GET /speakers` を引き、Hub のモデル UUID `47e...` に対応する話者 UUID `561e...`（実機 API 確認メモ参照）の `styles[0].id` を返す。無ければ `RuntimeError`。**プロセス内 1 回キャッシュ**。
   - `synthesize(text, style_id, params=DEFAULT_PARAMS) -> bytes`: `POST /audio_query?text=&speaker=` → query JSON に params を上書き（`tempoDynamicsScale` 含む。`outputStereo=False`）→ `POST /synthesis?speaker=`（body=query JSON, `application/json`）→ wav バイト列。
   - HTTP は標準 `urllib.request`（依存追加しない）。各呼び出しにタイムアウト明示。
@@ -231,6 +233,7 @@ News-Grasp/
 - 入力: `build/tts/{date}.script.txt`。
 - 変更内容:
   - `aivis_client.ensure_engine()` が False → **非致命スキップ**（WARN, return None）。
+  - `ensure_engine()` が自動起動したエンジンは、成功/失敗/ready 待ち失敗のいずれでも `shutdown_started_engine()` を呼び、日次バッチ後に不要サーバーを残さない。
   - `resolve_style_id()` → 原稿を句点/段落で分割 → 各チャンク `synthesize` → wav を結合（`wave` 標準ライブラリでフレーム連結）。
   - `proc.quiet_run(["ffmpeg","-y","-i",tmp_wav,"-ac","1","-b:a","80k",mp3])` で `build/tts/{date}.mp3`。変換時間を `time.monotonic()` で計測し `[tts] ffmpeg mp3 conversion: {秒}s` としてログに出す。
   - `proc.quiet_run(["ffprobe",...])` で尺取得 → **6〜10分レンジ外は WARN**（致命にしない）。
@@ -275,9 +278,18 @@ News-Grasp/
   - 話者本人のペルソナ: 話者は外から解説する先生ではなく、リスナーと同じ立場で、ITコンサルや事業・技術判断に関わる同僚である。各ニュースを自分事として捉えたときに、どう感じ、どうするべきと考えたかを短く添える。ニュースそのものだけでなく、同僚がそのニュースにどう反応し、何を論点化するかを伝える。
   - 息継ぎ: 文末から次文の入りまでを詰めすぎない。TTS 合成では文単位のチャンク間に短い無音を挿入し、人間の息継ぎに近い間を確保する。
   - 読み方対策: AivisSpeech が漢字熟語を誤読する語は `tools/tts/build_script.py` の `PRONUNCIATION_REPLACEMENTS` に登録し、TTS 入力では読み仮名へ強制置換する。既知例は `後工程` → `あとこうてい`、`上方修正` → `じょうほうしゅうせい`。完全な未知語誤読の自動検知は難しいため、実聴で見つけた語を辞書と契約テストへ追加し、次回以降は事前対応する。
-  - 締め: 最後には必ず「今日の観点・考察」を置き、その日に複数カテゴリを貫いた判断軸を具体的にまとめる。ニュースの聞き方ではなく、今日のニュースから見えた構造、違和感、次に問うべき論点を短く残す。
-  - 禁止: 35記事の機械的羅列、URL/記号の読み上げを誘発する表記、wikilink 多用。
+- 締め: 最後には必ず「今日の観点・考察」を置き、その日に複数カテゴリを貫いた判断軸を具体的にまとめる。ニュースの聞き方ではなく、今日のニュースから見えた構造、違和感、次に問うべき論点を短く残す。
+- 禁止: 35記事の機械的羅列、URL/記号の読み上げを誘発する表記、wikilink 多用。
 - 検証: 既存 editor 系テストを壊さない＋§4 ToDo 6 の good fixture を合格にできる構成と一致。
+
+### 2026-06-17 追記: 日次バッチ完了条件の補強
+
+- TTS は additive なので、AivisSpeech / ffmpeg / GitHub Releases の失敗は引き続き WARN の非致命扱いとし、digest 公開全体は止めない。
+- ただし `build/tts/latest_audio.json` が当日音声を指している場合は、音声公開が成功した日として扱う。この場合、通常 publish 後の `tools.daily_self_heal verify-publish` は `publish-status.json` だけでなく、次をすべて確認する。
+  - Releases の当日 mp3 URL が 200 を返す。
+  - Home の公開 HTML に同じ `latest_audio_url` が含まれる。
+  - 当日横断サマリーの公開 HTML に同じ `latest_audio_url` が含まれる。
+- 上記のいずれかが欠ける場合、`verify-publish` は `public_audio_missing` などで非 0 終了し、runner は `publish_failed` として完了扱いにしない。
 - 失敗時の戻り先: 本 ToDo
 
 ### ToDo 12. テンプレート改修（Home + 横断サマリー）+ generate_pages 連動

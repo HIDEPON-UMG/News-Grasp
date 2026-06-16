@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -29,6 +30,7 @@ DEFAULT_PARAMS: dict[str, Any] = {
 }
 
 _style_id_cache: dict[str, int] = {}
+_owned_engine_process: subprocess.Popen | None = None
 
 
 def _warn(message: str) -> None:
@@ -71,7 +73,18 @@ def _get_json(path: str, *, timeout: int | float = 10) -> Any:
         return json.load(response)
 
 
+def _post_shutdown() -> None:
+    req = urllib.request.Request(f"{BASE}/shutdown", method="POST")
+    with urllib.request.urlopen(req, timeout=5) as response:
+        response.read()
+
+
+def engine_started_by_this_process() -> bool:
+    return _owned_engine_process is not None
+
+
 def ensure_engine(timeout: int = 60) -> bool:
+    global _owned_engine_process
     if is_engine_up():
         return True
 
@@ -80,7 +93,7 @@ def ensure_engine(timeout: int = 60) -> bool:
         _warn("AivisSpeech engine executable was not found; TTS step skipped")
         return False
     try:
-        proc.spawn_detached([exe])
+        _owned_engine_process = proc.spawn_detached([exe])
     except Exception as exc:
         _warn(f"AivisSpeech auto-start failed: {exc}")
         return False
@@ -94,6 +107,31 @@ def ensure_engine(timeout: int = 60) -> bool:
             time.sleep(1)
     _warn("AivisSpeech did not become ready within timeout; TTS step skipped")
     return False
+
+
+def shutdown_started_engine(timeout: int = 10) -> bool:
+    global _owned_engine_process
+    owned = _owned_engine_process
+    if owned is None:
+        return True
+    try:
+        try:
+            _post_shutdown()
+        except Exception as exc:
+            _warn(f"AivisSpeech shutdown endpoint failed: {exc}")
+        if owned.poll() is None:
+            owned.terminate()
+            try:
+                owned.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                _warn("AivisSpeech did not exit after terminate; killing owned process")
+                owned.kill()
+        return True
+    except Exception as exc:
+        _warn(f"AivisSpeech owned process cleanup failed: {exc}")
+        return False
+    finally:
+        _owned_engine_process = None
 
 
 def _speaker_uuids_for_model(uuid: str) -> set[str]:

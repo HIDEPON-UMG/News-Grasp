@@ -520,6 +520,16 @@ def test_runner_tts_does_not_send_normal_notification() -> None:
     assert runner.index("publish verification start") < send_push_index
 
 
+def test_runner_publish_verification_includes_public_audio_sentinel() -> None:
+    """push 完了判定は publish-status だけでなく公開 audio URL 反映まで含む。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "public audio sentinel" in runner
+    assert "tools.daily_self_heal" in runner
+    assert "verify-publish" in runner
+    assert runner.index("publish verification start") < runner.index("publish verification OK")
+
+
 def test_runner_preflight_checks_workspace_write_readiness_before_generation() -> None:
     """OneDrive/file lock/disk 問題は生成後ではなく開始前に検出する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")

@@ -1781,7 +1781,7 @@ if ($NoPush) {
     Invoke-Logged { & $GitExe -C $RepoDir push origin main }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: push failed (rc=$LASTEXITCODE)"; exit 1 }
     Write-Log 'push origin main done (digest + docs pushed)'
-    Write-Log 'publish verification start (remote HEAD + public publish-status sentinel)'
+    Write-Log 'publish verification start (remote HEAD + public publish-status sentinel + public audio sentinel)'
     Push-Location $RepoDir
     try {
         Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' $PublishVerifyWaitSec '--poll-sec' $PublishVerifyPollSec }
@@ -1790,7 +1790,7 @@ if ($NoPush) {
         Pop-Location
     }
     if ($publishVerifyRc -ne 0) {
-        Write-Log "ERROR: publish verification failed (rc=$publishVerifyRc). remote/pages/public sentinel did not converge."
+        Write-Log "ERROR: publish verification failed (rc=$publishVerifyRc). remote/pages/public/audio sentinel did not converge."
         Set-RunnerState -Status 'publish_failed' -Message 'publish verification failed' -ExitCode 1
         exit 1
     }

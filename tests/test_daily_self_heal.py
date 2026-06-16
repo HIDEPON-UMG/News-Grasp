@@ -173,6 +173,135 @@ def test_verify_publish_requires_remote_head_and_public_status(monkeypatch, tmp_
     assert calls == [["rev-parse", "HEAD"], ["ls-remote", "origin", "refs/heads/main"]]
 
 
+def test_verify_publish_checks_public_audio_when_latest_audio_exists(monkeypatch, tmp_path: Path) -> None:
+    """当日音声がある日は Release だけでなく Home/summary の audio URL 反映まで確認する。"""
+    audio_url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3?v=abc123"
+    latest = tmp_path / "build" / "tts" / "latest_audio.json"
+    latest.parent.mkdir(parents=True)
+    latest.write_text(
+        json.dumps({"latest_audio_date": "2026-06-16", "latest_audio_url": audio_url}),
+        encoding="utf-8",
+    )
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    seen: list[tuple[str, str]] = []
+
+    class FakeResponse:
+        def __init__(self, body: str = "", status: int = 200):
+            self._body = body
+            self.status = status
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        method = getattr(req, "get_method", lambda: "GET")()
+        seen.append((method, url))
+        if url.endswith("publish-status.json"):
+            return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-06-16"}))
+        if url == audio_url:
+            return FakeResponse("", status=200)
+        if url == "https://example.com/News-Grasp/":
+            return FakeResponse(f'<audio preload="none" controls src="{audio_url}"></audio>')
+        if url == "https://example.com/News-Grasp/2026-06-16/summary/":
+            return FakeResponse(f'<audio preload="none" controls src="{audio_url}"></audio>')
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-16",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is True
+    assert result["audio"]["ok"] is True
+    assert ("HEAD", audio_url) in seen
+    assert ("GET", "https://example.com/News-Grasp/") in seen
+    assert ("GET", "https://example.com/News-Grasp/2026-06-16/summary/") in seen
+
+
+def test_verify_publish_rejects_public_audio_url_missing_from_summary(monkeypatch, tmp_path: Path) -> None:
+    """summary が旧音声URLのままなら publish 完了扱いにしない。"""
+    audio_url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3?v=newhash"
+    latest = tmp_path / "build" / "tts" / "latest_audio.json"
+    latest.parent.mkdir(parents=True)
+    latest.write_text(
+        json.dumps({"latest_audio_date": "2026-06-16", "latest_audio_url": audio_url}),
+        encoding="utf-8",
+    )
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str = ""):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if url.endswith("publish-status.json"):
+            return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-06-16"}))
+        if url == audio_url:
+            return FakeResponse("")
+        if url == "https://example.com/News-Grasp/":
+            return FakeResponse(f'<audio preload="none" controls src="{audio_url}"></audio>')
+        if url == "https://example.com/News-Grasp/2026-06-16/summary/":
+            return FakeResponse('<audio preload="none" controls src="old.mp3?v=oldhash"></audio>')
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-16",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "public_audio_missing"
+    assert result["audio"]["missing_from"] == ["summary"]
+
+
 def test_verify_publish_rejects_public_status_mismatch(monkeypatch, tmp_path: Path) -> None:
     def fake_git(_repo: Path, args: list[str]) -> str:
         if args == ["rev-parse", "HEAD"]:

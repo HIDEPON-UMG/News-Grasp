@@ -194,6 +194,72 @@ def _git_output(repo_root: Path, args: list[str]) -> str:
     return cp.stdout.strip()
 
 
+def _latest_audio_for_publish(repo_root: Path, date: str) -> dict[str, str] | None:
+    latest_path = repo_root / "build" / "tts" / "latest_audio.json"
+    if not latest_path.exists():
+        return None
+    try:
+        data = json.loads(latest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if data.get("latest_audio_date") != date:
+        return None
+    url = str(data.get("latest_audio_url") or "")
+    if not url:
+        return {"latest_audio_date": date, "latest_audio_url": ""}
+    return {"latest_audio_date": date, "latest_audio_url": url}
+
+
+def _fetch_text(url: str) -> str:
+    with urllib.request.urlopen(url, timeout=20) as res:  # noqa: S310 - fixed public URL from runner config
+        return res.read().decode("utf-8-sig", errors="replace")
+
+
+def _url_head_ok(url: str) -> bool:
+    req = urllib.request.Request(url, method="HEAD")
+    with urllib.request.urlopen(req, timeout=20) as res:  # noqa: S310 - fixed public URL from runner config
+        return int(getattr(res, "status", 200)) == 200
+
+
+def verify_public_audio(*, repo_root: Path, date: str, public_base_url: str) -> dict:
+    latest = _latest_audio_for_publish(repo_root, date)
+    if latest is None:
+        return {"checked": False, "ok": True, "reason": "no_audio_for_date"}
+    audio_url = latest.get("latest_audio_url", "")
+    if not audio_url:
+        return {"checked": True, "ok": False, "reason": "audio_url_missing", "latest_audio_date": date}
+    try:
+        if not _url_head_ok(audio_url):
+            return {"checked": True, "ok": False, "reason": "audio_url_not_200", "latest_audio_url": audio_url}
+        base = public_base_url.rstrip("/") + "/"
+        pages = {
+            "home": base,
+            "summary": urljoin(base, f"{date}/summary/"),
+        }
+        missing_from = [
+            name
+            for name, url in pages.items()
+            if audio_url not in _fetch_text(url)
+        ]
+    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError) as exc:
+        return {
+            "checked": True,
+            "ok": False,
+            "reason": "public_audio_verification_failed",
+            "detail": str(exc),
+            "latest_audio_url": audio_url,
+        }
+    if missing_from:
+        return {
+            "checked": True,
+            "ok": False,
+            "reason": "public_audio_missing",
+            "missing_from": missing_from,
+            "latest_audio_url": audio_url,
+        }
+    return {"checked": True, "ok": True, "latest_audio_url": audio_url}
+
+
 def verify_publish(
     *,
     repo_root: Path,
@@ -217,7 +283,24 @@ def verify_publish(
             with urllib.request.urlopen(status_url, timeout=20) as res:  # noqa: S310 - fixed public URL from runner config
                 status = json.loads(res.read().decode("utf-8-sig"))
             if status.get("result") == "published_ok" and status.get("date") == date:
-                return {"ok": True, "reason": "", "local_head": local_head, "remote_head": remote_head, "url": status_url}
+                audio = verify_public_audio(repo_root=repo_root, date=date, public_base_url=public_base_url)
+                if audio["ok"]:
+                    return {
+                        "ok": True,
+                        "reason": "",
+                        "local_head": local_head,
+                        "remote_head": remote_head,
+                        "url": status_url,
+                        "audio": audio,
+                    }
+                return {
+                    "ok": False,
+                    "reason": audio["reason"],
+                    "local_head": local_head,
+                    "remote_head": remote_head,
+                    "url": status_url,
+                    "audio": audio,
+                }
             last_error = f"publish-status mismatch: {status!r}"
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
             last_error = str(exc)

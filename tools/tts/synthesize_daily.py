@@ -116,6 +116,8 @@ def synthesize(date: str) -> Path | None:
         _warn(f"normalized script not found: {script_path}")
         return None
     if not aivis_client.ensure_engine():
+        if aivis_client.engine_started_by_this_process():
+            aivis_client.shutdown_started_engine()
         return None
     try:
         style_id = aivis_client.resolve_style_id()
@@ -143,6 +145,9 @@ def synthesize(date: str) -> Path | None:
     except Exception as exc:
         _warn(f"TTS synthesis failed: {exc}")
         return None
+    finally:
+        if aivis_client.engine_started_by_this_process():
+            aivis_client.shutdown_started_engine()
 
 
 def main(argv: list[str] | None = None) -> int:
