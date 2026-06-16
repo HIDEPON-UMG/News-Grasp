@@ -35,6 +35,9 @@ _WIKILINK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]")
 _MARKDOWN_TOKEN_RE = re.compile(r"^[#>\-\*\s]+", re.MULTILINE)
 _AUDIO_TITLE_LINE_RE = re.compile(r"^\s*#*\s*(?:News Grasp|ニュース\s*グラスプ)\s*#?\d{8}\s*(?:[—\-–]\s*)?音声朗読原稿\s*$")
 _COUNT_IGNORE_RE = re.compile(r"[\s\u3000、。，．・…「」『』（）()\[\]【】!！?？:：;；,.\-—–_#>*`~|/\\]")
+_PATRONIZING_RE = re.compile(
+    r"(細かな数字を全部覚えるより|覚えることが大切|持ち帰ることが大切|落ち着いて追えば|流れは見えてきます)"
+)
 
 
 def _warn(message: str) -> None:
@@ -83,6 +86,12 @@ def validate_script(text: str, *, date: str | None = None) -> list[str]:
         expected_date = _date_japanese(date)
         if expected_date not in first_line or "朝のニュース" not in first_line:
             issues.append(f"冒頭セリフ不足: 最初の本文で {expected_date} と 朝のニュース を伝える")
+        tail = "".join(line.strip() for line in text.splitlines() if line.strip())[-450:]
+        if "今日の観点" not in tail or "考察" not in tail:
+            issues.append("今日の観点・考察不足: 締めで当日の判断軸そのものをまとめる")
+
+    if _PATRONIZING_RE.search(text):
+        issues.append("上から目線コメント: 聞き手に説教せず、今日の観点・考察を具体化する")
 
     count = effective_char_count(text)
     if count < 2500:

@@ -47,6 +47,33 @@ def test_audio_script_for_date_requires_opening_news_greeting():
     assert any("冒頭セリフ不足" in issue for issue in issues)
 
 
+def test_audio_script_rejects_patronizing_listener_guidance():
+    text = (
+        "今日は6月16日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
+        + ("今日は条件設計を確認する日でした。" * 150)
+        + "聞くニュースとしては、細かな数字を全部覚えるより、今日の判断軸を一つ持ち帰ることが大切です。"
+        + "落ち着いて追えば、流れは見えてきます。"
+    )
+
+    issues = build_script.validate_script(text, date="2026-06-16")
+
+    assert any("上から目線" in issue for issue in issues)
+
+
+def test_audio_script_requires_final_viewpoints_and_analysis():
+    text = (
+        "今日は6月16日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
+        + ("今日は条件設計を確認する日でした。" * 160)
+        + "以上、6月16日のニュース グラスプでした。"
+    )
+
+    issues = build_script.validate_script(text, date="2026-06-16")
+
+    assert any("今日の観点・考察" in issue for issue in issues)
+
+
 def test_audio_script_heading_is_not_read_by_tts():
     raw = "# ニュース グラスプ #20260616 音声朗読原稿\n\n今日は6月16日です。朝のニュースをお伝えします。"
 

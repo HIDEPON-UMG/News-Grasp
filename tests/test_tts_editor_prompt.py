@@ -11,6 +11,27 @@ def test_editor_prompt_requires_human_impressions_in_audio_script():
 
     assert "あなたの短い感想" in text
     assert "事実の羅列" in text
+    assert "聞き手に説教しない" in text
+    assert "今日の観点・考察" in text
+
+
+def test_editor_prompt_defines_listener_persona_and_value_contract():
+    text = PROMPT.read_text(encoding="utf-8")
+
+    assert "リスナーのペルソナ" in text
+    assert "ITコンサル" in text
+    assert "事業・技術判断" in text
+    assert "次の会話・提案・判断で使える観点" in text
+
+
+def test_editor_prompt_defines_warm_speaker_strategy():
+    text = PROMPT.read_text(encoding="utf-8")
+
+    assert "話し手としての親しみやすさ" in text
+    assert "同じニュースを一緒に見ている伴走者" in text
+    assert "共感" in text
+    assert "小さな感想" in text
+    assert "カテゴリ間の橋渡し" in text
 
 
 def test_editor_prompt_requires_opening_news_greeting_and_no_heading_reading():
