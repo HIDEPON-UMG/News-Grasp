@@ -518,3 +518,38 @@ def test_runner_tts_does_not_send_normal_notification() -> None:
     assert "send_push" not in tts_block
     assert "Should-SendNormalBatchNotification" in runner
     assert runner.index("publish verification start") < send_push_index
+
+
+def test_runner_preflight_checks_workspace_write_readiness_before_generation() -> None:
+    """OneDrive/file lock/disk 問題は生成後ではなく開始前に検出する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Test-WorkspaceWriteReadiness" in runner
+    assert "workspace write readiness gate start" in runner
+    assert "workspace write readiness gate OK" in runner
+    assert "blocked_external_readiness" in runner
+    assert runner.index("workspace write readiness gate start") < runner.index("Stage0: deterministic candidate harvest")
+    preflight_block = runner.split("if ($PreflightOnly)", 1)[1].split("if ($SmokeTest)", 1)[0]
+    assert "Test-WorkspaceWriteReadiness" in preflight_block
+
+
+def test_runner_checks_publish_external_readiness_before_expensive_generation() -> None:
+    """git remote / push auth の明白な失敗は LLM 実行前に blocked_external_readiness へ分離する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Test-PublishExternalReadiness" in runner
+    assert "publish external readiness gate start" in runner
+    assert "git ls-remote origin main" in runner
+    assert "git push --dry-run origin HEAD:main" in runner
+    assert runner.index("publish external readiness gate start") < runner.index("Stage0: deterministic candidate harvest")
+
+
+def test_runner_stage0_harvest_uses_last_good_candidate_fallback() -> None:
+    """一時的な収集元ブロックは last-good 候補で bounded fallback し、無ければ外部readiness停止に分ける。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "CandidateLastGoodDir" in runner
+    assert "Stage0 harvest fallback from last-good" in runner
+    assert "Stage0 harvest no last-good candidates" in runner
+    assert "Stop-ExternalReadiness" in runner
+    assert "Copy-Item -LiteralPath $outPath -Destination $lastGoodPath -Force" in runner

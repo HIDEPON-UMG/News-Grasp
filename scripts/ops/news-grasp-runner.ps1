@@ -251,6 +251,48 @@ function Stop-ExternalReadiness {
     Exit-Runner -Status 'blocked_external_readiness' -Message $Reason -ExitCode $ExitCode
 }
 
+function Test-WorkspaceWriteReadiness {
+    $dirs = @('build', 'tmp', 'data', 'digest', 'docs')
+    foreach ($rel in $dirs) {
+        $dir = Join-Path $RepoDir $rel
+        try {
+            if (-not (Test-Path -LiteralPath $dir)) {
+                New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            }
+            $probe = Join-Path $dir (".news-grasp-write-probe-$DateStamp-" + [guid]::NewGuid().ToString('N') + ".tmp")
+            $renamed = "$probe.renamed"
+            Set-Content -LiteralPath $probe -Value "probe $DateStamp" -Encoding UTF8
+            Move-Item -LiteralPath $probe -Destination $renamed -Force
+            Remove-Item -LiteralPath $renamed -Force
+        } catch {
+            Write-Log "workspace write readiness failed path=$rel reason=$($_.Exception.Message)"
+            return $false
+        }
+    }
+    return $true
+}
+
+function Test-PublishExternalReadiness {
+    try {
+        Invoke-Logged { & $GitExe -C $RepoDir ls-remote --exit-code origin main }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "publish external readiness failed: git ls-remote origin main rc=$LASTEXITCODE"
+            return $false
+        }
+        if (-not $NoPush) {
+            Invoke-Logged { & $GitExe -C $RepoDir push --dry-run origin HEAD:main }
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "publish external readiness failed: git push --dry-run origin HEAD:main rc=$LASTEXITCODE"
+                return $false
+            }
+        }
+        return $true
+    } catch {
+        Write-Log "publish external readiness failed: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 function Should-SendNormalBatchNotification {
     return ((-not $NoPush) -and (-not $RecoverOnly) -and $NormalPublishVerified)
 }
@@ -900,6 +942,12 @@ if (-not (Test-Path (Join-Path $RepoDir '.git'))) {
     exit 1
 }
 
+Write-Log 'workspace write readiness gate start'
+if (-not (Test-WorkspaceWriteReadiness)) {
+    Stop-ExternalReadiness -Reason 'workspace write readiness failed'
+}
+Write-Log 'workspace write readiness gate OK'
+
 if ($PreflightOnly) {
     Write-Log 'PreflightOnly mode: skipping codex / git pull / push / generate_pages'
     Push-Location $RepoDir
@@ -913,6 +961,11 @@ if ($PreflightOnly) {
         Write-Log "ERROR: newsroom preflight failed (rc=$preflightRc)"
         Exit-Runner -Status 'preflight_failed' -Message 'newsroom preflight failed' -ExitCode $preflightRc
     }
+    Write-Log 'publish external readiness gate start'
+    if (-not (Test-PublishExternalReadiness)) {
+        Stop-ExternalReadiness -Reason 'publish external readiness failed'
+    }
+    Write-Log 'publish external readiness gate OK'
     Write-Log 'news-grasp-runner.ps1 PREFLIGHT OK'
     Exit-Runner -Status 'preflight_ok' -Message 'news-grasp-runner.ps1 PREFLIGHT OK' -ExitCode 0
 }
@@ -957,8 +1010,19 @@ if ($SmokeTest) {
 if ($RecoverOnly) {
     Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
 } else {
+    if ($Stage2EditorSmokeOnly) {
+        Write-Log 'Stage2EditorSmokeOnly mode: skipping publish external readiness gate'
+    } else {
+        Write-Log 'publish external readiness gate start'
+        if (-not (Test-PublishExternalReadiness)) {
+            Stop-ExternalReadiness -Reason 'publish external readiness failed'
+        }
+        Write-Log 'publish external readiness gate OK'
+    }
+
     # ===== Stage0: deterministic candidate harvest (LLM 前固定実行) =====
     $CandidateDir = Join-Path $RepoDir 'build\candidates'
+    $CandidateLastGoodDir = Join-Path $RepoDir 'build\candidates-last-good'
     $DedupedCandidateDir = Join-Path $RepoDir 'build\deduped-candidates'
     $HarvestAuditDir = Join-Path $RepoDir "data\search_audit\$DateStamp"
     $Categories = @('fx','ai','it','mobility','manufacturing','economy','game')
@@ -969,6 +1033,7 @@ if ($RecoverOnly) {
         if (Test-Path $CandidateDir) { Remove-Item -LiteralPath $CandidateDir -Recurse -Force -ErrorAction SilentlyContinue }
         if (Test-Path $DedupedCandidateDir) { Remove-Item -LiteralPath $DedupedCandidateDir -Recurse -Force -ErrorAction SilentlyContinue }
         New-Item -ItemType Directory -Path $CandidateDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $CandidateLastGoodDir -Force | Out-Null
         New-Item -ItemType Directory -Path $DedupedCandidateDir -Force | Out-Null
         New-Item -ItemType Directory -Path $HarvestAuditDir -Force | Out-Null
         $stage0Start = Get-Date
@@ -982,7 +1047,18 @@ if ($RecoverOnly) {
             } finally {
                 Pop-Location
             }
-            if ($harvestRc -ne 0) { Write-Log "ERROR: Stage0 harvest failed category=$cat rc=$harvestRc"; exit 1 }
+            $lastGoodPath = Join-Path $CandidateLastGoodDir "$cat.jsonl"
+            if ($harvestRc -ne 0) {
+                if (Test-Path -LiteralPath $lastGoodPath) {
+                    Write-Log "WARN: Stage0 harvest failed category=$cat rc=$harvestRc; Stage0 harvest fallback from last-good"
+                    Copy-Item -LiteralPath $lastGoodPath -Destination $outPath -Force
+                } else {
+                    Write-Log "ERROR: Stage0 harvest no last-good candidates category=$cat rc=$harvestRc"
+                    Stop-ExternalReadiness -Reason "Stage0 harvest failed category=$cat and no last-good candidates"
+                }
+            } else {
+                Copy-Item -LiteralPath $outPath -Destination $lastGoodPath -Force
+            }
             $count = 0
             if (Test-Path $outPath) { $count = @((Get-Content -LiteralPath $outPath -Encoding UTF8 -ErrorAction SilentlyContinue)).Count }
             $candidateTotal += $count
