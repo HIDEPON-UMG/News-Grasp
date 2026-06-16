@@ -69,6 +69,21 @@ def test_at_most_one_summary_entry_per_date() -> None:
     )
 
 
+def test_audio_script_is_not_scanned_as_digest(tmp_path: Path) -> None:
+    """音声原稿は TTS 入力であり、公開 digest エントリとして扱わない。"""
+    summary = tmp_path / "Summary"
+    summary.mkdir()
+    normal = summary / "2026-06-16.md"
+    audio = summary / "2026-06-16-audio-script.md"
+    normal.write_text("---\ndate: 2026-06-16\ncategoryId: summary\n---\n\n# Summary\n", encoding="utf-8")
+    audio.write_text("---\ndate: 2026-06-16\ncategoryId: summary\ntype: audio-script\n---\n\n# Audio\n", encoding="utf-8")
+
+    scanned = {p.name for p in scan_digests(tmp_path)}
+
+    assert "2026-06-16.md" in scanned
+    assert "2026-06-16-audio-script.md" not in scanned
+
+
 def test_latest_summary_entry_has_reflection() -> None:
     """最新の summary エントリは考察 (reflection) を持つ = LP の本日のテーマ考察が空にならない。"""
     entries = _collect_entries(scan_digests())

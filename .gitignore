@@ -101,4 +101,5 @@ build/deepdive-*.png
 build/*-last-message.txt
 build/deepdive-render-check/
 build/*.wrapper.log
+build/tts/
 docs/specs/*incident-hardening.html

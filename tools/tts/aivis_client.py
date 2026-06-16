@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+import json
+import os
+import socket
+import sys
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+from tools.tts import proc
+
+
+BASE = "http://127.0.0.1:10101"
+PORT = 10101
+MODEL_UUID = "47e53151-a378-46f3-abee-ce13aa07feb1"
+# AivisSpeech /speakers は Hub の model UUID ではなく speaker_uuid を返す。
+AIDA_SHIGERU_SPEAKER_UUID = "561e4e59-3bc9-4726-9028-44a3c12a6f1d"
+DEFAULT_PARAMS: dict[str, Any] = {
+    "speedScale": 1.0,
+    "pitchScale": 0.0,
+    "intonationScale": 1.1,
+    "tempoDynamicsScale": 1.2,
+    "volumeScale": 1.0,
+    "pauseLengthScale": 1.1,
+    "outputStereo": False,
+}
+
+_style_id_cache: dict[str, int] = {}
+
+
+def _warn(message: str) -> None:
+    print(f"[tts][WARN] {message}", file=sys.stderr)
+
+
+def is_engine_up() -> bool:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.settimeout(1.0)
+        return sock.connect_ex(("127.0.0.1", PORT)) == 0
+    finally:
+        sock.close()
+
+
+def _candidate_engine_paths() -> list[Path]:
+    paths: list[Path] = []
+    env_path = os.environ.get("AIVISSPEECH_ENGINE_EXE")
+    if env_path:
+        paths.append(Path(env_path))
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        paths.extend([
+            Path(local) / "Programs" / "AivisSpeech" / "AivisSpeech.exe",
+            Path(local) / "Programs" / "AivisSpeech" / "resources" / "engine" / "run.exe",
+            Path(local) / "Programs" / "AivisSpeech" / "resources" / "AivisSpeech-Engine" / "run.exe",
+        ])
+    program_files = [os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")]
+    for root in [p for p in program_files if p]:
+        paths.extend([
+            Path(root) / "AivisSpeech" / "AivisSpeech.exe",
+            Path(root) / "AivisSpeech" / "resources" / "engine" / "run.exe",
+            Path(root) / "AivisSpeech" / "resources" / "AivisSpeech-Engine" / "run.exe",
+        ])
+    return paths
+
+
+def _get_json(path: str, *, timeout: int | float = 10) -> Any:
+    with urllib.request.urlopen(f"{BASE}{path}", timeout=timeout) as response:
+        return json.load(response)
+
+
+def ensure_engine(timeout: int = 60) -> bool:
+    if is_engine_up():
+        return True
+
+    exe = next((p for p in _candidate_engine_paths() if p.exists()), None)
+    if not exe:
+        _warn("AivisSpeech engine executable was not found; TTS step skipped")
+        return False
+    try:
+        proc.spawn_detached([exe])
+    except Exception as exc:
+        _warn(f"AivisSpeech auto-start failed: {exc}")
+        return False
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            _get_json("/speakers", timeout=3)
+            return True
+        except Exception:
+            time.sleep(1)
+    _warn("AivisSpeech did not become ready within timeout; TTS step skipped")
+    return False
+
+
+def _speaker_uuids_for_model(uuid: str) -> set[str]:
+    if uuid == MODEL_UUID:
+        return {MODEL_UUID, AIDA_SHIGERU_SPEAKER_UUID}
+    return {uuid}
+
+
+def resolve_style_id(uuid: str = MODEL_UUID) -> int:
+    if uuid in _style_id_cache:
+        return _style_id_cache[uuid]
+
+    speakers = _get_json("/speakers")
+    expected = _speaker_uuids_for_model(uuid)
+    for speaker in speakers:
+        if speaker.get("speaker_uuid") not in expected:
+            continue
+        styles = speaker.get("styles") or []
+        if not styles:
+            raise RuntimeError(f"AivisSpeech speaker has no styles: {speaker.get('name')}")
+        style_id = int(styles[0]["id"])
+        _style_id_cache[uuid] = style_id
+        return style_id
+    raise RuntimeError(f"AivisSpeech model/speaker UUID not found: {uuid}")
+
+
+def synthesize(text: str, style_id: int, params: dict[str, Any] | None = None) -> bytes:
+    query = urllib.parse.urlencode({"text": text, "speaker": str(style_id)})
+    req = urllib.request.Request(f"{BASE}/audio_query?{query}", method="POST")
+    with urllib.request.urlopen(req, timeout=30) as response:
+        audio_query = json.load(response)
+
+    for key, value in (params or DEFAULT_PARAMS).items():
+        audio_query[key] = value
+
+    body = json.dumps(audio_query, ensure_ascii=False).encode("utf-8")
+    synth_req = urllib.request.Request(
+        f"{BASE}/synthesis?speaker={style_id}",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(synth_req, timeout=120) as response:
+        return response.read()
