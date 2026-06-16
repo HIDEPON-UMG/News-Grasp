@@ -196,6 +196,19 @@ def test_fail_all_null_thumbnails_in_records(tmp_path: Path):
     )
 
 
+def test_fail_news_grasp_self_reference_thumbnail_in_records(tmp_path: Path):
+    """記事 thumb に News-Grasp 自己参照 URL を保存したら、個別記事サムネではないため FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0]["thumb"] = "https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg"
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+
+    assert any("News-Grasp 自己参照 thumb" in e for e in errs), (
+        f"News-Grasp 自己参照 thumb を検出するはず: {errs}"
+    )
+
+
 # ── 2. 件数 1〜5 + quality_shortfall_reason ──────────────────────────────────
 
 
@@ -276,6 +289,26 @@ def test_fail_thumb_fallback_in_digest(tmp_path: Path):
     errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
     assert any("ng-thumb-common-" in e for e in errs), (
         f"共通サムネ直書きを検出するはず: {errs}"
+    )
+
+
+def test_fail_news_grasp_self_reference_thumbnail_in_digest(tmp_path: Path):
+    """digest md の thumb に News-Grasp 自己参照 URL があれば FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    digest = repo / "digest" / GENRE / f"{ISSUE}-{GENRE}.md"
+    digest.write_text(
+        digest.read_text(encoding="utf-8").replace(
+            "https://example.com/ai/thumb-1.png",
+            "https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg",
+        ),
+        encoding="utf-8",
+    )
+
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+
+    assert any("News-Grasp 自己参照 thumb" in e for e in errs), (
+        f"News-Grasp 自己参照 thumb を検出するはず: {errs}"
     )
 
 

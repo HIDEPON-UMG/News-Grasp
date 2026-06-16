@@ -541,6 +541,59 @@ def test_daily_quality_allows_shortfall_without_quality_reason(tmp_path: Path) -
     assert "quality_shortfall_reason" not in joined
 
 
+def test_daily_quality_rejects_zero_article_category_digest(tmp_path: Path) -> None:
+    """カテゴリ digest が存在しても記事カード 0 件なら公開物として成立していないため落とす。"""
+    _write_summary(tmp_path)
+    cat_dir = tmp_path / "digest" / "AI"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "2026-06-08-AI.md").write_text(
+        "---\n"
+        "title: AI\n"
+        "date: 2026-06-08\n"
+        "categoryId: ai\n"
+        "---\n\n"
+        "# AI\n\n"
+        "> [!summary]\n"
+        "> 記事カードがない要約だけの digest。\n",
+        encoding="utf-8",
+    )
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "has 0 article(s)" in joined
+    assert "category digest is not an article page" in joined
+
+
+def test_daily_quality_rejects_news_grasp_self_reference_thumbnail(tmp_path: Path) -> None:
+    """articles.jsonl の thumb が News-Grasp 自己参照なら記事固有サムネではないため落とす。"""
+    _write_summary(tmp_path)
+    url = "https://example.com/2026/06/08/fresh-news"
+    _write_category(tmp_path, url)
+    _write_jsonl(
+        tmp_path,
+        url,
+        extra={
+            "title_ja": "Freshness test article",
+            "thumb": "https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg",
+        },
+    )
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "News-Grasp 自己参照 thumb" in joined
+
+
 def test_daily_quality_accepts_shortfall_with_quality_reason(tmp_path: Path) -> None:
     """ニュース性の低い記事を避けた明示理由と検索監査ログがあれば、5件未満でも通す。"""
     _write_summary(tmp_path)

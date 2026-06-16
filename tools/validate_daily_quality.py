@@ -37,6 +37,14 @@ REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
     "manufacturing": {"TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"},
     "economy": {"Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"},
 }
+_NEWS_GRASP_THUMB_RE = re.compile(
+    r"^https?://hidepon-umg\.github\.io/News-Grasp/(?:assets/og/|assets/news-grasp)",
+    re.IGNORECASE,
+)
+
+
+def _is_news_grasp_self_thumb(value: object) -> bool:
+    return isinstance(value, str) and bool(_NEWS_GRASP_THUMB_RE.search(value))
 
 
 def _parse_issue_date(value: str) -> date:
@@ -106,6 +114,15 @@ def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str
             f"{jsonl_path}: {issue.isoformat()} の thumb が全件 null です。",
             "このままでは公開ページが全件 fallback サムネになります。fetch_ogp / WebSearch thumbnail の取得結果を反映してください。",
         ])
+    self_thumbs = [
+        (rec.get("genre") or "", rec.get("title_ja") or rec.get("title") or "", rec.get("thumb") or "")
+        for rec in records
+        if _is_news_grasp_self_thumb(rec.get("thumb"))
+    ]
+    for genre, title, thumb in self_thumbs:
+        errs.append(
+            f"{jsonl_path}: {issue.isoformat()} [{genre}] News-Grasp 自己参照 thumb です: {title} thumb={thumb}"
+        )
     return errs
 
 
@@ -331,7 +348,17 @@ def validate_digest_source_freshness(digest_root: Path, issue: date) -> list[str
 
 def validate_digest_article_counts(digest_root: Path, issue: date, *, min_articles: int = 5) -> list[str]:
     """当日カテゴリ digest が5件目標または品質理由付き不足を満たすか検査する。"""
-    return []
+    errs: list[str] = []
+    for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+        articles_count = len(parse_articles(body))
+        if articles_count == 0:
+            errs.append(
+                f"{md}: has 0 article(s); category digest is not an article page."
+            )
+    return errs
 
 
 def _search_audit_path(audit_root: Path, issue: date, cat_id: str) -> Path:
