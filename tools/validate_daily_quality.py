@@ -41,6 +41,7 @@ _NEWS_GRASP_THUMB_RE = re.compile(
     r"^https?://hidepon-umg\.github\.io/News-Grasp/(?:assets/og/|assets/news-grasp)",
     re.IGNORECASE,
 )
+_INTENTIONAL_PAUSE_RE = re.compile(r"(休載|正当な休載理由|正当な欠落理由|intentionally short)", re.IGNORECASE)
 
 
 def _is_news_grasp_self_thumb(value: object) -> bool:
@@ -228,7 +229,7 @@ def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
     summary_path = digest_root / "Summary" / f"{issue.isoformat()}.md"
     if not summary_path.exists():
         return []
-    fm, _body = parse_frontmatter(summary_path.read_text(encoding="utf-8-sig", errors="replace"))
+    fm, body = parse_frontmatter(summary_path.read_text(encoding="utf-8-sig", errors="replace"))
     weekday = str(fm.get("weekday") or "").strip()
     if not weekday:
         return []
@@ -253,9 +254,47 @@ def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
         if cat_id:
             present.add(cat_id)
 
-    _missing = sorted(expected - present)
+    missing = sorted(
+        cat_id for cat_id in expected - present
+        if not _has_intentional_pause_marker(body, cat_id)
+    )
+    for cat_id in missing:
+        label = str(CATEGORIES.get(cat_id, {}).get("label") or cat_id)
+        errs.append(
+            f"scheduled category digest missing: {cat_id} ({label}) for {issue.isoformat()}."
+            " 配信対象カテゴリの digest が存在しないため公開前に停止します。"
+            " 意図的休載の場合は Summary に当該カテゴリ名と休載理由を明記してください。"
+        )
     _extra = sorted(present - expected)
     return errs
+
+
+def _has_intentional_pause_marker(summary_body: str, cat_id: str) -> bool:
+    """Summary 内に当該カテゴリ名つきの休載理由があるかを見る。"""
+    meta = CATEGORIES.get(cat_id, {})
+    tokens = {
+        cat_id,
+        str(meta.get("label") or ""),
+        str(meta.get("jp") or ""),
+    }
+    aliases = {
+        "it": {"IT-Consulting", "IT", "コンサル"},
+        "fx": {"FX", "為替"},
+        "ai": {"AI"},
+        "mobility": {"Mobility", "モビリティ"},
+        "manufacturing": {"Manufacturing", "製造"},
+        "economy": {"Economy", "経済"},
+        "game": {"Game", "ゲーム"},
+    }
+    tokens.update(aliases.get(cat_id, set()))
+    tokens = {token for token in tokens if token}
+    for line in summary_body.splitlines():
+        if not _INTENTIONAL_PAUSE_RE.search(line):
+            continue
+        folded = line.casefold()
+        if any(token.casefold() in folded for token in tokens):
+            return True
+    return False
 
 
 def _stale_source_url_errors(*, issue: date, label: str, title: str, url: str) -> list[str]:
@@ -524,6 +563,31 @@ def validate_deepdive_presence(*, digest_root: Path, docs_root: Path, issue: dat
     return errs
 
 
+def validate_published_docs_presence(*, docs_root: Path, issue: date) -> list[str]:
+    """当日の日付 docs と配信対象カテゴリ docs の欠落を publish 前に落とす。"""
+    issue_str = issue.isoformat()
+    required: list[tuple[str, Path]] = [
+        ("日付 docs index が存在しません", docs_root / issue_str / "index.html"),
+        ("Summary 日付 docs が存在しません", docs_root / issue_str / "summary" / "index.html"),
+    ]
+    for cat_id in sorted(CATEGORIES):
+        if cat_id == "summary" or not is_category_scheduled_on(cat_id, issue_str):
+            continue
+        required.append((
+            f"カテゴリ日付 docs が存在しません ({cat_id})",
+            docs_root / cat_id / issue_str / "index.html",
+        ))
+
+    errs: list[str] = []
+    for label, path in required:
+        if not path.exists():
+            errs.append(
+                f"{label}: {path}。"
+                "tools.generate_pages で docs/<date>/index.html、summary、per-category docs を生成してから公開してください。"
+            )
+    return errs
+
+
 def _proper_cross(
     p: tuple[float, float],
     q: tuple[float, float],
@@ -646,6 +710,10 @@ def validate_daily_quality(
     errs.extend(validate_digest_source_freshness(digest_root, issue))
     errs.extend(validate_jsonl_source_freshness(jsonl_path, issue))
     if require_deepdive:
+        errs.extend(validate_published_docs_presence(
+            docs_root=docs_root,
+            issue=issue,
+        ))
         errs.extend(validate_deepdive_presence(
             digest_root=digest_root,
             docs_root=docs_root,

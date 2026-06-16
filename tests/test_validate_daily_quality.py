@@ -395,8 +395,8 @@ def test_daily_quality_rejects_weekday_mismatch(tmp_path: Path) -> None:
     assert "月曜日" in joined
 
 
-def test_daily_quality_allows_scheduled_category_gap_and_extra(tmp_path: Path) -> None:
-    """カテゴリ過不足だけでは号全体を fallback させない。"""
+def test_daily_quality_rejects_scheduled_category_gap(tmp_path: Path) -> None:
+    """配信対象カテゴリの digest 欠落は公開必須 inventory 欠落として落とす。"""
     _write_summary(tmp_path, weekday="月曜日")
     for cat_id, folder in [
         ("fx", "FX"),
@@ -415,7 +415,8 @@ def test_daily_quality_allows_scheduled_category_gap_and_extra(tmp_path: Path) -
     )
 
     joined = "\n".join(errs)
-    assert "scheduled category digest missing" not in joined
+    assert "scheduled category digest missing" in joined
+    assert "manufacturing" in joined
     assert "unscheduled category digest present" not in joined
 
 

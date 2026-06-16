@@ -86,3 +86,19 @@ tmp/
 
 # session URL フラグメント (発火 1 回 = 1 ファイル。push 前 gate のローカル白リスト・追跡不要) (2026-06-12)
 data/_session_urls.d/
+
+# 2026-06-16 追加: News-Grasp 日次 runner / reporter / incident audit 限定のローカル証跡
+# 公開物ではないが、障害監査・再現確認で参照するためローカルに保持し git status からは隠す。
+# build/ 全体ではなく、この機能が継続生成する証跡ディレクトリと wrapper log だけを対象にする。
+/C
+build/codex-usage/
+build/*.log
+build/reporter-artifacts/
+build/reporter-prompts/
+build/runner-smoke-*
+build/runner-smoke-logs/
+build/deepdive-*.png
+build/*-last-message.txt
+build/deepdive-render-check/
+build/*.wrapper.log
+docs/specs/*incident-hardening.html
