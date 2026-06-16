@@ -53,7 +53,27 @@ def test_audio_script_heading_is_not_read_by_tts():
     normalized = build_script.normalize_for_tts(raw)
 
     assert "音声朗読原稿" not in normalized
+    assert "#20260616" not in normalized
+    assert "#" not in normalized
     assert normalized.startswith("今日は6月16日です。朝のニュースをお伝えします。")
+
+
+def test_frontmatter_title_is_never_read_by_tts():
+    raw = (
+        "---\n"
+        "title: \"News Grasp #20260616 — 音声朗読原稿\"\n"
+        "date: 2026-06-16\n"
+        "---\n\n"
+        "今日は6月16日です。朝のニュースをお伝えします。"
+    )
+
+    normalized = build_script.normalize_for_tts(raw)
+
+    assert "News Grasp" not in normalized
+    assert "ニュース グラスプ #20260616" not in normalized
+    assert "#20260616" not in normalized
+    assert "音声朗読原稿" not in normalized
+    assert "#" not in normalized
 
 
 def test_normalize_for_tts_strips_markdown_url_and_wikilink():

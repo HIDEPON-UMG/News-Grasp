@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -19,6 +20,7 @@ LATEST_AUDIO_JSON = BUILD_DIR / "latest_audio.json"
 RELEASE_TAG = "audio-daily"
 OWNER = "HIDEPON-UMG"
 REPO = "News-Grasp"
+GH_TIMEOUT_SEC = 120
 _ASSET_DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.mp3$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -38,9 +40,18 @@ def audio_url(day: str, *, owner: str = OWNER, repo: str = REPO) -> str:
     return f"https://github.com/{owner}/{repo}/releases/download/{RELEASE_TAG}/{day}.mp3"
 
 
+def versioned_audio_url(day: str, mp3_path: Path, *, owner: str = OWNER, repo: str = REPO) -> str:
+    digest = hashlib.sha256(mp3_path.read_bytes()).hexdigest()[:12]
+    return f"{audio_url(day, owner=owner, repo=repo)}?v={digest}"
+
+
 def ensure_release() -> bool:
     try:
-        view = proc.quiet_run(["gh", "release", "view", RELEASE_TAG, "--json", "tagName"], check=False)
+        view = proc.quiet_run(
+            ["gh", "release", "view", RELEASE_TAG, "--json", "tagName"],
+            check=False,
+            timeout=GH_TIMEOUT_SEC,
+        )
         if view.returncode == 0:
             return True
         proc.quiet_run([
@@ -52,7 +63,7 @@ def ensure_release() -> bool:
             "Daily Audio",
             "--notes",
             "日次朗読音声の保管",
-        ])
+        ], timeout=GH_TIMEOUT_SEC)
         return True
     except Exception as exc:
         _warn(f"gh release prepare failed: {exc}")
@@ -60,7 +71,11 @@ def ensure_release() -> bool:
 
 
 def _load_assets() -> list[dict[str, Any]]:
-    result = proc.quiet_run(["gh", "release", "view", RELEASE_TAG, "--json", "assets"], check=True)
+    result = proc.quiet_run(
+        ["gh", "release", "view", RELEASE_TAG, "--json", "assets"],
+        check=True,
+        timeout=GH_TIMEOUT_SEC,
+    )
     return list(json.loads(result.stdout or "{}").get("assets") or [])
 
 
@@ -81,7 +96,7 @@ def rotate(
             continue
         asset_day = datetime.strptime(match.group(1), "%Y-%m-%d").date()
         if asset_day < cutoff:
-            quiet_run(["gh", "release", "delete-asset", RELEASE_TAG, name, "-y"])
+            quiet_run(["gh", "release", "delete-asset", RELEASE_TAG, name, "-y"], timeout=GH_TIMEOUT_SEC)
             deleted.append(name)
     return deleted
 
@@ -129,14 +144,14 @@ def publish(day: str, mp3_path: Path | None = None) -> dict[str, str] | None:
     try:
         if not ensure_release():
             return None
-        proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"])
-        url = audio_url(day)
+        proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"], timeout=GH_TIMEOUT_SEC)
+        url = versioned_audio_url(day, target)
         if not _url_returns_200(url):
             return None
         rotate(today=parsed_day)
         write_latest_audio(day, url)
         print(f"[tts] audio published: {url}")
-        return latest_audio_for_pages(day)
+        return {"latest_audio_date": day, "latest_audio_url": url}
     except Exception as exc:
         _warn(f"audio publish failed: {exc}")
         return None

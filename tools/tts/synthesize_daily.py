@@ -17,6 +17,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts"
 MIN_SECONDS = 6 * 60
 MAX_SECONDS = 10 * 60
+FFMPEG_TIMEOUT_SEC = 180
+FFPROBE_TIMEOUT_SEC = 30
+MAX_SYNTHESIS_SECONDS = 15 * 60
 
 
 def _warn(message: str) -> None:
@@ -60,16 +63,20 @@ def combine_wavs(wavs: list[bytes], out_path: Path) -> None:
 
 def probe_duration_seconds(mp3_path: Path) -> float | None:
     try:
-        result = proc.quiet_run([
-            "ffprobe",
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration",
-            "-of",
-            "json",
-            mp3_path,
-        ], check=True)
+        result = proc.quiet_run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "json",
+                mp3_path,
+            ],
+            check=True,
+            timeout=FFPROBE_TIMEOUT_SEC,
+        )
         data = json.loads(result.stdout or "{}")
         return float(data["format"]["duration"])
     except Exception as exc:
@@ -79,7 +86,10 @@ def probe_duration_seconds(mp3_path: Path) -> float | None:
 
 def convert_wav_to_mp3(wav_path: Path, mp3_path: Path) -> float:
     start = time.monotonic()
-    proc.quiet_run(["ffmpeg", "-y", "-i", wav_path, "-ac", "1", "-b:a", "80k", mp3_path])
+    proc.quiet_run(
+        ["ffmpeg", "-y", "-i", wav_path, "-ac", "1", "-b:a", "80k", mp3_path],
+        timeout=FFMPEG_TIMEOUT_SEC,
+    )
     return time.monotonic() - start
 
 
@@ -94,7 +104,13 @@ def synthesize(date: str) -> Path | None:
         style_id = aivis_client.resolve_style_id()
         text = script_path.read_text(encoding="utf-8")
         chunks = split_text(text)
-        wavs = [aivis_client.synthesize(chunk, style_id) for chunk in chunks]
+        started_at = time.monotonic()
+        wavs: list[bytes] = []
+        for chunk in chunks:
+            if time.monotonic() - started_at > MAX_SYNTHESIS_SECONDS:
+                _warn(f"TTS synthesis time budget exceeded: {MAX_SYNTHESIS_SECONDS}s")
+                return None
+            wavs.append(aivis_client.synthesize(chunk, style_id))
         with tempfile.TemporaryDirectory(prefix="news-grasp-tts-") as tmp:
             wav_path = Path(tmp) / f"{date}.wav"
             combine_wavs(wavs, wav_path)

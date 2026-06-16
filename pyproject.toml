@@ -18,3 +18,6 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-ra -q"
+markers = [
+    "network: 外部サービス、公開 URL、ローカル実エンジンに依存する test。runner の pytest-static gate では除外する。",
+]

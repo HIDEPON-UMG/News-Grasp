@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import date, timedelta
 
 from tools.tts import publish_audio
@@ -45,7 +46,64 @@ def test_rotate_deletes_only_assets_older_than_31_days():
     assert all(call[:3] == ["gh", "release", "delete-asset"] for call in calls)
 
 
+def test_rotate_uses_timeout_bounded_gh_delete():
+    today = date(2026, 6, 16)
+    assets = [{"name": "2026-05-01.mp3"}]
+    calls: list[dict[str, object]] = []
+
+    def fake_quiet_run(args, **kwargs):
+        calls.append({"args": list(args), "kwargs": dict(kwargs)})
+        return None
+
+    publish_audio.rotate(today=today, assets=assets, quiet_run=fake_quiet_run)
+
+    assert calls
+    assert all(call["kwargs"].get("timeout") == publish_audio.GH_TIMEOUT_SEC for call in calls)
+
+
+def test_publish_uses_timeout_bounded_gh_commands(tmp_path, monkeypatch):
+    mp3 = tmp_path / "2026-06-16.mp3"
+    mp3.write_bytes(b"ID3")
+    calls: list[dict[str, object]] = []
+
+    def fake_quiet_run(args, **kwargs):
+        calls.append({"args": list(args), "kwargs": dict(kwargs)})
+        class Result:
+            returncode = 0
+            stdout = '{"assets":[]}'
+        return Result()
+
+    monkeypatch.setattr(publish_audio.proc, "quiet_run", fake_quiet_run)
+    monkeypatch.setattr(publish_audio, "_url_returns_200", lambda _url: True)
+    monkeypatch.setattr(publish_audio, "write_latest_audio", lambda _day, _url: None)
+    expected_hash = hashlib.sha256(b"ID3").hexdigest()[:12]
+
+    assert publish_audio.publish("2026-06-16", mp3) == {
+        "latest_audio_url": (
+            "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
+            f"audio-daily/2026-06-16.mp3?v={expected_hash}"
+        ),
+        "latest_audio_date": "2026-06-16",
+    }
+    gh_calls = [call for call in calls if call["args"][0] == "gh"]
+    assert gh_calls
+    assert all(call["kwargs"].get("timeout") == publish_audio.GH_TIMEOUT_SEC for call in gh_calls)
+
+
 def test_audio_url_uses_confirmed_owner_and_repo():
     assert publish_audio.audio_url("2026-06-16") == (
         "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3"
+    )
+
+
+def test_latest_audio_url_uses_mp3_content_hash_cache_buster(tmp_path):
+    mp3 = tmp_path / "2026-06-16.mp3"
+    mp3.write_bytes(b"corrected-audio")
+    expected_hash = hashlib.sha256(b"corrected-audio").hexdigest()[:12]
+
+    url = publish_audio.versioned_audio_url("2026-06-16", mp3)
+
+    assert url == (
+        "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
+        f"audio-daily/2026-06-16.mp3?v={expected_hash}"
     )
