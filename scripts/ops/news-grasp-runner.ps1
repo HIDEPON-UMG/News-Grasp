@@ -22,7 +22,7 @@
 #   -PreflightOnly  Codex / git push / generate_pages.py を全部スキップ。E2E 前の
 #              schema / prompt / newsroom manifest 契約だけを検証する no-Codex モード
 #   -RecoverOnly  生成済み digest / DeepDive を再利用し、Codex を再実行せずに
-#              gate 群 → docs 再生成 → docs commit → push → send_push だけを実行する
+#              gate 群 → docs 再生成 → docs commit → push → 公開反映確認だけを実行する
 #              復旧モード。gate failed 後、対象 md/jsonl を手修正してから使う。
 #
 # 実装上の注意:
@@ -154,6 +154,7 @@ $LogPath = Join-Path $LogDir ("$DateStamp.log")
 $CodexUsageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.jsonl"
 $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.jsonl"
 $script:CodexUsageEndSnapshotWritten = $false
+$NormalPublishVerified = $false
 
 function Get-PublishInventoryArtifacts {
     param([ValidateSet('digest', 'published')] [string] $Kind)
@@ -239,6 +240,19 @@ function Write-Log {
     } elseif ($Text -eq 'news-grasp-runner.ps1 SMOKE OK') {
         Set-RunnerState -Status 'smoke_ok' -Message $Text -ExitCode 0
     }
+}
+
+function Stop-ExternalReadiness {
+    param(
+        [Parameter(Mandatory=$true)][string] $Reason,
+        [int] $ExitCode = 71
+    )
+    Write-Log "ERROR: external readiness blocked: $Reason"
+    Exit-Runner -Status 'blocked_external_readiness' -Message $Reason -ExitCode $ExitCode
+}
+
+function Should-SendNormalBatchNotification {
+    return ((-not $NoPush) -and (-not $RecoverOnly) -and $NormalPublishVerified)
 }
 
 function Write-CodexUsageWindowSnapshot {
@@ -746,14 +760,7 @@ function Invoke-FallbackPublish {
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: fallback push failed (rc=$LASTEXITCODE)"; exit 1 }
     Write-Log 'fallback push origin main done'
 
-    Push-Location $RepoDir
-    try {
-        Invoke-Logged { & $PyExe 'tools\send_push.py' }
-        $fallbackPushRc = $LASTEXITCODE
-    } finally {
-        Pop-Location
-    }
-    if ($fallbackPushRc -ne 0) { Write-Log "WARN: fallback send_push exited $fallbackPushRc (non-fatal)" }
+    Write-Log 'fallback notification skipped: not a normal batch'
     Write-CodexUsageWindowSnapshot -Phase 'end'
     Write-Log 'news-grasp-runner.ps1 OK (published_fallback_with_notice)'
     exit 0
@@ -838,12 +845,11 @@ if ($Stage2EditorSmokeOnly) {
         Write-Log 'net reachability wait start (github.com / api.github.com :443, max 10x30s)'
         Invoke-Logged { & $PyExe $NetWait --host github.com --host api.github.com --port 443 --retries 10 --interval-sec 30 --connect-timeout-sec 5 }
         if ($LASTEXITCODE -ne 0) {
-            Write-Log "ERROR: network unreachable (github.com:443) after wait; aborting before git fetch (rc=$LASTEXITCODE)"
-            exit 1
+            Stop-ExternalReadiness -Reason "network unreachable (github.com:443) after wait; aborting before git fetch (rc=$LASTEXITCODE)" -ExitCode 71
         }
         Write-Log 'net reachability OK'
     } else {
-        Write-Log "WARN: net_wait.py not found at $NetWait; skipping net reachability wait"
+        Stop-ExternalReadiness -Reason "net_wait.py missing at $NetWait" -ExitCode 71
     }
 
     # ===== 1. git fetch / pull =====
@@ -1565,6 +1571,7 @@ if ($NoPush) {
         Set-RunnerState -Status 'publish_failed' -Message 'publish verification failed' -ExitCode 1
         exit 1
     }
+    $NormalPublishVerified = $true
     Write-Log 'publish verification OK'
 }
 
@@ -1572,10 +1579,10 @@ if ($NoPush) {
 # 2026-05-30 に push を .bat 側へ移したが、タスクスケジューラが実行する実行体は本 .ps1。
 # .ps1 に push ステップが無く 2026-05-31 朝の通知が一度も飛ばなかった事故の恒久修正
 # （.bat と .ps1 の二重管理で修正が実行経路に入らなかった）。
+# 2026-06-16: 通知は正常な通常公開バッチだけに限定し、fallback / RecoverOnly / NoPush /
+# publish verify 未完了では send_push.py 自体を呼ばない。
 # push は付随機能なので非致命（send_push 自身が購読 0 / 鍵無しでも exit 0 を返す）。
-if ($NoPush) {
-    Write-Log 'NoPush mode: skipping send_push'
-} else {
+if (Should-SendNormalBatchNotification) {
     Write-Log 'send_push start'
     Push-Location $RepoDir
     try {
@@ -1586,6 +1593,14 @@ if ($NoPush) {
     }
     if ($pushRc -ne 0) { Write-Log "WARN: send_push exited $pushRc (non-fatal)" }
     Write-Log "send_push done rc=$pushRc"
+} elseif ($NoPush) {
+    Write-Log 'NoPush mode: skipping send_push'
+} elseif ($RecoverOnly) {
+    Write-Log 'RecoverOnly mode: skipping send_push (not a normal batch)'
+} elseif (-not $NormalPublishVerified) {
+    Write-Log 'send_push skipped: publish verification not confirmed'
+} else {
+    Write-Log 'send_push skipped: not a normal batch'
 }
 
 Write-CodexUsageWindowSnapshot -Phase 'end'

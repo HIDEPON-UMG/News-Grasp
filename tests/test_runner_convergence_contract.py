@@ -172,6 +172,43 @@ def test_fallback_publish_restores_unverified_generated_artifacts() -> None:
     assert "digest/" in runner
 
 
+def test_fallback_publish_never_sends_web_push() -> None:
+    """fallback publish は公開本体の保護だけで、購読通知へは到達させない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    fallback_body = runner.split("function Invoke-FallbackPublish", 1)[1].split("# ===== sentinel", 1)[0]
+
+    assert "fallback notification skipped: not a normal batch" in fallback_body
+    assert "tools\\send_push.py" not in fallback_body
+    assert "fallback send_push" not in fallback_body
+
+
+def test_send_push_requires_normal_batch_publish_verification() -> None:
+    """通知は通常バッチの公開反映確認が通った後だけ実行する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    notify_gate = runner.split("function Should-SendNormalBatchNotification", 1)[1].split("# ===== sentinel", 1)[0]
+    send_block = runner.split("# ===== 6. Web Push", 1)[1].split("Write-CodexUsageWindowSnapshot -Phase 'end'", 1)[0]
+
+    assert "$NormalPublishVerified = $false" in runner
+    assert "$NormalPublishVerified = $true" in runner
+    assert "$NormalPublishVerified" in notify_gate
+    assert "-not $NoPush" in notify_gate
+    assert "-not $RecoverOnly" in notify_gate
+    assert "Should-SendNormalBatchNotification" in send_block
+    assert "RecoverOnly mode: skipping send_push (not a normal batch)" in send_block
+    assert runner.index("publish verification OK") < runner.index("send_push start")
+
+
+def test_external_readiness_failures_write_blocked_state() -> None:
+    """外部 readiness 不足は warn skip ではなく終端 state を残して止める。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    net_wait_block = runner.split("net reachability wait start", 1)[1].split("# ===== 1. git fetch", 1)[0]
+
+    assert "function Stop-ExternalReadiness" in runner
+    assert "blocked_external_readiness" in runner
+    assert "Stop-ExternalReadiness" in net_wait_block
+    assert "WARN: net_wait.py not found" not in net_wait_block
+
+
 def test_daily_runner_timeout_is_80_minutes() -> None:
     """日次 digest 本体の wall-clock timeout は 80 分、idle 既定は 15 分に固定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
