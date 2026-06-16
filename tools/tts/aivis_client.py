@@ -54,16 +54,18 @@ def _candidate_engine_paths() -> list[Path]:
     local = os.environ.get("LOCALAPPDATA")
     if local:
         paths.extend([
-            Path(local) / "Programs" / "AivisSpeech" / "AivisSpeech.exe",
+            Path(local) / "Programs" / "AivisSpeech" / "AivisSpeech-Engine" / "run.exe",
             Path(local) / "Programs" / "AivisSpeech" / "resources" / "engine" / "run.exe",
             Path(local) / "Programs" / "AivisSpeech" / "resources" / "AivisSpeech-Engine" / "run.exe",
+            Path(local) / "Programs" / "AivisSpeech" / "AivisSpeech.exe",
         ])
     program_files = [os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")]
     for root in [p for p in program_files if p]:
         paths.extend([
-            Path(root) / "AivisSpeech" / "AivisSpeech.exe",
+            Path(root) / "AivisSpeech" / "AivisSpeech-Engine" / "run.exe",
             Path(root) / "AivisSpeech" / "resources" / "engine" / "run.exe",
             Path(root) / "AivisSpeech" / "resources" / "AivisSpeech-Engine" / "run.exe",
+            Path(root) / "AivisSpeech" / "AivisSpeech.exe",
         ])
     return paths
 
@@ -93,7 +95,7 @@ def ensure_engine(timeout: int = 60) -> bool:
         _warn("AivisSpeech engine executable was not found; TTS step skipped")
         return False
     try:
-        _owned_engine_process = proc.spawn_detached([exe])
+        _owned_engine_process = proc.spawn_detached([exe], cwd=exe.parent)
     except Exception as exc:
         _warn(f"AivisSpeech auto-start failed: {exc}")
         return False

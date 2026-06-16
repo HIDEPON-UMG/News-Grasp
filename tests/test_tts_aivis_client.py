@@ -24,6 +24,28 @@ def test_aivis_default_params_match_reviewed_voice_settings():
     assert aivis_client.DEFAULT_PARAMS["outputStereo"] is False
 
 
+def test_candidate_engine_paths_include_current_installer_engine_location(monkeypatch, tmp_path):
+    local_appdata = tmp_path / "Local"
+    monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
+    monkeypatch.delenv("AIVISSPEECH_ENGINE_EXE", raising=False)
+
+    paths = aivis_client._candidate_engine_paths()
+
+    assert local_appdata / "Programs" / "AivisSpeech" / "AivisSpeech-Engine" / "run.exe" in paths
+
+
+def test_candidate_engine_paths_prefer_engine_run_exe_before_gui(monkeypatch, tmp_path):
+    local_appdata = tmp_path / "Local"
+    monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
+    monkeypatch.delenv("AIVISSPEECH_ENGINE_EXE", raising=False)
+
+    paths = aivis_client._candidate_engine_paths()
+    engine = local_appdata / "Programs" / "AivisSpeech" / "AivisSpeech-Engine" / "run.exe"
+    gui = local_appdata / "Programs" / "AivisSpeech" / "AivisSpeech.exe"
+
+    assert paths.index(engine) < paths.index(gui)
+
+
 @pytest.mark.network
 def test_aivis_client_resolves_style_and_synthesizes_short_wav_when_engine_is_up():
     if not aivis_client.is_engine_up():
@@ -48,12 +70,39 @@ def test_ensure_engine_records_only_process_it_started(monkeypatch):
     monkeypatch.setattr(aivis_client, "_owned_engine_process", None)
     monkeypatch.setattr(aivis_client, "is_engine_up", lambda: False)
     monkeypatch.setattr(aivis_client, "_candidate_engine_paths", lambda: [aivis_client.Path(__file__)])
-    monkeypatch.setattr(aivis_client.proc, "spawn_detached", lambda _args: fake_process)
+    monkeypatch.setattr(aivis_client.proc, "spawn_detached", lambda _args, cwd=None: fake_process)
     monkeypatch.setattr(aivis_client, "_get_json", lambda _path, timeout=10: [])
 
     assert aivis_client.ensure_engine(timeout=1) is True
     assert aivis_client.engine_started_by_this_process() is True
     assert aivis_client._owned_engine_process is fake_process
+
+
+def test_ensure_engine_starts_executable_from_its_parent_directory(monkeypatch, tmp_path):
+    class FakeProcess:
+        pid = 1234
+
+        def poll(self):
+            return None
+
+    engine_dir = tmp_path / "AivisSpeech-Engine"
+    engine_dir.mkdir()
+    exe = engine_dir / "run.exe"
+    exe.write_text("", encoding="utf-8")
+    calls: list[tuple[list[aivis_client.Path], aivis_client.Path | None]] = []
+
+    def fake_spawn(args, cwd=None):
+        calls.append((args, cwd))
+        return FakeProcess()
+
+    monkeypatch.setattr(aivis_client, "_owned_engine_process", None)
+    monkeypatch.setattr(aivis_client, "is_engine_up", lambda: False)
+    monkeypatch.setattr(aivis_client, "_candidate_engine_paths", lambda: [exe])
+    monkeypatch.setattr(aivis_client.proc, "spawn_detached", fake_spawn)
+    monkeypatch.setattr(aivis_client, "_get_json", lambda _path, timeout=10: [])
+
+    assert aivis_client.ensure_engine(timeout=1) is True
+    assert calls == [([exe], exe.parent)]
 
 
 def test_ensure_engine_does_not_take_ownership_of_preexisting_engine(monkeypatch):

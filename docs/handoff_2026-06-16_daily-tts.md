@@ -345,7 +345,7 @@ News-Grasp/
 
 ## 7. 実装前の要確認事項（ブロッカー候補）
 - [x] 指定音声モデル `47e53151-...` の**個別ライセンス**（商用/Web 配信可否・クレジット表記要否）。AivisHub 上の `阿井田 茂` はライセンス `ACML 1.0`。ACML 1.0 は禁止事項に該当しない個人・法人・非営利・営利利用を許可し、クレジット表記は任意。News-Grasp の日次ニュース朗読は不特定多数が任意入力する TTS サービスではなく編集済み原稿の配信なので、利用可・クレジット任意と判断。出典: https://hub.aivis-project.com/aivm-models/47e53151-a378-46f3-abee-ce13aa07feb1 / https://github.com/Aivis-Project/ACML/blob/master/ACML-1.0.md / https://aivis-project.com/terms/
-- [x] AivisSpeech エンジン**実行ファイルの実パス**（自動起動用）。実機では `AIVISSPEECH_ENGINE_EXE` 未設定、GUI 本体は `%LOCALAPPDATA%\Programs\AivisSpeech\AivisSpeech.exe`。`runtime-info.json` は `http://127.0.0.1:10101` の Engine を指す。`aivis_client` は環境変数優先で、この GUI 本体パスと代表的 engine 同梱パスを既定探索する。
+- [x] AivisSpeech エンジン**実行ファイルの実パス**（自動起動用）。実機では `AIVISSPEECH_ENGINE_EXE` 未設定、エンジン本体は `%LOCALAPPDATA%\Programs\AivisSpeech\AivisSpeech-Engine\run.exe`、GUI 本体は `%LOCALAPPDATA%\Programs\AivisSpeech\AivisSpeech.exe`。短文TTSの実機スモークで `run.exe` は約10秒で `/speakers` 200 になり、`AivisSpeech.exe` はバッチ用途の自動起動では60秒以内に ready にならなかった。`aivis_client` は環境変数優先、未設定時は同梱 engine `run.exe` を GUI より優先して既定探索する。
 - [x] News-Grasp リポジトリの**公開設定**と Releases アセットの匿名 DL 可否（`gh repo view --json visibility`）。`gh repo view --json owner,name,visibility,url` で `HIDEPON-UMG/News-Grasp` / `PUBLIC` を確認。Releases URL は `https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/{date}.mp3`。
 
 ### 実機 API 確認メモ
