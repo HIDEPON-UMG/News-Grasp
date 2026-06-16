@@ -29,6 +29,7 @@ _WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", 
 # 「全件注釈ゼロ = 強化版を通っていない疑い」の警告検査を適用しない。
 _DATE_EVIDENCE_ANNOTATION_START = date(2026, 6, 11)
 _DATE_EVIDENCE_SOURCE_FIELD = "date_evidence_source"
+_TTS_REQUIRED_START = date(2026, 6, 17)
 REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
     "ai": {"OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"},
     "fx": {"USDJPY", "EURUSD", "BOJ", "Fed", "ECB"},
@@ -585,6 +586,69 @@ def validate_published_docs_presence(*, docs_root: Path, issue: date) -> list[st
     return errs
 
 
+def validate_tts_audio_presence(
+    *,
+    repo_root: Path = Path("."),
+    digest_root: Path = Path("digest"),
+    docs_root: Path = Path("docs"),
+    issue: date,
+) -> list[str]:
+    """必須音声成果物と公開 HTML への反映を検査する。"""
+    if issue < _TTS_REQUIRED_START:
+        return []
+
+    issue_str = issue.isoformat()
+    errs: list[str] = []
+    audio_script = digest_root / "Summary" / f"{issue_str}-audio-script.md"
+    if not audio_script.exists():
+        errs.append(
+            f"TTS 音声原稿が存在しません: {audio_script}。"
+            "digest/Summary/<date>-audio-script.md を生成してから公開してください。"
+        )
+
+    latest_path = repo_root / "build" / "tts" / "latest_audio.json"
+    if not latest_path.exists():
+        errs.append(
+            f"TTS latest_audio.json が存在しません: {latest_path}。"
+            "tools.tts.publish_audio で Release URL を確定してから公開してください。"
+        )
+        return errs
+
+    try:
+        latest = json.loads(latest_path.read_text(encoding="utf-8-sig"))
+    except Exception as exc:  # noqa: BLE001 - gate では文脈付きで返す
+        errs.append(f"TTS latest_audio.json を読めません: {latest_path}: {exc}")
+        return errs
+
+    if latest.get("latest_audio_date") != issue_str:
+        errs.append(
+            f"TTS latest_audio.json の日付が対象日ではありません: "
+            f"{latest.get('latest_audio_date')!r} != {issue_str}"
+        )
+    audio_url = str(latest.get("latest_audio_url") or "").strip()
+    if not audio_url:
+        errs.append("TTS latest_audio.json に latest_audio_url がありません。")
+        return errs
+    if f"/{issue_str}.mp3" not in audio_url:
+        errs.append(f"TTS latest_audio_url が対象日の mp3 を指していません: {audio_url}")
+
+    html_targets = [
+        ("home", docs_root / "index.html"),
+        ("summary", docs_root / issue_str / "summary" / "index.html"),
+    ]
+    for label, html_path in html_targets:
+        if not html_path.exists():
+            errs.append(f"TTS audio URL 検査対象 HTML が存在しません ({label}): {html_path}")
+            continue
+        html = html_path.read_text(encoding="utf-8-sig", errors="replace")
+        if "<audio" not in html or audio_url not in html:
+            errs.append(
+                f"TTS audio URL が {label} HTML に反映されていません: "
+                f"{html_path} に {audio_url} がありません。"
+            )
+    return errs
+
+
 def _proper_cross(
     p: tuple[float, float],
     q: tuple[float, float],
@@ -718,6 +782,12 @@ def validate_daily_quality(
         ))
         errs.extend(validate_deepdive_relations_layout(
             digest_root=digest_root,
+            issue=issue,
+        ))
+        errs.extend(validate_tts_audio_presence(
+            repo_root=Path("."),
+            digest_root=digest_root,
+            docs_root=docs_root,
             issue=issue,
         ))
     return errs

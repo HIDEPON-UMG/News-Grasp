@@ -114,6 +114,7 @@ def required_generated_artifacts(issue: str | date) -> list[str]:
         ]
         + [
             f"digest/Summary/{issue_str}.md",
+            f"digest/Summary/{issue_str}-audio-script.md",
             f"digest/DeepDive/{issue_str}-DeepDive.md",
             "data/articles.jsonl",
             "data/_status.md",
@@ -124,7 +125,11 @@ def required_generated_artifacts(issue: str | date) -> list[str]:
 
 def required_published_artifacts(issue: str | date) -> list[str]:
     """通常公開前の必須 docs + DeepDive artifact。"""
-    return required_published_docs_artifacts(issue) + required_deepdive_artifacts(issue)
+    return (
+        required_published_docs_artifacts(issue)
+        + required_deepdive_artifacts(issue)
+        + ["build/tts/latest_audio.json"]
+    )
 
 
 def missing_artifacts(repo_root: Path, artifacts: list[str]) -> list[str]:

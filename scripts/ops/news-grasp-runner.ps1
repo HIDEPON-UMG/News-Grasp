@@ -1651,16 +1651,16 @@ if ($pytestGateRc -ne 0) {
 }
 Write-Log 'pytest gate OK'
 
-# ===== 2.85 Daily TTS audio (non-fatal, editor 後・generate_pages 前) =====
+# ===== 2.85 Daily TTS audio (fatal, editor 後・generate_pages 前) =====
 # 2026-06-16: 編集長が生成した digest/Summary/{date}-audio-script.md を AivisSpeech で
-# mp3 化し、GitHub Releases audio-daily へ公開する。音声は additive な導線なので、
-# AivisSpeech / ffmpeg / gh のどこで失敗しても digest 公開は止めない。
+# mp3 化し、GitHub Releases audio-daily へ公開する。2026-06-17 以降は通常公開必須
+# 成果物なので、失敗時は公開・fallback・通知へ進ませない。
 foreach ($ttsStep in @(
     @{ Name = 'tts build_script'; Args = @('-m', 'tools.tts.build_script', $DateStamp) },
     @{ Name = 'tts synthesize_daily'; Args = @('-m', 'tools.tts.synthesize_daily', $DateStamp) },
     @{ Name = 'tts publish_audio'; Args = @('-m', 'tools.tts.publish_audio', $DateStamp) }
 )) {
-    Write-Log "$($ttsStep.Name) start (non-fatal)"
+    Write-Log "$($ttsStep.Name) start"
     try {
         Push-Location $RepoDir
         try {
@@ -1670,12 +1670,15 @@ foreach ($ttsStep in @(
             Pop-Location
         }
         if ($ttsRc -ne 0) {
-            Write-Log "WARN: $($ttsStep.Name) exited with $ttsRc (non-fatal, digest は続行)"
-        } else {
-            Write-Log "$($ttsStep.Name) done"
+            Write-Log "ERROR: $($ttsStep.Name) exited with $ttsRc. TTS is required for normal publish."
+            Set-RunnerState -Status 'content_repair_failed' -Message "$($ttsStep.Name) failed" -ExitCode $ttsRc
+            exit 1
         }
+        Write-Log "$($ttsStep.Name) done"
     } catch {
-        Write-Log "WARN: $($ttsStep.Name) failed: $($_.Exception.Message) (non-fatal, digest は続行)"
+        Write-Log "ERROR: $($ttsStep.Name) failed: $($_.Exception.Message). TTS is required for normal publish."
+        Set-RunnerState -Status 'content_repair_failed' -Message "$($ttsStep.Name) failed" -ExitCode 1
+        exit 1
     }
 }
 

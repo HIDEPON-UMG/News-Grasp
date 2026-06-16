@@ -387,6 +387,8 @@ def validate_generation_quality(repo_root: Path, issue: str) -> GenerationQualit
     for rel in artifacts:
         if rel.startswith("data/"):
             errors.extend(_validate_support_artifact(repo_root, rel))
+        elif rel.endswith("-audio-script.md"):
+            errors.extend(_validate_markdown_artifact(repo_root, rel, issue))
         elif rel.endswith(".md") and "/Summary/" in rel:
             errors.extend(_validate_summary(repo_root, rel, issue))
         elif rel.endswith(".md") and "/DeepDive/" in rel:

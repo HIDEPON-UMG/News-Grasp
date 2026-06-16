@@ -68,6 +68,16 @@ def _write_complete_fixture(root: Path) -> None:
         "本文です。\n",
         encoding="utf-8",
     )
+    (summary.parent / f"{ISSUE}-audio-script.md").write_text(
+        "---\n"
+        "title: Audio Script\n"
+        f"date: {ISSUE}\n"
+        "type: audio-script\n"
+        "---\n\n"
+        "# Audio Script\n\n"
+        "朗読原稿の本文です。\n",
+        encoding="utf-8",
+    )
 
     deepdive = root / "digest" / "DeepDive" / f"{ISSUE}-DeepDive.md"
     deepdive.parent.mkdir(parents=True, exist_ok=True)
@@ -138,6 +148,25 @@ def test_generation_quality_rejects_summary_without_hero(tmp_path: Path) -> None
 
     assert result.exit_code == 1
     assert any(err.code == "summary_hero_missing" for err in result.errors)
+
+
+def test_generation_quality_does_not_treat_audio_script_as_summary(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    audio_script = tmp_path / "digest" / "Summary" / f"{ISSUE}-audio-script.md"
+    audio_script.write_text(
+        "---\n"
+        "title: Audio Script\n"
+        f"date: {ISSUE}\n"
+        "type: audio-script\n"
+        "---\n\n"
+        "朗読原稿です。\n",
+        encoding="utf-8",
+    )
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 0
+    assert not any(err.artifact.endswith("-audio-script.md") for err in result.errors)
 
 
 def test_generation_quality_rejects_missing_deepdive(tmp_path: Path) -> None:

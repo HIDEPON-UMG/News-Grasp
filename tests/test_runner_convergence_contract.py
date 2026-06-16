@@ -510,18 +510,20 @@ def test_runner_requires_deepdive_after_pages_generation() -> None:
     assert runner.index("deepdive required gate start") < runner.index("public HTML gate start")
 
 
-def test_runner_tts_is_additive_and_non_fatal_before_pages_generation() -> None:
-    """TTS 生成・公開は additive として扱い、通常号 publish 本線を止めない。"""
+def test_runner_tts_is_required_before_pages_generation() -> None:
+    """TTS 生成・公開は通常公開必須として扱い、失敗時は publish 本線へ進めない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    assert "Daily TTS audio (non-fatal" in runner
+    assert "Daily TTS audio (fatal" in runner
     assert "tools.tts.build_script" in runner
     assert "tools.tts.synthesize_daily" in runner
     assert "tools.tts.publish_audio" in runner
-    assert runner.index("pytest gate OK") < runner.index("Daily TTS audio (non-fatal")
-    assert runner.index("Daily TTS audio (non-fatal") < runner.index("2.9 digest/data commit")
-    block = runner.split("Daily TTS audio (non-fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
-    assert "WARN:" in block
-    assert "non-fatal" in block
+    assert runner.index("pytest gate OK") < runner.index("Daily TTS audio (fatal")
+    assert runner.index("Daily TTS audio (fatal") < runner.index("2.9 digest/data commit")
+    block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
+    assert "TTS is required for normal publish" in block
+    assert "Set-RunnerState -Status 'content_repair_failed'" in block
+    assert "exit 1" in block
+    assert "non-fatal" not in block
     assert "Invoke-FallbackPublish" not in block
     assert "Stop-ContentGateWithoutFallback" not in block
 
@@ -529,7 +531,7 @@ def test_runner_tts_is_additive_and_non_fatal_before_pages_generation() -> None:
 def test_runner_tts_does_not_send_normal_notification() -> None:
     """TTS 失敗・成功だけで通常通知を送らず、通知は通常 publish verified 後に限定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    tts_block = runner.split("Daily TTS audio (non-fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
+    tts_block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
     send_push_index = runner.index("send_push start")
     assert "send_push" not in tts_block
     assert "Should-SendNormalBatchNotification" in runner

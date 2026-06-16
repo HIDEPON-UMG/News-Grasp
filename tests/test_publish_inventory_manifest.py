@@ -46,6 +46,7 @@ def test_manifest_lists_published_docs_and_deepdive_artifacts() -> None:
     assert "docs/game/2026-06-16/index.html" in artifacts
     assert "digest/DeepDive/2026-06-16-DeepDive.md" in artifacts
     assert "docs/deepdive/2026-06-16/index.html" in artifacts
+    assert "build/tts/latest_audio.json" in artifacts
 
 
 def test_generated_manifest_contains_required_generation_artifacts() -> None:
@@ -60,6 +61,7 @@ def test_generated_manifest_contains_required_generation_artifacts() -> None:
         "digest/Manufacturing/2026-06-16-Manufacturing.md",
         "digest/Mobility/2026-06-16-Mobility.md",
         "digest/Summary/2026-06-16.md",
+        "digest/Summary/2026-06-16-audio-script.md",
         "digest/DeepDive/2026-06-16-DeepDive.md",
         "data/articles.jsonl",
         "data/_status.md",
