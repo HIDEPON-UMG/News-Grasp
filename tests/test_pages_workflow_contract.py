@@ -22,5 +22,5 @@ def test_pages_deploy_workflow_uses_actions_source_and_node24_runtime() -> None:
     assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in text
     assert "uses: actions/configure-pages@v6" in text
     assert "uses: actions/upload-pages-artifact@v5" in text
-    assert "uses: actions/deploy-pages@v4" in text
+    assert "uses: actions/deploy-pages@v5" in text
     assert "path: ./docs" in text
