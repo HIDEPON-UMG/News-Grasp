@@ -738,6 +738,7 @@ if ($RecoverOnly) {
     # ===== Stage0: deterministic candidate harvest (LLM 前固定実行) =====
     $CandidateDir = Join-Path $RepoDir 'build\candidates'
     $DedupedCandidateDir = Join-Path $RepoDir 'build\deduped-candidates'
+    $HarvestAuditDir = Join-Path $RepoDir "data\search_audit\$DateStamp"
     $Categories = @('fx','ai','it','mobility','manufacturing','economy','game')
     if ($Stage2EditorSmokeOnly) {
         Write-Log 'Stage2EditorSmokeOnly mode: skipping Stage0 harvest and Stage1 dedup; using existing deduped candidates'
@@ -747,6 +748,7 @@ if ($RecoverOnly) {
         if (Test-Path $DedupedCandidateDir) { Remove-Item -LiteralPath $DedupedCandidateDir -Recurse -Force -ErrorAction SilentlyContinue }
         New-Item -ItemType Directory -Path $CandidateDir -Force | Out-Null
         New-Item -ItemType Directory -Path $DedupedCandidateDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $HarvestAuditDir -Force | Out-Null
         $stage0Start = Get-Date
         $candidateTotal = 0
         foreach ($cat in $Categories) {
@@ -754,7 +756,7 @@ if ($RecoverOnly) {
             Push-Location $RepoDir
             try {
                 Write-Log "Stage0 harvest_candidates.py start category=$cat"
-                $harvestRc = Invoke-PythonStdoutFileUtf8 -PythonArgs @('-m', 'tools.harvest_candidates', '--category', $cat) -StdoutPath $outPath
+                $harvestRc = Invoke-PythonStdoutFileUtf8 -PythonArgs @('-m', 'tools.harvest_candidates', '--category', $cat, '--audit-dir', $HarvestAuditDir) -StdoutPath $outPath
             } finally {
                 Pop-Location
             }

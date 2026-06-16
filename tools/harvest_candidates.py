@@ -50,13 +50,17 @@ RSS XML のパース部（`parse_rss` 等）は純関数として分離し、オ
 from __future__ import annotations
 
 import argparse
+import re
 import json
 import sys
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from html.parser import HTMLParser
+from pathlib import Path
 
 # tools パッケージ経由（python -m / pytest）と flat 実行（python tools/...）両対応の import。
 try:
@@ -83,6 +87,18 @@ _UA = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/126.0.0.0 Safari/537.36"
 )
+
+
+@dataclass(frozen=True)
+class SourceDefinition:
+    """カテゴリ別 source catalog の 1 エントリ。"""
+
+    url: str
+    mode: str = "rss"
+    trust_tier: str = "industry"
+    include_keywords: tuple[str, ...] = field(default_factory=tuple)
+    exclude_keywords: tuple[str, ...] = field(default_factory=tuple)
+    max_items: int = 10
 
 # ── カテゴリ別 検索クエリ（config.CATEGORIES に整合）─────────────────────────────
 #
@@ -156,28 +172,68 @@ CATEGORY_QUERY_SETS: dict[str, list[str]] = {
     ],
 }
 
-RSS_FEEDS_BY_CATEGORY: dict[str, list[str]] = {
+SOURCE_CATALOG_BY_CATEGORY: dict[str, list[SourceDefinition]] = {
     "fx": [
-        "https://www.forexlive.com/feed/",
+        SourceDefinition("https://www.forexlive.com/feed/", trust_tier="industry", max_items=10),
+        SourceDefinition("https://www.federalreserve.gov/feeds/press_monetary.xml", trust_tier="official", max_items=5),
+        SourceDefinition("https://www.boj.or.jp/rss/whatsnew.xml", trust_tier="official", max_items=5),
+        SourceDefinition("https://www.mof.go.jp/english/news.rss", trust_tier="official", max_items=5),
     ],
     "ai": [
-        "https://techcrunch.com/category/artificial-intelligence/feed/",
+        SourceDefinition("https://techcrunch.com/category/artificial-intelligence/feed/", trust_tier="industry", max_items=10),
+        SourceDefinition("https://venturebeat.com/category/ai/feed/", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.technologyreview.com/feed/", trust_tier="industry", include_keywords=("ai", "artificial intelligence", "openai", "anthropic", "model"), max_items=8),
+        SourceDefinition("https://deepmind.google/blog/rss.xml", trust_tier="official", max_items=5),
     ],
     "it": [
-        "https://www.infoq.com/feed/",
+        SourceDefinition("https://www.infoq.com/feed/", trust_tier="industry", max_items=10),
+        SourceDefinition("https://www.ciodive.com/feeds/news/", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.cybersecuritydive.com/feeds/news/", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.theregister.com/software/headlines.atom", mode="scrapling_page", trust_tier="industry", max_items=8),
     ],
     "mobility": [
-        "https://electrek.co/feed/",
+        SourceDefinition("https://electrek.co/feed/", trust_tier="industry", max_items=10),
+        SourceDefinition("https://insideevs.com/rss/news/all/", trust_tier="industry", max_items=8),
+        SourceDefinition("https://insideevs.com/rss/category/autonomous-vehicles/", trust_tier="industry", max_items=6),
+        SourceDefinition("https://insideevs.com/rss/category/battery-tech/", trust_tier="industry", max_items=6),
+        SourceDefinition("https://feeds.highgearmedia.com/?sites=GreenCarReports&tags=news", trust_tier="industry", max_items=8),
     ],
     "manufacturing": [
-        "https://semiengineering.com/feed/",
+        SourceDefinition("https://semiengineering.com/feed/", trust_tier="industry", max_items=10),
+        SourceDefinition("https://www.manufacturingdive.com/feeds/news/", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.supplychainbrain.com/rss/articles", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.supplychainbrain.com/rss/topic/1148-technology", trust_tier="industry", max_items=6),
+        SourceDefinition("https://semiwiki.com/feed/", trust_tier="industry", max_items=5),
     ],
     "economy": [
-        "https://feeds.bbci.co.uk/news/business/rss.xml",
+        SourceDefinition("https://feeds.bbci.co.uk/news/business/rss.xml", trust_tier="industry", max_items=10),
+        SourceDefinition("https://www.federalreserve.gov/feeds/press_all.xml", trust_tier="official", max_items=5),
+        SourceDefinition("https://www.boj.or.jp/rss/whatsnew.xml", trust_tier="official", max_items=5),
+        SourceDefinition("https://www.mof.go.jp/english/news.rss", trust_tier="official", max_items=5),
+        SourceDefinition("https://www.fsa.go.jp/fsaEnNewsList_rss2.xml", trust_tier="official", max_items=5),
+        SourceDefinition("https://www.cnbc.com/id/10001147/device/rss/rss.html", trust_tier="industry", max_items=8),
     ],
     "game": [
-        "https://www.gematsu.com/feed/",
+        SourceDefinition("https://www.gematsu.com/feed/", trust_tier="industry", max_items=10),
+        SourceDefinition("https://www.gamesindustry.biz/feed", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.gamedeveloper.com/rss.xml", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.videogameschronicle.com/feed/", trust_tier="industry", max_items=8),
+        SourceDefinition("https://www.nintendo.co.uk/news.xml", trust_tier="official", max_items=5),
     ],
+}
+
+
+def _rss_feeds_from_catalog(catalog: dict[str, list[SourceDefinition]]) -> dict[str, list[str]]:
+    return {
+        category: [source.url for source in sources if source.mode == "rss"]
+        for category, sources in catalog.items()
+    }
+
+
+_DEFAULT_RSS_FEEDS_BY_CATEGORY = _rss_feeds_from_catalog(SOURCE_CATALOG_BY_CATEGORY)
+RSS_FEEDS_BY_CATEGORY: dict[str, list[str]] = {
+    category: list(urls) for category, urls in _DEFAULT_RSS_FEEDS_BY_CATEGORY.items()
 }
 
 # 収集対象カテゴリ（config の summary を除く順序保持リスト）。
@@ -308,6 +364,178 @@ def parse_rss(xml_text: str, category: str, query: str) -> list[dict]:
     return out
 
 
+class _AnchorCollector(HTMLParser):
+    """一覧 HTML から `<a href>` と表示テキストだけを抜く最小 parser。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.anchors: list[tuple[str, str]] = []
+        self._href: str | None = None
+        self._text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "a":
+            return
+        href = dict(attrs).get("href")
+        if href:
+            self._href = href
+            self._text = []
+
+    def handle_data(self, data: str) -> None:
+        if self._href:
+            self._text.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "a" or not self._href:
+            return
+        title = re.sub(r"\s+", " ", " ".join(self._text)).strip()
+        if title:
+            self.anchors.append((self._href, title))
+        self._href = None
+        self._text = []
+
+
+def _source_id(url: str) -> str:
+    parts = urllib.parse.urlsplit(url)
+    path = parts.path.strip("/")
+    if path:
+        return f"{parts.netloc.lower()}/{path}".rstrip("/")
+    return parts.netloc.lower()
+
+
+def _text_for_filter(row: dict) -> str:
+    return " ".join(str(row.get(k) or "") for k in ("title", "url", "source")).lower()
+
+
+_POSITIVE_OVERRIDE = (
+    "regulation", "regulatory", "policy", "m&a", "merger", "acquisition", "investment",
+    "invests", "funding", "mass production", "量産", "投資", "規制", "政策", "買収", "決算",
+    "safety standard", "安全基準", "platform policy",
+)
+
+_NEGATIVE_FILTERS: dict[str, list[tuple[str, tuple[str, ...]]]] = {
+    "global": [
+        ("homepage_or_section", ("category/", "/tag/", "/topics/", "トップ", "homepage")),
+        ("video_only", ("video:", "動画のみ", "/video/")),
+        ("podcast_only", ("podcast", "ポッドキャスト")),
+        ("jobs", ("jobs", "careers", "求人", "採用")),
+        ("affiliate", ("affiliate", "アフィリエイト")),
+        ("ranking_only", ("ranking", "rankings", "top 10", "ランキング")),
+    ],
+    "fx": [
+        ("single_currency_tick", ("usd/jpy ticks", "usd/jpy tick", "ドル円 tick", "単一通貨")),
+        ("technical_analysis_only", ("technical analysis", "テクニカル分析")),
+        ("weekly_range_forecast", ("weekly range", "週間レンジ")),
+        ("broker_promo", ("broker", "口座開設", "spread", "ブローカー")),
+        ("calendar_only", ("economic calendar", "経済指標カレンダー")),
+    ],
+    "ai": [
+        ("tutorial", ("how to", "使い方", "tutorial")),
+        ("tool_listicle", ("best ai tools", "tool list", "ツール紹介", "まとめ")),
+        ("prompt_collection", ("prompt collection", "プロンプト集")),
+        ("crypto_scam_only", ("crypto scam", "暗号資産詐欺")),
+    ],
+    "it": [
+        ("crowdfunding", ("crowdfunding", "クラウドファンディング")),
+        ("course_pr", ("certification", "資格", "講座", "course")),
+        ("saas_promo", ("free trial", "導入事例", "saas promo")),
+        ("consumer_gadget_review", ("gadget review", "ガジェットレビュー")),
+        ("generic_dx", ("dx啓発", "digital transformation tips")),
+    ],
+    "mobility": [
+        ("car_review", ("road test", "test drive", "試乗", "review and buying advice")),
+        ("spy_shot", ("spy shot", "スパイショット")),
+        ("rendering", ("rendering", "予想cg", "レンダリング")),
+        ("buying_advice", ("buying advice", "値引き", "買い方")),
+        ("single_crash", ("crash", "事故")),
+        ("motorsport_result", ("motorsport result", "race result")),
+    ],
+    "manufacturing": [
+        ("stock_pick", ("stock pick", "株価材料")),
+        ("pr_wire_only", ("pr newswire", "business wire", "kyodo news prwire")),
+        ("local_factory_low_impact", ("local factory", "地元工場")),
+        ("product_catalog", ("product catalog", "製品カタログ")),
+        ("opinion_column", ("opinion:", "コラム")),
+    ],
+    "economy": [
+        ("individual_stock", ("stock quote", "share price", "個別株", "株価")),
+        ("fund_nav", ("nav", "基準価額")),
+        ("saving_tips", ("saving tips", "節約術")),
+        ("local_event", ("local economic event", "地域経済イベント")),
+        ("price_table_only", ("price table", "価格表")),
+    ],
+    "game": [
+        ("sports_result", ("nba", "mlb", "premier league", "beat celtics", "試合結果")),
+        ("game_theory", ("game theory", "ゲーム理論")),
+        ("guide_sale_patch", ("攻略", "sale", "セール", "patch note", "パッチノート")),
+        ("esports_notice", ("esports schedule", "eスポーツ告知")),
+        ("merchandise", ("merchandise", "グッズ")),
+    ],
+}
+
+
+def _contains_override_keyword(text: str, keyword: str) -> bool:
+    if keyword.isascii() and re.search(r"[A-Za-z]", keyword):
+        return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", text) is not None
+    return keyword in text
+
+
+def negative_filter_reason(row: dict) -> str | None:
+    """候補を deterministic に落とす理由を返す。残す場合は None。"""
+    category = str(row.get("category") or "")
+    text = _text_for_filter(row)
+    has_override = any(_contains_override_keyword(text, keyword) for keyword in _POSITIVE_OVERRIDE)
+    for scope in ("global", category):
+        for reason, needles in _NEGATIVE_FILTERS.get(scope, []):
+            if any(needle in text for needle in needles):
+                if scope != "global" and has_override:
+                    continue
+                return f"{scope}:{reason}"
+    return None
+
+
+def _source_accepts_row(row: dict, source: SourceDefinition) -> bool:
+    return _source_reject_reason(row, source) is None
+
+
+def _source_reject_reason(row: dict, source: SourceDefinition) -> str | None:
+    text = _text_for_filter(row)
+    if source.include_keywords and not any(keyword.lower() in text for keyword in source.include_keywords):
+        return "source:include_keyword_miss"
+    if source.exclude_keywords and any(keyword.lower() in text for keyword in source.exclude_keywords):
+        return "source:exclude_keyword"
+    return None
+
+
+def parse_scrapling_page(html_text: str, category: str, source: SourceDefinition) -> list[dict]:
+    """Scrapling で取得した一覧 HTML から候補を抽出する。"""
+    parser = _AnchorCollector()
+    parser.feed(html_text)
+    rows: list[dict] = []
+    seen: set[str] = set()
+    source_domain = urllib.parse.urlsplit(source.url).netloc.lower()
+    for href, title in parser.anchors:
+        url = urllib.parse.urljoin(source.url, href)
+        if not url.startswith(("http://", "https://")) or url in seen:
+            continue
+        seen.add(url)
+        row = {
+            "title": title,
+            "url": url,
+            "source": source_domain,
+            "category": category,
+            "pubDate": None,
+            "query": source.url,
+            "feed_url": source.url,
+            "source_mode": source.mode,
+            "trust_tier": source.trust_tier,
+        }
+        rows.append(row)
+        if len(rows) >= source.max_items:
+            break
+    return rows
+
+
 # ── fetch（urllib → _fetch 昇格）──────────────────────────────────────────────
 
 
@@ -329,6 +557,171 @@ def fetch_feed(url: str, *, timeout: float = 15.0) -> str | None:
     return res.html if res.ok else None
 
 
+def fetch_scrapling_page(url: str, *, timeout: float = 15.0):
+    """Scrapling Fetcher を含む昇格ラダーで HTML/listing page を取得する。"""
+    return fetch_with_escalation(url, timeout=timeout, allow_stealthy=False)
+
+
+def _looks_broken_scrapling_page(html_text: str | None) -> bool:
+    if not html_text or not html_text.strip():
+        return True
+    head = html_text[:4000].lower()
+    broken_markers = (
+        "404 -", "404 |", ">404<", "page not found", "not found",
+        "sign in", "log in", "login required", "access denied",
+    )
+    return any(marker in head for marker in broken_markers)
+
+
+def _source_definitions_for_category(category: str) -> list[SourceDefinition]:
+    """source catalog を返す。旧 RSS_FEEDS_BY_CATEGORY monkeypatch も互換維持する。"""
+    rss_urls = RSS_FEEDS_BY_CATEGORY.get(category, [])
+    if rss_urls != _DEFAULT_RSS_FEEDS_BY_CATEGORY.get(category, []):
+        return [
+            SourceDefinition(url=url, mode="rss", trust_tier="industry", max_items=10)
+            for url in rss_urls
+        ]
+    return list(SOURCE_CATALOG_BY_CATEGORY.get(category, []))
+
+
+def _empty_audit(category: str) -> dict:
+    return {
+        "category_id": category,
+        "queries": [],
+        "raw_results_total": 0,
+        "candidates_total": 0,
+        "selected_total": 0,
+        "source_breakdown": {},
+        "negative_filter_dropped": {},
+        "scrapling_sources_used": [],
+        "broken_sources": [],
+    }
+
+
+def _source_stats(source: SourceDefinition | None, url: str) -> dict:
+    return {
+        "url": url,
+        "mode": source.mode if source else "google_news_rss",
+        "trust_tier": source.trust_tier if source else "search",
+        "raw": 0,
+        "candidates": 0,
+        "dropped": 0,
+    }
+
+
+def _add_negative_drop(audit: dict, reason: str) -> None:
+    dropped = audit["negative_filter_dropped"]
+    dropped[reason] = dropped.get(reason, 0) + 1
+
+
+def _filter_rows(rows: list[dict], audit: dict, source_id: str, source: SourceDefinition | None = None) -> list[dict]:
+    kept: list[dict] = []
+    stats = audit["source_breakdown"][source_id]
+    stats["raw"] += len(rows)
+    audit["raw_results_total"] += len(rows)
+    for row in rows:
+        if source:
+            source_reason = _source_reject_reason(row, source)
+            if source_reason:
+                stats["dropped"] += 1
+                _add_negative_drop(audit, source_reason)
+                continue
+        reason = negative_filter_reason(row)
+        if reason:
+            stats["dropped"] += 1
+            _add_negative_drop(audit, reason)
+            continue
+        stats["candidates"] += 1
+        kept.append(row)
+    return kept
+
+
+def _mark_broken(audit: dict, source: SourceDefinition, reason: str) -> None:
+    audit["broken_sources"].append({"url": source.url, "mode": source.mode, "reason": reason})
+
+
+def harvest_category_with_audit(
+    category: str,
+    *,
+    max_per_category: int = DEFAULT_MAX_PER_CATEGORY,
+    timeout: float = 15.0,
+) -> tuple[list[dict], dict]:
+    """1 カテゴリの候補と収集監査を返す。"""
+    items: list[dict] = []
+    audit = _empty_audit(category)
+
+    for base_query in category_queries(category):
+        url = build_feed_url(base_query)
+        query = build_query(base_query)
+        audit["queries"].append(query)
+        source_id = f"google_news:{query}"
+        audit["source_breakdown"][source_id] = _source_stats(None, url)
+        xml_text = fetch_feed(url, timeout=timeout)
+        if not xml_text:
+            print(f"WARN: feed 取得失敗 category={category} url={url}", file=sys.stderr)
+            continue
+        rows = parse_rss(xml_text, category, query)
+        for row in rows:
+            row["feed_url"] = url
+            row["source_mode"] = "google_news_rss"
+            row["trust_tier"] = "search"
+        items.extend(_filter_rows(rows, audit, source_id))
+
+    for source in _source_definitions_for_category(category):
+        source_id = _source_id(source.url)
+        audit["queries"].append(source.url)
+        audit["source_breakdown"][source_id] = _source_stats(source, source.url)
+        if source.mode == "rss":
+            xml_text = fetch_feed(source.url, timeout=timeout)
+            if not xml_text:
+                print(f"WARN: RSS 取得失敗 category={category} url={source.url}", file=sys.stderr)
+                _mark_broken(audit, source, "fetch_failed")
+                continue
+            rows = parse_rss(xml_text, category, source.url)
+            if not rows:
+                _mark_broken(audit, source, "empty_or_unparseable")
+            for row in rows:
+                row["feed_url"] = source.url
+                row["source_mode"] = source.mode
+                row["trust_tier"] = source.trust_tier
+            items.extend(_filter_rows(rows[: source.max_items], audit, source_id, source))
+            continue
+
+        if source.mode == "scrapling_page":
+            res = fetch_scrapling_page(source.url, timeout=timeout)
+            if not getattr(res, "ok", False) or _looks_broken_scrapling_page(getattr(res, "html", None)):
+                print(f"WARN: Scrapling 取得失敗 category={category} url={source.url}", file=sys.stderr)
+                _mark_broken(audit, source, "scrapling_failed_or_broken_page")
+                continue
+            audit["scrapling_sources_used"].append(source.url)
+            rows = parse_scrapling_page(res.html or "", category, source)
+            if not rows:
+                _mark_broken(audit, source, "empty_listing")
+            items.extend(_filter_rows(rows, audit, source_id))
+            continue
+
+        _mark_broken(audit, source, f"unknown_mode:{source.mode}")
+
+    selected = items[:max_per_category]
+    audit["candidates_total"] = len(items)
+    audit["selected_total"] = len(selected)
+    if len(selected) < 5:
+        audit["quality_shortfall_reason"] = "filtered_candidates_below_minimum_5"
+    return selected, audit
+
+
+def write_harvest_audit(audit_dir: Path, category: str, audit: dict) -> Path:
+    """reporter audit と衝突しない `harvest-{category}.json` に Stage0 監査を書く。"""
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    path = audit_dir / f"harvest-{category}.json"
+    path.write_text(
+        json.dumps(audit, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return path
+
+
 def harvest_category(
     category: str,
     *,
@@ -339,30 +732,12 @@ def harvest_category(
 
     クエリは CATEGORY_QUERIES から引く。上限 max_per_category 件で切る。
     """
-    items: list[dict] = []
-    for base_query in category_queries(category):
-        url = build_feed_url(base_query)
-        query = build_query(base_query)
-        xml_text = fetch_feed(url, timeout=timeout)
-        if not xml_text:
-            print(f"WARN: feed 取得失敗 category={category} url={url}", file=sys.stderr)
-            continue
-        rows = parse_rss(xml_text, category, query)
-        for row in rows:
-            row["feed_url"] = url
-        items.extend(rows)
-
-    for feed_url in RSS_FEEDS_BY_CATEGORY.get(category, []):
-        xml_text = fetch_feed(feed_url, timeout=timeout)
-        if not xml_text:
-            print(f"WARN: RSS 取得失敗 category={category} url={feed_url}", file=sys.stderr)
-            continue
-        rows = parse_rss(xml_text, category, feed_url)
-        for row in rows:
-            row["feed_url"] = feed_url
-        items.extend(rows)
-
-    return items[:max_per_category]
+    items, _audit = harvest_category_with_audit(
+        category,
+        max_per_category=max_per_category,
+        timeout=timeout,
+    )
+    return items
 
 
 def main() -> int:
@@ -379,14 +754,22 @@ def main() -> int:
     p.add_argument("--max-per-category", type=int, default=DEFAULT_MAX_PER_CATEGORY,
                    help=f"1 カテゴリあたりの上限件数（既定: {DEFAULT_MAX_PER_CATEGORY}）")
     p.add_argument("--timeout", type=float, default=15.0, help="1 feed あたりのタイムアウト秒")
+    p.add_argument("--audit-dir", type=Path, help="Stage0 収集監査 JSON の出力先ディレクトリ")
     args = p.parse_args()
 
     targets = HARVEST_CATEGORIES if args.all else [args.category]
     total = 0
     for cat in targets:
-        items = harvest_category(cat, max_per_category=args.max_per_category, timeout=args.timeout)
+        items, audit = harvest_category_with_audit(
+            cat,
+            max_per_category=args.max_per_category,
+            timeout=args.timeout,
+        )
         for it in items:
             print(json.dumps(it, ensure_ascii=False))
+        if args.audit_dir:
+            audit_path = write_harvest_audit(args.audit_dir, cat, audit)
+            print(f"harvest audit: {audit_path}", file=sys.stderr)
         print(f"harvest: category={cat} {len(items)} 件", file=sys.stderr)
         total += len(items)
     print(f"harvest 合計: {total} 件 ({len(targets)} カテゴリ)", file=sys.stderr)

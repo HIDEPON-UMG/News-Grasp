@@ -11,7 +11,10 @@
 """
 from __future__ import annotations
 
+import json
+
 from tools import harvest_candidates as h
+from tools._fetch import FetchResult
 from tools.dedup import dedup_candidates, normalize_url
 
 # Google News RSS search feed の最小 fixture（item 2 件）。
@@ -212,3 +215,117 @@ def test_output_dedup_drops_same_url_duplicate() -> None:
     passed, dropped = dedup_candidates([rows[0], dup], existing=[])
     assert len(passed) == 1
     assert len(dropped) == 1
+
+
+# ── ⑤ source catalog / Scrapling / negative filter / audit ────────────────
+
+
+def test_source_catalog_keeps_rss_feed_compatibility() -> None:
+    """source catalog 導入後も既存 RSS 登録簿 API を壊さない。"""
+    assert set(h.SOURCE_CATALOG_BY_CATEGORY) == set(h.CATEGORY_QUERIES)
+    assert set(h.RSS_FEEDS_BY_CATEGORY) == set(h.CATEGORY_QUERIES)
+    assert any(
+        src.mode == "scrapling_page"
+        for sources in h.SOURCE_CATALOG_BY_CATEGORY.values()
+        for src in sources
+    )
+    assert "https://venturebeat.com/category/ai/feed/" in h.RSS_FEEDS_BY_CATEGORY["ai"]
+    assert "https://www.fsa.go.jp/fsaEnNewsList_rss2.xml" in h.RSS_FEEDS_BY_CATEGORY["economy"]
+
+
+def test_negative_filter_drops_noisy_category_items_without_dropping_policy_news() -> None:
+    noisy_rows = [
+        {"title": "Lakers beat Celtics in NBA finals", "url": "https://sports.example/game", "source": "sports.example", "category": "game"},
+        {"title": "USDJPY technical analysis weekly range forecast", "url": "https://fx.example/ta", "source": "fx.example", "category": "fx"},
+        {"title": "Best SaaS crowdfunding campaign launches", "url": "https://it.example/crowdfunding", "source": "it.example", "category": "it"},
+        {"title": "EV road test review and buying advice", "url": "https://car.example/review", "source": "car.example", "category": "mobility"},
+        {"title": "Toyota invests in EV battery mass production", "url": "https://car.example/investment", "source": "car.example", "category": "mobility"},
+        {"title": "Nintendo faces platform policy regulation probe", "url": "https://game.example/policy", "source": "game.example", "category": "game"},
+    ]
+
+    kept: list[dict] = []
+    dropped: list[dict] = []
+    for row in noisy_rows:
+        reason = h.negative_filter_reason(row)
+        if reason:
+            dropped.append({**row, "drop_reason": reason})
+        else:
+            kept.append(row)
+
+    assert {row["title"] for row in dropped} == {
+        "Lakers beat Celtics in NBA finals",
+        "USDJPY technical analysis weekly range forecast",
+        "Best SaaS crowdfunding campaign launches",
+        "EV road test review and buying advice",
+    }
+    assert {row["title"] for row in kept} == {
+        "Toyota invests in EV battery mass production",
+        "Nintendo faces platform policy regulation probe",
+    }
+
+
+def test_harvest_category_with_audit_extracts_scrapling_page_and_filters(monkeypatch) -> None:
+    """RSS parse 不能でも Scrapling 取得できる source は scrapling_page として候補化する。"""
+    source = h.SourceDefinition(
+        url="https://register.example/software",
+        mode="scrapling_page",
+        trust_tier="industry",
+        include_keywords=(),
+        exclude_keywords=(),
+        max_items=5,
+    )
+    html = """
+    <html><head><title>Software headlines</title></head><body>
+      <a href="/news/cloud-regulation">Cloud regulation changes enterprise procurement</a>
+      <a href="/news/gadget-review">Consumer gadget review roundup</a>
+    </body></html>
+    """
+
+    monkeypatch.setattr(h, "CATEGORY_QUERY_SETS", {"it": []})
+    monkeypatch.setattr(h, "SOURCE_CATALOG_BY_CATEGORY", {"it": [source]})
+    monkeypatch.setattr(h, "fetch_scrapling_page", lambda url, timeout=15.0: FetchResult(url=url, status=200, html=html, stage="fetcher", ok=True))
+
+    rows, audit = h.harvest_category_with_audit("it", max_per_category=10)
+
+    assert [row["title"] for row in rows] == ["Cloud regulation changes enterprise procurement"]
+    assert rows[0]["url"] == "https://register.example/news/cloud-regulation"
+    assert rows[0]["source_mode"] == "scrapling_page"
+    assert audit["scrapling_sources_used"] == ["https://register.example/software"]
+    assert audit["source_breakdown"]["register.example/software"]["raw"] == 2
+    assert audit["negative_filter_dropped"]["it:consumer_gadget_review"] == 1
+
+
+def test_harvest_category_with_audit_marks_broken_sources(monkeypatch) -> None:
+    broken = h.SourceDefinition(
+        url="https://broken.example/feed.xml",
+        mode="rss",
+        trust_tier="industry",
+        max_items=5,
+    )
+
+    monkeypatch.setattr(h, "CATEGORY_QUERY_SETS", {"ai": []})
+    monkeypatch.setattr(h, "SOURCE_CATALOG_BY_CATEGORY", {"ai": [broken]})
+    monkeypatch.setattr(h, "fetch_feed", lambda url, timeout=15.0: None)
+
+    rows, audit = h.harvest_category_with_audit("ai", max_per_category=10)
+
+    assert rows == []
+    assert audit["broken_sources"] == [
+        {"url": "https://broken.example/feed.xml", "mode": "rss", "reason": "fetch_failed"}
+    ]
+    assert audit["quality_shortfall_reason"] == "filtered_candidates_below_minimum_5"
+
+
+def test_write_harvest_audit_uses_non_colliding_filename(tmp_path) -> None:
+    audit = {
+        "category_id": "game",
+        "source_breakdown": {},
+        "negative_filter_dropped": {},
+        "scrapling_sources_used": [],
+        "broken_sources": [],
+    }
+
+    path = h.write_harvest_audit(tmp_path, "game", audit)
+
+    assert path.name == "harvest-game.json"
+    assert json.loads(path.read_text(encoding="utf-8"))["category_id"] == "game"
