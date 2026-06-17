@@ -17,7 +17,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts"
 ASSET_DIR = REPO_ROOT / "assets" / "audio"
 DEFAULT_BGM_PATH = ASSET_DIR / "news-grasp-bgm.wav"
-BGM_VOLUME_DB = -26.0
+BGM_VOLUME_DB = -9.5
+BGM_LOOP_CROSSFADE_SECONDS = 1.0
 MIN_SECONDS = 6 * 60
 MAX_SECONDS = 10 * 60
 FFMPEG_TIMEOUT_SEC = 180
@@ -120,6 +121,55 @@ def _wav_duration_seconds(wav_path: Path) -> float:
         return reader.getnframes() / reader.getframerate()
 
 
+def _read_int16_mono_wav(wav_path: Path) -> tuple[wave._wave_params, list[int]]:
+    with wave.open(str(wav_path), "rb") as reader:
+        params = reader.getparams()
+        if params.nchannels != 1 or params.sampwidth != 2:
+            raise RuntimeError(f"BGM wav must be mono 16-bit PCM: {wav_path}")
+        frames = reader.readframes(reader.getnframes())
+    samples = [
+        int.from_bytes(frames[index:index + 2], "little", signed=True)
+        for index in range(0, len(frames), 2)
+    ]
+    if not samples:
+        raise RuntimeError(f"BGM wav is empty: {wav_path}")
+    return params, samples
+
+
+def _write_looped_bgm_bed(
+    bgm_wav: Path,
+    out_wav: Path,
+    *,
+    duration_seconds: float,
+    crossfade_seconds: float = BGM_LOOP_CROSSFADE_SECONDS,
+) -> None:
+    params, source = _read_int16_mono_wav(bgm_wav)
+    target_frames = max(int(round(duration_seconds * params.framerate)), 1)
+    crossfade_frames = min(
+        int(round(crossfade_seconds * params.framerate)),
+        len(source) // 3,
+    )
+    bed = source[:]
+    while len(bed) < target_frames:
+        if crossfade_frames > 0:
+            overlap = min(crossfade_frames, len(bed), len(source))
+            start = len(bed) - overlap
+            for index in range(overlap):
+                ratio = (index + 1) / (overlap + 1)
+                bed[start + index] = int(
+                    bed[start + index] * (1.0 - ratio) + source[index] * ratio
+                )
+            bed.extend(source[overlap:])
+        else:
+            bed.extend(source)
+    bed = bed[:target_frames]
+    out_wav.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(out_wav), "wb") as writer:
+        writer.setparams(params)
+        frames = b"".join(sample.to_bytes(2, "little", signed=True) for sample in bed)
+        writer.writeframes(frames)
+
+
 def mix_voice_wav_with_bgm(
     voice_wav: Path,
     bgm_wav: Path,
@@ -129,36 +179,37 @@ def mix_voice_wav_with_bgm(
 ) -> None:
     duration = _wav_duration_seconds(voice_wav)
     fade_out_start = max(duration - 5.0, 0.0)
-    filter_complex = (
-        f"[1:a]aloop=loop=-1:size=2147483647,atrim=0:{duration:.3f},"
-        f"volume={bgm_volume_db:.1f}dB,"
-        "afade=t=in:st=0:d=2,"
-        f"afade=t=out:st={fade_out_start:.3f}:d=5[bgm];"
-        "[0:a][bgm]amix=inputs=2:duration=first:dropout_transition=0,"
-        "alimiter=limit=0.95[out]"
-    )
-    proc.quiet_run(
-        [
-            "ffmpeg",
-            "-y",
-            "-i",
-            voice_wav,
-            "-stream_loop",
-            "-1",
-            "-i",
-            bgm_wav,
-            "-filter_complex",
-            filter_complex,
-            "-map",
-            "[out]",
-            "-ac",
-            "1",
-            "-b:a",
-            "80k",
-            mp3_out,
-        ],
-        timeout=FFMPEG_TIMEOUT_SEC,
-    )
+    with tempfile.TemporaryDirectory(prefix="news-grasp-bgm-") as tmp:
+        bgm_bed = Path(tmp) / "looped-bgm-bed.wav"
+        _write_looped_bgm_bed(bgm_wav, bgm_bed, duration_seconds=duration)
+        filter_complex = (
+            f"[1:a]volume={bgm_volume_db:.1f}dB,"
+            "afade=t=in:st=0:d=2,"
+            f"afade=t=out:st={fade_out_start:.3f}:d=5[bgm];"
+            "[0:a][bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
+            "alimiter=limit=0.95[out]"
+        )
+        mp3_out.parent.mkdir(parents=True, exist_ok=True)
+        proc.quiet_run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                voice_wav,
+                "-i",
+                bgm_bed,
+                "-filter_complex",
+                filter_complex,
+                "-map",
+                "[out]",
+                "-ac",
+                "1",
+                "-b:a",
+                "80k",
+                mp3_out,
+            ],
+            timeout=FFMPEG_TIMEOUT_SEC,
+        )
 
 
 def convert_voice_wav_to_delivery_mp3(wav_path: Path, mp3_path: Path) -> float:

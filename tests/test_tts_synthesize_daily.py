@@ -18,6 +18,15 @@ def _wav_bytes(frames: bytes, *, framerate: int = 1000, channels: int = 1, sampw
     return buf.getvalue()
 
 
+def _wav_samples(wav_path: Path) -> list[int]:
+    with wave.open(str(wav_path), "rb") as reader:
+        frames = reader.readframes(reader.getnframes())
+    return [
+        int.from_bytes(frames[i:i + 2], "little", signed=True)
+        for i in range(0, len(frames), 2)
+    ]
+
+
 def test_split_text_keeps_sentence_boundaries_for_breathing_pause():
     chunks = synthesize_daily.split_text("一文目です。二文目です。三文目です。")
 
@@ -64,7 +73,7 @@ def test_mix_voice_wav_with_bgm_uses_bounded_ffmpeg_filter(tmp_path):
     bgm = tmp_path / "bgm.wav"
     mp3 = tmp_path / "out.mp3"
     voice.write_bytes(_wav_bytes(b"\x01\x00" * 1000, framerate=1000))
-    bgm.write_bytes(b"bgm")
+    bgm.write_bytes(_wav_bytes(b"\xff\x3f" * 1000, framerate=1000))
 
     with patch.object(synthesize_daily.proc, "quiet_run") as quiet_run:
         synthesize_daily.mix_voice_wav_with_bgm(voice, bgm, mp3)
@@ -72,13 +81,76 @@ def test_mix_voice_wav_with_bgm_uses_bounded_ffmpeg_filter(tmp_path):
     quiet_run.assert_called_once()
     args = quiet_run.call_args.args[0]
     assert args[:4] == ["ffmpeg", "-y", "-i", voice]
+    assert "-stream_loop" not in args
     filter_complex = args[args.index("-filter_complex") + 1]
-    assert "volume=-26.0dB" in filter_complex
+    assert "volume=-9.5dB" in filter_complex
+    assert "afade=t=in:st=0:d=2" in filter_complex
+    assert "afade=t=out" in filter_complex
     assert "amix=inputs=2" in filter_complex
+    assert "normalize=0" in filter_complex
     assert "alimiter" in filter_complex
     assert "-ac" in args
     assert args[args.index("-ac") + 1] == "1"
     assert quiet_run.call_args.kwargs["timeout"] == synthesize_daily.FFMPEG_TIMEOUT_SEC
+
+
+def test_looped_bgm_bed_crossfades_loop_boundaries(tmp_path):
+    bgm = tmp_path / "hard-boundary.wav"
+    bed = tmp_path / "bed.wav"
+    # 末尾が大きな負、先頭が大きな正。単純ループなら境界クリックが出る素材。
+    bgm.write_bytes(_wav_bytes((b"\xff\x3f" * 20) + (b"\x01\xc0" * 20), framerate=40))
+
+    synthesize_daily._write_looped_bgm_bed(
+        bgm,
+        bed,
+        duration_seconds=2.0,
+        crossfade_seconds=0.25,
+    )
+
+    samples = _wav_samples(bed)
+    loop_boundary = 40
+    raw_jump = 32766
+    actual_jump = abs(samples[loop_boundary] - samples[loop_boundary - 1])
+    assert actual_jump < raw_jump * 0.35
+
+
+def test_mix_voice_wav_with_bgm_actual_output_contains_bgm_when_voice_is_silent(tmp_path):
+    voice = tmp_path / "silent.wav"
+    bgm = tmp_path / "bgm.wav"
+    mp3 = tmp_path / "out.mp3"
+    voice.write_bytes(_wav_bytes(b"\x00\x00" * 10_000, framerate=10_000))
+    bgm.write_bytes(_wav_bytes(b"\xff\x3f" * 10_000, framerate=10_000))
+
+    synthesize_daily.mix_voice_wav_with_bgm(voice, bgm, mp3)
+
+    assert mp3.stat().st_size > 1000
+    duration = synthesize_daily.probe_duration_seconds(mp3)
+    assert duration is not None
+    assert 0.9 <= duration <= 1.2
+
+
+def test_mix_voice_wav_with_bgm_loops_bgm_until_voice_ends(tmp_path):
+    voice = tmp_path / "long-silent.wav"
+    bgm = tmp_path / "short-bgm.wav"
+    mp3 = tmp_path / "looped.mp3"
+    decoded = tmp_path / "decoded.wav"
+    voice.write_bytes(_wav_bytes(b"\x00\x00" * 30_000, framerate=10_000))
+    bgm.write_bytes(_wav_bytes(b"\xff\x3f" * 5_000, framerate=10_000))
+
+    synthesize_daily.mix_voice_wav_with_bgm(voice, bgm, mp3)
+    synthesize_daily.proc.quiet_run(
+        ["ffmpeg", "-y", "-i", mp3, "-ac", "1", decoded],
+        timeout=synthesize_daily.FFMPEG_TIMEOUT_SEC,
+    )
+    with wave.open(str(decoded), "rb") as reader:
+        reader.setpos(int(reader.getframerate() * 2.2))
+        tail = reader.readframes(int(reader.getframerate() * 0.5))
+    tail_samples = [
+        int.from_bytes(tail[i:i + 2], "little", signed=True)
+        for i in range(0, len(tail), 2)
+    ]
+
+    assert max(abs(sample) for sample in tail_samples) > 500
 
 
 def test_delivery_mp3_falls_back_to_plain_voice_when_bgm_is_missing(tmp_path, monkeypatch):
