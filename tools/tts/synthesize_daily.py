@@ -15,6 +15,9 @@ from tools.tts import aivis_client, proc
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts"
+ASSET_DIR = REPO_ROOT / "assets" / "audio"
+DEFAULT_BGM_PATH = ASSET_DIR / "news-grasp-bgm.wav"
+BGM_VOLUME_DB = -26.0
 MIN_SECONDS = 6 * 60
 MAX_SECONDS = 10 * 60
 FFMPEG_TIMEOUT_SEC = 180
@@ -110,6 +113,67 @@ def convert_wav_to_mp3(wav_path: Path, mp3_path: Path) -> float:
     return time.monotonic() - start
 
 
+def _wav_duration_seconds(wav_path: Path) -> float:
+    with wave.open(str(wav_path), "rb") as reader:
+        if reader.getframerate() <= 0:
+            raise RuntimeError(f"invalid wav framerate: {wav_path}")
+        return reader.getnframes() / reader.getframerate()
+
+
+def mix_voice_wav_with_bgm(
+    voice_wav: Path,
+    bgm_wav: Path,
+    mp3_out: Path,
+    *,
+    bgm_volume_db: float = BGM_VOLUME_DB,
+) -> None:
+    duration = _wav_duration_seconds(voice_wav)
+    fade_out_start = max(duration - 5.0, 0.0)
+    filter_complex = (
+        f"[1:a]aloop=loop=-1:size=2147483647,atrim=0:{duration:.3f},"
+        f"volume={bgm_volume_db:.1f}dB,"
+        "afade=t=in:st=0:d=2,"
+        f"afade=t=out:st={fade_out_start:.3f}:d=5[bgm];"
+        "[0:a][bgm]amix=inputs=2:duration=first:dropout_transition=0,"
+        "alimiter=limit=0.95[out]"
+    )
+    proc.quiet_run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            voice_wav,
+            "-stream_loop",
+            "-1",
+            "-i",
+            bgm_wav,
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[out]",
+            "-ac",
+            "1",
+            "-b:a",
+            "80k",
+            mp3_out,
+        ],
+        timeout=FFMPEG_TIMEOUT_SEC,
+    )
+
+
+def convert_voice_wav_to_delivery_mp3(wav_path: Path, mp3_path: Path) -> float:
+    start = time.monotonic()
+    if not DEFAULT_BGM_PATH.exists():
+        _warn(f"BGM not found, plain voice mp3: {DEFAULT_BGM_PATH}")
+        return convert_wav_to_mp3(wav_path, mp3_path)
+    try:
+        mix_voice_wav_with_bgm(wav_path, DEFAULT_BGM_PATH, mp3_path)
+        return time.monotonic() - start
+    except Exception as exc:
+        _warn(f"BGM mix failed, fallback to plain voice mp3: {exc}")
+        return convert_wav_to_mp3(wav_path, mp3_path)
+
+
 def synthesize(date: str) -> Path | None:
     script_path = BUILD_DIR / f"{date}.script.txt"
     if not script_path.exists():
@@ -135,7 +199,7 @@ def synthesize(date: str) -> Path | None:
             combine_wavs(wavs, wav_path)
             mp3_path = BUILD_DIR / f"{date}.mp3"
             BUILD_DIR.mkdir(parents=True, exist_ok=True)
-            elapsed = convert_wav_to_mp3(wav_path, mp3_path)
+            elapsed = convert_voice_wav_to_delivery_mp3(wav_path, mp3_path)
             print(f"[tts] ffmpeg mp3 conversion: {elapsed:.2f}s")
         duration = probe_duration_seconds(mp3_path)
         if duration is not None and not (MIN_SECONDS <= duration <= MAX_SECONDS):

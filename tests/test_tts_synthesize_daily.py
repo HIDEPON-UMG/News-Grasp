@@ -59,6 +59,58 @@ def test_convert_wav_to_mp3_returns_elapsed_seconds_and_uses_quiet_run(tmp_path)
     )
 
 
+def test_mix_voice_wav_with_bgm_uses_bounded_ffmpeg_filter(tmp_path):
+    voice = tmp_path / "voice.wav"
+    bgm = tmp_path / "bgm.wav"
+    mp3 = tmp_path / "out.mp3"
+    voice.write_bytes(_wav_bytes(b"\x01\x00" * 1000, framerate=1000))
+    bgm.write_bytes(b"bgm")
+
+    with patch.object(synthesize_daily.proc, "quiet_run") as quiet_run:
+        synthesize_daily.mix_voice_wav_with_bgm(voice, bgm, mp3)
+
+    quiet_run.assert_called_once()
+    args = quiet_run.call_args.args[0]
+    assert args[:4] == ["ffmpeg", "-y", "-i", voice]
+    filter_complex = args[args.index("-filter_complex") + 1]
+    assert "volume=-26.0dB" in filter_complex
+    assert "amix=inputs=2" in filter_complex
+    assert "alimiter" in filter_complex
+    assert "-ac" in args
+    assert args[args.index("-ac") + 1] == "1"
+    assert quiet_run.call_args.kwargs["timeout"] == synthesize_daily.FFMPEG_TIMEOUT_SEC
+
+
+def test_delivery_mp3_falls_back_to_plain_voice_when_bgm_is_missing(tmp_path, monkeypatch):
+    voice = tmp_path / "voice.wav"
+    mp3 = tmp_path / "out.mp3"
+    voice.write_bytes(_wav_bytes(b"\x01\x00" * 1000, framerate=1000))
+    monkeypatch.setattr(synthesize_daily, "DEFAULT_BGM_PATH", tmp_path / "missing-bgm.wav")
+
+    with patch.object(synthesize_daily, "convert_wav_to_mp3", return_value=1.0) as plain, \
+        patch.object(synthesize_daily, "mix_voice_wav_with_bgm") as mix:
+        synthesize_daily.convert_voice_wav_to_delivery_mp3(voice, mp3)
+
+    mix.assert_not_called()
+    plain.assert_called_once_with(voice, mp3)
+
+
+def test_delivery_mp3_falls_back_to_plain_voice_when_bgm_mix_fails(tmp_path, monkeypatch):
+    voice = tmp_path / "voice.wav"
+    bgm = tmp_path / "news-grasp-bgm.wav"
+    mp3 = tmp_path / "out.mp3"
+    voice.write_bytes(_wav_bytes(b"\x01\x00" * 1000, framerate=1000))
+    bgm.write_bytes(b"bgm")
+    monkeypatch.setattr(synthesize_daily, "DEFAULT_BGM_PATH", bgm)
+
+    with patch.object(synthesize_daily, "mix_voice_wav_with_bgm", side_effect=RuntimeError("boom")) as mix, \
+        patch.object(synthesize_daily, "convert_wav_to_mp3", return_value=1.0) as plain:
+        synthesize_daily.convert_voice_wav_to_delivery_mp3(voice, mp3)
+
+    mix.assert_called_once_with(voice, bgm, mp3)
+    plain.assert_called_once_with(voice, mp3)
+
+
 def test_probe_duration_uses_timeout_bounded_ffprobe(tmp_path):
     mp3 = tmp_path / "out.mp3"
     mp3.write_bytes(b"ID3")
