@@ -42,6 +42,7 @@ from tools.config import (  # noqa: E402
 from tools.dedup import same_event_by_tokens, significant_tokens  # noqa: E402  (表示層 dedup で再利用)
 
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
+_TTS_BUILD_DIR = _PKG_ROOT / "build" / "tts"
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
@@ -504,16 +505,30 @@ def render_page(ctx: dict[str, Any], out_path: Path, template_name: str = "page-
     return out_path
 
 
+def _local_audio_for_pages(date: str | None) -> dict[str, str]:
+    if not date:
+        return {"latest_audio_url": "", "latest_audio_date": ""}
+    mp3_path = _TTS_BUILD_DIR / f"{date}.mp3"
+    if not mp3_path.exists():
+        return {"latest_audio_url": "", "latest_audio_date": ""}
+    from tools.tts.publish_audio import versioned_audio_url
+
+    return {
+        "latest_audio_url": versioned_audio_url(date, mp3_path),
+        "latest_audio_date": date,
+    }
+
+
 def latest_audio_for_pages(date: str | None = None) -> dict[str, str]:
     """音声ステップが 200 確認済みで書いた最新 mp3 URL を SSG コンテキストへ渡す。"""
     if not _LATEST_AUDIO_JSON.exists():
-        return {"latest_audio_url": "", "latest_audio_date": ""}
+        return _local_audio_for_pages(date)
     try:
         data = json.loads(_LATEST_AUDIO_JSON.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return {"latest_audio_url": "", "latest_audio_date": ""}
+        return _local_audio_for_pages(date)
     if date and data.get("latest_audio_date") != date:
-        return {"latest_audio_url": "", "latest_audio_date": ""}
+        return _local_audio_for_pages(date)
     return {
         "latest_audio_url": str(data.get("latest_audio_url") or ""),
         "latest_audio_date": str(data.get("latest_audio_date") or ""),
@@ -1334,6 +1349,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         },
         "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
         "publication_matrix": compute_publication_matrix(entries, today_date, days=30),
+        "audio_label": "昨日のニュース朗読" if is_yesterday else "今日のニュース朗読",
         **latest_audio_for_pages(today_date),
         # LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダー用。entry ストリームとは
         # 独立に DeepDive md を直接読んだデータ (不変条件の本質 = entry 非汚染を維持)。
@@ -1840,6 +1856,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         "sections": sections,
         "takeaways": takeaways,
         "stats": stats,
+        "audio_label": "今日のニュース朗読",
         **latest_audio_for_pages(date),
     }
     out = Path(docs_root) / date / "summary" / "index.html"

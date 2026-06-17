@@ -96,15 +96,17 @@
 </nav>
 
 {% if latest_audio_url %}
-<section class="daily-audio" aria-label="本日の音声朗読">
+<section class="daily-audio" aria-label="{{ audio_label|default('今日のニュース朗読') }}">
   <div class="daily-audio__inner">
     <div class="daily-audio__meta">
       <span class="daily-audio__kicker">LISTEN</span>
-      <span class="daily-audio__title">今日のニュース朗読</span>
+      <span class="daily-audio__title">{{ audio_label|default('今日のニュース朗読') }}</span>
       {% if latest_audio_date %}<span class="daily-audio__date">{{ latest_audio_date }}</span>{% endif %}
     </div>
     <div class="daily-audio__controls">
-      <audio preload="none" controls src="{{ latest_audio_url }}"></audio>
+      <audio preload="none" controls>
+        <source src="{{ latest_audio_url }}" type="audio/mpeg">
+      </audio>
       <div class="daily-audio__rates" role="group" aria-label="再生速度">
         <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
         <button type="button" class="daily-audio__rate" data-rate="1.25">1.25x</button>
