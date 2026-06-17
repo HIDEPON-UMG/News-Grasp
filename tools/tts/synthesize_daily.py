@@ -269,8 +269,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="正規化済み原稿から AivisSpeech mp3 を生成します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     args = parser.parse_args(argv)
-    synthesize(args.date)
-    return 0
+    return 0 if synthesize(args.date) is not None else 1
 
 
 if __name__ == "__main__":

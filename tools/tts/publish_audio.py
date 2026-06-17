@@ -161,8 +161,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="日次朗読 mp3 を GitHub Releases に公開します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     args = parser.parse_args(argv)
-    publish(args.date)
-    return 0
+    return 0 if publish(args.date) is not None else 1
 
 
 if __name__ == "__main__":

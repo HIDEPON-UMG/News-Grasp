@@ -107,3 +107,19 @@ def test_latest_audio_url_uses_mp3_content_hash_cache_buster(tmp_path):
         "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
         f"audio-daily/2026-06-16.mp3?v={expected_hash}"
     )
+
+
+def test_publish_audio_main_returns_nonzero_when_publish_fails(monkeypatch):
+    monkeypatch.setattr(publish_audio, "publish", lambda _date: None)
+
+    assert publish_audio.main(["2026-06-17"]) == 1
+
+
+def test_publish_audio_main_returns_zero_when_publish_succeeds(monkeypatch):
+    monkeypatch.setattr(
+        publish_audio,
+        "publish",
+        lambda _date: {"latest_audio_date": "2026-06-17", "latest_audio_url": "https://example.com/audio.mp3"},
+    )
+
+    assert publish_audio.main(["2026-06-17"]) == 0

@@ -276,6 +276,19 @@ def test_synthesize_keeps_preexisting_engine_running(tmp_path, monkeypatch):
     assert calls == []
 
 
+def test_main_returns_nonzero_when_synthesis_fails(monkeypatch):
+    monkeypatch.setattr(synthesize_daily, "synthesize", lambda _date: None)
+
+    assert synthesize_daily.main(["2026-06-17"]) == 1
+
+
+def test_main_returns_zero_when_synthesis_succeeds(tmp_path, monkeypatch):
+    mp3 = tmp_path / "2026-06-17.mp3"
+    monkeypatch.setattr(synthesize_daily, "synthesize", lambda _date: mp3)
+
+    assert synthesize_daily.main(["2026-06-17"]) == 0
+
+
 def test_synthesize_shuts_down_owned_engine_when_engine_readiness_fails(tmp_path, monkeypatch):
     build_dir = tmp_path / "tts"
     build_dir.mkdir()
