@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, timedelta
 import json
 from pathlib import Path
 import re
@@ -306,6 +306,89 @@ def _validate_summary(repo_root: Path, rel: str, issue: str) -> list[GenerationQ
     return errors
 
 
+def _validate_deepdive(repo_root: Path, rel: str, issue: str) -> list[GenerationQualityError]:
+    errors = _validate_markdown_artifact(repo_root, rel, issue)
+    if errors:
+        return errors
+    path = repo_root / rel
+    try:
+        from tools.render_deepdive import DeepDiveIncompleteError, extract_blocks
+        from tools.render_deepdive import _require_blocks as require_deepdive_blocks
+
+        text = _read_text(path)
+        _frontmatter, body = _split_frontmatter(text)
+        require_deepdive_blocks(path, extract_blocks(body))
+    except ImportError as exc:
+        errors.append(
+            _error(
+                "deepdive_validator_unavailable",
+                rel,
+                category="DeepDive",
+                reason=str(exc),
+                expected="DeepDive renderer validator can be imported",
+                actual=type(exc).__name__,
+                retryable=False,
+            )
+        )
+    except DeepDiveIncompleteError as exc:
+        errors.append(
+            _error(
+                "deepdive_structure_invalid",
+                rel,
+                category="DeepDive",
+                reason=str(exc),
+                expected="timeline/players/relations/chart>=2/table/decision blocks",
+                actual="DeepDiveIncompleteError",
+            )
+        )
+    return errors
+
+
+def _recent_audio_history(repo_root: Path, issue: str) -> list[str]:
+    day = date.fromisoformat(issue)
+    history: list[str] = []
+    for offset in (1, 2):
+        path = repo_root / "digest" / "Summary" / f"{(day - timedelta(days=offset)).isoformat()}-audio-script.md"
+        if path.exists():
+            history.append(_read_text(path))
+    return history
+
+
+def _validate_audio_script(repo_root: Path, rel: str, issue: str) -> list[GenerationQualityError]:
+    errors = _validate_markdown_artifact(repo_root, rel, issue)
+    if errors:
+        return errors
+    try:
+        from tools.tts.build_script import validate_script
+    except ImportError as exc:
+        return [
+            _error(
+                "audio_script_validator_unavailable",
+                rel,
+                category="summary",
+                reason=str(exc),
+                expected="TTS script validator can be imported",
+                actual=type(exc).__name__,
+                retryable=False,
+            )
+        ]
+
+    _frontmatter, body = _split_frontmatter(_read_text(repo_root / rel))
+    issues = validate_script(body, date=issue, history_texts=_recent_audio_history(repo_root, issue))
+    if not issues:
+        return []
+    return [
+        _error(
+            "audio_script_quality_invalid",
+            rel,
+            category="summary",
+            reason="; ".join(issues),
+            expected="audio script passes deterministic TTS quality checks",
+            actual=f"{len(issues)} issue(s)",
+        )
+    ]
+
+
 def _validate_support_artifact(repo_root: Path, rel: str) -> list[GenerationQualityError]:
     path = repo_root / rel
     if path.exists():
@@ -388,11 +471,11 @@ def validate_generation_quality(repo_root: Path, issue: str) -> GenerationQualit
         if rel.startswith("data/"):
             errors.extend(_validate_support_artifact(repo_root, rel))
         elif rel.endswith("-audio-script.md"):
-            errors.extend(_validate_markdown_artifact(repo_root, rel, issue))
+            errors.extend(_validate_audio_script(repo_root, rel, issue))
         elif rel.endswith(".md") and "/Summary/" in rel:
             errors.extend(_validate_summary(repo_root, rel, issue))
         elif rel.endswith(".md") and "/DeepDive/" in rel:
-            errors.extend(_validate_markdown_artifact(repo_root, rel, issue))
+            errors.extend(_validate_deepdive(repo_root, rel, issue))
         elif rel.endswith(".md"):
             folder = Path(rel).parent.name
             cat_id = next((cid for cid, item in CATEGORY_PATHS.items() if item["digest_folder"] == folder), folder.lower())

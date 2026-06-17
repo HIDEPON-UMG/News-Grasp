@@ -81,6 +81,46 @@ def test_prepare_directory_drops_unresolved_google_news_url(tmp_path: Path) -> N
     assert rows[0]["url"] == "https://news.google.com/rss/articles/CBMiExample?oc=5"
     assert rows[0]["url_norm"] == "https://news.google.com/rss/articles/CBMiExample?oc=5"
     assert rows[0]["google_news_decode_status"] == "unresolved"
+    assert rows[0]["url_resolution_action"] == "reporter_must_resolve_canonical"
+
+
+def test_prepare_directory_keeps_all_google_news_unresolved_candidates_with_date_evidence(tmp_path: Path) -> None:
+    """Google News 解決不能が複数あっても全 drop せず、根拠付き候補を reporter に渡す。"""
+    input_dir = tmp_path / "deduped"
+    _write_jsonl(
+        input_dir / "ai.jsonl",
+        [
+            {
+                "title": "AI story one",
+                "url": "https://news.google.com/rss/articles/CBMiOne?oc=5",
+                "category": "ai",
+                "source": "Example",
+                "published_date": "2026-06-17",
+                "date_evidence_source": "rss-pubdate",
+            },
+            {
+                "title": "AI story two",
+                "url": "https://news.google.com/rss/articles/CBMiTwo?oc=5",
+                "category": "ai",
+                "source": "Example",
+                "published_date": "2026-06-17",
+                "date_evidence_source": "rss-pubdate",
+            },
+        ],
+    )
+
+    summary = prepare_directory(
+        input_dir,
+        google_decoder=lambda url: {"status": "error"},
+        fetch_ogp_func=lambda url, **kwargs: {},
+    )
+
+    rows = _read_jsonl(input_dir / "ai.jsonl")
+    assert summary["prepared_count"] == 2
+    assert summary["dropped_count"] == 0
+    assert all(row["google_news_decode_status"] == "unresolved" for row in rows)
+    assert all(row["url_resolution_action"] == "reporter_must_resolve_canonical" for row in rows)
+    assert all(row["date_evidence_source"] == "rss-pubdate" for row in rows)
 
 
 def test_decode_fallback_does_not_require_multiprocessing(monkeypatch) -> None:

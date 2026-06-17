@@ -23,6 +23,54 @@ def _frontmatter(title: str, category: str, category_id: str) -> str:
     )
 
 
+def _complete_deepdive_body(*, chart_count: int = 2) -> str:
+    charts = ""
+    for idx in range(chart_count):
+        chart_payload = {
+            "type": "bar",
+            "title": f"chart {idx + 1}",
+            "series": [{"name": "s", "data": [1, 2, 3]}],
+            "categories": ["a", "b", "c"],
+            "source": "fixture",
+        }
+        charts += (
+            "```chart\n"
+            + json.dumps(chart_payload, ensure_ascii=False)
+            + "\n"
+            "```\n\n"
+        )
+    return (
+        "## 背景\n\n"
+        "```timeline\n[]\n```\n\n"
+        "```players\n[]\n```\n\n"
+        "```relations\n"
+        '{"nodes":[{"id":"a","label":"A"},{"id":"b","label":"B"}],'
+        '"edges":[{"from":"a","to":"b","label":"x","kind":"競合"}],"source":"fixture"}\n'
+        "```\n\n"
+        "本文です。\n\n"
+        "## 深掘り\n\n"
+        f"{charts}"
+        "```table\n"
+        '{"columns":["a","b"],"rows":[["1","2"]],"source":"fixture"}\n'
+        "```\n\n"
+        "本文です。\n\n"
+        "## 注目点\n\n"
+        "```decision\n"
+        '{"issue":"x","options":["a"],"deadline":"d","decider":"w"}\n'
+        "```\n"
+    )
+
+
+def _complete_audio_script(extra: str = "") -> str:
+    return (
+        "今日は6月16日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
+        + ("今日は条件設計を確認する日でした。" * 152)
+        + extra
+        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。"
+    )
+
+
 def _write_complete_fixture(root: Path) -> None:
     article_lines: list[str] = []
     for idx, cat_id in enumerate(scheduled_category_ids(ISSUE), start=1):
@@ -74,8 +122,7 @@ def _write_complete_fixture(root: Path) -> None:
         f"date: {ISSUE}\n"
         "type: audio-script\n"
         "---\n\n"
-        "# Audio Script\n\n"
-        "朗読原稿の本文です。\n",
+        + _complete_audio_script(),
         encoding="utf-8",
     )
 
@@ -86,9 +133,7 @@ def _write_complete_fixture(root: Path) -> None:
         "title: DeepDive\n"
         f"date: {ISSUE}\n"
         "kind: deepdive\n"
-        "---\n\n"
-        "## 背景\n\n"
-        "本文です。\n",
+        "---\n\n" + _complete_deepdive_body(),
         encoding="utf-8",
     )
 
@@ -159,7 +204,7 @@ def test_generation_quality_does_not_treat_audio_script_as_summary(tmp_path: Pat
         f"date: {ISSUE}\n"
         "type: audio-script\n"
         "---\n\n"
-        "朗読原稿です。\n",
+        + _complete_audio_script(),
         encoding="utf-8",
     )
 
@@ -167,6 +212,30 @@ def test_generation_quality_does_not_treat_audio_script_as_summary(tmp_path: Pat
 
     assert result.exit_code == 0
     assert not any(err.artifact.endswith("-audio-script.md") for err in result.errors)
+
+
+def test_generation_quality_rejects_invalid_audio_script(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    audio_script = tmp_path / "digest" / "Summary" / f"{ISSUE}-audio-script.md"
+    audio_script.write_text(
+        "---\n"
+        "title: Audio Script\n"
+        f"date: {ISSUE}\n"
+        "type: audio-script\n"
+        "---\n\n"
+        + _complete_audio_script("ここは少し意外でした。"),
+        encoding="utf-8",
+    )
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 1
+    assert any(
+        err.code == "audio_script_quality_invalid"
+        and err.artifact.endswith(f"{ISSUE}-audio-script.md")
+        and err.retryable is True
+        for err in result.errors
+    )
 
 
 def test_generation_quality_rejects_missing_deepdive(tmp_path: Path) -> None:
@@ -177,6 +246,29 @@ def test_generation_quality_rejects_missing_deepdive(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert any(err.code == "missing_artifact" and "DeepDive" in err.artifact for err in result.errors)
+
+
+def test_generation_quality_rejects_deepdive_with_single_chart(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    deepdive = tmp_path / "digest" / "DeepDive" / f"{ISSUE}-DeepDive.md"
+    deepdive.write_text(
+        "---\n"
+        "title: DeepDive\n"
+        f"date: {ISSUE}\n"
+        "kind: deepdive\n"
+        "---\n\n" + _complete_deepdive_body(chart_count=1),
+        encoding="utf-8",
+    )
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 1
+    assert any(
+        err.code == "deepdive_structure_invalid"
+        and err.artifact.endswith(f"{ISSUE}-DeepDive.md")
+        and err.retryable is True
+        for err in result.errors
+    )
 
 
 def test_generation_quality_rejects_zero_issue_articles(tmp_path: Path) -> None:

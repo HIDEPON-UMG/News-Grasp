@@ -123,7 +123,7 @@ function Test-TerminalState {
     if (-not $State -or -not $State.status) {
         return $false
     }
-    return @('ok', 'fallback_ok', 'smoke_ok') -contains [string]$State.status
+    return @('ok', 'smoke_ok') -contains [string]$State.status
 }
 
 function Watch-Runner {

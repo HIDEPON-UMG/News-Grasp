@@ -98,11 +98,13 @@ def prepare_rows(
                 item["google_news_decode_status"] = "unresolved"
                 item["url_norm"] = dedup.normalize_url(url)
                 item["google_news_url"] = url
+                item["url_resolution_action"] = "reporter_must_resolve_canonical"
                 decoded = None
             else:
                 item["url"] = decoded
                 item["url_norm"] = dedup.normalize_url(decoded)
                 item["google_news_url"] = url
+                item["url_resolution_action"] = "canonical_resolved"
                 url = decoded
         elif url:
             item["url_norm"] = dedup.normalize_url(url)

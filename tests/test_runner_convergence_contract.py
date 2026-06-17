@@ -393,7 +393,8 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     assert "[int] $TimeoutMinutes = 120" in watcher
     assert "Start-Process -FilePath 'powershell'" in watcher
     assert "-WindowStyle Hidden" in watcher
-    assert "@('ok', 'fallback_ok', 'smoke_ok')" in watcher
+    assert "@('ok', 'smoke_ok')" in watcher
+    assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
     assert "runner process exited without ok marker" in watcher
     assert "log has not changed for" in watcher
     assert "watch timeout after" in watcher
@@ -474,7 +475,8 @@ def test_runner_quarantines_bad_urls_before_fallback_publish() -> None:
     assert "--apply" in block
     assert "URL liveness quarantine start" in block
     assert "URL liveness gate recheck after quarantine" in block
-    assert block.index("URL liveness quarantine start") < block.index("Invoke-FallbackPublish")
+    assert "Stop-ContentGateWithoutFallback -GateId 'url-liveness'" in block
+    assert "Invoke-FallbackPublish" not in block
     assert "search_audit_updated" in (ROOT / "tools" / "audit_all_article_urls.py").read_text(encoding="utf-8")
 
 
@@ -490,9 +492,15 @@ def test_content_gates_do_not_publish_fallback_notice() -> None:
     content_gate_markers = [
         ("summary reflection gate start", "daily quality gate start"),
         ("daily quality gate start", "Stage4: Codex DeepDive"),
+        ("generation quality gate start", "URL liveness gate start"),
+        ("URL liveness gate start", "record schema gate start"),
         ("record schema gate start", "digest/articles reconcile gate start"),
         ("digest/articles reconcile gate start", "ja-callout gate start"),
         ("ja-callout gate start", "pytest gate start"),
+        ("pytest gate start", "Daily TTS audio"),
+        ("generate_pages.py start", "deepdive required gate start"),
+        ("deepdive required gate start", "public HTML gate start"),
+        ("public HTML gate start", "availability gate start"),
     ]
     for start, end in content_gate_markers:
         block = runner.split(start, 1)[1].split(end, 1)[0]
@@ -536,6 +544,14 @@ def test_runner_tts_does_not_send_normal_notification() -> None:
     assert "send_push" not in tts_block
     assert "Should-SendNormalBatchNotification" in runner
     assert runner.index("publish verification start") < send_push_index
+
+
+def test_watcher_does_not_treat_fallback_as_normal_terminal_success() -> None:
+    """fallback_ok は公開済み旧号保護であり、通常バッチ完走として watcher を閉じない。"""
+    watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
+    assert "@('ok', 'smoke_ok')" in watcher
 
 
 def test_runner_publish_verification_includes_public_audio_sentinel() -> None:

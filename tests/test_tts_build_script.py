@@ -8,6 +8,16 @@ from tools.tts import build_script
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tts"
 
 
+def _valid_script(extra: str = "") -> str:
+    return (
+        "今日は6月16日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
+        + ("今日は条件設計を確認する日でした。" * 152)
+        + extra
+        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。"
+    )
+
+
 def test_good_audio_script_mentions_all_categories_and_length_is_valid():
     text = (FIXTURE_DIR / "good-audio-script.md").read_text(encoding="utf-8")
 
@@ -87,6 +97,64 @@ def test_audio_script_requires_final_viewpoints_and_analysis():
     issues = build_script.validate_script(text, date="2026-06-16")
 
     assert any("今日の観点・考察" in issue for issue in issues)
+
+
+def test_audio_script_rejects_three_or_more_sentences_reused_from_recent_history():
+    repeated = (
+        "ここは少し身構えます。"
+        "朝会で一言添えるなら、誰が説明するかが焦点です。"
+        "今日の観点・考察です。"
+    )
+    current = _valid_script(repeated)
+    history = [_valid_script(repeated)]
+
+    issues = build_script.validate_script(current, date="2026-06-16", history_texts=history)
+
+    assert any("過去原稿との同一文" in issue for issue in issues)
+
+
+def test_audio_script_rejects_prompt_example_copy():
+    current = _valid_script("ここは少し意外でした。このニュースは地味ですが、後から効いてきそうです。")
+
+    issues = build_script.validate_script(current, date="2026-06-16")
+
+    assert any("例文コピー" in issue for issue in issues)
+
+
+def test_audio_script_rejects_repeated_motifs_from_recent_history():
+    motifs = "ここは少し地味ですが、あとから効きそうです。今日の軸は誰が説明し誰が運用するかです。"
+    current = _valid_script(motifs)
+    history = [_valid_script(motifs)]
+
+    issues = build_script.validate_script(current, date="2026-06-16", history_texts=history)
+
+    assert any("過去原稿との定型表現" in issue for issue in issues)
+
+
+def test_audio_script_compares_against_one_available_history_day():
+    repeated = (
+        "ここは少し身構えます。"
+        "朝会で一言添えるなら、誰が説明するかが焦点です。"
+        "今日の観点・考察です。"
+    )
+
+    issues = build_script.validate_script(_valid_script(repeated), date="2026-06-16", history_texts=[_valid_script(repeated)])
+
+    assert any("過去原稿" in issue for issue in issues)
+
+
+def test_audio_script_allows_first_day_without_history():
+    issues = build_script.validate_script(_valid_script(), date="2026-06-16", history_texts=[])
+
+    assert issues == []
+
+
+def test_newsroom_editor_prompt_requires_tts_history_and_no_example_copy():
+    prompt = (Path(__file__).resolve().parent.parent / "prompts" / "newsroom-editor-system.md").read_text(encoding="utf-8")
+
+    assert "過去 2 日" in prompt
+    assert "例文コピー禁止" in prompt
+    assert "構成・感想・締めの反復禁止" in prompt
 
 
 def test_audio_script_heading_is_not_read_by_tts():

@@ -58,7 +58,7 @@ cat → Genre（digest フォルダ名）の対応：
 **candidates → filtered → 選別の流れ（各ファイルパスを明記）**：
 
 1. **candidates**（`tmp/newsroom/{号日}/{cat}.candidates.jsonl`）= harvest の生候補（鮮度担保済み）。これを **選別の第一ソース** にする。
-2. **canonical URL の解決**：harvest の `url` は Google News のエンコード URL（記事 canonical に飛べない）。採用したい候補は **`site:{source ドメイン} {タイトル断片}` の限定 WebSearch** で元記事単位の canonical URL を引き当てる（WebSearch 結果に明示的に出た URL だけを使う。記憶から URL を書くのは絶対禁止）。媒体トップ URL（例: `https://www.nikkei.com/`）やカテゴリトップ URL（例: `https://www3.nhk.or.jp/news/`）しか見つからない候補は、URL 解決失敗として候補ごと落とす。
+2. **canonical URL の解決**：harvest の `url` は Google News のエンコード URL（記事 canonical に飛べない）。`google_news_decode_status: unresolved` または `url_resolution_action: reporter_must_resolve_canonical` の候補は、候補ごと即 drop せず、**`site:{source ドメイン} {タイトル断片}` の限定 WebSearch** で元記事単位の canonical URL を引き当てる（WebSearch 結果に明示的に出た URL だけを使う。記憶から URL を書くのは絶対禁止）。媒体トップ URL（例: `https://www.nikkei.com/`）やカテゴリトップ URL（例: `https://www3.nhk.or.jp/news/`）しか見つからない候補は採用しないが、Google News 解決不能だけを理由にカテゴリ候補を全 drop しない。`published_date` / `date_evidence_source` / `source` がある候補は、canonical 解決待ちとして search_audit の dropped ではなく未採用理由に残す。
 3. **filtered**（`tmp/newsroom/{号日}/{cat}.filtered.jsonl`）= 候補（harvest + 後述 WebSearch 補完）を `dedup.py` に通した後の採用候補（後述 R2）。
 4. **選別** = filtered からスコア降順で 5 件確定（後述 R6）。
 

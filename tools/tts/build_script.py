@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date as date_type, timedelta
 import re
 import sys
 from pathlib import Path
@@ -43,6 +44,29 @@ _COUNT_IGNORE_RE = re.compile(r"[\s\u3000、。，．・…「」『』（）()\
 _PATRONIZING_RE = re.compile(
     r"(細かな数字を全部覚えるより|覚えることが大切|持ち帰ることが大切|落ち着いて追えば|流れは見えてきます)"
 )
+_SENTENCE_RE = re.compile(r"[^。！？\n]+[。！？]")
+_PROMPT_EXAMPLE_PHRASES = (
+    "ここは少し意外でした",
+    "このニュースは地味ですが、後から効いてきそうです",
+    "これは現場側には重い話です",
+    "ここは少し胸に来ます",
+    "地味ですが、あとから効きそうです",
+    "自分が提案側なら、ここは契約条件まで聞かれそうです",
+    "現場に入れる立場だと、この後工程コストは無視できません",
+    "これはAIだけの話ではなく、製造や電力にもつながります",
+)
+_REPEATED_MOTIFS = (
+    "ここは少し",
+    "地味ですが",
+    "後から効",
+    "あとから効",
+    "今日の軸",
+    "今日の観点",
+    "朝会で一言",
+    "誰が説明",
+    "誰が運用",
+    "後工程",
+)
 
 
 def _warn(message: str) -> None:
@@ -76,7 +100,53 @@ def _date_japanese(date: str) -> str:
         return date
 
 
-def validate_script(text: str, *, date: str | None = None) -> list[str]:
+def _sentences(text: str) -> list[str]:
+    normalized = re.sub(r"\s+", "", _strip_audio_title_lines(text))
+    return [m.group(0).strip() for m in _SENTENCE_RE.finditer(normalized) if len(m.group(0).strip()) >= 8]
+
+
+def _recent_history_texts(target_date: str) -> list[str]:
+    try:
+        day = date_type.fromisoformat(target_date)
+    except ValueError:
+        return []
+    history: list[str] = []
+    for offset in (1, 2):
+        path = SCRIPT_DIR / f"{(day - timedelta(days=offset)).isoformat()}-audio-script.md"
+        if path.exists():
+            history.append(_FRONTMATTER_RE.sub("", path.read_text(encoding="utf-8")).strip())
+    return history
+
+
+def _history_issues(text: str, history_texts: list[str]) -> list[str]:
+    issues: list[str] = []
+    for phrase in _PROMPT_EXAMPLE_PHRASES:
+        if phrase in text:
+            issues.append(f"例文コピー禁止: prompt 例文をそのまま使っています ({phrase})")
+            break
+
+    if not history_texts:
+        return issues
+
+    current_sentences = set(_sentences(text))
+    for history in history_texts:
+        overlap = sorted(current_sentences & set(_sentences(history)))
+        if len(overlap) >= 3:
+            issues.append(
+                "過去原稿との同一文: 直近原稿と同じ文が3件以上あります "
+                f"({'; '.join(overlap[:3])})"
+            )
+            break
+
+    for history in history_texts:
+        shared = [motif for motif in _REPEATED_MOTIFS if motif in text and motif in history]
+        if len(shared) >= 4:
+            issues.append("過去原稿との定型表現: 直近原稿と同じ motif が多すぎます (" + ", ".join(shared[:6]) + ")")
+            break
+    return issues
+
+
+def validate_script(text: str, *, date: str | None = None, history_texts: list[str] | None = None) -> list[str]:
     issues: list[str] = []
     text = _strip_audio_title_lines(text)
     missing: list[str] = []
@@ -97,6 +167,8 @@ def validate_script(text: str, *, date: str | None = None) -> list[str]:
 
     if _PATRONIZING_RE.search(text):
         issues.append("上から目線コメント: 聞き手に説教せず、今日の観点・考察を具体化する")
+
+    issues.extend(_history_issues(text, history_texts or []))
 
     count = effective_char_count(text)
     if count < 2500:
@@ -133,7 +205,7 @@ def build(date: str) -> Path | None:
         _warn(f"audio script not found: {path}")
         return None
     text = load_script(date)
-    issues = validate_script(text, date=date)
+    issues = validate_script(text, date=date, history_texts=_recent_history_texts(date))
     if issues:
         for issue in issues:
             _warn(issue)

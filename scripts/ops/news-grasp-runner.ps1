@@ -923,7 +923,7 @@ function Stop-ContentGateWithoutFallback {
     )
     Write-Log "ERROR: $GateId gate failed after bounded repair (rc=$ExitCode). content gate failure does not publish fallback notice; leaving existing public state unchanged."
     Write-Log "RECOVER: fix the reported digest/data issue, rerun the specific gate, then rerun runner with -RecoverOnly or publish manually after all gates pass."
-    exit 1
+    Exit-Runner -Status 'content_repair_failed' -Message "$GateId gate failed after bounded repair" -ExitCode 1
 }
 
 function Test-DailyArtifactsExist {
@@ -1394,17 +1394,23 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         }
     }
     $EditorInputManifest = Join-Path $ReporterArtifactDir 'editor-input-manifest.json'
+    $audioHistoryPaths = @()
+    for ($audioOffset = 1; $audioOffset -le 2; $audioOffset++) {
+        $audioDay = ([datetime]::ParseExact($DateStamp, 'yyyy-MM-dd', $null)).AddDays(-$audioOffset).ToString('yyyy-MM-dd')
+        $audioHistoryPaths += "digest/Summary/$audioDay-audio-script.md"
+    }
     $editorManifest = [pscustomobject]@{
         date = $DateStamp
         reporter_artifacts = @($ReporterArtifacts | ForEach-Object { $_.records_file })
         reporter_artifact_details = $ReporterArtifacts
         dedup_file = $DedupedCandidateDir
+        audio_script_history = $audioHistoryPaths
         source_policy = 'no_recollection'
     }
     $editorManifest | ConvertTo-Json -Depth 8 | Set-Content -Path $EditorInputManifest -Encoding UTF8
 
     $EditorPromptFile = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-prompt-$DateStamp.md")
-    $DateHeader = "今日の日付は $DateStamp (JST) である。Stage2 reporter artifact manifest は $EditorInputManifest にある。Stage1 dedup は build/deduped-candidates にある。編集長は再収集せず、検証済み reporter 成果物の統合・横断 dedup 判断・Summary planning・append だけを行う。"
+    $DateHeader = "今日の日付は $DateStamp (JST) である。Stage2 reporter artifact manifest は $EditorInputManifest にある。Stage1 dedup は build/deduped-candidates にある。音声原稿を作る場合は manifest の audio_script_history にある過去 2 日の path を確認し、構成・感想・締めの反復禁止と例文コピー禁止を守る。編集長は再収集せず、検証済み reporter 成果物の統合・横断 dedup 判断・Summary planning・append だけを行う。"
     $PromptBody = Get-Content -Path $PromptFile -Raw -Encoding UTF8
     Set-Content -Path $EditorPromptFile -Value ($DateHeader + "`n`n" + $PromptBody) -Encoding UTF8
     Write-Log "editor prompt date injected: header='$DateHeader' -> $EditorPromptFile"
@@ -1533,7 +1539,7 @@ $generationQualityRc = Invoke-PythonGateWithRepair -GateId 'generation-quality' 
 if ($generationQualityRc -ne 0) {
     Write-Log "generation quality repair failed (rc=$generationQualityRc)"
     Set-RunnerState -Status 'content_repair_failed' -Message 'generation quality repair failed' -ExitCode 1
-    exit 1
+    Stop-ContentGateWithoutFallback -GateId 'generation-quality' -ExitCode $generationQualityRc
 }
 Write-Log 'generation quality gate OK'
 
@@ -1575,12 +1581,12 @@ if ($urlGateRc -ne 0) {
             Write-Log 'URL liveness gate OK after per-article quarantine'
             $urlGateRc = 0
         } else {
-            Write-Log "ERROR: URL liveness recheck failed after quarantine (rc=$urlRecheckRc). fallback publish へ切替"
-            Invoke-FallbackPublish -Reason 'url-liveness-gate-failed-after-quarantine'
+            Write-Log "URL liveness recheck failed after quarantine (rc=$urlRecheckRc). normal publish is blocked."
+            Stop-ContentGateWithoutFallback -GateId 'url-liveness' -ExitCode $urlRecheckRc
         }
     } else {
-        Write-Log "ERROR: URL liveness quarantine failed (rc=$urlQuarantineRc). fallback publish へ切替"
-        Invoke-FallbackPublish -Reason 'url-liveness-quarantine-failed'
+        Write-Log "URL liveness quarantine failed (rc=$urlQuarantineRc). normal publish is blocked."
+        Stop-ContentGateWithoutFallback -GateId 'url-liveness' -ExitCode $urlQuarantineRc
     }
 }
 Write-Log 'URL liveness gate OK'
@@ -1646,8 +1652,8 @@ Write-Log 'ja-callout gate OK'
 Write-Log 'pytest gate start (pytest tests/ -q -m "not network")'
 $pytestGateRc = Invoke-PythonGateWithRepair -GateId 'pytest-static' -Category 'tests' -PythonArgs @('-m', 'pytest', 'tests/', '-q', '--tb=line', '--no-header', '-m', 'not network') -Artifacts @('tests', 'tools', 'prompts', 'digest', 'data/articles.jsonl')
 if ($pytestGateRc -ne 0) {
-    Write-Log "ERROR: pytest gate failed after bounded repair (rc=$pytestGateRc). 通常号公開を中止し fallback publish へ切替"
-    Invoke-FallbackPublish -Reason 'pytest-static-gate-failed'
+    Write-Log "pytest gate failed after bounded repair (rc=$pytestGateRc). normal publish is blocked."
+    Stop-ContentGateWithoutFallback -GateId 'pytest-static' -ExitCode $pytestGateRc
 }
 Write-Log 'pytest gate OK'
 
@@ -1719,8 +1725,8 @@ try {
     Pop-Location
 }
 if ($pagesRc -ne 0) {
-    Write-Log "ERROR: generate_pages.py exited with $pagesRc. 通常号公開を中止し fallback publish へ切替"
-    Invoke-FallbackPublish -Reason 'generate-pages-failed'
+    Write-Log "generate_pages.py exited with $pagesRc. normal publish is blocked."
+    Stop-ContentGateWithoutFallback -GateId 'generate-pages' -ExitCode $pagesRc
 }
 Write-Log 'generate_pages.py done'
 
@@ -1742,8 +1748,8 @@ Write-Log 'deepdive required gate OK'
 Write-Log "public HTML gate start (validate_public_home --date $DateStamp)"
 $publicHomeRc = Invoke-PythonGateWithRepair -GateId 'public-html' -Category 'docs' -PythonArgs @('-m', 'tools.validate_public_home', '--date', $DateStamp) -Artifacts @('docs/index.html')
 if ($publicHomeRc -ne 0) {
-    Write-Log "ERROR: public HTML gate failed after bounded repair (rc=$publicHomeRc). 通常号公開を中止し fallback publish へ切替"
-    Invoke-FallbackPublish -Reason 'public-html-gate-failed'
+    Write-Log "public HTML gate failed after bounded repair (rc=$publicHomeRc). normal publish is blocked."
+    Stop-ContentGateWithoutFallback -GateId 'public-html' -ExitCode $publicHomeRc
 }
 Write-Log 'public HTML gate OK'
 
