@@ -72,6 +72,19 @@
       "categories": {
         "digest": 2
       }
+    },
+    "deepdive-required": {
+      "signatures": {
+        "c9ed1cb9e29d2ff9": {
+          "failures": 1,
+          "artifact_hashes": [
+            "787ba505636f6515"
+          ]
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
     }
   }
 }
