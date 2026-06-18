@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Noto Sans JP",system-ui,sans-serif;background:#E6E1D5;color:#3A382F}
+code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em;background:#F1EBDC;color:#43412f;padding:.08em .36em;border-radius:3px;word-break:break-all;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div style="background:#181C2A;border-bottom:3px solid #C9A155">
+  <div style="max-width:1040px;margin:0 auto;padding:13px 56px;display:flex;justify-content:space-between;gap:16px;align-items:center;font:700 11px/1.4 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#C9A155">
+    <span>News-Grasp · Incident Report</span>
+    <span style="color:#8d96ab;text-align:right">2026-06-19 / Daily Batch</span>
+  </div>
+</div>
+<main style="max-width:1040px;margin:32px auto;background:#FFFFFF;border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+  <div style="padding:56px 56px 64px">
+    <header style="margin:-56px -56px 0;padding:56px 56px 40px;background:#F4EEE1;border-bottom:1px solid #E2DCCC">
+      <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#9A7B34">Root Cause Report</div>
+      <h1 style="margin:16px 0 0;font-family:'Noto Serif JP',serif;font-size:34px;line-height:1.42;font-weight:900;color:#181C2A;word-break:keep-all;overflow-wrap:break-word;line-break:strict">2026-06-19号は content gate と認証切れの複合で停止し、復旧後に通常公開まで完了</h1>
+      <div style="display:flex;gap:16px;margin:26px 0 0;padding:20px 22px;background:#FFFFFF;border:1px solid #EBD9B6;border-left:3px solid #C9A155;border-radius:0 6px 6px 0">
+        <div style="font:700 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.1em;color:#9A7B34;text-transform:uppercase;white-space:nowrap">結論</div>
+        <p style="margin:0;font-family:'Noto Serif JP',serif;font-size:15px;line-height:2;color:#3A382F">06:00 batch は <code>daily-quality</code> のコンテンツ不整合で停止し、bounded repair 中に Codex 認証切れが重なって復旧が遅延したが、最終的に gate を全通過し <strong style="font-weight:900;color:#181C2A">2026-06-19 号は通常公開済み</strong> である。</p>
+      </div>
+    </header>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-top:32px;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden">
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;color:#6B6862">Started</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A">06:00</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">Scheduled Task 起動</div></div>
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#FCF2F0"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;color:#B83A2D">Stopped</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#B83A2D">06:26</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">content_repair_failed</div></div>
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#F1F6F2"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;color:#3D7E60">Recovered</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#3D7E60">07:52</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">主要 gate 全通過</div></div>
+      <div style="padding:18px 20px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;color:#9A7B34">Published</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A">08:xx</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">remote / Pages verify OK</div></div>
+    </div>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">01</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">どの工程で問題が起きたか</h2></div>
+      <div style="margin-top:24px;border:1px solid #E1DCCF;border-radius:12px;background:#FBFAF6;padding:24px 26px">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#9A7B34">Workflow Map</div><div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#6B6862"><span>✓ 完了</span><span>✕ 停止</span><span>○ 未到達</span></div></div>
+        <div style="margin-top:18px;display:flex;align-items:stretch;gap:6px;flex-wrap:wrap">
+          <div style="flex:1 1 116px;min-width:112px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px"><div style="display:flex;justify-content:space-between"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34">01</span><span style="color:#3D7E60;font-weight:900">✓</span></div><div style="margin-top:8px;font-weight:700;color:#181C2A">digest 生成</div><div style="font-size:11px;color:#6B6862;line-height:1.5">各カテゴリ md</div></div>
+          <div style="align-self:center;color:#C9A155;font-weight:900">→</div>
+          <div style="flex:1 1 116px;min-width:112px;border:2px solid #B83A2D;border-radius:9px;background:#FCF2F0;padding:13px;box-shadow:0 0 0 3px #F0CFC9"><div style="display:flex;justify-content:space-between"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#B83A2D">STOP</span><span style="color:#B83A2D;font-weight:900">✕</span></div><div style="margin-top:8px;font-weight:900;color:#181C2A">daily-quality</div><div style="font-size:11px;color:#6B6862;line-height:1.5">古い記事 / 件数差異</div></div>
+          <div style="align-self:center;color:#C9A155;font-weight:900">→</div>
+          <div style="flex:1 1 116px;min-width:112px;border:1px dashed #B0AAA0;border-radius:9px;background:#fff;padding:13px;opacity:.72"><div style="display:flex;justify-content:space-between"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#B0AAA0">03</span><span style="color:#B0AAA0;font-weight:900">○</span></div><div style="margin-top:8px;font-weight:700;color:#6B6862">publish</div><div style="font-size:11px;color:#6B6862;line-height:1.5">初回は未到達</div></div>
+        </div>
+        <div style="margin-top:20px;padding:18px 20px;background:#181C2A;border-radius:8px;color:#D8D2C2"><div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:#C9A155;text-transform:uppercase">Fault boundary</div><p style="margin:10px 0 0;font-size:13px;line-height:1.9">停止境界は <code style="background:rgba(201,161,85,.18);color:#EBD9B6">daily-quality</code> と後続の <code style="background:rgba(201,161,85,.18);color:#EBD9B6">digest-articles-reconcile</code> / <code style="background:rgba(201,161,85,.18);color:#EBD9B6">url-liveness</code> であり、壊れた成果物を publish しない設計は機能した。一方で repair worker が artifact scope 外の report や audit JSON へ触り、同じ recovery を複数周させた。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">02</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の詳細と、なぜ起きたか</h2></div>
+      <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+        <div style="display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #E8E3D7;padding:14px 0"><dt style="font:700 12px/1.7 'JetBrains Mono',monospace;color:#B83A2D">直接原因</dt><dd style="margin:0;font-size:14px;line-height:1.9">古い記事 URL と <code>articles.jsonl</code> の当日 URL 集合がずれ、公開前 gate が停止した。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #E8E3D7;padding:14px 0"><dt style="font:700 12px/1.7 'JetBrains Mono',monospace;color:#181C2A">二次要因</dt><dd style="margin:0;font-size:14px;line-height:1.9">bounded repair 中に <code>token_revoked</code> / <code>refresh_token_invalidated</code> が発生し、認証復旧まで repair が止まった。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #E8E3D7;padding:14px 0"><dt style="font:700 12px/1.7 'JetBrains Mono',monospace;color:#181C2A">非原因</dt><dd style="margin:0;font-size:14px;line-height:1.9">publish 失敗や GitHub Pages 障害ではない。公開系は gate 通過後に実行し、remote HEAD と public sentinel は一致した。</dd></div>
+      </dl>
+      <div style="margin-top:18px;padding:16px 18px;background:#FCF6EC;border:1px solid #EBD9B6;border-left:3px solid #B07A39;border-radius:0 8px 8px 0"><div style="font:700 11px/1 'JetBrains Mono',monospace;color:#B07A39">2次</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8">認証切れは初回停止の原因ではなく、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">復旧作業を遅らせた二次要因</span> と整理する。</p></div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">03</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の暫定対応内容</h2></div>
+      <div style="margin-top:22px;border-left:2px solid #E1DCCF;padding-left:18px">
+        <p style="margin:0 0 14px;font-size:13px;line-height:1.8"><span style="font:700 12px/1 'JetBrains Mono',monospace;color:#B83A2D">06:26</span> runner state が <code>content_repair_failed</code> になり、既存公開状態を維持。</p>
+        <p style="margin:0 0 14px;font-size:13px;line-height:1.8"><span style="font:700 12px/1 'JetBrains Mono',monospace;color:#B07A39">06:31</span> Codex 認証を復旧し、<code>codex doctor</code> で auth OK を確認。</p>
+        <p style="margin:0 0 14px;font-size:13px;line-height:1.8"><span style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">07:52</span> <code>daily-quality</code>、<code>generation-quality</code>、<code>url-liveness</code>、<code>digest-articles-reconcile</code>、pytest を通過。</p>
+        <p style="margin:0;font-size:13px;line-height:1.8"><span style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">08:xx</span> <code>d9f397a</code> を push し、public <code>publish-status.json</code> と audio sentinel を確認。</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px">
+        <div style="border-top:3px solid #3D7E60;background:#F4F9F5;border-radius:8px;padding:16px"><div style="font-weight:900;color:#181C2A">記事・URL 整合</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8">stale Game / Economy 記事を整理し、URL 集合を <code>articles.jsonl</code> と digest md で一致させた。</p></div>
+        <div style="border-top:3px solid #3D7E60;background:#F4F9F5;border-radius:8px;padding:16px"><div style="font-weight:900;color:#181C2A">公開面</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8">DeepDive HTML、カテゴリ別 HTML、Summary、PWA <code>SW_VERSION</code> を揃えて通常公開した。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">04</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">直近改修・過去障害との関係</h2></div>
+      <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+        <div style="display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #E8E3D7;padding:14px 0"><dt style="font:700 12px/1.7 'JetBrains Mono',monospace;color:#181C2A">直近改修</dt><dd style="margin:0;font-size:14px;line-height:1.9">URL liveness、DeepDive 必須化、digest/articles 突合 gate の強化により、過去より厳しく停止した。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #E8E3D7;padding:14px 0"><dt style="font:700 12px/1.7 'JetBrains Mono',monospace;color:#181C2A">過去障害</dt><dd style="margin:0;font-size:14px;line-height:1.9">Summary/カテゴリだけで完了扱いにする事故を防ぐため、DeepDive と公開 sentinel を完了条件へ含めた運用と整合する。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #E8E3D7;padding:14px 0"><dt style="font:700 12px/1.7 'JetBrains Mono',monospace;color:#181C2A">今回の学び</dt><dd style="margin:0;font-size:14px;line-height:1.9">gate の強化自体は正しいが、repair worker の artifact scope が狭すぎると <strong style="font-weight:900;color:#181C2A">修復済みでも周回失敗になる</strong>。</dd></div>
+      </dl>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">05</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応方針の網羅性と完璧性の担保</h2></div>
+      <div style="margin-top:22px;padding:18px 20px;background:#F1F6F2;border:1px solid #CDE0D3;border-left:3px solid #3D7E60;border-radius:0 8px 8px 0"><p style="margin:0;font-size:14px;line-height:1.9">完璧性は「何度も repair を回すこと」ではなく、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">公開条件と repair 許可範囲を同じ artifact inventory に揃えること</span>で担保する。</p></div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:22px">
+        <div style="border-top:3px solid #3D7E60;background:#F7FBF8;border-radius:8px;padding:16px"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">LAYER 1</div><div style="margin-top:8px;font-weight:900;color:#181C2A">inventory 統一</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8">publish 必須成果物と repair 許可成果物を同じ定義から取る。</p></div>
+        <div style="border-top:3px solid #3D7E60;background:#F7FBF8;border-radius:8px;padding:16px"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">LAYER 2</div><div style="margin-top:8px;font-weight:900;color:#181C2A">認証事前 gate</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8">LLM repair 前に認証状態を確認し、token revoked を早期に切る。</p></div>
+        <div style="border-top:3px solid #3D7E60;background:#F7FBF8;border-radius:8px;padding:16px"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">LAYER 3</div><div style="margin-top:8px;font-weight:900;color:#181C2A">手動 publish 手順</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8">同一 gate が通過済みなら runner 周回を止め、publish verify に進める。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">06</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応の実行計画</h2></div>
+      <table style="width:100%;margin-top:18px;border-collapse:collapse;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden">
+        <thead><tr style="background:#181C2A;color:#F0EBE0"><th style="text-align:left;padding:14px 16px;font:700 12px/1.4 'JetBrains Mono',monospace">区分</th><th style="text-align:left;padding:14px 16px;font:700 12px/1.4 'JetBrains Mono',monospace">対応</th><th style="text-align:left;padding:14px 16px;font:700 12px/1.4 'JetBrains Mono',monospace">完了条件</th></tr></thead>
+        <tbody>
+          <tr><td style="padding:14px 16px;border-top:1px solid #E8E3D7"><span style="background:#F1F6F2;color:#3D7E60;border:1px solid #CDE0D3;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700">完了</span></td><td style="padding:14px 16px;border-top:1px solid #E8E3D7;font-size:13px;line-height:1.8">2026-06-19 の公開成果物を生成し、<code>d9f397a</code> を push。</td><td style="padding:14px 16px;border-top:1px solid #E8E3D7;font-size:13px;line-height:1.8">remote HEAD と public sentinel が一致。</td></tr>
+          <tr><td style="padding:14px 16px;border-top:1px solid #E8E3D7"><span style="background:#FBF4E9;color:#9A7B34;border:1px solid #EBD9B6;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700">計画</span></td><td style="padding:14px 16px;border-top:1px solid #E8E3D7;font-size:13px;line-height:1.8">runner の repair artifact scope を <code>tools.publish_inventory</code> と同期。</td><td style="padding:14px 16px;border-top:1px solid #E8E3D7;font-size:13px;line-height:1.8">修復済み gate が scope 外差分だけで失敗しない。</td></tr>
+          <tr><td style="padding:14px 16px;border-top:1px solid #E8E3D7"><span style="background:#FBF4E9;color:#9A7B34;border:1px solid #EBD9B6;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700">計画</span></td><td style="padding:14px 16px;border-top:1px solid #E8E3D7;font-size:13px;line-height:1.8">LLM repair 前に <code>codex doctor</code> 相当を runner gate 化。</td><td style="padding:14px 16px;border-top:1px solid #E8E3D7;font-size:13px;line-height:1.8">認証切れを content failure と混同しない。</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:18px;padding:18px 20px;background:#F1F6F2;border:1px solid #CDE0D3;border-radius:8px"><div style="font-size:13px;font-weight:700;color:#181C2A">公開確認</div><p style="margin:7px 0 0;font-size:13px;line-height:1.8;color:#3A382F">公開確認は <code>tools.daily_self_heal verify-publish</code> で実施し、local / remote HEAD は <code>d9f397ac6f57e43c0c69476de32bd285c07f9180</code>、public <code>publish-status.json</code> と audio URL は OK だった。</p></div>
+    </section>
+
+    <footer style="margin-top:52px;padding-top:18px;border-top:1px solid #E8E3D7;font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6B6862">News-Grasp Incident Report · 2026-06-19 · generated after normal publish verification</footer>
+  </div>
+</main>
+</body>
+</html>
