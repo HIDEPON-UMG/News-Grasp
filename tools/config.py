@@ -37,7 +37,7 @@ OG_IMAGE_WIDTH: int = 1120
 OG_IMAGE_HEIGHT: int = 587  # 1120 / 1.91 ≈ 587 (OGP 標準 1.91:1)
 TOP_RECENT_DAYS: int = 7
 
-DEFAULT_OG_IMAGE: str = f"{BASE_URL}/assets/og/summary.jpg"
+DEFAULT_OG_IMAGE: str = f"{BASE_URL}/assets/og/ng-ogp.png"
 
 # Magazine palette (DESIGN.md と同期)
 NAVY: str = "#181C2A"

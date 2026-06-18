@@ -29,11 +29,12 @@ sys.path.insert(0, str(ROOT))
 from tools.config import (  # noqa: E402
     BASE_URL,
     CATEGORIES,
+    DEFAULT_OG_IMAGE,
     OG_DESCRIPTION_MAX,
     OG_IMAGE_WIDTH,
     TOP_RECENT_DAYS,
 )
-from tools.generate_pages import build_context  # noqa: E402
+from tools.generate_pages import build_context, build_index  # noqa: E402
 
 
 SAMPLE_DIGEST = ROOT / "digest" / "FX" / "2026-05-20-FX.md"
@@ -83,6 +84,19 @@ def test_og_image_is_absolute_https(sample_ctx):
     assert sample_ctx["og_image"].startswith("https://"), (
         f"og:image must be absolute HTTPS: {sample_ctx['og_image']!r}"
     )
+
+
+def test_lp_representative_og_image_uses_ng_ogp_png():
+    """LP 代表サムネイルは News-Grasp 固定の ng-ogp.png を使う。"""
+    assert DEFAULT_OG_IMAGE == f"{BASE_URL}/assets/og/ng-ogp.png"
+
+
+def test_lp_rendered_meta_uses_representative_og_image(tmp_path):
+    """LP の og:image / twitter:image は代表サムネイルを指す。"""
+    out = build_index([], tmp_path)
+    html = out.read_text(encoding="utf-8")
+    assert f'<meta property="og:image" content="{DEFAULT_OG_IMAGE}">' in html
+    assert f'<meta name="twitter:image" content="{DEFAULT_OG_IMAGE}">' in html
 
 
 def test_og_url_matches_canonical(sample_ctx):
