@@ -41,6 +41,15 @@ def test_runner_uses_direct_codex_exe_not_preflight_capturing_wrapper() -> None:
     assert "Join-Path $env:USERPROFILE 'bin\\codex.ps1'" not in runner
 
 
+def test_runner_pytest_gate_uses_repo_local_basetemp() -> None:
+    """pytest の一時ディレクトリ権限で日次公開を止めない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    assert "$PytestBaseTemp = Join-Path $RepoDir '.pytest-tmp'" in runner
+    assert "PYTEST_ADDOPTS" in runner
+    assert "--basetemp=$PytestBaseTemp" in runner
+
+
 def test_mobility_backfill_does_not_keep_claude_print_path() -> None:
     """完了済み一時backfillからClaude CLI課金経路を残さない。"""
     if not BACKFILL_MOBILITY.exists():

@@ -101,10 +101,16 @@ function Resolve-NewsGraspRepoDir {
 function Resolve-CodexCliExe {
     param([string] $Override)
     if ($Override) {
-        return (Resolve-Path -LiteralPath $Override).Path
+        if (Test-Path -LiteralPath $Override) {
+            return (Resolve-Path -LiteralPath $Override).Path
+        }
+        return $Override
     }
     if ($env:NEWS_GRASP_CODEX_EXE) {
-        return (Resolve-Path -LiteralPath $env:NEWS_GRASP_CODEX_EXE).Path
+        if (Test-Path -LiteralPath $env:NEWS_GRASP_CODEX_EXE) {
+            return (Resolve-Path -LiteralPath $env:NEWS_GRASP_CODEX_EXE).Path
+        }
+        return $env:NEWS_GRASP_CODEX_EXE
     }
     $extensionRoot = Join-Path $env:USERPROFILE '.vscode\extensions'
     $candidate = Get-ChildItem -LiteralPath $extensionRoot -Filter 'openai.chatgpt-*' -Directory -ErrorAction SilentlyContinue |
@@ -1650,7 +1656,23 @@ Write-Log 'ja-callout gate OK'
 # 再 push する ([[feedback_check_design_principles]] 1 段 illegal state unrepresentable
 # + 2 段 境界 1 箇所集約)。
 Write-Log 'pytest gate start (pytest tests/ -q -m "not network")'
-$pytestGateRc = Invoke-PythonGateWithRepair -GateId 'pytest-static' -Category 'tests' -PythonArgs @('-m', 'pytest', 'tests/', '-q', '--tb=line', '--no-header', '-m', 'not network') -Artifacts @('tests', 'tools', 'prompts', 'digest', 'data/articles.jsonl')
+$PytestBaseTemp = Join-Path $RepoDir '.pytest-tmp'
+New-Item -ItemType Directory -Force -Path $PytestBaseTemp | Out-Null
+$previousPytestAddopts = $env:PYTEST_ADDOPTS
+try {
+    if ([string]::IsNullOrWhiteSpace($previousPytestAddopts)) {
+        $env:PYTEST_ADDOPTS = "--basetemp=$PytestBaseTemp"
+    } elseif ($previousPytestAddopts -notmatch '--basetemp(?:=|\s)') {
+        $env:PYTEST_ADDOPTS = "$previousPytestAddopts --basetemp=$PytestBaseTemp"
+    }
+    $pytestGateRc = Invoke-PythonGateWithRepair -GateId 'pytest-static' -Category 'tests' -PythonArgs @('-m', 'pytest', 'tests/', '-q', '--tb=line', '--no-header', '-m', 'not network') -Artifacts @('tests', 'tools', 'prompts', 'digest', 'data/articles.jsonl')
+} finally {
+    if ($null -eq $previousPytestAddopts) {
+        Remove-Item Env:\PYTEST_ADDOPTS -ErrorAction SilentlyContinue
+    } else {
+        $env:PYTEST_ADDOPTS = $previousPytestAddopts
+    }
+}
 if ($pytestGateRc -ne 0) {
     Write-Log "pytest gate failed after bounded repair (rc=$pytestGateRc). normal publish is blocked."
     Stop-ContentGateWithoutFallback -GateId 'pytest-static' -ExitCode $pytestGateRc
