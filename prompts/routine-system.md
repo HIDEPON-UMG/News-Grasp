@@ -298,11 +298,11 @@ py tools/fetch_ogp.py "https://example.com/article"
 # 失敗時: {"url":"...","og_image":null,"twitter_image":null,"status":"http_403","elapsed_sec":0.5}
 ```
 
-`og_image` または `twitter_image` のいずれかに有効 URL があればそれを採用。
+`og_image` または `twitter_image` のいずれかに有効 URL があればそれを採用。ただし **Google News 代理サムネ**（`lh3.googleusercontent.com`）は記事固有の OGP 画像ではないため採用禁止。段階 1 の戻り値が Google News 代理サムネだけなら `thumb: null` とし、段階 2 へ進む。
 
 ##### 段階 2: WebSearch の thumbnail を試す（第二候補）
 
-段階 1 が `og_image` も `twitter_image` も `null` で返ってきた記事に対して、`WebSearch` の検索結果メタデータに含まれる thumbnail URL を採用する。3-A のジャンル検索の結果に **thumbnail** / **image** プロパティがある場合はそこから引き当てる（同じ URL の検索結果を引いて `thumbnail` を取り出す）。
+段階 1 が `og_image` も `twitter_image` も `null` で返ってきた記事に対して、`WebSearch` の検索結果メタデータに含まれる thumbnail URL を採用する。3-A のジャンル検索の結果に **thumbnail** / **image** プロパティがある場合はそこから引き当てる（同じ URL の検索結果を引いて `thumbnail` を取り出す）。ただし **Google News 代理サムネ**（`lh3.googleusercontent.com`）は採用禁止。WebSearch の thumbnail が代理サムネだけなら `thumb: null` のままにする。
 
 ##### 段階 3: 諦めて `null` を入れる（最終）
 

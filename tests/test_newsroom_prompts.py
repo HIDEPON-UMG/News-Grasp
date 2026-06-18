@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parent.parent
 EDITOR_PROMPT = ROOT / "prompts" / "newsroom-editor-system.md"
 REPORTER_PROMPT = ROOT / "prompts" / "newsroom-reporter-system.md"
 RUNNER_PROMPT = ROOT / "prompts" / "runner-prompt.md"
+ROUTINE_PROMPT = ROOT / "prompts" / "routine-system.md"
+DEEPDIVE_RESEARCH_PROMPT = ROOT / "prompts" / "deepdive-research-system.md"
 
 
 def _read(path: Path) -> str:
@@ -68,6 +70,21 @@ def test_reporter_prompt_date_and_thumb_contracts() -> None:
     assert "published_date" in text
     assert "date_evidence_source" in text
     assert "記事公開日ではない" in text
+
+
+def test_thumb_prompts_forbid_google_news_proxy_thumbnail() -> None:
+    for path in [REPORTER_PROMPT, ROUTINE_PROMPT]:
+        text = _read(path)
+        assert "Google News 代理サムネ" in text, path
+        assert "lh3.googleusercontent.com" in text, path
+        assert "thumb: null" in text, path
+
+
+def test_deepdive_prompt_forbids_flat_line_chart() -> None:
+    text = _read(DEEPDIVE_RESEARCH_PROMPT)
+    assert "全点同一" in text
+    assert "フラットな折れ線" in text
+    assert "build が hard fail" in text
 
 
 def test_reporter_prompt_forbids_homepage_rounded_urls() -> None:

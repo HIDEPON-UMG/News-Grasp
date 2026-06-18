@@ -164,11 +164,11 @@ dedup を通過した候補から **スコア降順で 5 件** 確定する。**
 # stdout: {"url":"...","og_image":"https://...","twitter_image":null,"status":"ok",...}
 ```
 
-`og_image` または `twitter_image` のいずれかに有効 URL があればそれを採用。
+`og_image` または `twitter_image` のいずれかに有効 URL があればそれを採用。ただし **Google News 代理サムネ**（`lh3.googleusercontent.com`）は記事固有の OGP 画像ではないため採用禁止。段階 1 の戻り値が Google News 代理サムネだけなら `thumb: null` とし、段階 2 へ進む。
 
 ### 段階 2: WebSearch の thumbnail を試す（第二候補）
 
-段階 1 が両方 `null` の記事に限り、WebSearch 結果メタデータの thumbnail / image プロパティを採用。
+段階 1 が両方 `null` の記事に限り、WebSearch 結果メタデータの thumbnail / image プロパティを採用。ただし **Google News 代理サムネ**（`lh3.googleusercontent.com`）は採用禁止。WebSearch の thumbnail が代理サムネだけなら `thumb: null` のままにする。
 
 ### 段階 3: 諦めて `null`（最終・ただしキーは必ず出力）
 
