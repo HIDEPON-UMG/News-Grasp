@@ -163,7 +163,7 @@ $script:CodexUsageEndSnapshotWritten = $false
 $NormalPublishVerified = $false
 
 function Get-PublishInventoryArtifacts {
-    param([ValidateSet('digest', 'generated', 'published')] [string] $Kind)
+    param([ValidateSet('digest', 'generated', 'published', 'published-repair')] [string] $Kind)
     Push-Location $RepoDir
     try {
         $json = & $PyExe '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
@@ -179,6 +179,7 @@ function Get-PublishInventoryArtifacts {
 
 $DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'
 $PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'
+$PublishedRepairArtifacts = Get-PublishInventoryArtifacts -Kind 'published-repair'
 
 function Set-RunnerState {
     param(
@@ -556,6 +557,36 @@ function Get-ModelPolicyValue {
     }
 }
 
+function Test-CodexAuthReadiness {
+    $authPath = Join-Path $env:USERPROFILE '.codex\auth.json'
+    if (-not (Test-Path -LiteralPath $authPath)) {
+        Write-Log "codex auth readiness failed: auth_json_missing"
+        return $false
+    }
+    try {
+        $auth = Get-Content -LiteralPath $authPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (-not $auth.tokens -or -not $auth.tokens.refresh_token) {
+            Write-Log "codex auth readiness failed: refresh_token_missing"
+            return $false
+        }
+    } catch {
+        Write-Log "codex auth readiness failed: auth_json_unreadable reason=$($_.Exception.Message)"
+        return $false
+    }
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $CodexExe 'doctor' }
+        $doctorRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($doctorRc -ne 0) {
+        Write-Log "codex auth readiness failed: codex doctor rc=$doctorRc"
+        return $false
+    }
+    return $true
+}
+
 function Invoke-CodexWrapper {
     param(
         [string] $PromptFile,
@@ -628,6 +659,12 @@ function Invoke-TargetedRepair {
         Write-Log "repair worker denied by retry budget (gate=$GateId, rc=$decisionRc)"
         return 1
     }
+
+    Write-Log "codex auth readiness gate start (repair:$GateId)"
+    if (-not (Test-CodexAuthReadiness)) {
+        Exit-Runner -Status 'blocked_codex_auth' -Message "codex auth readiness failed before repair:$GateId" -ExitCode 72
+    }
+    Write-Log "codex auth readiness gate OK (repair:$GateId)"
 
     $repairPrompt = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-$GateId-$DateStamp.md")
     $failureText = ''
@@ -1710,36 +1747,6 @@ foreach ($ttsStep in @(
     }
 }
 
-# ===== 2.86 YouTube Podcast episode (non-fatal, TTS 後・generate_pages 前) =====
-# 2026-06-18: 生成済み TTS+BGM mp3 を固定カバー画像で mp4 化し、YouTube Podcast 用に
-# upload する。YouTube OAuth / API project / Podcast playlist 指定は外部運用状態に依存するため、
-# 初期運用では News-Grasp 本体公開を止めず、失敗は state/log に残して後追い復旧する。
-foreach ($youtubePodcastStep in @(
-    @{ Name = 'youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp) },
-    @{ Name = 'youtube podcast upload_episode'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--publish') }
-)) {
-    Write-Log "$($youtubePodcastStep.Name) start"
-    try {
-        Push-Location $RepoDir
-        try {
-            Invoke-Logged { & $PyExe @($youtubePodcastStep.Args) }
-            $youtubePodcastRc = $LASTEXITCODE
-        } finally {
-            Pop-Location
-        }
-        if ($youtubePodcastRc -ne 0) {
-            Write-Log "WARN: $($youtubePodcastStep.Name) exited with $youtubePodcastRc. YouTube Podcast upload is non-fatal for normal publish."
-            Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
-            break
-        }
-        Write-Log "$($youtubePodcastStep.Name) done"
-    } catch {
-        Write-Log "WARN: $($youtubePodcastStep.Name) failed: $($_.Exception.Message). YouTube Podcast upload is non-fatal for normal publish."
-        Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode 1
-        break
-    }
-}
-
 # ===== 2.9 digest/data commit (全 content gate 通過後・docs 生成前) =====
 # 2026-06-09 改定で生成側は commit しなくなった (routine-system.md ステップ 6:
 # 「commit / push は ps1 が代行」)。しかし旧実装は docs/ しか git add しておらず、
@@ -1787,7 +1794,7 @@ Write-Log 'generate_pages.py done'
 # 公開完了扱いにしてしまった。通常公開の完了条件は digest + docs + 当日 DeepDive まで
 # 揃っていることなので、generate_pages.py 後に md/html の存在を fail loud にする。
 Write-Log "deepdive required gate start (validate_daily_quality --date $DateStamp --require-deepdive)"
-$deepDiveRequiredRc = Invoke-PythonGateWithRepair -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts $PublishedDocsArtifacts
+$deepDiveRequiredRc = Invoke-PythonGateWithRepair -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts $PublishedRepairArtifacts
 if ($deepDiveRequiredRc -ne 0) {
     Stop-ContentGateWithoutFallback -GateId 'deepdive-required' -ExitCode $deepDiveRequiredRc
 }
@@ -1849,6 +1856,36 @@ if ($diffRc -eq 1) {
 } else {
     Write-Log "ERROR: git diff --cached returned unexpected rc=$diffRc"
     exit 1
+}
+
+# ===== 4.5 YouTube Podcast episode (non-fatal, push 直前) =====
+# 2026-06-19: repair / generate / docs commit が収束する前に upload すると、bounded repair
+# 周回のたびに同一日の podcast が重複公開される。YouTube upload は外部副作用なので、
+# 通常 publish の全 gate と commit が終わった後、git push 直前に 1 回だけ試行する。
+foreach ($youtubePodcastStep in @(
+    @{ Name = 'youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp) },
+    @{ Name = 'youtube podcast upload_episode'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--publish') }
+)) {
+    Write-Log "$($youtubePodcastStep.Name) start"
+    try {
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe @($youtubePodcastStep.Args) }
+            $youtubePodcastRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($youtubePodcastRc -ne 0) {
+            Write-Log "WARN: $($youtubePodcastStep.Name) exited with $youtubePodcastRc. YouTube Podcast upload is non-fatal for normal publish."
+            Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
+            break
+        }
+        Write-Log "$($youtubePodcastStep.Name) done"
+    } catch {
+        Write-Log "WARN: $($youtubePodcastStep.Name) failed: $($_.Exception.Message). YouTube Podcast upload is non-fatal for normal publish."
+        Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode 1
+        break
+    }
 }
 
 # ===== 5. digest + docs を 1 回の push で同時公開 (Plan v3 P0-A) =====

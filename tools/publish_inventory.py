@@ -132,6 +132,28 @@ def required_published_artifacts(issue: str | date) -> list[str]:
     )
 
 
+def required_published_repair_artifacts(issue: str | date) -> list[str]:
+    """公開前 gate の repair が触りうる出力 + 検証入力 artifact。
+
+    `validate_daily_quality --require-deepdive` は docs/DeepDive の存在だけでなく、
+    digest 本文、articles.jsonl、search_audit の件数整合も見る。repair scope を
+    published docs だけにすると、実際の修復点が data/search_audit だった場合に
+    gate は PASS 済みでも runner が artifact scope 違反で再停止する。
+    """
+    day = _issue(issue)
+    issue_str = day.isoformat()
+    return (
+        required_published_artifacts(day)
+        + required_generated_artifacts(day)
+        + [
+            "data/_session_urls.json",
+            f"data/_session_urls.d/{issue_str}",
+            "docs/publish-status.json",
+            "docs/sw.js",
+        ]
+    )
+
+
 def missing_artifacts(repo_root: Path, artifacts: list[str]) -> list[str]:
     return [rel for rel in artifacts if not (repo_root / rel).exists()]
 
@@ -139,7 +161,11 @@ def missing_artifacts(repo_root: Path, artifacts: list[str]) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="News-Grasp publish inventory manifest")
     parser.add_argument("--date", required=True)
-    parser.add_argument("--kind", choices=["digest", "generated", "published-docs", "deepdive", "published"], required=True)
+    parser.add_argument(
+        "--kind",
+        choices=["digest", "generated", "published-docs", "deepdive", "published", "published-repair"],
+        required=True,
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -151,8 +177,10 @@ def main(argv: list[str] | None = None) -> int:
         artifacts = required_published_docs_artifacts(args.date)
     elif args.kind == "deepdive":
         artifacts = required_deepdive_artifacts(args.date)
-    else:
+    elif args.kind == "published":
         artifacts = required_published_artifacts(args.date)
+    else:
+        artifacts = required_published_repair_artifacts(args.date)
 
     if args.json:
         print(json.dumps(artifacts, ensure_ascii=False))

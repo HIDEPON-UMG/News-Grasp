@@ -50,18 +50,22 @@ def test_runner_pytest_gate_uses_repo_local_basetemp() -> None:
     assert "--basetemp=$PytestBaseTemp" in runner
 
 
-def test_runner_youtube_podcast_step_runs_after_tts_without_blocking_publish() -> None:
-    """YouTube Podcast 化は TTS 成功後に試行し、初期運用では通常公開を止めない。"""
+def test_runner_youtube_podcast_step_runs_immediately_before_push() -> None:
+    """YouTube Podcast 化は repair 周回中に走らせず、push 直前に 1 回だけ試行する。"""
     runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
 
     tts_done = runner.index("tts publish_audio")
     youtube_build = runner.index("tools.youtube_podcast.build_video")
     digest_commit = runner.index("2.9 digest/data commit")
-    assert tts_done < youtube_build < digest_commit
+    docs_commit = runner.index("4. docs/ commit")
+    push_start = runner.index("push origin main start")
+    assert tts_done < digest_commit < docs_commit < youtube_build < push_start
     assert "tools.youtube_podcast.build_video" in runner
     assert "tools.youtube_podcast.upload_episode" in runner
     assert "youtube_podcast_failed" in runner
-    youtube_block = runner[youtube_build:digest_commit]
+    repair_window = runner[tts_done:docs_commit]
+    assert "tools.youtube_podcast.upload_episode" not in repair_window
+    youtube_block = runner[youtube_build:push_start]
     assert "exit 1" not in youtube_block
 
 

@@ -6,6 +6,7 @@ from tools.publish_inventory import (
     required_digest_artifacts,
     required_generated_artifacts,
     required_published_artifacts,
+    required_published_repair_artifacts,
     scheduled_category_ids,
 )
 
@@ -47,6 +48,18 @@ def test_manifest_lists_published_docs_and_deepdive_artifacts() -> None:
     assert "digest/DeepDive/2026-06-16-DeepDive.md" in artifacts
     assert "docs/deepdive/2026-06-16/index.html" in artifacts
     assert "build/tts/latest_audio.json" in artifacts
+
+
+def test_published_repair_manifest_includes_validation_inputs() -> None:
+    """公開必須 gate の repair scope は出力 HTML だけでなく検証入力も含む。"""
+    artifacts = required_published_repair_artifacts(ISSUE)
+
+    assert "docs/2026-06-16/index.html" in artifacts
+    assert "docs/deepdive/2026-06-16/index.html" in artifacts
+    assert "digest/DeepDive/2026-06-16-DeepDive.md" in artifacts
+    assert "data/articles.jsonl" in artifacts
+    assert "data/search_audit/2026-06-16" in artifacts
+    assert "digest/Game/2026-06-16-Game.md" in artifacts
 
 
 def test_generated_manifest_contains_required_generation_artifacts() -> None:

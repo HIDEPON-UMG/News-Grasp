@@ -145,7 +145,20 @@ def test_inventory_repair_artifacts_cover_required_digest_and_docs() -> None:
     ]:
         assert rel in (ROOT / "tools" / "publish_inventory.py").read_text(encoding="utf-8")
     assert "-GateId 'deepdive-required'" in runner
-    assert "-Artifacts $PublishedDocsArtifacts" in runner
+    assert "$PublishedRepairArtifacts = Get-PublishInventoryArtifacts -Kind 'published-repair'" in runner
+    assert "-Artifacts $PublishedRepairArtifacts" in runner
+
+
+def test_codex_auth_preflight_runs_before_llm_repair() -> None:
+    """LLM repair 前に Codex 認証切れを content failure と分離して止める。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+
+    assert "function Test-CodexAuthReadiness" in runner
+    assert "codex auth readiness gate start" in repair_body
+    assert "blocked_codex_auth" in repair_body
+    assert "Invoke-CodexWrapper" in repair_body
+    assert repair_body.index("Test-CodexAuthReadiness") < repair_body.index("Invoke-CodexWrapper")
 
 
 def test_runner_runs_generation_quality_before_url_and_record_gates() -> None:
@@ -544,7 +557,7 @@ def test_runner_tts_is_required_before_pages_generation() -> None:
     assert "tools.tts.publish_audio" in runner
     assert runner.index("pytest gate OK") < runner.index("Daily TTS audio (fatal")
     assert runner.index("Daily TTS audio (fatal") < runner.index("2.9 digest/data commit")
-    block = runner.split("Daily TTS audio (fatal", 1)[1].split("YouTube Podcast episode", 1)[0]
+    block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
     assert "TTS is required for normal publish" in block
     assert "Set-RunnerState -Status 'content_repair_failed'" in block
     assert "exit 1" in block
@@ -556,7 +569,7 @@ def test_runner_tts_is_required_before_pages_generation() -> None:
 def test_runner_tts_does_not_send_normal_notification() -> None:
     """TTS 失敗・成功だけで通常通知を送らず、通知は通常 publish verified 後に限定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    tts_block = runner.split("Daily TTS audio (fatal", 1)[1].split("YouTube Podcast episode", 1)[0]
+    tts_block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
     send_push_index = runner.index("send_push start")
     assert "send_push" not in tts_block
     assert "Should-SendNormalBatchNotification" in runner
