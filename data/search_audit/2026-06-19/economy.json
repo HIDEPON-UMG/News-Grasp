@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-19",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "Kevin Warsh price stability inflation top priority June 18 2026",
+    "Ifo 2027 growth forecast inflation June 2026",
+    "Japan economy Iran memorandum impact June 2026",
+    "Bank of Japan raises interest rates to 31-year high of 1%"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "日銀 金融政策",
+    "米FRB 利上げ / 利下げ",
+    "マクロ経済 指標",
+    "CPI / PCE",
+    "ホルムズ海峡 / 原油 / 物流コスト",
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "決算:フジクラ一転最高益 27年3月期、想定外の受注獲得で上方修正",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE8ybVp2YjVzdFVsbUZycVZGWUk1RWdOeGxSeDluTl9lZTMyNGg1T3RvUDh6cHUybGJvTU9pWHNZLTVjNUFvcGZrUHlJMWRfZEZ6TE9fdXhtdmF6SVhXYkw2MEt2X0tqS3VZbGg5Nw?oc=5",
+      "reason": "単発決算としては強いが、カテゴリ上位の金融政策・資源物流テーマより読者影響範囲が狭い"
+    },
+    {
+      "title": "国内最大級のオープンデータプラットフォームである地域経済分析システム（RESAS）をアップデートしました",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFA5eGdpeE9wYlRkT3pvZy1RQUVKaGh3M0ZwdGZYOGhMV0lneVVEUG01bW5pMWxwTEVUeVFVS1JheUcybnJkZ2E1VXg4N0w1VEV6OFd6Q1Y4OGFyUGZ5XzQtb0g5TnNnSkVFRzZmTi1rMkZGWE0?oc=5",
+      "reason": "政策データ基盤として重要だが、当日号の最重要論点である金利・景気・資源価格より市場インパクトが弱い"
+    },
+    {
+      "title": "決算:ANAHD中堀CFO「予約に大きな影響なく」 燃油高で付加運賃上げ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5nN0VlREpMREVnako5Y0JTeU10YWE4cjhEM2F4ZDVtRWxfNE84LVFmQmUyVl9mWnRfX2J2bDlsN3VYUHN6ZlRJeE1tc1puUHFnS0N4QTN5Sjk5eDlzUW9YX3dBejlMX3NaN0g0eA?oc=5",
+      "reason": "原油高波及の一例としては有効だが、海峡通航料構想の記事でより上流のコスト構造を押さえられるため統合的に除外"
+    },
+    {
+      "title": "【蒲郡】サーキュラーシティ宣言５年｜循環経済の動き着実に広がる",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE1GWHAxd2NTSVplb002UFZQTDVPWl9Sd252OU9iVWl3Sjd1dEJwRlRZYVFIVUdCM0lvd2hfUFUyT05pLUhHZ3JmS2l4NzJmTWprY2lyV29hWFRzY0l2?oc=5",
+      "reason": "ローカル施策で読者の投資・政策判断への直結度が低い"
+    }
+  ],
+  "manual_recovery_note": "2026-06-19 recovery: normalized audit counters to selected+dropped and recorded required coverage terms reviewed during recovery."
+}

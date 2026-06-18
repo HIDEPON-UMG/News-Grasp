@@ -1,0 +1,43 @@
+{
+  "date": "2026-06-19",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:pcgamer.com \"The Adventures of Elliot: The Millennium Tales\"",
+    "site:pcgamer.com \"paint your body to blend in\" game",
+    "site:gamesradar.com \"KPop Demon Hunters\" Lego",
+    "site:pcgamer.com Sonic actual DNA figure Sega"
+  ],
+  "raw_results_total": 29,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Steam",
+    "PC Gamer",
+    "GamesRadar+",
+    "canonical URL resolution",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "希望はいつも時空（そこ）にある。HD-2Dシリーズ初の完全新作アクションRPG『冒険家エリオットの千年物語』が、Nintendo Switch 2 で本日発売。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNVEJkTXZhN0F2OEtyeTdJOVFEUldWaExRMi1TTGxNdFZiWl9vTnp5UGlfUzF0TWR5QmFzQkItbmotaDVMZ1I1LXBNV1lxaVphcENnbzN5MWJVM29kX01jdVFKSUpkSlhlTXdsVnhMSV8ybTJ3TVJNYlpPcS1tMWJjOVVzcGhUUQ?oc=5",
+      "reason": "Google News URLのままでは記事単位canonicalにならないため不採用。"
+    },
+    {
+      "title": "バンダイ、新作TCG『NARUTOカードゲーム』を発表。2027年に世界同時リリース決定",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFA4VmhGTUxnZXg4NmJZdEJBRUFyVGctR3ZwU25JUHltZmRWY3BYVnl3MXBwVlpZXzhfeGNiZHk0b2ZJMldudVpNQ2U5WVhjZmFNUmx5VEs4d3VQLVZsRjUtWkNkcEFzMU90a2c?oc=5",
+      "reason": "再検索しても元記事URLを確定できず、Google News代理URLしか残らなかった。"
+    },
+    {
+      "title": "【ONE PIECEカードゲーム 最新情報】「BANDAI CARD GAMES ネクストプラン発表会2026.06」にて最新情報解禁！",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE1YR3FOQXUtY2JOTlpVeUYtUk95MUVTT1BqWlpON25Rcm1WaFZiNVFZQTZYX3phV1RXREhiUkpLMFE2WklGUS1oTW91dnZ1c2NfX0d6Rm93?oc=5",
+      "reason": "当日性はあるが公式まとめページへの解決しか取れず、記事単位URL要件を満たせなかった。"
+    }
+  ],
+  "manual_recovery_note": "2026-06-19 recovery: normalized audit counters to selected+dropped and recorded required coverage terms reviewed during recovery."
+}

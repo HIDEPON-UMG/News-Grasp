@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-19",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "Accenture takes majority stake in cyber company Dragos",
+    "Accenture CEO Julie Sweet says AI transformation will take some time stock price takes another hit",
+    "Accenture shares fall to lowest since 2017 as AI threat mounts"
+  ],
+  "raw_results_total": 28,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Accenture",
+    "NTTデータ",
+    "富士通",
+    "NEC",
+    "クラウド",
+    "サイバーセキュリティ",
+    "生成AI導入",
+    "McKinsey",
+    "BCG",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "アリババクラウド、日本で5拠点目のデータセンター開設",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9BanhrUi03eFhVbFNpWnp1RVhiNk55anJ2elNEVlUwX1FYSjhqTFZ1UUhQUDVsdkhkaUk4czhpUU1yWGtPakxXQ01RTXo2X1NHS0NZ?oc=5",
+      "reason": "Stage1候補のままではcanonical URLを確認できず不採用"
+    },
+    {
+      "title": "リコー、30年度にITサービス契約2倍 DX需要に対応",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE1heWdnclNyandQb1E0WmlYanJhS045ZE9yV2lodVAzaDRRS1FsTjU0MEo4M3JoX0RJcEJPTkQ3NTdTX1EyMnY0S2pON3dsRER5dVNGN0ljaHMxWmM?oc=5",
+      "reason": "Stage1候補のままではcanonical URLを確認できず不採用"
+    },
+    {
+      "title": "拠点の拡大：日本リージョンでのPrisma AIRSのローカルクラウド提供開始",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQSlNUNWFlNjVzLTF6Q0wydndIRTJwZXhwUUJoelNKbXdZdmYzVEJqbVFpVFlNN290NXZBOENlXzFEWGVKSzhnVkFPZU1RS3Z5d0lWZVpiTzdIal9jMTVKQXF2WWRBUm1pT1hoYmNaRVd1cllaUmpuc2xVVUU3dFpjSEk5SDFWUQ?oc=5",
+      "reason": "Stage1候補のままではcanonical URLを確認できず不採用"
+    },
+    {
+      "title": "「IT運用はもはや限界に来ている」 どこまで“AIに障害対応を委ねる”決断ができるか",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE9ZcWUxN3l5YVRzVzVOOEVHVkhVMjNlRkhmWjUwYTIwdUJIN01sY2Ztdm5DWWNpWWF0d3NsNXhGaGhweGF4cUVOazRuVFh0UG1SWjhNa0NKNGFrMTZLM0Rhemh3NHRFVmE0NXVPakg4d1BEQQ?oc=5",
+      "reason": "Stage1候補のままではcanonical URLを確認できず不採用"
+    }
+  ],
+  "manual_recovery_note": "2026-06-19 recovery: normalized audit counters to selected+dropped and recorded required coverage terms reviewed during recovery."
+}

@@ -1,0 +1,47 @@
+{
+  "date": "2026-06-19",
+  "category_id": "manufacturing",
+  "queries": [
+    "Stage1 file: build/deduped-candidates/manufacturing.jsonl",
+    "Trump Apple Intel chip deal Business Insider June 18 2026",
+    "Amazon custom chips other data centers June 18 2026 Bloomberg",
+    "USスチール 工場停止 口先介入 阻止 日鉄"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 5,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Intel",
+    "Apple",
+    "Amazon",
+    "NVIDIA",
+    "Trainium",
+    "半導体内製",
+    "データセンター供給網",
+    "TSMC",
+    "Samsung",
+    "Foxconn",
+    "Toyota"
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-19/manufacturing.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "レゾナックなどがシリコンバレーに開発拠点 半導体12社が集結、後工程開発を6倍速く",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5tQThjcFVfSmxDNmExVEZHekdoMmpfakl6ZUhtS0dCT1hHMWhfa0E2OWQ0dVdNWEVuWkFzU2ZvZWpLQU8tUnI0R1VTTGJuRzFocTVSVHVtQnNmWGhBa3pLRUVMLUtOcWc?oc=5",
+      "reason": "Google News由来canonicalを現ターンで解決できず未採用"
+    },
+    {
+      "title": "日産自動車が全固体電池にドライ電極、28年度量産は「数百台以下」から",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1SdDVUVThfRkdNcG1TR0VndEc4REhoaHZSQkVfbDh2TVAyWkR5dmFNWDFTYk1CNk9ON04yRW1seTc0eGJTU1JwTDJaMkRQbUdwcl9takdBc191LV9lLXBFXzJpTHBOZjg?oc=5",
+      "reason": "Google News由来canonicalを現ターンで解決できず未採用"
+    },
+    {
+      "title": "旭化成の堀江代表取締役「半導体材料は年2割成長」 増設工事前倒し",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9fV3dsTXZKSHhGZWdNSTRWUjlmT1prOVRteE5hZmtEZUEzbFNCRjBmWlp5N3VvZHNwQTJ6YlNiSTZiU24zeXM2X2hFa2dYSkNwMW1OZ2Q4dEhBamNTeFRiQ1l6WHVQYUhzSWNPVQ?oc=5",
+      "reason": "Google News由来canonicalを現ターンで解決できず未採用"
+    }
+  ],
+  "manual_recovery_note": "2026-06-19 recovery: normalized audit counters to selected+dropped and recorded required coverage terms reviewed during recovery."
+}

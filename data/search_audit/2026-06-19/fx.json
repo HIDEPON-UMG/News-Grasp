@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-19",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "Fed rate hike expectations yen intervention watch WSJ June 18 2026",
+    "Reuters June 18 2026 dollar 161 yen two-year low rate hike expectations",
+    "Bloomberg June 19 2026 yen intervention warning 161.37 hawkish Fed",
+    "2026 161 yen intervention watch June 18 2026",
+    "2026 Kevin Warsh rate hikes June 18 2026"
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "日銀",
+    "FRB",
+    "FOMC",
+    "為替介入",
+    "米金利"
+  ],
+  "dropped": [
+    {
+      "title": "ＮＹ外為市場＝ドル161円台、約2年ぶり円安水準 ＦＲＢ利上げ観測で",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE90cWdzQXJVQ2lTN0VhX0ttbVFIQjFDc2c5ZHJfSWVoMkk1XzhTVWFmRy1yeWp5V05Md2hVM1RmcUctZGdqamZQWVNrWTFFOHpnT1RETFVtQWVneFlvTnFvOHFNQ053WU5jamxCeVpVb2NJTl83a0s2Zg?oc=5",
+      "reason": "Google News URL の canonical 解決を自力確認できず未採用"
+    },
+    {
+      "title": "円安進行で介入警戒強まる、一時161円37銭－FRBタカ派姿勢でドル上昇",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPZDUxdnFEaWRpek9hcTIwaVZTcjhkYzc2VGM1N0VrTjZwbzBxOVMyM1p0U1JkYk5lYjBHb3Z6RXZDNDJ2aVJvY29zcWVDQm42SGszejdFblEtUDBrOWZGSV9naUtXVW5fQzNvM0FpZzdvVXQtUDZqVkJsQTI2Rk9GMERmdjhPcjN6T21FcQ?oc=5",
+      "reason": "Google News URL の canonical 解決を自力確認できず未採用"
+    },
+    {
+      "title": "円相場 一時1ドル＝161円台に FRB利上げ観測で 1年11か月ぶり",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1LT3FSWlUwMEd4ZUFzRWkwTjVDYmN4U0Ztd1dPSWpZSG9wOXlJZ0J1QVdMUHdZWDRheGFzZDVJUVo0NXg5N2VON0tnRXNPNVVMZXBlNjI5cS11NzRoV1pZ?oc=5",
+      "reason": "Google News URL の canonical 解決を自力確認できず未採用"
+    },
+    {
+      "title": "インドネシア・フィリピン利上げ 原油高でインフレ懸念 通貨安の歯止め狙う",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5qY2tIa19PUmxwYmNUUkZrelg5Z1gxOEhpd2F2QjJ1TGFtNC1qcXZuUGRDYkxzMDJpTHRfbmdjMWNpUnNWUnlaX04ydzJMazNsY0ZjcTZfMjlleUpsV2lnVWpwdkVZaE9pWjVPeA?oc=5",
+      "reason": "当日テーマとしては重要だが canonical 未解決でカード化を見送り"
+    },
+    {
+      "title": "日銀元総裁の独白 なぜ円安続く？「重く受け止める必要あり」",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFA4bi1EVXdWSF9vWU5JV1VESE1nSUhYSU9Pb0xaU3V4c2N3UFlucXdIbjFBUkI4U0dlM3B0S3paNE9pY1F1bF9LZmExM2JDbWJ6TzdGQzFUcFBWWHMxSHUw?oc=5",
+      "reason": "論点は有効だが独白記事で即時の市場インパクトが相対的に弱い"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "date": "2026-06-19",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jidounten-lab.com 韓国 自動運転で日本を追い抜く 高齢化 ドライバー不足",
+    "site:logi-today.com 自動運転V2X通信 総務省実証 MRI受託",
+    "site:logi-today.com プレミアムウォーター T2車 幹線輸送実証"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "自動運転",
+    "V2X",
+    "自動運転物流",
+    "韓国モビリティ",
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "BYDが最安EVにLiDAR搭載、ファーウェイが自動運転レベル3で攻勢",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1qT3RFdHZ0TXZ3R0oxbTloYzVyNXpaTUd2QkRGTkk0ZTh4Vm9pVUg4MVE1R0ItSWQ4OTRkSDVUMVN4RFZncHIxY3FOQWJ5T0pjMVg1S3hQSHg1aDhOYjdlZWJsM1dyQU0?oc=5",
+      "reason": "xtech.nikkei.com側の canonical URL を当セッションで確定できず不採用"
+    },
+    {
+      "title": "いすゞと横浜市、交換式EVごみ収集車を実証",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "logi-today.com 側の該当記事URL候補は得たが安定して開けず、200確認を満たせなかった"
+    },
+    {
+      "title": "Reuters / Diamond / Nikkei 系 unresolved 候補群",
+      "url": "stage1-mobility-candidates",
+      "reason": "Google News URL から canonical 解決が当セッションの Web 制約下で確定できず、媒体トップや曖昧URLへの丸まりを避けて除外"
+    }
+  ],
+  "manual_recovery_note": "2026-06-19 recovery: normalized audit counters to selected+dropped and recorded required coverage terms reviewed during recovery."
+}

@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-19",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "Anthropic Claude outage June 18 2026",
+    "ChatGPT share falls below 50% for the first time ever",
+    "Google's first smart speaker in six years arrives next week",
+    "SoftBank OpenAI patching service June 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 9,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "ChatGPT内に広告表示、日本でOpenAIが展開 電通や博報堂が仲介",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5oNDcwdXlkU1hicHg1emUyQzQ1NExUWHlNV1FJLWZmcnpJQzBzUmhPZVZRNGdENHVRQXo0YXFMVE1tVG8tSGs1amJtNzkzME9ORUQ0eVU3NUdQMXJESXNVZ0VFUk01M2Z4UzlFTQ?oc=5",
+      "reason": "当日号の制約内で媒体側 canonical URL と新材料を十分に確認できず不採用"
+    },
+    {
+      "title": "OpenAIは年間数兆円規模の損失を出していることが流出した財務文書で明らかに",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE9CN2hXaS11NXBUdXRDc0g2Ujd5NlA0bHZZaWtCWFBQWEE4NmJ1aTVEcXptUWFEN0VWNThHYnVWbG4xU1ZTLVdSd0VMMVRRWE0yX05ZS0VuY0NtY1FaTG5YMS0tM293bkQ1?oc=5",
+      "reason": "二次報道色が強く、当日動いた事実より既知の財務論点の整理に寄っていた"
+    },
+    {
+      "title": "がん患者や家族の約7%、生成AIで情報収集 対がん協会ネット調査",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5tS3BYcmQwSDFfb1dGVnU0TV9PcUZwVHpIeXZfQnRhMGVZSlR1ZWtWNElxd2VHWGxmdzVXVVh1dWNIcUFTMzU5V3E1d3JYdGNxQ1pyZFd3VTNCU1dBTWFVM2FvLTAzMkU?oc=5",
+      "reason": "読者インパクトが限定的で、同日の競争軸・配布軸の記事より優先度が低い"
+    },
+    {
+      "title": "生成AI推進 3割弱 全国平均下回る 県内企業調査 ／埼玉",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFB0Qm05bXpNcmJycnhhakdNNjU4OGFJQTk0UzZIVXBESVBuM2dCYjlETmtiMFd1ZERPT1hyZ0NIM3NnNGVUb0gzRDVKTTZDNkVPaTRIUXNMajNiVnBvdmNYVWk4SUF3QzdO?oc=5",
+      "reason": "地域統計としては有用だが、AIカテゴリのトップニュースとしては波及範囲が狭い"
+    },
+    {
+      "title": "「広報×生成AI」の実践、現場でどこまで進んでいるのか？【テラスク広報勉強会レポート】",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE0wd25xeUQ1akxiYjlhTkpWMk43ZHVVY1oxZUl3cjFGOEY3MThPcUl4VmJIZEloSGdPMFhhN0FuYlA5NXFDU1RZY085dS1Wc1g4YVExcDF3?oc=5",
+      "reason": "イベントレポート色が強く、当日新規ファクトの密度が足りない"
+    }
+  ]
+}
