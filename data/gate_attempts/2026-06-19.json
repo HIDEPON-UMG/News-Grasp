@@ -85,6 +85,19 @@
       "categories": {
         "daily": 1
       }
+    },
+    "public-html": {
+      "signatures": {
+        "4cd32728a3f606d4": {
+          "failures": 1,
+          "artifact_hashes": [
+            "b29ed2513e41b6a6"
+          ]
+        }
+      },
+      "categories": {
+        "docs": 1
+      }
     }
   }
 }
