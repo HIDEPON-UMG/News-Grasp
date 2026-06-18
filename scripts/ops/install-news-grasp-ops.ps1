@@ -35,4 +35,5 @@ New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 Copy-Item -LiteralPath (Join-Path $ops 'news-grasp-runner.ps1') -Destination (Join-Path $BinDir 'news-grasp-runner.ps1') -Force
 Copy-Item -LiteralPath (Join-Path $ops 'watch-news-grasp-runner.ps1') -Destination (Join-Path $BinDir 'watch-news-grasp-runner.ps1') -Force
 Copy-Item -LiteralPath (Join-Path $ops 'news-grasp-deadman.ps1') -Destination (Join-Path $BinDir 'news-grasp-deadman.ps1') -Force
+Copy-Item -LiteralPath (Join-Path $ops 'news-grasp-deadman-launcher.pyw') -Destination (Join-Path $BinDir 'news-grasp-deadman-launcher.pyw') -Force
 Write-Host "News-Grasp ops scripts installed to $BinDir"

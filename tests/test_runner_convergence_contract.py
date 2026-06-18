@@ -383,6 +383,23 @@ def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
     assert "-RecoverOnly" in text
 
 
+def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
+    """Deadman の毎時 task は console を出さない launcher 経由に固定する。"""
+    launcher = OPS_DIR / "news-grasp-deadman-launcher.pyw"
+    installer = OPS_DIR / "install-news-grasp-ops.ps1"
+
+    assert launcher.exists()
+    launcher_text = launcher.read_text(encoding="utf-8")
+    installer_text = installer.read_text(encoding="utf-8-sig")
+
+    assert "subprocess.CREATE_NO_WINDOW" in launcher_text
+    assert "stdout=subprocess.DEVNULL" in launcher_text
+    assert "stderr=subprocess.DEVNULL" in launcher_text
+    assert "subprocess.run(" in launcher_text
+    assert "news-grasp-deadman.ps1" in launcher_text
+    assert "news-grasp-deadman-launcher.pyw" in installer_text
+
+
 def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     """watcher は runner を hidden 起動し、state/log の終端状態で完了判定する。"""
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")

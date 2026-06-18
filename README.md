@@ -37,7 +37,8 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 │         ├─ git fetch / pull origin main                           │
 │         └─ codex exec による newsroom fan-out / editor 統合         │
 │ Windows タスクスケジューラ「News-Grasp Deadman」 1 時間ごと       │
-│   └─→ %USERPROFILE%\bin\news-grasp-deadman.ps1                    │
+│   └─→ pythonw.exe → %USERPROFILE%\bin\news-grasp-deadman-launcher.pyw │
+│         └─ CREATE_NO_WINDOW で news-grasp-deadman.ps1 を起動       │
 │         └─ stale / no ok / publish_failed を検知し RecoverOnly 起動 │
 └──────────────────────────────────────────────────────────────────┘
                           │
@@ -192,6 +193,7 @@ News-Grasp/
 │       ├── news-grasp-runner.ps1       # repo 管理版 runner
 │       ├── watch-news-grasp-runner.ps1 # runner watcher / RecoverOnly 起動
 │       ├── news-grasp-deadman.ps1      # dead-man switch
+│       ├── news-grasp-deadman-launcher.pyw # Deadman の no-console launcher
 │       └── install-news-grasp-ops.ps1  # %USERPROFILE%\bin へ同期
 │       └── pwa-head.html         # PWA <head> include (manifest / theme-color / apple-touch-icon / sw)
 ├── assets/                  # OGP 不足時の NG プレースホルダ (公開 Web 用、計 14 JPG)
