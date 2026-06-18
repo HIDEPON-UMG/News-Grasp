@@ -4,6 +4,7 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 GOOGLE_NEWS_RSS_MARKER = "news.google.com/rss/articles/"
+GOOGLE_NEWS_PROXY_THUMB_HOST = "lh3.googleusercontent.com"
 
 _LANDING_PATH_SEGMENTS = {
     "article",
@@ -26,6 +27,14 @@ _LANDING_PATH_SEGMENTS = {
 def is_google_news_rss_url(url: str) -> bool:
     """Google News RSS の中継 URL なら True。"""
     return GOOGLE_NEWS_RSS_MARKER in url
+
+
+def is_google_news_proxy_thumb(url: object) -> bool:
+    """Google News が配る代理サムネ URL なら True。"""
+    if not isinstance(url, str):
+        return False
+    parsed = urlparse(url)
+    return parsed.scheme in {"http", "https"} and parsed.netloc.lower() == GOOGLE_NEWS_PROXY_THUMB_HOST
 
 
 def looks_homepage_or_section_landing(url: str) -> bool:

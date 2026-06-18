@@ -901,6 +901,23 @@ def test_chart_svg_renders_bars() -> None:
     assert svg.count("<rect") >= 3   # 3 カテゴリの棒
 
 
+def test_chart_svg_rejects_flat_line_without_information_gain() -> None:
+    """全点同一の折れ線は図表として情報量が無いため公開前に落とす。"""
+    chart = {
+        "type": "line",
+        "title": "政策金利レンジ中点の据え置き継続",
+        "unit": "%",
+        "categories": ["2025-12", "2026-01", "2026-03", "2026-04", "2026-06"],
+        "series": [{"name": "FF金利レンジ中点", "data": [3.625, 3.625, 3.625, 3.625, 3.625]}],
+    }
+
+    with pytest.raises(DeepDiveIncompleteError) as exc:
+        chart_svg(chart)
+
+    assert "全点同一" in str(exc.value)
+    assert "本文で説明する変化を別系列または注釈値として入れる" in str(exc.value)
+
+
 # ── context + render ──────────────────────────────────────────────────────────
 
 def test_context_has_all_render_fields() -> None:

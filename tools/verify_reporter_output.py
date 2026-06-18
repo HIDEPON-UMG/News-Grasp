@@ -45,7 +45,11 @@ from tools.validate_record import (  # noqa: E402
     _DATE_RE,
     validate_record,
 )
-from tools.url_quality import is_google_news_rss_url, looks_homepage_or_section_landing
+from tools.url_quality import (
+    is_google_news_proxy_thumb,
+    is_google_news_rss_url,
+    looks_homepage_or_section_landing,
+)
 
 # cat (category_id) → digest フォルダ名 (= Genre = digest frontmatter の category)。
 # digest/{Genre}/{date}-{Genre}.md の Genre 部分。data/search_audit と digest の
@@ -139,6 +143,10 @@ def _check_records(
             errs.append(
                 f"record #{i}: News-Grasp 自己参照 thumb です: {rec.get('thumb')}"
             )
+        if is_google_news_proxy_thumb(rec.get("thumb")):
+            errs.append(
+                f"record #{i}: Google News 代理サムネです: {rec.get('thumb')}"
+            )
         if rec.get("date") != issue_date:
             errs.append(
                 f"record #{i}: date={rec.get('date')!r} != 号日 {issue_date!r} "
@@ -221,6 +229,10 @@ def _check_digest(
         if _is_news_grasp_self_thumb(thumb):
             errs.append(
                 f"{digest_path}: News-Grasp 自己参照 thumb が直書きされている: {thumb}"
+            )
+        if is_google_news_proxy_thumb(thumb):
+            errs.append(
+                f"{digest_path}: Google News 代理サムネが直書きされている: {thumb}"
             )
     return errs
 

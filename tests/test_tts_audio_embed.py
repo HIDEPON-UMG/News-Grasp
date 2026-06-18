@@ -46,8 +46,10 @@ def test_index_template_embeds_latest_release_audio_when_url_is_present():
     assert f'<source src="{url}" type="audio/mpeg">' in html
     assert '<audio preload="none" controls src=' not in html
     assert "2026-06-16" in html
-    for rate in ("1", "1.25", "1.5", "2"):
+    for rate in ("1", "1.1", "1.2", "1.3", "1.4", "1.5"):
         assert f'data-rate="{rate}"' in html
+    assert 'data-rate="1.25"' not in html
+    assert 'data-rate="2"' not in html
     assert "playbackRate" in html
 
 
@@ -60,8 +62,10 @@ def test_summary_template_embeds_latest_release_audio_when_url_is_present():
     assert f'<source src="{url}" type="audio/mpeg">' in html
     assert '<audio preload="none" controls src=' not in html
     assert "2026-06-16" in html
-    for rate in ("1", "1.25", "1.5", "2"):
+    for rate in ("1", "1.1", "1.2", "1.3", "1.4", "1.5"):
         assert f'data-rate="{rate}"' in html
+    assert 'data-rate="1.25"' not in html
+    assert 'data-rate="2"' not in html
     assert "playbackRate" in html
 
 

@@ -222,6 +222,19 @@ def test_fail_news_grasp_self_reference_thumbnail_in_records(tmp_path: Path):
     )
 
 
+def test_fail_google_news_proxy_thumbnail_in_records(tmp_path: Path):
+    """Google News 代理サムネを記者 record の thumb として保存したら FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0]["thumb"] = "https://lh3.googleusercontent.com/J6_proxy=s0-w300-rw"
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+
+    assert any("Google News 代理サムネ" in e for e in errs), (
+        f"Google News 代理サムネを検出するはず: {errs}"
+    )
+
+
 # ── 2. 件数 1〜5 + quality_shortfall_reason ──────────────────────────────────
 
 
@@ -322,6 +335,26 @@ def test_fail_news_grasp_self_reference_thumbnail_in_digest(tmp_path: Path):
 
     assert any("News-Grasp 自己参照 thumb" in e for e in errs), (
         f"News-Grasp 自己参照 thumb を検出するはず: {errs}"
+    )
+
+
+def test_fail_google_news_proxy_thumbnail_in_digest(tmp_path: Path):
+    """digest md の thumb に Google News 代理サムネ URL があれば FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    digest = repo / "digest" / GENRE / f"{ISSUE}-{GENRE}.md"
+    digest.write_text(
+        digest.read_text(encoding="utf-8").replace(
+            "https://example.com/ai/thumb-1.png",
+            "https://lh3.googleusercontent.com/J6_proxy=s0-w300-rw",
+        ),
+        encoding="utf-8",
+    )
+
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+
+    assert any("Google News 代理サムネ" in e for e in errs), (
+        f"Google News 代理サムネを検出するはず: {errs}"
     )
 
 

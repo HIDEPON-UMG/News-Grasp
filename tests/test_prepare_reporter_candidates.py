@@ -54,6 +54,33 @@ def test_prepare_directory_decodes_google_news_url_and_hydrates_thumb(tmp_path: 
     assert rows[0]["thumb"] == "https://example.com/ai/thumb.jpg"
 
 
+def test_prepare_directory_does_not_hydrate_google_news_proxy_thumb(tmp_path: Path) -> None:
+    """reporter 前の補完で Google News 代理サムネを thumb として採用しない。"""
+    input_dir = tmp_path / "deduped"
+    _write_jsonl(
+        input_dir / "ai.jsonl",
+        [
+            {
+                "title": "AI story",
+                "url": "https://example.com/ai/story",
+                "category": "ai",
+            }
+        ],
+    )
+
+    summary = prepare_directory(
+        input_dir,
+        fetch_ogp_func=lambda url, **kwargs: {
+            "og_image": "https://lh3.googleusercontent.com/J6_proxy=s0-w300-rw"
+        },
+    )
+
+    rows = _read_jsonl(input_dir / "ai.jsonl")
+    assert summary["prepared_count"] == 1
+    assert summary["dropped_count"] == 0
+    assert rows[0]["thumb"] is None
+
+
 def test_prepare_directory_drops_unresolved_google_news_url(tmp_path: Path) -> None:
     """Google News URL を解決できなくても候補全滅にせず reporter に渡す。"""
     input_dir = tmp_path / "deduped"

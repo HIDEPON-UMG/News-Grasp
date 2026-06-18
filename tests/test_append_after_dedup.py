@@ -137,6 +137,35 @@ def test_append_boundary_hydrates_google_news_url_and_thumb() -> None:
     assert hydrated[0]["thumb"] == "https://example.com/fresh-ai-item.jpg"
 
 
+def test_append_boundary_rejects_google_news_proxy_thumb() -> None:
+    """OGP 取得結果が Google News 代理サムネなら thumb として採用しない。"""
+    candidate = {
+        "date": "2026-06-14",
+        "genre": "AI",
+        "title": "Fresh AI item",
+        "title_ja": "新しい AI ニュース",
+        "url": "https://example.com/fresh-ai-item",
+        "thumb": None,
+        "score": 91,
+    }
+
+    def fake_fetch_ogp(url: str, *, timeout: float, retries: int) -> dict:
+        return {
+            "url": url,
+            "og_image": "https://lh3.googleusercontent.com/J6_proxy=s0-w300-rw",
+            "twitter_image": None,
+            "status": "ok",
+        }
+
+    hydrated, dropped = append_after_dedup.hydrate_thumbnails(
+        [candidate],
+        fetch_ogp_func=fake_fetch_ogp,
+    )
+
+    assert dropped == []
+    assert hydrated[0]["thumb"] is None
+
+
 def test_append_boundary_drops_unresolved_google_news_url() -> None:
     """Google News RSS URL を元記事 URL に解決できない候補は append しない。"""
     candidate = {

@@ -64,7 +64,7 @@ tags:
 
 #cat/it #co/Google #co/アクセンチュア #country/米国 #topic/生成AI導入 #score/高
 
-![thumb](https://lh3.googleusercontent.com/t9KvGjgjHJMLDqzAzXuDUOXFI4IlnMiYLhRmxohCRvB1qGSr8-8-TDEI24qk8ilY4OzRB2et5dSlWOjMs6lm-R718xmtQwdiGBxOO7VjxBfMq4a3yoI=w1200-h630-n-nu-rw)
+![thumb](null)
 
 - [[Google DeepMind]] が業界リーダーとの**エコシステム型パートナーシップ**を正式発表。アクセンチュア・デロイト・PwC などと**AI 実装の末端**まで担う体制を構築。
 - Google の Gemini Enterprise と**DeepMind の研究成果**を融合し、製造・金融・ヘルスケアへ横断展開。__「モデル提供」から「変革の共同保証」__へスコープが拡大。

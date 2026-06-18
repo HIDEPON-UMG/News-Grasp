@@ -19,7 +19,11 @@ from tools.generate_pages import (
     parse_reflection,
 )
 from tools.publish_inventory import required_published_docs_artifacts
-from tools.url_quality import is_google_news_rss_url, looks_homepage_or_section_landing
+from tools.url_quality import (
+    is_google_news_proxy_thumb,
+    is_google_news_rss_url,
+    looks_homepage_or_section_landing,
+)
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _WEEKDAY_JA = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"]
@@ -117,6 +121,16 @@ def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str
             f"{jsonl_path}: {issue.isoformat()} の thumb が全件 null です。",
             "このままでは公開ページが全件 fallback サムネになります。fetch_ogp / WebSearch thumbnail の取得結果を反映してください。",
         ])
+    proxy_thumbs = [
+        (rec.get("genre") or "", rec.get("title_ja") or rec.get("title") or "", rec.get("thumb") or "")
+        for rec in records
+        if is_google_news_proxy_thumb(rec.get("thumb"))
+    ]
+    for genre, title, thumb in proxy_thumbs:
+        errs.append(
+            f"{jsonl_path}: {issue.isoformat()} [{genre}] Google News 代理サムネです: "
+            f"{title} thumb={thumb}。元記事 OGP 画像またはカテゴリ既定画像へ差し替えてください。"
+        )
     self_thumbs = [
         (rec.get("genre") or "", rec.get("title_ja") or rec.get("title") or "", rec.get("thumb") or "")
         for rec in records

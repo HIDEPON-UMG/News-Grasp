@@ -1326,6 +1326,30 @@ def _series_colors(accent: str) -> list[str]:
     return [accent, GOLD, *_EXTRA_SERIES_COLORS]
 
 
+def _numeric_values(values: list[Any]) -> list[float]:
+    out: list[float] = []
+    for value in values:
+        if isinstance(value, (int, float)):
+            out.append(float(value))
+    return out
+
+
+def _validate_chart_information_gain(chart: dict[str, Any], ctype: str, series: list[dict[str, Any]]) -> None:
+    """見た目だけのチャートを公開前に止める。"""
+    if ctype != "line":
+        return
+    for item in series:
+        values = _numeric_values(item.get("data", []))
+        if len(values) >= 2 and len(set(values)) == 1:
+            title = chart.get("title") or "チャート"
+            name = item.get("name") or "series"
+            raise DeepDiveIncompleteError(
+                f"chart '{title}' の系列 '{name}' が全点同一です。"
+                "本文で説明する変化を別系列または注釈値として入れるか、"
+                "チャートではなく本文・KPIカードで表現してください。"
+            )
+
+
 def chart_svg(chart: dict[str, Any], accent: str = INK) -> str:
     """chart ブロックを SVG (棒 / 積み上げ棒 / 折れ線) に描く。
 
@@ -1340,6 +1364,7 @@ def chart_svg(chart: dict[str, Any], accent: str = INK) -> str:
         series = [{"name": chart.get("title", ""), "data": chart["data"]}]
     if not cats or not series:
         return ""
+    _validate_chart_information_gain(chart, ctype, series)
 
     vb_w, vb_h = 560, 270
     pad_l, pad_r, pad_t, pad_b = 16, 16, 40, 56

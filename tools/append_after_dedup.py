@@ -23,9 +23,9 @@ except ModuleNotFoundError:
     from fetch_ogp import fetch_ogp
 
 try:
-    from tools.url_quality import is_google_news_rss_url
+    from tools.url_quality import is_google_news_proxy_thumb, is_google_news_rss_url
 except ModuleNotFoundError:
-    from url_quality import is_google_news_rss_url
+    from url_quality import is_google_news_proxy_thumb, is_google_news_rss_url
 
 
 def read_candidates(stdin) -> list[dict]:
@@ -85,7 +85,11 @@ def decode_google_news_url(
 def _pick_thumb(result: dict[str, Any]) -> str | None:
     for key in ("og_image", "twitter_image"):
         value = result.get(key)
-        if isinstance(value, str) and value.startswith(("http://", "https://")):
+        if (
+            isinstance(value, str)
+            and value.startswith(("http://", "https://"))
+            and not is_google_news_proxy_thumb(value)
+        ):
             return value
     return None
 

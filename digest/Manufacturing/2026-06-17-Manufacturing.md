@@ -52,7 +52,7 @@ tags:
 
 #cat/manufacturing #co/ニコン #country/日本 #topic/後工程 #topic/ガラス基板 #event/新材料投入 #score/高
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[ニコン]]が**半導体後工程向けの新材料**を示し、次世代実装で壁になりやすい__ガラス基板の扱い__へ正面から手を打った。
 - 前工程の微細化だけでは差がつきにくい局面で、**後工程材料の改善**は[[歩留まり]]と実装自由度を左右する重要テーマになる。
@@ -66,7 +66,7 @@ tags:
 
 #cat/manufacturing #co/オーブレー #country/日本 #country/英国 #topic/ダイヤモンド基板 #event/共同開発 #score/高
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[オーブレー]]が**英国企業と大型ダイヤモンド基板の量産技術**を進め、__次世代半導体向け材料__を実装段階へ近づけようとしている。
 - ダイヤモンド基板は性能面の期待が大きい一方で、**大面積化と量産条件**が難所で、[[量産技術]]の前進自体が強いシグナルになる。
@@ -80,7 +80,7 @@ tags:
 
 #cat/manufacturing #co/富士フイルム #country/日本 #country/EU #topic/半導体材料 #event/供給網強化 #score/高
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[富士フイルム]]が**欧州で半導体材料の強化を継続**し、需要地の近くで__材料供給と技術支援__をセットで厚くする姿勢を示した。
 - 材料は後から代替しにくく、**現地での安定供給**を握れるかどうかが[[顧客囲い込み]]と工場稼働の両方に効いてくる。
@@ -94,7 +94,7 @@ tags:
 
 #cat/manufacturing #co/日精樹脂 #country/日本 #country/インド #topic/電動射出機 #event/工場稼働 #score/中
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[日精樹脂]]が**インドで電動射出機の新工場**を稼働させ、__成形機の現地供給体制__を一段進めた。
 - 産業機械は輸送や据え付けの制約が大きく、**現地生産の有無**が[[納期]]と価格競争力を左右しやすい。

@@ -239,6 +239,31 @@ def test_daily_quality_rejects_google_news_rss_urls_for_issue(tmp_path: Path) ->
     assert "元記事 URL へ解決してから公開してください" in joined
 
 
+def test_daily_quality_rejects_google_news_proxy_thumbnails_for_issue(tmp_path: Path) -> None:
+    """Google News 代理画像の lh3.googleusercontent.com サムネは公開前に落とす。"""
+    _write_summary(tmp_path)
+    url = "https://www.axios.com/2026/06/17/fed-warsh-interest-rates"
+    _write_category(tmp_path, url)
+    _write_jsonl(
+        tmp_path,
+        url,
+        extra={
+            "title_ja": "Freshness test article",
+            "thumb": "https://lh3.googleusercontent.com/J6_proxy=s0-w300-rw",
+        },
+    )
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    joined = "\n".join(errs)
+    assert "Google News 代理サムネ" in joined
+    assert "元記事 OGP 画像またはカテゴリ既定画像へ差し替えてください" in joined
+
+
 def test_daily_quality_rejects_homepage_rounded_urls_for_issue(tmp_path: Path) -> None:
     """Google News 解決失敗で媒体トップ URL に丸まった record は公開前に落とす。"""
     _write_summary(tmp_path)

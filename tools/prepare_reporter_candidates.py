@@ -11,7 +11,11 @@ from typing import Any, Callable
 from tools import dedup
 from tools.append_after_dedup import decode_google_news_url
 from tools.fetch_ogp import fetch_ogp
-from tools.url_quality import is_google_news_rss_url, looks_homepage_or_section_landing
+from tools.url_quality import (
+    is_google_news_proxy_thumb,
+    is_google_news_rss_url,
+    looks_homepage_or_section_landing,
+)
 
 try:
     from googlenewsdecoder import decoderv1 as _local_google_news_decode
@@ -66,7 +70,11 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 def _pick_thumb(result: dict[str, Any]) -> str | None:
     for key in ("og_image", "twitter_image"):
         value = result.get(key)
-        if isinstance(value, str) and value.startswith(("http://", "https://")):
+        if (
+            isinstance(value, str)
+            and value.startswith(("http://", "https://"))
+            and not is_google_news_proxy_thumb(value)
+        ):
             return value
     return None
 

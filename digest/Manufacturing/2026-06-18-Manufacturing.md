@@ -39,7 +39,7 @@ tags:
 
 #cat/manufacturing #co/NVIDIA #co/Coherent #country/米国 #topic/AIインフラ #event/工場増設 #score/高
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[NVIDIA]]がCoherentと組む**20億ドル規模のテキサス投資**を前面に出し、__AI需要を部材製造の国内回帰へ結びつける__絵を鮮明にした。
 - 焦点はGPUそのものではなく、**光通信向けレーザー材料の量産能力**を米国内でどこまで積み増せるかで、[[AIインフラ]]の実装速度を左右する。
@@ -53,7 +53,7 @@ tags:
 
 #cat/manufacturing #co/TSMC #country/台湾 #topic/先端パッケージング #event/量産方針 #score/高
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[TSMC]]が**パネル型パッケージングは当面CoWoSの代替にならない**と示し、__先端後工程の主戦場が依然としてウエハーレベル実装にある__と明確にした。
 - 同社は**58ダイ級まで拡張できる余地**を強調しており、[[先端パッケージング]]ではサイズ競争よりも配線密度と量産成熟度が優先される。
@@ -67,7 +67,7 @@ tags:
 
 #cat/manufacturing #co/Applied-Materials #country/シンガポール #country/米国 #topic/半導体製造装置 #event/設備投資 #score/中
 
-![thumb](https://lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300-rw)
+![thumb](null)
 
 - [[Applied-Materials]]が**5億ドルでシンガポール拠点を3施設体制へ広げる**計画を示し、__装置供給のボトルネックを先回りで解く__構えを鮮明にした。
 - 同社はチップ事業の**年30%超成長**を前提にしており、[[製造装置]]側の能力増強がAI半導体の増産ペースを左右する局面に入っている。
