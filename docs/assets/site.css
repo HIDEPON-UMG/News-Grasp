@@ -3141,4 +3141,17 @@ strong {
     gap: 12px;
     padding: 16px 18px;
   }
+  .daily-audio__rates {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .daily-audio__rate {
+    min-width: 0;
+    width: 100%;
+    padding: 4px 4px;
+    font-size: 10px;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
 }
