@@ -1,0 +1,59 @@
+{
+  "date": "2026-06-18",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jidounten-lab.com 国交省 自動運転に向けた道路づくりに向け本格整備",
+    "site:jidounten-lab.com 自動運転AIの実力、国が採点 レベル2++で「優良認定制度」",
+    "site:businessnetwork.jp EV向けワイヤレス給電の最新動向を三菱総研が解説 まずは停車中の充電から",
+    "site:appliedintuition.com The Next Chapter for SDS: Japan"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "Mobileye",
+    "自動運転",
+    "ロボタクシー",
+    "EV",
+    "充電インフラ",
+    "路車協調",
+    "Applied Intuition",
+    "Bosch",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "モービルアイ、来年米でロボタクシー開始へ ウェイモなどと競合",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPSWpqZTNpVUFUdU00bGZTbXc0TENEejE0ck5EcTdidEFuQ1hadHA2YTg1VURRbkNqbUZTMFhWQmszdXo4S2dNcll4Y1ZqSUhnZDdvTlVpTjlYVE92Z19XZmc0ZGlWdXg2enlwaEVPUmRRMG5iUWFmVi0tZkExa3B1Nw?oc=5",
+      "reason": "重要度は高いが Google News URL から Reuters canonical を確認できず、Stage1外への再収集を避けて保留"
+    },
+    {
+      "title": "独ボッシュ、横浜で自動運転車両の公道試験 日系メーカーに提案",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBYSEdoblBlN00wOFBqM1huTXhRUDlYTUJNTERmVUZ1QmxNY2Y0Y28wSUdvV1FzNlp0TTJ3WEhrczN6ZEliSEwwVWhuazRJbkNic0RkUl9raU5kSWdaODhUeUFweHFra2hjOVVZMA?oc=5",
+      "reason": "Mobility文脈では強いが canonical 解決未了で URL 契約を満たせなかった"
+    },
+    {
+      "title": "プラスAI、自動運転トラック商用化加速",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFB4SUJTblg0VDUtRllXbFdyaXdmaDNpdWQyYUxjbDJKVkQ5T2M5d2trbHhMdUlsSmVRNVFGbWpIa1N2OHc4bjN3NA?oc=5",
+      "reason": "LOGISTICS TODAY の canonical は得たが本文根拠を十分に回収できず、政策・インフラ軸の4件を優先"
+    },
+    {
+      "title": "福井駅周辺で自動運転バス実証運行 11月から「レベル2」、2027年度「レベル4」実装目指す（福井新聞ＯＮＬＩＮＥ）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1OUXd2R3hudHUzSkFJR0VoMW9QVnZNZGJwa290VkVhTjIyYXZyQkFIRDdvdzdXNmIxUmJJT2lORkIyUV9OeTRValVxV1Aya2xKYl9SQUx2WWFFUmxwUkVtV3JLQXl4NW82YmNFTXlPNi1vMGZjLWdqc21EQVNSUkE?oc=5",
+      "reason": "地域実証として有意だが全国政策・ソフト基盤・充電インフラに比べ読者への波及が一段弱い"
+    },
+    {
+      "title": "県内自治体でバス・タクシー自動運転の実証実験休止が相次ぐ、国の補助要件厳格化で…「期限までにレベル４」ハードル高く",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE9RNVNURHpVT25DTVV2SkpYRnZCbGlQMzFQdWQ5bE1NYjJYM013aHBMLUVmMTdZak5OcmF4d1JsOGZtb3RwYUMtbnc3LUZyWU43UmFYM09tMDliRlFpUjcwRFdRSGNobzIzRFYwM1JHWFZxdw?oc=5",
+      "reason": "問題提起として重要だが source canonical を確認できず、今回号は実装前進の材料を優先"
+    }
+  ]
+}

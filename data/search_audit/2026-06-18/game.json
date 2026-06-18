@@ -1,0 +1,58 @@
+{
+  "date": "2026-06-18",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "任天堂がNintendo Storeの緊急メンテナンスを6月17日14時頃から実施 現時点でも作業は終了せず",
+    "site:www.gamespark.jp 岡本吉起 ゲームリパブリック",
+    "site:news.yahoo.co.jp ゲームリパブリック 破産開始 東京商工リサーチ",
+    "site:www.famitsu.com イヴァリース クロニクルズ つよくてニューゲーム",
+    "site:automaton-media.com Fight or Flight 販売終了",
+    "ゼンレスゾーンゼロ Steam版 GAME Watch"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Steam",
+    "任天堂",
+    "miHoYo",
+    "SQUARE ENIX",
+    "ゲーム業界 M&A",
+    "Capcom",
+    "Sony",
+    "Square Enix",
+    "Switch 2"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "任天堂がNintendo Storeの緊急メンテナンスを6月17日14時頃から実施。現時点でも作業は終了せず",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFBsdkk5UURmZmR4eU5JWjgyTGRrQUl5Q0RuUk5xYmpMRm9GUVkyX0o1X3VGZndnX1BTRFZZaGtZaGt3LVhBTHo3V09ZWW1kN0lLeTM4YWFDNEtnTnNWTGw3anh4TnJRdw?oc=5",
+      "reason": "site 指定検索と local recovery を当てても canonical URL を確定できず未採用"
+    },
+    {
+      "title": "岡本吉起氏が設立した「ゲームリパブリック」東京地裁から破産開始決定を受ける。2013年から休眠状態",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE9TaTNsZElkSks2ZjF5QTRSQVV1LUhwTHJZQ1VyZjNmcTBpd1hudUp4RE9SVTlEbUZRcDBkczh2NE1Gc1ZveG9WVUFMWl9kcXRJZWtmX1FNa0JXTWUwNHI3Zm9faXRrdw?oc=5",
+      "reason": "Google News unresolved のままで source article を確定できず未採用"
+    },
+    {
+      "title": "『FFT - イヴァリース クロニクルズ』“つよくてニューゲーム”が追加。ユニットのレベルや所持品を引き継いで周回プレイが可能に",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE9fbUpnM1daaGUzdTZDbmpuQlIyRkpBSUJhclJwY2lKQzRwbXlaY3MxRlJqVVp5SXo2R0lCMjZpM1RUMnJYMUl0OUZ3OGIxWFF3elBDREJRNA?oc=5",
+      "reason": "source article を確定できず、GAME Watch / ファミ通 / 電撃の横断候補も canonical 未解決"
+    },
+    {
+      "title": "Steam無料ゾンビバトロワFPS『Fight or Flight』近日中に販売終了へ。入手できるラストチャンス、ソロでも遊べる",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFByOVY4eE9LMGROVUtQSkdJLXNWY21hVjdiSGJKQnVaSXdzaVVQeTNqb1lvNnVBMjdhUXBFU1ZRSGh5dU42VmZ6YTg2aHRLVTh3aHNsaHdVTEZjWlRuRjdsVXNEMUNsUEM2c2NIbg?oc=5",
+      "reason": "AUTOMATON source の canonical を確定できず未採用"
+    },
+    {
+      "title": "ゲームレコメンドサービス「もっと広めたいSteamゲーム9選」公開―おすすめゲーム9本選ぶと感性が近いユーザーが勧める作品と出会えるかも",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFBGbkNHM1NMRXRtMk9HQnpnWXc5eHJsLTdKcGhoX204YVhSVlJmSHZtLWVCWGdNQTNCbzNLMmgzOHBLdWdKYTVnSFhoQkFwS2lKMEMwYldDSDZVanBVSXRlaWRqN09YQQ?oc=5",
+      "reason": "followup 候補だが current source article の canonical 未解決で差分確認を完了できず未採用"
+    }
+  ]
+}

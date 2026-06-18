@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-18",
+  "category_id": "manufacturing",
+  "queries": [
+    "Stage1 file: build/deduped-candidates/manufacturing.jsonl",
+    "semiconductor manufacturing Japan June 2026 site:ft.com OR site:reuters.com OR site:tomshardware.com OR site:apnews.com",
+    "advanced packaging semiconductor June 2026 site:tomshardware.com OR site:ft.com",
+    "Reuters June 2026 semiconductor manufacturing expansion packaging"
+  ],
+  "raw_results_total": 10,
+  "candidates_total": 5,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "AIインフラ",
+    "先端パッケージング",
+    "半導体製造装置",
+    "NVIDIA",
+    "TSMC",
+    "Applied Materials",
+    "Foxconn",
+    "Intel",
+    "Samsung",
+    "Toyota"
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy_note": "Stage1候補を起点にしたが、日本語候補のcanonical URL未解決が多く、到達可能な元記事URLへ限定して3件採用",
+  "dropped": [
+    {
+      "title": "日本精機、磁石不使用の位置センサー量産 脱レアアースで28年にも",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE8zMElhZGhpWEszWk9MMVRYMmRadk9PM0R3VEJaalFzeERNMHZHTHNuZGM5VkdvaW1Ka1EyQ0xxRk9YRXBDTVZBaXQzc0VhUU1qZk15RGtSc1lVa2V1OVdoZzlOZkNHcUJBeVdDTg?oc=5",
+      "reason": "Google News由来のcanonical URLを現ターンで解決できず未採用"
+    },
+    {
+      "title": "半導体装置部品など増産…理想精密、新棟稼働",
+      "url": "https://news.google.com/rss/articles/CBMiR0FVX3lxTE84d21JT2xxTE1vMlV0ZnR5QkNoUFVDcDR3SGZvN012ZjlwTWVDWnNWdThFYTJlb3BmLU9sSVJvNWNqdlk1NHFn?oc=5",
+      "reason": "Google News由来のcanonical URLを現ターンで解決できず未採用"
+    },
+    {
+      "title": "レゾナック、封止材の特許維持 半導体パッケージ用",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE5fcTNSYXRDZEpvd3o4bXVITHhORzJ0TWM4eUVvUXBFRHVZYVVqNThxV1Rtb01NeHAwM25JV0FzbnRTTGJhOEQtNHBSV013OXVPLWZZ?oc=5",
+      "reason": "Google News由来のcanonical URLを現ターンで解決できず未採用"
+    },
+    {
+      "title": "ほくほくFGとふくおかFG協定 半導体供給網を強固に 道銀頭取「商流拡大、地域発展へ」",
+      "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxOTlZXNk5TZWduVmVoQ0JLbW81MGs4Q3pac2lmalFjeV9hd2k3aUJBYWw2aXpFcnBzYV9yR2c3ZjVqQUplUUFyNm9Ud2s1Qk1PT1hfaTNNdGIxRU1tVlV0R3E4Nm9UZmRURU42MF9hMGJyNkFnaVBrMjMzSWJ5VUtDTWYtcTFTbUVJZEpUbEt1MDhORzhKU2FxYw?oc=5",
+      "reason": "Google News由来のcanonical URLを現ターンで解決できず未採用"
+    }
+  ]
+}

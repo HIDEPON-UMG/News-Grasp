@@ -1,0 +1,42 @@
+{
+  "date": "2026-06-18",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d",
+    "site:ft.com Anthropic G7 AI splinter",
+    "site:businessinsider.com Microsoft Oracle cloud capacity security concerns",
+    "site:investopedia.com Accenture stock expected to move after earnings"
+  ],
+  "raw_results_total": 237,
+  "candidates_total": 231,
+  "selected_total": 3,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-18/it.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "selected_titles": [
+    "Anthropic CEO、G7にAIの分断回避を要請",
+    "Microsoft、Oracleのクラウド借用交渉をFedRAMP問題で見送り",
+    "Accenture決算前、AI不安で株価7%変動を市場が織り込む"
+  ],
+  "coverage_terms_checked": [
+    "Accenture",
+    "BCG",
+    "Deloitte",
+    "McKinsey",
+    "NTT",
+    "PwC"
+  ],
+  "dropped": [
+    {
+      "title": "Google News 未解決候補",
+      "reason": "canonical URL を現ターンで安全に確定できず未採用"
+    },
+    {
+      "title": "同一テーマ寄り候補",
+      "reason": "新材料が薄く、採用済み3件で論点を吸収できるため除外"
+    }
+  ],
+  "quality_shortfall_reason": "Stage1候補はGoogle News未解決URLや同一テーマ寄りが多く、watchlist再検索でも当日JSTで一次URLを確認できた高品質記事は3件に絞った。"
+}

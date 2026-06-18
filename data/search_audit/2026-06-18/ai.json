@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-18",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "Google Home speaker Gemini June 2026",
+    "Anthropic foreign access restriction Mythos 5 Fable 5 June 17 2026",
+    "ChatGPT market share below 50% Gemini Claude June 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "日立製作所、OpenAIとの連携を本格化し「Codex」でレガシーシステム刷新 金融機関をはじめとする幅広い産業のAXを推進",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBfeG9yT0hRZFA3UGF6Qjh2UGtyUk4xZmE1aW1SU3dFV3RlWm1zYVEySC1TTVpZd1REbXJfZG4wenctcVFMcnU1LUJoeWFDSjJLTzlF?oc=5",
+      "reason": "canonical URLを確認できず不採用"
+    },
+    {
+      "title": "生成AIで銀行を管理 マネーツリーや住信SBIネット銀行",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9POVRPcjl4TnRRcTdkTDd2dy02dWgyQlFQTS13d0lacGhwamFyNnRfTnprMUh2TTBxRGcyN1R0X040eHp4ZmYzNk5GdEVPZmxYWjUtSF9temd3akVoeWFMeDA0dlN0LWM5d183Uw?oc=5",
+      "reason": "canonical URLを確認できず不採用"
+    },
+    {
+      "title": "生成AI実装期におけるサイバーセキュリティの4大リスク：『ビジネス2.0』の視点",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5GeFRFTWIxeXh3aGxfXzZRR1liWllyZ1EyTHRKRXlpamxRMVJtNWdKcHVRb3FHTEl0ZzZXX0pwUGY2aXpfaC15UHhaZFNLaGtGUG5IclJ1WnFlVGNQR1RqaWxPT3dzWi1K?oc=5",
+      "reason": "論考色が強く当日新規ファクトが薄い"
+    },
+    {
+      "title": "8月26日生成AI活用セミナー申込受付中！",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE84ZHV4dFlIdEhWaTdGZ0pWY0RSVlBmZ3JtNDRIWEJGNGxURktjTzVPTDg0eGNab18yVEdLdW9oTTZWUFA1cWpaUlRPUEtRcUt2dF96X3I5OEMzZw?oc=5",
+      "reason": "セミナー告知でニュース性が低い"
+    },
+    {
+      "title": "2年間つきあった「ChatGPT」サブスクを解約した日。僕は涙した",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE5EanJ5Ujd0eWM4U1gyaDBaM3dmVHJxQ25HTHYyZkdHRTNic0N4YXpLQjJVX3NHTXBUWEJReV9DQUprLVc1VTlQNnpPM3FiNFpOMy1DRmdObDZJYUJWLVhQcWtn?oc=5",
+      "reason": "個人体験談で市場・政策・製品の新材料に乏しい"
+    },
+    {
+      "title": "「手入力が消える日」は本当に来るのか…Claude×freeeが変えるバックオフィスの未来",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5VaTlacllzMFlHbkV4dmNoemx0WHJ5RWVQWG9tM1lWUDlhQXExOXRKZ2ljdTJHNGYyRk1XU1Z1N2Q5bFRxYnFPVWhsOGljbXJnakx1MDM3NzBBUFU?oc=5",
+      "reason": "canonical URLを確認できず不採用"
+    }
+  ]
+}

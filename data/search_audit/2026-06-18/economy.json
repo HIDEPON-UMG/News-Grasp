@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-18",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "Fed leaves rates steady in Warsh's first meeting Axios June 17 2026",
+    "Median GDP Projection For 2026 Lowered Barrons June 17 2026",
+    "Trump Defends Iran Deal Says He Wants to Avoid Economic Catastrophe WSJ June 17 2026",
+    "China Shock 2.0 Surging Chinese exports threaten Europe's economy AP June 17 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "米FRB 利上げ / 利下げ",
+    "マクロ経済 指標",
+    "GDP見通し",
+    "原油供給",
+    "中国 過剰輸出",
+    "BOJ",
+    "Fed",
+    "NVIDIA",
+    "Nikkei",
+    "S&P 500",
+    "SoftBank"
+  ],
+  "dropped": [
+    {
+      "title": "会社四季報2026年3集 夏号",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE1Rd1NzSE91N05OSS1SMENqQ0ZzWHJDQy1sMUllZnQ1TlBNYVJ4STFrZmdwRVJTVDRHS2t4aEhwYlphejIxY3RYMDJfWC0xZTd1SWRjaHBycw?oc=5",
+      "reason": "雑誌告知で当日性が弱い"
+    },
+    {
+      "title": "【速報】FRB声明、金融政策の方向性示さず",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE1xRUNRVDRRNDI4bUFOeUdvTXVPSUZ0YjBCMGNMSHVQM25BdUU2SEVmWWs5b3BCOEVLYzlxZGo3bzFWQ3B6T2gwZzVJYw?oc=5",
+      "reason": "据え置き本体とGDP見通しの2本で新材料を吸収でき、速報単体では重複度が高い"
+    },
+    {
+      "title": "22年のインフレショック再来「可能性低いが排除できず」＝オランダ中銀総裁",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE9IZmxhTGs2WjQ0bldaMnBNc0RsMDlWU3N6SEZxemlHUDJyNXJlZjU2SGZnVWhKV29SNXdoRHl5SnIyNjFUSlZ4bmdWOWc1NFVoRHdoMXNUbE14VDFKQ3RMcGNiTzNKemladUViV2FjYmZoNngxT3JGQw?oc=5",
+      "reason": "トピックは有力だが canonical 確認が弱く、FRB主軸の記事を優先"
+    },
+    {
+      "title": "米4月企業在庫、0.5％増と堅調 第2四半期ＧＤＰ押し上げに寄与へ",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNYmxzN1NKbkRyZkh1N0RyZ3NWX2djSXpYQWxtQXJTamo0LTdaSTk0cWlHZGRWZ1R5TUxHZHZZRnd3WVl6cWkyRkZocUpHUncyTlpLRlRzb0tIbDIyYkM1NUNhQW9CME54SzNteUhYMzdWVk02RlRnYjlJWnA4NWE5bw?oc=5",
+      "reason": "GDP見通し下方修正の方が市場インパクトが大きく、在庫統計は補助線に留まった"
+    },
+    {
+      "title": "トランプ氏、イラン合意を自賛「経済の破局避ける」 ミサイル容認か",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1RVDRZR3hxYVNCcURuc2Y0dE1HNEF2Y19QLU52cWk1OUd2eXNzekFzaHJubEJZajB6UDhOWVhwRTRiOTNuLUh0LUVxSWVTaTlxalhfWjUzZVJDT1VENmEzdHRMUkV5MnZzWjN4UQ?oc=5",
+      "reason": "同テーマの採用記事と重複し、新材料の上積みが小さい"
+    }
+  ]
+}

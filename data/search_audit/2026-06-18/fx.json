@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-18",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "June 17 2026 Bank of Japan next hike December Nomura",
+    "June 17 2026 yen 160.40 after FOMC",
+    "June 17 2026 dollar broadly higher rate hike expectations Reuters yen 160",
+    "AP June 17 2026 Fed signals hike dollar yen"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "FOMC",
+    "日銀",
+    "ドル高",
+    "米金利",
+    "G7",
+    "BOJ",
+    "ECB",
+    "EURUSD",
+    "Fed",
+    "USDJPY"
+  ],
+  "dropped": [
+    {
+      "title": "ウォーシュFRBが金利据え置き 利上げ予想に転換、議長は予測示さず",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5BRWtJZEJRN1ZyWnRDX2dmaU5KcmRGcEhrNVJhSGtvYXluYnZyNlBKMmJGZFFlX25HOUp4aWJZdFRwdVoxM0JxbmdBRl91b0wzT01ZVndsQzlCejFPSVpYVkktdWRBN1BhTGRwVQ?oc=5",
+      "reason": "Google News中継URLのまま canonical を確認できず不採用"
+    },
+    {
+      "title": "Ｇ７、既存の為替レートへのコミットメントを再確認＝共同声明",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5MOV9aVzVCUVNqSEY1X0lLV3FNTjRic1hVMUNDYjJKX2c0RUZLWlVOWnlNTWQ4Umk3bGtWT0RFSGVMMkRsWm8xV3FmQ1NGQjlZdDZsSThCeE5feVM5Qi16aFgyS3piQUREN0x5cFI1Yy1PVnFpNHFEaQ?oc=5",
+      "reason": "FX論点として重要だが source domain の元記事URLを安全に特定できず保留"
+    },
+    {
+      "title": "円が対ドルで上げ消す、160円40銭台－FOMC受けて米利上げ意識",
+      "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQREltaldhMlAwdHdRMGZnQjFERllhQUJRWEhnQkhqRlRBYmpDR1JJSnhjcDRYalBidEwtMVBCVkpBMkVqMUtsUDNCZ2JLT1JMY1ppZ1VEWDZVOWdEelhZODV0Q0hCMnNzc0RVR1ZqUm5CMEdUblFOMnRPcWZLRm5NSkhVclAzcU5JSk9sRnV3?oc=5",
+      "reason": "Bloomberg側 canonical 未解決のため同趣旨の確認済みWSJ記事を採用"
+    },
+    {
+      "title": "【ドル/円、今夜の見通し】FOMC注目ポイントを解説！ウォーシュFRB議長の金融政策に対する今後の見解は？＿2026/6/17",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9PWk5TcEZ0OXBSYkpEUVJ0S0VnclF1TVJmRW80SVd2Rng5RUJidlQyZHE4c2lLbjc2RlZYQ2ljRFI0b0xFeGw5Z1FhN0k2blNXOTY2T3liWmw2RW9DZmdubllTVQ?oc=5",
+      "reason": "follow-up 色が強く、新材料が薄いため除外"
+    }
+  ]
+}
