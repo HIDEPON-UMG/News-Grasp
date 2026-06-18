@@ -102,6 +102,7 @@ build/*-last-message.txt
 build/deepdive-render-check/
 build/*.wrapper.log
 build/tts/
+build/youtube-podcast/
 docs/specs/*incident-hardening.html
 # Project-specific
 artifacts/

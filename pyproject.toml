@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "News Grasp ニュースダイジェスト配信 + 公開 web 配信パイプライン"
 requires-python = ">=3.10"
 dependencies = [
+    "google-api-python-client>=2.170",
+    "google-auth>=2.40",
     "jinja2>=3.1",
     "pywebpush>=2.0",  # Web Push 通知の送信 (tools/send_push.py)
 ]

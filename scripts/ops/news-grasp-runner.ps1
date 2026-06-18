@@ -1710,6 +1710,36 @@ foreach ($ttsStep in @(
     }
 }
 
+# ===== 2.86 YouTube Podcast episode (non-fatal, TTS 後・generate_pages 前) =====
+# 2026-06-18: 生成済み TTS+BGM mp3 を固定カバー画像で mp4 化し、YouTube Podcast 用に
+# upload する。YouTube OAuth / API project / Podcast playlist 指定は外部運用状態に依存するため、
+# 初期運用では News-Grasp 本体公開を止めず、失敗は state/log に残して後追い復旧する。
+foreach ($youtubePodcastStep in @(
+    @{ Name = 'youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp) },
+    @{ Name = 'youtube podcast upload_episode'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--publish') }
+)) {
+    Write-Log "$($youtubePodcastStep.Name) start"
+    try {
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe @($youtubePodcastStep.Args) }
+            $youtubePodcastRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($youtubePodcastRc -ne 0) {
+            Write-Log "WARN: $($youtubePodcastStep.Name) exited with $youtubePodcastRc. YouTube Podcast upload is non-fatal for normal publish."
+            Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
+            break
+        }
+        Write-Log "$($youtubePodcastStep.Name) done"
+    } catch {
+        Write-Log "WARN: $($youtubePodcastStep.Name) failed: $($_.Exception.Message). YouTube Podcast upload is non-fatal for normal publish."
+        Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode 1
+        break
+    }
+}
+
 # ===== 2.9 digest/data commit (全 content gate 通過後・docs 生成前) =====
 # 2026-06-09 改定で生成側は commit しなくなった (routine-system.md ステップ 6:
 # 「commit / push は ps1 が代行」)。しかし旧実装は docs/ しか git add しておらず、

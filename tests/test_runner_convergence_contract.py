@@ -544,7 +544,7 @@ def test_runner_tts_is_required_before_pages_generation() -> None:
     assert "tools.tts.publish_audio" in runner
     assert runner.index("pytest gate OK") < runner.index("Daily TTS audio (fatal")
     assert runner.index("Daily TTS audio (fatal") < runner.index("2.9 digest/data commit")
-    block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
+    block = runner.split("Daily TTS audio (fatal", 1)[1].split("YouTube Podcast episode", 1)[0]
     assert "TTS is required for normal publish" in block
     assert "Set-RunnerState -Status 'content_repair_failed'" in block
     assert "exit 1" in block
@@ -556,7 +556,7 @@ def test_runner_tts_is_required_before_pages_generation() -> None:
 def test_runner_tts_does_not_send_normal_notification() -> None:
     """TTS 失敗・成功だけで通常通知を送らず、通知は通常 publish verified 後に限定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    tts_block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
+    tts_block = runner.split("Daily TTS audio (fatal", 1)[1].split("YouTube Podcast episode", 1)[0]
     send_push_index = runner.index("send_push start")
     assert "send_push" not in tts_block
     assert "Should-SendNormalBatchNotification" in runner
