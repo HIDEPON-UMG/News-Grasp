@@ -1318,12 +1318,33 @@ def _arrow(x: float, y: float, ux: float, uy: float, color: str) -> str:
 
 # ── chart: bar / stacked_bar / line の SVG ────────────────────────────────────
 
-_EXTRA_SERIES_COLORS = ["#2D5BB8", "#2E6B52"]
+_FALLBACK_SERIES_COLORS = [
+    GOLD,
+    "#2D5BB8",
+    "#2E6B52",
+    "#8E2A19",
+    "#5E3D8C",
+    "#3A7B8C",
+    "#5A6B7B",
+]
 
 
-def _series_colors(accent: str) -> list[str]:
-    """系列色: 1 本目はアクセント (= カテゴリ色)、以降は gold→青→緑。"""
-    return [accent, GOLD, *_EXTRA_SERIES_COLORS]
+def _series_colors(accent: str, required: int = 0) -> list[str]:
+    """系列色: 同一チャート内で凡例色が重複しないように割り当てる。"""
+    colors: list[str] = []
+    seen: set[str] = set()
+    for color in [accent, *_FALLBACK_SERIES_COLORS]:
+        key = color.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        colors.append(color)
+    if required and required > len(colors):
+        raise DeepDiveIncompleteError(
+            f"chart の系列数 {required} に対し、識別可能な系列色が {len(colors)} 色しかありません。"
+            "同一チャート内の凡例色重複を避けるため、系列を絞るか色パレットを追加してください。"
+        )
+    return colors
 
 
 def _numeric_values(values: list[Any]) -> list[float]:
@@ -1356,7 +1377,6 @@ def chart_svg(chart: dict[str, Any], accent: str = INK) -> str:
     スキーマは series:[{name,data}] (複数系列可)。単一系列なら凡例を出さない。
     1 本目の系列色はアクセント (カテゴリ色) を使う。
     """
-    colors = _series_colors(accent)
     ctype = chart.get("type", "bar")
     cats = chart.get("categories", [])
     series = chart.get("series", [])
@@ -1364,6 +1384,7 @@ def chart_svg(chart: dict[str, Any], accent: str = INK) -> str:
         series = [{"name": chart.get("title", ""), "data": chart["data"]}]
     if not cats or not series:
         return ""
+    colors = _series_colors(accent, len(series))
     _validate_chart_information_gain(chart, ctype, series)
 
     vb_w, vb_h = 560, 270

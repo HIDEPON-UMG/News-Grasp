@@ -918,6 +918,27 @@ def test_chart_svg_rejects_flat_line_without_information_gain() -> None:
     assert "本文で説明する変化を別系列または注釈値として入れる" in str(exc.value)
 
 
+def test_chart_svg_uses_unique_legend_colors_per_chart() -> None:
+    """同一チャート内で系列色が重複すると凡例で識別できないため禁止する。"""
+    chart = {
+        "type": "line",
+        "title": "AI入口競争の重心移動",
+        "unit": "相対",
+        "categories": ["ベンチマーク", "配布", "常設", "復旧"],
+        "series": [
+            {"name": "OpenAI", "data": [5, 4, 3, 3]},
+            {"name": "Google", "data": [4, 5, 5, 4]},
+            {"name": "Anthropic", "data": [5, 3, 3, 5]},
+        ],
+    }
+
+    svg = chart_svg(chart, accent="#2D5BB8")
+    colors = re.findall(r'dd-chart-legend__sw" style="background:(#[0-9A-Fa-f]{6})"', svg)
+
+    assert len(colors) == 3
+    assert len(set(colors)) == len(colors)
+
+
 # ── context + render ──────────────────────────────────────────────────────────
 
 def test_context_has_all_render_fields() -> None:

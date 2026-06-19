@@ -14,3 +14,4 @@ This is the root routing contract for Claude Code and Codex.
 - Treat `_ref/` as ignored external reference material and `_ops/` as ignored local operations state.
 - Prefer repo-local workflow artifacts over tool-specific chat memory.
 - When a daily batch stops midway, publish verification fails, recovery is requested, or any News-Grasp incident investigation is requested, the output must include an incident report HTML. Use the `news-grasp-incident-report` skill, follow `docs/incidents/BUG_REPORT_DESIGN.md`, place the report under `docs/incidents/YYYY-MM-DD-<slug>-report.html`, and pass `python tools/validate_incident_report_design.py <report>` before completion.
+- DeepDive chart series colors must be unique within each chart. Do not publish a chart whose legend maps different series to the same color; enforce this in `tools/render_deepdive.py` and keep a pytest contract in `tests/test_deepdive_render.py`.
