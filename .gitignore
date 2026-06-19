@@ -104,6 +104,8 @@ build/*.wrapper.log
 build/tts/
 build/youtube-podcast/
 docs/specs/*incident-hardening.html
+# Incident report HTML はローカル成果物として保持し、コミット対象にしない。
+docs/incidents/*-report.html
 # Project-specific
 artifacts/
 coverage/
