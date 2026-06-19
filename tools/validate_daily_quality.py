@@ -143,6 +143,30 @@ def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str
     return errs
 
 
+def validate_digest_article_thumbnail_coverage(digest_root: Path, issue: date) -> list[str]:
+    """digest の記事カード単位で thumb 欠落と公開 fallback 退化を検査する。"""
+    errs: list[str] = []
+    for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
+        if md.parent.name in {"Summary", "DeepDive"}:
+            continue
+        _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+        articles = parse_articles(body)
+        for idx, article in enumerate(articles, 1):
+            title = str(article.get("title") or "").strip()
+            thumb = str(article.get("thumb") or "").strip()
+            label = f"{md}: card #{idx:02d} {title}"
+            if not thumb:
+                errs.append(
+                    f"{label}: thumb が空です。公開ページがカテゴリ fallback サムネになります。"
+                )
+                continue
+            if is_google_news_proxy_thumb(thumb):
+                errs.append(f"{label}: Google News 代理サムネです: thumb={thumb}")
+            if _is_news_grasp_self_thumb(thumb):
+                errs.append(f"{label}: News-Grasp 自己参照 thumb です: thumb={thumb}")
+    return errs
+
+
 def _missing_emphasis_kinds(text: str) -> list[str]:
     missing: list[str] = []
     if "[[" not in text or "]]" not in text:
@@ -782,6 +806,7 @@ def validate_daily_quality(
         issue=issue,
     ))
     errs.extend(validate_issue_thumbnail_coverage(jsonl_path, issue))
+    errs.extend(validate_digest_article_thumbnail_coverage(digest_root, issue))
     errs.extend(validate_digest_source_freshness(digest_root, issue))
     errs.extend(validate_jsonl_source_freshness(jsonl_path, issue))
     if require_deepdive:

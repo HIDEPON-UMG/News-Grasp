@@ -11,6 +11,7 @@ from tools.validate_daily_quality import (
     main,
     validate_daily_quality,
     validate_card_emphasis_coverage,
+    validate_digest_article_thumbnail_coverage,
     validate_digest_style_quality,
     validate_dedup_annotation_present,
     validate_deepdive_presence,
@@ -70,6 +71,7 @@ def _write_category(
         articles.append(
             f"### [{90 - i}] Freshness test article {i + 1}\n\n"
             f"📅 2026-06-08 06:0{i} · 📰 Example · 🔗 [元記事]({url})\n\n"
+            f"![thumb](https://example.com/thumb-{i}.jpg)\n\n"
             "- [[test]] **test** __test__\n\n"
             "---\n"
         )
@@ -96,6 +98,7 @@ def _write_category_digest(root: Path, cat_id: str, folder: str, *, count: int =
         articles.append(
             f"### [{90 - i}] {cat_id} article {i + 1}\n\n"
             f"📅 2026-06-08 06:0{i} · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/{cat_id}-{i})\n\n"
+            f"![thumb](https://example.com/thumb-{cat_id}-{i}.jpg)\n\n"
             "- [[test]] **test** __test__\n\n"
             "---\n"
         )
@@ -212,6 +215,31 @@ def test_daily_quality_rejects_all_null_thumbnails_for_issue(tmp_path: Path) -> 
     joined = "\n".join(errs)
     assert "thumb が全件 null" in joined
     assert "公開ページが全件 fallback サムネになります" in joined
+
+
+def test_digest_article_thumbnail_coverage_rejects_empty_card_thumb(tmp_path: Path) -> None:
+    """digest カードの thumb が空なら、記事ページ生成前に公開 gate で落とす。"""
+    cat_dir = tmp_path / "digest" / "AI"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "2026-06-08-AI.md").write_text(
+        "---\n"
+        "title: AI\n"
+        "date: 2026-06-08\n"
+        "categoryId: ai\n"
+        "---\n\n"
+        "### [90] Missing thumbnail article\n\n"
+        "📅 2026-06-08 06:00 · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/fresh-news)\n\n"
+        "![thumb](null)\n\n"
+        "- [[test]] **test** __test__\n\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_digest_article_thumbnail_coverage(tmp_path / "digest", date(2026, 6, 8))
+
+    joined = "\n".join(errs)
+    assert "thumb が空です" in joined
+    assert "カテゴリ fallback サムネになります" in joined
 
 
 def test_daily_quality_rejects_google_news_rss_urls_for_issue(tmp_path: Path) -> None:

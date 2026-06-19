@@ -50,7 +50,7 @@ tags:
 
 #cat/manufacturing #co/Amazon #co/NVIDIA #country/米国 #topic/AI半導体 #event/外販協議 #score/高
 
-![thumb](null)
+![thumb](https://images.barrons.com/im-58348067/social)
 
 - [[Amazon]]がTrainiumの外販協議に入ったことで、**クラウド内製チップを外部顧客へ直接売る**新しい供給モデルが現実味を帯び、__AWSの垂直統合が一段深まる__。
 - これは[[NVIDIA]]対抗の価格競争ではなく、**データセンター事業者ごと取り込む供給網づくり**が主眼で、量産能力とサポート体制が競争力の中心になる。

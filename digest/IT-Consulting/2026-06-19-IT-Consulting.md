@@ -49,7 +49,7 @@ tags:
 
 #cat/it #co/Accenture #country/米国 #topic/生成AI導入 #event/決算 #score/高
 
-![thumb]()
+![thumb](https://i.insider.com/6a3460ab0e60dfb3f373f676?width=1200&format=jpeg)
 
 - [[Julie Sweet]]は、[[Accenture]]が**AIの実証段階から本番移行案件を増やしている**としつつ、__全社変革の収益化には時間差がある__と認めた。
 - 市場が嫌気したのは、[[AI導入]]需要があることよりも**売上に跳ねる速度が遅く、新規受注が前年を下回った**ことだ。投資家は物語ではなく回収時期を見ている。
@@ -63,7 +63,7 @@ tags:
 
 #cat/it #co/Accenture #country/米国 #topic/AI時代の収益性 #event/決算 #score/高
 
-![thumb]()
+![thumb](https://www.ft.com/__origami/service/image/v2/images/raw/ftlogo-v1:brand-ft-masthead?source=next&format=png)
 
 - [[Accenture]]株は**通期成長率上限の引き下げと受注3%減**を受けて2017年以来の安値圏まで下げ、__AIが旧来型ITサービスを侵食する__見方が一気に強まった。
 - 同社は[[中東情勢]]による減収も挙げたが、市場の本音は**景気要因よりコンサルモデル自体の耐久性**にある。AI導入支援が人月売上を食う構図が意識されている。
