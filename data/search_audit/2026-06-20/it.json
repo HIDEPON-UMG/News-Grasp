@@ -1,0 +1,28 @@
+{
+  "date": "2026-06-20",
+  "category": "it",
+  "manual_recovery_audit": true,
+  "reason": "2026-06-20 runner repair left category digest with fewer than 5 cards; recovery verified shortfall explicitly before publish.",
+  "queries": [
+    "IT ニュース 2026-06-20",
+    "IT-Consulting market news June 20 2026",
+    "IT 主要企業 2026年6月20日"
+  ],
+  "raw_results_total": 10,
+  "candidates_total": 5,
+  "selected_total": 4,
+  "dropped": [
+    {
+      "title": "重複または前日以前の再掲候補",
+      "reason": "edition window outside or duplicate with selected item"
+    }
+  ],
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ]
+}

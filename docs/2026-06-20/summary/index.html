@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-06-20</title>
+<meta name="description" content="2026-06-20 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-06-20/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-06-20">
+<meta property="og:description" content="2026-06-20 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-06-20/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-06-20">
+<meta name="twitter:description" content="2026-06-20 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-20/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-06-20/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260620</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260620</span></h2>
+
+      <div class="summary-hero__subtitle">「自動化と制御境界」</div>
+
+      <div class="summary-hero__lead"><strong class="emph-bold">AI</strong>の操作自動化、<strong class="emph-bold">FX</strong>の金利再評価、<strong class="emph-bold">Mobility</strong>の運行実証、<strong class="emph-bold">Manufacturing</strong>の装置規制、<strong class="emph-bold">Game</strong>のIP運営は、別々のニュースに見えて<strong>自動化を広げるほど制御点が重要になる</strong>という同じ問いを含んでいる。<span class="emph-und">何を速くするか</span>だけでは足りず、<span class="emph-und">どこで止めるか、誰が監査するか</span>が実務上の差になる。今日の号は、スピードと安全弁をセットで読む朝だった。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">9</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">32</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<section class="daily-audio daily-audio--summary" aria-label="今日のニュース朗読">
+  <div class="daily-audio__inner">
+    <div class="daily-audio__meta">
+      <span class="daily-audio__kicker">LISTEN</span>
+      <span class="daily-audio__title">今日のニュース朗読</span>
+      <span class="daily-audio__date">2026-06-20</span>
+    </div>
+    <div class="daily-audio__controls">
+      <audio preload="none" controls>
+        <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-20.mp3?v=8b9007465412" type="audio/mpeg">
+      </audio>
+      <div class="daily-audio__rates" role="group" aria-label="再生速度">
+        <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">「速く動かす仕組みが増えるほど、止める場所と説明する責任が価値になる。」</div>
+      <div class="summary-pull__from">─── 総論 より</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — 自動化は制御境界の設計へ移った</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">OpenAI</strong>の広告テストとCodexの操作録画、<strong class="emph-bold">Microsoft</strong>の自律エージェント、<strong class="emph-bold">Waymo</strong>のリコールは、今日は<strong>自動化の効用</strong>だけでなく<span class="emph-und">権限と停止条件</span>をどう置くかを問う材料になった。自動で回る仕組みは増えるが、判断不能なまま任せると事故や不信に変わる。導入側は便利さより先に、制御境界を図にできるかを見られる。</p>
+
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #B8860B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #B8860B;">§02</span>
+          <span class="summary-sec__tag" style="background: #B8860B;">為替</span>
+        </div>
+        <h3 class="summary-sec__title">為替 — ドル高は金利再評価と介入警戒の綱引き</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">FRB</strong>のタカ派姿勢と原油反発で、ドル円は強い上方向を保った。<strong>金利差の再評価</strong>が続く限り、日銀の追加利上げ観測だけでは円の戻りは弱い。<span class="emph-und">介入警戒と政策金利</span>を分けて読むことが重要で、短期の円安だけを見ても次の判断は作りにくい。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">FRB</strong>を軸に、<strong>金利スワップ市場が9月までの0.25ポイント利上げを織り込み、原油高でドル買いが再加速</strong>。<span class="emph-und">金利差と通貨防衛のどちらを先に見るか</span>という観点で見ると、このカードは為替面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/fx/" style="color: #B8860B;">→ §02 為替 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — 操作の自動化ほど信頼境界が前に出る</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ChatGPT</strong>の広告テスト、<strong class="emph-bold">Codex</strong>のRecord &amp; Replay、<strong class="emph-bold">Copilot Cowork</strong>、<strong class="emph-bold">Claude</strong>悪用分析が並び、AIは<strong>使える範囲を広げる局面</strong>に入った。<span class="emph-und">会話データ、操作権限、業務ツール接続</span>をどこまで許すかが価値の条件になる。AIの賢さより、利用者が安心して任せられる境界設計が主役になっている。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">OpenAI</strong>を軸に、<strong>OpenAIが無料版とGo向けに広告表示を試験導入</strong>。<span class="emph-und">自動化を広げる設計と信頼境界をどう分けるか</span>という観点で見ると、このカードはAI面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — 門番型の統制と人材育成が実装を支える</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">AI MONBAN</strong>や<strong class="emph-bold">AWS Boost Camp</strong>は、AI導入を単発ツールで終わらせず、<strong>見えないリスクを可視化する運用</strong>へ寄せている。<span class="emph-und">統制と育成</span>がそろわない会社では、自動化は現場の負担を増やす。ITコンサルの論点は、導入提案よりも使い続ける仕組みの設計に移っている。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">Accenture</strong>を軸に、<strong>アクセンチュア急落を受け、NECや富士通など国内ITサービス株にもAI収益性懸念の連想売りが波及した</strong>。<span class="emph-und">AI統制と業務実装を同じ運用面で見られるか</span>という観点で見ると、このカードはIT面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #3A7B8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #3A7B8C;">§05</span>
+          <span class="summary-sec__tag" style="background: #3A7B8C;">モビリティ</span>
+        </div>
+        <h3 class="summary-sec__title">モビリティ — 自動運転は車両より運行制御で問われる</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">Waymo</strong>の通行止め誤進入リコール、都営バスの実証、<strong class="emph-bold">Volvo</strong>の自動運転貨物、日本郵便のEV充電制御は、<strong>移動の自動化</strong>が道路・物流・電力の制御問題でもあることを示した。<span class="emph-und">車両単体の性能</span>より、運行条件と充電ピークをどう管理するかが先に効く。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">Waymo</strong>を軸に、<strong>Waymoが工事区間誤進入を受け約3900台をリコール</strong>。<span class="emph-und">車両性能より運行制御とインフラ接続を優先できるか</span>という観点で見ると、このカードはモビリティ面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/" style="color: #3A7B8C;">→ §05 モビリティ 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #5A6B7B;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5A6B7B;">§06</span>
+          <span class="summary-sec__tag" style="background: #5A6B7B;">製造</span>
+        </div>
+        <h3 class="summary-sec__title">製造 — 装置と素材の支配点が供給網を決める</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ASML</strong>への懸念、<strong class="emph-bold">Lam Research</strong>の後工程拠点、<strong class="emph-bold">トクヤマ</strong>の韓国工場、日本製装置販売の増加は、<strong>半導体の主戦場</strong>が完成品だけでなく装置・素材・後工程へ広がったことを映す。<span class="emph-und">どの工程を握るか</span>を見ないと、供給網再編の本当の力点を読み違える。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">東京エレクトロン</strong>を軸に、<strong>中国の装置国産化が進み、日系大手5社の26年3月期対中売上は初の前年比減</strong>。<span class="emph-und">装置供給と素材工程の主導権を誰が握るか</span>という観点で見ると、このカードは製造面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" style="color: #5A6B7B;">→ §06 製造 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #8E2A19;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #8E2A19;">§07</span>
+          <span class="summary-sec__tag" style="background: #8E2A19;">経済</span>
+        </div>
+        <h3 class="summary-sec__title">経済 — 物価と金利は地域ごとに速度が違う</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ロシア中銀</strong>の利下げ、<strong class="emph-bold">BOE</strong>の据え置き、日銀短観、東南アジア見通しは、<strong>インフレ後の調整</strong>が一律に進まないことを示した。<span class="emph-und">物価沈静と金利維持</span>の組み合わせは地域ごとに違う。景気判断は「強い・弱い」より、どのコストがまだ残るかを見るほうが実務的だ。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">利下げ</strong>を軸に、<strong>ロシア中銀が9会合連続で利下げしたが、インフレはなお目標超え</strong>。<span class="emph-und">物価と金利の再調整をどの地域から読むか</span>という観点で見ると、このカードは経済面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/economy/" style="color: #8E2A19;">→ §07 経済 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #5E3D8C;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #5E3D8C;">§08</span>
+          <span class="summary-sec__tag" style="background: #5E3D8C;">ゲーム</span>
+        </div>
+        <h3 class="summary-sec__title">ゲーム — IP運営は発売前から導線を作る</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">holo Indie</strong>のシーズン制、<strong class="emph-bold">チェンソーマン</strong>のスマホゲーム化、<strong class="emph-bold">NARUTOカードゲーム</strong>の世界同時展開、<strong class="emph-bold">進撃の巨人3</strong>のOP公開は、ゲームが<strong>作品単体の発表</strong>から<span class="emph-und">運営導線とファン接点</span>の設計へ移っていることを示す。IPの寿命は発売日だけでなく、継続的に話題を作れるかで変わる。</p>
+
+        <ul class="summary-sec__bullets">
+
+          <li><strong class="emph-bold">カバー</strong>を軸に、<strong>カバーの二次創作ゲームブランド「holo Indie」が応募審査を年3回のシーズン制へ移行し、総DL300万超の実績</strong>。<span class="emph-und">IPを作品単体でなく運営導線として伸ばせるか</span>という観点で見ると、このカードはゲーム面の判断材料になる。</li>
+
+        </ul>
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/game/" style="color: #5E3D8C;">→ §08 ゲーム 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§09</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日へ — 自動化の安全弁を見る</h3>
+        <p class="summary-sec__body">明日は、AI操作自動化の広告・権限設計、ドル高の持続、Waymo型の運行制御、半導体装置規制、IP運営の継続施策を追いたい。<strong>自動化を進めるニュース</strong>ほど<span class="emph-und">停止条件と説明責任</span>を同時に見ると、単なる話題から実務上の判断材料に変わる。
+
+## KEY TAKEAWAYS
+
+- <strong>[AI・IT]</strong> <strong class="emph-bold">OpenAI</strong>、<strong class="emph-bold">Microsoft</strong>、<strong class="emph-bold">Google</strong>は、<span class="emph-und">自動化の入口</span>を広げる一方で、広告・権限・統制の境界を同時に問われている。
+- <strong>[為替・経済・製造]</strong> <strong class="emph-bold">FRB</strong>、<strong class="emph-bold">BOE</strong>、<strong class="emph-bold">ASML</strong>、<strong class="emph-bold">Lam Research</strong>は、<span class="emph-und">金利と供給網の制御点</span>がまだ再配置中であることを示した。
+- <strong>[モビリティ・ゲーム]</strong> <strong class="emph-bold">Waymo</strong>、<strong class="emph-bold">日本郵便</strong>、<strong class="emph-bold">holo Indie</strong>、<strong class="emph-bold">MAPPA</strong>は、<span class="emph-und">運用導線を設計する側</span>が普及速度とIP寿命を左右する流れを映している。
+
+&gt; [!link] Related Issues
+&gt; - 2026-06-19 — <strong class="emph-bold">前回号</strong>
+
+---</p>
+
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #5A6B7B;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #5A6B7B;">MANUFACTURING</div>
+          <div class="summary-take__text">半導体装置、日系5社の対中販売1割減少 中国の国産化進展で</div>
+        </div>
+      </div>
+
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">FOREIGN EXCHANGE</div>
+          <div class="summary-take__text">9月までの米利上げを完全に織り込む、FOMCのタカ派姿勢と原油反発で</div>
+        </div>
+      </div>
+
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #3A7B8C;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #3A7B8C;">MOBILITY</div>
+          <div class="summary-take__text">ウェイモ、ロボタクシー3900台リコール　通行止め区域に進入の恐れ</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-06-20/">全32本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-06-20 · #20260620
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-20/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

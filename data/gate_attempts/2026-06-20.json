@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "gates": {
+    "digest-articles-reconcile": {
+      "signatures": {
+        "b88117929d77b8ff": {
+          "failures": 1,
+          "artifact_hashes": [
+            "78aa6fd6c8448369"
+          ]
+        }
+      },
+      "categories": {
+        "digest": 1
+      }
+    }
+  }
+}
