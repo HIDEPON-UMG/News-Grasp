@@ -87,7 +87,26 @@ function Write-JsonFile {
     $Value | ConvertTo-Json -Depth 8 | Set-Content -Path $Path -Encoding UTF8
 }
 
-Add-Content -Path $trace -Value "wrapper START $FlowName"
+function Add-TraceLine {
+    param([string]$Value)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Value + [Environment]::NewLine)
+    for ($attempt = 0; $attempt -lt 50; $attempt++) {
+        try {
+            $stream = [System.IO.File]::Open($trace, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+            try {
+                $stream.Write($bytes, 0, $bytes.Length)
+            } finally {
+                $stream.Dispose()
+            }
+            return
+        } catch {
+            Start-Sleep -Milliseconds 20
+        }
+    }
+    throw "failed to append trace line: $Value"
+}
+
+Add-TraceLine "wrapper START $FlowName"
 if ($UsageLog) {
     $usageDir = Split-Path -Parent $UsageLog
     if ($usageDir) { New-Item -ItemType Directory -Path $usageDir -Force | Out-Null }
@@ -150,7 +169,7 @@ if ($FlowName.StartsWith('reporter:')) {
             quality_shortfall_reasons = @()
         })
     }
-    Add-Content -Path $trace -Value "wrapper END $FlowName"
+    Add-TraceLine "wrapper END $FlowName"
     exit 0
 }
 
@@ -199,7 +218,7 @@ if ($FlowName -eq 'newsroom_editor') {
             summary_markdown = "Smoke summary"
         })
     }
-    Add-Content -Path $trace -Value "wrapper END $FlowName"
+    Add-TraceLine "wrapper END $FlowName"
     exit 0
 }
 
