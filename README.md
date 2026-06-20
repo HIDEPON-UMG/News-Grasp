@@ -6,6 +6,8 @@
 
 配信は **公開 Web (GitHub Pages + PWA) + Web Push 通知** のみ。旧 Gmail SMTP 直送によるメール配信は 2026-06-05 に機能ごと廃止済み。
 
+プロダクトの上位目的、完了条件、品質原則、完全自立型運用の境界は [docs/spec.md](docs/spec.md) を正本とする。
+
 ## 公開 web
 
 Magazine Spread デザイン (navy / cream / gold + 角丸 0 + Noto Serif JP × Inter × JetBrains Mono の 3 フォント鼎立)。PWA としてホーム画面追加可、モバイル幅でも崩れない。4 階層の URL 体系を持つ。

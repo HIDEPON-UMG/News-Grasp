@@ -59,7 +59,9 @@ def test_runner_physically_fans_out_reporters_before_editor_integration() -> Non
     assert "tools.verify_reporter_output" in stage
     assert "$MaxParallelReporterJobs = 7" in runner
     assert "Start-Job" in stage
-    assert "Wait-Job" in stage
+    assert "ReporterPollSeconds" in stage
+    assert "reporter supervisor heartbeat" in stage
+    assert "Wait-Job -Job $jobs | Out-Null" not in stage
     assert "Receive-Job" in stage
     assert "reporter job START" in stage
     assert "reporter job END" in stage

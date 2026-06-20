@@ -132,6 +132,18 @@ def required_published_artifacts(issue: str | date) -> list[str]:
     )
 
 
+def required_distribution_artifacts(issue: str | date) -> list[str]:
+    """Web 公開後の配信完了 gate が見る audio / podcast state。"""
+    day = _issue(issue)
+    issue_str = day.isoformat()
+    return [
+        "build/tts/latest_audio.json",
+        f"build/youtube-podcast/{issue_str}.mp4",
+        "build/youtube-podcast/uploads.json",
+        f"data/distribution/{issue_str}.json",
+    ]
+
+
 def required_published_repair_artifacts(issue: str | date) -> list[str]:
     """公開前 gate の repair が触りうる出力 + 検証入力 artifact。
 
@@ -163,7 +175,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", required=True)
     parser.add_argument(
         "--kind",
-        choices=["digest", "generated", "published-docs", "deepdive", "published", "published-repair"],
+        choices=[
+            "digest",
+            "generated",
+            "published-docs",
+            "deepdive",
+            "published",
+            "published-repair",
+            "distribution",
+        ],
         required=True,
     )
     parser.add_argument("--json", action="store_true")
@@ -179,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
         artifacts = required_deepdive_artifacts(args.date)
     elif args.kind == "published":
         artifacts = required_published_artifacts(args.date)
+    elif args.kind == "distribution":
+        artifacts = required_distribution_artifacts(args.date)
     else:
         artifacts = required_published_repair_artifacts(args.date)
 

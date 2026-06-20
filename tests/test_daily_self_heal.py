@@ -240,6 +240,142 @@ def test_verify_publish_checks_public_audio_when_latest_audio_exists(monkeypatch
     assert ("GET", "https://example.com/News-Grasp/2026-06-16/summary/") in seen
 
 
+def test_verify_podcast_accepts_public_video_and_playlist(monkeypatch, tmp_path: Path) -> None:
+    """Podcast は state、watch/oEmbed、playlist の全反映で OK にする。"""
+    state = tmp_path / "build" / "youtube-podcast" / "uploads.json"
+    state.parent.mkdir(parents=True)
+    state.write_text(
+        json.dumps(
+            {
+                "2026-06-20": {
+                    "status": "public",
+                    "videoId": "video-1",
+                    "playlistId": "playlist-1",
+                    "playlistItemId": "item-1",
+                    "mp4_sha256": "abc",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if "oembed" in url:
+            return FakeResponse(json.dumps({"title": "News-Grasp Daily News Briefing 2026-06-20"}))
+        if "watch?v=video-1" in url:
+            return FakeResponse("<html>News-Grasp Daily News Briefing 2026-06-20</html>")
+        if "playlist?list=playlist-1" in url:
+            return FakeResponse("<html>video-1</html>")
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_podcast(date="2026-06-20", state_path=state, wait_sec=0, poll_sec=1)
+
+    assert result["ok"] is True
+    assert result["videoId"] == "video-1"
+    assert result["playlistId"] == "playlist-1"
+
+
+def test_verify_podcast_rejects_title_mismatch(monkeypatch, tmp_path: Path) -> None:
+    state = tmp_path / "uploads.json"
+    state.write_text(
+        json.dumps({"2026-06-20": {"status": "public", "videoId": "video-1", "playlistId": "playlist-1"}}),
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    monkeypatch.setattr(
+        dsh.urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: FakeResponse(json.dumps({"title": "News-Grasp Daily News Briefing 2026-06-19"})),
+    )
+
+    result = dsh.verify_podcast(date="2026-06-20", state_path=state, wait_sec=0, poll_sec=1)
+
+    assert result["ok"] is False
+    assert result["reason"] == "podcast_title_mismatch"
+
+
+def test_verify_publish_can_require_podcast(monkeypatch, tmp_path: Path) -> None:
+    """通常公開は Web/audio に加えて Podcast gate も要求できる。"""
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str = ""):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(
+        dsh.urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: FakeResponse(json.dumps({"result": "published_ok", "date": "2026-06-20"})),
+    )
+    monkeypatch.setattr(dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True})
+    monkeypatch.setattr(dsh, "verify_podcast", lambda **_kwargs: {"ok": False, "reason": "public_podcast_missing"})
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+        require_podcast=True,
+        podcast_state_path=tmp_path / "uploads.json",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "public_podcast_missing"
+
+
 def test_verify_publish_rejects_public_audio_url_missing_from_summary(monkeypatch, tmp_path: Path) -> None:
     """summary が旧音声URLのままなら publish 完了扱いにしない。"""
     audio_url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3?v=newhash"

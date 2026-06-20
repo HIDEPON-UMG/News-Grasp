@@ -4,6 +4,7 @@ from datetime import date
 
 from tools.publish_inventory import (
     required_digest_artifacts,
+    required_distribution_artifacts,
     required_generated_artifacts,
     required_published_artifacts,
     required_published_repair_artifacts,
@@ -102,3 +103,12 @@ def test_generated_manifest_respects_weekend_schedule() -> None:
     assert "digest/Economy/2026-06-20-Economy.md" not in artifacts
     assert "digest/Game/2026-06-20-Game.md" in artifacts
     assert "digest/DeepDive/2026-06-20-DeepDive.md" in artifacts
+
+
+def test_distribution_manifest_includes_audio_and_podcast_state() -> None:
+    artifacts = required_distribution_artifacts(ISSUE)
+
+    assert "build/tts/latest_audio.json" in artifacts
+    assert "build/youtube-podcast/2026-06-16.mp4" in artifacts
+    assert "build/youtube-podcast/uploads.json" in artifacts
+    assert "data/distribution/2026-06-16.json" in artifacts

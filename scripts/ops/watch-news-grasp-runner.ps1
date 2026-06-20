@@ -28,6 +28,22 @@ function Get-LogPath {
     return Join-Path $LogDir "$date.log"
 }
 
+function Get-StringSha256Hex {
+    param([string] $Text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes([string]$Text)
+        return (([System.BitConverter]::ToString($sha.ComputeHash($bytes))) -replace '-', '').ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Get-CommandLineFingerprint {
+    param([string] $CommandLine)
+    return Get-StringSha256Hex -Text ([string]$CommandLine).Trim().ToLowerInvariant()
+}
+
 function Read-State {
     if (-not (Test-Path $StateFile)) {
         return $null
@@ -35,7 +51,37 @@ function Read-State {
     try {
         return Get-Content -LiteralPath $StateFile -Raw -Encoding UTF8 | ConvertFrom-Json
     } catch {
-        return $null
+        $stamp = Get-Date -Format 'yyyyMMddHHmmss'
+        $corrupt = "$StateFile.corrupt.$stamp.json"
+        try { Copy-Item -LiteralPath $StateFile -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
+        return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
+    }
+}
+
+function Write-StateAtomic {
+    param(
+        [string] $Path,
+        [object] $Payload
+    )
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    }
+    $tmp = "$Path.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+    $backup = "$Path.bak"
+    $json = ($Payload | ConvertTo-Json -Depth 8) + "`n"
+    $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($json)
+    $fs = [System.IO.File]::Open($tmp, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+    try {
+        $fs.Write($bytes, 0, $bytes.Length)
+        $fs.Flush($true)
+    } finally {
+        $fs.Dispose()
+    }
+    if (Test-Path -LiteralPath $Path) {
+        [System.IO.File]::Replace($tmp, $Path, $backup, $true)
+    } else {
+        [System.IO.File]::Move($tmp, $Path)
     }
 }
 
@@ -50,6 +96,100 @@ function Get-RunnerProcessAlive {
     } catch {
         return $false
     }
+}
+
+function Get-StateTime {
+    param(
+        $State,
+        [string] $Name
+    )
+    if (-not $State -or -not $State.$Name) { return $null }
+    try { return [datetime]::Parse([string]$State.$Name) } catch { return $null }
+}
+
+function Get-StaleSeconds {
+    param($State)
+    $now = Get-Date
+    $t = Get-StateTime -State $State -Name 'heartbeat_at'
+    if (-not $t) { $t = Get-StateTime -State $State -Name 'updated_at' }
+    if ($t) { return [int]($now - $t).TotalSeconds }
+    $logPath = Get-LogPath
+    if (Test-Path $logPath) {
+        return [int]($now - (Get-Item -LiteralPath $logPath).LastWriteTime).TotalSeconds
+    }
+    return 0
+}
+
+function Write-WatchdogState {
+    param(
+        $State,
+        [string] $Status,
+        [string] $Message,
+        [int] $ExitCode
+    )
+    $now = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    $payload = [ordered]@{
+        status = $Status
+        message = $Message
+        exit_code = $ExitCode
+        updated_at = $now
+        heartbeat_at = $now
+        run_id = if ($State -and $State.run_id) { [string]$State.run_id } else { '' }
+        pid = if ($State -and $State.pid) { [int]$State.pid } else { -1 }
+        repo_dir = if ($State -and $State.repo_dir) { [string]$State.repo_dir } else { '' }
+        runner_path = if ($State -and $State.runner_path) { [string]$State.runner_path } else { $RunnerPath }
+        log_path = Get-LogPath
+        last_observed_status = if ($State -and $State.status) { [string]$State.status } else { 'unknown' }
+        last_observed_phase = if ($State -and $State.phase) { [string]$State.phase } else { '' }
+        process_creation_time = if ($State -and $State.process_creation_time) { [string]$State.process_creation_time } else { '' }
+        command_line_fingerprint = if ($State -and $State.command_line_fingerprint) { [string]$State.command_line_fingerprint } else { '' }
+    }
+    if ($State -and $State.corrupt_backup) {
+        $payload.corrupt_backup = [string]$State.corrupt_backup
+    }
+    Write-StateAtomic -Path $StateFile -Payload $payload
+}
+
+function Test-RunnerProcessIdentity {
+    param($State)
+    if (-not $State -or -not $State.pid -or -not $State.run_id -or -not $State.runner_path -or -not $State.process_creation_time -or -not $State.command_line_fingerprint) {
+        return $false
+    }
+    try {
+        $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$State.pid)" -ErrorAction Stop
+    } catch {
+        return $false
+    }
+    if (-not $proc -or -not $proc.CommandLine) { return $false }
+    if ([string]$State.repo_dir -and -not ([string]$State.repo_dir).Equals((Split-Path -Parent (Split-Path -Parent $RunnerPath)), [System.StringComparison]::OrdinalIgnoreCase)) {
+        # RepoDirOverride 実行では repo_dir 照合が厳密にできないため command line と runner path を優先する。
+    }
+    if ($proc.CommandLine -notlike "*$([string]$State.runner_path)*") { return $false }
+    $fingerprint = Get-CommandLineFingerprint -CommandLine ([string]$proc.CommandLine)
+    if ($fingerprint -ne [string]$State.command_line_fingerprint) { return $false }
+    try {
+        $expected = [datetime]::Parse([string]$State.process_creation_time)
+        $actual = [datetime]$proc.CreationDate
+        if ([math]::Abs(($actual - $expected).TotalSeconds) -gt 2) { return $false }
+    } catch {
+        return $false
+    }
+    return $true
+}
+
+function Stop-VerifiedRunner {
+    param(
+        $State,
+        [string] $Status,
+        [string] $Message
+    )
+    if (Test-RunnerProcessIdentity -State $State) {
+        try { Stop-Process -Id ([int]$State.pid) -Force -ErrorAction Stop } catch { }
+        Write-WatchdogState -State $State -Status $Status -Message $Message -ExitCode 124
+        return 124
+    }
+    Write-WatchdogState -State $State -Status 'watchdog_stale_unconfirmed' -Message $Message -ExitCode 125
+    return 125
 }
 
 function Write-StatusJson {
@@ -83,6 +223,11 @@ function Write-StatusJson {
         log_path = $logPath
         log_updated_at = $logUpdatedAt
         updated_at = if ($State -and $State.updated_at) { [string]$State.updated_at } else { $null }
+        run_id = if ($State -and $State.run_id) { [string]$State.run_id } else { $null }
+        phase = if ($State -and $State.phase) { [string]$State.phase } else { $null }
+        heartbeat_at = if ($State -and $State.heartbeat_at) { [string]$State.heartbeat_at } else { $null }
+        deadline_at = if ($State -and $State.deadline_at) { [string]$State.deadline_at } else { $null }
+        stale_seconds = Get-StaleSeconds -State $State
     }
     $out | ConvertTo-Json -Depth 4
 }
@@ -130,9 +275,19 @@ function Watch-Runner {
     param([System.Diagnostics.Process] $Process)
     $started = Get-Date
     $script:WatchExitCode = 1
+    $watchRunId = ''
     while ($true) {
         Start-Sleep -Seconds $PollSeconds
         $state = Read-State
+        if ($state -and $state.__corrupt) {
+            Write-WatchdogState -State $state -Status 'watchdog_state_corrupt' -Message 'runner state json is corrupt' -ExitCode 125
+            Write-StatusJson -Mode 'state_corrupt' -State (Read-State) -ProcessId $Process.Id -Message 'runner state json is corrupt'
+            $script:WatchExitCode = 125
+            return
+        }
+        if (-not $watchRunId -and $state -and $state.run_id) {
+            $watchRunId = [string]$state.run_id
+        }
         if (Test-TerminalState -State $state) {
             Write-StatusJson -Mode 'completed' -State $state -ProcessId $Process.Id
             $script:WatchExitCode = 0
@@ -148,19 +303,25 @@ function Watch-Runner {
             $script:WatchExitCode = 1
             return
         }
-        $logPath = Get-LogPath
-        if (Test-Path $logPath) {
-            $age = (Get-Date) - (Get-Item -LiteralPath $logPath).LastWriteTime
-            if ($age.TotalMinutes -ge $StaleMinutes) {
-                Write-StatusJson -Mode 'stale' -State $state -ProcessId $Process.Id -Message "log has not changed for $([int]$age.TotalMinutes) minutes"
-                $script:WatchExitCode = 124
+        $staleSeconds = Get-StaleSeconds -State $state
+        if ($staleSeconds -ge ($StaleMinutes * 60)) {
+            $minutes = [int]($staleSeconds / 60)
+            $message = "log has not changed for $minutes minutes"
+            if ($watchRunId -and $state -and $state.run_id -and [string]$state.run_id -ne $watchRunId) {
+                Write-WatchdogState -State $state -Status 'watchdog_stale_unconfirmed' -Message $message -ExitCode 125
+                Write-StatusJson -Mode 'stale_unconfirmed' -State (Read-State) -ProcessId $Process.Id -Message $message
+                $script:WatchExitCode = 125
                 return
             }
+            $script:WatchExitCode = Stop-VerifiedRunner -State $state -Status 'watchdog_stale_timeout' -Message $message
+            Write-StatusJson -Mode 'stale' -State (Read-State) -ProcessId $Process.Id -Message $message
+            return
         }
         $elapsed = (Get-Date) - $started
         if ($elapsed.TotalMinutes -ge $TimeoutMinutes) {
-            Write-StatusJson -Mode 'timeout' -State $state -ProcessId $Process.Id -Message "watch timeout after $TimeoutMinutes minutes"
-            $script:WatchExitCode = 124
+            $message = "watch timeout after $TimeoutMinutes minutes"
+            $script:WatchExitCode = Stop-VerifiedRunner -State $state -Status 'watchdog_wall_timeout' -Message $message
+            Write-StatusJson -Mode 'timeout' -State (Read-State) -ProcessId $Process.Id -Message $message
             return
         }
     }

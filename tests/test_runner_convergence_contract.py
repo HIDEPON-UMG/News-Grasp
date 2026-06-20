@@ -171,25 +171,26 @@ def test_runner_runs_generation_quality_before_url_and_record_gates() -> None:
     assert runner.index("generation quality gate start") < runner.index("record schema gate start")
 
 
-def test_generation_quality_gate_uses_bounded_repair() -> None:
-    """generation-quality は独自 loop でなく既存 bounded repair gate に乗せる。"""
+def test_generation_quality_gate_uses_autonomous_gate() -> None:
+    """generation-quality は分類つき自走 gate に乗せる。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     block = runner.split("generation quality gate start", 1)[1].split("URL liveness gate start", 1)[0]
 
-    assert "Invoke-PythonGateWithRepair" in block
+    assert "Invoke-AutonomousGate" in block
     assert "-GateId 'generation-quality'" in block
     assert "-Category 'generated'" in block
     assert "-Artifacts $GeneratedArtifacts" in block
     assert "tools.validate_generation_quality" in block
 
 
-def test_generation_quality_repair_failure_sets_content_repair_failed() -> None:
-    """生成品質 repair が収束しない場合は publish 系 state と混ぜない。"""
+def test_generation_quality_repair_failure_sets_typed_repair_status() -> None:
+    """生成品質 repair が収束しない場合は旧 content_repair_failed に直行しない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     block = runner.split("generation quality gate start", 1)[1].split("URL liveness gate start", 1)[0]
 
-    assert "content_repair_failed" in block
-    assert "generation quality repair failed" in block
+    assert "blocked_repair_budget_exhausted" in block
+    assert "generation quality autonomous gate failed" in block
+    assert "content_repair_failed" not in block
     assert "Invoke-FallbackPublish" not in block
     assert "send_push" not in block
 
@@ -209,12 +210,13 @@ def test_generation_quality_repair_prompt_is_item_scoped() -> None:
 def test_targeted_repair_rejects_changes_outside_artifact_scope() -> None:
     """repair worker が対象 artifact 以外を触ったら同じ gate の再試行へ進ませない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-    gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Restore-UnverifiedGeneratedArtifacts", 1)[0]
+    gate_body = runner.split("function Invoke-AutonomousGate", 1)[1].split("function Preserve-UnverifiedGeneratedArtifacts", 1)[0]
 
     assert "Test-RepairArtifactScope" in runner
     assert "Snapshot-RepairWorkspace" in runner
     assert "repair worker changed files outside artifact scope" in runner
-    assert "if (-not (Test-RepairArtifactScope" in gate_body
+    assert "Invoke-PythonGateWithRepair" in gate_body
+    assert "if (-not (Test-RepairArtifactScope" in runner
 
 
 def test_generation_quality_runs_after_external_readiness_precheck() -> None:
@@ -349,6 +351,60 @@ def test_runner_writes_machine_readable_state() -> None:
     assert "-Status 'error' -Message $Text -ExitCode 1" in runner
 
 
+def test_runner_state_is_progress_aware_and_terminal_first_wins() -> None:
+    """長時間工程は heartbeat を残し、terminal state は後続更新で上書きしない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    state_body = runner.split("function Set-RunnerState", 1)[1].split("function Exit-Runner", 1)[0]
+
+    assert "$RunId = [guid]::NewGuid().ToString('N')" in runner
+    assert "command_line_fingerprint" in state_body
+    assert "process_creation_time" in state_body
+    assert "heartbeat_at" in state_body
+    assert "deadline_at" in state_body
+    assert "phase" in state_body
+    assert "Invoke-WithRunnerStateLock" in runner
+    assert "Local\\NewsGraspRunnerState-" in runner
+    assert "[System.IO.File]::Replace" in runner
+    assert "Test-TerminalRunnerStatus" in runner
+    assert "first-terminal-wins" in runner
+    assert "blocked_runner_state_lock_timeout" in runner
+    assert "blocked_runner_state_corrupt" in runner
+
+
+def test_runner_progress_updates_long_running_phases() -> None:
+    """reporter / gate / repair / publish / podcast の長時間工程は進捗 state を更新する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Update-RunnerProgress" in runner
+    assert "Update-RunnerProgress -Phase 'reporter'" in runner
+    assert "Update-RunnerProgress -Phase 'gate'" in runner
+    assert "Update-RunnerProgress -Phase 'repair'" in runner
+    assert "Update-RunnerProgress -Phase 'publish-verify'" in runner
+    assert "Update-RunnerProgress -Phase 'podcast-verify'" in runner
+    assert "active_jobs" in runner
+    assert "GateDeadlineSec" in runner
+    assert "blocked_gate_timeout" in runner
+
+
+def test_reporter_wave_uses_supervisor_loop_instead_of_blind_wait_job() -> None:
+    """reporter wave は親runnerが沈黙しないよう job を監視し続ける。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    reporter_body = runner.split("function Invoke-ReporterWave", 1)[1].split("$retryCategories = @($Categories)", 1)[0]
+
+    assert "Wait-Job -Job $jobs | Out-Null" not in reporter_body
+    assert "Wait-Job -Job @($jobs | Where-Object { $_.State -eq 'Running' }) -Any" not in reporter_body
+    assert "ReporterPollSeconds" in reporter_body
+    assert "ReporterHeartbeatSeconds" in reporter_body
+    assert "Update-RunnerProgress -Phase 'reporter'" in reporter_body
+    assert "active_jobs" in reporter_body
+    assert "Append-ReporterWrapperLog" in reporter_body
+    assert "wrapper_log_offsets" in reporter_body
+    assert "Stop-Job -Job $job -Force" in reporter_body
+    assert "Remove-Job -Job $job -Force" in reporter_body
+    assert "blocked_reporter_timeout" in reporter_body
+    assert "blocked_reporter_repeated_failure" in runner
+
+
 def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
     """bin 実行体 drift は手動 install 待ちにせず自己同期して再起動する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
@@ -369,12 +425,15 @@ def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
 
 
 def test_runner_only_marks_ok_after_publish_verification() -> None:
-    """ok marker は push 後の公開反映確認より後にしか書けない。"""
+    """ok marker は publish + podcast verification より後にしか書けない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
     assert "tools.daily_self_heal' 'verify-publish'" in runner
+    assert "tools.daily_self_heal' 'verify-podcast'" in runner
     assert runner.index("publish verification start") < runner.index("send_push start")
+    assert runner.index("podcast verification start") < runner.index("send_push start")
     assert runner.index("publish verification start") < runner.rindex("news-grasp-runner.ps1 OK")
+    assert runner.index("podcast verification start") < runner.rindex("news-grasp-runner.ps1 OK")
 
 
 def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
@@ -428,6 +487,26 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     assert "runner process exited without ok marker" in watcher
     assert "log has not changed for" in watcher
     assert "watch timeout after" in watcher
+
+
+def test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state() -> None:
+    """watcher は照合済み runner だけを止め、照合不能・state破損では kill しない。"""
+    watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Write-WatchdogState" in watcher
+    assert "function Test-RunnerProcessIdentity" in watcher
+    assert "Get-CimInstance Win32_Process" in watcher
+    assert "command_line_fingerprint" in watcher
+    assert "process_creation_time" in watcher
+    assert "run_id" in watcher
+    assert "watchdog_stale_timeout" in watcher
+    assert "watchdog_wall_timeout" in watcher
+    assert "watchdog_stale_unconfirmed" in watcher
+    assert "watchdog_state_corrupt" in watcher
+    assert "Stop-Process -Id ([int]$State.pid) -Force" in watcher
+    assert watcher.index("Test-RunnerProcessIdentity") < watcher.index("Stop-Process -Id ([int]$State.pid) -Force")
+    assert "heartbeat_at" in watcher
+    assert "stale_seconds" in watcher
 
 
 def test_watcher_status_reports_stale_when_running_pid_is_dead(tmp_path: Path) -> None:
@@ -496,16 +575,18 @@ def test_runner_record_gate_passes_issue_date() -> None:
     )
 
 
-def test_runner_quarantines_bad_urls_before_fallback_publish() -> None:
-    """URL gate 失敗は号全体 fallback 直行ではなく、記事単位隔離を先に試す。"""
+def test_runner_quarantines_and_refills_bad_urls_before_typed_failure() -> None:
+    """URL gate 失敗は隔離だけで終わらず、カテゴリ補充と再検証へ進む。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     block = runner.split("URL liveness gate start", 1)[1].split("record schema gate start", 1)[0]
 
     assert "--quarantine-articles" in block
     assert "--apply" in block
     assert "URL liveness quarantine start" in block
+    assert "tools.refill_category_after_quarantine" in block
     assert "URL liveness gate recheck after quarantine" in block
-    assert "Stop-ContentGateWithoutFallback -GateId 'url-liveness'" in block
+    assert "blocked_refill_unresolved" in block
+    assert "Stop-ContentGateWithoutFallback -GateId 'url-liveness'" not in block
     assert "Invoke-FallbackPublish" not in block
     assert "search_audit_updated" in (ROOT / "tools" / "audit_all_article_urls.py").read_text(encoding="utf-8")
 
@@ -534,7 +615,12 @@ def test_content_gates_do_not_publish_fallback_notice() -> None:
     ]
     for start, end in content_gate_markers:
         block = runner.split(start, 1)[1].split(end, 1)[0]
-        assert "Stop-ContentGateWithoutFallback" in block
+        assert (
+            "Invoke-AutonomousGate" in block
+            or "blocked_refill_unresolved" in block
+            or "blocked_repair_budget_exhausted" in block
+            or "TTS is required for normal publish" in block
+        )
         assert "Invoke-FallbackPublish" not in block
 
 
@@ -585,12 +671,14 @@ def test_watcher_does_not_treat_fallback_as_normal_terminal_success() -> None:
 
 
 def test_runner_publish_verification_includes_public_audio_sentinel() -> None:
-    """push 完了判定は publish-status だけでなく公開 audio URL 反映まで含む。"""
+    """push 完了判定は publish-status / audio / podcast 反映まで含む。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
     assert "public audio sentinel" in runner
+    assert "public podcast sentinel" in runner
     assert "tools.daily_self_heal" in runner
     assert "verify-publish" in runner
+    assert "verify-podcast" in runner
     assert runner.index("publish verification start") < runner.index("publish verification OK")
 
 

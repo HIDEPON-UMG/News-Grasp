@@ -14,7 +14,7 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 
 ALERT_STATUSES = {
@@ -260,6 +260,93 @@ def verify_public_audio(*, repo_root: Path, date: str, public_base_url: str) -> 
     return {"checked": True, "ok": True, "latest_audio_url": audio_url}
 
 
+def _load_podcast_row(state_path: Path, date: str) -> dict:
+    if not state_path.exists():
+        return {}
+    try:
+        data = json.loads(state_path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return {"_state_error": "podcast_state_corrupt"}
+    row = data.get(date)
+    return row if isinstance(row, dict) else {}
+
+
+def _fetch_json(url: str) -> dict:
+    with urllib.request.urlopen(url, timeout=20) as res:  # noqa: S310 - fixed public URL
+        return json.loads(res.read().decode("utf-8-sig"))
+
+
+def verify_podcast(
+    *,
+    date: str,
+    state_path: Path,
+    wait_sec: int = 0,
+    poll_sec: int = 30,
+    expected_title: str | None = None,
+) -> dict:
+    expected = expected_title or f"News-Grasp Daily News Briefing {date}"
+    deadline = time.monotonic() + max(0, wait_sec)
+    last: dict = {}
+    while True:
+        row = _load_podcast_row(state_path, date)
+        if row.get("_state_error"):
+            return {"ok": False, "reason": row["_state_error"], "state": str(state_path)}
+        video_id = str(row.get("videoId") or "")
+        playlist_id = str(row.get("playlistId") or "")
+        status = str(row.get("status") or row.get("privacyStatus") or "")
+        if not video_id:
+            return {"ok": False, "reason": "public_podcast_missing", "state": str(state_path)}
+        if status and status != "public":
+            last = {"ok": False, "reason": "podcast_pending", "videoId": video_id, "status": status}
+        else:
+            try:
+                watch_url = f"https://www.youtube.com/watch?v={quote(video_id)}"
+                oembed_url = f"https://www.youtube.com/oembed?url={quote(watch_url, safe='')}&format=json"
+                oembed = _fetch_json(oembed_url)
+                actual_title = str(oembed.get("title") or "")
+                if actual_title != expected:
+                    return {
+                        "ok": False,
+                        "reason": "podcast_title_mismatch",
+                        "videoId": video_id,
+                        "expected_title": expected,
+                        "actual_title": actual_title,
+                    }
+                watch_html = _fetch_text(watch_url)
+                if expected not in watch_html and video_id not in watch_html:
+                    last = {"ok": False, "reason": "podcast_watch_missing", "videoId": video_id}
+                elif playlist_id:
+                    playlist_url = f"https://www.youtube.com/playlist?list={quote(playlist_id)}"
+                    playlist_html = _fetch_text(playlist_url)
+                    if video_id not in playlist_html:
+                        last = {
+                            "ok": False,
+                            "reason": "podcast_playlist_missing",
+                            "videoId": video_id,
+                            "playlistId": playlist_id,
+                        }
+                    else:
+                        return {
+                            "ok": True,
+                            "reason": "",
+                            "videoId": video_id,
+                            "playlistId": playlist_id,
+                            "title": actual_title,
+                        }
+                else:
+                    return {
+                        "ok": False,
+                        "reason": "podcast_playlist_missing",
+                        "videoId": video_id,
+                        "playlistId": "",
+                    }
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+                last = {"ok": False, "reason": "podcast_pending", "videoId": video_id, "detail": str(exc)}
+        if time.monotonic() >= deadline:
+            return last or {"ok": False, "reason": "public_podcast_missing", "state": str(state_path)}
+        time.sleep(max(1, poll_sec))
+
+
 def verify_publish(
     *,
     repo_root: Path,
@@ -269,6 +356,8 @@ def verify_publish(
     public_base_url: str,
     wait_sec: int,
     poll_sec: int,
+    require_podcast: bool = False,
+    podcast_state_path: Path | None = None,
 ) -> dict:
     local_head = _git_output(repo_root, ["rev-parse", "HEAD"])
     remote_head = _git_output(repo_root, ["ls-remote", remote, f"refs/heads/{branch}"]).split()[0]
@@ -285,6 +374,24 @@ def verify_publish(
             if status.get("result") == "published_ok" and status.get("date") == date:
                 audio = verify_public_audio(repo_root=repo_root, date=date, public_base_url=public_base_url)
                 if audio["ok"]:
+                    podcast = {"checked": False, "ok": True, "reason": "podcast_not_required"}
+                    if require_podcast:
+                        podcast = verify_podcast(
+                            date=date,
+                            state_path=podcast_state_path or repo_root / "build" / "youtube-podcast" / "uploads.json",
+                            wait_sec=wait_sec,
+                            poll_sec=poll_sec,
+                        )
+                        if not podcast["ok"]:
+                            return {
+                                "ok": False,
+                                "reason": podcast["reason"],
+                                "local_head": local_head,
+                                "remote_head": remote_head,
+                                "url": status_url,
+                                "audio": audio,
+                                "podcast": podcast,
+                            }
                     return {
                         "ok": True,
                         "reason": "",
@@ -292,6 +399,7 @@ def verify_publish(
                         "remote_head": remote_head,
                         "url": status_url,
                         "audio": audio,
+                        "podcast": podcast,
                     }
                 return {
                     "ok": False,
@@ -343,6 +451,14 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("--public-base-url", default="https://hidepon-umg.github.io/News-Grasp/")
     verify.add_argument("--wait-sec", type=int, default=600)
     verify.add_argument("--poll-sec", type=int, default=30)
+    verify.add_argument("--require-podcast", action="store_true")
+    verify.add_argument("--podcast-state", type=Path, default=None)
+
+    podcast = sub.add_parser("verify-podcast")
+    podcast.add_argument("--date", required=True)
+    podcast.add_argument("--state", type=Path, default=Path("build") / "youtube-podcast" / "uploads.json")
+    podcast.add_argument("--wait-sec", type=int, default=1200)
+    podcast.add_argument("--poll-sec", type=int, default=30)
 
     args = parser.parse_args(argv)
     if args.cmd == "checksum":
@@ -379,6 +495,17 @@ def main(argv: list[str] | None = None) -> int:
             remote=args.remote,
             branch=args.branch,
             public_base_url=args.public_base_url,
+            wait_sec=args.wait_sec,
+            poll_sec=args.poll_sec,
+            require_podcast=args.require_podcast,
+            podcast_state_path=args.podcast_state,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["ok"] else 1
+    if args.cmd == "verify-podcast":
+        result = verify_podcast(
+            date=args.date,
+            state_path=args.state,
             wait_sec=args.wait_sec,
             poll_sec=args.poll_sec,
         )

@@ -567,6 +567,13 @@ def main() -> int:
             bad_urls = {v.ref.url for v in fatal}
             bad_urls |= {url for _dt, _title, url in session_fatal}
             bad_urls |= {ev.url for ev in date_fatal}
+            if args.apply and bad_urls:
+                ledger = _PKG_ROOT / "build" / "quarantine" / today.strftime("%Y-%m-%d") / "bad-urls.json"
+                ledger.parent.mkdir(parents=True, exist_ok=True)
+                ledger.write_text(
+                    json.dumps(sorted(bad_urls), ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
             result = drop_article_urls(
                 repo_root=_PKG_ROOT,
                 urls=bad_urls,

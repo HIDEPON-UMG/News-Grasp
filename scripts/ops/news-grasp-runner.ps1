@@ -160,10 +160,45 @@ $LogPath = Join-Path $LogDir ("$DateStamp.log")
 $CodexUsageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.jsonl"
 $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.jsonl"
 $script:CodexUsageEndSnapshotWritten = $false
+$RunId = [guid]::NewGuid().ToString('N')
+$script:RunnerCommandLine = ''
+$script:RunnerCommandLineFingerprint = ''
+$script:RunnerProcessCreationTime = ''
+
+function Get-StringSha256Hex {
+    param([string] $Text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes([string]$Text)
+        return (([System.BitConverter]::ToString($sha.ComputeHash($bytes))) -replace '-', '').ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Get-RunnerCommandLine {
+    try {
+        $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$PID" -ErrorAction Stop
+        if ($proc.CommandLine) { return [string]$proc.CommandLine }
+    } catch { }
+    return [Environment]::CommandLine
+}
+
+function Initialize-RunnerIdentity {
+    $script:RunnerCommandLine = Get-RunnerCommandLine
+    $script:RunnerCommandLineFingerprint = Get-StringSha256Hex -Text ($script:RunnerCommandLine.Trim().ToLowerInvariant())
+    try {
+        $script:RunnerProcessCreationTime = (Get-Process -Id $PID -ErrorAction Stop).StartTime.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    } catch {
+        $script:RunnerProcessCreationTime = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    }
+}
+
+Initialize-RunnerIdentity
 $NormalPublishVerified = $false
 
 function Get-PublishInventoryArtifacts {
-    param([ValidateSet('digest', 'generated', 'published', 'published-repair')] [string] $Kind)
+    param([ValidateSet('digest', 'generated', 'published', 'published-repair', 'distribution')] [string] $Kind)
     Push-Location $RepoDir
     try {
         $json = & $PyExe '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
@@ -181,40 +216,208 @@ $DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'
 $PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'
 $PublishedRepairArtifacts = Get-PublishInventoryArtifacts -Kind 'published-repair'
 
+function Get-RunnerStateMutexName {
+    param([string] $Path)
+    $hash = (Get-StringSha256Hex -Text ([System.IO.Path]::GetFullPath($Path).ToLowerInvariant())).Substring(0, 24)
+    return "Local\NewsGraspRunnerState-$hash"
+}
+
+function Test-TerminalRunnerStatus {
+    param([string] $Status)
+    return @(
+        'ok',
+        'smoke_ok',
+        'preflight_ok',
+        'watchdog_stale_timeout',
+        'watchdog_wall_timeout',
+        'watchdog_stale_unconfirmed',
+        'watchdog_state_corrupt',
+        'blocked_runner_timeout',
+        'blocked_gate_timeout',
+        'blocked_reporter_timeout',
+        'blocked_reporter_repeated_failure',
+        'blocked_repair_budget_exhausted',
+        'blocked_refill_unresolved',
+        'blocked_external_readiness',
+        'blocked_runner_state_lock_timeout',
+        'blocked_runner_state_corrupt',
+        'distribution_failed',
+        'publish_failed',
+        'failed',
+        'error'
+    ) -contains [string]$Status
+}
+
+function Write-RunnerStateAtomic {
+    param(
+        [string] $Path,
+        [object] $Payload
+    )
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    }
+    $json = ($Payload | ConvertTo-Json -Depth 8) + "`n"
+    $tmp = "$Path.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+    $backup = "$Path.bak"
+    $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($json)
+    $fs = [System.IO.File]::Open($tmp, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+    try {
+        $fs.Write($bytes, 0, $bytes.Length)
+        $fs.Flush($true)
+    } finally {
+        $fs.Dispose()
+    }
+    if (Test-Path -LiteralPath $Path) {
+        [System.IO.File]::Replace($tmp, $Path, $backup, $true)
+    } else {
+        [System.IO.File]::Move($tmp, $Path)
+    }
+}
+
+function Read-RunnerStateOrNull {
+    param([string] $Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    try {
+        return Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        $stamp = Get-Date -Format 'yyyyMMddHHmmss'
+        $corrupt = "$Path.corrupt.$stamp.json"
+        try { Copy-Item -LiteralPath $Path -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
+        return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
+    }
+}
+
+function Invoke-WithRunnerStateLock {
+    param([scriptblock] $Block)
+    $mutexName = Get-RunnerStateMutexName -Path $StateFile
+    $mutex = [System.Threading.Mutex]::new($false, $mutexName)
+    $locked = $false
+    try {
+        $locked = $mutex.WaitOne(5000)
+        if (-not $locked) {
+            throw 'blocked_runner_state_lock_timeout'
+        }
+        & $Block
+    } finally {
+        if ($locked) { $mutex.ReleaseMutex() }
+        $mutex.Dispose()
+    }
+}
+
 function Set-RunnerState {
     param(
         [string] $Status,
         [string] $Message,
         [int] $ExitCode = -1,
-        [switch] $ResetStartedAt
+        [switch] $ResetStartedAt,
+        [string] $Phase = '',
+        [string] $Step = '',
+        [string] $GateId = '',
+        [string] $Category = '',
+        [int] $Attempt = 0,
+        [object] $ActiveJobs = $null,
+        [string] $DeadlineAt = '',
+        [string] $HeartbeatAt = ''
     )
     $now = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK'
-    $state = [ordered]@{
-        status = $Status
-        message = $Message
-        exit_code = $ExitCode
-        updated_at = $now
-        date = $DateStamp
-        pid = $PID
-        repo_dir = $RepoDir
-        log_path = $LogPath
-    }
-    if ($ResetStartedAt) {
-        $state.started_at = $now
-    } elseif (Test-Path $StateFile) {
-        try {
-            $prev = Get-Content -LiteralPath $StateFile -Raw -Encoding UTF8 | ConvertFrom-Json
-            if ($prev.started_at) {
-                $state.started_at = [string]$prev.started_at
+    try {
+        Invoke-WithRunnerStateLock {
+            $prev = Read-RunnerStateOrNull -Path $StateFile
+            if ($prev -and $prev.__corrupt) {
+                $payload = [ordered]@{
+                    status = 'blocked_runner_state_corrupt'
+                    message = "runner state corrupt: $($prev.corrupt_backup)"
+                    exit_code = 125
+                    updated_at = $now
+                    heartbeat_at = $now
+                    date = $DateStamp
+                    run_id = $RunId
+                    pid = $PID
+                    repo_dir = $RepoDir
+                    runner_path = $PSCommandPath
+                    log_path = $LogPath
+                    process_creation_time = $script:RunnerProcessCreationTime
+                    command_line_fingerprint = $script:RunnerCommandLineFingerprint
+                    first_terminal_wins = 'first-terminal-wins'
+                }
+                Write-RunnerStateAtomic -Path $StateFile -Payload $payload
+                return
             }
-        } catch {
-            $state.started_at = $now
+            if ($prev -and $prev.run_id -eq $RunId -and (Test-TerminalRunnerStatus -Status ([string]$prev.status))) {
+                # first-terminal-wins: 同一 run_id の terminal state は running にも別 terminal にも戻さない。
+                return
+            }
+            if ($ResetStartedAt -and $prev -and $prev.run_id -and $prev.run_id -ne $RunId) {
+                $previous = "$StateFile.previous.$(Get-Date -Format 'yyyyMMddHHmmss').json"
+                try { Copy-Item -LiteralPath $StateFile -Destination $previous -Force -ErrorAction SilentlyContinue } catch { }
+            }
+
+            $startedAt = $now
+            if (-not $ResetStartedAt -and $prev -and $prev.started_at) {
+                $startedAt = [string]$prev.started_at
+            }
+            $state = [ordered]@{
+                status = $Status
+                message = $Message
+                exit_code = $ExitCode
+                updated_at = $now
+                heartbeat_at = $(if ($HeartbeatAt) { $HeartbeatAt } else { $now })
+                date = $DateStamp
+                run_id = $RunId
+                pid = $PID
+                repo_dir = $RepoDir
+                runner_path = $PSCommandPath
+                log_path = $LogPath
+                started_at = $startedAt
+                process_creation_time = $script:RunnerProcessCreationTime
+                command_line_fingerprint = $script:RunnerCommandLineFingerprint
+                first_terminal_wins = 'first-terminal-wins'
+            }
+            if ($Phase) { $state.phase = $Phase }
+            if ($Step) { $state.step = $Step }
+            if ($GateId) { $state.gate_id = $GateId }
+            if ($Category) { $state.category = $Category }
+            if ($Attempt -gt 0) { $state.attempt = $Attempt }
+            if ($null -ne $ActiveJobs) { $state.active_jobs = $ActiveJobs }
+            if ($DeadlineAt) { $state.deadline_at = $DeadlineAt }
+            Write-RunnerStateAtomic -Path $StateFile -Payload $state
         }
-    } else {
-        $state.started_at = $now
+    } catch {
+        if ([string]$_.Exception.Message -eq 'blocked_runner_state_lock_timeout') {
+            $fallback = [ordered]@{
+                status = 'blocked_runner_state_lock_timeout'
+                message = 'runner state lock timeout'
+                exit_code = 125
+                updated_at = $now
+                heartbeat_at = $now
+                date = $DateStamp
+                run_id = $RunId
+                pid = $PID
+                repo_dir = $RepoDir
+                runner_path = $PSCommandPath
+                log_path = $LogPath
+                process_creation_time = $script:RunnerProcessCreationTime
+                command_line_fingerprint = $script:RunnerCommandLineFingerprint
+            }
+            try { Write-RunnerStateAtomic -Path $StateFile -Payload $fallback } catch { }
+        } else {
+            throw
+        }
     }
-    $json = $state | ConvertTo-Json -Depth 4
-    [System.IO.File]::WriteAllText($StateFile, $json, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Update-RunnerProgress {
+    param(
+        [string] $Phase,
+        [string] $Step,
+        [string] $GateId = '',
+        [string] $Category = '',
+        [int] $Attempt = 0,
+        [object] $ActiveJobs = $null,
+        [string] $DeadlineAt = ''
+    )
+    Set-RunnerState -Status 'running' -Message $Step -ExitCode -1 -Phase $Phase -Step $Step -GateId $GateId -Category $Category -Attempt $Attempt -ActiveJobs $ActiveJobs -DeadlineAt $DeadlineAt
 }
 
 function Exit-Runner {
@@ -626,6 +829,7 @@ function Invoke-TargetedRepair {
         [string] $CapturePath,
         [string[]] $Artifacts
     )
+    Update-RunnerProgress -Phase 'repair' -Step "repair budget check: $GateId" -GateId $GateId -Category $Category
     $attemptState = Join-Path $RepoDir ("data\gate_attempts\$DateStamp.json")
     # 2026-06-10: 変数名を $args から $gateAttemptArgs に変更 (致命バグ修正)。
     #   $args は PowerShell 自動変数。`Invoke-Logged { & $PyExe @args }` の
@@ -660,6 +864,7 @@ function Invoke-TargetedRepair {
         return 1
     }
 
+    Update-RunnerProgress -Phase 'repair' -Step "codex auth readiness: $GateId" -GateId $GateId -Category $Category
     Write-Log "codex auth readiness gate start (repair:$GateId)"
     if (-not (Test-CodexAuthReadiness)) {
         Exit-Runner -Status 'blocked_codex_auth' -Message "codex auth readiness failed before repair:$GateId" -ExitCode 72
@@ -707,8 +912,10 @@ $failureText
     [System.IO.File]::WriteAllText($repairPrompt, $prompt, [System.Text.UTF8Encoding]::new($false))
     $repairModel = Get-ModelPolicyValue -Role 'editor' -Key 'default'
     Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, Model=$repairModel, TimeoutSec=900)"
+    Update-RunnerProgress -Phase 'repair' -Step "repair wrapper invoke: $GateId" -GateId $GateId -Category $Category
     $repairRc = Invoke-CodexWrapper -PromptFile $repairPrompt -TimeoutSec 900 -IdleTimeoutSec 300 -Model $repairModel -FlowName "repair:$GateId"
     Write-Log "repair wrapper invoke END (agent=codex, gate=$GateId, rc=$repairRc)"
+    Update-RunnerProgress -Phase 'repair' -Step "repair wrapper done: $GateId rc=$repairRc" -GateId $GateId -Category $Category
     return $repairRc
 }
 
@@ -815,11 +1022,17 @@ function Invoke-PythonGateWithRepair {
         [string] $GateId,
         [string] $Category,
         [string[]] $PythonArgs,
-        [string[]] $Artifacts
+        [string[]] $Artifacts,
+        [datetime] $DeadlineAt = [datetime]::MaxValue
     )
     for ($attempt = 1; $attempt -le 2; $attempt++) {
+        if ((Get-Date) -ge $DeadlineAt) {
+            Write-Log "$GateId gate deadline exceeded before attempt $attempt"
+            return 124
+        }
         $capturePath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-gate-$GateId-$DateStamp-attempt$attempt.log")
         Write-Log "$GateId gate attempt $attempt start"
+        Update-RunnerProgress -Phase 'gate' -Step "$GateId attempt $attempt start" -GateId $GateId -Category $Category -Attempt $attempt -DeadlineAt $DeadlineAt.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
         Push-Location $RepoDir
         try {
             Invoke-LoggedCapture -CapturePath $capturePath -Block { & $PyExe @PythonArgs }
@@ -829,11 +1042,17 @@ function Invoke-PythonGateWithRepair {
         }
         if ($gateRc -eq 0) {
             Write-Log "$GateId gate OK (attempt=$attempt)"
+            Update-RunnerProgress -Phase 'gate' -Step "$GateId attempt $attempt OK" -GateId $GateId -Category $Category -Attempt $attempt -DeadlineAt $DeadlineAt.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
             return 0
         }
         Write-Log "$GateId gate failed (attempt=$attempt, rc=$gateRc)"
+        Update-RunnerProgress -Phase 'gate' -Step "$GateId attempt $attempt failed rc=$gateRc" -GateId $GateId -Category $Category -Attempt $attempt -DeadlineAt $DeadlineAt.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
         $repairBeforeStatus = Snapshot-RepairWorkspace
         $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts
+        if ($repairRc -eq 124) {
+            Write-Log "$GateId repair timeout (rc=124)"
+            return 124
+        }
         if ($repairRc -ne 0) {
             return $gateRc
         }
@@ -842,6 +1061,41 @@ function Invoke-PythonGateWithRepair {
         }
     }
     return 1
+}
+
+function Invoke-AutonomousGate {
+    param(
+        [string] $GateId,
+        [string] $Category,
+        [string[]] $PythonArgs,
+        [string[]] $Artifacts,
+        [int] $GateDeadlineSec = 2100
+    )
+    $statePath = Join-Path $RepoDir "data\gate_attempts\$DateStamp-$GateId.json"
+    $deadline = (Get-Date).AddSeconds($GateDeadlineSec)
+    Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate policy start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    Write-Log "$GateId autonomous gate policy start (tools.auto_repair_orchestrator classify)"
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output' '' }
+    } finally {
+        Pop-Location
+    }
+    Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=3, signature_repair=1, state=$statePath)"
+    Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    $gateRc = Invoke-PythonGateWithRepair -GateId $GateId -Category $Category -PythonArgs $PythonArgs -Artifacts $Artifacts -DeadlineAt $deadline
+    if ($gateRc -eq 0) {
+        Write-Log "$GateId autonomous gate OK"
+        Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate OK" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+        return 0
+    }
+    if ($gateRc -eq 124 -or (Get-Date) -ge $deadline) {
+        Write-Log "$GateId autonomous gate timeout (rc=$gateRc, deadline=$($deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')))"
+        Set-RunnerState -Status 'blocked_gate_timeout' -Message "$GateId autonomous gate timeout" -ExitCode 124 -Phase 'gate' -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+        return 124
+    }
+    Write-Log "$GateId autonomous gate failed (rc=$gateRc, state=$statePath)"
+    return $gateRc
 }
 
 function Preserve-UnverifiedGeneratedArtifacts {
@@ -1261,6 +1515,10 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             [string[]]$WaveCategories
         )
 
+        $ReporterPollSeconds = 30
+        $ReporterHeartbeatSeconds = 60
+        $ReporterJobTimeoutSec = $TimeoutSec + 120
+        $wrapper_log_offsets = @{}
         $jobs = @()
         foreach ($waveCat in $WaveCategories) {
             if ($Attempt -gt 1) {
@@ -1273,11 +1531,11 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             New-ReporterPrompt -Category $waveCat -PromptFile $promptFile
 
             while (@($jobs | Where-Object { $_.State -eq 'Running' }).Count -ge $MaxParallelReporterJobs) {
-                Wait-Job -Job @($jobs | Where-Object { $_.State -eq 'Running' }) -Any | Out-Null
+                Start-Sleep -Seconds 1
             }
 
             Write-Log "reporter job START (agent=codex, role=reporter, category=$waveCat, attempt=$Attempt/$ReporterMaxAttempts, Wrapper=$CodexWrapper, Model=$ReporterModel, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
-            $jobs += Start-Job -ArgumentList @(
+            $job = Start-Job -ArgumentList @(
                 $waveCat,
                 $Attempt,
                 $CodexWrapper,
@@ -1335,30 +1593,125 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     wrapper_log = $WrapperLog
                     usage_log = $UsageLog
                     last_message = $OutputLastMessage
+                    wrapper_pid = -1
                 }
             }
+            $job | Add-Member -NotePropertyName Category -NotePropertyValue $waveCat
+            $job | Add-Member -NotePropertyName Attempt -NotePropertyValue $Attempt
+            $job | Add-Member -NotePropertyName StartedAt -NotePropertyValue (Get-Date)
+            $job | Add-Member -NotePropertyName WrapperLog -NotePropertyValue $wrapperLog
+            $job | Add-Member -NotePropertyName UsageLog -NotePropertyValue $usageLog
+            $job | Add-Member -NotePropertyName LastMessage -NotePropertyValue $lastMessage
+            $jobs += $job
         }
 
         if ($jobs.Count -eq 0) { return @() }
-        Wait-Job -Job $jobs | Out-Null
-        $results = @($jobs | Receive-Job)
-        Remove-Job -Job $jobs -Force -ErrorAction SilentlyContinue
 
-        foreach ($result in $results) {
-            if ($result.wrapper_log -and (Test-Path $result.wrapper_log)) {
-                Add-Content -Path $LogPath -Value (Get-Content -LiteralPath $result.wrapper_log -Raw -Encoding UTF8) -Encoding UTF8
+        function Append-ReporterWrapperLog {
+            param([string]$Path)
+            if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return }
+            $text = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+            $key = [string]$Path
+            $offset = if ($wrapper_log_offsets.ContainsKey($key)) { [int]$wrapper_log_offsets[$key] } else { 0 }
+            if ($text.Length -gt $offset) {
+                Add-Content -Path $LogPath -Value $text.Substring($offset) -Encoding UTF8
+                $wrapper_log_offsets[$key] = $text.Length
             }
+        }
+
+        $results = @()
+        $pending = @($jobs)
+        $lastHeartbeat = (Get-Date).AddSeconds(-1 * $ReporterHeartbeatSeconds)
+        while ($pending.Count -gt 0) {
+            $now = Get-Date
+            $activeJobs = @(
+                $pending | Where-Object { $_.State -eq 'Running' } | ForEach-Object {
+                    [ordered]@{
+                        category = [string]$_.Category
+                        attempt = [int]$_.Attempt
+                        elapsed_sec = [int]($now - $_.StartedAt).TotalSeconds
+                    }
+                }
+            )
+            foreach ($job in @($pending)) {
+                Append-ReporterWrapperLog -Path $job.WrapperLog
+            }
+            if (($now - $lastHeartbeat).TotalSeconds -ge $ReporterHeartbeatSeconds) {
+                Write-Log "reporter supervisor heartbeat attempt=$Attempt active_jobs=$($activeJobs.Count)"
+                Update-RunnerProgress -Phase 'reporter' -Step "reporter wave attempt=$Attempt active_jobs=$($activeJobs.Count)" -Attempt $Attempt -ActiveJobs $activeJobs
+                $lastHeartbeat = $now
+            }
+
+            foreach ($job in @($pending)) {
+                $elapsed = [int]((Get-Date) - $job.StartedAt).TotalSeconds
+                if ($job.State -eq 'Running' -and $elapsed -gt $ReporterJobTimeoutSec) {
+                    Write-Log "ERROR: reporter job timeout category=$($job.Category) attempt=$Attempt elapsed_sec=$elapsed limit_sec=$ReporterJobTimeoutSec"
+                    Append-ReporterWrapperLog -Path $job.WrapperLog
+                    Stop-Job -Job $job -Force -ErrorAction SilentlyContinue
+                    $partial = @($job | Receive-Job -ErrorAction SilentlyContinue)
+                    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+                    foreach ($item in $partial) {
+                        if ($item.wrapper_pid -and [int]$item.wrapper_pid -gt 0) {
+                            try { Stop-Process -Id ([int]$item.wrapper_pid) -Force -ErrorAction SilentlyContinue } catch { }
+                        }
+                    }
+                    $timeoutResult = [pscustomobject]@{
+                        category = [string]$job.Category
+                        attempt = [int]$job.Attempt
+                        rc = 124
+                        elapsed_sec = $elapsed
+                        wrapper_log = [string]$job.WrapperLog
+                        usage_log = [string]$job.UsageLog
+                        last_message = [string]$job.LastMessage
+                        failure_status = 'blocked_reporter_timeout'
+                    }
+                    $results += $timeoutResult
+                    Write-Log "reporter job END category=$($timeoutResult.category) attempt=$($timeoutResult.attempt)/$ReporterMaxAttempts rc=$($timeoutResult.rc) elapsed_sec=$($timeoutResult.elapsed_sec)"
+                    Set-RunnerState -Status 'blocked_reporter_timeout' -Message "reporter job timeout category=$($job.Category)" -ExitCode 124 -Phase 'reporter' -Category ([string]$job.Category) -Attempt $Attempt -ActiveJobs $activeJobs
+                    $pending = @($pending | Where-Object { $_.Id -ne $job.Id })
+                    continue
+                }
+
+                if ($job.State -ne 'Running') {
+                    Append-ReporterWrapperLog -Path $job.WrapperLog
+                    $received = @($job | Receive-Job -ErrorAction SilentlyContinue)
+                    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+                    if ($received.Count -eq 0) {
+                        $received = @([pscustomobject]@{
+                            category = [string]$job.Category
+                            attempt = [int]$job.Attempt
+                            rc = 125
+                            elapsed_sec = $elapsed
+                            wrapper_log = [string]$job.WrapperLog
+                            usage_log = [string]$job.UsageLog
+                            last_message = [string]$job.LastMessage
+                        })
+                    }
+                    foreach ($item in $received) {
+                        $results += $item
+                        Write-Log "reporter job END category=$($item.category) attempt=$($item.attempt)/$ReporterMaxAttempts rc=$($item.rc) elapsed_sec=$($item.elapsed_sec)"
+                    }
+                    $pending = @($pending | Where-Object { $_.Id -ne $job.Id })
+                }
+            }
+            if ($pending.Count -gt 0) {
+                Start-Sleep -Seconds $ReporterPollSeconds
+            }
+        }
+
+        foreach ($result in @($results)) {
+            if ($result.wrapper_log) { Append-ReporterWrapperLog -Path $result.wrapper_log }
             if ($result.usage_log -and (Test-Path $result.usage_log)) {
                 Add-Content -Path $CodexUsageLog -Value (Get-Content -LiteralPath $result.usage_log -Raw -Encoding UTF8) -Encoding UTF8
             }
-            Write-Log "reporter job END category=$($result.category) attempt=$($result.attempt)/$ReporterMaxAttempts rc=$($result.rc) elapsed_sec=$($result.elapsed_sec)"
         }
 
-        return $results
+        return @($results)
     }
 
     $retryCategories = @($Categories)
     $terminalFailures = @{}
+    $ReporterTerminalExitCode = 1
     for ($attempt = 1; $attempt -le $ReporterMaxAttempts -and $retryCategories.Count -gt 0; $attempt++) {
         $waveResults = Invoke-ReporterWave -Attempt $attempt -WaveCategories $retryCategories
         $nextRetryCategories = @()
@@ -1369,6 +1722,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $failureReason = $null
             if ([int]$waveResult.rc -ne 0) {
                 $failureReason = "wrapper_rc=$($waveResult.rc)"
+                if ([int]$waveResult.rc -eq 124) {
+                    $ReporterTerminalExitCode = 124
+                }
             } else {
                 $verifyReporterArgs = @('-m', 'tools.verify_reporter_output', '--date', $DateStamp, '--category', $catName)
                 $verifyCapture = Join-Path $ReporterArtifactDir "$catName.verify-attempt$attempt.log"
@@ -1394,6 +1750,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $previousSignature = $ReporterFailureSignatures[$catName]
             if ($previousSignature -and $previousSignature -eq $failureSignature) {
                 Write-Log "ERROR: reporter same failure signature category=$catName attempt=$attempt signature=$failureSignature; stop retrying this category"
+                Set-RunnerState -Status 'blocked_reporter_repeated_failure' -Message "reporter repeated failure category=$catName" -ExitCode 1 -Phase 'reporter' -Category $catName -Attempt $attempt
                 $terminalFailures[$catName] = $failureReason
             } elseif ($attempt -ge $ReporterMaxAttempts) {
                 Write-Log "ERROR: reporter exhausted attempts category=$catName attempt=$attempt signature=$failureSignature"
@@ -1419,7 +1776,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             Write-Log "ERROR: reporter terminal failure category=$retryCat reason=retry loop ended before success"
         }
         Write-Log 'ERROR: Stage2 reporter fan-out failed; Stage3 editor integration is skipped'
-        exit 1
+        exit $ReporterTerminalExitCode
     }
 
     foreach ($artifactCat in $Categories) {
@@ -1507,9 +1864,10 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 # 直せばよいかを runner log に明示する。判定は `tools.generate_pages.parse_reflection`
 # を使う `tools.validate_summary_reflection` に集約し、公開 HTML 側の抽出仕様と分岐させない。
 Write-Log 'summary reflection gate start (validate_summary_reflection --latest)'
-$summaryReflectionRc = Invoke-PythonGateWithRepair -GateId 'summary-reflection' -Category 'summary' -PythonArgs @('-m', 'tools.validate_summary_reflection') -Artifacts @("digest/Summary/$DateStamp.md")
+$summaryReflectionRc = Invoke-AutonomousGate -GateId 'summary-reflection' -Category 'summary' -PythonArgs @('-m', 'tools.validate_summary_reflection') -Artifacts @("digest/Summary/$DateStamp.md")
 if ($summaryReflectionRc -ne 0) {
-    Stop-ContentGateWithoutFallback -GateId 'summary-reflection' -ExitCode $summaryReflectionRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'summary reflection autonomous gate failed' -ExitCode $summaryReflectionRc
+    exit 1
 }
 Write-Log 'summary reflection gate OK'
 
@@ -1519,9 +1877,10 @@ Write-Log 'summary reflection gate OK'
 # 落ちた。また、記事 record の date は収集日であり、URL パス上の発行日が前日以前
 # でも pre-push gate が検出できなかった。日次公開境界で両方を fail loud にする。
 Write-Log "daily quality gate start (validate_daily_quality --date $DateStamp)"
-$dailyQualityRc = Invoke-PythonGateWithRepair -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp) -Artifacts $DailyDigestArtifacts
+$dailyQualityRc = Invoke-AutonomousGate -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp) -Artifacts $DailyDigestArtifacts
 if ($dailyQualityRc -ne 0) {
-    Stop-ContentGateWithoutFallback -GateId 'daily-quality' -ExitCode $dailyQualityRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'daily quality autonomous gate failed' -ExitCode $dailyQualityRc
+    exit 1
 }
 Write-Log 'daily quality gate OK'
 
@@ -1578,11 +1937,11 @@ if ($generationNormalizeRc -ne 0) {
 Write-Log 'generation artifact normalize OK'
 
 Write-Log 'generation quality gate start (validate_generation_quality)'
-$generationQualityRc = Invoke-PythonGateWithRepair -GateId 'generation-quality' -Category 'generated' -PythonArgs @('-m', 'tools.validate_generation_quality', '--date', $DateStamp, '--repo-root', $RepoDir, '--json') -Artifacts $GeneratedArtifacts
+$generationQualityRc = Invoke-AutonomousGate -GateId 'generation-quality' -Category 'generated' -PythonArgs @('-m', 'tools.validate_generation_quality', '--date', $DateStamp, '--repo-root', $RepoDir, '--json') -Artifacts $GeneratedArtifacts
 if ($generationQualityRc -ne 0) {
-    Write-Log "generation quality repair failed (rc=$generationQualityRc)"
-    Set-RunnerState -Status 'content_repair_failed' -Message 'generation quality repair failed' -ExitCode 1
-    Stop-ContentGateWithoutFallback -GateId 'generation-quality' -ExitCode $generationQualityRc
+    Write-Log "generation quality autonomous gate failed (rc=$generationQualityRc)"
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'generation quality autonomous gate failed' -ExitCode 1
+    exit 1
 }
 Write-Log 'generation quality gate OK'
 
@@ -1601,7 +1960,7 @@ Write-Log 'generation quality gate OK'
 # 時は本番 runner では fatal にする。対話・ad-hoc の audit 既定は互換維持し、
 # runner が --require-session を渡す経路だけ完走扱いを禁止する。
 Write-Log 'URL liveness gate start (audit_all_article_urls --gate --match-session --require-session)'
-$urlGateRc = Invoke-PythonGateWithRepair -GateId 'url-liveness' -Category 'urls' -PythonArgs @('tools\audit_all_article_urls.py', '--gate', '--match-session', '--require-session') -Artifacts @('data/articles.jsonl', 'data/_session_urls.json', 'data/_session_urls.d')
+$urlGateRc = Invoke-AutonomousGate -GateId 'url-liveness' -Category 'urls' -PythonArgs @('tools\audit_all_article_urls.py', '--gate', '--match-session', '--require-session') -Artifacts @('data/articles.jsonl', 'data/_session_urls.json', 'data/_session_urls.d')
 if ($urlGateRc -ne 0) {
     Write-Log "URL liveness quarantine start (audit_all_article_urls --gate --match-session --require-session --quarantine-articles --apply)"
     Push-Location $RepoDir
@@ -1612,6 +1971,28 @@ if ($urlGateRc -ne 0) {
         Pop-Location
     }
     if ($urlQuarantineRc -eq 0) {
+        $badUrlFile = Join-Path $RepoDir "build\quarantine\$DateStamp\bad-urls.json"
+        if (Test-Path -LiteralPath $badUrlFile) {
+            Write-Log "URL liveness refill start (tools.refill_category_after_quarantine, bad-url-file=$badUrlFile)"
+            $refillCategories = @('fx','ai','it','mobility','manufacturing','economy','game')
+            foreach ($refillCat in $refillCategories) {
+                Push-Location $RepoDir
+                try {
+                    Invoke-Logged { & $PyExe '-m' 'tools.refill_category_after_quarantine' '--date' $DateStamp '--category' $refillCat '--bad-url-file' $badUrlFile '--candidate-dir' 'build\deduped-candidates' '--txid' "url-liveness-$refillCat" }
+                    $refillRc = $LASTEXITCODE
+                } finally {
+                    Pop-Location
+                }
+                if ($refillRc -ne 0) {
+                    Write-Log "URL liveness refill failed category=$refillCat rc=$refillRc"
+                    Set-RunnerState -Status 'blocked_refill_unresolved' -Message "URL liveness refill failed category=$refillCat" -ExitCode $refillRc
+                    exit 1
+                }
+            }
+            Write-Log 'URL liveness refill OK'
+        } else {
+            Write-Log 'URL liveness refill skipped: bad URL ledger not found'
+        }
         Write-Log 'URL liveness gate recheck after quarantine'
         Push-Location $RepoDir
         try {
@@ -1625,11 +2006,13 @@ if ($urlGateRc -ne 0) {
             $urlGateRc = 0
         } else {
             Write-Log "URL liveness recheck failed after quarantine (rc=$urlRecheckRc). normal publish is blocked."
-            Stop-ContentGateWithoutFallback -GateId 'url-liveness' -ExitCode $urlRecheckRc
+            Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness recheck failed after quarantine/refill' -ExitCode $urlRecheckRc
+            exit 1
         }
     } else {
         Write-Log "URL liveness quarantine failed (rc=$urlQuarantineRc). normal publish is blocked."
-        Stop-ContentGateWithoutFallback -GateId 'url-liveness' -ExitCode $urlQuarantineRc
+        Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness quarantine failed' -ExitCode $urlQuarantineRc
+        exit 1
     }
 }
 Write-Log 'URL liveness gate OK'
@@ -1642,9 +2025,10 @@ Write-Log 'URL liveness gate OK'
 # `tools/validate_record.py` は純粋関数 + CLI を提供、本 gate は本番 daily append
 # LLM append でも ad-hoc script (`append_*.py`) でも効く位置にいる。
 Write-Log "record schema gate start (validate_record --recent 7 --issue-date $DateStamp)"
-$recordGateRc = Invoke-PythonGateWithRepair -GateId 'record-schema' -Category 'records' -PythonArgs @('-m', 'tools.validate_record', '--recent', '7', '--issue-date', $DateStamp) -Artifacts @('data/articles.jsonl')
+$recordGateRc = Invoke-AutonomousGate -GateId 'record-schema' -Category 'records' -PythonArgs @('-m', 'tools.validate_record', '--recent', '7', '--issue-date', $DateStamp) -Artifacts @('data/articles.jsonl')
 if ($recordGateRc -ne 0) {
-    Stop-ContentGateWithoutFallback -GateId 'record-schema' -ExitCode $recordGateRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'record schema autonomous gate failed' -ExitCode $recordGateRc
+    exit 1
 }
 Write-Log 'record schema gate OK'
 
@@ -1655,9 +2039,10 @@ Write-Log 'record schema gate OK'
 # digest-only は「古記事残存または append 漏れ」、articles-only は「カード生成漏れ」として
 # push 前に止める。
 Write-Log "digest/articles reconcile gate start (validate_digest_articles_reconcile --issue-date $DateStamp)"
-$reconcileGateRc = Invoke-PythonGateWithRepair -GateId 'digest-articles-reconcile' -Category 'digest' -PythonArgs @('-m', 'tools.validate_digest_articles_reconcile', '--issue-date', $DateStamp) -Artifacts @('digest', 'data/articles.jsonl')
+$reconcileGateRc = Invoke-AutonomousGate -GateId 'digest-articles-reconcile' -Category 'digest' -PythonArgs @('-m', 'tools.validate_digest_articles_reconcile', '--issue-date', $DateStamp) -Artifacts @('digest', 'data/articles.jsonl')
 if ($reconcileGateRc -ne 0) {
-    Stop-ContentGateWithoutFallback -GateId 'digest-articles-reconcile' -ExitCode $reconcileGateRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'digest/articles reconcile autonomous gate failed' -ExitCode $reconcileGateRc
+    exit 1
 }
 Write-Log 'digest/articles reconcile gate OK'
 
@@ -1671,9 +2056,10 @@ Write-Log 'digest/articles reconcile gate OK'
 # を強制発火し、1 件でも欠落があれば push 全停止 → digest commit も push されない構造に
 # する。URL liveness gate と同じ pre-push 境界に集約。
 Write-Log 'ja-callout gate start (test_english_articles_require_ja_callout)'
-$jaGateRc = Invoke-PythonGateWithRepair -GateId 'ja-callout' -Category 'digest' -PythonArgs @('-m', 'pytest', 'tests/test_title_ja_coverage.py::test_english_articles_require_ja_callout', '-q', '--tb=short', '--no-header') -Artifacts @('digest')
+$jaGateRc = Invoke-AutonomousGate -GateId 'ja-callout' -Category 'digest' -PythonArgs @('-m', 'pytest', 'tests/test_title_ja_coverage.py::test_english_articles_require_ja_callout', '-q', '--tb=short', '--no-header') -Artifacts @('digest')
 if ($jaGateRc -ne 0) {
-    Stop-ContentGateWithoutFallback -GateId 'ja-callout' -ExitCode $jaGateRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'ja-callout autonomous gate failed' -ExitCode $jaGateRc
+    exit 1
 }
 Write-Log 'ja-callout gate OK'
 
@@ -1702,7 +2088,7 @@ try {
     } elseif ($previousPytestAddopts -notmatch '--basetemp(?:=|\s)') {
         $env:PYTEST_ADDOPTS = "$previousPytestAddopts --basetemp=$PytestBaseTemp"
     }
-    $pytestGateRc = Invoke-PythonGateWithRepair -GateId 'pytest-static' -Category 'tests' -PythonArgs @('-m', 'pytest', 'tests/', '-q', '--tb=line', '--no-header', '-m', 'not network') -Artifacts @('tests', 'tools', 'prompts', 'digest', 'data/articles.jsonl')
+    $pytestGateRc = Invoke-AutonomousGate -GateId 'pytest-static' -Category 'tests' -PythonArgs @('-m', 'pytest', 'tests/', '-q', '--tb=line', '--no-header', '-m', 'not network') -Artifacts @('tests', 'tools', 'prompts', 'digest', 'data/articles.jsonl')
 } finally {
     if ($null -eq $previousPytestAddopts) {
         Remove-Item Env:\PYTEST_ADDOPTS -ErrorAction SilentlyContinue
@@ -1712,7 +2098,8 @@ try {
 }
 if ($pytestGateRc -ne 0) {
     Write-Log "pytest gate failed after bounded repair (rc=$pytestGateRc). normal publish is blocked."
-    Stop-ContentGateWithoutFallback -GateId 'pytest-static' -ExitCode $pytestGateRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'pytest autonomous gate failed' -ExitCode $pytestGateRc
+    exit 1
 }
 Write-Log 'pytest gate OK'
 
@@ -1785,7 +2172,8 @@ try {
 }
 if ($pagesRc -ne 0) {
     Write-Log "generate_pages.py exited with $pagesRc. normal publish is blocked."
-    Stop-ContentGateWithoutFallback -GateId 'generate-pages' -ExitCode $pagesRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'generate-pages failed' -ExitCode $pagesRc
+    exit 1
 }
 Write-Log 'generate_pages.py done'
 
@@ -1794,9 +2182,10 @@ Write-Log 'generate_pages.py done'
 # 公開完了扱いにしてしまった。通常公開の完了条件は digest + docs + 当日 DeepDive まで
 # 揃っていることなので、generate_pages.py 後に md/html の存在を fail loud にする。
 Write-Log "deepdive required gate start (validate_daily_quality --date $DateStamp --require-deepdive)"
-$deepDiveRequiredRc = Invoke-PythonGateWithRepair -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts $PublishedRepairArtifacts
+$deepDiveRequiredRc = Invoke-AutonomousGate -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts $PublishedRepairArtifacts
 if ($deepDiveRequiredRc -ne 0) {
-    Stop-ContentGateWithoutFallback -GateId 'deepdive-required' -ExitCode $deepDiveRequiredRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'deepdive required autonomous gate failed' -ExitCode $deepDiveRequiredRc
+    exit 1
 }
 Write-Log 'deepdive required gate OK'
 
@@ -1805,10 +2194,11 @@ Write-Log 'deepdive required gate OK'
 # TOP STORY 画像や hero lead が退化する経路が残っていた。公開される HTML を
 # 1 箇所で検査し、画像なし TOP STORY / 色面 fallback / 短文 lead を push 前に止める。
 Write-Log "public HTML gate start (validate_public_home --date $DateStamp)"
-$publicHomeRc = Invoke-PythonGateWithRepair -GateId 'public-html' -Category 'docs' -PythonArgs @('-m', 'tools.validate_public_home', '--date', $DateStamp) -Artifacts @('docs/index.html')
+$publicHomeRc = Invoke-AutonomousGate -GateId 'public-html' -Category 'docs' -PythonArgs @('-m', 'tools.validate_public_home', '--date', $DateStamp) -Artifacts @('docs/index.html')
 if ($publicHomeRc -ne 0) {
     Write-Log "public HTML gate failed after bounded repair (rc=$publicHomeRc). normal publish is blocked."
-    Stop-ContentGateWithoutFallback -GateId 'public-html' -ExitCode $publicHomeRc
+    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'public HTML autonomous gate failed' -ExitCode $publicHomeRc
+    exit 1
 }
 Write-Log 'public HTML gate OK'
 
@@ -1858,13 +2248,12 @@ if ($diffRc -eq 1) {
     exit 1
 }
 
-# ===== 4.5 YouTube Podcast episode (non-fatal, push 直前) =====
-# 2026-06-19: repair / generate / docs commit が収束する前に upload すると、bounded repair
-# 周回のたびに同一日の podcast が重複公開される。YouTube upload は外部副作用なので、
-# 通常 publish の全 gate と commit が終わった後、git push 直前に 1 回だけ試行する。
+# ===== 4.5 YouTube Podcast prepare (fatal, push 直前) =====
+# push 前は private upload までに留め、Web publish が失敗したときに YouTube だけ public
+# になる一時不整合を避ける。rerun は uploads.json の mp4_sha256/videoId で skip する。
 foreach ($youtubePodcastStep in @(
     @{ Name = 'youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp) },
-    @{ Name = 'youtube podcast upload_episode'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--publish') }
+    @{ Name = 'youtube podcast prepare'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare') }
 )) {
     Write-Log "$($youtubePodcastStep.Name) start"
     try {
@@ -1876,15 +2265,15 @@ foreach ($youtubePodcastStep in @(
             Pop-Location
         }
         if ($youtubePodcastRc -ne 0) {
-            Write-Log "WARN: $($youtubePodcastStep.Name) exited with $youtubePodcastRc. YouTube Podcast upload is non-fatal for normal publish."
-            Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
-            break
+            Write-Log "ERROR: $($youtubePodcastStep.Name) exited with $youtubePodcastRc. YouTube Podcast is required for normal publish."
+            Set-RunnerState -Status 'distribution_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
+            exit 1
         }
         Write-Log "$($youtubePodcastStep.Name) done"
     } catch {
-        Write-Log "WARN: $($youtubePodcastStep.Name) failed: $($_.Exception.Message). YouTube Podcast upload is non-fatal for normal publish."
-        Set-RunnerState -Status 'youtube_podcast_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode 1
-        break
+        Write-Log "ERROR: $($youtubePodcastStep.Name) failed: $($_.Exception.Message). YouTube Podcast is required for normal publish."
+        Set-RunnerState -Status 'distribution_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode 1
+        exit 1
     }
 }
 
@@ -1902,6 +2291,7 @@ if ($NoPush) {
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: push failed (rc=$LASTEXITCODE)"; exit 1 }
     Write-Log 'push origin main done (digest + docs pushed)'
     Write-Log 'publish verification start (remote HEAD + public publish-status sentinel + public audio sentinel)'
+    Update-RunnerProgress -Phase 'publish-verify' -Step 'publish verification start'
     Push-Location $RepoDir
     try {
         Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' $PublishVerifyWaitSec '--poll-sec' $PublishVerifyPollSec }
@@ -1914,8 +2304,39 @@ if ($NoPush) {
         Set-RunnerState -Status 'publish_failed' -Message 'publish verification failed' -ExitCode 1
         exit 1
     }
-    $NormalPublishVerified = $true
     Write-Log 'publish verification OK'
+
+    Write-Log 'youtube podcast finalize start'
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.youtube_podcast.upload_episode' $DateStamp '--finalize' }
+        $youtubeFinalizeRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($youtubeFinalizeRc -ne 0) {
+        Write-Log "ERROR: youtube podcast finalize failed (rc=$youtubeFinalizeRc). public podcast sentinel cannot converge."
+        Set-RunnerState -Status 'distribution_failed' -Message 'youtube podcast finalize failed' -ExitCode $youtubeFinalizeRc
+        exit 1
+    }
+    Write-Log 'youtube podcast finalize OK'
+
+    Write-Log 'podcast verification start (public podcast sentinel)'
+    Update-RunnerProgress -Phase 'podcast-verify' -Step 'podcast verification start'
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-podcast' '--date' $DateStamp '--state' (Join-Path $RepoDir 'build\youtube-podcast\uploads.json') '--wait-sec' '1200' '--poll-sec' '30' }
+        $podcastVerifyRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($podcastVerifyRc -ne 0) {
+        Write-Log "ERROR: podcast verification failed (rc=$podcastVerifyRc). public podcast sentinel did not converge."
+        Set-RunnerState -Status 'distribution_failed' -Message 'podcast verification failed' -ExitCode $podcastVerifyRc
+        exit 1
+    }
+    $NormalPublishVerified = $true
+    Write-Log 'podcast verification OK'
 }
 
 # ===== 6. Web Push 通知（docs 公開後・.venv python = $PyExe で送る） =====

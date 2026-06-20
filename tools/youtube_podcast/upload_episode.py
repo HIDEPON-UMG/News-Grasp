@@ -24,6 +24,7 @@ _URL_RE = re.compile(r"https?://[^\s)>\"]+")
 class PodcastClient(Protocol):
     def ensure_playlist(self) -> str: ...
     def upload_video(self, mp4_path: Path, metadata: dict[str, Any], *, privacy_status: str) -> str: ...
+    def update_video_privacy(self, *, video_id: str, privacy_status: str) -> dict[str, Any]: ...
     def add_video_to_playlist(self, *, video_id: str, playlist_id: str) -> str: ...
 
 
@@ -50,7 +51,11 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    if path.exists():
+        path.with_suffix(path.suffix + ".bak").write_text(path.read_text(encoding="utf-8-sig"), encoding="utf-8")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
+    tmp.replace(path)
 
 
 def _uploads_json() -> Path:
@@ -197,6 +202,17 @@ class YouTubePodcastClient:
             raise RuntimeError("YouTube upload response did not include id")
         return video_id
 
+    def update_video_privacy(self, *, video_id: str, privacy_status: str) -> dict[str, Any]:
+        request = self.service.videos().update(
+            part="status",
+            body={
+                "id": video_id,
+                "status": {"privacyStatus": privacy_status, "selfDeclaredMadeForKids": False},
+            },
+        )
+        response = request.execute()
+        return response if isinstance(response, dict) else {"id": video_id}
+
     def add_video_to_playlist(self, *, video_id: str, playlist_id: str) -> str:
         request = self.service.playlistItems().insert(
             part="snippet",
@@ -211,6 +227,88 @@ class YouTubePodcastClient:
         return str(response.get("id") or "")
 
 
+def _mp4_and_hash(day: str) -> tuple[Path, str]:
+    if not _DATE_RE.match(day):
+        raise ValueError(f"invalid date: {day}")
+    mp4 = BUILD_DIR / f"{day}.mp4"
+    if not mp4.exists():
+        raise FileNotFoundError(f"mp4 not found: {mp4}")
+    return mp4, sha256_file(mp4)
+
+
+def prepare(
+    day: str,
+    *,
+    client: PodcastClient | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    mp4, mp4_hash = _mp4_and_hash(day)
+    uploads = _load_uploads()
+    existing = uploads.get(day)
+    if isinstance(existing, dict) and existing.get("mp4_sha256") == mp4_hash and existing.get("videoId"):
+        return {"date": day, "skipped": True, **existing}
+
+    metadata = build_metadata(day)
+    if dry_run:
+        result = {
+            "date": day,
+            "dry_run": True,
+            "phase": "prepared",
+            "status": "private",
+            "videoId": "",
+            "mp4_path": str(mp4),
+            "mp4_sha256": mp4_hash,
+            "metadata": metadata,
+        }
+        print(json.dumps(result, ensure_ascii=False))
+        return result
+
+    active_client = client or YouTubePodcastClient.from_local_secrets()
+    video_id = active_client.upload_video(mp4, metadata, privacy_status="private")
+    uploads[day] = {
+        "phase": "prepared",
+        "status": "private",
+        "videoId": video_id,
+        "mp4_sha256": mp4_hash,
+        "title": metadata["title"],
+    }
+    _write_uploads(uploads)
+    result = {"date": day, "skipped": False, **uploads[day]}
+    print(json.dumps(result, ensure_ascii=False))
+    return result
+
+
+def finalize(day: str, *, client: PodcastClient | None = None) -> dict[str, Any]:
+    _mp4_and_hash(day)
+    uploads = _load_uploads()
+    row = uploads.get(day)
+    if not isinstance(row, dict) or not row.get("videoId"):
+        raise RuntimeError(f"prepared podcast upload not found for {day}")
+    if row.get("status") == "public" and row.get("playlistItemId"):
+        return {"date": day, "skipped": True, **row}
+
+    active_client = client or YouTubePodcastClient.from_local_secrets()
+    video_id = str(row["videoId"])
+    playlist_id = str(row.get("playlistId") or active_client.ensure_playlist())
+    active_client.update_video_privacy(video_id=video_id, privacy_status="public")
+    playlist_item_id = str(row.get("playlistItemId") or "")
+    if not playlist_item_id:
+        playlist_item_id = active_client.add_video_to_playlist(video_id=video_id, playlist_id=playlist_id)
+    row.update(
+        {
+            "phase": "finalized",
+            "status": "public",
+            "playlistId": playlist_id,
+            "playlistItemId": playlist_item_id,
+        }
+    )
+    uploads[day] = row
+    _write_uploads(uploads)
+    result = {"date": day, "skipped": False, **row}
+    print(json.dumps(result, ensure_ascii=False))
+    return result
+
+
 def publish(
     day: str,
     *,
@@ -218,12 +316,7 @@ def publish(
     dry_run: bool = False,
     privacy_status: str = "public",
 ) -> dict[str, Any]:
-    if not _DATE_RE.match(day):
-        raise ValueError(f"invalid date: {day}")
-    mp4 = BUILD_DIR / f"{day}.mp4"
-    if not mp4.exists():
-        raise FileNotFoundError(f"mp4 not found: {mp4}")
-    mp4_hash = sha256_file(mp4)
+    mp4, mp4_hash = _mp4_and_hash(day)
     existing = _already_public(day, mp4_hash)
     if existing:
         return {"date": day, "skipped": True, **existing}
@@ -265,11 +358,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("date", help="YYYY-MM-DD")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--dry-run", action="store_true", help="YouTube API を呼ばず mp4 と metadata を検査する。")
+    mode.add_argument("--prepare", action="store_true", help="push 前に private video として upload する。")
+    mode.add_argument("--finalize", action="store_true", help="Web 公開確認後に public 化して playlist に追加する。")
     mode.add_argument("--publish", action="store_true", help="YouTube へ公開 upload して podcast playlist に追加する。")
     parser.add_argument("--privacy-status", default="public", choices=["public", "private", "unlisted"])
     args = parser.parse_args(argv)
     try:
-        publish(args.date, dry_run=args.dry_run, privacy_status=args.privacy_status)
+        if args.prepare:
+            prepare(args.date, dry_run=False)
+        elif args.finalize:
+            finalize(args.date)
+        else:
+            publish(args.date, dry_run=args.dry_run, privacy_status=args.privacy_status)
         return 0
     except Exception as exc:
         _warn(str(exc))
