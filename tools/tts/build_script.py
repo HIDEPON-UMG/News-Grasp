@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import date as date_type, timedelta
+from decimal import Decimal, InvalidOperation
 import re
 import sys
 from pathlib import Path
@@ -55,6 +56,12 @@ _PROMPT_EXAMPLE_PHRASES = (
     "現場に入れる立場だと、この後工程コストは無視できません",
     "これはAIだけの話ではなく、製造や電力にもつながります",
 )
+_DOLLAR_PREFIX_UNIT_RE = re.compile(
+    r"(?i)(?:US\s*)?[$＄]\s*([0-9]+(?:\.[0-9]+)?)\s*([KMBT])(?![A-Za-z0-9])"
+)
+_DOLLAR_SUFFIX_UNIT_RE = re.compile(
+    r"(?i)(?<![A-Za-z0-9])([0-9]+(?:\.[0-9]+)?)\s*([KMBT])\s*(?:ドル|dollars?|USD)(?![A-Za-z0-9])"
+)
 _REPEATED_MOTIFS = (
     "ここは少し",
     "地味ですが",
@@ -81,6 +88,41 @@ def load_script(date: str) -> str:
 
 def effective_char_count(text: str) -> int:
     return len(_COUNT_IGNORE_RE.sub("", text))
+
+
+def _format_decimal(value: Decimal) -> str:
+    normalized = value.normalize()
+    if normalized == normalized.to_integral():
+        return str(normalized.quantize(Decimal("1")))
+    return format(normalized, "f").rstrip("0").rstrip(".")
+
+
+def _format_usd_japanese_units(value: Decimal, unit: str) -> str:
+    multipliers = {
+        "K": Decimal("1000"),
+        "M": Decimal("1000000"),
+        "B": Decimal("1000000000"),
+        "T": Decimal("1000000000000"),
+    }
+    dollars = value * multipliers[unit.upper()]
+    if dollars >= Decimal("1000000000000"):
+        return f"{_format_decimal(dollars / Decimal('1000000000000'))}兆ドル"
+    if dollars >= Decimal("100000000"):
+        return f"{_format_decimal(dollars / Decimal('100000000'))}億ドル"
+    if dollars >= Decimal("10000"):
+        return f"{_format_decimal(dollars / Decimal('10000'))}万ドル"
+    return f"{_format_decimal(dollars)}ドル"
+
+
+def normalize_us_currency_units(text: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        try:
+            return _format_usd_japanese_units(Decimal(match.group(1)), match.group(2))
+        except InvalidOperation:
+            return match.group(0)
+
+    text = _DOLLAR_PREFIX_UNIT_RE.sub(_replace, text)
+    return _DOLLAR_SUFFIX_UNIT_RE.sub(_replace, text)
 
 
 def _strip_audio_title_lines(text: str) -> str:
@@ -186,6 +228,7 @@ def normalize_for_tts(text: str) -> str:
     text = re.sub(r"`{3}.*?`{3}", "", text, flags=re.DOTALL)
     text = _MARKDOWN_TOKEN_RE.sub("", text)
     text = text.replace("**", "").replace("__", "").replace("`", "")
+    text = normalize_us_currency_units(text)
     for src, dst in KANA_REPLACEMENTS.items():
         text = re.sub(
             rf"(?<![A-Za-z]){re.escape(src)}(?![A-Za-z])",

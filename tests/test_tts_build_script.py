@@ -212,3 +212,21 @@ def test_normalize_for_tts_applies_pronunciation_overrides_for_known_misreads():
     assert "じょうほうしゅうせい" in normalized
     assert "後工程" not in normalized
     assert "上方修正" not in normalized
+
+
+def test_normalize_for_tts_converts_us_currency_units_to_japanese_units():
+    normalized = build_script.normalize_for_tts(
+        "新規予約は$17.4Bで、別表記では17.4Bドル。"
+        "売上はUS$250M、投資枠は＄1.2T、費用は50Mドル。"
+    )
+
+    assert "$17.4B" not in normalized
+    assert "17.4Bドル" not in normalized
+    assert "US$250M" not in normalized
+    assert "＄1.2T" not in normalized
+    assert "50Mドル" not in normalized
+    assert "174億ドル" in normalized
+    assert normalized.count("174億ドル") == 2
+    assert "2.5億ドル" in normalized
+    assert "1.2兆ドル" in normalized
+    assert "5000万ドル" in normalized
