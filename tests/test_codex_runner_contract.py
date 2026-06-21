@@ -90,18 +90,6 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     assert "exit 1" in youtube_block
 
 
-def test_runner_waits_until_0730_before_normal_daily_processing() -> None:
-    """通常の日次実行は 07:30 前に重い処理へ進まない。"""
-    runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-
-    assert "function Wait-DailyStartGate" in runner
-    assert ".Date.AddHours(7).AddMinutes(30)" in runner
-    assert "daily start gate waiting until 07:30 JST" in runner
-    assert "NEWS_GRASP_SKIP_DAILY_START_GATE" in runner
-    assert runner.index("Assert-RunnerBinaryInSync") < runner.index("Wait-DailyStartGate")
-    assert runner.index("Wait-DailyStartGate") < runner.index("existing daily artifacts detected")
-
-
 def test_mobility_backfill_does_not_keep_claude_print_path() -> None:
     """完了済み一時backfillからClaude CLI課金経路を残さない。"""
     if not BACKFILL_MOBILITY.exists():

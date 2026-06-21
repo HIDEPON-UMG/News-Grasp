@@ -1238,27 +1238,6 @@ function Test-DailyArtifactsExist {
     return $false
 }
 
-function Wait-DailyStartGate {
-    $dailyStart = (Get-Date).Date.AddHours(7).AddMinutes(30)
-    if ($SmokeTest -or $PreflightOnly -or $RecoverOnly -or $NoPush -or $Stage2EditorSmokeOnly -or $StopAfterEditorStart) {
-        Write-Log 'daily start gate skipped (non-normal mode)'
-        return
-    }
-    if ($env:NEWS_GRASP_SKIP_DAILY_START_GATE -eq '1') {
-        Write-Log 'daily start gate skipped (NEWS_GRASP_SKIP_DAILY_START_GATE=1)'
-        return
-    }
-    $now = Get-Date
-    if ($now -ge $dailyStart) {
-        Write-Log 'daily start gate passed (now >= 07:30 JST)'
-        return
-    }
-    $waitSeconds = [int][Math]::Ceiling(($dailyStart - $now).TotalSeconds)
-    Write-Log "daily start gate waiting until 07:30 JST (waitSeconds=$waitSeconds)"
-    Start-Sleep -Seconds $waitSeconds
-    Write-Log 'daily start gate passed (after wait)'
-}
-
 # ===== sentinel: 起動できた事実 =====
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
 Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly" -Encoding UTF8
@@ -1268,7 +1247,6 @@ Add-Content -Path $LogPath -Value '==========================================' -
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, pid=$PID)"
 Assert-RunnerBinaryInSync
-Wait-DailyStartGate
 if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
     Write-Log "ERROR: existing daily artifacts detected; refusing full rerun for date=$DateStamp. Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts."
     Set-RunnerState -Status 'failed' -Message 'existing daily artifacts detected; refusing full rerun' -ExitCode 64
