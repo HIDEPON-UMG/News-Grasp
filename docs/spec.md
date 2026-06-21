@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-06-20
+> **Last Updated**: 2026-06-21
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -85,6 +85,32 @@ runner、watcher、repair、publish verification、podcast verification、distri
 | Repair first | 直せる品質問題を停止で済ませていないか確認する。 |
 | Verification | 契約テスト、dry-run、publish verify、podcast verify など自己完結の検証を置く。 |
 | Decision record | 憲法に関わる判断を変える場合は、incident report、ADR、または計画書に context と consequence を残す。 |
+
+## Feature Change Quality Gate Matrix
+
+機能を追加、削除、修正する場合は、実装だけでなく同じ変更単位で品質 gate、契約テスト、公開検証、runner state、完了報告のどれを更新するかを先に決める。機能の成果物が Definition of Done のいずれかへ届くなら、その成果物を作る工程だけでなく、前工程の入力契約、当該工程の失敗分類、後工程の公開確認までを 1 セットで扱う。
+
+次の表を変更計画の最低チェックリストとする。該当する行があるのに gate 更新が不要な場合は、不要理由を計画または incident evidence に残す。
+
+| Change area | Update with the feature change | Minimum gate / test |
+|---|---|---|
+| Source collection / URL freshness / dedup | watchlist、検索 query、URL 正規化、公開日 freshness、重複 / follow-up 判定、`data/search_audit` を更新する。 | URL liveness / freshness / dedup 契約テスト、`tests/test_all_article_urls_live.py`、`tests/test_dedup_freshness.py`、`tests/test_dedup_followup_gate.py`。 |
+| Article data / schema / tags | `data/articles.jsonl` schema、frontmatter、Obsidian tags、entities / topics / industries / events を更新する。 | `tools.validate_record`、`tests/test_validate_record.py`、tag / session URL / article append 系契約テスト。 |
+| Digest / category schedule | 対象カテゴリ、休載条件、記事数不足時の refill / quarantine、`data/search_audit` 契約を更新する。 | `tools.validate_daily_quality --date <date> --require-deepdive`、カテゴリ presence / search audit 契約テスト。 |
+| Summary / editorial reflection | Summary 構造、reflection、hero、key takeaways、日付 docs への反映を更新する。 | summary reflection 系テスト、`validate_daily_quality`、公開日付 docs sentinel。 |
+| DeepDive | md、HTML、関係図、日付ページからの導線、公開 inventory を更新する。 | `--require-deepdive`、DeepDive presence / relation layout テスト、公開 URL sentinel。 |
+| Public UI / OGP / PWA / thumbnails | template、CSS、OGP meta、thumbnail contract、manifest、service worker cache、offline page を更新する。 | `tests/test_pwa_meta.py`、`tests/test_thumb_contract.py`、`tests/test_fetch_ogp.py`、必要時 Playwright / visual smoke と `docs/sw.js` version bump。 |
+| Web publish surface | `docs/<date>/index.html`、summary、per-category docs、public status、GitHub Pages 反映を更新する。 | `verify-publish`、published docs presence、public URL 200 / sentinel、remote HEAD / Pages success。 |
+| Audio / TTS | 音声生成、release URL、ページ埋め込み、再生可能性、TTS required gate を更新する。 | TTS publish gate、audio URL presence、`verify-publish` audio check。 |
+| YouTube Podcast / playlist | upload state、public video、playlist 反映、外部検証 fallback、token / quota / permission の typed status を更新する。 | `verify-podcast`、`verify-publish --require-podcast`、外部 API 401/403/404 fallback 契約テスト。 |
+| Notification | 送信条件、通知不要条件、失敗時 typed status、再送可否を更新する。 | notification dry-run / typed status テスト、送信不要時の完了条件テスト。 |
+| Runner / state / recovery | full run / RecoverOnly / fallback publish / OK marker / distribution state の遷移を更新する。 | runner convergence / state watcher 契約テスト、full と RecoverOnly の両経路 dry-run。 |
+| Incident / reporting | 障害 evidence、公開 inventory、報告 HTML、完了報告の必須項目を更新する。 | incident report validator、公開 inventory 確認、`tests/test_product_spec_contract.py`。 |
+| External integration / auth | OAuth、API quota、権限、token expiry、公開反映遅延の failure domain を typed status に分ける。 | auth/quota/permission の fixture、retry しない fatal と fallback 可能な verify failure の分類テスト。 |
+
+非自明な変更計画と完了報告には、必ず「Affected matrix rows」「Gate update decision」「Verification command」を書く。該当する row が無い機能を追加、削除、修正する場合は、実装と同じ変更単位でこの `Feature Change Quality Gate Matrix` と `tests/test_product_spec_contract.py` を更新してから完了扱いにする。
+
+今回の 2026-06-21 Podcast 検証障害のように、公開成果物は正常でも検証 API 側だけが 401 を返す場合は、成果物を未公開扱いにせず、別経路の公開確認へ fallback する。ただし fallback は無条件成功ではない。watch / playlist / public status のいずれかで同じ videoId、playlistId、title、日付を確認できる場合だけ Green とする。
 
 ## Acceptance Scenarios
 

@@ -7,6 +7,7 @@ This is the root routing contract for Claude Code and Codex.
 - Keep sibling `CLAUDE.md` and `AGENTS.md` files aligned. Claude Code consumes `CLAUDE.md`; Codex consumes `AGENTS.md`.
 - Treat `docs/spec.md` as stable product truth, `tasks/current.md` as a derived status snapshot, and `tasks/todos.md` as the deferred-goal ledger; current execution stays in the active plan's `## Task Breakdown`.
 - For any 非自明な News-Grasp 改修, treat `docs/spec.md` as the 上位プロダクト真実 and check whether the change preserves the mission, Definition of Done, repair-first principle, and system integrity before implementation.
+- For any feature addition, deletion, or behavioral fix, explicitly name the affected `docs/spec.md` `Feature Change Quality Gate Matrix` row(s) in the plan and final report. If no existing row covers the feature, update the matrix and `tests/test_product_spec_contract.py` in the same change before calling the work complete.
 - Treat `docs/researches/`, `tasks/lessons.md`, and `.ai/harness/policy.json` as durable workflow context.
 - Use `.ai/context/context-map.json` and `.ai/context/capabilities.json` to discover functional-block contracts.
 - Do not infer local `CLAUDE.md` or `AGENTS.md` files from broad physical layouts such as `apps/*`, `packages/*`, or `services/*`.

@@ -57,6 +57,32 @@ def test_product_constitution_locks_done_and_autonomous_repair_principles() -> N
         assert phrase in text
 
 
+def test_product_constitution_maps_feature_changes_to_quality_gates() -> None:
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "Feature Change Quality Gate Matrix" in headings
+    for phrase in [
+        "機能を追加、削除、修正する場合",
+        "同じ変更単位で品質 gate",
+        "Source collection / URL freshness / dedup",
+        "Article data / schema / tags",
+        "Web publish surface",
+        "Public UI / OGP / PWA / thumbnails",
+        "Audio / TTS",
+        "YouTube Podcast / playlist",
+        "Notification",
+        "Runner / state / recovery",
+        "Incident / reporting",
+        "Affected matrix rows",
+        "Gate update decision",
+        "Verification command",
+        "docs/spec.md",
+        "tests/test_product_spec_contract.py",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> None:
     text = _read(SPEC)
 
@@ -77,3 +103,6 @@ def test_product_constitution_is_referenced_from_repo_entrypoints() -> None:
         assert "docs/spec.md" in text
         assert "上位プロダクト真実" in text
         assert "非自明な News-Grasp 改修" in text
+        assert "Feature Change Quality Gate Matrix" in text
+        assert "affected" in text
+        assert "tests/test_product_spec_contract.py" in text
