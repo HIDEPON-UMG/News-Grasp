@@ -293,6 +293,50 @@ def test_verify_podcast_accepts_public_video_and_playlist(monkeypatch, tmp_path:
     assert result["playlistId"] == "playlist-1"
 
 
+def test_verify_podcast_falls_back_when_oembed_is_unauthorized(monkeypatch, tmp_path: Path) -> None:
+    """oEmbed が 401 でも watch / playlist HTML で公開実体を確認できれば OK。"""
+    state = tmp_path / "uploads.json"
+    state.write_text(
+        json.dumps({"2026-06-21": {"status": "public", "videoId": "video-1", "playlistId": "playlist-1"}}),
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if "oembed" in url:
+            raise dsh.urllib.error.HTTPError(url, 401, "Unauthorized", hdrs=None, fp=None)
+        if "watch?v=video-1" in url:
+            return FakeResponse("<title>News-Grasp Daily News Briefing 2026-06-21 - YouTube</title>video-1")
+        if "playlist?list=playlist-1" in url:
+            return FakeResponse("<html>News-Grasp Daily News Briefing 2026-06-21 video-1</html>")
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_podcast(date="2026-06-21", state_path=state, wait_sec=0, poll_sec=1)
+
+    assert result["ok"] is True
+    assert result["reason"] == ""
+    assert result["videoId"] == "video-1"
+    assert result["title"] == "News-Grasp Daily News Briefing 2026-06-21"
+    assert result["verification"] == "watch_playlist_fallback"
+
+
 def test_verify_podcast_rejects_title_mismatch(monkeypatch, tmp_path: Path) -> None:
     state = tmp_path / "uploads.json"
     state.write_text(

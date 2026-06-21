@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -276,6 +277,20 @@ def _fetch_json(url: str) -> dict:
         return json.loads(res.read().decode("utf-8-sig"))
 
 
+def _title_from_watch_html(html: str, expected: str) -> str:
+    match = re.search(r"<title>(.*?)</title>", html, flags=re.IGNORECASE | re.DOTALL)
+    if match:
+        title = re.sub(r"\s+", " ", match.group(1)).strip()
+        suffix = " - YouTube"
+        if title.endswith(suffix):
+            title = title[: -len(suffix)].strip()
+        if title:
+            return title
+    if expected in html:
+        return expected
+    return ""
+
+
 def verify_podcast(
     *,
     date: str,
@@ -302,9 +317,29 @@ def verify_podcast(
             try:
                 watch_url = f"https://www.youtube.com/watch?v={quote(video_id)}"
                 oembed_url = f"https://www.youtube.com/oembed?url={quote(watch_url, safe='')}&format=json"
-                oembed = _fetch_json(oembed_url)
-                actual_title = str(oembed.get("title") or "")
-                if actual_title != expected:
+                verification = "oembed_watch_playlist"
+                try:
+                    oembed = _fetch_json(oembed_url)
+                    actual_title = str(oembed.get("title") or "")
+                    if actual_title != expected:
+                        return {
+                            "ok": False,
+                            "reason": "podcast_title_mismatch",
+                            "videoId": video_id,
+                            "expected_title": expected,
+                            "actual_title": actual_title,
+                        }
+                except urllib.error.HTTPError as exc:
+                    if exc.code != 401:
+                        raise
+                    actual_title = ""
+                    verification = "watch_playlist_fallback"
+                watch_html = _fetch_text(watch_url)
+                if not actual_title:
+                    actual_title = _title_from_watch_html(watch_html, expected)
+                if expected not in watch_html and video_id not in watch_html:
+                    last = {"ok": False, "reason": "podcast_watch_missing", "videoId": video_id}
+                elif actual_title and actual_title != expected:
                     return {
                         "ok": False,
                         "reason": "podcast_title_mismatch",
@@ -312,9 +347,6 @@ def verify_podcast(
                         "expected_title": expected,
                         "actual_title": actual_title,
                     }
-                watch_html = _fetch_text(watch_url)
-                if expected not in watch_html and video_id not in watch_html:
-                    last = {"ok": False, "reason": "podcast_watch_missing", "videoId": video_id}
                 elif playlist_id:
                     playlist_url = f"https://www.youtube.com/playlist?list={quote(playlist_id)}"
                     playlist_html = _fetch_text(playlist_url)
@@ -332,6 +364,7 @@ def verify_podcast(
                             "videoId": video_id,
                             "playlistId": playlist_id,
                             "title": actual_title,
+                            "verification": verification,
                         }
                 else:
                     return {
