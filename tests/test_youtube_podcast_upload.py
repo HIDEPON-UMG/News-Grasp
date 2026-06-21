@@ -275,3 +275,61 @@ def test_deepdive_metadata_and_upload_state_are_separate(tmp_path, monkeypatch):
     assert "DeepDive" in metadata["tags"]
     assert result["mp4_path"] == str(deepdive_build_dir / "2026-06-21.mp4")
     assert result["metadata"]["title"] == metadata["title"]
+
+
+def test_deepdive_finalize_adds_video_to_primary_podcast_playlist_too(tmp_path, monkeypatch):
+    """DeepDive 対談は DeepDive 補助リストだけでなく News-Grasp Podcast 本体にも載せる。"""
+    from tools.youtube_podcast import upload_episode
+
+    deepdive_build_dir = tmp_path / "build" / "youtube-podcast-deepdive"
+    state_dir = tmp_path / ".news-grasp"
+    deepdive_build_dir.mkdir(parents=True)
+    mp4 = deepdive_build_dir / "2026-06-21.mp4"
+    mp4.write_bytes(b"mp4")
+    monkeypatch.setattr(upload_episode, "DEEPDIVE_BUILD_DIR", deepdive_build_dir)
+    monkeypatch.setattr(upload_episode, "LOCAL_STATE_DIR", state_dir)
+    (deepdive_build_dir / "uploads.json").write_text(
+        json.dumps(
+            {
+                "2026-06-21": {
+                    "phase": "prepared",
+                    "status": "private",
+                    "videoId": "deepdive-video-1",
+                    "mp4_sha256": upload_episode.sha256_file(mp4),
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    calls: list[tuple[str, str]] = []
+
+    class FakeClient:
+        def ensure_playlist(self, kind="daily"):
+            calls.append(("ensure_playlist", kind))
+            return "playlist-primary" if kind == "daily" else "playlist-deepdive"
+
+        def update_video_privacy(self, *, video_id, privacy_status):
+            calls.append(("update_video_privacy", f"{video_id}:{privacy_status}"))
+            return {"id": video_id, "status": {"privacyStatus": privacy_status}}
+
+        def add_video_to_playlist(self, *, video_id, playlist_id):
+            calls.append(("add_video_to_playlist", f"{video_id}:{playlist_id}"))
+            return f"item-{playlist_id}"
+
+        def upload_video(self, *_args, **_kwargs):  # pragma: no cover - 呼ばれたら失敗
+            raise AssertionError("finalize must not re-upload")
+
+    result = upload_episode.finalize("2026-06-21", client=FakeClient(), kind="deepdive")
+
+    assert result["playlistId"] == "playlist-deepdive"
+    assert result["playlistItemId"] == "item-playlist-deepdive"
+    assert result["primaryPodcastPlaylistId"] == "playlist-primary"
+    assert result["primaryPodcastPlaylistItemId"] == "item-playlist-primary"
+    assert calls == [
+        ("ensure_playlist", "deepdive"),
+        ("update_video_privacy", "deepdive-video-1:public"),
+        ("add_video_to_playlist", "deepdive-video-1:playlist-deepdive"),
+        ("ensure_playlist", "daily"),
+        ("add_video_to_playlist", "deepdive-video-1:playlist-primary"),
+    ]

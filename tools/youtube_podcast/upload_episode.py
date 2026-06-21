@@ -196,6 +196,27 @@ def _ensure_playlist(client: PodcastClient, kind: str) -> str:
         return client.ensure_playlist()
 
 
+def _ensure_primary_podcast_membership(
+    row: dict[str, Any],
+    *,
+    client: PodcastClient,
+    video_id: str,
+    kind: str,
+) -> None:
+    if kind != "deepdive":
+        return
+    primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or _ensure_playlist(client, "daily"))
+    current_playlist_id = str(row.get("playlistId") or "")
+    primary_playlist_item_id = str(row.get("primaryPodcastPlaylistItemId") or "")
+    if not primary_playlist_item_id:
+        if primary_playlist_id == current_playlist_id:
+            primary_playlist_item_id = str(row.get("playlistItemId") or "")
+        else:
+            primary_playlist_item_id = client.add_video_to_playlist(video_id=video_id, playlist_id=primary_playlist_id)
+    row["primaryPodcastPlaylistId"] = primary_playlist_id
+    row["primaryPodcastPlaylistItemId"] = primary_playlist_item_id
+
+
 class YouTubePodcastClient:
     def __init__(self, service: Any):
         self.service = service
@@ -387,6 +408,7 @@ def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "dail
             "playlistItemId": playlist_item_id,
         }
     )
+    _ensure_primary_podcast_membership(row, client=active_client, video_id=video_id, kind=kind)
     uploads[day] = row
     _write_uploads(uploads, kind)
     result = {"date": day, "skipped": False, **row}
@@ -425,14 +447,16 @@ def publish(
     playlist_id = _ensure_playlist(active_client, kind)
     video_id = active_client.upload_video(mp4, metadata, privacy_status=privacy_status)
     playlist_item_id = active_client.add_video_to_playlist(video_id=video_id, playlist_id=playlist_id)
-    uploads = _load_uploads(kind)
-    uploads[day] = {
+    row = {
         "status": privacy_status,
         "videoId": video_id,
         "playlistId": playlist_id,
         "playlistItemId": playlist_item_id,
         "mp4_sha256": mp4_hash,
     }
+    _ensure_primary_podcast_membership(row, client=active_client, video_id=video_id, kind=kind)
+    uploads = _load_uploads(kind)
+    uploads[day] = row
     _write_uploads(uploads, kind)
     result = {"date": day, "skipped": False, **uploads[day]}
     print(json.dumps(result, ensure_ascii=False))

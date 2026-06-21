@@ -358,11 +358,27 @@ def verify_podcast(
                             "playlistId": playlist_id,
                         }
                     else:
+                        primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or "")
+                        if primary_playlist_id and primary_playlist_id != playlist_id:
+                            primary_playlist_url = f"https://www.youtube.com/playlist?list={quote(primary_playlist_id)}"
+                            primary_playlist_html = _fetch_text(primary_playlist_url)
+                            if video_id not in primary_playlist_html:
+                                last = {
+                                    "ok": False,
+                                    "reason": "primary_podcast_playlist_missing",
+                                    "videoId": video_id,
+                                    "playlistId": primary_playlist_id,
+                                }
+                                if time.monotonic() >= deadline:
+                                    return last
+                                time.sleep(max(1, poll_sec))
+                                continue
                         return {
                             "ok": True,
                             "reason": "",
                             "videoId": video_id,
                             "playlistId": playlist_id,
+                            "primaryPodcastPlaylistId": primary_playlist_id,
                             "title": actual_title,
                             "verification": verification,
                         }

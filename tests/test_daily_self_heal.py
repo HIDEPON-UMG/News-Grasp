@@ -293,6 +293,65 @@ def test_verify_podcast_accepts_public_video_and_playlist(monkeypatch, tmp_path:
     assert result["playlistId"] == "playlist-1"
 
 
+def test_verify_podcast_requires_primary_podcast_playlist_when_recorded(monkeypatch, tmp_path: Path) -> None:
+    """DeepDive 対談の二重所属記録がある場合は News-Grasp Podcast 本体も確認する。"""
+    state = tmp_path / "uploads.json"
+    state.write_text(
+        json.dumps(
+            {
+                "2026-06-21": {
+                    "status": "public",
+                    "videoId": "deepdive-video-1",
+                    "playlistId": "playlist-deepdive",
+                    "primaryPodcastPlaylistId": "playlist-primary",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if "oembed" in url:
+            return FakeResponse(json.dumps({"title": "News-Grasp DeepDive Dialogue 2026-06-21"}))
+        if "watch?v=deepdive-video-1" in url:
+            return FakeResponse("<html>News-Grasp DeepDive Dialogue 2026-06-21</html>")
+        if "playlist?list=playlist-deepdive" in url:
+            return FakeResponse("<html>deepdive-video-1</html>")
+        if "playlist?list=playlist-primary" in url:
+            return FakeResponse("<html>daily-video-only</html>")
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_podcast(
+        date="2026-06-21",
+        state_path=state,
+        wait_sec=0,
+        poll_sec=1,
+        expected_title="News-Grasp DeepDive Dialogue 2026-06-21",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "primary_podcast_playlist_missing"
+    assert result["playlistId"] == "playlist-primary"
+
+
 def test_verify_podcast_falls_back_when_oembed_is_unauthorized(monkeypatch, tmp_path: Path) -> None:
     """oEmbed が 401 でも watch / playlist HTML で公開実体を確認できれば OK。"""
     state = tmp_path / "uploads.json"
