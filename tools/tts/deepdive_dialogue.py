@@ -14,6 +14,7 @@ from tools.tts import aivis_client, build_script, synthesize_daily
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts" / "deepdive"
 DEFAULT_BGM_PATH = REPO_ROOT / "build" / "tts" / "candidates" / "news-grasp-bgm-office-lofi-v2-loop40s.mp3"
+BGM_VOLUME_DB = synthesize_daily.BGM_VOLUME_DB + 6.0
 MIN_DIALOGUE_CHARS = 1200
 MAX_DIALOGUE_CHARS = 2600
 MIN_SECONDS = 4 * 60
@@ -109,7 +110,7 @@ def mix_voice_wav_with_bgm(voice_wav: Path, bgm_path: Path, mp3_out: Path) -> No
     duration = synthesize_daily._wav_duration_seconds(voice_wav)
     fade_out_start = max(duration - 5.0, 0.0)
     filter_complex = (
-        f"[1:a]volume={synthesize_daily.BGM_VOLUME_DB:.1f}dB,"
+        f"[1:a]volume={BGM_VOLUME_DB:.1f}dB,"
         f"atrim=0:{duration:.3f},"
         "afade=t=in:st=0:d=2,"
         f"afade=t=out:st={fade_out_start:.3f}:d=5[bgm];"
