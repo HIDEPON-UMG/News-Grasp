@@ -24,6 +24,17 @@ def test_aivis_default_params_match_reviewed_voice_settings():
     assert aivis_client.DEFAULT_PARAMS["outputStereo"] is False
 
 
+def test_requested_dialogue_model_uuids_map_to_local_speaker_uuids():
+    assert aivis_client._speaker_uuids_for_model("47e53151-a378-46f3-abee-ce13aa07feb1") == {
+        "47e53151-a378-46f3-abee-ce13aa07feb1",
+        "561e4e59-3bc9-4726-9028-44a3c12a6f1d",
+    }
+    assert aivis_client._speaker_uuids_for_model("59f96896-64d2-4378-830a-4d5feb3d81aa") == {
+        "59f96896-64d2-4378-830a-4d5feb3d81aa",
+        "05df32d1-1c20-48d3-860d-83310004e046",
+    }
+
+
 def test_candidate_engine_paths_include_current_installer_engine_location(monkeypatch, tmp_path):
     local_appdata = tmp_path / "Local"
     monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))

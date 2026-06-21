@@ -1851,6 +1851,9 @@ def build_deepdive_pages(
     written: list[Path] = []
     tmpl_mtime = _templates_mtime()  # テンプレ変更も増分判定に含める (generate_pages と同一境界)
     for src in sorted(src_dir.glob("*.md")):
+        fm, _ = parse_frontmatter(src.read_text(encoding="utf-8"))
+        if str(fm.get("kind", "")).strip() != "deepdive":
+            continue
         try:
             ctx = build_deepdive_context(src)
         except (DeepDiveIncompleteError, DeepDiveUrlError):
@@ -1889,6 +1892,8 @@ def _archive_item(md_path: Path) -> dict[str, Any] | None:
     """
     text = Path(md_path).read_text(encoding="utf-8")
     fm, body = parse_frontmatter(text)
+    if str(fm.get("kind", "")).strip() != "deepdive":
+        return None
     date_str = fm.get("date", "")
     if not date_str:
         return None

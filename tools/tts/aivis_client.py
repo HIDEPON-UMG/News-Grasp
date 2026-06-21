@@ -19,6 +19,22 @@ PORT = 10101
 MODEL_UUID = "47e53151-a378-46f3-abee-ce13aa07feb1"
 # AivisSpeech /speakers は Hub の model UUID ではなく speaker_uuid を返す。
 AIDA_SHIGERU_SPEAKER_UUID = "561e4e59-3bc9-4726-9028-44a3c12a6f1d"
+MODEL_TO_SPEAKER_UUIDS: dict[str, set[str]] = {
+    MODEL_UUID: {MODEL_UUID, AIDA_SHIGERU_SPEAKER_UUID},
+    # DeepDive 対談サンプル用。Hub model UUID と Engine speaker_uuid は別 ID。
+    "70a875a9-feae-41e6-a586-8cf9e47c6c0b": {
+        "70a875a9-feae-41e6-a586-8cf9e47c6c0b",
+        "6dd8366d-b928-4d60-ac41-b3010c85c08e",
+    },
+    "e9339137-2ae3-4d41-9394-fb757a7e61e6": {
+        "e9339137-2ae3-4d41-9394-fb757a7e61e6",
+        "41b7785f-35cc-4089-a360-dd8a63da5e75",
+    },
+    "59f96896-64d2-4378-830a-4d5feb3d81aa": {
+        "59f96896-64d2-4378-830a-4d5feb3d81aa",
+        "05df32d1-1c20-48d3-860d-83310004e046",
+    },
+}
 DEFAULT_PARAMS: dict[str, Any] = {
     "speedScale": 1.0,
     "pitchScale": 0.0,
@@ -137,9 +153,7 @@ def shutdown_started_engine(timeout: int = 10) -> bool:
 
 
 def _speaker_uuids_for_model(uuid: str) -> set[str]:
-    if uuid == MODEL_UUID:
-        return {MODEL_UUID, AIDA_SHIGERU_SPEAKER_UUID}
-    return {uuid}
+    return MODEL_TO_SPEAKER_UUIDS.get(uuid, {uuid})
 
 
 def resolve_style_id(uuid: str = MODEL_UUID) -> int:
