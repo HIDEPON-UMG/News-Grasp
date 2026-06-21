@@ -151,8 +151,10 @@ def test_theme_banner_navy(built_overview: str):
 
 
 def test_overview_links_to_deepdive_dialogue_podcast(built_overview: str):
-    assert "PODCAST" in built_overview
-    assert "DeepDive解説対談を聴く" in built_overview
+    assert 'class="overview-theme__podcast-cta"' in built_overview
+    assert 'aria-label="YouTube PodcastでDeepDive解説対談を聴く"' in built_overview
+    assert '<span class="overview-theme__podcast-kicker">YOUTUBE PODCAST</span>' in built_overview
+    assert '<span class="overview-theme__podcast-title">DeepDive解説対談を聴く</span>' in built_overview
     assert "https://www.youtube.com/watch?v=video-deepdive-1&amp;list=playlist-deepdive-1" in built_overview
 
 

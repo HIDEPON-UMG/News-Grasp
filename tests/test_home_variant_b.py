@@ -170,6 +170,20 @@ def test_home_hero_grid_columns_clamped_to_container():
     )
 
 
+def test_deepdive_podcast_cta_is_visually_button_like():
+    """Podcast 導線は小さな下線リンクではなく、押せるCTAとして固定する。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    for selector in (".home-hero__podcast-cta", ".overview-theme__podcast-cta"):
+        start = css.find(selector)
+        assert start >= 0, f"{selector} missing"
+        block = css[start:css.find("}", start)]
+        assert "display: inline-flex;" in block
+        assert "min-height:" in block
+        assert "background: var(--color-" in block
+        assert "border: 2px solid" in block
+        assert "text-decoration: none;" in block
+
+
 def test_categories_7_lens_cards(built_home: str):
     """home-cats__grid に 7 lens card が並ぶ。"""
     assert 'class="home-cats__grid"' in built_home

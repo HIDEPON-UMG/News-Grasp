@@ -1353,6 +1353,38 @@ strong {
 .home-hero__report-item:last-child { border-bottom: none; }
 /* 黒地 CTA は gold で反転 */
 .home-hero__cta--dd { background: var(--color-gold); color: var(--color-ink); }
+.home-hero__podcast-cta {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 54px;
+  margin-top: 12px;
+  margin-left: 12px;
+  padding: 10px 18px;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  border: 2px solid var(--color-gold);
+  text-decoration: none;
+  vertical-align: top;
+}
+.home-hero__podcast-cta:hover {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+.home-hero__podcast-kicker {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  line-height: 1.1;
+}
+.home-hero__podcast-title {
+  margin-top: 4px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
 /* DeepDive スライドから過去テーマ書架 (/deepdive/) への副導線 (黒パネル上の控えめなゴールド) */
 .home-hero__dd-archlink { display: inline-block; margin-top: 12px; margin-left: 14px; font-family: var(--font-mono);
   font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--color-gold); text-decoration: none;
@@ -1964,9 +1996,35 @@ strong {
   gap: 16px;
   flex-wrap: wrap;
 }
-.overview-theme__cta--podcast {
-  color: var(--color-cream);
-  border-bottom: 1px solid var(--color-gold);
+.overview-theme__podcast-cta {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 58px;
+  padding: 10px 18px;
+  background: var(--color-gold);
+  color: var(--color-ink);
+  border: 2px solid var(--color-cream);
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(201, 161, 85, 0.35);
+}
+.overview-theme__podcast-cta:hover {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+.overview-theme__podcast-kicker {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  line-height: 1.1;
+}
+.overview-theme__podcast-title {
+  margin-top: 4px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 /* Category rows */
