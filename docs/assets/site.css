@@ -1950,13 +1950,23 @@ strong {
   font-family: var(--font-serif);
 }
 .overview-theme__cta {
-  margin-left: auto;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--color-gold);
   font-weight: 700;
   letter-spacing: 0.15em;
   text-decoration: none;
+}
+.overview-theme__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.overview-theme__cta--podcast {
+  color: var(--color-cream);
+  border-bottom: 1px solid var(--color-gold);
 }
 
 /* Category rows */
@@ -2747,7 +2757,7 @@ strong {
   .overview-theme { padding: 14px 16px; }
   .overview-theme__inner { flex-direction: column; align-items: flex-start; gap: 8px; }
   .overview-theme__title { font-size: 18px; }
-  .overview-theme__cta { margin-left: 0; }
+  .overview-theme__actions { margin-left: 0; flex-direction: column; align-items: flex-start; gap: 6px; }
   .overview-row { padding: 16px 16px; }
   .overview-row__inner { grid-template-columns: 1fr; gap: 16px; }
   .overview-dist { border-left: none; padding-left: 0; border-top: 1px solid var(--color-border); padding-top: 16px; }

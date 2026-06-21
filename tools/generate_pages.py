@@ -44,6 +44,7 @@ from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
 _TTS_BUILD_DIR = _PKG_ROOT / "build" / "tts"
+_DEEPDIVE_PODCAST_UPLOADS = Path("build") / "youtube-podcast-deepdive" / "uploads.json"
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
@@ -71,6 +72,27 @@ _BULLET_RE = re.compile(r"^-\s+(.+)$", re.MULTILINE)
 _WIKILINK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]")
 _UNDERLINE_RE = re.compile(r"__(.+?)__")
 _BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+
+
+def _deepdive_podcast_url_for_date(date: str, docs_root: Path) -> str:
+    uploads_path = Path(docs_root).parent / _DEEPDIVE_PODCAST_UPLOADS
+    if not uploads_path.exists():
+        return ""
+    try:
+        uploads = json.loads(uploads_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    row = uploads.get(date)
+    if not isinstance(row, dict) or row.get("status") != "public":
+        return ""
+    video_id = str(row.get("videoId") or "").strip()
+    if not video_id:
+        return ""
+    playlist_id = str(row.get("playlistId") or "").strip()
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    if playlist_id:
+        url = f"{url}&list={playlist_id}"
+    return url
 
 # Summary digest の考察 (reflection) ブロック抽出用。
 # `## § 本日のテーマ考察` 見出し / `> [!quote]` PULL QUOTE / `### KEY TAKEAWAYS`。
@@ -1131,7 +1153,7 @@ def _deepdive_report_items(dd: dict[str, Any]) -> list[str]:
     return items
 
 
-def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | None:
+def _latest_deepdive_card(target_date: str | None = None, docs_root: Path | None = None) -> dict[str, Any] | None:
     """最新 DeepDive (週次 TODAY'S THEME) を LP 上部ヒーローの
     SUMMARY ⇆ DEEP DIVE スライダー用に 1 枚分のデータへ整形する。
 
@@ -1167,6 +1189,8 @@ def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | No
         return None
     if not dd.get("date") or not dd.get("title"):
         return None
+    dd_date = str(dd.get("date", ""))
+    resolved_docs_root = docs_root or (_PKG_ROOT / "docs")
     tags = dd.get("tags") or []
     title = dd.get("title", "")
     theme = dd.get("theme", "")
@@ -1180,7 +1204,7 @@ def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | No
         "title_html": _emphasize_entities(title, tags),
         "theme": theme,
         "lead_md": lead_md,
-        "date": dd.get("date", ""),
+        "date": dd_date,
         "date_dot": dd.get("date_dot", ""),
         "canonical": dd.get("canonical", ""),
         "read_min": dd.get("read_min", 0),
@@ -1190,7 +1214,8 @@ def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | No
         "lens_glyph": dd.get("lens_glyph", ""),
         "accent": dd.get("accent", INK),
         "tags": tags[:4],
-        **deepdive_audio_for_pages(str(dd.get("date", ""))),
+        **deepdive_audio_for_pages(dd_date),
+        "deepdive_podcast_url": _deepdive_podcast_url_for_date(dd_date, resolved_docs_root),
         # 「IN THIS REPORT」manifest (実ブロックから動的生成)
         "report_items": _deepdive_report_items(dd),
     }
@@ -1239,7 +1264,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "editorial": None,
             "stats": {"stories": 0, "categories": 6, "essay": 7, "reading_min": 15},
             "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
-            "latest_deepdive": _latest_deepdive_card(),
+            "latest_deepdive": _latest_deepdive_card(docs_root=docs_root),
         }
         out = Path(docs_root) / "index.html"
         return render_page(ctx, out, template_name="index-template.html")
@@ -1357,7 +1382,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         # 独立に DeepDive md を直接読んだデータ (不変条件の本質 = entry 非汚染を維持)。
         # 昨日 LP では target_date(=昨日) 以前の DeepDive を引き、当日のテーマが
         # 昨日 LP に出る不具合を防ぐ。当日 LP (is_yesterday=False) は従来どおり最新。
-        "latest_deepdive": _latest_deepdive_card(today_date if is_yesterday else None),
+        "latest_deepdive": _latest_deepdive_card(today_date if is_yesterday else None, docs_root=docs_root),
     }
     # target_date 指定時は docs/{date}/index.html (昨日 LP)、無指定は docs/index.html (当日 LP)
     out = (Path(docs_root) / target_date / "index.html") if target_date else (Path(docs_root) / "index.html")
@@ -1419,6 +1444,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
     issue_no = date.replace("-", "")
     date_mmdd = f"{date[5:7]}·{date[8:10]}" if len(date) >= 10 else date
     canonical = f"{BASE_URL}/{date}/"
+    deepdive_podcast_url = _deepdive_podcast_url_for_date(date, docs_root)
 
     ctx = {
         "site_title": SITE_TITLE,
@@ -1434,6 +1460,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
         "hero_phrase_right": hero_phrase_right,
 
         "editorial_date": editorial["date"] if editorial else "",
+        "deepdive_podcast_url": deepdive_podcast_url,
 
         "cat_rows": cat_rows,
         "stats": {

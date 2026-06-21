@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import json
 
 import pytest
 
@@ -97,6 +98,22 @@ def built_overview(tmp_path_factory) -> str:
         )
         sources.append(path)
 
+    podcast_state = root / "build" / "youtube-podcast-deepdive"
+    podcast_state.mkdir(parents=True, exist_ok=True)
+    (podcast_state / "uploads.json").write_text(
+        json.dumps(
+            {
+                "2026-05-20": {
+                    "status": "public",
+                    "videoId": "video-deepdive-1",
+                    "playlistId": "playlist-deepdive-1",
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
     build_all(full=True, docs_root=docs, digests=sources)
     entries = _collect_entries(sources)
     assert len(entries) == 5
@@ -131,6 +148,12 @@ def test_theme_banner_navy(built_overview: str):
     """overview-theme (navy / TODAY'S THEME) がある。"""
     assert "overview-theme" in built_overview
     assert "TODAY&#39;S THEME" in built_overview or "TODAY'S THEME" in built_overview
+
+
+def test_overview_links_to_deepdive_dialogue_podcast(built_overview: str):
+    assert "PODCAST" in built_overview
+    assert "DeepDive解説対談を聴く" in built_overview
+    assert "https://www.youtube.com/watch?v=video-deepdive-1&amp;list=playlist-deepdive-1" in built_overview
 
 
 def test_theme_fallback_uses_brand_tagline(built_overview: str):

@@ -180,6 +180,9 @@
             </div>
             {% endif %}
             <a href="{{ latest_deepdive.canonical }}" class="home-hero__cta home-hero__cta--dd">READ THE DEEP DIVE →</a>
+            {% if latest_deepdive.deepdive_podcast_url %}
+            <a href="{{ latest_deepdive.deepdive_podcast_url }}" class="home-hero__dd-archlink" target="_blank" rel="noopener">PODCASTで解説対談を聴く →</a>
+            {% endif %}
             <a href="{{ base_url }}/archive/?view=deepdive" class="home-hero__dd-archlink">❖ 過去のテーマを書架で見る →</a>
           </div>
         </div>
