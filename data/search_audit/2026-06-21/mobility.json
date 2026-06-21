@@ -1,0 +1,55 @@
+{
+  "date": "2026-06-21",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jidounten-lab.com \"「自動運転車」の検索量が激増！背景に「現実味」\"",
+    "site:news.livedoor.com \"「ＧＯ」は上場し自動運転タクシーに投資、「ウーバー」と「エスライド」提携…タクシー配車アプリ競争激化\"",
+    "site:finance.biggo.jp \"千億円評価の自動運転ユニコーンMomentaが香港上場へ\"",
+    "site:carcareplus.jp \"1名乗り超小型EV「mibot」…20代の総合満足度は100%、中国銀行5拠点で実証実験\"",
+    "\"政府、自動運転に「優良」認定制度 開発・普及を促進\"",
+    "\"自動運転レベル4に初の国連基準 ｢注意深い運転手｣並みの安全前提\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "自動運転政策",
+    "配車アプリ",
+    "ロボタクシー",
+    "中国ADサプライヤーIPO",
+    "超小型EV業務導入"
+  ],
+  "dropped": [
+    {
+      "title": "政府、自動運転に「優良」認定制度 開発・普及を促進",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBwSE5WTW1pVnc1YjRqQk9BdTdIQXRad3c5R3F2TGNhSzUxbEx6R0xKSUxBT1RCc2pLT24wdXFzZ2k1NHZUTVJyd0Q0cFFxRE5pQmxFUTEwOGo1VXhzU1dlakt6M0hRblVkZElrQw?oc=5",
+      "reason": "影響範囲は大きいが、日経のcanonical URLを確定できず採用保留"
+    },
+    {
+      "title": "自動運転レベル4に初の国連基準 ｢注意深い運転手｣並みの安全前提",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1IMkYwaG5iOUw2bUxHY0lDTmN0SmtMaFNOLVF6T1J3UEJCNUUtR2wtN3dENHhZZVZFTGN1TFNacENpNjV2V2V3bXlvcG1JOVZvYWllaF9oWWlMSkN4MFRLc2hqWHpOcHk4Q0diVg?oc=5",
+      "reason": "基準策定ニュースとして重要だが、元記事URLの解決に失敗"
+    },
+    {
+      "title": "「無人トラック」企業がナスダック上場 株価急騰で自動運転バブル状態",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE5rUU5mYTZ4NTJkaHFoYVNFZzFLNW9lMGFzdXlLbXRrUFdrbnFfT2FlTmpQX2hZSnB0NV91eFdKSjFRdEFQS0p4WA?oc=5",
+      "reason": "一覧ページ以外の直接記事URLを確定できず、Google Finance/X断片のみでは裏取り不足"
+    },
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0?oc=5",
+      "reason": "株価ページであり、モビリティの当日ニュース価値が不足"
+    },
+    {
+      "title": "注文殺到で大人気！209万円で手に入るホンダの最新EV「Super-ONE」の楽しすぎる走り",
+      "url": "https://carview.yahoo.co.jp/news/detail/de47d1db07a47131eaba93fe54a2ea6ee923630b/",
+      "reason": "製品紹介色が強く、当日の業界インパクトで上位4件に届かず"
+    },
+    {
+      "title": "BYDがハンガリーのEV工場における環境違反疑惑を否定 執筆",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE42NWJrYWEybTQtekxXQ2gzNHJEV3VadXB2dTVENXI3VDVGOXRKb3dENHNFdnAzMkF6b2YtdHhZd0JXc0JST1ZTTkN5V215WXlnZmphN3AxZ24weG1hbkdSdlllci1VRktwNEE?oc=5",
+      "reason": "Investing側で記事固有URLを確定できず、株価ハブページしか解決しなかった"
+    }
+  ]
+}

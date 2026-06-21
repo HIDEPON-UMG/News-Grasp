@@ -1,0 +1,56 @@
+{
+  "date": "2026-06-21",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:diamond.jp 日銀半年ぶり利上げ 物価上振れリスク ロジック変化",
+    "site:asahi.com 利上げペース より早く 数カ月に一度 日銀の4月会合議事要旨",
+    "site:gaitame.com FRBタカ派姿勢で163円視野 当局の介入本気度を試す展開",
+    "site:gaitame.com ユーロ円 ポンド円 反発力は限定的か",
+    "site:gaitame.com 豪ドル 円 NZドル 円 豪CPIはRBAの利上げ期待を高められるか"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 16,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "日銀",
+    "FRB",
+    "ドル円",
+    "ユーロ円",
+    "ポンド円",
+    "豪ドル円",
+    "NZドル円",
+    "為替介入",
+    "FOMC"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "円相場 1ドル＝160円80銭付近まで下落 FOMCの結果受け 日米金利差を意識",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE9rRVVTaENmSktDWXowOUJLcFVtbE9ib2NpMHNQdGdOQ2x2ck1kRkZsV2RZUjg4RWRJMVdIdXkwUmtTZkpKVm5IOTN0MHc2SlI5a3BSOHIxXzFqU1E?oc=5",
+      "reason": "ABEMA本体の公開時刻が2026-06-18で当日性不足"
+    },
+    {
+      "title": "国債減で「適正体重」探る日銀 前門の金利急騰、後門の円安",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFA0a2VOMkliRUxVOE9VOWdSZVE5eXgyZVdLdURVTE9LanJwRU0tYnJRbzF5Vzh3bWJQcGd2bDB2R0djay1TVVduSG9KaG9DeDZUY2ZValhOc1BST3Vub3owZHQxTEZIeGlGdVNHag?oc=5",
+      "reason": "canonical URL を元記事単位で安定解決できず不採用"
+    },
+    {
+      "title": "元ダラス連銀総裁 カプラン氏 「9月にも利上げ」",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9Cd3lBVzNuUGxuM2tWSzFNRDBBVjljRlVXSUNtRXlxT19jNDJyZ1ZjbU1HT0tGVkQ3NlFnVjZQeHpBa21PbU5jU3ZiTWRwYlRxSEhITWN6aUZJTlBfNHlSelh1OA?oc=5",
+      "reason": "txbiz の canonical URL を検索結果から確定できず不採用"
+    },
+    {
+      "title": "外為：1ドル161円09銭前後と大幅なドル高・円安で推移(株探ニュース)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNSEZBOVJIbGtmeUlmZUExWUlHQUU4YWNFWVQwam5ubWsyNkxFNl9tUEFNVm5lUHFZVWhDV2QxSDZtSkN2aDhhd3hDcTA0bkhhMFItQU1iUjlRUnZDSDQ5b2hPdWt6WHlmQ1AtN1VMR1RwSEZaM3RDY0tDVGVzYWxnZElxNHNzbnM?oc=5",
+      "reason": "Yahoo/株探の二次配信で一次情報性が低い"
+    },
+    {
+      "title": "インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBDTjlOZzdQUEdTdXdtbG1meUpMcWtGZmZhdmhuYkhadW1qbURDdkpYMTB2TWF6cWYwSzdTQVlpZ0pXbzZuVl9QMnlFRlFHRC1wMTZydw?oc=5",
+      "reason": "投信基準価額ページでニュース性なし"
+    }
+  ]
+}

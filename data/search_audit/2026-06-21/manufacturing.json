@@ -1,0 +1,56 @@
+{
+  "date": "2026-06-21",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:kumanichi.com \"半導体や食品など32社を重点支援へ 熊本県知事主導の『地域産業成長プラン』\"",
+    "site:levolant.jp \"矢島工場の『超・混流生産』とバッテリー内製化の全貌\"",
+    "\"米商務省がSandboxAQに5億ドル支援 半導体サプライチェーン強化の切り札か\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "半導体",
+    "工場",
+    "サプライチェーン",
+    "量産",
+    "設備投資",
+    "内製化",
+    "電池",
+    "材料",
+    "Foxconn",
+    "Intel",
+    "NVIDIA",
+    "Samsung",
+    "TSMC",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "eMAXIS 日経半導体株インデックス【03311247】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1WcnBkNXkzRS1PdnNIWkxieGVIMWw3YjRKMXZON1NIZlpIQjd1Z09ETlVHUWdXUmthamQ3LWdyakFSd1hMU0Z5cWVuSkF3Z0tGY0Q1Vg?oc=5",
+      "reason": "投資信託情報であり、作り手視点の製造ニュースではない"
+    },
+    {
+      "title": "大学研究を10年超支援、半導体や量子など戦略17分野 政府が新制度",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBSNHlJZUprZEJQSmVkVXNkN0YtcTJMNkMwUUtadGFxMmNybFA4VzBiN3JtUGJGcVV0MUE1MXNiclZQelQzN2lINmFkejZjMU9rTzRocEtXcWg2Z21qdWpMVTZBbmZNTFViMnJpNw?oc=5",
+      "reason": "一次媒体の canonical URL を確定できず採用保留"
+    },
+    {
+      "title": "東邦アセチの新中計 営業益26％増 半導体向け水素拡大",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE92T1Y4OHpLZjA3bkU4clc4cXpHdnJuS1JVY3lUNWtQLXltdS1fSV9zS0VFUlE1MjhjaDNxZXVlaUNvVjcwZGs1dE9OX3FwZm5MRXZkS0FaUEVXSjg?oc=5",
+      "reason": "記事 canonical を確定できず、IR代替では候補元と同一記事保証が置けない"
+    },
+    {
+      "title": "高市総理イタリア到着 日伊首脳会談へ 半導体開発や宇宙分野で協力強化の見通し",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE9xaWZqb3ZoT0xWZHZjTVkwUVVRRGJrQjY2OF8zSXZrRklaRmlrc09CUTk0c3RLZVNKaklpajN3TXZNS1hzQzFjak5PaXpCYUZFUllueVkzTW00U3M?oc=5",
+      "reason": "公開ページ本文が『日本時間15日夕方』に言及し、当日性と公開日根拠が不整合"
+    },
+    {
+      "title": "【2026夏休み第2弾】工場見学＆特別体験を計画するなら今！ 予約争奪戦間違いなしの人気スポット7選",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE5COGdIQ21EWjFjaUlsZmEydUYyZ0MyTkprTEs5RktpVEV5LV90WnRpeHFhUjBCaDV5WVBTYUZLWmNaTkZBR0c2V0I1SGZDVmppVTA0?oc=5",
+      "reason": "工場見学案内であり、製造業の競争力や生産計画の変化を扱わない"
+    }
+  ]
+}

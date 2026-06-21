@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-21",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:newsdig.tbs.co.jp withbloomberg ボリビア大統領 非常事態 道路封鎖長期化 経済",
+    "site:newsdig.tbs.co.jp withbloomberg 中国から日本への重要鉱物輸出 5月も低水準 一部の品目はゼロ",
+    "site:newsdig.tbs.co.jp withbloomberg ホルムズ海峡の南側航路 信号発信したまま通航可能 JMIC",
+    "site:newsdig.tbs.co.jp withbloomberg イラン カーグ島 原油 積み出し 再開"
+  ],
+  "raw_results_total": 29,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "日銀 金融政策",
+    "米FRB 利上げ / 利下げ",
+    "マクロ経済 指標",
+    "CPI / PCE",
+    "原油供給",
+    "ホルムズ海峡",
+    "重要鉱物",
+    "IMF支援",
+    "BOJ",
+    "Fed",
+    "NVIDIA",
+    "Nikkei",
+    "S&P 500",
+    "SoftBank"
+  ],
+  "dropped": [
+    {
+      "title": "原油価格上昇と米国経済 エネルギーショックへの耐性は十分にある 米国野村證券・雨宮愛知",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1WYWxQdUhmbWRtaGFoYkxwejUwd1RUeGxNWFh5TzN2VURWdUZCZzFrMkhNNFVLYkROYkUxTHVvS0pZcUltazBWTnh1U1BBR2RRaXZnVkpUYVU3Z2pDcDZB?oc=5",
+      "reason": "解決できた公開ページが当日記事ではなく再掲扱いで、freshness を満たさない"
+    },
+    {
+      "title": "[FT]中国クリーンテック企業に原油高の恩恵",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFB5akRLQVFQdFBsQXNoQklxaUpubWkxQzBwM3dYSkhrMjV1LW5nX3NQM2RqTjVNMWVjM0c5TS1oUkVULUplVnZuTUxVRzBwTkN3XzY2UkdSdnQtdkJoR3hxc093ZjFrTFRuRUhXbw?oc=5",
+      "reason": "元記事は数日前の FT 記事で当日性が弱く、今日の経済面の主要論点から外した"
+    },
+    {
+      "title": "[FT]英金融新興レボリュート、銀行界に「革命」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE0yMHdTaHd1NVBEQTdoTFl5VDR1M3ppamNSaGVLX3NZaGt1dHJBaUJzMlBxMU5DR1pTSFpkaW9kWml0MVEzTHQ4a1VPMmJZNDZvbXJCRkx5VUFMM0pSQ2oyRGlYMnd3ZnV4SlFtLQ?oc=5",
+      "reason": "元記事の鮮度は確保できたが、当日の資源物流・供給網テーマより読者影響範囲が狭い"
+    },
+    {
+      "title": "投資信託・高配当株の基準価格記事群",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE11S3pKdkF5YXJ6cDktVmVycWdrN1ZKZnFUUXNBcEtQdUdXY3BpdGo5bFF1all2SDY1S0xteTFnNS16b3VLa0RzaExUbVhlTEhSVEpoUQ?oc=5",
+      "reason": "個別ファンドの基準価格更新で、カテゴリ契約上のマクロ経済・政策・供給網テーマから外れる"
+    }
+  ]
+}

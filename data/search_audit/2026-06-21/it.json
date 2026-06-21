@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-21",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:enterprisezine.jp Google Cloud Okta パートナーシップ拡大 ID管理 クラウドサービス 統合",
+    "site:online.logi-biz.com 三菱自動車 Shippio Cargo 貿易管理クラウド 導入",
+    "site:pwc.com 第2回 パーソルテンプスタッフ IT DX 部門 人材ポートフォリオ スキルアセスメント",
+    "site:prtimes.jp クラウド診断Projimo AI診断サービス 提供開始"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 4,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Accenture",
+    "PwC",
+    "NTTデータ",
+    "富士通",
+    "NEC",
+    "Google Cloud",
+    "Okta",
+    "Shippio",
+    "Projimo"
+  ],
+  "dropped": [
+    {
+      "title": "One Team,One Place｜新たな拠点をみんなで",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9XQzMtTnh0cGxvWVBpTGJVVVBhRm1CLWFPZDMwWlR1UWhXRE1qRVB6c3JrbUZFTnp0VEpMUHdGQmVLUXNZR2J5TV9pSEdhZWMzbTNYRVFQbUNZUQ?oc=5",
+      "reason": "クラウドファンディング案件で enterprise IT 記事ではない"
+    },
+    {
+      "title": "もっと知りたい、この夏",
+      "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE9BT3FLTTg5WHNFbkVabk94TEdCVzlhQy15RXdOYnNUM0NVUHJ2MTBuV1lJOXZrTllUbDlZTjY4R0dCbElDX1lncGxwcVcwY1VlSnI2ZXVZS0pGYmtvQmptdV9vSlVwajQ2dC1DUXN3?oc=5",
+      "reason": "ITカテゴリと無関係なエンタメ記事"
+    },
+    {
+      "title": "NetApp and Commvault - Cyber resiliency with secure storage and cloud recovery",
+      "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQdjJLTm5veUxqZFZna1ZjQjZGMGdITWtNekROdjRaZDFZUUpmSGpfeVhJbFVKejRnNHd4SW5KWDVMb19GMUNIZzNwY1hPVncyRjl3RldxQklhVXIwSUhNZUVYQTNaLUM4N3hlMkcxREh3M29SY1UxM2tzYngxSzZOTXlSNG9YeTAxZFZhRVQ0U1d2VnJDUVVJSmpxejJOTnB1TlExV1R6a2ZaNjF1bGE0MXU0bXhWMGNlb2lnMXVB?oc=5",
+      "reason": "canonical の公開日が約5カ月前で当日性がない"
+    },
+    {
+      "title": "CData Sync、Oracle Autonomous DatabaseへSaaSデータ同期を実現：saleszine",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE55ZXM3VmRjVHFtanlGUnNQc2RHVHdjNVlrMmVRVWY3NDNOVUkzSWJSUk1mV3hSeEc5eEFnSWtsS2tXbnlST2I4OUFXd2JsOVU?oc=5",
+      "reason": "canonical の公開日が2023-02-01で古い"
+    },
+    {
+      "title": "6月20日のInfosys Ltd (INFY) 終値は9.74%下落：投資家が知っておくべき情報",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOeGdpMnBDZ1hINlJZMWZwdWhUZjVuLUFiNFhmdlQwc1NGVEFrdmRwLXJyMXdGOUdfSFV4S3NMbkZJbndmSEh3ak9yTUdHWWh0T2oyMmpVOTFPeEJQVnVDNjZwVlRDUHpDVktfek1rYnNlVXpqUGMtM0xhMXRRcjVWR0xIY0RaajlkQjUyaU9pQQ?oc=5",
+      "reason": "株価小動き単体で enterprise IT の構造変化を示さない"
+    }
+  ]
+}

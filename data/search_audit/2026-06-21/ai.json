@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-21",
+  "category_id": "ai",
+  "queries": [
+    "stage1: build/deduped-candidates/ai.jsonl",
+    "site:www.sbbit.jp \"MUFG・SBIも参戦、「AIエージェント」で激変する金融、勝敗分ける“責任の境界”とは\"",
+    "site:wired.jp \"Google Home スピーカー\" Gemini スマートホーム体験",
+    "site:realsound.jp Anthropic 広告を拒み OpenAI 導入 ChatGPT広告 日本上陸",
+    "site:diamond-rm.net \"アオキスーパー、Anthropic社の生成AI「Claude Pro」を本格導入\"",
+    "site:www.sbbit.jp \"OpenAI、Codexの新機能「Record & Replay」を公開 操作の実演で作業を自動化\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 9,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA",
+    "AMD"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAI、Codexの新機能「Record & Replay」を公開 操作の実演で作業を自動化",
+      "url": "https://www.sbbit.jp/article/cont1/185840",
+      "reason": "前号 2026-06-20-AI で既掲載。新材料が乏しいため除外"
+    },
+    {
+      "title": "ChatGPT、無料版およびGoプランで試験的広告表示を開始",
+      "url": "https://realsound.jp/tech/2026/06/post-2434171.html",
+      "reason": "広告開始そのものは前号で既掲載。今回は収益モデル比較の新角度のみ採用"
+    },
+    {
+      "title": "GitHub Copilot、「Claude Fable 5」に正式対応",
+      "url": "https://codezine.jp/news/detail/24523",
+      "reason": "2026-06-10-AI で同趣旨を既掲載。原記事公開日も古い"
+    },
+    {
+      "title": "NEC・Anthropicと金融8社、金融分野におけるAIの社会実装に向けて連携",
+      "url": "https://enterprisezine.jp/news/detail/24481",
+      "reason": "2026-06-15-AI で既掲載。今回は責任分界の分析記事を優先"
+    },
+    {
+      "title": "Anthropic、AI研究者への“見えない性能制限”を撤回",
+      "url": "https://wired.jp/article/anthropic-responds-to-backlash-on-claudes-secret-sabotage-on-ai-research/",
+      "reason": "原記事公開日が 2026-06-12 で当日性が弱い"
+    }
+  ]
+}
