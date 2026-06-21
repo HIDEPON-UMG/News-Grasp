@@ -45,6 +45,8 @@ from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
 _TTS_BUILD_DIR = _PKG_ROOT / "build" / "tts"
 _PODCAST_UPLOADS = Path("build") / "youtube-podcast" / "uploads.json"
+_DEEPDIVE_PODCAST_UPLOADS = Path("build") / "youtube-podcast-deepdive" / "uploads.json"
+_PODCAST_CHANNEL_URL = "https://www.youtube.com/@newsgrasp/podcasts"
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
@@ -75,22 +77,19 @@ _BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
 
 
 def _podcast_url(docs_root: Path) -> str:
-    uploads_path = Path(docs_root).parent / _PODCAST_UPLOADS
-    if not uploads_path.exists():
-        return ""
-    try:
-        uploads = json.loads(uploads_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return ""
-    if not isinstance(uploads, dict):
-        return ""
-    for date in sorted(uploads.keys(), reverse=True):
-        row = uploads.get(date)
-        if not isinstance(row, dict) or row.get("status") != "public":
+    for state_path in (_PODCAST_UPLOADS, _DEEPDIVE_PODCAST_UPLOADS):
+        uploads_path = Path(docs_root).parent / state_path
+        if not uploads_path.exists():
             continue
-        playlist_id = str(row.get("playlistId") or "").strip()
-        if playlist_id:
-            return f"https://www.youtube.com/playlist?list={playlist_id}"
+        try:
+            uploads = json.loads(uploads_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(uploads, dict):
+            continue
+        for row in uploads.values():
+            if isinstance(row, dict) and row.get("status") == "public":
+                return _PODCAST_CHANNEL_URL
     return ""
 
 

@@ -108,7 +108,8 @@ def test_build_archive_places_podcast_after_deepdive_and_removes_density(tmp_pat
     assert "DENSITY" not in html
     assert "COMFORTABLE" not in html
     assert 'ng-modeswitch__btn ng-modeswitch__btn--link' in html
-    assert "https://www.youtube.com/playlist?list=archive-playlist" in html
+    assert "https://www.youtube.com/@newsgrasp/podcasts" in html
+    assert "https://www.youtube.com/playlist?list=archive-playlist" not in html
     assert "https://www.youtube.com/watch?v=archive-video" not in html
     assert html.index('data-view="deepdive"') < html.index("PODCAST")
 

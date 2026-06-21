@@ -87,11 +87,12 @@ def test_sticky_nav_with_7_lenses(built_home: str):
     assert "ARCHIVE" in built_home, "ARCHIVE entry missing"
 
 
-def test_home_nav_places_podcast_before_archive_as_playlist_link(built_home: str):
+def test_home_nav_places_podcast_before_archive_as_channel_podcasts_link(built_home: str):
     """LP は ARCHIVE 左に Podcast 全体への導線を置く。"""
     assert 'class="home-nav__actions"' in built_home
     assert 'class="home-nav__podcast"' in built_home
-    assert "https://www.youtube.com/playlist?list=playlist-deepdive" in built_home
+    assert "https://www.youtube.com/@newsgrasp/podcasts" in built_home
+    assert "https://www.youtube.com/playlist?list=playlist-deepdive" not in built_home
     assert "https://www.youtube.com/watch?v=video-latest" not in built_home
     assert built_home.index('class="home-nav__podcast"') < built_home.index('class="home-nav__archive"')
 
