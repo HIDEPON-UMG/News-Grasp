@@ -97,6 +97,21 @@ def test_home_nav_places_podcast_before_archive_as_channel_podcasts_link(built_h
     assert built_home.index('class="home-nav__podcast"') < built_home.index('class="home-nav__archive"')
 
 
+def test_home_nav_mobile_keeps_today_yesterday_readable():
+    """Podcast追加後も、モバイルで TODAY / YESTERDAY を小さく潰さない。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    sizes = [
+        float(match.group("size"))
+        for match in re.finditer(
+            r"\.home-nav__day\s*\{[^}]*font-size:\s*(?P<size>[0-9.]+)px",
+            css,
+            re.S,
+        )
+    ]
+    assert sizes, ".home-nav__day font-size missing"
+    assert min(sizes) >= 15
+
+
 def test_hero_2col_structure(built_home: str):
     """home-hero の左 (76px theme title) + 右 (Editor's Top 5 + Stats 2x2) が両方存在。
 

@@ -3080,15 +3080,15 @@ strong {
   .home-nav__bar { gap: 8px; flex-wrap: nowrap; }
   .home-nav__day {
     min-width: 0;
-    gap: 8px;
-    font-size: 12px;
+    gap: 12px;
+    font-size: 15px;
     white-space: nowrap;
   }
   .home-nav__today,
   .home-nav__yesterday { white-space: nowrap; }
   .home-nav__actions { gap: 4px; }
   .home-nav__podcast,
-  .home-nav__archive { padding: 4px 7px; font-size: 9px; letter-spacing: 0.08em; }
+  .home-nav__archive { padding: 4px 6px; font-size: 9px; letter-spacing: 0.08em; }
 }
 /* Daily audio player */
 .daily-audio {
