@@ -13,8 +13,8 @@ from tools.tts import aivis_client, build_script, synthesize_daily
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts" / "deepdive"
-DEFAULT_BGM_PATH = REPO_ROOT / "build" / "tts" / "candidates" / "news-grasp-bgm-office-lofi-v2-loop40s.mp3"
-BGM_VOLUME_DB = synthesize_daily.BGM_VOLUME_DB + 6.0
+DEFAULT_BGM_PATH = REPO_ROOT / "build" / "office-daily-bgm-standalone.mp3"
+BGM_VOLUME_DB = 1.5
 MIN_DIALOGUE_CHARS = 1200
 MAX_DIALOGUE_CHARS = 2600
 MIN_SECONDS = 4 * 60

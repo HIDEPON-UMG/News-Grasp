@@ -116,7 +116,8 @@ def test_mix_voice_wav_with_bgm_loops_and_uses_daily_bgm_fade_settings(tmp_path,
     args, timeout = calls[0]
     filter_complex = args[args.index("-filter_complex") + 1]
     assert args[args.index("-stream_loop") + 1] == "-1"
-    assert deepdive_dialogue.BGM_VOLUME_DB == deepdive_dialogue.synthesize_daily.BGM_VOLUME_DB + 6.0
+    assert deepdive_dialogue.DEFAULT_BGM_PATH.name == "office-daily-bgm-standalone.mp3"
+    assert deepdive_dialogue.BGM_VOLUME_DB == 1.5
     assert f"volume={deepdive_dialogue.BGM_VOLUME_DB:.1f}dB" in filter_complex
     assert "afade=t=in:st=0:d=2" in filter_complex
     assert "afade=t=out:st=118.456:d=5" in filter_complex
