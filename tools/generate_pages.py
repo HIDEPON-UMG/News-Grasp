@@ -44,7 +44,7 @@ from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
 _TTS_BUILD_DIR = _PKG_ROOT / "build" / "tts"
-_DEEPDIVE_PODCAST_UPLOADS = Path("build") / "youtube-podcast-deepdive" / "uploads.json"
+_PODCAST_UPLOADS = Path("build") / "youtube-podcast" / "uploads.json"
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
@@ -74,8 +74,8 @@ _UNDERLINE_RE = re.compile(r"__(.+?)__")
 _BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
 
 
-def _deepdive_podcast_url(docs_root: Path) -> str:
-    uploads_path = Path(docs_root).parent / _DEEPDIVE_PODCAST_UPLOADS
+def _podcast_url(docs_root: Path) -> str:
+    uploads_path = Path(docs_root).parent / _PODCAST_UPLOADS
     if not uploads_path.exists():
         return ""
     try:
@@ -88,12 +88,9 @@ def _deepdive_podcast_url(docs_root: Path) -> str:
         row = uploads.get(date)
         if not isinstance(row, dict) or row.get("status") != "public":
             continue
-        video_id = str(row.get("videoId") or "").strip()
-        if not video_id:
-            continue
         playlist_id = str(row.get("playlistId") or "").strip()
-        url = f"https://www.youtube.com/watch?v={video_id}"
-        return f"{url}&list={playlist_id}" if playlist_id else url
+        if playlist_id:
+            return f"https://www.youtube.com/playlist?list={playlist_id}"
     return ""
 
 
@@ -1265,7 +1262,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "stats": {"stories": 0, "categories": 6, "essay": 7, "reading_min": 15},
             "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
             "latest_deepdive": _latest_deepdive_card(),
-            "deepdive_podcast_url": _deepdive_podcast_url(docs_root),
+            "podcast_url": _podcast_url(docs_root),
         }
         out = Path(docs_root) / "index.html"
         return render_page(ctx, out, template_name="index-template.html")
@@ -1378,7 +1375,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
         "publication_matrix": compute_publication_matrix(entries, today_date, days=30),
         "audio_label": "昨日のニュース朗読" if is_yesterday else "今日のニュース朗読",
-        "deepdive_podcast_url": _deepdive_podcast_url(docs_root),
+        "podcast_url": _podcast_url(docs_root),
         **latest_audio_for_pages(today_date),
         # LP 上部ヒーローの SUMMARY ⇆ DEEP DIVE スライダー用。entry ストリームとは
         # 独立に DeepDive md を直接読んだデータ (不変条件の本質 = entry 非汚染を維持)。
@@ -2235,7 +2232,7 @@ def build_archive(entries: list[dict[str, Any]], docs_root: Path,
         "deepdive_items": deepdive_items or [],
         "lens_chips": lens_chips or [],
         "deepdive_count": len(deepdive_items or []),
-        "deepdive_podcast_url": _deepdive_podcast_url(docs_root),
+        "podcast_url": _podcast_url(docs_root),
     }
     out = Path(docs_root) / "archive" / "index.html"
     return render_page(ctx, out, template_name="archive-template.html")
@@ -2336,3 +2333,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

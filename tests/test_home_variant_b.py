@@ -40,7 +40,7 @@ from tools.config import CATEGORIES  # noqa: E402
 def built_home(tmp_path_factory) -> str:
     """Phase 3 開発用 fixture。実 digest 全件を tmp に再 build して index.html を返す。"""
     docs_root = tmp_path_factory.mktemp("home_b")
-    podcast_state = docs_root.parent / "build" / "youtube-podcast-deepdive"
+    podcast_state = docs_root.parent / "build" / "youtube-podcast"
     podcast_state.mkdir(parents=True, exist_ok=True)
     (podcast_state / "uploads.json").write_text(
         json.dumps({
@@ -87,18 +87,13 @@ def test_sticky_nav_with_7_lenses(built_home: str):
     assert "ARCHIVE" in built_home, "ARCHIVE entry missing"
 
 
-def test_home_nav_places_podcast_before_archive_without_wrapping(built_home: str):
-    """LP は ARCHIVE 左に PODCAST を置き、短いボタン列として折り返しを避ける。"""
+def test_home_nav_places_podcast_before_archive_as_playlist_link(built_home: str):
+    """LP は ARCHIVE 左に Podcast 全体への導線を置く。"""
     assert 'class="home-nav__actions"' in built_home
     assert 'class="home-nav__podcast"' in built_home
-    assert "https://www.youtube.com/watch?v=video-latest&amp;list=playlist-deepdive" in built_home
+    assert "https://www.youtube.com/playlist?list=playlist-deepdive" in built_home
+    assert "https://www.youtube.com/watch?v=video-latest" not in built_home
     assert built_home.index('class="home-nav__podcast"') < built_home.index('class="home-nav__archive"')
-
-    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    assert ".home-nav__actions" in css
-    assert ".home-nav__podcast," in css
-    assert "white-space: nowrap;" in css
-    assert ".home-nav__podcast,\n  .home-nav__archive { padding: 4px 8px;" in css
 
 
 def test_hero_2col_structure(built_home: str):

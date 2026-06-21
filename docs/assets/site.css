@@ -1107,6 +1107,7 @@ strong {
   font-weight: 700;   /* 現在地は太字で強調 */
   border-bottom: 2px solid var(--color-navy);
   padding-bottom: 4px;
+  white-space: nowrap;
 }
 /* 現在地は < > で囲んでさらに強調 (例: <TODAY> / <YESTERDAY>)。非選択側には付けない。 */
 .home-nav__today::before { content: "<"; margin-right: 2px; }
@@ -1120,6 +1121,7 @@ strong {
   padding-bottom: 4px;
   border-bottom: 2px solid transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
 }
 .home-nav__yesterday:hover {
   color: var(--color-navy);
@@ -3074,9 +3076,19 @@ strong {
   .pub-matrix__wd { font-size: 11px; min-width: 36px; }
   .pub-matrix__cell { font-size: 15px; padding: 8px 0; }
   .pub-matrix__legend { font-size: 10px; gap: 14px; }
-  .home-nav__actions { gap: 6px; }
+  .home-nav { padding-left: 10px; padding-right: 10px; }
+  .home-nav__bar { gap: 8px; flex-wrap: nowrap; }
+  .home-nav__day {
+    min-width: 0;
+    gap: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .home-nav__today,
+  .home-nav__yesterday { white-space: nowrap; }
+  .home-nav__actions { gap: 4px; }
   .home-nav__podcast,
-  .home-nav__archive { padding: 4px 8px; font-size: 10px; letter-spacing: 0.1em; }
+  .home-nav__archive { padding: 4px 7px; font-size: 9px; letter-spacing: 0.08em; }
 }
 /* Daily audio player */
 .daily-audio {

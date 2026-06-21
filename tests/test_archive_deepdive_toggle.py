@@ -89,7 +89,7 @@ def test_build_archive_emits_toggle_and_deepdive_pane(tmp_path: Path) -> None:
 
 def test_build_archive_places_podcast_after_deepdive_and_removes_density(tmp_path: Path) -> None:
     """日付アーカイブは DEEP DIVE 右に PODCAST を置き、DENSITY の名残を出さない。"""
-    podcast_state = tmp_path.parent / "build" / "youtube-podcast-deepdive"
+    podcast_state = tmp_path.parent / "build" / "youtube-podcast"
     podcast_state.mkdir(parents=True, exist_ok=True)
     (podcast_state / "uploads.json").write_text(
         json.dumps({
@@ -108,7 +108,8 @@ def test_build_archive_places_podcast_after_deepdive_and_removes_density(tmp_pat
     assert "DENSITY" not in html
     assert "COMFORTABLE" not in html
     assert 'ng-modeswitch__btn ng-modeswitch__btn--link' in html
-    assert "https://www.youtube.com/watch?v=archive-video&amp;list=archive-playlist" in html
+    assert "https://www.youtube.com/playlist?list=archive-playlist" in html
+    assert "https://www.youtube.com/watch?v=archive-video" not in html
     assert html.index('data-view="deepdive"') < html.index("PODCAST")
 
 
