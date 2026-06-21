@@ -193,6 +193,44 @@ def test_finalize_publicizes_prepared_video_and_adds_playlist(tmp_path, monkeypa
     ]
 
 
+def test_youtube_client_marks_uploaded_and_finalized_videos_embeddable(tmp_path):
+    from tools.youtube_podcast import upload_episode
+
+    bodies: list[dict] = []
+
+    class FakeRequest:
+        def __init__(self, response):
+            self.response = response
+
+        def execute(self):
+            return self.response
+
+    class FakeVideos:
+        def insert(self, **kwargs):
+            bodies.append(kwargs["body"])
+            return FakeRequest({"id": "video-1"})
+
+        def update(self, **kwargs):
+            bodies.append(kwargs["body"])
+            return FakeRequest({"id": kwargs["body"]["id"], "status": kwargs["body"]["status"]})
+
+    class FakeService:
+        def videos(self):
+            return FakeVideos()
+
+    mp4 = tmp_path / "episode.mp4"
+    mp4.write_bytes(b"mp4")
+    client = upload_episode.YouTubePodcastClient(FakeService())
+
+    client.upload_video(mp4, {"title": "t", "description": "d"}, privacy_status="private")
+    client.update_video_privacy(video_id="video-1", privacy_status="public")
+
+    assert bodies[0]["status"]["privacyStatus"] == "private"
+    assert bodies[0]["status"]["embeddable"] is True
+    assert bodies[1]["status"]["privacyStatus"] == "public"
+    assert bodies[1]["status"]["embeddable"] is True
+
+
 def test_dry_run_does_not_call_youtube_api(tmp_path, monkeypatch):
     from tools.youtube_podcast import upload_episode
 

@@ -266,7 +266,12 @@ class YouTubePodcastClient:
                     "categoryId": metadata.get("categoryId", "25"),
                     "defaultLanguage": "ja",
                 },
-                "status": {"privacyStatus": privacy_status, "selfDeclaredMadeForKids": False},
+                "status": {
+                    "privacyStatus": privacy_status,
+                    "embeddable": True,
+                    "publicStatsViewable": True,
+                    "selfDeclaredMadeForKids": False,
+                },
             },
             media_body=MediaFileUpload(str(mp4_path), mimetype="video/mp4", resumable=True),
         )
@@ -281,7 +286,12 @@ class YouTubePodcastClient:
             part="status",
             body={
                 "id": video_id,
-                "status": {"privacyStatus": privacy_status, "selfDeclaredMadeForKids": False},
+                "status": {
+                    "privacyStatus": privacy_status,
+                    "embeddable": True,
+                    "publicStatsViewable": True,
+                    "selfDeclaredMadeForKids": False,
+                },
             },
         )
         response = request.execute()
