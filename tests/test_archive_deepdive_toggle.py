@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -84,6 +85,31 @@ def test_build_archive_emits_toggle_and_deepdive_pane(tmp_path: Path) -> None:
     assert 'data-view-pane="deepdive"' in html, "DEEP DIVE ペインが無い"
     assert "view=deepdive" in html, "?view=deepdive 初期選択ロジックが無い"
     assert dd["items"][0]["title"] in html, "DEEP DIVE 行に fixture のテーマが出ていない"
+
+
+def test_build_archive_places_podcast_after_deepdive_and_removes_density(tmp_path: Path) -> None:
+    """日付アーカイブは DEEP DIVE 右に PODCAST を置き、DENSITY の名残を出さない。"""
+    podcast_state = tmp_path.parent / "build" / "youtube-podcast-deepdive"
+    podcast_state.mkdir(parents=True, exist_ok=True)
+    (podcast_state / "uploads.json").write_text(
+        json.dumps({
+            "2026-06-21": {
+                "status": "public",
+                "videoId": "archive-video",
+                "playlistId": "archive-playlist",
+            }
+        }),
+        encoding="utf-8",
+    )
+    dd = collect_archive_items(digest_dir=_FIXTURE_DIR)
+    out = build_archive(_sample_entries(), tmp_path,
+                        deepdive_items=dd["items"], lens_chips=dd["chips"])
+    html = out.read_text(encoding="utf-8")
+    assert "DENSITY" not in html
+    assert "COMFORTABLE" not in html
+    assert 'ng-modeswitch__btn ng-modeswitch__btn--link' in html
+    assert "https://www.youtube.com/watch?v=archive-video&amp;list=archive-playlist" in html
+    assert html.index('data-view="deepdive"') < html.index("PODCAST")
 
 
 def test_build_archive_deepdive_rows_have_filter_attrs(tmp_path: Path) -> None:

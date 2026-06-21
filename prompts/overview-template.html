@@ -98,17 +98,9 @@
         <span style="background: rgba(201,161,85,0.3); padding: 0 6px;">時勢</span>を掴み、<span style="background: rgba(45,91,184,0.4); padding: 0 6px;">日々</span>に新たに。
       {% endif %}
     </h3>
-    <div class="overview-theme__actions">
-      {% if editorial_date %}
-      <a href="{{ base_url }}/{{ editorial_date }}/summary/" class="overview-theme__cta">READ § ESSAY →</a>
-      {% endif %}
-      {% if deepdive_podcast_url %}
-      <a href="{{ deepdive_podcast_url }}" class="overview-theme__podcast-cta" target="_blank" rel="noopener" aria-label="YouTube PodcastでDeepDive解説対談を聴く">
-        <span class="overview-theme__podcast-kicker">YOUTUBE PODCAST</span>
-        <span class="overview-theme__podcast-title">DeepDive解説対談を聴く</span>
-      </a>
-      {% endif %}
-    </div>
+    {% if editorial_date %}
+    <a href="{{ base_url }}/{{ editorial_date }}/summary/" class="overview-theme__cta">READ § ESSAY →</a>
+    {% endif %}
   </div>
 </section>
 

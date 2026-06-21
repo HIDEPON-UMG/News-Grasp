@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-import json
 
 import pytest
 
@@ -98,22 +97,6 @@ def built_overview(tmp_path_factory) -> str:
         )
         sources.append(path)
 
-    podcast_state = root / "build" / "youtube-podcast-deepdive"
-    podcast_state.mkdir(parents=True, exist_ok=True)
-    (podcast_state / "uploads.json").write_text(
-        json.dumps(
-            {
-                "2026-05-20": {
-                    "status": "public",
-                    "videoId": "video-deepdive-1",
-                    "playlistId": "playlist-deepdive-1",
-                }
-            },
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-
     build_all(full=True, docs_root=docs, digests=sources)
     entries = _collect_entries(sources)
     assert len(entries) == 5
@@ -150,12 +133,10 @@ def test_theme_banner_navy(built_overview: str):
     assert "TODAY&#39;S THEME" in built_overview or "TODAY'S THEME" in built_overview
 
 
-def test_overview_links_to_deepdive_dialogue_podcast(built_overview: str):
-    assert 'class="overview-theme__podcast-cta"' in built_overview
-    assert 'aria-label="YouTube PodcastでDeepDive解説対談を聴く"' in built_overview
-    assert '<span class="overview-theme__podcast-kicker">YOUTUBE PODCAST</span>' in built_overview
-    assert '<span class="overview-theme__podcast-title">DeepDive解説対談を聴く</span>' in built_overview
-    assert "https://www.youtube.com/watch?v=video-deepdive-1&amp;list=playlist-deepdive-1" in built_overview
+def test_overview_does_not_show_ad_hoc_deepdive_podcast_cta(built_overview: str):
+    """日付アーカイブのテーマ帯に場当たり的なPodcast CTAを出さない。"""
+    assert "overview-theme__podcast-cta" not in built_overview
+    assert "YOUTUBE PODCAST" not in built_overview
 
 
 def test_theme_fallback_uses_brand_tagline(built_overview: str):

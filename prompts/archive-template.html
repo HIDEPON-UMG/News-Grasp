@@ -89,9 +89,6 @@
 .ng-month-jump { display: flex; align-items: center; gap: 6px; }
 .ng-month-jump a { border: 1px solid var(--color-border); background: #fff; color: var(--color-ink); font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; padding: 5px 10px; text-decoration: none; }
 .ng-month-jump a:hover { border-color: var(--color-navy); }
-.ng-density { font-family: var(--font-mono); font-size: 10px; color: var(--color-ink-dim); letter-spacing: .1em; margin-left: 8px; }
-.ng-density strong { color: var(--color-navy); }
-
 /* ---- Editor's intro strip ---- */
 .ng-intro { border-bottom: 1px solid var(--color-border); padding: 24px 0 20px; display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 32px; }
 .ng-intro__k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .22em; margin-bottom: 8px; color: var(--color-ink-dim); }
@@ -202,9 +199,10 @@
 
 /* ---- Mode switch (DIGEST / DEEP DIVE) ---- */
 .ng-modeswitch { display: inline-flex; border: 1px solid var(--color-navy); flex-shrink: 0; align-self: flex-end; }
-.ng-modeswitch__btn { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; padding: 7px 16px; background: transparent; color: var(--color-navy); border: none; cursor: pointer; transition: background .15s, color .15s; }
+.ng-modeswitch__btn { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; padding: 7px 16px; background: transparent; color: var(--color-navy); border: none; cursor: pointer; transition: background .15s, color .15s; text-decoration: none; white-space: nowrap; }
 .ng-modeswitch__btn + .ng-modeswitch__btn { border-left: 1px solid var(--color-navy); }
 .ng-modeswitch__btn.is-active { background: var(--color-navy); color: var(--color-cream); }
+.ng-modeswitch__btn--link { display: inline-flex; align-items: center; }
 
 /* ---- DEEP DIVE pane (旧テーマ書架 /deepdive/ の一本化先) ---- */
 .ng-dd-cap { border-bottom: 1px solid var(--color-border); padding: 22px 0 18px; margin-bottom: 18px; }
@@ -247,6 +245,8 @@
   .ng-filters__top { gap: 10px; }
   .ng-filters__h1 { font-size: 27px; }
   .ng-filters__h1 em { font-size: 17px; }
+  .ng-modeswitch { width: 100%; align-self: stretch; }
+  .ng-modeswitch__btn { flex: 1 1 0; min-width: 0; justify-content: center; padding: 10px 6px; font-size: 10px; letter-spacing: .08em; }
   .ng-search { width: 100%; }
   .ng-search input { width: 100%; }
 
@@ -342,6 +342,7 @@
         <div class="ng-modeswitch" role="tablist" aria-label="アーカイブ表示切替">
           <button type="button" class="ng-modeswitch__btn is-active" data-view="digest" role="tab" aria-selected="true">DIGEST</button>
           <button type="button" class="ng-modeswitch__btn" data-view="deepdive" role="tab" aria-selected="false">❖ DEEP DIVE</button>
+          {% if deepdive_podcast_url %}<a href="{{ deepdive_podcast_url }}" class="ng-modeswitch__btn ng-modeswitch__btn--link" target="_blank" rel="noopener">PODCAST</a>{% endif %}
         </div>
         <label class="ng-search">
           <span class="ng-search__icon">⌕</span>
@@ -364,7 +365,6 @@
           {% for m in months_meta %}
           <a href="#m-{{ m.id }}">{{ m.label }} {{ m.year }}</a>
           {% endfor %}
-          <span class="ng-density">DENSITY: <strong>COMFORTABLE</strong></span>
         </div>
       </div>
     </div>

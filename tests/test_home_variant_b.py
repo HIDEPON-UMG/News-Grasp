@@ -12,6 +12,7 @@ Variant B の認識: site/variant-b.jsx (Claude Design Handoff) を権威ソー�
 from __future__ import annotations
 
 import html
+import json
 import re
 import sys
 from pathlib import Path
@@ -39,6 +40,18 @@ from tools.config import CATEGORIES  # noqa: E402
 def built_home(tmp_path_factory) -> str:
     """Phase 3 開発用 fixture。実 digest 全件を tmp に再 build して index.html を返す。"""
     docs_root = tmp_path_factory.mktemp("home_b")
+    podcast_state = docs_root.parent / "build" / "youtube-podcast-deepdive"
+    podcast_state.mkdir(parents=True, exist_ok=True)
+    (podcast_state / "uploads.json").write_text(
+        json.dumps({
+            "2026-06-21": {
+                "status": "public",
+                "videoId": "video-latest",
+                "playlistId": "playlist-deepdive",
+            }
+        }),
+        encoding="utf-8",
+    )
     # 実 digest から個別ページを生成 (build_index 前提)
     written = build_all(full=True, docs_root=docs_root)
     assert written, "build_all が 0 件しか返さない: 実 digest が足りない可能性"
@@ -72,6 +85,20 @@ def test_sticky_nav_with_7_lenses(built_home: str):
     # § ESSAY / ARCHIVE
     assert "§ ESSAY" in built_home, "ESSAY entry missing"
     assert "ARCHIVE" in built_home, "ARCHIVE entry missing"
+
+
+def test_home_nav_places_podcast_before_archive_without_wrapping(built_home: str):
+    """LP は ARCHIVE 左に PODCAST を置き、短いボタン列として折り返しを避ける。"""
+    assert 'class="home-nav__actions"' in built_home
+    assert 'class="home-nav__podcast"' in built_home
+    assert "https://www.youtube.com/watch?v=video-latest&amp;list=playlist-deepdive" in built_home
+    assert built_home.index('class="home-nav__podcast"') < built_home.index('class="home-nav__archive"')
+
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert ".home-nav__actions" in css
+    assert ".home-nav__podcast," in css
+    assert "white-space: nowrap;" in css
+    assert ".home-nav__podcast,\n  .home-nav__archive { padding: 4px 8px;" in css
 
 
 def test_hero_2col_structure(built_home: str):
@@ -170,18 +197,10 @@ def test_home_hero_grid_columns_clamped_to_container():
     )
 
 
-def test_deepdive_podcast_cta_is_visually_button_like():
-    """Podcast 導線は小さな下線リンクではなく、押せるCTAとして固定する。"""
-    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    for selector in (".home-hero__podcast-cta", ".overview-theme__podcast-cta"):
-        start = css.find(selector)
-        assert start >= 0, f"{selector} missing"
-        block = css[start:css.find("}", start)]
-        assert "display: inline-flex;" in block
-        assert "min-height:" in block
-        assert "background: var(--color-" in block
-        assert "border: 2px solid" in block
-        assert "text-decoration: none;" in block
+def test_home_deepdive_does_not_show_ad_hoc_podcast_cta(built_home: str):
+    """LP の DeepDive 黒パネルに場当たり的なPodcast CTAを出さない。"""
+    assert "home-hero__podcast-cta" not in built_home
+    assert "YOUTUBE PODCAST" not in built_home
 
 
 def test_categories_7_lens_cards(built_home: str):
