@@ -2,7 +2,7 @@
 
 > 時勢を掴み、日々に新たに。
 
-毎朝 06:30 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → 公開 web (GitHub Pages + PWA) に SSG で配信、までを自律実行する **個人運用の日次ニュースダイジェスト**。
+毎朝 07:30 JST にローカル PC 上の Claude Code (Sonnet 4.6) が起動し、watchlist の対象を Web 検索 → 過去 90 日の関連記事と照合 → カテゴリ別 digest Markdown を生成 → GitHub に commit & push → 公開 web (GitHub Pages + PWA) に SSG で配信、までを自律実行する **個人運用の日次ニュースダイジェスト**。
 
 配信は **公開 Web (GitHub Pages + PWA) + Web Push 通知** のみ。旧 Gmail SMTP 直送によるメール配信は 2026-06-05 に機能ごと廃止済み。
 
@@ -27,13 +27,13 @@ SSG は `tools/generate_pages.py` (Jinja2)。`docs/` 配下に静的 HTML を生
 
 - Editorial Summary の § セクション記号は 768px 以下で stats 右側の余白に絶対配置 (`.summary-hero__sigil` を `position: absolute; right:0; bottom:0`)
 - 「7 つの § セクション」見出しは 768px 以下で「7 つの」「§ セクション」の 2 行に強制改行
-- Home の subscribe band は「毎朝 6:30 更新 / 土日祝日も毎朝公開」に統一 (メール購読を前提とした旧表現は撤去)
+- Home の subscribe band は「毎朝 7:30 更新 / 土日祝日も毎朝公開」に統一 (メール購読を前提とした旧表現は撤去)
 
 ## アーキテクチャ概要 (ローカル Codex runner + dead-man)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Windows タスクスケジューラ「News-Grasp Runner」 06:30 JST 毎日   │
+│ Windows タスクスケジューラ「News-Grasp Runner」 07:30 JST 毎日   │
 │   └─→ %USERPROFILE%\bin\news-grasp-runner.ps1                    │
 │         ├─ repo 管理版 scripts/ops/news-grasp-runner.ps1 と同期確認 │
 │         ├─ git fetch / pull origin main                           │
@@ -284,8 +284,8 @@ DESIGN.md を一次ソースとし、`docs/assets/site.css` で実装。色 / �
 | ステップ | 担当 | 頻度 |
 |---|---|---|
 | watchlist 編集 | 管理人 (`data/watchlist.md` を編集 → push) | 必要に応じて |
-| Runner 起動 | Windows タスクスケジューラ | 毎朝 06:30 JST |
-| digest 生成・commit | Claude Code (Sonnet 4.6) | 毎朝 06:30〜06:45 JST |
+| Runner 起動 | Windows タスクスケジューラ | 毎朝 07:30 JST |
+| digest 生成・commit | Claude Code (Sonnet 4.6) | 毎朝 07:30〜07:45 JST |
 | pre-push 契約ゲート | Runner 内で 3 段ゲート (① URL liveness ② `[!ja]` 和訳 callout 必須テスト ③ pytest 全件 PASS `NEWS_GRASP_SKIP_URL_CHECK=1`) を強制発火。fail なら push を阻止。「別件」judgement での bypass は禁止 (2026-06-06 plan v2 で B-1 ロックダウン追加。同日セッションで thumb FAIL bypass 事故が発覚) | 自動 |
 | build 時層 2 品質ゲート | `tools/output_quality.py` で関係図 SVG の幾何違反 (線がノード貫通) と カテゴリトップ連続同テーマを生成段階で検出。違反時は `OutputQualityError` で `generate_pages.py` を中止し docs/ への書き込みを物理ブロック (2026-06-06 plan v2 で A 軸追加。同日セッションで関係図貫通 / カテゴリ重複の 2 件公開後検知事故への構造解決) | 自動 |
 | git push | Runner (Claude 終了後の ps1) | 自動 |
@@ -306,7 +306,7 @@ DESIGN.md を一次ソースとし、`docs/assets/site.css` で実装。色 / �
 | Cloudflare Worker + KV (Web Push 購読ストア) | **$0** (無料枠内) |
 | **合計** | **$0** |
 
-5h 枠は 1 回の実行で **15〜25% 程度** 消費。朝 06:30 実行のため日中の作業と干渉しない。
+5h 枠は 1 回の実行で **15〜25% 程度** 消費。朝 07:30 実行のため日中の作業と干渉しない。
 
 ## Obsidian タグ運用
 
