@@ -54,3 +54,34 @@ def test_build_video_returns_none_when_cover_is_missing(tmp_path, monkeypatch):
         assert build_video.build("2026-06-18") is None
 
     quiet_run.assert_not_called()
+
+
+def test_build_video_deepdive_uses_dialogue_audio_cover_and_separate_output(tmp_path, monkeypatch):
+    from tools.youtube_podcast import build_video
+
+    tts_dir = tmp_path / "build" / "tts"
+    deepdive_tts_dir = tts_dir / "deepdive"
+    podcast_dir = tmp_path / "build" / "youtube-podcast"
+    deepdive_podcast_dir = tmp_path / "build" / "youtube-podcast-deepdive"
+    deepdive_tts_dir.mkdir(parents=True)
+    audio = deepdive_tts_dir / "2026-06-21.mp3"
+    cover = tmp_path / "deepdive-cover.png"
+    audio.write_bytes(b"ID3")
+    cover.write_bytes(b"PNG")
+    monkeypatch.setattr(build_video, "TTS_BUILD_DIR", tts_dir)
+    monkeypatch.setattr(build_video, "BUILD_DIR", podcast_dir)
+    monkeypatch.setattr(build_video, "DEEPDIVE_BUILD_DIR", deepdive_podcast_dir)
+    monkeypatch.setattr(build_video, "DEEPDIVE_COVER_PATH", cover)
+
+    with patch.object(build_video.proc, "quiet_run") as quiet_run, \
+        patch.object(build_video, "probe_duration_seconds", return_value=332.0):
+        result = build_video.build("2026-06-21", kind="deepdive")
+
+    assert result is not None
+    assert result["kind"] == "deepdive"
+    assert result["mp3_path"] == str(audio)
+    assert result["cover_path"] == str(cover)
+    assert result["mp4_path"] == str(deepdive_podcast_dir / "2026-06-21.mp4")
+    args = quiet_run.call_args.args[0]
+    assert str(audio) in [str(arg) for arg in args]
+    assert str(cover) in [str(arg) for arg in args]

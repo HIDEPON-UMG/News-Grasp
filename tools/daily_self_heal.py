@@ -492,6 +492,7 @@ def main(argv: list[str] | None = None) -> int:
     podcast.add_argument("--state", type=Path, default=Path("build") / "youtube-podcast" / "uploads.json")
     podcast.add_argument("--wait-sec", type=int, default=1200)
     podcast.add_argument("--poll-sec", type=int, default=30)
+    podcast.add_argument("--expected-title", default=None)
 
     args = parser.parse_args(argv)
     if args.cmd == "checksum":
@@ -541,6 +542,7 @@ def main(argv: list[str] | None = None) -> int:
             state_path=args.state,
             wait_sec=args.wait_sec,
             poll_sec=args.poll_sec,
+            expected_title=args.expected_title,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["ok"] else 1

@@ -126,6 +126,20 @@ html { background: #FAF7F0; }
                   word-break: auto-phrase; line-break: strict; }
 .dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
 .dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+.dd-audio { max-width: 760px; margin: 26px 0 0; padding: 16px 18px; border: 1px solid var(--border);
+            background: rgba(255,255,255,.42); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.dd-audio__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 10px; }
+.dd-audio__kicker,
+.dd-audio__date { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--soft); }
+.dd-audio__kicker { color: var(--accent); }
+.dd-audio__title { font-family: var(--serif); font-size: 18px; font-weight: 800; color: var(--ink); }
+.dd-audio audio { display: block; width: 100%; min-width: 0; }
+.dd-audio__rates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dd-audio__rate { min-width: 52px; border: 1px solid var(--border); background: var(--paper);
+                  color: var(--ink); padding: 4px 10px; font-family: var(--mono); font-size: 11px;
+                  font-weight: 700; letter-spacing: .08em; }
+.dd-audio__rate.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.dd-audio__rate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* section */
 .dd-sec { padding: 52px 0; }
@@ -351,6 +365,9 @@ html { background: #FAF7F0; }
   .dd-wrap { padding: 0 18px; }
   .dd-hero { padding: 30px 0 26px; }
   .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-audio { padding: 14px; }
+  .dd-audio__rates { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .dd-audio__rate { min-width: 0; width: 100%; padding: 4px 4px; font-size: 10px; letter-spacing: .04em; }
   /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
      <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
      折り返しさせる。タイトル → 日付の順に縦積み。 */
@@ -434,11 +451,31 @@ html { background: #FAF7F0; }
         <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
       </div>
       <h1 class="dd-hero__title">AIエージェントは操作代行から統制設計へ</h1>
+      
+      <section class="dd-audio" aria-label="DeepDive解説対談">
+        <div class="dd-audio__meta">
+          <span class="dd-audio__kicker">LISTEN</span>
+          <span class="dd-audio__title">DeepDive 解説対談</span>
+          <span class="dd-audio__date">2026-06-20</span>
+        </div>
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-06-20.mp3?v=83a9aff46881" type="audio/mpeg">
+        </audio>
+        <div class="dd-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="dd-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </section>
+      
       <p class="dd-hero__theme">ChatGPT広告、Codex操作録画、Copilot Cowork、Confidential AI、Claude悪用が示すAI実行権限の再設計</p>
       <div class="dd-hero__tags"><span>#deepdive</span><span>#daily</span><span>#news-grasp</span><span>#issue-20260620</span><span>#AI</span><span>#OpenAI</span><span>#Microsoft</span><span>#Google</span><span>#Apple</span><span>#Anthropic</span><span>#Security</span></div>
     </header>
 
-
+    
 
     <!-- 背景 / BACKGROUND -->
     <section class="dd-sec">
@@ -448,14 +485,14 @@ html { background: #FAF7F0; }
       </div>
       <div class="dd-prose"><p>きょうのAI面は、モデル性能の比較ではなく、<strong>AIにどこまで実行権限を渡すか</strong>が中心になった。ChatGPTの広告テストは会話面の収益化境界を問い、CodexのRecord &amp; Replayは画面操作を再利用する実行権限を前に出した。MicrosoftのCopilot Coworkは業務ツール横断の常駐化を示し、Google CloudとAppleのConfidential AIは推論基盤側の信頼境界を押し広げた。さらにClaude共有画面の悪用分析が入り、<span class="emph-und">AIを便利にするほど、権限・広告・データ・攻撃面を同時に管理する必要</span>がはっきりした。</p><p>関係図で見ると、AIエージェントの争点は「どの製品が多機能か」ではなく、<strong>どの権限を渡し、どの境界で止めるか</strong>に集約される。<strong class="emph-bold">Codex</strong>の操作録画は実行手順を再利用しやすくする一方、<span class="emph-und">利用者が意図した操作と自動再生された操作をどう照合するか</span>を問う。<strong class="emph-bold">Copilot Cowork</strong>も同じで、複数ツールを横断するほど、ログと承認の設計が価値になる。</p></div>
       <div class="dd-exhibits">
-
+        
         <div>
           <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
           <figure class="dd-fig">
             <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
             <div class="dd-tl">
               <div class="dd-tl__line"></div>
-
+              
               <div class="dd-tl__row">
                 <div class="dd-tl__date"><div class="d">06.20</div><div class="y">2026</div></div>
                 <div class="dd-tl__dot"><span></span></div>
@@ -464,7 +501,7 @@ html { background: #FAF7F0; }
                   <a href="https://ai.watch.impress.co.jp/docs/news/2118417.html"><span class="src">AI Watch</span><span class="ext">↗ 一次ソース</span></a>
                 </div>
               </div>
-
+              
               <div class="dd-tl__row">
                 <div class="dd-tl__date"><div class="d">06.19</div><div class="y">2026</div></div>
                 <div class="dd-tl__dot"><span></span></div>
@@ -473,7 +510,7 @@ html { background: #FAF7F0; }
                   <a href="https://www.itmedia.co.jp/news/articles/2606/19/news102.html"><span class="src">ITmedia NEWS</span><span class="ext">↗ 一次ソース</span></a>
                 </div>
               </div>
-
+              
               <div class="dd-tl__row">
                 <div class="dd-tl__date"><div class="d">06.20</div><div class="y">2026</div></div>
                 <div class="dd-tl__dot"><span></span></div>
@@ -482,7 +519,7 @@ html { background: #FAF7F0; }
                   <a href="https://ai.watch.impress.co.jp/docs/news/2118515.html"><span class="src">AI Watch</span><span class="ext">↗ 一次ソース</span></a>
                 </div>
               </div>
-
+              
               <div class="dd-tl__row">
                 <div class="dd-tl__date"><div class="d">06.20</div><div class="y">2026</div></div>
                 <div class="dd-tl__dot"><span></span></div>
@@ -491,16 +528,16 @@ html { background: #FAF7F0; }
                   <a href="https://www.trendmicro.com/ja_jp/research/26/f/claudeai-shared-chat-abused-in-malvertising.html"><span class="src">Trend Micro</span><span class="ext">↗ 一次ソース</span></a>
                 </div>
               </div>
-
+              
             </div>
           </figure>
         </div>
-
-
+        
+        
         <div>
           <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
           <div class="dd-players">
-
+            
             <div class="dd-player">
               <div class="dd-player__name">OpenAI / ChatGPT</div>
               <div class="dd-player__role">会話UIと収益化の設計者</div>
@@ -509,7 +546,7 @@ html { background: #FAF7F0; }
               <div class="dd-player__lbl pos">POSITION ─ 立場</div>
               <p class="dd-player__txt dim">広告を入れても信頼を落とさない境界設計が必要</p>
             </div>
-
+            
             <div class="dd-player">
               <div class="dd-player__name">OpenAI / Codex</div>
               <div class="dd-player__role">操作自動化エージェント</div>
@@ -518,7 +555,7 @@ html { background: #FAF7F0; }
               <div class="dd-player__lbl pos">POSITION ─ 立場</div>
               <p class="dd-player__txt dim">実行権限と再利用手順の監査が焦点</p>
             </div>
-
+            
             <div class="dd-player">
               <div class="dd-player__name">Microsoft</div>
               <div class="dd-player__role">業務ツール横断のAI供給者</div>
@@ -527,7 +564,7 @@ html { background: #FAF7F0; }
               <div class="dd-player__lbl pos">POSITION ─ 立場</div>
               <p class="dd-player__txt dim">企業の権限管理とログ設計を巻き込む</p>
             </div>
-
+            
             <div class="dd-player">
               <div class="dd-player__name">Google / Apple</div>
               <div class="dd-player__role">秘匿推論基盤の設計者</div>
@@ -536,7 +573,7 @@ html { background: #FAF7F0; }
               <div class="dd-player__lbl pos">POSITION ─ 立場</div>
               <p class="dd-player__txt dim">基盤側の信頼境界を競争力にする</p>
             </div>
-
+            
             <div class="dd-player">
               <div class="dd-player__name">Anthropic / Trend Micro</div>
               <div class="dd-player__role">悪用面の観測対象</div>
@@ -545,32 +582,32 @@ html { background: #FAF7F0; }
               <div class="dd-player__lbl pos">POSITION ─ 立場</div>
               <p class="dd-player__txt dim">正規ドメイン経由の誘導対策が必要</p>
             </div>
-
+            
           </div>
         </div>
-
-
+        
+        
         <div>
           <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
           <figure class="dd-fig">
             <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">AI実行権限をめぐる境界設計</span></figcaption>
             <div class="dd-relwrap"><svg viewBox="0 0 1080 695" width="1080" height="695" style="display:block;background:#FAF7F0" role="img" aria-label="AI実行権限をめぐる境界設計"><line x1="581.3" y1="508.0" x2="581.3" y2="407.5" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="581.3,407.5 585.8,416.5 576.8,416.5" fill="#181C2A"/><line x1="295.5" y1="144.9" x2="524.2" y2="299.8" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="524.2,299.8 514.2,298.5 519.3,291.0" fill="#2D5BB8"/><line x1="550.0" y1="168.1" x2="568.8" y2="270.6" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="568.8,270.6 562.8,262.6 571.6,261.0" fill="#2D5BB8"/><line x1="678.7" y1="514.9" x2="614.7" y2="398.9" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="614.7,398.9 623.0,404.6 615.1,409.0" fill="#181C2A"/><line x1="789.2" y1="150.9" x2="632.5" y2="292.3" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="632.5,292.3 636.2,282.9 642.2,289.6" fill="#8E2A19"/><polygon points="789.2,150.9 785.5,160.2 779.5,153.5" fill="#8E2A19"/><g transform="translate(515.5,412.2)"><rect width="131.5" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 広告と信頼</text></g><g transform="translate(345.8,141.2)"><rect width="119.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 操作権限</text></g><g transform="translate(499.9,206.2)"><rect width="119.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 業務ログ</text></g><g transform="translate(587.7,477.2)"><rect width="119.0" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 秘匿推論</text></g><g transform="translate(653.9,271.2)"><rect width="119.0" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 悪用対策</text></g><circle cx="581.3" cy="563.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="581.3" y="559.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="12.6" fill="#1A1A1A" letter-spacing="-0.5">ChatGPT広告</text><text x="581.3" y="574.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">収益化</text><circle cx="250.0" cy="114.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="250.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.3" fill="#1A1A1A" letter-spacing="-0.5">Codex操作録画</text><text x="250.0" y="125.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">実行</text><circle cx="540.0" cy="114.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="540.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Copilot Cowork</text><text x="540.0" y="124.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">業務</text><circle cx="705.3" cy="563.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="705.3" y="559.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.0" fill="#1A1A1A" letter-spacing="-0.5">Confidential AI</text><text x="705.3" y="573.8" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">基盤</text><circle cx="830.0" cy="114.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="830.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="14.0" fill="#1A1A1A" letter-spacing="-0.5">Claude悪用</text><text x="830.0" y="126.7" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">脅威</text><circle cx="581.3" cy="338.5" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="581.3" y="334.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">統制境界</text><text x="581.3" y="357.4" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">判断</text></svg></div>
-
+            
             <div class="dd-rel-legend">
               <span class="hd">EDGE KIND</span>
-
+              
               <span class="it"><span class="sw" style="border-top-color:#181C2A"></span>規制</span>
-
+              
               <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
-
+              
               <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
-
+              
             </div>
-
+            
             <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://ai.watch.impress.co.jp/docs/news/2118417.html">AI Watch / ITmedia NEWS / AI Watch / Trend Micro <span class="ext">↗</span></a></span></div>
           </figure>
         </div>
-
+        
       </div>
     </section>
 
@@ -580,27 +617,27 @@ html { background: #FAF7F0; }
         <span class="rule"></span><span class="en">DEEP DIVE</span>
         <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
       </div>
-
-
+      
+      
       <div class="dd-charts">
-
+        
         <figure class="dd-fig">
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">きょうのAIニュースで強まった統制論点</span></figcaption>
           <div class="dd-chart__note">実行権限と悪用対策が同時に重い</div>
           <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="きょうのAIニュースで強まった統制論点"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">相対</text><rect x="36.1" y="96.0" width="65.5" height="118.0" fill="#2D5BB8"/><text x="68.8" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4</text><rect x="141.7" y="66.5" width="65.5" height="147.5" fill="#2D5BB8"/><text x="174.4" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><rect x="247.3" y="66.5" width="65.5" height="147.5" fill="#2D5BB8"/><text x="280.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><rect x="352.9" y="96.0" width="65.5" height="118.0" fill="#2D5BB8"/><text x="385.6" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4</text><rect x="458.5" y="66.5" width="65.5" height="147.5" fill="#2D5BB8"/><text x="491.2" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><text x="68.8" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">広告境界</text><text x="174.4" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">操作権限</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">業務横断</text><text x="385.6" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">秘匿推論</text><text x="491.2" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">悪用対策</text><text x="174.4" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 実行権限と悪用対策が同時に重い</text></svg></div>
           <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://ai.watch.impress.co.jp/docs/news/2118417.html">AI Watch / ITmedia NEWS / Trend Micro の2026-06-20掲載記事をもとにNews-Graspが相対整理 <span class="ext">↗</span></a></span></div>
         </figure>
-
+        
         <figure class="dd-fig">
           <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">AI導入時に確認すべき境界の移動</span></figcaption>
           <div class="dd-chart__note">操作と業務横断で統制負荷が利用範囲に追いつく</div>
           <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="AI導入時に確認すべき境界の移動"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">相対</text><polyline points="68.8,125.5 174.4,96.0 280.0,66.5 385.6,66.5 491.2,96.0" fill="none" stroke="#2D5BB8" stroke-width="2.5"/><circle cx="68.8" cy="125.5" r="4" fill="#2D5BB8"/><text x="68.8" y="117.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3</text><circle cx="174.4" cy="96.0" r="4" fill="#2D5BB8"/><text x="174.4" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4</text><circle cx="280.0" cy="66.5" r="4" fill="#2D5BB8"/><text x="280.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><circle cx="385.6" cy="66.5" r="4" fill="#2D5BB8"/><text x="385.6" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><circle cx="491.2" cy="96.0" r="4" fill="#2D5BB8"/><text x="491.2" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4</text><polyline points="68.8,155.0 174.4,96.0 280.0,66.5 385.6,66.5 491.2,66.5" fill="none" stroke="#C9A155" stroke-width="2.5"/><circle cx="68.8" cy="155.0" r="4" fill="#C9A155"/><text x="68.8" y="147.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">2</text><circle cx="174.4" cy="96.0" r="4" fill="#C9A155"/><text x="174.4" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">4</text><circle cx="280.0" cy="66.5" r="4" fill="#C9A155"/><text x="280.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><circle cx="385.6" cy="66.5" r="4" fill="#C9A155"/><text x="385.6" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><circle cx="491.2" cy="66.5" r="4" fill="#C9A155"/><text x="491.2" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><text x="68.8" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">会話</text><text x="174.4" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">広告</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">操作</text><text x="385.6" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">業務</text><text x="491.2" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">攻撃対策</text><text x="385.6" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 操作と業務横断で統制負荷が利用範囲に追いつく</text></svg><div class="dd-chart-legend"><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#2D5BB8"></span>利用範囲</span><span class="dd-chart-legend__item"><span class="dd-chart-legend__sw" style="background:#C9A155"></span>統制負荷</span></div></div>
           <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://ai.watch.impress.co.jp/docs/news/2118515.html)">*3 [Microsoft、自律型AIエージェント</a></span></div>
         </figure>
-
+        
       </div>
-
-
+      
+      
       <div style="margin:34px 0">
         <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
         <figure class="dd-fig">
@@ -609,65 +646,65 @@ html { background: #FAF7F0; }
             <table class="dd-table">
               <thead><tr><th>論点</th><th>今日の材料</th><th>実務で見る点</th></tr></thead>
               <tbody>
-
+                
                 <tr>
-
+                  
                   <td class="head">広告</td>
-
+                  
                   <td class="val">ChatGPT無料版とGoプランで広告テスト</td>
-
+                  
                   <td class="src">回答への非介入、会話データ非共有、表示位置</td>
-
+                  
                 </tr>
-
+                
                 <tr>
-
+                  
                   <td class="head">操作権限</td>
-
+                  
                   <td class="val">Codex Record &amp; Replay</td>
-
+                  
                   <td class="src">再生前承認、対象アプリ、実行ログ</td>
-
+                  
                 </tr>
-
+                
                 <tr>
-
+                  
                   <td class="head">業務横断</td>
-
+                  
                   <td class="val">Copilot Cowork一般提供</td>
-
+                  
                   <td class="src">ツール別権限、監査証跡、失敗時の戻し方</td>
-
+                  
                 </tr>
-
+                
                 <tr>
-
+                  
                   <td class="head">基盤信頼</td>
-
+                  
                   <td class="val">Confidential AIとApple PCC</td>
-
+                  
                   <td class="src">推論時のデータ隔離、第三者検証</td>
-
+                  
                 </tr>
-
+                
                 <tr>
-
+                  
                   <td class="head">悪用対策</td>
-
+                  
                   <td class="val">claude.ai共有画面のClickFix型攻撃</td>
-
+                  
                   <td class="src">正規ドメイン経由の誘導検知、教育、ブロック</td>
-
+                  
                 </tr>
-
+                
               </tbody>
             </table>
           </div>
-
+          
         </figure>
       </div>
-
-
+      
+      
     </section>
 
     <!-- 注目点 / WHAT TO WATCH -->
@@ -676,7 +713,7 @@ html { background: #FAF7F0; }
         <span class="rule"></span><span class="en">WHAT TO WATCH</span>
         <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
       </div>
-
+      
       <div style="margin-bottom:34px">
         <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
         <div class="dd-decision">
@@ -685,92 +722,92 @@ html { background: #FAF7F0; }
             <p>AIエージェントへ実行権限を渡す前に、どの境界を最低限固定するか</p>
           </div>
           <div class="dd-decision__opts">
-
+            
             <div class="dd-opt">
               <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
               <p class="dd-opt__txt">広告・会話データ・回答生成を分け、収益化が信頼を壊さない条件を明文化する</p>
             </div>
-
+            
             <div class="dd-opt">
               <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
               <p class="dd-opt__txt">操作自動化は対象アプリ、実行前承認、ログ保存、ロールバック手順を必須にする</p>
             </div>
-
+            
             <div class="dd-opt">
               <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
               <p class="dd-opt__txt">業務横断AIはツールごとの権限棚卸しと悪用検知を先に整える</p>
             </div>
-
+            
           </div>
           <div class="dd-decision__foot">
             <div><div class="lbl">期限 — DEADLINE</div><p>2026年6月下旬、各社の一般提供・広告テストが広がる前に運用規約へ落とす</p></div>
             <div><div class="lbl">決定権者 — DECIDER</div>
-
+              
               <ul class="dd-decision__deciders"><li>企業IT部門</li><li>セキュリティ責任者</li><li>業務オーナー</li><li>AI導入チーム</li></ul>
-
+              
             </div>
           </div>
         </div>
       </div>
-
+      
       <div class="dd-prose"><p>AIの実行範囲は、会話から画面操作、複数ツール横断、秘匿推論、攻撃対策まで広がった。だから導入側は、<strong>便利な機能を見つける前に境界を決める</strong>必要がある。<strong class="emph-bold">OpenAI</strong>や<strong class="emph-bold">Microsoft</strong>の機能追加は前向きな材料だが、<span class="emph-und">誰の権限で何を実行したか</span>を説明できなければ、業務利用では不信に変わる。今日のAIニュースは、エージェント時代の主戦場が「能力」から「統制」へ移る合図だった。</p></div>
     </section>
 
     <!-- 要約 + 参考リンク -->
     <section class="dd-tail">
-
+      
       <div class="dd-summary">
         <div class="lbl">❖ 要約 — IN ONE READ</div>
         <p>AIエージェントは、広告、操作代行、業務横断、秘匿推論、悪用対策を同時に抱える段階へ入った。<strong>実行権限を渡すほど、統制境界の設計が価値になる</strong>。<strong class="emph-bold">Codex</strong>や<strong class="emph-bold">Copilot Cowork</strong>を見ると、次の焦点は<span class="emph-und">何ができるか</span>ではなく<span class="emph-und">誰が止められるか</span>だ。</p>
         <div class="watermark">❖</div>
       </div>
-
-
+      
+      
       <div style="margin-top:40px">
         <div class="dd-sechead">
           <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
           <h2 class="jp" style="font-size:26px">参考リンク</h2>
         </div>
         <div class="dd-sources">
-
-
+          
+          
           <a class="dd-source" href="https://ai.watch.impress.co.jp/docs/news/2118417.html)">
             <span class="dd-source__no">01</span>
             <span class="dd-source__txt"><span class="dd-source__pub">[ChatGPT、無料版およびGoプランで試験的広告表示を開始]</span>( <span class="ext">↗</span></span>
           </a>
-
-
-
+          
+          
+          
           <a class="dd-source" href="https://www.itmedia.co.jp/news/articles/2606/19/news102.html)">
             <span class="dd-source__no">02</span>
             <span class="dd-source__txt"><span class="dd-source__pub">[画面操作を“録画”→AIが作業代行 Codexに新機能</span>「Record &amp; Replay」]( <span class="ext">↗</span></span>
           </a>
-
-
-
+          
+          
+          
           <a class="dd-source" href="https://ai.watch.impress.co.jp/docs/news/2118515.html)">
             <span class="dd-source__no">03</span>
             <span class="dd-source__txt"><span class="dd-source__pub">[Microsoft、自律型AIエージェント</span>「Copilot Cowork」を一般提供]( <span class="ext">↗</span></span>
           </a>
-
-
-
+          
+          
+          
           <a class="dd-source" href="https://ai.watch.impress.co.jp/docs/news/2118603.html)">
             <span class="dd-source__no">04</span>
             <span class="dd-source__txt"><span class="dd-source__pub">[Google Cloud、AppleのPCC拡張を支える次世代のConfidential AIを推進]</span>( <span class="ext">↗</span></span>
           </a>
-
-
-
+          
+          
+          
           <a class="dd-source" href="https://www.trendmicro.com/ja_jp/research/26/f/claudeai-shared-chat-abused-in-malvertising.html)">
             <span class="dd-source__no">05</span>
             <span class="dd-source__txt"><span class="dd-source__pub">[claude.ai共有画面から不正なコマンドを実行させるClickFix型攻撃キャンペーンを分析]</span>( <span class="ext">↗</span></span>
           </a>
-
-
+          
+          
         </div>
       </div>
-
+      
     </section>
   </div>
 
@@ -781,5 +818,19 @@ html { background: #FAF7F0; }
   </div>
 
 </div>
+<script>
+document.querySelectorAll('.dd-audio').forEach(function (block) {
+  var audio = block.querySelector('audio');
+  var buttons = block.querySelectorAll('[data-rate]');
+  if (!audio || !buttons.length) return;
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var rate = parseFloat(button.getAttribute('data-rate') || '1');
+      audio.playbackRate = rate;
+      buttons.forEach(function (b) { b.classList.toggle('is-active', b === button); });
+    });
+  });
+});
+</script>
 </body>
 </html>

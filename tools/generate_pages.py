@@ -40,6 +40,7 @@ from tools.config import (  # noqa: E402
     TOP_RECENT_DAYS,
 )
 from tools.dedup import same_event_by_tokens, significant_tokens  # noqa: E402  (表示層 dedup で再利用)
+from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
 _TTS_BUILD_DIR = _PKG_ROOT / "build" / "tts"
@@ -1189,6 +1190,7 @@ def _latest_deepdive_card(target_date: str | None = None) -> dict[str, Any] | No
         "lens_glyph": dd.get("lens_glyph", ""),
         "accent": dd.get("accent", INK),
         "tags": tags[:4],
+        **deepdive_audio_for_pages(str(dd.get("date", ""))),
         # 「IN THIS REPORT」manifest (実ブロックから動的生成)
         "report_items": _deepdive_report_items(dd),
     }

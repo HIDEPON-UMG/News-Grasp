@@ -38,9 +38,67 @@ from tools.render_deepdive import (  # noqa: E402
     layout_relations,
     relations_svg,
 )
+from tools.generate_pages import _get_jinja_env  # noqa: E402
 
 _FIXTURE = ROOT / "tests" / "fixtures" / "deepdive_robotaxi.md"
 _REAL = ROOT / "digest" / "DeepDive" / "2026-05-31-DeepDive.md"
+
+
+def test_deepdive_template_embeds_dialogue_audio_with_rate_buttons() -> None:
+    url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-06-21.mp3?v=abc123"
+    html = _get_jinja_env().get_template("deepdive-template.html").render(
+        title="アクセンチュア急落、AI変革の時間差",
+        date="2026-06-21",
+        date_dot="2026.06.21",
+        issue="20260621",
+        theme="AI導入支援の需要と従来型ITサービスの評価低下をどう切り分けるか",
+        tags=["deepdive"],
+        read_min=8,
+        canonical="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-21/",
+        og_title="",
+        og_description="",
+        og_image="",
+        og_url="",
+        base_url="https://hidepon-umg.github.io/News-Grasp",
+        site_title="News Grasp",
+        ink=INK,
+        gold="#C9A155",
+        cream="#F0EBE0",
+        paper="#FAF7F0",
+        border="#E2DED4",
+        accent="#2E6B52",
+        accent_chip_bg="rgba(46,107,82,.12)",
+        accent_chip_line="rgba(46,107,82,.22)",
+        accent_underline="rgba(46,107,82,.55)",
+        lens_id="it",
+        lens_name_en="IT & CONSULTING",
+        lens_name_jp="IT-Consulting",
+        lens_glyph="⌗",
+        deepdive_audio_url=url,
+        deepdive_audio_date="2026-06-21",
+        timeline=[],
+        players=[],
+        relations_svg="",
+        relations_legend=[],
+        relations_title="",
+        relations_source=[],
+        charts=[],
+        table=None,
+        decision=None,
+        bg_prose=[],
+        di_prose=[],
+        watch_prose=[],
+        summary_prose="",
+        sources=[],
+        related=[],
+    )
+
+    section = html[html.index('class="dd-audio"') : html.index('class="dd-hero__theme"')]
+    assert "DeepDive 解説対談" in section
+    assert f'<source src="{url}" type="audio/mpeg">' in section
+    for rate in ("1", "1.1", "1.2", "1.3", "1.4", "1.5"):
+        assert f'data-rate="{rate}"' in section
+    assert "playbackRate" in html
 
 
 # ── ブロック抽出 ──────────────────────────────────────────────────────────────

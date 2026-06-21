@@ -2134,6 +2134,37 @@ foreach ($ttsStep in @(
     }
 }
 
+# ===== 2.86 DeepDive dialogue audio (fatal, generate_pages 前) =====
+# DeepDive 記事の理解補助として、対談台本を AivisSpeech で mp3 化し、
+# GitHub Releases audio-deepdive へ公開する。generate_pages はこの URL を
+# LP/DeepDive 記事へ埋め込むため、docs 生成前に完了させる。
+$DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive-dialogue.md")
+foreach ($deepDiveTtsStep in @(
+    @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
+    @{ Name = 'deepdive dialogue publish'; Args = @('-m', 'tools.tts.deepdive_audio', $DateStamp) }
+)) {
+    Write-Log "$($deepDiveTtsStep.Name) start"
+    try {
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe @($deepDiveTtsStep.Args) }
+            $deepDiveTtsRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($deepDiveTtsRc -ne 0) {
+            Write-Log "ERROR: $($deepDiveTtsStep.Name) exited with $deepDiveTtsRc. DeepDive dialogue audio is required for normal publish."
+            Set-RunnerState -Status 'content_repair_failed' -Message "$($deepDiveTtsStep.Name) failed" -ExitCode $deepDiveTtsRc
+            exit 1
+        }
+        Write-Log "$($deepDiveTtsStep.Name) done"
+    } catch {
+        Write-Log "ERROR: $($deepDiveTtsStep.Name) failed: $($_.Exception.Message). DeepDive dialogue audio is required for normal publish."
+        Set-RunnerState -Status 'content_repair_failed' -Message "$($deepDiveTtsStep.Name) failed" -ExitCode 1
+        exit 1
+    }
+}
+
 # ===== 2.9 digest/data commit (全 content gate 通過後・docs 生成前) =====
 # 2026-06-09 改定で生成側は commit しなくなった (routine-system.md ステップ 6:
 # 「commit / push は ps1 が代行」)。しかし旧実装は docs/ しか git add しておらず、
@@ -2253,7 +2284,9 @@ if ($diffRc -eq 1) {
 # になる一時不整合を避ける。rerun は uploads.json の mp4_sha256/videoId で skip する。
 foreach ($youtubePodcastStep in @(
     @{ Name = 'youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp) },
-    @{ Name = 'youtube podcast prepare'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare') }
+    @{ Name = 'deepdive youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp, '--kind', 'deepdive') },
+    @{ Name = 'youtube podcast prepare'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare') },
+    @{ Name = 'deepdive youtube podcast prepare'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--kind', 'deepdive', '--prepare') }
 )) {
     Write-Log "$($youtubePodcastStep.Name) start"
     try {
@@ -2321,6 +2354,21 @@ if ($NoPush) {
     }
     Write-Log 'youtube podcast finalize OK'
 
+    Write-Log 'deepdive youtube podcast finalize start'
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.youtube_podcast.upload_episode' $DateStamp '--kind' 'deepdive' '--finalize' }
+        $deepDiveYoutubeFinalizeRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($deepDiveYoutubeFinalizeRc -ne 0) {
+        Write-Log "ERROR: deepdive youtube podcast finalize failed (rc=$deepDiveYoutubeFinalizeRc). public DeepDive podcast sentinel cannot converge."
+        Set-RunnerState -Status 'distribution_failed' -Message 'deepdive youtube podcast finalize failed' -ExitCode $deepDiveYoutubeFinalizeRc
+        exit 1
+    }
+    Write-Log 'deepdive youtube podcast finalize OK'
+
     Write-Log 'podcast verification start (public podcast sentinel)'
     Update-RunnerProgress -Phase 'podcast-verify' -Step 'podcast verification start'
     Push-Location $RepoDir
@@ -2335,8 +2383,24 @@ if ($NoPush) {
         Set-RunnerState -Status 'distribution_failed' -Message 'podcast verification failed' -ExitCode $podcastVerifyRc
         exit 1
     }
-    $NormalPublishVerified = $true
     Write-Log 'podcast verification OK'
+
+    Write-Log 'deepdive podcast verification start (public podcast sentinel)'
+    Update-RunnerProgress -Phase 'deepdive-podcast-verify' -Step 'deepdive podcast verification start'
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-podcast' '--date' $DateStamp '--state' (Join-Path $RepoDir 'build\youtube-podcast-deepdive\uploads.json') '--expected-title' "News-Grasp DeepDive Dialogue $DateStamp" '--wait-sec' '1200' '--poll-sec' '30' }
+        $deepDivePodcastVerifyRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($deepDivePodcastVerifyRc -ne 0) {
+        Write-Log "ERROR: deepdive podcast verification failed (rc=$deepDivePodcastVerifyRc). public DeepDive podcast sentinel did not converge."
+        Set-RunnerState -Status 'distribution_failed' -Message 'deepdive podcast verification failed' -ExitCode $deepDivePodcastVerifyRc
+        exit 1
+    }
+    $NormalPublishVerified = $true
+    Write-Log 'deepdive podcast verification OK'
 }
 
 # ===== 6. Web Push 通知（docs 公開後・.venv python = $PyExe で送る） =====

@@ -103,6 +103,10 @@ build/deepdive-render-check/
 build/*.wrapper.log
 build/tts/
 build/youtube-podcast/
+build/youtube-podcast-deepdive/
+build/candidates-last-good/
+build/news-grasp-deepdive-final-draft.md
+*pytest-tmp/
 docs/specs/*incident-hardening.html
 # Incident report HTML はローカル成果物として保持し、コミット対象にしない。
 docs/incidents/*-report.html

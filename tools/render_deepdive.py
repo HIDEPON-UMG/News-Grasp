@@ -52,6 +52,7 @@ from tools.generate_pages import (  # noqa: E402
     parse_frontmatter,
     render_page,
 )
+from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 from tools.validate_deepdive_urls import (  # noqa: E402
     DeepDiveUrlError,
     require_live_urls,
@@ -1750,6 +1751,7 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
         "theme": theme,
         "tags": tags,
         "read_min": read_min,
+        **deepdive_audio_for_pages(date_str, enforce_recent=True, digest_dir=Path(md_path).parent),
         "canonical": canonical,
         "og_title": title,
         "og_description": theme[:180],

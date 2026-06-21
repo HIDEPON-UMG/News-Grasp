@@ -140,6 +140,9 @@ def required_distribution_artifacts(issue: str | date) -> list[str]:
         "build/tts/latest_audio.json",
         f"build/youtube-podcast/{issue_str}.mp4",
         "build/youtube-podcast/uploads.json",
+        "build/tts/deepdive/latest_audio.json",
+        f"build/youtube-podcast-deepdive/{issue_str}.mp4",
+        "build/youtube-podcast-deepdive/uploads.json",
         f"data/distribution/{issue_str}.json",
     ]
 

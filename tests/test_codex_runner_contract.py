@@ -55,21 +55,31 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
 
     tts_done = runner.index("tts publish_audio")
+    deepdive_tts_build = runner.index("deepdive dialogue synthesize")
+    deepdive_tts_publish = runner.index("deepdive dialogue publish")
     youtube_build = runner.index("youtube podcast build_video")
+    deepdive_youtube_build = runner.index("deepdive youtube podcast build_video")
     youtube_prepare = runner.index("youtube podcast prepare")
+    deepdive_youtube_prepare = runner.index("deepdive youtube podcast prepare")
     digest_commit = runner.index("2.9 digest/data commit")
     docs_commit = runner.index("4. docs/ commit")
     push_start = runner.index("push origin main start")
     publish_verify = runner.index("publish verification start")
     youtube_finalize = runner.index("youtube podcast finalize")
+    deepdive_youtube_finalize = runner.index("deepdive youtube podcast finalize")
     podcast_verify = runner.index("podcast verification start")
+    deepdive_podcast_verify = runner.index("deepdive podcast verification start")
     send_push = runner.index("send_push start")
     ok_marker = runner.rindex("news-grasp-runner.ps1 OK")
 
-    assert tts_done < digest_commit < docs_commit < youtube_build < youtube_prepare < push_start
-    assert push_start < publish_verify < youtube_finalize < podcast_verify < send_push < ok_marker
+    assert tts_done < deepdive_tts_build < deepdive_tts_publish < digest_commit
+    assert digest_commit < docs_commit < youtube_build < deepdive_youtube_build < youtube_prepare < deepdive_youtube_prepare < push_start
+    assert push_start < publish_verify < youtube_finalize < deepdive_youtube_finalize < podcast_verify < deepdive_podcast_verify < send_push < ok_marker
     assert "tools.youtube_podcast.build_video" in runner
     assert "tools.youtube_podcast.upload_episode" in runner
+    assert "tools.tts.deepdive_dialogue" in runner
+    assert "tools.tts.deepdive_audio" in runner
+    assert "'--kind', 'deepdive'" in runner
     assert "--prepare" in runner
     assert "--finalize" in runner
     assert "distribution_failed" in runner

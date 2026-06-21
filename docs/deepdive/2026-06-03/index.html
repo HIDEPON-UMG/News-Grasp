@@ -126,6 +126,20 @@ html { background: #FAF7F0; }
                   word-break: auto-phrase; line-break: strict; }
 .dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
 .dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+.dd-audio { max-width: 760px; margin: 26px 0 0; padding: 16px 18px; border: 1px solid var(--border);
+            background: rgba(255,255,255,.42); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.dd-audio__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 10px; }
+.dd-audio__kicker,
+.dd-audio__date { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--soft); }
+.dd-audio__kicker { color: var(--accent); }
+.dd-audio__title { font-family: var(--serif); font-size: 18px; font-weight: 800; color: var(--ink); }
+.dd-audio audio { display: block; width: 100%; min-width: 0; }
+.dd-audio__rates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dd-audio__rate { min-width: 52px; border: 1px solid var(--border); background: var(--paper);
+                  color: var(--ink); padding: 4px 10px; font-family: var(--mono); font-size: 11px;
+                  font-weight: 700; letter-spacing: .08em; }
+.dd-audio__rate.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.dd-audio__rate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* section */
 .dd-sec { padding: 52px 0; }
@@ -351,6 +365,9 @@ html { background: #FAF7F0; }
   .dd-wrap { padding: 0 18px; }
   .dd-hero { padding: 30px 0 26px; }
   .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-audio { padding: 14px; }
+  .dd-audio__rates { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .dd-audio__rate { min-width: 0; width: 100%; padding: 4px 4px; font-size: 10px; letter-spacing: .04em; }
   /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
      <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
      折り返しさせる。タイトル → 日付の順に縦積み。 */
@@ -434,6 +451,7 @@ html { background: #FAF7F0; }
         <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
       </div>
       <h1 class="dd-hero__title">USD/JPY 160円攻防、日米金融政策の逆行</h1>
+      
       <p class="dd-hero__theme">USD/JPYが160円に迫る中、ウォーシュ新議長下のFedの利下げ封印と日銀の利上げ躊躇という日米金融政策の逆行は、為替介入ライン160円の攻防をどう決着させるか</p>
       <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260603</span><span>#USDJPY</span><span>#日銀</span><span>#FRB</span><span>#為替介入</span><span>#金利差</span></div>
     </header>
@@ -867,5 +885,19 @@ html { background: #FAF7F0; }
   </div>
 
 </div>
+<script>
+document.querySelectorAll('.dd-audio').forEach(function (block) {
+  var audio = block.querySelector('audio');
+  var buttons = block.querySelectorAll('[data-rate]');
+  if (!audio || !buttons.length) return;
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var rate = parseFloat(button.getAttribute('data-rate') || '1');
+      audio.playbackRate = rate;
+      buttons.forEach(function (b) { b.classList.toggle('is-active', b === button); });
+    });
+  });
+});
+</script>
 </body>
 </html>

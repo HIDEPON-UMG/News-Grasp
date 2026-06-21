@@ -11,6 +11,7 @@ def _render(
     *,
     latest_audio_url: str = "",
     latest_audio_date: str = "",
+    latest_deepdive: dict | None = None,
     is_yesterday: bool = False,
     audio_label: str = "今日のニュース朗読",
 ) -> str:
@@ -32,6 +33,7 @@ def _render(
         takeaways=[],
         latest_audio_url=latest_audio_url,
         latest_audio_date=latest_audio_date,
+        latest_deepdive=latest_deepdive,
         is_yesterday=is_yesterday,
         audio_label=audio_label,
     )
@@ -88,6 +90,33 @@ def test_yesterday_index_template_labels_audio_as_yesterday():
     assert 'aria-label="昨日のニュース朗読"' in html
     assert "昨日のニュース朗読" in html
     assert "今日のニュース朗読" not in html
+
+
+def test_index_deepdive_card_embeds_dialogue_audio_without_rate_buttons():
+    url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-06-16.mp3?v=abc123"
+
+    html = _render(
+        "index-template.html",
+        latest_deepdive={
+            "lens_id": "it",
+            "lens_glyph": "⌗",
+            "lens_name_en": "IT & CONSULTING",
+            "accent": "#2E6B52",
+            "date_dot": "2026.06.16",
+            "read_min": 8,
+            "title_html": "アクセンチュア急落、AI変革の時間差",
+            "deepdive_audio_url": url,
+            "deepdive_audio_date": "2026-06-16",
+            "lead_md": "",
+            "report_items": [],
+            "canonical": "https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-16/",
+        },
+    )
+
+    section = html[html.index('class="deepdive-audio deepdive-audio--home"') : html.index("READ THE DEEP DIVE")]
+    assert "DeepDive 解説対談" in section
+    assert f'<source src="{url}" type="audio/mpeg">' in section
+    assert "data-rate" not in section
 
 
 def test_latest_audio_for_pages_falls_back_to_requested_local_mp3(tmp_path, monkeypatch):

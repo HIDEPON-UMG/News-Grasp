@@ -111,4 +111,7 @@ def test_distribution_manifest_includes_audio_and_podcast_state() -> None:
     assert "build/tts/latest_audio.json" in artifacts
     assert "build/youtube-podcast/2026-06-16.mp4" in artifacts
     assert "build/youtube-podcast/uploads.json" in artifacts
+    assert "build/tts/deepdive/latest_audio.json" in artifacts
+    assert "build/youtube-podcast-deepdive/2026-06-16.mp4" in artifacts
+    assert "build/youtube-podcast-deepdive/uploads.json" in artifacts
     assert "data/distribution/2026-06-16.json" in artifacts

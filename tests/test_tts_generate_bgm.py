@@ -233,6 +233,84 @@ def test_newsroom_drive_is_busier_than_major_swing(tmp_path):
     assert busy > relaxed * 1.3, f"drive={busy} swing={relaxed}"
 
 
+# ---- 「同僚同士の会話」用オフィス系ローファイ候補（会話を邪魔しない控えめさ） ----
+
+def test_office_lofi_style_exists_with_mellow_relaxed_profile():
+    assert "office-lofi" in generate_bgm.STYLES
+    style = generate_bgm.STYLES["office-lofi"]
+
+    # lofi らしい遅めのテンポ
+    assert 65 <= style.bpm <= 95
+
+    # 明るすぎない（エレピの明度を下げている）
+    assert style.brightness < 1.0
+
+    # lofi はあまりスイングしない（均等〜わずかなハネ）
+    assert 0.50 <= style.swing_ratio <= 0.56
+
+    # maj7/m9 系の落ち着いた進行（明るすぎない）
+    chord_names = [chord.name for chord in style.progression]
+    assert any(("maj7" in n or "maj9" in n or "m9" in n) for n in chord_names)
+
+
+def test_office_lofi_is_calmer_than_newsroom_and_cool_minor(tmp_path):
+    office_path = tmp_path / "office.wav"
+    newsroom_path = tmp_path / "newsroom.wav"
+    cool_path = tmp_path / "cool.wav"
+    generate_bgm.write_bgm_wav(office_path, duration_seconds=4.0, seed=5, style="office-lofi")
+    generate_bgm.write_bgm_wav(newsroom_path, duration_seconds=4.0, seed=5, style="newsroom-drive")
+    generate_bgm.write_bgm_wav(cool_path, duration_seconds=4.0, seed=5, style="cool-minor")
+
+    sr = generate_bgm.SAMPLE_RATE
+    office_onsets = _low_band_onsets(_read_samples(office_path), sr)
+    newsroom_onsets = _low_band_onsets(_read_samples(newsroom_path), sr)
+    cool_onsets = _low_band_onsets(_read_samples(cool_path), sr)
+
+    # 会話の邪魔をしない＝低域の音数（せわしさ）が他候補より明確に少ない
+    assert office_onsets < newsroom_onsets, f"office={office_onsets} newsroom={newsroom_onsets}"
+    assert office_onsets < cool_onsets, f"office={office_onsets} cool={cool_onsets}"
+
+
+def test_office_lofi_still_has_harmonic_content_not_pure_sine(tmp_path):
+    out = tmp_path / "office-harmonic.wav"
+    generate_bgm.write_bgm_wav(out, duration_seconds=4.0, seed=7, style="office-lofi")
+
+    samples = _read_samples(out)
+    sr = generate_bgm.SAMPLE_RATE
+    total = _rms(samples)
+    high = _rms(_highpass(samples, sr, 3000.0))
+
+    assert total > 0.0
+    assert high > total * 0.04
+
+
+# ---- 旋律を参考BGM(オフィスの日常.mp3)寄りに調整: 跳躍を抑えた控えめな旋律 ----
+# 参考曲はスペクトログラム解析で「高密度なリズムテクスチャが前面、明確に跳躍するメロディ線は無い」
+# と判明（自己相関ピッチ追跡は信頼性が低く不採用、視覚解析の所見を採用）。
+# office-lofi だけ専用メロディに分岐させ、他スタイル(ジャズ系の倍音/コード進行/ベース/ドラム)は不変。
+
+def test_office_lofi_melody_intervals_are_stepwise_not_jazz_leaps():
+    # ジャズ系スタイルは1オクターブ近い跳躍(最大19半音)。office-lofi は順次進行中心に抑える。
+    intervals = [interval for _, interval in generate_bgm.OFFICE_LOFI_MELODY_STARTS]
+    assert intervals, "OFFICE_LOFI_MELODY_STARTS が空"
+    assert max(abs(i) for i in intervals) <= 7
+
+
+def test_office_lofi_melody_is_sparser_than_jazz_melody_pattern():
+    # 参考曲はメロディが控えめ。ジャズ用の固定メロディ(12イベント)より少ないイベント数にする。
+    assert len(generate_bgm.OFFICE_LOFI_MELODY_STARTS) < len(generate_bgm.JAZZ_MELODY_STARTS)
+
+
+def test_office_lofi_melody_other_styles_untouched():
+    # 既存スタイルの曲調(倍音構造/コード進行/ベース/ドラム)は今回の旋律修正で変えない。
+    assert generate_bgm.STYLES["cool-minor"].progression == generate_bgm.COOL_MINOR_PROGRESSION
+    assert generate_bgm.STYLES["cool-minor"].bass_mode == "walking"
+    assert generate_bgm.STYLES["cool-minor"].drum_mode == "swing"
+    assert generate_bgm.STYLES["office-lofi"].progression == generate_bgm.OFFICE_LOFI_PROGRESSION
+    assert generate_bgm.STYLES["office-lofi"].bass_mode == "lofi"
+    assert generate_bgm.STYLES["office-lofi"].drum_mode == "lofi"
+
+
 # ---- ミックス（TTS 下敷き）の ffmpeg 契約は維持 ----
 
 def test_mix_preview_uses_bounded_ffmpeg_with_low_bgm_volume(tmp_path):

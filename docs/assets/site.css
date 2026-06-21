@@ -3135,6 +3135,43 @@ strong {
   outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
+.deepdive-audio {
+  width: min(100%, 720px);
+  margin: 18px 0 20px;
+  padding: 14px 16px;
+  border: 1px solid rgba(250, 247, 240, .18);
+  background: rgba(250, 247, 240, .07);
+  color: var(--color-cream);
+}
+.deepdive-audio__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+.deepdive-audio__kicker,
+.deepdive-audio__date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: rgba(250, 247, 240, .62);
+}
+.deepdive-audio__kicker {
+  color: var(--color-gold);
+}
+.deepdive-audio__title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.deepdive-audio audio {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
 @media (max-width: 760px) {
   .daily-audio__inner {
     grid-template-columns: 1fr;

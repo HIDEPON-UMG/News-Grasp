@@ -160,6 +160,18 @@
             </div>
             {% endif %}
             <h2 class="home-hero__title home-hero__title--dd">{{ latest_deepdive.title_html|safe }}</h2>
+            {% if latest_deepdive.deepdive_audio_url %}
+            <section class="deepdive-audio deepdive-audio--home" aria-label="DeepDive解説対談">
+              <div class="deepdive-audio__meta">
+                <span class="deepdive-audio__kicker">LISTEN</span>
+                <span class="deepdive-audio__title">DeepDive 解説対談</span>
+                <span class="deepdive-audio__date">{{ latest_deepdive.deepdive_audio_date }}</span>
+              </div>
+              <audio preload="none" controls>
+                <source src="{{ latest_deepdive.deepdive_audio_url }}" type="audio/mpeg">
+              </audio>
+            </section>
+            {% endif %}
             {% if latest_deepdive.lead_md %}<p class="home-hero__lead home-hero__lead--dd">{{ latest_deepdive.lead_md|render_emph }}</p>{% endif %}
             {% if latest_deepdive.report_items %}
             <div class="home-hero__report">

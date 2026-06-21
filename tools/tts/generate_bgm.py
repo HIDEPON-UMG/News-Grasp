@@ -76,6 +76,13 @@ BOSSA_PROGRESSION: tuple[Chord, ...] = (
     Chord("A7b9", (57, 61, 67, 70)),
 )
 
+OFFICE_LOFI_PROGRESSION: tuple[Chord, ...] = (
+    Chord("Cmaj9", (48, 55, 59, 64)),
+    Chord("Am9", (57, 60, 64, 67)),
+    Chord("Fmaj7", (53, 57, 60, 64)),
+    Chord("G6", (55, 59, 62, 67)),
+)
+
 NEWSROOM_PROGRESSION: tuple[Chord, ...] = (
     Chord("Fm9", (53, 56, 60, 63)),
     Chord("Dbmaj7", (49, 53, 56, 60)),
@@ -121,6 +128,15 @@ STYLES: dict[str, Style] = {
         brightness=0.72,
         bass_mode="ostinato",
         drum_mode="sixteen",
+    ),
+    "office-lofi": Style(
+        name="office-lofi",
+        bpm=82,
+        progression=OFFICE_LOFI_PROGRESSION,
+        swing_ratio=0.52,
+        brightness=0.62,
+        bass_mode="lofi",
+        drum_mode="lofi",
     ),
 }
 
@@ -177,6 +193,10 @@ def _walking_bass(beat: float, style: Style, phase: float) -> float:
         midi = chord.midis[0] - 12 + (0, 0, 3, 5)[step]
     elif style.bass_mode == "bossa":
         midi = chord.midis[0] - 12 + (0, 7, 5, 7)[step]
+    elif style.bass_mode == "lofi":
+        if step % 2 == 1:
+            return 0.0  # 2/4拍目は休符。低密度＝会話の邪魔をしない
+        midi = chord.midis[0] - 12 + (0, 0, 7, 7)[step]
     else:
         next_chord = style.progression[(bar_index + 1) % len(style.progression)]
         target = next_chord.midis[0] - 12
@@ -218,6 +238,8 @@ def _ride(beat: float, style: Style, phase: float) -> float:
         starts = (0.0, 0.25, 0.50, 0.75)
     elif style.drum_mode == "bossa":
         starts = (0.0, 0.50)
+    elif style.drum_mode == "lofi":
+        starts = (style.swing_ratio,)  # 裏拍 1 点のみ。控えめなチル感
     else:
         starts = (0.0, style.swing_ratio)
     value = 0.0
@@ -235,30 +257,48 @@ def _ride(beat: float, style: Style, phase: float) -> float:
     return value
 
 
+JAZZ_MELODY_STARTS: tuple[tuple[float, int], ...] = (
+    (0.67, 12),
+    (1.67, 16),
+    (2.67, 14),
+    (3.34, 12),
+    (8.67, 17),
+    (9.67, 14),
+    (10.67, 12),
+    (11.50, 9),
+    (16.67, 16),
+    (17.67, 19),
+    (18.67, 17),
+    (19.50, 16),
+)
+
+# 参考BGM(オフィスの日常.mp3)のスペクトログラム解析所見: 高密度なリズムテクスチャが前面で、
+# 明確に跳躍するメロディ線は無い。office-lofi だけ順次進行中心・低頻度・ロングトーンの専用メロディにする。
+OFFICE_LOFI_MELODY_STARTS: tuple[tuple[float, int], ...] = (
+    (1.50, 4),
+    (5.50, 2),
+    (9.50, 0),
+    (13.50, 5),
+)
+
+
 def _melody(beat: float, style: Style, phases: list[float]) -> float:
     form_beats = len(style.progression) * BEATS_PER_BAR
     local = beat % form_beats
-    starts = (
-        (0.67, 12),
-        (1.67, 16),
-        (2.67, 14),
-        (3.34, 12),
-        (8.67, 17),
-        (9.67, 14),
-        (10.67, 12),
-        (11.50, 9),
-        (16.67, 16),
-        (17.67, 19),
-        (18.67, 17),
-        (19.50, 16),
-    )
+    if style.bass_mode == "lofi":
+        starts = OFFICE_LOFI_MELODY_STARTS
+        note_dur, note_decay = 0.95, 2.0
+    else:
+        starts = JAZZ_MELODY_STARTS
+        note_dur, note_decay = 0.28, 5.8
+    note_dur_beats = note_dur * style.bpm / 60.0
     value = 0.0
     base = style.progression[int(local // BEATS_PER_BAR)].midis[0]
     for index, (start, interval) in enumerate(starts):
         dt_beats = local - start
-        if 0.0 <= dt_beats <= 0.45:
+        if 0.0 <= dt_beats <= note_dur_beats:
             dt = dt_beats * 60.0 / style.bpm
-            env = _pluck_env(dt, 0.28, decay=5.8)
+            env = _pluck_env(dt, note_dur, decay=note_decay)
             freq = _midi_freq(base + interval)
             phase = phases[(index + 3) % len(phases)]
             value += (

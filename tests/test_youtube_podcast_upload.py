@@ -206,3 +206,34 @@ def test_dry_run_does_not_call_youtube_api(tmp_path, monkeypatch):
 
     assert result["dry_run"] is True
     assert result["videoId"] == ""
+
+
+def test_deepdive_metadata_and_upload_state_are_separate(tmp_path, monkeypatch):
+    from tools.youtube_podcast import upload_episode
+
+    build_dir = tmp_path / "build" / "youtube-podcast"
+    deepdive_build_dir = tmp_path / "build" / "youtube-podcast-deepdive"
+    deepdive_build_dir.mkdir(parents=True)
+    (deepdive_build_dir / "2026-06-21.mp4").write_bytes(b"mp4")
+    md_dir = tmp_path / "digest" / "DeepDive"
+    md_dir.mkdir(parents=True)
+    (md_dir / "2026-06-21-DeepDive.md").write_text(
+        "---\n"
+        "title: アクセンチュア急落、AI変革の時間差\n"
+        "theme: AccentureのFY2026 Q3決算をどう読むか\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(upload_episode, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(upload_episode, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(upload_episode, "DEEPDIVE_BUILD_DIR", deepdive_build_dir)
+
+    metadata = upload_episode.build_metadata("2026-06-21", kind="deepdive")
+    result = upload_episode.publish("2026-06-21", dry_run=True, kind="deepdive")
+
+    assert metadata["title"] == "News-Grasp DeepDive Dialogue 2026-06-21"
+    assert "アクセンチュア急落、AI変革の時間差" in metadata["description"]
+    assert "解説対談" in metadata["description"]
+    assert "DeepDive" in metadata["tags"]
+    assert result["mp4_path"] == str(deepdive_build_dir / "2026-06-21.mp4")
+    assert result["metadata"]["title"] == metadata["title"]
