@@ -71,6 +71,19 @@
       "categories": {
         "tests": 1
       }
+    },
+    "public-html": {
+      "signatures": {
+        "4cd32728a3f606d4": {
+          "failures": 1,
+          "artifact_hashes": [
+            "a2aaea9f9205ae5b"
+          ]
+        }
+      },
+      "categories": {
+        "docs": 1
+      }
     }
   }
 }
