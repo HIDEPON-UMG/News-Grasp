@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build" / "tts" / "deepdive"
 DEFAULT_BGM_PATH = REPO_ROOT / "build" / "office-daily-bgm-standalone.mp3"
 BGM_VOLUME_DB = 1.5
+BGM_EQ_FILTER = "highpass=f=110,equalizer=f=170:t=q:w=0.9:g=-4.0"
 MIN_DIALOGUE_CHARS = 1200
 MAX_DIALOGUE_CHARS = 2600
 MIN_SECONDS = 4 * 60
@@ -111,6 +112,7 @@ def mix_voice_wav_with_bgm(voice_wav: Path, bgm_path: Path, mp3_out: Path) -> No
     fade_out_start = max(duration - 5.0, 0.0)
     filter_complex = (
         f"[1:a]volume={BGM_VOLUME_DB:.1f}dB,"
+        f"{BGM_EQ_FILTER},"
         f"atrim=0:{duration:.3f},"
         "afade=t=in:st=0:d=2,"
         f"afade=t=out:st={fade_out_start:.3f}:d=5[bgm];"
