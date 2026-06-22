@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260623 — Mobility</title>
+<meta name="description" content="モビリティは車両そのものより、運用網と制度の設計差がニュースになった。欧州の電池交換網、国内幹線物流の自動運転、超小型EV量産、eVTOLインフラ補助が進む一方、地方実証は補助要件の厳格化で止まる。拡大と停滞の分岐は、技術より実装条件にある。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-23/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260623 — Mobility">
+<meta property="og:description" content="モビリティは車両そのものより、運用網と制度の設計差がニュースになった。欧州の電池交換網、国内幹線物流の自動運転、超小型EV量産、eVTOLインフラ補助が進む一方、地方実証は補助要件の厳格化で止まる。拡大と停滞の分岐は、技術より実装条件にある。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-23/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260623 — Mobility">
+<meta name="twitter:description" content="モビリティは車両そのものより、運用網と制度の設計差がニュースになった。欧州の電池交換網、国内幹線物流の自動運転、超小型EV量産、eVTOLインフラ補助が進む一方、地方実証は補助要件の厳格化で止まる。拡大と停滞の分岐は、技術より実装条件にある。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-23 · #20260623</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">モビリティは車両そのものより、運用網と制度の設計差がニュースになった。欧州の電池交換網、国内幹線物流の自動運転、超小型EV量産、eVTOLインフラ補助が進む一方、地方実証は補助要件の厳格化で止まる。拡大と停滞の分岐は、技術より実装条件にある。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·23</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260623</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-22 22:19 · Financial Times</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.ft.com/content/c2175609-d106-4a9c-b6a3-56aac71c569a" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://thedriven.io/wp-content/uploads/2026/04/CATL-2026-Super-Technology-Day-1.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.ft.com/content/c2175609-d106-4a9c-b6a3-56aac71c569a" rel="noopener nofollow" target="_blank" style="color: inherit;">CATL、欧州でEVトラック向け電池交換網　英Octopusと合弁</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">CATL</strong>は英Octopus Energyと組み、<strong>2035年までに欧州で30超の交換拠点</strong>を敷く構想を打ち出した。</li><li>狙いは車両本体と電池を切り離し、<span class="emph-und">導入コストと充電停止時間</span>を同時に下げて大型EV普及の壁を崩すことだ。</li><li>読者視点では<strong class="emph-bold">電池交換</strong>が、<strong>乗用車の実験論</strong>ではなく物流幹線の採算を左右するインフラ投資テーマへ進んだ意味が大きい。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-23</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-22 23:21</span>
+        <span>· 物流ウィークリー</span>
+        <span class="more-card__score">92</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://weekly-net.co.jp/news/197671/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://weekly-net.co.jp/wp/wp-content/uploads/2026/06/%E7%A9%8D%E3%81%BF%E8%BE%BC%E3%81%BF%E3%81%AE%E6%A7%98%E5%AD%90-700x525.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://weekly-net.co.jp/news/197671/" rel="noopener nofollow" target="_blank">PALTACと大王製紙、T2の自動運転トラック商用運行に参画</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">PALTAC</strong>と<strong class="emph-bold">大王製紙</strong>は、<strong>T2のレベル2自動運転トラックを定期運行に載せる</strong>段階まで踏み込んだ。</li><li>西淀川DCからRDC横浜まで約520kmを紙おむつなどで回し、<span class="emph-und">2027年度以降のレベル4幹線輸送</span>への接続を見据える。</li><li>読者にとって重要なのは<strong class="emph-bold">自動運転トラック</strong>が、<strong>実証便の話題</strong>ではなく荷主の定常オペレーションへ入り始めた点だ。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-22 21:24</span>
+        <span>· 岐阜新聞デジタル</span>
+        <span class="more-card__score">89</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.gifu-np.co.jp/articles/-/727895" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://gifu-np.ismcdn.jp/mwimgs/0/b/-/img_0ba7fc93a04451b562504b6cae2a0426161514.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.gifu-np.co.jp/articles/-/727895" rel="noopener nofollow" target="_blank">岐阜5市の自動運転実証、補助要件見直しで今年度見送り</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">東濃地域自動運転推進コンソーシアム</strong>の実証は、<strong>恵那市を除く5市で今年度見送り</strong>という後退局面に入った。</li><li>背景には国補助の公募要領見直しがあり、<span class="emph-und">車両購入や来年度までのレベル4要件</span>が地方実装の負荷を一段引き上げている。</li><li>読者視点では<strong class="emph-bold">自動運転実証</strong>の成否が、<strong>車載技術の出来</strong>だけでなく制度設計と予算条件に強く縛られている現実が見える。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-22 12:00</span>
+        <span>· PR TIMES</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://prtimes.jp/main/html/rd/p/000000008.000135629.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://prcdn.freetls.fastly.net/release_image/135629/8/135629-8-55fdb4cfb7a6671436c082a9ec455d05-3168x1344.png?format=jpeg&amp;auto=webp&amp;fit=bounds&amp;width=2400&amp;height=1260" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://prtimes.jp/main/html/rd/p/000000008.000135629.html" rel="noopener nofollow" target="_blank">リーンモビリティ、都市型EV「Lean3」量産へ累計8億円調達</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">リーンモビリティ</strong>は累計約8億円を積み増し、<strong>超小型EV「Lean3」の量産体制</strong>を具体フェーズへ進めた。</li><li>車両販売だけでなく走行データ基盤LeanXまで抱え込み、<span class="emph-und">自動運転やMaaSに接続できる都市型モビリティ</span>を目指している。</li><li>読者にとっては<strong class="emph-bold">Lean3</strong>が、<strong>小型EVのニッチ商品</strong>ではなくラストワンマイルと都市交通再設計の実験台になっている点が重要だ。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-22 18:30</span>
+        <span>· 大分県</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.pref.oita.jp/site/sme/oitaadvancedairmobility-vp-r8result.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.pref.oita.jp/img/ogp-oita-pref.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.pref.oita.jp/site/sme/oitaadvancedairmobility-vp-r8result.html" rel="noopener nofollow" target="_blank">大分県、空飛ぶクルマ向け離着陸場調査補助の採択結果を公表</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">大分県</strong>は、<strong>次世代空モビリティ離着陸場の調査補助採択</strong>を公表し、実装議論を事業化フェーズへ進めた。</li><li>補助率は2分の1以内、上限1500万円で、<span class="emph-und">運航と整備を見据えた基礎調査</span>に公費を入れる設計が明確になった。</li><li>読者視点では<strong class="emph-bold">空飛ぶクルマ</strong>が、<strong>展示イベントの話題</strong>ではなく離着陸場や保険まで含む地域インフラ計画へ移ったことが重要だ。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">CATL</strong>の欧州電池交換網、<strong class="emph-bold">T2</strong>の自動運転トラック商用化、<strong class="emph-bold">Lean3</strong>の資金調達が並び、Mobilityは車両性能より<strong>運用網</strong>で語る段階に入りました。いっぽう<strong class="emph-bold">岐阜</strong>の実証は補助要件見直しで見送り。<strong class="emph-bold">大分</strong>の空飛ぶクルマ向け調査補助も含め、<span class="emph-und">拡大の条件</span>と<span class="emph-und">停止の条件</span>がはっきり分かれています。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-23/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-23
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

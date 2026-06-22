@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260623 — Manufacturing</title>
+<meta name="description" content="製造は5件の配信。工場竣工、海外増設融資、産業ガスの中計、展示会外交、産業用地整備が並び、今日は生産能力をどこに置くかの判断が前面に出た。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-23/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260623 — Manufacturing">
+<meta property="og:description" content="製造は5件の配信。工場竣工、海外増設融資、産業ガスの中計、展示会外交、産業用地整備が並び、今日は生産能力をどこに置くかの判断が前面に出た。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-23/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260623 — Manufacturing">
+<meta name="twitter:description" content="製造は5件の配信。工場竣工、海外増設融資、産業ガスの中計、展示会外交、産業用地整備が並び、今日は生産能力をどこに置くかの判断が前面に出た。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="manufacturing">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill is-active" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-23 · #20260623</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MANUFACTURING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⬢</span>
+      <h1 class="cat-hero__title">製造.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">製造は5件の配信。工場竣工、海外増設融資、産業ガスの中計、展示会外交、産業用地整備が並び、今日は生産能力をどこに置くかの判断が前面に出た。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">86</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·23</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260623</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">← BACK TO MANUFACTURING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-22 10:11 · PR TIMES</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://prtimes.jp/main/html/rd/p/000000013.000115078.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://prcdn.freetls.fastly.net/release_image/115078/13/115078-13-c5e50c061ac09e8e05109d11c831bd96-2048x1536.jpg?format=jpeg&amp;auto=webp&amp;fit=bounds&amp;width=2400&amp;height=1260" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://prtimes.jp/main/html/rd/p/000000013.000115078.html" rel="noopener nofollow" target="_blank" style="color: inherit;">イグス、栃木さくら工場を稼働 4拠点集約で供給力を底上げ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">イグス</strong>は<strong>栃木さくら工場を6月22日に稼働</strong>させ、<span class="emph-und">分散していた4拠点を一本化して国内供給網を組み直す</span>段階に入った。</li><li>新工場では<strong class="emph-bold">高層ラック</strong>と組み立てライン効率化を入れ、<strong>在庫保管能力を旧4拠点比で約70%増</strong>とすることで<span class="emph-und">欠品リスクと拠点間輸送を同時に縮める</span>。</li><li>約4.2万平方メートルの敷地に<strong class="emph-bold">追加拡張余地</strong>も残しており、<strong>需要増を前提にした先回り投資</strong>として<span class="emph-und">日本市場向けの供給弾力性を高める</span>。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⬢ MANUFACTURING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-23</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⬢ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-22 00:00</span>
+        <span>· Salfin</span>
+        <span class="more-card__score">87</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://salfin.jp/news/c9c80120-0495-413a-abe5-f5b81ed67cde" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://images.newswitch.jp/images/f8644f4a-0449-4d0c-a0ef-fcf3cf7652ed.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://salfin.jp/news/c9c80120-0495-413a-abe5-f5b81ed67cde" rel="noopener nofollow" target="_blank">東邦アセチレン、水素と半導体向け拡販を軸に新中計 営業益26%増を狙う</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">東邦アセチレン</strong>は新中計で<strong>2028年度の営業利益を25年度比26.3%増へ引き上げる目標</strong>を掲げ、<span class="emph-und">半導体向け水素需要を収益柱へ育てる</span>姿勢を鮮明にした。</li><li>計画の芯は<strong class="emph-bold">水素事業の拡大</strong>と新規拡販で、<strong>半導体・エレクトロニクス向けの産業ガス需要を取り込む設計</strong>が<span class="emph-und">設備増強後の稼働率を左右する</span>。</li><li>東北での<strong class="emph-bold">半導体投資連鎖</strong>を追い風に、<strong>素材ガス供給側が先に能力と販売計画を固める局面</strong>へ入り<span class="emph-und">上流インフラの寡占度が一段と高まりやすい</span>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-22 19:28</span>
+        <span>· TBS NEWS DIG</span>
+        <span class="more-card__score">84</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://newsdig.tbs.co.jp/articles/-/2748813?display=1" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://newsdig.ismcdn.jp/mwimgs/b/f/1200w/img_bfbee4ae5169ce529e068f526edc0fef693476.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://newsdig.tbs.co.jp/articles/-/2748813?display=1" rel="noopener nofollow" target="_blank">中国サプライチェーン博が開幕 半導体企業と日本財界が現地で接点を探る</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">中国サプライチェーン博覧会</strong>が北京で開幕し、<strong>670超の企業が集まる場に半導体企業と日本財界が同時に入った</strong>ことで<span class="emph-und">対中製造ネットワークの温度感が可視化された</span>。</li><li><strong class="emph-bold">住友電工</strong>の松本正義会長は、<strong>政府間交流が細る局面でも経済界が正常化努力を続ける</strong>と述べ<span class="emph-und">供給網の現場接点を政治停滞から切り離す</span>考えを示した。</li><li>展示会そのものが<strong class="emph-bold">代替調達と協業探索</strong>の装置になっており、<strong>部品・素材・物流を跨ぐ再接続の機会</strong>として<span class="emph-und">企業側が現地で判断材料を取りに行く流れ</span>が強まっている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-22 09:19</span>
+        <span>· 建設通信新聞</span>
+        <span class="more-card__score">80</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.kensetsunews.com/sokuho/1248647" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.kensetsunews.com/PB5001H/wp-content/uploads/2026/06/d2a65351019f0741797ebabd71ff1b86.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.kensetsunews.com/sokuho/1248647" rel="noopener nofollow" target="_blank">茂原市、5.6haの産業用地を公募 半導体クラスターの受け皿を整備</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">茂原市</strong>は旧市営住宅跡を含む<strong>5.6ヘクタール超の産業用地整備</strong>に踏み出し、<span class="emph-und">半導体を含む成長分野の立地余地を自治体側で先に用意する</span>。</li><li>募集要項は8月公表、<strong class="emph-bold">2026年度内の事業者選定</strong>を想定し、<strong>29年度造成着手から31年度後半の建築開始</strong>まで工程を切って<span class="emph-und">企業誘致の時間軸を明示した</span>。</li><li>圏央道全通を見据える<strong class="emph-bold">立地条件改善</strong>と最大16億円の支援策により、<strong>大規模区画から1ヘクタール未満まで対応する設計</strong>で<span class="emph-und">地方側が製造投資の受け皿競争へ入った</span>。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MANUFACTURING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">イグス</strong>の栃木さくら工場、<strong class="emph-bold">JBIC</strong>の<strong class="emph-bold">サムテック</strong>増設融資、<strong class="emph-bold">東邦アセチレン</strong>の中計、<strong class="emph-bold">中国サプライチェーン博</strong>、<strong class="emph-bold">茂原市</strong>の産業用地公募が同時に出ると、製造の論点は<strong>何を作るか</strong>から<span class="emph-und">どこに置くか</span>へ移ります。供給力は設備の場所で決まる、という朝でした。物流や電力の手当てまで含めて、配置の巧さがそのまま競争力になります。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-23/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MANUFACTURING · 2026-06-23
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
