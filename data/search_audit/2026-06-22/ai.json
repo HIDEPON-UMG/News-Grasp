@@ -1,0 +1,61 @@
+{
+  "date": "2026-06-22",
+  "category_id": "ai",
+  "queries": [
+    "site:diamond.jp みどりの窓口 生成AI 新幹線は1分で発券 JR東日本 3つの乗車券改革 最大の難関とは",
+    "site:dxmagazine.jp OpenAI ChatGPT Enterprise クレジット消費の可視化 コスト統制ツール",
+    "site:itmedia.co.jp ジョン・ジャンパー Anthropic DeepMind 2026 6 21",
+    "\"県が生成AIサービスを業務に活用 約２万７０００時間の業務削減効果\"",
+    "Meta AI June 2026 news recency AI model or acquisition",
+    "Microsoft AI June 2026 enterprise or Copilot recency",
+    "NVIDIA AI June 2026 model or platform recency",
+    "Google DeepMind June 2026 news recency"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "GitHub Copilot、「Claude Fable 5」に正式対応",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFBHRXVEelNpLV94QmoxaUhYaTZ5ZjllNmk5anBqQ05DUnNYcDVUclpRa3I2d1NLNlVObDhCYmttRzliWEZMUGM1dUgxeEhLUQ?oc=5",
+      "reason": "CodeZine元記事が2026-06-11公開で直近1週間に既掲。新材料は運用条件の追記に留まった。"
+    },
+    {
+      "title": "Gemini活用で「Siri AI」がついに実現、だがアップルが越えるべき壁は多い",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9SdE9aTTFjVENhVUREWlF2Y1FKUi03cnEtWUF0aVMyMzZBWVZwQTVqc3JYbjJ1MUtKbUpSU053RXRXekRPUXYxLVNnN2lxSUJLVmxCS1ZFcWRYWlk5SDBJUW5NcVhWejg?oc=5",
+      "reason": "2026-06-14号で既掲。今回は分析記事中心で追加の一次的新材料が薄い。"
+    },
+    {
+      "title": "ChatGPTの市場シェアが初の50％割れ、Gemini・Claudeと「生成AI三国時代」に突入",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE5yZzBnTE1kREZfUzJEbVo0eTRpMHFVdU5ObG9Md0g5TklxV3Q3a2xveWQtTC1ZTlZaQm1FRkJZN3QxRExSN0ozZ2FldVBzaFhfMi13?oc=5",
+      "reason": "2026-06-18号で既掲。Sensor Tower系の反復で新数値や新決定がない。"
+    },
+    {
+      "title": "トランプ政権の命令でAnthropicが最新モデル2種の公開を停止",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE5YblVudDZTMTd4SlFpRk5fNVU1QTk1MmNiSENXdnhoemtwUHRnck9CSHJNS0tQSnBWM2NsLW9YeWt3OEtGOXpJeGIwOFJFX1lTWVhrU3FaTHBEN1hXbFRfV0JJTDMtMXJPOEYyV0c1cWRUa2M?oc=5",
+      "reason": "2026-06-18号までに既掲。今回は解説・転載が中心で新展開を確認できなかった。"
+    },
+    {
+      "title": "自然言語や手描きスケッチで部品をモデリング、AutodeskがLLMとCADを連動",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE0tVGRhWEJjT3pzREZsNjg2WjVVTWJSdG5xbWJFYkpFOUllV1RpbHNJdDBzZDZOdWVxRGxseUJNckpRX0o4eUlSM0N4UXJXbDFOZm5FS3V4RUxJWFRxWjRUZUpaZy1YWW8?oc=5",
+      "reason": "技術背景は有意だが、今回確認できたのは紹介・研究解説で当日性の高い商用更新ではなかった。"
+    },
+    {
+      "url": "https://dxmagazine.jp/news/ytoda2625-28/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

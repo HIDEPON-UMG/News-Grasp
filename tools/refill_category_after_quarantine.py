@@ -9,7 +9,7 @@ from typing import Any
 from tools.publish_inventory import CATEGORY_PATHS
 
 
-MIN_SHORTFALL_COUNT = 3
+MIN_PUBLISHABLE_COUNT = 1
 TARGET_COUNT = 5
 
 
@@ -44,6 +44,58 @@ def _copy_if_exists(src: Path, dst_dir: Path) -> None:
         return
     dst_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst_dir / src.name)
+
+
+def _count_digest_cards(text: str) -> int:
+    return sum(1 for line in text.splitlines() if line.startswith("### ["))
+
+
+def _format_digest_card(row: dict[str, Any]) -> str:
+    score = row.get("score", 70)
+    try:
+        score_text = str(int(score))
+    except (TypeError, ValueError):
+        score_text = "70"
+    title = str(row.get("title") or row.get("title_ja") or "reserve article").strip()
+    url = str(row.get("url") or "").strip()
+    source = str(row.get("source") or "Reserve").strip()
+    published = str(row.get("published") or row.get("date") or "").strip()
+    thumb = str(row.get("thumb") or row.get("thumbnail") or "").strip()
+    summary = str(row.get("summary") or "reserve candidates exhausted after quarantine").strip()
+    lines = [f"### [{score_text}] {title}", ""]
+    meta = " · ".join(part for part in [published, f"📰 {source}"] if part)
+    if url:
+        meta = f"{meta} · 🔗 [元記事]({url})" if meta else f"🔗 [元記事]({url})"
+    if meta:
+        lines.extend([meta, ""])
+    if thumb:
+        lines.extend([f"![thumb]({thumb})", ""])
+    if summary:
+        lines.append(f"- **補充採用**: {summary}")
+    return "\n".join(lines).rstrip()
+
+
+def _drop_bad_digest_cards(text: str, bad_urls: set[str]) -> list[str]:
+    lines = text.splitlines()
+    kept: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.lstrip().startswith("### ["):
+            block: list[str] = []
+            while i < len(lines):
+                block.append(lines[i])
+                i += 1
+                if i < len(lines) and lines[i].lstrip().startswith("### ["):
+                    break
+            if any(url in "\n".join(block) for url in bad_urls):
+                continue
+            kept.extend(block)
+            continue
+        if not any(url in line for url in bad_urls):
+            kept.append(line)
+        i += 1
+    return kept
 
 
 def _category_folder(category: str) -> str:
@@ -91,16 +143,10 @@ def _reserve_candidates(candidate_dir: Path, category: str) -> list[dict[str, An
 def _sync_digest(path: Path, bad_urls: set[str], selected: list[dict[str, Any]]) -> None:
     if not path.exists():
         return
-    kept = [
-        line
-        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
-        if not any(url in line for url in bad_urls)
-    ]
+    kept = _drop_bad_digest_cards(path.read_text(encoding="utf-8-sig", errors="replace"), bad_urls)
     for row in selected:
-        title = str(row.get("title") or row.get("title_ja") or "reserve article")
-        url = str(row.get("url") or "")
-        if url:
-            kept.append(f"- {title} {url}")
+        if str(row.get("url") or ""):
+            kept.extend(["", _format_digest_card(row), "---"])
     path.write_text("\n".join(kept).rstrip() + "\n", encoding="utf-8", newline="\n")
 
 
@@ -119,6 +165,27 @@ def _read_bad_urls(path: Path | None) -> list[str]:
     return []
 
 
+def _read_audit(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _audit_dropped_urls(audit: dict[str, Any]) -> set[str]:
+    dropped = audit.get("dropped")
+    if not isinstance(dropped, list):
+        return set()
+    urls: set[str] = set()
+    for row in dropped:
+        if isinstance(row, dict) and row.get("url"):
+            urls.add(str(row["url"]))
+    return urls
+
+
 def refill_category(
     *,
     repo_root: Path,
@@ -130,7 +197,9 @@ def refill_category(
 ) -> dict[str, Any]:
     paths = _paths(repo_root, date, category)
     before = _backup(paths, repo_root, date, txid)
+    audit = _read_audit(paths["audit"])
     bad = {url for url in bad_urls if url}
+    rejected = _audit_dropped_urls(audit)
     records = _jsonl(paths["records"])
     if not records and not paths["digest"].exists():
         return {"ok": True, "mode": "skipped", "reason": "category_not_scheduled", "selected_total": 0}
@@ -142,7 +211,7 @@ def refill_category(
     selected: list[dict[str, Any]] = []
     for candidate in _reserve_candidates(candidate_dir, category):
         url = str(candidate.get("url") or "")
-        if not url or url in bad or url in current_urls:
+        if not url or url in bad or url in rejected or url in current_urls:
             continue
         selected.append(candidate)
         current_urls.add(url)
@@ -150,7 +219,7 @@ def refill_category(
             break
 
     final_rows = kept + selected
-    if len(final_rows) < MIN_SHORTFALL_COUNT:
+    if len(final_rows) < MIN_PUBLISHABLE_COUNT:
         _rollback(paths, before)
         return {
             "ok": False,
@@ -169,22 +238,19 @@ def refill_category(
     _write_jsonl(paths["records"], final_rows)
     _sync_digest(paths["digest"], bad, selected)
 
-    audit: dict[str, Any] = {}
-    if paths["audit"].exists():
-        try:
-            audit = json.loads(paths["audit"].read_text(encoding="utf-8-sig"))
-        except json.JSONDecodeError:
-            audit = {}
     dropped = audit.get("dropped")
     if not isinstance(dropped, list):
         dropped = []
     for row in removed:
         dropped.append({"url": row.get("url"), "reason": "quarantined by gate"})
+    digest_card_count = len(final_rows)
+    if paths["digest"].exists():
+        digest_card_count = _count_digest_cards(paths["digest"].read_text(encoding="utf-8-sig", errors="replace"))
     audit.update(
         {
             "category_id": category,
             "date": date,
-            "selected_total": len(final_rows),
+            "selected_total": digest_card_count,
             "dropped": dropped,
         }
     )
@@ -195,7 +261,7 @@ def refill_category(
     return {
         "ok": True,
         "mode": mode,
-        "selected_total": len(final_rows),
+        "selected_total": digest_card_count,
         "removed": len(removed),
         "refilled": len(selected),
         "transaction": str(before.parent),

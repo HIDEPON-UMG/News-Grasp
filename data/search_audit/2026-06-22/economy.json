@@ -1,0 +1,69 @@
+{
+  "date": "2026-06-22",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:www.nikkei.com コメ市場から見た景気",
+    "site:www.nikkei.com 企業が萎縮しない個人情報保護 後藤元気",
+    "site:www.nikkei.com フェンタニル 不正品",
+    "site:www.ig.com 米国株週間見通し マイクロン決算",
+    "site:jp.investing.com フランス経済 構造的変化が需要を圧迫",
+    "site:shikiho.toyokeizai.net 6月22～26日に決算発表を予定している企業リスト"
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 6,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "日銀 金融政策",
+    "米FRB 利上げ / 利下げ",
+    "決算速報",
+    "マクロ経済 指標",
+    "CPI / PCE",
+    "コメ価格",
+    "個人情報保護法",
+    "マイクロン決算",
+    "フランス経済",
+    "BOJ",
+    "Fed",
+    "NVIDIA",
+    "Nikkei",
+    "S&P 500",
+    "SoftBank"
+  ],
+  "dropped": [
+    {
+      "title": "フェンタニル 不正品、各国で社会問題に",
+      "url": "https://www.nikkei.com/article/DGKKZO97064270R20C26A6NN1000/",
+      "reason": "当日性はあるが、制度変更・家計コスト・市場材料の4件より読者の業務直結度を下位と判断"
+    },
+    {
+      "title": "6月22～26日に決算発表を予定している企業リスト",
+      "url": "https://shikiho.toyokeizai.net/news/0/948515",
+      "reason": "予定表で新規材料が薄く、個社決算の実体ニュースではない"
+    },
+    {
+      "title": "副業時代の社会保険 マルチワーカー「適用の壁」とは",
+      "url": "https://mainichi.jp/premier/business/articles/20260616/biz/00m/020/008000c",
+      "reason": "canonical の公開日が 2026-06-16 で、当日号の鮮度基準を満たさない"
+    },
+    {
+      "title": "経済財政諮問会議の有識者、社会保障負担率の目標検討を提言（2026年5月22日）",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1YR2F0TXdfMmVvZ2Jmd1ZaNkZIZVRsa1FxVl91elRBNF9WMHdnckl4NEJSM3VhWFhST0tRaVdQNTZTdGxRVXdWTXRuMUFnNUdRZDlR?oc=5",
+      "reason": "タイトル自体に旧日付が明記され、当日材料として採用できない"
+    },
+    {
+      "title": "投資信託・高配当株の基準価格記事群",
+      "url": "https://finance.yahoo.co.jp/",
+      "reason": "基準価格の定点更新で、マクロ経済・政策・市場変化の主要論点から外れる"
+    },
+    {
+      "title": "総裁不在の日銀金融政策決定会合 多数決で利上げ決まるか 異例ずくめ",
+      "url": "https://times.abema.tv/articles/-/10253085?page=1",
+      "reason": "確認できた本文が 2026-06-16 放送分で、新材料を伴う当日展開としては弱い"
+    }
+  ],
+  "candidate_file": "tmp/newsroom/2026-06-22/economy.candidates.merged.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-22/economy.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

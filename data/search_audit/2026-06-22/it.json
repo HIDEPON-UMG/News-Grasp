@@ -1,0 +1,83 @@
+{
+  "date": "2026-06-22",
+  "category_id": "it",
+  "queries": [
+    "Stage1 deduped candidates supplied externally: build/deduped-candidates/it.jsonl",
+    "site:media.shaho.co.jp 病院への立入検査 サイバーセキュリティ対策 充足率",
+    "site:prtimes.jp Bridge LLMO コンサルティングサービス",
+    "site:enterprisezine.jp インテル AI PC 脱・クラウド依存 エッジAI",
+    "site:enterprisezine.jp 7/10 情シス塾 炎上ITプロジェクト",
+    "GMO TECHHD社長 ネット広告からクラウドサービスへ事業転換",
+    "site:xtech.nikkei.com 人月商売 IT業界 死滅 3カ月"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Bridge",
+    "LLMO",
+    "病院サイバーセキュリティ",
+    "Intel",
+    "AI PC",
+    "情シス塾",
+    "GMO TECHHD",
+    "CloudOps",
+    "Accenture",
+    "BCG",
+    "Deloitte",
+    "McKinsey",
+    "NTT",
+    "PwC"
+  ],
+  "dropped": [
+    {
+      "title": "GMO TECHHD社長「ネット広告からクラウドサービスへ事業転換」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5FYkJRbWtqemF4cnJVMWNqUm9meGdvYnJ2Y2Y2VWJFT0hzU290dDRQZ2JRMjU4RXVhT1R3Q0xLTXNmcEpvSkNTU1I1bFdlSDBNemo0WjladmVyRENKd2JLWWhWb2pMcFIzOUVtZw?oc=5",
+      "reason": "確認できた一次ソースは2026-05-14の方針転換リリースで、号日6/22の新材料としては古かった。"
+    },
+    {
+      "title": "人月商売のIT業界がついに死滅する、たった3カ月で誰の目にも明らかに",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5wLU5SWWQ1S3BZSWw1dnFBaWd3LTl3MnhQeS1mSllMYUY5bVdIUExnT1JhZ0tRM2RQRkVmWXAxQkd4VEFaZVZkM1RfQ3ctSmZyRV9ZNHExVURYbnBnRFRUZmFGV1JscU1EOHV2MQ?oc=5",
+      "reason": "canonical URLを当日取得できず、タイトル以外の新材料と公開根拠を確認できなかった。"
+    },
+    {
+      "title": "クラウド運用管理の新潮流 「CloudOps」 とは 〜 クラウドファーストの、その先へ [JP23-BB-4-1042]",
+      "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxPQWZTOEEwLXFORDZPT1ZKbGNRV0Vjb21YOWhjYUVTQjlRdk0tTXVPZVAtQVJwSTduX0VYMXZWbzg2emxRdVY5VGdKVTQxTmdlbVQxbThDNFZObzh4SkJNQmNHWTVqTmo5V04yOFF6RkRYc3BNQXJyMF9RNllpemRWYk5yNXRoaWNiNnhqMGRZZ0t0dUdIMzhRR0o5UEJtNWpvTDlOZG9WcDNrMFpTS1N2Ti1uRjVmSkNLajNJaFVEbllnUW9nMXhmc2RvOE10dG84LUdTcHln?oc=5",
+      "reason": "direct URLは取得できたが公開日が約5カ月前で、当日号に載せる新規性が足りない。"
+    },
+    {
+      "title": "「ＩＴはトライ＆エラーを繰り返しながら『できた！』を積み重ねられる世界」…無償で学ぶ機会を子どもに提供（読売新聞オンライン）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBZajFjUmltSHRvMml0QWhpQlVzZ1pBN1FRMVVkdXVkX0hjb25YYnZSS29uczFLU2FtcHVLMUJ5UXRiTkxJMTdjRHVka1BkU0hNXy1PbmVmOUYtUVh3RGZReGNNQUVadkZSYnYyajVRNHZGRDdWdlljTzFVNDJGbEE?oc=5",
+      "reason": "X経由の見出し確認まではできたが、canonical URLとenterprise ITの本流性を当日JSTに十分固められなかった。"
+    },
+    {
+      "title": "6月20日のInfosys Ltd (INFY) 終値は9.74%下落：投資家が知っておくべき情報",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOeGdpMnBDZ1hINlJZMWZwdWhUZjVuLUFiNFhmdlQwc1NGVEFrdmRwLXJyMXdGOUdfSFV4S3NMbkZJbndmSEh3ak9yTUdHWWh0T2oyMmpVOTFPeEJQVnVDNjZwVlRDUHpDVktfek1rYnNlVXpqUGMtM0xhMXRRcjVWR0xIY0RaajlkQjUyaU9pQQ?oc=5",
+      "reason": "株価小動き単体でenterprise ITの構造変化を示す材料が薄く、一次情報性も弱い。"
+    },
+    {
+      "title": "（クロスレビュー）米ＩＴ企業創業者らの著書「テクノロジカル・リパブリック」",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE1samJpQ2x5SDZSdThiWXgtRlMzZ3hnSVktUVBKb05JdWR1R192RDlScFJfYXRFMHVXR1NaQ053Z1RnMnE5ZUNscE1HQ19lYzNzN3JqTlAzaXc5LVhI?oc=5",
+      "reason": "書評としては有意だが、当日号のenterprise IT実務変化を示すニュースカードとしては弱い。"
+    },
+    {
+      "title": "Amazon（AMZN）株：最近のAIおよびクラウド分野への投資を経て、依然として投資機会はあるのか",
+      "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxQZi1jQ0V0SUlrenliTXotOEFGbmJsejRjbGY3UG0zRmhyRDdvSHNBZG1LNF9pRWxZT0FmWWtRNGlpd0NXbzVVNElxdmN2WGVpS1JvNVlUMVlIQzRWT01lZHNYdU1HV29TVWJYbE0yWEJNRkxtT3VVaVBUajlUUzBpV2ZWTVJPSml3eWxFNkJiMVlBM09NVUdTRkhwcWxxZHVEa0NsZDNTZnFFbG4zeDlQNUhCbzFXTXl3UEJSdTJBenJ1NGc3MDVpRtIBkwFBVV95cUxPNk5PTEhfT1hWY2l6ODhKYVFEeHpNaDIxbVZ0TnBEelhLb2wzSHZRRC1lLWNDdTdTZkFwSThZdUNCRmRYcHJsLXhSWFRwMDZkRWZpQ2k2XzhDTTNYdlhCZmZMckFtd3pFaEF1Qm95MDZXaFZrbWdRZTRSckVUWFYwSlYtVW8ya2VuNGtObTJXcUZienc?oc=5",
+      "reason": "投資コラム色が強く、ITコンサル読者向けの実装・運用シグナルとしては優先度が落ちた。"
+    },
+    {
+      "title": "One Team,One Place｜新たな拠点をみんなで",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9XQzMtTnh0cGxvWVBpTGJVVVBhRm1CLWFPZDMwWlR1UWhXRE1qRVB6c3JrbUZFTnp0VEpMUHdGQmVLUXNZR2J5TV9pSEdhZWMzbTNYRVFQbUNZUQ?oc=5",
+      "reason": "クラウドファンディング案件でenterprise IT記事ではない。"
+    },
+    {
+      "title": "もっと知りたい、この夏",
+      "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE9BT3FLTTg5WHNFbkVabk94TEdCVzlhQy15RXdOYnNUM0NVUHJ2MTBuV1lJOXZrTllUbDlZTjY4R0dCbElDX1lncGxwcVcwY1VlSnI2ZXVZS0pGYmtvQmptdV9vSlVwajQ2dC1DUXN3?oc=5",
+      "reason": "ITカテゴリと無関係なエンタメ記事。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "fresh enterprise IT candidates exhausted after quarantine"
+}

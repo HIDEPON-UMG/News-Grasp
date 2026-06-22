@@ -1,0 +1,56 @@
+{
+  "date": "2026-06-22",
+  "category_id": "mobility",
+  "queries": [
+    "stage1: build/deduped-candidates/mobility.jsonl",
+    "\"ダンプトラックの大部分が自動運転に、「フィジカルAI」で急速に関心高まる\"",
+    "福井県 坂井市 越前市 自動運転実証休止 補助要件 厳しく 日経",
+    "自動運転バス試験 良好な結果 福山市 全710便 トラブルなし",
+    "コマツ 戦略 フィジカルAI 建機 自動運転 xtech",
+    "https://merkmal-biz.jp/?s=BYD%20%E8%BB%BD%E8%87%AA%E5%8B%95%E8%BB%8A%20EV%E6%99%82%E4%BB%A3%20%E8%BB%A2%E6%8F%9B%E7%82%B9",
+    "https://merkmal-biz.jp/?s=%E3%83%AD%E3%83%9C%E3%82%BF%E3%82%AF%E3%82%B7%E3%83%BC%20%E5%9B%BD%E9%80%A3%E6%96%B0%E5%9F%BA%E6%BA%96%20%E8%87%AA%E5%8B%95%E9%81%8B%E8%BB%A2%20%E5%8B%A2%E5%8A%9B%E5%9B%B3"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 10,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "自動運転",
+    "ロボタクシー",
+    "軽EV",
+    "EV輸入規制",
+    "建機自動運転",
+    "BYD",
+    "Tesla",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ],
+  "dropped": [
+    {
+      "title": "トヨタ自動車 EVの“新モデル”「bZ4X Touring」と“独自の充電サービス”を公開 EVのさらなる普及めざす",
+      "url": "https://newsdig.tbs.co.jp/articles/-/2615859",
+      "reason": "canonical解決後の公開日が2026-04-22で当日性不足"
+    },
+    {
+      "title": "福井県坂井市・越前市、相次ぎ自動運転実証休止 国の補助要件厳しく",
+      "url": "https://news.yahoo.co.jp/articles/d4489d7b1c8a4cf1b9c3459a5508c4652015fefd",
+      "reason": "canonical解決後の参照記事が2026-06-09公開で旧聞"
+    },
+    {
+      "title": "三菱の軽EV「eKクロスEV」が一部改良！フロントグリルにイルミネーション追加など魅力度がアップ【写真・2枚目】",
+      "url": "https://motor-fan.jp/article/1523945/",
+      "reason": "公開日が2026-06-18で当日性不足"
+    },
+    {
+      "title": "ダンプトラックの大部分が自動運転に、「フィジカルAI」で急速に関心高まる",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/ncr/18/00264/060200006/",
+      "reason": "同一テーマのコマツ戦略記事と重複度が高く、1件に集約"
+    },
+    {
+      "title": "G7サミット反対デモでテスラ車が炎上 金持ちへの怒りがテスラに向かう",
+      "url": "https://jidounten-lab.com/u_63862",
+      "reason": "政治・騒擾色が強く、モビリティの業務判断に直結する材料としては優先度を下げた"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

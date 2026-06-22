@@ -1,0 +1,63 @@
+{
+  "date": "2026-06-22",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:ig.com ドル円週間見通し ドル高加速で162円台視野も 為替介入絡み の円高警戒",
+    "site:gaitame.com 来週のドル円相場はどうなる 6/22週のイベント予定 2026年6月21日",
+    "site:newsdig.tbs.co.jp 物価高抑制へ 日銀 政策金利を1%に 円安止まらず 161円に片山財務大臣 けん制",
+    "site:newsdig.tbs.co.jp 日銀 政策金利 1.0%に引き上げ 物価高抑えたい でも 景気悪化させたくない 物価の番人 日銀の舵取り"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "ドル円",
+    "日銀",
+    "FRB",
+    "PCEデフレーター",
+    "為替介入",
+    "住宅ローン",
+    "BOJ",
+    "ECB",
+    "EURUSD",
+    "Fed",
+    "USDJPY"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "日欧米中銀、長短金利差が示す「信認の格差」 日銀への不安消えず",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5VVGYtZFNCQWJKVDJFWEdDVldja1dKQnFjSWhMVVVWa3lCUERxUWlMSmlYXzRDb3FZWG9BUlJfSGNEVVdZeDFkdTRPRGZlZmFoMFhxV2xsTEV2RXBSYXo1eDc0aEF2eDI4cTdSeQ?oc=5",
+      "reason": "Nikkei本体の元記事URLを検索結果から安定解決できず不採用"
+    },
+    {
+      "title": "Ｎｅｗｓモーニングサテライト【日銀フォワードガイダンス修正の意図】",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNeHNLbjE3UTA4RmhHOEItdnQ4SlF1YlhWVHc5ckZmNWp1RDc2clp5dld2V19DX2s4STJjbmZnRnJPTFM5OHhMNkZyODFrSmhCaURZZ1dFZHVzbDd5OHdYbWtya1NsQkhya1JCQ0tCMFNhQ19mckNpTXBlNU5wLVdYZlA1MktxUVFnSzlJcl9UTQ?oc=5",
+      "reason": "番組告知ページで記事本文レベルの新材料を確認できず不採用"
+    },
+    {
+      "title": "【速報】日銀 政策金利を1.0％程度に引き上げ 31年ぶり高水準 金融政策決定会合",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTFBfSUpNQnJWZnJ3YUg5ZVc2VWNBZzMxeXc3LTcyQlFJa3I0Z2ZiMi1sbWhiWFZWb0JNQUFJb1NGWUFZbDZrV3lnY3lvRDViaE5xQm00NXQ5SEs2VU0?oc=5",
+      "reason": "速報動画ページで、選定済み4件を上回る独自材料が乏しく同論点の重複と判断"
+    },
+    {
+      "title": "止まらぬ円安、再介入観測に市場緊張 効果限定的の見方が大勢…構造問題に切り込めるか",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBOSkNzZ1JGaEZBc3ZQc180MzEycktuU01nTUFwNEVxUDlEMXlodERRWjdnWnNsazVOYVdoQ2hGZGw1QXFJUFBZNUhtSkhPMGwwX01CaERoRGhmZFV5RmtmLUZoNzE2U1QzdWs0TWJ4ZVZ4M3EyNGc?oc=5",
+      "reason": "元記事単位のcanonical URLを安定解決できず不採用"
+    },
+    {
+      "title": "ネット銀の快進撃を暗転させる｢日銀借入金｣の呪縛…住宅ローン市場で薄れる存在感､預金競争で負ければ流動性に暗雲",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE1DNkZsdHZ6eVg2UllmdzVrUUZ4aGpraFZYSll3RThPV2IyV25JNE9kSk9Jdzl6cnFwZ0wwVDgxQlNHT18zaURDR09UOWc0cFFIdWc?oc=5",
+      "reason": "日銀論点はあるが、為替より銀行収益・住宅ローン寄りで優先度を下げた"
+    },
+    {
+      "title": "インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBDTjlOZzdQUEdTdXdtbG1meUpMcWtGZmZhdmhuYkhadW1qbURDdkpYMTB2TWF6cWYwSzdTQVlpZ0pXbzZuVl9QMnlFRlFHRC1wMTZydw?oc=5",
+      "reason": "投信基準価額ページでニュース性がない"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

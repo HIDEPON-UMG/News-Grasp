@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "gates": {
+    "daily-quality": {
+      "signatures": {
+        "a7317aa7dabee2bf": {
+          "failures": 1,
+          "artifact_hashes": [
+            "1e9ec6f2497695ba"
+          ]
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    },
+    "generation-quality": {
+      "signatures": {
+        "a7e02cdb654642cd": {
+          "failures": 1,
+          "artifact_hashes": [
+            "9112aeb3e5f71f38"
+          ]
+        }
+      },
+      "categories": {
+        "generated": 1
+      }
+    },
+    "url-liveness": {
+      "signatures": {
+        "608914f7e462ed8d": {
+          "failures": 1,
+          "artifact_hashes": [
+            "d3e179bd3482651d"
+          ]
+        }
+      },
+      "categories": {
+        "urls": 1
+      }
+    }
+  }
+}

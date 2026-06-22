@@ -1,0 +1,56 @@
+{
+  "date": "2026-06-22",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-file: build/deduped-candidates/manufacturing.jsonl",
+    "stage1-query: 製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "stage1-query: 半導体 OR TSMC OR Samsung OR Intel OR 量産 when:1d",
+    "stage1-query: 工場 OR サプライチェーン OR 製造業 OR 特許 when:1d",
+    "canonical-decode: Google News article URL -> source canonical URL"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_upstream_raw_results_total": 337,
+  "coverage_terms_checked": [
+    "半導体部材投資",
+    "セル生産",
+    "半導体装置販売統計",
+    "パッケージ基板新製法",
+    "ラピダス量産準備"
+  ],
+  "resolution_actions": [
+    "Google News batchexecute decode で canonical URL を解決",
+    "fetch_article_body と fetch_ogp で公開部分と OGP を確認"
+  ],
+  "dropped": [
+    {
+      "title": "eMAXIS 日経半導体株インデックス【03311247】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/03311247",
+      "reason": "投資信託の基準価格であり、製造現場の新規材料や設備投資のシグナルではない"
+    },
+    {
+      "title": "AI半導体入門 技術を知ってチャンスをつかむ",
+      "url": "https://www.nikkei.com/live/event/EVT260608001",
+      "reason": "学習イベントであり、当日号で扱う製造業の新規動向ではない"
+    },
+    {
+      "title": "【阪神】高橋遥人＆村上頌樹が勝ち星量産…気になる「先発格差」 セ独走に不可欠な〝２枚以外〟の奮起（東スポWEB）",
+      "url": "https://news.yahoo.co.jp/articles/3c2b6499f1a21f4fb5a737cb6a3fe9e25dff8cd0",
+      "reason": "カテゴリ不一致"
+    },
+    {
+      "title": "「セキュリティのアレ」の3人が事例から導く、サプライチェーン攻撃対策の楔：TeamPCPによる攻撃の構造も解説",
+      "url": "https://atmarkit.itmedia.co.jp/ait/articles/2606/22/news008.html",
+      "reason": "供給網のサイバー対策解説であり、製造計画や量産体制の直接シグナルではない"
+    },
+    {
+      "title": "ホクレン 米油製造参入 ボトリング施設を新設",
+      "url": "https://www.agrinews.co.jp/economy/index/388227",
+      "reason": "設備新設はあるが、当日の半導体・工場設計上位5件に比べ産業インパクトが限定的"
+    }
+  ]
+}

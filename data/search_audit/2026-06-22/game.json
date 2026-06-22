@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-22",
+  "category_id": "game",
+  "queries": [
+    "stage1: build/deduped-candidates/game.jsonl",
+    "site:prtimes.jp \"配信者ハイパーゲーム大会FINAL\"",
+    "site:news.denfaminicogamer.jp ウマ娘 タイトルホルダー 2026年6月21日",
+    "site:dengekionline.com \"ドラクエ10オンライン\" \"時空の迷い子たち\"",
+    "site:gamebiz.jp \"Alpha Nomos\"",
+    "site:www.famitsu.com \"ユレイシア英雄戦記\" 7月3日リリース"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "任天堂",
+    "PlayStation",
+    "Cygames",
+    "スクウェア・エニックス",
+    "配信者イベント",
+    "Steamインディー"
+  ],
+  "dropped": [
+    {
+      "title": "最大6人協力プレイ対応・ピザ屋を経営するゲーム『Pizza House Simulator』体験版がSteamで配信中",
+      "url": "https://news.denfaminicogamer.jp/news/260621m",
+      "reason": "体験版配信の単発告知で、採用5件と比べて業界インパクトが一段弱い"
+    },
+    {
+      "title": "『WANGYUE』最新ゲーム映像公開！ロシア語音声の美少女ミリタリー『雪松』配信間近。『ドルフロ』新スピンオフも登場―日本未上陸の注目ゲーム3選【2026年6月21日】",
+      "url": "https://www.inside-games.jp/article/2026/06/21/183321.html",
+      "reason": "3本まとめ記事で論点が分散し、単独ニュースとしての焦点が弱い"
+    },
+    {
+      "title": "今週発売の新作ゲーム『Star Fox』『DEAD OR ALIVE 6 Last Round』『Devil May Cry 5 デビルハンターエディション』他",
+      "url": "https://www.gamespark.jp/article/2026/06/21/168250.html",
+      "reason": "週間発売一覧で独自の新材料が薄く、個別記事との重複度が高い"
+    },
+    {
+      "title": "『ソニックマニア』が90％オフの194円。『Mass Effect Legendary Edition』は『Mass Effect』3作セットなのに92％オフで696円。今週の高割引率PCゲーム",
+      "url": "https://automaton-media.com/articles/newsjp/steam-20260621-450878/",
+      "reason": "値引きまとめは実用性はあるが、当日の新規性と継続性で優先度を下げた"
+    },
+    {
+      "title": "“100均ダイソー”、トレーディングカードゲーム『蟲神器』がコミック化 昨年はNintendo Switchでゲーム発売",
+      "url": "https://www.sanyonews.jp/article/1733858",
+      "reason": "カードIP拡張の話題で、ビデオゲーム軸から外れるため不採用"
+    }
+  ]
+}
