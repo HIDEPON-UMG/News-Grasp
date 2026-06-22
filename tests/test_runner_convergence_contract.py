@@ -231,6 +231,30 @@ def test_generation_quality_runs_after_external_readiness_precheck() -> None:
     assert "content_repair_failed" not in readiness_block
 
 
+def test_url_liveness_refill_expands_json_categories_before_native_call() -> None:
+    """PowerShell 5.1 の JSON 配列差を吸収し、category を 1 件ずつ native command に渡す。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    refill_block = runner.split("URL liveness refill start", 1)[1].split("URL liveness gate recheck after quarantine", 1)[0]
+
+    assert "Convert-JsonStringArrayToStringList" in runner
+    assert "$refillCategories = Convert-JsonStringArrayToStringList -JsonText $refillCategoriesJson" in refill_block
+    assert "@($refillCategoriesJson | ConvertFrom-Json)" not in refill_block
+    assert "foreach ($nestedItem in $item)" in runner
+    assert "refill category contains whitespace" in refill_block
+    assert "'--category' $refillCat" in refill_block
+
+
+def test_runner_url_liveness_does_not_require_interactive_session_whitelist() -> None:
+    """非対話 runner は session hook 台帳不在だけで公開を止めず、URL 物理 gate を本線にする。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    url_block = runner.split("URL liveness gate start", 1)[1].split("record schema gate start", 1)[0]
+
+    assert "--match-session" in url_block
+    assert "--require-session" not in url_block
+    assert "data/_session_urls.json" in url_block
+    assert "data/_session_urls.d" in url_block
+
+
 def test_preflight_only_writes_terminal_state() -> None:
     """PreflightOnly 成功は running のままにせず preflight_ok を state に残す。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")

@@ -452,6 +452,28 @@ function Write-Log {
     }
 }
 
+function Convert-JsonStringArrayToStringList {
+    param([string] $JsonText)
+
+    $parsed = $JsonText | ConvertFrom-Json
+    $items = New-Object System.Collections.Generic.List[string]
+    foreach ($item in $parsed) {
+        if ($null -eq $item) {
+            continue
+        }
+        if (($item -is [System.Array]) -or (($item -is [System.Collections.IEnumerable]) -and -not ($item -is [string]))) {
+            foreach ($nestedItem in $item) {
+                if ($null -ne $nestedItem) {
+                    $items.Add([string] $nestedItem)
+                }
+            }
+            continue
+        }
+        $items.Add([string] $item)
+    }
+    return @($items.ToArray())
+}
+
 function Stop-ExternalReadiness {
     param(
         [Parameter(Mandatory=$true)][string] $Reason,
@@ -1956,16 +1978,15 @@ Write-Log 'generation quality gate OK'
 # 2026-06-04 追加 --match-session (案②-Lite): HEAD/GET だけでは LLM が記憶から
 # 引いた「200 は返るが本来の WebSearch 結果に無い別記事 URL」までは弾けない。
 # 日次 digest セッションが書き出す data/_session_urls.json と articles.jsonl 当日 URL
-# を物理照合し、session 未登録 URL を捏造疑いで fatal 化する。session ファイル不在
-# 時は本番 runner では fatal にする。対話・ad-hoc の audit 既定は互換維持し、
-# runner が --require-session を渡す経路だけ完走扱いを禁止する。
-Write-Log 'URL liveness gate start (audit_all_article_urls --gate --match-session --require-session)'
-$urlGateRc = Invoke-AutonomousGate -GateId 'url-liveness' -Category 'urls' -PythonArgs @('tools\audit_all_article_urls.py', '--gate', '--match-session', '--require-session') -Artifacts @('data/articles.jsonl', 'data/_session_urls.json', 'data/_session_urls.d')
+# を物理照合する。ただし非対話 codex exec では PostToolUse hook 由来の session 台帳が
+# 必ず成立するとは限らないため、台帳不在だけでは止めず、URL 物理 gate と日付証拠を本線にする。
+Write-Log 'URL liveness gate start (audit_all_article_urls --gate --match-session)'
+$urlGateRc = Invoke-AutonomousGate -GateId 'url-liveness' -Category 'urls' -PythonArgs @('tools\audit_all_article_urls.py', '--gate', '--match-session') -Artifacts @('data/articles.jsonl', 'data/_session_urls.json', 'data/_session_urls.d')
 if ($urlGateRc -ne 0) {
-    Write-Log "URL liveness quarantine start (audit_all_article_urls --gate --match-session --require-session --quarantine-articles --apply)"
+    Write-Log "URL liveness quarantine start (audit_all_article_urls --gate --match-session --quarantine-articles --apply)"
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' '--require-session' '--quarantine-articles' '--apply' }
+        Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' '--quarantine-articles' '--apply' }
         $urlQuarantineRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -1987,13 +2008,22 @@ if ($urlGateRc -ne 0) {
                 exit 1
             }
             try {
-                $refillCategories = @($refillCategoriesJson | ConvertFrom-Json)
+                # ConvertFrom-Json は Convert-JsonStringArrayToStringList の中で扱う。
+                $refillCategories = Convert-JsonStringArrayToStringList -JsonText $refillCategoriesJson
             } catch {
                 Write-Log "URL liveness refill category list parse failed: $($_.Exception.Message)"
                 Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness refill category list parse failed' -ExitCode 1
                 exit 1
             }
             foreach ($refillCat in $refillCategories) {
+                if ([string]::IsNullOrWhiteSpace($refillCat)) {
+                    continue
+                }
+                if ($refillCat -match '\s') {
+                    Write-Log "URL liveness refill category contains whitespace: $refillCat"
+                    Set-RunnerState -Status 'blocked_refill_unresolved' -Message "URL liveness refill category contains whitespace: $refillCat" -ExitCode 1
+                    exit 1
+                }
                 Push-Location $RepoDir
                 try {
                     Invoke-Logged { & $PyExe '-m' 'tools.refill_category_after_quarantine' '--date' $DateStamp '--category' $refillCat '--bad-url-file' $badUrlFile '--candidate-dir' 'build\deduped-candidates' '--txid' "url-liveness-$refillCat" }
@@ -2014,7 +2044,7 @@ if ($urlGateRc -ne 0) {
         Write-Log 'URL liveness gate recheck after quarantine'
         Push-Location $RepoDir
         try {
-            Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' '--require-session' }
+            Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' }
             $urlRecheckRc = $LASTEXITCODE
         } finally {
             Pop-Location
@@ -2156,8 +2186,10 @@ foreach ($ttsStep in @(
 # DeepDive 記事の理解補助として、対談台本を AivisSpeech で mp3 化し、
 # GitHub Releases audio-deepdive へ公開する。generate_pages はこの URL を
 # LP/DeepDive 記事へ埋め込むため、docs 生成前に完了させる。
+$DeepDiveMarkdown = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive.md")
 $DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive-dialogue.md")
 foreach ($deepDiveTtsStep in @(
+    @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript) },
     @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
     @{ Name = 'deepdive dialogue publish'; Args = @('-m', 'tools.tts.deepdive_audio', $DateStamp) }
 )) {

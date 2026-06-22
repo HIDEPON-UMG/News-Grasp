@@ -21,6 +21,9 @@ def test_codex_timeout_wrapper_uses_codex_exec_schema_and_last_message() -> None
     assert "--search" not in wrapper
     assert "IdleTimeoutSec" in wrapper
     assert "WorkingDirectory" in wrapper
+    assert "CODEX_NONINTERACTIVE_SESSION" in wrapper
+    assert "CODEX_OUTPUT_CONTRACT" in wrapper
+    assert "artifact-gate" in wrapper
 
 
 def test_runner_exposes_codex_mode_without_claude_print() -> None:
@@ -55,6 +58,7 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
 
     tts_done = runner.index("tts publish_audio")
+    deepdive_tts_script = runner.index("deepdive dialogue script build")
     deepdive_tts_build = runner.index("deepdive dialogue synthesize")
     deepdive_tts_publish = runner.index("deepdive dialogue publish")
     youtube_build = runner.index("youtube podcast build_video")
@@ -72,11 +76,12 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     send_push = runner.index("send_push start")
     ok_marker = runner.rindex("news-grasp-runner.ps1 OK")
 
-    assert tts_done < deepdive_tts_build < deepdive_tts_publish < digest_commit
+    assert tts_done < deepdive_tts_script < deepdive_tts_build < deepdive_tts_publish < digest_commit
     assert digest_commit < docs_commit < youtube_build < deepdive_youtube_build < youtube_prepare < deepdive_youtube_prepare < push_start
     assert push_start < publish_verify < youtube_finalize < deepdive_youtube_finalize < podcast_verify < deepdive_podcast_verify < send_push < ok_marker
     assert "tools.youtube_podcast.build_video" in runner
     assert "tools.youtube_podcast.upload_episode" in runner
+    assert "tools.tts.build_deepdive_dialogue_script" in runner
     assert "tools.tts.deepdive_dialogue" in runner
     assert "tools.tts.deepdive_audio" in runner
     assert "'--kind', 'deepdive'" in runner
