@@ -1974,7 +1974,25 @@ if ($urlGateRc -ne 0) {
         $badUrlFile = Join-Path $RepoDir "build\quarantine\$DateStamp\bad-urls.json"
         if (Test-Path -LiteralPath $badUrlFile) {
             Write-Log "URL liveness refill start (tools.refill_category_after_quarantine, bad-url-file=$badUrlFile)"
-            $refillCategories = @('fx','ai','it','mobility','manufacturing','economy','game')
+            Push-Location $RepoDir
+            try {
+                $refillCategoriesJson = & $PyExe '-m' 'tools.refill_category_after_quarantine' '--list-categories'
+                $refillCategoryListRc = $LASTEXITCODE
+            } finally {
+                Pop-Location
+            }
+            if ($refillCategoryListRc -ne 0) {
+                Write-Log "URL liveness refill category list failed rc=$refillCategoryListRc"
+                Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness refill category list failed' -ExitCode $refillCategoryListRc
+                exit 1
+            }
+            try {
+                $refillCategories = @($refillCategoriesJson | ConvertFrom-Json)
+            } catch {
+                Write-Log "URL liveness refill category list parse failed: $($_.Exception.Message)"
+                Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness refill category list parse failed' -ExitCode 1
+                exit 1
+            }
             foreach ($refillCat in $refillCategories) {
                 Push-Location $RepoDir
                 try {

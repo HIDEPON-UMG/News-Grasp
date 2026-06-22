@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.refill_category_after_quarantine import refill_category
+from tools.config import CATEGORIES
+from tools.publish_inventory import CATEGORY_PATHS
+from tools.refill_category_after_quarantine import main, refill_category, refill_category_ids
 
 
 ISSUE = "2026-06-20"
@@ -153,6 +155,20 @@ def test_refill_category_allows_single_survivor_with_shortfall_reason(tmp_path: 
     assert records[0]["quality_shortfall_reason"] == "reserve candidates exhausted after quarantine"
     assert audit["selected_total"] == 1
     assert audit["quality_shortfall_reason"] == "reserve candidates exhausted after quarantine"
+
+
+def test_refill_category_ids_follow_canonical_categories(capsys) -> None:
+    """refill 対象は runner 直書きではなく tools.config.CATEGORIES 正本に追随する。"""
+    expected = [cat_id for cat_id in CATEGORIES if cat_id != "summary"]
+
+    assert refill_category_ids() == expected
+    assert set(expected).issubset(CATEGORY_PATHS)
+
+    rc = main(["--list-categories"])
+    captured = capsys.readouterr()
+
+    assert rc == 0
+    assert json.loads(captured.out) == expected
 
 
 def test_refill_category_skips_audit_dropped_reserve_candidate(tmp_path: Path) -> None:

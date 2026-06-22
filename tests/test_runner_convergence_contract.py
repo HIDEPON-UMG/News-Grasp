@@ -591,6 +591,18 @@ def test_runner_quarantines_and_refills_bad_urls_before_typed_failure() -> None:
     assert "search_audit_updated" in (ROOT / "tools" / "audit_all_article_urls.py").read_text(encoding="utf-8")
 
 
+def test_runner_refill_categories_follow_canonical_config() -> None:
+    """URL liveness refill はカテゴリ直書きではなく refill tool の正本一覧を使う。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("URL liveness refill start", 1)[1].split("URL liveness refill OK", 1)[0]
+
+    assert "--list-categories" in block
+    assert "ConvertFrom-Json" in block
+    assert "$refillCategories = @('fx','ai','it','mobility','manufacturing','economy','game')" not in runner
+    assert "URL liveness refill category list failed" in block
+    assert "URL liveness refill category list parse failed" in block
+
+
 def test_content_gates_do_not_publish_fallback_notice() -> None:
     """内容系 gate の未収束は fallback notice 公開ではなく、通常公開を止める。
 

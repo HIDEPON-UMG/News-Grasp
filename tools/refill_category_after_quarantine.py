@@ -6,11 +6,17 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from tools.config import CATEGORIES
 from tools.publish_inventory import CATEGORY_PATHS
 
 
 MIN_PUBLISHABLE_COUNT = 1
 TARGET_COUNT = 5
+
+
+def refill_category_ids() -> list[str]:
+    """Return refill target categories from the canonical site category config."""
+    return [cat_id for cat_id in CATEGORIES if cat_id != "summary"]
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -270,14 +276,25 @@ def refill_category(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Refill a category after article quarantine.")
+    parser.add_argument("--list-categories", action="store_true", help="Print canonical refill category ids as JSON and exit.")
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
-    parser.add_argument("--date", required=True)
-    parser.add_argument("--category", required=True)
+    parser.add_argument("--date")
+    parser.add_argument("--category")
     parser.add_argument("--bad-url-file", type=Path)
     parser.add_argument("--bad-url", action="append", default=[])
     parser.add_argument("--candidate-dir", type=Path, default=Path("build") / "deduped-candidates")
-    parser.add_argument("--txid", required=True)
+    parser.add_argument("--txid", default="manual")
     args = parser.parse_args(argv)
+
+    if args.list_categories:
+        print(json.dumps(refill_category_ids(), ensure_ascii=False))
+        return 0
+
+    if not args.date or not args.category:
+        parser.error("--date and --category are required unless --list-categories is used")
+    missing_paths = [cat_id for cat_id in refill_category_ids() if cat_id not in CATEGORY_PATHS]
+    if missing_paths:
+        parser.error(f"refill category path config missing for: {', '.join(missing_paths)}")
 
     bad_urls = list(args.bad_url) + _read_bad_urls(args.bad_url_file)
     result = refill_category(
