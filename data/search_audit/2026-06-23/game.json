@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-23",
+  "category_id": "game",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-23/game.selected.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 file: build/deduped-candidates/game.jsonl",
+    "site:automaton-media.com Valveの新小型ゲーミングPC Steam Machine なんと海外でいきなり販売開始 細かい仕様や価格が明らかに",
+    "site:automaton-media.com Steam向けゲーム開発者に 売れてないゲーム の権利を譲ってほしい とする怪しいメール相次ぐ",
+    "site:news.denfaminicogamer.jp miHoYo 新作ゲーム BSide Olivia Lin Steamストアページを公開",
+    "site:game.watch.impress.co.jp NINTENDO 64 発売30周年 ゲームの歴史を根本から変えた名機と 永遠に色褪せないローンチタイトルの記憶",
+    "site:www.gamespark.jp 無料公開 ママにあいたい 制作者の8年ぶり新作ADV 墓場から地獄まで リリース"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "任天堂",
+    "Steam",
+    "miHoYo",
+    "インディーゲーム",
+    "ゲーム業界 M&A"
+  ],
+  "dropped": [
+    {
+      "title": "「Steam Machine」海外にて予約抽選受付開始！512GB約17万円、2TBモデル約22万円（Game Spark）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFB0UUN3NlJ4Qmc1M1huNkJEWm1kLUFTaWdwWVR2OHFMV1dUNUJlaHRSODZseG1fcWRVRFI5ek0wQVhfekY4MVJ4MFdWRnk1Ul9aWkxZSEhSdHNBbnU3UzRpeU1JM1dRTlFfUDViMlN6ck1SdzJfTVF3RTlzQVlxeUk?oc=5",
+      "reason": "同一テーマの元記事としてAUTOMATON版を採用し、Yahoo転載は除外"
+    },
+    {
+      "title": "『ライアーゲーム』第2クールPV解禁で追加キャスト9人発表 花江夏樹ら「楽しいアフレコ現場でした」",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE1LY3JCci1aNTZKNWFtT3IzcHVRMjdnOXN6eGpxbW55bXVhbm9tSU1nV1J6ZGNpMnRJY2ZkRDUwTUV3eXgyanRSLUxSZ0JKTkxuWHdEQnc5NXBxRDQ?oc=5",
+      "reason": "アニメ告知寄りでゲーム業界の読者価値が弱い"
+    },
+    {
+      "title": "【ポケカ】ストームエメラルダ招待販売リクエストがAmazon受付中【ポケモンカードゲーム】",
+      "url": "https://dengekionline.com/article/202606/79131",
+      "reason": "EC販売情報が中心で産業・製品動向の新規性が薄い"
+    },
+    {
+      "title": "【ただ今より！オンライン限定受注スタート】「サヨナラゲームTシャツ＆フェイスタオル 」発売！！",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE1xeGJKbGxOM1lrTC1wLVJ3Ul9ZMkNXRk9rS1FqTGU1U2tZbFlreUNsdG9vMUswUXd2el9kVzFkYWNvZnJESWJXNjFFWjdpdlJoUExQbkZpNmNudlZpelpfSmJKVDJtZXJ0?oc=5",
+      "reason": "ゲーム外グッズ販売でカテゴリ適合が弱い"
+    },
+    {
+      "title": "【きっかけはオンラインゲーム】10代前半の少年に「ワイセツ画像」を送信させた疑いで26歳の派遣社員の男を逮捕＜北海道旭川市＞",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBFeXNYSEpPbWhhNEZxMElIX0JrbVNpUTNaZUM2aG5adE1pMGg2UVZnMFdXNktUMkxzTm5mdmQ0ZGlScnV1YWEzRjAtcG1sbUl4aGx6d2NEUFc5ZEppN1l3OHREMEJxZEtSMFIwS2hYYzVzZnNudkZTZHNyTG9FYkU?oc=5",
+      "reason": "事件報道でゲーム産業ニュースとしての主題が弱い"
+    }
+  ]
+}

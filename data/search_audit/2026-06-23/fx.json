@@ -1,0 +1,43 @@
+{
+  "date": "2026-06-23",
+  "category_id": "fx",
+  "queries": [
+    "Google News RSS stage1 seed: 為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:newsdig.tbs.co.jp 片山財務大臣 ベッセント財務長官 オンライン会談 為替介入 2026-06-23",
+    "\"ＢｏｆＡ・ドイツ銀、ＦＲＢ利上げ見通しに転換 9月開始も\"",
+    "\"円とアジア通貨に試練、FRB新時代幕開け－ウォーシュ議長は予想以上にタカ派\"",
+    "\"40年ぶりの円安水準、自動車7社で9000億円超の利益上振れ要因に\"",
+    "\"米格付け会社インタビューでは、円相場と円金利がリスクとされた\""
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "日銀",
+    "FRB",
+    "為替介入",
+    "金利差",
+    "ヘッジファンド ポジション"
+  ],
+  "dropped": [
+    {
+      "title": "アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型の基準価額・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1zckZSdHVvbExXV2xBc3Qtdk51MGlVVU9UNHZWeVRPMnRTNFJ6RTlfMjByUlZ6UEc4WGhvVURYd2RIRW5Oa0hXeXVMd0xETDdqamdPZw?oc=5",
+      "reason": "投信情報でカテゴリ主題のニュース性がない"
+    },
+    {
+      "title": "【テクニカル】乖離ランク＝ドル円、首位を維持 NZドル円は最下位",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFByWjJBckVncVdORmZiOUs4TXU1b0hSWF9iWEdVOWoyOUkySVVfWXAtZ2NJcXNmcUNwNXFJWlEtcWdxQ1Z6dDRkWDA4cUN3eGM4X0g3aV9Gc0xWeFhIdWEwZ3c1MA?oc=5",
+      "reason": "テクニカル速報で新材料が薄く、政策・需給変化の軸に届かない"
+    },
+    {
+      "title": "ドル円は１６１．４０円近辺＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1kM29iczBIQVNQVC1oQjZxcVRXbF83ZXpQaUVvbE5DZWp5ckVIeTQzVnViMzRWLTJ5SUE0V0h3Uk9sanJveDByUw?oc=5",
+      "reason": "値動き速報で独自論点が乏しく、採用5本と論点重複"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-23/fx.filtered.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

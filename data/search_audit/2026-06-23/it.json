@@ -1,0 +1,59 @@
+{
+  "date": "2026-06-23",
+  "category_id": "it",
+  "queries": [
+    "Stage1 deduped candidates supplied externally: build/deduped-candidates/it.jsonl",
+    "site:enterprisezine.jp アリババクラウド 国内5ヵ所目 データセンター AI開発プラットフォーム",
+    "site:it.impress.co.jp SVF Archiver MCP サーバー機能 自然言語",
+    "site:businessnetwork.jp/article 同志社女子大 クラウド型 学認連携方式",
+    "site:it.impress.co.jp ゴディバ ジャパン クラウド型シフト管理 全社導入",
+    "site:eetimes.itmedia.co.jp AIが食い尽くすメモリ供給 企業ITを揺らす価格高騰"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Accenture",
+    "デロイト",
+    "PwC",
+    "NTTデータ",
+    "CTC",
+    "富士通",
+    "NEC",
+    "クラウド",
+    "SaaS",
+    "サイバーセキュリティ",
+    "MCP",
+    "認証基盤"
+  ],
+  "dropped": [
+    {
+      "title": "日比谷音楽祭2026｜みんなでつくる音楽祭の実現へ向けて（日比谷音楽祭事務局 2026/03/30 公開）",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE1aQjVBTTAtUkFPVzN5N2tSOUxOT2NiMXExQ2J0Y3JwTF9YcjZLMF9IemtSQmJXZ3czZzRDWjc2UGpJQ2g1UlJ4VU9RRVM?oc=5",
+      "reason": "enterprise IT と無関係なクラウドファンディング案件。"
+    },
+    {
+      "title": "[NOTICE]『2026 PLAVE World Tour [KEEP IT MANIC] in Japan』PLLI MEMBERSHIP (GLOBAL) 会員先行受付のご案内",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE5BSGZZX0REVnI1TGx6NXZkVVVCMUFpLWVFZ2dtS2R1THdXMUxJVW5RUnJVSlRYMEx3ZkJCZnhndVlPOVl1NFp4V181RldnQjJrNGZEZ2dB?oc=5",
+      "reason": "ITカテゴリと無関係なエンタメ告知。"
+    },
+    {
+      "title": "The AI monster | Watts the Future",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxNZHJfN0F3bC1LZ091ajlFUXdnUGgxVjRSOVAyVnhiOHdiQkhaU1M3Y0RHMTZjS2pIVlprYS1qY3lHYmxKellFSjdqWlhqVDZ4NlpfU08xTkR5NHRHRF9pM2RjUEJ5dXZIWUIwcnVWUFRHc1hRVkZhTWo0MkJmcXZxT1lR?oc=5",
+      "reason": "抽象的なブログで、日本のenterprise IT現場の意思決定に直結する新材料が薄い。"
+    },
+    {
+      "title": "明治安田生命、CO2排出可視化クラウドを導入",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBFZHFjLXBfTXlWMEdKUHdUVVRCalQ1QkY2WnBCeEVqbUhXYXdjaDhBY3RjQ3YwYUZfNVdsN09RdTNsdlVyOGJJNlozNEF2SEl6V1dN?oc=5",
+      "reason": "事例として有意だが、同日の採用5件に比べると構造変化の射程が狭く優先度を下げた。"
+    },
+    {
+      "title": "NHN テコラス、クラウド総合支援ブランドを「Cloud Chorus」へ刷新",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5VWFRsTmJNbW5HNGREMFRHRTZMQV9Tby1WdlFnUzhGa2FHQ2ZtcnAzeFBQakpCUjlwd2FERkFsQmZ3QUZOckMtX2N3MFFCMWVpeTJsQVo3am9MdlNxWE5zRm4zQkhRaEJGS3c?oc=5",
+      "reason": "ブランド刷新告知が中心で、当日号の実装・運用シグナルとしては弱かった。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

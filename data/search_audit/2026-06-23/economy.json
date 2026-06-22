@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-23",
+  "category_id": "economy",
+  "queries": [
+    "stage1_file: build/deduped-candidates/economy.jsonl",
+    "\"グリーンスパン氏死去、100歳 巧みな金融政策、景気拡大に寄与 元米FRB議長\"",
+    "finance.yahoo.co.jp/news/media/reut で Reuters 候補の詳細 URL を確認",
+    "\"供給網博が開幕＝外資も多数出展―中国・北京\"",
+    "https://www.ktn.co.jp/news/ で『36カ月連続で景気概況』の詳細 URL を確認"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "BOJ",
+    "Fed",
+    "NVIDIA",
+    "Nikkei",
+    "S&P 500",
+    "SoftBank"
+  ],
+  "dropped": [
+    {
+      "title": "岐路に立つ中国経済",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBzdEZLd0xZNmNDb1RKZUItb2JfM2RvX3YwRGNTalRsOHVadkZnM1FOc2VlQmhKbzNqRUdNSlF6eUNXdnlTWnJKRXY4SDBpRGtBSFRFMzIxWUwyRUt6WEM0Y2pxWTVpekF1TWwyaA?oc=5",
+      "reason": "canonical URL を 200 確認できず採用見送り"
+    },
+    {
+      "title": "経済プラス：どうなる「最低賃金1500円」 高市首相、石破氏肝いりの目標転換?",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE9qQU5NcTJRVTNQc1pONS14ME5leXRyaWJOREFqaW5SQkN3Wm92bzFIQ3l0dktpSWJxY2JVYS0tRnNJU21DQnhNTE5HRFVYMnlMeW05UHIyTEdjWnlPaTY5czZLUzBVTkx3?oc=5",
+      "reason": "exact source article の URL 解決に失敗し、accessible mirror でも同一記事確認が取れなかった"
+    },
+    {
+      "title": "ウォーシュ議長のインフレ抑制姿勢、長期金利の安定につながる可能性",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE12M0Y1cENlREhjQ05GRTNjUnZJWEdMZHpBZE5aMWNUdG52ODBaNTBiRXktOXdzQnU4aG05ZXVxWlFxLUlOcGx5QTJ6S0J6NzRISVYwUUpJX2tKdkdDcTNabkxlU1VxZ3JkOGhscGhnclZ2YUF6Z3NR?oc=5",
+      "reason": "source 直リンクは 403、accessible mirror は別記事のみで exact candidate を再現できず"
+    },
+    {
+      "title": "明日の決算発表予定 サンリオ (6月22日)",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE9FMHc4NHBJWkNyRXhGTHRvTlBjYUJyQlNKdWJLa0RMWkVWc21rN29JZkQ2LXJ2eFA1cm1rWFhWOFNfSTBlR2lzZG1IQTNXRGtoRmhlOFFMTUJTWXljcEprVg?oc=5",
+      "reason": "決算予告であり新材料が薄く、経済カテゴリ上位枠には不採用"
+    },
+    {
+      "title": "黒田東彦が影響を受けた「経済書」は？印象的だった15冊と、海外の学者の原著を読む意義",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTFBfZmZCZmZzdmhfckxGMHQ1X294ai1YanZudmZGZGIxMDV3NlB2MkVHejdpUlpZTm5jbVRuSVdLR3dVQ0wtbkRSd245NzA?oc=5",
+      "reason": "特集読み物で当日性が弱い"
+    },
+    {
+      "title": "大型破綻のドローンネット、節税ビジネスの落とし穴",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9acWdkT1hYY0Rrd2FER0VGVlBCWmZSNmxncVRDSHBxZEowRk5mY2JxN0pwMTYtbFd3OGZWZFlzVkhQMmFiM3lUR1poNVVtRFh1OEJVeHdYVW1SSEFWX0JHQ1dMbGtfUGRPb21PZA?oc=5",
+      "reason": "記事自体が 2025-12 の過去事例で freshness を満たさない"
+    }
+  ]
+}

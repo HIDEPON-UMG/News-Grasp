@@ -1,0 +1,64 @@
+{
+  "date": "2026-06-23",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-file: build/deduped-candidates/manufacturing.jsonl",
+    "stage1-query: 製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "websearch: リンナイ 瀬戸工場隣接地の取得",
+    "websearch: JBIC サムテック メキシコ工場 増設 融資",
+    "websearch: イグス 栃木さくら工場 竣工",
+    "websearch: 茂原市 5.6ha 半導体産業 集積目指す",
+    "websearch: 中国 サプライチェーン博覧会 日本企業も出展 TBS",
+    "websearch: 東邦アセチレン 新中計 半導体向け水素拡大"
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "coverage_terms_checked": [
+    "Foxconn",
+    "Intel",
+    "NVIDIA",
+    "Samsung",
+    "TSMC",
+    "Toyota",
+    "工場集約",
+    "海外工場増設",
+    "半導体向け水素",
+    "サプライチェーン展示会",
+    "半導体クラスター用地"
+  ],
+  "resolution_actions": [
+    "stage1 候補タイトルを起点に WebSearch で canonical URL を補完",
+    "fetch_article_body と fetch_ogp で公開本文と OGP を確認"
+  ],
+  "dropped": [
+    {
+      "title": "日経平均株価7万円台半ばを意識 大手半導体・電子部品企業向けに納入している企業に注目 野村證券ストラテジストが解説",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE5tSjBwWTMxVXRNMWJla1NGUzdBM3lpdjhsUUk5WFVZUWZZOXJZak96TnpnSU9kdVZiMjZ4dWdDMmVaRW5qSGs3QkdxR3lBZ3g1VVczc3BreXRtdElsemV3?oc=5",
+      "reason": "市場解説であり、生産能力や製造計画の新規シグナルではない"
+    },
+    {
+      "title": "三菱電機、ローム、タツモ…エヌビディアも注目!「パワー半導体」でAIデータセンターの省エネ支える日本の最強技術企業【厳選8社】",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE1aM25vZjE0NjdiOTE0OUZOWnBEOUM2NUVtWkZtRE1YYkxBSVBSYnhOc0k2YzdPTkx6Z21RSU5GLWlOSGVvX1hvZlUtcjI?oc=5",
+      "reason": "銘柄解説の寄せ集めで、当日の設備投資や量産判断の一次材料が薄い"
+    },
+    {
+      "title": "ウクライナ、ロシア西部のミサイル部品工場を攻撃 ボロネジ州で5人死亡",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQLUpDYXZNRk44SHVBaUpVeXlzSEN1ZkJUMnRMT3ktcFJsbncwSXEyQlpPY2lQTGYwRUppcm8ya1RMZGRtcnMtQkwwWnYtX0JNbS0xM0VJYTFLX2NyV1NlMUVxWUJrV0lwLWw1UDVnSEZzaE9pbXYxZXoteFh3YjdMZw?oc=5",
+      "reason": "地政学ニュースとして重要だが、当日号の製造カテゴリでは供給網運営より軍事衝突側の比重が高い"
+    },
+    {
+      "title": "eMAXIS 日経半導体株インデックス【03311247】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1WcnBkNXkzRS1PdnNIWkxieGVIMWw3YjRKMXZON1NIZlpIQjd1Z09ETlVHUWdXUmthamQ3LWdyakFSd1hMU0Z5cWVuSkF3Z0tGY0Q1Vg?oc=5",
+      "reason": "投資信託の基準価格であり、製造現場の新規材料ではない"
+    },
+    {
+      "title": "【夏休み企画！！】おやまくまと行く！東光高岳工場見学×ディーゼル機関車",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFBZdHN6WnpsVjJxSG5weGFyZ1lzMW5veVpPX0FWOHZpc19CTHJ4cG9ZSHd0dkt5V3UyQ01LNHRvaTNyS1hVbzh3VkFhZEtLUFZhbHJzMmp5YXBCQXZ3dDFReXhzQkZZOEF3WVFrWEtjcEplLXBoenZF?oc=5",
+      "reason": "工場公開イベントであり、量産計画や投資判断の材料としては弱い"
+    }
+  ]
+}

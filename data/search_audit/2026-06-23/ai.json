@@ -1,0 +1,64 @@
+{
+  "date": "2026-06-23",
+  "category_id": "ai",
+  "queries": [
+    "stage1: build/deduped-candidates/ai.jsonl",
+    "site:preferred.jp PLaMo 3.0 Prime 2026-06-22",
+    "site:marketwatch.com Alphabet AI talent Anthropic OpenAI 2026-06-22",
+    "site:marketwatch.com Micron Anthropic partnership 2026-06-22",
+    "site:sbbit.jp ノルウェー政府 小学校 生成AI 利用 原則禁止",
+    "site:itmedia.co.jp Claude Code 7つの方法 公式"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA",
+    "AMD",
+    "Preferred Networks",
+    "Claude Code"
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "selected_titles": [
+    "PFN、国産LLM「PLaMo 3.0 Prime」を正式投入　日本語性能と256k文脈で企業導入を狙う",
+    "Alphabet時価総額22兆円超が消失　DeepMindとGeminiの人材流出がAI投資不信を直撃",
+    "MicronがAnthropic向けAIメモリー供給を拡大　半導体株の評価軸が推論コストへ移る",
+    "ノルウェー、小学生の生成AI利用を原則禁止　基礎学力優先で年齢別規制へ",
+    "Anthropic、Claude Codeの指示設計を7手法で整理　運用ルールをコード資産化へ"
+  ],
+  "dropped": [
+    {
+      "title": "PFN、国産フラグシップLLMの最新版を正式リリース--企業の実用性を向上",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9xLWdlWUs3Y0NnNTJFcVB3bGVsNlI5c05SYTJlV3VvVk5kV1BhNzlIZ1BKY01vaFdGLVZCclBiWmpTZ0c0bEt1TG82c19SaTBxYldJ?oc=5",
+      "reason": "PFN正式リリース記事と同一テーマのため重複回避"
+    },
+    {
+      "title": "生成AI活用で国産LLMを検証～総務省",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFBrY05UM0Nqczc0ZmxsQmY1T2ltRGdjVU41c1lHell1MlFKQzlfRW5MZkdaRVZ3QW13WjNBa19NWk8tZU5jdEE0WWtOOExmdTdSclFwSEZB?oc=5",
+      "reason": "政策意義は大きいが、同日の国産LLM主役記事としてPFNを優先"
+    },
+    {
+      "title": "OpenAIがGPT-5.5-CyberとCodex Securityでデイブレークを拡張 執筆",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFBfZ3hfWnkzN0JnMHF3M013QjVyV1lIZ2Q0RmdzMWU2OGtJNDEzTnpyVmVwOW9kd3doRFZHWld0MmhTQi1SZHlGQmJoMHRCZkdrcG1VdV9qdW16Q1lTS25tTTRVSW9mbHZ6LVFKUDREdHFRa096UkpB?oc=5",
+      "reason": "OpenAI公式ソースは確認できたが OGP 取得が不安定で、当日5件の中では優先度を一段下げた"
+    },
+    {
+      "title": "Google、Gemini搭載のスマートスピーカー「Google Home スピーカー」を6月25日発売（PHILE WEB）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1PUUFIcFUxUHdhUjN0cjB3QUJMX0JwTjRTMDJGbjJsRjdzN3RNMGdyRTU3UzhSZ21lamc4VzJSZGpndFF2TEFCRHI1LXkxLVNPdzdVUmM5dHRIQk5QOUswRU5Ta3ZGekhFVFI1RndETVh1bHBReFRscUYtYno5SU0?oc=5",
+      "reason": "原記事の掲載日が2026-06-18で鮮度が弱く、同日の新材料としては見送り"
+    },
+    {
+      "title": "インターナショナル・ビジネス・マシーンズ、セキュリティ強化でOpenAIのサイバーパートナープログラムに参加 執筆",
+      "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE93NTUydFcxTEkzZHFVRzcya3E0UnFTemxCUGZKNEdWOHFoVk56eWdfaldWV3pmMTBGREp4LUhZRkhYdEJEUjlUdVc2aWlVdjJJUXBmNUNrdUhfRGdlWm4zdFY2QXV5WXZ2WWROd0gxeWY?oc=5",
+      "reason": "Daybreak全体記事の派生であり、個別参加企業ニュースとしては広がりが限定的"
+    }
+  ]
+}

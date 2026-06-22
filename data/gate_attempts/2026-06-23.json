@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "gates": {
+    "summary-reflection": {
+      "signatures": {
+        "9443277b859cec51": {
+          "failures": 1,
+          "artifact_hashes": [
+            "819f8ad4513c7038"
+          ]
+        }
+      },
+      "categories": {
+        "summary": 1
+      }
+    },
+    "daily-quality": {
+      "signatures": {
+        "2912a79c33df0533": {
+          "failures": 1,
+          "artifact_hashes": [
+            "2cb0cc4a9180e1e5"
+          ]
+        },
+        "d8215ec3fdadf8e6": {
+          "failures": 1,
+          "artifact_hashes": [
+            "1c48ab812db3fc36"
+          ]
+        }
+      },
+      "categories": {
+        "daily": 2
+      }
+    },
+    "generation-quality": {
+      "signatures": {
+        "3aadef4290890819": {
+          "failures": 1,
+          "artifact_hashes": [
+            "4fa879df1685d838"
+          ]
+        }
+      },
+      "categories": {
+        "generated": 1
+      }
+    },
+    "url-liveness": {
+      "signatures": {
+        "c2c82d0f65d46f0f": {
+          "failures": 1,
+          "artifact_hashes": [
+            "eac8341be89c4d94"
+          ]
+        },
+        "c102297b82652761": {
+          "failures": 1,
+          "artifact_hashes": [
+            "8c1c3aed31014e51"
+          ]
+        }
+      },
+      "categories": {
+        "urls": 2
+      }
+    },
+    "pytest-static": {
+      "signatures": {
+        "e171c4d4b3a93d0f": {
+          "failures": 1,
+          "artifact_hashes": [
+            "cf231c01015377c7"
+          ]
+        }
+      },
+      "categories": {
+        "tests": 1
+      }
+    }
+  }
+}

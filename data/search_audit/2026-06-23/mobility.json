@@ -1,0 +1,53 @@
+{
+  "date": "2026-06-23",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "FT CATL bets battery swapping will cut costs for Europe's electric trucks",
+    "site:weekly-net.co.jp PALTAC 大王製紙 T2 自動運転トラック 商用運行に参画",
+    "site:gifu-np.co.jp 多治見 土岐 瑞浪 中津川 下呂市 自動運転 実証実験 見送り",
+    "site:autoc-one.jp 元トヨタエンジニアが率いるリーンモビリティ Pre-Aラウンド",
+    "site:pref.oita.jp 令和8年度次世代空モビリティ離着陸場整備調査事業費補助金 採択結果"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "CATL",
+    "自動運転トラック",
+    "空飛ぶクルマ",
+    "超小型EV",
+    "電池交換",
+    "自動運転実証",
+    "T2",
+    "リーンモビリティ",
+    "大分県"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ホンダ新EV､想定外の補助金 軽より安く｢実質79万円｣も",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFAtMld6T0hYMHBnM2tockpfRE1iRjcwM2hneUhOR19LTUVoakFQVGVFNkR2VFBFQXhTQlYtV1VXMnJXaXVKTERlUkVWT091eFhON3JkdWRZaWpCUnk0RzVzTFllMV9YbGpYX2FsQndsRUc1M1E1VlpmTXFGZzN5cWs?oc=5",
+      "reason": "読者価値は高いが Stage1 候補から元記事 canonical を安定解決できず、URL 契約を満たせなかった"
+    },
+    {
+      "title": "バッテリー交換式のＥＶごみ収集車を実証実験 いすゞと横浜市",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE52NGs1Z2pWa1dGT01La0JoclFwdlJKVWdVQWRvQnVEQ2JCczZhTnlzaGlrMkpQV0ZVdy03dl81ME4xMlJIUXgxMGNWOXpFaGl1WkhXVWl3WVF3M29hN0xzQnJyVHYtOWVH?oc=5",
+      "reason": "source の元記事日は 2026-06-18 で当日性が弱く、6月22日付の新規材料を優先して採用を外した"
+    },
+    {
+      "title": "トヨタ、レクサス「ES」全面刷新 HVとEV投入",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE1SNjdFNFFGQm80WEt0OFlvYlFpQk0xMVdUb0FDSTFRSXdvS2psY2NLUTMyLUxybzQyeXE5ZUJlb2luUmY5alRFLTYydXczcUVfbFoxQm9aRjZqa2s?oc=5",
+      "reason": "商品刷新として重要だが、制度・運用網・資金調達の変化を示す他候補より波及範囲が一段狭いと判断した"
+    },
+    {
+      "title": "JICN、ラストワンマイル向けEV三輪を支援",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1INGFQZGxmRXZJMGtBWXJRbVdQNk5qd1lUOGZBOVMyaFNsN3ducktybm1SQ0JhN3k0SjFmMjJUX2VwMnIyZDltbg?oc=5",
+      "reason": "リーンモビリティ資金調達記事と論点が重なり、同一テーマの重複を避けてPR TIMES側を採用した"
+    }
+  ]
+}
