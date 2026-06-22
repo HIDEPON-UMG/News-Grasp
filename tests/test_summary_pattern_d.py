@@ -284,6 +284,26 @@ def test_parse_essay_sections_extracts_section_bodies():
     assert "160 円突破" not in sections[7]["body"]
 
 
+def test_parse_essay_sections_stops_before_h2_key_takeaways():
+    """`## KEY TAKEAWAYS` でも最後の ESSAY 本文へ構造化ブロックを混ぜない。"""
+    digest = _SUMMARY_DIGEST_WITH_ESSAY.replace("### KEY TAKEAWAYS", "## KEY TAKEAWAYS")
+    digest = digest.replace(
+        "- 為替: PCE が 3.5% 超で 160 円突破",
+        "- n: 1 / color: #B8860B / **[FX・Economy]** PCE が 3.5% 超で 160 円突破\n"
+        "\n"
+        "> [!link] Related Issues\n"
+        "> - 2026-06-21 — 前回号",
+    )
+
+    sections = parse_essay_sections(digest)
+
+    assert "観察の週" in sections[7]["body"]
+    assert "KEY TAKEAWAYS" not in sections[7]["body"]
+    assert "color:" not in sections[7]["body"]
+    assert "Related Issues" not in sections[7]["body"]
+    assert "前回号" not in sections[7]["body"]
+
+
 def test_build_summary_renders_section1_full_body_when_essay_present(tmp_path):
     """digest_sources に summary digest を渡すと §01 本文が HTML に出る (全文表示)。"""
     root = tmp_path

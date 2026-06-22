@@ -94,10 +94,10 @@ def _podcast_url(docs_root: Path) -> str:
 
 
 # Summary digest の考察 (reflection) ブロック抽出用。
-# `## § 本日のテーマ考察` 見出し / `> [!quote]` PULL QUOTE / `### KEY TAKEAWAYS`。
+# `## § 本日のテーマ考察` 見出し / `> [!quote]` PULL QUOTE / `##/### KEY TAKEAWAYS`。
 _THEME_ESSAY_HEADER_RE = re.compile(r"^##\s+§?\s*本日のテーマ考察\s*$", re.MULTILINE)
 _PULLQUOTE_RE = re.compile(r"^>\s*\[!quote\][^\n]*\r?\n((?:>.*(?:\r?\n|$))+)", re.MULTILINE)
-_TAKEAWAYS_HEADER_RE = re.compile(r"^###\s+KEY\s+TAKEAWAYS\s*$", re.MULTILINE)
+_TAKEAWAYS_HEADER_RE = re.compile(r"^#{2,3}\s+KEY\s+TAKEAWAYS\s*$", re.MULTILINE)
 _TAKEAWAY_ITEM_RE = re.compile(r"^-\s+\*\*\[([^\]]+)\]\*\*\s*(.+?)\s*$", re.MULTILINE)
 # Hero / LP の考察文末尾に付く定型の遷移句 (「以下、各カテゴリを横断して読み解く。」)。
 # LP の「本日のテーマ考察」ボックスは単体で読まれるため、表示時に除去する。
@@ -1502,7 +1502,7 @@ def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
 
     キーは 1..7、値は `{heading, body}`。
     - heading: 行頭 `### §NN ` の直後の文字列 (例: `総論 — 金利の壁とAIの自律が交差した一日`)
-    - body: 次の `### ` ヘッダ直前まで or `### KEY TAKEAWAYS` 直前までの段落テキスト
+    - body: 次の `### ` ヘッダ直前まで or `##/### KEY TAKEAWAYS` 直前までの段落テキスト
 
     digest が §01-§07 全部含む前提だが、欠けていればその番号のキーは作らない。
     """
@@ -1517,8 +1517,8 @@ def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
         else:
             end = len(body)
         section_body = body[start:end]
-        # `### KEY TAKEAWAYS` や `### ` で始まる別ブロックは段落から除外
-        cut = re.search(r"^###\s", section_body, re.MULTILINE)
+        # `##/### KEY TAKEAWAYS` や `### ` で始まる別ブロックは段落から除外
+        cut = re.search(r"^(?:#{2,3}\s+KEY\s+TAKEAWAYS\s*$|###\s)", section_body, re.MULTILINE)
         if cut:
             section_body = section_body[: cut.start()]
         sections[num] = {
@@ -1598,7 +1598,7 @@ def _parse_pull_quote(body: str) -> dict[str, str]:
 
 
 def _parse_takeaways(body: str) -> list[dict[str, str]]:
-    """`### KEY TAKEAWAYS` の `- **[tag]** text` 形式 bullet を [{tag, text}] で返す。"""
+    """`##/### KEY TAKEAWAYS` の `- **[tag]** text` 形式 bullet を [{tag, text}] で返す。"""
     m = _TAKEAWAYS_HEADER_RE.search(body)
     if not m:
         return []
