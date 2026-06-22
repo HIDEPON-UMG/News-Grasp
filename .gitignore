@@ -107,6 +107,15 @@ build/youtube-podcast-deepdive/
 build/candidates-last-good/
 build/news-grasp-deepdive-final-draft.md
 build/news-grasp-publish-final-draft.md
+# 実装後に残りがちなローカル検証・復旧証跡。公開物・永続資産は docs/ や assets/ 側に置く。
+build/*.png
+build/quarantine/
+build/repair-transactions/
+build/*_tmp.py
+build/*-final-draft.md
+build/*-preview.mp3
+build/*_analyze.wav
+build/*-bgm.wav
 *pytest-tmp/
 docs/specs/*incident-hardening.html
 # Incident report HTML はローカル成果物として保持し、コミット対象にしない。

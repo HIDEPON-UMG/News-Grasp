@@ -311,6 +311,66 @@ def test_office_lofi_melody_other_styles_untouched():
     assert generate_bgm.STYLES["office-lofi"].drum_mode == "lofi"
 
 
+# ---- 実測BPM反映の対談用候補(参考曲「オフィスの日常.mp3」の実測テンポを再現) ----
+# 2026-06-21: 自己相関+ピーク間隔(IOI)ヒストグラムで実測。全帯域ピーク間隔は129/123/126/133近辺
+# (186点中165点)に集中し、表テンポは約128BPM(低域だけ64BPM付近に分散するのはキックの倍音オクターブ)。
+
+def test_office_daily_style_exists_with_measured_bpm_no_melody_no_swing():
+    assert "office-daily" in generate_bgm.STYLES
+    style = generate_bgm.STYLES["office-daily"]
+
+    # 自己相関+IOIヒストグラムでの実測BPM
+    assert style.bpm == 128
+    # 元音源はストレートなテクスチャでスイングしない
+    assert style.swing_ratio == 0.50
+    assert style.bass_mode == "office"
+    assert style.drum_mode == "office"
+    # 「明確に跳躍するメロディ線は無い」所見を反映しメロディ無し
+    assert generate_bgm._melody(0.5, style, [0.0] * 8) == 0.0
+
+
+def _high_band_onsets(samples, sample_rate, cutoff_hz=4000.0):
+    """高域(クリック/テクスチャ)の立ち上がり回数。office-daily の密度の実体。"""
+    high = _highpass(samples, sample_rate, cutoff_hz)
+    width = int(sample_rate * 0.006)
+    envelope = [_rms(high[i:i + width]) for i in range(0, len(high) - width, width)]
+    if not envelope:
+        return 0
+    floor = 0.25 * max(envelope)
+    onsets = 0
+    for i in range(1, len(envelope)):
+        if envelope[i] > floor and envelope[i - 1] <= floor:
+            onsets += 1
+    return onsets
+
+
+def test_office_daily_has_denser_high_band_texture_than_office_lofi(tmp_path):
+    daily_path = tmp_path / "daily.wav"
+    lofi_path = tmp_path / "lofi.wav"
+    generate_bgm.write_bgm_wav(daily_path, duration_seconds=4.0, seed=5, style="office-daily")
+    generate_bgm.write_bgm_wav(lofi_path, duration_seconds=4.0, seed=5, style="office-lofi")
+
+    sr = generate_bgm.SAMPLE_RATE
+    daily_high_onsets = _high_band_onsets(_read_samples(daily_path), sr)
+    lofi_high_onsets = _high_band_onsets(_read_samples(lofi_path), sr)
+
+    # 元音源「高密度なリズムテクスチャ」を反映し、office-lofi よりクリック密度が明確に高い
+    assert daily_high_onsets > lofi_high_onsets, f"daily={daily_high_onsets} lofi={lofi_high_onsets}"
+
+
+def test_office_daily_has_harmonic_content_not_pure_sine(tmp_path):
+    out = tmp_path / "daily-harmonic.wav"
+    generate_bgm.write_bgm_wav(out, duration_seconds=4.0, seed=7, style="office-daily")
+
+    samples = _read_samples(out)
+    sr = generate_bgm.SAMPLE_RATE
+    total = _rms(samples)
+    high = _rms(_highpass(samples, sr, 3000.0))
+
+    assert total > 0.0
+    assert high > total * 0.04
+
+
 # ---- ミックス（TTS 下敷き）の ffmpeg 契約は維持 ----
 
 def test_mix_preview_uses_bounded_ffmpeg_with_low_bgm_volume(tmp_path):

@@ -103,6 +103,15 @@ STYLES: dict[str, Style] = {
         bass_mode="walking",
         drum_mode="swing",
     ),
+    "office-daily": Style(
+        name="office-daily",
+        bpm=128,
+        progression=OFFICE_LOFI_PROGRESSION,
+        swing_ratio=0.50,
+        brightness=0.55,
+        bass_mode="office",
+        drum_mode="office",
+    ),
     "cool-minor": Style(
         name="cool-minor",
         bpm=128,
@@ -189,6 +198,7 @@ def _bar_and_chord(beat: float, style: Style) -> tuple[int, Chord, float]:
 def _walking_bass(beat: float, style: Style, phase: float) -> float:
     bar_index, chord, beat_in_bar = _bar_and_chord(beat, style)
     step = min(int(beat_in_bar), 3)
+    dur, decay = 0.45, 7.5
     if style.bass_mode == "ostinato":
         midi = chord.midis[0] - 12 + (0, 0, 3, 5)[step]
     elif style.bass_mode == "bossa":
@@ -197,6 +207,12 @@ def _walking_bass(beat: float, style: Style, phase: float) -> float:
         if step % 2 == 1:
             return 0.0  # 2/4拍目は休符。低密度＝会話の邪魔をしない
         midi = chord.midis[0] - 12 + (0, 0, 7, 7)[step]
+    elif style.bass_mode == "office":
+        if step != 0:
+            return 0.0  # 小節頭だけ。対談の邪魔をしない最低密度のロングトーン
+        midi = chord.midis[0] - 12
+        dur = BEATS_PER_BAR * 60.0 / style.bpm - 0.05
+        decay = 1.1
     else:
         next_chord = style.progression[(bar_index + 1) % len(style.progression)]
         target = next_chord.midis[0] - 12
@@ -204,7 +220,7 @@ def _walking_bass(beat: float, style: Style, phase: float) -> float:
         midi = (root, root + 4, root + 7, target - 1)[step]
     dt_beats = beat_in_bar - step
     dt = dt_beats * 60.0 / style.bpm
-    env = _pluck_env(dt, 0.45, decay=7.5)
+    env = _pluck_env(dt, dur, decay=decay)
     if env <= 0.0:
         return 0.0
     freq = _midi_freq(midi)
@@ -257,6 +273,28 @@ def _ride(beat: float, style: Style, phase: float) -> float:
     return value
 
 
+OFFICE_TEXTURE_PARTIALS: tuple[float, ...] = (5180.0, 6730.0, 8310.0, 9870.0, 11460.0)
+
+
+def _office_texture(beat: float, style: Style, phase: float) -> float:
+    """16分刻みの高域クリック群。状態を持たない非整数partial合成でタイピング/紙音っぽい質感を近似する。"""
+    beat_floor = math.floor(beat)
+    beat_pos = beat - beat_floor
+    starts = (0.0, 0.25, 0.50, 0.75)
+    value = 0.0
+    for index, start in enumerate(starts):
+        dt_beats = beat_pos - start
+        if 0.0 <= dt_beats <= 0.045:
+            dt = dt_beats * 60.0 / style.bpm
+            env = math.exp(-95.0 * dt)
+            click = sum(
+                math.sin(2.0 * math.pi * f * dt + phase * (k + 1) * 0.71 + index * 1.3)
+                for k, f in enumerate(OFFICE_TEXTURE_PARTIALS)
+            ) / len(OFFICE_TEXTURE_PARTIALS)
+            value += click * env * 0.010
+    return value
+
+
 JAZZ_MELODY_STARTS: tuple[tuple[float, int], ...] = (
     (0.67, 12),
     (1.67, 16),
@@ -274,6 +312,10 @@ JAZZ_MELODY_STARTS: tuple[tuple[float, int], ...] = (
 
 # 参考BGM(オフィスの日常.mp3)のスペクトログラム解析所見: 高密度なリズムテクスチャが前面で、
 # 明確に跳躍するメロディ線は無い。office-lofi だけ順次進行中心・低頻度・ロングトーンの専用メロディにする。
+# 2026-06-21 自己相関+IOIヒストグラムで実測BPM再分析: 全帯域ピーク間隔は129/123/126/133近辺に集中
+# (186点中165点)し、約128BPMが実テンポ。低域(<180Hz)だけは64BPM付近にも分散するが、これは
+# キックが2拍に1回しか踏まれない倍音(オクターブ下)で、表テンポは128BPM側が正。office-daily は
+# この実測BPM=128で「高密度テクスチャ・メロディ無し」をそのまま再現する専用スタイル。
 OFFICE_LOFI_MELODY_STARTS: tuple[tuple[float, int], ...] = (
     (1.50, 4),
     (5.50, 2),
@@ -287,6 +329,9 @@ def _melody(beat: float, style: Style, phases: list[float]) -> float:
     local = beat % form_beats
     if style.bass_mode == "lofi":
         starts = OFFICE_LOFI_MELODY_STARTS
+        note_dur, note_decay = 0.95, 2.0
+    elif style.bass_mode == "office":
+        starts = ()  # 元音源に跳躍メロディ線が無い所見を反映し、メロディ無し
         note_dur, note_decay = 0.95, 2.0
     else:
         starts = JAZZ_MELODY_STARTS
@@ -311,10 +356,11 @@ def _melody(beat: float, style: Style, phases: list[float]) -> float:
 def _sample(t: float, duration_seconds: float, style: Style, phases: list[float]) -> float:
     beat = t * style.bpm / 60.0
     air = math.sin(2.0 * math.pi * 0.17 * t + phases[6]) * 0.003
+    texture = _office_texture(beat, style, phases[6]) if style.drum_mode == "office" else _ride(beat, style, phases[6])
     value = (
         _walking_bass(beat, style, phases[0])
         + _comping(beat, style, phases)
-        + _ride(beat, style, phases[6])
+        + texture
         + _melody(beat, style, phases)
         + air
     )
