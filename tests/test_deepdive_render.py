@@ -1146,6 +1146,17 @@ def test_real_digest_is_complete(tmp_path: Path) -> None:
     assert pages and pages[0].exists()
 
 
+def test_timeline_items_wrapper_renders(tmp_path: Path) -> None:
+    """timeline が {"items": [...]} 形式でも render できる。"""
+    src = ROOT / "digest" / "DeepDive" / "2026-06-24-DeepDive.md"
+    if not src.exists():
+        return
+    ctx = build_deepdive_context(src)
+    assert isinstance(ctx["timeline"], list)
+    html = _get_jinja_env().get_template("deepdive-template.html").render(**ctx)
+    assert "Micron" in html
+
+
 def test_deepdive_output_is_isolated_from_daily_pipeline(tmp_path: Path) -> None:
     """DeepDive は docs/deepdive/ 配下にのみ出力し、LP 等を汚さない。"""
     pages = build_deepdive_pages(

@@ -16,10 +16,17 @@
   "candidates_total": 25,
   "selected_total": 5,
   "coverage_terms_checked": [
-    "任天堂",
-    "Steam",
+    "AUTOMATON",
+    "Capcom",
+    "Game Watch",
+    "Nintendo",
     "Nintendo Switch Online",
+    "Sony",
+    "Square Enix",
+    "Steam",
+    "Switch 2",
     "カプコン",
+    "任天堂",
     "旧作リマスター"
   ],
   "dropped": [
@@ -47,6 +54,33 @@
       "title": "7月発売の「パルワールド オフィシャルカードゲーム」先行体験レポート[Sponsored]",
       "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE1Wa0RQWVc5Z1pkVG5GdVliMDVBRzI4ZDAxcEUtazJqVmdVNVZJTVBhUGxxTV9OekFfVHlNVDdKZlNUazJwQzBwUUE3dElIRUhpVkF4WmE4emNBME13N2ZFTXY3TG96S0FvNG9vY1BUZ01KUQ?oc=5",
       "reason": "Sponsored表記で独立性が弱く、当日の主要5本から外した"
+    }
+  ],
+  "selected": [
+    {
+      "title": "ゲーミングミニPC「Steam Machine」日本で販売開始。すでに注文殺到で順番待ち",
+      "url": "https://pc.watch.impress.co.jp/docs/news/2119151.html",
+      "source": "PC Watch"
+    },
+    {
+      "title": "Nintendo Switch『リズム天国 ミラクルスターズ 体験版』を本日より配信中。また、かまいたちさんのプレイするCMロングバージョンも公開。",
+      "url": "https://www.nintendo.com/jp/topics/article/77597f86-9529-4acb-acab-8d60b5d20db7",
+      "source": "Nintendo"
+    },
+    {
+      "title": "任天堂、「Nintendo Switch Online」7月1日からの値上げを改めて告知―自動継続購入の決済タイミングにも注意",
+      "url": "https://www.gamespark.jp/article/2026/06/23/168328.html",
+      "source": "Game*Spark"
+    },
+    {
+      "title": "爽快スタイリッシュアクション『デビル メイ クライ 5』に数々の追加コンテンツを収めた『デビル メイ クライ 5 デビルハンターエディション』がNintendo Switch 2 で本日配信。 | トピックス",
+      "url": "https://www.nintendo.com/jp/topics/article/3fcb9e51-42fa-419f-9139-2810cc4f741f",
+      "source": "Nintendo"
+    },
+    {
+      "title": "美少女ゲーム『Nursery Rhyme -ナーサリィ☆ライム-』現代向けにリマスターorリメイクへ。“きしめん”でおなじみのゲームが蘇る",
+      "url": "https://automaton-media.com/articles/newsjp/20260623-451340/",
+      "source": "AUTOMATON"
     }
   ]
 }

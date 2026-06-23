@@ -1703,6 +1703,10 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     if table_ctx:
         table_ctx["source"] = _figure_citations(table_ctx.get("source", ""), biblio)
 
+    timeline = blocks.get("timeline", [None])[0] or []
+    if isinstance(timeline, dict) and isinstance(timeline.get("items"), list):
+        timeline = timeline["items"]
+
     # 関連レポート (続報時のみ・任意ブロック)。URL と「左バー/下線のカテゴリ色」は date から
     # 導出し、手書きの誤記を構造的に排除する (md には date/title/relation/link/change だけ書く)。
     related = []
@@ -1772,7 +1776,7 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
         "lens_name_jp": (lens["jp"] if lens else ""),
         "lens_glyph": (lens["glyph"] if lens else ""),
         # blocks
-        "timeline": blocks.get("timeline", [None])[0] or [],
+        "timeline": timeline,
         "players": blocks.get("players", [None])[0] or [],
         "relations_svg": relations_svg(relations) if relations else "",
         "relations_legend": layout_relations(relations).get("legend", []) if relations else [],
