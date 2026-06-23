@@ -1410,7 +1410,7 @@ function Write-DistributionManifest {
     $distributionDir = Join-Path $RepoDir 'data\distribution'
     New-Item -ItemType Directory -Path $distributionDir -Force | Out-Null
     $distributionSummary = Join-Path $distributionDir "$DateStamp.json"
-    [ordered]@{
+    $distributionJson = [ordered]@{
         date = $DateStamp
         pre_publish_commit = $prePublishCommit
         publish_commit = ''
@@ -1419,7 +1419,9 @@ function Write-DistributionManifest {
         latest_audio_state = (Join-Path $RepoDir 'build\tts\latest_audio.json')
         deepdive_audio_state = (Join-Path $RepoDir 'build\tts\deepdive\latest_audio.json')
         generated_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK')
-    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $distributionSummary -Encoding UTF8
+    } | ConvertTo-Json -Depth 4
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($distributionSummary, ($distributionJson + [Environment]::NewLine), $utf8NoBom)
     return $distributionSummary
 }
 

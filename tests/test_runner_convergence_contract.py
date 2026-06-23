@@ -310,6 +310,7 @@ Get-Content -LiteralPath $path -Raw -Encoding UTF8
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     payload["_expected_head"] = expected_head
+    payload["_manifest_path"] = str(tmp_path / "data" / "distribution" / "2026-06-23.json")
     return payload
 
 
@@ -1330,6 +1331,7 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     assert manifest["date"] == "2026-06-23"
     assert manifest["pre_publish_commit"] == manifest["_expected_head"]
     assert manifest["publish_commit"] == ""
+    assert not Path(manifest["_manifest_path"]).read_bytes().startswith(b"\xef\xbb\xbf")
     assert manifest["primary_podcast_state"].endswith("build\\youtube-podcast\\uploads.json")
     assert "Write-DistributionManifest" in runner
     assert runner.count("$distributionSummary = Write-DistributionManifest") == 1
