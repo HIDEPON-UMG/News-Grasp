@@ -1,0 +1,57 @@
+{
+  "date": "2026-06-24",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:finance.yahoo.co.jp \"金利据え置き「適切かつ慎重な対応」、中東情勢巡り不透明感＝英中銀テイラー委員\"",
+    "site:www.kobe-np.co.jp \"景気拡大、戦後最長タイか\"",
+    "site:kabutan.jp \"サンリオ、今期経常は14％増で3期連続最高益\"",
+    "site:asahi.com \"グリーンスパン元FRB議長が死去\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "景気判断",
+    "英中銀",
+    "企業決算",
+    "金融政策史",
+    "日本",
+    "英国",
+    "米国",
+    "BOJ",
+    "Fed",
+    "NVIDIA",
+    "Nikkei",
+    "S&P 500",
+    "SoftBank"
+  ],
+  "quality_shortfall_reason": "Stage1候補25件の残余は論説・大学/官庁告知・canonical未解決・当日性の弱い二次情報が多く、広域再収集禁止の契約に従って4件採用で確定。",
+  "dropped": [
+    {
+      "title": "中国経済に成長リスク、不均衡是正が重要－人民銀政策委員",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFBpb3dWbTVYb05iRTNzeldwV2NnajUwWUNmLWhsazNVeHc0QzFiVzU5VklhRlM5bWpFMVFqXzBiYllyNkVzdDN5OHdOa1Y4WXBXVW1xdnhGUGI3TGx6YWtWSkVSekJGWjNYTkE2TFZjMDhLSUItcEVJ?oc=5",
+      "reason": "Bloomberg本体が403で、代替の200 canonicalを確保できず未採用"
+    },
+    {
+      "title": "英EU離脱国民投票から10年、経済への影響は 識者に聞く",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5oZ1liemFkVlk4dnJrZG5vdzdTbVdob1JfVWVRQlNTSkNtTU5zZnFJSkx0MTZVQi1NeXBfVFRuTjZoczAtTVAtckZma2ZaVDY0QzNvd3huWjVucHMxVTBOYW9UQ0tzRERTQzEwZg?oc=5",
+      "reason": "同テーマの当日一次URLを200で確保できず、広域再収集も禁止されているため見送り"
+    },
+    {
+      "title": "シーレーン途絶でGDP最大4％減も 日本の「急所」は南米やアフリカにも",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFAxVmZWbXd6MF9FVDk3MHozYl9HLW9uQjdEUlFzWndFTzhBYTRyTUhzVlJReEoxSjRIWkROWkxObzd6MVZkQTB1d0d3aDV0Tmw0eVR3ZndhcG1SUTczNGxnS3Bia3c2MnM?oc=5",
+      "reason": "Nikkei Business canonicalを確認できず、媒体トップ化回避の契約上未採用"
+    },
+    {
+      "title": "2026年上期の米国・日本・欧州などの金融政策・政策金利の推移 まとめ｜年後半に向けてどうなる 2026/6/23",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE5CMTNRUmI3dnViVW5hNDdNZE9HaTJvbExUdGhjNDV3QS1vZUl0Z1pna0E5NlY4M05KR25oWXJTWmFvd1prRTRrcDRlLS15ZnVvT1dONEpURVJ5VEtTdzFURlNXcw?oc=5",
+      "reason": "解説まとめで新規ニュース性が弱く、当日号の上位採用から除外"
+    },
+    {
+      "title": "経済学部「入門演習」にて、元日本銀行の堂野氏による特別講義が行われました |",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBjTnN4MEdsZHhZd1VtRG5HaTRCWFIwUEFjY0VDMU9WcmRJZGdpRUJrY09sWW1ZTk5DREN3ODFuVkhHTjRCWHl4aW84UWZnQ1dXM04xZVlCQnBwV2lFQlJUUC0wSWh4WV8zaXp1ZkR3NUVVZHlFRzJRTzVRY00xX1E?oc=5",
+      "reason": "大学告知で読者インパクトが限定的"
+    }
+  ]
+}

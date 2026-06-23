@@ -1,0 +1,66 @@
+{
+  "date": "2026-06-24",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "\"水素製造PEM水電解におけるイリジウム触媒の使用効率向上と使用量低減に関する新知見を発表\"",
+    "\"TOTO、利益面ではすでに半導体企業～800億円投資で強まる“静かな傾斜”\"",
+    "\"愛三工業子会社 半導体材料分野に参入 高純度タングステン製造技術確立\"",
+    "\"半導体に官民投資68兆円\"",
+    "\"米総合PMI上昇、5カ月ぶり高水準－製造業がけん引\"",
+    "\"中国パワー半導体のスピードに驚き、新型車載モジュールで先行\"",
+    "\"DMG森が欧州で超音波加工機の生産能力を2倍に、旺盛な半導体需要に応える\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "半導体政策",
+    "設備投資",
+    "半導体材料",
+    "水素材料",
+    "需要指標"
+  ],
+  "dropped": [
+    {
+      "title": "中国パワー半導体のスピードに驚き、新型車載モジュールで先行",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE01RXVxV3JmSC14bmJrVzd2V2hHVXh0RW8zb0hOendzN1hXcjRDX3FkNGYtblhsU2hpdFVvaWZhY3dXVHM1TERsaURHOFR6MjFoSG1GQzFhZ0pSQzhueVI2WGxRYjdQalhROHp5Rg?oc=5",
+      "reason": "canonical解決後の本文取得ができず、新規性の裏取りが薄い"
+    },
+    {
+      "title": "DMG森が欧州で超音波加工機の生産能力を2倍に、旺盛な半導体需要に応える",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBOLVFVeGQtSVBpenltalBMV3pCd29VVjhJUEd1Z0NkWTNWMFVfR21pV1Z6a0JOSGJEOUZ3eU1EX0xQX1BQLUJwd3U3QnNsNUZRUm9mdjJFYS1mMklDbGM4V09ad3Y3WVB3Q0xiRA?oc=5",
+      "reason": "canonical記事の公開日が2026-06-12で当日性が不足"
+    },
+    {
+      "title": "ＴＳＭＣ、半導体製造に再生ＣＯ２ 台湾拠点で導入",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9HNDY2MmNZWjFDSnl2MkFrc1F2QnBFWndaRGpmdGtPLVRNZFN4VlA5US00bHA2a21ndUE4cXlFVFVjZ2stMVVobWE1c3V3Vi01SmFR?oc=5",
+      "reason": "媒体側403で本文確認ができず、導入規模の裏取りが不足"
+    },
+    {
+      "title": "ニコン社長「3Dプリンターに半導体の知見注入」 カメラもテコ入れ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBDOHBkcTdWMk1tZ09rRVk5VTU3d3hVV1hEWDl4cFVENkN6X3dMbFhSNDdKaFh6cE9EMjdIUWdCRUxsOW0wQzdEdm1JVkt4YkNIenlsSGJQbGx2T2NZeEp1ZG1PejB1UmJmaXN3SA?oc=5",
+      "reason": "中計の方向性は重要だが、今回の公開情報だけでは新数値が薄く選外"
+    },
+    {
+      "title": "キヤノンCFO、半導体関連事業「利益率25%狙う」 次世代品伸ばす",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5DdWktQ1U4NDFlSjdONWl5V3lQVW9Kd3JkX2hOOUw1aDc1SnVYVVBSOFNZOFpMeW9mQzQ1bUs4Wlk4czlmbnhqVkRlLUg0eldLV2dsTFFBdmc2UjZ5bExVVm5nWk1VTlQyYkJZeA?oc=5",
+      "reason": "paywall越しで定量情報が不足し、TOTO記事と論点が重複"
+    },
+    {
+      "title": "富士フ、圧力測定時間30分の1 半導体用円形フィルム",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE00dHpIMUZkeUZ1WGFYVXp1UHNpZi03SnZqT3YtdFlfcHRIWkY1X2MyRS1GXzRTVzFtT0h2US1UbjdfNlBTc3JqUDVZOHlONEkwdUt4c1A5RFQydEk?oc=5",
+      "reason": "技術性は高いが量産・供給網インパクトの確証が薄い"
+    },
+    {
+      "title": "米国株式市場＝Ｓ＆Ｐ・ナスダック1週間ぶり安値、半導体株が安い",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxON0FOd19mMTVXVGNSRVZrM19rOHZVVmpSSXdIdG8tUGd5VnN4djBRd1BPd1MzTE0zakZqam94ZzlCWVNLTzlBMTJNdDAyWndDTjl0LWlKMUVxRWN1d25lcG9SX2x6M09YUWI5N3l3ajMwYWJVTEZUUjlEbWNfTmpRbw?oc=5",
+      "reason": "株価要因が主で製造現場の構造変化としては弱い"
+    },
+    {
+      "title": "〔米株式〕ダウ反落、45ドル安＝AI・半導体に売り（23日）☆差替(時事通信)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOdU01RktmYUx2MVpCdERMY3pLeHFYVDl0SW1USXhuZ2hYeFc4TWQ5bWJHdDZiZWw2T1hvZTF4UkEyY3dHTEZvNG00bzFZdnRJWDU3UDcxcWJGOXV3X1hIUWY4RUVSeEpJN25TbnlzbHZudmphQzlsVW5Tb29LOTVQcmtfMzFTbkU?oc=5",
+      "reason": "市場概況中心で製造カテゴリの独自価値が薄い"
+    }
+  ]
+}

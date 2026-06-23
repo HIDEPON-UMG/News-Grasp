@@ -1,0 +1,66 @@
+{
+  "date": "2026-06-24",
+  "category_id": "it",
+  "queries": [
+    "Stage1 deduped candidates supplied externally: build/deduped-candidates/it.jsonl",
+    "site:sbbit.jp \"ファイブ・アイズ\" \"最先端AIによるサイバー脅威\"",
+    "site:businessnetwork.jp/article \"国産GPUクラウドが不可欠な理由\"",
+    "site:pwc.com/jp/ja/press-room SAP Analytics Cloud Athena",
+    "site:productzine.jp/article Centou トラッキング機能 alma",
+    "site:kabutan.jp/news/marketnews 岡山市 クラウドサービス導入支援業務 フォーバル",
+    "site:itmedia.co.jp/news \"SaaSの死は起こっていない\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Accenture",
+    "デロイト",
+    "PwC",
+    "NTTデータ",
+    "CTC",
+    "富士通",
+    "NEC",
+    "クラウド",
+    "SaaS",
+    "サイバーセキュリティ",
+    "生成AI導入",
+    "IT投資",
+    "システムインテグレーター"
+  ],
+  "dropped": [
+    {
+      "title": "【国際経営学部】大塚製薬協力のもとコンサルティングプロジェクトがスタートしました |",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQMFRJaG4wMzgyVlVsT3Btdi1tUjNuSVJia1RONC1INmowLTNOeEhhaG9ESjR1aTVfUmxkVURuVl8tY29Nd3VpZHZwU2F6SDhtODl4dmlQR3ZGaUtjNFZJRUY1eXZuTG1zeVVhQUF6b1FraUZaS0FzYmJ3bF9nQzhXRDJRNng4TlVJ?oc=5",
+      "reason": "enterprise IT と無関係な大学授業告知。"
+    },
+    {
+      "title": "日比谷音楽祭2026｜みんなでつくる音楽祭の実現へ向けて（日比谷音楽祭事務局 2026/03/30 公開）",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE1aQjVBTTAtUkFPVzN5N2tSOUxOT2NiMXExQ2J0Y3JwTF9YcjZLMF9IemtSQmJXZ3czZzRDWjc2UGpJQ2g1UlJ4VU9RRVM?oc=5",
+      "reason": "ITカテゴリと無関係なクラウドファンディング案件。"
+    },
+    {
+      "title": "ラクスが唱える「SaaS is NOT Dead」論の勘所",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE13MjNDN2Njc0NqV2hMdllpUnJncV9nOGFlaXRMaU1iUk9wR2pTeFp0OFYyWFluTWhBa3haOWVncVJCZ3BWMjFRbmd1WUt3OVczY0tv?oc=5",
+      "reason": "元記事単位の canonical URL を確認できず採用見送り。"
+    },
+    {
+      "title": "「SaaSの死」は起こっていない？ 2つの調査から見えてきたAIで代替できない、代替すべきではない業務（ITmedia NEWS）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9KMTRua3gxNE81Tl9fbjZqMWl4NGctaXZFalRsTkhmWlR5c2ZDV1BzM0QwMWctSFdBOTNEQ05xQVczZVM2MzBITndVQlRGZlZob0dkYXVHOXVEMzVuYWZCaC0xOWZjV0tBUHpqYkdPTW1FUVNDcWdkWkFMZGVOS2M?oc=5",
+      "reason": "元記事公開日が2026-06-22で、当日号の freshness gate 外。"
+    },
+    {
+      "title": "MRTグループのMedikiki提供 クラウド型医療機器管理システム「MMS」 無料提供開始から1年強で導入数150に到達",
+      "url": "https://news.google.com/rss/articles/CBMiQ0FVX3lxTFA5YVNYemZucjdpcV9iRGZ6blJfYm05a3NBcGxvVEFQTV9GcU91N0c0Y2ZqNEpOaENIbXVta1ZnajVwYzg?oc=5",
+      "reason": "一次情報だが医療機器管理の個別導入拡大で、当日号の5件に比べて横断的な示唆が弱い。"
+    },
+    {
+      "title": "Gstarsoft、AI搭載のCAD・BIM・クラウドで設計ポートフォリオを全面刷新",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE5rZXBISU5ieXMyVHBLR3Rhd290UkRBYmoyeXVtQkVHZnRUZmlvZGR2cGZXWDV6d19aWFBJb0VWSjhteGhNWUx2Y0R6dzFiczBfMkRlZnFHLU9hVGFyaHQ5RUZ6RFpBS1hxRjFGMEZGZGgtRWRG?oc=5",
+      "reason": "海外設計ソフト刷新の色が強く、日本のIT-Consulting読者に直結する運用・投資判断の射程で優先度を下げた。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

@@ -1,0 +1,42 @@
+{
+  "date": "2026-06-24",
+  "category_id": "mobility",
+  "queries": [
+    "stage1 source: build/deduped-candidates/mobility.jsonl",
+    "nikkei search: 米中ロボタクシー ロンドン 初対決",
+    "nikkei search: 東京湾岸 自動運転 実験場 Turing",
+    "nikkei search: ソニー EV技術 ホンダ以外からも関心",
+    "bikebros rss search: Lean3 リーンモビリティ 資金調達",
+    "jidounten rss search: トヨタ 自動運転車 いつ買える"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "自動運転",
+    "ロボタクシー",
+    "EV",
+    "小型EV",
+    "モビリティ"
+  ],
+  "dropped": [
+    {
+      "title": "欧州新車販売、5月は前年比3.6％増 ＥＶけん引 中国勢好調",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQNUtVV1c5RFI4Vm9paFpnSEg1TWwtV0N5QW4wWUNEaHhRV1FyR2NBVmZBMU9oWC1IeXJuSXRKcjZ0X1hLdld5X2pOTjNBbTNxT052U0Q3dXhwSlhzNy1KUlNzaHFReG5QUWRsT0JOQW10SmtjWmZEWllTRTltSjJZSw?oc=5",
+      "reason": "Reuters一次URLを当日内に安定解決できず未採用"
+    },
+    {
+      "title": "EXCLUSIVE 日産、「キャシュカイ」のＥＶ開発凍結 英工場で生産計画＝関係者",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxQZHBmM3p4dWNPY19Nc3VwelJyY004cU5nRFZvU2tUUTRoa3d0am5oSGpWcnE1TnBhNDZjX04wUXM4YmNyNGw5dWxKbEFVM1Z6UWhBcjBxUTMxY0NsUW5OSHozUmxsNXZuMV81cFhGS19MYnJaMU84alRSTDZNLUFxQWE3Q2hyUnBSb2Z1ZA?oc=5",
+      "reason": "製品計画寄りで manufacturing 境界が強く、mobility 5本から外した"
+    },
+    {
+      "title": "テスラのロボタクシー「実はたった31台」説",
+      "url": "https://jidounten-lab.com/u_63886",
+      "reason": "ロボタクシー論点が feature と重複するため今回は未採用"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-24/mobility.filtered.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

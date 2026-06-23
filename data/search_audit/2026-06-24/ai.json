@@ -1,0 +1,58 @@
+{
+  "date": "2026-06-24",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:about.mercari.com メルカリ ChatGPT 商品検索 出品準備 2026-06-24",
+    "site:anthropic.com \"Claude Tag\" Slack 2026",
+    "site:openai.com Daybreak Codex Security GPT-5.5-Cyber 2026",
+    "Google AI talent OpenAI Anthropic poached 2026-06-23",
+    "site:eset-info.canon-its.jp PromptSpy 生成AI Android マルウェア 2026-06-23",
+    "Apple AI June 24 2026 site:apple.com OR site:newsroom.apple.com",
+    "Microsoft AI June 24 2026 site:blogs.microsoft.com OR site:news.microsoft.com",
+    "Meta AI June 24 2026 site:about.fb.com OR site:ai.meta.com",
+    "NVIDIA AI June 24 2026 site:nvidia.com"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA",
+    "AIエージェント",
+    "AIセキュリティ",
+    "AIコマース"
+  ],
+  "dropped": [
+    {
+      "title": "Amazon CloudWatch と OpenTelemetry による Claude Code 利用状況の分析",
+      "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQWU5iNjBteUtHMm5PZlFRNE1rUzVnMUNyVXZzbXV4RWFEQnZuV2c3SlYydEJzTWdUZDM5aXFzVXdOWUlHaGxSSDZ4bkYzeE1kUU5jUUUwVTZxdDlSMjZvOTFJbEZleHFvLXF1Q1hmaTFvX1R3VVJ5VWluZW5zX21IRF82X3ZWaXgxZjJYN1BBdkNjXzlRdGNxUGtvTWtZTUYw?oc=5",
+      "reason": "公式記事の初出が2026-06-17で当日性が弱い"
+    },
+    {
+      "title": "AnthropicがRoutinesを導入、Claude Code自動化のため",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE9GdDd3Uktjc1R0MWRfclhXOTZzZnplbkpUeFAzTzh0OHZBS0NlU1ZtRjk0aURYcW1XSjJpU2lKRXRHYTUyOHFvSDcxdjlpOE5kajZyN29zVEU4ZGQtOWpseG9JblRHU3AxMmc4dC1NRzdGUQ?oc=5",
+      "reason": "翻訳記事で原著起点が古く、新材料が薄い follow-up"
+    },
+    {
+      "title": "Claude CodeがDynamic Workflowsを追加、並列エージェント連携のため",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE9QUUw1UHJlejR5aElBb2xDcmhyYkdMeHRuMHlLQV9CZmMyQUotUzRKbE9fcFdBS3FHV1BBOGUyN2ZNS0NDTFVScXRETXpfejkwZmJoVFNCdktUcHZLdzZjOEo1bHZ1YjBuNkREeTItcHVRcnUzdWQ4?oc=5",
+      "reason": "翻訳記事で原著起点が古く、当日号の最重要5件には届かない"
+    },
+    {
+      "title": "生成AIの図表、読解性能を向上 リコーが書類処理システム開発",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9iR05kcDhwckNaeVloX0hIWXAwN3pTLTNya0pYV0JzaFpXVld5YU1WRkFyTnhvSzVzdXpFM0RKUlF5WmdJOUtvRVE1eGtFV09QOWJ1MFhSNTJRVkRDX05sUlpXSDRQNVlnREJRVw?oc=5",
+      "reason": "元発表が2026-06-17で、当日性よりストック性が強い"
+    },
+    {
+      "title": "AIにプログラミング能力を競わせる、APIを利用できる環境を用意",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1NWnkxdXZvV3pITVZweHNNdmNEZUFob0hOTmVVUm1aV1ItV2tmT203V2pPQ2RxT3p5MFJxMTBUVGJtSFhPVlBOQ0pWaWM3QWdKeXR6b3FWNHNMZG1QYy1TeC1RbmdwQ1pvRk5zWA?oc=5",
+      "reason": "一次ソース特定と影響範囲の評価が不足し、5件枠では優先度が下がった"
+    }
+  ]
+}

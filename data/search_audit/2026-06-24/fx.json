@@ -1,0 +1,62 @@
+{
+  "date": "2026-06-24",
+  "category_id": "fx",
+  "queries": [
+    "stage1:file build/deduped-candidates/fx.jsonl",
+    "\"ＦＲＢ利上げで165円も、日銀は10か12月に引き上げ＝白井元審議委員\"",
+    "\"特殊要因除くコアＣＰＩ、5月は＋2.7％ 20カ月連続で2％以上＝日銀\"",
+    "\"FX/為替「ドル/円今日の見通し｜ドル円は40年ぶり高値を巡る攻防が焦点」\"",
+    "\"FX個人投資家動向｜ドルロングが増加、米9月利上げ観測受けて｜豪ドルが低迷\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "EUR/USD",
+    "EUR/JPY",
+    "GBP/USD",
+    "USD/CNH",
+    "AUD/USD",
+    "日銀",
+    "FRB",
+    "BOJ",
+    "ECB",
+    "EURUSD",
+    "Fed",
+    "USDJPY",
+    "為替介入",
+    "金利差",
+    "ヘッジファンド ポジション"
+  ],
+  "dropped": [
+    {
+      "title": "片山財務相、米財務長官と会談 為替介入「必要あれば断固たる措置」",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBBclM1NHRyRkExSWp5RFh5c2pETEs2ZkRMUnVjX1I0Um1mUWU5Uk5WdmpNc0NLVmRZZDhGMGlBa3BqbXBZTHZTNmJaVjRzcXBxNmd5RXRfcGotY1dER1JrSkNuRVBweHc?oc=5",
+      "reason": "会談・介入牽制の論点は外為どっとコム見通し記事でより文脈豊富に採用済み。単独の要人発言速報は重複度が高い。"
+    },
+    {
+      "title": "ＮＹ外為市場＝ドル上昇、161円台半ば 介入警戒続く",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE1sT0hkNExvNWl3QXdiR0NxdkF2STR0RmU1a3FKQWVSRFNmTERHc2VnWEpMZVBDS0d1YVd1SGY1RDFsRVI4ZnZEZEpBNUV0U2pZdDBBblNPWS1CT29tNjlvam9Pdk9TdHFya2RpR0piVWxvRGhna1RnMg?oc=5",
+      "reason": "市場動向は採用した 161.95 円攻防記事と内容が近く、独立テーマとしての追加価値が薄い。"
+    },
+    {
+      "title": "円下落 一時161円93銭 2年ぶり円安ドル高水準",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFA2Qjl0MEhkSmR4Y2FhOWx6ZFhGNEhzXzNPLTdDX1FvcDBqanRva1BXc2FKclpPWHEwZ2VJRDBXOHdXdm1penVQQ0ZEUTdrT2hXa1dZeGdYQ1Q3Q2hLY2c?oc=5",
+      "reason": "値動き速報で新材料が薄く、同日の他候補で水準・介入・ポジションの背景まで補えている。"
+    },
+    {
+      "title": "日銀次回「12月利上げ」は遅いか早いか、政策金利1％でも“円安基調”変わらず",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE8wV214Nl9YcWV4dk1XV1htYlBlejBubjJ4Qk1CUDNsb0RpUGZ4RXB4MmtVUGRDMEQxcVk3aXc4dTdiQTJVOWFDUWV0ODg?oc=5",
+      "reason": "FRB 利上げと日銀次回利上げ時期の論点が白井氏記事と重なり、当日性の強い定量・市況記事を優先した。"
+    },
+    {
+      "title": "ドル円の162円下側に売指値が集まり始める、介入警戒で不安定な値動き 今日の外為注文情報 2026/6/23 17:00",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1iSm1UNXR5akFUel9DbUNHT0pJb2hyQV8yMTNiMWZ2S2wwWDlYVzFzd3lmWnNsa1RyaDRoNHBvRTFfT21LOE9zNzZhT2U5SUdkc09qeUhuMERJSVFiWHJwSDgxWQ?oc=5",
+      "reason": "板情報単体では読者価値が限定的で、ポジション動向記事の方が需給の広がりを示せた。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

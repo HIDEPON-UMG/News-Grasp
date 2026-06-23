@@ -1,10 +1,10 @@
 {
     "date":  "2026-06-23",
-    "pre_publish_commit":  "45d25784a90964eda2fcd71baaa1c8068adfde4d",
+    "pre_publish_commit":  "b4f300b674a76c6d90c7f1e0ee62ca9af516f636",
     "publish_commit":  "",
     "primary_podcast_state":  "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\build\\youtube-podcast\\uploads.json",
     "deepdive_podcast_state":  "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\build\\youtube-podcast-deepdive\\uploads.json",
     "latest_audio_state":  "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\build\\tts\\latest_audio.json",
     "deepdive_audio_state":  "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\build\\tts\\deepdive\\latest_audio.json",
-    "generated_at":  "2026-06-23T20:40:26.021+09:00"
+    "generated_at":  "2026-06-23T21:15:57.348+09:00"
 }
