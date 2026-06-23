@@ -13,7 +13,7 @@
   ],
   "raw_results_total": 31,
   "candidates_total": 25,
-  "selected_total": 4,
+  "selected_total": 5,
   "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
   "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
   "source_policy": "stage0_stage1_only",

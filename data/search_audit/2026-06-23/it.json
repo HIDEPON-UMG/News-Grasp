@@ -51,6 +51,10 @@
       "title": "NHN テコラス、クラウド総合支援ブランドを「Cloud Chorus」へ刷新",
       "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5VWFRsTmJNbW5HNGREMFRHRTZMQV9Tby1WdlFnUzhGa2FHQ2ZtcnAzeFBQakpCUjlwd2FERkFsQmZ3QUZOckMtX2N3MFFCMWVpeTJsQVo3am9MdlNxWE5zRm4zQkhRaEJGS3c?oc=5",
       "reason": "ブランド刷新告知が中心で、当日号の実装・運用シグナルとしては弱かった。"
+    },
+    {
+      "url": "https://eetimes.itmedia.co.jp/ee/articles/2606/22/news071.html",
+      "reason": "quarantined by gate"
     }
   ],
   "candidate_file": "build/deduped-candidates/it.jsonl",

@@ -49,9 +49,10 @@
     "url-liveness": {
       "signatures": {
         "c2c82d0f65d46f0f": {
-          "failures": 1,
+          "failures": 2,
           "artifact_hashes": [
-            "eac8341be89c4d94"
+            "eac8341be89c4d94",
+            "8c1c3aed31014e51"
           ]
         },
         "c102297b82652761": {
@@ -62,7 +63,7 @@
         }
       },
       "categories": {
-        "urls": 2
+        "urls": 3
       }
     },
     "pytest-static": {
@@ -76,6 +77,19 @@
       },
       "categories": {
         "tests": 1
+      }
+    },
+    "digest-articles-reconcile": {
+      "signatures": {
+        "bb58b6694558e43f": {
+          "failures": 1,
+          "artifact_hashes": [
+            "fa510b38a407ec60"
+          ]
+        }
+      },
+      "categories": {
+        "digest": 1
       }
     }
   }

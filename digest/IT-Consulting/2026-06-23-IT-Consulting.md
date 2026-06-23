@@ -62,20 +62,6 @@ tags:
 
 ---
 
-### [86] AI向けメモリ逼迫で企業ITコスト急騰 調達戦略の再設計迫る
-
-📅 2026-06-22 11:00 · 📰 EE Times Japan · 🔗 [元記事](https://eetimes.itmedia.co.jp/ee/articles/2606/22/news071.html)
-
-#cat/it #co/Samsung-Electronics #co/キオクシア #topic/メモリ供給逼迫 #event/市場分析 #score/高
-
-![thumb](https://image.itmedia.co.jp/ee/articles/2606/22/cover_news071.png)
-
-- AIインフラ投資の加速で[[DRAM]]と[[NAND]]の供給不足が深まり、**企業ITの予算管理が予測不能**になるほど、__メモリ価格の急騰__が広がっている。
-- TrendForceによると上位5社のNAND売上高は前年同期比**83.7%増**、Gartnerはメモリ価格の上昇幅を**50〜200%**とみており、需給の歪みが鮮明だ。
-- IT部門が見るべき論点は、[[AI投資]]そのものよりも、__1年単位の固定契約を避けて月次・四半期で調達計画を回す運用設計__へ切り替える必要性にある。
-
----
-
 ### [84] ネットワンとシスコ、同志社女子大の認証基盤をクラウド完結へ
 
 📅 2026-06-22 13:44 · 📰 BUSINESS NETWORK · 🔗 [元記事](https://businessnetwork.jp/article/35380/)
