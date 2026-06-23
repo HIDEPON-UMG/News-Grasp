@@ -1,5 +1,7 @@
 {
-  "result": "published_ok",
+  "result": "published_fallback_with_notice",
   "date": "2026-06-23",
-  "updated_at": "2026-06-23T08:06:16"
+  "reason": "quality_hold:deepdive-required",
+  "notice": "本日の更新は品質確認中です。直近の公開済み号を表示しています。",
+  "updated_at": "2026-06-23T18:54:03"
 }
