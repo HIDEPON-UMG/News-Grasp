@@ -68,6 +68,8 @@ def test_product_constitution_maps_feature_changes_to_quality_gates() -> None:
         "Source collection / URL freshness / dedup",
         "Article data / schema / tags",
         "Web publish surface",
+        "Deploy workflow success",
+        "Pages build success",
         "Public UI / OGP / PWA / thumbnails",
         "Audio / TTS",
         "YouTube Podcast / playlist",

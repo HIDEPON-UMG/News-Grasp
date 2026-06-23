@@ -1043,6 +1043,32 @@ def test_build_writes_page_to_deepdive_path(tmp_path: Path) -> None:
     assert 'class="emph-bold"' in html and 'class="emph-und"' in html
 
 
+def test_build_skips_auxiliary_markdown_without_deepdive_kind(tmp_path: Path) -> None:
+    """dialogue 等の補助 md は frontmatter kind が deepdive の本文だけを render 対象にする。"""
+    digest_dir = tmp_path / "DeepDive"
+    digest_dir.mkdir()
+    main = digest_dir / "2026-05-31-DeepDive.md"
+    main.write_text(_FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+    auxiliary = digest_dir / "2026-06-23-DeepDive-dialogue.md"
+    auxiliary.write_text(
+        "---\n"
+        'title: "DeepDive dialogue script"\n'
+        'date: "2026-06-23"\n'
+        "kind: deepdive-dialogue\n"
+        "---\n\n"
+        "Host: 補助音声用スクリプト。relations/table/chart/decision は持たない。\n",
+        encoding="utf-8",
+    )
+
+    pages = build_deepdive_pages(
+        docs_root=tmp_path / "docs", full=True, digest_dir=digest_dir,
+    )
+
+    assert len(pages) == 1, "auxiliary DeepDive markdown must be skipped unless kind: deepdive"
+    assert pages[0] == tmp_path / "docs" / "deepdive" / "2026-05-31" / "index.html"
+    assert not (tmp_path / "docs" / "deepdive" / "2026-06-23").exists()
+
+
 def _incomplete_md(path: Path) -> Path:
     """relations と table を欠く DeepDive md (= 未完成記事) を 1 件書き出す。"""
     path.write_text(

@@ -15,7 +15,9 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import quote, urljoin, urlparse
+from urllib.parse import quote, urlencode, urljoin, urlparse
+
+from tools.publish_inventory import required_distribution_artifacts
 
 
 ALERT_STATUSES = {
@@ -216,6 +218,57 @@ def _fetch_text(url: str) -> str:
         return res.read().decode("utf-8-sig", errors="replace")
 
 
+def _extract_sw_version(text: str) -> str:
+    match = re.search(r"SW_VERSION\s*=\s*['\"]([^'\"]+)['\"]", text)
+    return match.group(1).strip() if match else ""
+
+
+def verify_public_sw_version(*, repo_root: Path, public_base_url: str) -> dict:
+    local_sw = repo_root / "docs" / "sw.js"
+    if not local_sw.exists():
+        return {"ok": False, "reason": "local_sw_missing", "path": str(local_sw)}
+    try:
+        local_version = _extract_sw_version(local_sw.read_text(encoding="utf-8-sig"))
+    except UnicodeDecodeError as exc:
+        return {"ok": False, "reason": "local_sw_unreadable", "detail": str(exc), "path": str(local_sw)}
+    if not local_version:
+        return {"ok": False, "reason": "local_sw_version_missing", "path": str(local_sw)}
+
+    public_sw_url = urljoin(public_base_url.rstrip("/") + "/", "sw.js")
+    try:
+        public_version = _extract_sw_version(_fetch_text(public_sw_url))
+    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError) as exc:
+        return {
+            "ok": False,
+            "reason": "public_sw_fetch_failed",
+            "detail": str(exc),
+            "url": public_sw_url,
+            "local_sw_version": local_version,
+        }
+    if not public_version:
+        return {
+            "ok": False,
+            "reason": "public_sw_version_missing",
+            "url": public_sw_url,
+            "local_sw_version": local_version,
+        }
+    if public_version != local_version:
+        return {
+            "ok": False,
+            "reason": "sw_version_mismatch",
+            "url": public_sw_url,
+            "local_sw_version": local_version,
+            "public_sw_version": public_version,
+        }
+    return {
+        "ok": True,
+        "reason": "",
+        "url": public_sw_url,
+        "local_sw_version": local_version,
+        "public_sw_version": public_version,
+    }
+
+
 def _url_head_ok(url: str) -> bool:
     req = urllib.request.Request(url, method="HEAD")
     with urllib.request.urlopen(req, timeout=20) as res:  # noqa: S310 - fixed public URL from runner config
@@ -396,6 +449,136 @@ def verify_podcast(
         time.sleep(max(1, poll_sec))
 
 
+def _repo_slug_from_remote_url(remote_url: str) -> tuple[str, str] | None:
+    value = remote_url.strip().rstrip("/")
+    if value.endswith(".git"):
+        value = value[:-4]
+    match = re.fullmatch(r"https://github\.com/([^/\s]+)/([^/\s]+)", value)
+    if not match:
+        match = re.fullmatch(r"git@github\.com:([^/\s]+)/([^/\s]+)", value)
+    if not match:
+        return None
+    owner, repo = match.group(1), match.group(2)
+    if not owner or not repo:
+        return None
+    return owner, repo
+
+
+def verify_pages_build(repo_root: Path, remote: str, expected_commit: str) -> dict:
+    """GitHub Pages latest build が対象 commit で built であることを検証する。"""
+    try:
+        remote_url = _git_output(repo_root, ["config", "--get", f"remote.{remote}.url"])
+    except Exception as exc:
+        return {"ok": False, "reason": "pages_remote_unparseable", "detail": str(exc)}
+    slug = _repo_slug_from_remote_url(remote_url)
+    if slug is None:
+        return {"ok": False, "reason": "pages_remote_unparseable", "remote_url": remote_url}
+    owner, repo = slug
+    url = f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/pages/builds/latest"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2026-03-10",
+            "User-Agent": "News-Grasp-PublishVerifier/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
+            build = json.loads(res.read().decode("utf-8-sig"))
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+        return {"ok": False, "reason": "pages_build_unavailable", "url": url, "detail": str(exc)}
+    if not isinstance(build, dict):
+        return {"ok": False, "reason": "pages_build_unavailable", "url": url, "detail": "response_not_object"}
+    status = str(build.get("status") or "")
+    commit = str(build.get("commit") or "")
+    if status != "built":
+        return {"ok": False, "reason": "pages_build_not_built", "status": status, "commit": commit, "url": url}
+    if commit != expected_commit:
+        return {"ok": False, "reason": "pages_build_commit_mismatch", "status": status, "commit": commit, "expected_commit": expected_commit, "url": url}
+    return {"ok": True, "reason": "", "status": status, "commit": commit, "url": url}
+
+
+def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_commit: str) -> dict:
+    """Deploy Pages workflow が対象 commit で success したことを検証する。"""
+    workflow_file = "deploy-pages.yml"
+    workflow_path = repo_root / ".github" / "workflows" / workflow_file
+    if not workflow_path.exists():
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "detail": f"workflow_missing:{workflow_file}"}
+    try:
+        remote_url = _git_output(repo_root, ["config", "--get", f"remote.{remote}.url"])
+    except Exception as exc:
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "detail": str(exc)}
+    slug = _repo_slug_from_remote_url(remote_url)
+    if slug is None:
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "remote_url": remote_url}
+    owner, repo = slug
+    query = urlencode({"branch": branch, "head_sha": expected_commit, "event": "push", "per_page": 5})
+    url = (
+        f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/actions/workflows/"
+        f"{quote(workflow_file, safe='')}/runs?{query}"
+    )
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2026-03-10",
+            "User-Agent": "News-Grasp-PublishVerifier/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
+            payload = json.loads(res.read().decode("utf-8-sig"))
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "url": url, "detail": str(exc)}
+    if not isinstance(payload, dict) or not isinstance(payload.get("workflow_runs"), list):
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "url": url, "detail": "workflow_runs_not_list"}
+    runs = payload["workflow_runs"]
+    if not runs:
+        return {"ok": False, "reason": "deploy_workflow_not_success", "url": url, "workflow_file": workflow_file}
+    matching_runs = [run for run in runs if isinstance(run, dict) and str(run.get("head_sha") or "") == expected_commit]
+    if not matching_runs:
+        first_head = ""
+        for run in runs:
+            if isinstance(run, dict):
+                first_head = str(run.get("head_sha") or "")
+                break
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_commit_mismatch",
+            "url": url,
+            "head_sha": first_head,
+            "expected_commit": expected_commit,
+            "workflow_file": workflow_file,
+        }
+    run = matching_runs[0]
+    status = str(run.get("status") or "")
+    conclusion = str(run.get("conclusion") or "")
+    if status != "completed" or conclusion != "success":
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_not_success",
+            "status": status,
+            "conclusion": conclusion,
+            "head_sha": str(run.get("head_sha") or ""),
+            "run_id": run.get("id", ""),
+            "html_url": run.get("html_url", ""),
+            "url": url,
+            "workflow_file": workflow_file,
+        }
+    return {
+        "ok": True,
+        "reason": "",
+        "status": status,
+        "conclusion": conclusion,
+        "head_sha": str(run.get("head_sha") or ""),
+        "run_id": run.get("id", ""),
+        "html_url": run.get("html_url", ""),
+        "url": url,
+        "workflow_file": workflow_file,
+    }
+
+
 def verify_publish(
     *,
     repo_root: Path,
@@ -412,6 +595,30 @@ def verify_publish(
     remote_head = _git_output(repo_root, ["ls-remote", remote, f"refs/heads/{branch}"]).split()[0]
     if local_head != remote_head:
         return {"ok": False, "reason": "remote_head_mismatch", "local_head": local_head, "remote_head": remote_head}
+    deploy_workflow = verify_deploy_workflow(
+        repo_root=repo_root,
+        remote=remote,
+        branch=branch,
+        expected_commit=local_head,
+    )
+    if not deploy_workflow["ok"]:
+        return {
+            "ok": False,
+            "reason": deploy_workflow["reason"],
+            "local_head": local_head,
+            "remote_head": remote_head,
+            "deploy_workflow": deploy_workflow,
+        }
+    pages = verify_pages_build(repo_root=repo_root, remote=remote, expected_commit=local_head)
+    if not pages["ok"]:
+        return {
+            "ok": False,
+            "reason": pages["reason"],
+            "local_head": local_head,
+            "remote_head": remote_head,
+            "deploy_workflow": deploy_workflow,
+            "pages": pages,
+        }
 
     status_url = urljoin(public_base_url.rstrip("/") + "/", "publish-status.json")
     deadline = time.monotonic() + max(0, wait_sec)
@@ -421,6 +628,18 @@ def verify_publish(
             with urllib.request.urlopen(status_url, timeout=20) as res:  # noqa: S310 - fixed public URL from runner config
                 status = json.loads(res.read().decode("utf-8-sig"))
             if status.get("result") == "published_ok" and status.get("date") == date:
+                pwa = verify_public_sw_version(repo_root=repo_root, public_base_url=public_base_url)
+                if not pwa["ok"]:
+                    return {
+                        "ok": False,
+                        "reason": pwa["reason"],
+                        "local_head": local_head,
+                        "remote_head": remote_head,
+                        "url": status_url,
+                        "deploy_workflow": deploy_workflow,
+                        "pages": pages,
+                        "pwa": pwa,
+                    }
                 audio = verify_public_audio(repo_root=repo_root, date=date, public_base_url=public_base_url)
                 if audio["ok"]:
                     podcast = {"checked": False, "ok": True, "reason": "podcast_not_required"}
@@ -438,6 +657,9 @@ def verify_publish(
                                 "local_head": local_head,
                                 "remote_head": remote_head,
                                 "url": status_url,
+                                "deploy_workflow": deploy_workflow,
+                                "pages": pages,
+                                "pwa": pwa,
                                 "audio": audio,
                                 "podcast": podcast,
                             }
@@ -447,6 +669,9 @@ def verify_publish(
                         "local_head": local_head,
                         "remote_head": remote_head,
                         "url": status_url,
+                        "deploy_workflow": deploy_workflow,
+                        "pages": pages,
+                        "pwa": pwa,
                         "audio": audio,
                         "podcast": podcast,
                     }
@@ -456,6 +681,9 @@ def verify_publish(
                     "local_head": local_head,
                     "remote_head": remote_head,
                     "url": status_url,
+                    "deploy_workflow": deploy_workflow,
+                    "pages": pages,
+                    "pwa": pwa,
                     "audio": audio,
                 }
             last_error = f"publish-status mismatch: {status!r}"
@@ -469,8 +697,151 @@ def verify_publish(
                 "local_head": local_head,
                 "remote_head": remote_head,
                 "url": status_url,
+                "deploy_workflow": deploy_workflow,
+                "pages": pages,
             }
         time.sleep(max(1, poll_sec))
+
+
+def _distribution_artifact_manifest(repo_root: Path, date: str) -> dict:
+    required = required_distribution_artifacts(date)
+    missing = [rel for rel in required if not (repo_root / rel).exists()]
+    manifest_rel = f"data/distribution/{date}.json"
+    manifest_path = repo_root / manifest_rel
+    manifest: dict = {}
+    manifest_errors: list[str] = []
+    manifest_reason = ""
+    if manifest_path.exists():
+        try:
+            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            loaded = {}
+            manifest_errors.append(f"invalid_json:{exc}")
+        if not isinstance(loaded, dict):
+            manifest_errors.append("manifest_not_object")
+            loaded = {}
+        manifest = loaded
+        required_text_fields = (
+            "date",
+            "primary_podcast_state",
+            "deepdive_podcast_state",
+            "latest_audio_state",
+            "deepdive_audio_state",
+            "generated_at",
+        )
+        for field in required_text_fields:
+            if not str(manifest.get(field) or "").strip():
+                manifest_errors.append(f"missing_field:{field}")
+        if manifest_errors:
+            manifest_reason = "distribution_manifest_invalid"
+        elif str(manifest.get("date")) != date:
+            manifest_reason = "distribution_manifest_mismatch"
+        else:
+            pre_publish_commit = str(manifest.get("pre_publish_commit") or "").strip()
+            if not re.fullmatch(r"[0-9a-fA-F]{7,40}", pre_publish_commit):
+                manifest_reason = "distribution_manifest_commit_missing"
+    return {
+        "required": required,
+        "missing": missing,
+        "manifest_path": manifest_rel,
+        "manifest": manifest,
+        "manifest_errors": manifest_errors,
+        "manifest_reason": manifest_reason,
+    }
+
+
+def verify_publish_complete(
+    *,
+    repo_root: Path,
+    date: str,
+    remote: str,
+    branch: str,
+    public_base_url: str,
+    wait_sec: int,
+    poll_sec: int,
+    primary_podcast_state_path: Path | None = None,
+    deepdive_podcast_state_path: Path | None = None,
+) -> dict:
+    """公開完了を remote/public/audio/podcast/local inventory の同一 manifest として検証する。"""
+    distribution = _distribution_artifact_manifest(repo_root, date)
+    base = {
+        "ok": False,
+        "reason": "",
+        "date": date,
+        "distribution_artifacts": distribution,
+    }
+    if distribution["missing"]:
+        return {**base, "reason": "distribution_artifact_missing"}
+    if distribution.get("manifest_reason"):
+        return {**base, "reason": distribution["manifest_reason"]}
+
+    primary_state = primary_podcast_state_path or repo_root / "build" / "youtube-podcast" / "uploads.json"
+    deepdive_state = deepdive_podcast_state_path or repo_root / "build" / "youtube-podcast-deepdive" / "uploads.json"
+    publish = verify_publish(
+        repo_root=repo_root,
+        date=date,
+        remote=remote,
+        branch=branch,
+        public_base_url=public_base_url,
+        wait_sec=wait_sec,
+        poll_sec=poll_sec,
+        require_podcast=True,
+        podcast_state_path=primary_state,
+    )
+    manifest = {
+        **base,
+        "publish": publish,
+        "local_head": publish.get("local_head", ""),
+        "remote_head": publish.get("remote_head", ""),
+        "publish_status_url": publish.get("url", ""),
+        "pwa": publish.get("pwa", {}),
+        "audio": publish.get("audio", {}),
+        "podcasts": {
+            "primary": {"date": date, **dict(publish.get("podcast") or {})},
+            "deepdive": {},
+        },
+        "distribution_manifest": distribution.get("manifest", {}),
+    }
+    if not publish.get("ok"):
+        return {**manifest, "reason": str(publish.get("reason") or "publish_sentinel_failed")}
+
+    local_head = str(publish.get("local_head") or "")
+    remote_head = str(publish.get("remote_head") or "")
+    if not local_head or local_head != remote_head:
+        return {**manifest, "reason": "publish_commit_mismatch"}
+    distribution_manifest = dict(distribution.get("manifest") or {})
+    pre_publish_commit = str(distribution_manifest.get("pre_publish_commit") or "").strip()
+    publish_commit = str(distribution_manifest.get("publish_commit") or "").strip()
+    if pre_publish_commit != local_head:
+        return {**manifest, "reason": "distribution_manifest_commit_mismatch"}
+    if publish_commit and (publish_commit != local_head or publish_commit != remote_head):
+        return {**manifest, "reason": "distribution_manifest_commit_mismatch"}
+
+    deepdive = verify_podcast(
+        date=date,
+        state_path=deepdive_state,
+        wait_sec=wait_sec,
+        poll_sec=poll_sec,
+        expected_title=f"News-Grasp DeepDive Dialogue {date}",
+    )
+    manifest["podcasts"]["deepdive"] = {"date": date, **deepdive}
+    if not deepdive.get("ok"):
+        return {**manifest, "reason": "deepdive_podcast_missing"}
+
+    return {
+        **manifest,
+        "ok": True,
+        "reason": "",
+        "publish_commit": local_head,
+        "same_publish": {
+            "date": date,
+            "local_head": local_head,
+            "remote_head": remote_head,
+            "publish_commit": local_head,
+            "distribution_date": str(distribution_manifest.get("date") or ""),
+            "distribution_pre_publish_commit": pre_publish_commit,
+        },
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -509,6 +880,18 @@ def main(argv: list[str] | None = None) -> int:
     podcast.add_argument("--wait-sec", type=int, default=1200)
     podcast.add_argument("--poll-sec", type=int, default=30)
     podcast.add_argument("--expected-title", default=None)
+
+    complete = sub.add_parser("verify-publish-complete")
+    complete.add_argument("--repo-root", type=Path, required=True)
+    complete.add_argument("--date", required=True)
+    complete.add_argument("--remote", default="origin")
+    complete.add_argument("--branch", default="main")
+    complete.add_argument("--public-base-url", default="https://hidepon-umg.github.io/News-Grasp/")
+    complete.add_argument("--wait-sec", type=int, default=600)
+    complete.add_argument("--poll-sec", type=int, default=30)
+    complete.add_argument("--primary-podcast-state", type=Path, default=None)
+    complete.add_argument("--deepdive-podcast-state", type=Path, default=None)
+    complete.add_argument("--output", type=Path, default=None)
 
     args = parser.parse_args(argv)
     if args.cmd == "checksum":
@@ -561,6 +944,24 @@ def main(argv: list[str] | None = None) -> int:
             expected_title=args.expected_title,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["ok"] else 1
+    if args.cmd == "verify-publish-complete":
+        result = verify_publish_complete(
+            repo_root=args.repo_root,
+            date=args.date,
+            remote=args.remote,
+            branch=args.branch,
+            public_base_url=args.public_base_url,
+            wait_sec=args.wait_sec,
+            poll_sec=args.poll_sec,
+            primary_podcast_state_path=args.primary_podcast_state,
+            deepdive_podcast_state_path=args.deepdive_podcast_state,
+        )
+        text = json.dumps(result, ensure_ascii=False, indent=2)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(text + "\n", encoding="utf-8")
+        print(text)
         return 0 if result["ok"] else 1
     raise AssertionError(args.cmd)
 

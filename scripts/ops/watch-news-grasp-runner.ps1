@@ -268,7 +268,7 @@ function Test-TerminalState {
     if (-not $State -or -not $State.status) {
         return $false
     }
-    return @('ok', 'smoke_ok') -contains [string]$State.status
+    return @('publish_complete', 'smoke_ok') -contains [string]$State.status
 }
 
 function Watch-Runner {
@@ -299,7 +299,7 @@ function Watch-Runner {
             return
         }
         if ($Process.HasExited) {
-            Write-StatusJson -Mode 'failed' -State $state -ProcessId $Process.Id -Message "runner process exited without ok marker"
+            Write-StatusJson -Mode 'failed' -State $state -ProcessId $Process.Id -Message "runner process exited without publish_complete marker"
             $script:WatchExitCode = 1
             return
         }

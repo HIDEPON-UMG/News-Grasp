@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -17,6 +18,299 @@ RUNNER_PS1 = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / 
 WATCHER_PS1 = Path(os.environ.get("NEWS_GRASP_WATCHER", str(Path.home() / "bin" / "watch-news-grasp-runner.ps1")))
 POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
 OPS_DIR = ROOT / "scripts" / "ops"
+
+
+def _normalized_powershell_statements(text: str, marker: str) -> list[str]:
+    lines = text.splitlines()
+    statements: list[str] = []
+    for index, line in enumerate(lines):
+        if marker not in line:
+            continue
+        collected = [line.rstrip()]
+        balance = line.count("(") - line.count(")")
+        cursor = index + 1
+        while cursor < len(lines):
+            previous_continues = collected[-1].rstrip().endswith("`")
+            next_line = lines[cursor].rstrip()
+            next_stripped = next_line.strip()
+            if not previous_continues and balance <= 0 and not next_stripped.startswith("-"):
+                break
+            collected.append(next_line)
+            balance += next_line.count("(") - next_line.count(")")
+            cursor += 1
+        normalized = " ".join(part.rstrip("`").strip() for part in collected)
+        statements.append(re.sub(r"\s+", " ", normalized).strip())
+    return statements
+
+
+def _contains_powershell_variable(statement: str, variable_name: str) -> bool:
+    return bool(re.search(re.escape(variable_name) + r"(?![A-Za-z0-9_])", statement, re.IGNORECASE))
+
+
+def _powershell_command_extents(path: Path, command_name: str) -> list[str]:
+    """PowerShell Parser で実コマンド AST を抽出し、静的 scan の対象を構文単位へ寄せる。"""
+    script = r"""
+$Path = $env:NEWS_GRASP_AST_PATH
+$CommandName = $env:NEWS_GRASP_AST_COMMAND
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tokens, [ref]$errors)
+if ($errors.Count -gt 0) {
+  $errors | ForEach-Object { Write-Error $_.Message }
+  exit 2
+}
+$commands = $ast.FindAll({
+  param($node)
+  $node -is [System.Management.Automation.Language.CommandAst] -and
+    $node.GetCommandName() -eq $CommandName
+}, $true)
+@($commands | ForEach-Object { $_.Extent.Text }) | ConvertTo-Json -Compress
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_AST_PATH"] = str(path)
+    env["NEWS_GRASP_AST_COMMAND"] = command_name
+    result = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    data = json.loads(result.stdout or "[]")
+    if isinstance(data, str):
+        return [data]
+    return [str(item) for item in data]
+
+
+def _assert_runner_powershell_parses() -> None:
+    script = r"""
+$Path = $env:NEWS_GRASP_AST_PATH
+$tokens = $null
+$errors = $null
+[void][System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tokens, [ref]$errors)
+if ($errors.Count -gt 0) {
+  $errors | ForEach-Object { Write-Error $_.Message }
+  exit 2
+}
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_AST_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def _mock_autonomous_policy_invocation(failure_kind: str) -> dict[str, str]:
+    script = r"""
+function Invoke-FallbackPublish {
+  param([string]$Reason)
+  $script:FallbackReason = $Reason
+}
+function Write-Log {
+  param([string]$Text)
+  $script:LastLog = $Text
+}
+function Exit-Runner {
+  param(
+    [string]$Status,
+    [string]$Message,
+    [int]$ExitCode,
+    [string]$ExternalKind = '',
+    [string]$ExternalSystem = '',
+    [string]$ExternalStatus = '',
+    [string]$ExternalStderr = '',
+    [string]$ExternalDetail = ''
+  )
+  $script:ExitStatus = $Status
+  $script:ExitMessage = $Message
+  $script:ExitCode = $ExitCode
+  $script:ExternalKind = $ExternalKind
+  $script:ExternalSystem = $ExternalSystem
+  $script:ExternalStatus = $ExternalStatus
+  $script:ExternalStderr = $ExternalStderr
+  $script:ExternalDetail = $ExternalDetail
+}
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$start = $runner.IndexOf('function Invoke-AutonomousCompletionPolicy')
+if ($start -lt 0) { Write-Error 'Invoke-AutonomousCompletionPolicy missing'; exit 2 }
+$end = $runner.IndexOf('function Test-DailyArtifactsExist', $start)
+if ($end -lt 0) { Write-Error 'policy end marker missing'; exit 2 }
+Invoke-Expression $runner.Substring($start, $end - $start)
+Invoke-AutonomousCompletionPolicy -FailureKind $env:NEWS_GRASP_FAILURE_KIND -GateId 'unit-gate' -Reason 'unit-test' -ExitCode 42
+[pscustomobject]@{
+  fallback_reason = $script:FallbackReason
+  exit_status = $script:ExitStatus
+  exit_message = $script:ExitMessage
+  exit_code = $script:ExitCode
+  external_kind = $script:ExternalKind
+  external_system = $script:ExternalSystem
+  external_status = $script:ExternalStatus
+  external_stderr = $script:ExternalStderr
+  external_detail = $script:ExternalDetail
+} | ConvertTo-Json -Compress
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    env["NEWS_GRASP_FAILURE_KIND"] = failure_kind
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def _mock_external_readiness_block() -> dict:
+    script = r"""
+function Write-Log {
+  param([string]$Text)
+  $script:LastLog = $Text
+}
+function Exit-Runner {
+  param(
+    [string]$Status,
+    [string]$Message,
+    [int]$ExitCode,
+    [string]$ExternalKind = '',
+    [string]$ExternalSystem = '',
+    [string]$ExternalStatus = '',
+    [string]$ExternalStderr = '',
+    [string]$ExternalDetail = ''
+  )
+  [pscustomobject]@{
+    status = $Status
+    message = $Message
+    exit_code = $ExitCode
+    external_readiness = [ordered]@{
+      kind = $ExternalKind
+      system = $ExternalSystem
+      status = $ExternalStatus
+      stderr = $ExternalStderr
+      detail = $ExternalDetail
+    }
+  } | ConvertTo-Json -Compress
+}
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$start = $runner.IndexOf('function Stop-ExternalReadiness')
+if ($start -lt 0) { Write-Error 'Stop-ExternalReadiness missing'; exit 2 }
+$end = $runner.IndexOf('function Test-WorkspaceWriteReadiness', $start)
+if ($end -lt 0) { Write-Error 'Stop-ExternalReadiness end marker missing'; exit 2 }
+Invoke-Expression $runner.Substring($start, $end - $start)
+Stop-ExternalReadiness -Kind 'git_push_auth' -System 'github' -Reason 'push dry-run failed' -ExitCode 71 -ExternalStatus 'rc=1' -ExternalStderr 'fatal auth' -ExternalDetail 'origin HEAD:main'
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def _mock_recoveronly_manifest(tmp_path: Path) -> dict:
+    script = r"""
+$RepoDir = $env:NEWS_GRASP_REPO_DIR
+$DateStamp = '2026-06-23'
+$StateFile = Join-Path $RepoDir 'state.json'
+$GitExe = 'git'
+function Write-Log { param([string]$Text) }
+function Get-PublishInventoryArtifacts {
+  param([string]$Kind)
+  return @('digest/Summary/2026-06-23.md', 'data/articles.jsonl')
+}
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$start = $runner.IndexOf('function Write-RecoverOnlyInputManifest')
+if ($start -lt 0) { Write-Error 'Write-RecoverOnlyInputManifest missing'; exit 2 }
+    $end = $runner.IndexOf('function Test-DailyArtifactsExist', $start)
+if ($end -lt 0) { Write-Error 'Write-RecoverOnlyInputManifest end marker missing'; exit 2 }
+Invoke-Expression $runner.Substring($start, $end - $start)
+$path = Write-RecoverOnlyInputManifest
+Get-Content -LiteralPath $path -Raw -Encoding UTF8
+"""
+    (tmp_path / "digest" / "Summary").mkdir(parents=True)
+    (tmp_path / "digest" / "Summary" / "2026-06-23.md").write_text("summary", encoding="utf-8")
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    env["NEWS_GRASP_REPO_DIR"] = str(tmp_path)
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def _mock_distribution_manifest(tmp_path: Path) -> dict:
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=tmp_path, check=True)
+    (tmp_path / "README.md").write_text("test\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-m", "test"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    expected_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True).strip()
+    script = r"""
+$RepoDir = $env:NEWS_GRASP_REPO_DIR
+$DateStamp = '2026-06-23'
+$GitExe = 'git'
+function Write-Log { param([string]$Text) }
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$start = $runner.IndexOf('function Write-DistributionManifest')
+if ($start -lt 0) { Write-Error 'Write-DistributionManifest missing'; exit 2 }
+$end = $runner.IndexOf('function Test-DailyArtifactsExist', $start)
+if ($end -lt 0) { Write-Error 'Write-DistributionManifest end marker missing'; exit 2 }
+Invoke-Expression $runner.Substring($start, $end - $start)
+$path = Write-DistributionManifest
+Get-Content -LiteralPath $path -Raw -Encoding UTF8
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    env["NEWS_GRASP_REPO_DIR"] = str(tmp_path)
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    payload["_expected_head"] = expected_head
+    return payload
 
 
 def test_claude_prompt_does_not_delegate_commit_to_claude() -> None:
@@ -161,6 +455,59 @@ def test_codex_auth_preflight_runs_before_llm_repair() -> None:
     assert repair_body.index("Test-CodexAuthReadiness") < repair_body.index("Invoke-CodexWrapper")
 
 
+def test_runner_never_passes_long_prompt_or_html_via_native_argument() -> None:
+    """長大 prompt/report/html 本文は file/stdin 境界に閉じ、native argv へ載せない。"""
+    runner_path = OPS_DIR / "news-grasp-runner.ps1"
+    wrapper_path = Path.home() / "bin" / "run_codex_with_timeout.ps1"
+    runner = runner_path.read_text(encoding="utf-8-sig")
+    wrapper = wrapper_path.read_text(encoding="utf-8-sig")
+
+    codex_calls = [
+        re.sub(r"\s+", " ", stmt).strip()
+        for stmt in _powershell_command_extents(runner_path, "Invoke-CodexWrapper")
+        if not stmt.startswith("function Invoke-CodexWrapper")
+    ]
+    assert codex_calls
+    body_vars = [
+        "$prompt",
+        "$promptText",
+        "$PromptBody",
+        "$reporterPrompt",
+        "$failureText",
+        "$DateHeader",
+        "$html",
+        "$reportHtml",
+    ]
+    for call in codex_calls:
+        assert re.search(r"(?:^|\s)-PromptFile(?:\s|$)", call), (
+            f"long prompt must be file/stdin, not native argv: {call}"
+        )
+        assert not re.search(r"(?:^|\s)-Prompt(?!File)(?:\s|$)", call), (
+            f"long prompt must be file/stdin, not native argv: {call}"
+        )
+        for var_name in body_vars:
+            assert not _contains_powershell_variable(call, var_name), (
+                f"long prompt must be file/stdin, not native argv: {call}"
+            )
+
+    argument_boundaries = (
+        _normalized_powershell_statements(runner, "-ArgumentList")
+        + [re.sub(r"\s+", " ", stmt).strip() for stmt in _powershell_command_extents(wrapper_path, "Start-Process")]
+    )
+    assert argument_boundaries
+    for statement in argument_boundaries:
+        for var_name in body_vars:
+            assert not _contains_powershell_variable(statement, var_name), (
+                f"long prompt must be file/stdin, not native argv: {statement}"
+            )
+
+    start_process = " ".join(_normalized_powershell_statements(wrapper, "Start-Process"))
+    assert "-RedirectStandardInput $stdinFile" in start_process
+    assert "-ArgumentList $effectiveArgString" in start_process
+    assert "--prompt" not in wrapper
+    assert "$argList += $promptText" not in wrapper
+
+
 def test_runner_runs_generation_quality_before_url_and_record_gates() -> None:
     """生成物品質 gate は URL / record gate より前に normalize 済み artifact を検査する。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
@@ -188,10 +535,11 @@ def test_generation_quality_repair_failure_sets_typed_repair_status() -> None:
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     block = runner.split("generation quality gate start", 1)[1].split("URL liveness gate start", 1)[0]
 
-    assert "blocked_repair_budget_exhausted" in block
+    assert "Invoke-AutonomousCompletionPolicy" in block
+    assert "-FailureKind 'content'" in block
+    assert "-GateId 'generation-quality'" in block
     assert "generation quality autonomous gate failed" in block
     assert "content_repair_failed" not in block
-    assert "Invoke-FallbackPublish" not in block
     assert "send_push" not in block
 
 
@@ -227,7 +575,8 @@ def test_generation_quality_runs_after_external_readiness_precheck() -> None:
     assert "Test-GenerationExternalReadiness" in runner
     assert runner.index("generation external readiness gate start") < runner.index("generation quality gate start")
     readiness_block = runner.split("generation external readiness gate start", 1)[1].split("generation artifact normalize start", 1)[0]
-    assert "blocked_external_readiness" in readiness_block
+    assert "Stop-ExternalReadiness" in readiness_block
+    assert "-Kind 'generation_input_missing'" in readiness_block
     assert "content_repair_failed" not in readiness_block
 
 
@@ -369,10 +718,22 @@ def test_runner_writes_machine_readable_state() -> None:
     assert "news-grasp-runner-state.json" in runner
     assert "function Set-RunnerState" in runner
     assert "-Status 'running' -Message 'runner started'" in runner
-    assert "-Status 'ok' -Message $Text -ExitCode 0" in runner
+    assert "-Status 'publish_complete' -Message $Text -ExitCode 0" in runner
+    assert "-Status 'ok' -Message $Text -ExitCode 0" not in runner
     assert "-Status 'fallback_ok' -Message $Text -ExitCode 0" in runner
     assert "-Status 'smoke_ok' -Message $Text -ExitCode 0" in runner
     assert "-Status 'error' -Message $Text -ExitCode 1" in runner
+
+
+def test_runner_typed_terminal_state_can_replace_generic_error() -> None:
+    """ERROR ログの副作用で typed terminal state を generic error に潰さない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    state_body = runner.split("function Set-RunnerState", 1)[1].split("function Exit-Runner", 1)[0]
+
+    assert "typed terminal state must replace generic error" in state_body
+    assert "$prev.status -eq 'error'" in state_body
+    for status in ["blocked_external_readiness", "publish_failed", "distribution_failed"]:
+        assert status in state_body
 
 
 def test_runner_state_is_progress_aware_and_terminal_first_wins() -> None:
@@ -448,12 +809,13 @@ def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
     assert "Run scripts/ops/install-news-grasp-ops.ps1 before scheduled execution" not in runner
 
 
-def test_runner_only_marks_ok_after_publish_verification() -> None:
-    """ok marker は publish + podcast verification より後にしか書けない。"""
+def test_runner_only_marks_publish_complete_after_publish_verification() -> None:
+    """publish_complete marker は publish + podcast verification より後にしか書けない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
     assert "tools.daily_self_heal' 'verify-publish'" in runner
     assert "tools.daily_self_heal' 'verify-podcast'" in runner
+    assert "publish_complete" in runner
     assert runner.index("publish verification start") < runner.index("send_push start")
     assert runner.index("podcast verification start") < runner.index("send_push start")
     assert runner.index("publish verification start") < runner.rindex("news-grasp-runner.ps1 OK")
@@ -506,9 +868,10 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     assert "[int] $TimeoutMinutes = 120" in watcher
     assert "Start-Process -FilePath 'powershell'" in watcher
     assert "-WindowStyle Hidden" in watcher
-    assert "@('ok', 'smoke_ok')" in watcher
+    assert "@('publish_complete', 'smoke_ok')" in watcher
+    assert "@('ok', 'smoke_ok')" not in watcher
     assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
-    assert "runner process exited without ok marker" in watcher
+    assert "runner process exited without publish_complete marker" in watcher
     assert "log has not changed for" in watcher
     assert "watch timeout after" in watcher
 
@@ -609,9 +972,9 @@ def test_runner_quarantines_and_refills_bad_urls_before_typed_failure() -> None:
     assert "URL liveness quarantine start" in block
     assert "tools.refill_category_after_quarantine" in block
     assert "URL liveness gate recheck after quarantine" in block
-    assert "blocked_refill_unresolved" in block
+    assert "Invoke-AutonomousCompletionPolicy" in block
+    assert "-GateId 'url-liveness'" in block
     assert "Stop-ContentGateWithoutFallback -GateId 'url-liveness'" not in block
-    assert "Invoke-FallbackPublish" not in block
     assert "search_audit_updated" in (ROOT / "tools" / "audit_all_article_urls.py").read_text(encoding="utf-8")
 
 
@@ -627,14 +990,11 @@ def test_runner_refill_categories_follow_canonical_config() -> None:
     assert "URL liveness refill category list parse failed" in block
 
 
-def test_content_gates_do_not_publish_fallback_notice() -> None:
-    """内容系 gate の未収束は fallback notice 公開ではなく、通常公開を止める。
-
-    なぜ重要か: publish-always 化の過渡期でも、内容系 gate の失敗で旧号 fallback notice を
-    publish すると「本日分が存在するのに品質確認中へ落ちる」事故が再発する。
-    """
+def test_content_gates_use_quality_hold_fallback_without_normal_notification() -> None:
+    """内容系 gate の未収束は手動復旧に落とさず、品質保留 fallback で自走完了する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    assert "function Stop-ContentGateWithoutFallback" in runner
+    assert "function Invoke-AutonomousCompletionPolicy" in runner
+    assert "quality_hold" in runner
 
     content_gate_markers = [
         ("summary reflection gate start", "daily quality gate start"),
@@ -655,9 +1015,165 @@ def test_content_gates_do_not_publish_fallback_notice() -> None:
             "Invoke-AutonomousGate" in block
             or "blocked_refill_unresolved" in block
             or "blocked_repair_budget_exhausted" in block
+            or "Invoke-AutonomousCompletionPolicy" in block
             or "TTS is required for normal publish" in block
         )
-        assert "Invoke-FallbackPublish" not in block
+        assert "send_push" not in block
+        assert "Should-SendNormalBatchNotification" not in block
+    assert "function Stop-ContentGateWithoutFallback" not in runner
+    assert "Set-RunnerState -Status 'content_repair_failed'" not in runner
+
+
+def test_runner_non_external_failures_do_not_require_manual_recoveronly() -> None:
+    """非外部障害は `RECOVER:` や手動 RecoverOnly 案内で終わらせない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    manual_markers = [
+        "RECOVER:",
+        "publish manually",
+        "manual resolve required",
+        "run: powershell -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -RecoverOnly",
+    ]
+    non_external_ranges = [
+        ("function Stop-ContentGateWithoutFallback", "function Test-DailyArtifactsExist"),
+        ("wrapper invoke START (agent=codex, role=newsroom_editor", "summary reflection gate start"),
+        ("generation artifact normalize start", "generation quality gate start"),
+        ("Daily TTS audio (fatal", "2.9 digest/data commit"),
+        ("generate_pages.py start", "deepdive required gate start"),
+    ]
+    for start, end in non_external_ranges:
+        if start not in runner:
+            continue
+        block = runner.split(start, 1)[1].split(end, 1)[0]
+        for marker in manual_markers:
+            assert marker not in block, (
+                f"non-external failures must not require manual RecoverOnly: {marker}"
+            )
+
+
+def test_runner_autonomous_completion_policy_separates_internal_and_external_failures() -> None:
+    """内部品質保留 fallback と外部 failure を policy 関数で分離する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    _assert_runner_powershell_parses()
+    policy = runner.split("function Invoke-AutonomousCompletionPolicy", 1)[1].split(
+        "function Test-DailyArtifactsExist", 1
+    )[0]
+    assert "Invoke-FallbackPublish" in policy
+    assert "quality_hold" in policy
+    assert "blocked_external_readiness" in policy
+    assert "publish_failed" in policy
+    assert "distribution_failed" in policy
+    assert "Exit-Runner -Status 'ok'" not in policy
+
+    internal = _mock_autonomous_policy_invocation("content")
+    assert internal["fallback_reason"] == "quality_hold:unit-gate"
+    assert internal["exit_status"] in (None, "")
+
+    external = _mock_autonomous_policy_invocation("external")
+    assert external["fallback_reason"] in (None, "")
+    assert external["exit_status"] == "blocked_external_readiness"
+    assert external["exit_code"] == 42
+    assert external["external_kind"] == "unit-gate"
+    assert external["external_system"] == "external"
+    assert external["external_status"] == "rc=42"
+    assert external["external_detail"] == "unit-test"
+
+
+def test_external_readiness_state_carries_typed_evidence() -> None:
+    """blocked_external_readiness は machine-readable external evidence を持つ。"""
+    payload = _mock_external_readiness_block()
+
+    assert payload["status"] == "blocked_external_readiness"
+    assert payload["exit_code"] == 71
+    assert payload["external_readiness"]["kind"] == "git_push_auth"
+    assert payload["external_readiness"]["system"] == "github"
+    assert payload["external_readiness"]["status"] == "rc=1"
+    assert payload["external_readiness"]["stderr"] == "fatal auth"
+    assert payload["external_readiness"]["detail"] == "origin HEAD:main"
+
+
+def test_blocked_external_readiness_uses_boundary_only() -> None:
+    """外部停止は直接 Set-RunnerState せず Stop-ExternalReadiness 境界へ集約する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    direct = [
+        line.strip()
+        for line in runner.splitlines()
+        if "Set-RunnerState -Status 'blocked_external_readiness'" in line
+    ]
+
+    assert not direct, (
+        "blocked_external_readiness must use external readiness boundary: "
+        + "; ".join(direct)
+    )
+
+
+def test_publish_external_readiness_returns_structured_evidence() -> None:
+    """publish readiness は bool だけでなく kind/system/status/stderr を返す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    body = runner.split("function Test-PublishExternalReadiness", 1)[1].split(
+        "function Should-SendNormalBatchNotification", 1
+    )[0]
+
+    assert "New-ExternalReadinessResult" in body
+    assert "-Kind 'github_remote'" in body
+    assert "-Kind 'git_push_auth'" in body
+    assert "-System 'github'" in body
+    assert ".ok" in runner.split("publish external readiness gate start", 1)[1].split("publish external readiness gate OK", 1)[0]
+    assert "-ExternalKind" in runner
+    assert "-ExternalSystem" in runner
+
+
+def test_generation_readiness_uses_external_boundary_with_missing_paths() -> None:
+    """generation readiness も missing paths を typed evidence として外部境界に渡す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("generation external readiness gate start", 1)[1].split(
+        "generation external readiness gate OK", 1
+    )[0]
+
+    assert "Stop-ExternalReadiness" in block
+    assert "-Kind 'generation_input_missing'" in block
+    assert "-System 'local_artifact_inventory'" in block
+    assert "-ExternalDetail" in block
+    assert "Set-RunnerState -Status 'blocked_external_readiness'" not in block
+
+
+def test_runner_distribution_failures_use_autonomous_policy() -> None:
+    """distribution_failed は各呼出箇所で直書きせず policy 境界へ集約する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    direct_distribution_writes = [
+        line.strip()
+        for line in runner.splitlines()
+        if "Set-RunnerState -Status 'distribution_failed'" in line
+    ]
+
+    assert not direct_distribution_writes, (
+        "distribution failures must use autonomous completion policy: "
+        + "; ".join(direct_distribution_writes)
+    )
+
+
+def test_runner_preflight_passes_issue_date_to_newsroom_preflight() -> None:
+    """date-sensitive inventory drift は実行対象日で preflight する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("PreflightOnly mode: skipping codex / git pull / push / generate_pages", 1)[1].split(
+        "publish external readiness gate start", 1
+    )[0]
+
+    assert "tools.newsroom_preflight" in block
+    assert "'--date'" in block
+    assert "$DateStamp" in block
+
+
+def test_recoveronly_writes_input_manifest_before_reuse(tmp_path: Path) -> None:
+    """RecoverOnly は再利用する入力を machine-readable manifest に残す。"""
+    manifest = _mock_recoveronly_manifest(tmp_path)
+
+    assert manifest["date"] == "2026-06-23"
+    assert manifest["mode"] == "RecoverOnly"
+    assert "digest/Summary/2026-06-23.md" in manifest["required_artifacts"]
+    assert "data/articles.jsonl" in manifest["missing_artifacts"]
+    assert manifest["repo_head"]
+    assert manifest["state_file"].endswith("state.json")
+    assert manifest["created_at"]
 
 
 def test_runner_requires_deepdive_after_pages_generation() -> None:
@@ -681,10 +1197,10 @@ def test_runner_tts_is_required_before_pages_generation() -> None:
     assert runner.index("Daily TTS audio (fatal") < runner.index("2.9 digest/data commit")
     block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
     assert "TTS is required for normal publish" in block
-    assert "Set-RunnerState -Status 'content_repair_failed'" in block
-    assert "exit 1" in block
+    assert "Invoke-AutonomousCompletionPolicy" in block
+    assert "-FailureKind 'local-tool'" in block
+    assert "-GateId 'daily-tts'" in block
     assert "non-fatal" not in block
-    assert "Invoke-FallbackPublish" not in block
     assert "Stop-ContentGateWithoutFallback" not in block
 
 
@@ -703,7 +1219,8 @@ def test_watcher_does_not_treat_fallback_as_normal_terminal_success() -> None:
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
 
     assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
-    assert "@('ok', 'smoke_ok')" in watcher
+    assert "@('publish_complete', 'smoke_ok')" in watcher
+    assert "@('ok', 'smoke_ok')" not in watcher
 
 
 def test_runner_publish_verification_includes_public_audio_sentinel() -> None:
@@ -716,6 +1233,61 @@ def test_runner_publish_verification_includes_public_audio_sentinel() -> None:
     assert "verify-publish" in runner
     assert "verify-podcast" in runner
     assert runner.index("publish verification start") < runner.index("publish verification OK")
+
+
+def test_runner_verifies_publish_complete_manifest_before_success() -> None:
+    """publish_complete 前に unified manifest verifier を通す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "verify-publish-complete" in runner
+    assert runner.index("deepdive podcast verification OK") < runner.index("verify-publish-complete")
+    assert runner.index("verify-publish-complete") < runner.index("send_push start")
+    assert runner.index("verify-publish-complete") < runner.rindex("news-grasp-runner.ps1 OK")
+    block = runner.split("publish-complete manifest verification start", 1)[1].split("send_push start", 1)[0]
+    before_block = runner.split("deepdive podcast verification OK", 1)[1].split("publish-complete manifest verification start", 1)[0]
+    distribution_body = runner.split("function Write-DistributionManifest", 1)[1].split("function Test-DailyArtifactsExist", 1)[0]
+    assert "data\\distribution" in distribution_body
+    assert "$distributionSummary = Write-DistributionManifest" in before_block
+    assert "$DateStamp.json" in distribution_body
+    assert "build\\publish-complete\\$DateStamp.json" in block
+    assert "Invoke-AutonomousCompletionPolicy" in block
+    assert "-FailureKind 'publish'" in block
+    assert "-GateId 'publish-complete'" in block
+
+
+def test_runner_publish_complete_state_carries_manifest() -> None:
+    """terminal state は publish manifest path と commit を持つ。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    state_body = runner.split("function Set-RunnerState", 1)[1].split("function Update-RunnerProgress", 1)[0]
+    write_log_body = runner.split("function Write-Log", 1)[1].split("function Invoke-Logged", 1)[0]
+
+    assert "PublishManifestPath" in state_body
+    assert "PublishCommit" in state_body
+    assert "publish_manifest_path" in state_body
+    assert "publish_commit" in state_body
+    assert "$script:PublishCompleteManifestPath" in write_log_body
+    assert "$script:PublishCompleteCommit" in write_log_body
+
+
+def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) -> None:
+    """publish_complete 前の distribution manifest は local HEAD の commit anchor を持つ。"""
+    manifest = _mock_distribution_manifest(tmp_path)
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    publish_tail = runner.split("deepdive podcast verification OK", 1)[1].split(
+        "publish-complete manifest verification start",
+        1,
+    )[0]
+
+    assert manifest["date"] == "2026-06-23"
+    assert manifest["pre_publish_commit"] == manifest["_expected_head"]
+    assert manifest["publish_commit"] == ""
+    assert manifest["primary_podcast_state"].endswith("build\\youtube-podcast\\uploads.json")
+    assert "Write-DistributionManifest" in runner
+    assert "$distributionSummary = Write-DistributionManifest" in publish_tail
+    assert "pre_publish_commit" in runner.split("function Write-DistributionManifest", 1)[1].split(
+        "function Test-DailyArtifactsExist",
+        1,
+    )[0]
 
 
 def test_runner_preflight_checks_workspace_write_readiness_before_generation() -> None:

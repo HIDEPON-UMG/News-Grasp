@@ -17,6 +17,42 @@ from tools.daily_self_heal import (
 )
 
 
+def _write_local_sw(repo_root: Path, version: str = "expected-version") -> None:
+    docs = repo_root / "docs"
+    docs.mkdir(parents=True, exist_ok=True)
+    (docs / "sw.js").write_text(f"const SW_VERSION = '{version}';\n", encoding="utf-8")
+
+
+def _mock_pages_build_success(monkeypatch, commit: str = "abc123") -> None:
+    monkeypatch.setattr(
+        dsh,
+        "verify_pages_build",
+        lambda **_kwargs: {"ok": True, "reason": "", "status": "built", "commit": commit, "url": "pages"},
+    )
+
+
+def _mock_deploy_workflow_success(monkeypatch, commit: str = "abc123") -> None:
+    monkeypatch.setattr(
+        dsh,
+        "verify_deploy_workflow",
+        lambda **_kwargs: {
+            "ok": True,
+            "reason": "",
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": commit,
+            "run_id": 123,
+            "url": "workflow",
+        },
+    )
+
+
+def _write_deploy_workflow(repo_root: Path) -> None:
+    workflow_dir = repo_root / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True, exist_ok=True)
+    (workflow_dir / "deploy-pages.yml").write_text("name: Deploy Pages\n", encoding="utf-8")
+
+
 def test_phase0_prioritizes_bin_drift_before_content_repair() -> None:
     """bin drift がある日は content repair へ進む前に同期不備を主因にする。"""
     snapshot = {
@@ -136,6 +172,7 @@ def test_deadman_cli_payload_is_json_serializable(tmp_path: Path) -> None:
 
 def test_verify_publish_requires_remote_head_and_public_status(monkeypatch, tmp_path: Path) -> None:
     """ok は remote HEAD と公開 publish-status の両方が揃った後だけ。"""
+    _write_local_sw(tmp_path)
     calls: list[list[str]] = []
 
     def fake_git(repo_root: Path, args: list[str]) -> str:
@@ -158,6 +195,9 @@ def test_verify_publish_requires_remote_head_and_public_status(monkeypatch, tmp_
 
     monkeypatch.setattr(dsh, "_git_output", fake_git)
     monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *a, **k: FakeResponse())
+    monkeypatch.setattr(dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'expected-version';\n")
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
 
     result = verify_publish(
         repo_root=tmp_path,
@@ -173,8 +213,446 @@ def test_verify_publish_requires_remote_head_and_public_status(monkeypatch, tmp_
     assert calls == [["rev-parse", "HEAD"], ["ls-remote", "origin", "refs/heads/main"]]
 
 
+def test_repo_slug_from_remote_url_accepts_github_https_and_ssh() -> None:
+    """GitHub Pages API の owner/repo は origin URL から一意に導く。"""
+    assert dsh._repo_slug_from_remote_url("https://github.com/HIDEPON-UMG/News-Grasp.git") == (
+        "HIDEPON-UMG",
+        "News-Grasp",
+    )
+    assert dsh._repo_slug_from_remote_url("https://github.com/HIDEPON-UMG/News-Grasp/") == (
+        "HIDEPON-UMG",
+        "News-Grasp",
+    )
+    assert dsh._repo_slug_from_remote_url("git@github.com:HIDEPON-UMG/News-Grasp.git") == (
+        "HIDEPON-UMG",
+        "News-Grasp",
+    )
+    assert dsh._repo_slug_from_remote_url("https://example.com/HIDEPON-UMG/News-Grasp.git") is None
+
+
+def test_verify_deploy_workflow_uses_workflow_file_api_contract_and_timeout(monkeypatch, tmp_path: Path) -> None:
+    """Deploy Pages workflow sentinel は workflow file 正本と同じ branch/head_sha で確認する。"""
+    _write_deploy_workflow(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {
+                            "id": 123,
+                            "head_sha": head,
+                            "status": "completed",
+                            "conclusion": "success",
+                            "html_url": "https://github.example/run/123",
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+
+    seen: list[dict[str, str | int]] = []
+
+    def fake_urlopen(req, *args, **kwargs):
+        headers = dict(req.header_items())
+        seen.append(
+            {
+                "url": req.full_url,
+                "accept": headers.get("Accept"),
+                "version": headers.get("X-github-api-version"),
+                "user_agent": headers.get("User-agent"),
+                "timeout": kwargs.get("timeout"),
+            }
+        )
+        return FakeResponse()
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_deploy_workflow(repo_root=tmp_path, remote="origin", branch="main", expected_commit=head)
+
+    assert result["ok"] is True
+    assert result["run_id"] == 123
+    assert seen == [
+        {
+            "url": (
+                "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/"
+                f"deploy-pages.yml/runs?branch=main&head_sha={head}&event=push&per_page=5"
+            ),
+            "accept": "application/vnd.github+json",
+            "version": "2026-03-10",
+            "user_agent": "News-Grasp-PublishVerifier/1.0",
+            "timeout": 10,
+        }
+    ]
+
+
+def test_verify_deploy_workflow_normalizes_api_errors_and_bad_payloads(monkeypatch, tmp_path: Path) -> None:
+    """Actions API 失敗や壊れた payload は deploy_workflow_unavailable に正規化する。"""
+    _write_deploy_workflow(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class BadPayloadResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"workflow_runs": {}}).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *a, **k: BadPayloadResponse())
+
+    bad_payload = dsh.verify_deploy_workflow(repo_root=tmp_path, remote="origin", branch="main", expected_commit=head)
+    assert bad_payload["ok"] is False
+    assert bad_payload["reason"] == "deploy_workflow_unavailable"
+
+    def fake_urlopen(req, *args, **kwargs):
+        raise dsh.urllib.error.HTTPError(req.full_url, 503, "Service Unavailable", {}, None)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    api_error = dsh.verify_deploy_workflow(repo_root=tmp_path, remote="origin", branch="main", expected_commit=head)
+    assert api_error["ok"] is False
+    assert api_error["reason"] == "deploy_workflow_unavailable"
+
+
+def test_verify_publish_requires_deploy_pages_workflow_success(monkeypatch, tmp_path: Path) -> None:
+    """Deploy Pages workflow が未完了なら Pages build や public sentinel へ進まない。"""
+    _write_local_sw(tmp_path)
+    _write_deploy_workflow(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return head
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{head}\trefs/heads/main"
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {"workflow_runs": [{"id": 123, "head_sha": head, "status": "in_progress", "conclusion": None}]}
+            ).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *a, **k: FakeResponse())
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deploy_workflow_not_success"
+    assert result["deploy_workflow"]["status"] == "in_progress"
+
+
+def test_verify_publish_rejects_deploy_pages_workflow_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
+    """Deploy Pages workflow run が別 commit なら publish_complete にしない。"""
+    _write_local_sw(tmp_path)
+    _write_deploy_workflow(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return head
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{head}\trefs/heads/main"
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {"id": 123, "head_sha": "b" * 40, "status": "completed", "conclusion": "success"}
+                    ]
+                }
+            ).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *a, **k: FakeResponse())
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deploy_workflow_commit_mismatch"
+    assert result["deploy_workflow"]["head_sha"] == "b" * 40
+
+
+def test_verify_pages_build_uses_github_api_contract_and_timeout(monkeypatch, tmp_path: Path) -> None:
+    """GitHub Pages build sentinel は固定 endpoint / API version / timeout で確認する。"""
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"status": "built", "commit": head}).encode("utf-8")
+
+    seen: list[dict[str, str | int]] = []
+
+    def fake_urlopen(req, *args, **kwargs):
+        headers = dict(req.header_items())
+        seen.append(
+            {
+                "url": req.full_url,
+                "accept": headers.get("Accept"),
+                "version": headers.get("X-github-api-version"),
+                "user_agent": headers.get("User-agent"),
+                "timeout": kwargs.get("timeout"),
+            }
+        )
+        return FakeResponse()
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_pages_build(repo_root=tmp_path, remote="origin", expected_commit=head)
+
+    assert result["ok"] is True
+    assert seen == [
+        {
+            "url": "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/pages/builds/latest",
+            "accept": "application/vnd.github+json",
+            "version": "2026-03-10",
+            "user_agent": "News-Grasp-PublishVerifier/1.0",
+            "timeout": 10,
+        }
+    ]
+
+
+def test_verify_pages_build_normalizes_api_errors(monkeypatch, tmp_path: Path) -> None:
+    """Pages API が失敗した場合は publish_complete に進まず typed reason へ正規化する。"""
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    def fake_urlopen(req, *args, **kwargs):
+        raise dsh.urllib.error.HTTPError(req.full_url, 503, "Service Unavailable", {}, None)
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_pages_build(repo_root=tmp_path, remote="origin", expected_commit=head)
+
+    assert result["ok"] is False
+    assert result["reason"] == "pages_build_unavailable"
+    assert result["url"] == "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/pages/builds/latest"
+
+
+def test_verify_publish_requires_pages_build_for_remote_head(monkeypatch, tmp_path: Path) -> None:
+    """remote HEAD だけでなく、同じ commit の GitHub Pages build が built であることを要求する。"""
+    _write_local_sw(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return head
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{head}\trefs/heads/main"
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"status": "queued", "commit": head}).encode("utf-8")
+
+    seen: list[str] = []
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        seen.append(url)
+        assert url == "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/pages/builds/latest"
+        return FakeResponse()
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    _mock_deploy_workflow_success(monkeypatch, commit=head)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "pages_build_not_built"
+    assert result["pages"]["status"] == "queued"
+    assert seen == ["https://api.github.com/repos/HIDEPON-UMG/News-Grasp/pages/builds/latest"]
+
+
+def test_verify_publish_rejects_pages_build_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
+    """Pages build が built でも対象 commit でなければ publish_complete にしない。"""
+    _write_local_sw(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return head
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{head}\trefs/heads/main"
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "git@github.com:HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"status": "built", "commit": "b" * 40}).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *a, **k: FakeResponse())
+    _mock_deploy_workflow_success(monkeypatch, commit=head)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "pages_build_commit_mismatch"
+    assert result["pages"]["commit"] == "b" * 40
+
+
+def test_verify_publish_rejects_stale_public_sw_version(monkeypatch, tmp_path: Path) -> None:
+    """public sw.js の SW_VERSION がローカル期待版と違えば publish_complete にしない。"""
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "sw.js").write_text("const SW_VERSION = 'expected-version';\n", encoding="utf-8")
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"result": "published_ok", "date": "2026-06-15"}).encode("utf-8")
+
+    fetched: list[str] = []
+
+    def fake_fetch_text(url: str) -> str:
+        fetched.append(url)
+        if url == "https://example.com/News-Grasp/sw.js":
+            return "const SW_VERSION = 'stale-version';\n"
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *a, **k: FakeResponse())
+    monkeypatch.setattr(dsh, "_fetch_text", fake_fetch_text)
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "sw_version_mismatch"
+    assert result["pwa"]["local_sw_version"] == "expected-version"
+    assert result["pwa"]["public_sw_version"] == "stale-version"
+    assert fetched == ["https://example.com/News-Grasp/sw.js"]
+
+
 def test_verify_publish_checks_public_audio_when_latest_audio_exists(monkeypatch, tmp_path: Path) -> None:
     """当日音声がある日は Release だけでなく Home/summary の audio URL 反映まで確認する。"""
+    _write_local_sw(tmp_path)
     audio_url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3?v=abc123"
     latest = tmp_path / "build" / "tts" / "latest_audio.json"
     latest.parent.mkdir(parents=True)
@@ -212,6 +690,8 @@ def test_verify_publish_checks_public_audio_when_latest_audio_exists(monkeypatch
         seen.append((method, url))
         if url.endswith("publish-status.json"):
             return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-06-16"}))
+        if url == "https://example.com/News-Grasp/sw.js":
+            return FakeResponse("const SW_VERSION = 'expected-version';\n")
         if url == audio_url:
             return FakeResponse("", status=200)
         if url == "https://example.com/News-Grasp/":
@@ -222,6 +702,8 @@ def test_verify_publish_checks_public_audio_when_latest_audio_exists(monkeypatch
 
     monkeypatch.setattr(dsh, "_git_output", fake_git)
     monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
 
     result = verify_publish(
         repo_root=tmp_path,
@@ -432,6 +914,8 @@ def test_verify_podcast_rejects_title_mismatch(monkeypatch, tmp_path: Path) -> N
 
 def test_verify_publish_can_require_podcast(monkeypatch, tmp_path: Path) -> None:
     """通常公開は Web/audio に加えて Podcast gate も要求できる。"""
+    _write_local_sw(tmp_path)
+
     def fake_git(_repo: Path, args: list[str]) -> str:
         if args == ["rev-parse", "HEAD"]:
             return "abc123"
@@ -460,8 +944,11 @@ def test_verify_publish_can_require_podcast(monkeypatch, tmp_path: Path) -> None
         "urlopen",
         lambda *_args, **_kwargs: FakeResponse(json.dumps({"result": "published_ok", "date": "2026-06-20"})),
     )
+    monkeypatch.setattr(dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'expected-version';\n")
     monkeypatch.setattr(dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True})
     monkeypatch.setattr(dsh, "verify_podcast", lambda **_kwargs: {"ok": False, "reason": "public_podcast_missing"})
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
 
     result = verify_publish(
         repo_root=tmp_path,
@@ -481,6 +968,7 @@ def test_verify_publish_can_require_podcast(monkeypatch, tmp_path: Path) -> None
 
 def test_verify_publish_rejects_public_audio_url_missing_from_summary(monkeypatch, tmp_path: Path) -> None:
     """summary が旧音声URLのままなら publish 完了扱いにしない。"""
+    _write_local_sw(tmp_path)
     audio_url = "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-16.mp3?v=newhash"
     latest = tmp_path / "build" / "tts" / "latest_audio.json"
     latest.parent.mkdir(parents=True)
@@ -515,6 +1003,8 @@ def test_verify_publish_rejects_public_audio_url_missing_from_summary(monkeypatc
         url = getattr(req, "full_url", str(req))
         if url.endswith("publish-status.json"):
             return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-06-16"}))
+        if url == "https://example.com/News-Grasp/sw.js":
+            return FakeResponse("const SW_VERSION = 'expected-version';\n")
         if url == audio_url:
             return FakeResponse("")
         if url == "https://example.com/News-Grasp/":
@@ -525,6 +1015,8 @@ def test_verify_publish_rejects_public_audio_url_missing_from_summary(monkeypatc
 
     monkeypatch.setattr(dsh, "_git_output", fake_git)
     monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
 
     result = verify_publish(
         repo_root=tmp_path,
@@ -550,6 +1042,8 @@ def test_verify_publish_rejects_public_status_mismatch(monkeypatch, tmp_path: Pa
         raise AssertionError(args)
 
     monkeypatch.setattr(dsh, "_git_output", fake_git)
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
 
     class FakeResponse:
         def __enter__(self):
@@ -575,3 +1069,332 @@ def test_verify_publish_rejects_public_status_mismatch(monkeypatch, tmp_path: Pa
 
     assert result["ok"] is False
     assert result["reason"] == "public_sentinel_missing"
+
+
+PUBLISH_COMMIT = "a" * 40
+
+
+def _write_publish_complete_inventory(
+    repo_root: Path,
+    date: str = "2026-06-20",
+    *,
+    distribution_manifest: dict | str | None = None,
+) -> None:
+    _write_local_sw(repo_root)
+    (repo_root / "build" / "tts").mkdir(parents=True, exist_ok=True)
+    (repo_root / "build" / "tts" / "latest_audio.json").write_text(
+        json.dumps(
+            {
+                "latest_audio_date": date,
+                "latest_audio_url": f"https://example.com/audio/{date}.mp3",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / "build" / "tts" / "deepdive").mkdir(parents=True, exist_ok=True)
+    (repo_root / "build" / "tts" / "deepdive" / "latest_audio.json").write_text(
+        json.dumps(
+            {
+                "latest_audio_date": date,
+                "latest_audio_url": f"https://example.com/audio/{date}-deepdive.mp3",
+            }
+        ),
+        encoding="utf-8",
+    )
+    primary = repo_root / "build" / "youtube-podcast"
+    primary.mkdir(parents=True, exist_ok=True)
+    (primary / f"{date}.mp4").write_bytes(b"primary")
+    (primary / "uploads.json").write_text(
+        json.dumps({date: {"status": "public", "videoId": "primary-video", "playlistId": "primary-list"}}),
+        encoding="utf-8",
+    )
+    deepdive = repo_root / "build" / "youtube-podcast-deepdive"
+    deepdive.mkdir(parents=True, exist_ok=True)
+    (deepdive / f"{date}.mp4").write_bytes(b"deepdive")
+    (deepdive / "uploads.json").write_text(
+        json.dumps({date: {"status": "public", "videoId": "deepdive-video", "playlistId": "deepdive-list"}}),
+        encoding="utf-8",
+    )
+    dist = repo_root / "data" / "distribution"
+    dist.mkdir(parents=True, exist_ok=True)
+    if distribution_manifest is None:
+        distribution_manifest = {
+            "date": date,
+            "pre_publish_commit": PUBLISH_COMMIT,
+            "publish_commit": "",
+            "primary_podcast_state": str(repo_root / "build" / "youtube-podcast" / "uploads.json"),
+            "deepdive_podcast_state": str(repo_root / "build" / "youtube-podcast-deepdive" / "uploads.json"),
+            "latest_audio_state": str(repo_root / "build" / "tts" / "latest_audio.json"),
+            "deepdive_audio_state": str(repo_root / "build" / "tts" / "deepdive" / "latest_audio.json"),
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        }
+    content = distribution_manifest if isinstance(distribution_manifest, str) else json.dumps(distribution_manifest)
+    (dist / f"{date}.json").write_text(content, encoding="utf-8")
+
+
+def test_verify_publish_complete_requires_distribution_inventory(monkeypatch, tmp_path: Path) -> None:
+    """publish_complete は local distribution inventory が揃わない限り成立しない。"""
+    _write_publish_complete_inventory(tmp_path)
+    (tmp_path / "build" / "youtube-podcast-deepdive" / "uploads.json").unlink()
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": PUBLISH_COMMIT, "remote_head": PUBLISH_COMMIT, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_artifact_missing"
+    assert "build/youtube-podcast-deepdive/uploads.json" in result["distribution_artifacts"]["missing"]
+
+
+def test_verify_publish_complete_rejects_invalid_distribution_manifest(monkeypatch, tmp_path: Path) -> None:
+    """distribution manifest は存在だけでなく JSON/schema を満たす必要がある。"""
+    _write_publish_complete_inventory(tmp_path, distribution_manifest="{not-json")
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": PUBLISH_COMMIT, "remote_head": PUBLISH_COMMIT, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_invalid"
+
+
+def test_verify_publish_complete_rejects_distribution_date_mismatch(monkeypatch, tmp_path: Path) -> None:
+    """distribution manifest の日付が対象日と違う場合は same-publish にしない。"""
+    _write_publish_complete_inventory(
+        tmp_path,
+        distribution_manifest={
+            "date": "2026-06-19",
+            "pre_publish_commit": PUBLISH_COMMIT,
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": PUBLISH_COMMIT, "remote_head": PUBLISH_COMMIT, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_mismatch"
+
+
+def test_verify_publish_complete_requires_distribution_commit_anchor(monkeypatch, tmp_path: Path) -> None:
+    """date だけの distribution manifest は同一 publish 証明として不十分。"""
+    _write_publish_complete_inventory(
+        tmp_path,
+        distribution_manifest={
+            "date": "2026-06-20",
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": PUBLISH_COMMIT, "remote_head": PUBLISH_COMMIT, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_commit_missing"
+
+
+def test_verify_publish_complete_rejects_distribution_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
+    """distribution manifest の commit anchor が公開検証 commit と違えば完了にしない。"""
+    _write_publish_complete_inventory(
+        tmp_path,
+        distribution_manifest={
+            "date": "2026-06-20",
+            "pre_publish_commit": "b" * 40,
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": PUBLISH_COMMIT, "remote_head": PUBLISH_COMMIT, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_commit_mismatch"
+
+
+def test_verify_publish_complete_rejects_optional_publish_commit_conflict(monkeypatch, tmp_path: Path) -> None:
+    """optional publish_commit が入っている場合も公開検証 commit と矛盾できない。"""
+    _write_publish_complete_inventory(
+        tmp_path,
+        distribution_manifest={
+            "date": "2026-06-20",
+            "pre_publish_commit": PUBLISH_COMMIT,
+            "publish_commit": "b" * 40,
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": PUBLISH_COMMIT, "remote_head": PUBLISH_COMMIT, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_commit_mismatch"
+
+
+def test_verify_publish_complete_requires_deepdive_podcast(monkeypatch, tmp_path: Path) -> None:
+    """DeepDive podcast が public 化されない限り publish_complete にしない。"""
+    _write_publish_complete_inventory(tmp_path)
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "https://example.com/News-Grasp/publish-status.json",
+            "pwa": {"ok": True},
+            "audio": {"ok": True},
+            "podcast": {"ok": True, "videoId": "primary-video"},
+        },
+    )
+    monkeypatch.setattr(dsh, "verify_podcast", lambda **_kwargs: {"ok": False, "reason": "public_podcast_missing"})
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deepdive_podcast_missing"
+    assert result["podcasts"]["deepdive"]["reason"] == "public_podcast_missing"
+
+
+def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Path, capsys) -> None:
+    """CLI は既定 stdout、明示 `--output` のみ local manifest を書く。"""
+    _write_publish_complete_inventory(tmp_path)
+    output = tmp_path / "build" / "publish-complete" / "2026-06-20.json"
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "https://example.com/News-Grasp/publish-status.json",
+            "pwa": {"ok": True, "local_sw_version": "expected-version", "public_sw_version": "expected-version"},
+            "audio": {"ok": True, "latest_audio_url": "https://example.com/audio/2026-06-20.mp3"},
+            "podcast": {"ok": True, "videoId": "primary-video"},
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_podcast",
+        lambda **_kwargs: {"ok": True, "videoId": "deepdive-video", "title": "News-Grasp DeepDive Dialogue 2026-06-20"},
+    )
+
+    rc = dsh.main(
+        [
+            "verify-publish-complete",
+            "--repo-root",
+            str(tmp_path),
+            "--date",
+            "2026-06-20",
+            "--public-base-url",
+            "https://example.com/News-Grasp/",
+            "--wait-sec",
+            "0",
+            "--poll-sec",
+            "1",
+            "--output",
+            str(output),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    stdout_manifest = json.loads(captured.out)
+    file_manifest = json.loads(output.read_text(encoding="utf-8"))
+    assert rc == 0
+    assert stdout_manifest["ok"] is True
+    assert stdout_manifest["publish_commit"] == PUBLISH_COMMIT
+    assert stdout_manifest["same_publish"]["distribution_pre_publish_commit"] == PUBLISH_COMMIT
+    assert stdout_manifest == file_manifest

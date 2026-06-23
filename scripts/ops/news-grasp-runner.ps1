@@ -164,6 +164,8 @@ $RunId = [guid]::NewGuid().ToString('N')
 $script:RunnerCommandLine = ''
 $script:RunnerCommandLineFingerprint = ''
 $script:RunnerProcessCreationTime = ''
+$script:PublishCompleteManifestPath = ''
+$script:PublishCompleteCommit = ''
 
 function Get-StringSha256Hex {
     param([string] $Text)
@@ -225,7 +227,7 @@ function Get-RunnerStateMutexName {
 function Test-TerminalRunnerStatus {
     param([string] $Status)
     return @(
-        'ok',
+        'publish_complete',
         'smoke_ok',
         'preflight_ok',
         'watchdog_stale_timeout',
@@ -318,7 +320,14 @@ function Set-RunnerState {
         [int] $Attempt = 0,
         [object] $ActiveJobs = $null,
         [string] $DeadlineAt = '',
-        [string] $HeartbeatAt = ''
+        [string] $HeartbeatAt = '',
+        [string] $PublishManifestPath = '',
+        [string] $PublishCommit = '',
+        [string] $ExternalKind = '',
+        [string] $ExternalSystem = '',
+        [string] $ExternalStatus = '',
+        [string] $ExternalStderr = '',
+        [string] $ExternalDetail = ''
     )
     $now = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK'
     try {
@@ -345,8 +354,18 @@ function Set-RunnerState {
                 return
             }
             if ($prev -and $prev.run_id -eq $RunId -and (Test-TerminalRunnerStatus -Status ([string]$prev.status))) {
+                # typed terminal state must replace generic error: Write-Log("ERROR:*") can run before
+                # a typed status such as publish_failed / distribution_failed / blocked_external_readiness.
+                $typedTerminalOverridesGenericError = (
+                    [string]$prev.status -eq 'error' -and
+                    @('blocked_external_readiness', 'publish_failed', 'distribution_failed', 'publish_complete') -contains [string]$Status
+                )
+                if ($typedTerminalOverridesGenericError) {
+                    Write-Log "typed terminal state replaces generic error: $Status"
+                } else {
                 # first-terminal-wins: 同一 run_id の terminal state は running にも別 terminal にも戻さない。
                 return
+                }
             }
             if ($ResetStartedAt -and $prev -and $prev.run_id -and $prev.run_id -ne $RunId) {
                 $previous = "$StateFile.previous.$(Get-Date -Format 'yyyyMMddHHmmss').json"
@@ -381,6 +400,17 @@ function Set-RunnerState {
             if ($Attempt -gt 0) { $state.attempt = $Attempt }
             if ($null -ne $ActiveJobs) { $state.active_jobs = $ActiveJobs }
             if ($DeadlineAt) { $state.deadline_at = $DeadlineAt }
+            if ($PublishManifestPath) { $state.publish_manifest_path = $PublishManifestPath }
+            if ($PublishCommit) { $state.publish_commit = $PublishCommit }
+            if ($ExternalKind -or $ExternalSystem -or $ExternalStatus -or $ExternalStderr -or $ExternalDetail) {
+                $state.external_readiness = [ordered]@{
+                    kind = $ExternalKind
+                    system = $ExternalSystem
+                    status = $ExternalStatus
+                    stderr = $ExternalStderr
+                    detail = $ExternalDetail
+                }
+            }
             Write-RunnerStateAtomic -Path $StateFile -Payload $state
         }
     } catch {
@@ -424,9 +454,14 @@ function Exit-Runner {
     param(
         [string] $Status,
         [string] $Message,
-        [int] $ExitCode
+        [int] $ExitCode,
+        [string] $ExternalKind = '',
+        [string] $ExternalSystem = '',
+        [string] $ExternalStatus = '',
+        [string] $ExternalStderr = '',
+        [string] $ExternalDetail = ''
     )
-    Set-RunnerState -Status $Status -Message $Message -ExitCode $ExitCode
+    Set-RunnerState -Status $Status -Message $Message -ExitCode $ExitCode -ExternalKind $ExternalKind -ExternalSystem $ExternalSystem -ExternalStatus $ExternalStatus -ExternalStderr $ExternalStderr -ExternalDetail $ExternalDetail
     exit $ExitCode
 }
 
@@ -444,7 +479,7 @@ function Write-Log {
         }
         Set-RunnerState -Status 'error' -Message $Text -ExitCode 1
     } elseif ($Text -eq 'news-grasp-runner.ps1 OK') {
-        Set-RunnerState -Status 'ok' -Message $Text -ExitCode 0
+        Set-RunnerState -Status 'publish_complete' -Message $Text -ExitCode 0 -PublishManifestPath $script:PublishCompleteManifestPath -PublishCommit $script:PublishCompleteCommit
     } elseif ($Text -eq 'news-grasp-runner.ps1 OK (published_fallback_with_notice)') {
         Set-RunnerState -Status 'fallback_ok' -Message $Text -ExitCode 0
     } elseif ($Text -eq 'news-grasp-runner.ps1 SMOKE OK') {
@@ -474,13 +509,37 @@ function Convert-JsonStringArrayToStringList {
     return @($items.ToArray())
 }
 
+function New-ExternalReadinessResult {
+    param(
+        [bool] $Ok,
+        [string] $Kind = '',
+        [string] $System = '',
+        [string] $Status = '',
+        [string] $Stderr = '',
+        [string] $Detail = ''
+    )
+    return [pscustomobject]@{
+        ok = $Ok
+        kind = $Kind
+        system = $System
+        status = $Status
+        stderr = $Stderr
+        detail = $Detail
+    }
+}
+
 function Stop-ExternalReadiness {
     param(
         [Parameter(Mandatory=$true)][string] $Reason,
-        [int] $ExitCode = 71
+        [int] $ExitCode = 71,
+        [Parameter(Mandatory=$true)][string] $Kind,
+        [Parameter(Mandatory=$true)][string] $System,
+        [string] $ExternalStatus = '',
+        [string] $ExternalStderr = '',
+        [string] $ExternalDetail = ''
     )
     Write-Log "ERROR: external readiness blocked: $Reason"
-    Exit-Runner -Status 'blocked_external_readiness' -Message $Reason -ExitCode $ExitCode
+    Exit-Runner -Status 'blocked_external_readiness' -Message $Reason -ExitCode $ExitCode -ExternalKind $Kind -ExternalSystem $System -ExternalStatus $ExternalStatus -ExternalStderr $ExternalStderr -ExternalDetail $ExternalDetail
 }
 
 function Test-WorkspaceWriteReadiness {
@@ -509,19 +568,19 @@ function Test-PublishExternalReadiness {
         Invoke-Logged { & $GitExe -C $RepoDir ls-remote --exit-code origin main }
         if ($LASTEXITCODE -ne 0) {
             Write-Log "publish external readiness failed: git ls-remote origin main rc=$LASTEXITCODE"
-            return $false
+            return New-ExternalReadinessResult -Ok $false -Kind 'github_remote' -System 'github' -Status "rc=$LASTEXITCODE" -Detail 'git ls-remote origin main'
         }
         if (-not $NoPush) {
             Invoke-Logged { & $GitExe -C $RepoDir push --dry-run origin HEAD:main }
             if ($LASTEXITCODE -ne 0) {
                 Write-Log "publish external readiness failed: git push --dry-run origin HEAD:main rc=$LASTEXITCODE"
-                return $false
+                return New-ExternalReadinessResult -Ok $false -Kind 'git_push_auth' -System 'github' -Status "rc=$LASTEXITCODE" -Detail 'git push --dry-run origin HEAD:main'
             }
         }
-        return $true
+        return New-ExternalReadinessResult -Ok $true -Kind 'ok' -System 'github'
     } catch {
         Write-Log "publish external readiness failed: $($_.Exception.Message)"
-        return $false
+        return New-ExternalReadinessResult -Ok $false -Kind 'github_exception' -System 'github' -Status 'exception' -Stderr $_.Exception.Message -Detail 'publish external readiness exception'
     }
 }
 
@@ -1018,6 +1077,7 @@ function Test-RepairArtifactScope {
 }
 
 function Test-GenerationExternalReadiness {
+    $missing = New-Object System.Collections.Generic.List[string]
     $requiredPaths = @(
         'data\articles.jsonl',
         'data\_status.md',
@@ -1027,16 +1087,19 @@ function Test-GenerationExternalReadiness {
         $path = Join-Path $RepoDir $rel
         if (-not (Test-Path -LiteralPath $path)) {
             Write-Log "generation external readiness missing: $rel"
-            return $false
+            $missing.Add($rel)
         }
     }
     $auditDir = Join-Path $RepoDir "data\search_audit\$DateStamp"
     $auditFiles = @(Get-ChildItem -LiteralPath $auditDir -File -ErrorAction SilentlyContinue)
     if ($auditFiles.Count -eq 0) {
         Write-Log "generation external readiness missing: data\search_audit\$DateStamp has no files"
-        return $false
+        $missing.Add("data\search_audit\$DateStamp has no files")
     }
-    return $true
+    if ($missing.Count -gt 0) {
+        return New-ExternalReadinessResult -Ok $false -Kind 'generation_input_missing' -System 'local_artifact_inventory' -Status 'missing' -Detail ([string]::Join('; ', @($missing)))
+    }
+    return New-ExternalReadinessResult -Ok $true -Kind 'ok' -System 'local_artifact_inventory'
 }
 
 function Invoke-PythonGateWithRepair {
@@ -1235,14 +1298,113 @@ function Invoke-FallbackPublish {
     exit 0
 }
 
-function Stop-ContentGateWithoutFallback {
+function Invoke-AutonomousCompletionPolicy {
     param(
-        [Parameter(Mandatory=$true)][string] $GateId,
-        [Parameter(Mandatory=$true)][int] $ExitCode
+        [Parameter(Mandatory=$true)][ValidateSet('content', 'artifact', 'local-tool', 'external', 'publish', 'distribution')][string] $FailureKind,
+        [string] $GateId = '',
+        [string] $Reason = '',
+        [int] $ExitCode = 1
     )
-    Write-Log "ERROR: $GateId gate failed after bounded repair (rc=$ExitCode). content gate failure does not publish fallback notice; leaving existing public state unchanged."
-    Write-Log "RECOVER: fix the reported digest/data issue, rerun the specific gate, then rerun runner with -RecoverOnly or publish manually after all gates pass."
-    Exit-Runner -Status 'content_repair_failed' -Message "$GateId gate failed after bounded repair" -ExitCode 1
+    $gateLabel = $GateId
+    if (-not $gateLabel) { $gateLabel = $FailureKind }
+    $message = $Reason
+    if (-not $message) { $message = "$gateLabel failed" }
+
+    if ($FailureKind -eq 'external') {
+        Write-Log "ERROR: external failure classified by autonomous policy (gate=$gateLabel, rc=$ExitCode): $message"
+        Exit-Runner `
+            -Status 'blocked_external_readiness' `
+            -Message $message `
+            -ExitCode $ExitCode `
+            -ExternalKind $gateLabel `
+            -ExternalSystem 'external' `
+            -ExternalStatus "rc=$ExitCode" `
+            -ExternalDetail $message
+        return
+    }
+    if ($FailureKind -eq 'publish') {
+        Write-Log "ERROR: publish failure classified by autonomous policy (gate=$gateLabel, rc=$ExitCode): $message"
+        Exit-Runner -Status 'publish_failed' -Message $message -ExitCode $ExitCode
+        return
+    }
+    if ($FailureKind -eq 'distribution') {
+        Write-Log "ERROR: distribution failure classified by autonomous policy (gate=$gateLabel, rc=$ExitCode): $message"
+        Exit-Runner -Status 'distribution_failed' -Message $message -ExitCode $ExitCode
+        return
+    }
+
+    $qualityHoldReason = "quality_hold:$gateLabel"
+    Write-Log "quality hold fallback start (kind=$FailureKind, gate=$gateLabel, rc=$ExitCode): $message"
+    Invoke-FallbackPublish -Reason $qualityHoldReason
+}
+
+function Write-RecoverOnlyInputManifest {
+    $requiredArtifacts = @(Get-PublishInventoryArtifacts -Kind 'generated')
+    $missingArtifacts = New-Object System.Collections.Generic.List[string]
+    foreach ($rel in $requiredArtifacts) {
+        $path = Join-Path $RepoDir $rel
+        if (-not (Test-Path -LiteralPath $path)) {
+            $missingArtifacts.Add([string] $rel)
+        }
+    }
+
+    $repoHead = 'unknown'
+    try {
+        $head = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $head) {
+            $repoHead = [string] $head
+        }
+    } catch {
+        $repoHead = 'unknown'
+    }
+
+    $outDir = Join-Path $RepoDir 'build\recover-only'
+    New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+    $manifestPath = Join-Path $outDir "$DateStamp.json"
+    [ordered]@{
+        date = $DateStamp
+        mode = 'RecoverOnly'
+        required_artifacts = @($requiredArtifacts)
+        missing_artifacts = @($missingArtifacts.ToArray())
+        repo_head = $repoHead
+        state_file = $StateFile
+        created_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK')
+    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    Write-Log "RecoverOnly input manifest written: $manifestPath"
+    return $manifestPath
+}
+
+function Write-DistributionManifest {
+    $prePublishCommit = ''
+    try {
+        $head = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $head) {
+            $candidate = [string] $head
+            if ($candidate -match '^[0-9a-fA-F]{40}$') {
+                $prePublishCommit = $candidate
+            }
+        }
+    } catch {
+        $prePublishCommit = ''
+    }
+    if (-not $prePublishCommit) {
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'distribution-manifest' -Reason 'distribution manifest pre_publish_commit unavailable' -ExitCode 1
+    }
+
+    $distributionDir = Join-Path $RepoDir 'data\distribution'
+    New-Item -ItemType Directory -Path $distributionDir -Force | Out-Null
+    $distributionSummary = Join-Path $distributionDir "$DateStamp.json"
+    [ordered]@{
+        date = $DateStamp
+        pre_publish_commit = $prePublishCommit
+        publish_commit = ''
+        primary_podcast_state = (Join-Path $RepoDir 'build\youtube-podcast\uploads.json')
+        deepdive_podcast_state = (Join-Path $RepoDir 'build\youtube-podcast-deepdive\uploads.json')
+        latest_audio_state = (Join-Path $RepoDir 'build\tts\latest_audio.json')
+        deepdive_audio_state = (Join-Path $RepoDir 'build\tts\deepdive\latest_audio.json')
+        generated_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK')
+    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $distributionSummary -Encoding UTF8
+    return $distributionSummary
 }
 
 function Test-DailyArtifactsExist {
@@ -1285,7 +1447,7 @@ if (-not (Test-Path (Join-Path $RepoDir '.git'))) {
 
 Write-Log 'workspace write readiness gate start'
 if (-not (Test-WorkspaceWriteReadiness)) {
-    Stop-ExternalReadiness -Reason 'workspace write readiness failed'
+    Stop-ExternalReadiness -Reason 'workspace write readiness failed' -Kind 'workspace_write_unavailable' -System 'local_filesystem' -ExternalStatus 'write_probe_failed' -ExternalDetail $RepoDir
 }
 Write-Log 'workspace write readiness gate OK'
 
@@ -1293,7 +1455,7 @@ if ($PreflightOnly) {
     Write-Log 'PreflightOnly mode: skipping codex / git pull / push / generate_pages'
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.newsroom_preflight' '--repo-root' $RepoDir }
+        Invoke-Logged { & $PyExe '-m' 'tools.newsroom_preflight' '--repo-root' $RepoDir '--date' $DateStamp }
         $preflightRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -1303,8 +1465,9 @@ if ($PreflightOnly) {
         Exit-Runner -Status 'preflight_failed' -Message 'newsroom preflight failed' -ExitCode $preflightRc
     }
     Write-Log 'publish external readiness gate start'
-    if (-not (Test-PublishExternalReadiness)) {
-        Stop-ExternalReadiness -Reason 'publish external readiness failed'
+    $publishReadiness = Test-PublishExternalReadiness
+    if (-not $publishReadiness.ok) {
+        Stop-ExternalReadiness -Reason 'publish external readiness failed' -Kind $publishReadiness.kind -System $publishReadiness.system -ExternalStatus $publishReadiness.status -ExternalStderr $publishReadiness.stderr -ExternalDetail $publishReadiness.detail
     }
     Write-Log 'publish external readiness gate OK'
     Write-Log 'news-grasp-runner.ps1 PREFLIGHT OK'
@@ -1325,11 +1488,11 @@ if ($Stage2EditorSmokeOnly) {
         Write-Log 'net reachability wait start (github.com / api.github.com :443, max 10x30s)'
         Invoke-Logged { & $PyExe $NetWait --host github.com --host api.github.com --port 443 --retries 10 --interval-sec 30 --connect-timeout-sec 5 }
         if ($LASTEXITCODE -ne 0) {
-            Stop-ExternalReadiness -Reason "network unreachable (github.com:443) after wait; aborting before git fetch (rc=$LASTEXITCODE)" -ExitCode 71
+            Stop-ExternalReadiness -Reason "network unreachable (github.com:443) after wait; aborting before git fetch (rc=$LASTEXITCODE)" -ExitCode 71 -Kind 'network_unreachable' -System 'github' -ExternalStatus "rc=$LASTEXITCODE" -ExternalDetail 'github.com:443'
         }
         Write-Log 'net reachability OK'
     } else {
-        Stop-ExternalReadiness -Reason "net_wait.py missing at $NetWait" -ExitCode 71
+        Stop-ExternalReadiness -Reason "net_wait.py missing at $NetWait" -ExitCode 71 -Kind 'local_tool_missing' -System 'local_filesystem' -ExternalStatus 'missing' -ExternalDetail $NetWait
     }
 
     # ===== 1. git fetch / pull =====
@@ -1339,7 +1502,7 @@ if ($Stage2EditorSmokeOnly) {
 
     Write-Log 'git pull --ff-only start'
     Invoke-Logged { & $GitExe -C $RepoDir pull --ff-only origin main }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git pull failed (rc=$LASTEXITCODE, manual resolve required)"; exit 1 }
+    if ($LASTEXITCODE -ne 0) { Stop-ExternalReadiness -Reason "git pull failed (rc=$LASTEXITCODE)" -ExitCode 71 -Kind 'github_remote' -System 'github' -ExternalStatus "rc=$LASTEXITCODE" -ExternalDetail 'git pull --ff-only origin main' }
 }
 
 if ($SmokeTest) {
@@ -1349,14 +1512,17 @@ if ($SmokeTest) {
 }
 
 if ($RecoverOnly) {
+    $recoverOnlyInputManifest = Write-RecoverOnlyInputManifest
+    Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
     Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
 } else {
     if ($Stage2EditorSmokeOnly) {
         Write-Log 'Stage2EditorSmokeOnly mode: skipping publish external readiness gate'
     } else {
         Write-Log 'publish external readiness gate start'
-        if (-not (Test-PublishExternalReadiness)) {
-            Stop-ExternalReadiness -Reason 'publish external readiness failed'
+        $publishReadiness = Test-PublishExternalReadiness
+        if (-not $publishReadiness.ok) {
+            Stop-ExternalReadiness -Reason 'publish external readiness failed' -Kind $publishReadiness.kind -System $publishReadiness.system -ExternalStatus $publishReadiness.status -ExternalStderr $publishReadiness.stderr -ExternalDetail $publishReadiness.detail
         }
         Write-Log 'publish external readiness gate OK'
     }
@@ -1395,7 +1561,7 @@ if ($RecoverOnly) {
                     Copy-Item -LiteralPath $lastGoodPath -Destination $outPath -Force
                 } else {
                     Write-Log "ERROR: Stage0 harvest no last-good candidates category=$cat rc=$harvestRc"
-                    Stop-ExternalReadiness -Reason "Stage0 harvest failed category=$cat and no last-good candidates"
+                    Stop-ExternalReadiness -Reason "Stage0 harvest failed category=$cat and no last-good candidates" -Kind 'candidate_source_unavailable' -System 'source_collection' -ExternalStatus 'no_last_good' -ExternalDetail "category=$cat"
                 }
             } else {
                 Copy-Item -LiteralPath $outPath -Destination $lastGoodPath -Force
@@ -1851,27 +2017,20 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         if ($agentRc -eq 124) {
             $postHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
             if ($postHead -ne $preHead) {
-                Write-Log "ERROR: codex TIMEOUT (rc=124) and HEAD changed ($preHead -> $postHead): partial commits exist, NOT retrying"
-                Write-Log "RECOVER: Check git status plus digest/$DateStamp*.md and data/articles.jsonl, repair if needed, then run: powershell -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -RecoverOnly"
-                exit 124
+                Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-timeout' -Reason "codex timeout after partial output (HEAD changed $preHead -> $postHead)" -ExitCode 124
             }
             if ($attempt -lt $MaxAgentAttempts) {
                 Write-Log "WARN: codex idle/timeout (rc=124, HEAD unchanged = no output/commits): intermittent startup hang suspected, retrying (next attempt=$($attempt + 1)/$MaxAgentAttempts)"
                 continue
             }
-            Write-Log "ERROR: codex TIMEOUT (rc=124) after $MaxAgentAttempts attempts, giving up"
-            Write-Log "RECOVER: partial artifacts may exist. Check git status plus digest/$DateStamp*.md and data/articles.jsonl, repair if needed, then run: powershell -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -RecoverOnly"
-            exit 124
+            Stop-ExternalReadiness -Reason "codex timeout after $MaxAgentAttempts attempts" -ExitCode 124 -Kind 'codex_timeout' -System 'openai_codex' -ExternalStatus "rc=124" -ExternalDetail "attempts=$MaxAgentAttempts"
         }
 
         if ($agentRc -eq 123) {
-            Write-Log "ERROR: codex CLI rate limit / out of credits (rc=123; wrapper RESULT line に api_error_status / result あり)。リトライしない。"
-            Write-Log "RECOVER: API 上限/クレジット回復後に再実行: powershell -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath (部分生成済なら -RecoverOnly)"
-            exit 123
+            Stop-ExternalReadiness -Reason "codex CLI rate limit / out of credits" -ExitCode 123 -Kind 'codex_quota' -System 'openai_codex' -ExternalStatus "rc=123" -ExternalDetail 'codex CLI rate limit or out of credits'
         }
 
-        Write-Log "ERROR: codex exited with $agentRc (not a timeout; no retry)"
-        exit 1
+        Stop-ExternalReadiness -Reason "codex exited with $agentRc" -ExitCode $agentRc -Kind 'codex_cli_failed' -System 'openai_codex' -ExternalStatus "rc=$agentRc" -ExternalDetail 'codex newsroom editor invocation'
     }
     if ($StopAfterEditorStart) {
         Write-Log 'StopAfterEditorStart mode: editor wrapper succeeded; skipping downstream gates'
@@ -1888,8 +2047,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 Write-Log 'summary reflection gate start (validate_summary_reflection --latest)'
 $summaryReflectionRc = Invoke-AutonomousGate -GateId 'summary-reflection' -Category 'summary' -PythonArgs @('-m', 'tools.validate_summary_reflection') -Artifacts @("digest/Summary/$DateStamp.md")
 if ($summaryReflectionRc -ne 0) {
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'summary reflection autonomous gate failed' -ExitCode $summaryReflectionRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'summary-reflection' -Reason 'summary reflection autonomous gate failed' -ExitCode $summaryReflectionRc
 }
 Write-Log 'summary reflection gate OK'
 
@@ -1901,8 +2059,7 @@ Write-Log 'summary reflection gate OK'
 Write-Log "daily quality gate start (validate_daily_quality --date $DateStamp)"
 $dailyQualityRc = Invoke-AutonomousGate -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp) -Artifacts $DailyDigestArtifacts
 if ($dailyQualityRc -ne 0) {
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'daily quality autonomous gate failed' -ExitCode $dailyQualityRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'daily-quality' -Reason 'daily quality autonomous gate failed' -ExitCode $dailyQualityRc
 }
 Write-Log 'daily quality gate OK'
 
@@ -1937,9 +2094,9 @@ if ($RecoverOnly) {
 $GeneratedArtifacts = Get-PublishInventoryArtifacts -Kind 'generated'
 
 Write-Log 'generation external readiness gate start'
-if (-not (Test-GenerationExternalReadiness)) {
-    Set-RunnerState -Status 'blocked_external_readiness' -Message 'generation external readiness failed' -ExitCode 71
-    exit 71
+$generationReadiness = Test-GenerationExternalReadiness
+if (-not $generationReadiness.ok) {
+    Stop-ExternalReadiness -Reason 'generation external readiness failed' -Kind 'generation_input_missing' -System 'local_artifact_inventory' -ExternalStatus $generationReadiness.status -ExternalStderr $generationReadiness.stderr -ExternalDetail $generationReadiness.detail
 }
 Write-Log 'generation external readiness gate OK'
 
@@ -1953,8 +2110,7 @@ try {
 }
 if ($generationNormalizeRc -ne 0) {
     Write-Log "generation artifact normalize failed (rc=$generationNormalizeRc)"
-    Set-RunnerState -Status 'content_repair_failed' -Message 'generation artifact normalize failed' -ExitCode 1
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'artifact' -GateId 'generation-normalize' -Reason 'generation artifact normalize failed' -ExitCode $generationNormalizeRc
 }
 Write-Log 'generation artifact normalize OK'
 
@@ -1962,8 +2118,7 @@ Write-Log 'generation quality gate start (validate_generation_quality)'
 $generationQualityRc = Invoke-AutonomousGate -GateId 'generation-quality' -Category 'generated' -PythonArgs @('-m', 'tools.validate_generation_quality', '--date', $DateStamp, '--repo-root', $RepoDir, '--json') -Artifacts $GeneratedArtifacts
 if ($generationQualityRc -ne 0) {
     Write-Log "generation quality autonomous gate failed (rc=$generationQualityRc)"
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'generation quality autonomous gate failed' -ExitCode 1
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'generation-quality' -Reason 'generation quality autonomous gate failed' -ExitCode $generationQualityRc
 }
 Write-Log 'generation quality gate OK'
 
@@ -2004,16 +2159,14 @@ if ($urlGateRc -ne 0) {
             }
             if ($refillCategoryListRc -ne 0) {
                 Write-Log "URL liveness refill category list failed rc=$refillCategoryListRc"
-                Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness refill category list failed' -ExitCode $refillCategoryListRc
-                exit 1
+                Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'url-liveness' -Reason 'URL liveness refill category list failed' -ExitCode $refillCategoryListRc
             }
             try {
                 # ConvertFrom-Json は Convert-JsonStringArrayToStringList の中で扱う。
                 $refillCategories = Convert-JsonStringArrayToStringList -JsonText $refillCategoriesJson
             } catch {
                 Write-Log "URL liveness refill category list parse failed: $($_.Exception.Message)"
-                Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness refill category list parse failed' -ExitCode 1
-                exit 1
+                Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'url-liveness' -Reason 'URL liveness refill category list parse failed' -ExitCode 1
             }
             foreach ($refillCat in $refillCategories) {
                 if ([string]::IsNullOrWhiteSpace($refillCat)) {
@@ -2021,8 +2174,7 @@ if ($urlGateRc -ne 0) {
                 }
                 if ($refillCat -match '\s') {
                     Write-Log "URL liveness refill category contains whitespace: $refillCat"
-                    Set-RunnerState -Status 'blocked_refill_unresolved' -Message "URL liveness refill category contains whitespace: $refillCat" -ExitCode 1
-                    exit 1
+                    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'url-liveness' -Reason "URL liveness refill category contains whitespace: $refillCat" -ExitCode 1
                 }
                 Push-Location $RepoDir
                 try {
@@ -2033,8 +2185,7 @@ if ($urlGateRc -ne 0) {
                 }
                 if ($refillRc -ne 0) {
                     Write-Log "URL liveness refill failed category=$refillCat rc=$refillRc"
-                    Set-RunnerState -Status 'blocked_refill_unresolved' -Message "URL liveness refill failed category=$refillCat" -ExitCode $refillRc
-                    exit 1
+                    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'url-liveness' -Reason "URL liveness refill failed category=$refillCat" -ExitCode $refillRc
                 }
             }
             Write-Log 'URL liveness refill OK'
@@ -2054,13 +2205,11 @@ if ($urlGateRc -ne 0) {
             $urlGateRc = 0
         } else {
             Write-Log "URL liveness recheck failed after quarantine (rc=$urlRecheckRc). normal publish is blocked."
-            Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness recheck failed after quarantine/refill' -ExitCode $urlRecheckRc
-            exit 1
+            Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'url-liveness' -Reason 'URL liveness recheck failed after quarantine/refill' -ExitCode $urlRecheckRc
         }
     } else {
         Write-Log "URL liveness quarantine failed (rc=$urlQuarantineRc). normal publish is blocked."
-        Set-RunnerState -Status 'blocked_refill_unresolved' -Message 'URL liveness quarantine failed' -ExitCode $urlQuarantineRc
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'url-liveness' -Reason 'URL liveness quarantine failed' -ExitCode $urlQuarantineRc
     }
 }
 Write-Log 'URL liveness gate OK'
@@ -2075,8 +2224,7 @@ Write-Log 'URL liveness gate OK'
 Write-Log "record schema gate start (validate_record --recent 7 --issue-date $DateStamp)"
 $recordGateRc = Invoke-AutonomousGate -GateId 'record-schema' -Category 'records' -PythonArgs @('-m', 'tools.validate_record', '--recent', '7', '--issue-date', $DateStamp) -Artifacts @('data/articles.jsonl')
 if ($recordGateRc -ne 0) {
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'record schema autonomous gate failed' -ExitCode $recordGateRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'record-schema' -Reason 'record schema autonomous gate failed' -ExitCode $recordGateRc
 }
 Write-Log 'record schema gate OK'
 
@@ -2089,8 +2237,7 @@ Write-Log 'record schema gate OK'
 Write-Log "digest/articles reconcile gate start (validate_digest_articles_reconcile --issue-date $DateStamp)"
 $reconcileGateRc = Invoke-AutonomousGate -GateId 'digest-articles-reconcile' -Category 'digest' -PythonArgs @('-m', 'tools.validate_digest_articles_reconcile', '--issue-date', $DateStamp) -Artifacts @('digest', 'data/articles.jsonl')
 if ($reconcileGateRc -ne 0) {
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'digest/articles reconcile autonomous gate failed' -ExitCode $reconcileGateRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'digest-articles-reconcile' -Reason 'digest/articles reconcile autonomous gate failed' -ExitCode $reconcileGateRc
 }
 Write-Log 'digest/articles reconcile gate OK'
 
@@ -2106,8 +2253,7 @@ Write-Log 'digest/articles reconcile gate OK'
 Write-Log 'ja-callout gate start (test_english_articles_require_ja_callout)'
 $jaGateRc = Invoke-AutonomousGate -GateId 'ja-callout' -Category 'digest' -PythonArgs @('-m', 'pytest', 'tests/test_title_ja_coverage.py::test_english_articles_require_ja_callout', '-q', '--tb=short', '--no-header') -Artifacts @('digest')
 if ($jaGateRc -ne 0) {
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'ja-callout autonomous gate failed' -ExitCode $jaGateRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'ja-callout' -Reason 'ja-callout autonomous gate failed' -ExitCode $jaGateRc
 }
 Write-Log 'ja-callout gate OK'
 
@@ -2146,8 +2292,7 @@ try {
 }
 if ($pytestGateRc -ne 0) {
     Write-Log "pytest gate failed after bounded repair (rc=$pytestGateRc). normal publish is blocked."
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'pytest autonomous gate failed' -ExitCode $pytestGateRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'pytest-static' -Reason 'pytest autonomous gate failed' -ExitCode $pytestGateRc
 }
 Write-Log 'pytest gate OK'
 
@@ -2171,14 +2316,12 @@ foreach ($ttsStep in @(
         }
         if ($ttsRc -ne 0) {
             Write-Log "ERROR: $($ttsStep.Name) exited with $ttsRc. TTS is required for normal publish."
-            Set-RunnerState -Status 'content_repair_failed' -Message "$($ttsStep.Name) failed" -ExitCode $ttsRc
-            exit 1
+            Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'daily-tts' -Reason "$($ttsStep.Name) failed" -ExitCode $ttsRc
         }
         Write-Log "$($ttsStep.Name) done"
     } catch {
         Write-Log "ERROR: $($ttsStep.Name) failed: $($_.Exception.Message). TTS is required for normal publish."
-        Set-RunnerState -Status 'content_repair_failed' -Message "$($ttsStep.Name) failed" -ExitCode 1
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'daily-tts' -Reason "$($ttsStep.Name) failed" -ExitCode 1
     }
 }
 
@@ -2204,14 +2347,12 @@ foreach ($deepDiveTtsStep in @(
         }
         if ($deepDiveTtsRc -ne 0) {
             Write-Log "ERROR: $($deepDiveTtsStep.Name) exited with $deepDiveTtsRc. DeepDive dialogue audio is required for normal publish."
-            Set-RunnerState -Status 'content_repair_failed' -Message "$($deepDiveTtsStep.Name) failed" -ExitCode $deepDiveTtsRc
-            exit 1
+            Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason "$($deepDiveTtsStep.Name) failed" -ExitCode $deepDiveTtsRc
         }
         Write-Log "$($deepDiveTtsStep.Name) done"
     } catch {
         Write-Log "ERROR: $($deepDiveTtsStep.Name) failed: $($_.Exception.Message). DeepDive dialogue audio is required for normal publish."
-        Set-RunnerState -Status 'content_repair_failed' -Message "$($deepDiveTtsStep.Name) failed" -ExitCode 1
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason "$($deepDiveTtsStep.Name) failed" -ExitCode 1
     }
 }
 
@@ -2253,8 +2394,7 @@ try {
 }
 if ($pagesRc -ne 0) {
     Write-Log "generate_pages.py exited with $pagesRc. normal publish is blocked."
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'generate-pages failed' -ExitCode $pagesRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'generate-pages' -Reason 'generate-pages failed' -ExitCode $pagesRc
 }
 Write-Log 'generate_pages.py done'
 
@@ -2265,8 +2405,7 @@ Write-Log 'generate_pages.py done'
 Write-Log "deepdive required gate start (validate_daily_quality --date $DateStamp --require-deepdive)"
 $deepDiveRequiredRc = Invoke-AutonomousGate -GateId 'deepdive-required' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--docs-root', 'docs', '--require-deepdive') -Artifacts $PublishedRepairArtifacts
 if ($deepDiveRequiredRc -ne 0) {
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'deepdive required autonomous gate failed' -ExitCode $deepDiveRequiredRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'deepdive-required' -Reason 'deepdive required autonomous gate failed' -ExitCode $deepDiveRequiredRc
 }
 Write-Log 'deepdive required gate OK'
 
@@ -2278,8 +2417,7 @@ Write-Log "public HTML gate start (validate_public_home --date $DateStamp)"
 $publicHomeRc = Invoke-AutonomousGate -GateId 'public-html' -Category 'docs' -PythonArgs @('-m', 'tools.validate_public_home', '--date', $DateStamp) -Artifacts @('docs/index.html')
 if ($publicHomeRc -ne 0) {
     Write-Log "public HTML gate failed after bounded repair (rc=$publicHomeRc). normal publish is blocked."
-    Set-RunnerState -Status 'blocked_repair_budget_exhausted' -Message 'public HTML autonomous gate failed' -ExitCode $publicHomeRc
-    exit 1
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'public-html' -Reason 'public HTML autonomous gate failed' -ExitCode $publicHomeRc
 }
 Write-Log 'public HTML gate OK'
 
@@ -2349,14 +2487,12 @@ foreach ($youtubePodcastStep in @(
         }
         if ($youtubePodcastRc -ne 0) {
             Write-Log "ERROR: $($youtubePodcastStep.Name) exited with $youtubePodcastRc. YouTube Podcast is required for normal publish."
-            Set-RunnerState -Status 'distribution_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
-            exit 1
+            Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'youtube-podcast-prepare' -Reason "$($youtubePodcastStep.Name) failed" -ExitCode $youtubePodcastRc
         }
         Write-Log "$($youtubePodcastStep.Name) done"
     } catch {
         Write-Log "ERROR: $($youtubePodcastStep.Name) failed: $($_.Exception.Message). YouTube Podcast is required for normal publish."
-        Set-RunnerState -Status 'distribution_failed' -Message "$($youtubePodcastStep.Name) failed" -ExitCode 1
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'youtube-podcast-prepare' -Reason "$($youtubePodcastStep.Name) failed" -ExitCode 1
     }
 }
 
@@ -2399,8 +2535,7 @@ if ($NoPush) {
     }
     if ($youtubeFinalizeRc -ne 0) {
         Write-Log "ERROR: youtube podcast finalize failed (rc=$youtubeFinalizeRc). public podcast sentinel cannot converge."
-        Set-RunnerState -Status 'distribution_failed' -Message 'youtube podcast finalize failed' -ExitCode $youtubeFinalizeRc
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'youtube-podcast-finalize' -Reason 'youtube podcast finalize failed' -ExitCode $youtubeFinalizeRc
     }
     Write-Log 'youtube podcast finalize OK'
 
@@ -2414,8 +2549,7 @@ if ($NoPush) {
     }
     if ($deepDiveYoutubeFinalizeRc -ne 0) {
         Write-Log "ERROR: deepdive youtube podcast finalize failed (rc=$deepDiveYoutubeFinalizeRc). public DeepDive podcast sentinel cannot converge."
-        Set-RunnerState -Status 'distribution_failed' -Message 'deepdive youtube podcast finalize failed' -ExitCode $deepDiveYoutubeFinalizeRc
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'deepdive-youtube-podcast-finalize' -Reason 'deepdive youtube podcast finalize failed' -ExitCode $deepDiveYoutubeFinalizeRc
     }
     Write-Log 'deepdive youtube podcast finalize OK'
 
@@ -2430,8 +2564,7 @@ if ($NoPush) {
     }
     if ($podcastVerifyRc -ne 0) {
         Write-Log "ERROR: podcast verification failed (rc=$podcastVerifyRc). public podcast sentinel did not converge."
-        Set-RunnerState -Status 'distribution_failed' -Message 'podcast verification failed' -ExitCode $podcastVerifyRc
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'podcast-verify' -Reason 'podcast verification failed' -ExitCode $podcastVerifyRc
     }
     Write-Log 'podcast verification OK'
 
@@ -2446,11 +2579,40 @@ if ($NoPush) {
     }
     if ($deepDivePodcastVerifyRc -ne 0) {
         Write-Log "ERROR: deepdive podcast verification failed (rc=$deepDivePodcastVerifyRc). public DeepDive podcast sentinel did not converge."
-        Set-RunnerState -Status 'distribution_failed' -Message 'deepdive podcast verification failed' -ExitCode $deepDivePodcastVerifyRc
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'deepdive-podcast-verify' -Reason 'deepdive podcast verification failed' -ExitCode $deepDivePodcastVerifyRc
+    }
+    Write-Log 'deepdive podcast verification OK'
+
+    $distributionSummary = Write-DistributionManifest
+    Write-Log "distribution manifest written: $distributionSummary"
+
+    Write-Log 'publish-complete manifest verification start'
+    $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--output' $publishCompleteManifest }
+        $publishCompleteRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($publishCompleteRc -ne 0) {
+        Write-Log "ERROR: publish-complete manifest verification failed (rc=$publishCompleteRc)."
+        Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest verification failed' -ExitCode $publishCompleteRc
+    }
+    try {
+        $publishComplete = Get-Content -LiteralPath $publishCompleteManifest -Raw -Encoding UTF8 | ConvertFrom-Json
+        $script:PublishCompleteManifestPath = $publishCompleteManifest
+        $script:PublishCompleteCommit = [string]$publishComplete.publish_commit
+    } catch {
+        Write-Log "ERROR: publish-complete manifest parse failed: $($_.Exception.Message)"
+        Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest parse failed' -ExitCode 1
+    }
+    if (-not $script:PublishCompleteCommit) {
+        Write-Log 'ERROR: publish-complete manifest missing publish_commit'
+        Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest missing publish_commit' -ExitCode 1
     }
     $NormalPublishVerified = $true
-    Write-Log 'deepdive podcast verification OK'
+    Write-Log 'publish-complete manifest verification OK'
 }
 
 # ===== 6. Web Push 通知（docs 公開後・.venv python = $PyExe で送る） =====

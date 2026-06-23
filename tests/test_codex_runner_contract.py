@@ -92,7 +92,8 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     repair_window = runner[tts_done:docs_commit]
     assert "tools.youtube_podcast.upload_episode" not in repair_window
     youtube_block = runner[youtube_build:push_start]
-    assert "exit 1" in youtube_block
+    assert "Invoke-AutonomousCompletionPolicy -FailureKind 'distribution'" in youtube_block
+    assert "GateId 'youtube-podcast-prepare'" in youtube_block
 
 
 def test_mobility_backfill_does_not_keep_claude_print_path() -> None:

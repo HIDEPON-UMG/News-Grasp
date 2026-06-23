@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 import subprocess
 from pathlib import Path
 
@@ -41,6 +42,34 @@ def _fake_codex_with_usage(tmp_path: Path) -> Path:
     return fake
 
 
+def _fake_codex_capture_ps1(tmp_path: Path) -> Path:
+    fake = tmp_path / "fake_codex_capture.ps1"
+    fake.write_text(
+        "$capturePath = $env:CODEX_FAKE_CAPTURE_JSON\n"
+        "if (-not $capturePath) { Write-Error 'CODEX_FAKE_CAPTURE_JSON missing'; exit 99 }\n"
+        "$stdinBytesStream = [Console]::OpenStandardInput()\n"
+        "$stdinMemory = [System.IO.MemoryStream]::new()\n"
+        "$stdinBytesStream.CopyTo($stdinMemory)\n"
+        "$stdinText = [System.Text.Encoding]::UTF8.GetString($stdinMemory.ToArray())\n"
+        "$data = [ordered]@{\n"
+        "  argv = @($args)\n"
+        "  stdin = $stdinText\n"
+        "  env = [ordered]@{\n"
+        "    PYTHONIOENCODING = $env:PYTHONIOENCODING\n"
+        "    PYTHONUTF8 = $env:PYTHONUTF8\n"
+        "    CODEX_NONINTERACTIVE_SESSION = $env:CODEX_NONINTERACTIVE_SESSION\n"
+        "    CODEX_OUTPUT_CONTRACT = $env:CODEX_OUTPUT_CONTRACT\n"
+        "  }\n"
+        "}\n"
+        "$json = $data | ConvertTo-Json -Depth 5\n"
+        "[System.IO.File]::WriteAllText($capturePath, $json, [System.Text.UTF8Encoding]::new($false))\n"
+        "Write-Output '{\"type\":\"result\",\"is_error\":false}'\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    return fake
+
+
 def test_codex_wrapper_uses_prompt_file_working_directory_and_schema(tmp_path: Path) -> None:
     prompt_file = tmp_path / "prompt.md"
     log_file = tmp_path / "wrapper.log"
@@ -74,6 +103,48 @@ def test_codex_wrapper_uses_prompt_file_working_directory_and_schema(tmp_path: P
     assert "-C" in log
     assert "--search" not in log
     assert "test-model" in log
+
+
+def test_codex_wrapper_sets_noninteractive_artifact_gate_env_and_stdin_prompt(tmp_path: Path) -> None:
+    """非対話 runner の正本は env/stdin/exit code で、人間向け完了報告に依存しない。"""
+    prompt_file = tmp_path / "prompt.md"
+    log_file = tmp_path / "wrapper.log"
+    capture_file = tmp_path / "capture.json"
+    prompt_text = "日本語の artifact gate prompt\n長大本文を argv に載せない\n"
+    prompt_file.write_text(prompt_text, encoding="utf-8")
+    env = os.environ.copy()
+    env["CODEX_FAKE_CAPTURE_JSON"] = str(capture_file)
+
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-CodexExe", str(_fake_codex_capture_ps1(tmp_path)),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "30",
+            "-IdleTimeoutSec", "30",
+            "-WorkingDirectory", str(ROOT),
+            "-Model", "test-model",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        env=env,
+    )
+
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+    assert result.returncode == 0, result.stderr + log
+    capture = json.loads(capture_file.read_text(encoding="utf-8-sig"))
+    argv_text = " ".join(capture["argv"])
+    assert capture["stdin"].replace("\r\n", "\n") == prompt_text
+    assert "日本語の artifact gate prompt" not in argv_text, "prompt leaked into argv"
+    assert capture["env"]["CODEX_NONINTERACTIVE_SESSION"] == "1", "artifact-gate env missing"
+    assert capture["env"]["CODEX_OUTPUT_CONTRACT"] == "artifact-gate", "artifact-gate env missing"
+    assert capture["env"]["PYTHONUTF8"] == "1"
+    assert capture["env"]["PYTHONIOENCODING"] == "utf-8:backslashreplace"
 
 
 def test_codex_wrapper_has_no_legacy_agent_parameters() -> None:

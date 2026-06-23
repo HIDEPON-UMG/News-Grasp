@@ -4,8 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from datetime import date
 from pathlib import Path
+
+from tools.config import CATEGORIES
+from tools.model_policy import DEFAULT_MODEL_POLICY
+from tools.publish_inventory import CATEGORY_ORDER, CATEGORY_PATHS, required_distribution_artifacts
+from tools.refill_category_after_quarantine import refill_category_ids
 
 
 REQUIRED_FILES = [
@@ -16,7 +23,19 @@ REQUIRED_FILES = [
     "prompts/newsroom-editor-system.md",
     "tools/verify_reporter_output.py",
     "tools/fetch_article_body.py",
+    "docs/sw.js",
+    "docs/publish-status.json",
 ]
+
+REQUIRED_MODEL_POLICY_KEYS = (
+    ("reporter", "default"),
+    ("editor", "default"),
+    ("newsroom_editor", "default"),
+    ("deepdive", "default"),
+)
+
+ALLOWED_PUBLISH_RESULTS = {"published_ok", "published_fallback_with_notice"}
+SW_VERSION_RE = re.compile(r"\bSW_VERSION\s*=\s*['\"]([^'\"]+)['\"]")
 
 
 def _load_json(path: Path) -> dict:
@@ -37,8 +56,99 @@ def _iter_refs(node) -> list[str]:
     return refs
 
 
-def run(repo_root: Path) -> list[str]:
+def _non_summary_categories() -> list[str]:
+    return [cat_id for cat_id in CATEGORIES if cat_id != "summary"]
+
+
+def _audit_category_sources() -> list[str]:
     errors: list[str] = []
+    canonical = _non_summary_categories()
+    inventory_order = list(CATEGORY_ORDER)
+    inventory_paths = list(CATEGORY_PATHS)
+    refill_ids = list(refill_category_ids())
+    if inventory_order != canonical:
+        errors.append(
+            "category source drift: publish_inventory.CATEGORY_ORDER "
+            f"{inventory_order} != tools.config.CATEGORIES {canonical}"
+        )
+    if inventory_paths != canonical:
+        errors.append(
+            "category source drift: publish_inventory.CATEGORY_PATHS "
+            f"{inventory_paths} != tools.config.CATEGORIES {canonical}"
+        )
+    if refill_ids != canonical:
+        errors.append(
+            "category source drift: refill category ids "
+            f"{refill_ids} != tools.config.CATEGORIES {canonical}"
+        )
+    return errors
+
+
+def _audit_model_policy() -> list[str]:
+    errors: list[str] = []
+    for role, key in REQUIRED_MODEL_POLICY_KEYS:
+        policy = DEFAULT_MODEL_POLICY.get(role)
+        if not isinstance(policy, dict):
+            errors.append(f"model policy missing required role: {role}")
+            continue
+        value = policy.get(key)
+        if value in (None, ""):
+            errors.append(f"model policy missing required key: {role}.{key}")
+    return errors
+
+
+def _audit_sw_version(repo_root: Path) -> list[str]:
+    text = (repo_root / "docs/sw.js").read_text(encoding="utf-8-sig")
+    match = SW_VERSION_RE.search(text)
+    if not match:
+        return ["docs/sw.js missing SW_VERSION"]
+    return []
+
+
+def _audit_publish_status(repo_root: Path) -> list[str]:
+    path = repo_root / "docs/publish-status.json"
+    try:
+        payload = _load_json(path)
+    except json.JSONDecodeError as exc:
+        return [f"publish-status invalid JSON: {exc.msg}"]
+    result = payload.get("result")
+    if result not in ALLOWED_PUBLISH_RESULTS:
+        return [f"publish-status invalid result: {result!r}"]
+    if not isinstance(payload.get("date"), str) or not payload.get("date"):
+        return ["publish-status missing date"]
+    return []
+
+
+def _audit_distribution_inventory(issue_date: str) -> list[str]:
+    artifacts = set(required_distribution_artifacts(issue_date))
+    required = {
+        "build/tts/latest_audio.json",
+        f"build/youtube-podcast/{issue_date}.mp4",
+        "build/youtube-podcast/uploads.json",
+        "build/tts/deepdive/latest_audio.json",
+        f"build/youtube-podcast-deepdive/{issue_date}.mp4",
+        "build/youtube-podcast-deepdive/uploads.json",
+        f"data/distribution/{issue_date}.json",
+    }
+    missing = sorted(required - artifacts)
+    if missing:
+        return [f"distribution inventory missing required sentinel: {missing}"]
+    return []
+
+
+def audit_source_of_truth_drift(repo_root: Path, issue_date: str) -> list[str]:
+    errors: list[str] = []
+    errors.extend(_audit_category_sources())
+    errors.extend(_audit_model_policy())
+    errors.extend(_audit_sw_version(repo_root))
+    errors.extend(_audit_publish_status(repo_root))
+    errors.extend(_audit_distribution_inventory(issue_date))
+    return errors
+
+
+def run(repo_root: Path, issue_date: str | None = None) -> list[str]:
+    errors: list[str] = []
+    issue_date = issue_date or date.today().isoformat()
     for rel in REQUIRED_FILES:
         if not (repo_root / rel).exists():
             errors.append(f"missing required file: {rel}")
@@ -99,6 +209,7 @@ def run(repo_root: Path) -> list[str]:
         if 'Join-Path $RepoDir "build\\codex-usage\\$DateStamp.jsonl"' not in runner:
             errors.append("runner must build CodexUsageLog after DateStamp with dated jsonl path")
 
+    errors.extend(audit_source_of_truth_drift(repo_root, issue_date))
     return errors
 
 
@@ -111,9 +222,10 @@ def main() -> int:
 
     p = argparse.ArgumentParser(description="Newsroom E2E 前 preflight")
     p.add_argument("--repo-root", default=".")
+    p.add_argument("--date", default=None)
     args = p.parse_args()
     repo_root = Path(args.repo_root).resolve()
-    errors = run(repo_root)
+    errors = run(repo_root, issue_date=args.date)
     payload = {"ok": not errors, "errors": errors}
     print(json.dumps(payload, ensure_ascii=False))
     if errors:
