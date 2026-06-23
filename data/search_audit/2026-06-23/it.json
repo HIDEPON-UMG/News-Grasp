@@ -11,7 +11,7 @@
   ],
   "raw_results_total": 25,
   "candidates_total": 5,
-  "selected_total": 5,
+  "selected_total": 4,
   "coverage_terms_checked": [
     "Accenture",
     "デロイト",
@@ -24,7 +24,11 @@
     "SaaS",
     "サイバーセキュリティ",
     "MCP",
-    "認証基盤"
+    "認証基盤",
+    "BCG",
+    "Deloitte",
+    "McKinsey",
+    "NTT"
   ],
   "dropped": [
     {

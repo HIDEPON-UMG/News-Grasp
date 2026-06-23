@@ -644,6 +644,51 @@ def test_repair_scope_allows_runner_state_and_ignores_temp_outputs() -> None:
     assert "Test-RepairStatusPathAllowed -Path $path" in scope_body
 
 
+def test_published_repair_inventory_json_array_flattens_for_windows_powershell() -> None:
+    """PowerShell 5.1 でも JSON 配列 inventory を artifact path 配列として扱う。"""
+    script = r"""
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$convertStart = $runner.IndexOf('function Convert-PublishInventoryJson')
+$convertEnd = $runner.IndexOf('function Get-PublishInventoryArtifacts', $convertStart)
+if ($convertStart -lt 0 -or $convertEnd -lt 0) { Write-Error 'Convert-PublishInventoryJson block missing'; exit 2 }
+$scopeStart = $runner.IndexOf('function Test-RepairStatusPathAllowed')
+$scopeEnd = $runner.IndexOf('function Test-RepairArtifactScope', $scopeStart)
+if ($scopeStart -lt 0 -or $scopeEnd -lt 0) { Write-Error 'Test-RepairStatusPathAllowed block missing'; exit 2 }
+$script:DateStamp = '2026-06-23'
+Invoke-Expression $runner.Substring($convertStart, $convertEnd - $convertStart)
+Invoke-Expression $runner.Substring($scopeStart, $scopeEnd - $scopeStart)
+$json = '["data/search_audit/2026-06-23","docs/index.html"]'
+$items = @(Convert-PublishInventoryJson -Json @($json))
+$allowed = @($items | ForEach-Object { ([string]$_).Trim().Replace('\', '/') } | Where-Object { $_ })
+$childAllowed = Test-RepairStatusPathAllowed -Path 'data/search_audit/2026-06-23/it.json' -AllowedArtifacts $allowed
+[pscustomobject]@{
+  count = $items.Count
+  first = [string]$items[0]
+  second = [string]$items[1]
+  child_allowed = $childAllowed
+} | ConvertTo-Json -Compress
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    data = json.loads(result.stdout)
+    assert data == {
+        "count": 2,
+        "first": "data/search_audit/2026-06-23",
+        "second": "docs/index.html",
+        "child_allowed": True,
+    }
+
+
 def test_fallback_publish_never_sends_web_push() -> None:
     """fallback publish は公開本体の保護だけで、購読通知へは到達させない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")

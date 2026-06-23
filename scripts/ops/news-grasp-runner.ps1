@@ -199,6 +199,23 @@ function Initialize-RunnerIdentity {
 Initialize-RunnerIdentity
 $NormalPublishVerified = $false
 
+function Convert-PublishInventoryJson {
+    param([string[]] $Json)
+    $jsonText = [string]::Join([Environment]::NewLine, @($Json))
+    $parsed = $jsonText | ConvertFrom-Json
+    $items = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($item in @($parsed)) {
+        if ($item -is [System.Array]) {
+            foreach ($nested in @($item)) {
+                if ($null -ne $nested) { [void]$items.Add([string]$nested) }
+            }
+            continue
+        }
+        if ($null -ne $item) { [void]$items.Add([string]$item) }
+    }
+    return @($items)
+}
+
 function Get-PublishInventoryArtifacts {
     param([ValidateSet('digest', 'generated', 'published', 'published-repair', 'distribution')] [string] $Kind)
     Push-Location $RepoDir
@@ -207,8 +224,7 @@ function Get-PublishInventoryArtifacts {
         if ($LASTEXITCODE -ne 0) {
             throw "tools.publish_inventory failed (kind=$Kind, rc=$LASTEXITCODE)"
         }
-        $items = @($json | ConvertFrom-Json)
-        return @($items | ForEach-Object { [string]$_ })
+        return @(Convert-PublishInventoryJson -Json $json)
     } finally {
         Pop-Location
     }
