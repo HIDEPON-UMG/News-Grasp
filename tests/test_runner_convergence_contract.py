@@ -1289,9 +1289,13 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert runner.index("verify-publish-complete") < runner.index("send_push start")
     assert runner.index("verify-publish-complete") < runner.rindex("news-grasp-runner.ps1 OK")
     block = runner.split("publish-complete manifest verification start", 1)[1].split("send_push start", 1)[0]
-    before_block = runner.split("deepdive podcast verification OK", 1)[1].split("publish-complete manifest verification start", 1)[0]
+    before_block = runner.split("Write-Log 'push origin main done (digest + docs pushed)'", 1)[1].split(
+        "Write-Log 'publish verification start",
+        1,
+    )[0]
     distribution_body = runner.split("function Write-DistributionManifest", 1)[1].split("function Test-DailyArtifactsExist", 1)[0]
     assert "data\\distribution" in distribution_body
+    assert runner.count("$distributionSummary = Write-DistributionManifest") == 1
     assert "$distributionSummary = Write-DistributionManifest" in before_block
     assert "$DateStamp.json" in distribution_body
     assert "build\\publish-complete\\$DateStamp.json" in block
@@ -1318,8 +1322,8 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     """publish_complete 前の distribution manifest は local HEAD の commit anchor を持つ。"""
     manifest = _mock_distribution_manifest(tmp_path)
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    publish_tail = runner.split("deepdive podcast verification OK", 1)[1].split(
-        "publish-complete manifest verification start",
+    publish_tail = runner.split("Write-Log 'push origin main done (digest + docs pushed)'", 1)[1].split(
+        "Write-Log 'publish verification start",
         1,
     )[0]
 
@@ -1328,6 +1332,7 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     assert manifest["publish_commit"] == ""
     assert manifest["primary_podcast_state"].endswith("build\\youtube-podcast\\uploads.json")
     assert "Write-DistributionManifest" in runner
+    assert runner.count("$distributionSummary = Write-DistributionManifest") == 1
     assert "$distributionSummary = Write-DistributionManifest" in publish_tail
     assert "pre_publish_commit" in runner.split("function Write-DistributionManifest", 1)[1].split(
         "function Test-DailyArtifactsExist",

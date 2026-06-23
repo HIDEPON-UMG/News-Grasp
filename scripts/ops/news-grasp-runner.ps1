@@ -2525,6 +2525,10 @@ if ($NoPush) {
     Invoke-Logged { & $GitExe -C $RepoDir push origin main }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: push failed (rc=$LASTEXITCODE)"; exit 1 }
     Write-Log 'push origin main done (digest + docs pushed)'
+
+    $distributionSummary = Write-DistributionManifest
+    Write-Log "distribution manifest written: $distributionSummary"
+
     Write-Log 'publish verification start (remote HEAD + public publish-status sentinel + public audio sentinel)'
     Update-RunnerProgress -Phase 'publish-verify' -Step 'publish verification start'
     Push-Location $RepoDir
@@ -2598,9 +2602,6 @@ if ($NoPush) {
         Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'deepdive-podcast-verify' -Reason 'deepdive podcast verification failed' -ExitCode $deepDivePodcastVerifyRc
     }
     Write-Log 'deepdive podcast verification OK'
-
-    $distributionSummary = Write-DistributionManifest
-    Write-Log "distribution manifest written: $distributionSummary"
 
     Write-Log 'publish-complete manifest verification start'
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
