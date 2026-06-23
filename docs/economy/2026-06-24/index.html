@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260624 — Economy</title>
+<meta name="description" content="きょうの経済は日本景気の長期持続と英中銀の利下げ条件が軸になった。国内では月例経済報告が戦後最長タイを示唆し、企業面ではサンリオ決算が消費の強さを映す。米金融史ではグリーンスパン氏死去が、中央銀行の力と副作用を改めて浮かび上がらせた。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-24/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260624 — Economy">
+<meta property="og:description" content="きょうの経済は日本景気の長期持続と英中銀の利下げ条件が軸になった。国内では月例経済報告が戦後最長タイを示唆し、企業面ではサンリオ決算が消費の強さを映す。米金融史ではグリーンスパン氏死去が、中央銀行の力と副作用を改めて浮かび上がらせた。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-06-24/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260624 — Economy">
+<meta name="twitter:description" content="きょうの経済は日本景気の長期持続と英中銀の利下げ条件が軸になった。国内では月例経済報告が戦後最長タイを示唆し、企業面ではサンリオ決算が消費の強さを映す。米金融史ではグリーンスパン氏死去が、中央銀行の力と副作用を改めて浮かび上がらせた。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-24 · #20260624</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">きょうの経済は<strong class="emph-bold">日本景気の長期持続</strong>と<strong class="emph-bold">英中銀の利下げ条件</strong>が軸になった。国内では月例経済報告が戦後最長タイを示唆し、企業面ではサンリオ決算が消費の強さを映す。米金融史ではグリーンスパン氏死去が、<strong>中央銀行の力と副作用</strong>を改めて浮かび上がらせた。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">84</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·24</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260624</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-23 15:53 · 神戸新聞</span>
+    <span class="top-story__score">90</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.kobe-np.co.jp/news/zenkoku/compact/202606/0020508765.shtml" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i.kobe-np.co.jp/news/zenkoku/compact/202606/img/a_20508771.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.kobe-np.co.jp/news/zenkoku/compact/202606/0020508765.shtml" rel="noopener nofollow" target="_blank" style="color: inherit;">景気拡大、戦後最長タイか　政府、6月も回復判断維持の公算</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">月例経済報告</strong>は景気判断を据え置く公算が大きく、<strong>2020年6月起点の拡大局面が73カ月に達する可能性</strong>を示した。</li><li>中東情勢に伴う値上がり懸念が残る中でも、<span class="emph-und">ガソリン補助金と設備投資の底堅さ</span>が個人消費の失速をいったん防いでいる。</li><li>AI普及を追い風にした投資が支え役で、<strong class="emph-bold">後退入りを示す決定打が乏しい</strong>ぶん、<strong>実感なき長期拡大</strong>が続くかが次の焦点になる。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">■ ECONOMY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-24</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-24 04:19</span>
+        <span>· ロイター</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://finance.yahoo.co.jp/news/detail/aa96c97496ed42fb775bd973e00ca41d6e5353e2" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://s.yimg.jp/images/finance/common/image/ogp.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://finance.yahoo.co.jp/news/detail/aa96c97496ed42fb775bd973e00ca41d6e5353e2" rel="noopener nofollow" target="_blank">金利据え置き「適切かつ慎重な対応」、中東情勢巡り不透明感＝英中銀テイラー委員</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">テイラー委員</strong>は、<strong>確かな見通しが得られるまで3.75%据え置きが妥当</strong>と述べ、拙速な方向転換を避ける姿勢を鮮明にした。</li><li>賃金と物価の再加速リスクは低いとみる一方、<span class="emph-und">イラン情勢前から英景気は脆弱だった</span>と強調し、下振れ警戒を前面に出した。</li><li>穏やかなインフレ経路なら<strong class="emph-bold">中立金利3%</strong>へ向けた利下げ再開も視野に入り、<strong>英中銀の次の一手が「利上げ警戒」から「利下げ条件」へ移りつつある</strong>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-23 15:30</span>
+        <span>· 株探ニュース</span>
+        <span class="more-card__score">82</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://kabutan.jp/news/marketnews/?b=k202606230001" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://async.api.kabutan.jp/og_image?stock_code=8136&amp;stock_name=%E3%82%B5%E3%83%B3%E3%83%AA%E3%82%AA&amp;title=%E4%BB%8A%E6%9C%9F%E7%B5%8C%E5%B8%B8%E3%81%AF14%EF%BC%85%E5%A2%97%E3%81%A73%E6%9C%9F%E9%80%A3%E7%B6%9A%E6%9C%80%E9%AB%98%E7%9B%8A%E3%80%81%E5%89%8D%E6%9C%9F%E9%85%8D%E5%BD%93%E3%82%923%E5%86%86%E5%A2%97%E9%A1%8D%E3%83%BB%E4%BB%8A%E6%9C%9F%E3%81%AF%E5%AE%9F%E8%B3%AA%E5%A2%97%E9%85%8D" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://kabutan.jp/news/marketnews/?b=k202606230001" rel="noopener nofollow" target="_blank">サンリオ、今期経常は14％増で3期連続最高益、前期配当を3円増額・今期は実質増配</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">サンリオ</strong>は26年3月期の経常利益を793億円まで伸ばし、<strong>27年3月期も902億円へ続伸</strong>する計画を示した。</li><li>中国を含むアジアのライセンス事業と欧州アパレルの拡大が寄与し、<span class="emph-und">キャラクターIPの海外収益化が消費株の稼ぐ力</span>を押し上げている。</li><li>前期配当を69円へ積み増し、今期も実質増配を打ち出したことで、<strong class="emph-bold">内需株の利益成長</strong>が<strong>景気の底堅さを企業サイドから裏づける材料</strong>になった。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-23 00:06</span>
+        <span>· 朝日新聞</span>
+        <span class="more-card__score">77</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://smart.asahi.com/v/article/ASV6Q3WDMV6QULFA01LM.php" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="http://sp00sp.asahi.com/image/spimg/AS20260622004211_comm.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://smart.asahi.com/v/article/ASV6Q3WDMV6QULFA01LM.php" rel="noopener nofollow" target="_blank">グリーンスパン元FRB議長が死去　米国の景気支えた「マエストロ」</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">アラン・グリーンスパン</strong>氏の死去で、<strong>1990年代の米景気拡大を支えたFRB運営</strong>が改めて市場史の論点に戻った。</li><li>ブラックマンデー後の流動性供給や長期拡大の演出は功績だが、<span class="emph-und">金融政策への過信と規制緩和の副作用</span>も同時に想起させる。</li><li>現在の中央銀行論にとっても、<strong class="emph-bold">マエストロ神話</strong>が示した<strong>政策の力と限界の両面</strong>をどう継承するかが次の争点になる。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>Economyは<strong class="emph-bold">景気拡大の最長更新観測</strong>、<strong class="emph-bold">英中銀</strong>の慎重姿勢、<strong class="emph-bold">サンリオ</strong>の最高益、<strong class="emph-bold">グリーンスパン</strong>氏の死去が並び、<strong>マクロの温度</strong>と<span class="emph-und">企業利益の持続性</span>を別々に読む必要がありました。数字が上向いても、どこで収益を積むかは別問題です。
+景気判断、金利、企業利益は別の時間軸で動いています。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-24/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-06-24
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

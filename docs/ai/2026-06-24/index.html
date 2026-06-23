@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260624 — AI</title>
+<meta name="description" content="きょうのAIは、モデル性能そのものより「どこで使われ、誰が握り、どう守るか」が前に出た。OpenAIは修復まで踏み込む防御基盤を広げ、AnthropicはSlack常駐の協働面を押し出し、メルカリはChatGPTを商取引の入口に変え始めた。一方でGoogle DeepMindの人材流出とPromptSpyの登場は、競争軸が組織力と運用統制へ移っていることを…">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-24/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260624 — AI">
+<meta property="og:description" content="きょうのAIは、モデル性能そのものより「どこで使われ、誰が握り、どう守るか」が前に出た。OpenAIは修復まで踏み込む防御基盤を広げ、AnthropicはSlack常駐の協働面を押し出し、メルカリはChatGPTを商取引の入口に変え始めた。一方でGoogle DeepMindの人材流出とPromptSpyの登場は、競争軸が組織力と運用統制へ移っていることを…">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-24/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260624 — AI">
+<meta name="twitter:description" content="きょうのAIは、モデル性能そのものより「どこで使われ、誰が握り、どう守るか」が前に出た。OpenAIは修復まで踏み込む防御基盤を広げ、AnthropicはSlack常駐の協働面を押し出し、メルカリはChatGPTを商取引の入口に変え始めた。一方でGoogle DeepMindの人材流出とPromptSpyの登場は、競争軸が組織力と運用統制へ移っていることを…">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-24 · #20260624</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">きょうのAIは、モデル性能そのものより「どこで使われ、誰が握り、どう守るか」が前に出た。OpenAIは修復まで踏み込む防御基盤を広げ、AnthropicはSlack常駐の協働面を押し出し、メルカリはChatGPTを商取引の入口に変え始めた。一方でGoogle DeepMindの人材流出とPromptSpyの登場は、競争軸が組織力と運用統制へ移っていることを示している。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·24</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260624</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-23 11:30 · OpenAI</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://openai.com/index/daybreak-securing-the-world/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.cnbcfm.com/api/v1/image/108276814-1773254522162-gettyimages-2265991644-0d6a8221_0m2z4cha.jpeg?v=1776066514&amp;w=1920&amp;h=1080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://openai.com/index/daybreak-securing-the-world/" rel="noopener nofollow" target="_blank" style="color: inherit;">OpenAI、Daybreak拡張でCodex Security刷新　GPT-5.5-Cyberを防御用途へ本格投入</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Daybreak</strong>は<strong>脆弱性の検出だけでなく修復までを自動化する方向</strong>を打ち出し、<span class="emph-und">AIセキュリティの主戦場</span>をアラート生成からパッチ適用へ移した。</li><li>更新版の<strong class="emph-bold">Codex Security</strong>は<strong>深いスキャン、検証、修正案生成を一体で回せる</strong>ようになり、<span class="emph-und">開発フローの中で防御を完結</span>させる色合いを強めた。</li><li><strong class="emph-bold">GPT-5_5-Cyber</strong>は<strong>CyberGym 85.6%などの指標を示して正式版へ進んだ</strong>が、<span class="emph-und">利用対象を信頼済み防御者に絞る</span>設計で能力と統制を両立させている。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-24</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-23 03:21</span>
+        <span>· Anthropic</span>
+        <span class="more-card__score">92</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.anthropic.com/news/introducing-claude-tag" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cdn.sanity.io/images/4zrzovbb/website/b9ba85fd4d8beaf4efe04a4cf6cec14761e52c78-2400x1260.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.anthropic.com/news/introducing-claude-tag" rel="noopener nofollow" target="_blank">Anthropic、Slack常駐の「Claude Tag」を投入　チーム単位のAI協働を前面に</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Claude Tag</strong>は<strong>SlackチャンネルにClaudeを常駐させる</strong>構成で、<span class="emph-und">AIを個人の相棒からチームの同僚へ広げる</span>一手になった。</li><li>Anthropicは<strong class="emph-bold">社内利用</strong>で<strong>プロダクトチームのコードの65%が内部版Claude Tag由来</strong>だと示し、<span class="emph-und">単なる実験ではなく運用段階</span>に入ったことを印象付けた。</li><li>利用者は<strong class="emph-bold">@Claude</strong>で依頼するだけで<strong>接続済みツールやコードベースを踏まえたタスク処理</strong>を進められ、<span class="emph-und">チャット基盤そのものがエージェント実行面</span>に変わり始めている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-23 21:35</span>
+        <span>· Axios</span>
+        <span class="more-card__score">89</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.axios.com/2026/06/23/ai-lab-agi-google-deepmind-departures" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.itmedia.co.jp/news/articles/2606/21/cover_news017.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.axios.com/2026/06/23/ai-lab-agi-google-deepmind-departures" rel="noopener nofollow" target="_blank">Google DeepMind、看板研究者流出が連鎖　OpenAI・Anthropicとの人材戦が激化</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Google DeepMind</strong>は<strong>ノーム・シャジーア氏のOpenAI移籍に続き、ジョン・ジャンパー氏もAnthropicへ失った</strong>ことで、<span class="emph-und">モデル競争の前提となる人材維持</span>を問われる局面に入った。</li><li>Axiosは<strong class="emph-bold">AGI接近観測</strong>のもとで<strong>研究者数人の移籍が次の採用連鎖まで誘発する</strong>と整理しており、<span class="emph-und">資金力だけでは埋まらない組織魅力</span>が勝敗要因になっている。</li><li>同じ流れの中で<strong class="emph-bold">NVIDIA</strong>も人材獲得を進めており、<strong>AI競争はモデル発表より先に人をどこへ集めるか</strong>へ寄っていることが、<span class="emph-und">市場評価と採用市場の両面</span>で鮮明になった。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-24 04:40</span>
+        <span>· メルカリ</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://about.mercari.com/press/news/articles/20260623chatgpt/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://storage.googleapis.com/prd-about-asset-2020/2026/06/0a180388-20260623chatgpt01-2048x1075.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://about.mercari.com/press/news/articles/20260623chatgpt/" rel="noopener nofollow" target="_blank">メルカリ、ChatGPT内で商品検索と出品下書きに対応　AIがEC導線へ進出</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">メルカリ</strong>は<strong>Apps in ChatGPTに公式アプリを載せ、会話から商品検索までつなげた</strong>ことで、<span class="emph-und">フリマの入口が自社アプリ外へ広がる</span>転換点を作った。</li><li>出品側では<strong class="emph-bold">商品説明文の下書き</strong>を<strong>ChatGPT上で整えられる</strong>ようにし、<span class="emph-und">検索だけでなく供給面の入力負荷</span>までAIで下げにきた。</li><li>消費者が<strong class="emph-bold">ChatGPT</strong>の中で発見と比較を済ませる流れが定着すれば、<strong>EC各社は自前UIより外部AI経由の導線最適化</strong>を迫られ、<span class="emph-und">コマースの集客構造</span>が変わりうる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-23 13:04</span>
+        <span>· ESET</span>
+        <span class="more-card__score">84</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://eset-info.canon-its.jp/malware_info/special/detail/260623.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://eset-info.canon-its.jp/files/topics/4848_ext_01_0.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://eset-info.canon-its.jp/malware_info/special/detail/260623.html" rel="noopener nofollow" target="_blank">PromptSpy、Geminiで端末操作を適応化　生成AI悪用のAndroidマルウェア確認</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">PromptSpy</strong>は<strong>Geminiに画面XMLを渡して操作手順を返させる</strong>仕組みで、<span class="emph-und">端末差分に強いマルウェア自動化</span>を現実のものにした。</li><li>ESETによれば<strong class="emph-bold">常駐化</strong>は<strong>最近使ったアプリ画面でのロック操作をAIに判断させる</strong>ことで実現され、<span class="emph-und">従来の固定座標スクリプトより適応力</span>が大きく上がる。</li><li>現時点では<strong class="emph-bold">概念実証段階</strong>の可能性が高い一方、<strong>生成AIが防御側だけでなく攻撃側のUI突破にも使われ始めた</strong>ことで、<span class="emph-und">モバイル防御の前提</span>が変わりつつある。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p>AIは<strong class="emph-bold">OpenAI</strong>の<strong class="emph-bold">Daybreak</strong>防御刷新、<strong class="emph-bold">Claude Tag</strong>の常駐化、<strong class="emph-bold">Google DeepMind</strong>の人材流出、<strong class="emph-bold">メルカリ</strong>の検索導線、<strong class="emph-bold">PromptSpy</strong>の悪用確認が一列に並び、<strong>賢さの競争</strong>から<span class="emph-und">守りと運用の競争</span>へ一段進みました。モデルの見せ方より、誰が使い、どう止めるかが問われています。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-24/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-24
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
