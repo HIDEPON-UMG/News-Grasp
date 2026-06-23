@@ -688,6 +688,42 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
     }
 
 
+def _is_retryable_deploy_workflow(result: dict) -> bool:
+    if result.get("ok"):
+        return False
+    if result.get("reason") != "deploy_workflow_not_success":
+        return False
+    status = str(result.get("status") or "")
+    conclusion = str(result.get("conclusion") or "")
+    if status == "completed" and conclusion and conclusion != "success":
+        return False
+    return status in {"", "queued", "requested", "waiting", "pending", "in_progress"}
+
+
+def wait_for_deploy_workflow(
+    *,
+    repo_root: Path,
+    remote: str,
+    branch: str,
+    expected_commit: str,
+    deadline: float,
+    poll_sec: int,
+) -> dict:
+    """Deploy Pages workflow の transient pending だけを同一 deadline 内で待つ。"""
+    while True:
+        result = verify_deploy_workflow(
+            repo_root=repo_root,
+            remote=remote,
+            branch=branch,
+            expected_commit=expected_commit,
+        )
+        if result.get("ok") or not _is_retryable_deploy_workflow(result):
+            return result
+        if time.monotonic() >= deadline:
+            return {**result, "detail": "deploy_workflow_wait_timeout"}
+        time.sleep(max(1, poll_sec))
+
+
 def verify_publish(
     *,
     repo_root: Path,
@@ -704,11 +740,14 @@ def verify_publish(
     remote_head = _git_output(repo_root, ["ls-remote", remote, f"refs/heads/{branch}"]).split()[0]
     if local_head != remote_head:
         return {"ok": False, "reason": "remote_head_mismatch", "local_head": local_head, "remote_head": remote_head}
-    deploy_workflow = verify_deploy_workflow(
+    deadline = time.monotonic() + max(0, wait_sec)
+    deploy_workflow = wait_for_deploy_workflow(
         repo_root=repo_root,
         remote=remote,
         branch=branch,
         expected_commit=local_head,
+        deadline=deadline,
+        poll_sec=poll_sec,
     )
     if not deploy_workflow["ok"]:
         return {
@@ -730,7 +769,6 @@ def verify_publish(
         }
 
     status_url = urljoin(public_base_url.rstrip("/") + "/", "publish-status.json")
-    deadline = time.monotonic() + max(0, wait_sec)
     last_error = ""
     while True:
         try:

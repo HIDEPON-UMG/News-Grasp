@@ -1281,6 +1281,18 @@ def test_runner_publish_verification_includes_public_audio_sentinel() -> None:
     assert runner.index("publish verification start") < runner.index("publish verification OK")
 
 
+def test_runner_publish_verify_uses_wait_window_before_finalize() -> None:
+    """push 直後の Deploy Pages / public sentinel 収束待ちは pre-finalize gate に渡す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    block = runner.split("publish verification start", 1)[1].split("youtube podcast finalize start", 1)[0]
+
+    assert "'verify-publish'" in block
+    assert "'--wait-sec' $PublishVerifyWaitSec" in block
+    assert "'--poll-sec' $PublishVerifyPollSec" in block
+    assert "'--require-podcast'" not in block
+
+
 def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     """publish_complete 前に unified manifest verifier を通す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")

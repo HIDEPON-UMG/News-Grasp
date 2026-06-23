@@ -1067,6 +1067,160 @@ def test_verify_publish_can_require_podcast(monkeypatch, tmp_path: Path) -> None
     assert result["reason"] == "public_podcast_missing"
 
 
+def test_verify_publish_does_not_require_podcast_by_default(monkeypatch, tmp_path: Path) -> None:
+    """pre-finalize の publish gate は Web/audio までを確認し、Podcast は complete gate に残す。"""
+    _write_local_sw(tmp_path)
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"result": "published_ok", "date": "2026-06-20"}).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse())
+    monkeypatch.setattr(dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'expected-version';\n")
+    monkeypatch.setattr(dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True})
+    monkeypatch.setattr(dsh, "verify_podcast", lambda **_kwargs: (_ for _ in ()).throw(AssertionError("podcast must be skipped")))
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is True
+    assert result["podcast"]["reason"] == "podcast_not_required"
+
+
+def test_verify_publish_waits_for_deploy_workflow_success(monkeypatch, tmp_path: Path) -> None:
+    """push 直後の Deploy workflow in_progress は wait window 内で success まで待つ。"""
+    _write_local_sw(tmp_path)
+    deploy_calls: list[str] = []
+    sleeps: list[int] = []
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    def fake_deploy(**_kwargs):
+        deploy_calls.append("call")
+        if len(deploy_calls) == 1:
+            return {
+                "ok": False,
+                "reason": "deploy_workflow_not_success",
+                "status": "in_progress",
+                "conclusion": "",
+                "head_sha": "abc123",
+            }
+        return {
+            "ok": True,
+            "reason": "",
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": "abc123",
+        }
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"result": "published_ok", "date": "2026-06-20"}).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh, "verify_deploy_workflow", fake_deploy)
+    monkeypatch.setattr(dsh, "verify_pages_build", lambda **_kwargs: {"ok": True, "reason": "", "status": "built"})
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse())
+    monkeypatch.setattr(dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'expected-version';\n")
+    monkeypatch.setattr(dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True})
+    monkeypatch.setattr(dsh.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(dsh.time, "monotonic", lambda: 0.0)
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=30,
+        poll_sec=7,
+    )
+
+    assert result["ok"] is True
+    assert len(deploy_calls) == 2
+    assert sleeps == [7]
+    assert result["deploy_workflow"]["status"] == "completed"
+
+
+def test_verify_publish_does_not_wait_on_deploy_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
+    """別 commit の Deploy workflow は待機で隠さず即 typed mismatch にする。"""
+    _write_local_sw(tmp_path)
+    deploy_calls: list[str] = []
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return "abc123"
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return "abc123\trefs/heads/main"
+        raise AssertionError(args)
+
+    def fake_deploy(**_kwargs):
+        deploy_calls.append("call")
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_commit_mismatch",
+            "head_sha": "def456",
+            "expected_commit": "abc123",
+        }
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh, "verify_deploy_workflow", fake_deploy)
+    monkeypatch.setattr(dsh, "verify_pages_build", lambda **_kwargs: (_ for _ in ()).throw(AssertionError("pages must not run")))
+    monkeypatch.setattr(dsh.time, "sleep", lambda _seconds: (_ for _ in ()).throw(AssertionError("must not wait")))
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=30,
+        poll_sec=7,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deploy_workflow_commit_mismatch"
+    assert len(deploy_calls) == 1
+
+
 def test_verify_publish_rejects_public_audio_url_missing_from_summary(monkeypatch, tmp_path: Path) -> None:
     """summary が旧音声URLのままなら publish 完了扱いにしない。"""
     _write_local_sw(tmp_path)
