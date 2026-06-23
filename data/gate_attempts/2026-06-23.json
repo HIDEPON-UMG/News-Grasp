@@ -73,10 +73,16 @@
           "artifact_hashes": [
             "cf231c01015377c7"
           ]
+        },
+        "dbb4460c2eb858fa": {
+          "failures": 1,
+          "artifact_hashes": [
+            "ca5578bf375774bd"
+          ]
         }
       },
       "categories": {
-        "tests": 1
+        "tests": 2
       }
     },
     "digest-articles-reconcile": {
