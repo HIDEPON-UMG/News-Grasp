@@ -100,7 +100,7 @@ runner、watcher、repair、publish verification、podcast verification、distri
 | Summary / editorial reflection | Summary 構造、reflection、hero、key takeaways、日付 docs への反映を更新する。 | summary reflection 系テスト、`validate_daily_quality`、公開日付 docs sentinel。 |
 | DeepDive | md、HTML、関係図、日付ページからの導線、公開 inventory を更新する。 | `--require-deepdive`、DeepDive presence / relation layout テスト、公開 URL sentinel。 |
 | Public UI / OGP / PWA / thumbnails | template、CSS、OGP meta、thumbnail contract、manifest、service worker cache、offline page を更新する。 | `tests/test_pwa_meta.py`、`tests/test_thumb_contract.py`、`tests/test_fetch_ogp.py`、必要時 Playwright / visual smoke と `docs/sw.js` version bump。 |
-| Web publish surface | `docs/<date>/index.html`、summary、per-category docs、public status、GitHub Pages 反映を更新する。 | `verify-publish`、published docs presence、public URL 200 / sentinel、remote HEAD / Deploy workflow success / Pages build success。 |
+| Web publish surface | `docs/<date>/index.html`、summary、per-category docs、public status、GitHub Pages 反映を更新する。 | `verify-publish`、published docs presence、public URL 200 / sentinel、remote HEAD / Deploy workflow success / workflow Pages status built。 |
 | Audio / TTS | 音声生成、release URL、ページ埋め込み、再生可能性、TTS required gate を更新する。 | TTS publish gate、audio URL presence、`verify-publish` audio check。 |
 | YouTube Podcast / playlist | upload state、public video、playlist 反映、外部検証 fallback、token / quota / permission の typed status を更新する。 | `verify-podcast`、`verify-publish --require-podcast`、外部 API 401/403/404 fallback 契約テスト。 |
 | Notification | 送信条件、通知不要条件、失敗時 typed status、再送可否を更新する。 | notification dry-run / typed status テスト、送信不要時の完了条件テスト。 |

@@ -501,6 +501,107 @@ def test_verify_pages_build_normalizes_api_errors(monkeypatch, tmp_path: Path) -
     assert result["url"] == "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/pages/builds/latest"
 
 
+def test_verify_pages_build_falls_back_to_workflow_pages_status_when_latest_unavailable(monkeypatch, tmp_path: Path) -> None:
+    """workflow Pages では pages/builds/latest が 404 でも Pages status を正本 fallback にできる。"""
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakePagesResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            payload = {
+                "status": "built",
+                "build_type": "workflow",
+                "source": {"branch": "main", "path": "/docs"},
+            }
+            return json.dumps(payload).encode("utf-8")
+
+    seen: list[dict[str, str | None]] = []
+
+    def fake_urlopen(req, *args, **kwargs):
+        headers = dict(req.header_items())
+        seen.append({"url": req.full_url, "authorization": headers.get("Authorization")})
+        if req.full_url.endswith("/pages/builds/latest"):
+            raise dsh.urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+        if req.full_url.endswith("/pages") and headers.get("Authorization") == "Bearer gh-test-token":
+            return FakePagesResponse()
+        raise dsh.urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.setattr(dsh, "_gh_auth_token", lambda: "gh-test-token")
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_pages_build(repo_root=tmp_path, remote="origin", expected_commit=head)
+
+    assert result["ok"] is True
+    assert result["url"] == "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/pages"
+    assert result["commit"] == head
+    assert result["build_type"] == "workflow"
+    assert result["source_branch"] == "main"
+    assert result["source_path"] == "/docs"
+    assert any(call["authorization"] == "Bearer gh-test-token" for call in seen)
+
+
+def test_verify_pages_build_accepts_workflow_pages_status_when_latest_build_is_stale(monkeypatch, tmp_path: Path) -> None:
+    """workflow Pages の latest build が古い commit を返す場合は Pages status + branch を使う。"""
+    head = "a" * 40
+    stale = "b" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "git@github.com:HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __init__(self, payload: dict):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        if req.full_url.endswith("/pages/builds/latest"):
+            return FakeResponse({"status": "built", "commit": stale})
+        if req.full_url.endswith("/pages"):
+            return FakeResponse(
+                {
+                    "status": "built",
+                    "build_type": "workflow",
+                    "source": {"branch": "main", "path": "/docs"},
+                }
+            )
+        raise AssertionError(req.full_url)
+
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+
+    result = dsh.verify_pages_build(repo_root=tmp_path, remote="origin", expected_commit=head)
+
+    assert result["ok"] is True
+    assert result["commit"] == head
+    assert result["latest_build"]["commit"] == stale
+    assert result["latest_detail"] == f"latest_commit_mismatch:{stale}"
+
+
 def test_verify_publish_requires_pages_build_for_remote_head(monkeypatch, tmp_path: Path) -> None:
     """remote HEAD だけでなく、同じ commit の GitHub Pages build が built であることを要求する。"""
     _write_local_sw(tmp_path)

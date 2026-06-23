@@ -464,7 +464,115 @@ def _repo_slug_from_remote_url(remote_url: str) -> tuple[str, str] | None:
     return owner, repo
 
 
-def verify_pages_build(repo_root: Path, remote: str, expected_commit: str) -> dict:
+def _gh_auth_token() -> str:
+    for name in ("GITHUB_TOKEN", "GH_TOKEN"):
+        token = os.environ.get(name, "").strip()
+        if token:
+            return token
+    try:
+        proc = subprocess.run(
+            ["gh", "auth", "token"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if proc.returncode != 0:
+        return ""
+    return proc.stdout.strip()
+
+
+def _github_headers(token: str = "") -> dict[str, str]:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2026-03-10",
+        "User-Agent": "News-Grasp-PublishVerifier/1.0",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _github_api_json(url: str) -> dict:
+    token = os.environ.get("GITHUB_TOKEN", "").strip() or os.environ.get("GH_TOKEN", "").strip()
+    tried_auth = bool(token)
+    try:
+        req = urllib.request.Request(url, headers=_github_headers(token))
+        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
+            payload = json.loads(res.read().decode("utf-8-sig"))
+    except urllib.error.HTTPError as exc:
+        if exc.code not in {401, 403, 404} or tried_auth:
+            raise
+        token = _gh_auth_token()
+        if not token:
+            raise
+        req = urllib.request.Request(url, headers=_github_headers(token))
+        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
+            payload = json.loads(res.read().decode("utf-8-sig"))
+    if not isinstance(payload, dict):
+        raise ValueError("response_not_object")
+    return payload
+
+
+def _verify_workflow_pages_status(*, owner: str, repo: str, branch: str, expected_commit: str, latest_detail: str = "") -> dict:
+    url = f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/pages"
+    try:
+        pages = _github_api_json(url)
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+        return {"ok": False, "reason": "pages_build_unavailable", "url": url, "detail": str(exc), "latest_detail": latest_detail}
+    status = str(pages.get("status") or "")
+    build_type = str(pages.get("build_type") or "")
+    source = pages.get("source") if isinstance(pages.get("source"), dict) else {}
+    source_branch = str(source.get("branch") or "")
+    source_path = str(source.get("path") or "")
+    if build_type != "workflow":
+        return {
+            "ok": False,
+            "reason": "pages_build_unavailable",
+            "url": url,
+            "status": status,
+            "build_type": build_type,
+            "detail": "pages_build_latest_unavailable_for_non_workflow",
+            "latest_detail": latest_detail,
+        }
+    if status != "built":
+        return {
+            "ok": False,
+            "reason": "pages_build_not_built",
+            "url": url,
+            "status": status,
+            "build_type": build_type,
+            "source": source,
+            "latest_detail": latest_detail,
+        }
+    if source_branch and source_branch != branch:
+        return {
+            "ok": False,
+            "reason": "pages_build_commit_mismatch",
+            "url": url,
+            "status": status,
+            "build_type": build_type,
+            "source": source,
+            "expected_branch": branch,
+        }
+    return {
+        "ok": True,
+        "reason": "",
+        "status": status,
+        "commit": expected_commit,
+        "url": url,
+        "build_type": build_type,
+        "source_branch": source_branch,
+        "source_path": source_path,
+        "latest_detail": latest_detail,
+    }
+
+
+def verify_pages_build(repo_root: Path, remote: str, expected_commit: str, branch: str = "main") -> dict:
     """GitHub Pages latest build が対象 commit で built であることを検証する。"""
     try:
         remote_url = _git_output(repo_root, ["config", "--get", f"remote.{remote}.url"])
@@ -475,18 +583,19 @@ def verify_pages_build(repo_root: Path, remote: str, expected_commit: str) -> di
         return {"ok": False, "reason": "pages_remote_unparseable", "remote_url": remote_url}
     owner, repo = slug
     url = f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/pages/builds/latest"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2026-03-10",
-            "User-Agent": "News-Grasp-PublishVerifier/1.0",
-        },
-    )
     try:
-        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
-            build = json.loads(res.read().decode("utf-8-sig"))
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+        build = _github_api_json(url)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            return {"ok": False, "reason": "pages_build_unavailable", "url": url, "detail": str(exc)}
+        return _verify_workflow_pages_status(
+            owner=owner,
+            repo=repo,
+            branch=branch,
+            expected_commit=expected_commit,
+            latest_detail=str(exc),
+        )
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
         return {"ok": False, "reason": "pages_build_unavailable", "url": url, "detail": str(exc)}
     if not isinstance(build, dict):
         return {"ok": False, "reason": "pages_build_unavailable", "url": url, "detail": "response_not_object"}
@@ -495,7 +604,16 @@ def verify_pages_build(repo_root: Path, remote: str, expected_commit: str) -> di
     if status != "built":
         return {"ok": False, "reason": "pages_build_not_built", "status": status, "commit": commit, "url": url}
     if commit != expected_commit:
-        return {"ok": False, "reason": "pages_build_commit_mismatch", "status": status, "commit": commit, "expected_commit": expected_commit, "url": url}
+        workflow_pages = _verify_workflow_pages_status(
+            owner=owner,
+            repo=repo,
+            branch=branch,
+            expected_commit=expected_commit,
+            latest_detail=f"latest_commit_mismatch:{commit}",
+        )
+        if workflow_pages["ok"]:
+            return {**workflow_pages, "latest_build": {"status": status, "commit": commit, "url": url}}
+        return {"ok": False, "reason": "pages_build_commit_mismatch", "status": status, "commit": commit, "expected_commit": expected_commit, "url": url, "workflow_pages": workflow_pages}
     return {"ok": True, "reason": "", "status": status, "commit": commit, "url": url}
 
 
@@ -518,17 +636,8 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
         f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/actions/workflows/"
         f"{quote(workflow_file, safe='')}/runs?{query}"
     )
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2026-03-10",
-            "User-Agent": "News-Grasp-PublishVerifier/1.0",
-        },
-    )
     try:
-        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
-            payload = json.loads(res.read().decode("utf-8-sig"))
+        payload = _github_api_json(url)
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
         return {"ok": False, "reason": "deploy_workflow_unavailable", "url": url, "detail": str(exc)}
     if not isinstance(payload, dict) or not isinstance(payload.get("workflow_runs"), list):
@@ -609,7 +718,7 @@ def verify_publish(
             "remote_head": remote_head,
             "deploy_workflow": deploy_workflow,
         }
-    pages = verify_pages_build(repo_root=repo_root, remote=remote, expected_commit=local_head)
+    pages = verify_pages_build(repo_root=repo_root, remote=remote, expected_commit=local_head, branch=branch)
     if not pages["ok"]:
         return {
             "ok": False,
