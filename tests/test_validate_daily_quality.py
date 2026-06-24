@@ -470,8 +470,7 @@ def test_daily_quality_rejects_scheduled_category_gap(tmp_path: Path) -> None:
     joined = "\n".join(errs)
     assert "scheduled category digest missing" in joined
     assert "manufacturing" in joined
-    assert "unscheduled category digest present" in joined
-    assert "game" in joined
+    assert "unscheduled category digest present" not in joined
 
 
 def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path) -> None:

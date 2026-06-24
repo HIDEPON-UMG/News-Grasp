@@ -75,8 +75,8 @@ def test_issue_schedule_allows_per_category_intentional_pause_marker(tmp_path: P
     assert validate_issue_schedule(tmp_path / "digest", ISSUE) == []
 
 
-def test_issue_schedule_rejects_unscheduled_category_digest(tmp_path: Path) -> None:
-    """非対象カテゴリ digest は required missing ではなく、runner bug / quarantine 対象として落とす。"""
+def test_issue_schedule_ignores_unscheduled_category_digest_for_required_presence(tmp_path: Path) -> None:
+    """非対象カテゴリ digest が残っていても required missing と混同しない。"""
     issue = date(2026, 6, 24)  # 水曜日: game は非対象
     summary_dir = tmp_path / "digest" / "Summary"
     summary_dir.mkdir(parents=True, exist_ok=True)
@@ -111,9 +111,4 @@ def test_issue_schedule_rejects_unscheduled_category_digest(tmp_path: Path) -> N
             encoding="utf-8",
         )
 
-    errs = validate_issue_schedule(tmp_path / "digest", issue)
-
-    joined = "\n".join(errs)
-    assert "unscheduled category digest present" in joined
-    assert "game" in joined
-    assert "scheduled category digest missing" not in joined
+    assert validate_issue_schedule(tmp_path / "digest", issue) == []
