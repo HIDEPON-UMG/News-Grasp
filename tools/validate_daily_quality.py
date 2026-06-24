@@ -305,7 +305,14 @@ def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
             " 配信対象カテゴリの digest が存在しないため公開前に停止します。"
             " 意図的休載の場合は Summary に当該カテゴリ名と休載理由を明記してください。"
         )
-    _extra = sorted(present - expected)
+    extra = sorted(present - expected)
+    for cat_id in extra:
+        label = str(CATEGORIES.get(cat_id, {}).get("label") or cat_id)
+        errs.append(
+            f"unscheduled category digest present: {cat_id} ({label}) for {issue.isoformat()}."
+            " 当日非対象カテゴリの digest は required missing ではなく runner bug / quarantine 対象です。"
+            " publish inventory、repair scope、sub-agent fan-out へ混ぜないでください。"
+        )
     return errs
 
 

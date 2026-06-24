@@ -85,6 +85,62 @@ def test_product_constitution_maps_feature_changes_to_quality_gates() -> None:
         assert phrase in text
 
 
+def test_product_constitution_defines_category_schedule_source_of_truth() -> None:
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "Category Schedule Source of Truth" in headings
+    for phrase in [
+        "月 | fx, ai, it, mobility, manufacturing, economy | game",
+        "火 | fx, ai, it, mobility, manufacturing, economy, game |",
+        "水 | fx, ai, it, mobility, manufacturing, economy | game",
+        "土 | fx, ai, it, mobility, game | manufacturing, economy",
+        "日 | fx, ai, it, mobility, game | manufacturing, economy",
+        "tools.publish_inventory.scheduled_category_ids(issue)",
+        "runner は 7 カテゴリ固定で sub-agent を起動してはならない",
+        "土日に Manufacturing / Economy digest",
+        "Game に限らず、任意の非対象カテゴリ",
+        "非対象カテゴリ artifact",
+        "runner bug",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_maps_category_schedule_impact() -> None:
+    text = _read(SPEC)
+
+    for phrase in [
+        "Category schedule impact map",
+        "Runner Stage0 / Stage2 reporter fan-out",
+        "Editor manifest / newsroom prompt",
+        "publish inventory / repair scope",
+        "generate_pages / public UI",
+        "validate_daily_quality / validate_generation_quality / reconcile",
+        "YouTube Podcast / publish_complete",
+        "fallback_ok",
+        "verify-publish-complete",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_keeps_recovered_state_and_future_gates_separate() -> None:
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "Operational Premise Fidelity" in headings
+    for phrase in [
+        "復旧済みの公開成果物",
+        "未復旧扱いに巻き戻してはならない",
+        "現在状態の復旧タスク",
+        "将来の完走判定 gate",
+        "goal が打ち取れなかった理由",
+        "完走扱いになった理由",
+        "公開済みの非対象カテゴリ artifact",
+        "当日必須カテゴリへ昇格しない",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> None:
     text = _read(SPEC)
 

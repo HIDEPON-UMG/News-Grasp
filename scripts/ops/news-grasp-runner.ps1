@@ -217,7 +217,7 @@ function Convert-PublishInventoryJson {
 }
 
 function Get-PublishInventoryArtifacts {
-    param([ValidateSet('digest', 'generated', 'published', 'published-repair', 'distribution')] [string] $Kind)
+    param([ValidateSet('categories', 'digest', 'generated', 'published', 'published-repair', 'distribution')] [string] $Kind)
     Push-Location $RepoDir
     try {
         $json = & $PyExe '-m' 'tools.publish_inventory' '--date' $DateStamp '--kind' $Kind '--json'
@@ -255,6 +255,7 @@ function Test-TerminalRunnerStatus {
         'blocked_reporter_timeout',
         'blocked_reporter_repeated_failure',
         'blocked_repair_budget_exhausted',
+        'blocked_slo_violation',
         'blocked_refill_unresolved',
         'blocked_external_readiness',
         'blocked_runner_state_lock_timeout',
@@ -1148,6 +1149,17 @@ function Invoke-PythonGateWithRepair {
         }
         Write-Log "$GateId gate failed (attempt=$attempt, rc=$gateRc)"
         Update-RunnerProgress -Phase 'gate' -Step "$GateId attempt $attempt failed rc=$gateRc" -GateId $GateId -Category $Category -Attempt $attempt -DeadlineAt $DeadlineAt.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath }
+            $classifyRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($classifyRc -ne 0) {
+            Write-Log "ERROR: auto repair classify failed gate=$GateId rc=$classifyRc capture=$capturePath"
+            return $gateRc
+        }
         $repairBeforeStatus = Snapshot-RepairWorkspace
         $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts
         if ($repairRc -eq 124) {
@@ -1174,14 +1186,6 @@ function Invoke-AutonomousGate {
     )
     $statePath = Join-Path $RepoDir "data\gate_attempts\$DateStamp-$GateId.json"
     $deadline = (Get-Date).AddSeconds($GateDeadlineSec)
-    Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate policy start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
-    Write-Log "$GateId autonomous gate policy start (tools.auto_repair_orchestrator classify)"
-    Push-Location $RepoDir
-    try {
-        Invoke-Logged { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output' '' }
-    } finally {
-        Pop-Location
-    }
     Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=3, signature_repair=1, state=$statePath)"
     Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
     $gateRc = Invoke-PythonGateWithRepair -GateId $GateId -Category $Category -PythonArgs $PythonArgs -Artifacts $Artifacts -DeadlineAt $deadline
@@ -1550,7 +1554,13 @@ if ($RecoverOnly) {
     $CandidateLastGoodDir = Join-Path $RepoDir 'build\candidates-last-good'
     $DedupedCandidateDir = Join-Path $RepoDir 'build\deduped-candidates'
     $HarvestAuditDir = Join-Path $RepoDir "data\search_audit\$DateStamp"
-    $Categories = @('fx','ai','it','mobility','manufacturing','economy','game')
+    # tools.publish_inventory.scheduled_category_ids(issue) が当日必須カテゴリの正本。
+    # 非対象カテゴリを reporter fan-out しない。Game は火木土日のみ、Manufacturing / Economy は月火水木金のみ。
+    $Categories = Get-PublishInventoryArtifacts -Kind 'categories'
+    if ($Categories.Count -le 0) {
+        Write-Log "ERROR: scheduled category list is empty date=$DateStamp"
+        exit 1
+    }
     if ($Stage2EditorSmokeOnly) {
         Write-Log 'Stage2EditorSmokeOnly mode: skipping Stage0 harvest and Stage1 dedup; using existing deduped candidates'
         New-Item -ItemType Directory -Path $DedupedCandidateDir -Force | Out-Null
@@ -1650,6 +1660,12 @@ if ($RecoverOnly) {
         manufacturing = 'Manufacturing'
         economy = 'Economy'
         game = 'Game'
+    }
+    foreach ($scheduledCat in $Categories) {
+        if (-not $CategoryGenreMap.ContainsKey($scheduledCat)) {
+            Write-Log "ERROR: scheduled category has no genre mapping category=$scheduledCat date=$DateStamp"
+            exit 1
+        }
     }
     if (Test-Path $ReporterArtifactDir) { Remove-Item -LiteralPath $ReporterArtifactDir -Recurse -Force -ErrorAction SilentlyContinue }
     if (Test-Path $ReporterPromptDir) { Remove-Item -LiteralPath $ReporterPromptDir -Recurse -Force -ErrorAction SilentlyContinue }
@@ -2313,6 +2329,21 @@ if ($pytestGateRc -ne 0) {
     Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'pytest-static' -Reason 'pytest autonomous gate failed' -ExitCode $pytestGateRc
 }
 Write-Log 'pytest gate OK'
+
+# ===== 2.81 batch SLO gate (commit 後・publish 前) =====
+# 1時間 / 300万token を超える自走は goal 未達として止める。
+Write-Log 'batch SLO gate start'
+Push-Location $RepoDir
+try {
+    Invoke-Logged { & $PyExe '-m' 'tools.validate_batch_slo' '--usage-log' $CodexUsageLog '--max-total-tokens' '3000000' '--max-window-sec' '3600' }
+    $batchSloRc = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+if ($batchSloRc -ne 0) {
+    Exit-Runner -Status 'blocked_slo_violation' -Message 'batch SLO gate failed before publish' -ExitCode $batchSloRc -Phase 'gate' -GateId 'batch-slo' -Category 'runner'
+}
+Write-Log 'batch SLO gate OK'
 
 # ===== 2.85 Daily TTS audio (fatal, editor 後・generate_pages 前) =====
 # 2026-06-16: 編集長が生成した digest/Summary/{date}-audio-script.md を AivisSpeech で

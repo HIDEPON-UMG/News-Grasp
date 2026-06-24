@@ -179,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--kind",
         choices=[
+            "categories",
             "digest",
             "generated",
             "published-docs",
@@ -192,7 +193,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.kind == "digest":
+    if args.kind == "categories":
+        artifacts = scheduled_category_ids(args.date)
+    elif args.kind == "digest":
         artifacts = required_digest_artifacts(args.date)
     elif args.kind == "generated":
         artifacts = required_generated_artifacts(args.date)

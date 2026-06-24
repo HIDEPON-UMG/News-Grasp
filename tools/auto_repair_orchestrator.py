@@ -123,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     classify_parser = sub.add_parser("classify")
     classify_parser.add_argument("--gate-id", required=True)
     classify_parser.add_argument("--output", default="")
+    classify_parser.add_argument("--output-file", type=Path)
 
     run_parser = sub.add_parser("run-gate")
     run_parser.add_argument("--date", required=True)
@@ -132,7 +133,10 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.cmd == "classify":
-        print(json.dumps(classify(args.gate_id, args.output), ensure_ascii=False, indent=2))
+        output = args.output
+        if args.output_file is not None:
+            output = args.output_file.read_text(encoding="utf-8", errors="replace")
+        print(json.dumps(classify(args.gate_id, output), ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "run-gate":
         command = list(args.command)

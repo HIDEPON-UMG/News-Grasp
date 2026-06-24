@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 
 from tools.publish_inventory import (
@@ -10,6 +11,7 @@ from tools.publish_inventory import (
     required_published_repair_artifacts,
     scheduled_category_ids,
 )
+from tools.publish_inventory import main as publish_inventory_main
 
 
 ISSUE = date(2026, 6, 16)
@@ -115,3 +117,30 @@ def test_distribution_manifest_includes_audio_and_podcast_state() -> None:
     assert "build/youtube-podcast-deepdive/2026-06-16.mp4" in artifacts
     assert "build/youtube-podcast-deepdive/uploads.json" in artifacts
     assert "data/distribution/2026-06-16.json" in artifacts
+
+
+def test_categories_manifest_exposes_issue_schedule(capsys) -> None:
+    rc = publish_inventory_main(["--date", "2026-06-24", "--kind", "categories", "--json"])
+
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out) == [
+        "fx",
+        "ai",
+        "it",
+        "mobility",
+        "manufacturing",
+        "economy",
+    ]
+
+
+def test_weekend_categories_manifest_excludes_manufacturing_and_economy(capsys) -> None:
+    rc = publish_inventory_main(["--date", "2026-06-20", "--kind", "categories", "--json"])
+
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out) == [
+        "fx",
+        "ai",
+        "it",
+        "mobility",
+        "game",
+    ]

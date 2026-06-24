@@ -444,6 +444,27 @@ def test_inventory_repair_artifacts_cover_required_digest_and_docs() -> None:
     assert "-Artifacts $PublishedRepairArtifacts" in runner
 
 
+def test_runner_derives_reporter_categories_from_publish_inventory() -> None:
+    """runner は 7 カテゴリ固定ではなく、号日の必須カテゴリだけを fan-out する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "$Categories = @('fx','ai','it','mobility','manufacturing','economy','game')" not in runner
+    assert "Get-PublishInventoryArtifacts -Kind 'categories'" in runner
+    assert "$Categories = Get-PublishInventoryArtifacts -Kind 'categories'" in runner
+    assert "Stage0 harvest summary categories=$($Categories.Count)" in runner
+    assert "reporter_artifacts = @($ReporterArtifacts | ForEach-Object { $_.records_file })" in runner
+
+
+def test_runner_contract_mentions_non_target_categories_are_not_fanned_out() -> None:
+    """水曜 Game / 土日 Manufacturing・Economy を sub-agent に流さない契約を runner に残す。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "scheduled_category_ids(issue)" in runner
+    assert "非対象カテゴリを reporter fan-out しない" in runner
+    assert "Game は火木土日のみ" in runner
+    assert "Manufacturing / Economy は月火水木金のみ" in runner
+
+
 def test_codex_auth_preflight_runs_before_llm_repair() -> None:
     """LLM repair 前に Codex 認証切れを content failure と分離して止める。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
@@ -566,6 +587,31 @@ def test_targeted_repair_rejects_changes_outside_artifact_scope() -> None:
     assert "repair worker changed files outside artifact scope" in runner
     assert "Invoke-PythonGateWithRepair" in gate_body
     assert "if (-not (Test-RepairArtifactScope" in runner
+
+
+def test_autonomous_gate_classifies_actual_gate_capture() -> None:
+    """classify は空 output ではなく、失敗した gate の capture file を読む。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
+
+    assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output' ''" not in runner
+    assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath" in gate_body
+    assert "auto repair classify failed" in gate_body
+    assert "return $gateRc" in gate_body
+
+
+def test_runner_blocks_publish_on_batch_slo_violation() -> None:
+    """370万token / 2時間超の自走失敗を publish 前の SLO gate で止める。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "batch SLO gate start" in runner
+    assert "'tools.validate_batch_slo'" in runner
+    assert "--max-total-tokens" in runner
+    assert "'3000000'" in runner
+    assert "--max-window-sec" in runner
+    assert "'3600'" in runner
+    assert "blocked_slo_violation" in runner
+    assert runner.index("batch SLO gate start") < runner.index("Daily TTS audio")
 
 
 def test_generation_quality_runs_after_external_readiness_precheck() -> None:

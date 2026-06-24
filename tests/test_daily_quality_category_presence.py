@@ -73,3 +73,47 @@ def test_issue_schedule_allows_per_category_intentional_pause_marker(tmp_path: P
     _write_all_scheduled_categories_except(tmp_path, missing="game")
 
     assert validate_issue_schedule(tmp_path / "digest", ISSUE) == []
+
+
+def test_issue_schedule_rejects_unscheduled_category_digest(tmp_path: Path) -> None:
+    """非対象カテゴリ digest は required missing ではなく、runner bug / quarantine 対象として落とす。"""
+    issue = date(2026, 6, 24)  # 水曜日: game は非対象
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    (summary_dir / f"{issue.isoformat()}.md").write_text(
+        "---\n"
+        "title: Summary\n"
+        f"date: {issue.isoformat()}\n"
+        "categoryId: summary\n"
+        "weekday: 水曜日\n"
+        "---\n\n"
+        "# Summary\n",
+        encoding="utf-8",
+    )
+    for cat_id, folder in [
+        ("fx", "FX"),
+        ("ai", "AI"),
+        ("it", "IT-Consulting"),
+        ("mobility", "Mobility"),
+        ("manufacturing", "Manufacturing"),
+        ("economy", "Economy"),
+        ("game", "Game"),
+    ]:
+        cat_dir = tmp_path / "digest" / folder
+        cat_dir.mkdir(parents=True, exist_ok=True)
+        (cat_dir / f"{issue.isoformat()}-{folder}.md").write_text(
+            "---\n"
+            f"title: {folder}\n"
+            f"date: {issue.isoformat()}\n"
+            f"categoryId: {cat_id}\n"
+            "---\n\n"
+            f"# {folder}\n",
+            encoding="utf-8",
+        )
+
+    errs = validate_issue_schedule(tmp_path / "digest", issue)
+
+    joined = "\n".join(errs)
+    assert "unscheduled category digest present" in joined
+    assert "game" in joined
+    assert "scheduled category digest missing" not in joined
