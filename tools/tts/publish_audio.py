@@ -135,13 +135,18 @@ def latest_audio_for_pages(day: str | None = None) -> dict[str, str]:
     }
 
 
-def publish(day: str, mp3_path: Path | None = None) -> dict[str, str] | None:
+def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) -> dict[str, str] | None:
     parsed_day = _parse_day(day)
     target = mp3_path or (BUILD_DIR / f"{day}.mp3")
     if not target.exists():
         _warn(f"mp3 not found: {target}")
         return None
     try:
+        if dry_run:
+            url = versioned_audio_url(day, target)
+            write_latest_audio(day, url)
+            print(f"[tts] audio publish dry-run: {url}")
+            return {"latest_audio_date": day, "latest_audio_url": url}
         if not ensure_release():
             return None
         proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"], timeout=GH_TIMEOUT_SEC)
@@ -160,8 +165,10 @@ def publish(day: str, mp3_path: Path | None = None) -> dict[str, str] | None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="日次朗読 mp3 を GitHub Releases に公開します。")
     parser.add_argument("date", help="YYYY-MM-DD")
+    parser.add_argument("--dry-run", action="store_true", help="GitHub Releases へ upload せず latest_audio.json だけ検証用に更新する。")
     args = parser.parse_args(argv)
-    return 0 if publish(args.date) is not None else 1
+    result = publish(args.date, dry_run=True) if args.dry_run else publish(args.date)
+    return 0 if result is not None else 1
 
 
 if __name__ == "__main__":

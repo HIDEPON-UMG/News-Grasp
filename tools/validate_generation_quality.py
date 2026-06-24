@@ -374,7 +374,12 @@ def _validate_audio_script(repo_root: Path, rel: str, issue: str) -> list[Genera
         ]
 
     _frontmatter, body = _split_frontmatter(_read_text(repo_root / rel))
-    issues = validate_script(body, date=issue, history_texts=_recent_audio_history(repo_root, issue))
+    issues = validate_script(
+        body,
+        date=issue,
+        history_texts=_recent_audio_history(repo_root, issue),
+        required_categories=scheduled_category_ids(issue),
+    )
     if not issues:
         return []
     return [

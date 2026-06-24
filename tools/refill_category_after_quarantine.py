@@ -8,6 +8,7 @@ from typing import Any
 
 from tools.config import CATEGORIES
 from tools.publish_inventory import CATEGORY_PATHS
+from tools.publish_inventory import scheduled_category_ids
 
 
 MIN_PUBLISHABLE_COUNT = 1
@@ -17,6 +18,12 @@ TARGET_COUNT = 5
 def refill_category_ids() -> list[str]:
     """Return refill target categories from the canonical site category config."""
     return [cat_id for cat_id in CATEGORIES if cat_id != "summary"]
+
+
+def refill_category_ids_for_date(issue_date: str | None) -> list[str]:
+    if issue_date:
+        return list(scheduled_category_ids(issue_date))
+    return refill_category_ids()
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -108,11 +115,59 @@ def _category_folder(category: str) -> str:
     return CATEGORY_PATHS[category]["digest_folder"]
 
 
+def _published_day(row: dict[str, Any], fallback: str) -> str:
+    for key in ("published_date", "published", "pubDate", "date"):
+        value = row.get(key)
+        if isinstance(value, str) and len(value) >= 10:
+            head = value[:10]
+            if len(head) == 10 and head[4] == "-" and head[7] == "-":
+                return head
+    return fallback
+
+
+def _normalize_refill_record(row: dict[str, Any], *, date: str, category: str) -> dict[str, Any]:
+    """dedup raw candidate を reporter/articles record として使える形に寄せる。"""
+    normalized = dict(row)
+    genre = _category_folder(category)
+    title = str(normalized.get("title") or normalized.get("title_ja") or "reserve article").strip()
+    published_day = _published_day(normalized, date)
+    normalized["date"] = date
+    normalized["genre"] = str(normalized.get("genre") or genre)
+    normalized["title"] = title
+    normalized["title_ja"] = str(normalized.get("title_ja") or title)
+    normalized["thumb"] = normalized.get("thumb")
+    normalized["published_date"] = str(normalized.get("published_date") or published_day)
+    normalized["published"] = str(normalized.get("published") or published_day)
+    normalized["date_evidence_source"] = str(
+        normalized.get("date_evidence_source")
+        or ("rss-pubdate" if normalized.get("pubDate") else "refill-candidate")
+    )
+    return normalized
+
+
+def _is_publishable_refill_candidate(row: dict[str, Any]) -> bool:
+    url = str(row.get("url") or "")
+    if not url.startswith("http"):
+        return False
+    if "news.google.com/rss/articles/" in url:
+        return False
+    if str(row.get("google_news_decode_status") or "").casefold() == "unresolved":
+        return False
+    if str(row.get("url_resolution_action") or "") == "reporter_must_resolve_canonical":
+        return False
+    thumb = row.get("thumb")
+    if not isinstance(thumb, str) or not thumb.startswith("http"):
+        return False
+    title = str(row.get("title") or row.get("title_ja") or "").strip()
+    return bool(title)
+
+
 def _paths(repo_root: Path, date: str, category: str) -> dict[str, Path]:
     folder = _category_folder(category)
     return {
         "digest": repo_root / "digest" / folder / f"{date}-{folder}.md",
         "records": repo_root / "tmp" / "newsroom" / date / f"{category}.records.jsonl",
+        "articles": repo_root / "data" / "articles.jsonl",
         "audit": repo_root / "data" / "search_audit" / date / f"{category}.json",
     }
 
@@ -154,6 +209,34 @@ def _sync_digest(path: Path, bad_urls: set[str], selected: list[dict[str, Any]])
         if str(row.get("url") or ""):
             kept.extend(["", _format_digest_card(row), "---"])
     path.write_text("\n".join(kept).rstrip() + "\n", encoding="utf-8", newline="\n")
+
+
+def _sync_articles_jsonl(
+    path: Path,
+    bad_urls: set[str],
+    selected: list[dict[str, Any]],
+    drop_extra_urls: set[str] | None = None,
+) -> None:
+    drop_urls = set(bad_urls)
+    if drop_extra_urls:
+        drop_urls.update(drop_extra_urls)
+    rows = _jsonl(path)
+    selected_by_url = {str(row.get("url") or ""): row for row in selected if str(row.get("url") or "")}
+    kept: list[dict[str, Any]] = []
+    written_selected: set[str] = set()
+    for row in rows:
+        url = str(row.get("url") or "")
+        if url in drop_urls:
+            continue
+        if url in selected_by_url:
+            kept.append(selected_by_url[url])
+            written_selected.add(url)
+            continue
+        kept.append(row)
+    for url, row in selected_by_url.items():
+        if url not in written_selected:
+            kept.append(row)
+    _write_jsonl(path, kept)
 
 
 def _read_bad_urls(path: Path | None) -> list[str]:
@@ -215,11 +298,15 @@ def refill_category(
     current_urls = {str(row.get("url") or "") for row in kept}
 
     selected: list[dict[str, Any]] = []
+    skipped_unpublishable: set[str] = set()
     for candidate in _reserve_candidates(candidate_dir, category):
         url = str(candidate.get("url") or "")
         if not url or url in bad or url in rejected or url in current_urls:
             continue
-        selected.append(candidate)
+        if not _is_publishable_refill_candidate(candidate):
+            skipped_unpublishable.add(url)
+            continue
+        selected.append(_normalize_refill_record(candidate, date=date, category=category))
         current_urls.add(url)
         if len(kept) + len(selected) >= min(TARGET_COUNT, original_count):
             break
@@ -243,6 +330,7 @@ def refill_category(
 
     _write_jsonl(paths["records"], final_rows)
     _sync_digest(paths["digest"], bad, selected)
+    _sync_articles_jsonl(paths["articles"], bad, selected, skipped_unpublishable)
 
     dropped = audit.get("dropped")
     if not isinstance(dropped, list):
@@ -287,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.list_categories:
-        print(json.dumps(refill_category_ids(), ensure_ascii=False))
+        print(json.dumps(refill_category_ids_for_date(args.date), ensure_ascii=False))
         return 0
 
     if not args.date or not args.category:

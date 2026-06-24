@@ -406,8 +406,10 @@ py tools/fetch_ogp.py "https://example.com/article"
 ### ステップ 4: テーマ考察の生成 (γ schema)
 
 カテゴリ横断で、当日の通底テーマを抽出。**Phase 5 で /News-Grasp/{date}/summary/ の
-Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflection` ブロックを 7
-セクション + 3 takeaways + pull_quote 構造で出力する：
+Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflection` ブロックを scheduled_categories
+準拠のセクション + 3 takeaways + pull_quote 構造で出力する：
+
+`editor-input-manifest.json` の `scheduled_categories` が当日の唯一の対象カテゴリ正本である。**Summary frontmatter の categories / tags は scheduled_categories のみ**にし、**非対象カテゴリの section を作らない**。Game は火木土日のみ、Manufacturing / Economy は月火水木金のみ。非対象カテゴリを休載文・穴埋め・過去 artifact からの引用で Summary / audio script / DeepDive テーマに混ぜない。
 
 **Summary テーマの直近3日重複を避ける（2026-06-23 追加）**。執筆前に `digest/Summary/{前日}.md` / `{2日前}.md` / `{3日前}.md` が存在する場合、frontmatter の `title` / `hero_left` / `hero_right` / `theme` と `Today's Theme` 冒頭だけを読む。候補を最低3本作り、各候補の「同じ骨格」「主役カテゴリ」「切り口」を直近3日と比較してから採用する。大手ニュース見出しに多いタイトルパターン帳として、①主体+動作、②転換/節目、③対比/衝突、④影響/波及、⑤数字/期限、⑥現場/地域、⑦次の焦点を使い、最低3系統を候補に混ぜる。直近3日にある `A と B` 型、同じ末尾語、同じ抽象語の組み替えは採用禁止。特に `現場実装`、`制御境界`、`条件設計`、`制度化`、`供給網再編` を続けて主語・述語・左右いずれかに置かない。続報が多い日は、今日だけ増えた一次材料、対立、数字、期限、現場、読者の判断軸のどれかをタイトルに出す。
 
@@ -436,8 +438,8 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
     "from": "§06 GAME"
   },
 
-  // **ちょうど 9 セクション**: 総論 / 為替 / AI / IT / モビリティ / 製造 / 経済 / ゲーム / 明日へ
-  // 順序固定、color はテンプレ側で固定値 (_SUMMARY_SECTION_COLORS) を当てるので不要
+  // **scheduled_categories 準拠のセクション**: 総論 / scheduled_categories の公開順 / 明日へ
+  // 非対象カテゴリの section は作らない。color はテンプレ側で固定値 (_SUMMARY_SECTION_COLORS) を当てるので不要
   "sections": [
     { "number": 1, "tag": "総論",       "heading": "本日の総論",       "body": "..." },
     { "number": 2, "tag": "為替",       "heading": "...",             "body": "..." },
@@ -446,8 +448,7 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
     { "number": 5, "tag": "モビリティ", "heading": "...",             "body": "..." },
     { "number": 6, "tag": "製造",       "heading": "...",             "body": "..." },
     { "number": 7, "tag": "経済",       "heading": "...",             "body": "..." },
-    { "number": 8, "tag": "ゲーム",     "heading": "...",             "body": "..." },
-    { "number": 9, "tag": "明日へ",     "heading": "明日への示唆",     "body": "..." }
+    { "number": 8, "tag": "明日へ",     "heading": "明日への示唆",     "body": "..." }
   ],
 
   // **ちょうど 3 件**: KEY TAKEAWAYS (3 カラム / 64px 番号バー + tag + 本文)
@@ -472,15 +473,14 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   通る名詞句で、「{hero_left} と {hero_right}。」が日本語の 1 文として成立させる。`"AI"` `"GPT-5"`
   のような裸の英略語 1 語で終わらせない (LP hero が「Gemma 4 12B と AI」と断片化し意味不明改行に
   なった 2026-06-06 事故を人手オーサで防ぐ)。frontmatter `title`/`theme` (長文可) とは別物。
-- **sections は必ず 9 件**。順序は 総論 → 為替 → AI → IT → モビリティ → 製造 → 経済 → ゲーム → 明日へ で固定。
-  これは Pattern D のセクションタグ（`_SUMMARY_SECTION_TAGS` in `tools/generate_pages.py`）と
-  揃える必要がある。曜日でカテゴリが少ない日（例: 月は Game なし、土日は 製造・Economy なし）でも 9 件は守り、
-  該当カテゴリは「ゲーム関連は本日休載」「製造は本日休載（平日のみ）」のように 1 文で繋ぐ
+- **sections は scheduled_categories だけで構成**する。順序は 総論 → scheduled_categories の公開順 → 明日へ。
+  水曜は Game section を作らない。土日は Manufacturing / Economy section を作らない。非対象カテゴリを休載文で繋がない。
+- **朗読原稿も scheduled_categories 件だけを巡回**する。カテゴリ巡回 7 件の固定構成は禁止。水曜は Game に触れず、土日は Manufacturing / Economy に触れない。非対象カテゴリを休載文・穴埋め・過去 artifact 由来の話題で補わない。実効字数は曜日にかかわらず 2,500〜3,000字に収める。
 - **takeaways は必ず 3 件**。`n` は 1/2/3 の番号、`tag` は本文中で最も強調したい軸、`color` は対応する
   カテゴリ accent (`#B8860B` / `#2D5BB8` / `#2E6B52` / `#3A7B8C` / `#5A6B7B` / `#8E2A19` / `#5E3D8C` / `#475569`) から選ぶ
 - **pull_quote.text** は **40〜80 字** が目安。Georgia 120px の大型引用符と並ぶので長すぎると改行が乱れる。
   `emphasis` 部分は `[[ ]]` で囲まなくてよい (テンプレ側で gold underline を当てる)
-- **lead は 150〜250 字（最低 150 字を厳守）**。**3 階層の強調をすべて使う**: `[[ ]]` を 2-4 箇所 + `**太字**` を 1-2 箇所 + `__下線__` を 1 箇所（この lead は LP 上部「TODAY'S THEME」本文に `render_emph` でマーカー/太字/下線として描画されるため、`[[ ]]` だけだと太字・下線が出ず単調になる。2026-05-30 に lead がマーカーのみで「強調が効いていない」と指摘された）。
+- **lead は 220〜250 字**。`tools.validate_summary_reflection` は LP TODAY'S THEME 用 lead を 180文字以上で gate するため、ぎりぎりを狙わず 220 字以上で書く。**3 階層の強調をすべて使う**: `[[ ]]` を 2-4 箇所 + `**太字**` を 1-2 箇所 + `__下線__` を 1 箇所（この lead は LP 上部「TODAY'S THEME」本文に `render_emph` でマーカー/太字/下線として描画されるため、`[[ ]]` だけだと太字・下線が出ず単調になる。2026-05-30 に lead がマーカーのみで「強調が効いていない」と指摘された）。
   **為替・AI だけに偏らせず、その日に動いた主要カテゴリ (3 分野以上) を横断して言及する**こと。
   この lead は LP の「本日のテーマ考察」ボックスにそのまま再利用される。末尾の定型句「以下、各カテゴリを
   横断して読み解く。」は LP 表示時に自動除去されるため、**それを除いた本文だけで「今日が何のテーマで

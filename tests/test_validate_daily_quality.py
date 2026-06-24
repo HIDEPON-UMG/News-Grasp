@@ -11,11 +11,13 @@ from tools.validate_daily_quality import (
     main,
     validate_daily_quality,
     validate_card_emphasis_coverage,
+    validate_digest_article_counts,
     validate_digest_article_thumbnail_coverage,
     validate_digest_style_quality,
     validate_dedup_annotation_present,
     validate_deepdive_presence,
     validate_deepdive_relations_layout,
+    validate_issue_schedule,
 )
 
 
@@ -123,6 +125,58 @@ def _write_monday_scheduled_digests(root: Path) -> None:
         ("economy", "Economy"),
     ]:
         _write_category_digest(root, cat_id, folder)
+
+
+def _write_category_digest_for_issue(
+    root: Path,
+    *,
+    issue: str,
+    cat_id: str,
+    folder: str,
+) -> None:
+    cat_dir = root / "digest" / folder
+    cat_dir.mkdir(parents=True, exist_ok=True)
+    (cat_dir / f"{issue}-{folder}.md").write_text(
+        "---\n"
+        f"title: {folder}\n"
+        f"date: {issue}\n"
+        f"categoryId: {cat_id}\n"
+        "---\n\n"
+        f"### [90] {cat_id} article\n\n"
+        f"📅 {issue} 06:00 · 📰 Example · 🔗 [元記事](https://example.com/{issue}/{cat_id})\n\n"
+        "![thumb](https://example.com/thumb.jpg)\n\n"
+        "- [[test]] **test** __test__\n\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+
+def _write_wednesday_summary(
+    root: Path,
+    *,
+    categories: list[str],
+    body: str = "",
+) -> None:
+    summary_dir = root / "digest" / "Summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    category_lines = "\n".join(f"  - {cat_id}" for cat_id in categories)
+    tag_lines = "\n".join(f"  - cat/{cat_id}" for cat_id in categories)
+    (summary_dir / "2026-06-24.md").write_text(
+        "---\n"
+        "title: Summary\n"
+        "date: 2026-06-24\n"
+        "weekday: 水曜日\n"
+        "category: Daily Summary\n"
+        "categoryId: summary\n"
+        "categories:\n"
+        f"{category_lines}\n"
+        "tags:\n"
+        f"{tag_lines}\n"
+        "---\n\n"
+        "# Summary\n\n"
+        f"{body}\n",
+        encoding="utf-8",
+    )
 
 
 def _write_jsonl(root: Path, url: str, *, extra: dict | None = None) -> None:
@@ -473,6 +527,61 @@ def test_daily_quality_rejects_scheduled_category_gap(tmp_path: Path) -> None:
     assert "unscheduled category digest present" not in joined
 
 
+def test_issue_schedule_rejects_unscheduled_summary_category_on_wednesday(tmp_path: Path) -> None:
+    """水曜 Summary が Game を参照したら、記者 fan-out が正しくても公開前に落とす。"""
+    for cat_id, folder in [
+        ("fx", "FX"),
+        ("ai", "AI"),
+        ("it", "IT-Consulting"),
+        ("mobility", "Mobility"),
+        ("manufacturing", "Manufacturing"),
+        ("economy", "Economy"),
+    ]:
+        _write_category_digest_for_issue(
+            tmp_path,
+            issue="2026-06-24",
+            cat_id=cat_id,
+            folder=folder,
+        )
+    _write_wednesday_summary(
+        tmp_path,
+        categories=["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"],
+        body="### §08 ゲーム — 発売より、その後の回し方\n\nGame は料金改定が主役でした。\n",
+    )
+
+    joined = "\n".join(validate_issue_schedule(tmp_path / "digest", date(2026, 6, 24)))
+
+    assert "unscheduled summary category" in joined
+    assert "game" in joined
+    assert "2026-06-24" in joined
+
+
+def test_issue_schedule_allows_stale_unscheduled_digest_when_summary_excludes_it(tmp_path: Path) -> None:
+    """非対象カテゴリ artifact が残っていても、Summary が参照しなければ missing/failure にしない。"""
+    for cat_id, folder in [
+        ("fx", "FX"),
+        ("ai", "AI"),
+        ("it", "IT-Consulting"),
+        ("mobility", "Mobility"),
+        ("manufacturing", "Manufacturing"),
+        ("economy", "Economy"),
+        ("game", "Game"),
+    ]:
+        _write_category_digest_for_issue(
+            tmp_path,
+            issue="2026-06-24",
+            cat_id=cat_id,
+            folder=folder,
+        )
+    _write_wednesday_summary(
+        tmp_path,
+        categories=["fx", "ai", "it", "mobility", "manufacturing", "economy"],
+        body="### §06 製造 — 量産の入口\n\nManufacturing を扱います。\n",
+    )
+
+    assert validate_issue_schedule(tmp_path / "digest", date(2026, 6, 24)) == []
+
+
 def test_daily_quality_rejects_stale_url_date_in_digest_and_jsonl(tmp_path: Path) -> None:
     """URL パス日付が号日より古ければ、digest と jsonl の両方で落とす。"""
     _write_summary(tmp_path)
@@ -769,6 +878,24 @@ def test_daily_quality_rejects_search_audit_missing_ai_coverage_terms(tmp_path: 
     joined = "\n".join(errs)
     assert "coverage_terms_checked missing required terms" in joined
     assert "OpenAI" in joined
+
+
+def test_daily_quality_ignores_non_scheduled_game_digest_on_wednesday(tmp_path: Path) -> None:
+    """水曜の Game artifact は非対象なので記事数 gate の失敗にしない。"""
+    issue = date(2026, 6, 24)
+    game = tmp_path / "digest" / "Game" / "2026-06-24-Game.md"
+    game.parent.mkdir(parents=True)
+    game.write_text(
+        "---\n"
+        "title: Game\n"
+        "date: 2026-06-24\n"
+        "categoryId: game\n"
+        "---\n\n"
+        "# Game\n",
+        encoding="utf-8",
+    )
+
+    assert validate_digest_article_counts(tmp_path / "digest", issue) == []
 
 
 def test_daily_quality_rejects_thin_search_audit(tmp_path: Path) -> None:

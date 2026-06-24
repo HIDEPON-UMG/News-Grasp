@@ -12,6 +12,7 @@ from typing import Any
 
 DEFAULT_MAX_SAME_SIGNATURE_RETRIES = 1
 DEFAULT_MAX_CATEGORY_FAILURES = 2
+RETRY_BUDGET_POLICY_VERSION = 4
 NON_RETRYABLE_PATTERNS = (
     "secret",
     "credential",
@@ -115,6 +116,25 @@ def is_retryable_output(output: str) -> bool:
     return not any(pat in lowered for pat in NON_RETRYABLE_PATTERNS)
 
 
+def _category_failures_for_artifact(
+    signatures: dict[str, Any],
+    *,
+    category: str,
+    artifact_hash: str,
+) -> int:
+    failures = 0
+    for sig_state in signatures.values():
+        if not isinstance(sig_state, dict):
+            continue
+        sig_category = sig_state.get("category") or category
+        if sig_category != category:
+            continue
+        for seen_hash in sig_state.get("artifact_hashes", []):
+            if seen_hash == artifact_hash:
+                failures += 1
+    return failures
+
+
 def record_gate_failure(
     state: dict[str, Any],
     failure: GateFailure,
@@ -124,6 +144,9 @@ def record_gate_failure(
     max_category_failures: int = DEFAULT_MAX_CATEGORY_FAILURES,
 ) -> AttemptDecision:
     """失敗を state に記録し、次の repair worker を許可するか返す。"""
+    if state.get("retry_budget_policy_version") != RETRY_BUDGET_POLICY_VERSION:
+        state["retry_budget_policy_version"] = RETRY_BUDGET_POLICY_VERSION
+        state["gates"] = {}
     sig = failure.signature()
     art_hash = failure.artifact_hash(repo_root)
     gates = state.setdefault("gates", {})
@@ -131,11 +154,16 @@ def record_gate_failure(
     signatures = gate_state.setdefault("signatures", {})
     categories = gate_state.setdefault("categories", {})
 
-    sig_state = signatures.setdefault(sig, {"failures": 0, "artifact_hashes": []})
+    sig_state = signatures.setdefault(sig, {"failures": 0, "artifact_hashes": [], "category": failure.category})
+    sig_state.setdefault("category", failure.category)
     sig_state["failures"] = int(sig_state.get("failures", 0)) + 1
     sig_state.setdefault("artifact_hashes", []).append(art_hash)
 
-    category_failures = int(categories.get(failure.category, 0)) + 1
+    category_failures = _category_failures_for_artifact(
+        signatures,
+        category=failure.category,
+        artifact_hash=art_hash,
+    )
     categories[failure.category] = category_failures
 
     same_signature_failures = int(sig_state["failures"])

@@ -43,6 +43,7 @@
 
 - **記者→編集長の返却は「コンパクト JSON（~2KB）」のみ**。各記者には「フル record・記事本文・digest md 本文を external fan-out の返却に含めるな。返すのは件数・タイトル一覧・shortfall 理由だけ」と spawn 時に明示する（reporter system 側にも規定済み）。
 - runner から渡される `editor-input-manifest.json` は `reporter_artifacts`（記者 compact JSON / records のパス）, `dedup_file`, `source_policy: "no_recollection"` を持つ。あなたの最後の応答は `schemas/editor_summary.schema.json` に一致する JSON だけにする。
+- `editor-input-manifest.json` の `scheduled_categories` が当日の唯一の対象カテゴリ正本である。**Summary frontmatter の categories / tags は scheduled_categories のみ**にし、**非対象カテゴリの section を作らない**。Game は火木土日のみ、Manufacturing / Economy は月火水木金のみ。非対象カテゴリを休載文・穴埋め・過去 artifact からの引用で Summary / audio script / DeepDive テーマに混ぜない。
 - **`articles.jsonl` / digest md の全文 Read を禁止**する。あなたは articles.jsonl の中身を一度も Read しない。フル record はファイル経由でパイプ処理する（`cat … | python -m tools.dedup …`）。
 - **検証は CLI の exit code で受ける**。`verify_reporter_output.py` / `dedup.py` の stdout を全文読み込んで判断しない（FAIL 時のみ FAIL 理由行を読む）。
 - record の中身を確認したいときは、ファイル全体を Read せず `wc -l` / `head` 相当の最小限に留める。
@@ -146,9 +147,9 @@ cat tmp/newsroom/{号日}/*.records.jsonl \
 - **`hero_left` / `hero_right` を必ず frontmatter に出力**（各 ≤14 字・単独で意味が通る名詞句。「{hero_left} と {hero_right}。」が日本語 1 文として成立。`"AI"` 等の裸の英略語 1 語で終わらせない）。
 - **`categoryId` を必ず frontmatter に出力する（最重要）**。
   > ⚠️ **2026-05-16 fallback の真因はカテゴリ digest 4 本の `categoryId` 欠落だった**（summary 誤判定 → 同日重複 entry）。Summary digest と各カテゴリ digest の frontmatter には `categoryId` を **絶対に欠落させない**。Summary は `categoryId: summary`、各カテゴリは対応 id（記者側でも規定済み）。
-- **sections は必ず 9 件**（総論 → 為替 → AI → IT → モビリティ → 製造 → 経済 → ゲーム → 明日へ、順序固定）。曜日でカテゴリが無い日（月は Game なし / 土日は 製造・Economy なし）でも 9 件を守り、該当カテゴリは「ゲーム関連は本日休載」のように 1 文で繋ぐ。
+- **sections は scheduled_categories だけで構成**する。総論 → scheduled_categories の公開順 → 明日へ、の順にする。水曜は Game section を作らない。土日は Manufacturing / Economy section を作らない。非対象カテゴリを休載文で繋がない。
 - **takeaways は必ず 3 件**（`n` は 1/2/3、`color` はカテゴリ accent から選ぶ）。
-- **lead は 150〜250 字**（最低 150 字厳守）。3 階層の強調をすべて使う（`[[ ]]` 2-4 + `**太字**` 1-2 + `__下線__` 1）。為替・AI に偏らせず、その日動いた主要カテゴリ 3 分野以上を横断する。
+- **lead は 220〜250 字**。`tools.validate_summary_reflection` は LP TODAY'S THEME 用 lead を 180文字以上で gate するため、ぎりぎりを狙わず 220 字以上で書く。3 階層の強調をすべて使う（`[[ ]]` 2-4 + `**太字**` 1-2 + `__下線__` 1）。為替・AI に偏らせず、その日動いた主要カテゴリ 3 分野以上を横断する。
 - **pull_quote.text は 40〜80 字**。`{text, emphasis, from}` のオブジェクト。
 - **各 section body は 150〜250 字**。各 § ごとに 3 階層の強調をすべて使う（`[[マーカー]]` 1-2 + `**太字**` 1 + `__下線__` 1）。
 
@@ -167,9 +168,9 @@ dedup 第 2 パスを通過した全 record（`tmp/newsroom/{号日}/_merged_fil
 
 日次 digest と Summary を完成させた後、当日のニュースを「聴いて」把握するための朗読原稿を追加で生成する。出力先は `digest/Summary/{号日}-audio-script.md`。これは公開 HTML ではなく、後続の音声専用ステップが AivisSpeech で mp3 化するための原稿である。
 
-朗読原稿は、35 記事の機械的な羅列にしてはならない。親しみやすい語り口のバリトン男声で読む前提で、耳で聞いて流れが分かる短めの文にする。構成は、オープニング約450字、カテゴリ巡回 7 件を各約300字、クロージング約120字、合計約2,670字を目安にする。実効字数は 2,500〜3,000字に収める。Markdown の見出し `# ニュース グラスプ #YYYYMMDD 音声朗読原稿` はファイル整理用であり、読み上げ本文には含めない。本文の最初の文では、必ず当日の日付を述べた後に「朝のニュースをお伝えします」という趣旨のセリフを入れる。
+朗読原稿は、35 記事の機械的な羅列にしてはならない。親しみやすい語り口のバリトン男声で読む前提で、耳で聞いて流れが分かる短めの文にする。構成は、オープニング約450字、カテゴリ巡回 scheduled_categories 件を各約300字、クロージング約120字を目安にする。実効字数は曜日にかかわらず 2,500〜3,000字に収める。Markdown の見出し `# ニュース グラスプ #YYYYMMDD 音声朗読原稿` はファイル整理用であり、読み上げ本文には含めない。本文の最初の文では、必ず当日の日付を述べた後に「朝のニュースをお伝えします」という趣旨のセリフを入れる。
 
-カテゴリ巡回は、為替、AI、IT-Consulting、モビリティ、製造、経済、ゲームの 7 カテゴリすべてに言及する。各カテゴリではトップ記事、つまり hero を軸に「今日そのカテゴリで何があったか」「その動きが他カテゴリや生活にどうつながるか」を語る。主要な関連記事には軽く触れてよいが、記事タイトルや URL の読み上げを誘発する表記、wikilink の多用、表、箇条書き、記号列は避ける。
+カテゴリ巡回は、`editor-input-manifest.json` の scheduled_categories 件だけに言及する。水曜は Game に触れず、土日は Manufacturing / Economy に触れない。非対象カテゴリを休載文・穴埋め・過去 artifact 由来の話題で補わない。各カテゴリではトップ記事、つまり hero を軸に「今日そのカテゴリで何があったか」「その動きが他カテゴリや生活にどうつながるか」を語る。主要な関連記事には軽く触れてよいが、記事タイトルや URL の読み上げを誘発する表記、wikilink の多用、表、箇条書き、記号列は避ける。
 
 冒頭では横断トレンド予測サマリーを核に「今日はどんな日だったか」を語る。締めでは、明日以降どこを見ると流れを追いやすいかを自然に添える。難読語や英略語は、必要に応じて読みが分かる形に言い換える。朗読本文内でブランド名を読む場合は、TTS の発音安定のため `News Grasp` ではなく `ニュース グラスプ` と表記する。
 

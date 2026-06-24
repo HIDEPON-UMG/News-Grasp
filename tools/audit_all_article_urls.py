@@ -53,6 +53,7 @@ if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
 from tools.validate_deepdive_urls import UrlRef, verify_urls  # noqa: E402
+from tools.validate_digest_articles_reconcile import current_reporter_urls_for_issue  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -335,6 +336,8 @@ def main() -> int:
     ap.add_argument("--require-session", action="store_true",
                     help="--match-session の白リストが不在/空/日付不一致なら fatal にする "
                          "(本番 runner 用。ad-hoc 監査の既定 degrade は維持)")
+    ap.add_argument("--issue-date",
+                    help="対象号日 (YYYY-MM-DD)。resume / 翌日検証でも quarantine 対象を実行日ではなく号日に固定する")
     ap.add_argument("--verify-dates", action="store_true",
                     help="2026-06-11 偽日付事故の恒久対策: 当日 date のレコード全件を "
                          "full GET し、htmldate で独立抽出した公開日と自己申告 date を "
@@ -356,6 +359,14 @@ def main() -> int:
         return 2
 
     today = date.today()
+    issue_date_str = today.strftime("%Y-%m-%d")
+    if args.issue_date:
+        try:
+            datetime.strptime(args.issue_date, "%Y-%m-%d")
+        except ValueError:
+            print(f"FATAL: --issue-date は YYYY-MM-DD 形式: {args.issue_date!r}", file=sys.stderr)
+            return 2
+        issue_date_str = args.issue_date
     cutoff = today - timedelta(days=args.recent) if args.recent else None
 
     items: list[tuple[str, str, str]] = []  # (date, title, url)
@@ -380,6 +391,8 @@ def main() -> int:
             title = str(d.get("title", "")).strip()
             if not url.startswith("http"):
                 continue
+            if args.issue_date and dt_str != issue_date_str:
+                continue
             if cutoff:
                 try:
                     dt = datetime.strptime(dt_str, "%Y-%m-%d").date()
@@ -397,14 +410,26 @@ def main() -> int:
         print("対象 URL が 0 件")
         return 0
 
+    if args.issue_date:
+        current_urls = current_reporter_urls_for_issue(_PKG_ROOT, issue_date_str)
+        if current_urls is not None:
+            current_norm = {_normalize_url_for_match(url) for url in current_urls}
+            items = [
+                (dt_str, title, url)
+                for dt_str, title, url in items
+                if _normalize_url_for_match(url) in current_norm
+            ]
+            if not items:
+                print(f"対象 URL が 0 件 (--issue-date {issue_date_str}, current reporter manifest)")
+                return 0
+
     print(f"対象 URL: {len(items)} 件 ({'直近 ' + str(args.recent) + ' 日' if cutoff else '全期間'})")
 
     # 案②-Lite: session 白リスト照合 (gate と独立に動かせるが、本番運用は --gate と同時指定)
     session_fatal: list[tuple[str, str, str]] = []  # (date, title, url)
     session_gate_errors: list[str] = []
     if args.match_session:
-        today_str = today.strftime("%Y-%m-%d")
-        session_norm, session_path, session_date = _load_session_urls(_PKG_ROOT, today_str)
+        session_norm, session_path, session_date = _load_session_urls(_PKG_ROOT, issue_date_str)
         if not session_norm:
             # degrade: session ファイル無し / 空 / 破損 → 物理照合は無効化して従来 gate のみで進む
             print(
@@ -417,17 +442,17 @@ def main() -> int:
             if args.require_session:
                 session_gate_errors.append("session whitelist missing or empty")
         else:
-            if session_date and session_date != today_str:
+            if session_date and session_date != issue_date_str:
                 # session date が当日でない (前日のまま残ってる等) → degrade と同じ扱い
                 print(
-                    f"STRONG WARN: _session_urls.json の date={session_date} が当日 {today_str} と "
+                    f"STRONG WARN: _session_urls.json の date={session_date} が対象号日 {issue_date_str} と "
                     f"不一致のため session 照合を skip (古い session を誤検知に使わないため)。"
                     f"hook が当日セッションを書けていない可能性があるため data/_session_urls.audit.log を確認すること",
                     file=sys.stderr,
                 )
                 if args.require_session:
                     session_gate_errors.append(
-                        f"session date mismatch: {session_date} != {today_str}"
+                        f"session date mismatch: {session_date} != {issue_date_str}"
                     )
             else:
                 # session の date と同じ date の articles.jsonl エントリのみを照合対象にする。
@@ -565,10 +590,9 @@ def main() -> int:
     if total_fatal:
         if args.quarantine_articles:
             bad_urls = {v.ref.url for v in fatal}
-            bad_urls |= {url for _dt, _title, url in session_fatal}
             bad_urls |= {ev.url for ev in date_fatal}
             if args.apply and bad_urls:
-                ledger = _PKG_ROOT / "build" / "quarantine" / today.strftime("%Y-%m-%d") / "bad-urls.json"
+                ledger = _PKG_ROOT / "build" / "quarantine" / issue_date_str / "bad-urls.json"
                 ledger.parent.mkdir(parents=True, exist_ok=True)
                 ledger.write_text(
                     json.dumps(sorted(bad_urls), ensure_ascii=False, indent=2) + "\n",
@@ -577,7 +601,7 @@ def main() -> int:
             result = drop_article_urls(
                 repo_root=_PKG_ROOT,
                 urls=bad_urls,
-                issue_date=today.strftime("%Y-%m-%d"),
+                issue_date=issue_date_str,
                 apply=args.apply,
             )
             print(

@@ -467,17 +467,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="YouTube Podcast episode を dry-run または公開 upload します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     parser.add_argument("--kind", choices=["daily", "deepdive"], default="daily", help="daily=日次朗読 / deepdive=DeepDive解説対談")
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--dry-run", action="store_true", help="YouTube API を呼ばず mp4 と metadata を検査する。")
+    mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--prepare", action="store_true", help="push 前に private video として upload する。")
     mode.add_argument("--finalize", action="store_true", help="Web 公開確認後に public 化して playlist に追加する。")
     mode.add_argument("--publish", action="store_true", help="YouTube へ公開 upload して podcast playlist に追加する。")
+    parser.add_argument("--dry-run", action="store_true", help="YouTube API を呼ばず mp4 と metadata を検査する。")
     parser.add_argument("--privacy-status", default="public", choices=["public", "private", "unlisted"])
     args = parser.parse_args(argv)
     try:
         if args.prepare:
-            prepare(args.date, dry_run=False, kind=args.kind)
+            prepare(args.date, dry_run=args.dry_run, kind=args.kind)
         elif args.finalize:
+            if args.dry_run:
+                raise ValueError("--finalize cannot be combined with --dry-run")
             finalize(args.date, kind=args.kind)
         else:
             publish(args.date, dry_run=args.dry_run, privacy_status=args.privacy_status, kind=args.kind)

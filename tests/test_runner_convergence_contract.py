@@ -117,7 +117,9 @@ if ($errors.Count -gt 0) {
     assert result.returncode == 0, result.stderr
 
 
-def _mock_autonomous_policy_invocation(failure_kind: str) -> dict[str, str]:
+def _mock_autonomous_policy_invocation(
+    failure_kind: str, *, no_publish: bool = False
+) -> dict[str, str]:
     script = r"""
 function Invoke-FallbackPublish {
   param([string]$Reason)
@@ -148,6 +150,7 @@ function Exit-Runner {
   $script:ExternalDetail = $ExternalDetail
 }
 $runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$NoPublish = ($env:NEWS_GRASP_NO_PUBLISH -eq '1')
 $start = $runner.IndexOf('function Invoke-AutonomousCompletionPolicy')
 if ($start -lt 0) { Write-Error 'Invoke-AutonomousCompletionPolicy missing'; exit 2 }
 $end = $runner.IndexOf('function Test-DailyArtifactsExist', $start)
@@ -169,6 +172,7 @@ Invoke-AutonomousCompletionPolicy -FailureKind $env:NEWS_GRASP_FAILURE_KIND -Gat
     env = os.environ.copy()
     env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
     env["NEWS_GRASP_FAILURE_KIND"] = failure_kind
+    env["NEWS_GRASP_NO_PUBLISH"] = "1" if no_publish else "0"
     result = subprocess.run(
         [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
         capture_output=True,
@@ -398,11 +402,16 @@ def test_recover_only_does_not_disable_targeted_repair() -> None:
     assert "Invoke-CodexWrapper" in repair_body
 
 
-def test_targeted_repair_prompt_regenerates_until_same_gate_passes() -> None:
-    """欠落時の repair は fatal で終わらず、成果物再生成→同一 gate 再検証を要求する。"""
+def test_targeted_repair_prompt_patches_existing_artifacts_until_same_gate_passes() -> None:
+    """repair は既存 artifact を捨てず、validator failure だけを最小差分で直す。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
 
-    assert "欠落成果物を再生成" in runner
+    assert "欠落成果物を再生成" not in runner
+    assert "まず既存 artifact を確認" in runner
+    assert "既存 artifact を破棄して新規生成しない" in runner
+    assert "再利用不能の証拠" in runner
+    assert "validation failure" in runner
+    assert "最小差分" in runner
     assert "同じ gate を再実行" in runner
     assert "PASS するまで" in runner
     assert "bounded retry" in runner
@@ -453,6 +462,8 @@ def test_runner_derives_reporter_categories_from_publish_inventory() -> None:
     assert "$Categories = Get-PublishInventoryArtifacts -Kind 'categories'" in runner
     assert "Stage0 harvest summary categories=$($Categories.Count)" in runner
     assert "reporter_artifacts = @($ReporterArtifacts | ForEach-Object { $_.records_file })" in runner
+    assert "scheduled_categories = @($Categories)" in runner
+    assert "Summary frontmatter categories/tags/sections は scheduled_categories のみ" in runner
 
 
 def test_runner_contract_mentions_non_target_categories_are_not_fanned_out() -> None:
@@ -552,6 +563,17 @@ def test_generation_quality_gate_uses_autonomous_gate() -> None:
     assert "tools.validate_generation_quality" in block
 
 
+def test_python_gate_skips_repair_after_final_attempt_failure() -> None:
+    """検証されない最終 attempt 後 repair は token と時間の無駄なので禁止する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
+
+    assert "$maxGateAttempts = 2" in gate_body
+    assert "if ($attempt -ge $maxGateAttempts)" in gate_body
+    assert "final attempt failed; skipping repair" in gate_body
+    assert gate_body.index("final attempt failed; skipping repair") < gate_body.index("tools.auto_repair_orchestrator")
+
+
 def test_generation_quality_repair_failure_sets_typed_repair_status() -> None:
     """生成品質 repair が収束しない場合は旧 content_repair_failed に直行しない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
@@ -575,6 +597,84 @@ def test_generation_quality_repair_prompt_is_item_scoped() -> None:
     assert "対象 artifact 以外" in repair_body
     assert "full rerun" in repair_body
     assert "publish 実行は禁止" in repair_body
+
+
+def test_generation_quality_repair_prompt_guides_audio_script_length_convergence() -> None:
+    """音声台本の字数不足 repair は、境界ぎりぎりで再失敗しない目標字数を示す。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+
+    assert "audio_script_quality_invalid" in repair_body
+    assert "effective_char_count" in repair_body
+    assert "2600〜2800" in repair_body
+
+
+def test_generation_quality_audio_length_uses_deterministic_repair_before_codex() -> None:
+    """音声台本の字数不足は LLM repair ではなく決定論的補修を先に使う。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+
+    assert "Invoke-DeterministicGenerationRepair" in repair_body
+    assert "tools.repair_audio_script_length" in repair_body
+    assert repair_body.index("Invoke-DeterministicGenerationRepair") < repair_body.index("codex auth readiness gate start")
+
+
+def test_repair_patch_existing_policy_is_enforced_after_targeted_repair() -> None:
+    """repair は prompt だけでなく、before/after artifact 証跡で patch-existing を強制する。"""
+    _assert_runner_powershell_parses()
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
+
+    assert "Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'before'" in gate_body
+    assert "Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts -RepairTransactionId $repairTransactionId" in gate_body
+    assert "Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'after'" in gate_body
+    assert "Test-RepairPatchExistingPolicy -TransactionId $repairTransactionId -Artifacts $Artifacts" in gate_body
+    assert gate_body.index("Test-RepairPatchExistingPolicy") < gate_body.index("Test-RepairArtifactScope")
+
+
+def test_repair_preflight_blocks_llm_worker_before_existing_artifact_recreate() -> None:
+    """既存 artifact がある repair は LLM worker 起動前に止め、下流diff検出へ丸投げしない。"""
+    _assert_runner_powershell_parses()
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicGenerationRepair", 1)[0]
+
+    assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId" in repair_body
+    assert "pre-repair policy denied LLM repair worker" in runner
+    assert "blocked_pre_repair_recreate" in runner
+    assert repair_body.index("Test-RepairWorkerPreflight") < repair_body.index("codex auth readiness gate start")
+    assert repair_body.index("Test-RepairWorkerPreflight") < repair_body.index("Invoke-CodexWrapper")
+
+
+def test_repair_downstream_guards_are_last_resort_after_upstream_preflight() -> None:
+    """下流のdiff/scope検査は最後の砦であり、pre-repair防止より前面に出さない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
+
+    assert "Test-RepairWorkerPreflight" in runner
+    assert "Test-RepairPatchExistingPolicy" in runner
+    assert "Test-RepairArtifactScope" in runner
+    assert "llm_worker_only_when_all_artifacts_missing" in runner
+    assert "最後の砦" in runner
+    assert gate_body.index("Invoke-TargetedRepair") < gate_body.index("Test-RepairPatchExistingPolicy")
+    assert gate_body.index("Test-RepairPatchExistingPolicy") < gate_body.index("Test-RepairArtifactScope")
+
+
+def test_repair_patch_existing_policy_requires_reuse_blocked_reason_for_rewrite() -> None:
+    """既存 artifact の大幅再作成は reuse-blocked.json の typed reason なしでは失敗する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    helper_body = runner.split("function Test-RepairReuseBlockedReason", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+    policy_body = runner.split("function Test-RepairPatchExistingPolicy", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+    prompt_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicGenerationRepair", 1)[0]
+
+    assert "reuse-blocked.json" in policy_body
+    assert "preserved_line_ratio" in policy_body
+    assert "without reuse-blocked.json" in policy_body
+    assert "missing_artifact" in helper_body
+    assert "structure_corrupt" in helper_body
+    assert "date_mismatch" in helper_body
+    assert "category_mismatch" in helper_body
+    assert "provenance_invalid" in helper_body
+    assert "reuse-blocked.json に artifact_path と typed reason" in prompt_body
 
 
 def test_targeted_repair_rejects_changes_outside_artifact_scope() -> None:
@@ -610,6 +710,8 @@ def test_runner_blocks_publish_on_batch_slo_violation() -> None:
     assert "'3000000'" in runner
     assert "--max-window-sec" in runner
     assert "'3600'" in runner
+    assert "--since" in runner
+    assert "$script:RunnerProcessCreationTime" in runner
     assert "blocked_slo_violation" in runner
     assert runner.index("batch SLO gate start") < runner.index("Daily TTS audio")
 
@@ -638,6 +740,18 @@ def test_url_liveness_refill_expands_json_categories_before_native_call() -> Non
     assert "foreach ($nestedItem in $item)" in runner
     assert "refill category contains whitespace" in refill_block
     assert "'--category' $refillCat" in refill_block
+
+
+def test_url_liveness_gate_bypasses_llm_repair_for_quarantine_refill() -> None:
+    """URL liveness は targeted LLM repair ではなく既存 quarantine/refill に進める。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    gate_function = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
+    url_block = runner.split("URL liveness gate start", 1)[1].split("record schema gate start", 1)[0]
+
+    assert "[switch] $NoRepair" in gate_function
+    assert "repair disabled for this gate; returning rc" in gate_function
+    assert "-NoRepair" in url_block
+    assert url_block.index("-NoRepair") < url_block.index("URL liveness quarantine start")
 
 
 def test_runner_url_liveness_does_not_require_interactive_session_whitelist() -> None:
@@ -792,6 +906,96 @@ def test_runner_exposes_no_push_dry_run_switch() -> None:
     assert "[switch] $NoPush" in runner
     assert "NoPush mode: skipping git push origin main" in runner
     assert "NoPush mode: skipping send_push" in runner
+
+
+def test_runner_has_no_publish_e2e_mode_distinct_from_no_push() -> None:
+    """push直前E2Eは NoPush と別に、commit / publish / upload の副作用も止める。
+
+    なぜ重要か: NoPush は git push と send_push を止めるだけでは足りない。
+    git commit、GitHub Releases audio upload、YouTube private prepare が残る状態で
+    「本番影響なしのE2E」と呼ぶと、前回と同じ goal 矮小化になる。
+    """
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "[switch] $NoPublish" in runner
+    assert "if ($NoPublish) { $NoPush = $true }" in runner
+    assert "NoPublish mode: skipping digest/data git add + commit" in runner
+    assert "NoPublish mode: skipping docs git add + commit" in runner
+    assert "tools.tts.publish_audio', $DateStamp, '--dry-run'" in runner
+    assert "tools.tts.deepdive_audio', $DateStamp, '--dry-run'" in runner
+    assert "tools.youtube_podcast.upload_episode', $DateStamp, '--prepare', '--dry-run'" in runner
+    assert "tools.youtube_podcast.upload_episode', $DateStamp, '--kind', 'deepdive', '--prepare', '--dry-run'" in runner
+    assert "news-grasp-runner.ps1 PUBLISH DRY RUN OK" in runner
+    assert "publish_dry_run_ok" in runner
+
+
+def test_runner_exposes_resume_from_deepdive_without_reharvest() -> None:
+    """失敗後の E2E は Stage0/Reporter を再実行せず、停止点から再開できる。
+
+    なぜ重要か: push直前E2Eのやり直しで重い収集・記者要約を毎回回すと、
+    1時間SLOと token 効率の証明そのものを壊す。
+    """
+    _assert_runner_powershell_parses()
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "[ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive')]" in runner
+    assert "[string] $ResumeFromStage = ''" in runner
+    assert "$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')" in runner
+    assert "$ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')" in runner
+    assert "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality artifacts; starting at DeepDive" in runner
+    assert "ResumeFromStage mode: skipping net reachability wait and git sync" in runner
+    assert "ResumeFromStage mode: skipping Stage0/Stage1/Stage1.5/Stage2/Stage3; rechecking summary/daily gates" in runner
+
+
+def test_runner_can_resume_after_deepdive_without_regenerating_deepdive() -> None:
+    """DeepDive artifact が既に使えるなら、DeepDive も再生成せず TTS 以降へ進む。"""
+    _assert_runner_powershell_parses()
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    deepdive_block = runner.split("# ===== Stage4: Codex DeepDive", 1)[1].split(
+        "# ===== 2.4 generation quality gate", 1
+    )[0]
+
+    assert "ResumeFromStage mode: skipping deepdive codex; using existing DeepDive artifact" in deepdive_block
+    assert "$ResumeAfterDeepDive" in deepdive_block
+    assert "deepdive wrapper invoke START" in deepdive_block
+
+
+def test_existing_artifact_guard_allows_explicit_resume() -> None:
+    """既存 artifact がある日は full rerun を拒否し、明示 resume だけ許可する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    guard = runner.split("existing daily artifacts detected", 1)[0].split("Assert-RunnerBinaryInSync", 1)[1]
+
+    assert "(-not $ResumeFromPostDailyQuality)" in guard
+    assert "Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts." in runner
+
+
+def test_no_publish_e2e_does_not_mark_publish_complete() -> None:
+    """NoPublish E2E は成功しても publish_complete ではなく publish_dry_run_ok にする。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    final_block = runner.split("# ===== 6. Web Push", 1)[1]
+    final_block = final_block.split("Write-CodexUsageWindowSnapshot -Phase 'end'", 1)[1]
+    no_publish_branch = final_block.split("} elseif ($NoPush)", 1)[0]
+
+    assert "news-grasp-runner.ps1 PUBLISH DRY RUN OK" in no_publish_branch
+    assert "news-grasp-runner.ps1 OK" not in no_publish_branch
+    assert "publish_complete" not in no_publish_branch
+
+
+def test_no_publish_e2e_never_fallback_publishes_on_quality_hold() -> None:
+    """NoPublish E2E は gate 失敗時も fallback publish へ逃げず、失敗として止まる。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    policy = runner.split("function Invoke-AutonomousCompletionPolicy", 1)[1].split(
+        "function Test-DailyArtifactsExist", 1
+    )[0]
+
+    assert "NoPublish mode: fallback publish blocked" in policy
+    assert "publish_dry_run_failed" in policy
+
+    no_publish = _mock_autonomous_policy_invocation("content", no_publish=True)
+    assert no_publish["fallback_reason"] in (None, "")
+    assert no_publish["exit_status"] == "publish_dry_run_failed"
+    assert no_publish["exit_code"] == 42
 
 
 def test_runner_idle_timeout_is_parameterized() -> None:
@@ -1061,6 +1265,8 @@ def test_runner_quarantines_and_refills_bad_urls_before_typed_failure() -> None:
 
     assert "--quarantine-articles" in block
     assert "--apply" in block
+    assert "'--issue-date', $DateStamp" in block
+    assert "'--issue-date' $DateStamp" in block
     assert "URL liveness quarantine start" in block
     assert "tools.refill_category_after_quarantine" in block
     assert "URL liveness gate recheck after quarantine" in block

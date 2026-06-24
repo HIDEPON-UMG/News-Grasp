@@ -87,6 +87,8 @@ goal が打ち取れなかった理由と、未達なのに完走扱いになっ
 
 公開済みの非対象カテゴリ artifact が存在しても、それを当日必須カテゴリへ昇格しない。過去復旧、手動復旧、または旧 runner によって生成された artifact は、現在の必須カテゴリ判定の正本ではない。公開 artifact の存在は UI 表示や過去成果の事実として扱い、当日必須カテゴリ、repair scope、sub-agent fan-out、missing 判定は `tools.publish_inventory.scheduled_category_ids(issue)` からだけ導く。
 
+完走性と効率性の報告では、必要条件と十分条件を混同してはならない。pytest PASS は必要条件、daily quality PASS は必要条件、public URL PASS は必要条件、runner/live SHA一致は必要条件である。しかし、これらは実運用完走の十分条件ではない。効率的・完全完走を主張するための必要条件は、1時間以内の本番相当 push直前 E2E PASS である。SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実施なら効率的・完全・1時間以内完走とは報告してはならない。
+
 ## Editorial Quality Bar
 
 News-Grasp の記事は、ITコンサルタントが業務の隙間で読むことを前提にする。単なるニュース羅列ではなく、論点、背景、示唆、関係性、次の確認観点を明確にする。

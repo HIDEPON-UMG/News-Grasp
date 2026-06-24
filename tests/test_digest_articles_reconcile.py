@@ -42,6 +42,43 @@ def _write_articles(articles_path: Path, issue_date: str, urls: list[str]) -> No
     articles_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _write_reporter_records(
+    root: Path,
+    issue_date: str,
+    category: str,
+    genre: str,
+    urls: list[str],
+) -> None:
+    records = root / "tmp" / "newsroom" / issue_date / f"{category}.records.jsonl"
+    records.parent.mkdir(parents=True, exist_ok=True)
+    records.write_text(
+        "\n".join(
+            json.dumps(
+                {"date": issue_date, "genre": genre, "title": f"{category}-{i}", "url": u},
+                ensure_ascii=False,
+            )
+            for i, u in enumerate(urls)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest = root / "build" / "reporter-artifacts" / issue_date / "editor-input-manifest.json"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict = {
+        "date": issue_date,
+        "scheduled_categories": [],
+        "reporter_artifacts": [],
+    }
+    if manifest.exists():
+        existing = json.loads(manifest.read_text(encoding="utf-8"))
+    if category not in existing["scheduled_categories"]:
+        existing["scheduled_categories"].append(category)
+    rel = f"tmp/newsroom/{issue_date}/{category}.records.jsonl"
+    if rel not in existing["reporter_artifacts"]:
+        existing["reporter_artifacts"].append(rel)
+    manifest.write_text(json.dumps(existing, ensure_ascii=False), encoding="utf-8")
+
+
 def test_reconcile_detects_digest_only_url(tmp_path: Path) -> None:
     """digest md にだけある URL を古記事残存または append 漏れとして検出する。"""
     issue = "2026-06-12"
@@ -107,3 +144,64 @@ def test_reconcile_excludes_deepdive_and_thumb(tmp_path: Path) -> None:
     assert result == {"digest_only": [], "articles_only": []}, (
         f"DeepDive / thumb を誤検出した: {result}"
     )
+
+
+def test_reconcile_uses_scheduled_categories_for_issue_date(tmp_path: Path) -> None:
+    """水曜の Game artifact / record は非対象なので突合失敗にしない。"""
+    issue = "2026-06-24"
+    digest = tmp_path / "digest"
+    articles = tmp_path / "data" / "articles.jsonl"
+    _write_digest(digest, "AI", issue, ["https://a.example.com/1"])
+    _write_digest(digest, "Game", issue, ["https://game.example.com/digest-only"])
+    articles.parent.mkdir(parents=True, exist_ok=True)
+    articles.write_text(
+        "\n".join(
+            [
+                json.dumps({"date": issue, "genre": "AI", "title": "ai", "url": "https://a.example.com/1"}, ensure_ascii=False),
+                json.dumps({"date": issue, "genre": "Game", "title": "game", "url": "https://game.example.com/articles-only"}, ensure_ascii=False),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assert reconcile(digest, articles, issue) == {"digest_only": [], "articles_only": []}
+
+
+def test_reconcile_ignores_stale_same_day_articles_when_manifest_exists(tmp_path: Path) -> None:
+    """再実行前の同日 old record は current reporter manifest 外なので過検出しない。"""
+    issue = "2026-06-24"
+    digest = tmp_path / "digest"
+    articles = tmp_path / "data" / "articles.jsonl"
+    current_urls = ["https://a.example.com/current-1", "https://a.example.com/current-2"]
+    stale_url = "https://a.example.com/stale-old-run"
+    _write_digest(digest, "AI", issue, current_urls)
+    _write_articles(articles, issue, [stale_url, *current_urls])
+    _write_reporter_records(tmp_path, issue, "ai", "AI", current_urls)
+
+    assert reconcile(digest, articles, issue) == {"digest_only": [], "articles_only": []}
+
+
+def test_reconcile_detects_current_reporter_record_missing_from_digest(tmp_path: Path) -> None:
+    """manifest 内の current record が digest に無ければカード生成漏れとして検出する。"""
+    issue = "2026-06-24"
+    digest = tmp_path / "digest"
+    articles = tmp_path / "data" / "articles.jsonl"
+    _write_digest(digest, "AI", issue, ["https://a.example.com/current-1"])
+    _write_articles(
+        articles,
+        issue,
+        ["https://a.example.com/current-1", "https://a.example.com/current-2"],
+    )
+    _write_reporter_records(
+        tmp_path,
+        issue,
+        "ai",
+        "AI",
+        ["https://a.example.com/current-1", "https://a.example.com/current-2"],
+    )
+
+    assert reconcile(digest, articles, issue) == {
+        "digest_only": [],
+        "articles_only": ["AI: https://a.example.com/current-2"],
+    }

@@ -2,6 +2,9 @@ from pathlib import Path
 
 from tools.validate_incident_report_design import validate_report
 
+ROOT = Path(__file__).resolve().parent.parent
+GOAL_INCIDENT_REPORT = ROOT / "docs" / "incidents" / "2026-06-24-digest-articles-reconcile-report.html"
+
 
 def _write_reference_like_report(path: Path) -> None:
     long_body = "公開前 gate の停止理由、復旧作業、公開確認、次回の観測点を同じ紙面で説明する。" * 700
@@ -134,3 +137,20 @@ def test_reference_like_incident_report_follows_required_design(tmp_path: Path) 
     result = validate_report(report)
 
     assert result.ok, result.errors
+
+
+def test_goal_completion_incident_report_keeps_e2e_unproven_when_not_run() -> None:
+    """goal 矮小化レポートは、必要条件を十分条件にすり替えない。"""
+    text = GOAL_INCIDENT_REPORT.read_text(encoding="utf-8-sig")
+
+    for phrase in [
+        "必要条件",
+        "十分条件",
+        "full E2E 未実行",
+        "E2E 未実施なら未証明",
+        "効率的・完全・1時間以内とは報告しない",
+        "current diff は未コミット・未push",
+        "現在差分の完了証跡として扱わない",
+        "goal complete は呼ばない",
+    ]:
+        assert phrase in text

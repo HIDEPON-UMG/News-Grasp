@@ -29,10 +29,15 @@ def validate_usage_log(
     *,
     max_total_tokens: int,
     max_window_sec: int,
+    since: str | None = None,
 ) -> list[str]:
     errors: list[str] = []
     if not usage_log.exists():
         return [f"SLO usage log missing: {usage_log}"]
+
+    since_timestamp = _parse_timestamp(since)
+    if since and since_timestamp is None:
+        errors.append(f"SLO usage log has invalid since timestamp: {since!r}")
 
     total_tokens = 0
     timestamps: list[datetime] = []
@@ -45,11 +50,13 @@ def validate_usage_log(
         except json.JSONDecodeError:
             malformed += 1
             continue
+        timestamp = _parse_timestamp(record.get("timestamp"))
+        if since_timestamp is not None and timestamp is not None and timestamp < since_timestamp:
+            continue
         try:
             total_tokens += int(record.get("tokens_used") or 0)
         except (TypeError, ValueError):
             errors.append(f"SLO usage log has invalid tokens_used at line {line_no}: {record.get('tokens_used')!r}")
-        timestamp = _parse_timestamp(record.get("timestamp"))
         if timestamp is not None:
             timestamps.append(timestamp)
 
@@ -69,12 +76,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--usage-log", type=Path, required=True)
     parser.add_argument("--max-total-tokens", type=int, default=3_000_000)
     parser.add_argument("--max-window-sec", type=int, default=3600)
+    parser.add_argument("--since", default=None, help="この timestamp より前の過去試行を SLO 窓から除外する。")
     args = parser.parse_args(argv)
 
     errors = validate_usage_log(
         args.usage_log,
         max_total_tokens=args.max_total_tokens,
         max_window_sec=args.max_window_sec,
+        since=args.since,
     )
     if errors:
         for error in errors:

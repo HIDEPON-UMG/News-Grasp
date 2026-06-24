@@ -207,6 +207,195 @@ def test_date_evidence_skips_google_news_rss_pubdate(monkeypatch, tmp_path):
     assert captured == []
 
 
+def test_quarantine_uses_issue_date_not_execution_date(monkeypatch, tmp_path):
+    """resume / 翌日検証でも対象号日の digest と ledger を更新する。"""
+    import json as _json
+
+    from tools import audit_all_article_urls as mod
+    from tools.validate_deepdive_urls import UrlRef, UrlVerdict
+
+    issue = "2026-06-24"
+    bad_url = "https://bad.example.com/dead"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        _json.dumps({"date": issue, "title": "bad", "url": bad_url}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    digest = tmp_path / "digest" / "Manufacturing" / f"{issue}-Manufacturing.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        f"# Manufacturing\n\n"
+        f"### [90] bad\n\n"
+        f"📅 {issue} 10:00 · 📰 Sample · 🔗 [元記事]({bad_url})\n\n"
+        f"- 本文\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(mod, "_PKG_ROOT", tmp_path)
+    monkeypatch.setattr(
+        mod,
+        "verify_urls",
+        lambda refs, max_workers=0: [
+            UrlVerdict(ref=UrlRef(url=bad_url, location=f"{issue}|bad"), status=404, ok=False, detail="404")
+        ],
+    )
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_all_article_urls",
+            "--gate",
+            "--no-verify-dates",
+            "--issue-date",
+            issue,
+            "--quarantine-articles",
+            "--apply",
+        ],
+    )
+
+    rc = mod.main()
+
+    assert rc == 0
+    assert (tmp_path / "build" / "quarantine" / issue / "bad-urls.json").exists()
+    assert bad_url not in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8")
+    assert bad_url not in digest.read_text(encoding="utf-8")
+
+
+def test_issue_date_url_gate_uses_current_manifest_urls_only(monkeypatch, tmp_path):
+    """同日旧行や非対象行を session 照合 / HEAD 対象にしない。"""
+    import json as _json
+
+    from tools import audit_all_article_urls as mod
+
+    issue = "2026-06-24"
+    current_url = "https://example.com/current"
+    stale_url = "https://example.com/stale-same-day"
+    game_url = "https://example.com/game-non-scheduled"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        "\n".join(
+            _json.dumps(row, ensure_ascii=False)
+            for row in [
+                {"date": issue, "genre": "AI", "title": "current", "url": current_url},
+                {"date": issue, "genre": "AI", "title": "stale", "url": stale_url},
+                {"date": issue, "genre": "Game", "title": "game", "url": game_url},
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    records.parent.mkdir(parents=True)
+    records.write_text(
+        _json.dumps({"date": issue, "genre": "AI", "title": "current", "url": current_url}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        _json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    session_dir = tmp_path / "data" / "_session_urls.d" / issue
+    session_dir.mkdir(parents=True)
+    (session_dir / "current.json").write_text(
+        _json.dumps({"date": issue, "urls": [current_url]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    captured_refs: list[str] = []
+
+    def _fake_verify(refs, max_workers=0):
+        captured_refs.extend(ref.url for ref in refs)
+        return []
+
+    monkeypatch.setattr(mod, "_PKG_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "verify_urls", _fake_verify)
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_all_article_urls",
+            "--gate",
+            "--match-session",
+            "--no-verify-dates",
+            "--issue-date",
+            issue,
+        ],
+    )
+
+    rc = mod.main()
+
+    assert rc == 0
+    assert captured_refs == [current_url]
+
+
+def test_quarantine_does_not_delete_session_mismatch_urls(monkeypatch, tmp_path):
+    """session 未確認は削除せず停止する。quarantine は物理/date fatal 限定。"""
+    import json as _json
+
+    from tools import audit_all_article_urls as mod
+
+    issue = "2026-06-24"
+    url = "https://example.com/current"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        _json.dumps({"date": issue, "genre": "AI", "title": "current", "url": url}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    records.parent.mkdir(parents=True)
+    records.write_text(
+        _json.dumps({"date": issue, "genre": "AI", "title": "current", "url": url}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        _json.dumps({"date": issue, "scheduled_categories": ["ai"], "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    session_dir = tmp_path / "data" / "_session_urls.d" / issue
+    session_dir.mkdir(parents=True)
+    (session_dir / "stale.json").write_text(
+        _json.dumps({"date": issue, "urls": ["https://example.com/other"]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(mod, "_PKG_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "verify_urls", lambda refs, max_workers=0: [])
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_all_article_urls",
+            "--gate",
+            "--match-session",
+            "--no-verify-dates",
+            "--issue-date",
+            issue,
+            "--quarantine-articles",
+            "--apply",
+        ],
+    )
+
+    rc = mod.main()
+
+    assert rc == 1
+    assert url in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8")
+    assert not (tmp_path / "build" / "quarantine" / issue / "bad-urls.json").exists()
+
+
 @pytest.mark.network
 @needs_network
 def test_recent_article_urls_are_alive():

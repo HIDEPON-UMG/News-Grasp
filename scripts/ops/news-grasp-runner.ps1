@@ -24,6 +24,8 @@
 #   -RecoverOnly  生成済み digest / DeepDive を再利用し、Codex を再実行せずに
 #              gate 群 → docs 再生成 → docs commit → push → 公開反映確認だけを実行する
 #              復旧モード。gate failed 後、対象 md/jsonl を手修正してから使う。
+#   -NoPublish  push直前E2E用。Codex / 生成 / gate は通すが、git commit / git push /
+#              GitHub Releases upload / YouTube upload / send_push を止める。NoPush を含意する。
 #
 # 実装上の注意:
 #   - すべて 1 PowerShell プロセス内で完結する (cmd.exe を介さない)
@@ -39,10 +41,13 @@ param(
     [switch] $PreflightOnly,
     [switch] $RecoverOnly,
     [switch] $NoPush,
+    [switch] $NoPublish,
     [switch] $UseCodex,
     [int] $IdleTimeoutSec = 900,
     [switch] $Stage2EditorSmokeOnly,
     [switch] $StopAfterEditorStart,
+    [ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive')]
+    [string] $ResumeFromStage = '',
     [string] $RepoDirOverride = '',
     [string] $CodexWrapperOverride = '',
     [string] $CodexExeOverride = '',
@@ -62,6 +67,9 @@ $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $UseCodex = $true
+if ($NoPublish) { $NoPush = $true }
+$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
+$ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')
 # 子 Python の stdin/stdout/stderr を UTF-8 に固定 (境界 1 箇所集約)。日本語版 Windows
 # では子 Python の stderr が pipe 出力時 locale (CP932) になり、[Console]::OutputEncoding
 # = UTF8 の reader が誤デコード → repair プロンプトへ渡る gate stderr が文字化けしていた
@@ -246,6 +254,7 @@ function Test-TerminalRunnerStatus {
         'publish_complete',
         'smoke_ok',
         'preflight_ok',
+        'publish_dry_run_ok',
         'watchdog_stale_timeout',
         'watchdog_wall_timeout',
         'watchdog_stale_unconfirmed',
@@ -501,6 +510,8 @@ function Write-Log {
         Set-RunnerState -Status 'fallback_ok' -Message $Text -ExitCode 0
     } elseif ($Text -eq 'news-grasp-runner.ps1 SMOKE OK') {
         Set-RunnerState -Status 'smoke_ok' -Message $Text -ExitCode 0
+    } elseif ($Text -eq 'news-grasp-runner.ps1 PUBLISH DRY RUN OK') {
+        Set-RunnerState -Status 'publish_dry_run_ok' -Message $Text -ExitCode 0
     }
 }
 
@@ -706,10 +717,12 @@ function Get-RunnerScriptArguments {
     if ($PreflightOnly) { $runnerArgs += '-PreflightOnly' }
     if ($RecoverOnly) { $runnerArgs += '-RecoverOnly' }
     if ($NoPush) { $runnerArgs += '-NoPush' }
+    if ($NoPublish) { $runnerArgs += '-NoPublish' }
     if ($UseCodex) { $runnerArgs += '-UseCodex' }
     if ($IdleTimeoutSec -ne 900) { $runnerArgs += @('-IdleTimeoutSec', [string]$IdleTimeoutSec) }
     if ($Stage2EditorSmokeOnly) { $runnerArgs += '-Stage2EditorSmokeOnly' }
     if ($StopAfterEditorStart) { $runnerArgs += '-StopAfterEditorStart' }
+    if ($ResumeFromStage) { $runnerArgs += @('-ResumeFromStage', $ResumeFromStage) }
     if ($RepoDirOverride) { $runnerArgs += @('-RepoDirOverride', $RepoDirOverride) }
     if ($CodexWrapperOverride) { $runnerArgs += @('-CodexWrapperOverride', $CodexWrapperOverride) }
     if ($CodexExeOverride) { $runnerArgs += @('-CodexExeOverride', $CodexExeOverride) }
@@ -925,7 +938,8 @@ function Invoke-TargetedRepair {
         [string] $GateId,
         [string] $Category,
         [string] $CapturePath,
-        [string[]] $Artifacts
+        [string[]] $Artifacts,
+        [string] $RepairTransactionId
     )
     Update-RunnerProgress -Phase 'repair' -Step "repair budget check: $GateId" -GateId $GateId -Category $Category
     $attemptState = Join-Path $RepoDir ("data\gate_attempts\$DateStamp.json")
@@ -962,6 +976,21 @@ function Invoke-TargetedRepair {
         return 1
     }
 
+    $deterministicRepairRc = Invoke-DeterministicGenerationRepair -GateId $GateId -CapturePath $CapturePath -Artifacts $Artifacts
+    if ($deterministicRepairRc -eq 0) {
+        Write-Log "deterministic repair OK (gate=$GateId)"
+        return 0
+    }
+    if ($deterministicRepairRc -notin @(2, 3)) {
+        Write-Log "deterministic repair failed (gate=$GateId, rc=$deterministicRepairRc)"
+        return $deterministicRepairRc
+    }
+
+    if (-not (Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId)) {
+        Write-Log "pre-repair policy denied LLM repair worker (gate=$GateId, status=blocked_pre_repair_recreate)"
+        return 1
+    }
+
     Update-RunnerProgress -Phase 'repair' -Step "codex auth readiness: $GateId" -GateId $GateId -Category $Category
     Write-Log "codex auth readiness gate start (repair:$GateId)"
     if (-not (Test-CodexAuthReadiness)) {
@@ -975,12 +1004,15 @@ function Invoke-TargetedRepair {
         $failureText = Get-Content -LiteralPath $CapturePath -Raw -Encoding UTF8
     }
     $artifactText = [string]::Join(', ', $Artifacts)
+    $repairTransactionDir = Get-RepairTransactionDir -TransactionId $RepairTransactionId
     $prompt = @"
 News-Grasp RecoverOnly targeted repair.
 
 目的:
 - gate 失敗を 1 回だけ修復する。
-- 欠落成果物を再生成し、同じ gate を再実行したときに PASS するまでの最小修復に限定する。
+- まず既存 artifact を確認し、validation failure が示す不足だけを最小差分で修正する。
+- 既存 artifact を破棄して新規生成しない。再利用不能の証拠がある場合だけ、指定 artifact の再作成を許可する。
+- 同じ gate を再実行したときに PASS するまでの最小修復に限定する。
 - repair は runner の bounded retry 内でだけ実行される。無制限 loop にしない。
 - commit / push / full rerun / 全体再生成 / publish 実行は禁止。docs 欠落が失敗原因の場合だけ、指定 artifact の docs を作る最小 build は許可する。
 - 変更してよいのは下記 artifact と、その修復に必須の最小ファイルだけ。対象 artifact 以外へ作業を広げない。
@@ -988,17 +1020,27 @@ News-Grasp RecoverOnly targeted repair.
 gate_id: $GateId
 category: $Category
 artifacts: $artifactText
+repair_transaction_dir: $repairTransactionDir
 
 失敗ログ:
 $failureText
 
 作業:
-1. 失敗ログが示す不備だけを修正する。
-2. 欠落成果物を再生成する。fatal で終わるだけにしない。
-3. runner_python を使い、同じ gate を再実行して PASS するまで確認する。
-4. 同じ gate が PASS しない場合は、追加で別作業へ広げず失敗理由を最小 artifact に残して停止する。
-5. git commit / git push は絶対に実行しない。
-6. 修正したら停止する。
+1. artifacts に列挙された既存 artifact を読む。存在しない場合だけ missing として扱う。
+2. 失敗ログの validation failure が示す不備だけを、既存 artifact 上で最小差分修正する。
+3. artifact が存在する場合は、既存 artifact を破棄して新規生成しない。
+4. artifact が存在しない、または構造破損・日付不一致・カテゴリ不一致・provenance 不正で再利用不能の証拠がある場合だけ、指定 artifact を再作成する。
+   - 既存 artifact を大きく作り直す場合は、repair_transaction_dir の reuse-blocked.json に artifact_path と typed reason を必ず書く。
+   - reason は missing_artifact / structure_corrupt / date_mismatch / category_mismatch / provenance_invalid のいずれか。
+5. runner_python を使い、同じ gate を再実行して PASS するまで確認する。
+6. 同じ gate が PASS しない場合は、追加で別作業へ広げず失敗理由を最小 artifact に残して停止する。
+7. git commit / git push は絶対に実行しない。
+8. 修正したら停止する。
+
+音声台本の収束条件:
+- 失敗ログの code が audio_script_quality_invalid の場合、対象の audio-script だけを修正する。
+- 字数不足は 2500 字ぎりぎりを狙わず、tools.tts.build_script.effective_char_count で 2600〜2800 字に収める。
+- 同じ runner_python で tools.validate_generation_quality を再実行し、audio_script_quality_invalid が消えたことを確認する。
 
 制約:
 - 検証コマンドは必ず次の Python 実行体だけを使う。
@@ -1015,6 +1057,241 @@ $failureText
     Write-Log "repair wrapper invoke END (agent=codex, gate=$GateId, rc=$repairRc)"
     Update-RunnerProgress -Phase 'repair' -Step "repair wrapper done: $GateId rc=$repairRc" -GateId $GateId -Category $Category
     return $repairRc
+}
+
+function Invoke-DeterministicGenerationRepair {
+    param(
+        [string] $GateId,
+        [string] $CapturePath,
+        [string[]] $Artifacts
+    )
+    if ($GateId -ne 'generation-quality') { return 2 }
+    if (-not (Test-Path -LiteralPath $CapturePath)) { return 2 }
+    $failureText = Get-Content -LiteralPath $CapturePath -Raw -Encoding UTF8
+    if ($failureText -notlike '*audio_script_quality_invalid*' -or $failureText -notlike '*字数不足*') { return 2 }
+    $audioArtifact = @($Artifacts | Where-Object { $_ -like 'digest/Summary/*-audio-script.md' } | Select-Object -First 1)
+    if ($audioArtifact.Count -eq 0) { return 3 }
+    Write-Log "deterministic repair start (gate=$GateId, tool=tools.repair_audio_script_length)"
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.repair_audio_script_length' '--repo-root' $RepoDir '--date' $DateStamp }
+        return $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+}
+
+function New-RepairTransactionId {
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $suffix = [guid]::NewGuid().ToString('N').Substring(0, 8)
+    return "$stamp-$suffix"
+}
+
+function Get-RepairTransactionDir {
+    param([string] $TransactionId)
+    return (Join-Path $RepoDir "build\repair-transactions\$DateStamp\$TransactionId")
+}
+
+function ConvertTo-RepairSnapshotName {
+    param([string] $ArtifactPath)
+    return (($ArtifactPath.Trim().Replace('\', '/')) -replace '[:\\/]+', '__')
+}
+
+function Get-RepairArtifactHash {
+    param([string] $FullPath)
+    if (-not (Test-Path -LiteralPath $FullPath)) {
+        return ''
+    }
+    $item = Get-Item -LiteralPath $FullPath
+    if (-not $item.PSIsContainer) {
+        return (Get-FileHash -LiteralPath $FullPath -Algorithm SHA256).Hash
+    }
+    $parts = New-Object System.Collections.Generic.List[string]
+    $files = @(Get-ChildItem -LiteralPath $FullPath -Recurse -File | Sort-Object FullName)
+    foreach ($file in $files) {
+        $rel = $file.FullName.Substring($FullPath.Length).TrimStart('\', '/')
+        $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+        [void]$parts.Add("$rel=$hash")
+    }
+    return (($parts.ToArray() -join "`n") | ConvertTo-Json -Compress)
+}
+
+function Snapshot-RepairArtifacts {
+    param(
+        [string] $TransactionId,
+        [ValidateSet('before', 'after')] [string] $Phase,
+        [string[]] $Artifacts
+    )
+    $transactionDir = Get-RepairTransactionDir -TransactionId $TransactionId
+    $phaseDir = Join-Path $transactionDir $Phase
+    New-Item -ItemType Directory -Force -Path $phaseDir | Out-Null
+    $manifest = New-Object System.Collections.Generic.List[object]
+    foreach ($artifact in @($Artifacts)) {
+        $rel = ([string]$artifact).Trim().Replace('\', '/')
+        if (-not $rel) { continue }
+        $full = Join-Path $RepoDir $rel
+        $exists = Test-Path -LiteralPath $full
+        $snapshotName = ConvertTo-RepairSnapshotName -ArtifactPath $rel
+        $snapshotPath = Join-Path $phaseDir $snapshotName
+        $itemType = 'missing'
+        $length = 0
+        $hash = ''
+        if ($exists) {
+            $item = Get-Item -LiteralPath $full
+            $itemType = if ($item.PSIsContainer) { 'directory' } else { 'file' }
+            if ($item.PSIsContainer) {
+                Copy-Item -LiteralPath $full -Destination $snapshotPath -Recurse -Force
+                $length = @((Get-ChildItem -LiteralPath $full -Recurse -File)).Count
+            } else {
+                Copy-Item -LiteralPath $full -Destination $snapshotPath -Force
+                $length = $item.Length
+            }
+            $hash = Get-RepairArtifactHash -FullPath $full
+        }
+        [void]$manifest.Add([pscustomobject]@{
+            artifact_path = $rel
+            exists = [bool]$exists
+            item_type = $itemType
+            hash = $hash
+            length = $length
+            snapshot_path = if ($exists) { $snapshotPath } else { '' }
+        })
+    }
+    $manifestPath = Join-Path $transactionDir "$Phase-manifest.json"
+    $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    return $manifestPath
+}
+
+function Get-RepairSignificantLines {
+    param([string] $Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return @() }
+    try {
+        $text = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+    } catch {
+        return @()
+    }
+    return @($text -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_.Length -ge 12 })
+}
+
+function Test-RepairReuseBlockedReason {
+    param(
+        [string] $TransactionId,
+        [string] $ArtifactPath
+    )
+    $transactionDir = Get-RepairTransactionDir -TransactionId $TransactionId
+    $reasonPath = Join-Path $transactionDir 'reuse-blocked.json'
+    if (-not (Test-Path -LiteralPath $reasonPath)) { return $false }
+    try {
+        $payload = Get-Content -LiteralPath $reasonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        return $false
+    }
+    $allowedReasons = @('missing_artifact', 'structure_corrupt', 'date_mismatch', 'category_mismatch', 'provenance_invalid')
+    foreach ($entry in @($payload)) {
+        $entryPath = ([string]$entry.artifact_path).Trim().Replace('\', '/')
+        $reason = ([string]$entry.reason).Trim()
+        if ($entryPath -eq $ArtifactPath -and $reason -in $allowedReasons) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-RepairWorkerPreflight {
+    param(
+        [string] $GateId,
+        [string[]] $Artifacts,
+        [string] $RepairTransactionId
+    )
+    $transactionDir = Get-RepairTransactionDir -TransactionId $RepairTransactionId
+    New-Item -ItemType Directory -Force -Path $transactionDir | Out-Null
+    $existing = New-Object System.Collections.Generic.List[string]
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($artifact in @($Artifacts)) {
+        $rel = ([string]$artifact).Trim().Replace('\', '/')
+        if (-not $rel) { continue }
+        $full = Join-Path $RepoDir $rel
+        if (Test-Path -LiteralPath $full) {
+            [void]$existing.Add($rel)
+        } else {
+            [void]$missing.Add($rel)
+        }
+    }
+    $allowed = ($existing.Count -eq 0)
+    [pscustomobject]@{
+        transaction_id = $RepairTransactionId
+        date = $DateStamp
+        gate_id = $GateId
+        allowed = [bool]$allowed
+        policy = 'llm_worker_only_when_all_artifacts_missing'
+        existing_artifacts = @($existing.ToArray())
+        missing_artifacts = @($missing.ToArray())
+        denied_status = if ($allowed) { '' } else { 'blocked_pre_repair_recreate' }
+    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $transactionDir 'pre-repair-policy.json') -Encoding UTF8
+    if (-not $allowed) {
+        Write-Log ("pre-repair policy denied LLM repair worker before edits; existing artifacts require deterministic patch repair: " + ([string]::Join(', ', @($existing.ToArray()))))
+        return $false
+    }
+    Write-Log "pre-repair policy OK: all target artifacts are missing; LLM worker may create specified artifacts only"
+    return $true
+}
+
+function Test-RepairPatchExistingPolicy {
+    param(
+        [string] $TransactionId,
+        [string[]] $Artifacts
+    )
+    $transactionDir = Get-RepairTransactionDir -TransactionId $TransactionId
+    $beforePath = Join-Path $transactionDir 'before-manifest.json'
+    $afterPath = Join-Path $transactionDir 'after-manifest.json'
+    if (-not (Test-Path -LiteralPath $beforePath) -or -not (Test-Path -LiteralPath $afterPath)) {
+        Write-Log "repair patch-existing policy failed: transaction manifests missing tx=$TransactionId"
+        return $false
+    }
+    $before = @(Get-Content -LiteralPath $beforePath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $after = @(Get-Content -LiteralPath $afterPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $afterByPath = @{}
+    foreach ($entry in $after) {
+        $afterByPath[[string]$entry.artifact_path] = $entry
+    }
+    $violations = New-Object System.Collections.Generic.List[string]
+    foreach ($beforeEntry in $before) {
+        $artifactPath = [string]$beforeEntry.artifact_path
+        $afterEntry = $afterByPath[$artifactPath]
+        if (-not [bool]$beforeEntry.exists) { continue }
+        if ($null -eq $afterEntry -or -not [bool]$afterEntry.exists) {
+            [void]$violations.Add("${artifactPath}: existing artifact removed")
+            continue
+        }
+        if ([string]$beforeEntry.hash -eq [string]$afterEntry.hash) { continue }
+        if ([string]$beforeEntry.item_type -ne 'file' -or [string]$afterEntry.item_type -ne 'file') { continue }
+        $beforeLines = @(Get-RepairSignificantLines -Path ([string]$beforeEntry.snapshot_path))
+        $afterLines = @(Get-RepairSignificantLines -Path ([string]$afterEntry.snapshot_path))
+        if ($beforeLines.Count -lt 5 -or $afterLines.Count -lt 5) { continue }
+        $afterSet = New-Object 'System.Collections.Generic.HashSet[string]'
+        foreach ($line in $afterLines) { [void]$afterSet.Add([string]$line) }
+        $kept = 0
+        foreach ($line in $beforeLines) {
+            if ($afterSet.Contains([string]$line)) { $kept++ }
+        }
+        $preservedLineRatio = [double]$kept / [double]$beforeLines.Count
+        if ($preservedLineRatio -lt 0.2 -and -not (Test-RepairReuseBlockedReason -TransactionId $TransactionId -ArtifactPath $artifactPath)) {
+            [void]$violations.Add("${artifactPath}: preserved_line_ratio=$([math]::Round($preservedLineRatio, 3)) without reuse-blocked.json")
+        }
+    }
+    $policyPath = Join-Path $transactionDir 'patch-existing-policy.json'
+    [pscustomobject]@{
+        transaction_id = $TransactionId
+        date = $DateStamp
+        artifacts = @($Artifacts)
+        violations = @($violations.ToArray())
+    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $policyPath -Encoding UTF8
+    if ($violations.Count -gt 0) {
+        Write-Log ("repair patch-existing policy failed: " + ([string]::Join(', ', @($violations))))
+        return $false
+    }
+    Write-Log "repair patch-existing policy OK (tx=$TransactionId)"
+    return $true
 }
 
 function Snapshot-RepairWorkspace {
@@ -1125,9 +1402,11 @@ function Invoke-PythonGateWithRepair {
         [string] $Category,
         [string[]] $PythonArgs,
         [string[]] $Artifacts,
-        [datetime] $DeadlineAt = [datetime]::MaxValue
+        [datetime] $DeadlineAt = [datetime]::MaxValue,
+        [switch] $NoRepair
     )
-    for ($attempt = 1; $attempt -le 2; $attempt++) {
+    $maxGateAttempts = 2
+    for ($attempt = 1; $attempt -le $maxGateAttempts; $attempt++) {
         if ((Get-Date) -ge $DeadlineAt) {
             Write-Log "$GateId gate deadline exceeded before attempt $attempt"
             return 124
@@ -1149,6 +1428,14 @@ function Invoke-PythonGateWithRepair {
         }
         Write-Log "$GateId gate failed (attempt=$attempt, rc=$gateRc)"
         Update-RunnerProgress -Phase 'gate' -Step "$GateId attempt $attempt failed rc=$gateRc" -GateId $GateId -Category $Category -Attempt $attempt -DeadlineAt $DeadlineAt.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+        if ($NoRepair) {
+            Write-Log "$GateId repair disabled for this gate; returning rc=$gateRc"
+            return $gateRc
+        }
+        if ($attempt -ge $maxGateAttempts) {
+            Write-Log "$GateId gate final attempt failed; skipping repair"
+            return $gateRc
+        }
         Push-Location $RepoDir
         try {
             Invoke-Logged { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath }
@@ -1161,12 +1448,20 @@ function Invoke-PythonGateWithRepair {
             return $gateRc
         }
         $repairBeforeStatus = Snapshot-RepairWorkspace
-        $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts
+        $repairTransactionId = New-RepairTransactionId
+        [void](Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'before' -Artifacts $Artifacts)
+        $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts -RepairTransactionId $repairTransactionId
         if ($repairRc -eq 124) {
             Write-Log "$GateId repair timeout (rc=124)"
             return 124
         }
         if ($repairRc -ne 0) {
+            return $gateRc
+        }
+        [void](Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'after' -Artifacts $Artifacts)
+        # 最後の砦: 作業前 preflight を抜けた missing-artifact repair でも、
+        # 実行後に予期しない再作成や scope 拡大が起きた場合はここで止める。
+        if (-not (Test-RepairPatchExistingPolicy -TransactionId $repairTransactionId -Artifacts $Artifacts)) {
             return $gateRc
         }
         if (-not (Test-RepairArtifactScope -BeforeStatus $repairBeforeStatus -Artifacts $Artifacts)) {
@@ -1182,13 +1477,14 @@ function Invoke-AutonomousGate {
         [string] $Category,
         [string[]] $PythonArgs,
         [string[]] $Artifacts,
-        [int] $GateDeadlineSec = 2100
+        [int] $GateDeadlineSec = 2100,
+        [switch] $NoRepair
     )
     $statePath = Join-Path $RepoDir "data\gate_attempts\$DateStamp-$GateId.json"
     $deadline = (Get-Date).AddSeconds($GateDeadlineSec)
-    Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=3, signature_repair=1, state=$statePath)"
+    Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=2, signature_repair=1, state=$statePath)"
     Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
-    $gateRc = Invoke-PythonGateWithRepair -GateId $GateId -Category $Category -PythonArgs $PythonArgs -Artifacts $Artifacts -DeadlineAt $deadline
+    $gateRc = Invoke-PythonGateWithRepair -GateId $GateId -Category $Category -PythonArgs $PythonArgs -Artifacts $Artifacts -DeadlineAt $deadline -NoRepair:$NoRepair
     if ($gateRc -eq 0) {
         Write-Log "$GateId autonomous gate OK"
         Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate OK" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
@@ -1262,6 +1558,12 @@ function Resolve-LastGoodDocsRef {
 
 function Invoke-FallbackPublish {
     param([string] $Reason)
+    if ($NoPublish) {
+        $message = "NoPublish mode: direct fallback publish blocked (reason=$Reason)"
+        Write-Log "ERROR: $message"
+        Exit-Runner -Status 'publish_dry_run_failed' -Message $message -ExitCode 73
+        return
+    }
     Write-Log "fallback publish start (reason=$Reason)"
     Preserve-UnverifiedGeneratedArtifacts
     $lastGoodDocsRef = Resolve-LastGoodDocsRef
@@ -1350,6 +1652,13 @@ function Invoke-AutonomousCompletionPolicy {
     if ($FailureKind -eq 'distribution') {
         Write-Log "ERROR: distribution failure classified by autonomous policy (gate=$gateLabel, rc=$ExitCode): $message"
         Exit-Runner -Status 'distribution_failed' -Message $message -ExitCode $ExitCode
+        return
+    }
+
+    if ($NoPublish) {
+        $dryRunMessage = "NoPublish mode: fallback publish blocked (kind=$FailureKind, gate=$gateLabel, rc=$ExitCode): $message"
+        Write-Log "ERROR: $dryRunMessage"
+        Exit-Runner -Status 'publish_dry_run_failed' -Message $dryRunMessage -ExitCode $ExitCode
         return
     }
 
@@ -1446,14 +1755,14 @@ function Test-DailyArtifactsExist {
 
 # ===== sentinel: 起動できた事実 =====
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
-Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly" -Encoding UTF8
+Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
 
 Add-Content -Path $LogPath -Value '' -Encoding UTF8
 Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
-Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, pid=$PID)"
+Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
 Assert-RunnerBinaryInSync
-if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
+if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
     Write-Log "ERROR: existing daily artifacts detected; refusing full rerun for date=$DateStamp. Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts."
     Set-RunnerState -Status 'failed' -Message 'existing daily artifacts detected; refusing full rerun' -ExitCode 64
     exit 64
@@ -1505,6 +1814,8 @@ if ($PreflightOnly) {
 $NetWait = Join-Path $env:USERPROFILE 'bin\net_wait.py'
 if ($Stage2EditorSmokeOnly) {
     Write-Log 'Stage2EditorSmokeOnly mode: skipping net reachability wait and git sync'
+} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive) {
+    Write-Log 'ResumeFromStage mode: skipping net reachability wait and git sync'
 } else {
     if (Test-Path $NetWait) {
         Write-Log 'net reachability wait start (github.com / api.github.com :443, max 10x30s)'
@@ -1537,6 +1848,29 @@ if ($RecoverOnly) {
     $recoverOnlyInputManifest = Write-RecoverOnlyInputManifest
     Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
     Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
+} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive) {
+    if ($ResumeAfterDeepDive) {
+        Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality/DeepDive artifacts; starting after DeepDive"
+    } else {
+        Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality artifacts; starting at DeepDive"
+    }
+    Write-Log 'ResumeFromStage mode: skipping Stage0/Stage1/Stage1.5/Stage2/Stage3; rechecking summary/daily gates'
+    $Categories = Get-PublishInventoryArtifacts -Kind 'categories'
+    $resumeRequiredArtifacts = @(
+        (Join-Path $RepoDir "build\reporter-artifacts\$DateStamp\editor-input-manifest.json"),
+        (Join-Path $RepoDir "digest\Summary\$DateStamp.md"),
+        (Join-Path $RepoDir "data\articles.jsonl")
+    )
+    if ($ResumeAfterDeepDive) {
+        $resumeRequiredArtifacts += (Join-Path $RepoDir "digest\DeepDive\$DateStamp-DeepDive.md")
+    }
+    foreach ($resumeArtifact in $resumeRequiredArtifacts) {
+        if (-not (Test-Path -LiteralPath $resumeArtifact)) {
+            Write-Log "ERROR: ResumeFromStage missing required artifact: $resumeArtifact"
+            Set-RunnerState -Status 'failed' -Message 'resume required artifact missing' -ExitCode 65 -Phase 'resume' -Step 'resume artifact check'
+            exit 65
+        }
+    }
 } else {
     if ($Stage2EditorSmokeOnly) {
         Write-Log 'Stage2EditorSmokeOnly mode: skipping publish external readiness gate'
@@ -2023,6 +2357,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     }
     $editorManifest = [pscustomobject]@{
         date = $DateStamp
+        scheduled_categories = @($Categories)
         reporter_artifacts = @($ReporterArtifacts | ForEach-Object { $_.records_file })
         reporter_artifact_details = $ReporterArtifacts
         dedup_file = $DedupedCandidateDir
@@ -2032,7 +2367,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $editorManifest | ConvertTo-Json -Depth 8 | Set-Content -Path $EditorInputManifest -Encoding UTF8
 
     $EditorPromptFile = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-prompt-$DateStamp.md")
-    $DateHeader = "今日の日付は $DateStamp (JST) である。Stage2 reporter artifact manifest は $EditorInputManifest にある。Stage1 dedup は build/deduped-candidates にある。音声原稿を作る場合は manifest の audio_script_history にある過去 2 日の path を確認し、構成・感想・締めの反復禁止と例文コピー禁止を守る。編集長は再収集せず、検証済み reporter 成果物の統合・横断 dedup 判断・Summary planning・append だけを行う。"
+    $ScheduledCategoryList = ($Categories -join ', ')
+    $DateHeader = "今日の日付は $DateStamp (JST) である。Stage2 reporter artifact manifest は $EditorInputManifest にある。manifest の scheduled_categories は [$ScheduledCategoryList] で、Summary frontmatter categories/tags/sections は scheduled_categories のみ。非対象カテゴリの section を作らない。Stage1 dedup は build/deduped-candidates にある。音声原稿を作る場合は manifest の audio_script_history にある過去 2 日の path を確認し、構成・感想・締めの反復禁止と例文コピー禁止を守る。編集長は再収集せず、検証済み reporter 成果物の統合・横断 dedup 判断・Summary planning・append だけを行う。"
     $PromptBody = Get-Content -Path $PromptFile -Raw -Encoding UTF8
     Set-Content -Path $EditorPromptFile -Value ($DateHeader + "`n`n" + $PromptBody) -Encoding UTF8
     Write-Log "editor prompt date injected: header='$DateHeader' -> $EditorPromptFile"
@@ -2110,6 +2446,8 @@ $DeepDiveTimeoutSec = 1800
 $DeepDiveModel = Get-ModelPolicyValue -Role 'deepdive' -Key 'default'
 if ($RecoverOnly) {
     Write-Log "RecoverOnly mode: skipping deepdive codex; keeping existing DeepDive state"
+} elseif ($ResumeAfterDeepDive) {
+    Write-Log 'ResumeFromStage mode: skipping deepdive codex; using existing DeepDive artifact'
 } else {
     Write-Log "deepdive wrapper invoke START (agent=codex, Model=$DeepDiveModel, TimeoutSec=$DeepDiveTimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
     # 2026-06-10: IdleTimeoutSec 0 → 900 (digest 側と同じ理由。stream-json 既定化で
@@ -2170,12 +2508,12 @@ Write-Log 'generation quality gate OK'
 # を物理照合する。ただし非対話 codex exec では PostToolUse hook 由来の session 台帳が
 # 必ず成立するとは限らないため、台帳不在だけでは止めず、URL 物理 gate と日付証拠を本線にする。
 Write-Log 'URL liveness gate start (audit_all_article_urls --gate --match-session)'
-$urlGateRc = Invoke-AutonomousGate -GateId 'url-liveness' -Category 'urls' -PythonArgs @('tools\audit_all_article_urls.py', '--gate', '--match-session') -Artifacts @('data/articles.jsonl', 'data/_session_urls.json', 'data/_session_urls.d')
+$urlGateRc = Invoke-AutonomousGate -GateId 'url-liveness' -Category 'urls' -PythonArgs @('tools\audit_all_article_urls.py', '--gate', '--match-session', '--issue-date', $DateStamp) -Artifacts @('data/articles.jsonl', 'data/_session_urls.json', 'data/_session_urls.d') -NoRepair
 if ($urlGateRc -ne 0) {
     Write-Log "URL liveness quarantine start (audit_all_article_urls --gate --match-session --quarantine-articles --apply)"
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' '--quarantine-articles' '--apply' }
+        Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' '--issue-date' $DateStamp '--quarantine-articles' '--apply' }
         $urlQuarantineRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -2186,7 +2524,7 @@ if ($urlGateRc -ne 0) {
             Write-Log "URL liveness refill start (tools.refill_category_after_quarantine, bad-url-file=$badUrlFile)"
             Push-Location $RepoDir
             try {
-                $refillCategoriesJson = & $PyExe '-m' 'tools.refill_category_after_quarantine' '--list-categories'
+                $refillCategoriesJson = & $PyExe '-m' 'tools.refill_category_after_quarantine' '--list-categories' '--date' $DateStamp
                 $refillCategoryListRc = $LASTEXITCODE
             } finally {
                 Pop-Location
@@ -2229,7 +2567,7 @@ if ($urlGateRc -ne 0) {
         Write-Log 'URL liveness gate recheck after quarantine'
         Push-Location $RepoDir
         try {
-            Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' }
+            Invoke-Logged { & $PyExe 'tools\audit_all_article_urls.py' '--gate' '--match-session' '--issue-date' $DateStamp }
             $urlRecheckRc = $LASTEXITCODE
         } finally {
             Pop-Location
@@ -2335,7 +2673,7 @@ Write-Log 'pytest gate OK'
 Write-Log 'batch SLO gate start'
 Push-Location $RepoDir
 try {
-    Invoke-Logged { & $PyExe '-m' 'tools.validate_batch_slo' '--usage-log' $CodexUsageLog '--max-total-tokens' '3000000' '--max-window-sec' '3600' }
+    Invoke-Logged { & $PyExe '-m' 'tools.validate_batch_slo' '--usage-log' $CodexUsageLog '--max-total-tokens' '3000000' '--max-window-sec' '3600' '--since' $script:RunnerProcessCreationTime }
     $batchSloRc = $LASTEXITCODE
 } finally {
     Pop-Location
@@ -2349,10 +2687,12 @@ Write-Log 'batch SLO gate OK'
 # 2026-06-16: 編集長が生成した digest/Summary/{date}-audio-script.md を AivisSpeech で
 # mp3 化し、GitHub Releases audio-daily へ公開する。2026-06-17 以降は通常公開必須
 # 成果物なので、失敗時は公開・fallback・通知へ進ませない。
+$dailyTtsPublishArgs = @('-m', 'tools.tts.publish_audio', $DateStamp)
+if ($NoPublish) { $dailyTtsPublishArgs = @('-m', 'tools.tts.publish_audio', $DateStamp, '--dry-run') }
 foreach ($ttsStep in @(
     @{ Name = 'tts build_script'; Args = @('-m', 'tools.tts.build_script', $DateStamp) },
     @{ Name = 'tts synthesize_daily'; Args = @('-m', 'tools.tts.synthesize_daily', $DateStamp) },
-    @{ Name = 'tts publish_audio'; Args = @('-m', 'tools.tts.publish_audio', $DateStamp) }
+    @{ Name = 'tts publish_audio'; Args = $dailyTtsPublishArgs }
 )) {
     Write-Log "$($ttsStep.Name) start"
     try {
@@ -2380,10 +2720,12 @@ foreach ($ttsStep in @(
 # LP/DeepDive 記事へ埋め込むため、docs 生成前に完了させる。
 $DeepDiveMarkdown = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive.md")
 $DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive-dialogue.md")
+$deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp)
+if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run') }
 foreach ($deepDiveTtsStep in @(
     @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript) },
     @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
-    @{ Name = 'deepdive dialogue publish'; Args = @('-m', 'tools.tts.deepdive_audio', $DateStamp) }
+    @{ Name = 'deepdive dialogue publish'; Args = $deepDiveTtsPublishArgs }
 )) {
     Write-Log "$($deepDiveTtsStep.Name) start"
     try {
@@ -2413,19 +2755,23 @@ foreach ($deepDiveTtsStep in @(
 # 無関係な作業ツリー変更 (SETUP.md / tests 等) は巻き込まない。fallback 経路は
 # この step を通らないため「未検証 digest commit が fallback push に乗る」事故は
 # 引き続き構造的に起きない。
-Invoke-Logged { & $GitExe -C $RepoDir add 'digest/' 'data/' }
-if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add digest/data failed (rc=$LASTEXITCODE)"; exit 1 }
-Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet }
-$digestDiffRc = $LASTEXITCODE
-if ($digestDiffRc -eq 1) {
-    Write-Log 'digest/data has changes, committing'
-    Invoke-Logged { & $GitExe -C $RepoDir commit -m "daily: digest and data for $DateStamp" }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: digest commit failed (rc=$LASTEXITCODE)"; exit 1 }
-} elseif ($digestDiffRc -eq 0) {
-    Write-Log 'digest/data no changes (commit skip)'
+if ($NoPublish) {
+    Write-Log 'NoPublish mode: skipping digest/data git add + commit'
 } else {
-    Write-Log "ERROR: git diff --cached (digest) returned unexpected rc=$digestDiffRc"
-    exit 1
+    Invoke-Logged { & $GitExe -C $RepoDir add 'digest/' 'data/' }
+    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add digest/data failed (rc=$LASTEXITCODE)"; exit 1 }
+    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet }
+    $digestDiffRc = $LASTEXITCODE
+    if ($digestDiffRc -eq 1) {
+        Write-Log 'digest/data has changes, committing'
+        Invoke-Logged { & $GitExe -C $RepoDir commit -m "daily: digest and data for $DateStamp" }
+        if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: digest commit failed (rc=$LASTEXITCODE)"; exit 1 }
+    } elseif ($digestDiffRc -eq 0) {
+        Write-Log 'digest/data no changes (commit skip)'
+    } else {
+        Write-Log "ERROR: git diff --cached (digest) returned unexpected rc=$digestDiffRc"
+        exit 1
+    }
 }
 
 # ===== 3. docs/ 再生成 (旧 step 4 を前倒し / Plan v3 P0-A) =====
@@ -2499,31 +2845,41 @@ try {
 if ($markOkRc -ne 0) { Write-Log "WARN: publish_fallback mark-ok exited $markOkRc (non-fatal)" }
 
 # ===== 4. docs/ commit (差分があれば) =====
-Invoke-Logged { & $GitExe -C $RepoDir add 'docs/' }
-if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add docs/ failed (rc=$LASTEXITCODE)"; exit 1 }
-
-# git diff --cached --quiet docs/ は差分があると exit 1、無いと exit 0。
-Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- 'docs/' }
-$diffRc = $LASTEXITCODE
-if ($diffRc -eq 1) {
-    Write-Log 'docs/ has changes, committing'
-    Invoke-Logged { & $GitExe -C $RepoDir commit -m "docs: generate public pages for $DateStamp" }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: docs commit failed (rc=$LASTEXITCODE)"; exit 1 }
-} elseif ($diffRc -eq 0) {
-    Write-Log 'docs no changes (digest commit のみを push します)'
+if ($NoPublish) {
+    Write-Log 'NoPublish mode: skipping docs git add + commit'
 } else {
-    Write-Log "ERROR: git diff --cached returned unexpected rc=$diffRc"
-    exit 1
+    Invoke-Logged { & $GitExe -C $RepoDir add 'docs/' }
+    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add docs/ failed (rc=$LASTEXITCODE)"; exit 1 }
+
+    # git diff --cached --quiet docs/ は差分があると exit 1、無いと exit 0。
+    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- 'docs/' }
+    $diffRc = $LASTEXITCODE
+    if ($diffRc -eq 1) {
+        Write-Log 'docs/ has changes, committing'
+        Invoke-Logged { & $GitExe -C $RepoDir commit -m "docs: generate public pages for $DateStamp" }
+        if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: docs commit failed (rc=$LASTEXITCODE)"; exit 1 }
+    } elseif ($diffRc -eq 0) {
+        Write-Log 'docs no changes (digest commit のみを push します)'
+    } else {
+        Write-Log "ERROR: git diff --cached returned unexpected rc=$diffRc"
+        exit 1
+    }
 }
 
 # ===== 4.5 YouTube Podcast prepare (fatal, push 直前) =====
 # push 前は private upload までに留め、Web publish が失敗したときに YouTube だけ public
 # になる一時不整合を避ける。rerun は uploads.json の mp4_sha256/videoId で skip する。
+$youtubePodcastPrepareArgs = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare')
+$deepDiveYoutubePodcastPrepareArgs = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--kind', 'deepdive', '--prepare')
+if ($NoPublish) {
+    $youtubePodcastPrepareArgs = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare', '--dry-run')
+    $deepDiveYoutubePodcastPrepareArgs = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--kind', 'deepdive', '--prepare', '--dry-run')
+}
 foreach ($youtubePodcastStep in @(
     @{ Name = 'youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp) },
     @{ Name = 'deepdive youtube podcast build_video'; Args = @('-m', 'tools.youtube_podcast.build_video', $DateStamp, '--kind', 'deepdive') },
-    @{ Name = 'youtube podcast prepare'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare') },
-    @{ Name = 'deepdive youtube podcast prepare'; Args = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--kind', 'deepdive', '--prepare') }
+    @{ Name = 'youtube podcast prepare'; Args = $youtubePodcastPrepareArgs },
+    @{ Name = 'deepdive youtube podcast prepare'; Args = $deepDiveYoutubePodcastPrepareArgs }
 )) {
     Write-Log "$($youtubePodcastStep.Name) start"
     try {
@@ -2694,7 +3050,9 @@ if (Should-SendNormalBatchNotification) {
 }
 
 Write-CodexUsageWindowSnapshot -Phase 'end'
-if ($NoPush) {
+if ($NoPublish) {
+    Write-Log 'news-grasp-runner.ps1 PUBLISH DRY RUN OK'
+} elseif ($NoPush) {
     Write-Log 'news-grasp-runner.ps1 SMOKE OK'
 } else {
     Write-Log 'news-grasp-runner.ps1 OK'

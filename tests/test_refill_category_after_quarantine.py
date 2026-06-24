@@ -6,6 +6,7 @@ from pathlib import Path
 from tools.config import CATEGORIES
 from tools.publish_inventory import CATEGORY_PATHS
 from tools.refill_category_after_quarantine import main, refill_category, refill_category_ids
+from tools.validate_record import validate_record
 
 
 ISSUE = "2026-06-20"
@@ -61,6 +62,9 @@ def _write_fixture(repo: Path) -> None:
         _record("https://example.com/a5", 5),
     ]
     records.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8")
+    articles = repo / "data" / "articles.jsonl"
+    articles.parent.mkdir(parents=True, exist_ok=True)
+    articles.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8")
     audit = repo / "data" / "search_audit" / ISSUE / "ai.json"
     audit.parent.mkdir(parents=True)
     audit.write_text(
@@ -73,9 +77,22 @@ def test_refill_category_replaces_quarantined_url_from_reserve(tmp_path: Path) -
     _write_fixture(tmp_path)
     candidate_dir = tmp_path / "build" / "deduped-candidates"
     candidate_dir.mkdir(parents=True)
-    candidate = _record("https://example.com/reserve", 6)
-    candidate["title"] = "reserve title"
+    candidate = {
+        "category": "ai",
+        "pubDate": f"{ISSUE}T09:35:00+00:00",
+        "source": "Reserve",
+        "title": "reserve title",
+        "url": "https://example.com/reserve",
+        "thumb": "https://example.com/reserve-thumb.jpg",
+    }
     (candidate_dir / "ai_candidates.jsonl").write_text(json.dumps(candidate, ensure_ascii=False) + "\n", encoding="utf-8")
+    articles_path = tmp_path / "data" / "articles.jsonl"
+    articles_path.write_text(
+        articles_path.read_text(encoding="utf-8")
+        + json.dumps(candidate, ensure_ascii=False)
+        + "\n",
+        encoding="utf-8",
+    )
 
     result = refill_category(
         repo_root=tmp_path,
@@ -90,13 +107,32 @@ def test_refill_category_replaces_quarantined_url_from_reserve(tmp_path: Path) -
     assert result["mode"] == "refilled"
     assert (tmp_path / "build" / "repair-transactions" / ISSUE / "tx1" / "before").exists()
     records_text = (tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl").read_text(encoding="utf-8")
+    articles_text = (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8")
     digest_text = (tmp_path / "digest" / "AI" / f"{ISSUE}-AI.md").read_text(encoding="utf-8")
     audit = json.loads((tmp_path / "data" / "search_audit" / ISSUE / "ai.json").read_text(encoding="utf-8"))
 
     assert "https://bad.example.com/dead" not in records_text
+    assert "https://bad.example.com/dead" not in articles_text
     assert "https://bad.example.com/dead" not in digest_text
     assert "https://example.com/reserve" in records_text
+    assert "https://example.com/reserve" in articles_text
     assert "https://example.com/reserve" in digest_text
+    refill_records = [
+        json.loads(line)
+        for line in (tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    reserve = [row for row in refill_records if row["url"] == "https://example.com/reserve"][0]
+    validate_record(reserve)
+    article_records = [
+        json.loads(line)
+        for line in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8").splitlines()
+        if json.loads(line)["url"] == "https://example.com/reserve"
+    ]
+    assert len(article_records) == 1
+    validate_record(article_records[0])
+    assert reserve["date"] == ISSUE
+    assert reserve["genre"] == "AI"
+    assert reserve["title_ja"] == "reserve title"
     assert audit["selected_total"] == 5
     assert audit["dropped"]
 
@@ -171,6 +207,17 @@ def test_refill_category_ids_follow_canonical_categories(capsys) -> None:
     assert json.loads(captured.out) == expected
 
 
+def test_refill_category_list_categories_can_use_issue_schedule(capsys) -> None:
+    """水曜 refill は Game を対象にしない。"""
+    rc = main(["--list-categories", "--date", "2026-06-24"])
+    captured = capsys.readouterr()
+
+    assert rc == 0
+    categories = json.loads(captured.out)
+    assert categories == ["fx", "ai", "it", "mobility", "manufacturing", "economy"]
+    assert "game" not in categories
+
+
 def test_refill_category_skips_audit_dropped_reserve_candidate(tmp_path: Path) -> None:
     _write_fixture(tmp_path)
     candidate_dir = tmp_path / "build" / "deduped-candidates"
@@ -204,3 +251,47 @@ def test_refill_category_skips_audit_dropped_reserve_candidate(tmp_path: Path) -
     assert result["refilled"] == 0
     assert "https://example.com/rejected-reserve" not in records_text
     assert "https://example.com/rejected-reserve" not in digest_text
+
+
+def test_refill_category_skips_unresolved_google_news_candidate(tmp_path: Path) -> None:
+    """未解決 Google News RSS / thumb 欠落候補は公開可能な補充として採用しない。"""
+    _write_fixture(tmp_path)
+    candidate_dir = tmp_path / "build" / "deduped-candidates"
+    candidate_dir.mkdir(parents=True)
+    unresolved = {
+        "category": "ai",
+        "google_news_decode_status": "unresolved",
+        "pubDate": f"{ISSUE}T09:35:00+00:00",
+        "thumb": None,
+        "title": "unresolved google news",
+        "url": "https://news.google.com/rss/articles/CBMiTEST?oc=5",
+        "url_resolution_action": "reporter_must_resolve_canonical",
+    }
+    (candidate_dir / "ai_candidates.jsonl").write_text(json.dumps(unresolved, ensure_ascii=False) + "\n", encoding="utf-8")
+    articles_path = tmp_path / "data" / "articles.jsonl"
+    articles_path.write_text(
+        articles_path.read_text(encoding="utf-8")
+        + json.dumps(unresolved, ensure_ascii=False)
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = refill_category(
+        repo_root=tmp_path,
+        date=ISSUE,
+        category="ai",
+        bad_urls=["https://bad.example.com/dead"],
+        candidate_dir=candidate_dir,
+        txid="tx-unresolved-google-news",
+    )
+
+    records_text = (tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl").read_text(encoding="utf-8")
+    articles_text = (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8")
+    digest_text = (tmp_path / "digest" / "AI" / f"{ISSUE}-AI.md").read_text(encoding="utf-8")
+
+    assert result["ok"] is True
+    assert result["mode"] == "shortfall"
+    assert result["refilled"] == 0
+    assert "https://news.google.com/rss/articles/CBMiTEST?oc=5" not in records_text
+    assert "https://news.google.com/rss/articles/CBMiTEST?oc=5" not in articles_text
+    assert "https://news.google.com/rss/articles/CBMiTEST?oc=5" not in digest_text

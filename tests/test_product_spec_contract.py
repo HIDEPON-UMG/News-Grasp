@@ -141,6 +141,23 @@ def test_product_constitution_keeps_recovered_state_and_future_gates_separate() 
         assert phrase in text
 
 
+def test_product_constitution_distinguishes_necessary_checks_from_sufficient_e2e_proof() -> None:
+    """テスト Green や SLO gate 実装を、実運用完走の十分証明へ矮小化しない。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "pytest PASS は必要条件",
+        "daily quality PASS は必要条件",
+        "public URL PASS は必要条件",
+        "runner/live SHA一致は必要条件",
+        "1時間以内の本番相当 push直前 E2E PASS",
+        "効率的・完全完走を主張するための必要条件",
+        "SLO gate 実装を SLO 達成実測と混同してはならない",
+        "E2E 未実施なら効率的・完全・1時間以内完走とは報告してはならない",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> None:
     text = _read(SPEC)
 

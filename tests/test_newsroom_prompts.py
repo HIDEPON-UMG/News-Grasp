@@ -72,6 +72,30 @@ def test_reporter_prompt_date_and_thumb_contracts() -> None:
     assert "記事公開日ではない" in text
 
 
+def test_reporter_prompt_does_not_override_freshness_gate_for_manufacturing() -> None:
+    """manufacturing 例外でも validator の鮮度窓を破らせない。"""
+    text = _read(REPORTER_PROMPT)
+
+    assert "--max-source-age-days 1" in text
+    assert "manufacturing でも freshness gate は破らない" in text
+    assert "24h 超 −10 は適用しない" not in text
+
+
+def test_reporter_prompt_lists_required_coverage_terms_for_all_categories() -> None:
+    """search_audit coverage_terms_checked は全カテゴリの必須語を明記する。"""
+    text = _read(REPORTER_PROMPT)
+    for term in [
+        "OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA",
+        "USDJPY", "EURUSD", "BOJ", "Fed", "ECB",
+        "McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT",
+        "Tesla", "Waymo", "BYD", "Toyota", "Uber",
+        "TSMC", "Samsung", "Intel", "Foxconn",
+        "Nikkei", "S&P 500", "SoftBank",
+        "Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix",
+    ]:
+        assert term in text
+
+
 def test_thumb_prompts_forbid_google_news_proxy_thumbnail() -> None:
     for path in [REPORTER_PROMPT, ROUTINE_PROMPT]:
         text = _read(path)
@@ -110,3 +134,40 @@ def test_editor_prompt_has_core_responsibilities() -> None:
     assert "categoryId" in text
     assert "codex-deepdive" in text or "DeepDive" in text
     assert "全文 Read 禁止" in text or "全文を Read していない" in text
+
+
+def test_editor_prompt_sets_reflection_lead_floor_above_validator_threshold() -> None:
+    """編集長 prompt は validator 180 字ぎりぎりではなく、余裕を持つ下限を指示する。"""
+    text = _read(EDITOR_PROMPT)
+    routine_text = _read(ROUTINE_PROMPT)
+
+    assert "lead は 220〜250 字" in text
+    assert "validate_summary_reflection" in text
+    assert "180文字以上" in text
+    assert "lead は 220〜250 字" in routine_text
+    assert "validate_summary_reflection" in routine_text
+    assert "180文字以上" in routine_text
+
+
+def test_editor_prompt_forbids_unscheduled_summary_sections() -> None:
+    """編集長 prompt は非対象カテゴリを休載文でも Summary に載せさせない。"""
+    text = _read(EDITOR_PROMPT)
+    routine_text = _read(ROUTINE_PROMPT)
+
+    for prompt in [text, routine_text]:
+        assert "scheduled_categories" in prompt
+        assert "Summary frontmatter の categories / tags は scheduled_categories のみ" in prompt
+        assert "非対象カテゴリの section を作らない" in prompt
+        assert "休載文で繋ぐ" not in prompt
+        assert "sections は必ず 9 件" not in prompt
+
+
+def test_editor_prompt_audio_script_uses_scheduled_categories_not_fixed_seven() -> None:
+    """音声原稿も当日 scheduled_categories だけを巡回し、7カテゴリ固定に戻さない。"""
+    text = _read(EDITOR_PROMPT)
+    routine_text = _read(ROUTINE_PROMPT)
+
+    for prompt in [text, routine_text]:
+        assert "朗読原稿" in prompt
+        assert "scheduled_categories 件" in prompt
+        assert "カテゴリ巡回 7 件を各" not in prompt

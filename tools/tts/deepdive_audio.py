@@ -144,7 +144,7 @@ def write_latest_audio(day: str, url: str) -> None:
     )
 
 
-def publish(day: str, mp3_path: Path | None = None) -> dict[str, str] | None:
+def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) -> dict[str, str] | None:
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", day):
         raise ValueError(f"invalid DeepDive audio date: {day}")
     target = mp3_path or (BUILD_DIR / f"{day}.mp3")
@@ -152,6 +152,11 @@ def publish(day: str, mp3_path: Path | None = None) -> dict[str, str] | None:
         _warn(f"DeepDive mp3 not found: {target}")
         return None
     try:
+        if dry_run:
+            url = versioned_deepdive_audio_url(day, target)
+            write_latest_audio(day, url)
+            print(f"[tts] DeepDive audio publish dry-run: {url}")
+            return {"deepdive_audio_date": day, "deepdive_audio_url": url}
         if not ensure_release():
             return None
         proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"], timeout=GH_TIMEOUT_SEC)
@@ -170,8 +175,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="DeepDive 対談 mp3 を GitHub Releases に公開します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     parser.add_argument("--mp3", type=Path, default=None)
+    parser.add_argument("--dry-run", action="store_true", help="GitHub Releases へ upload せず latest_audio.json だけ検証用に更新する。")
     args = parser.parse_args(argv)
-    return 0 if publish(args.date, args.mp3) is not None else 1
+    return 0 if publish(args.date, args.mp3, dry_run=args.dry_run) is not None else 1
 
 
 if __name__ == "__main__":

@@ -118,7 +118,7 @@ cat → Genre（digest フォルダ名）の対応：
 | 戦略的シグナル | **25%** | 計画の新規/中止/停止・設備投資・工場立地・提携/撤退・人事 |
 | 一次情報度 | **20%** | IR・適時開示・プレスリリース・特許・現地取材・専門誌（製造は一次源が命なので 15%→20% に重視） |
 
-- **manufacturing の差分（必ず守る）**：①「話題性（拡散量）」を軸から外す（拡散しなくても構造的に重要なものが多い）②時間減衰を弱める（24h 超 −10 は適用しない。特許分析・戦略シフトのストック型は数日遅れても価値が落ちない）③件数下限を緩める（該当が薄い日は 3 件で可。低品質な続報で埋めない）。
+- **manufacturing の差分（必ず守る）**：①「話題性（拡散量）」を軸から外す（拡散しなくても構造的に重要なものが多い）② manufacturing でも freshness gate は破らない（`--max-source-age-days 1` の当日/前日窓を超えた記事は、背景文脈に留め、記事カードや TOP に採用しない）③件数下限を緩める（該当が薄い日は 3 件で可。低品質な続報や古いストック記事で埋めない）。
 - **Mobility との境界**（対象企業がトヨタ/BYD/デンソー等で重なる）：**使う／乗る／サービスを受ける視点 → Mobility**、**作る／誰が作る／作る計画をどうするか視点 → Manufacturing**。境界記事（次世代 EV 開発中止 等）は製品計画の意思決定が主題なら Manufacturing に振る。
 
 ### R2-B. 重複除外（**`tools/dedup.py` に必ず通す。目視・手作業 dedup 禁止**）
@@ -255,10 +255,20 @@ dedup を通過した候補から **スコア降順で 5 件** 確定する。**
   "raw_results_total": 12,           // harvest + WebSearch の生取得件数
   "candidates_total": 6,             // 候補化した件数
   "selected_total": 3,               // 最終採用件数
-  "coverage_terms_checked": ["主要軸の確認証跡"],  // ai なら OpenAI/Anthropic/Google/Apple/Microsoft/Meta/NVIDIA を必ず含める
+  "coverage_terms_checked": ["主要軸の確認証跡"],
   "dropped": [{"title": "...", "url": "...", "reason": "新材料が薄い / 前日以前の再掲 / 一次情報性が低い"}]
 }
 ```
+
+`coverage_terms_checked` は `tools.validate_daily_quality.REQUIRED_COVERAGE_TERMS` と一致させる。対象カテゴリの必須語は必ず全件含める。
+
+- `ai`: `OpenAI / Anthropic / Google / Apple / Microsoft / Meta / NVIDIA`
+- `fx`: `USDJPY / EURUSD / BOJ / Fed / ECB`
+- `it`: `McKinsey / BCG / Accenture / Deloitte / PwC / NTT`
+- `mobility`: `Tesla / Waymo / BYD / Toyota / Uber`
+- `manufacturing`: `TSMC / Samsung / Intel / NVIDIA / Foxconn / Toyota`
+- `economy`: `Nikkei / S&P 500 / Fed / BOJ / SoftBank / NVIDIA`
+- `game`: `Nintendo / Switch 2 / Sony / Capcom / Square Enix`
 
 ---
 

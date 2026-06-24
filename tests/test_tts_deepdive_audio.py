@@ -68,3 +68,25 @@ def test_latest_deepdive_dates_ignores_dialogue_scripts(tmp_path):
         (digest_dir / name).write_text("---\n", encoding="utf-8")
 
     assert deepdive_audio.latest_deepdive_dates(digest_dir, limit=2) == ["2026-06-20", "2026-06-21"]
+
+
+def test_deepdive_audio_dry_run_writes_latest_audio_without_gh_upload(tmp_path, monkeypatch):
+    """NoPublish E2E 用 dry-run は gh release upload を呼ばず latest_audio を作る。"""
+    mp3 = tmp_path / "2026-06-21.mp3"
+    mp3.write_bytes(b"deepdive-dry-run-audio")
+    latest_json = tmp_path / "latest_audio.json"
+    calls: list[list[str]] = []
+
+    def fake_quiet_run(args, **kwargs):
+        calls.append(list(args))
+        raise AssertionError("dry-run must not call gh")
+
+    monkeypatch.setattr(deepdive_audio, "BUILD_DIR", tmp_path)
+    monkeypatch.setattr(deepdive_audio, "LATEST_JSON", latest_json)
+    monkeypatch.setattr(deepdive_audio.proc, "quiet_run", fake_quiet_run)
+
+    assert deepdive_audio.main(["2026-06-21", "--dry-run"]) == 0
+    assert calls == []
+    payload = latest_json.read_text(encoding="utf-8")
+    assert "2026-06-21" in payload
+    assert "audio-deepdive/2026-06-21.mp3" in payload

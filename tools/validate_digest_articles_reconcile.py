@@ -31,6 +31,8 @@ import re
 import sys
 from pathlib import Path
 
+from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
+
 _PKG_ROOT = Path(__file__).resolve().parent.parent
 
 # digest md カードの正典 URL は `🔗 [元記事](https://...)`。thumb (`![thumb](...)`) や
@@ -51,9 +53,15 @@ def _normalize_url(url: str) -> str:
 def digest_card_urls(digest_dir: Path, issue_date: str) -> dict[str, list[str]]:
     """{genre: [card url, ...]} を返す。当日号のカテゴリ digest md のみ走査。"""
     out: dict[str, list[str]] = {}
+    scheduled_folders = {
+        CATEGORY_PATHS[cat_id]["digest_folder"]
+        for cat_id in scheduled_category_ids(issue_date)
+    }
     for md in sorted(digest_dir.glob(f"*/{issue_date}-*.md")):
         genre = md.parent.name
         if genre in _EXCLUDE_DIRS:
+            continue
+        if genre not in scheduled_folders:
             continue
         text = md.read_text(encoding="utf-8-sig", errors="replace")
         urls = [_normalize_url(u) for u in _GENMOTO_RE.findall(text)]
@@ -65,6 +73,10 @@ def digest_card_urls(digest_dir: Path, issue_date: str) -> dict[str, list[str]]:
 def articles_urls_for_issue(articles_path: Path, issue_date: str) -> dict[str, str]:
     """当日号 (date == issue_date) の articles.jsonl URL -> genre (正規化済)。"""
     urls: dict[str, str] = {}
+    scheduled_folders = {
+        CATEGORY_PATHS[cat_id]["digest_folder"]
+        for cat_id in scheduled_category_ids(issue_date)
+    }
     with articles_path.open(encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
@@ -76,9 +88,67 @@ def articles_urls_for_issue(articles_path: Path, issue_date: str) -> dict[str, s
                 continue
             if rec.get("date") != issue_date:
                 continue
+            genre = str(rec.get("genre") or "unknown")
+            if genre not in scheduled_folders:
+                continue
             u = rec.get("url")
             if isinstance(u, str) and u.strip():
-                urls[_normalize_url(u)] = str(rec.get("genre") or "unknown")
+                urls[_normalize_url(u)] = genre
+    return urls
+
+
+def current_reporter_urls_for_issue(repo_root: Path, issue_date: str) -> dict[str, str] | None:
+    """現在 run の reporter artifact URL -> genre を返す。
+
+    `data/articles.jsonl` は append-only で、同一号日の再実行前 record も残り得る。
+    editor-input-manifest がある場合は、その manifest が指す reporter records を
+    「今回 publish 直前に digest と一致すべき集合」として使う。manifest が無い古い
+    fixture / 手動実行では None を返し、従来の articles.jsonl 当日全件突合に戻す。
+    """
+    manifest = repo_root / "build" / "reporter-artifacts" / issue_date / "editor-input-manifest.json"
+    if not manifest.exists():
+        return None
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    scheduled_ids = data.get("scheduled_categories")
+    if not isinstance(scheduled_ids, list) or not scheduled_ids:
+        scheduled_ids = scheduled_category_ids(issue_date)
+    scheduled_folders = {
+        CATEGORY_PATHS[cat_id]["digest_folder"]
+        for cat_id in scheduled_ids
+        if cat_id in CATEGORY_PATHS
+    }
+    artifacts = data.get("reporter_artifacts")
+    if not isinstance(artifacts, list):
+        return None
+
+    urls: dict[str, str] = {}
+    for rel in artifacts:
+        if not isinstance(rel, str) or not rel.strip():
+            continue
+        path = repo_root / rel
+        if not path.exists():
+            continue
+        with path.open(encoding="utf-8-sig") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if rec.get("date") != issue_date:
+                    continue
+                genre = str(rec.get("genre") or "unknown")
+                if genre not in scheduled_folders:
+                    continue
+                u = rec.get("url")
+                if isinstance(u, str) and u.strip():
+                    urls[_normalize_url(u)] = genre
     return urls
 
 
@@ -99,14 +169,17 @@ def reconcile(digest_dir: Path, articles_path: Path, issue_date: str) -> dict[st
             digest_index[u] = genre
 
     jsonl_urls = articles_urls_for_issue(articles_path, issue_date)
+    repo_root = digest_dir.parent if digest_dir.name == "digest" else _PKG_ROOT
+    current_run_urls = current_reporter_urls_for_issue(repo_root, issue_date)
+    compare_urls = current_run_urls if current_run_urls is not None else jsonl_urls
     digest_only = [
         f"{genre}: {u}"
         for u, genre in sorted(digest_index.items(), key=lambda item: (item[1], item[0]))
-        if u not in jsonl_urls
+        if u not in compare_urls or u not in jsonl_urls
     ]
     articles_only = [
         f"{genre}: {u}"
-        for u, genre in sorted(jsonl_urls.items(), key=lambda item: (item[1], item[0]))
+        for u, genre in sorted(compare_urls.items(), key=lambda item: (item[1], item[0]))
         if u not in digest_index
     ]
     return {"digest_only": digest_only, "articles_only": articles_only}

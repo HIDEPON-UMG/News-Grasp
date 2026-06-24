@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tools.tts import build_script
+from tools import repair_audio_script_length
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "tts"
@@ -53,6 +54,27 @@ def test_cli_returns_nonzero_when_audio_script_validation_fails(tmp_path, monkey
     monkeypatch.setattr(build_script, "BUILD_DIR", tmp_path / "build")
 
     assert build_script.main(["2026-06-16"]) == 1
+
+
+def test_build_uses_scheduled_categories_not_all_categories_on_wednesday(tmp_path, monkeypatch):
+    """水曜の音声原稿では非対象 Game をカテゴリ不足にしない。"""
+    issue = "2026-06-24"
+    script_dir = tmp_path / "Summary"
+    script_dir.mkdir()
+    (script_dir / f"{issue}-audio-script.md").write_text(
+        "---\n"
+        f"date: {issue}\n"
+        "---\n\n"
+        "今日は6月24日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済。"
+        + ("今日は認証と防御と供給網の順番を確認する日でした。" * 105)
+        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(build_script, "SCRIPT_DIR", script_dir)
+    monkeypatch.setattr(build_script, "BUILD_DIR", tmp_path / "build")
+
+    assert build_script.main([issue]) == 0
 
 
 def test_effective_length_requires_at_least_2500_chars():
@@ -147,6 +169,35 @@ def test_audio_script_allows_first_day_without_history():
     issues = build_script.validate_script(_valid_script(), date="2026-06-16", history_texts=[])
 
     assert issues == []
+
+
+def test_repair_audio_script_length_extends_short_script_to_safe_range(tmp_path):
+    issue = "2026-06-24"
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True)
+    short_script = (
+        "---\n"
+        f"date: {issue}\n"
+        "---\n\n"
+        "今日は6月24日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済。"
+        + ("今日は認証と防御と供給網の順番を確認する日でした。" * 92)
+        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。"
+    )
+    target = summary_dir / f"{issue}-audio-script.md"
+    target.write_text(short_script, encoding="utf-8")
+
+    assert repair_audio_script_length.repair_file(tmp_path, issue) is True
+
+    repaired = target.read_text(encoding="utf-8")
+    repaired_body = repaired.split("---", 2)[2].strip()
+    count = build_script.effective_char_count(repaired)
+    assert 2600 <= count <= 2800
+    assert build_script.validate_script(
+        repaired_body,
+        date=issue,
+        required_categories=("fx", "ai", "it", "mobility", "manufacturing", "economy"),
+    ) == []
 
 
 def test_newsroom_editor_prompt_requires_tts_history_and_no_example_copy():

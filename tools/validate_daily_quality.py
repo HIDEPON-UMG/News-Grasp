@@ -13,12 +13,12 @@ from typing import Any
 from tools.dedup import extract_source_date_from_url
 from tools.generate_pages import (
     CATEGORIES,
-    is_category_scheduled_on,
     parse_articles,
     parse_frontmatter,
     parse_reflection,
 )
 from tools.publish_inventory import required_published_docs_artifacts
+from tools.publish_inventory import scheduled_category_ids
 from tools.url_quality import (
     is_google_news_proxy_thumb,
     is_google_news_rss_url,
@@ -47,7 +47,19 @@ _NEWS_GRASP_THUMB_RE = re.compile(
     r"^https?://hidepon-umg\.github\.io/News-Grasp/(?:assets/og/|assets/news-grasp)",
     re.IGNORECASE,
 )
+
+
+def _scheduled_digest_file(md: Path, issue: date) -> bool:
+    if md.parent.name in {"Summary", "DeepDive"}:
+        return False
+    try:
+        fm, _body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
+    except OSError:
+        return False
+    cat_id = str(fm.get("categoryId") or fm.get("category") or "").strip().casefold()
+    return bool(cat_id and cat_id in set(scheduled_category_ids(issue)))
 _INTENTIONAL_PAUSE_RE = re.compile(r"(休載|正当な休載理由|正当な欠落理由|intentionally short)", re.IGNORECASE)
+_FRONTMATTER_BLOCK_RE = re.compile(r"\A---\r?\n(?P<frontmatter>.*?)\r?\n---", re.DOTALL)
 
 
 def _is_news_grasp_self_thumb(value: object) -> bool:
@@ -147,7 +159,7 @@ def validate_digest_article_thumbnail_coverage(digest_root: Path, issue: date) -
     """digest の記事カード単位で thumb 欠落と公開 fallback 退化を検査する。"""
     errs: list[str] = []
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         articles = parse_articles(body)
@@ -209,7 +221,7 @@ def validate_card_emphasis_coverage(digest_root: Path, issue: date) -> list[str]
     """カテゴリカード本文が 3 階層の強調記法を含むか検査する。"""
     errs: list[str] = []
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         blocks = re.split(r"\r?\n---\r?\n", body)
@@ -236,7 +248,7 @@ def validate_digest_style_quality(digest_root: Path, issue: date) -> list[str]:
     redundant = ("一方で", "また、", "さらに、", "加えて、")
     translationese = ("することを発表した", "であると述べた", "することを明らかにした")
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         blocks = re.split(r"\r?\n---\r?\n", body)
@@ -281,13 +293,10 @@ def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
             f"{summary_path}: weekday={weekday} does not match date {issue.isoformat()} ({expected_weekday})."
         )
 
-    expected = {
-        cat_id for cat_id in CATEGORIES
-        if cat_id != "summary" and is_category_scheduled_on(cat_id, issue.isoformat())
-    }
+    expected = set(scheduled_category_ids(issue))
     present: set[str] = set()
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         cat_fm, _body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         cat_id = str(cat_fm.get("categoryId") or "").strip().casefold()
@@ -305,6 +314,101 @@ def validate_issue_schedule(digest_root: Path, issue: date) -> list[str]:
             " 配信対象カテゴリの digest が存在しないため公開前に停止します。"
             " 意図的休載の場合は Summary に当該カテゴリ名と休載理由を明記してください。"
         )
+    errs.extend(_unscheduled_summary_category_errors(summary_path, fm, body, issue, expected))
+    return errs
+
+
+def _frontmatter_sequence_values(text: str, key: str) -> list[str]:
+    """簡易 frontmatter の `key:\n  - value` 形式だけを抽出する。"""
+    match = _FRONTMATTER_BLOCK_RE.match(text)
+    if not match:
+        return []
+    values: list[str] = []
+    in_target = False
+    for line in match.group("frontmatter").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if not line.startswith((" ", "\t")) and ":" in line:
+            head, _, tail = line.partition(":")
+            in_target = head.strip() == key
+            if in_target and tail.strip():
+                values.append(tail.strip().strip('"').strip("'"))
+            continue
+        if in_target and stripped.startswith("- "):
+            values.append(stripped[2:].strip().strip('"').strip("'"))
+    return values
+
+
+def _category_aliases(cat_id: str) -> set[str]:
+    meta = CATEGORIES.get(cat_id, {})
+    aliases = {
+        cat_id,
+        str(meta.get("label") or ""),
+        str(meta.get("jp") or ""),
+    }
+    aliases.update({
+        "it": {"IT-Consulting", "IT", "コンサル"},
+        "fx": {"FX", "為替"},
+        "ai": {"AI"},
+        "mobility": {"Mobility", "モビリティ"},
+        "manufacturing": {"Manufacturing", "製造"},
+        "economy": {"Economy", "経済"},
+        "game": {"Game", "ゲーム"},
+    }.get(cat_id, set()))
+    return {alias for alias in aliases if alias}
+
+
+def _cat_id_from_ref(value: str) -> str | None:
+    folded = value.strip().strip('"').strip("'").casefold()
+    if folded.startswith("cat/"):
+        folded = folded[4:]
+    if folded in CATEGORIES and folded != "summary":
+        return folded
+    return None
+
+
+def _unscheduled_summary_category_errors(
+    summary_path: Path,
+    fm: dict[str, str],
+    body: str,
+    issue: date,
+    expected: set[str],
+) -> list[str]:
+    """Summary が非対象カテゴリを当日扱いしたら公開前に止める。"""
+    raw_text = summary_path.read_text(encoding="utf-8-sig", errors="replace")
+    known = set(CATEGORIES) - {"summary"}
+    refs: dict[str, set[str]] = {cat_id: set() for cat_id in known}
+
+    for key in ("categories", "tags"):
+        for value in _frontmatter_sequence_values(raw_text, key):
+            cat_id = _cat_id_from_ref(value)
+            if cat_id:
+                refs[cat_id].add(f"frontmatter {key}: {value}")
+
+    theme = str(fm.get("theme") or "")
+    heading_lines = [
+        line.strip()
+        for line in body.splitlines()
+        if line.lstrip().startswith("### ")
+    ]
+    body_probe_lines = heading_lines + [theme]
+    for cat_id in known:
+        for token in _category_aliases(cat_id):
+            folded = token.casefold()
+            for line in body_probe_lines:
+                if folded and folded in line.casefold():
+                    refs[cat_id].add(f"summary text: {line[:120]}")
+
+    errs: list[str] = []
+    for cat_id in sorted(known - expected):
+        if refs[cat_id]:
+            label = str(CATEGORIES.get(cat_id, {}).get("label") or cat_id)
+            evidence = "; ".join(sorted(refs[cat_id])[:3])
+            errs.append(
+                f"{summary_path}: unscheduled summary category: {cat_id} ({label}) for {issue.isoformat()}."
+                f" Summary must not publish or discuss non-target categories. evidence={evidence}"
+            )
     return errs
 
 
@@ -316,16 +420,7 @@ def _has_intentional_pause_marker(summary_body: str, cat_id: str) -> bool:
         str(meta.get("label") or ""),
         str(meta.get("jp") or ""),
     }
-    aliases = {
-        "it": {"IT-Consulting", "IT", "コンサル"},
-        "fx": {"FX", "為替"},
-        "ai": {"AI"},
-        "mobility": {"Mobility", "モビリティ"},
-        "manufacturing": {"Manufacturing", "製造"},
-        "economy": {"Economy", "経済"},
-        "game": {"Game", "ゲーム"},
-    }
-    tokens.update(aliases.get(cat_id, set()))
+    tokens.update(_category_aliases(cat_id))
     tokens = {token for token in tokens if token}
     for line in summary_body.splitlines():
         if not _INTENTIONAL_PAUSE_RE.search(line):
@@ -402,7 +497,7 @@ def validate_digest_source_freshness(digest_root: Path, issue: date) -> list[str
     """当日カテゴリ digest の記事 URL パス日付が前日以前なら落とす。"""
     errs: list[str] = []
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         cat = fm.get("categoryId") or fm.get("category") or md.parent.name
@@ -428,7 +523,7 @@ def validate_digest_article_counts(digest_root: Path, issue: date, *, min_articl
     """当日カテゴリ digest が5件目標または品質理由付き不足を満たすか検査する。"""
     errs: list[str] = []
     for md in sorted(digest_root.glob(f"*/*{issue.isoformat()}*.md")):
-        if md.parent.name in {"Summary", "DeepDive"}:
+        if not _scheduled_digest_file(md, issue):
             continue
         _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         articles_count = len(parse_articles(body))

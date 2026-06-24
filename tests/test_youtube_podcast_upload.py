@@ -246,6 +246,20 @@ def test_dry_run_does_not_call_youtube_api(tmp_path, monkeypatch):
     assert result["videoId"] == ""
 
 
+def test_prepare_dry_run_cli_does_not_call_youtube_api(tmp_path, monkeypatch):
+    """NoPublish runner は upload_episode --prepare --dry-run で private upload も避ける。"""
+    from tools.youtube_podcast import upload_episode
+
+    build_dir = tmp_path / "build" / "youtube-podcast"
+    build_dir.mkdir(parents=True)
+    (build_dir / "2026-06-18.mp4").write_bytes(b"mp4")
+    monkeypatch.setattr(upload_episode, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(upload_episode, "build_metadata", lambda _day, kind="daily": {"title": "t", "description": "d", "tags": []})
+
+    assert upload_episode.main(["2026-06-18", "--prepare", "--dry-run"]) == 0
+    assert not (build_dir / "uploads.json").exists()
+
+
 def test_deepdive_metadata_and_upload_state_are_separate(tmp_path, monkeypatch):
     from tools.youtube_podcast import upload_episode
 

@@ -7,6 +7,8 @@ import re
 import sys
 from pathlib import Path
 
+from tools.publish_inventory import scheduled_category_ids
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_DIR = REPO_ROOT / "digest" / "Summary"
@@ -188,11 +190,19 @@ def _history_issues(text: str, history_texts: list[str]) -> list[str]:
     return issues
 
 
-def validate_script(text: str, *, date: str | None = None, history_texts: list[str] | None = None) -> list[str]:
+def validate_script(
+    text: str,
+    *,
+    date: str | None = None,
+    history_texts: list[str] | None = None,
+    required_categories: list[str] | tuple[str, ...] | None = None,
+) -> list[str]:
     issues: list[str] = []
     text = _strip_audio_title_lines(text)
     missing: list[str] = []
-    for cat_id, aliases in CATEGORY_ALIASES.items():
+    categories = tuple(required_categories) if required_categories is not None else tuple(CATEGORY_ALIASES)
+    for cat_id in categories:
+        aliases = CATEGORY_ALIASES.get(cat_id, (cat_id,))
         if not any(alias in text for alias in aliases):
             missing.append(cat_id)
     if missing:
@@ -248,7 +258,12 @@ def build(date: str) -> Path | None:
         _warn(f"audio script not found: {path}")
         return None
     text = load_script(date)
-    issues = validate_script(text, date=date, history_texts=_recent_history_texts(date))
+    issues = validate_script(
+        text,
+        date=date,
+        history_texts=_recent_history_texts(date),
+        required_categories=scheduled_category_ids(date),
+    )
     if issues:
         for issue in issues:
             _warn(issue)

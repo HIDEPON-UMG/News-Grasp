@@ -123,3 +123,25 @@ def test_publish_audio_main_returns_zero_when_publish_succeeds(monkeypatch):
     )
 
     assert publish_audio.main(["2026-06-17"]) == 0
+
+
+def test_publish_audio_dry_run_writes_latest_audio_without_gh_upload(tmp_path, monkeypatch):
+    """NoPublish E2E 用 dry-run は gh release upload を呼ばず latest_audio を作る。"""
+    mp3 = tmp_path / "2026-06-17.mp3"
+    mp3.write_bytes(b"dry-run-audio")
+    latest_json = tmp_path / "latest_audio.json"
+    calls: list[list[str]] = []
+
+    def fake_quiet_run(args, **kwargs):
+        calls.append(list(args))
+        raise AssertionError("dry-run must not call gh")
+
+    monkeypatch.setattr(publish_audio, "BUILD_DIR", tmp_path)
+    monkeypatch.setattr(publish_audio, "LATEST_AUDIO_JSON", latest_json)
+    monkeypatch.setattr(publish_audio.proc, "quiet_run", fake_quiet_run)
+
+    assert publish_audio.main(["2026-06-17", "--dry-run"]) == 0
+    assert calls == []
+    payload = latest_json.read_text(encoding="utf-8")
+    assert "2026-06-17" in payload
+    assert "audio-daily/2026-06-17.mp3" in payload

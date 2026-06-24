@@ -82,8 +82,8 @@ def test_same_error_on_different_article_identity_is_not_same_signature(tmp_path
     assert second.same_signature_failures == 1
 
 
-def test_category_budget_allows_configured_number_of_distinct_failures(tmp_path: Path) -> None:
-    """同じ gate/category でも別失敗なら上限回数までは修復を許可する。"""
+def test_category_budget_allows_distinct_failures_after_artifact_changes(tmp_path: Path) -> None:
+    """artifact が変わった後の別失敗は、古い category 回数だけで拒否しない。"""
     artifact = tmp_path / "digest" / "Summary" / "2026-06-13.md"
     artifact.parent.mkdir(parents=True)
     artifact.write_text("first state", encoding="utf-8")
@@ -115,7 +115,81 @@ def test_category_budget_allows_configured_number_of_distinct_failures(tmp_path:
 
     assert first.retry_allowed is True
     assert second.retry_allowed is True
-    assert second.category_failures == 2
+    assert second.category_failures == 1
+
+
+def test_category_budget_counts_current_artifact_hash_only(tmp_path: Path) -> None:
+    """古い artifact 状態の失敗履歴だけで後段 resume の repair を拒否しない。"""
+    artifact = tmp_path / "digest" / "Summary" / "2026-06-24-audio-script.md"
+    artifact.parent.mkdir(parents=True)
+    state: dict = {"version": 1, "gates": {}}
+
+    artifact.write_text("old invalid state", encoding="utf-8")
+    first = record_gate_failure(
+        state,
+        GateFailure(
+            gate_id="generation-quality",
+            category="generated",
+            artifact_paths=("digest/Summary/2026-06-24-audio-script.md",),
+            output="ERROR: カテゴリ不足: game; 字数不足: 1515字",
+        ),
+        repo_root=tmp_path,
+        max_category_failures=2,
+    )
+    artifact.write_text("current invalid state", encoding="utf-8")
+    second = record_gate_failure(
+        state,
+        GateFailure(
+            gate_id="generation-quality",
+            category="generated",
+            artifact_paths=("digest/Summary/2026-06-24-audio-script.md",),
+            output="ERROR: 字数不足: 1515字",
+        ),
+        repo_root=tmp_path,
+        max_category_failures=2,
+    )
+
+    assert first.retry_allowed is True
+    assert second.retry_allowed is True
+    assert second.category_failures == 1
+
+
+def test_retry_budget_policy_change_ignores_legacy_state(tmp_path: Path) -> None:
+    """policy 変更前に repair 未実行で記録された失敗 state は後段 resume を詰まらせない。"""
+    artifact = tmp_path / "digest" / "Summary" / "2026-06-24-audio-script.md"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("current invalid state", encoding="utf-8")
+    failure = GateFailure(
+        gate_id="generation-quality",
+        category="generated",
+        artifact_paths=("digest/Summary/2026-06-24-audio-script.md",),
+        output="ERROR: 字数不足: 1515字",
+    )
+    state: dict = {
+        "version": 1,
+        "gates": {
+            "generation-quality": {
+                "signatures": {
+                    failure.signature(): {
+                        "failures": 1,
+                        "artifact_hashes": [failure.artifact_hash(tmp_path)],
+                    }
+                },
+                "categories": {"generated": 3},
+            }
+        },
+    }
+
+    decision = record_gate_failure(
+        state,
+        failure,
+        repo_root=tmp_path,
+        max_category_failures=2,
+    )
+
+    assert decision.retry_allowed is True
+    assert decision.same_signature_failures == 1
+    assert state["gates"]["generation-quality"]["categories"]["generated"] == 1
 
 
 def test_non_retryable_security_failure_never_calls_repair(tmp_path: Path) -> None:

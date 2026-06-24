@@ -153,6 +153,93 @@ def test_generation_quality_passes_complete_fixture(tmp_path: Path) -> None:
     assert result.errors == []
 
 
+def test_generation_quality_audio_script_uses_scheduled_categories_only_on_wednesday(tmp_path: Path) -> None:
+    """水曜の音声原稿 gate は非対象 Game を要求しない。"""
+    issue = "2026-06-24"
+    article_lines: list[str] = []
+    for idx, cat_id in enumerate(scheduled_category_ids(issue), start=1):
+        folder = CATEGORY_PATHS[cat_id]["digest_folder"]
+        url = f"https://example.com/{issue}/{cat_id}/{idx}"
+        digest = tmp_path / "digest" / folder / f"{issue}-{folder}.md"
+        digest.parent.mkdir(parents=True, exist_ok=True)
+        digest.write_text(
+            "---\n"
+            f"title: {folder} digest\n"
+            f"date: {issue}\n"
+            f"category: {folder}\n"
+            f"categoryId: {cat_id}\n"
+            "---\n\n"
+            f"# {folder}\n\n"
+            f"### [{idx:02d}] {folder} article\n\n"
+            f"📅 {issue} · 📰 Example · 🔗 [元記事]({url})\n\n"
+            "- body line\n",
+            encoding="utf-8",
+        )
+        article_lines.append(
+            json.dumps(
+                {
+                    "date": issue,
+                    "title": f"{folder} article",
+                    "url": url,
+                    "published_date": issue,
+                    "date_evidence_source": "fixture",
+                },
+                ensure_ascii=False,
+            )
+        )
+
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    (summary_dir / f"{issue}.md").write_text(
+        "---\n"
+        "title: Summary\n"
+        f"date: {issue}\n"
+        "category: Summary\n"
+        "categoryId: summary\n"
+        "hero_left: Left\n"
+        "hero_right: Right\n"
+        "---\n\n"
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "本文です。\n",
+        encoding="utf-8",
+    )
+    scheduled_terms = "為替 AI IT-Consulting モビリティ 製造 経済"
+    (summary_dir / f"{issue}-audio-script.md").write_text(
+        "---\n"
+        "title: Audio Script\n"
+        f"date: {issue}\n"
+        "type: audio-script\n"
+        "---\n\n"
+        f"今日は6月24日です。朝のニュースをお伝えします。{scheduled_terms}。"
+        + ("今日は投資と認証と防御の置き方を確認する日でした。" * 110)
+        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。",
+        encoding="utf-8",
+    )
+
+    deepdive = tmp_path / "digest" / "DeepDive" / f"{issue}-DeepDive.md"
+    deepdive.parent.mkdir(parents=True, exist_ok=True)
+    deepdive.write_text(
+        "---\n"
+        "title: DeepDive\n"
+        f"date: {issue}\n"
+        "kind: deepdive\n"
+        "---\n\n"
+        + _complete_deepdive_body(),
+        encoding="utf-8",
+    )
+    data = tmp_path / "data"
+    data.mkdir(parents=True, exist_ok=True)
+    (data / "articles.jsonl").write_text("\n".join(article_lines) + "\n", encoding="utf-8")
+    (data / "_status.md").write_text("ok\n", encoding="utf-8")
+    (data / "search_audit" / issue).mkdir(parents=True, exist_ok=True)
+
+    result = validate_generation_quality(tmp_path, issue)
+
+    assert result.exit_code == 0
+    assert not any("カテゴリ不足: game" in err.reason for err in result.errors)
+
+
 def test_generation_quality_rejects_missing_category_digest(tmp_path: Path) -> None:
     _write_complete_fixture(tmp_path)
     missing = tmp_path / "digest" / "Game" / f"{ISSUE}-Game.md"
