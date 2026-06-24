@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """news-grasp-runner.ps1 Stage2 -> editor 初動の部分 E2E。
 
-7 カテゴリ reporter の並列 fan-out が完走し、editor が 7 成果物の manifest を
-読めるところまでを fake Codex wrapper で決定論的に検証する。
+当日必須カテゴリだけの reporter 並列 fan-out が完走し、editor が schedule 由来の
+成果物 manifest を読めるところまでを fake Codex wrapper で決定論的に検証する。
 """
 from __future__ import annotations
 
@@ -13,11 +13,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tools.publish_inventory import scheduled_category_ids
+
 RUNNER = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
 POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
 ROOT = Path(__file__).resolve().parent.parent
 ISSUE = "2026-06-14"
-CATEGORIES = ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game")
+CATEGORIES = tuple(scheduled_category_ids(ISSUE))
 
 
 def _copy_minimal_repo(dst: Path) -> None:
@@ -49,7 +51,7 @@ def _copy_minimal_repo(dst: Path) -> None:
 
 
 def _fake_codex_wrapper(path: Path) -> None:
-    """reporter 成果物を書き、editor で manifest 7 件を検査する wrapper。"""
+    """reporter 成果物を書き、editor で schedule 由来 manifest 件数を検査する wrapper。"""
     path.write_text(
         r'''
 param(
@@ -70,6 +72,7 @@ $ErrorActionPreference = 'Stop'
 $date = $env:NEWS_GRASP_E2E_DATE
 $trace = $env:NEWS_GRASP_E2E_TRACE
 $sentinel = $env:NEWS_GRASP_E2E_SENTINEL
+$expectedReporterArtifacts = [int]$env:NEWS_GRASP_E2E_EXPECTED_REPORTERS
 $genreMap = @{
     fx = 'FX'
     ai = 'AI'
@@ -180,10 +183,10 @@ if ($FlowName -eq 'newsroom_editor') {
     }
     $manifestPath = $Matches[1].Trim()
     $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if (@($manifest.reporter_artifacts).Count -ne 7) {
+    if (@($manifest.reporter_artifacts).Count -ne $expectedReporterArtifacts) {
         throw "reporter_artifacts count was $(@($manifest.reporter_artifacts).Count)"
     }
-    if (@($manifest.reporter_artifact_details).Count -ne 7) {
+    if (@($manifest.reporter_artifact_details).Count -ne $expectedReporterArtifacts) {
         throw "reporter_artifact_details count was $(@($manifest.reporter_artifact_details).Count)"
     }
     foreach ($rel in @($manifest.reporter_artifacts)) {
@@ -229,7 +232,7 @@ throw "unexpected FlowName: $FlowName"
 
 
 def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_path: Path) -> None:
-    """7 reporter 完走後、editor が manifest 経由で 7 成果物を読める。"""
+    """当日必須 reporter 完走後、editor が schedule 由来 manifest を読める。"""
     repo = tmp_path / "repo"
     repo.mkdir()
     _copy_minimal_repo(repo)
@@ -244,6 +247,7 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     env["NEWS_GRASP_E2E_DATE"] = ISSUE
     env["NEWS_GRASP_E2E_TRACE"] = str(trace)
     env["NEWS_GRASP_E2E_SENTINEL"] = str(sentinel)
+    env["NEWS_GRASP_E2E_EXPECTED_REPORTERS"] = str(len(CATEGORIES))
     root_last_message = ROOT / "build" / "codex-last-message.txt"
     root_last_message_backup = tmp_path / "root-codex-last-message.txt"
     if root_last_message.exists():
@@ -294,15 +298,16 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
 
     assert result.returncode == 0, result.stdout + result.stderr
     trace_text = trace.read_text(encoding="utf-8")
-    assert trace_text.count("wrapper START reporter:") == 7
-    assert trace_text.count("wrapper END reporter:") == 7
+    expected_count = len(CATEGORIES)
+    assert trace_text.count("wrapper START reporter:") == expected_count
+    assert trace_text.count("wrapper END reporter:") == expected_count
     assert "wrapper START newsroom_editor" in trace_text
     first_parent_end = result.stdout.index("reporter job END")
-    assert result.stdout[:first_parent_end].count("reporter job START") == 7
+    assert result.stdout[:first_parent_end].count("reporter job START") == expected_count
 
     sentinel_text = sentinel.read_text(encoding="utf-8")
     assert '"editor_started":  true' in sentinel_text or '"editor_started": true' in sentinel_text
-    assert sentinel_text.count(".records.jsonl") == 7
+    assert sentinel_text.count(".records.jsonl") == expected_count
     manifest = repo / "build" / "reporter-artifacts" / ISSUE / "editor-input-manifest.json"
     assert manifest.exists()
     assert (repo / "build" / "codex-last-message.txt").exists()
