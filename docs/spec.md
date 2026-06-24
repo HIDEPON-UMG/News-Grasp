@@ -39,56 +39,6 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 | Notification | 通知送信が完了するか、送信不能理由が typed status として残っている。 |
 | State | runner state、distribution state、OK marker が同じ日付と同じ run intent を指している。 |
 
-## Category Schedule Source of Truth
-
-カテゴリには「カテゴリ宇宙」と「当日必須カテゴリ」がある。カテゴリ宇宙は `tools.config.CATEGORIES`、当日必須カテゴリは `tools.publish_inventory.scheduled_category_ids(issue)` を正本とする。runner、sub-agent fan-out、editor manifest、digest / docs / repair inventory、公開 UI、品質 gate は、当日必須カテゴリを個別に再計算してはならない。
-
-曜日別の当日必須カテゴリは次の通り。
-
-| 曜日 | Required categories | Non-required categories |
-|---|---|---|
-| 月 | fx, ai, it, mobility, manufacturing, economy | game |
-| 火 | fx, ai, it, mobility, manufacturing, economy, game |  |
-| 水 | fx, ai, it, mobility, manufacturing, economy | game |
-| 木 | fx, ai, it, mobility, manufacturing, economy, game |  |
-| 金 | fx, ai, it, mobility, manufacturing, economy | game |
-| 土 | fx, ai, it, mobility, game | manufacturing, economy |
-| 日 | fx, ai, it, mobility, game | manufacturing, economy |
-
-この表は「Game は火木土日のみ」「Manufacturing / Economy は月火水木金のみ」を意味する。したがって、水曜日に Game digest / Game reporter / Game search audit / Game docs が存在しないこと、また土日に Manufacturing / Economy digest / reporter / search audit / docs が存在しないこと自体は欠落ではない。逆に、runner は 7 カテゴリ固定で sub-agent を起動してはならない。Game に限らず、任意の非対象カテゴリを sub-agent に探索させることは、token、時間、repair scope、gate 判定をすべて汚す無駄な処理である。
-
-非対象カテゴリ artifact が生成された場合は、公開対象へ混ぜて成功扱いしてはならない。非対象カテゴリ artifact は runner bug として扱い、次のいずれかを必ず行う。
-
-| Situation | Required handling |
-|---|---|
-| 非対象カテゴリを runner が収集・reporter 起動した | runner bug として typed failure にし、対象カテゴリ導出を `tools.publish_inventory.scheduled_category_ids(issue)` へ戻す。 |
-| 非対象カテゴリ digest が生成された | 公開 inventory へ入れず、quarantine し、なぜ生成されたかを incident evidence に残す。 |
-| editor manifest に非対象カテゴリが混入した | manifest 生成側の契約違反として fail fast する。editor prompt 側で「manifest にあるから対象」と解釈して仕様を上書きしない。 |
-| gate が非対象カテゴリの 0 記事 digest で fallback へ落ちた | gate 入力の artifact scope drift として扱い、正常公開 fallback ではなく typed failure にする。 |
-
-### Category schedule impact map
-
-曜日スケジュールを変更する場合、またはカテゴリ追加・削除・対象曜日変更を行う場合は、次の影響範囲を同じ変更単位で更新する。
-
-| Impact area | Must follow | Required update / test |
-|---|---|---|
-| Runner Stage0 / Stage2 reporter fan-out | `tools.publish_inventory.scheduled_category_ids(issue)` | runner が当日必須カテゴリだけを harvest / reporter 起動 / retry / cleanup 対象にする契約テスト。 |
-| Editor manifest / newsroom prompt | runner が schedule-derived manifest を渡す | manifest が当日必須カテゴリだけを含むこと、prompt が曜日表を再計算しないことを固定するテスト。 |
-| publish inventory / repair scope | `required_digest_artifacts`、`required_generated_artifacts`、`required_published_docs_artifacts` | digest / generated / published / repair artifact が曜日別必須カテゴリだけを要求する契約テスト。 |
-| generate_pages / public UI | schedule-derived category availability | 日付 overview、カテゴリトップ休載 notice、publication matrix が同じ schedule を使う契約テスト。 |
-| validate_daily_quality / validate_generation_quality / reconcile | 当日必須カテゴリ presence と非対象カテゴリ quarantine | 必須カテゴリ欠落を fail、非対象カテゴリ artifact 混入を runner bug または quarantine として扱うテスト。 |
-| YouTube Podcast / publish_complete | Web / Audio / Podcast / playlist が同じ当日号を指す | `fallback_ok` を OK marker とせず、`verify-publish-complete` 通過後だけ `publish_complete` にする契約テスト。 |
-
-## Operational Premise Fidelity
-
-障害復旧後の恒久対策では、復旧済みの公開成果物を未復旧扱いに巻き戻してはならない。現在状態の復旧タスクと、将来の完走判定 gate は別物として扱う。公開ページ、Podcast、DeepDive、Audio、publish_complete は、すでに復旧済みであっても今後の完走判定 gate から外してはならないが、復旧済みである事実を無視して再復旧対象へ戻すことも禁止する。
-
-goal が打ち取れなかった理由と、未達なのに完走扱いになった理由は、単なる会話反省ではなく、完了条件、runner state、publish inventory、SLO、incident evidence の欠陥として記録する。完走判定の修正では、どの gate が公開面、Podcast、SLO、非対象カテゴリ探索を止められなかったかを明示し、同じ欠陥を契約テストまたは typed status で再発不能にする。
-
-公開済みの非対象カテゴリ artifact が存在しても、それを当日必須カテゴリへ昇格しない。過去復旧、手動復旧、または旧 runner によって生成された artifact は、現在の必須カテゴリ判定の正本ではない。公開 artifact の存在は UI 表示や過去成果の事実として扱い、当日必須カテゴリ、repair scope、sub-agent fan-out、missing 判定は `tools.publish_inventory.scheduled_category_ids(issue)` からだけ導く。
-
-完走性と効率性の報告では、必要条件と十分条件を混同してはならない。pytest PASS は必要条件、daily quality PASS は必要条件、public URL PASS は必要条件、runner/live SHA一致は必要条件である。しかし、これらは実運用完走の十分条件ではない。効率的・完全完走を主張するための必要条件は、1時間以内の本番相当 push直前 E2E PASS である。SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実施なら効率的・完全・1時間以内完走とは報告してはならない。
-
 ## Editorial Quality Bar
 
 News-Grasp の記事は、ITコンサルタントが業務の隙間で読むことを前提にする。単なるニュース羅列ではなく、論点、背景、示唆、関係性、次の確認観点を明確にする。
