@@ -81,3 +81,67 @@ def test_usage_log_scoped_duration_still_rejects_current_run_violation(tmp_path)
     )
 
     assert any("SLO duration budget exceeded" in error for error in errors)
+
+
+def test_usage_log_rejects_40min_under_half_progress(tmp_path) -> None:
+    usage = tmp_path / "usage.jsonl"
+    _write_jsonl(
+        usage,
+        [
+            {
+                "timestamp": "2026-06-25T08:40:00+09:00",
+                "flow": "runner-progress",
+                "elapsed_sec": 2400,
+                "completed_units": 2,
+                "required_units": 7,
+            },
+        ],
+    )
+
+    errors = validate_usage_log(usage, max_total_tokens=3_000_000, max_window_sec=3600)
+
+    assert any("blocked_slo_progress" in error and "under 50%" in error for error in errors)
+
+
+def test_usage_log_rejects_non_required_category_work(tmp_path) -> None:
+    usage = tmp_path / "usage.jsonl"
+    _write_jsonl(
+        usage,
+        [
+            {
+                "timestamp": "2026-06-24T08:10:00+09:00",
+                "flow": "reporter:game",
+                "category": "game",
+                "required_categories": ["fx", "ai", "it", "mobility", "manufacturing", "economy"],
+            },
+        ],
+    )
+
+    errors = validate_usage_log(usage, max_total_tokens=3_000_000, max_window_sec=3600)
+
+    assert any("blocked_slo_progress" in error and "non-required category" in error for error in errors)
+
+
+def test_usage_log_rejects_repeated_repair_signature_without_progress(tmp_path) -> None:
+    usage = tmp_path / "usage.jsonl"
+    _write_jsonl(
+        usage,
+        [
+            {
+                "timestamp": "2026-06-25T08:10:00+09:00",
+                "flow": "repair",
+                "repair_signature": "daily-quality:summary-emphasis",
+                "artifact_progress": False,
+            },
+            {
+                "timestamp": "2026-06-25T08:20:00+09:00",
+                "flow": "repair",
+                "repair_signature": "daily-quality:summary-emphasis",
+                "artifact_progress": False,
+            },
+        ],
+    )
+
+    errors = validate_usage_log(usage, max_total_tokens=3_000_000, max_window_sec=3600)
+
+    assert any("blocked_slo_progress" in error and "repeated repair signature" in error for error in errors)

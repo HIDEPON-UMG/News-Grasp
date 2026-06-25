@@ -9,6 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from tools.gate_policy import GateAction, classify_gate_failure
+from tools.repair_coverage_matrix import (
+    RepairClass,
+    RepairDecision,
+    classify_gate_output,
+)
+from tools.repair_registry import UNIMPLEMENTED_STATUS, metadata as repair_metadata
 
 
 MAX_WALL_CLOCK_SEC = 150 * 60
@@ -82,20 +88,92 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     tmp.replace(path)
 
 
-def classify(gate_id: str, output: str) -> dict[str, str]:
+def _payload_from_decision(decision: RepairDecision) -> dict[str, Any]:
+    if decision.repair_class == RepairClass.DETERMINISTIC_HANDLER:
+        if decision.handler_id == "url-quarantine-refill":
+            handler = "quarantine-refill"
+            action = GateAction.QUARANTINE
+        else:
+            handler = "deterministic-repair"
+            action = GateAction.REPAIRABLE
+    elif decision.repair_class == RepairClass.LLM_GENERATE_MISSING_ARTIFACT:
+        handler = "targeted-repair"
+        action = GateAction.REPAIRABLE
+    elif decision.repair_class == RepairClass.TYPED_EXTERNAL:
+        handler = "external-readiness"
+        action = GateAction.FATAL
+    else:
+        handler = "fatal"
+        action = GateAction.FATAL
+
+    payload: dict[str, Any] = {
+        "gate_id": decision.gate_id,
+        "issue_code": decision.issue_code,
+        "repair_class": str(decision.repair_class),
+        "action": str(action),
+        "handler": handler,
+        "failure_status": decision.status_on_failure,
+        "verify_gate": decision.verify_gate,
+        "reason": decision.reason,
+        "external_kind": decision.external_kind,
+        "external_system": decision.external_system,
+        "evidence": decision.evidence,
+    }
+    if decision.handler_id:
+        payload["handler_id"] = decision.handler_id
+        payload.update(repair_metadata(decision.handler_id) or {})
+    elif decision.allowed_artifacts:
+        payload["allowed_artifacts"] = list(decision.allowed_artifacts)
+    return payload
+
+
+def classify(gate_id: str, output: str) -> dict[str, Any]:
+    decision = classify_gate_output(gate_id, output)
+    if decision.status_on_failure != "blocked_unknown_repair_class":
+        return _payload_from_decision(decision)
+
+    # 既存互換: URL 404/410 等の明示 quarantine だけは旧 gate policy へ委譲する。
+    # 未知 failure を repairable へ倒す用途には使わない。
+    action = classify_gate_failure(gate_id, output)
+    if action == GateAction.QUARANTINE:
+        return {
+            "gate_id": gate_id,
+            "issue_code": "url_dead_or_stale",
+            "repair_class": str(RepairClass.DETERMINISTIC_HANDLER),
+            "action": str(action),
+            "handler": "quarantine-refill",
+            "handler_id": "url-quarantine-refill",
+            "failure_status": "blocked_refill_unresolved",
+            **(repair_metadata("url-quarantine-refill") or {}),
+        }
+    if action == GateAction.FATAL:
+        return {
+            "gate_id": gate_id,
+            "issue_code": "unknown",
+            "repair_class": str(RepairClass.TYPED_FATAL),
+            "action": str(action),
+            "handler": "fatal",
+            "failure_status": "blocked_unknown_repair_class",
+        }
+
+    return _payload_from_decision(decision)
+
+
+def _legacy_classify(gate_id: str, output: str) -> dict[str, Any]:
     action = classify_gate_failure(gate_id, output)
     table = HANDLER_BY_GATE.get(gate_id, {})
     handler = table.get(action, "targeted-repair" if action == GateAction.REPAIRABLE else "fatal")
     status = {
         "targeted-repair": "blocked_repair_budget_exhausted",
-        "deterministic-repair": "blocked_repair_budget_exhausted",
+        "deterministic-repair": UNIMPLEMENTED_STATUS,
         "quarantine-refill": "blocked_refill_unresolved",
         "external-readiness": "blocked_external_readiness",
         "distribution-retry": "distribution_pending",
         "distribution-failed": "distribution_failed",
         "fatal": "blocked_repair_budget_exhausted",
     }[handler]
-    return {"gate_id": gate_id, "action": str(action), "handler": handler, "failure_status": status}
+    result: dict[str, Any] = {"gate_id": gate_id, "action": str(action), "handler": handler, "failure_status": status}
+    return result
 
 
 def run_gate(*, date: str, gate_id: str, state_path: Path, command: list[str]) -> dict[str, Any]:

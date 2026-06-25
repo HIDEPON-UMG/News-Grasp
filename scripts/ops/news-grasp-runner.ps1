@@ -206,6 +206,7 @@ function Initialize-RunnerIdentity {
 
 Initialize-RunnerIdentity
 $NormalPublishVerified = $false
+$script:RunnerStartedAt = Get-Date
 
 function Convert-PublishInventoryJson {
     param([string[]] $Json)
@@ -241,6 +242,7 @@ function Get-PublishInventoryArtifacts {
 $DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'
 $PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'
 $PublishedRepairArtifacts = Get-PublishInventoryArtifacts -Kind 'published-repair'
+$script:RequiredCategoriesForSlo = @(Get-PublishInventoryArtifacts -Kind 'categories')
 
 function Get-RunnerStateMutexName {
     param([string] $Path)
@@ -471,9 +473,40 @@ function Update-RunnerProgress {
         [string] $Category = '',
         [int] $Attempt = 0,
         [object] $ActiveJobs = $null,
-        [string] $DeadlineAt = ''
+        [string] $DeadlineAt = '',
+        [string] $RepairSignature = '',
+        [bool] $ArtifactProgress = $false
     )
     Set-RunnerState -Status 'running' -Message $Step -ExitCode -1 -Phase $Phase -Step $Step -GateId $GateId -Category $Category -Attempt $Attempt -ActiveJobs $ActiveJobs -DeadlineAt $DeadlineAt
+    try {
+        $requiredArtifacts = @($DailyDigestArtifacts)
+        $completedUnits = 0
+        foreach ($artifact in $requiredArtifacts) {
+            $full = Join-Path $RepoDir ([string]$artifact)
+            if (Test-Path -LiteralPath $full) { $completedUnits++ }
+        }
+        $progressRecord = [ordered]@{
+            timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+            flow = 'runner-progress'
+            phase = $Phase
+            step = $Step
+            gate_id = $GateId
+            category = $Category
+            attempt = $Attempt
+            elapsed_sec = [int]((Get-Date) - $script:RunnerStartedAt).TotalSeconds
+            completed_units = $completedUnits
+            required_units = @($requiredArtifacts).Count
+            required_categories = @($script:RequiredCategoriesForSlo)
+        }
+        if ($RepairSignature) {
+            $progressRecord.repair_signature = $RepairSignature
+            $progressRecord.artifact_progress = [bool]$ArtifactProgress
+        }
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $CodexUsageLog) | Out-Null
+        Add-Content -Path $CodexUsageLog -Value ($progressRecord | ConvertTo-Json -Compress -Depth 6) -Encoding UTF8
+    } catch {
+        # progress logging must never hide the real runner failure
+    }
 }
 
 function Exit-Runner {
@@ -735,40 +768,16 @@ function Get-RunnerScriptArguments {
     return $runnerArgs
 }
 
-function Invoke-RunnerBinarySelfUpdate {
+function Invoke-RunnerBinarySyncApprovalBlock {
     param(
         [string] $LiveRunnerSha,
         [string] $RepoRunnerSha
     )
-    if ($env:NEWS_GRASP_RUNNER_SYNC_REEXEC -eq '1') {
-        Write-Log "ERROR: runner binary drift remains after self update (live=$LiveRunnerSha repo=$RepoRunnerSha)."
-        Set-RunnerState -Status 'failed' -Message 'runner binary drift' -ExitCode 1
-        exit 1
-    }
-
-    $binDir = Split-Path -Parent $PSCommandPath
-    Write-Log "WARN: runner binary drift detected (live=$LiveRunnerSha repo=$RepoRunnerSha); self-updating ops scripts from repo."
-    Copy-Item -LiteralPath $RepoManagedRunner -Destination $PSCommandPath -Force
-    Copy-Item -LiteralPath $RepoManagedWatcher -Destination (Join-Path $binDir 'watch-news-grasp-runner.ps1') -Force
-    $repoManagedDeadman = Join-Path (Split-Path -Parent $RepoManagedRunner) 'news-grasp-deadman.ps1'
-    if (Test-Path -LiteralPath $repoManagedDeadman) {
-        Copy-Item -LiteralPath $repoManagedDeadman -Destination (Join-Path $binDir 'news-grasp-deadman.ps1') -Force
-    }
-
-    $updatedLiveSha = Get-FileSha256Hex -Path $PSCommandPath
-    if ($updatedLiveSha -ne $RepoRunnerSha) {
-        Write-Log "ERROR: runner binary drift self update failed (live=$updatedLiveSha repo=$RepoRunnerSha)."
-        Set-RunnerState -Status 'failed' -Message 'runner binary drift' -ExitCode 1
-        exit 1
-    }
-
-    Write-Log 'runner binary drift repaired; relaunching synced runner'
-    $env:NEWS_GRASP_RUNNER_SYNC_REEXEC = '1'
-    $powershellExe = (Get-Process -Id $PID).Path
-    $scriptArgs = Get-RunnerScriptArguments
-    & $powershellExe @scriptArgs
-    $childExitCode = if ($LASTEXITCODE -ne $null) { $LASTEXITCODE } else { 1 }
-    exit $childExitCode
+    $backupDir = Join-Path $RepoDir "build\live-runner-backups\$DateStamp"
+    $message = "runner binary drift requires backup + explicit approval + rollback plan before live overwrite (live=$LiveRunnerSha repo=$RepoRunnerSha backup_dir=$backupDir)"
+    Write-Log "ERROR: $message"
+    Write-Log 'Live runner sync is intentionally blocked here. Prepare backup, get explicit user approval, then run scripts/ops/install-news-grasp-ops.ps1 with rollback evidence.'
+    Exit-Runner -Status 'blocked_runner_sync_approval_required' -Message $message -ExitCode 72
 }
 
 function Assert-RunnerBinaryInSync {
@@ -787,7 +796,7 @@ function Assert-RunnerBinaryInSync {
     $taskAction = Get-ScheduledTaskActionSummary
     Write-Log "runner launch snapshot repo_dir=$RepoDir repo_head=$(& $GitExe -C $RepoDir rev-parse --short HEAD 2>$null) live_runner_sha=$liveRunnerSha repo_runner_sha=$repoRunnerSha repo_watcher_sha=$repoWatcherSha task_action=$taskAction"
     if ($liveRunnerSha -ne $repoRunnerSha) {
-        Invoke-RunnerBinarySelfUpdate -LiveRunnerSha $liveRunnerSha -RepoRunnerSha $repoRunnerSha
+        Invoke-RunnerBinarySyncApprovalBlock -LiveRunnerSha $liveRunnerSha -RepoRunnerSha $repoRunnerSha
     }
 }
 
@@ -933,13 +942,45 @@ function Invoke-CodexWrapper {
     return $wrapperRc
 }
 
+function Read-RepairDecision {
+    param(
+        [string] $GateId,
+        [string] $CapturePath,
+        [string] $ClassifyPath = ''
+    )
+    if ($ClassifyPath -and (Test-Path -LiteralPath $ClassifyPath)) {
+        $classifyOutputText = Get-Content -LiteralPath $ClassifyPath -Raw -Encoding UTF8
+    } else {
+        Push-Location $RepoDir
+        try {
+            $classifyOutput = & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $CapturePath 2>&1
+            $classifyRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($classifyRc -ne 0) {
+            Write-Log "repair decision read failed: classify failed (gate=$GateId, rc=$classifyRc)"
+            return $null
+        }
+        $classifyOutputText = $classifyOutput -join "`n"
+    }
+
+    try {
+        return ($classifyOutputText | ConvertFrom-Json)
+    } catch {
+        Write-Log "repair decision read failed: classify JSON parse failed (gate=$GateId)"
+        return $null
+    }
+}
+
 function Invoke-TargetedRepair {
     param(
         [string] $GateId,
         [string] $Category,
         [string] $CapturePath,
         [string[]] $Artifacts,
-        [string] $RepairTransactionId
+        [string] $RepairTransactionId,
+        [string] $ClassifyPath = ''
     )
     Update-RunnerProgress -Phase 'repair' -Step "repair budget check: $GateId" -GateId $GateId -Category $Category
     $attemptState = Join-Path $RepoDir ("data\gate_attempts\$DateStamp.json")
@@ -976,17 +1017,31 @@ function Invoke-TargetedRepair {
         return 1
     }
 
-    $deterministicRepairRc = Invoke-DeterministicGenerationRepair -GateId $GateId -CapturePath $CapturePath -Artifacts $Artifacts
-    if ($deterministicRepairRc -eq 0) {
-        Write-Log "deterministic repair OK (gate=$GateId)"
+    $decision = Read-RepairDecision -GateId $GateId -CapturePath $CapturePath -ClassifyPath $ClassifyPath
+    if ($null -eq $decision) {
+        Write-Log "repair worker denied: repair decision unavailable (gate=$GateId)"
+        return 1
+    }
+    $repairSignature = "${GateId}:$($decision.issue_code):$($decision.handler_id)"
+    Update-RunnerProgress -Phase 'repair' -Step "repair decision: $GateId $($decision.issue_code)" -GateId $GateId -Category $Category -RepairSignature $repairSignature -ArtifactProgress $false
+
+    $registryRepairRc = Invoke-DeterministicRegistryRepair -GateId $GateId -CapturePath $CapturePath -Artifacts $Artifacts -ClassifyPath $ClassifyPath -RepairDecision $decision
+    if ($registryRepairRc -eq 0) {
+        Write-Log "deterministic registry repair OK (gate=$GateId)"
+        Update-RunnerProgress -Phase 'repair' -Step "deterministic registry repair OK: $GateId" -GateId $GateId -Category $Category -RepairSignature $repairSignature -ArtifactProgress $true
         return 0
     }
-    if ($deterministicRepairRc -notin @(2, 3)) {
-        Write-Log "deterministic repair failed (gate=$GateId, rc=$deterministicRepairRc)"
-        return $deterministicRepairRc
+    if ($registryRepairRc -notin @(2, 3)) {
+        Write-Log "deterministic registry repair failed (gate=$GateId, rc=$registryRepairRc)"
+        return $registryRepairRc
     }
 
-    if (-not (Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId)) {
+    if ([string]$decision.repair_class -ne 'llm_generate_missing_artifact') {
+        Write-Log "repair matrix denied LLM repair worker (gate=$GateId, repair_class=$($decision.repair_class), status=$($decision.failure_status))"
+        return 1
+    }
+
+    if (-not (Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId -RepairDecision $decision)) {
         Write-Log "pre-repair policy denied LLM repair worker (gate=$GateId, status=blocked_pre_repair_recreate)"
         return 1
     }
@@ -1059,26 +1114,54 @@ $failureText
     return $repairRc
 }
 
-function Invoke-DeterministicGenerationRepair {
+function Invoke-DeterministicRegistryRepair {
+    # registry handler traceability: summary-emphasis-patch / category-card-emphasis-patch / audio-script-length-patch
     param(
         [string] $GateId,
         [string] $CapturePath,
-        [string[]] $Artifacts
+        [string[]] $Artifacts,
+        [string] $ClassifyPath = '',
+        [object] $RepairDecision = $null
     )
-    if ($GateId -ne 'generation-quality') { return 2 }
-    if (-not (Test-Path -LiteralPath $CapturePath)) { return 2 }
-    $failureText = Get-Content -LiteralPath $CapturePath -Raw -Encoding UTF8
-    if ($failureText -notlike '*audio_script_quality_invalid*' -or $failureText -notlike '*字数不足*') { return 2 }
-    $audioArtifact = @($Artifacts | Where-Object { $_ -like 'digest/Summary/*-audio-script.md' } | Select-Object -First 1)
-    if ($audioArtifact.Count -eq 0) { return 3 }
-    Write-Log "deterministic repair start (gate=$GateId, tool=tools.repair_audio_script_length)"
+    Update-RunnerProgress -Phase 'repair' -Step "deterministic registry repair: $GateId" -GateId $GateId
+
+    $decision = $RepairDecision
+    if ($null -eq $decision) {
+        $decision = Read-RepairDecision -GateId $GateId -CapturePath $CapturePath -ClassifyPath $ClassifyPath
+    }
+    if ($null -eq $decision) { return 2 }
+    if ($decision.handler -ne 'deterministic-repair' -or -not $decision.handler_id) {
+        return 2
+    }
+
+    $registryArgs = @(
+        '-m', 'tools.repair_registry',
+        'repair',
+        '--handler-id', $decision.handler_id,
+        '--repo-root', $RepoDir,
+        '--date', $DateStamp
+    )
+    foreach ($artifact in $Artifacts) {
+        $registryArgs += @('--artifact', $artifact)
+    }
+
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.repair_audio_script_length' '--repo-root' $RepoDir '--date' $DateStamp }
-        return $LASTEXITCODE
+        Invoke-Logged { & $PyExe @registryArgs }
+        $registryRc = $LASTEXITCODE
     } finally {
         Pop-Location
     }
+    if ($registryRc -eq 0) {
+        Write-Log "deterministic registry repair OK (gate=$GateId, handler=$($decision.handler_id))"
+        return 0
+    }
+    if ($decision.failure_status -eq 'blocked_repair_handler_unimplemented') {
+        Write-Log "ERROR: deterministic repair handler unavailable (gate=$GateId, handler=$($decision.handler_id), status=blocked_repair_handler_unimplemented)"
+        Exit-Runner -Status 'blocked_repair_handler_unimplemented' -Message "deterministic repair handler unavailable for ${GateId}: $($decision.handler_id)" -ExitCode 73
+    }
+    Write-Log "deterministic registry repair failed (gate=$GateId, handler=$($decision.handler_id), rc=$registryRc)"
+    return $registryRc
 }
 
 function New-RepairTransactionId {
@@ -1201,7 +1284,8 @@ function Test-RepairWorkerPreflight {
     param(
         [string] $GateId,
         [string[]] $Artifacts,
-        [string] $RepairTransactionId
+        [string] $RepairTransactionId,
+        [object] $RepairDecision = $null
     )
     $transactionDir = Get-RepairTransactionDir -TransactionId $RepairTransactionId
     New-Item -ItemType Directory -Force -Path $transactionDir | Out-Null
@@ -1217,22 +1301,39 @@ function Test-RepairWorkerPreflight {
             [void]$missing.Add($rel)
         }
     }
-    $allowed = ($existing.Count -eq 0)
+    $repairClass = ''
+    if ($null -ne $RepairDecision) {
+        $repairClass = [string]$RepairDecision.repair_class
+    }
+    $allMissing = ($existing.Count -eq 0)
+    $allowed = ($repairClass -eq 'llm_generate_missing_artifact' -and $allMissing)
+    $deniedStatus = ''
+    if (-not $allowed) {
+        if (-not $allMissing) {
+            $deniedStatus = 'blocked_existing_artifact_llm_recreate'
+        } else {
+            $deniedStatus = 'blocked_llm_repair_not_allowed_by_matrix'
+        }
+    }
     [pscustomobject]@{
         transaction_id = $RepairTransactionId
         date = $DateStamp
         gate_id = $GateId
         allowed = [bool]$allowed
-        policy = 'llm_worker_only_when_all_artifacts_missing'
+        policy = 'llm_worker_only_when_matrix_allows_missing_artifact_and_all_artifacts_missing'
+        legacy_policy = 'llm_worker_only_when_all_artifacts_missing'
+        repair_class = $repairClass
+        issue_code = if ($null -eq $RepairDecision) { '' } else { [string]$RepairDecision.issue_code }
         existing_artifacts = @($existing.ToArray())
         missing_artifacts = @($missing.ToArray())
-        denied_status = if ($allowed) { '' } else { 'blocked_pre_repair_recreate' }
+        denied_status = $deniedStatus
+        legacy_denied_status = if ($allowed) { '' } else { 'blocked_pre_repair_recreate' }
     } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $transactionDir 'pre-repair-policy.json') -Encoding UTF8
     if (-not $allowed) {
-        Write-Log ("pre-repair policy denied LLM repair worker before edits; existing artifacts require deterministic patch repair: " + ([string]::Join(', ', @($existing.ToArray()))))
+        Write-Log ("pre-repair policy denied LLM repair worker before edits; status=$deniedStatus; existing artifacts require deterministic patch repair: " + ([string]::Join(', ', @($existing.ToArray()))))
         return $false
     }
-    Write-Log "pre-repair policy OK: all target artifacts are missing; LLM worker may create specified artifacts only"
+    Write-Log "pre-repair policy OK: coverage matrix allows missing artifact generation and all target artifacts are missing"
     return $true
 }
 
@@ -1436,9 +1537,10 @@ function Invoke-PythonGateWithRepair {
             Write-Log "$GateId gate final attempt failed; skipping repair"
             return $gateRc
         }
+        $classifyPath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-classify-$GateId-$DateStamp-attempt$attempt.json")
         Push-Location $RepoDir
         try {
-            Invoke-Logged { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath }
+            Invoke-LoggedCapture -CapturePath $classifyPath -Block { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath }
             $classifyRc = $LASTEXITCODE
         } finally {
             Pop-Location
@@ -1450,7 +1552,7 @@ function Invoke-PythonGateWithRepair {
         $repairBeforeStatus = Snapshot-RepairWorkspace
         $repairTransactionId = New-RepairTransactionId
         [void](Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'before' -Artifacts $Artifacts)
-        $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts -RepairTransactionId $repairTransactionId
+        $repairRc = Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts -RepairTransactionId $repairTransactionId -ClassifyPath $classifyPath
         if ($repairRc -eq 124) {
             Write-Log "$GateId repair timeout (rc=124)"
             return 124

@@ -926,6 +926,46 @@ def validate_daily_quality(
     return errs
 
 
+def daily_quality_issue_code(message: str) -> str:
+    text = message.casefold()
+    if "hero_left" in text or "hero_right" in text:
+        return "summary_hero_missing"
+    if "card #" in text and "lacks required emphasis" in text:
+        return "category_card_emphasis_missing"
+    if "lacks required emphasis" in text:
+        return "summary_reflection_emphasis_missing"
+    if "thumbnail" in text or "thumb" in text:
+        return "thumb_invalid_or_missing"
+    if "published docs" in text or "published doc" in text or "docs/" in text:
+        return "published_docs_missing"
+    if "deepdive" in text and "missing" in text:
+        return "published_docs_missing"
+    if "audio" in text or "tts" in text:
+        return "audio_script_quality_invalid"
+    if "search audit" in text:
+        return "url_dead_or_stale"
+    if "digest missing" in text or "category digest" in text:
+        return "missing_artifact"
+    return "unknown"
+
+
+def daily_quality_json_payload(issue: str, errs: list[str]) -> dict[str, Any]:
+    return {
+        "ok": not errs,
+        "gate_id": "daily-quality",
+        "date": issue,
+        "issues": [
+            {
+                "gate_id": "daily-quality",
+                "issue_code": daily_quality_issue_code(err),
+                "message": err,
+                "issue_date": issue,
+            }
+            for err in errs
+        ],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="日次 digest の公開前品質を検査します。")
     parser.add_argument("--date", required=True, help="検査対象日 YYYY-MM-DD")
@@ -934,6 +974,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--audit-root", type=Path, default=Path("data") / "search_audit")
     parser.add_argument("--docs-root", type=Path, default=Path("docs"))
     parser.add_argument("--require-deepdive", action="store_true")
+    parser.add_argument("--json", action="store_true", help="stable issue_code を含む JSON を stdout に出す。")
     args = parser.parse_args(argv)
 
     errs = validate_daily_quality(
@@ -948,10 +989,16 @@ def main(argv: list[str] | None = None) -> int:
     for warn in validate_dedup_annotation_present(args.jsonl, _parse_issue_date(args.date)):
         print(warn, file=sys.stderr)
     if errs:
-        for err in errs:
-            print(f"ERROR: {err}", file=sys.stderr)
+        if args.json:
+            print(json.dumps(daily_quality_json_payload(args.date, errs), ensure_ascii=False, indent=2))
+        else:
+            for err in errs:
+                print(f"ERROR: {err}", file=sys.stderr)
         return 1
-    print(f"PASS: daily quality OK ({args.date})")
+    if args.json:
+        print(json.dumps(daily_quality_json_payload(args.date, []), ensure_ascii=False, indent=2))
+    else:
+        print(f"PASS: daily quality OK ({args.date})")
     return 0
 
 

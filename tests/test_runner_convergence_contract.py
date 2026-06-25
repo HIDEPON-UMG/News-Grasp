@@ -610,13 +610,51 @@ def test_generation_quality_repair_prompt_guides_audio_script_length_convergence
 
 
 def test_generation_quality_audio_length_uses_deterministic_repair_before_codex() -> None:
-    """音声台本の字数不足は LLM repair ではなく決定論的補修を先に使う。"""
+    """音声台本の字数不足は runner 個別分岐ではなく registry 経由で決定論的補修する。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
 
-    assert "Invoke-DeterministicGenerationRepair" in repair_body
-    assert "tools.repair_audio_script_length" in repair_body
-    assert repair_body.index("Invoke-DeterministicGenerationRepair") < repair_body.index("codex auth readiness gate start")
+    assert "Invoke-DeterministicRegistryRepair" in repair_body
+    assert "audio-script-length-patch" in runner
+    assert "Invoke-DeterministicGenerationRepair" not in runner
+    assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("codex auth readiness gate start")
+
+
+def test_runner_has_single_registry_repair_path_without_legacy_deterministic_duplicate() -> None:
+    """deterministic repair の正本は registry に一本化し、runner 内の重複経路を残さない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicRegistryRepair", 1)[0]
+
+    assert "function Invoke-DeterministicRegistryRepair" in runner
+    assert "function Invoke-DeterministicGenerationRepair" not in runner
+    assert "tools.repair_audio_script_length" not in runner
+    assert repair_body.count("Invoke-DeterministicRegistryRepair") == 1
+    assert "Invoke-CodexWrapper" in repair_body
+    assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Invoke-CodexWrapper")
+
+
+def test_runner_invokes_repair_registry_before_llm_worker() -> None:
+    """既知内部欠陥は LLM worker 起動前に deterministic repair registry で処理する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+
+    assert "function Invoke-DeterministicRegistryRepair" in runner
+    assert "tools.repair_registry" in runner
+    assert "blocked_repair_handler_unimplemented" in runner
+    assert "Invoke-DeterministicRegistryRepair -GateId $GateId -CapturePath $CapturePath -Artifacts $Artifacts -ClassifyPath $ClassifyPath" in repair_body
+    assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Test-RepairWorkerPreflight")
+    assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Invoke-CodexWrapper")
+
+
+def test_runner_blocks_llm_worker_unless_matrix_allows_missing_artifact_generation() -> None:
+    """LLM repair worker は coverage matrix が missing artifact 生成を許可した時だけ起動できる。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function New-RepairTransactionId", 1)[0]
+
+    assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId -RepairDecision $decision" in repair_body
+    assert "llm_generate_missing_artifact" in repair_body
+    assert "blocked_existing_artifact_llm_recreate" in runner
+    assert repair_body.index("llm_generate_missing_artifact") < repair_body.index("codex auth readiness gate start")
 
 
 def test_repair_patch_existing_policy_is_enforced_after_targeted_repair() -> None:
@@ -626,7 +664,7 @@ def test_repair_patch_existing_policy_is_enforced_after_targeted_repair() -> Non
     gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
 
     assert "Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'before'" in gate_body
-    assert "Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts -RepairTransactionId $repairTransactionId" in gate_body
+    assert "Invoke-TargetedRepair -GateId $GateId -Category $Category -CapturePath $capturePath -Artifacts $Artifacts -RepairTransactionId $repairTransactionId -ClassifyPath $classifyPath" in gate_body
     assert "Snapshot-RepairArtifacts -TransactionId $repairTransactionId -Phase 'after'" in gate_body
     assert "Test-RepairPatchExistingPolicy -TransactionId $repairTransactionId -Artifacts $Artifacts" in gate_body
     assert gate_body.index("Test-RepairPatchExistingPolicy") < gate_body.index("Test-RepairArtifactScope")
@@ -636,7 +674,7 @@ def test_repair_preflight_blocks_llm_worker_before_existing_artifact_recreate() 
     """既存 artifact がある repair は LLM worker 起動前に止め、下流diff検出へ丸投げしない。"""
     _assert_runner_powershell_parses()
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicGenerationRepair", 1)[0]
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicRegistryRepair", 1)[0]
 
     assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId" in repair_body
     assert "pre-repair policy denied LLM repair worker" in runner
@@ -664,7 +702,7 @@ def test_repair_patch_existing_policy_requires_reuse_blocked_reason_for_rewrite(
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     helper_body = runner.split("function Test-RepairReuseBlockedReason", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
     policy_body = runner.split("function Test-RepairPatchExistingPolicy", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
-    prompt_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicGenerationRepair", 1)[0]
+    prompt_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicRegistryRepair", 1)[0]
 
     assert "reuse-blocked.json" in policy_body
     assert "preserved_line_ratio" in policy_body
@@ -695,6 +733,8 @@ def test_autonomous_gate_classifies_actual_gate_capture() -> None:
     gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
 
     assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output' ''" not in runner
+    assert "$classifyPath = Join-Path" in gate_body
+    assert "Invoke-LoggedCapture -CapturePath $classifyPath" in gate_body
     assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath" in gate_body
     assert "auto repair classify failed" in gate_body
     assert "return $gateRc" in gate_body
@@ -1086,20 +1126,23 @@ def test_reporter_wave_uses_supervisor_loop_instead_of_blind_wait_job() -> None:
     assert "blocked_reporter_repeated_failure" in runner
 
 
-def test_runner_is_repo_managed_and_checks_live_checksum() -> None:
-    """bin 実行体 drift は手動 install 待ちにせず自己同期して再起動する。"""
-    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+def test_runner_is_repo_managed_and_requires_approved_live_sync() -> None:
+    """bin 実行体 drift は勝手に上書きせず、backup + 明示承認 + rollback を要求する。"""
     repo_runner = OPS_DIR / "news-grasp-runner.ps1"
     repo_watcher = OPS_DIR / "watch-news-grasp-runner.ps1"
+    runner = repo_runner.read_text(encoding="utf-8-sig")
 
     assert repo_runner.exists()
     assert repo_watcher.exists()
     forbidden_local_user_path = "C:" + "\\Users\\" + "hide" + "k"
     assert forbidden_local_user_path not in runner
     assert "function Assert-RunnerBinaryInSync" in runner
-    assert "function Invoke-RunnerBinarySelfUpdate" in runner
-    assert "NEWS_GRASP_RUNNER_SYNC_REEXEC" in runner
-    assert "runner binary drift repaired; relaunching synced runner" in runner
+    assert "function Invoke-RunnerBinarySyncApprovalBlock" in runner
+    assert "blocked_runner_sync_approval_required" in runner
+    assert "backup + explicit approval + rollback plan" in runner
+    assert "Copy-Item -LiteralPath $RepoManagedRunner -Destination $PSCommandPath -Force" not in runner
+    assert "NEWS_GRASP_RUNNER_SYNC_REEXEC" not in runner
+    assert "runner binary drift repaired; relaunching synced runner" not in runner
     assert "scripts\\ops\\news-grasp-runner.ps1" in runner
     assert "runner binary drift" in runner
     assert "Run scripts/ops/install-news-grasp-ops.ps1 before scheduled execution" not in runner
@@ -1152,6 +1195,22 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "subprocess.run(" in launcher_text
     assert "news-grasp-deadman.ps1" in launcher_text
     assert "news-grasp-deadman-launcher.pyw" in installer_text
+
+
+def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite() -> None:
+    """live runner 同期は上書き前に backup / manifest / rollback 証跡を残す。"""
+    installer = OPS_DIR / "install-news-grasp-ops.ps1"
+    text = installer.read_text(encoding="utf-8-sig")
+
+    assert "backup + explicit approval + rollback" in text
+    assert "$BackupDir" in text
+    assert "$ManifestPath" in text
+    assert "rollback_commands" in text
+    assert "Copy-Item -LiteralPath $destination -Destination" in text
+    assert "Get-FileHash" in text
+    assert "install-manifest.json" in text
+    assert text.index("$BackupDir") < text.index("$files = @(")
+    assert text.index("$BackupDir") < text.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
 
 
 def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
@@ -1516,7 +1575,13 @@ def test_watcher_does_not_treat_fallback_as_normal_terminal_success() -> None:
     """fallback_ok は公開済み旧号保護であり、通常バッチ完走として watcher を閉じない。"""
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
+    terminal_body = watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
+
+    assert "fallback_ok" not in terminal_body
+    assert "quality_hold" not in terminal_body
+    assert "blocked_repair_handler_unimplemented" not in terminal_body
+    assert "blocked_slo_progress" not in terminal_body
+    assert "blocked_external_readiness" not in terminal_body
     assert "@('publish_complete', 'smoke_ok')" in watcher
     assert "@('ok', 'smoke_ok')" not in watcher
 

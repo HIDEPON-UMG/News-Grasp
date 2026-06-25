@@ -42,6 +42,7 @@ def validate_usage_log(
     total_tokens = 0
     timestamps: list[datetime] = []
     malformed = 0
+    repair_signatures_without_progress: dict[str, int] = {}
     for line_no, line in enumerate(usage_log.read_text(encoding="utf-8-sig", errors="replace").splitlines(), start=1):
         if not line.strip():
             continue
@@ -59,6 +60,40 @@ def validate_usage_log(
             errors.append(f"SLO usage log has invalid tokens_used at line {line_no}: {record.get('tokens_used')!r}")
         if timestamp is not None:
             timestamps.append(timestamp)
+
+        try:
+            elapsed_sec = int(record.get("elapsed_sec") or 0)
+            completed_units = int(record.get("completed_units") or 0)
+            required_units = int(record.get("required_units") or 0)
+        except (TypeError, ValueError):
+            elapsed_sec = completed_units = required_units = 0
+        if elapsed_sec >= 2400 and required_units > 0 and (completed_units / required_units) < 0.5:
+            errors.append(
+                "blocked_slo_progress: under 50% required progress at 40 minutes "
+                f"(completed_units={completed_units} required_units={required_units})"
+            )
+
+        category = str(record.get("category") or "").strip()
+        required_categories = record.get("required_categories")
+        if category and isinstance(required_categories, list):
+            required_set = {str(item).strip() for item in required_categories if str(item).strip()}
+            if required_set and category not in required_set:
+                errors.append(f"blocked_slo_progress: non-required category work detected: {category}")
+
+        repair_signature = str(record.get("repair_signature") or "").strip()
+        if repair_signature:
+            artifact_progress = bool(record.get("artifact_progress"))
+            if artifact_progress:
+                repair_signatures_without_progress.pop(repair_signature, None)
+            else:
+                repair_signatures_without_progress[repair_signature] = (
+                    repair_signatures_without_progress.get(repair_signature, 0) + 1
+                )
+                if repair_signatures_without_progress[repair_signature] >= 2:
+                    errors.append(
+                        "blocked_slo_progress: repeated repair signature without artifact progress: "
+                        f"{repair_signature}"
+                    )
 
     if malformed:
         errors.append(f"SLO usage log has malformed JSON lines: {malformed}")

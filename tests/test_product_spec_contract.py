@@ -158,6 +158,47 @@ def test_product_constitution_distinguishes_necessary_checks_from_sufficient_e2e
         assert phrase in text
 
 
+def test_product_constitution_defines_sustainable_complete_repair_invariants() -> None:
+    """内部欠陥を fallback で正常扱いせず、局所 repair と live runner guard を正本化する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "外部システム要因以外で公開面が揃わない停止は許容しない",
+        "fallback は通常日次完走ではない",
+        "handler 未実装は Red とする",
+        "live runner 上書きは backup + 明示承認 + rollback",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_has_human_commitment_review_gate() -> None:
+    """Codex が spec 上の完全自走 repair を自己承認済みに昇格しない。"""
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "Human Commitment" in headings
+    for phrase in [
+        "approval_status: needs_human_review",
+        "Codex はこの approval_status を自己判断で approved に変更してはならない",
+        "repo-local pytest Green は実装証跡であり、人間承認ではない",
+        "full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_defines_repair_completeness_proof() -> None:
+    """完全自走 repair は実装の雰囲気ではなく、matrix と contract で証明する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "repair completeness = coverage matrix + zero unimplemented + fixture repair + runner single path",
+        "coverage matrix に未掲載の failure は blocked_unknown_repair_class",
+        "handler_unimplemented_red は最終 Green 条件では 0 件",
+        "existing artifact repair では LLM worker を起動しない",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> None:
     text = _read(SPEC)
 

@@ -38,6 +38,19 @@ def _write_summary(root: Path, *, hero: bool = True, weekday: str | None = None)
     (summary_dir / "2026-06-08.md").write_text(frontmatter, encoding="utf-8")
 
 
+def test_daily_quality_cli_json_emits_stable_issue_codes(tmp_path: Path, monkeypatch, capsys) -> None:
+    _write_summary(tmp_path, hero=False)
+    monkeypatch.chdir(tmp_path)
+
+    rc = main(["--date", "2026-06-08", "--json"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["ok"] is False
+    assert any(issue["issue_code"] == "summary_hero_missing" for issue in payload["issues"])
+    assert all(issue["gate_id"] == "daily-quality" for issue in payload["issues"])
+
+
 def _write_summary_with_reflection(root: Path, *, lead: str, section_body: str) -> None:
     summary_dir = root / "digest" / "Summary"
     summary_dir.mkdir(parents=True, exist_ok=True)

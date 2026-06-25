@@ -46,8 +46,9 @@ _QUARANTINE_HINTS = (
 def classify_gate_failure(gate_id: str, output: str) -> GateAction:
     """gate 失敗を runner の処置単位へ分類する。
 
-    fatal は build/publish/git の破滅系だけに限定し、記事単位で落とせるものは
-    quarantine、機械補完できるものは repairable へ寄せる。
+    明示的な hint があるものだけを quarantine / repairable に寄せる。
+    matrix 未掲載の未知 failure は、auto_repair_orchestrator 側で
+    blocked_unknown_repair_class に倒すため fatal とする。
     """
     gate = gate_id.strip().casefold()
     text = output.casefold()
@@ -59,4 +60,4 @@ def classify_gate_failure(gate_id: str, output: str) -> GateAction:
         return GateAction.QUARANTINE
     if any(h.casefold() in text for h in _REPAIRABLE_HINTS):
         return GateAction.REPAIRABLE
-    return GateAction.REPAIRABLE
+    return GateAction.FATAL

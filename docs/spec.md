@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-06-21
+> **Last Updated**: 2026-06-25
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -24,6 +24,34 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 品質 gate は「問題を見つけたので止める」ためだけに存在しない。既知の品質問題は、止める前に repair、quarantine+refill、reporter retry、re-verify のいずれかへ分類し、修復可能な範囲では直せるものは直して完走する。
 
 ただし、完走は壊れた公開を押し通すことではない。修復予算を超えた失敗、未知分類、外部依存、配信不能、security risk は typed fatal として止め、状態、exit code、incident evidence を残す。
+
+## Sustainable Complete Repair
+
+外部システム要因以外で公開面が揃わない停止は許容しない。外部 API、認証、quota、GitHub Pages、YouTube、ネットワークなどの外部依存を除き、公開面が揃わない内部欠陥は停止理由ではなく repair handler 未実装として扱う。
+
+fallback は通常日次完走ではない。fallback は読者保護のための一時的な公開面保護であり、Definition of Done、OK marker、publish_complete、または 1時間以内の完全完走証明へ昇格してはならない。
+
+handler 未実装は Red とする。Summary emphasis、category card emphasis、audio script length、published docs presence、URL quarantine/refill など既知の内部欠陥は、既存 artifact を局所 repair して同じ gate を再実行する deterministic handler を持つ。該当 handler が無い場合は `blocked_repair_handler_unimplemented` として失敗させ、fallback や LLM worker のゼロベース再作成へ逃がさない。
+
+repair completeness = coverage matrix + zero unimplemented + fixture repair + runner single path と定義する。coverage matrix は `tools/repair_coverage_matrix.py` を唯一の分類正本とし、validator / gate が返す `gate_id` と `issue_code` は coverage matrix の row に存在しなければならない。coverage matrix に未掲載の failure は blocked_unknown_repair_class として扱い、推測や prose hint で repairable に倒してはならない。
+
+handler_unimplemented_red は最終 Green 条件では 0 件でなければならない。既知 failure row は deterministic handler、LLM missing artifact 生成、typed external、typed fatal のいずれかに分類し、内部欠陥を `handler_unimplemented_red` のまま本番導入しない。安全に局所 repair できない既存 artifact は `blocked_ambiguous_repair` として止め、LLM worker や広域再作成へ逃がさない。
+
+runner の repair path は registry single path に集約する。`tools.auto_repair_orchestrator` は gate failure 1 回につき classifier JSON を 1 回だけ生成し、runner はその decision を `tools.repair_registry` と LLM preflight の両方へ渡す。existing artifact repair では LLM worker を起動しない。LLM worker は coverage matrix が `llm_generate_missing_artifact` を返し、対象 artifact が全 missing で、typed reason がある場合だけ起動できる。
+
+SLO/progress evidence は runner が実データとして出す。`runner-progress` record は `required_units`、`completed_units`、`required_categories`、必要時 `repair_signature` と `artifact_progress` を持つ。`tools.validate_batch_slo` は 40 分で 50% 未満、非対象カテゴリ作業、同一 repair signature 反復、artifact progress なしを publish 前に失敗として扱う。
+
+live runner 上書きは backup + 明示承認 + rollback を必須とする。repo 側の runner と tests が Green でも、`C:\Users\hidek\bin\news-grasp-runner.ps1` など live runner への反映は、反映前 backup、明示承認、反映後 hash/smoke、rollback 手順なしに実行してはならない。
+
+## Human Commitment
+
+approval_status: needs_human_review
+
+完全自走 repair の実装証跡は、coverage matrix、registry handler、runner single path、SLO/progress gate、fixture repair、repo-local pytest で示す。ただし、Codex はこの approval_status を自己判断で approved に変更してはならない。承認状態を変更できるのは、ユーザーが live runner 反映、full E2E、publish、push、public proof の実行範囲と判定結果を確認し、明示的に承認した場合だけである。
+
+repo-local pytest Green は実装証跡であり、人間承認ではない。repo-local 検証が Green でも、live runner 同期、full E2E、publish、push、public URL / Podcast / playlist proof が未実行なら、それらは Yellow として扱う。
+
+full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない。SLO/progress gate の実装は SLO 達成実測ではなく、runner が 40分50%未満、非対象カテゴリ作業、同一 repair signature 反復、artifact progress なしを publish 前に止められることの repo-local 証跡である。
 
 ## Definition of Done
 

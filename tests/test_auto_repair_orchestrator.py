@@ -15,3 +15,25 @@ def test_classify_reads_gate_output_file(tmp_path, capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["action"] == "quarantine"
     assert payload["handler"] == "quarantine-refill"
+
+
+def test_classify_routes_summary_emphasis_to_deterministic_handler(capsys) -> None:
+    rc = main(
+        [
+            "classify",
+            "--gate-id",
+            "daily-quality",
+            "--output",
+            "Summary section lacks required emphasis",
+        ]
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["action"] == "repairable"
+    assert payload["handler"] == "deterministic-repair"
+    assert payload["handler_id"] == "summary-emphasis-patch"
+    assert payload["handler_kind"] == "deterministic"
+    assert payload["failure_status"] == "blocked_repair_handler_unimplemented"
+    assert "digest/Summary/{date}.md" in payload["allowed_artifacts"]
+    assert payload["verify_gate"] == "daily-quality"
