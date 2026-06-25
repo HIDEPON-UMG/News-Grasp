@@ -265,6 +265,13 @@ def test_normalize_for_tts_applies_pronunciation_overrides_for_known_misreads():
     assert "上方修正" not in normalized
 
 
+def test_normalize_for_tts_reads_jalapeno_chip_as_japanese():
+    normalized = build_script.normalize_for_tts("OpenAI の新チップ Jalapeño が焦点です。")
+
+    assert "ハラペーニョ" in normalized
+    assert "Jalapeño" not in normalized
+
+
 def test_normalize_for_tts_converts_us_currency_units_to_japanese_units():
     normalized = build_script.normalize_for_tts(
         "新規予約は$17.4Bで、別表記では17.4Bドル。"

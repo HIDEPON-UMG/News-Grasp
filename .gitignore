@@ -97,6 +97,8 @@ build/reporter-artifacts/
 build/reporter-prompts/
 build/runner-smoke-*
 build/runner-smoke-logs/
+build/evidence/
+build/live-runner-backups/
 build/deepdive-*.png
 build/*-last-message.txt
 build/deepdive-render-check/
@@ -118,6 +120,7 @@ build/*_analyze.wav
 build/*-bgm.wav
 *pytest-tmp/
 docs/specs/*incident-hardening.html
+docs/evidence/
 # Incident report HTML はローカル成果物として保持し、コミット対象にしない。
 docs/incidents/*-report.html
 # Project-specific

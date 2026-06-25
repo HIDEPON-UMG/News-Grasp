@@ -34,6 +34,7 @@ KANA_REPLACEMENTS = {
 }
 
 PRONUNCIATION_REPLACEMENTS = {
+    "Jalapeño": "ハラペーニョ",
     "後工程": "あとこうてい",
     "上方修正": "じょうほうしゅうせい",
 }
