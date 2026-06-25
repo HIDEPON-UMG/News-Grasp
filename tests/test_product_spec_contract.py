@@ -172,14 +172,16 @@ def test_product_constitution_defines_sustainable_complete_repair_invariants() -
 
 
 def test_product_constitution_has_human_commitment_review_gate() -> None:
-    """Codex が spec 上の完全自走 repair を自己承認済みに昇格しない。"""
+    """Codex が spec 上の Human Commitment を自己判断で変更しない。"""
     text = _read(SPEC)
     headings = _headings(text)
 
     assert "Human Commitment" in headings
     for phrase in [
-        "approval_status: needs_human_review",
-        "Codex はこの approval_status を自己判断で approved に変更してはならない",
+        "| approval_status | Committed |",
+        "| committed_by_human | true |",
+        "| approved_by_user_text | 以下対応を実施の上で承認する。 |",
+        "Codex はこの Human Commitment を自己判断で変更してはならない",
         "repo-local pytest Green は実装証跡であり、人間承認ではない",
         "full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない",
     ]:

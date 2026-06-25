@@ -45,13 +45,40 @@ live runner 上書きは backup + 明示承認 + rollback を必須とする。r
 
 ## Human Commitment
 
-approval_status: needs_human_review
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_goal_statement | 繁忙なITコンサルタントが、膨大なニュースを個別確認せず、実務判断に必要な重要論点・背景・示唆を短時間で把握できる完全自走型ニュース体験を、テキスト・音声・動画を用い、都度最適な手段で提供する。 |
+| approved_by_user_text | 以下対応を実施の上で承認する。 |
+| approval_evidence_ref | Current conversation, user answer on 2026-06-25. |
+| approved_at | 2026-06-25 |
+| commitment_version | 1 |
+| commitment_scope | Product Constitution, Goal Quality Contract, Definition of Done, Sustainable Complete Repair, Change Governance, Feature/Test Traceability, SDD/TDD Quality Contract. |
+| open_questions | None. |
 
-完全自走 repair の実装証跡は、coverage matrix、registry handler、runner single path、SLO/progress gate、fixture repair、repo-local pytest で示す。ただし、Codex はこの approval_status を自己判断で approved に変更してはならない。承認状態を変更できるのは、ユーザーが live runner 反映、full E2E、publish、push、public proof の実行範囲と判定結果を確認し、明示的に承認した場合だけである。
+完全自走 repair の実装証跡は、coverage matrix、registry handler、runner single path、SLO/progress gate、fixture repair、repo-local pytest で示す。ただし、Codex はこの Human Commitment を自己判断で変更してはならない。承認状態を変更できるのは、ユーザーが live runner 反映、full E2E、publish、push、public proof の実行範囲と判定結果を確認し、明示的に承認した場合だけである。
 
 repo-local pytest Green は実装証跡であり、人間承認ではない。repo-local 検証が Green でも、live runner 同期、full E2E、publish、push、public URL / Podcast / playlist proof が未実行なら、それらは Yellow として扱う。
 
 full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない。SLO/progress gate の実装は SLO 達成実測ではなく、runner が 40分50%未満、非対象カテゴリ作業、同一 repair signature 反復、artifact progress なしを publish 前に止められることの repo-local 証跡である。
+
+## User Answer Provenance
+
+- source_status=UserConfirmed
+- user_answer_text: News-Grasp の core_goal は「繁忙なITコンサルタントが、膨大なニュースを個別確認せず、実務判断に必要な重要論点・背景・示唆を短時間で把握できる完全自走型ニュース体験を、テキスト・音声・動画を用い、都度最適な手段で提供する」。success_condition は通常日次バッチで Web / Audio / YouTube Podcast / playlist / notification / runner state / OK marker が同じ日付・同じ run intent で揃うこと。non_goal_boundary は一般ニュースサイト化しない、外部依存を無理に突破しない、fallback を完全完走証明にしないこと。learning_loop は incident / repair coverage / publish verification / runner state / public proof のズレを継続的に潰すこと。Human Commitment は以下対応を実施の上で承認する。
+
+## Goal Quality Contract
+
+| Field | Value |
+|---|---|
+| core_goal | 繁忙なITコンサルタントが、膨大なニュースを個別確認せず、実務判断に必要な重要論点・背景・示唆を短時間で把握できる完全自走型ニュース体験を、テキスト・音声・動画を用い、都度最適な手段で提供する。 |
+| target_user_or_operator | 繁忙なITコンサルタント、および News-Grasp の日次運用・復旧・公開確認を担う運用者。 |
+| user_state_change | 読者は大量ニュースを個別確認しなくても、業務判断に必要な重要論点、背景、影響、次に見るべき観点を短時間で把握できる。運用者は、公開面の欠落や runner state のズレを検知・修復・証跡化できる。 |
+| business_or_operational_value | 継続的な情報収集、編集、公開、検証、repair を自走させ、ニュース提供の運用品質と復旧可能性を高める。 |
+| success_condition | 通常日次バッチで Web / Audio / YouTube Podcast / playlist / notification / runner state / OK marker が同じ日付・同じ run intent で揃う。 |
+| non_goal_boundary | 一般ニュースサイト化しない。外部依存を無理に突破しない。fallback を完全完走証明にしない。 |
+| learning_loop | incident / repair coverage / publish verification / runner state / public proof のズレを継続的に潰す。 |
 
 ## Definition of Done
 
@@ -114,11 +141,25 @@ runner、watcher、repair、publish verification、podcast verification、distri
 | Verification | 契約テスト、dry-run、publish verify、podcast verify など自己完結の検証を置く。 |
 | Decision record | 憲法に関わる判断を変える場合は、incident report、ADR、または計画書に context と consequence を残す。 |
 
+## SDD / TDD Quality Contract
+
+- SDD lifecycle: Spec -> Spec Questions -> Acceptance Matrix -> Plan -> Review -> Implementation -> Evidence -> Drift review
+- TDD lifecycle: Red -> Green -> Refactor -> Evidence -> Completion
+- 非自明な変更は、少なくとも 1 つの `Spec Item` を `User/Operator Outcome`、`Concrete Acceptance Example`、`Red Signal`、`Green Verification`、`Evidence Plan` に対応させる。
+- ChatGPT review は plan gate であり、実装完了証跡ではない。News-Grasp の完了証跡は repo-local tests、publish verification、Podcast / playlist proof、runner state、incident evidence、public URL sentinel で示す。
+
 ## Feature Change Quality Gate Matrix
 
 機能を追加、削除、修正する場合は、実装だけでなく同じ変更単位で品質 gate、契約テスト、公開検証、runner state、完了報告のどれを更新するかを先に決める。機能の成果物が Definition of Done のいずれかへ届くなら、その成果物を作る工程だけでなく、前工程の入力契約、当該工程の失敗分類、後工程の公開確認までを 1 セットで扱う。
 
 次の表を変更計画の最低チェックリストとする。該当する行があるのに gate 更新が不要な場合は、不要理由を計画または incident evidence に残す。
+
+| Spec Item | User/Operator Outcome | Concrete Acceptance Example | Red Signal | Green Verification | Evidence Plan |
+|---|---|---|---|---|---|
+| Daily complete public experience | 読者が同じ日付・同じ run intent の Web / Audio / Podcast / playlist / notification を欠落なく利用できる | Given 外部依存が利用可能, When 通常日次バッチが完走する, Then Definition of Done の公開面が verified になり OK marker が書かれる | OK marker が公開面 verified より先に書ける、または runner state と publish-status が別日付になる | `verify-publish-complete`、`verify-publish`、Podcast / playlist verification、public URL sentinel | コマンド出力、publish-status、runner state、public URL / YouTube watch / playlist proof |
+| Repair-first operation | 修復可能な内部欠陥は停止で済ませず deterministic repair で完走または typed fatal に分類される | Given 既知の品質問題が発生, When repair classifier が動く, Then coverage matrix 上の handler または typed fatal に分類される | `handler_unimplemented_red`、`blocked_unknown_repair_class`、fallback を完全完走証明にする | `tools/repair_coverage_matrix.py`、repair registry tests、runner convergence tests | coverage matrix、pytest output、incident evidence |
+| Editorial quality for IT consultants | 読者が重要論点、背景、示唆、次の確認観点を短時間で把握できる | Given digest / Summary / DeepDive が生成される, When quality gate が実行される, Then ITコンサルタント向けの relevance / insight / source health を満たす | source URL 不健全、Summary が当日論点を統合しない、DeepDive 導線欠落 | `tools.validate_daily_quality --require-deepdive`、summary reflection tests、URL liveness tests | validator output、generated docs inventory、public sentinel |
+| Incident and drift learning | 障害や仕様ズレが incident / repair coverage / gate に還元される | Given publish verification や runner state にズレが出る, When 復旧または仕様変更を行う, Then incident evidence と matrix / tests の更新要否が記録される | 復旧済み公開成果物を未復旧扱いに戻す、または gate 不足を記録しない | incident report validator、product spec contract、harness / report tests | incident HTML、contract test output、drift review notes |
 
 | Change area | Update with the feature change | Minimum gate / test |
 |---|---|---|
