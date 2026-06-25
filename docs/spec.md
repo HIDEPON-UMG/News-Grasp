@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-06-25
+> **Last Updated**: 2026-06-21
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -24,61 +24,6 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 品質 gate は「問題を見つけたので止める」ためだけに存在しない。既知の品質問題は、止める前に repair、quarantine+refill、reporter retry、re-verify のいずれかへ分類し、修復可能な範囲では直せるものは直して完走する。
 
 ただし、完走は壊れた公開を押し通すことではない。修復予算を超えた失敗、未知分類、外部依存、配信不能、security risk は typed fatal として止め、状態、exit code、incident evidence を残す。
-
-## Sustainable Complete Repair
-
-外部システム要因以外で公開面が揃わない停止は許容しない。外部 API、認証、quota、GitHub Pages、YouTube、ネットワークなどの外部依存を除き、公開面が揃わない内部欠陥は停止理由ではなく repair handler 未実装として扱う。
-
-fallback は通常日次完走ではない。fallback は読者保護のための一時的な公開面保護であり、Definition of Done、OK marker、publish_complete、または 1時間以内の完全完走証明へ昇格してはならない。
-
-handler 未実装は Red とする。Summary emphasis、category card emphasis、audio script length、published docs presence、URL quarantine/refill など既知の内部欠陥は、既存 artifact を局所 repair して同じ gate を再実行する deterministic handler を持つ。該当 handler が無い場合は `blocked_repair_handler_unimplemented` として失敗させ、fallback や LLM worker のゼロベース再作成へ逃がさない。
-
-repair completeness = coverage matrix + zero unimplemented + fixture repair + runner single path と定義する。coverage matrix は `tools/repair_coverage_matrix.py` を唯一の分類正本とし、validator / gate が返す `gate_id` と `issue_code` は coverage matrix の row に存在しなければならない。coverage matrix に未掲載の failure は blocked_unknown_repair_class として扱い、推測や prose hint で repairable に倒してはならない。
-
-handler_unimplemented_red は最終 Green 条件では 0 件でなければならない。既知 failure row は deterministic handler、LLM missing artifact 生成、typed external、typed fatal のいずれかに分類し、内部欠陥を `handler_unimplemented_red` のまま本番導入しない。安全に局所 repair できない既存 artifact は `blocked_ambiguous_repair` として止め、LLM worker や広域再作成へ逃がさない。
-
-runner の repair path は registry single path に集約する。`tools.auto_repair_orchestrator` は gate failure 1 回につき classifier JSON を 1 回だけ生成し、runner はその decision を `tools.repair_registry` と LLM preflight の両方へ渡す。existing artifact repair では LLM worker を起動しない。LLM worker は coverage matrix が `llm_generate_missing_artifact` を返し、対象 artifact が全 missing で、typed reason がある場合だけ起動できる。
-
-SLO/progress evidence は runner が実データとして出す。`runner-progress` record は `required_units`、`completed_units`、`required_categories`、必要時 `repair_signature` と `artifact_progress` を持つ。`tools.validate_batch_slo` は 40 分で 50% 未満、非対象カテゴリ作業、同一 repair signature 反復、artifact progress なしを publish 前に失敗として扱う。
-
-live runner 上書きは backup + 明示承認 + rollback を必須とする。repo 側の runner と tests が Green でも、`C:\Users\hidek\bin\news-grasp-runner.ps1` など live runner への反映は、反映前 backup、明示承認、反映後 hash/smoke、rollback 手順なしに実行してはならない。
-
-## Human Commitment
-
-| Field | Value |
-|---|---|
-| approval_status | Committed |
-| committed_by_human | true |
-| approved_goal_statement | 繁忙なITコンサルタントが、膨大なニュースを個別確認せず、実務判断に必要な重要論点・背景・示唆を短時間で把握できる完全自走型ニュース体験を、テキスト・音声・動画を用い、都度最適な手段で提供する。 |
-| approved_by_user_text | 以下対応を実施の上で承認する。 |
-| approval_evidence_ref | Current conversation, user answer on 2026-06-25. |
-| approved_at | 2026-06-25 |
-| commitment_version | 1 |
-| commitment_scope | Product Constitution, Goal Quality Contract, Definition of Done, Sustainable Complete Repair, Change Governance, Feature/Test Traceability, SDD/TDD Quality Contract. |
-| open_questions | None. |
-
-完全自走 repair の実装証跡は、coverage matrix、registry handler、runner single path、SLO/progress gate、fixture repair、repo-local pytest で示す。ただし、Codex はこの Human Commitment を自己判断で変更してはならない。承認状態を変更できるのは、ユーザーが live runner 反映、full E2E、publish、push、public proof の実行範囲と判定結果を確認し、明示的に承認した場合だけである。
-
-repo-local pytest Green は実装証跡であり、人間承認ではない。repo-local 検証が Green でも、live runner 同期、full E2E、publish、push、public URL / Podcast / playlist proof が未実行なら、それらは Yellow として扱う。
-
-full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない。SLO/progress gate の実装は SLO 達成実測ではなく、runner が 40分50%未満、非対象カテゴリ作業、同一 repair signature 反復、artifact progress なしを publish 前に止められることの repo-local 証跡である。
-
-## User Answer Provenance
-
-- source_status=UserConfirmed
-- user_answer_text: News-Grasp の core_goal は「繁忙なITコンサルタントが、膨大なニュースを個別確認せず、実務判断に必要な重要論点・背景・示唆を短時間で把握できる完全自走型ニュース体験を、テキスト・音声・動画を用い、都度最適な手段で提供する」。success_condition は通常日次バッチで Web / Audio / YouTube Podcast / playlist / notification / runner state / OK marker が同じ日付・同じ run intent で揃うこと。non_goal_boundary は一般ニュースサイト化しない、外部依存を無理に突破しない、fallback を完全完走証明にしないこと。learning_loop は incident / repair coverage / publish verification / runner state / public proof のズレを継続的に潰すこと。Human Commitment は以下対応を実施の上で承認する。
-
-## Goal Quality Contract
-
-| Field | Value |
-|---|---|
-| core_goal | 繁忙なITコンサルタントが、膨大なニュースを個別確認せず、実務判断に必要な重要論点・背景・示唆を短時間で把握できる完全自走型ニュース体験を、テキスト・音声・動画を用い、都度最適な手段で提供する。 |
-| target_user_or_operator | 繁忙なITコンサルタント、および News-Grasp の日次運用・復旧・公開確認を担う運用者。 |
-| user_state_change | 読者は大量ニュースを個別確認しなくても、業務判断に必要な重要論点、背景、影響、次に見るべき観点を短時間で把握できる。運用者は、公開面の欠落や runner state のズレを検知・修復・証跡化できる。 |
-| business_or_operational_value | 継続的な情報収集、編集、公開、検証、repair を自走させ、ニュース提供の運用品質と復旧可能性を高める。 |
-| success_condition | 通常日次バッチで Web / Audio / YouTube Podcast / playlist / notification / runner state / OK marker が同じ日付・同じ run intent で揃う。 |
-| non_goal_boundary | 一般ニュースサイト化しない。外部依存を無理に突破しない。fallback を完全完走証明にしない。 |
-| learning_loop | incident / repair coverage / publish verification / runner state / public proof のズレを継続的に潰す。 |
 
 ## Definition of Done
 
@@ -141,25 +86,11 @@ runner、watcher、repair、publish verification、podcast verification、distri
 | Verification | 契約テスト、dry-run、publish verify、podcast verify など自己完結の検証を置く。 |
 | Decision record | 憲法に関わる判断を変える場合は、incident report、ADR、または計画書に context と consequence を残す。 |
 
-## SDD / TDD Quality Contract
-
-- SDD lifecycle: Spec -> Spec Questions -> Acceptance Matrix -> Plan -> Review -> Implementation -> Evidence -> Drift review
-- TDD lifecycle: Red -> Green -> Refactor -> Evidence -> Completion
-- 非自明な変更は、少なくとも 1 つの `Spec Item` を `User/Operator Outcome`、`Concrete Acceptance Example`、`Red Signal`、`Green Verification`、`Evidence Plan` に対応させる。
-- ChatGPT review は plan gate であり、実装完了証跡ではない。News-Grasp の完了証跡は repo-local tests、publish verification、Podcast / playlist proof、runner state、incident evidence、public URL sentinel で示す。
-
 ## Feature Change Quality Gate Matrix
 
 機能を追加、削除、修正する場合は、実装だけでなく同じ変更単位で品質 gate、契約テスト、公開検証、runner state、完了報告のどれを更新するかを先に決める。機能の成果物が Definition of Done のいずれかへ届くなら、その成果物を作る工程だけでなく、前工程の入力契約、当該工程の失敗分類、後工程の公開確認までを 1 セットで扱う。
 
 次の表を変更計画の最低チェックリストとする。該当する行があるのに gate 更新が不要な場合は、不要理由を計画または incident evidence に残す。
-
-| Spec Item | User/Operator Outcome | Concrete Acceptance Example | Red Signal | Green Verification | Evidence Plan |
-|---|---|---|---|---|---|
-| Daily complete public experience | 読者が同じ日付・同じ run intent の Web / Audio / Podcast / playlist / notification を欠落なく利用できる | Given 外部依存が利用可能, When 通常日次バッチが完走する, Then Definition of Done の公開面が verified になり OK marker が書かれる | OK marker が公開面 verified より先に書ける、または runner state と publish-status が別日付になる | `verify-publish-complete`、`verify-publish`、Podcast / playlist verification、public URL sentinel | コマンド出力、publish-status、runner state、public URL / YouTube watch / playlist proof |
-| Repair-first operation | 修復可能な内部欠陥は停止で済ませず deterministic repair で完走または typed fatal に分類される | Given 既知の品質問題が発生, When repair classifier が動く, Then coverage matrix 上の handler または typed fatal に分類される | `handler_unimplemented_red`、`blocked_unknown_repair_class`、fallback を完全完走証明にする | `tools/repair_coverage_matrix.py`、repair registry tests、runner convergence tests | coverage matrix、pytest output、incident evidence |
-| Editorial quality for IT consultants | 読者が重要論点、背景、示唆、次の確認観点を短時間で把握できる | Given digest / Summary / DeepDive が生成される, When quality gate が実行される, Then ITコンサルタント向けの relevance / insight / source health を満たす | source URL 不健全、Summary が当日論点を統合しない、DeepDive 導線欠落 | `tools.validate_daily_quality --require-deepdive`、summary reflection tests、URL liveness tests | validator output、generated docs inventory、public sentinel |
-| Incident and drift learning | 障害や仕様ズレが incident / repair coverage / gate に還元される | Given publish verification や runner state にズレが出る, When 復旧または仕様変更を行う, Then incident evidence と matrix / tests の更新要否が記録される | 復旧済み公開成果物を未復旧扱いに戻す、または gate 不足を記録しない | incident report validator、product spec contract、harness / report tests | incident HTML、contract test output、drift review notes |
 
 | Change area | Update with the feature change | Minimum gate / test |
 |---|---|---|
