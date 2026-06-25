@@ -1,0 +1,50 @@
+{
+  "date": "2026-06-25",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "\"経済財政諮問会議・日本成長戦略会議合同会議\" 官邸",
+    "\"米財務長官、ＦＲＢ脱フォワードガイダンス評価 予測分布も疑問視\" Reuters",
+    "\"ウォーシュFRB議長、インフレに「厳しい姿勢」示した－ベッセント氏\"",
+    "\"米国株、マイクロン決算を警戒 S&P500急落 原油安は見通しに好材料\"",
+    "\"明日の戦略－乱高下して大幅続落、マイクロンの決算はAI関連の買いを刺激するか\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "【本日の材料と銘柄】マイクロン、予想上回る決算を受け時間外で10％超上昇(フィスコ)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPQWVaRHc1YVFQQ0NtTmtiUEQ4d0Z6OW15MjJ3VWlDRVd5U2VFdjhOYkJXU0Y0QXdRZHNwMHJhNFRHeThyamZ1NUZrbHpXN3dVVzI1OWVyYXk3aUdYWF9WUDJvZHVPM21zMGJFN1RTNDZNcTh3UEhGYXFfRHZ6Slp1MmZVMnJyNTA?oc=5",
+      "reason": "Yahoo検索で記事本体URLを抽出できず、銘柄ページ断片のみだったため未採用"
+    },
+    {
+      "title": "マイクロン、決算受け時間外で１５％高 ＡＩ需要急拡大でメモリー不足と価格上昇が追い風＝米国株個別(株探ニュース)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPYVFudGJaeTFaQlJILVFpVngyaTZ6OE02YVhEQWtUcmE2b2RYaWVaeHJRNmxhVVVzZEhDZFJNeGNDa3BtQlNVVmczdk1fZ1AxNXNjLWNGQzVsZ1Q1STBOZWYzdk5rQ0ZFc3FWSUIyYURKNTBocllWazZBb2JCckYzSWR4ZVZKRGs?oc=5",
+      "reason": "canonicalを確定できず、速報の核心が既採用の米日市場記事と重複したため見送り"
+    },
+    {
+      "title": "経済安保に特別会計活用 高市首相、中長期の経財計画策定表明へ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFA2TGxFZmZSRm40cUdfSGpFdmd6c2xsMDhqS3lvTFRaZjBVRVJucUEzN2FTd3VCV3dDdExjRl9EU0w2QVVMdTVmZmJVYng2bS1GNnpZS010UXc2Z3hNRVhwb2dodlhaZDRyS3hBZg?oc=5",
+      "reason": "日経の有料面でcanonical URLを機械取得できず、官邸一次情報を優先採用した"
+    },
+    {
+      "title": "資源国通貨に下げ圧力 景気懸念・米ドル高が重荷",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5rTVVvT3lSMVFTUXhtZmNMY1NQOENXdWtVaHdrUVNJNDNVbnRvSmZ5ZFFVQjRjZ1RCelVxdDF4dEZLOXVDd29JRkVrbnZid0FyZ0wtNlpoNk96R1EyTm5mdDV2MmJXcTJzUWlyZg?oc=5",
+      "reason": "日経のheadline確認止まりで元記事URLを確定できず、FX専用カテゴリとの境界も曖昧だった"
+    },
+    {
+      "title": "経済産業省のキャリア官僚の53歳男を逮捕 知人女性になりすまし名誉傷つける内容のメールを送信 複数の出会い系サイトにメールアドレスを掲載",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFBDX3JSWnNoeWlzS2dsSUxIS3czSUtUUEtJckRxcEI0ZzJVYlNJbjl4ejAzUmFxRkJ3MlZCQjdIaWhEZ1hEWV85RGNxYlBKUUlPOW5JV3o4RQ?oc=5",
+      "reason": "社会事件であり経済カテゴリの読者価値から外れるため除外"
+    }
+  ]
+}

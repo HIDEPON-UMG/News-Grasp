@@ -112,6 +112,47 @@ runner、watcher、repair、publish verification、podcast verification、distri
 
 今回の 2026-06-21 Podcast 検証障害のように、公開成果物は正常でも検証 API 側だけが 401 を返す場合は、成果物を未公開扱いにせず、別経路の公開確認へ fallback する。ただし fallback は無条件成功ではない。watch / playlist / public status のいずれかで同じ videoId、playlistId、title、日付を確認できる場合だけ Green とする。
 
+## Category Schedule Source of Truth
+
+曜日別の必須カテゴリは `tools.publish_inventory.scheduled_category_ids(issue)` を唯一の実装正本とする。runner、sub-agent、reporter、repair、gate、publish inventory、prompt、validator は、この関数が返したカテゴリだけを required として扱う。
+
+| 曜日 | Required categories | Non-target categories |
+|---|---|---|
+| 月 | fx, ai, it, mobility, manufacturing, economy | game |
+| 火 | fx, ai, it, mobility, manufacturing, economy, game | |
+| 水 | fx, ai, it, mobility, manufacturing, economy | game |
+| 木 | fx, ai, it, mobility, manufacturing, economy, game | |
+| 金 | fx, ai, it, mobility, manufacturing, economy | game |
+| 土 | fx, ai, it, mobility, game | manufacturing, economy |
+| 日 | fx, ai, it, mobility, game | manufacturing, economy |
+
+runner は 7 カテゴリ固定で sub-agent を起動してはならない。水曜日に Game を探索すること、土日に Manufacturing / Economy digest を required として探すこと、Game に限らず、任意の非対象カテゴリを repair / reporter / missing 判定へ流すことは禁止する。
+
+非対象カテゴリ artifact が過去 run や手動復旧で残っていても、それを当日の required artifact へ昇格してはならない。逆に required category の artifact 欠落は失敗として検出する。公開済みの非対象カテゴリ artifact は存在してもよいが、当日必須カテゴリへ昇格しない。runner bug や repair bug の調査では、まず required / non-target の境界をこの表に戻して確認する。
+
+Category schedule impact map:
+
+| Impact area | Required reflection |
+|---|---|
+| Runner Stage0 / Stage2 reporter fan-out | `scheduled_category_ids(issue)` の結果だけを fan-out し、固定 7 カテゴリを作らない。 |
+| Editor manifest / newsroom prompt | 当日必須カテゴリだけを統合対象にし、非対象カテゴリ不足を editorial defect にしない。 |
+| publish inventory / repair scope | required artifact だけを missing / repair 対象にし、非対象カテゴリ artifact は fallback_ok でも failure でもない補助情報として扱う。 |
+| generate_pages / public UI | 存在する artifact は公開できるが、当日 issue の required 判定には戻さない。 |
+| validate_daily_quality / validate_generation_quality / reconcile | date から必須カテゴリを解決し、非対象カテゴリを required missing にしない。 |
+| YouTube Podcast / publish_complete | required web/audio/deepdive の公開状態と Podcast/playlist 状態を確認し、非対象カテゴリ有無で完了判定を変えない。 |
+| fallback_ok | fallback が許されるのは公開品質保護のためであり、非対象カテゴリ探索失敗を fallback 理由にしない。 |
+| verify-publish-complete | public URL、publish-status、audio、Podcast の日付 sentinel を確認し、曜日別カテゴリ仕様と矛盾させない。 |
+
+## Operational Premise Fidelity
+
+復旧済みの公開成果物を、後続の goal、incident、E2E、または仕様整理の都合で未復旧扱いに巻き戻してはならない。現在状態の復旧タスクと、将来の完走判定 gate は分ける。
+
+goal が打ち取れなかった理由、完走扱いになった理由、どの gate が公開未更新を止められなかったかは incident evidence に残す。ただし、復旧済みの公開成果物、公開済みの非対象カテゴリ artifact、または公開仕様上不要な artifact を後から required failure に変えてはならない。
+
+pytest PASS は必要条件であり十分条件ではない。daily quality PASS は必要条件、public URL PASS は必要条件、runner/live SHA一致は必要条件である。効率的・完全完走を主張するための必要条件は、1時間以内の本番相当 push直前 E2E PASS、または同等の証跡で SLO と公開面が一致していることを示すことである。
+
+SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実施なら効率的・完全・1時間以内完走とは報告してはならない。テスト Green、SLO gate 実装、または public URL 単発 200 は必要条件であって、単独では完全完走の十分証明ではない。
+
 ## Acceptance Scenarios
 
 | Scenario | Given | When | Then |

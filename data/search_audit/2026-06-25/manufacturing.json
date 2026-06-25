@@ -1,0 +1,45 @@
+{
+  "date": "2026-06-25",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-deduped-candidates: build/deduped-candidates/manufacturing.jsonl",
+    "search.yahoo.co.jp: 台湾半導体ASE 生産能力 全力で引き上げ 26年は15工場",
+    "search.yahoo.co.jp: 中国 AI向け半導体 急所握る タングステン禁輸で特殊ガス株急騰",
+    "search.yahoo.co.jp/realtime: 国内工場",
+    "search.yahoo.co.jp: AI・半導体など 戦略17分野 投資370兆円超 政府が工程表 高市首相 投資不足の流れ断ち切る",
+    "search.yahoo.co.jp: 三菱電機 SiCパワー半導体を民生に拡大 高耐圧品で酸化ガリウムも"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "決算:味の素、今や「半導体銘柄」 アクティビストも熱視線",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1MUHgyRFdMT05qMmlIb0tfVWxyc3RpQ3VtbklBREFUUmZnUjRrd0JHb0c5WE5jQUtQR0hEN3lic2U4bEZ3MnRERHE2aHJOYkpNMXpIYm5ibmhmdDdSMXhkZHVSN2F3dnJzbXkxNA?oc=5",
+      "reason": "投資家視点が主で、量産計画や供給網の構造変化が本文から読み取りにくい"
+    },
+    {
+      "title": "ソニーG、熊本で「地下水を増やす」 TSMCも追随する半導体と水戦略",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBpZXlmSFQwWWRDckZPSHRXYWdVbjk1N0Vlb0hfbklLTzFZNlZ6X1ZhNUxLblY5M2IwU0V3XzJOdFRfWkxaQWZtMjBYVGRaclNMZklZVjBwOEY3RHhIWVpUSHFMcjJjVnM?oc=5",
+      "reason": "水資源テーマは重要だが、当日の新しい量産意思決定より背景解説の比重が大きい"
+    },
+    {
+      "title": "韓国の半導体大手SKハイニックスがナスダック上場申請､約4.8兆円調達を計画",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE1wVG16aU5jSDFFbllIbmhBWUE3dmg0TEJZMERocHdvXzk0di1uNkxLRG95MjFaQnBnM0prM1c0T2Z2VFFxbjRsbmhkeUpUVDQ5LWc?oc=5",
+      "reason": "資本市場イベントが主で、製造現場や供給能力の具体像が当日候補の中では薄い"
+    },
+    {
+      "title": "一関市に自動車部品製造の新工場 山口化成が市と立地協定、18億円投資",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBzSHdfLTNuNW9sR1V5LWtJQXJkVHo4WnRSdlNXYVExbjRaU1E0NmVQYTJDZktTMnlmblVHS2RoRjdGV0dLQ0xfNVFCOEtneXNtdGZwUVRVdzJsdTNhdWZkTQ?oc=5",
+      "reason": "地域投資案件として有意だが、グローバル供給網や技術競争への波及は上位5件より限定的"
+    }
+  ]
+}

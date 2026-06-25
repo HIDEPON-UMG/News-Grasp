@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260625 — IT-Consulting</title>
+<meta name="description" content="IT-Consultingは5件。きょうの軸は、AIやクラウドを「導入するか」ではなく、基幹・企画・監視をどう運用に落とし込むかへ論点が移ったことだ。SaaS不要論の修正、勘定系とERPの刷新、AIペルソナの外販、常時監視の外部化が、IT投資の実務を具体化している。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-06-25/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260625 — IT-Consulting">
+<meta property="og:description" content="IT-Consultingは5件。きょうの軸は、AIやクラウドを「導入するか」ではなく、基幹・企画・監視をどう運用に落とし込むかへ論点が移ったことだ。SaaS不要論の修正、勘定系とERPの刷新、AIペルソナの外販、常時監視の外部化が、IT投資の実務を具体化している。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-06-25/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260625 — IT-Consulting">
+<meta name="twitter:description" content="IT-Consultingは5件。きょうの軸は、AIやクラウドを「導入するか」ではなく、基幹・企画・監視をどう運用に落とし込むかへ論点が移ったことだ。SaaS不要論の修正、勘定系とERPの刷新、AIペルソナの外販、常時監視の外部化が、IT投資の実務を具体化している。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-06-25 · #20260625</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⌗</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+
+    <div class="cat-hero__summary">IT-Consultingは5件。きょうの軸は、AIやクラウドを「導入するか」ではなく、基幹・企画・監視をどう運用に落とし込むかへ論点が移ったことだ。SaaS不要論の修正、勘定系とERPの刷新、AIペルソナの外販、常時監視の外部化が、IT投資の実務を具体化している。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">87</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·25</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260625</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-25 05:00 · 日本経済新聞</span>
+    <span class="top-story__score">93</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://www.nikkei.com/article/DGXZQOCD095RT0Z00C26A6000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3212845024062026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=557eeddd5c8b38dcf9853894ba8304b3" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.nikkei.com/article/DGXZQOCD095RT0Z00C26A6000000/" rel="noopener nofollow" target="_blank" style="color: inherit;">SaaS不要論に修正圧力　AIはソフトより人の作業を置き換える</a>
+
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">AIエージェント</strong>の普及で<strong>「SaaSの死」</strong>が語られる一方、記事は<span class="emph-und">企業現場では業務ソフトとの併用が主流</span>だと整理した。</li><li>代替の中心はソフトそのものではなく、入力・確認・転記といった<strong>人の作業</strong>であり、SaaS側にはAIを組み込む再設計余地が残る。</li><li><strong class="emph-bold">業務ソフト株</strong>への見方が修正されれば、<span class="emph-und">AI時代の投資判断は「置き換え」より「併用して何を減らすか」</span>へ移りやすい。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⌗ IT &amp; CONSULTING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-25</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⌗ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-25 00:00</span>
+        <span>· 日経クロストレンド</span>
+        <span class="more-card__score">90</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://xtrend.nikkei.com/atcl/contents/casestudy/00012/01893/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://xtrend.nikkei.com/atcl/contents/casestudy/00012/01893/nxr_m.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://xtrend.nikkei.com/atcl/contents/casestudy/00012/01893/" rel="noopener nofollow" target="_blank">電通、AIペルソナをSaaS化　15万人データで企画前検証を外販</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">電通</strong>は15万人規模の生活者調査を学習した<strong>AIペルソナ</strong>をSaaS提供し、<span class="emph-und">企画前の仮説検証を外販</span>し始めた。</li><li>商品案や広告案を人間調査の前にAI上でふるいにかける発想で、<strong>PDCAの前にSimulationを挟む</strong>運用を企業に持ち込む。</li><li>広告会社の収益源が<strong class="emph-bold">受託制作</strong>だけでなく、<span class="emph-und">企業が自走で試すAI基盤の提供</span>へ広がり、コンサルとSaaSの境界が薄くなる。</li>
+      </ul>
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-24 17:17</span>
+        <span>· IT Leaders</span>
+        <span class="more-card__score">88</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://it.impress.co.jp/articles/-/29497" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://it.impress.co.jp/mwimgs/1/7/400/img_17fd8fd21e01fa4f7fdd3a97f188e8eb172183.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://it.impress.co.jp/articles/-/29497" rel="noopener nofollow" target="_blank">日本IBM、勘定系をクラウド前提へ刷新　銀行システムの再利用性高める</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">日本IBM</strong>は勘定系NEFSSを<strong>Digital Core Banking Library</strong>へ刷新し、<span class="emph-und">クラウド前提の銀行基幹</span>として売り出し直した。</li><li>機能を階層化・コンポーネント化し、<strong>共通部品を複数業務で再利用</strong>しながら銀行固有要件は個別部品で吸収する設計を採る。</li><li>レガシー刷新の焦点が<strong class="emph-bold">全面再構築</strong>から<span class="emph-und">再利用できる部品化と可用性確保</span>へ移り、金融IT案件の進め方を示す例になった。</li>
+      </ul>
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-24 18:13</span>
+        <span>· IT Leaders</span>
+        <span class="more-card__score">86</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://it.impress.co.jp/articles/-/29498" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://it.impress.co.jp/mwimgs/e/9/400/img_e922fdf1cbb4e21ba08e8de703e7ddb0474465.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://it.impress.co.jp/articles/-/29498" rel="noopener nofollow" target="_blank">INPEX、SAPクラウドERPを稼働　アビーム支援で刷新期間を短縮</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">INPEX</strong>は<strong>SAP-S4HANA-Cloud-Private-Edition</strong>を1月に稼働させ、<span class="emph-und">基幹刷新を経営基盤改革の中核</span>に据えた。</li><li>支援した<strong class="emph-bold">アビームコンサルティング</strong>は業務改革から導入・定着までを一貫で担い、<strong>Fit to Standard</strong>で構築期間を縮めた。</li><li>エネルギー大手でも、<span class="emph-und">ERP刷新の勝負どころが個別開発量ではなく標準活用と意思決定速度</span>になっていることが見える。</li>
+      </ul>
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-24 10:00</span>
+        <span>· TechTargetジャパン</span>
+        <span class="more-card__score">80</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://techtarget.itmedia.co.jp/tt/news/2605/29/news05.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://image.itmedia.co.jp/images/logo/1200x630_500x500_tt.gif" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://techtarget.itmedia.co.jp/tt/news/2605/29/news05.html" rel="noopener nofollow" target="_blank">年1回診断から常時監視へ　クラウド防御の運用外部化が現実解に</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">クラウド運用</strong>が広がるほど<strong>年1回診断だけでは追いつかない</strong>という前提が強まり、<span class="emph-und">監視を常時化する運用設計</span>が論点になった。</li><li>記事は<strong class="emph-bold">Defender-for-Cloud</strong>を軸に、AzureだけでなくAWSやGoogle Cloudも含む監視負荷を<strong>外部化して吸収する</strong>現実解を示した。</li><li>企業の差は製品選定よりも、<span class="emph-und">監視・権限管理・設定確認を24時間365日で回せる体制</span>を持てるかに移りつつある。</li>
+      </ul>
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p><strong class="emph-bold">SaaS不要論</strong>が出ても、日経は<strong>ソフトそのものより人の作業</strong>が置き換わると整理しました。<strong class="emph-bold">電通</strong>はAIペルソナをSaaS化し、<strong class="emph-bold">日本IBM</strong>と<strong class="emph-bold">INPEX</strong>はクラウド前提の基幹刷新を進めています。<span class="emph-und">売り物の名称</span>より<span class="emph-und">現場の往復を何回減らせるか</span>が論点で、常時監視型の運用外部化もその延長です。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-25/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-06-25
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

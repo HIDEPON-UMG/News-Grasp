@@ -1,0 +1,44 @@
+{
+  "date": "2026-06-25",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:jp.reuters.com 日銀 6月会合 早期 利上げ 政策余地 大幅利上げ回避",
+    "\"経済・物価・金融情勢に応じ引き続き利上げ\" ニューズウィーク",
+    "\"ＮＹ外為市場＝ドル続伸、161円台後半 介入警戒続く\"",
+    "site:www.gaitame.com \"162円接近で高まる為替介入・急落リスク\"",
+    "site:www.gaitame.com \"ドル円、162円の大台替わりの水準は売買がミックス\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "日本の5月のCPIと、日銀金融政策の微妙な関係",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE01OVhwUXhSZkxLaXgwYnJfMzVwcGdYVzVVRHdoUl96VDBwdW1wYkx6d0hiY2RnRHZ6ejREdm5YN19uMnJlX0s0VDV2QVA4b0NlYzNTRTNMR3ZnZkpuWUItQk5Ddk9kcTk3Ty0zaVlJV2MzaXB3dUJwRVI3UFhLY28?oc=5",
+      "reason": "解説色が強く、当日材料の更新幅が小さいため一次情報性で劣後"
+    },
+    {
+      "title": "中立金利「可能な限り早く近づける」意見も 日銀6月会合",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE1PU0J1Z181VXNBeko3LUF0bEFVUzFoY1ZVRzF0SC1Pc01wdTdzWHNocWJ4UzFrVW5TZnN1MmRSWGU0cEFWTkFRQnZ6MFIyRXlmUjhCNnNsemxhN1VGaTNGLURZN1l2eFVh?oc=5",
+      "reason": "会合意見の主題が採用記事と重複し、新材料を圧縮できるため見送り"
+    },
+    {
+      "title": "夜に売られる円 日本株高で為替ヘッジ膨らむ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE03NWJKejAxMzcxSTBrSU9hbGxubmVXeXJuZTJTLWV0eUhHcU9FeFZXTWZmOF9xNEk1bEFRMWV0UXd0VmtMdHVMbE1LLXVGZUJobFRJcFZyekM0ZDFkWHJrdjUtMy1rNDktc2N5RQ?oc=5",
+      "reason": "検索結果から元記事 canonical URL を確定できず、媒体トップへの丸まりを避けるため不採用"
+    },
+    {
+      "title": "FX個人投資家動向｜株安でクロス円は下落、メキシコペソイベント控え大幅調整 2026年6月24日",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE95X3lXM3FyVllCSjJWSUlpUjFYVW96Rm5rb0syUm90Z0hoZjhDMDlrcjRwd1BIcGYyVHJGdWZiTEE5ZDRwZTlsaF9hWVJTNjc5UUNTNm9UUGxSNE82WnlLdW9Rdw?oc=5",
+      "reason": "メキシコペソ軸が強く、FX主役をドル円に絞る当日構成では優先度が下がった"
+    }
+  ]
+}

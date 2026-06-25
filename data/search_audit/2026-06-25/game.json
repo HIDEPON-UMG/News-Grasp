@@ -1,0 +1,57 @@
+{
+  "date": "2026-06-25",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:automaton-media.com \"Steamで「AI生成コンテンツの使用開示」に記載がある場合、レビューが少なくなるというデータ分析報告\"",
+    "site:gamespark.jp \"自分だけのSteam MachineをSteamOSインストで作れる\"",
+    "site:diamond.jp \"PS5が出荷600万台減予想でも「2ケタ増益」の理由\"",
+    "site:game.watch.impress.co.jp \"Switch2「スターフォックス」本日発売\"",
+    "site:colopl.co.jp \"KAZUMA KANEKO'S ツクヨミ\" Steam"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ゲームパラダイス「わんぱく倶楽部」【川島明×笑い飯 西田×ザコシ×もう中学生】 [字]",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFBvMHRVQ2dhUUZBZnI5NzVpSTlYSTc2OU8xOXM1LXh6T3ZPQlEtbVJsX2RJZm80d0tsdGJTYVJRQ1JCZG51YTRHOU9MNi1nVDRjWDhiSmdB?oc=5",
+      "reason": "テレビ番組告知でゲーム業界の構造変化と結び付きが薄い"
+    },
+    {
+      "title": "【ゲーム業界】日本と西洋のゲームデザインの違いや色の使い方について学ぶ！好評セミナー「色で“感情”を動かすデザイン術とは？」など3本のアーカイブ映像を無料配信!!",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5sdFlZcTI4S3hlQV9kQlJMdDdNcnl5R2x0NDNtYmhnWS1LZGJTdXN6bjBINWFROG55aTY0b3VmQmNNWUl5aFQwbW9HMkhDN3B0MC1YaW9zZV9KeFA2cWd3MFA3R29oUTdLZHc?oc=5",
+      "reason": "PR配信で販促色が強く、当日インパクトが限定的"
+    },
+    {
+      "title": "ゲームアップデートのお知らせ(6/24 18:00実施)",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBuSUJSOGtkSnpheEJnbDlpMjVtdUhLNW9CS01WbndMZmlna2JUUEpKTHRqbmFxWkJ1UnI0ZTBHVnBjSThBU1dQbXM3Z1R3a3NhemNqVw?oc=5",
+      "reason": "個別運営告知で市場波及が小さく、横断読者向け優先度が低い"
+    },
+    {
+      "title": "【アケアカ2】初代『鉄拳』が6月25日に配信開始。人気3D対戦格闘ゲームシリーズの第1作がSwitch 2、PS5、Xboxで復刻",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE5GOXFRS25KelNVOW5EM2x6UDRYZjhlY1NBd2p3Q2NyaDFuSDBUZ1FZbXpVMlU5WUx2U0I4VkRzQmVxS3dKQ081dGl1ODB3eGJuZWtZeGZhdw?oc=5",
+      "reason": "復刻配信の話題性はあるが、当日の業界構造変化としては優先度を下げた"
+    },
+    {
+      "title": "どうぶつの森×サーティワン「サーティワンで島のどうぶつたちとのんびり夏ライフ！」開催決定。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxPSkJTWGQ4Qk1ZYzJ6TkZTcXhGM3d6Ylg0NVRWMVJSWkpZMl85cnc0WkNzV21SSVFVVHFDTEJTRU5mM2dsdEc0ZlN6c0hBdG42WmpXSUg4a2dYMURmOE9fdzctSHZ3VWx0cThGbHhOWUdDV29xNEtwUmE0SnVBSHRPY0pXUkZhUQ?oc=5",
+      "reason": "大型販促としては注目だが、継続課金や配信基盤の変化を優先して不採用"
+    },
+    {
+      "title": "ゲーム開発者の「大規模シムの最適化」談義が盛り上がる。大量キャラをぬるぬる動かすノウハウ、ベテランが語る“数千体からが本番”",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE04TXZjaUppQWM2bGlLTlduSDB6TnI4ekFaVzNpVTg5eXZQOVdqZ28zbDJkbEJrTHE0bWFlSUNtWU43ajI1SHRVcENBVzlFNFpFX284WUlDV0M5azNQQlVSRE5TYVU3ZW5aNkluMg?oc=5",
+      "reason": "開発者談義として興味深いが、一次データより経験則中心で優先度を下げた"
+    }
+  ]
+}

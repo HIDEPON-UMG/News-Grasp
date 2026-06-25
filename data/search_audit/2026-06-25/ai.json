@@ -1,0 +1,58 @@
+{
+  "date": "2026-06-25",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:watch.impress.co.jp OpenAI LLM 新チップ ハラペーニョ",
+    "\"重要インフラ3000社\" OpenAI NTT",
+    "site:codezine.jp \"事故よりも怖い生成AIの『説明できないリスク』\"",
+    "site:techno-edge.net Anthropic 日本 Claude コミュニティアンバサダー 募集開始"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "メルカリ、OpenAI「ChatGPT」上で「メルカリ」の商品検索・出品準備が可能に",
+      "url": "https://about.mercari.com/press/news/articles/20260623chatgpt/",
+      "reason": "前日号で掲載済み。新材料なし"
+    },
+    {
+      "title": "Slackで「＠Claude」するだけでAIが自律的に動く…アンソロピックが協働AIを公開",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFA3NVZmR1NrdER1OHdWemxhZHc3dm8xZ29pSjZTWG9lOVNabk45SHVIOHR3OUdCeXZhd3lWNTJMUjYxVEpCcDhUYmgzUm52ZlBRTjEw?oc=5",
+      "reason": "前日号で主要論点を掲載済み。新材料なし"
+    },
+    {
+      "title": "ClaudeがSlack上のバーチャル同僚に--Anthropicの新機能「Claude Tag」とは",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE1RRDRPVzljYTdDcUkxU2xJWWFXTjNGTUFxdWlrQjJRSWJHRDdEaVRFUC02dThsT2tLSVZ2aGQxeURtZ2l1SG9OeUludjE5R2pkM1E?oc=5",
+      "reason": "前日号の公式発表と同論点。追加の一次材料なし"
+    },
+    {
+      "title": "事故よりも怖い生成AIの「説明できないリスク」──OWASPとレッドチーミングで実現するガバナンス設計",
+      "url": "https://codezine.jp/article/detail/23605",
+      "reason": "元記事公開が3日前で鮮度窓外"
+    },
+    {
+      "title": "利用禁止でも「業務で生成AIを使い続ける」約2割 使っているAIを会社に申請していない人も（ITmedia ビジネスオンライン）",
+      "url": "https://www.itmedia.co.jp/aiplus/article/2606/23/2000000119/",
+      "reason": "元記事公開日が6月23日で鮮度窓外"
+    },
+    {
+      "title": "AWS Summit Japan 2026 ブース紹介 — 生成 AI 時代の製品設計開発",
+      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxNOTV1MFItbkNaTUo1MTZlUklxNjk4M2dvdkFjaUlaX2NCOUFSTlBHOGdpS0FQOXpzWHVkOTB1a0piNUswdVoxbnR4RURsdDk3eUFWa2xseEc2VWNZMnM4U0NjN05IWlR6aUlxbWRXejVlSFNQZXB0QURrdkswd3lBV005a3JHbHAyY2c?oc=5",
+      "reason": "イベント告知色が強く読者影響が限定的"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-25",
+  "category_id": "mobility",
+  "queries": [
+    "stage1 source: build/deduped-candidates/mobility.jsonl",
+    "site:www.fnn.jp \"自動運転の初の国際規則採択 有能で注意深い人間ドライバー同等以上\"",
+    "site:waymo.com \"June 24, 2026\" \"From the road\"",
+    "site:www.metro.tokyo.lg.jp \"EV・PHEVの補助上限額一部引上げ|6月\"",
+    "site:jidounten-lab.com \"Googleのロボタクシー、赤信号を無視\"",
+    "\"ヴァレオと日産、欧州市場におけるV2G（Vehicle-to-Grid）スマートEV充給電に関する契約を締結\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0?oc=5",
+      "reason": "株価ページでニュース本文ではなく、mobility 本文カードの一次情報として弱い"
+    },
+    {
+      "title": "自動運転EV､運行中の異常を遠隔検知 マクニカと豪新興",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5EaG93eTBfYlNOUDlhREZkMlN2Wm9uQjhnTEh2UkFodmg3UEpnZ0luRFU4WXhiS3c2dU1WNC1TZnBDNFNzajZORVBGaUdIQ1NJS2lFZW5fTm01Y3oxOHl2dTRlV0V3SVRFc20zWXVVZUl1anVQV3hBYlczV19lYkU?oc=5",
+      "reason": "Nikkei 原文の安定解決に時間を使うより、規制・補助金・Waymo動向の主要5本を優先"
+    },
+    {
+      "title": "ダイセーロジ、埼玉・杉戸で自動運転実証",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1tNjVzUVFiZnJaOV8wekp2R2ttTlp0ODZNXzFOOVFCZ01qaVpaZ0JnWmhjQWJuRDlSTk56UnV6VFdsN2ZEeFhWQg?oc=5",
+      "reason": "構内実証としては有望だが、当日の制度・安全・V2G商用化より影響範囲が狭い"
+    },
+    {
+      "title": "自動運転バス実証実験(テスト走行)開始",
+      "url": "https://www.town.taishi.osaka.jp/busyo/machidukurisuisinbu/chiikiseibika/taisityoutiikikoukyoukoutuu/sinnmobirityi/6965.html",
+      "reason": "テスト走行開始の告知で新規性はあるが、レベル2・乗客なしで全国波及の材料がまだ薄い"
+    },
+    {
+      "title": "令和８年度次世代空モビリティ商用サービス開発事業費補助金の採択結果について",
+      "url": "https://www.pref.oita.jp/soshiki/list1-1.html",
+      "reason": "空モビリティの採択結果は確認したが、採択主体と金額の詳細確認に対して当日の読者価値が5本目候補を上回らなかった"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

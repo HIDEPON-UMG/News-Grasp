@@ -1,0 +1,64 @@
+{
+  "date": "2026-06-25",
+  "category_id": "it",
+  "queries": [
+    "Stage1 deduped candidates supplied externally: build/deduped-candidates/it.jsonl",
+    "homepage HTML parse: https://www.nikkei.com/ \"SaaSは死なない\"",
+    "homepage HTML parse: https://xtrend.nikkei.com/ \"電通がAIペルソナをSaaSで提供\"",
+    "homepage HTML parse: https://it.impress.co.jp/ \"日本IBM、オープン勘定系システム\"",
+    "homepage HTML parse: https://it.impress.co.jp/ \"INPEX、基幹システムをS/4HANAクラウドで刷新\"",
+    "web search: site:techtarget.itmedia.co.jp \"年に1回の脆弱性診断は限界\"",
+    "homepage HTML parse: https://active.nikkeibp.co.jp/ \"無料から始めるクラウドID管理\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT",
+    "クラウド",
+    "SaaS",
+    "サイバーセキュリティ",
+    "IT投資",
+    "システムインテグレーター"
+  ],
+  "dropped": [
+    {
+      "title": "One Team,One Place｜新たな拠点をみんなで",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9XQzMtTnh0cGxvWVBpTGJVVVBhRm1CLWFPZDMwWlR1UWhXRE1qRVB6c3JrbUZFTnp0VEpMUHdGQmVLUXNZR2J5TV9pSEdhZWMzbTNYRVFQbUNZUQ?oc=5",
+      "reason": "クラウドファンディング案件で enterprise IT の読者価値が薄い。"
+    },
+    {
+      "title": "「さくらのクラウドサービス約款」改定のお知らせ",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPc0NneFZURHg1WmF4YTZ0ak9oZGVndHpDTHJ5RklOVHZqTkpabDI2T05heGV1bkl2dFVqLVFRV001bVNMb2xCX3NpVmIwNVFHTkRTc1ZFbFdXWWt2ZUQ5aVlNdlFSWk91V0ZWYUViVF9USTFmR1VfelZWNGlpb0xnMHNlTnhsT0pwV21V?oc=5",
+      "reason": "約款改定の告知で影響範囲はあるが、読者の投資判断や案件設計を直ちに動かす材料としては弱い。"
+    },
+    {
+      "title": "無料から始めるクラウドID管理、各種SaaSをシングルサインオンで利用可能に",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxObWl3YzBoa19ZNDdKdC1PQzhJbGdtYzd3TGdIbkFoc0JZbXZTQ0dJY2hxV2FCVFFrelhDYVlyYWU2UkRjN05KVU4yY1NSWDV2c0txWFJzODF3dVVLVDNmemUzTDBMX3B3dERJMkJCMVJTZWd2enRFVF9QTmxBeTA1aENOOEJFQWpuRUJzUWZMbw?oc=5",
+      "reason": "canonical は解決できたがホワイトペーパー色が強く、上位5本に比べて横断的な示唆が弱い。"
+    },
+    {
+      "title": "NTTドコモがコンタクトセンター運用基盤をクラウド化、その成果を動画で披露",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNVEdJandHLURJRkwyMlg4eTQ3ckVQLXdGNDdmYUsyTlRtUXlWXzd0cmxBVlRQelc4SW9hNlFtdnZaN19NemZhTjNFR1g2T01XbUZnNkNoMXVQVkt4dDB1RFRfeDJhaFZXUFM5UG9aSFRJRmNKMlFGTGtYZ3Rxa2N0MnFPU1pyTzdRdEVvMndkcw?oc=5",
+      "reason": "Stage1 候補の許容範囲で target page の stable canonical URL を抽出できず採用見送り。"
+    },
+    {
+      "title": "テンプル大学ジャパンキャンパス 2026年秋にサイバーセキュリティ学科とデータサイエンス修了証書プログラムを新設",
+      "url": "https://news.google.com/rss/articles/CBMiRkFVX3lxTE81U3duVzA2MTU3SG9vckw1aWhiRXY4QkZuWDRxVklQSTYtUU5UaXJsRDJJZTVyNnZzRHEweTEzYS01WkdRZmc?oc=5",
+      "reason": "教育機関の新設告知で enterprise IT の運用・投資判断に直結する度合いが低い。"
+    },
+    {
+      "title": "VR観戦施設、札幌など全国10カ所に 浦幌のIT新興企業、29年までに開設",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFBGQjdnT0RETFRIVGZpbjloWGkxLWNuZnNnYlZMU01WMWlzcjc2QmEweGM3dkc4TGJSZXJsN0RxbXdfRWp0RFBJQ3QteUNvaUVJWmVDR21VbFFRQQ?oc=5",
+      "reason": "地域エンタメ投資の色が強く、IT-Consulting カテゴリの主要論点から外れる。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

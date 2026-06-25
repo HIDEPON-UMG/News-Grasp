@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260625 — Manufacturing</title>
+<meta name="description" content="製造は5件の配信。政策の長期資金、素材の禁輸、後工程の能力増強、完成車再編、次世代パワー半導体まで、今日は「量産の前提条件を誰が握るか」が一段とはっきりした。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-25/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260625 — Manufacturing">
+<meta property="og:description" content="製造は5件の配信。政策の長期資金、素材の禁輸、後工程の能力増強、完成車再編、次世代パワー半導体まで、今日は「量産の前提条件を誰が握るか」が一段とはっきりした。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-25/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260625 — Manufacturing">
+<meta name="twitter:description" content="製造は5件の配信。政策の長期資金、素材の禁輸、後工程の能力増強、完成車再編、次世代パワー半導体まで、今日は「量産の前提条件を誰が握るか」が一段とはっきりした。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="manufacturing">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill is-active" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-06-25 · #20260625</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MANUFACTURING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⬢</span>
+      <h1 class="cat-hero__title">製造.</h1>
+    </div>
+
+    <div class="cat-hero__summary">製造は5件の配信。政策の長期資金、素材の禁輸、後工程の能力増強、完成車再編、次世代パワー半導体まで、今日は「量産の前提条件を誰が握るか」が一段とはっきりした。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">92</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·25</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260625</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">← BACK TO MANUFACTURING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-25 00:30 · 読売新聞</span>
+    <span class="top-story__score">96</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://www.yomiuri.co.jp/economy/20260625-GYT1T00043/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.yomiuri.co.jp/media/2026/06/20260625-GYT1I00044-1.jpg?type=ogp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.yomiuri.co.jp/economy/20260625-GYT1T00043/" rel="noopener nofollow" target="_blank" style="color: inherit;">政府、戦略17分野に370兆円超の工程表 半導体投資を前面に</a>
+
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">政府の官民投資ロードマップ</strong>は<strong>AI・半導体・造船など戦略17分野に2040年度まで370兆円超</strong>を積み上げ、<span class="emph-und">量産能力の土台を政策で先に固める方針</span>を示した。</li><li>骨太方針と日本成長戦略に盛り込む前提で打ち出したため、<strong class="emph-bold">半導体投資</strong>は<strong>単年度補助金ではなく15年単位の設備計画</strong>として扱われ、<span class="emph-und">材料・装置各社の投資回収シナリオ</span>を描きやすくする。</li><li>高市政権が<strong class="emph-bold">責任ある積極財政</strong>の目玉に据えたことで、<strong>採択・立地・人材確保を巡る競争が前倒し</strong>される公算が大きく、<span class="emph-und">次は配分ルールと実行速度</span>が焦点になる。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⬢ MANUFACTURING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-25</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⬢ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-25 04:30</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">94</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.nikkei.com/article/DGXZQOFL222EYTS6A620C2000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3212183024062026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=17873964995ab9b957e68962d362e080" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOFL222EYTS6A620C2000000/" rel="noopener nofollow" target="_blank">中国のタングステン禁輸が半導体ガスを直撃 供給網の急所が浮上</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">中国のタングステン禁輸</strong>が日本企業の<strong>先端半導体向け特殊ガス供給停止リスク</strong>として意識され、<span class="emph-und">AI半導体の川上素材が地政学の直撃を受ける構図</span>が鮮明になった。</li><li>中国の工業用特殊ガス株は<strong class="emph-bold">30営業日で4.9倍</strong>まで買われ、<strong>供給網再編の思惑だけで市場が大きく反応</strong>したこと自体が、<span class="emph-und">代替調達先の薄さ</span>を物語る。</li><li>記事は<strong class="emph-bold">未確認情報に注意</strong>との企業側コメントも伝えているが、<strong>サプライチェーンを巡る駆け引きが激化</strong>している点は変わらず、<span class="emph-und">装置・材料各社は在庫戦略の見直し</span>を迫られる。</li>
+      </ul>
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-24 20:14</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">92</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.nikkei.com/article/DGXZQOGM2485S0U6A620C2000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3215387024062026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;upscale=false&amp;w=1200&amp;s=27f8b1ffedc73bbe0d8a0180d639475f" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOGM2485S0U6A620C2000000/" rel="noopener nofollow" target="_blank">ASE、26年に15工場計画 後工程の能力増強を前倒し</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">ASE</strong>は株主総会で<strong>2026年にグループ合計15の工場開発計画</strong>があると明かし、<span class="emph-und">AI半導体の封止・検査で詰まりやすい後工程を先回りで増強</span>する姿勢を示した。</li><li>呉田玉COOは<strong class="emph-bold">29年や30年をにらむ</strong>と述べ、<strong>中期需要を前提に能力増強を急ぐ</strong>方針を明言しており、<span class="emph-und">先端パッケージ投資が一過性ではない</span>ことを示している。</li><li>後工程最大手が<strong class="emph-bold">全力で引き上げ</strong>に動くことで、<strong>前工程だけでは測れない量産競争の主戦場</strong>がはっきりし、<span class="emph-und">TSMCや設計勢の増産計画の実現性</span>を支える。</li>
+      </ul>
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-24 20:38</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">89</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.nikkei.com/article/DGXZQOUC24A560U6A620C2000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3216528024062026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=de3a324804d65426412ba67718e76716" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOUC24A560U6A620C2000000/" rel="noopener nofollow" target="_blank">日産、国内5拠点の事務職で早期退職 工場再編を加速</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">日産自動車</strong>は<strong>追浜・栃木・横浜・いわき・日産自動車九州の5拠点</strong>を主対象に事務職の早期退職募集へ動き、<span class="emph-und">工場運営の固定費削減を本格化</span>させた。</li><li>今回の募集は<strong class="emph-bold">生産現場の従業員を除外</strong>しつつ、<strong>世界で2万人削減するRe:Nissanの一環</strong>として進むため、<span class="emph-und">本丸の生産体制再編は別レイヤーで続く</span>ことを示す。</li><li>国内工場の<strong class="emph-bold">管理・間接機能</strong>から先に手を付けたことで、<strong>車両生産能力の見直し前段階</strong>に入った可能性が高く、<span class="emph-und">サプライヤーは拠点別の発注変動</span>を見極める必要がある。</li>
+      </ul>
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-25 05:00</span>
+        <span>· 日経クロステック</span>
+        <span class="more-card__score">87</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/00001/11846/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://xtech.nikkei.com/atcl/nxt/column/18/00001/11846/topm.jpg?20220512" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/00001/11846/" rel="noopener nofollow" target="_blank">三菱電機、SiC半導体を家電へ拡大 酸化ガリウムも視野</a>
+
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">三菱電機</strong>は<strong>SiCパワー半導体をエアコンなど民生機器向けへ拡大</strong>し、<span class="emph-und">車載・産機中心だった用途を量産家電まで広げる</span>方針を明確にした。</li><li>同社は<strong class="emph-bold">10kV級の高耐圧品</strong>投入も検討しており、<strong>電力インフラ向けの上位レンジ</strong>まで射程に入れることで、<span class="emph-und">SiCの適用範囲を縦に伸ばす戦略</span>が見える。</li><li>さらに<strong class="emph-bold">酸化ガリウム</strong>の研究開発を進めると示した点は、<strong>次世代材料の主導権争いを先取り</strong>する動きであり、<span class="emph-und">家電量産と次世代高耐圧の二面作戦</span>として注目される。</li>
+      </ul>
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MANUFACTURING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p>政府は17分野で370兆円超の工程表を示し、<strong class="emph-bold">ASE</strong>は26年に15工場計画、<strong class="emph-bold">中国のタングステン禁輸</strong>は半導体ガスの急所を浮かび上がらせました。日産の国内5拠点の早期退職や三菱電機のSiC拡大も含め、<strong>材料と工程の結び方</strong>が競争力を左右しています。量より配置が問われる朝です。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-25/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MANUFACTURING · 2026-06-25
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
