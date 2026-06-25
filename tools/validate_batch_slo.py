@@ -9,6 +9,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from tools.publish_inventory import CATEGORY_PATHS
+
+
+ARTICLE_CATEGORY_IDS = frozenset(CATEGORY_PATHS)
+
 
 def _parse_timestamp(value: Any) -> datetime | None:
     if not value:
@@ -75,7 +80,7 @@ def validate_usage_log(
 
         category = str(record.get("category") or "").strip()
         required_categories = record.get("required_categories")
-        if category and isinstance(required_categories, list):
+        if category in ARTICLE_CATEGORY_IDS and isinstance(required_categories, list):
             required_set = {str(item).strip() for item in required_categories if str(item).strip()}
             if required_set and category not in required_set:
                 errors.append(f"blocked_slo_progress: non-required category work detected: {category}")

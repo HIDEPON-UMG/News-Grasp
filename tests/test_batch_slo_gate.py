@@ -122,6 +122,31 @@ def test_usage_log_rejects_non_required_category_work(tmp_path) -> None:
     assert any("blocked_slo_progress" in error and "non-required category" in error for error in errors)
 
 
+def test_usage_log_allows_internal_gate_categories(tmp_path) -> None:
+    usage = tmp_path / "usage.jsonl"
+    _write_jsonl(
+        usage,
+        [
+            {
+                "timestamp": "2026-06-25T08:10:00+09:00",
+                "flow": "runner-progress",
+                "category": "summary",
+                "required_categories": ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"],
+            },
+            {
+                "timestamp": "2026-06-25T08:11:00+09:00",
+                "flow": "runner-progress",
+                "category": "tests",
+                "required_categories": ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"],
+            },
+        ],
+    )
+
+    errors = validate_usage_log(usage, max_total_tokens=3_000_000, max_window_sec=3600)
+
+    assert not errors
+
+
 def test_usage_log_rejects_repeated_repair_signature_without_progress(tmp_path) -> None:
     usage = tmp_path / "usage.jsonl"
     _write_jsonl(
