@@ -10,7 +10,7 @@
   ],
   "raw_results_total": 25,
   "candidates_total": 25,
-  "selected_total": 4,
+  "selected_total": 3,
   "coverage_terms_checked": [
     "McKinsey",
     "BCG",
@@ -44,6 +44,10 @@
       "title": "国立映画アーカイブ、活動存続へクラファン 運営費交付金の削減受け",
       "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBjS2dIYnJpeXpXYmNTc0tCWW5nVzZWQWxLWTJ4Q0ZnNm5mV2llcEdEWndMUFNhNjNVZnZBbDlRdU9admNzZ3RHYTJ5NUxhWnkyWXQ1UlVfSHhYdTBCSjgyN1JQR1RMaVktOTNocQ?oc=5",
       "reason": "カテゴリ逸脱"
+    },
+    {
+      "url": "https://it.impress.co.jp/articles/-/29502",
+      "reason": "quarantined by gate"
     }
   ],
   "candidate_file": "build/deduped-candidates/it.jsonl",
