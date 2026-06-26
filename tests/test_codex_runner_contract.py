@@ -96,6 +96,19 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     assert "GateId 'youtube-podcast-prepare'" in youtube_block
 
 
+def test_runner_checks_youtube_oauth_before_podcast_work() -> None:
+    """YouTube OAuth 失効は podcast build/upload の直前 gate で止める。"""
+    runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    readiness = runner.index("youtube oauth readiness gate start")
+    build_video = runner.index("youtube podcast build_video")
+    prepare = runner.index("youtube podcast prepare")
+
+    assert "function Test-YouTubePodcastAuthReadiness" in runner
+    assert "youtube oauth readiness failed" in runner
+    assert readiness < build_video < prepare
+
+
 def test_mobility_backfill_does_not_keep_claude_print_path() -> None:
     """完了済み一時backfillからClaude CLI課金経路を残さない。"""
     if not BACKFILL_MOBILITY.exists():

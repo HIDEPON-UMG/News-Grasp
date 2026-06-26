@@ -910,6 +910,22 @@ function Test-CodexAuthReadiness {
     return $true
 }
 
+function Test-YouTubePodcastAuthReadiness {
+    Push-Location $RepoDir
+    try {
+        $code = "from tools.youtube_podcast.upload_episode import YouTubePodcastClient; c=YouTubePodcastClient.from_local_secrets(); c.ensure_playlist('daily'); c.ensure_playlist('deepdive'); print('youtube oauth readiness ok')"
+        Invoke-Logged { & $PyExe '-c' $code }
+        $youtubeAuthRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($youtubeAuthRc -ne 0) {
+        Write-Log "youtube oauth readiness failed: rc=$youtubeAuthRc"
+        return $false
+    }
+    return $true
+}
+
 function Invoke-CodexWrapper {
     param(
         [string] $PromptFile,
@@ -2971,6 +2987,13 @@ if ($NoPublish) {
 # ===== 4.5 YouTube Podcast prepare (fatal, push 直前) =====
 # push 前は private upload までに留め、Web publish が失敗したときに YouTube だけ public
 # になる一時不整合を避ける。rerun は uploads.json の mp4_sha256/videoId で skip する。
+Write-Log 'youtube oauth readiness gate start'
+Update-RunnerProgress -Phase 'youtube-oauth-ready' -Step 'youtube oauth readiness gate start'
+if (-not (Test-YouTubePodcastAuthReadiness)) {
+    Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'youtube-podcast-auth' -Reason 'youtube oauth readiness failed' -ExitCode 1
+}
+Write-Log 'youtube oauth readiness gate OK'
+
 $youtubePodcastPrepareArgs = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--prepare')
 $deepDiveYoutubePodcastPrepareArgs = @('-m', 'tools.youtube_podcast.upload_episode', $DateStamp, '--kind', 'deepdive', '--prepare')
 if ($NoPublish) {
