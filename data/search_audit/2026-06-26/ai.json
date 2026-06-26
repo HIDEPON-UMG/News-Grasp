@@ -1,0 +1,79 @@
+{
+  "date": "2026-06-26",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-26/ai.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:gigazine.net Anthropic Alibaba 蒸留攻撃 Claude 2880万回以上のアクセスか",
+    "site:forest.watch.impress.co.jp Gemini 3.5 Flash PC操作能力 Computer Use ネイティブ統合",
+    "site:openai.com \"How agents are transforming work\" OpenAI Codex June 25 2026",
+    "site:enterprisezine.jp NEC cotomi Acompany 秘匿環境下での推論実行に成功",
+    "site:j-cast.com アニメ制作の取引適正化 リーフレット 生成AI 公取委 制作経緯"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Daybreak のパートナーになる",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5ZMl9DWUxkeG5PY2g2MXpQMGJUVzYyVENUNEZDYk5pWVRkNVpGQmJNSFZzZ1dXbnVhdTQ3M3E1RHJwS2hhNzJuZ3ZYSFJRa1RRNklLSw?oc=5",
+      "reason": "前日号でDaybreak/Codex Securityを掲載済みで新材料が薄い"
+    },
+    {
+      "title": "メルカリ、OpenAI「ChatGPT」上で「メルカリ」の商品検索・出品準備が可能に",
+      "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE5YTEgxS0RxUzdJS3dQNUpBaHYxaU9YWTJIdHVoV3JzNlNjNEE3U1dldXVKNjNnVWZ5d2R4ZkRzam0xVi1vUXdSTXlzeGlJczVmeGNqby1PSHhCdEJRVm5iSDUyUy1xOVAwRXFEMy14Yw?oc=5",
+      "reason": "前日号で掲載済みのため再掲を避けた"
+    },
+    {
+      "title": "OpenAIがBroadcomとAI推論特化型の独自半導体「ハラペーニョ」を開発",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1ZcWt5T1hucExtUWF5UmNwZGZIWW1kWG9rdW90MTVWcThVc2h1S3RvYTl1MHFqSkdVUlNRLVZQMXdrWUhiZmU4VUhqNHdZTUF4VzEw?oc=5",
+      "reason": "Jalapeño は前日号のトップで扱っており当日差分が薄い"
+    },
+    {
+      "title": "OpenAIが初の独自AIチップ 名前は「ハラペーニョ」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1RVWtZVTROY1JqclgwWVpXTUgxN2NBcWpKR3REMHc3eUJVa0h3ODlEbWdlam01dnVPWG83S2dMTTdITVJaNG5PVVRGSmpIc1YxUlZSNDR3YWdZaEJpRlJOcjloeUVCRndxUUtScw?oc=5",
+      "reason": "同一テーマの重複で前日号との差分が乏しい"
+    },
+    {
+      "title": "MicronとAnthropicが協業で合意、戦略的投資も（EE Times Japan）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1QY1lZU2pjOWpIYmc5WE5LTGhDQ0ozbXBlbktXbjZpMzNnTU1MOVB1dG81UFVtalBxUGNDRDJtUGo1TTM0Wmd3ZktDNDQ0SVpjOHA4RTJVZUd4d05ONEdhZklRV1ZWTWVjdk03dW4zZmMzY0NjWXRRYVB0UjBfWWs?oc=5",
+      "reason": "6月23日号のMicron×Anthropic記事と近く、新材料の独自性が弱い"
+    },
+    {
+      "title": "電通デジタル、OpenAIとdentsu Japanの戦略的連携に続き、ChatGPT広告のパイロット運用を開始",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1Ed09VY1hzYlhzR3FCeENpcWxmV2tZV3J5VFp5TXpxd2cyV1l0bWhlSTdiODZtSzd1ZDdnVjRRbVhmRG5IUW10MzJlQ1FmWVA4Q19Mdnd2TEQxZFFKQ18tSHFhRXZxR0JKU1licjZteGdYUUdZ?oc=5",
+      "reason": "元発表が2026-06-18で鮮度が弱く、二次配信の更新だけでは上位採用しにくい"
+    },
+    {
+      "title": "LLM推論処理のKVキャッシュを高速化する11TBメモリーのキャッシュ装置─ペンギンソリューションズ",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE8zVGo4NE00ZWdBQkd5bzZrWTQ1Rjhoa25UVy1DU1lsaFVndVJnMnVqdVNFeTBPcXNMRHdIdnZadE01SGkxcWlhS0RaVnZpbzQtSkNF?oc=5",
+      "reason": "製品紹介としては面白いが、競争構造や制度変更への波及が上位5件より小さい"
+    },
+    {
+      "title": "OpenAIの自社チップで、AIと半導体の自己改善ループが始まった",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBsdUJOX2Z0WGdJTVA2YkxWcFpzQVNEdXZNUTFpYTZtSmNYdzdQZEFjYnVOVk0wQ09HTmZhRVhtSGtWTTZHZlhpeVMyWHl3MEZmYWlpVTZXYXI3OG5xMVItWmVvd1RGT00?oc=5",
+      "reason": "解説色が強く、当日ニュースとしては前日既出テーマの整理にとどまる"
+    },
+    {
+      "title": "Claude Codeに「作業のやり方」を仕込んでみよう 無料でできるAgent Skills基礎学習：バイブコーディング入門、paizaが公開",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFA4VWlvVXZMd1E5S3BxYThidUFUNm05cXZFZmN2WTZ1Vl85enVrV0pPbzJtOS1wSUxiczdIMjg3bE92SDNEVFVPWDREdEZ4Y1FKQXR6dE51dFM1d0tINnI1NmdZc0lKNHJxc1ktRlRET2RZZw?oc=5",
+      "reason": "実務Tips色が強く、読者全体の意思決定に効くインパクトは限定的"
+    },
+    {
+      "title": "「生成AIパスポート」って、何？ 9万人が受験した資格試験の正体：合格率は約8割、年5回開催",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE03WTYtcDQxT3p6RGFJSDlUVGVhWDRWb0U5cVFhN09sVEFUeGUtdGZwZG1ESkZJUnJnRFpaVE1wQ3FsRVhsWXFnUlNtT3FpaEFUeVd0R2d3V0RLaVhSM1htUTdhQm5UOUNSS3BpMEtkLTBudw?oc=5",
+      "reason": "解説記事で当日性が弱く、今日の主要論点より優先度を下げた"
+    }
+  ]
+}

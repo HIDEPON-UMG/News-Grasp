@@ -1,0 +1,40 @@
+{
+  "date": "2026-06-26",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "\"ＩＭＦ、米経済に堅調な勢い ＦＲＢの金利据え置き「適切」\"",
+    "\"米ＧＤＰ確報値、第1四半期は2.1％増に上方改定 個人消費は停滞も\"",
+    "\"ＮＹ株続伸、７１ドル高 米経済指標好感で買い優勢\"",
+    "\"国・地方の総債務残高の対ＧＤＰ比低下、財政目標の中核＝高市首相\"",
+    "\"日本オラクル、前期経常は4％増で15期連続最高益、今期業績は非開示\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "経済財政諮問会議",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE80MFdXeHhiMGlQNVVSVFpwaW1LVl9wZXJ5c0hOZlZjWTQxb29reEpZdTZvVTl1bjExLVY2a2dkcWtOM1k4RkN2R2dScnQwU3FiRkY0UkMtR1piR2xCVnB5QjA4MVFGWFFucGtBVA?oc=5",
+      "reason": "財政目標の記事と論点が重複し、独立カード化すると同一会議の重複になるため除外"
+    },
+    {
+      "title": "井野経済産業副大臣が「チームカナダ・対日貿易ミッション」関連イベントに参加しました",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFB6TXV3ckxJUkF6di0wZEF6OVc5anFNZDBHSzlRQWNnTEo5T1djRF80LVBWdUZOMEg3ajZIdUNUQ1R2UGJyMGVxMmRfZDl0VmpzVkEzWE1LQnVtWmtUTmdwYldwYnh1QzdBd3FwbGh6Nl9NMTQ?oc=5",
+      "reason": "経済外交として重要だが、当日の市場・政策・決算の方が読者影響が大きく今回は次点扱い"
+    },
+    {
+      "title": "米日経済協議会訪日団による木原内閣官房長官表敬｜外務省",
+      "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE1JdkNNZTZlVHQ0R1BIekhBNC1TQVJoQWYwbHNBaXllak5kXy12cmx6RGZ4LVZha1d5UFlIOXBhOS15bl85T2tJWklPWkdCamJ4ZzB0VGlGYi1fLXpZVmN1dUZFSTNFS3V1azJRZk0ybG0?oc=5",
+      "reason": "投資促進の方向性は確認できたが、具体的な投資額や制度変更がなくトップ5から外した"
+    }
+  ]
+}

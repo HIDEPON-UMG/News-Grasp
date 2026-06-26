@@ -1,0 +1,53 @@
+{
+  "date": "2026-06-26",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"freee、中小企業向けSaaSにAIエージェントを統合、バックオフィス業務の自動化を図る\"",
+    "\"KPMGコンサルティング\" ZDNET Japan 2026年6月25日",
+    "\"FortiSOC\" \"提供開始\"",
+    "\"アマゾン、インドでＡＩとクラウドに130億ドル追加投資へ\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "「私は逃げ切る」と言うIT部長とSIer経営者 思考停止が生む無責任発言",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/00148/060100438/",
+      "reason": "本文日付が2026-06-08で当日窓外"
+    },
+    {
+      "title": "EU、米クラウド規制 アマゾンなど AI基盤寡占防ぐ",
+      "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNVWtkRUNEcEZVOHJyakM1eEpUUXRTTmRXRFlzRHRZbElkRmNTdGJJT1lFalR2VnJ6Sl9DVnhyNUpFMGVxZWE4bVFTdlBKb0NxSjc4eEpXUmZSdG8zZ2NoY3Y2bzBmMXFqQ1J0eWlnZFJobURaWkFtSWRBSWJrcGZwTGN6cVlOaVhHQTdzM3UwMU9aZUxMVXdjelZlVWk2WF8xLUNqSE93?oc=5",
+      "reason": "canonical URLを確認できず推測禁止"
+    },
+    {
+      "title": "アマゾンとＭＳのクラウド、テック規制対象に 欧州委が暫定見解",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxObExJYmNtNHJXLW9WSG8xd0JzTXhqVDY0VjI4NHdIbDJGOGpnOWhaWmRvbDlzR1JaZEhSWHhSR1FLQ2o2eFJwQnRzS3gzdlNFWGpYQnU3aGMzNVFwUWR5dFFteWhqVmlGdy1DUlBuNnZyQURfMWlGa2lTNjRaNWxEMzJrTmdLcmE0Qk5GaA?oc=5",
+      "reason": "canonical URLを確認できず推測禁止"
+    },
+    {
+      "title": "One Team,One Place｜新たな拠点をみんなで",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9XQzMtTnh0cGxvWVBpTGJVVVBhRm1CLWFPZDMwWlR1UWhXRE1qRVB6c3JrbUZFTnp0VEpMUHdGQmVLUXNZR2J5TV9pSEdhZWMzbTNYRVFQbUNZUQ?oc=5",
+      "reason": "カテゴリ逸脱"
+    },
+    {
+      "title": "国立映画アーカイブ、活動存続へクラファン 運営費交付金の削減受け",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBjS2dIYnJpeXpXYmNTc0tCWW5nVzZWQWxLWTJ4Q0ZnNm5mV2llcEdEWndMUFNhNjNVZnZBbDlRdU9admNzZ3RHYTJ5NUxhWnkyWXQ1UlVfSHhYdTBCSjgyN1JQR1RMaVktOTNocQ?oc=5",
+      "reason": "カテゴリ逸脱"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

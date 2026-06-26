@@ -1,0 +1,66 @@
+{
+  "date": "2026-06-26",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-deduped-candidates: build/deduped-candidates/manufacturing.jsonl",
+    "canonical-resolve: site:jp.newsroom.ibm.com 世界初のサブ1ナノメートル半導体チップ技術を発表",
+    "canonical-resolve: \"米新興防衛アンドゥリル社、日産の追浜工場取得を協議 無人機の生産拠点に＝関係者\"",
+    "canonical-resolve: \"半導体価格、また上がる？TSMCが先進プロセス半導体の値上げを顧客に通告\"",
+    "canonical-resolve: \"トーヤク、茨城町に除草剤新工場\"",
+    "canonical-resolve: \"日機装、ベトナム航空機部品工場で太陽光稼働\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "resolution_actions": [
+    "stage1 候補タイトル起点で canonical URL を補完",
+    "fetch_article_body と fetch_ogp で公開本文と OGP を確認"
+  ],
+  "dropped": [
+    {
+      "title": "米企業 日産・追浜工場取得を協議",
+      "url": "https://news.google.com/rss/articles/CBMiUEFVX3lxTE9WdURBZVpmdENYLUNXQWNMdXNMaTN4REVpcXV3OUMyUjNZam1vZU5WWFd1ZVhILUFPT29ENXZvaVc4ZlJIV2R5MkhhRldKalZv?oc=5",
+      "reason": "Newsweek 経由で同一ロイター記事の canonical を確保できたため重複として不採用"
+    },
+    {
+      "title": "米ＩＢＭ、1ナノ弱の半導体技術発表 世界初",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNeW95Y3ZPd25zMDBKaHc2VEttOGw2bG9vcnJCNnNOeERmcklFVXcxdld4N3pJSUxaX1d0b0hHQW95S3lNYl9UdlZZS2t0TmlMZEt5S0xGeHc1TkVXN1NERzRKOWdGanlHNXdTRUZMMGpabDhoTTB2ZTJnZGNYWUc5ZQ?oc=5",
+      "reason": "IBM 公式発表の canonical を採用できたため同テーマの重複として不採用"
+    },
+    {
+      "title": "SUMCO龍田社長「半導体の予測は外れる」 柔軟な計画変更に勝ち筋",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBwQ1dWX1VIVWE2SVNRamNwalJVOWZ1RGlyM19kUERmejNfbG9KT0NOSHBhQnp5WjdRRnhMYzRmNHNjXzd1ZWlubElwaHI3NWMtbUFTU0lvQlFTWE9hekVMbnNmZnVqdGtCYTlIQw?oc=5",
+      "reason": "経営示唆は強いが当日性のある新数値と量産判断の確証が本文から取り切れず、上位5件を優先"
+    },
+    {
+      "title": "トヨタ、福岡の工場を一時停止 九州北部の大雨で：時事ドットコム",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBwOHZ4bW1vbi1GeEV0TTFzbzJTZHlLejNRSEZMLXZSZFpxUkVkdS1yU0VxbXlEb2wzZFJEWUlMb1ltbmVKbk91Y1lRQ1lHWktxTzB3akQtS3ZDVkZoaXlKcEpEaw?oc=5",
+      "reason": "短期の操業停止として重要だが、恒常的な能力再編や投資判断を示す案件を優先"
+    },
+    {
+      "title": "令和8年度やまぐち産業イノベーション促進補助金〔半導体・蓄電池関連分野〕の採択事業が決まりました",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE43aFg4VDdwQjhjVnRNNDhaQlVHNklWcFplR09QX2dqSEx1Zmh6ZzRhMnozNXdsR1gwdERjUDVGYzRGbEdJaTA4NVRxY0E2Y0pBS3ViV1FSRUE0ZU9VaHBJ?oc=5",
+      "reason": "採択決定は前進だが、当日記事だけでは採択案件の量産インパクトを具体化しきれず選外"
+    },
+    {
+      "url": "https://www.logi-today.com/969029",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/969069",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

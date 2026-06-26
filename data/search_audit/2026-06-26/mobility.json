@@ -1,0 +1,68 @@
+{
+  "date": "2026-06-26",
+  "category_id": "mobility",
+  "queries": [
+    "stage1 source: build/deduped-candidates/mobility.jsonl",
+    "site:finance.yahoo.co.jp \"ホンダが株主総会＝EV見直しで巨額赤字\"",
+    "\"May Mobility\" \"CaoCao\" autonomous",
+    "site:mezha.net \"brake pedal\" autonomous vehicles June 2026",
+    "\"ヴァレオと日産、欧州でEV充給電器展開\"",
+    "site:j.people.com.cn \"中国のEV充電インフラ、5月末時点で2249万7000基に\"",
+    "site:jidounten-lab.com \"テスラ自動運転FSD AIと会話しながらドライブできる夢の機能を年内実装へ\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0?oc=5",
+      "reason": "株価ページでニュース本文ではなく、記事カードの一次情報として弱い"
+    },
+    {
+      "title": "自動運転バス実証実験(テスト走行)開始",
+      "url": "https://www.town.taishi.osaka.jp/busyo/machidukurisuisinbu/chiikiseibika/taisityoutiikikoukyoukoutuu/sinnmobirityi/6965.html",
+      "reason": "更新日は2026-06-23で issue 当日性が弱く、乗客なしレベル2実証のため波及範囲も限定的"
+    },
+    {
+      "title": "中国の市街地NOA､BYDが大胆策 全車種対応･全額補償",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE4wLUJKcmxHcXhXdkNrdHVYVUlOWlc5V2NSS1F4Mng4VGdvQjFsR1hXRkFXU1FrMUhCYmE1TnlqRkdCZ28xTkpNNER4bkp0TXRSREFRVUhUOGdLVS1mTFRMVHQtV2RCSG9qQTBmTF85MEFydVBpenk5T1UyaXBHYUE?oc=5",
+      "reason": "根拠となる補償制度自体は6月上旬公表で、新材料の差分が薄かった"
+    },
+    {
+      "title": "スズキ､未発売の軽トラEV貸し出し 航続と価格の解探る",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBpbUhfMXNJcnRtaWVpSGlNX2lLTFpEZnBONUZhZTN2cGZZZWItel9BQk9TUXNObktMU0l4NmQxanp2NVFJcFFycjJ4ckFWM3lDUTZVZDBTeDVTZHF4Zk05QmNxaks4cElfNGpKYm10b2E2NHZjekpQWXc2Y0xfWms?oc=5",
+      "reason": "実証継続の意義は大きいが、規制・V2G・ロボタクシー商業化を優先した"
+    },
+    {
+      "title": "DMP、米会議で自動運転向け3Dデータ議論",
+      "url": "https://www.logi-today.com/969042",
+      "reason": "技術シグナルとして有用だが、商用展開や制度変更まで踏み込んだ選定5本を下回った"
+    },
+    {
+      "title": "テスラ自動運転FSD AIと会話しながらドライブできる夢の機能を年内実装へ",
+      "url": "https://jidounten-lab.com/u_64029",
+      "reason": "CEO発言ベースの機能予告で実装確度が未確定のため、制度・商用化・実需データを優先"
+    },
+    {
+      "title": "ホンダとのEV中止「合理的な判断」、ソニーＧが株主総会で示した見解",
+      "url": "https://news.google.com/rss/articles/CBMiR0FVX3lxTE90UVNoMmxIbnJzR2UwM1lNNkw5ZnZYdUJ6c3ZfbVhnSlBPUnYta3BWeXVfRWFfSVo5Y25JbV93OWFTY3JqVENZ?oc=5",
+      "reason": "前号でソニー/ホンダEV再編を既掲載で、当日差分は限定的だった"
+    },
+    {
+      "url": "https://www.logi-today.com/969145",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,47 @@
+{
+  "date": "2026-06-26",
+  "category_id": "fx",
+  "queries": [
+    "Stage1 deduped candidates: build/deduped-candidates/fx.jsonl",
+    "\"ＮＹ外為市場＝ドル軟調、米利上げ観測後退 対円では161円台後半維持\"",
+    "\"米7月利上げ織り込まず、9月観測維持＝金利先物市場\" Reuters",
+    "\"中立金利2％に向け、数カ月に一度0.25％ずつ利上げが基本線＝田村日銀委員\" Reuters",
+    "\"ECBの追加利上げ、一部エコノミストの見通し後退\" Bloomberg",
+    "\"ユーロドルの下げ、今後は鈍化する可能性も＝ＮＹ為替\""
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-26/fx.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFBzbWxqc1ltSU1ndEE0VElnZldUTGdyRVJpOTdKeXBsc0RDSm40dm9kLTJqaDZlOVpoR2E5eEZIX1o0bFR1SFR2N2k4WjRiTnN5dHVBTHJn?oc=5",
+      "reason": "レートページであり独立ニュース記事ではない"
+    },
+    {
+      "title": "【テクニカル】乖離ランク＝順位に変化なし、ドル円が首位",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE4zOXVfOThuekhVNnRPaWJOM2tIMUFBNFBheUxfb1hzaTlqREVQbnlfeTdqNzdoWV94d05seVZ5S0ViZ3pfMC1KX3RsU1otNzFBMEhfTGZfeEVHQ3VHRUo0dUYxMA?oc=5",
+      "reason": "テクニカル指標の繰り返しで新規材料が薄い"
+    },
+    {
+      "title": "利上げ「周回遅れ」、円安是正の効果なく…「円の信認や日本経済に対する信頼に影響する」と警鐘も（読売新聞オンライン）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9LRmtrb2tWMWZRdFF2dTR2ZWktcmZuWkFsN29fQnpwMTUyZGp4TjFFSk9LZTdHV0x0UUtxV3BBRDc4ZElxSVc0U2t3NEZDRTk2TGdVQWNtajVvNzZFTE1TZWFtdE5CeVA4NnQ5d3lkV3R3YW9EcUxFNTlLUTVSdzg?oc=5",
+      "reason": "Yahoo配信面経由で一次性が弱く、上位5件より市場インパクトで劣後"
+    },
+    {
+      "title": "突入！金利1％時代：インフレと利上げの波に飲まれるな",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9yUTROUGQ2LUV1R0g1MXB1OG4wY2xjWUpGWmlONWJUdG1xX1FGVUE4X1Z0SVVyNFdpenFFY0Z4cDhnZFBIMWlqRnJlZjg2Z0tOa2o5UGM4cmR2OEdwVGZvUktiTUhIV0ZsYTBJaDB6T01RYkdEQXRCRmVNTG9GaXM?oc=5",
+      "reason": "解説色が強く当日ニュースの優先度を下げる"
+    }
+  ]
+}
