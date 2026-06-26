@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260626 — Manufacturing</title>
+<meta name="description" content="製造は5件の配信。自動車工場の防衛転用、原子スケールの新プロセス、先端ノードの値上げ、国内化学工場の新設、航空部品工場の自家発電まで、今日は「生産拠点を誰がどう握るか」が横に広がった。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-26/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260626 — Manufacturing">
+<meta property="og:description" content="製造は5件の配信。自動車工場の防衛転用、原子スケールの新プロセス、先端ノードの値上げ、国内化学工場の新設、航空部品工場の自家発電まで、今日は「生産拠点を誰がどう握るか」が横に広がった。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-06-26/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260626 — Manufacturing">
+<meta name="twitter:description" content="製造は5件の配信。自動車工場の防衛転用、原子スケールの新プロセス、先端ノードの値上げ、国内化学工場の新設、航空部品工場の自家発電まで、今日は「生産拠点を誰がどう握るか」が横に広がった。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="manufacturing">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill is-active" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-26 · #20260626</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MANUFACTURING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⬢</span>
+      <h1 class="cat-hero__title">製造.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">製造は5件の配信。自動車工場の防衛転用、原子スケールの新プロセス、先端ノードの値上げ、国内化学工場の新設、航空部品工場の自家発電まで、今日は「生産拠点を誰がどう握るか」が横に広がった。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">94</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·26</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260626</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">← BACK TO MANUFACTURING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-25 14:13 · ニューズウィーク日本版</span>
+    <span class="top-story__score">96</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.newsweekjapan.jp/articles/-/326597" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://newsweekjapan.ismcdn.jp/mwimgs/9/f/1200x/img_9f8a29679c0603526e383efa2ff8989e52697.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.newsweekjapan.jp/articles/-/326597" rel="noopener nofollow" target="_blank" style="color: inherit;">アンドゥリル、日産追浜工場の取得協議 ドローン量産拠点へ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">アンドゥリル</strong>は<strong>日産追浜工場の取得協議</strong>を進め、自動車工場を<span class="emph-und">軍事用ドローンの量産拠点へ転用</span>する構想を示した。</li><li>関係者によれば<strong class="emph-bold">従業員の多くを再雇用</strong>する意向もあり、<strong>工場閉鎖後の雇用と技能を防衛生産へ移す</strong>絵が見え始めた。</li><li>重要なのは<strong class="emph-bold">日本製部品だけを使うドローン</strong>構想と結びつく点で、<strong>自動車の遊休設備が防衛産業基盤へ流れ込む可能性</strong>が<span class="emph-und">国内製造の再配置</span>を加速させる。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⬢ MANUFACTURING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-26</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⬢ stories</h2>
+    <span class="more-stories__head-meta">2 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-25 19:18</span>
+        <span>· IBM</span>
+        <span class="more-card__score">94</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://jp.newsroom.ibm.com/2026-06-25-ibm-debuts-worlds-first-sub-1-nanometer-chip-technology" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://jp.newsroom.ibm.com/image/IBM_social_logo.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://jp.newsroom.ibm.com/2026-06-25-ibm-debuts-worlds-first-sub-1-nanometer-chip-technology" rel="noopener nofollow" target="_blank">IBM、0.7ナノのサブ1nmチップ発表 3D積層で性能5割向上へ</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">IBM</strong>は<strong>0.7ナノのサブ1nmチップ技術</strong>を公表し、<span class="emph-und">原子スケールでも微細化を続けられる</span>設計余地を示した。</li><li>新構造<strong class="emph-bold">ナノスタック</strong>は<strong>トランジスタを3Dで積層・横ずらし配置</strong>し、2nm比で最大50%性能向上または70%省エネを狙う。</li><li>製造側の論点は<strong class="emph-bold">High-NA-EUV</strong>や材料統合を前提にした<strong>次世代量産プロセスの立ち上げ</strong>で、<span class="emph-und">研究成果を誰が工場へ落とし込めるか</span>が次の競争になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-25 20:30</span>
+        <span>· Seizo Trend</span>
+        <span class="more-card__score">92</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.sbbit.jp/article/st/185899" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.sbbit.jp/article/image/185899/OGP_bit202606252001375196.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.sbbit.jp/article/st/185899" rel="noopener nofollow" target="_blank">TSMC、3nmから7nmまで値上げへ 先端ノード全体に価格転嫁</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">TSMC</strong>は<strong>3nmから7nmまでの先端ノード全体で値上げ通知</strong>を始め、<span class="emph-und">AI需要の逼迫を価格へ転嫁</span>する姿勢を鮮明にした。</li><li>値上げ幅は<strong class="emph-bold">5%から10%</strong>が中心で、<strong>3nmは下期に最大15%・2nmウエハーは3万ドル</strong>とされ、顧客別の原価差が広がる。</li><li>対象が<strong class="emph-bold">ウエハー売上の74%</strong>を占めるため、<strong>NVIDIAやAppleなど設計大手の製品採算</strong>に波及し、<span class="emph-und">先端製造の交渉力がファウンドリ側へ傾く</span>。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MANUFACTURING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">アンドゥリル</strong> の追浜工場取得協議は、自動車工場を<strong>ドローン量産拠点</strong>へ変える発想を示しました。<strong class="emph-bold">IBM</strong> のサブ1nm、<strong class="emph-bold">TSMC</strong> の値上げ、<strong class="emph-bold">トーヤク</strong> の新工場、<strong class="emph-bold">日機装</strong> の太陽光稼働も重なり、<span class="emph-und">工場は作る場所から組み替える場所</span>へ移っています。IBM は 0.7nm で 3D 積層の性能5割向上を狙い、TSMC は 3nm から 7nm まで 5〜10% 値上げを通知しました。材料、電力、用途のどれか一つでも詰まると回収計画がずれるので、配置の妙が効いてきます。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-26/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MANUFACTURING · 2026-06-26
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

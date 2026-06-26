@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260626 — IT-Consulting</title>
+<meta name="description" content="IT-Consultingは4件。きょうの軸は、AIエージェントが「試す技術」から「業務を実行する運用基盤」へ移り始めたことだ。SaaS再設計、顧客理解の伴走支援、SOC統合、インド向けクラウド投資が、導入論から実装論への移行を示している。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-06-26/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260626 — IT-Consulting">
+<meta property="og:description" content="IT-Consultingは4件。きょうの軸は、AIエージェントが「試す技術」から「業務を実行する運用基盤」へ移り始めたことだ。SaaS再設計、顧客理解の伴走支援、SOC統合、インド向けクラウド投資が、導入論から実装論への移行を示している。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-06-26/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260626 — IT-Consulting">
+<meta name="twitter:description" content="IT-Consultingは4件。きょうの軸は、AIエージェントが「試す技術」から「業務を実行する運用基盤」へ移り始めたことだ。SaaS再設計、顧客理解の伴走支援、SOC統合、インド向けクラウド投資が、導入論から実装論への移行を示している。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-26 · #20260626</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⌗</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">IT-Consultingは4件。きょうの軸は、AIエージェントが「試す技術」から「業務を実行する運用基盤」へ移り始めたことだ。SaaS再設計、顧客理解の伴走支援、SOC統合、インド向けクラウド投資が、導入論から実装論への移行を示している。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·26</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260626</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-25 13:27 · IT Leaders</span>
+    <span class="top-story__score">93</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://it.impress.co.jp/articles/-/29502" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://it.impress.co.jp/mwimgs/8/4/400/img_840296d9f3140a9034008f8e5779101f186409.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://it.impress.co.jp/articles/-/29502" rel="noopener nofollow" target="_blank" style="color: inherit;">freee、AIエージェントを本番実装　会計SaaSを業務実行基盤へ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">freee</strong>は<strong>会計・人事労務SaaSをAIエージェント実行型へ移す</strong>方針を示し、<span class="emph-und">人が触るソフトから業務を代行する基盤</span>へ軸足を移した。</li><li><strong class="emph-bold">Amazon-Bedrock</strong>上で複数エージェントを本番稼働させ、<strong>MCPサーバーと382本のAPI</strong>を公開済みと説明したことで、<span class="emph-und">外部AIから国内実務を呼び出す接続面</span>まで見えた。</li><li>介護現場の経費精算を月30分から2分へ縮めた事例や、<strong>SLMの精度10ポイント超改善・推論5倍超</strong>を示し、<span class="emph-und">AI導入がPoCではなく運用KPIの段階</span>に入ったことを示した。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">⌗ IT &amp; CONSULTING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-26</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⌗ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-25 13:14</span>
+        <span>· クラウド Watch</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://cloud.watch.impress.co.jp/docs/news/2119627.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cloud.watch.impress.co.jp/img/clw/list/2119/627/kpmg1.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://cloud.watch.impress.co.jp/docs/news/2119627.html" rel="noopener nofollow" target="_blank">KPMG、顧客理解AIエージェント支援を開始　構想から運用まで伴走</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">KPMGコンサルティング</strong>は<strong>顧客理解AIエージェント支援サービス</strong>を始め、<span class="emph-und">マーケティングから営業・コンタクトセンターまで横断して設計する案件</span>を取りに行く。</li><li>特徴は既製品販売ではなく、<strong class="emph-bold">対話AI</strong>・CRM・データ基盤を組み合わせて<strong>企業ごとに顧客理解モデルを作る</strong>点で、<span class="emph-und">コンサルの価値を実装と運用定着まで延ばす</span>構えが明確だ。</li><li>構想策定、データマネジメント、AIガバナンス、効果検証までを一気通貫で抱え込むため、<strong>AI案件の収益源がPoC単発から継続伴走へ</strong>移り、<span class="emph-und">総合コンサルの案件単価を押し上げやすい</span>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-25 16:52</span>
+        <span>· EnterpriseZine</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://enterprisezine.jp/news/detail/24558" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://ez-cdn.shoeisha.jp/static/images/article/24558/24558-top.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://enterprisezine.jp/news/detail/24558" rel="noopener nofollow" target="_blank">Fortinet、FortiSOCを提供開始　SOC運用を単一SaaSへ統合</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Fortinet</strong>は<strong>SIEM・SOAR・脅威インテリジェンス・ITDRを単一SaaSへ統合</strong>したFortiSOCを投入し、<span class="emph-und">SOC運用のサイロ解消</span>を前面に出した。</li><li><strong class="emph-bold">FortiAI-Assist</strong>がアラート調査やプレイブック生成、MCP経由のエージェント連携を担うため、<strong>監視から調査・対応までを同一基盤で回す</strong>設計が現実味を増した。</li><li>企業にとってはツール乱立より<strong>単一サブスクリプションと単一コンソール</strong>の方が導入判断しやすく、<span class="emph-und">セキュリティ運用市場でも統合SaaS化が加速する</span>。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-25 19:28</span>
+        <span>· Yahoo!ファイナンス（ロイター）</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://finance.yahoo.co.jp/news/detail/20e13634913e4a5dc1e07873f08f410f8098686c" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://s.yimg.jp/images/finance/common/image/ogp.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://finance.yahoo.co.jp/news/detail/20e13634913e4a5dc1e07873f08f410f8098686c" rel="noopener nofollow" target="_blank">アマゾン、インドのAI・クラウドに130億ドル追加投資</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Amazon</strong>は2030年までに<strong>インドのAI・クラウド基盤へ130億ドルを追加投資</strong>し、<span class="emph-und">既表明分と合わせ総額480億ドル</span>へ積み増すと示した。</li><li>ジャシーCEOは今後5年で<strong>210億ドル超をAIとクラウドへ振り向ける</strong>と説明し、<strong class="emph-bold">ムンバイ</strong>やハイデラバードを軸に容量拡張を急ぐ。</li><li>米ハイテク大手がインドを<strong>AI・クラウドの戦略拠点</strong>として囲い込む流れが強まり、<span class="emph-und">日本企業のクラウド調達や開発委託でもインド比重がさらに上がりやすい</span>。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">freee</strong> は会計SaaSを<strong>業務を代行する基盤</strong>へ組み替え、<strong class="emph-bold">KPMG</strong> は顧客理解AIエージェントを支援側に乗せました。<strong class="emph-bold">Fortinet</strong> のSOC統合も含め、<span class="emph-und">システム名より往復を何回減らすか</span>が評価軸になっています。<strong class="emph-bold">Amazon</strong> の大型投資も、その接続先を広げる動きです。国内実務をAIから呼び出す接点が増えるほど、導入の勝負は画面の見た目より運用の回数削減に移ります。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-26/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-06-26
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
