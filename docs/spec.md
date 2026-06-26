@@ -153,6 +153,26 @@ pytest PASS は必要条件であり十分条件ではない。daily quality PAS
 
 SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実施なら効率的・完全・1時間以内完走とは報告してはならない。テスト Green、SLO gate 実装、または public URL 単発 200 は必要条件であって、単独では完全完走の十分証明ではない。
 
+## Human Commitment
+
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_by_user_text | 以下対応を実施の上で承認する。 |
+
+Codex はこの Human Commitment を自己判断で変更してはならない。repo-local pytest Green は実装証跡であり、人間承認ではない。full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない。
+
+## Sustainable Complete Repair
+
+外部システム要因以外で公開面が揃わない停止は許容しない。fallback は通常日次完走ではない。fallback は読者向け公開面を壊さないための暫定保護であり、通常日次バッチ、Podcast、DeepDive、distribution、notification の完了証跡ではない。
+
+handler 未実装は Red とする。coverage matrix に未掲載の failure は blocked_unknown_repair_class として止め、prose hint だけで repairable に倒してはならない。handler_unimplemented_red は最終 Green 条件では 0 件でなければならない。
+
+repair completeness = coverage matrix + zero unimplemented + fixture repair + runner single path。existing artifact repair では LLM worker を起動しない。既存 artifact がある場合は deterministic handler または typed not-applicable / blocked status で扱い、対象 artifact が全 missing かつ typed reason がある場合だけ missing artifact generation を許可する。
+
+live runner 上書きは backup + 明示承認 + rollback を満たす場合だけ許可する。repo runner と live runner の SHA 一致は必要条件であり、runner 実行・公開検証・Podcast 検証の代替にはならない。
+
 ## Acceptance Scenarios
 
 | Scenario | Given | When | Then |
