@@ -98,6 +98,7 @@ build/reporter-prompts/
 build/runner-smoke-*
 build/runner-smoke-logs/
 build/evidence/
+build/recovery/
 build/live-runner-backups/
 build/deepdive-*.png
 build/*-last-message.txt

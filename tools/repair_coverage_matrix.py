@@ -380,12 +380,45 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "public-html",
     ),
     CoverageRow(
+        "public-surface",
+        "public_sentinel_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("docs/publish-status.json", "docs/sw.js"),
+        "verify-publish-complete",
+        "public_surface_red",
+        "public_sentinel_missing",
+        "github-pages",
+    ),
+    CoverageRow(
+        "public-surface",
+        "distribution_manifest_invalid",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("build/distribution/{date}.json",),
+        "verify-publish-complete",
+        "distribution_manifest_invalid",
+        "distribution_manifest_invalid",
+        "news-grasp",
+    ),
+    CoverageRow(
         "deepdive-required",
         "published_docs_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "published-docs-regenerate",
         ("docs/{date}/index.html", "docs/deepdive/{date}/index.html"),
         "deepdive-required",
+    ),
+    CoverageRow(
+        "youtube-podcast",
+        "oauth_invalid_grant",
+        RepairClass.TYPED_EXTERNAL,
+        "",
+        ("youtube oauth secrets",),
+        "youtube-podcast",
+        "blocked_external_readiness",
+        "oauth_consent_required",
+        "youtube",
     ),
     CoverageRow(
         "youtube-podcast",
@@ -397,6 +430,50 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "blocked_external_readiness",
         "quota_or_permission",
         "youtube",
+    ),
+    CoverageRow(
+        "github-pages",
+        "deploy_workflow_not_success",
+        RepairClass.TYPED_EXTERNAL,
+        "",
+        (".github/workflows/deploy-pages.yml",),
+        "verify-publish-complete",
+        "blocked_external_readiness",
+        "deploy_workflow_not_success",
+        "github-pages",
+    ),
+    CoverageRow(
+        "google-api",
+        "google_api_external",
+        RepairClass.TYPED_EXTERNAL,
+        "",
+        ("google api response",),
+        "verify-publish-complete",
+        "blocked_external_readiness",
+        "google_api_external",
+        "google-api",
+    ),
+    CoverageRow(
+        "deploy",
+        "deploy_surface_regression",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("docs/**",),
+        "verify-publish-complete",
+        "deploy_surface_regression",
+        "deploy_surface_regression",
+        "github-pages",
+    ),
+    CoverageRow(
+        "deploy",
+        "deploy_surface_unrelated_red",
+        RepairClass.TYPED_FATAL,
+        "",
+        (),
+        "verify-publish-complete",
+        "deploy_surface_unrelated_red",
+        "deploy_surface_unrelated_red",
+        "github-pages",
     ),
     CoverageRow(
         "git-push",
@@ -547,10 +624,24 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "url_dead_or_stale"
     if "public_home_fallback" in text or "fallback" in text:
         return "public_home_fallback"
+    if "public_sentinel_missing" in text or "publish-status" in text or "sentinel" in text:
+        return "public_sentinel_missing"
+    if "distribution_manifest_invalid" in text:
+        return "distribution_manifest_invalid"
     if "published docs" in text or "deepdive" in text and "missing" in text:
         return "published_docs_missing"
+    if "invalid_grant" in text:
+        return "oauth_invalid_grant"
     if "youtube" in text and ("quota" in text or "permission" in text or "403" in text):
         return "youtube_quota_or_permission"
+    if "deploy_workflow_not_success" in text or "workflow" in text and "not success" in text:
+        return "deploy_workflow_not_success"
+    if "google_api_external" in text or "google api" in text:
+        return "google_api_external"
+    if "deploy_surface_regression" in text:
+        return "deploy_surface_regression"
+    if "deploy_surface_unrelated_red" in text:
+        return "deploy_surface_unrelated_red"
     if gate_id == "git-push" or "non-fast-forward" in text or "rejected" in text:
         return "remote_divergence"
     return "unknown"

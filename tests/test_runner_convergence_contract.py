@@ -927,6 +927,16 @@ def test_external_readiness_failures_write_blocked_state() -> None:
     assert "WARN: net_wait.py not found" not in net_wait_block
 
 
+def test_runner_stage0_uses_auth_doctor_before_podcast_work() -> None:
+    """YouTube OAuth/権限不備は高コストな podcast upload 前に typed Yellow/Red へ分離する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "tools.youtube_podcast.auth_doctor" in runner
+    assert "youtube auth doctor failed" in runner
+    assert "blocked_external_readiness" in runner
+    assert runner.index("tools.youtube_podcast.auth_doctor") < runner.index("tools.youtube_podcast.upload_episode")
+
+
 def test_daily_runner_timeout_is_80_minutes() -> None:
     """日次 digest 本体の wall-clock timeout は 80 分、idle 既定は 15 分に固定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")

@@ -913,14 +913,19 @@ function Test-CodexAuthReadiness {
 function Test-YouTubePodcastAuthReadiness {
     Push-Location $RepoDir
     try {
-        $code = "from tools.youtube_podcast.upload_episode import YouTubePodcastClient; c=YouTubePodcastClient.from_local_secrets(); c.ensure_playlist('daily'); c.ensure_playlist('deepdive'); print('youtube oauth readiness ok')"
-        Invoke-Logged { & $PyExe '-c' $code }
+        Invoke-Logged { & $PyExe '-m' 'tools.youtube_podcast.auth_doctor' '--check-only' '--json' }
         $youtubeAuthRc = $LASTEXITCODE
     } finally {
         Pop-Location
     }
+    if ($youtubeAuthRc -eq 10) {
+        Stop-ExternalReadiness -Reason "youtube auth doctor failed: oauth consent required rc=$youtubeAuthRc" -Kind 'oauth_consent_required' -System 'youtube' -ExternalStatus "rc=$youtubeAuthRc" -ExternalDetail 'tools.youtube_podcast.auth_doctor --check-only --json'
+    }
+    if ($youtubeAuthRc -eq 71) {
+        Stop-ExternalReadiness -Reason "youtube auth doctor failed: blocked external readiness rc=$youtubeAuthRc" -Kind 'youtube_quota_or_permission' -System 'youtube' -ExternalStatus "rc=$youtubeAuthRc" -ExternalDetail 'tools.youtube_podcast.auth_doctor --check-only --json'
+    }
     if ($youtubeAuthRc -ne 0) {
-        Write-Log "youtube oauth readiness failed: rc=$youtubeAuthRc"
+        Write-Log "youtube auth doctor failed: rc=$youtubeAuthRc"
         return $false
     }
     return $true

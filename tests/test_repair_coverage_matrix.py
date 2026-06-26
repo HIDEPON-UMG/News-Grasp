@@ -25,8 +25,15 @@ REQUIRED_ROWS = {
     ("record-schema", "thumb_invalid_or_missing"),
     ("url-liveness", "url_dead_or_stale"),
     ("public-html", "public_home_fallback"),
+    ("public-surface", "public_sentinel_missing"),
+    ("public-surface", "distribution_manifest_invalid"),
     ("deepdive-required", "published_docs_missing"),
+    ("youtube-podcast", "oauth_invalid_grant"),
     ("youtube-podcast", "youtube_quota_or_permission"),
+    ("github-pages", "deploy_workflow_not_success"),
+    ("google-api", "google_api_external"),
+    ("deploy", "deploy_surface_regression"),
+    ("deploy", "deploy_surface_unrelated_red"),
     ("git-push", "remote_divergence"),
     ("any", "unknown"),
 }
@@ -101,3 +108,36 @@ def test_repair_coverage_inventory_has_no_missing_known_validator_issue() -> Non
     missing = missing_coverage()
 
     assert not missing, "\n".join(f"{gate_id}:{issue_code}" for gate_id, issue_code in missing)
+
+
+def test_google_api_external_is_typed_external_not_green() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="google-api",
+            issue_code="google_api_external",
+            evidence={
+                "external_system": "google-api",
+                "external_kind": "google_api_external",
+                "observed_error_code": "403",
+                "source_command": "python -m tools.verify_public_surface",
+                "detail": "Google API returned 403",
+                "observed_at": "2026-06-26T00:00:00Z",
+            },
+        )
+    )
+
+    assert decision.repair_class == RepairClass.TYPED_EXTERNAL
+    assert decision.status_on_failure == "blocked_external_readiness"
+
+
+def test_deploy_surface_unrelated_red_is_fatal_no_rollback() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="deploy",
+            issue_code="deploy_surface_unrelated_red",
+            evidence={"detail": "red surface was not touched by candidate"},
+        )
+    )
+
+    assert decision.repair_class == RepairClass.TYPED_FATAL
+    assert decision.status_on_failure == "deploy_surface_unrelated_red"

@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-06-21
+> **Last Updated**: 2026-06-26
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -159,9 +159,23 @@ SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実�
 |---|---|
 | approval_status | Committed |
 | committed_by_human | true |
-| approved_by_user_text | 以下対応を実施の上で承認する。 |
+| approved_by_user_text | PLEASE IMPLEMENT THIS PLAN: |
+| approved_goal_statement | News-Grasp最大重大障害 hardening + Plan Modeレビュー恒久対策 R7 を、Phase 0/A/B の範囲で実装する。 |
+| approval_evidence_ref | current chat turn: user message `PLEASE IMPLEMENT THIS PLAN:` with R7 plan body |
+| approved_at | 2026-06-26 |
+| commitment_version | news-grasp-max-incident-hardening-r7 |
+| commitment_scope | Phase 0 spec/provenance repair; Phase A review discipline; Phase B News-Grasp local hardening. Excludes live runner sync/full E2E/publish/push/public proof/rollback unless separately approved. |
+| open_questions | None for Phase 0/A/B local implementation scope. Yellow public actions remain separately approval-gated. |
 
 Codex はこの Human Commitment を自己判断で変更してはならない。repo-local pytest Green は実装証跡であり、人間承認ではない。full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない。
+
+## User Answer Provenance
+
+| Date | Source | Exact user text |
+|---|---|---|
+| 2026-06-26 | Current chat planning intent | ChatGPTレビューに通すための最低限の基準であるインプットは完全に用意してからレビューに渡す |
+| 2026-06-26 | Current chat planning intent | その上で過去レビューで指摘された内容を字面だけでなく根本的に全体最適を考えた上で修正してからレビューに渡す |
+| 2026-06-26 | Current chat implementation approval | PLEASE IMPLEMENT THIS PLAN: |
 
 ## Sustainable Complete Repair
 
