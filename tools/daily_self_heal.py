@@ -197,6 +197,32 @@ def _git_output(repo_root: Path, args: list[str]) -> str:
     return cp.stdout.strip()
 
 
+def _is_git_worktree(repo_root: Path) -> bool:
+    return (repo_root / ".git").exists()
+
+
+def _git_tree_has_path(repo_root: Path, commit: str, rel_path: str) -> bool | None:
+    if not _is_git_worktree(repo_root):
+        return None
+    try:
+        _git_output(repo_root, ["cat-file", "-e", f"{commit}:{rel_path}"])
+    except RuntimeError:
+        return False
+    return True
+
+
+def _commit_is_ancestor(repo_root: Path, ancestor: str, descendant: str) -> bool:
+    if ancestor == descendant:
+        return True
+    if not _is_git_worktree(repo_root):
+        return False
+    try:
+        _git_output(repo_root, ["merge-base", "--is-ancestor", ancestor, descendant])
+    except RuntimeError:
+        return False
+    return True
+
+
 def _latest_audio_for_publish(repo_root: Path, date: str) -> dict[str, str] | None:
     latest_path = repo_root / "build" / "tts" / "latest_audio.json"
     if not latest_path.exists():
@@ -877,8 +903,11 @@ def _distribution_artifact_manifest(repo_root: Path, date: str) -> dict:
             "generated_at",
         )
         for field in required_text_fields:
-            if not str(manifest.get(field) or "").strip():
+            value = str(manifest.get(field) or "").strip()
+            if not value:
                 manifest_errors.append(f"missing_field:{field}")
+            elif field.endswith("_state") and Path(value).is_absolute():
+                manifest_errors.append(f"absolute_path:{field}")
         if manifest_errors:
             manifest_reason = "distribution_manifest_invalid"
         elif str(manifest.get("date")) != date:
@@ -956,12 +985,17 @@ def verify_publish_complete(
     remote_head = str(publish.get("remote_head") or "")
     if not local_head or local_head != remote_head:
         return {**manifest, "reason": "publish_commit_mismatch"}
+    manifest_rel = str(distribution.get("manifest_path") or f"data/distribution/{date}.json")
+    manifest_in_head = _git_tree_has_path(repo_root, local_head, manifest_rel)
+    if manifest_in_head is False:
+        return {**manifest, "reason": "distribution_manifest_remote_missing"}
+    manifest["distribution_manifest_in_head"] = manifest_in_head
     distribution_manifest = dict(distribution.get("manifest") or {})
     pre_publish_commit = str(distribution_manifest.get("pre_publish_commit") or "").strip()
     publish_commit = str(distribution_manifest.get("publish_commit") or "").strip()
-    if pre_publish_commit != local_head:
+    if not _commit_is_ancestor(repo_root, pre_publish_commit, local_head):
         return {**manifest, "reason": "distribution_manifest_commit_mismatch"}
-    if publish_commit and (publish_commit != local_head or publish_commit != remote_head):
+    if publish_commit and not _commit_is_ancestor(repo_root, publish_commit, local_head):
         return {**manifest, "reason": "distribution_manifest_commit_mismatch"}
 
     deepdive = verify_podcast(

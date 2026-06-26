@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -1377,10 +1378,10 @@ def _write_publish_complete_inventory(
             "date": date,
             "pre_publish_commit": PUBLISH_COMMIT,
             "publish_commit": "",
-            "primary_podcast_state": str(repo_root / "build" / "youtube-podcast" / "uploads.json"),
-            "deepdive_podcast_state": str(repo_root / "build" / "youtube-podcast-deepdive" / "uploads.json"),
-            "latest_audio_state": str(repo_root / "build" / "tts" / "latest_audio.json"),
-            "deepdive_audio_state": str(repo_root / "build" / "tts" / "deepdive" / "latest_audio.json"),
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
             "generated_at": "2026-06-20T00:00:00+09:00",
         }
     content = distribution_manifest if isinstance(distribution_manifest, str) else json.dumps(distribution_manifest)
@@ -1534,6 +1535,49 @@ def test_verify_publish_complete_rejects_distribution_commit_mismatch(monkeypatc
 
     assert result["ok"] is False
     assert result["reason"] == "distribution_manifest_commit_mismatch"
+
+
+def test_verify_publish_complete_rejects_manifest_missing_from_head_tree(monkeypatch, tmp_path: Path) -> None:
+    """local に手書き manifest があっても、publish HEAD の tree に無ければ完了にしない。"""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=tmp_path, check=True)
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True, encoding="utf-8").strip()
+
+    _write_publish_complete_inventory(
+        tmp_path,
+        distribution_manifest={
+            "date": "2026-06-20",
+            "pre_publish_commit": head,
+            "publish_commit": "",
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {"ok": True, "local_head": head, "remote_head": head, "url": "status"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_remote_missing"
 
 
 def test_verify_publish_complete_rejects_optional_publish_commit_conflict(monkeypatch, tmp_path: Path) -> None:

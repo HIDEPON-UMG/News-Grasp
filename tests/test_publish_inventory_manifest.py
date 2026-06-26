@@ -8,6 +8,7 @@ from tools.publish_inventory import (
     required_distribution_artifacts,
     required_generated_artifacts,
     required_published_artifacts,
+    required_published_docs_artifacts,
     required_published_repair_artifacts,
     scheduled_category_ids,
 )
@@ -105,6 +106,43 @@ def test_generated_manifest_respects_weekend_schedule() -> None:
     assert "digest/Economy/2026-06-20-Economy.md" not in artifacts
     assert "digest/Game/2026-06-20-Game.md" in artifacts
     assert "digest/DeepDive/2026-06-20-DeepDive.md" in artifacts
+
+
+def test_required_inventory_covers_every_weekday_schedule_pattern() -> None:
+    """曜日別成果物セットを全曜日で固定し、未対象カテゴリ混入を防ぐ。"""
+    cases = {
+        date(2026, 6, 22): ["fx", "ai", "it", "mobility", "manufacturing", "economy"],
+        date(2026, 6, 23): ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"],
+        date(2026, 6, 24): ["fx", "ai", "it", "mobility", "manufacturing", "economy"],
+        date(2026, 6, 25): ["fx", "ai", "it", "mobility", "manufacturing", "economy", "game"],
+        date(2026, 6, 26): ["fx", "ai", "it", "mobility", "manufacturing", "economy"],
+        date(2026, 6, 27): ["fx", "ai", "it", "mobility", "game"],
+        date(2026, 6, 28): ["fx", "ai", "it", "mobility", "game"],
+    }
+
+    for issue, expected_categories in cases.items():
+        issue_str = issue.isoformat()
+        scheduled = scheduled_category_ids(issue)
+        digest = required_digest_artifacts(issue)
+        generated = required_generated_artifacts(issue)
+        published_docs = required_published_docs_artifacts(issue)
+        published = required_published_artifacts(issue)
+        published_repair = required_published_repair_artifacts(issue)
+        distribution = required_distribution_artifacts(issue)
+
+        assert scheduled == expected_categories, issue_str
+        assert len(digest) == len(scheduled) + 2, issue_str
+        assert len(generated) == len(scheduled) + 6, issue_str
+        assert len(published_docs) == len(scheduled) + 2, issue_str
+        assert len(published) == len(scheduled) + 5, issue_str
+        assert len(published_repair) == (len(scheduled) * 2) + 15, issue_str
+        assert len(distribution) == 7, issue_str
+        assert f"data/distribution/{issue_str}.json" in distribution
+
+        for cat_id in expected_categories:
+            assert f"docs/{cat_id}/{issue_str}/index.html" in published_docs
+        for cat_id in {"economy", "game", "manufacturing"} - set(expected_categories):
+            assert f"docs/{cat_id}/{issue_str}/index.html" not in published_docs
 
 
 def test_distribution_manifest_includes_audio_and_podcast_state() -> None:

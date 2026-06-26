@@ -186,6 +186,53 @@ Invoke-AutonomousCompletionPolicy -FailureKind $env:NEWS_GRASP_FAILURE_KIND -Gat
     return json.loads(result.stdout)
 
 
+def _mock_direct_fallback_publish_no_publish() -> dict[str, str]:
+    script = r"""
+function Write-Log {
+  param([string]$Text)
+  $script:Logs += @($Text)
+}
+function Exit-Runner {
+  param(
+    [string]$Status,
+    [string]$Message,
+    [int]$ExitCode
+  )
+  $script:ExitStatus = $Status
+  $script:ExitMessage = $Message
+  $script:ExitCode = $ExitCode
+}
+$script:Logs = @()
+$runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
+$NoPublish = $true
+$start = $runner.IndexOf('function Invoke-FallbackPublish')
+if ($start -lt 0) { Write-Error 'Invoke-FallbackPublish missing'; exit 2 }
+$end = $runner.IndexOf('function Invoke-AutonomousCompletionPolicy', $start)
+if ($end -lt 0) { Write-Error 'fallback end marker missing'; exit 2 }
+Invoke-Expression $runner.Substring($start, $end - $start)
+Invoke-FallbackPublish -Reason 'unit-direct-fallback'
+[pscustomobject]@{
+  exit_status = $script:ExitStatus
+  exit_message = $script:ExitMessage
+  exit_code = $script:ExitCode
+  logs = $script:Logs
+} | ConvertTo-Json -Compress
+"""
+    env = os.environ.copy()
+    env["NEWS_GRASP_RUNNER_PATH"] = str(OPS_DIR / "news-grasp-runner.ps1")
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
 def _mock_external_readiness_block() -> dict:
     script = r"""
 function Write-Log {
@@ -1048,6 +1095,78 @@ def test_no_publish_e2e_never_fallback_publishes_on_quality_hold() -> None:
     assert no_publish["exit_code"] == 42
 
 
+def test_no_publish_autonomous_policy_never_fallbacks_for_any_failure_kind() -> None:
+    """NoPublish E2E は全 failure kind で fallback publish に逃げない。"""
+    expected_status_by_kind = {
+        "content": "publish_dry_run_failed",
+        "artifact": "publish_dry_run_failed",
+        "local-tool": "publish_dry_run_failed",
+        "external": "blocked_external_readiness",
+        "publish": "publish_failed",
+        "distribution": "distribution_failed",
+    }
+
+    for failure_kind, expected_status in expected_status_by_kind.items():
+        result = _mock_autonomous_policy_invocation(failure_kind, no_publish=True)
+
+        assert result["fallback_reason"] in (None, ""), failure_kind
+        assert result["exit_status"] == expected_status, failure_kind
+        assert result["exit_code"] == 42, failure_kind
+
+
+def test_no_publish_direct_fallback_publish_is_blocked_before_public_actions() -> None:
+    """NoPublish E2E は direct fallback publish 呼び出しも公開操作前に止める。"""
+    result = _mock_direct_fallback_publish_no_publish()
+
+    assert result["exit_status"] == "publish_dry_run_failed"
+    assert result["exit_code"] == 73
+    assert "NoPublish mode: direct fallback publish blocked" in result["exit_message"]
+    assert all("fallback publish start" not in line for line in result["logs"])
+    assert all("fallback push origin main done" not in line for line in result["logs"])
+
+
+def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contract() -> None:
+    """runner 全工程の repair/failure gate を NoPublish 非fallback契約の対象に固定する。"""
+    commands = _powershell_command_extents(RUNNER_PS1, "Invoke-AutonomousCompletionPolicy")
+    observed: set[tuple[str, str]] = set()
+    for command in commands:
+        kind = re.search(r"-FailureKind\s+'([^']+)'", command)
+        gate = re.search(r"-GateId\s+'([^']+)'", command)
+        assert kind, command
+        assert gate, command
+        observed.add((kind.group(1), gate.group(1)))
+
+    expected = {
+        ("distribution", "distribution-manifest"),
+        ("content", "newsroom-editor-timeout"),
+        ("content", "summary-reflection"),
+        ("content", "daily-quality"),
+        ("artifact", "generation-normalize"),
+        ("content", "generation-quality"),
+        ("content", "url-liveness"),
+        ("content", "record-schema"),
+        ("content", "digest-articles-reconcile"),
+        ("content", "ja-callout"),
+        ("local-tool", "pytest-static"),
+        ("local-tool", "daily-tts"),
+        ("local-tool", "deepdive-tts"),
+        ("local-tool", "generate-pages"),
+        ("content", "deepdive-required"),
+        ("content", "public-html"),
+        ("distribution", "youtube-podcast-auth"),
+        ("distribution", "youtube-podcast-prepare"),
+        ("distribution", "youtube-podcast-finalize"),
+        ("distribution", "deepdive-youtube-podcast-finalize"),
+        ("distribution", "podcast-verify"),
+        ("distribution", "deepdive-podcast-verify"),
+        ("publish", "publish-complete"),
+    }
+    covered_kinds = {"content", "artifact", "local-tool", "external", "publish", "distribution"}
+
+    assert observed == expected
+    assert {kind for kind, _gate in observed} <= covered_kinds
+
+
 def test_runner_idle_timeout_is_parameterized() -> None:
     """digest / DeepDive の idle timeout は runner パラメータから調整できる。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
@@ -1629,14 +1748,16 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert runner.index("verify-publish-complete") < runner.index("send_push start")
     assert runner.index("verify-publish-complete") < runner.rindex("news-grasp-runner.ps1 OK")
     block = runner.split("publish-complete manifest verification start", 1)[1].split("send_push start", 1)[0]
-    before_block = runner.split("Write-Log 'push origin main done (digest + docs pushed)'", 1)[1].split(
-        "Write-Log 'publish verification start",
+    before_block = runner.split("$distributionSummary = Write-DistributionManifest", 1)[1].split(
+        "# ===== 5. digest + docs",
         1,
     )[0]
     distribution_body = runner.split("function Write-DistributionManifest", 1)[1].split("function Test-DailyArtifactsExist", 1)[0]
     assert "data\\distribution" in distribution_body
     assert runner.count("$distributionSummary = Write-DistributionManifest") == 1
-    assert "$distributionSummary = Write-DistributionManifest" in before_block
+    assert 'add "data/distribution/$DateStamp.json"' in before_block
+    assert 'commit -m "distribution: record publish state for $DateStamp"' in before_block
+    assert runner.index("$distributionSummary = Write-DistributionManifest") < runner.index("push origin main start")
     assert "$DateStamp.json" in distribution_body
     assert "build\\publish-complete\\$DateStamp.json" in block
     assert "Invoke-AutonomousCompletionPolicy" in block
@@ -1662,8 +1783,8 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     """publish_complete 前の distribution manifest は local HEAD の commit anchor を持つ。"""
     manifest = _mock_distribution_manifest(tmp_path)
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    publish_tail = runner.split("Write-Log 'push origin main done (digest + docs pushed)'", 1)[1].split(
-        "Write-Log 'publish verification start",
+    publish_tail = runner.split("$distributionSummary = Write-DistributionManifest", 1)[1].split(
+        "# ===== 5. digest + docs",
         1,
     )[0]
 
@@ -1671,10 +1792,13 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     assert manifest["pre_publish_commit"] == manifest["_expected_head"]
     assert manifest["publish_commit"] == ""
     assert not Path(manifest["_manifest_path"]).read_bytes().startswith(b"\xef\xbb\xbf")
-    assert manifest["primary_podcast_state"].endswith("build\\youtube-podcast\\uploads.json")
+    assert manifest["primary_podcast_state"] == "build/youtube-podcast/uploads.json"
+    assert manifest["deepdive_podcast_state"] == "build/youtube-podcast-deepdive/uploads.json"
+    assert manifest["latest_audio_state"] == "build/tts/latest_audio.json"
+    assert manifest["deepdive_audio_state"] == "build/tts/deepdive/latest_audio.json"
     assert "Write-DistributionManifest" in runner
     assert runner.count("$distributionSummary = Write-DistributionManifest") == 1
-    assert "$distributionSummary = Write-DistributionManifest" in publish_tail
+    assert 'commit -m "distribution: record publish state for $DateStamp"' in publish_tail
     assert "pre_publish_commit" in runner.split("function Write-DistributionManifest", 1)[1].split(
         "function Test-DailyArtifactsExist",
         1,

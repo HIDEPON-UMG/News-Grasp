@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class HistoricalFailureScenario:
+    issue_date: str
+    stage: str
+    direct_cause: str
+    root_pattern: str
+    missing_invariant: str
+    cheapest_e2e_or_fixture: str
+    evidence_path: str
+    expected_status: str
+
+
+@dataclass(frozen=True)
+class CompoundFailureScenario:
+    scenario_id: str
+    dimensions: tuple[str, ...]
+    gates: tuple[str, ...]
+    no_publish_required: bool
+    forbidden_public_actions: tuple[str, ...]
+    expected_status: str
+    evidence_basis: tuple[str, ...]
+
+
+SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
+    HistoricalFailureScenario(
+        "2026-06-12",
+        "record-schema / daily-quality / url-liveness",
+        "record schema gate surfaced masked multi-error classes across attempts",
+        "masked multi-error gate disclosure",
+        "one gate attempt must disclose all local record violations needed for bounded repair",
+        "record-schema fixture with title/thumb/date mismatches in one artifact and same-gate rerun",
+        "data/gate_attempts/2026-06-12.json",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-13",
+        "daily-quality / digest-articles-reconcile / pytest-static",
+        "multiple public-preflight gates failed in one daily run",
+        "multi-gate pre-publish convergence",
+        "daily run cannot be healthy until every recorded gate converges or blocks with typed status",
+        "gate-attempt ledger fixture covering multi-gate convergence and retry budget",
+        "data/gate_attempts/2026-06-13.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-14",
+        "daily-quality / url-liveness / reconcile / pytest-static",
+        "pre-publish gate chain contained repeated local content failures",
+        "multi-gate pre-publish convergence",
+        "gate-attempt ledger must preserve every failed gate, not only the final stop",
+        "gate-attempt ledger fixture for required gate set",
+        "data/gate_attempts/2026-06-14.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-16",
+        "resume / runner invocation",
+        "Codex started a full runner rerun instead of resuming from existing artifacts",
+        "resume-before-rerun boundary",
+        "existing daily artifacts must block full rerun unless explicit ForceFullRerun approval exists",
+        "runner contract fixture refusing full rerun when daily artifacts exist",
+        "docs/incidents/2026-06-16-codex-rerun-incident.md",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-17",
+        "daily-quality / url-liveness / reconcile / pytest-static",
+        "pre-publish gate attempts show URL and static gate failures before recovery",
+        "multi-gate pre-publish convergence",
+        "URL liveness and static gates must remain independent blockers with retry budget evidence",
+        "gate-attempt ledger fixture for URL/static gate separation",
+        "data/gate_attempts/2026-06-17.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-18",
+        "pytest-static / RecoverOnly",
+        "pytest used user temp and hit PermissionError WinError 5 before publish",
+        "non-interactive Windows environment boundary",
+        "runner pytest gate must force repo-local basetemp and RecoverOnly must resume existing artifacts",
+        "runner contract for repo-local pytest basetemp plus RecoverOnly inventory proof",
+        "docs/incidents/2026-06-18-daily-batch-failure-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-19",
+        "daily-quality / digest-articles-reconcile / url-liveness",
+        "digest/data URL set drift plus repair scope drift",
+        "artifact inventory/scope",
+        "repair must patch only allowed artifacts and rerun the same gate",
+        "runtime repair cycle for deterministic registry repair plus scope guard",
+        "docs/incidents/2026-06-19-batch-recovery-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-19",
+        "public QA / thumbnail fallback",
+        "article-level thumb null values passed aggregate thumbnail gate and rendered category fallback images",
+        "public degradation after nominal batch success",
+        "article-card thumbnail fallback must be rejected per card before publish and verified on public HTML",
+        "daily-quality fixture with mixed missing thumbs plus public HTML fallback sentinel",
+        "docs/incidents/2026-06-19-thumbnail-missing-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-20",
+        "PowerShell/Python boundary / digest reconcile / podcast",
+        "bounded digest repair failed before publish and podcast readiness had to be recovered separately",
+        "PowerShell Python boundary",
+        "runner subprocess boundary must pass bounded files/args and podcast state must be verified after recovery",
+        "fixture exercising runner command construction, parser boundary, and podcast public sentinel",
+        "docs/incidents/2026-06-20-daily-batch-recovery-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-21",
+        "DeepDive generation",
+        "auxiliary markdown leaked into DeepDive artifact set",
+        "artifact inventory/scope",
+        "DeepDive required artifacts must exclude helper markdown and include only publish inventory",
+        "published repair inventory fixture for DeepDive artifact scope",
+        "docs/incidents/2026-06-21-daily-batch-recovery-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-22",
+        "refill / Summary parser",
+        "refill and Summary parser boundaries did not share one source of truth",
+        "public pre-gate/refill and parser boundary",
+        "quarantine/refill must update session/search audit state before parser-dependent gates",
+        "quarantine/refill fixture with selected_total and same-gate rerun",
+        "docs/incidents/2026-06-22-daily-batch-and-summary-incident-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-23",
+        "non-interactive runner ledger / URL refill / DeepDive dialogue",
+        "PowerShell category argument, session ledger dependency, and missing DeepDive dialogue surfaced together",
+        "non-interactive runner contract",
+        "non-interactive runner must not depend on human-session artifacts and must generate required dialogue artifacts",
+        "NoPublish runner fixture with noninteractive state/progress proof and DeepDive dialogue generation",
+        "docs/incidents/2026-06-23-daily-batch-recovery-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-24",
+        "goal completion / recovery state",
+        "goal run mixed recovered public state with future readiness gates and mishandled weekday/non-target evidence",
+        "completion gate and source-of-truth drift",
+        "goal completion must separate current public recovery from future gates and include SLO/non-target category evidence",
+        "goal-run completion fixture with weekday category, SLO, public/podcast proof, and non-target artifact separation",
+        "docs/incidents/2026-06-24-digest-articles-reconcile-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-24",
+        "summary-reflection / daily-quality / generation-quality / url-liveness / reconcile / pytest-static",
+        "gate-attempt ledger shows broad pre-publish gate surface on the same issue date",
+        "multi-gate pre-publish convergence",
+        "future complete gates must include all recorded gate surfaces for the day",
+        "gate-attempt ledger fixture for 2026-06-24 gate set",
+        "data/gate_attempts/2026-06-24.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-25",
+        "post-daily-quality resume / fallback publish",
+        "resume reran daily-quality before DeepDive/docs/TTS existed and produced fallback",
+        "resume order and fallback boundary",
+        "post-daily-quality resume must generate DeepDive/docs/TTS before publish gates and must not fallback under NoPublish",
+        "NoPublish resume fixture plus fallback-block contract",
+        "docs/incidents/2026-06-25-daily-batch-incomplete-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-26",
+        "verify-publish-complete / distribution manifest",
+        "post-gate verification failed because distribution manifest for the issue date was absent",
+        "publish boundary and distribution manifest",
+        "publish complete cannot be claimed until runner-owned distribution manifest exists with commit/audio/podcast state",
+        "verify-publish-complete fixture for distribution_artifact_missing and manifest ownership boundary",
+        "build/recovery/proofs/2026-06-26-post-gate-verify-publish-complete.json",
+        "fixture_required",
+    ),
+)
+
+
+COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
+    CompoundFailureScenario(
+        scenario_id="same_artifact_repair_plus_residual_red",
+        dimensions=("same artifact", "deterministic repair", "residual local red", "NoPublish side-effect block"),
+        gates=("record-schema", "residual-schema"),
+        no_publish_required=True,
+        forbidden_public_actions=("fallback_publish", "git_push", "send_push"),
+        expected_status="blocked_unresolved_compound_failure",
+        evidence_basis=("2026-06-12 masked record gate errors", "2026-06-19 same-gate repair invariant"),
+    ),
+    CompoundFailureScenario(
+        scenario_id="multi_gate_repair_then_publish_block",
+        dimensions=("multi gate", "deterministic repair", "publish gate red", "NoPublish side-effect block"),
+        gates=("daily-quality", "generation-quality", "publish-complete"),
+        no_publish_required=True,
+        forbidden_public_actions=("fallback_publish", "git_push", "youtube_upload", "send_push"),
+        expected_status="blocked_unresolved_compound_failure",
+        evidence_basis=("2026-06-25 resume order failure", "NoPublish fallback-block contract"),
+    ),
+    CompoundFailureScenario(
+        scenario_id="external_yellow_plus_local_red",
+        dimensions=("external dependency", "local artifact defect", "typed outcome boundary"),
+        gates=("youtube-podcast-auth", "publish-complete"),
+        no_publish_required=True,
+        forbidden_public_actions=("fallback_publish", "youtube_upload", "send_push"),
+        expected_status="typed_yellow_not_complete",
+        evidence_basis=("OAuth/google_api_external boundary", "public verifier must stay Yellow until reverified"),
+    ),
+    CompoundFailureScenario(
+        scenario_id="weekday_inventory_plus_distribution_manifest",
+        dimensions=("weekday schedule", "artifact inventory", "distribution manifest", "same publish anchor"),
+        gates=("publish-inventory", "distribution-manifest", "publish-complete"),
+        no_publish_required=False,
+        forbidden_public_actions=(),
+        expected_status="typed_red_not_complete",
+        evidence_basis=("weekday category schedule", "distribution manifest commit/date anchor"),
+    ),
+)
+
+
+def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
+    return SCENARIOS
+
+
+def compound_failure_scenarios() -> tuple[CompoundFailureScenario, ...]:
+    return COMPOUND_SCENARIOS

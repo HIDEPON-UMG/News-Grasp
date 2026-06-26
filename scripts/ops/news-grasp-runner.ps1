@@ -1850,10 +1850,10 @@ function Write-DistributionManifest {
         date = $DateStamp
         pre_publish_commit = $prePublishCommit
         publish_commit = ''
-        primary_podcast_state = (Join-Path $RepoDir 'build\youtube-podcast\uploads.json')
-        deepdive_podcast_state = (Join-Path $RepoDir 'build\youtube-podcast-deepdive\uploads.json')
-        latest_audio_state = (Join-Path $RepoDir 'build\tts\latest_audio.json')
-        deepdive_audio_state = (Join-Path $RepoDir 'build\tts\deepdive\latest_audio.json')
+        primary_podcast_state = 'build/youtube-podcast/uploads.json'
+        deepdive_podcast_state = 'build/youtube-podcast-deepdive/uploads.json'
+        latest_audio_state = 'build/tts/latest_audio.json'
+        deepdive_audio_state = 'build/tts/deepdive/latest_audio.json'
         generated_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK')
     } | ConvertTo-Json -Depth 4
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
@@ -3031,6 +3031,23 @@ foreach ($youtubePodcastStep in @(
     }
 }
 
+$distributionSummary = Write-DistributionManifest
+Write-Log "distribution manifest written before push: $distributionSummary"
+Invoke-Logged { & $GitExe -C $RepoDir add "data/distribution/$DateStamp.json" }
+if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add distribution manifest failed (rc=$LASTEXITCODE)"; exit 1 }
+Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- "data/distribution/$DateStamp.json" }
+$distributionDiffRc = $LASTEXITCODE
+if ($distributionDiffRc -eq 1) {
+    Write-Log 'distribution manifest has changes, committing'
+    Invoke-Logged { & $GitExe -C $RepoDir commit -m "distribution: record publish state for $DateStamp" }
+    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: distribution manifest commit failed (rc=$LASTEXITCODE)"; exit 1 }
+} elseif ($distributionDiffRc -eq 0) {
+    Write-Log 'distribution manifest no changes'
+} else {
+    Write-Log "ERROR: git diff distribution manifest returned unexpected rc=$distributionDiffRc"
+    exit 1
+}
+
 # ===== 5. digest + docs を 1 回の push で同時公開 (Plan v3 P0-A) =====
 # 旧構造の「digest push → docs build → docs push」を統合。失敗時には digest commit が
 # ローカルにのみ残るので、翌日 runner の git pull --ff-only が可能な状態を維持する。
@@ -3044,9 +3061,6 @@ if ($NoPush) {
     Invoke-Logged { & $GitExe -C $RepoDir push origin main }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: push failed (rc=$LASTEXITCODE)"; exit 1 }
     Write-Log 'push origin main done (digest + docs pushed)'
-
-    $distributionSummary = Write-DistributionManifest
-    Write-Log "distribution manifest written: $distributionSummary"
 
     Write-Log 'publish verification start (remote HEAD + public publish-status sentinel + public audio sentinel)'
     Update-RunnerProgress -Phase 'publish-verify' -Step 'publish verification start'
