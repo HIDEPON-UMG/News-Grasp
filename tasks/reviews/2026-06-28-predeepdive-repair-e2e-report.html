@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<title>News-Grasp DeepDive前工程 / repair E2E 結果報告</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Noto Sans JP",system-ui,sans-serif;background:#E6E1D5;color:#3a382f;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em;background:#F1EBDC;color:#43412f;padding:.08em .36em;border-radius:3px;word-break:break-all;overflow-wrap:anywhere}
+</style>
+</head>
+<body data-report-kind="predeepdive-repair-e2e">
+<div style="background:#181C2A;border-bottom:3px solid #C9A155">
+  <div style="max-width:1040px;margin:0 auto;padding:13px 56px;display:flex;justify-content:space-between;align-items:center;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#C9A155">
+    <span>News-Grasp · Incident Report</span>
+    <span style="color:#8d96ab">2026-06-28 / E2E Evidence</span>
+  </div>
+</div>
+
+<div style="max-width:1040px;margin:32px auto;background:#fff;border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+  <div style="padding:56px 56px 64px">
+    <header style="margin:-56px -56px 0;padding:56px 56px 40px;background:#F4EEE1;border-bottom:1px solid #E2DCCC">
+      <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#9a7b34">E2E Verification Report</div>
+      <h1 style="margin:16px 0 0;font-family:'Noto Serif JP',serif;font-size:44px;line-height:1.4;font-weight:900;color:#181C2A;word-break:keep-all;overflow-wrap:break-word;line-break:strict">真のE2E探索で<wbr>内部bugを修正し、<wbr><span style="white-space:nowrap">06:00&nbsp;本番資源</span>を確定した</h1>
+      <div style="display:flex;gap:16px;margin:26px 0 0;padding:20px 22px;background:#fff;border:1px solid #EBD9B6;border-left:3px solid #C9A155;border-radius:0 6px 6px 0">
+        <div style="font:700 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.1em;color:#9a7b34;text-transform:uppercase;white-space:nowrap">結論</div>
+        <p style="margin:0;font-family:'Noto Serif JP',serif;font-size:15px;line-height:2;color:#3a382f;max-width:760px">停止地点から先へ進める探索で、URL quarantine refill、stale top digest、Codex quota 誤分類を検出して修正した。final fresh E2E は Codex quota と06:00締切により完了証跡にできないため、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">公開完了とは言わない</span>。一方で、修正済み資源は commit/push、remote HEAD 一致、live runner 同期、Scheduled Task 06:00 起動先確認まで完了しており、<strong style="font-weight:900;color:#181C2A">本番バッチが最新資源で起動する状態</strong>は確定した。</p>
+      </div>
+    </header>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-top:32px;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden">
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6B6862">Started</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A">探索E2E</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">停止点から下流bugを洗い出し</div>
+      </div>
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#FCF6EC">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#B07A39">Stopped</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#B07A39">quota</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">final fresh E2Eは未完了境界</div>
+      </div>
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#F4F9F5">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#3D7E60">Recovered</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#3D7E60">tests Green</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">影響範囲suite / 全pytest</div>
+      </div>
+      <div style="padding:18px 20px">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#9a7b34">Published</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A;font-family:'JetBrains Mono',monospace">65c9347</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">remote/live runner 確定</div>
+      </div>
+    </div>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">01</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">どの工程で問題が起きたか</h2>
+      </div>
+
+      <div style="margin-top:24px;border:1px solid #E1DCCF;border-radius:12px;background:#FBFAF6;padding:24px 26px 26px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#9a7b34">Workflow Map · E2E検証工程 / 検証フロー図</div>
+          <div style="display:flex;gap:16px;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:15px;height:15px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">✓</span>完了</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:15px;height:15px;border-radius:50%;background:#B83A2D;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">✕</span>検出</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:15px;height:15px;border-radius:50%;border:1.5px dashed #B0AAA0;display:inline-block"></span>未到達</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:16px;height:16px;border-radius:50%;background:#B83A2D;color:#fff;box-shadow:0 0 0 4px rgba(184,58,45,.12);display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:900">STOP</span>Fault boundary</span>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#3D7E60">① Normal pre-DeepDive pipeline — 本番量5カテゴリ</div>
+        <div style="margin-top:12px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+          <div data-flow-node="normal-1" style="flex:1 1 116px;min-width:112px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#9a7b34">01</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#6B6862">Stage0</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">harvest</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">開始</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div data-flow-node="normal-2" style="flex:1 1 116px;min-width:112px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#9a7b34">02</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#6B6862">Stage1</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">dedup</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">重複除去</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div data-flow-node="normal-3" style="flex:1 1 116px;min-width:112px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#9a7b34">03</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#6B6862">Stage1.5</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">prepare</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">manifest整備</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div data-flow-node="normal-4" style="flex:1 1 116px;min-width:112px;border:1px solid #CDE0D3;border-radius:9px;background:#F4F9F5;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">04</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#3D7E60">Reporter</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">5カテゴリ</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">各5記事</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div data-flow-node="normal-5" style="flex:1 1 116px;min-width:112px;border:1px solid #CDE0D3;border-radius:9px;background:#F4F9F5;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">05</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#3D7E60">Editor</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">digest統合</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">cards=5</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div data-flow-node="normal-6" style="flex:1 1 116px;min-width:112px;border:1.5px solid #3D7E60;border-radius:9px;background:#3D7E60;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#CDE9D6">06</span><span style="width:18px;height:18px;border-radius:50%;background:#fff;color:#3D7E60;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#CDE9D6">Gate</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#fff;line-height:1.4">quality</div><div style="margin-top:3px;font-size:10.5px;color:#CDE9D6;line-height:1.5">Stage4前停止</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div data-flow-node="normal-7" style="flex:1 1 116px;min-width:112px;border:1.5px dashed #B0AAA0;border-radius:9px;background:#F8F6EF;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#8d8679">07</span><span style="width:18px;height:18px;border-radius:50%;border:1.5px dashed #B0AAA0;color:#8d8679;display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:700">STOP</span></div><div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#8d8679">未到達</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#6B6862;line-height:1.4">DeepDive</div><div style="margin-top:3px;font-size:10.5px;color:#8d8679;line-height:1.5">今回scope外</div></div>
+        </div>
+
+        <div style="margin-top:18px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#B83A2D">② Compound abnormal-path matrix — 仕込み / 検出 / repair / recovery / re-verify / 判定</div>
+        <p style="margin:8px 0 0;font-size:12.5px;line-height:1.8;color:#3a382f"><strong style="font-weight:900;color:#181C2A">直せるものは直して完走。</strong> 内部要因の停止は成功扱いしない。外部システム障害の typed external block だけは、外部境界ハンドリングのシナリオPASSとして分離し、publish Green とは合成しない。</p>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div data-compound-pattern="A" style="border:1px solid #F0CFC9;border-radius:10px;background:#FCF2F0;padding:14px 14px 16px">
+            <div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#B83A2D">複合異常系A 同一artifact repair後の残留赤</div>
+            <div style="margin-top:10px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+              <div data-flow-node="A-inject" style="flex:1 1 92px;min-width:90px;border:1px solid #F0CFC9;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B83A2D">仕込み</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">title_ja欠落 + date不整合</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="A-detect" style="flex:1 1 92px;min-width:90px;border:1px solid #F0CFC9;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B83A2D">検出</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">record-schema gate 初回赤</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="A-repair" style="flex:1 1 92px;min-width:90px;border:1px solid #EBD9B6;border-radius:8px;background:#FCF6EC;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">repair</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">record-title-ja-patch</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="A-recovery" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">recovery</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">date不整合を再分類</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="A-reverify" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">re-verify</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">record-schema Green</div></div>
+            </div>
+            <p style="margin:10px 0 0;font-size:12px;line-height:1.75;color:#3a382f"><strong style="font-weight:900;color:#181C2A">判定:</strong> <code>green_after_compound_repair</code></p>
+          </div>
+
+          <div data-compound-pattern="B" style="border:1px solid #EBD9B6;border-radius:10px;background:#FCF6EC;padding:14px 14px 16px">
+            <div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#B07A39">複合異常系B multi gate repair後のpublish境界</div>
+            <div style="margin-top:10px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+              <div data-flow-node="B-inject" style="flex:1 1 92px;min-width:90px;border:1px solid #EBD9B6;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">仕込み</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">local赤 + publish境界赤</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="B-detect" style="flex:1 1 92px;min-width:90px;border:1px solid #EBD9B6;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">検出</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">local gate群とpublish境界</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="B-repair" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">repair</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">deterministic repair</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="B-recovery" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">recovery</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">内部工程をGreenへ戻す</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="B-side-effect" style="flex:1 1 92px;min-width:90px;border:1.5px solid #B07A39;border-radius:8px;background:#FCF6EC;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">guard</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">public副作用0件</div></div>
+            </div>
+            <p style="margin:10px 0 0;font-size:12px;line-height:1.75;color:#3a382f"><strong style="font-weight:900;color:#181C2A">判定:</strong> <code>green_before_publish_boundary_no_public_actions</code></p>
+          </div>
+
+          <div data-compound-pattern="C" style="border:1px solid #EBD9B6;border-radius:10px;background:#FCF6EC;padding:14px 14px 16px">
+            <div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#B07A39">複合異常系C 外部障害block と local Red の分離</div>
+            <div style="margin-top:10px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+              <div data-flow-node="C-inject" style="flex:1 1 92px;min-width:90px;border:1px solid #EBD9B6;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">仕込み</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">外部障害 + local Red</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="C-detect" style="flex:1 1 92px;min-width:90px;border:1px solid #EBD9B6;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">検出</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">external readiness + local gate</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="C-repair" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">repair</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">local側のみ修復</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="C-external" style="flex:1 1 92px;min-width:90px;border:1.5px solid #B07A39;border-radius:8px;background:#FCF6EC;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B07A39">external</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">typed external block</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="C-reverify" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">re-verify</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">scenario PASS / publish未完了</div></div>
+            </div>
+            <p style="margin:10px 0 0;font-size:12px;line-height:1.75;color:#3a382f"><strong style="font-weight:900;color:#181C2A">判定:</strong> <code>typed_external_block_handled</code></p>
+          </div>
+
+          <div data-compound-pattern="D" style="border:1px solid #F0CFC9;border-radius:10px;background:#FCF2F0;padding:14px 14px 16px">
+            <div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#B83A2D">複合異常系D 曜日inventoryとdistribution manifest境界</div>
+            <div style="margin-top:10px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+              <div data-flow-node="D-inject" style="flex:1 1 92px;min-width:90px;border:1px solid #F0CFC9;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B83A2D">仕込み</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">required境界 + manifest anchor</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="D-detect" style="flex:1 1 92px;min-width:90px;border:1px solid #F0CFC9;border-radius:8px;background:#fff;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#B83A2D">検出</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">scheduled_category_ids + manifest</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="D-repair" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">repair</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">非対象をrequired化しない</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="D-recovery" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">recovery</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">required manifest再構築</div></div><div style="align-self:center;color:#C9A155;font-weight:700">→</div>
+              <div data-flow-node="D-reverify" style="flex:1 1 92px;min-width:90px;border:1px solid #CDE0D3;border-radius:8px;background:#F4F9F5;padding:10px"><div style="font:700 9px/1 'JetBrains Mono',monospace;color:#3D7E60">re-verify</div><div style="margin-top:7px;font-size:11.5px;line-height:1.55">manifest Green</div></div>
+            </div>
+            <p style="margin:10px 0 0;font-size:12px;line-height:1.75;color:#3a382f"><strong style="font-weight:900;color:#181C2A">判定:</strong> <code>green_after_inventory_manifest_reverify</code></p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;background:#181C2A;border-radius:10px;padding:22px 24px">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#C9A155">Fault boundary · 検証境界</div>
+        <p style="margin:12px 0 0;font-size:13.5px;line-height:1.85;color:#D8D2C2">今回の停止点は障害停止ではなく、<span style="font-weight:700;color:#fff;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">意図的な DeepDive 前停止</span>である。<code style="background:rgba(201,161,85,.18);color:#EBD9B6">NoPublish</code> により push、upload、notification、public proof claim は実行しない。したがって <strong style="font-weight:900;color:#fff">local Green と public Green を合成しない</strong>ことが、このレポートの検証境界である。</p>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">02</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の詳細と、なぜ起きたか</h2>
+      </div>
+      <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#B83A2D">直接原因</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f">停止した E2E をその地点から継続せず、fresh rerun と遅延予約へ寄せたため、<strong style="font-weight:900;color:#181C2A">下流 bug の洗い出しと06:00締切の逆算が遅れた</strong>。本来は <span style="font-weight:700;background:#F6E7C6;border-radius:3px;padding:.04em .3em">停止点を保存</span> し、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">pre-DeepDive終端まで継続探索</span> してから一括修正すべきだった。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">検証対象</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f"><span style="font-weight:700;background:#F6E7C6;border-radius:3px;padding:.04em .3em">News-Grasp</span> の daily publish state machine のうち、DeepDive記事作成前まで。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">なぜ必要か</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f">過去障害と今回障害は、すべて <span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">DeepDive記事作成前の工程</span> で発生している。単発の正常系E2Eでは、repair / fallback / typed external / inventory の相互作用を捕まえられない。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#B83A2D">検出すべき異常</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f">deterministic repair後の残留Red、NoPublish時のfallback public副作用、typed external block と local Green のpublish完了合成、曜日inventoryとdistribution manifestの境界崩れ。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">完了表現の境界</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f"><strong style="font-weight:900;color:#181C2A">local / NoPublish の完走は public 完了ではない</strong>。公開面、live runner、翌日Scheduled Taskは別証跡で確認するまでYellowで残す。</dd></div>
+      </dl>
+      <div style="margin-top:18px;display:flex;gap:14px;padding:18px 20px;background:#FCF6EC;border:1px solid #EBD9B6;border-radius:8px">
+        <div style="font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#fff;background:#B07A39;padding:6px 9px;border-radius:5px;text-transform:uppercase;white-space:nowrap;height:fit-content">2次</div>
+        <div><div style="font-size:13px;font-weight:700;color:#181C2A">二次的に見つかった問題</div><p style="margin:7px 0 0;font-size:13px;line-height:1.8;color:#3a382f">前回報告は図の存在だけを契約にしていたため、<strong style="font-weight:900;color:#181C2A">読める工程図かどうか</strong>、また障害レポートのトンマナに合っているかを検出できなかった。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">03</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の暫定対応内容 / 試行履歴と発見バグ台帳</h2>
+      </div>
+      <div style="margin-top:22px;position:relative;padding-left:30px">
+        <div style="position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:#E1DCCF"></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B83A2D;border:2px solid #fff;box-shadow:0 0 0 2px #B83A2D"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B83A2D">探索 1</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3a382f">daily-quality で stale follow-up URL を検出。repair matrix に handler はあったが実装がなく、<code>blocked_repair_handler_unimplemented</code> で停止。</p></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B83A2D;border:2px solid #fff;box-shadow:0 0 0 2px #B83A2D"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B83A2D">探索 2</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3a382f">handler 実装後、auto repair routing が <code>quarantine-refill</code> へ誤分類し registry repair に到達しない bug を検出。</p></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B83A2D;border:2px solid #fff;box-shadow:0 0 0 2px #B83A2D"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B83A2D">探索 3</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3a382f">fresh run で IT digest の stale top article を検出。refill 後もTOPが古いまま残る residual local Red として修正。</p></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B07A39;border:2px solid #fff;box-shadow:0 0 0 2px #B07A39"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B07A39">final fresh E2E</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3a382f">Codex quota により reporter fan-out が停止。wrapper と runner がこれを内部 reporter failure 扱いしていたため、<code>codex_quota</code> typed external へ分類する契約を追加。</p></div>
+        <div style="position:relative"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#3D7E60;border:2px solid #fff;box-shadow:0 0 0 2px #3D7E60"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">06:00本番資源</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3a382f">commit <code>65c9347</code> を push。remote HEAD 一致、live runner SHA256 一致、Scheduled Task が 06:00 に live runner を Hidden 起動することを確認。</p></div>
+      </div>
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px"><div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#9a7b34">発見バグ1</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8;color:#3a382f">URL quarantine refill handler 未実装。<code>tools/repair_registry.py</code> に deterministic repair を追加。</p></div>
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px"><div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#9a7b34">発見バグ2</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8;color:#3a382f">auto repair routing 誤分類。<code>deterministic-repair</code> と registry handler id を正本化。</p></div>
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px"><div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#9a7b34">発見バグ3</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8;color:#3a382f">stale top article の残留。category digest TOP を fresh 記事へ並べ替える repair を追加。</p></div>
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px"><div style="font:700 11px/1.5 'JetBrains Mono',monospace;color:#9a7b34">発見バグ4</div><p style="margin:8px 0 0;font-size:13px;line-height:1.8;color:#3a382f">Codex quota の内部失敗扱い。wrapper と runner の二重境界で <code>codex_quota</code> に分類。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">04</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">直近改修・過去障害との関係</h2>
+      </div>
+      <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">過去障害との関係</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f">過去の重大停止はいずれもDeepDive記事作成前までに発生していたため、今回のE2Eはその工程に絞って質と量を厚くした。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">通常系との差</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f">通常系1本ではなく、incident-driven matrix、compound abnormal-path、state-machine invariant、public/local proof分離、runner fault injectionを入れた。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">今回の位置付け</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3a382f"><span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">公開前証跡ではなく</span>、DeepDive前までのlocal運用品質証跡である。</dd></div>
+      </dl>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">05</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応方針の網羅性と完璧性の担保</h2>
+      </div>
+      <div style="margin-top:22px;display:flex;gap:14px;padding:18px 20px;background:#F1F6F2;border:1px solid #CDE0D3;border-left:3px solid #3D7E60;border-radius:0 8px 8px 0">
+        <div style="font:700 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase;white-space:nowrap">完璧性の定義</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.85;color:#3a382f">ここでいう完璧性は<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">「未知の全障害が絶対に起きない」ではなく</span>、今回と同じ class の失敗が再導入された場合に、E2E後レポートと契約テストで <strong style="font-weight:900;color:#181C2A">どの工程で検出・修復・停止されたかを読めること</strong> と定義する。</p>
+      </div>
+      <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:0 0 8px 8px;padding:16px 18px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase">Layer 1</div><div style="margin-top:9px;font-size:14px;font-weight:700;color:#181C2A;line-height:1.4">本番量を正本resolverで固定</div><p style="margin:7px 0 0;font-size:12px;line-height:1.7;color:#6B6862">曜日カテゴリを手書きせず、repoのsource of truthから解決する。</p></div>
+        <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:0 0 8px 8px;padding:16px 18px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase">Layer 2</div><div style="margin-top:9px;font-size:14px;font-weight:700;color:#181C2A;line-height:1.4">repair後の残留赤を止める</div><p style="margin:7px 0 0;font-size:12px;line-height:1.7;color:#6B6862">deterministic repair後も同じgateを再実行し、残留RedをGreen扱いしない。</p></div>
+        <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:0 0 8px 8px;padding:16px 18px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase">Layer 3</div><div style="margin-top:9px;font-size:14px;font-weight:700;color:#181C2A;line-height:1.4">NoPublish副作用を禁止</div><p style="margin:7px 0 0;font-size:12px;line-height:1.7;color:#6B6862">fallback publish、push、upload、notificationへ進まないことを固定。</p></div>
+        <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:0 0 8px 8px;padding:16px 18px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase">Layer 4</div><div style="margin-top:9px;font-size:14px;font-weight:700;color:#181C2A;line-height:1.4">typed external blockを分離</div><p style="margin:7px 0 0;font-size:12px;line-height:1.7;color:#6B6862">外部障害blockはシナリオPASSだが、local Greenと混ぜてpublish完了扱いしない。</p></div>
+        <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:0 0 8px 8px;padding:16px 18px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase">Layer 5</div><div style="margin-top:9px;font-size:14px;font-weight:700;color:#181C2A;line-height:1.4">PowerShell衝突をfixture化</div><p style="margin:7px 0 0;font-size:12px;line-height:1.7;color:#6B6862">CapturePath / StatePath のscriptblock scope衝突を落とす。</p></div>
+        <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:0 0 8px 8px;padding:16px 18px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:#3D7E60;text-transform:uppercase">Layer 6</div><div style="margin-top:9px;font-size:14px;font-weight:700;color:#181C2A;line-height:1.4">E2E後HTMLを必須化</div><p style="margin:7px 0 0;font-size:12px;line-height:1.7;color:#6B6862">E2E実行は、障害レポート準拠HTMLが残るまで報告完了にしない。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">06</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応の実行計画</h2>
+      </div>
+      <div style="margin-top:22px;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:108px 1fr 1fr;background:#181C2A">
+          <div style="padding:11px 14px;font:700 10px/1.4 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#C9A155">区分</div>
+          <div style="padding:11px 14px;font:700 10px/1.4 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#C9A155">対応</div>
+          <div style="padding:11px 14px;font:700 10px/1.4 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#C9A155">完了条件</div>
+        </div>
+        <div style="display:grid;grid-template-columns:108px 1fr 1fr;border-bottom:1px solid #E8E3D7"><div style="padding:14px;border-right:1px solid #E8E3D7"><span style="font:700 9px/1 'JetBrains Mono',monospace;color:#fff;background:#3D7E60;padding:4px 8px;border-radius:4px;text-transform:uppercase">完了</span></div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#3a382f;border-right:1px solid #E8E3D7">pre-DeepDive本番量E2E。</div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#6B6862">records=5 / digest cards=5 / StopBeforeDeepDive。</div></div>
+        <div style="display:grid;grid-template-columns:108px 1fr 1fr;border-bottom:1px solid #E8E3D7"><div style="padding:14px;border-right:1px solid #E8E3D7"><span style="font:700 9px/1 'JetBrains Mono',monospace;color:#fff;background:#3D7E60;padding:4px 8px;border-radius:4px;text-transform:uppercase">完了</span></div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#3a382f;border-right:1px solid #E8E3D7">複合異常系A-Dの図解と契約化。</div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#6B6862"><code>data-compound-pattern</code> と <code>data-flow-node</code> で検査。</div></div>
+        <div style="display:grid;grid-template-columns:108px 1fr 1fr;border-bottom:1px solid #E8E3D7"><div style="padding:14px;border-right:1px solid #E8E3D7"><span style="font:700 9px/1 'JetBrains Mono',monospace;color:#fff;background:#3D7E60;padding:4px 8px;border-radius:4px;text-transform:uppercase">完了</span></div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#3a382f;border-right:1px solid #E8E3D7">E2E後HTMLレポート必須規約。</div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#6B6862"><code>news-grasp-e2e-discipline</code> と契約テストに固定。</div></div>
+        <div style="display:grid;grid-template-columns:108px 1fr 1fr"><div style="padding:14px;border-right:1px solid #E8E3D7"><span style="font:700 9px/1 'JetBrains Mono',monospace;color:#9a7b34;background:#FBF4E9;border:1px solid #EBD9B6;padding:4px 8px;border-radius:4px;text-transform:uppercase">未完了</span></div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#3a382f;border-right:1px solid #E8E3D7">final fresh pre-DeepDive E2E の完走証跡。</div><div style="padding:14px 16px;font-size:12.5px;line-height:1.75;color:#6B6862">Codex quota と 06:00 締切により未取得。成功扱いしない。</div></div>
+      </div>
+      <div style="margin-top:18px;display:flex;gap:14px;padding:18px 20px;background:#F1F6F2;border:1px solid #CDE0D3;border-radius:8px">
+        <div style="font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#fff;background:#3D7E60;padding:6px 9px;border-radius:5px;text-transform:uppercase;white-space:nowrap;height:fit-content">OK</div>
+        <div><div style="font-size:13px;font-weight:700;color:#181C2A">証跡マップ</div><p style="margin:7px 0 0;font-size:13px;line-height:1.8;color:#3a382f">commit / push: <code>65c93471799ba727fde1c06bbab4a990d28a467b</code>。remote HEAD: local/remote 一致。live runner: repo/live SHA256 一致。Scheduled Task: <code>News-Grasp Runner</code> は <code>2026-06-28T06:00:00+09:00</code> に <code>C:\Users\hidek\bin\news-grasp-runner.ps1</code> を Hidden 起動。HTML報告: <code>C:\Users\hidek\OneDrive\ドキュメント\ProjectFolders\News-Grasp\tasks\reviews\2026-06-28-predeepdive-repair-e2e-report.html</code>。</p></div>
+      </div>
+    </section>
+
+    <footer style="margin-top:52px;padding-top:24px;border-top:1px solid #E8E3D7;font-size:11.5px;line-height:1.7;color:#9d988c;font-family:'JetBrains Mono',monospace">
+      News-Grasp BUG_REPORT_DESIGN.md · navy × gold × paper / single HTML / E2E execution is not public completion
+    </footer>
+  </div>
+</div>
+</body>
+</html>
