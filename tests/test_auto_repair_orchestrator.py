@@ -14,7 +14,9 @@ def test_classify_reads_gate_output_file(tmp_path, capsys) -> None:
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["action"] == "quarantine"
-    assert payload["handler"] == "quarantine-refill"
+    assert payload["handler"] == "deterministic-repair"
+    assert payload["handler_id"] == "url-quarantine-refill"
+    assert payload["failure_status"] == "blocked_refill_unresolved"
 
 
 def test_classify_routes_summary_emphasis_to_deterministic_handler(capsys) -> None:

@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import json
+
 from tools.repair_registry import (
     RepairContext,
     find_handler,
     repair_with_registry,
 )
+from tools.validate_daily_quality import validate_summary_emphasis
 
 
 def test_registry_exposes_summary_emphasis_patch_metadata() -> None:
@@ -75,6 +78,42 @@ def test_summary_emphasis_patch_is_idempotent(tmp_path: Path) -> None:
     assert summary.read_text(encoding="utf-8").count("**市場の変化**") == 1
 
 
+def test_summary_emphasis_patch_preserves_frontmatter_and_repairs_reflection(tmp_path: Path) -> None:
+    issue = "2026-06-25"
+    summary = tmp_path / "digest" / "Summary" / f"{issue}.md"
+    summary.parent.mkdir(parents=True)
+    summary.write_text(
+        "---\n"
+        "title: Summary\n"
+        f"date: {issue}\n"
+        "category: Daily Summary\n"
+        "hero_left: プラットフォーム再編\n"
+        "hero_right: 市場へ波及\n"
+        "---\n\n"
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "> [[政策イベント]] と __企業実装__ が同じ日に並んだ。\n\n"
+        "### §01 総論 — 実装力を見る日\n\n"
+        "[[AI導入]] は __継続運用できる体制__ で評価される。\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="summary-emphasis-patch",
+            artifacts=[f"digest/Summary/{issue}.md"],
+        )
+    )
+
+    repaired = summary.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "title: Summary" in repaired
+    assert "**title: Summary**" not in repaired
+    assert validate_summary_emphasis(summary) == []
+
+
 def test_registry_blocks_handler_scope_violation(tmp_path: Path) -> None:
     summary = tmp_path / "digest" / "Summary" / "2026-06-25.md"
     summary.parent.mkdir(parents=True)
@@ -92,3 +131,152 @@ def test_registry_blocks_handler_scope_violation(tmp_path: Path) -> None:
     assert result.status == "blocked_scope_violation"
     assert not result.changed
     assert "**市場の変化**" not in summary.read_text(encoding="utf-8")
+
+
+def test_url_quarantine_refill_handler_repairs_stale_followup_from_registry(tmp_path: Path) -> None:
+    issue = "2026-06-28"
+    stale_url = "https://example.com/no-date/followup-topic"
+    reserve_url = "https://example.com/fresh-reserve"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    articles = tmp_path / "data" / "articles.jsonl"
+    audit = tmp_path / "data" / "search_audit" / issue / "ai.json"
+    candidate_dir = tmp_path / "build" / "deduped-candidates"
+    for path in (digest, records, articles, audit, candidate_dir / "ai_candidates.jsonl"):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    rows = [
+        {
+            "date": issue,
+            "genre": "AI",
+            "title": f"title {idx}",
+            "title_ja": f"title {idx}",
+            "summary": f"summary {idx}",
+            "url": f"https://example.com/fresh-{idx}",
+            "thumb": "https://example.com/thumb.jpg",
+            "source": "Example",
+            "published": issue,
+            "date_evidence_source": "rss_pubDate",
+        }
+        for idx in range(1, 5)
+    ]
+    stale = {
+        "date": issue,
+        "genre": "AI",
+        "title": "stale followup",
+        "title_ja": "stale followup",
+        "summary": "old matched source",
+        "url": stale_url,
+        "thumb": "https://example.com/thumb.jpg",
+        "source": "Example",
+        "published": issue,
+        "date_evidence_source": "rss_pubDate",
+        "is_followup": True,
+        "matched_with": "https://example.com/2026/05/20/original-topic",
+    }
+    all_rows = rows + [stale]
+    digest.write_text(
+        "# AI\n"
+        + "\n---\n".join(
+            f"### [7{idx}] {row['title']}\n\n{issue} · 🔗 [元記事]({row['url']})"
+            for idx, row in enumerate(all_rows, start=1)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    records.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in all_rows), encoding="utf-8")
+    articles.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in all_rows), encoding="utf-8")
+    audit.write_text(
+        json.dumps({"category_id": "ai", "date": issue, "selected_total": 5, "dropped": []}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    reserve = {
+        "category": "ai",
+        "pubDate": f"{issue}T09:35:00+00:00",
+        "source": "Reserve",
+        "title": "fresh reserve",
+        "url": reserve_url,
+        "thumb": "https://example.com/reserve-thumb.jpg",
+    }
+    (candidate_dir / "ai_candidates.jsonl").write_text(json.dumps(reserve, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/Summary/{issue}.md", "data/articles.jsonl", f"data/search_audit/{issue}"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert result.changed
+    assert "autonomous_recovery: url_quarantine_refill" in result.message
+    assert stale_url not in records.read_text(encoding="utf-8")
+    assert stale_url not in articles.read_text(encoding="utf-8")
+    assert stale_url not in digest.read_text(encoding="utf-8")
+    assert reserve_url in records.read_text(encoding="utf-8")
+    assert reserve_url in articles.read_text(encoding="utf-8")
+    assert reserve_url in digest.read_text(encoding="utf-8")
+
+
+def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path) -> None:
+    issue = "2026-06-28"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    audit = tmp_path / "data" / "search_audit" / issue / "it.json"
+    records = tmp_path / "tmp" / "newsroom" / issue / "it.records.jsonl"
+    for path in (digest, articles, audit, records):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    stale = {
+        "date": issue,
+        "genre": "IT-Consulting",
+        "title": "stale top",
+        "title_ja": "stale top",
+        "summary": "old item",
+        "url": "https://example.com/no-date/stale-top",
+        "thumb": "https://example.com/thumb.jpg",
+        "source": "Example",
+        "published": "2026-06-26",
+        "date_evidence_source": "body-text",
+    }
+    fresh = {
+        "date": issue,
+        "genre": "IT-Consulting",
+        "title": "fresh second",
+        "title_ja": "fresh second",
+        "summary": "fresh item",
+        "url": "https://example.com/no-date/fresh-second",
+        "thumb": "https://example.com/thumb.jpg",
+        "source": "Example",
+        "published": "2026-06-27",
+        "date_evidence_source": "body-text",
+    }
+    articles.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in [stale, fresh]), encoding="utf-8")
+    records.write_text(articles.read_text(encoding="utf-8"), encoding="utf-8")
+    audit.write_text(json.dumps({"category_id": "it", "date": issue, "selected_total": 2}, ensure_ascii=False), encoding="utf-8")
+    digest.write_text(
+        "---\ncategoryId: it\n---\n\n"
+        "# IT\n\n"
+        "### [91] stale top\n\n"
+        "📅 2026-06-26 00:00 · 📰 Example · 🔗 [元記事](https://example.com/no-date/stale-top)\n\n"
+        "---\n\n"
+        "### [88] fresh second\n\n"
+        "📅 2026-06-27 09:00 · 📰 Example · 🔗 [元記事](https://example.com/no-date/fresh-second)\n\n"
+        "← [[2026-06-27-IT-Consulting|前号 IT-Consulting]]\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/Summary/{issue}.md", "data/articles.jsonl", f"data/search_audit/{issue}"],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "stale_top_reordered" in result.message
+    assert repaired.index("fresh second") < repaired.index("stale top")

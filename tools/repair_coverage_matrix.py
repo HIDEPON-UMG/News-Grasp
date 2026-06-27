@@ -125,8 +125,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "url_dead_or_stale",
         RepairClass.DETERMINISTIC_HANDLER,
         "url-quarantine-refill",
-        ("data/articles.jsonl", "data/search_audit/{date}"),
+        (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/Summary/{date}.md",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
         "url-liveness",
+        "blocked_refill_unresolved",
     ),
     CoverageRow(
         "daily-quality",
@@ -352,6 +359,14 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "title_ja_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "record-title-ja-patch",
+        ("data/articles.jsonl",),
+        "record-schema",
+    ),
+    CoverageRow(
+        "record-schema",
+        "issue_date_mismatch",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "record-issue-date-patch",
         ("data/articles.jsonl",),
         "record-schema",
     ),
@@ -616,6 +631,8 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "summary_reflection_emphasis_missing"
     if "digest_article_url_mismatch" in text or "digest url" in text:
         return "digest_article_url_mismatch"
+    if "号日不整合" in text or "issue-date" in text and "date" in text:
+        return "issue_date_mismatch"
     if "title_ja" in text:
         return "title_ja_missing"
     if "thumb" in text or "thumbnail" in text:

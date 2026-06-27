@@ -81,13 +81,13 @@ def test_compound_failure_matrix_covers_interaction_dimensions() -> None:
 
     assert {scenario.scenario_id for scenario in scenarios} >= {
         "same_artifact_repair_plus_residual_red",
-        "multi_gate_repair_then_publish_block",
-        "external_yellow_plus_local_red",
+        "multi_gate_repair_before_publish_boundary",
+        "external_block_plus_local_repair",
         "weekday_inventory_plus_distribution_manifest",
     }
     assert any(
         {"record-schema", "residual-schema"} <= set(scenario.gates)
-        and scenario.expected_status == "blocked_unresolved_compound_failure"
+        and scenario.expected_status == "green_after_compound_repair"
         for scenario in scenarios
     )
     assert any(
@@ -98,7 +98,24 @@ def test_compound_failure_matrix_covers_interaction_dimensions() -> None:
         assert len(scenario.dimensions) >= 2
         assert scenario.expected_status in {
             "green_after_compound_repair",
-            "blocked_unresolved_compound_failure",
-            "typed_yellow_not_complete",
-            "typed_red_not_complete",
+            "green_before_publish_boundary_no_public_actions",
+            "typed_external_block_handled",
+            "green_after_inventory_manifest_reverify",
         }
+        assert scenario.expected_status != "blocked_unresolved_compound_failure"
+        assert scenario.expected_status != "typed_yellow_not_complete"
+        assert scenario.expected_status != "typed_red_not_complete"
+
+
+def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:
+    scenarios = compound_failure_scenarios()
+
+    forbidden = {
+        "blocked_unresolved_compound_failure",
+        "typed_red_not_complete",
+        "typed_yellow_not_complete",
+    }
+    assert not {scenario.expected_status for scenario in scenarios} & forbidden
+    for scenario in scenarios:
+        if scenario.expected_status.startswith("green_"):
+            assert "block" not in " ".join(scenario.dimensions).casefold()

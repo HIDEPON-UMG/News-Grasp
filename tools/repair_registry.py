@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from datetime import date, timedelta
 import json
 from pathlib import Path
 import re
 from typing import Callable
 
+from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
+from tools.refill_category_after_quarantine import refill_category
 from tools.repair_audio_script_length import repair_file as repair_audio_script_file
+from tools.validate_daily_quality import extract_source_date_from_url
 
 
 UNIMPLEMENTED_STATUS = "blocked_repair_handler_unimplemented"
@@ -83,23 +87,49 @@ def _scope_violation(ctx: RepairContext, handler: RepairHandler) -> str | None:
 
 
 def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
-    for line in text.splitlines(keepends=True):
-        stripped = line.strip()
-        if not stripped or stripped.startswith(("#", "---", ">", "|", "-", "*")):
+    lines = text.splitlines(keepends=True)
+    protected_until = 0
+    if lines and lines[0].strip() == "---":
+        for idx, line in enumerate(lines[1:], start=1):
+            if line.strip() == "---":
+                protected_until = idx + 1
+                break
+
+    changed = False
+    repaired_lines: list[str] = []
+    for idx, line in enumerate(lines):
+        if idx < protected_until:
+            repaired_lines.append(line)
             continue
-        if "**" in stripped:
+        line_body = line.rstrip("\r\n")
+        newline = line[len(line_body):]
+        stripped = line_body.strip()
+        if not stripped or stripped.startswith(("#", "---", "|")):
+            repaired_lines.append(line)
             continue
-        emphasis_end = stripped.find("を")
+
+        prefix_match = re.match(r"^(\s*(?:>\s*)?(?:[-*]\s*)?)(.+)$", line_body)
+        if not prefix_match:
+            repaired_lines.append(line)
+            continue
+        prefix, content = prefix_match.groups()
+        if "**" in content:
+            repaired_lines.append(line)
+            continue
+
+        emphasis_end = content.find("を")
         if emphasis_end <= 1:
             emphasis_end = min(
-                [idx for idx in (stripped.find("。"), stripped.find(".")) if idx >= 0] or [len(stripped)]
+                [pos for pos in (content.find("。"), content.find(".")) if pos >= 0] or [len(content)]
             )
         if emphasis_end <= 1:
+            repaired_lines.append(line)
             continue
-        head = stripped[:emphasis_end]
-        repaired = stripped.replace(head, f"**{head}**", 1)
-        return text.replace(stripped, repaired, 1), True
-    return text, False
+        head = content[:emphasis_end]
+        repaired_content = content.replace(head, f"**{head}**", 1)
+        repaired_lines.append(prefix + repaired_content + newline)
+        changed = True
+    return "".join(repaired_lines), changed
 
 
 def _repair_summary_emphasis(ctx: RepairContext) -> RepairResult:
@@ -199,7 +229,7 @@ def _repair_jsonl_field(ctx: RepairContext, *, field: str, fallback: str) -> Rep
     if not changed:
         return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
     path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8", newline="\n")
-    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,))
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,), f"autonomous_recovery: {field}")
 
 
 def _repair_date_evidence(ctx: RepairContext) -> RepairResult:
@@ -224,7 +254,224 @@ def _repair_record_title_ja(ctx: RepairContext) -> RepairResult:
     if not changed:
         return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
     path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8", newline="\n")
-    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,))
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,), "autonomous_recovery: title_ja_missing")
+
+
+def _repair_record_issue_date(ctx: RepairContext) -> RepairResult:
+    rel = "data/articles.jsonl"
+    path = ctx.repo_root / rel
+    if not path.exists():
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"missing artifact: {rel}")
+    changed = False
+    rows: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        seen_at = str(row.get("seen_at") or "")
+        if seen_at[:10] == ctx.issue and row.get("date") != ctx.issue:
+            row["date"] = ctx.issue
+            changed = True
+        rows.append(row)
+    if not changed:
+        return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
+    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8", newline="\n")
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,), "autonomous_recovery: issue_date_mismatch")
+
+
+def _record_category_id(row: dict[str, object]) -> str | None:
+    for key in ("category_id", "category", "cat_id"):
+        value = str(row.get(key) or "").strip().casefold()
+        if value in CATEGORY_PATHS:
+            return value
+    genre = str(row.get("genre") or "").strip().casefold()
+    for cat_id, meta in CATEGORY_PATHS.items():
+        if genre == str(meta.get("digest_folder") or "").strip().casefold():
+            return cat_id
+    return None
+
+
+def _is_stale_current_source_url(*, issue_day: date, url: str) -> bool:
+    src_date = extract_source_date_from_url(url)
+    if src_date is None:
+        return False
+    allowed_oldest = date.fromordinal(issue_day.toordinal() - 1)
+    return src_date < allowed_oldest
+
+
+def _is_unreviewed_stale_followup(*, issue_day: date, row: dict[str, object]) -> bool:
+    if not row.get("is_followup"):
+        return False
+    if str(row.get("followup_review_note") or "").strip():
+        return False
+    matched_with = str(row.get("matched_with") or "").strip()
+    matched_date = extract_source_date_from_url(matched_with)
+    return matched_date is not None and matched_date < issue_day
+
+
+def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[str]]:
+    path = ctx.repo_root / "data" / "articles.jsonl"
+    if not path.exists():
+        return {}
+    issue_day = date.fromisoformat(ctx.issue)
+    by_category: dict[str, list[str]] = {}
+    seen: set[tuple[str, str]] = set()
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("date") or "") != ctx.issue:
+            continue
+        url = str(row.get("url") or "").strip()
+        if not url:
+            continue
+        if not (
+            _is_stale_current_source_url(issue_day=issue_day, url=url)
+            or _is_unreviewed_stale_followup(issue_day=issue_day, row=row)
+        ):
+            continue
+        cat_id = _record_category_id(row)
+        if cat_id is None:
+            continue
+        key = (cat_id, url)
+        if key in seen:
+            continue
+        seen.add(key)
+        by_category.setdefault(cat_id, []).append(url)
+    return by_category
+
+
+def _split_digest_blocks(text: str) -> tuple[list[str], list[list[str]], list[str]]:
+    lines = text.splitlines()
+    starts = [idx for idx, line in enumerate(lines) if line.lstrip().startswith("### [")]
+    if not starts:
+        return lines, [], []
+    footer_start = next((idx for idx in range(starts[0], len(lines)) if lines[idx].startswith("← [[")), len(lines))
+    prefix = lines[:starts[0]]
+    article_lines = lines[starts[0]:footer_start]
+    footer = lines[footer_start:]
+    rel_starts = [idx - starts[0] for idx in starts if idx < footer_start]
+    blocks: list[list[str]] = []
+    for pos, start in enumerate(rel_starts):
+        end = rel_starts[pos + 1] if pos + 1 < len(rel_starts) else len(article_lines)
+        blocks.append(article_lines[start:end])
+    return prefix, blocks, footer
+
+
+def _digest_block_date(block: list[str]) -> date | None:
+    for line in block:
+        match = re.search(r"📅\s+(\d{4}-\d{2}-\d{2})", line)
+        if not match:
+            continue
+        try:
+            return date.fromisoformat(match.group(1))
+        except ValueError:
+            return None
+    return None
+
+
+def _repair_stale_top_digest_cards(ctx: RepairContext) -> tuple[list[str], list[str], str | None]:
+    issue_day = date.fromisoformat(ctx.issue)
+    allowed_oldest = issue_day - timedelta(days=1)
+    changed: list[str] = []
+    messages: list[str] = []
+    for cat_id in scheduled_category_ids(ctx.issue):
+        folder = CATEGORY_PATHS[cat_id]["digest_folder"]
+        rel = f"digest/{folder}/{ctx.issue}-{folder}.md"
+        path = ctx.repo_root / rel
+        if not path.exists():
+            continue
+        raw = path.read_text(encoding="utf-8-sig", errors="replace")
+        prefix, blocks, footer = _split_digest_blocks(raw)
+        if len(blocks) < 2:
+            continue
+        first_date = _digest_block_date(blocks[0])
+        if first_date is None or first_date >= allowed_oldest:
+            continue
+        fresh_index = next(
+            (
+                idx
+                for idx, block in enumerate(blocks[1:], start=1)
+                if (block_date := _digest_block_date(block)) is not None and block_date >= allowed_oldest
+            ),
+            None,
+        )
+        if fresh_index is None:
+            return changed, messages, f"blocked_refill_unresolved: no fresh top candidate for {cat_id}"
+        blocks.insert(0, blocks.pop(fresh_index))
+        out_lines = prefix[:]
+        for block in blocks:
+            if out_lines and out_lines[-1] != "":
+                out_lines.append("")
+            out_lines.extend(block)
+        if footer:
+            if out_lines and out_lines[-1] != "":
+                out_lines.append("")
+            out_lines.extend(footer)
+        path.write_text("\n".join(out_lines).rstrip() + "\n", encoding="utf-8", newline="\n")
+        changed.append(rel)
+        messages.append(f"{cat_id}: stale_top_reordered from_index={fresh_index + 1}")
+    return changed, messages, None
+
+
+def _repair_url_quarantine_refill(ctx: RepairContext) -> RepairResult:
+    bad_by_category = _daily_quality_bad_urls_by_category(ctx)
+    changed_artifacts: set[str] = {"data/articles.jsonl"}
+    messages: list[str] = []
+    for cat_id, bad_urls in sorted(bad_by_category.items()):
+        result = refill_category(
+            repo_root=ctx.repo_root,
+            date=ctx.issue,
+            category=cat_id,
+            bad_urls=bad_urls,
+            candidate_dir=ctx.repo_root / "build" / "deduped-candidates",
+            txid=f"{ctx.handler_id}-{cat_id}",
+        )
+        if not result.get("ok"):
+            reason = str(result.get("reason") or "blocked_refill_unresolved")
+            return RepairResult(
+                ctx.handler_id,
+                reason,
+                False,
+                tuple(sorted(changed_artifacts)),
+                f"autonomous_recovery_failed: url_quarantine_refill category={cat_id} reason={reason}",
+            )
+        folder = CATEGORY_PATHS[cat_id]["digest_folder"]
+        changed_artifacts.update(
+            {
+                f"digest/{folder}/{ctx.issue}-{folder}.md",
+                f"tmp/newsroom/{ctx.issue}/{cat_id}.records.jsonl",
+                f"data/search_audit/{ctx.issue}/{cat_id}.json",
+            }
+        )
+        messages.append(
+            f"{cat_id}: mode={result.get('mode')} removed={result.get('removed')} refilled={result.get('refilled')}"
+        )
+
+    stale_top_artifacts, stale_top_messages, stale_top_block = _repair_stale_top_digest_cards(ctx)
+    if stale_top_block:
+        return RepairResult(
+            ctx.handler_id,
+            "blocked_refill_unresolved",
+            False,
+            tuple(sorted(changed_artifacts)),
+            f"autonomous_recovery_failed: url_quarantine_refill {stale_top_block}",
+        )
+    changed_artifacts.update(stale_top_artifacts)
+    messages.extend(stale_top_messages)
+
+    if not bad_by_category and not stale_top_artifacts:
+        return RepairResult(ctx.handler_id, NOOP_STATUS, False, ("data/articles.jsonl",))
+
+    return RepairResult(
+        ctx.handler_id,
+        REPAIRED_STATUS,
+        True,
+        tuple(sorted(changed_artifacts)),
+        "autonomous_recovery: url_quarantine_refill; " + "; ".join(messages),
+    )
 
 
 def _blocked_ambiguous(ctx: RepairContext) -> RepairResult:
@@ -275,9 +522,15 @@ REGISTRY: dict[str, RepairHandler] = {
     "url-quarantine-refill": RepairHandler(
         handler_id="url-quarantine-refill",
         kind="deterministic",
-        allowed_artifacts=("data/articles.jsonl", "data/search_audit/{date}"),
+        allowed_artifacts=(
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/Summary/{date}.md",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
         verify_gate="url-liveness",
-        repair=_blocked_ambiguous,
+        repair=_repair_url_quarantine_refill,
     ),
     "date-evidence-source-patch": RepairHandler(
         handler_id="date-evidence-source-patch",
@@ -306,6 +559,13 @@ REGISTRY: dict[str, RepairHandler] = {
         allowed_artifacts=("data/articles.jsonl",),
         verify_gate="record-schema",
         repair=_repair_record_title_ja,
+    ),
+    "record-issue-date-patch": RepairHandler(
+        handler_id="record-issue-date-patch",
+        kind="deterministic",
+        allowed_artifacts=("data/articles.jsonl",),
+        verify_gate="record-schema",
+        repair=_repair_record_issue_date,
     ),
     "record-thumb-quarantine-patch": RepairHandler(
         handler_id="record-thumb-quarantine-patch",

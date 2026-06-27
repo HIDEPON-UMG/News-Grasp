@@ -1280,6 +1280,34 @@ def test_reporter_wave_uses_supervisor_loop_instead_of_blind_wait_job() -> None:
     assert "blocked_reporter_repeated_failure" in runner
 
 
+def test_reporter_codex_quota_uses_external_readiness_boundary() -> None:
+    """reporter の Codex quota は retry/terminal failure ではなく外部境界で即停止する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    reporter_body = runner.split("$retryCategories = @($Categories)", 1)[1].split(
+        "foreach ($artifactCat in $Categories)",
+        1,
+    )[0]
+    quota_marker = "if ([int]$WaveResult.rc -eq 123)"
+
+    assert quota_marker in runner
+    assert "function Test-ReporterCodexQuotaFailure" in runner
+    quota_function = runner.split("function Test-ReporterCodexQuotaFailure", 1)[1].split(
+        "function Clear-ReporterCategoryArtifacts",
+        1,
+    )[0]
+    quota_block = reporter_body.split("if (Test-ReporterCodexQuotaFailure -WaveResult $waveResult)", 1)[1].split(
+        "if ([int]$waveResult.rc -ne 0)",
+        1,
+    )[0]
+    assert "You've hit your usage limit" in quota_function
+    assert "purchase more credits" in quota_function
+    assert "Stop-ExternalReadiness" in quota_block
+    assert "-Kind 'codex_quota'" in quota_block
+    assert "-System 'openai_codex'" in quota_block
+    assert "blocked_reporter_repeated_failure" not in quota_block
+    assert "terminalFailures" not in quota_block
+
+
 def test_runner_is_repo_managed_and_requires_approved_live_sync() -> None:
     """bin 実行体 drift は勝手に上書きせず、backup + 明示承認 + rollback を要求する。"""
     repo_runner = OPS_DIR / "news-grasp-runner.ps1"

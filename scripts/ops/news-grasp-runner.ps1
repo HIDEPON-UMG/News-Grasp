@@ -46,6 +46,7 @@ param(
     [int] $IdleTimeoutSec = 900,
     [switch] $Stage2EditorSmokeOnly,
     [switch] $StopAfterEditorStart,
+    [switch] $StopBeforeDeepDive,
     [ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive')]
     [string] $ResumeFromStage = '',
     [string] $RepoDirOverride = '',
@@ -67,6 +68,7 @@ $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $UseCodex = $true
+if ($StopBeforeDeepDive) { $NoPublish = $true }
 if ($NoPublish) { $NoPush = $true }
 $ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
 $ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')
@@ -543,6 +545,8 @@ function Write-Log {
         Set-RunnerState -Status 'fallback_ok' -Message $Text -ExitCode 0
     } elseif ($Text -eq 'news-grasp-runner.ps1 SMOKE OK') {
         Set-RunnerState -Status 'smoke_ok' -Message $Text -ExitCode 0
+    } elseif ($Text -eq 'news-grasp-runner.ps1 PRE DEEPDIVE E2E OK') {
+        Set-RunnerState -Status 'pre_deepdive_e2e_ok' -Message $Text -ExitCode 0 -Phase 'pre-deepdive' -Step 'summary-reflection-and-daily-quality'
     } elseif ($Text -eq 'news-grasp-runner.ps1 PUBLISH DRY RUN OK') {
         Set-RunnerState -Status 'publish_dry_run_ok' -Message $Text -ExitCode 0
     }
@@ -755,6 +759,7 @@ function Get-RunnerScriptArguments {
     if ($IdleTimeoutSec -ne 900) { $runnerArgs += @('-IdleTimeoutSec', [string]$IdleTimeoutSec) }
     if ($Stage2EditorSmokeOnly) { $runnerArgs += '-Stage2EditorSmokeOnly' }
     if ($StopAfterEditorStart) { $runnerArgs += '-StopAfterEditorStart' }
+    if ($StopBeforeDeepDive) { $runnerArgs += '-StopBeforeDeepDive' }
     if ($ResumeFromStage) { $runnerArgs += @('-ResumeFromStage', $ResumeFromStage) }
     if ($RepoDirOverride) { $runnerArgs += @('-RepoDirOverride', $RepoDirOverride) }
     if ($CodexWrapperOverride) { $runnerArgs += @('-CodexWrapperOverride', $CodexWrapperOverride) }
@@ -2149,6 +2154,24 @@ if ($RecoverOnly) {
         }
     }
 
+    function Test-ReporterCodexQuotaFailure {
+        param($WaveResult)
+
+        if ([int]$WaveResult.rc -eq 123) { return $true }
+        $wrapperLog = [string]$WaveResult.wrapper_log
+        if (-not $wrapperLog -or -not (Test-Path -LiteralPath $wrapperLog)) { return $false }
+        try {
+            $logText = Get-Content -LiteralPath $wrapperLog -Raw -Encoding UTF8
+        } catch {
+            return $false
+        }
+        return (
+            $logText -match "You've hit your usage limit" -or
+            $logText -match 'purchase more credits' -or
+            $logText -match 'try again at [0-9]{1,2}:[0-9]{2}\s*(AM|PM)'
+        )
+    }
+
     function Clear-ReporterCategoryArtifacts {
         param([string]$Category)
 
@@ -2400,6 +2423,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         foreach ($waveResult in $waveResults) {
             $catName = [string]$waveResult.category
             $failureReason = $null
+            if (Test-ReporterCodexQuotaFailure -WaveResult $waveResult) {
+                Stop-ExternalReadiness -Reason "codex CLI rate limit / out of credits during reporter category=$catName attempt=$attempt" -ExitCode 123 -Kind 'codex_quota' -System 'openai_codex' -ExternalStatus "rc=$($waveResult.rc)" -ExternalDetail "reporter:$catName attempt=$attempt wrapper_log=$($waveResult.wrapper_log)"
+            }
             if ([int]$waveResult.rc -ne 0) {
                 $failureReason = "wrapper_rc=$($waveResult.rc)"
                 if ([int]$waveResult.rc -eq 124) {
@@ -2556,6 +2582,12 @@ if ($dailyQualityRc -ne 0) {
     Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'daily-quality' -Reason 'daily quality autonomous gate failed' -ExitCode $dailyQualityRc
 }
 Write-Log 'daily quality gate OK'
+
+if ($StopBeforeDeepDive) {
+    Write-Log 'StopBeforeDeepDive mode: summary-reflection and daily-quality gates succeeded; stopping before Stage4 DeepDive'
+    Write-Log 'news-grasp-runner.ps1 PRE DEEPDIVE E2E OK'
+    exit 0
+}
 
 # ===== Stage4: Codex DeepDive 生成 + commit (テーマゲート式日次・非致命) =====
 # 2026-06-01: 旧 news-grasp-weekly-runner.ps1 (毎週日曜 23:00 の別タスク) を日次に統合した step。

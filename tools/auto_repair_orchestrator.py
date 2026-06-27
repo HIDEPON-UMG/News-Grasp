@@ -91,7 +91,7 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
 def _payload_from_decision(decision: RepairDecision) -> dict[str, Any]:
     if decision.repair_class == RepairClass.DETERMINISTIC_HANDLER:
         if decision.handler_id == "url-quarantine-refill":
-            handler = "quarantine-refill"
+            handler = "deterministic-repair"
             action = GateAction.QUARANTINE
         else:
             handler = "deterministic-repair"

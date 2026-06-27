@@ -42,6 +42,18 @@ def _fake_codex_with_usage(tmp_path: Path) -> Path:
     return fake
 
 
+def _fake_codex_usage_limit(tmp_path: Path) -> Path:
+    fake = tmp_path / "fake_codex_usage_limit.cmd"
+    fake.write_text(
+        "@echo off\r\n"
+        "echo ERROR: You've hit your usage limit.\r\n"
+        "echo Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 5:36 AM.\r\n"
+        "exit /b 1\r\n",
+        encoding="cp932",
+    )
+    return fake
+
+
 def _fake_codex_capture_ps1(tmp_path: Path) -> Path:
     fake = tmp_path / "fake_codex_capture.ps1"
     fake.write_text(
@@ -191,3 +203,37 @@ def test_codex_wrapper_writes_flow_usage_jsonl(tmp_path: Path) -> None:
     text = usage_log.read_text(encoding="utf-8")
     assert '"flow":"reporter:ai"' in text
     assert '"tokens_used":12345' in text
+
+
+def test_codex_wrapper_maps_usage_limit_to_typed_external_rc(tmp_path: Path) -> None:
+    """Codex quota は内部 reporter 失敗ではなく、外部 readiness の rc=123 に正規化する。"""
+    prompt_file = tmp_path / "prompt.md"
+    log_file = tmp_path / "wrapper.log"
+    usage_log = tmp_path / "usage.jsonl"
+    prompt_file.write_text("quota smoke\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-CodexExe", str(_fake_codex_usage_limit(tmp_path)),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "30",
+            "-IdleTimeoutSec", "30",
+            "-WorkingDirectory", str(ROOT),
+            "-FlowName", "reporter:ai",
+            "-UsageLog", str(usage_log),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+    )
+
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+    usage = usage_log.read_text(encoding="utf-8", errors="replace")
+    assert result.returncode == 123, result.stderr + log
+    assert "codex quota detected" in log
+    assert '"exit_code":123' in usage

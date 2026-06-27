@@ -142,6 +142,54 @@ def run_registry_repair_cycle(
     )
 
 
+def _recover_residual_known_failure(
+    *,
+    repo_root: Path,
+    issue: str,
+    result: RepairRuntimeResult,
+    command: list[str],
+    artifacts: list[str],
+) -> RepairRuntimeResult:
+    decision = classify_gate_output(result.gate_id, result.post_repair_output)
+    if decision.repair_class != RepairClass.DETERMINISTIC_HANDLER or not decision.handler_id:
+        return result
+
+    repair = repair_with_registry(
+        RepairContext(
+            repo_root=repo_root,
+            issue=issue,
+            handler_id=decision.handler_id,
+            artifacts=artifacts,
+        )
+    )
+    if repair.status not in {"repaired", "noop"}:
+        return result
+
+    second = _run_gate(repo_root, command)
+    post_output = (second.stdout or "") + (second.stderr or "")
+    recovery_output = "\n".join(
+        part
+        for part in (
+            result.post_repair_output,
+            repair.message,
+            post_output,
+        )
+        if part
+    )
+    return RepairRuntimeResult(
+        gate_id=result.gate_id,
+        initial_exit_code=result.initial_exit_code,
+        post_repair_exit_code=second.returncode,
+        handler_id=f"{result.handler_id}+{decision.handler_id}",
+        repair_status=repair.status,
+        repair_changed=result.repair_changed or repair.changed,
+        repaired_artifacts=tuple(dict.fromkeys((*result.repaired_artifacts, *repair.artifacts))),
+        final_status="green_after_recovery" if second.returncode == 0 else "still_red",
+        initial_output=result.initial_output,
+        post_repair_output=recovery_output,
+    )
+
+
 def run_compound_repair_plan(
     *,
     repo_root: Path,
@@ -159,13 +207,19 @@ def run_compound_repair_plan(
             command=step.command,
             artifacts=step.artifacts,
         )
+        if result.final_status == "still_red":
+            result = _recover_residual_known_failure(
+                repo_root=repo_root,
+                issue=issue,
+                result=result,
+                command=step.command,
+                artifacts=step.artifacts,
+            )
         results.append(result)
-        if result.final_status in {"already_green", "green_after_repair"}:
+        if result.final_status in {"already_green", "green_after_repair", "green_after_recovery"}:
             continue
-        if not no_publish:
-            public_actions_attempted.append("fallback_publish_candidate")
         return CompoundRepairPlanResult(
-            final_status="blocked_unresolved_compound_failure",
+            final_status="failed_internal_block",
             steps=tuple(results),
             public_actions_attempted=tuple(public_actions_attempted),
         )
