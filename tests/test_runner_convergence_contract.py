@@ -325,13 +325,35 @@ Get-Content -LiteralPath $path -Raw -Encoding UTF8
 
 
 def _mock_distribution_manifest(tmp_path: Path) -> dict:
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "init"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
     subprocess.run(["git", "config", "user.name", "Test User"], cwd=tmp_path, check=True)
     (tmp_path / "README.md").write_text("test\n", encoding="utf-8")
     subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "commit", "-m", "test"], cwd=tmp_path, check=True, capture_output=True, text=True)
-    expected_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True).strip()
+    subprocess.run(
+        ["git", "commit", "-m", "test"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    expected_head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    ).strip()
     script = r"""
 $RepoDir = $env:NEWS_GRASP_REPO_DIR
 $DateStamp = '2026-06-23'
@@ -781,8 +803,10 @@ def test_autonomous_gate_classifies_actual_gate_capture() -> None:
 
     assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output' ''" not in runner
     assert "$classifyPath = Join-Path" in gate_body
+    assert "$gateCapturePathForClassify = $capturePath" in gate_body
     assert "Invoke-LoggedCapture -CapturePath $classifyPath" in gate_body
-    assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath" in gate_body
+    assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $gateCapturePathForClassify" in gate_body
+    assert "'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath" not in gate_body
     assert "auto repair classify failed" in gate_body
     assert "return $gateRc" in gate_body
 
@@ -1018,6 +1042,7 @@ def test_runner_has_no_publish_e2e_mode_distinct_from_no_push() -> None:
     assert "if ($NoPublish) { $NoPush = $true }" in runner
     assert "NoPublish mode: skipping digest/data git add + commit" in runner
     assert "NoPublish mode: skipping docs git add + commit" in runner
+    assert "NoPublish mode: skipping distribution manifest git add + commit" in runner
     assert "tools.tts.publish_audio', $DateStamp, '--dry-run'" in runner
     assert "tools.tts.deepdive_audio', $DateStamp, '--dry-run'" in runner
     assert "tools.youtube_podcast.upload_episode', $DateStamp, '--prepare', '--dry-run'" in runner

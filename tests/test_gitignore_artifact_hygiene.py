@@ -12,6 +12,7 @@ def test_local_evidence_and_repair_artifacts_are_gitignored() -> None:
 
     required_patterns = {
         "build/*.png",
+        "build/publish-complete/",
         "build/quarantine/",
         "build/repair-transactions/",
         "build/*_tmp.py",

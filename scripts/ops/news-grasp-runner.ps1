@@ -1559,9 +1559,10 @@ function Invoke-PythonGateWithRepair {
             return $gateRc
         }
         $classifyPath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-classify-$GateId-$DateStamp-attempt$attempt.json")
+        $gateCapturePathForClassify = $capturePath
         Push-Location $RepoDir
         try {
-            Invoke-LoggedCapture -CapturePath $classifyPath -Block { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $capturePath }
+            Invoke-LoggedCapture -CapturePath $classifyPath -Block { & $PyExe '-m' 'tools.auto_repair_orchestrator' 'classify' '--gate-id' $GateId '--output-file' $gateCapturePathForClassify }
             $classifyRc = $LASTEXITCODE
         } finally {
             Pop-Location
@@ -3033,19 +3034,23 @@ foreach ($youtubePodcastStep in @(
 
 $distributionSummary = Write-DistributionManifest
 Write-Log "distribution manifest written before push: $distributionSummary"
-Invoke-Logged { & $GitExe -C $RepoDir add "data/distribution/$DateStamp.json" }
-if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add distribution manifest failed (rc=$LASTEXITCODE)"; exit 1 }
-Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- "data/distribution/$DateStamp.json" }
-$distributionDiffRc = $LASTEXITCODE
-if ($distributionDiffRc -eq 1) {
-    Write-Log 'distribution manifest has changes, committing'
-    Invoke-Logged { & $GitExe -C $RepoDir commit -m "distribution: record publish state for $DateStamp" }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: distribution manifest commit failed (rc=$LASTEXITCODE)"; exit 1 }
-} elseif ($distributionDiffRc -eq 0) {
-    Write-Log 'distribution manifest no changes'
+if ($NoPublish) {
+    Write-Log 'NoPublish mode: skipping distribution manifest git add + commit'
 } else {
-    Write-Log "ERROR: git diff distribution manifest returned unexpected rc=$distributionDiffRc"
-    exit 1
+    Invoke-Logged { & $GitExe -C $RepoDir add "data/distribution/$DateStamp.json" }
+    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add distribution manifest failed (rc=$LASTEXITCODE)"; exit 1 }
+    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- "data/distribution/$DateStamp.json" }
+    $distributionDiffRc = $LASTEXITCODE
+    if ($distributionDiffRc -eq 1) {
+        Write-Log 'distribution manifest has changes, committing'
+        Invoke-Logged { & $GitExe -C $RepoDir commit -m "distribution: record publish state for $DateStamp" }
+        if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: distribution manifest commit failed (rc=$LASTEXITCODE)"; exit 1 }
+    } elseif ($distributionDiffRc -eq 0) {
+        Write-Log 'distribution manifest no changes'
+    } else {
+        Write-Log "ERROR: git diff distribution manifest returned unexpected rc=$distributionDiffRc"
+        exit 1
+    }
 }
 
 # ===== 5. digest + docs を 1 回の push で同時公開 (Plan v3 P0-A) =====
