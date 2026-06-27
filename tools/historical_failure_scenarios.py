@@ -187,6 +187,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "build/recovery/proofs/2026-06-26-post-gate-verify-publish-complete.json",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-06-27",
+        "auto-repair classify / NoPublish distribution manifest",
+        "PowerShell scriptblock read wrapper parameter scope and NoPublish still committed distribution manifest changes",
+        "scriptblock scope and NoPublish side-effect boundary",
+        "scriptblock parameter names must not collide with outer runner inputs and NoPublish must not create local commits",
+        "scriptblock-scope audit plus NoPublish E2E fixture blocking distribution manifest git add/commit",
+        "docs/incidents/2026-06-27-scriptblock-nopublish-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

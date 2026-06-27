@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Noto Sans JP",system-ui,sans-serif;background:#E6E1D5;color:#3A382F;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em;background:#F1EBDC;color:#43412f;padding:.08em .36em;border-radius:3px;word-break:break-all;overflow-wrap:anywhere}
+@media(max-width:600px){
+  body>div:first-child>div{padding:12px 16px!important;letter-spacing:.08em!important;gap:10px!important;align-items:flex-start!important}
+  body>div:nth-of-type(2){width:100%!important;max-width:100%!important;margin:0!important;border-radius:0!important}
+  body>div:nth-of-type(2)>div{padding:28px 16px 40px!important}
+  header{margin:-28px -16px 0!important;padding:28px 16px!important}
+  h1{font-size:28px!important;line-height:1.5!important}
+  [style*="white-space:nowrap"]{white-space:normal!important}
+  [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:1fr 1fr!important}
+  [style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:200px 1fr"]{grid-template-columns:1fr!important;gap:8px!important}
+}
+</style>
+</head>
+<body>
+<div style="background:#181C2A;border-bottom:3px solid #C9A155">
+  <div style="max-width:1040px;margin:0 auto;padding:13px 56px;display:flex;justify-content:space-between;align-items:center;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#C9A155">
+    <span>News-Grasp · Incident Report</span>
+    <span style="color:#8d96ab">2026-06-27 / Daily Batch</span>
+  </div>
+</div>
+
+<div style="max-width:1040px;margin:32px auto;background:#FFFFFF;border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+  <div style="padding:56px 56px 64px">
+    <header style="margin:-56px -56px 0;padding:56px 56px 40px;background:#F4EEE1;border-bottom:1px solid #E2DCCC">
+      <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#9A7B34">Root Cause Report</div>
+      <h1 style="margin:16px 0 0;font-family:'Noto Serif JP',serif;font-size:44px;line-height:1.4;font-weight:900;color:#181C2A;word-break:keep-all;overflow-wrap:break-word;line-break:strict">日次バッチ停止は<wbr> scriptblock の<wbr>動的スコープ衝突と<wbr><span style="white-space:nowrap">NoPublish&nbsp;副作用</span>の二重事故だった</h1>
+      <div style="display:flex;gap:16px;margin:26px 0 0;padding:20px 22px;background:#FFFFFF;border:1px solid #EBD9B6;border-left:3px solid #C9A155;border-radius:0 6px 6px 0">
+        <div style="font:700 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.1em;color:#9A7B34;text-transform:uppercase;white-space:nowrap">結論</div>
+        <p style="margin:0;font-family:'Noto Serif JP',serif;font-size:15px;line-height:2;color:#3A382F;max-width:760px">2026-06-27 の日次バッチは 06:00 に起動したが、<code>Invoke-LoggedCapture</code> の <span style="font-weight:700;background:#F6E7C6;border-radius:3px;padding:.04em .3em">PowerShell scriptblock</span> が wrapper parameter <code>$CapturePath</code> を動的スコープで読んだため、auto repair classify が gate 出力ではなく classify 出力を参照し、06:42 に公開前 gate で停止した。復旧後の検証では <span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">NoPublish なのに distribution manifest を commit する副作用</span> も検出し、修正後の2回目 NoPublish E2E で <strong style="font-weight:900;color:#181C2A">publish_dry_run_ok かつ HEAD 不変</strong> を確認した。</p>
+      </div>
+    </header>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-top:32px;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden">
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6B6862">Started</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A">06:00</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">Scheduled Task 起動済み</div>
+      </div>
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#FCF2F0">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#B83A2D">Stopped</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#B83A2D">06:42</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">daily-quality gate classify 失敗</div>
+      </div>
+      <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#F4F9F5">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#3D7E60">Recovered</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#3D7E60">12:17</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">publish verification OK</div>
+      </div>
+      <div style="padding:18px 20px">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#9A7B34">Published</div>
+        <div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A;font-family:'JetBrains Mono',monospace">a515459</div>
+        <div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">distribution manifest 反映</div>
+      </div>
+    </div>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">01</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">どの工程で問題が起きたか</h2>
+      </div>
+      <div style="margin-top:24px;border:1px solid #E1DCCF;border-radius:12px;background:#FBFAF6;padding:24px 26px 26px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#9A7B34">Workflow Map · 日次バッチ停止工程</div>
+          <div style="display:flex;gap:16px;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:15px;height:15px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">✓</span>完了</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:15px;height:15px;border-radius:50%;background:#B83A2D;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">✕</span>停止</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6B6862"><span style="width:15px;height:15px;border-radius:50%;border:1.5px solid #B0AAA0;display:inline-block"></span>未到達</span>
+          </div>
+        </div>
+        <div style="margin-top:18px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#B83A2D">① Daily pipeline — 06:00 起動 → 06:42 停止</div>
+        <div style="margin-top:12px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+          <div style="flex:1 1 116px;min-width:112px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px 13px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34">01</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div>
+            <div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#6B6862">06:00</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">Scheduled Task</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">runner start</div>
+          </div>
+          <div style="flex:0 0 auto;align-self:center;color:#C9A155;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 116px;min-width:112px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px 13px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34">02</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div>
+            <div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#6B6862">06:00-06:41</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">digest / DeepDive</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">成果物生成</div>
+          </div>
+          <div style="flex:0 0 auto;align-self:center;color:#B83A2D;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 116px;min-width:112px;border:2px solid #B83A2D;border-radius:9px;background:#FCF2F0;padding:13px 13px 12px;position:relative;box-shadow:0 0 0 4px rgba(184,58,45,.1)">
+            <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#B83A2D;color:#fff;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;padding:4px 9px;border-radius:999px;white-space:nowrap">STOP</div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#B83A2D">03</span><span style="width:18px;height:18px;border-radius:50%;background:#B83A2D;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✕</span></div>
+            <div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#B83A2D">Gate</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#B83A2D;line-height:1.4">daily-quality</div><div style="margin-top:3px;font-size:10.5px;color:#8a5049;line-height:1.5">classify 出力誤参照</div>
+          </div>
+          <div style="flex:0 0 auto;align-self:center;color:#CFC8BA;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 116px;min-width:112px;border:1.5px dashed #CFC8BA;border-radius:9px;background:transparent;padding:13px 13px 12px;opacity:.62">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#B0AAA0">04</span><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid #B0AAA0;display:inline-block"></span></div>
+            <div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#B0AAA0">Publish</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#8d897f;line-height:1.4">distribution / docs push</div><div style="margin-top:3px;font-size:10.5px;color:#B0AAA0;line-height:1.5">未到達</div>
+          </div>
+          <div style="flex:0 0 auto;align-self:center;color:#CFC8BA;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 116px;min-width:112px;border:1.5px dashed #CFC8BA;border-radius:9px;background:transparent;padding:13px 13px 12px;opacity:.62">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#B0AAA0">05</span><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid #B0AAA0;display:inline-block"></span></div>
+            <div style="margin-top:11px;font:700 9.5px/1 'JetBrains Mono',monospace;color:#B0AAA0">Notify</div><div style="margin-top:4px;font-size:12.5px;font-weight:700;color:#8d897f;line-height:1.4">send_push</div><div style="margin-top:3px;font-size:10.5px;color:#B0AAA0;line-height:1.5">未到達</div>
+          </div>
+        </div>
+        <div style="margin:22px 0 0;border-top:1px dashed #E1DCCF"></div>
+        <div style="margin-top:18px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#3D7E60">② Recovery / proof pipeline — 12:17 公開復旧 → 13:18 NoPublish 再検証</div>
+        <div style="margin-top:12px;display:flex;align-items:stretch;gap:4px;flex-wrap:wrap">
+          <div style="flex:1 1 130px;min-width:120px;border:1px solid #CDE0D3;border-radius:9px;background:#F4F9F5;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">R1</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">production publish</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">a515459</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#3D7E60;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 130px;min-width:120px;border:1px solid #EBD9B6;border-radius:9px;background:#FCF6EC;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#B07A39">R2</span><span style="width:18px;height:18px;border-radius:50%;background:#B07A39;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">!</span></div><div style="margin-top:11px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">NoPublish 1回目</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">manifest commit 副作用</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#3D7E60;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 130px;min-width:120px;border:1px solid #CDE0D3;border-radius:9px;background:#F4F9F5;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">R3</span><span style="width:18px;height:18px;border-radius:50%;background:#3D7E60;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font-size:12.5px;font-weight:700;color:#181C2A;line-height:1.4">runner fix</div><div style="margin-top:3px;font-size:10.5px;color:#6B6862;line-height:1.5">audit / contract</div></div>
+          <div style="flex:0 0 auto;align-self:center;color:#3D7E60;font-size:15px;font-weight:700">→</div>
+          <div style="flex:1 1 130px;min-width:120px;border:1.5px solid #3D7E60;border-radius:9px;background:#3D7E60;padding:13px 13px 12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 10px/1 'JetBrains Mono',monospace;color:#CDE9D6">R4</span><span style="width:18px;height:18px;border-radius:50%;background:#fff;color:#3D7E60;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span></div><div style="margin-top:11px;font-size:12.5px;font-weight:700;color:#fff;line-height:1.4">NoPublish 2回目</div><div style="margin-top:3px;font-size:10.5px;color:#CDE9D6;line-height:1.5">publish_dry_run_ok</div></div>
+        </div>
+      </div>
+      <div style="margin-top:18px;background:#181C2A;border-radius:10px;padding:22px 24px">
+        <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#C9A155">Fault boundary · 停止した工程</div>
+        <p style="margin:12px 0 0;font-size:13.5px;line-height:1.85;color:#D8D2C2">停止点は <code style="background:rgba(201,161,85,.18);color:#EBD9B6">tools.auto_repair_orchestrator classify</code> 実行後の結果読込である。runner は <code style="background:rgba(201,161,85,.18);color:#EBD9B6">FileNotFoundError: news-grasp-repair-classify-daily-quality-2026-06-27-attempt1.json</code> を受け、<strong style="font-weight:900;color:#fff">公開前に停止した</strong>。このため E2E の一時生成成果物は production publish へ流れず、修正後の NoPublish 2回目でも <span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">commit / push / upload / send_push を実行していない</span>。</p>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">02</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の詳細と、なぜ起きたか</h2>
+      </div>
+      <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7">
+          <dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#B83A2D">直接原因</dt>
+          <dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F"><code>Invoke-LoggedCapture</code> の wrapper parameter <code>$CapturePath</code> と、呼び出し元が scriptblock 内で参照した <code>$capturePath</code> が PowerShell の case-insensitive な名前解決で衝突した。<strong style="font-weight:900;color:#181C2A">classify は gate 出力ではなく classify 出力を入力として読みに行き</strong>、結果 JSON が存在しないため停止した。</dd>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7">
+          <dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">なぜ起きたか</dt>
+          <dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F">PowerShell の <code>&amp; $Block</code> は scriptblock の未束縛変数を wrapper function 側のローカル変数へ解決し得る。通常 E2E は正常系の gate 通過を確認していたが、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">wrapper parameter と block 内変数の衝突</span> という異常系を固定していなかった。</dd>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7">
+          <dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">停止が公開停止になった理由</dt>
+          <dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F"><span style="font-weight:700;background:#F6E7C6;border-radius:3px;padding:.04em .3em">News-Grasp</span> は公開前 gate が Green になってから docs 生成、distribution manifest、push、send_push へ進む。classify の失敗は gate 判定不能であり、runner は <strong style="font-weight:900;color:#181C2A">未検証の成果物を公開しない</strong> 側に倒れた。</dd>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7">
+          <dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">確認した非原因</dt>
+          <dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F">YouTube OAuth は auth doctor で <code>ok=true</code>、<code>reauth_required=false</code>。Scheduled Task は翌日 06:00 に登録済みで、live runner と repo runner の SHA256 は一致。外部認証や task 登録欠落ではなく、runner 内の scriptblock 変数衝突が直接原因だった。</dd>
+        </div>
+      </dl>
+      <div style="margin-top:18px;display:flex;gap:14px;padding:18px 20px;background:#FCF6EC;border:1px solid #EBD9B6;border-radius:8px">
+        <div style="font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#fff;background:#B07A39;padding:6px 9px;border-radius:5px;text-transform:uppercase;white-space:nowrap;height:fit-content">2次</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#181C2A">二次的に見つかった問題</div>
+          <p style="margin:7px 0 0;font-size:13px;line-height:1.8;color:#3A382F">1回目の NoPublish E2E は publish dry-run まで進んだが、<code>distribution manifest has changes, committing</code> に到達した。これは <strong style="font-weight:900;color:#181C2A">NoPublish なのに repository commit 副作用が残る</strong> 契約漏れであり、同日中に backup branch 作成、mixed reset、生成物 restore、runner 修正、2回目 NoPublish E2E で解消を確認した。</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">03</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の暫定対応内容</h2>
+      </div>
+      <div style="margin-top:22px;position:relative;padding-left:30px">
+        <div style="position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:#E1DCCF"></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B83A2D;border:2px solid #fff;box-shadow:0 0 0 2px #B83A2D"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B83A2D">06:42</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3A382F">daily-quality gate の auto repair classify が <code>FileNotFoundError</code> で停止。公開前工程で止まり、push と send_push には到達しなかった。</p></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B07A39;border:2px solid #fff;box-shadow:0 0 0 2px #B07A39"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B07A39">11:49</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3A382F"><code>-ResumeFromStage post-daily-quality</code> で再開。生成済み成果物を再利用し、日次公開の復旧に進めた。</p></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#3D7E60;border:2px solid #fff;box-shadow:0 0 0 2px #3D7E60"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">12:17</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3A382F">production publish verification が OK。commit <code>a515459</code> で distribution manifest が反映された。</p></div>
+        <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B07A39;border:2px solid #fff;box-shadow:0 0 0 2px #B07A39"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B07A39">12:58</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3A382F">NoPublish 1回目で distribution manifest commit 副作用を検出。意図しない local commit は backup branch 退避後に reset し、生成 side effect を restore。</p></div>
+        <div style="position:relative"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#3D7E60;border:2px solid #fff;box-shadow:0 0 0 2px #3D7E60"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">13:18</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8;color:#3A382F">NoPublish 2回目で <code>NoPublish mode: skipping distribution manifest git add + commit</code> と <code>publish_dry_run_ok</code> を確認。HEAD と origin HEAD は不変。</p></div>
+      </div>
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34;letter-spacing:.12em;text-transform:uppercase">MITIGATION 1</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">停止原因の局所修正</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F"><code>$gateCapturePathForClassify</code> に外側値を退避し、scriptblock が wrapper parameter を読まない構造に変更。</p></div>
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34;letter-spacing:.12em;text-transform:uppercase">MITIGATION 2</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">副作用の取り消し</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">NoPublish で発生した local commit は backup branch 作成後に reset し、<code>docs/</code> と <code>data/distribution/</code> の生成差分を restore。</p></div>
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34;letter-spacing:.12em;text-transform:uppercase">MITIGATION 3</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">NoPublish 契約強化</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">digest/data/docs に加え、distribution manifest の git add/commit も NoPublish で skip する runner 契約へ変更。</p></div>
+        <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#9A7B34;letter-spacing:.12em;text-transform:uppercase">MITIGATION 4</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">公開ではない検証の明記</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">NoPublish E2E の一時生成成果物は公開していない。公開 URL 200 確認は既存公開面が壊れていないことの確認であり、E2E 成果物公開ではない。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">04</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">直近改修・過去障害との関係</h2>
+      </div>
+      <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">直近改修との関係</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F">auto repair classify 経路は gate 失敗時にだけ通るため、通常系 E2E では見落としやすい。修正は runner の分類補助経路に限定され、通常 publish path そのものを置き換えていない。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">過去 E2E との関係</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F">従来の E2E は正常 path と単発異常 path の確認に寄っており、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">PowerShell の動的スコープ衝突</span> と <span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">NoPublish 下の distribution manifest 副作用</span> を compound case として固定していなかった。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">公開面との関係</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F">production publish は 12:17 に完了している。NoPublish E2E の一時成果物は公開しておらず、公開 URL 200 は既存公開面の健全性確認として扱った。</dd></div>
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">非原因</dt><dd style="margin:0;font-size:14px;line-height:1.9;color:#3A382F">YouTube OAuth、Scheduled Task 登録、GitHub remote HEAD、live runner sync は復旧後に Green。根本原因ではなく、復旧・翌日自走の確認対象である。</dd></div>
+      </dl>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">05</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応方針の網羅性と完璧性の担保</h2>
+      </div>
+      <div style="margin-top:22px;padding:18px 20px;background:#F1F6F2;border:1px solid #CDE0D3;border-left:3px solid #3D7E60;border-radius:0 8px 8px 0">
+        <div style="font-size:13px;font-weight:700;color:#181C2A">完璧性の定義</div>
+        <p style="margin:8px 0 0;font-size:13.5px;line-height:1.9;color:#3A382F">明日以降の自走を担保するには、単に今回の1行を直すだけでなく、<strong style="font-weight:900;color:#181C2A">同種の scriptblock 変数衝突を監査で検出し、NoPublish の副作用を契約で禁止し、E2E skill が同じ異常系を必須 proof として要求する</strong>状態にする必要がある。</p>
+      </div>
+      <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60;letter-spacing:.12em;text-transform:uppercase">LAYER 1</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">構造回避</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">classify 入力を alias 変数に退避し、wrapper parameter と同名の変数を scriptblock 内で参照しない。</p></div>
+        <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60;letter-spacing:.12em;text-transform:uppercase">LAYER 2</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">静的監査</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F"><code>tools.audit_powershell_scriptblock_scope</code> で ops PowerShell の wrapper/scriptblock 衝突を検出する。</p></div>
+        <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60;letter-spacing:.12em;text-transform:uppercase">LAYER 3</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">異常 fixture</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">今回の classify 衝突、case-insensitive 衝突、fixed-seed monkey 注入を契約テストへ追加。</p></div>
+        <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60;letter-spacing:.12em;text-transform:uppercase">LAYER 4</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">NoPublish 境界</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">distribution manifest の git add/commit も NoPublish で skip する。</p></div>
+        <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60;letter-spacing:.12em;text-transform:uppercase">LAYER 5</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">E2E skill</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">push-before-publish readiness で scriptblock audit と NoPublish distribution block を必須化。</p></div>
+        <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px;background:#FFFFFF"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60;letter-spacing:.12em;text-transform:uppercase">LAYER 6</div><h3 style="margin:8px 0 0;font-size:14px;color:#181C2A">live runner sync</h3><p style="margin:7px 0 0;font-size:12.5px;line-height:1.75;color:#3A382F">repo copy と <code>%USERPROFILE%\bin\news-grasp-runner.ps1</code> の SHA256 一致を確認。</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:52px">
+      <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px">
+        <span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">06</span>
+        <h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応の実行計画</h2>
+      </div>
+      <table style="width:100%;border-collapse:separate;border-spacing:0;margin-top:22px;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden;font-size:12.5px;line-height:1.75">
+        <thead><tr style="background:#181C2A;color:#F0EBE0"><th style="text-align:left;padding:12px 14px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase">区分</th><th style="text-align:left;padding:12px 14px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase">対応</th><th style="text-align:left;padding:12px 14px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase">完了条件</th></tr></thead>
+        <tbody>
+          <tr><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7"><span style="display:inline-block;background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px;font:700 10px/1 'JetBrains Mono',monospace">完了</span></td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7">classify capture path を alias 化</td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7"><code>test_autonomous_gate_classifies_actual_gate_capture</code> Green</td></tr>
+          <tr><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7"><span style="display:inline-block;background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px;font:700 10px/1 'JetBrains Mono',monospace">完了</span></td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7">scriptblock collision auditor 追加</td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7"><code>tools.audit_powershell_scriptblock_scope</code> が ops scripts で <code>[]</code></td></tr>
+          <tr><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7"><span style="display:inline-block;background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px;font:700 10px/1 'JetBrains Mono',monospace">完了</span></td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7">NoPublish distribution manifest commit block</td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7">NoPublish 2回目で <code>publish_dry_run_ok</code> と HEAD 不変</td></tr>
+          <tr><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7"><span style="display:inline-block;background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px;font:700 10px/1 'JetBrains Mono',monospace">完了</span></td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7">E2E skill / harness mapping 反映</td><td style="padding:13px 14px;border-bottom:1px solid #E8E3D7">AIHarnessState snapshot <code>c801685</code> push 済み</td></tr>
+          <tr><td style="padding:13px 14px"><span style="display:inline-block;border:1px solid #C9A155;background:#FBF4E9;color:#9A7B34;border-radius:4px;padding:3px 7px;font:700 10px/1 'JetBrains Mono',monospace">継続</span></td><td style="padding:13px 14px">明日 06:00 の通常日次バッチ観測</td><td style="padding:13px 14px">Scheduled Task `News-Grasp Runner` が通常 publish を完了し、verify-publish-complete が Green</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:18px;display:flex;gap:14px;padding:18px 20px;background:#F1F6F2;border:1px solid #CDE0D3;border-radius:8px">
+        <div style="font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#fff;background:#3D7E60;padding:6px 9px;border-radius:5px;text-transform:uppercase;white-space:nowrap;height:fit-content">OK</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#181C2A">報告時点の確認</div>
+          <p style="margin:7px 0 0;font-size:13px;line-height:1.8;color:#3A382F">News-Grasp commit <code>b3a4287</code> は origin/main に push 済み。public report 作成前の公開トップは HTTP 200。NoPublish E2E の一時成果物は公開しておらず、公開 URL 200 は既存公開面が壊れていないことの確認である。</p>
+        </div>
+      </div>
+    </section>
+    <footer style="margin-top:52px;padding-top:18px;border-top:1px solid #E8E3D7;font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6B6862">News-Grasp incident report · 2026-06-27 scriptblock scope / NoPublish side-effect</footer>
+  </div>
+</div>
+</body>
+</html>
