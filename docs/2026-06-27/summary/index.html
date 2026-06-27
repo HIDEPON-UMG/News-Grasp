@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-06-27</title>
+<meta name="description" content="2026-06-27 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-06-27/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-06-27">
+<meta property="og:description" content="2026-06-27 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-06-27/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-06-27">
+<meta name="twitter:description" content="2026-06-27 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-27/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-06-27/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260627</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260627</span></h2>
+      
+      <div class="summary-hero__subtitle">「先行配布と基準線」</div>
+      
+      <div class="summary-hero__lead">今日は、<strong class="emph-bold">OpenAI</strong> の限定提供、<strong class="emph-bold">Google</strong> の学校向けチューター、<strong class="emph-bold">BIPROGY</strong> の AML SaaS、<strong class="emph-bold">自動運転レベル4</strong> の国際基準、<strong class="emph-bold">ペルソナ3 リロード</strong> の長期販売が同じ朝に並び、<strong>どこまで先に配るか</strong> と <span class="emph-und">どこを基準線に置くか</span> が競争の分岐になりました。AI もモビリティも、派手な新機能より、認可・標準・運用の線を引けるかどうかが先に問われています。為替も 161.96 円という節目が見えることで、値動きの読み方が一段はっきりしました。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">5</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">24</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<section class="daily-audio daily-audio--summary" aria-label="今日のニュース朗読">
+  <div class="daily-audio__inner">
+    <div class="daily-audio__meta">
+      <span class="daily-audio__kicker">LISTEN</span>
+      <span class="daily-audio__title">今日のニュース朗読</span>
+      <span class="daily-audio__date">2026-06-27</span>
+    </div>
+    <div class="daily-audio__controls">
+      <audio preload="none" controls>
+        <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-06-27.mp3?v=38d8a5f19bc9" type="audio/mpeg">
+      </audio>
+      <div class="daily-audio__rates" role="group" aria-label="再生速度">
+        <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text">きょうは、性能そのものより、先に配る範囲と守る基準をどう決めるかがニュースをまとめていました。</div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+      
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§02</span>
+          <span class="summary-sec__tag" style="background: #475569;">FX</span>
+        </div>
+        <h3 class="summary-sec__title">FX — 介入警戒と雇用統計待ち</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">USDJPY</strong> は <strong>161 円台後半</strong> を保ち、PCE 通過後も介入警戒が上値を重くしています。<strong class="emph-bold">米雇用統計</strong> が強ければ 162 円台定着を試せますが、弱ければ上値追いは鈍りやすい。<span class="emph-und">金利差と 161.96 円の節目</span> を同時に見ると、来週の読み筋が立ちます。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — 限定提供と定着先の競争</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">GPT-5.6</strong> の 20 社限定提供と <strong class="emph-bold">Jalapeno</strong> チップは、モデル競争が配布条件と推論基盤の争いへ移ったことを示しました。中国の <strong class="emph-bold">Claude</strong> API プロキシと <strong class="emph-bold">LearnLM</strong> の学校展開も並び、<strong>使わせ方と守り方</strong> が同じくらい重い。今日は性能より <span class="emph-und">定着先の設計</span> が主題です。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">GPT-5.6</strong> は <strong>当初の提供先を約20社に限定</strong> され、<span class="emph-und">一般提供までの利用に米政府承認</span> が必要になった。</li>
+          
+          <li>モデル性能そのものより、<strong class="emph-bold">OpenAI</strong> が <strong>国家安全保障を踏まえて配布を制御</strong> し始めた点が大きい。最先端AIの公開は製品判断だけで完結しなくなる。</li>
+          
+          <li>読者が次に見るべきは、<span class="emph-und">承認待ちで誰が先に使えるか</span> と、限定提供が企業導入の商談速度をどこまで変えるかだ。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — 標準化して回す段階へ</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">BIPROGY</strong> の AML SaaS、<strong class="emph-bold">清水建設</strong> の Snowflake 移行、<strong class="emph-bold">山下PMC</strong> の現場横断 UI、<strong class="emph-bold">NTT東日本</strong> の AWS 認定 37 名が並び、IT は <strong>「ソフトを入れる」から「業務を標準化して回す」段階</strong> に入りました。<span class="emph-und">提案力</span> だけでなく <span class="emph-und">現場で続く運用設計</span> が採用理由になっています。</p>
+        
+        <ul class="summary-sec__bullets">
+          
+          <li><strong class="emph-bold">BIPROGY</strong>は<strong>外国送金の商流情報をAIで判定するAML SaaS「Trabotic」</strong>を12月に始め、<span class="emph-und">人手依存だった一次チェック</span>を標準化しにきた。</li>
+          
+          <li>国内初のSaaS型を掲げ、<strong class="emph-bold">商流管理</strong>と送金データを突き合わせて異常兆候を可視化するため、<strong>金融機関ごとの差が大きい審査実務</strong>を横断基盤へ寄せる狙いがある。</li>
+          
+          <li>今後は<strong class="emph-bold">Swift</strong>の異常検知APIやAmazon Bedrockも組み合わせる計画で、<strong>AML対応を個別開発から継続更新型サービスへ移す</strong>流れが<span class="emph-und">銀行IT投資の新しい軸</span>になりうる。</li>
+          
+        </ul>
+        
+        
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§05</span>
+          <span class="summary-sec__tag" style="background: #475569;">Mobility</span>
+        </div>
+        <h3 class="summary-sec__title">Mobility — 認証と補助と採用の順番</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">自動運転レベル4</strong> の国際基準、<strong class="emph-bold">Uber</strong> と <strong class="emph-bold">Lucid</strong>・<strong class="emph-bold">Nuro</strong> のロボタクシー、<strong class="emph-bold">東京都</strong> の ZEV 補助、<strong class="emph-bold">Tesla</strong> の日本採用が同じ日に出て、モビリティは性能競争より <strong>認証・補助・採用</strong> の順番を詰める局面です。先に走れるかより、<span class="emph-und">先に通るか</span> が勝負になっています。</p>
+        
+        
+      </div>
+      
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§06</span>
+          <span class="summary-sec__tag" style="background: #475569;">Game</span>
+        </div>
+        <h3 class="summary-sec__title">Game — 販売線を長く引く</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ペルソナ3 リロード</strong> の 300 万本、<strong class="emph-bold">Steam Machine</strong> の 60FPS 表記修正、<strong class="emph-bold">めっちゃカメレオン</strong> の 1000 万本、<strong class="emph-bold">BanG Dream! Our Notes</strong> の事前登録、<strong class="emph-bold">JAMMM</strong> の始動が並び、ゲームは発売点より <strong>運営と収益の持久力</strong> が問われました。<span class="emph-und">販売線を伸ばす設計</span> が、きょうの主語です。</p>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #2D5BB8;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #2D5BB8;">ARTIFICIAL INTELLIGENCE</div>
+          <div class="summary-take__text">OpenAI、新型AI「GPT-5.6」を20社限定で先行提供　米政府承認が条件</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">FOREIGN EXCHANGE</div>
+          <div class="summary-take__text">ドル円は161円台後半を維持、PCE通過でも介入警戒と雇用統計待ち</div>
+        </div>
+      </div>
+      
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #3A7B8C;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #3A7B8C;">MOBILITY</div>
+          <div class="summary-take__text">Uber、Lucid・Nuroと高級EVロボタクシーを量産展開へ</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-06-27/">全24本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-06-27 · #20260627
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-27/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
