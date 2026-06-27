@@ -1,0 +1,91 @@
+{
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d",
+    "https://www.infoq.com/feed/",
+    "https://www.ciodive.com/feeds/news/",
+    "https://www.cybersecuritydive.com/feeds/news/",
+    "https://www.theregister.com/software/headlines.atom"
+  ],
+  "raw_results_total": 236,
+  "candidates_total": 214,
+  "selected_total": 50,
+  "source_breakdown": {
+    "google_news:IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d": {
+      "url": "https://news.google.com/rss/search?q=IT+OR+%E3%82%AF%E3%83%A9%E3%82%A6%E3%83%89+OR+SaaS+OR+%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3+OR+%E3%82%B3%E3%83%B3%E3%82%B5%E3%83%AB%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0+OR+%22enterprise+software%22+OR+cybersecurity+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 85,
+      "dropped": 15
+    },
+    "google_news:SaaS OR クラウド OR enterprise software OR cybersecurity when:1d": {
+      "url": "https://news.google.com/rss/search?q=SaaS+OR+%E3%82%AF%E3%83%A9%E3%82%A6%E3%83%89+OR+enterprise+software+OR+cybersecurity+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 10,
+      "candidates": 7,
+      "dropped": 3
+    },
+    "google_news:コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E3%82%B3%E3%83%B3%E3%82%B5%E3%83%AB%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0+OR+DX+OR+%E3%82%AC%E3%83%90%E3%83%A1%E3%83%B3%E3%83%88%E3%82%AF%E3%83%A9%E3%82%A6%E3%83%89+OR+IT%E6%8A%95%E8%B3%87+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 96,
+      "dropped": 4
+    },
+    "www.infoq.com/feed": {
+      "url": "https://www.infoq.com/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 10,
+      "candidates": 10,
+      "dropped": 0
+    },
+    "www.ciodive.com/feeds/news": {
+      "url": "https://www.ciodive.com/feeds/news/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 8,
+      "dropped": 0
+    },
+    "www.cybersecuritydive.com/feeds/news": {
+      "url": "https://www.cybersecuritydive.com/feeds/news/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 8,
+      "dropped": 0
+    },
+    "www.theregister.com/software/headlines.atom": {
+      "url": "https://www.theregister.com/software/headlines.atom",
+      "mode": "scrapling_page",
+      "trust_tier": "industry",
+      "raw": 0,
+      "candidates": 0,
+      "dropped": 0
+    }
+  },
+  "negative_filter_dropped": {
+    "global:ranking_only": 6,
+    "it:crowdfunding": 9,
+    "it:course_pr": 1,
+    "global:homepage_or_section": 2,
+    "global:jobs": 3,
+    "it:saas_promo": 1
+  },
+  "scrapling_sources_used": [
+    "https://www.theregister.com/software/headlines.atom"
+  ],
+  "broken_sources": [
+    {
+      "url": "https://www.theregister.com/software/headlines.atom",
+      "mode": "scrapling_page",
+      "reason": "empty_listing"
+    }
+  ]
+}

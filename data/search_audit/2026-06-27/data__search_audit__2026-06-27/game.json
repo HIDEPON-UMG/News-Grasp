@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-27",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:p-ch.jp \"ペルソナ３ リロード\" \"300万本\"",
+    "site:www.gamespark.jp \"Valve、「Steam Machine」の説明文を一部変更\"",
+    "\"めっちゃカメレオン\" 1000万本",
+    "site:prtimes.jp \"BanG Dream! Our Notes\" 事前登録",
+    "site:prtimes.jp \"JAMMM\" \"IP360\" Bufff"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "フレッシュオールスターゲーム2026 選出選手のお知らせ",
+      "url": "https://news.google.com/rss/articles/CBMiUEFVX3lxTFBDb0d4VGdYamhPbmJYVjdRRER1bXRaSThJVExGLVkzakdtZFpzTUhmaDlSYlB3YnVDY2RsZXdSbk9JbjZxLUN2UWdIXzdndjVz?oc=5",
+      "reason": "野球のオールスター告知で game カテゴリ対象外"
+    },
+    {
+      "title": "強制わいせつ罪で起訴の「イカゲーム」俳優 無罪が確定＝韓国",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1ucmRxZlVoRndvOFEwSHdrUGpVTUhFRHlBRVUyaEs2RnlRMGdYby0zWXQtQ2ZsSHlSdUJzOUlVME1pTkdzYXhTNEFFTFFTM1IzemZtQjAxNWZ6eG1rcDd0NjB3XzM3U29LRlJnN0xKSlBUV2xNR2VlczN0VU9IOGc?oc=5",
+      "reason": "ゲーム業界ニュースではなく映像作品俳優の司法報道"
+    },
+    {
+      "title": "『ロマンシング サガ -ミンストレルソング- リマスター』がNintendo Switchで本日発売。リマスター要素や追加要素などをご紹介。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNQ0FCLW9sRzdRR2ZneTh2Z0NXejljeHBoc2tFd3ZyendoeFJlUWJ6clNyUVg2d2NEcTE2S3ZlRTJsbHA3SFhuWmZGMS0yU3U0dVY3ZFQ5WmFlVnI5aldWekZidDgzczNkSXo0WUFtZDJnb3ZicmFJUDI2dWwxUzRPVU5LcTFMZw?oc=5",
+      "reason": "canonical 解決先の記事本文が 2022-12-01 公開で当日性を満たさない"
+    },
+    {
+      "title": "ニンテンドーeショップ新作ソフト情報 6/26（金）号。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQU2ZqME1jSl9UZUtXRTU0T0RES28yTThKejZPZENGRlBBMTJ6WW9Qa0o0d21yWmVBbUhFck5VVnRvR0t1WGRNWHVGREZ4bG4zdThTYkxSeFNseTNZaWM2UXlzNFRRUVhudUcxV2pZcTFBOUk4cVVBN0xQZjJ6bUE2MXVMeXd4Zw?oc=5",
+      "reason": "週次の配信一覧で個別ニュースとしての変化量が薄い"
+    },
+    {
+      "title": "パーティ編成×デッキ構築×オートバトル・ローグライクRPG『Spirit Dungeon』Steamにて早期アクセス開始",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE1KdHdpUG01VHlBMWpoYXdJRGZpRXJlQlJPWWI2TmlaM3E5VVpvUmdyVlRVTVVyMWk2VjN3aVFPWU11S2IxcnIxcnZNT3JUd1JadXNONHp0YjY3ZEhBOVJJVDlVcXhhUQ?oc=5",
+      "reason": "現行性はあるが市場インパクトが限定的で、上位5件に及ばず"
+    },
+    {
+      "title": "“天使視点”の百合恋愛ゲーム『私たちフェイクマリッジ？』8月25日発売へ。第三者としてキャラを導く、「カップルの間に挟まらない」百合ファンから大注目の作品",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5nczFpY3dub3h0czEySjk0bjQwOFRUcHhYNU5USzY5aktROHllYlVrUUR6U3MxcFpZZmZISDFSRGdoNjl0MXhCTXh6eFo0YXM2RFFNT0d2cXV1WHBycHF0YVk3ZW16bE5Td05nOA?oc=5",
+      "reason": "コンセプトは新しいが、当日の業界面としては訴求対象が狭い"
+    }
+  ]
+}

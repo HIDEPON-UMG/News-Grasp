@@ -1,0 +1,53 @@
+{
+  "date": "2026-06-27",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:finance.yahoo.co.jp BIPROGY SaaS型金融機関向け商流管理サービス 2026 6 26",
+    "site:it.impress.co.jp 清水建設 Snowflake データ基盤 クラウド移行 2026 6 26",
+    "site:prtimes.jp PrimeKarteNEXT 2026年6月26日",
+    "site:cloud.watch.impress.co.jp 山下PMC b-platform kintone 2026 6 26",
+    "site:ntt-east.co.jp AWS Ambassadors 37名 2026年6月26日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "日比谷音楽祭2026｜みんなでつくる音楽祭の実現へ向けて（日比谷音楽祭事務局 2026/03/30 公開）",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE1aQjVBTTAtUkFPVzN5N2tSOUxOT2NiMXExQ2J0Y3JwTF9YcjZLMF9IemtSQmJXZ3czZzRDWjc2UGpJQ2g1UlJ4VU9RRVM?oc=5",
+      "reason": "カテゴリ逸脱"
+    },
+    {
+      "title": "救った命の、その先を守る。NICUでの家族時間を支えたい！",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE5OQW5yeHlXTXZteG9CSWh6YW5rTFJLbUZDNlRUTWFYbDRsUVJERlJkUGZ2dDlmOUJKeFdSRjVodFNxUFhoM1VlNGYyaVhPbGdKNE9z?oc=5",
+      "reason": "カテゴリ逸脱"
+    },
+    {
+      "title": "第21回出雲神話まつり",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFAxR0R1UDdYak41SnJuRGVuSjZzYmdMVVVVb3hVN3pCd2t1REp4Rlh5Z3d5NVE2c09Namc5a0hIc0lwU0JCZ0sxcDFEMmNjWVRFcWl4dHdrYw?oc=5",
+      "reason": "カテゴリ逸脱"
+    },
+    {
+      "title": "Seaco： サイバーセキュリティ統合を推進するためトレンドマイクロを戦略的セキュリティパートナーに選定",
+      "url": "https://www.trendmicro.com/ja_jp/about/customer-stories/seaco.html",
+      "reason": "本文が2024-12-19基準の顧客事例で当日窓外"
+    },
+    {
+      "title": "【事例・製造業】Trend Global Customer Award受賞 – Cybersecurity Leader Award 2023 | Steelcase | トレンドマイクロ",
+      "url": "https://www.trendmicro.com/ja_jp/about/customer-stories/steelcase.html",
+      "reason": "本文主題が2023年事例で当日窓外"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-27/it.filtered.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

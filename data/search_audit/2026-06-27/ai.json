@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-27",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Google News RSS feed query from stage1: 生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:www.nikkei.com \"OpenAIの新型AI「GPT-5.6」、当初20社に限定提供 米政府要請で\"",
+    "site:www.sbbit.jp \"オープンAI、LLM推論特化の独自AIチップを発表…ブロードコムと共同開発\"",
+    "site:gigazine.net \"OpenAI社員がAIエージェントをどれだけ使っているのかが丸わかりなレポートが公開される\"",
+    "site:gigazine.net \"中国の開発者が公式価格の約10％でAnthropicのAIモデルを利用できるAPIプロキシ\"",
+    "site:k-tai.watch.impress.co.jp \"Googleの汎用AI「Gemini」が教育現場で活躍、教育向けLLM「LearnLM」\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAI、ミュトス対抗「GPT-5.6」発表 Sol・Terra・Lunaの3モデル、一般提供は数週間後",
+      "source": "japan.cnet.com",
+      "reason": "GPT-5.6テーマが重複。政府承認と限定提供の配布制御を扱う日本経済新聞の記事を優先"
+    },
+    {
+      "title": "OpenAI、新型AI「GPT-5.6」限定提供開始 「数週間で一般公開」",
+      "source": "www.nikkei.com",
+      "reason": "上記と同テーマの近接続報。新材料が薄いため非採用"
+    },
+    {
+      "title": "Google・OpenAI、買い物体験競う どこでもカートやプロトコル連携",
+      "source": "www.nikkei.com",
+      "reason": "重要度は高いが、今回の5本では配布・推論基盤・社内定着・接続経路・教育導入の流れを優先"
+    },
+    {
+      "title": "アップルのVision Proとスマートグラスの開発責任者、OpenAIへ移籍",
+      "source": "www.bloomberg.com",
+      "reason": "人材移籍の速報としては有力だが、当日テーマの事業インパクト比較で次点"
+    },
+    {
+      "title": "OpenAI、上場時期「年内から27年に延期検討」 米紙報道",
+      "source": "www.nikkei.com",
+      "reason": "金融面の波及はあるが、AIカテゴリとしては運用・基盤・配布の変化を優先"
+    }
+  ]
+}

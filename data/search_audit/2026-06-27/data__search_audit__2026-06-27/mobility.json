@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-27",
+  "category_id": "mobility",
+  "queries": [
+    "stage1 file: build/deduped-candidates/mobility.jsonl",
+    "site:asahi.com 自動運転 レベル4 国際基準決まる 有能で注意深い人間",
+    "site:jidounten-lab.com Uber ソフトバンクG 投資先 高級EV ロボタクシー 自動運転 新市場開拓",
+    "site:jidounten-lab.com イーロン・マスク 日本 英語ペラペラ運転手 募集 テスラ 自動運転試験",
+    "site:my.metro.tokyo.lg.jp 令和8年度 シェアリング レンタル ZEV 車両 補助上限額 130万円",
+    "site:mainichi.jp 経営責任問う声に三部社長は陳謝 EV巨額損失のホンダ株主総会"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "トヨタ九州がＥＶ生産本格化、中国向け主力車「レクサスＥＳ」に新モデル…苦戦続く中国市場で挽回へ（読売新聞オンライン）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE93VWpDRm1tYWlUdFh4LXJCRnpXLUo4MVZUaXgyZ2swaXIwOHplbldfNlgyOFZtQUR3TXpfVmJxaEdaVXM3ZjY5R1Zvc1BFeEVDMkp3b2lKRzZlM0Noa0wtRWkzMWgwX3NmeENGYXRrX0RtXzVyN1BqTm5PRkItcm8?oc=5",
+      "reason": "読売本体の canonical を確認できず、Yahoo!/X 断片のみで元記事 URL を確証できなかった"
+    },
+    {
+      "title": "ホンダ、米EV電池工場をデータセンター向けに転換 AI需要に存続託す",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBhVjZhUE94UnFQTWtiTG85TDBtVmdjVWpZMllkX05IN3lxSl9jSlZqYWxvdFV2THVaT1o0Z2Nyemt3U0NsYndrbTZnZWlWTk9kNGhoUEVoeU9zd2pDSlhIbThsTjdrUnZzZURpVA?oc=5",
+      "reason": "日経要旨は確認できたが canonical と公開時刻の一次確認が不足し、ホンダ総会記事より重複論点も大きかった"
+    },
+    {
+      "title": "【詳報】無人タクシー「Waymo」に乗ってみた サッカー日本代表練習拠点 ナッシュビル",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTFB6cTNpeDNZTm5IUWlDaE1MQ3p3SDVuMEhZamdqUG85NWxtNHhoSXRCbzVfVnlwZXhtcXh4Rm54a2ptYUZYTDJfYnQ2bw?oc=5",
+      "reason": "体験レポート中心で新規の制度・投資・供給条件の変化が薄く、当日トップ5の影響度に届かなかった"
+    },
+    {
+      "title": "大阪メトロが使用断念した中国製ＥＶバス１００台以上、産廃処理場へ「出発」",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE5IS3NmdkV6cWVlb1poWmJSLW0ycVU1bDVNWjZwTnJqX1FFV3NOQnVvZ1pTMlNhNWxNMmYyRDl5SjVtWmVxTmhjVzZ2dEo3U2hXWmJuZHllZURtbWlGazEwLWs4dnFydw?oc=5",
+      "reason": "話題性はあるが地域案件の後処理色が強く、全国の制度・投資判断への波及が限定的だった"
+    },
+    {
+      "title": "フォルクスワーゲンが大リストラ、従業員の１５％削減検討…巨額投資のＥＶ普及遅れ",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTFBLdzIzVzZucG5tTkRlejZtb05iLWl1VURzSGp0S05UYmZualF2cTdIbWgwcTJnUzRlZk5zVW41V09SX2MyWFhCeDg1ZUZxLXl2QWl2WVlYd0JpdkRfVkFxVzRzZVc?oc=5",
+      "reason": "完成車の雇用再編というより生産構造の話が主で manufacturing 寄り。カテゴリ境界を優先して外した"
+    }
+  ]
+}
