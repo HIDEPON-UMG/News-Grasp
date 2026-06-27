@@ -2584,6 +2584,52 @@ if ($dailyQualityRc -ne 0) {
 Write-Log 'daily quality gate OK'
 
 if ($StopBeforeDeepDive) {
+    Write-Log 'pre-DeepDive production volume gate start'
+    $ProductionVolumeTarget = 5
+    $ProductionVolumeLedger = @()
+    foreach ($volumeCat in $Categories) {
+        $volumeGenre = $CategoryGenreMap[$volumeCat]
+        $volumeRecordsPath = Join-Path $RepoDir "tmp\newsroom\$DateStamp\$volumeCat.records.jsonl"
+        $volumeDigestPath = Join-Path $RepoDir "digest\$volumeGenre\$DateStamp-$volumeGenre.md"
+        $volumeRecordCount = 0
+        $volumeDigestCardCount = 0
+        if (Test-Path -LiteralPath $volumeRecordsPath) {
+            $volumeRecordCount = @(
+                Get-Content -LiteralPath $volumeRecordsPath -Encoding UTF8 |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            ).Count
+        }
+        if (Test-Path -LiteralPath $volumeDigestPath) {
+            $volumeDigestCardCount = @(
+                Get-Content -LiteralPath $volumeDigestPath -Encoding UTF8 |
+                    Where-Object { $_ -match '^###\s+\[' }
+            ).Count
+        }
+        $volumeStatus = if (($volumeRecordCount -ge $ProductionVolumeTarget) -and ($volumeDigestCardCount -ge $ProductionVolumeTarget)) { 'Green' } else { 'Yellow' }
+        $ProductionVolumeLedger += [pscustomobject]@{
+            category = $volumeCat
+            digest_genre = $volumeGenre
+            records_path = $volumeRecordsPath
+            digest_path = $volumeDigestPath
+            records_count = $volumeRecordCount
+            digest_card_count = $volumeDigestCardCount
+            target_count = $ProductionVolumeTarget
+            status = $volumeStatus
+        }
+    }
+    $ProductionVolumeLedgerPath = Join-Path $ReporterArtifactDir 'predeepdive-production-volume.json'
+    $ProductionVolumeLedger | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $ProductionVolumeLedgerPath -Encoding UTF8
+    $ProductionVolumeShortfalls = @($ProductionVolumeLedger | Where-Object { $_.status -ne 'Green' })
+    if ($ProductionVolumeShortfalls.Count -gt 0) {
+        $shortfallText = [string]::Join(
+            ', ',
+            @($ProductionVolumeShortfalls | ForEach-Object { "$($_.category):records=$($_.records_count),digest_cards=$($_.digest_card_count),target=$($_.target_count)" })
+        )
+        Write-Log "pre-DeepDive production volume gate failed ledger=$ProductionVolumeLedgerPath shortfall=$shortfallText"
+        Set-RunnerState -Status 'failed_predeepdive_production_volume' -Message "pre-DeepDive production volume shortfall: $shortfallText" -ExitCode 65 -Phase 'gate' -Step 'predeepdive-production-volume' -GateId 'predeepdive-production-volume'
+        exit 65
+    }
+    Write-Log "pre-DeepDive production volume gate OK ledger=$ProductionVolumeLedgerPath"
     Write-Log 'StopBeforeDeepDive mode: summary-reflection and daily-quality gates succeeded; stopping before Stage4 DeepDive'
     Write-Log 'news-grasp-runner.ps1 PRE DEEPDIVE E2E OK'
     exit 0
