@@ -2,11 +2,13 @@
 """記事カード3行要約レーンUIの契約テスト。"""
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+CSS_PATH = ROOT / "docs" / "assets" / "site.css"
 
 from tools.generate_pages import (  # noqa: E402
     _collect_entries,
@@ -121,3 +123,28 @@ def test_home_featured_story_uses_same_lane_component(tmp_path):
 
     assert "home-featured" in html
     _assert_layer_lanes(html)
+
+
+def test_summary_lane_avatar_colors_have_defined_visible_tokens():
+    css = CSS_PATH.read_text(encoding="utf-8")
+
+    assert "--summary-accent-mid:" in css
+    assert "var(--summary-accent-mid)" in css
+    assert "--summary-accent-mid: color-mix(in srgb, var(--summary-accent) 55%, var(--color-surface));" in css
+    assert 'body[data-category="fx"] .summary-lanes' in css
+    for fx_stop in ("#8A6408", "#B8860B", "#CFAD59", "#E1CC99"):
+        assert fx_stop in css
+    defined_summary_tokens = set(re.findall(r"(--summary-[a-z-]+)\s*:", css))
+    used_summary_tokens = set(re.findall(r"var\((--summary-[a-z-]+)\)", css))
+    assert used_summary_tokens <= defined_summary_tokens
+    assert ".summary-lane--context .summary-lane__avatar" in css
+    assert ".summary-lane--outlook .summary-lane__avatar" in css
+    context_start = css.index(".summary-lane--context .summary-lane__avatar")
+    context_block = css[context_start:css.index("}", context_start)]
+    assert "linear-gradient(135deg, var(--summary-accent), var(--summary-accent-mid))" in context_block
+    for role in ("fact", "context", "outlook"):
+        selector = f".summary-lane--{role} .summary-lane__avatar"
+        start = css.index(selector)
+        block = css[start:css.index("}", start)]
+        assert "background:" in block
+        assert "transparent" not in block

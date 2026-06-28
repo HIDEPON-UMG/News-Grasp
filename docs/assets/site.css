@@ -704,12 +704,19 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
 .summary-lanes {
   --summary-accent: var(--accent-current);
   --summary-accent-dark: color-mix(in srgb, var(--summary-accent) 76%, var(--color-ink));
+  --summary-accent-mid: color-mix(in srgb, var(--summary-accent) 55%, var(--color-surface));
   --summary-accent-soft: color-mix(in srgb, var(--summary-accent) 30%, var(--color-surface));
   position: relative;
   display: grid;
   gap: 0;
   margin: 0;
   padding-left: 16px;
+}
+body[data-category="fx"] .summary-lanes {
+  --summary-accent-dark: #8A6408;
+  --summary-accent: #B8860B;
+  --summary-accent-mid: #CFAD59;
+  --summary-accent-soft: #E1CC99;
 }
 .home-featured .summary-lanes {
   --summary-accent: var(--featured-accent, var(--accent-current));
