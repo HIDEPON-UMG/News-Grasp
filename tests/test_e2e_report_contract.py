@@ -216,12 +216,19 @@ def test_news_grasp_e2e_skill_requires_html_report_after_e2e() -> None:
     required_fragments = [
         "HTML E2E report",
         "News-Grasp incident report tone",
+        "report-news-grasp-incident",
         "BUG_REPORT_DESIGN.md",
         "single HTML",
         "Workflow Map",
         "Fault boundary",
         "data-compound-pattern",
         "E2E execution is not report-complete until this HTML report exists",
+        "passes `tools/validate_incident_report_design.py`",
+        "desktop and one mobile render check",
+        "no horizontal overflow",
+        "historical failure matrix",
+        "public URL returns HTTP 200",
+        "report-specific sentinel text",
     ]
     for fragment in required_fragments:
         assert fragment in skill, fragment
