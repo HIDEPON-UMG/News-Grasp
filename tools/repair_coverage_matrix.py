@@ -119,6 +119,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "audio-script-length-patch",
         ("digest/Summary/{date}-audio-script.md",),
         "generation-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -152,6 +153,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "audio-script-length-patch",
         ("digest/Summary/{date}-audio-script.md",),
         "generation-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -182,13 +184,19 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "generation-quality",
         "articles_issue_empty",
-        RepairClass.TYPED_FATAL,
-        "",
-        ("data/articles.jsonl",),
+        RepairClass.DETERMINISTIC_HANDLER,
+        "digest-articles-reconcile-patch",
+        (
+            "data/articles.jsonl",
+            "data/_status.md",
+            "data/gate_attempts/{date}.json",
+            "data/search_audit/{date}",
+            "digest",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+        ),
         "generation-quality",
-        "blocked_generation_input_empty",
-        "invalid_input",
-        "local_artifact_inventory",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -250,8 +258,18 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "digest_article_url_mismatch",
         RepairClass.DETERMINISTIC_HANDLER,
         "digest-articles-reconcile-patch",
-        ("digest/{category}/{date}-{category}.md", "data/articles.jsonl"),
+        (
+            "digest",
+            "digest/{category}/{date}-{category}.md",
+            "data/articles.jsonl",
+            "data/_status.md",
+            "data/gate_attempts/{date}.json",
+            "data/search_audit/{date}",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+        ),
         "digest-articles-reconcile",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -351,8 +369,18 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "digest_article_url_mismatch",
         RepairClass.DETERMINISTIC_HANDLER,
         "digest-articles-reconcile-patch",
-        ("digest/{category}/{date}-{category}.md", "data/articles.jsonl"),
+        (
+            "digest",
+            "digest/{category}/{date}-{category}.md",
+            "data/articles.jsonl",
+            "data/_status.md",
+            "data/gate_attempts/{date}.json",
+            "data/search_audit/{date}",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+        ),
         "digest-articles-reconcile",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "record-schema",
@@ -714,4 +742,16 @@ def classify_gate_output(gate_id: str, output: str) -> RepairDecision:
     issues = issues_from_gate_output(gate_id, output)
     if not issues:
         return classify_repair_issue(RepairIssue(gate_id=gate_id, issue_code="unknown", raw_output=output))
-    return classify_repair_issue(issues[0])
+    priority = {
+        "articles_json_invalid": 0,
+        "articles_issue_empty": 1,
+        "digest_article_url_mismatch": 2,
+        "date_evidence_source_missing": 3,
+        "missing_artifact": 10,
+        "summary_hero_missing": 20,
+        "summary_reflection_missing": 21,
+        "deepdive_structure_invalid": 30,
+        "audio_script_quality_invalid": 90,
+    }
+    ordered = sorted(issues, key=lambda item: priority.get(item.issue_code, 50))
+    return classify_repair_issue(ordered[0])

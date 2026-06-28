@@ -280,3 +280,97 @@ def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path
     assert result.status == "repaired"
     assert "stale_top_reordered" in result.message
     assert repaired.index("fresh second") < repaired.index("stale top")
+
+
+def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_path: Path) -> None:
+    issue = "2026-06-28"
+    articles = tmp_path / "data" / "articles.jsonl"
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    for path in (articles, records, manifest):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    old = {
+        "date": "2026-06-27",
+        "genre": "AI",
+        "title": "old",
+        "title_ja": "old",
+        "summary": "old",
+        "url": "https://example.com/old",
+        "source": "Example",
+        "published": "2026-06-27",
+        "date_evidence_source": "rss_pubDate",
+    }
+    current = {
+        "date": issue,
+        "genre": "AI",
+        "title": "current",
+        "title_ja": "current",
+        "summary": "current",
+        "url": "https://example.com/current",
+        "source": "Example",
+        "published": issue,
+        "date_evidence_source": "rss_pubDate",
+    }
+    articles.write_text(json.dumps(old, ensure_ascii=False) + "\n", encoding="utf-8")
+    records.write_text(json.dumps(current, ensure_ascii=False) + "\n", encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-articles-reconcile-patch",
+            artifacts=["digest", "data/articles.jsonl", "data/_status.md"],
+        )
+    )
+
+    repaired = articles.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert result.changed
+    assert "appended_current_reporter_records=1" in result.message
+    assert "https://example.com/old" in repaired
+    assert "https://example.com/current" in repaired
+
+
+def test_audio_script_length_patch_repairs_repeated_closing(tmp_path: Path) -> None:
+    issue = "2026-06-28"
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True)
+    history_tail = "ありがとうございました。\nニュースグラスプでした。\n今日はここまでです。\n"
+    (summary_dir / "2026-06-27-audio-script.md").write_text(history_tail, encoding="utf-8")
+    body = (
+        "6月28日の朝のニュースです。\n"
+        "AI、FX、Game、IT、Mobilityを順に見ます。\n"
+        + "\n".join(
+            f"今日の論点{i}は、認証と運用と説明責任を同じ順番で確認することです。"
+            for i in range(70)
+        )
+        + "\n今日の観点・考察として、広げる前に守る条件をそろえることが重要です。\n"
+        + history_tail
+    )
+    (summary_dir / f"{issue}-audio-script.md").write_text(body, encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="audio-script-length-patch",
+            artifacts=[f"digest/Summary/{issue}-audio-script.md"],
+        )
+    )
+
+    repaired = (summary_dir / f"{issue}-audio-script.md").read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "ニュースグラスプ、6月28日号でした。" in repaired
+    assert "今日の整理はここで区切ります。" in repaired

@@ -197,6 +197,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-06-27-scriptblock-nopublish-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-06-28",
+        "pre-DeepDive E2E / report artifact",
+        "final pre-DeepDive E2E report was published without being included in historical failure coverage",
+        "completion evidence inventory drift",
+        "new incident or E2E report artifacts must be added to the historical failure matrix before pytest-static",
+        "historical failure matrix fixture covering report corpus sync",
+        "docs/incidents/2026-06-28-final-predeepdive-e2e-report.html",
+        "fixture_required",
+    ),
 )
 
 

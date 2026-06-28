@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from tools.repair_coverage_matrix import (
     RepairClass,
     RepairIssue,
+    classify_gate_output,
     classify_repair_issue,
     missing_coverage,
     unimplemented_rows,
@@ -108,6 +111,26 @@ def test_repair_coverage_inventory_has_no_missing_known_validator_issue() -> Non
     missing = missing_coverage()
 
     assert not missing, "\n".join(f"{gate_id}:{issue_code}" for gate_id, issue_code in missing)
+
+
+def test_generation_quality_multi_issue_prioritizes_state_consistency_before_audio() -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "errors": [
+                {"code": "audio_script_quality_invalid", "artifact": "digest/Summary/2026-06-28-audio-script.md"},
+                {"code": "articles_issue_empty", "artifact": "data/articles.jsonl"},
+                {"code": "digest_article_url_mismatch", "artifact": "digest/AI/2026-06-28-AI.md"},
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    decision = classify_gate_output("generation-quality", output)
+
+    assert decision.issue_code == "articles_issue_empty"
+    assert decision.handler_id == "digest-articles-reconcile-patch"
+    assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
 
 
 def test_google_api_external_is_typed_external_not_green() -> None:

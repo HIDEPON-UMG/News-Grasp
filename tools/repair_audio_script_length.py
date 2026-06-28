@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""音声台本の字数不足だけを決定論的に補修する CLI。"""
+"""音声台本の字数不足・定型文重複を決定論的に補修する CLI。"""
 from __future__ import annotations
 
 import argparse
@@ -21,6 +21,12 @@ SUPPLEMENT_SENTENCES = (
     "今日の観点・考察としては、成長の速さそのものより、認証、監査、供給、説明責任をどの順番で固めるかが焦点です。",
 )
 
+REPEATED_CLOSING_REPLACEMENTS = (
+    ("ありがとうございました。", "ここまでお聞きいただき、ありがとうございました。"),
+    ("ニュースグラスプでした。", "ニュースグラスプ、{issue_jp}号でした。"),
+    ("今日はここまでです。", "今日の整理はここで区切ります。"),
+)
+
 
 def _split_frontmatter(raw: str) -> tuple[str, str]:
     if not raw.startswith("---"):
@@ -31,33 +37,70 @@ def _split_frontmatter(raw: str) -> tuple[str, str]:
     return f"---{parts[1]}---\n\n", parts[2].strip()
 
 
-def repair_text(raw: str, *, issue: str) -> tuple[str, bool]:
+def _issue_japanese(issue: str) -> str:
+    try:
+        _year, month, day = issue.split("-")
+        return f"{int(month)}月{int(day)}日"
+    except ValueError:
+        return issue
+
+
+def _recent_history_texts(repo_root: Path, issue: str) -> list[str]:
+    from datetime import date, timedelta
+
+    try:
+        day = date.fromisoformat(issue)
+    except ValueError:
+        return []
+    history: list[str] = []
+    for offset in (1, 2):
+        path = repo_root / "digest" / "Summary" / f"{(day - timedelta(days=offset)).isoformat()}-audio-script.md"
+        if path.exists():
+            _frontmatter, body = _split_frontmatter(path.read_text(encoding="utf-8-sig"))
+            history.append(body)
+    return history
+
+
+def _repair_repeated_closing(body: str, *, issue: str) -> tuple[str, bool]:
+    repaired = body
+    for src, dst in REPEATED_CLOSING_REPLACEMENTS:
+        repaired = repaired.replace(src, dst.format(issue_jp=_issue_japanese(issue)), 1)
+    return repaired, repaired != body
+
+
+def repair_text(raw: str, *, issue: str, history_texts: list[str] | None = None) -> tuple[str, bool]:
     frontmatter, body = _split_frontmatter(raw)
-    if effective_char_count(body) >= TARGET_MIN:
-        return raw, False
+    repaired_body, changed = _repair_repeated_closing(body, issue=issue)
 
     additions: list[str] = []
-    for _ in range(3):
-        for sentence in SUPPLEMENT_SENTENCES:
-            candidate_body = body.rstrip() + "\n\n" + "\n".join(additions + [sentence])
-            if effective_char_count(candidate_body) > TARGET_MAX:
+    if effective_char_count(repaired_body) < TARGET_MIN:
+        for _ in range(3):
+            for sentence in SUPPLEMENT_SENTENCES:
+                candidate_body = repaired_body.rstrip() + "\n\n" + "\n".join(additions + [sentence])
+                if effective_char_count(candidate_body) > TARGET_MAX:
+                    break
+                additions.append(sentence)
+                if effective_char_count(candidate_body) >= TARGET_MIN:
+                    break
+            if effective_char_count(repaired_body.rstrip() + "\n\n" + "\n".join(additions)) >= TARGET_MIN:
                 break
-            additions.append(sentence)
-            if effective_char_count(candidate_body) >= TARGET_MIN:
-                break
-        if effective_char_count(body.rstrip() + "\n\n" + "\n".join(additions)) >= TARGET_MIN:
-            break
 
-    repaired_body = body.rstrip() + "\n\n" + "\n".join(additions)
+    if additions:
+        repaired_body = repaired_body.rstrip() + "\n\n" + "\n".join(additions)
+        changed = True
+
+    if not changed:
+        return raw, False
     if effective_char_count(repaired_body) < TARGET_MIN:
         return raw, False
 
     issues = validate_script(
         repaired_body,
         date=issue,
+        history_texts=history_texts or [],
         required_categories=scheduled_category_ids(issue),
     )
-    if any("字数不足" in issue_text or "字数超過" in issue_text for issue_text in issues):
+    if issues:
         return raw, False
     return frontmatter + repaired_body.strip() + "\n", True
 
@@ -67,7 +110,7 @@ def repair_file(repo_root: Path, issue: str) -> bool:
     if not path.exists():
         return False
     raw = path.read_text(encoding="utf-8-sig")
-    repaired, changed = repair_text(raw, issue=issue)
+    repaired, changed = repair_text(raw, issue=issue, history_texts=_recent_history_texts(repo_root, issue))
     if not changed:
         return False
     path.write_text(repaired, encoding="utf-8", newline="\n")

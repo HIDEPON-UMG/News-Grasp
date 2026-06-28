@@ -54,6 +54,31 @@ def _fake_codex_usage_limit(tmp_path: Path) -> Path:
     return fake
 
 
+def _fake_codex_with_delayed_exit(tmp_path: Path, sentinel: Path) -> Path:
+    fake = tmp_path / "fake_codex_delayed.ps1"
+    fake.write_text(
+        "$sentinel = [Environment]::GetEnvironmentVariable('CODEX_FAKE_SUCCESS_SENTINEL', 'Process')\n"
+        "if (-not $sentinel) { Write-Error 'CODEX_FAKE_SUCCESS_SENTINEL missing'; exit 99 }\n"
+        "Write-Output '{\"type\":\"result\",\"is_error\":false}'\n"
+        "[System.IO.File]::WriteAllText($sentinel, 'ok', [System.Text.UTF8Encoding]::new($false))\n"
+        "Start-Sleep -Seconds 20\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    return fake
+
+
+def _success_probe_script(tmp_path: Path, sentinel: Path) -> Path:
+    probe = tmp_path / "success_probe.ps1"
+    probe.write_text(
+        "param([string]$Sentinel)\n"
+        "if (Test-Path -LiteralPath $Sentinel) { exit 0 }\n"
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    return probe
+
+
 def _fake_codex_capture_ps1(tmp_path: Path) -> Path:
     fake = tmp_path / "fake_codex_capture.ps1"
     fake.write_text(
@@ -237,3 +262,45 @@ def test_codex_wrapper_maps_usage_limit_to_typed_external_rc(tmp_path: Path) -> 
     assert result.returncode == 123, result.stderr + log
     assert "codex quota detected" in log
     assert '"exit_code":123' in usage
+
+
+def test_codex_wrapper_success_probe_returns_after_artifact_gate_green(tmp_path: Path) -> None:
+    """成果物ゲートがGreenなら、長引くcodex子プロセスを待たずにrc=0で制御を戻す。"""
+    prompt_file = tmp_path / "prompt.md"
+    log_file = tmp_path / "wrapper.log"
+    usage_log = tmp_path / "usage.jsonl"
+    sentinel = tmp_path / "artifact-green.txt"
+    prompt_file.write_text("success probe smoke\n", encoding="utf-8")
+    probe = _success_probe_script(tmp_path, sentinel)
+    env = os.environ.copy()
+    env["CODEX_FAKE_SUCCESS_SENTINEL"] = str(sentinel)
+
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(WRAPPER),
+            "-CodexExe", str(_fake_codex_with_delayed_exit(tmp_path, sentinel)),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(log_file),
+            "-TimeoutSec", "30",
+            "-IdleTimeoutSec", "30",
+            "-WorkingDirectory", str(ROOT),
+            "-FlowName", "newsroom_editor",
+            "-UsageLog", str(usage_log),
+            "-SuccessProbeCommand", f'powershell -NoProfile -ExecutionPolicy Bypass -File "{probe}" -Sentinel "{sentinel}"',
+            "-SuccessProbeIntervalSec", "1",
+            "-SuccessProbeMinElapsedSec", "1",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
+        env=env,
+    )
+
+    log = log_file.read_text(encoding="utf-8", errors="replace")
+    assert result.returncode == 0, result.stderr + log
+    assert "success probe passed" in log
+    assert '"flow":"newsroom_editor"' in usage_log.read_text(encoding="utf-8", errors="replace")
+    assert '"exit_code":0' in usage_log.read_text(encoding="utf-8", errors="replace")

@@ -474,6 +474,85 @@ def _repair_url_quarantine_refill(ctx: RepairContext) -> RepairResult:
     )
 
 
+def _record_url(row: dict[str, object]) -> str:
+    return str(row.get("url") or "").strip().rstrip("/")
+
+
+def _read_jsonl_records(path: Path) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    if not path.exists():
+        return rows
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
+def _repair_digest_articles_reconcile(ctx: RepairContext) -> RepairResult:
+    """現在 run の reporter records を articles.jsonl へ同期する。
+
+    digest md は reporter artifact から生成済みなので、append 漏れだけなら
+    current manifest が指す records を正本として data/articles.jsonl に補う。
+    """
+    manifest = ctx.repo_root / "build" / "reporter-artifacts" / ctx.issue / "editor-input-manifest.json"
+    if not manifest.exists():
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"missing artifact: {manifest}")
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError as exc:
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"manifest JSON invalid: {exc.msg}")
+
+    artifact_paths = data.get("reporter_artifacts")
+    if not isinstance(artifact_paths, list) or not artifact_paths:
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message="manifest reporter_artifacts missing")
+
+    current_records: list[dict[str, object]] = []
+    used_artifacts: list[str] = []
+    for rel in artifact_paths:
+        if not isinstance(rel, str) or not rel.strip():
+            continue
+        normalized = _normalize_rel(rel)
+        path = ctx.repo_root / normalized
+        if not path.exists():
+            continue
+        used_artifacts.append(normalized)
+        for row in _read_jsonl_records(path):
+            if str(row.get("date") or "") == ctx.issue and _record_url(row):
+                current_records.append(row)
+    if not current_records:
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, tuple(used_artifacts), "no current reporter records")
+
+    articles_path = ctx.repo_root / "data" / "articles.jsonl"
+    articles_path.parent.mkdir(parents=True, exist_ok=True)
+    existing_rows = _read_jsonl_records(articles_path)
+    existing_keys = {
+        (str(row.get("date") or ""), _record_url(row))
+        for row in existing_rows
+        if _record_url(row)
+    }
+    missing_rows = [
+        row
+        for row in current_records
+        if (str(row.get("date") or ""), _record_url(row)) not in existing_keys
+    ]
+    if not missing_rows:
+        return RepairResult(ctx.handler_id, NOOP_STATUS, False, ("data/articles.jsonl", *tuple(used_artifacts)))
+
+    with articles_path.open("a", encoding="utf-8", newline="\n") as f:
+        for row in missing_rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return RepairResult(
+        ctx.handler_id,
+        REPAIRED_STATUS,
+        True,
+        ("data/articles.jsonl", *tuple(used_artifacts)),
+        f"autonomous_recovery: appended_current_reporter_records={len(missing_rows)}",
+    )
+
+
 def _blocked_ambiguous(ctx: RepairContext) -> RepairResult:
     return RepairResult(
         ctx.handler_id,
@@ -549,9 +628,18 @@ REGISTRY: dict[str, RepairHandler] = {
     "digest-articles-reconcile-patch": RepairHandler(
         handler_id="digest-articles-reconcile-patch",
         kind="deterministic",
-        allowed_artifacts=("digest/{category}/{date}-{category}.md", "data/articles.jsonl"),
+        allowed_artifacts=(
+            "digest",
+            "digest/{category}/{date}-{category}.md",
+            "data/articles.jsonl",
+            "data/_status.md",
+            "data/gate_attempts/{date}.json",
+            "data/search_audit/{date}",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+        ),
         verify_gate="digest-articles-reconcile",
-        repair=_blocked_ambiguous,
+        repair=_repair_digest_articles_reconcile,
     ),
     "record-title-ja-patch": RepairHandler(
         handler_id="record-title-ja-patch",

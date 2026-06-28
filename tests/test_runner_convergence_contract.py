@@ -1105,27 +1105,27 @@ def test_no_publish_e2e_does_not_mark_publish_complete() -> None:
 
 
 def test_no_publish_e2e_never_fallback_publishes_on_quality_hold() -> None:
-    """NoPublish E2E は gate 失敗時も fallback publish へ逃げず、失敗として止まる。"""
+    """NoPublish E2E は内部 gate 失敗時も fallback publish へ逃げず、内部 block として止まる。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     policy = runner.split("function Invoke-AutonomousCompletionPolicy", 1)[1].split(
         "function Test-DailyArtifactsExist", 1
     )[0]
 
-    assert "NoPublish mode: fallback publish blocked" in policy
-    assert "publish_dry_run_failed" in policy
+    assert "Invoke-FallbackPublish" not in policy
+    assert "quality_hold" not in policy
 
     no_publish = _mock_autonomous_policy_invocation("content", no_publish=True)
     assert no_publish["fallback_reason"] in (None, "")
-    assert no_publish["exit_status"] == "publish_dry_run_failed"
+    assert no_publish["exit_status"] == "blocked_internal_quality_gate"
     assert no_publish["exit_code"] == 42
 
 
 def test_no_publish_autonomous_policy_never_fallbacks_for_any_failure_kind() -> None:
     """NoPublish E2E は全 failure kind で fallback publish に逃げない。"""
     expected_status_by_kind = {
-        "content": "publish_dry_run_failed",
-        "artifact": "publish_dry_run_failed",
-        "local-tool": "publish_dry_run_failed",
+        "content": "blocked_internal_quality_gate",
+        "artifact": "blocked_internal_quality_gate",
+        "local-tool": "blocked_internal_quality_gate",
         "external": "blocked_external_readiness",
         "publish": "publish_failed",
         "distribution": "distribution_failed",
@@ -1175,6 +1175,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
         ("local-tool", "pytest-static"),
         ("local-tool", "daily-tts"),
         ("local-tool", "deepdive-tts"),
+        ("content", "current-deepdive-url"),
         ("local-tool", "generate-pages"),
         ("content", "deepdive-required"),
         ("content", "public-html"),
@@ -1199,6 +1200,30 @@ def test_runner_idle_timeout_is_parameterized() -> None:
     assert "[int] $IdleTimeoutSec = 900" in runner
     assert "-TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec" in runner
     assert "-TimeoutSec $DeepDiveTimeoutSec -IdleTimeoutSec $IdleTimeoutSec" in runner
+
+
+def test_pytest_static_gate_skips_historical_url_liveness_checks() -> None:
+    """本番当日 publish 前 pytest は historical URL 生存確認を巻き込まない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("pytest gate start", 1)[1].split("if ($pytestGateRc -ne 0)", 1)[0]
+
+    assert "$previousSkipUrlCheck = $env:NEWS_GRASP_SKIP_URL_CHECK" in block
+    assert "$env:NEWS_GRASP_SKIP_URL_CHECK = '1'" in block
+    assert "Remove-Item Env:\\NEWS_GRASP_SKIP_URL_CHECK" in block
+
+
+def test_generate_pages_skips_historical_deepdive_url_liveness_after_current_gate() -> None:
+    """SSG は過去 DeepDive URL の経年 404 で本日 publish を止めない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    current_gate = "current DeepDive URL gate start"
+    generate_start = "generate_pages.py start"
+    deepdive_required = "deepdive required gate start"
+
+    assert runner.index(current_gate) < runner.index(generate_start)
+    block = runner.split(generate_start, 1)[1].split(deepdive_required, 1)[0]
+    assert "$env:NEWS_GRASP_SKIP_URL_CHECK = '1'" in block
+    assert "tools\\generate_pages.py" in block
+    assert "tools.validate_deepdive_urls" not in block
 
 
 def test_runner_writes_machine_readable_state() -> None:
@@ -1529,11 +1554,11 @@ def test_runner_refill_categories_follow_canonical_config() -> None:
     assert "URL liveness refill category list parse failed" in block
 
 
-def test_content_gates_use_quality_hold_fallback_without_normal_notification() -> None:
-    """内容系 gate の未収束は手動復旧に落とさず、品質保留 fallback で自走完了する。"""
+def test_content_gates_block_internal_failures_without_normal_notification() -> None:
+    """内容系 gate の未収束は fallback 成功扱いにせず typed internal block で止める。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     assert "function Invoke-AutonomousCompletionPolicy" in runner
-    assert "quality_hold" in runner
+    assert "blocked_internal_quality_gate" in runner
 
     content_gate_markers = [
         ("summary reflection gate start", "daily quality gate start"),
@@ -1559,7 +1584,6 @@ def test_content_gates_use_quality_hold_fallback_without_normal_notification() -
         )
         assert "send_push" not in block
         assert "Should-SendNormalBatchNotification" not in block
-    assert "function Stop-ContentGateWithoutFallback" not in runner
     assert "Set-RunnerState -Status 'content_repair_failed'" not in runner
 
 
@@ -1590,22 +1614,24 @@ def test_runner_non_external_failures_do_not_require_manual_recoveronly() -> Non
 
 
 def test_runner_autonomous_completion_policy_separates_internal_and_external_failures() -> None:
-    """内部品質保留 fallback と外部 failure を policy 関数で分離する。"""
+    """内部品質 gate failure と外部 failure を policy 関数で分離する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     _assert_runner_powershell_parses()
     policy = runner.split("function Invoke-AutonomousCompletionPolicy", 1)[1].split(
         "function Test-DailyArtifactsExist", 1
     )[0]
-    assert "Invoke-FallbackPublish" in policy
-    assert "quality_hold" in policy
+    assert "Invoke-FallbackPublish" not in policy
+    assert "quality_hold" not in policy
+    assert "blocked_internal_quality_gate" in policy
     assert "blocked_external_readiness" in policy
     assert "publish_failed" in policy
     assert "distribution_failed" in policy
     assert "Exit-Runner -Status 'ok'" not in policy
 
     internal = _mock_autonomous_policy_invocation("content")
-    assert internal["fallback_reason"] == "quality_hold:unit-gate"
-    assert internal["exit_status"] in (None, "")
+    assert internal["fallback_reason"] in (None, "")
+    assert internal["exit_status"] == "blocked_internal_quality_gate"
+    assert internal["exit_code"] == 42
 
     external = _mock_autonomous_policy_invocation("external")
     assert external["fallback_reason"] in (None, "")

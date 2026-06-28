@@ -141,10 +141,25 @@ def test_runner_invokes_codex_wrapper_with_named_parameter_splatting() -> None:
     assert "'OutputLastMessage' = $OutputLastMessage" in wrapper
     assert "'FlowName' = $FlowName" in wrapper
     assert "'UsageLog' = $CodexUsageLog" in wrapper
+    assert "if ($SuccessProbeCommand)" in wrapper
+    assert "$codexArgs['SuccessProbeCommand'] = $SuccessProbeCommand" in wrapper
+    assert "$codexArgs['SuccessProbeIntervalSec'] = $SuccessProbeIntervalSec" in wrapper
+    assert "$codexArgs['SuccessProbeMinElapsedSec'] = $SuccessProbeMinElapsedSec" in wrapper
     assert "$wrapperOk = $?" in wrapper
     assert "return 125" in wrapper
     assert "'OutputSchema' = $CodexOutputSchema" not in wrapper
     assert "'-CodexExe', $CodexExe" not in wrapper
+
+
+def test_runner_newsroom_editor_uses_success_probe_for_artifact_gate_completion() -> None:
+    runner = _read(RUNNER)
+    stage = runner.split("role=newsroom_editor", 1)[1].split("# ===== 2.1 Summary reflection gate", 1)[0]
+
+    assert "$editorSuccessProbe" in stage
+    assert "tools.validate_summary_reflection" in stage
+    assert "tools.validate_daily_quality --date $DateStamp" in stage
+    assert "-SuccessProbeCommand $editorSuccessProbe" in stage
+    assert "-SuccessProbeMinElapsedSec 120" in stage
 
 
 def test_runner_records_codex_usage_by_flow() -> None:

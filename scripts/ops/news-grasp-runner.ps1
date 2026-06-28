@@ -944,7 +944,10 @@ function Invoke-CodexWrapper {
         [string] $Model = '',
         [string] $OutputSchema = $CodexOutputSchema,
         [string] $OutputLastMessage = $CodexLastMessage,
-        [string] $FlowName = 'unknown'
+        [string] $FlowName = 'unknown',
+        [string] $SuccessProbeCommand = '',
+        [int] $SuccessProbeIntervalSec = 30,
+        [int] $SuccessProbeMinElapsedSec = 0
     )
     $codexArgs = @{
         'CodexExe' = $CodexExe
@@ -957,6 +960,11 @@ function Invoke-CodexWrapper {
         'OutputLastMessage' = $OutputLastMessage
         'FlowName' = $FlowName
         'UsageLog' = $CodexUsageLog
+    }
+    if ($SuccessProbeCommand) {
+        $codexArgs['SuccessProbeCommand'] = $SuccessProbeCommand
+        $codexArgs['SuccessProbeIntervalSec'] = $SuccessProbeIntervalSec
+        $codexArgs['SuccessProbeMinElapsedSec'] = $SuccessProbeMinElapsedSec
     }
     if ($Model) { $codexArgs['Model'] = $Model }
     & $CodexWrapper @codexArgs
@@ -1784,16 +1792,9 @@ function Invoke-AutonomousCompletionPolicy {
         return
     }
 
-    if ($NoPublish) {
-        $dryRunMessage = "NoPublish mode: fallback publish blocked (kind=$FailureKind, gate=$gateLabel, rc=$ExitCode): $message"
-        Write-Log "ERROR: $dryRunMessage"
-        Exit-Runner -Status 'publish_dry_run_failed' -Message $dryRunMessage -ExitCode $ExitCode
-        return
-    }
-
-    $qualityHoldReason = "quality_hold:$gateLabel"
-    Write-Log "quality hold fallback start (kind=$FailureKind, gate=$gateLabel, rc=$ExitCode): $message"
-    Invoke-FallbackPublish -Reason $qualityHoldReason
+    $internalMessage = "internal quality gate failed (kind=$FailureKind, gate=$gateLabel, rc=$ExitCode): $message"
+    Write-Log "ERROR: $internalMessage"
+    Exit-Runner -Status 'blocked_internal_quality_gate' -Message $internalMessage -ExitCode $ExitCode
 }
 
 function Write-RecoverOnlyInputManifest {
@@ -2529,7 +2530,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $agentRc = $null
     for ($attempt = 1; $attempt -le $MaxAgentAttempts; $attempt++) {
         Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
-        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor'
+        $editorSuccessProbe = "py -3.12 -m tools.validate_summary_reflection; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_daily_quality --date $DateStamp"
+        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor' -SuccessProbeCommand $editorSuccessProbe -SuccessProbeIntervalSec 30 -SuccessProbeMinElapsedSec 120
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"
 
         if ($agentRc -eq 0) { break }
@@ -2850,18 +2852,25 @@ Write-Log 'pytest gate start (pytest tests/ -q -m "not network")'
 $PytestBaseTemp = Join-Path $RepoDir '.pytest-tmp'
 New-Item -ItemType Directory -Force -Path $PytestBaseTemp | Out-Null
 $previousPytestAddopts = $env:PYTEST_ADDOPTS
+$previousSkipUrlCheck = $env:NEWS_GRASP_SKIP_URL_CHECK
 try {
     if ([string]::IsNullOrWhiteSpace($previousPytestAddopts)) {
         $env:PYTEST_ADDOPTS = "--basetemp=$PytestBaseTemp"
     } elseif ($previousPytestAddopts -notmatch '--basetemp(?:=|\s)') {
         $env:PYTEST_ADDOPTS = "$previousPytestAddopts --basetemp=$PytestBaseTemp"
     }
+    $env:NEWS_GRASP_SKIP_URL_CHECK = '1'
     $pytestGateRc = Invoke-AutonomousGate -GateId 'pytest-static' -Category 'tests' -PythonArgs @('-m', 'pytest', 'tests/', '-q', '--tb=line', '--no-header', '-m', 'not network') -Artifacts @('tests', 'tools', 'prompts', 'digest', 'data/articles.jsonl')
 } finally {
     if ($null -eq $previousPytestAddopts) {
         Remove-Item Env:\PYTEST_ADDOPTS -ErrorAction SilentlyContinue
     } else {
         $env:PYTEST_ADDOPTS = $previousPytestAddopts
+    }
+    if ($null -eq $previousSkipUrlCheck) {
+        Remove-Item Env:\NEWS_GRASP_SKIP_URL_CHECK -ErrorAction SilentlyContinue
+    } else {
+        $env:NEWS_GRASP_SKIP_URL_CHECK = $previousSkipUrlCheck
     }
 }
 if ($pytestGateRc -ne 0) {
@@ -2981,12 +2990,35 @@ if ($NoPublish) {
 # generate_pages.py 失敗時に digest md のみ origin 公開 + docs HTML 古いままという
 # illegal state を表現可能だった。新構造は build 失敗で exit 1 → push 自体が走らない
 # = サイレント公開停止が構造的に消える。
-Write-Log 'generate_pages.py start'
+Write-Log "current DeepDive URL gate start (validate_deepdive_urls $DateStamp)"
 Push-Location $RepoDir
 try {
+    Invoke-Logged { & $PyExe '-m' 'tools.validate_deepdive_urls' "digest\DeepDive\$DateStamp-DeepDive.md" }
+    $currentDeepDiveUrlRc = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+if ($currentDeepDiveUrlRc -ne 0) {
+    Write-Log "current DeepDive URL gate failed (rc=$currentDeepDiveUrlRc). normal publish is blocked."
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'current-deepdive-url' -Reason 'current DeepDive URL validation failed' -ExitCode $currentDeepDiveUrlRc
+}
+Write-Log 'current DeepDive URL gate OK'
+
+Write-Log 'generate_pages.py start'
+$previousGeneratePagesSkipUrlCheck = $env:NEWS_GRASP_SKIP_URL_CHECK
+Push-Location $RepoDir
+try {
+    # 本日 DeepDive URL は直前 gate で検証済み。SSG は HTML 生成責務に限定し、
+    # 過去 DeepDive の経年 404 を本日 publish の内部停止要因にしない。
+    $env:NEWS_GRASP_SKIP_URL_CHECK = '1'
     Invoke-Logged { & $PyExe 'tools\generate_pages.py' }
     $pagesRc = $LASTEXITCODE
 } finally {
+    if ([string]::IsNullOrEmpty($previousGeneratePagesSkipUrlCheck)) {
+        Remove-Item Env:\NEWS_GRASP_SKIP_URL_CHECK -ErrorAction SilentlyContinue
+    } else {
+        $env:NEWS_GRASP_SKIP_URL_CHECK = $previousGeneratePagesSkipUrlCheck
+    }
     Pop-Location
 }
 if ($pagesRc -ne 0) {
