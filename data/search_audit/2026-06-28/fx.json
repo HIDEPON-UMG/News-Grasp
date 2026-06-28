@@ -1,0 +1,58 @@
+{
+  "date": "2026-06-28",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 deduped file review: build/deduped-candidates/fx.jsonl",
+    "\"「強い経済」に適切な金融政策を 骨太方針明記へ 日銀けん制か\" site:mainichi.jp",
+    "\"来週のドル円相場はどうなる？6/29週のイベント予定 2026年6月28日\" site:gaitame.com",
+    "\"【ドル円予想】最高値は165円！？FX個人投資家の『円安予想』強まる\" site:gaitame.com",
+    "\"来週の為替予想（豪ドル/円 NZドル/円）『豪経済指標は金利据え置き示唆？』\" site:gaitame.com"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "selected_titles": [
+    "骨太方針に金融政策明記、政府が日銀けん制を強める",
+    "来週のドル円は米雇用統計が主戦場、162円台と介入警戒が同居",
+    "個人FXの円安予想が2年ぶり高水準、ドル円165円シナリオが台頭",
+    "豪ドル円はRBA据え置き観測で上値重く、資源国通貨も円高圧力を警戒"
+  ],
+  "dropped": [
+    {
+      "title": "スイス フラン / 日本 円【CHFJPY=X】：為替レート・相場",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5FQ1hNWHpFakpUUUNLamFyTGw1UFo0STRMM0xqcnlfSTN3b2ZLOU1TX1EtN2lSTUU4YnV2QVdhZTlxZkgtZ0x5UmRqb1hHcnlMbDJtUA?oc=5",
+      "reason": "相場ページで記事ではなく、canonical article URL を確認できない"
+    },
+    {
+      "title": "今週の日経平均、7万円前後でもみあう展開か 円安基調変わらず",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5aU1ZBdm10V21ULVhZeS1haW5WdzB1SXhqV2dfbng4eTRvRUNzX1BrUVZrYk5xLUxWY3NsZE44MFNSOTduRzBuTDdXSnRXQ1BlZnhGb19IcHpiczhGdTE3WE5JZXZDMUlwR0V2Zg?oc=5",
+      "reason": "株式見通しが主題で、FXカテゴリの中心論点から外れる"
+    },
+    {
+      "title": "欧米為替見通し:ドル・円は伸び悩み、162円台為替介入に警戒感(フィスコ)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxON1UyRVlRc1lOTGlsVTlXRG9nd0pVXzk3aHljZFNVaFNBSWhVU1dmZzRENl9YLXZISk5LRHF1Yk1lWXNtSE1XRmFLY1VxdDlaZFRJZE9ZX3ZTNHNwU2cwX2RpNTdDVnhmdHR5dGc0RlI2WVdVVDJuT0VLUVdLUFo3UXV3bnloWDg?oc=5",
+      "reason": "前日号と論点が重複し、新材料が相対的に薄い"
+    },
+    {
+      "title": "外貨運用に思わぬ落とし穴…最高裁「為替差益は課税対象」初判断で投資家に広がる影響",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1HRFZNTTZsanFUeElfekZnb1FScnR5ZGRZUWx5LWNPazNYdlZFblpIaXhyWmNDVDVnaE0zU2prZjMydmc4czR4WVE4eEI5M3ZmVjZiQXFpRHJoMXpZY3VlMXNtZGFDRnNEeFRhWUFraEFWdzV2VFltR2FmamlYdDA?oc=5",
+      "reason": "元記事単位の canonical URL を確認できず、URL 品質 gate を満たせない"
+    },
+    {
+      "title": "為替・経済アカデミー 名古屋",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5NRGphWkdIUTV2c0d4M2FRTlNpSnFpSHFOdzAzc2NaV0s4b3k5czFTaDN1cFpVdUN6eEJndVZZRWtnVmZSazMxX3JkdHRJUEY4aHlPUkxLY0VrVVljMmNySFFBWVZpQ3RXNVFhbg?oc=5",
+      "reason": "セミナー告知で市場ニュースとしての即時性と影響範囲が低い"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行せず、Stage1 dedup 済み候補だけを精査して canonical URL を確認した。投信・相場ページ・同一角度の見通し記事は除外した。"
+}

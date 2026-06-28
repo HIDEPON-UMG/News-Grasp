@@ -1,0 +1,34 @@
+{
+  "date": "2026-06-28",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-28/ai.selected_filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:sbbit.jp OpenAI Codex 利用急増 非エンジニア 189倍",
+    "site:sbbit.jp Gemini 3.5 Flash Computer Use 統合",
+    "site:sbbit.jp 米OpenAI GPT-5.6 Sol Terra Luna 限定プレビュー版",
+    "site:sbbit.jp Mythos 5 米企業限定で一部再開 許可 Anthropic",
+    "site:finance.biggo.jp OpenAI インド統括責任者 プラブジート・シン"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAIとブロードコム、AI推論向けカスタムチップ「Jalapeño」発表",
+      "url": "https://finance.biggo.jp/news/8dfa17cf-41ac-4793-8c6b-4b4f5338caa9",
+      "reason": "published_date が 2026-06-25 で freshness gate 超過"
+    }
+  ]
+}

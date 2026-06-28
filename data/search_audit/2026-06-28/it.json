@@ -1,0 +1,65 @@
+{
+  "date": "2026-06-28",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:www.sbbit.jp OpenAI Codex 利用急増 企業の非エンジニア",
+    "site:forbesjapan.com IT部門がAIの複雑性を企業の競争優位に変える方法",
+    "site:online.logi-biz.com AIエージェント Argus 4.0 在庫管理",
+    "site:online.logi-biz.com クラウド在庫管理 ロジクラ freee会計 API連携",
+    "site:productzine.jp SaaSのID課金からどう変わるか マネーフォワードとPeopleXがAIエージェントの課金設計を語る",
+    "site:productzine.jp Tably KI Checker ベータ版 公開",
+    "\"クラウド型Webアプリケーション脆弱性診断ツール『AeyeScan』が市場シェア1位を獲得\""
+  ],
+  "raw_results_total": 32,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "SaaSのID課金からどう変わるか、マネーフォワードとPeopleXがAIエージェントの課金設計を語る",
+      "url": "https://productzine.jp/article/detail/4293",
+      "reason": "htmldateで2026-05-18公開を確認し当日窓外"
+    },
+    {
+      "title": "要件定義とコードの矛盾をAIが検知、Tablyが開発支援ツール「KI Checker」のベータ版を公開",
+      "url": "https://productzine.jp/article/detail/4240",
+      "reason": "htmldateで2026-04-17公開を確認し当日窓外"
+    },
+    {
+      "title": "クラウド型Webアプリケーション脆弱性診断ツール『AeyeScan』が市場シェア1位を獲得",
+      "url": "https://www.mapion.co.jp/news/release/000000091.000051317/",
+      "reason": "htmldate解決日が当日窓と整合せず鮮度根拠を満たさないため除外"
+    },
+    {
+      "title": "Support Team Japan–ITF Masters'26",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFAtQW1yZFBLZUVoSk5yMXBhV0tpUzhRazFKWVZYRmRZZnRBc19zcnNldU5VeXdlUUhqYVJXdlhlQ1c2WnlCYlJuUmFqRmFEZw?oc=5",
+      "reason": "Stage1候補だがカテゴリ逸脱"
+    },
+    {
+      "title": "19歳",
+      "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE5MaG15MnR1b05UenNqc2p1ZzJ6aTg0cnQ2OWFfdGFpY082WDNsdE1JX2VKczhBX0lTLUxWQ3FWZzZQVWJGVXlUYm5ZbFd5WVE3TC1MaEhDc1A4TUpWdmdNV0V6RjdLbmRkcU9QLUVB?oc=5",
+      "reason": "Stage1候補だがカテゴリ逸脱"
+    },
+    {
+      "title": "京都の救急・災害医療を守りたい！病院救急車 更新のご支援を！",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE91cEZCM2p3SzlIdWJjR09zaS1VTzIteDBlWUZmekJFZ0xoTS1RS3V5bjZzX1dJNjQ2a3FLQUlBazNzSlZWRUtKLVpyZFNGeW8?oc=5",
+      "reason": "Stage1候補だがカテゴリ逸脱"
+    },
+    {
+      "url": "https://www.sbbit.jp/article/cont1/185928",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-28/it.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

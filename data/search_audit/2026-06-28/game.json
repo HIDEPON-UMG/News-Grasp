@@ -1,0 +1,57 @@
+{
+  "date": "2026-06-28",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:automaton-media.com GBVSR イド 9月17日 Nintendo Switch 2版とともに",
+    "site:automaton-media.com ほとんど宣伝しなかったのにめっちゃ売れた ロケットスタート",
+    "site:news.dengeki.com 勝利の女神 NIKKE 夏イベ 7/2 水着 新SSR ニケ",
+    "site:encount.press メガテン 鈴木一也氏 予告する 新作ゲーム"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ニンテンドーeショップ新作ソフト情報 6/26（金）号。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQU2ZqME1jSl9UZUtXRTU0T0RES28yTThKejZPZENGRlBBMTJ6WW9Qa0o0d21yWmVBbUhFck5VVnRvR0t1WGRNWHVGREZ4bG4zdThTYkxSeFNseTNZaWM2UXlzNFRRUVhudUcxV2pZcTFBOUk4cVVBN0xQZjJ6bUE2MXVMeXd4Zw?oc=5",
+      "reason": "週次の販売一覧で新材料が薄く、読者の意思決定を大きく動かす論点に届かなかった"
+    },
+    {
+      "title": "Shoreline Games、新作ホラーゲーム『Dreadline Express』『Sisters of Solitude』『The Funskin Project』の3タイトルを発表",
+      "url": "https://news.google.com/rss/articles/CBMiREFVX3lxTE5hZlNwdTU3OUpQeldKdk5iamVpWG84VmtFZFVaWkhfN29XOUE4MDg1WkVEQ2tqYU5sczVpZHZISmRValNQ?oc=5",
+      "reason": "canonical 解決先が当日記事として確認できず、候補タイトル自体も小粒で一次情報性が弱かった"
+    },
+    {
+      "title": "『ファミ通40周年記念Live DAY2』声優・青木瑠璃子が出演！ 『ビースト・オブ・リンカネーション』プレイ動画解説やエンターグラム新作タイトルの発表など、ゲーム最新情報をお届けする生放送を6/28に配信",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE4zbms2RDVZbUI1TDdOTmE3Yi13QzJhcThnRm9DNDliYUs0ZEhrVG03NGxRX3BYblF5YlJLaVl2eUNKeVlVT3doUXpXQ2pwVWFSbFZmR001dw?oc=5",
+      "reason": "イベント告知中心で、当日読者に渡すべき新情報の密度が不足した"
+    },
+    {
+      "title": "ValveのSteam Machine、発売前から転売横行──eBayで公式価格の2倍超、最高3200ドルで出品",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBnU3ljZ3BwSkxkSUU2WTA1UEhpV2VzQWYyU29zYTZtMHhQeFoxNHk4dlVlbE1aUlhwNEFrbWQyVk5DQjMxb2w4WjByYVh1TW1LWVE2QklGT3FyWVdDXzdZTnRTWUlpWVM2OTFzazF2SFBYc3JR?oc=5",
+      "reason": "follow-up の新材料はあるが、二次情報色が強く原記事の信頼度で採用優先度を下げた"
+    },
+    {
+      "title": "PlayStation 6の価格は1,000ドルに達する可能性も：部品供給の悪夢がゲーム機の価格を押し上げている。",
+      "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOVWdLTm53TWlLb0FLWEExdlRfdWc1OGVlbGExQTJYbjFfWk9wMDRJZWFBeU16bThFc0lUV0V0ejFQdDAzVnBUV29yYUR5aFNhRVhuRVRRUTFacXBKZGlBcHN4OUJDazY1S1pENWViaGZrTG51dl9sWVVEY1RLX28tN0dteDE4aHRKUENCSERCeEtzbjFvR1ZlWnRuRUF6c3c1d05BZzFyWmxRamhleEpMVnRjaVc5dw?oc=5",
+      "reason": "翻訳・転載寄りの媒体で一次情報との距離が遠く、価格観測を当日トップに置く根拠が弱かった"
+    },
+    {
+      "title": "PlayStationが購入済み映画551本を削除：デジタル所有権に関する警鐘。",
+      "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPc2hQNmRXWUZMUTBjMEw3aG1mZXpON2VZOC0xcEJIN3RzWlNBdjY3ektUU2ktX0xSeTYtcUFjRzltM3V3UEFRQ1hhbnBibVNOV253dWVMOG9OdzNkVzVsNHhXV2tZZXVvaEdJRXFiSVZjWjNCcWNOTXVYVUdlaFg5MzBlMVNOcl8xRjFzMFYxS0RfS3BsZF9XYmFWTVFKaFBOZWhNaWIxU3dlanZoYWc?oc=5",
+      "reason": "ゲームカテゴリより映像配信の権利論に寄っており、今回のゲーム枠では主題がぶれた"
+    }
+  ],
+  "quality_shortfall_reason": "Stage1候補は25件あったが、ゲーム外ノイズ、二次情報色の強い翻訳記事、告知のみで新材料が薄い案件を落とした結果、読者価値の高い4件に絞られた"
+}

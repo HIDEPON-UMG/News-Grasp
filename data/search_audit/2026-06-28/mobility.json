@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-28",
+  "category_id": "mobility",
+  "queries": [
+    "stage1 file: build/deduped-candidates/mobility.jsonl",
+    "\"自動運転レベル4の世界共通ルールが日本主導でついに決定\"",
+    "\"トヨタ出資のロボタクシー『May Mobility』 中国で10万台規模で展開へ\"",
+    "\"テスラが運転支援機能『FSD』の移行に2万ドルを請求\"",
+    "site:36kr.jp \"世界累計150万台突破\" \"リープモーター\"",
+    "\"信号の残り時間まで自ら計算\" 自動運転大型バス マリョンeバス"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "交通空白「29年までに解消」 政府が新目標、自動運転を活用へ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1ZMDVDdVFOMnBSWGhTdWhINDlRYWlEU2x4WGExeXp6MjV4b1dTa29kNUtkTVU1MXFITlBMNHdsd3cxSEVUNUZueDJzT1lNMzd6dHFtN2JMZFI0Z0N6RERLV09UOC1UMHN6TDNMMg?oc=5",
+      "reason": "日経本体の canonical URL を当日中に確証できず、媒体トップ・PDF・周辺資料だけでは記事カードの一次情報として採用できなかった"
+    },
+    {
+      "title": "トヨタ、充電サービス網を2026年度中に4割拡大 他メーカーEVの利用促進で稼働率向上へ",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE1mLVdRd0FLTW5YaFdOLTQ3cnRQcmc1d1dSR2J4d01QTUZPV0ZLYXRRNnBETFBGcmNkdDJIN3VQdXMtYzlnSXNuTURiaGdDQ1c3VFE?oc=5",
+      "reason": "検索で確認できた本体記事は2026-04-22公開で、stage1の当日候補としては鮮度不一致だった"
+    },
+    {
+      "title": "国内EVトラック初の「クレーン専用シャシー」を新規設定！ 三菱ふそうの小型EVトラック「eキャンター」が改良",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE14R0d5dGdrNGxrRWpYaFV6bXdHdktZQkNHNjhRQVhkUUJXdTdGd0RBLV9LOXFIN25aQVpEWmt3MWdVMWFiZy1BYmhOUGRXaGg1NUQwcQ?oc=5",
+      "reason": "製品改良としては有用だが、制度標準・ロボタクシー運営・量産加速の5本より事業インパクトが一段小さかった"
+    },
+    {
+      "title": "物流拠点で自動運転モビリティ実証を開始 ダイセーロジスティクスと東海クラリオン、限定領域での自動運転実装を目指す",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE93ZEVrYlRJaHA1UHJmdDd3aXNFelRoaG03ODhsSnp0THhQM0xwVzNpVkx6ZHltaTNNX1JramtsUHBzYzRuVTd0ZWp0VQ?oc=5",
+      "reason": "PR主導の限定領域実証で、当日のトップ5に入れるには運行規模と第三者検証がまだ不足していた"
+    },
+    {
+      "title": "韓国・現代自動車グループ、釜山モビリティショーで新型アバンテ公開へ",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE1LNzA1dDdQdDFaTWRQZmhzTEhxNXlUOEhnNXlOQVF4eDBPM2pWXzN5bXNDUHZMRy1ub0o5TzJXZmdHVmlrR3lPdExxZThjdTg2bHfSAVRBVV95cUxPZ1NGQjRKRldSbHBCNVBxWElNeHJFbzdXR2JqRUVyMWNOVEliNndfT05ra09kaFEybWxOV2lsc01JYWp2Q1ZnZEw5eURMc3Y2QldZNzk?oc=5",
+      "reason": "展示会ニュースとしては新鮮だが、仕様紹介中心で投資・制度・運行モデルの変化を示す材料が薄かった"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only"
+}
