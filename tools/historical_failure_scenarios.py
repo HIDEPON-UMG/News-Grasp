@@ -207,6 +207,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-06-28-final-predeepdive-e2e-report.html",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-06-28",
+        "daily batch recovery / internal fallback boundary",
+        "daily batch was blocked by same-date artifacts, then recovery exposed wrapper non-termination, repair scope gaps, and historical DeepDive URL liveness coupling",
+        "artifact predicate drift, deterministic repair coverage, and fallback boundary",
+        "same-date artifact cleanup must use runner predicates, internal failures must not fallback, and current-day publish gates must be separated from historical audits",
+        "runner contract tests, repair matrix fixtures, current DeepDive URL gate, and incident report validation",
+        "docs/incidents/2026-06-28-daily-batch-recovery-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 
