@@ -86,11 +86,14 @@ def _assert_layer_lanes(html: str) -> None:
     for role in ("fact", "context", "outlook"):
         assert f'data-role="{role}"' in html
     assert "summary-lanes__spine" in html
+    assert "summary-lane__avatar-col" in html
+    assert "summary-lane__avatar" in html
+    assert "summary-lane__icon" in html
+    assert "summary-lane__short" in html
     assert "summary-lane__marker" in html
-    assert "summary-lane__avatar" not in html
-    assert "summary-lane__icon" not in html
-    assert "summary-lane__short" not in html
     assert "summary-lane__label" not in html
+    for short in ("FACT", "CONTEXT", "OUTLOOK"):
+        assert short in html
     for persona in ("記者", "解説者", "予測者"):
         assert persona not in html
 

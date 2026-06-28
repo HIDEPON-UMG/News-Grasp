@@ -42,6 +42,7 @@ tmp_*
 /dedup_check.py
 /update_articles.py
 build/test_avatar.html
+build/ui-check/
 build/email_preview.png
 # セッション引き継ぎメモ（ローカル参照のみ・履歴には残さない）
 /handoff_*.md

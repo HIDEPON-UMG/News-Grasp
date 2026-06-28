@@ -99,7 +99,7 @@ runner、watcher、repair、publish verification、podcast verification、distri
 | Digest / category schedule | 対象カテゴリ、休載条件、記事数不足時の refill / quarantine、`data/search_audit` 契約を更新する。 | `tools.validate_daily_quality --date <date> --require-deepdive`、カテゴリ presence / search audit 契約テスト。 |
 | Summary / editorial reflection | Summary 構造、reflection、hero、key takeaways、日付 docs への反映を更新する。 | summary reflection 系テスト、`validate_daily_quality`、公開日付 docs sentinel。 |
 | DeepDive | md、HTML、関係図、日付ページからの導線、公開 inventory を更新する。 | `--require-deepdive`、DeepDive presence / relation layout テスト、公開 URL sentinel。 |
-| Public UI / OGP / PWA / thumbnails | template、CSS、OGP meta、thumbnail contract、manifest、service worker cache、offline page を更新する。 | `tests/test_pwa_meta.py`、`tests/test_thumb_contract.py`、`tests/test_fetch_ogp.py`、必要時 Playwright / visual smoke と `docs/sw.js` version bump。 |
+| Public UI / OGP / PWA / thumbnails | template、CSS、OGP meta、thumbnail contract、manifest、service worker cache、offline page を更新する。 | `tests/test_pwa_meta.py`、`tests/test_thumb_contract.py`、`tests/test_fetch_ogp.py`、必要時 Chrome操作系スキルでの visual smoke と `docs/sw.js` version bump。 |
 | Web publish surface | `docs/<date>/index.html`、summary、per-category docs、public status、GitHub Pages 反映を更新する。 | `verify-publish`、published docs presence、public URL 200 / sentinel、remote HEAD / Deploy workflow success / workflow Pages status built。 |
 | Audio / TTS | 音声生成、release URL、ページ埋め込み、再生可能性、TTS required gate を更新する。 | TTS publish gate、audio URL presence、`verify-publish` audio check。 |
 | YouTube Podcast / playlist | upload state、public video、playlist 反映、外部検証 fallback、token / quota / permission の typed status を更新する。 | `verify-podcast`、`verify-publish --require-podcast`、外部 API 401/403/404 fallback 契約テスト。 |
@@ -189,7 +189,7 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 | approval_status | Committed |
 | committed_by_human | true |
 | approved_by_user_text | PLEASE IMPLEMENT THIS PLAN: / 本修正は品質ゲートと完全に仕様をリンクすること。実装後に結合テストを実施しGreenの場合のみpushする。Yellow以下はGreenになるまで修正→テストすること。 / ここの「記者」「解説者」「予測者」は不要。すべてのテンプレから削除すること。品質ゲートも含めて合わせて修正せよ。ESSAY部分は中途半端に適用されているが、いっそのことカテゴリー別の様式と合わせたほうが良い。 / 別件ですが、スマホ版のページトップの見え方を右側の写真のようにして、上部の帯を圧縮してほしい。 |
-| approved_goal_statement | News-Grasp 記事カード要約UIと ESSAY 要約部を、役割者名を出さない事実・背景・展望の3層レーンへ統一する。スマホ版トップ帯は日付メタを上段に寄せ、tagline / ISSUE label / TOKYO 行を畳んだ圧縮表示へ寄せる。 |
+| approved_goal_statement | News-Grasp 記事カード要約UIと ESSAY 要約部を、アイコンは保持したまま役割者名を出さない事実・背景・展望の3層レーンへ統一する。スマホ版トップ帯は日付メタを上段に寄せ、tagline / ISSUE label / TOKYO 行を畳んだ圧縮表示へ寄せる。 |
 | approval_evidence_ref | current chat turn: user messages `PLEASE IMPLEMENT THIS PLAN:` plus follow-up quality gate / integration test / push instruction, 2026-06-29 role-name removal / ESSAY alignment instruction, and mobile compact header screenshot instruction |
 | approved_at | 2026-06-29 |
 | commitment_version | summary-layer-lanes-2026-06-29 |
@@ -201,7 +201,7 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 | Link item | Decision |
 |---|---|
 | Affected matrix rows | `Public UI / OGP / PWA / thumbnails`; `Summary / editorial reflection` |
-| Gate update decision | 記事カード要約UIは `tests/test_summary_layer_lanes.py` で lane role / marker / spine / card shell preservation と役割者名表示の不在を固定する。ESSAY 側は `tests/test_summary_pattern_d.py` で `summary-template.html` が同じ3層レーン部品を使い、旧 `summary-sec__bullets` に退行しないことを固定する。スマホ版トップ帯は `tests/test_home_variant_b.py::test_home_brand_mobile_uses_compact_issue_header` で日付メタ上段化、tagline / ISSUE label / TOKYO 行の非表示、Issue 番号の下段配置を固定する。過去記事要約3層リライトは `tests/test_rewrite_bullets_3layer.py` で3 bullet、URL、数値、固有名詞、`[[...]]` / `**...**` / `__...__` の保持を固定する。 |
+| Gate update decision | 記事カード要約UIは `tests/test_summary_layer_lanes.py` で lane role / marker / spine / icon / card shell preservation と役割者名表示の不在を固定する。ESSAY 側は `tests/test_summary_pattern_d.py` で `summary-template.html` が同じ3層レーン部品を使い、アイコンは保持しつつ旧 `summary-sec__bullets` と旧役割者ラベルに退行しないことを固定する。スマホ版トップ帯は `tests/test_home_variant_b.py::test_home_brand_mobile_uses_compact_issue_header` で日付メタ上段化、tagline / ISSUE label / TOKYO 行の非表示、Issue 番号の下段配置を固定する。過去記事要約3層リライトは `tests/test_rewrite_bullets_3layer.py` で3 bullet、URL、数値、固有名詞、`[[...]]` / `**...**` / `__...__` の保持を固定する。 |
 | Verification command | `.venv\Scripts\python.exe -m pytest tests/test_summary_layer_lanes.py tests/test_summary_pattern_d.py tests/test_home_variant_b.py tests/test_rewrite_bullets_3layer.py tests/test_card_summary_strip_markdown.py tests/test_generate_pages.py tests/test_product_spec_contract.py -q`; `.venv\Scripts\python.exe tools/generate_pages.py --full`; `designmd lint .\DESIGN.md` |
 | Integration gate | 結合テスト Green の場合のみ commit/push する。Yellow 以下は修正と再テストを継続し、push しない。 |
 | Public boundary | push 後の公開 URL / GitHub Pages / remote HEAD 確認は push を実行した場合だけ行う。 |

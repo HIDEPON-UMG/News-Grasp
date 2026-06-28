@@ -208,6 +208,7 @@ def test_product_constitution_links_summary_lanes_to_quality_gates() -> None:
         "ESSAY",
         "スマホ版トップ帯",
         "役割者名を出さない",
+        "アイコンは保持",
         "過去記事要約3層リライト",
         "Affected matrix rows",
         "Public UI / OGP / PWA / thumbnails",

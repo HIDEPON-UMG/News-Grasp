@@ -118,9 +118,18 @@ def test_home_brand_mobile_uses_compact_issue_header():
     assert ".home-brand__left, .home-brand__title, .home-brand__issue { display: contents; }" in css
     assert ".home-brand__tagline, .home-brand__issue-label, .home-brand__issue-loc { display: none; }" in css
     assert ".home-brand__issue-meta br { display: none; }" in css
-    assert ".home-brand__eyebrow { grid-column: 1; grid-row: 1; }" in css
+    assert ".home-brand__eyebrow { grid-column: 1; grid-row: 1;" in css
     assert ".home-brand__issue-meta { grid-column: 2; grid-row: 1;" in css
     assert ".home-brand__issue-num { grid-column: 1 / -1; grid-row: 3;" in css
+    assert ".home-brand__issue-num { grid-column: 1 / -1; grid-row: 3; justify-self: start;" in css
+    assert "font-size: clamp(30px, 8.3vw, 34px);" in css
+
+
+def test_home_mobile_nav_keeps_podcast_navy():
+    """参照画像どおり、スマホの PODCAST ボタンは濃紺で金色に戻さない。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert ".home-nav__podcast { background: var(--color-navy); color: var(--color-cream);" in css
+    assert ".home-nav__podcast { background: var(--color-gold); color: var(--color-navy);" not in css
 
 
 def test_hero_2col_structure(built_home: str):
