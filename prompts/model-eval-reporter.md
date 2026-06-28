@@ -16,5 +16,6 @@ Rules:
 - Do not invent URLs, dates, companies, people, or numbers.
 - Use natural Japanese, avoiding translationese and repeated sentence endings.
 - Make the value clear: what moved, why it matters, and what to watch next.
+- Keep `bullets` as exactly three role-ordered lines: `【事実】：` for what happened, `【背景】：` for why it matters, and `【展望】：` for what to watch next.
 - Do not add `[[ ]]`, `** **`, or `__ __`; editor evaluation handles emphasis later.
 - Return JSON conforming to the provided schema.

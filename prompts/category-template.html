@@ -1,3 +1,4 @@
+{% from "_partials.html" import summary_lanes %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -229,9 +230,7 @@
         {% if featured.top_title_ja %}<span class="story-title-ja">{{ featured.top_title_ja }}</span>{% endif %}
       </h2>
       {% if featured.top_bullets %}
-      <ul class="top-story__bullets">
-        {% for b in featured.top_bullets[:3] %}<li>{{ b|safe }}</li>{% endfor %}
-      </ul>
+      {{ summary_lanes(featured.top_bullets, "full") }}
       {% elif featured.summary_text %}
       <p style="font-family: var(--font-serif); font-size: 18px; line-height: 1.85; color: var(--color-ink); margin: 0;">{{ featured.summary_text|truncate(220, true, '…') }}</p>
       {% endif %}
@@ -270,9 +269,7 @@
         {% if e.top_title_ja %}<span class="story-title-ja">{{ e.top_title_ja }}</span>{% endif %}
       </h3>
       {% if e.top_bullets %}
-      <ul class="more-card__bullets">
-        {% for b in e.top_bullets[:2] %}<li>{{ b|safe }}</li>{% endfor %}
-      </ul>
+      {{ summary_lanes(e.top_bullets, "compact") }}
       {% elif e.summary_text %}
       <p style="font-family: var(--font-serif); font-size: 16px; line-height: 1.8; color: var(--color-ink); margin: 0;">{{ e.summary_text|truncate(140, true, '…') }}</p>
       {% endif %}

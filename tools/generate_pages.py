@@ -521,7 +521,7 @@ def render_page(ctx: dict[str, Any], out_path: Path, template_name: str = "page-
     """ctx を Jinja2 テンプレで render し UTF-8 で out_path に書き出す。"""
     env = _get_jinja_env()
     template = env.get_template(template_name)
-    html_text = template.render(**ctx)
+    html_text = "\n".join(line.rstrip() for line in template.render(**ctx).splitlines()) + "\n"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html_text, encoding="utf-8", newline="\n")
     return out_path

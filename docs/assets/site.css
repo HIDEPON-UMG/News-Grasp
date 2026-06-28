@@ -700,6 +700,137 @@ button { font: inherit; cursor: pointer; border-radius: 0; }
   font-weight: 700;
 }
 
+/* ---------------- Summary persona lanes ---------------- */
+.summary-lanes {
+  --summary-accent: var(--accent-current);
+  --summary-accent-dark: color-mix(in srgb, var(--summary-accent) 76%, var(--color-ink));
+  --summary-accent-mid: color-mix(in srgb, var(--summary-accent) 62%, var(--color-surface));
+  --summary-accent-soft: color-mix(in srgb, var(--summary-accent) 30%, var(--color-surface));
+  position: relative;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding-left: 18px;
+}
+.home-featured .summary-lanes {
+  --summary-accent: var(--featured-accent, var(--accent-current));
+}
+.summary-lanes__spine {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 6px;
+  background: linear-gradient(
+    180deg,
+    var(--summary-accent-dark) 0%,
+    var(--summary-accent) 42%,
+    var(--summary-accent-soft) 100%
+  );
+}
+.summary-lane {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
+  padding: 15px 0;
+  border-top: 1px solid color-mix(in srgb, var(--summary-accent) 22%, var(--color-border));
+}
+.summary-lane:first-of-type { border-top: 0; padding-top: 0; }
+.summary-lane:last-of-type { padding-bottom: 0; }
+.summary-lane__avatar-col {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+}
+.summary-lane__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  color: var(--color-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-surface) 28%, transparent);
+}
+.summary-lane--fact .summary-lane__avatar {
+  background: linear-gradient(135deg, var(--summary-accent-dark), var(--summary-accent));
+}
+.summary-lane--context .summary-lane__avatar {
+  background: linear-gradient(135deg, var(--summary-accent), var(--summary-accent-mid));
+}
+.summary-lane--outlook .summary-lane__avatar {
+  background: linear-gradient(135deg, var(--summary-accent-mid), var(--summary-accent-soft));
+  color: color-mix(in srgb, var(--summary-accent) 84%, var(--color-ink));
+}
+.summary-lane__icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+.summary-lane__short {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--summary-accent) 74%, var(--color-ink));
+}
+.summary-lane__content {
+  min-width: 0;
+}
+.summary-lane__label {
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--summary-accent) 78%, var(--color-ink));
+}
+.summary-lane__body {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.9;
+  color: var(--color-ink);
+}
+.summary-lanes--compact {
+  padding-left: 14px;
+}
+.summary-lanes--compact .summary-lanes__spine {
+  width: 5px;
+}
+.summary-lanes--compact .summary-lane {
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+}
+.summary-lanes--compact .summary-lane__avatar {
+  width: 38px;
+  height: 38px;
+}
+.summary-lanes--compact .summary-lane__icon {
+  width: 18px;
+  height: 18px;
+}
+.summary-lanes--compact .summary-lane__short {
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+.summary-lanes--compact .summary-lane__label {
+  font-size: 10px;
+}
+.summary-lanes--compact .summary-lane__body {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.summary-lane .emph-bold {
+  border-radius: 0;
+  background: color-mix(in srgb, var(--summary-accent) 24%, transparent);
+  color: color-mix(in srgb, var(--summary-accent) 78%, var(--color-ink));
+}
+.summary-lane .emph-und {
+  border-bottom-color: var(--summary-accent);
+}
+
 /* ---------------- Inline emphasis (3 階層) ----------------
  * 1. [[X]] -> .emph-bold = マーカー (最強・1段落 1-2 箇所、固有名詞/人物/数字主役)
  *    accent 28% 背景 + 太字 900 + accent 色文字 + 微パディング
@@ -2674,6 +2805,14 @@ strong {
   .ng-lead__title .story-title-ja { font-size: 10px; margin-top: 3px; }
   .ng-lens-item__t .story-title-ja { font-size: 9px; margin-top: 2px; }
   .top-story__bullets li { font-size: 16px; line-height: 1.8; padding-left: 18px; }
+  .summary-lanes { padding-left: 14px; }
+  .summary-lanes__spine { width: 5px; }
+  .summary-lane { grid-template-columns: 44px minmax(0, 1fr); gap: 11px; padding: 12px 0; }
+  .summary-lane__avatar { width: 36px; height: 36px; }
+  .summary-lane__icon { width: 17px; height: 17px; }
+  .summary-lane__short { font-size: 8px; letter-spacing: 0.05em; }
+  .summary-lane__label { font-size: 10px; }
+  .summary-lane__body { font-size: 14px; line-height: 1.8; }
   .more-stories { padding: 24px 16px; }
   .more-stories__head h2 { font-size: 22px; }
   .more-stories__grid { grid-template-columns: 1fr; gap: 24px; }

@@ -40,9 +40,9 @@ tags:
 
 ![thumb](https://data.windowsforum.com/attachments/118/118270-eecce2fb2f55ed741a21687d9835d445.jpg?hash=ALXRvtF3bh)
 
-- Microsoft Azure AI Foundryが[[Claude Fable 5]]を基盤として採用し、企業向けに__アクセス制御・監査ログ・コンプライアンスゲート__付きのエージェントを提供開始。
-- エンタープライズ顧客は自社データとポリシーをFoundry上で定義したうえでFable 5を呼び出せる設計で、SaaSとして完結するためAzure商談に組み込みやすい。
-- Anthropicが商用利用を積極的に推進する中、__MicrosoftはAWSと並んで最速の企業展開パスを整備__しており、コンサル案件での提案力が高まる。
+- 【事実】：Microsoft Azure AI Foundryが[[Claude Fable 5]]を基盤として採用し、企業向けに__アクセス制御・監査ログ・コンプライアンスゲート__付きのエージェントを提供開始。
+- 【背景】：エンタープライズ顧客は自社データとポリシーをFoundry上で定義したうえでFable 5を呼び出せる設計で、SaaSとして完結するためAzure商談に組み込みやすい。
+- 【展望】：Anthropicが商用利用を積極的に推進する中、__MicrosoftはAWSと並んで最速の企業展開パスを整備__しており、コンサル案件での提案力が高まる。
 
 ---
 
@@ -56,9 +56,9 @@ tags:
 
 ![thumb](null)
 
-- Microsoftは社内エンジニアのClaude Codeライセンスを__6月30日付で廃止__し、GitHub Copilot CLIへの一本化を進めている（WinBuzzer, opentools.ai 等で複数確認）。
-- Claude Code統合からCopilot CLI移行という「引き算」は、MicrosoftがAnthropic依存度を下げ__自社エコシステムにAIを内製化__する方向性を示す。
-- 一方でFoundryへのFable 5組み込みは継続（上記記事）という矛盾した動きは、「エンドユーザーにはCopilot / 社内エンジニアにはFoundryで直接叩く」という使い分けとも読める。
+- 【事実】：Microsoftは社内エンジニアのClaude Codeライセンスを__6月30日付で廃止__し、GitHub Copilot CLIへの一本化を進めている（WinBuzzer, opentools.ai 等で複数確認）。
+- 【背景】：Claude Code統合からCopilot CLI移行という「引き算」は、MicrosoftがAnthropic依存度を下げ__自社エコシステムにAIを内製化__する方向性を示す。
+- 【展望】：一方でFoundryへのFable 5組み込みは継続（上記記事）という矛盾した動きは、「エンドユーザーにはCopilot / 社内エンジニアにはFoundryで直接叩く」という使い分けとも読める。
 
 ---
 
@@ -72,9 +72,9 @@ tags:
 
 ![thumb](https://www.nttdata.com/global/en/-/media/assets/images/sns_share.png?rev=583d5951ace649c08be7a88679328a3b)
 
-- NTT DATA JapanとシンガポールのAXSが__東・東南アジア越境請求書決済__の簡素化に向けたMOUを締結。日本発のデジタル決済インフラがASEAN圏に拡張。
-- AIを活用した__データ主導の信頼ある社会インフラ__を構築するというNTT DATAの戦略軸と合致する動き。
-- 越境決済の効率化はコンサル案件の発展余地も大きく、NTTデータの東南アジア展開に新たなエントリーポイントが生まれる。
+- 【事実】：NTT DATA JapanとシンガポールのAXSが__東・東南アジア越境請求書決済__の簡素化に向けたMOUを締結。日本発のデジタル決済インフラがASEAN圏に拡張。
+- 【背景】：AIを活用した__データ主導の信頼ある社会インフラ__を構築するというNTT DATAの戦略軸と合致する動き。
+- 【展望】：越境決済の効率化はコンサル案件の発展余地も大きく、NTTデータの東南アジア展開に新たなエントリーポイントが生まれる。
 
 ---
 
@@ -88,9 +88,9 @@ tags:
 
 ![thumb](https://www.crowdfundinsider.com/wp-content/uploads/2019/07/Accenture-Linklaters-in-New-York-City.jpg)
 
-- [[Accenture]]は2026年のAI投資を戦略コアに設定し、OpenAI/Anthropic/AWS等との提携を通じたエンタープライズAI実装を加速する方針を公表。
-- コンサル業界では「__AIが生産性を上げれば人件費が下がる__」という自己矛盾的なビジネスモデルの再設計が進み、Accentureは25%超の収益をAI起源にする目標を掲げる。
-- Fable 5の登場でツール選択肢が増え、コンサルタントの提案力は高まる一方、顧客の内製化支援需要も増加し、Accentureのポジショニングが問われる局面。
+- 【事実】：[[Accenture]]は2026年のAI投資を戦略コアに設定し、OpenAI/Anthropic/AWS等との提携を通じたエンタープライズAI実装を加速する方針を公表。
+- 【背景】：コンサル業界では「__AIが生産性を上げれば人件費が下がる__」という自己矛盾的なビジネスモデルの再設計が進み、Accentureは25%超の収益をAI起源にする目標を掲げる。
+- 【展望】：Fable 5の登場でツール選択肢が増え、コンサルタントの提案力は高まる一方、顧客の内製化支援需要も増加し、Accentureのポジショニングが問われる局面。
 
 ---
 

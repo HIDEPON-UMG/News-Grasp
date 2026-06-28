@@ -197,6 +197,27 @@ def test_product_constitution_has_human_commitment_review_gate() -> None:
         assert phrase in text
 
 
+def test_product_constitution_links_summary_lanes_to_quality_gates() -> None:
+    """記事カード要約レーン改修を spec の品質 gate と人間承認へ接続する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "## Summary Persona Lanes Commitment",
+        "summary-persona-lanes-2026-06-28",
+        "記事カード要約UI",
+        "過去記事要約3層リライト",
+        "Affected matrix rows",
+        "Public UI / OGP / PWA / thumbnails",
+        "Summary / editorial reflection",
+        "Gate update decision",
+        "tests/test_summary_persona_lanes.py",
+        "tests/test_rewrite_bullets_3layer.py",
+        "結合テスト Green の場合のみ commit/push",
+        "Yellow 以下は修正と再テストを継続",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_defines_repair_completeness_proof() -> None:
     """完全自走 repair は実装の雰囲気ではなく、matrix と contract で証明する。"""
     text = _read(SPEC)

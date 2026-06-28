@@ -1,3 +1,4 @@
+{% from "_partials.html" import summary_lanes %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -280,9 +281,7 @@
           {% if hero_story.top_source_url %}<a href="{{ hero_story.top_source_url }}" rel="noopener nofollow" target="_blank">{{ hero_story.top_title }}</a>{% else %}{{ hero_story.top_title }}{% endif %}
           {% if hero_story.top_title_ja %}<span class="story-title-ja">{{ hero_story.top_title_ja }}</span>{% endif %}
         </h2>
-        <ul class="home-featured__bullets">
-          {% for b in hero_story.top_bullets[:3] %}<li>{{ b|safe }}</li>{% endfor %}
-        </ul>
+        {{ summary_lanes(hero_story.top_bullets, "full") }}
         <div class="home-featured__meta">
           {% if hero_story.top_date %}<span>{{ hero_story.top_date }}</span>{% endif %}
           {% if hero_story.top_source %}<span>· {{ hero_story.top_source }}</span>{% endif %}

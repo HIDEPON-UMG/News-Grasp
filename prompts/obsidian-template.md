@@ -60,9 +60,9 @@ hero_right: "{{HERO_RIGHT}}"
 
 ![thumb]({THUMB_URL_OR_NG_PLACEHOLDER})
 
-- {bullet 1, 100 字程度。[[キーワード]] と __重要文__ を使う}
-- {bullet 2}
-- {bullet 3}
+- 【事実】：{bullet 1, 100 字程度。何が起きたか。[[キーワード]] と **重要数値** と __重要文__ を使う}
+- 【背景】：{bullet 2, 100 字程度。なぜ重要か、背景・要点を書く}
+- 【展望】：{bullet 3, 100 字程度。次に見る影響・展望を書く}
 
 > [!tip] 🔗 関連: {AXIS}
 > [[{REF_DATE}-{Genre}#{REF_HEADING}|{REF_TITLE}]] と {AXIS} の関係。{NOTE}
@@ -175,7 +175,8 @@ Reading View でニュースカード化スタイルを当てる。Runner が出
    - **`alt` テキストは必ず `thumb`**（CSS の `img[alt="thumb"]` セレクタが識別子）
    - 取得失敗時も `null` プレースホルダ画像 URL を入れる（サムネ自体を省略しない）
 9. **箇条書き**: サムネの直後に `-` で 3 件
-   - `[[キーワード]]` と `__重要文__` を含む
+   - 順に `【事実】：` / `【背景】：` / `【展望】：` で始める
+   - `[[キーワード]]` と `**重要数値**` と `__重要文__` を含む
    - CSS でカードの下端 = `border-radius` 下 12px + 影を閉じる
 10. **tip callout（任意）**: 関連波及があれば `> [!tip] 🔗 関連: {AXIS}`
     （CSS で軽量な border-left スタイル）
@@ -202,5 +203,4 @@ Reading View でニュースカード化スタイルを当てる。Runner が出
 - 2026-05-21: 初版。CSS スニペット `news-grasp.css` 導入と
   Vault root リポ `HIDEPON-UMG/obsidian-newsgrasp-vault` 化に伴い追加
 -->
-
 

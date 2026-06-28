@@ -1,3 +1,4 @@
+{% from "_partials.html" import summary_lanes %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -137,9 +138,7 @@
         {% if top.source_url %}<a href="{{ top.source_url }}" rel="noopener nofollow" target="_blank" style="color: inherit;">{{ top.title }}</a>{% else %}{{ top.title }}{% endif %}
         {% if top.title_ja %}<span class="story-title-ja">{{ top.title_ja }}</span>{% endif %}
       </h2>
-      <ul class="top-story__bullets">
-        {% for b in top.bullets %}<li>{{ b|safe }}</li>{% endfor %}
-      </ul>
+      {{ summary_lanes(top.bullets, "full") }}
       <div class="top-story__tags">
         <span class="top-story__tag is-accent">{{ glyph }} {{ category_label|upper }}</span>
         <span class="top-story__tag">#FEATURED</span>
@@ -180,9 +179,7 @@
         {% if art.source_url %}<a href="{{ art.source_url }}" rel="noopener nofollow" target="_blank">{{ art.title }}</a>{% else %}{{ art.title }}{% endif %}
         {% if art.title_ja %}<span class="story-title-ja">{{ art.title_ja }}</span>{% endif %}
       </h3>
-      <ul class="more-card__bullets">
-        {% for b in art.bullets %}<li>{{ b|safe }}</li>{% endfor %}
-      </ul>
+      {{ summary_lanes(art.bullets, "compact") }}
     </article>
     {% endfor %}
   </div>

@@ -39,9 +39,9 @@ tags:
 
 ![thumb](https://images.ctfassets.net/kftzwdyauwt9/31rjlet3neWRz6pY1AzuTd/b48667a68f2e86d0fa1f7a890060bbbe/Frame__7_.png?w=1600&h=900&fit=fill)
 
-- [[OpenAI]] が「**Deployment Company（DeployCo）**」を設立。ChatGPT エンタープライズ導入の**SI/コンサル機能**を内製化し、[[Accenture]]・[[マッキンゼー]] が担ってきた実装支援領域に直接参入。
-- DeployCo は現在 **50 社超**の Fortune 500 企業に採用担当者を派遣し、既存 IT 投資の AI 活用を支援。年内に **1,000 名体制**を目指すとされる。
-- __AI 開発会社がインテグレーターを兼ねる時代__。モデル + 実装のワンストップ化は SI 大手のマージン圧迫を直接的に意味する。
+- 【事実】：[[OpenAI]] が「**Deployment Company（DeployCo）**」を設立。ChatGPT エンタープライズ導入の**SI/コンサル機能**を内製化し、[[Accenture]]・[[マッキンゼー]] が担ってきた実装支援領域に直接参入。
+- 【背景】：DeployCo は現在 **50 社超**の Fortune 500 企業に採用担当者を派遣し、既存 IT 投資の AI 活用を支援。年内に **1,000 名体制**を目指すとされる。
+- 【展望】：__AI 開発会社がインテグレーターを兼ねる時代__。モデル + 実装のワンストップ化は SI 大手のマージン圧迫を直接的に意味する。
 
 ---
 
@@ -55,9 +55,9 @@ tags:
 
 ![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-it.jpg)
 
-- [[マッキンゼー]] と [[Google Cloud]] が **4/22** の Cloud Next '26 で「**McKinsey Google Transformation Group**」を設立。McKinsey の変革実行力と Gemini/AI スタックを組み合わせ、成果連動型モデルで大企業の AI 変革を加速。
-- 2027 年までに累計 **3.6 億ドルの EBITDA 改善**を目標とし、**80 超の AI ユースケース**を同時並行で展開。全従業員の **90%以上**を定常的 AI ユーザーにする計画。
-- __マッキンゼー×Google のバンドルが新しい「実行力の軸」__。OpenAI DeployCo とは好対照で、ストラテジー + テクノロジー + 変革の三位一体を標榜する。
+- 【事実】：[[マッキンゼー]] と [[Google Cloud]] が **4/22** の Cloud Next '26 で「**McKinsey Google Transformation Group**」を設立。McKinsey の変革実行力と Gemini/AI スタックを組み合わせ、成果連動型モデルで大企業の AI 変革を加速。
+- 【背景】：2027 年までに累計 **3.6 億ドルの EBITDA 改善**を目標とし、**80 超の AI ユースケース**を同時並行で展開。全従業員の **90%以上**を定常的 AI ユーザーにする計画。
+- 【展望】：__マッキンゼー×Google のバンドルが新しい「実行力の軸」__。OpenAI DeployCo とは好対照で、ストラテジー + テクノロジー + 変革の三位一体を標榜する。
 
 ---
 
@@ -71,9 +71,9 @@ tags:
 
 ![thumb](https://fortune.com/img-assets/wp-content/uploads/2026/05/GettyImages-1132529735-e1780064099241.jpg?resize=1200,600)
 
-- [[Microsoft]] が AI コーディング・チャット・生産性ツールを統合した「**Copilot Super App**」を開発中。Build 2026 での発表を視野に入れ、GitHub・Microsoft 365・Azure AI Foundry を一元化したインターフェイスを目指す。
-- 企業向けには **Windows Copilot Runtime** を経由した**ローカル AI 処理**も提供。クラウドとオンプレミスのハイブリッド AI 戦略の一環。
-- __スーパーアプリ化は Azure 契約の粘着性を高める戦略__。エンタープライズが Copilot を使うほど Microsoft エコシステムへの依存が深まる構造。
+- 【事実】：[[Microsoft]] が AI コーディング・チャット・生産性ツールを統合した「**Copilot Super App**」を開発中。Build 2026 での発表を視野に入れ、GitHub・Microsoft 365・Azure AI Foundry を一元化したインターフェイスを目指す。
+- 【背景】：企業向けには **Windows Copilot Runtime** を経由した**ローカル AI 処理**も提供。クラウドとオンプレミスのハイブリッド AI 戦略の一環。
+- 【展望】：__スーパーアプリ化は Azure 契約の粘着性を高める戦略__。エンタープライズが Copilot を使うほど Microsoft エコシステムへの依存が深まる構造。
 
 ---
 

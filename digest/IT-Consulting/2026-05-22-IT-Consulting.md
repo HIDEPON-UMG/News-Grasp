@@ -42,9 +42,9 @@ tags:
 
 ![thumb](https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-it.jpg)
 
-- Google Cloudが4月のCloud Next 2026で[[AIパートナーファンド]]$750M（約1,100億円）を設立。Accenture（450+エージェント構築）・Deloitte（100+エージェント展開、「最大投資」と明言）・KPMG（$100M自己資本投入）・PwC（$400Mセキュリティ・コンプライアンス特化）が参画。
-- コンサルが1ドルのGoogle Cloud支出から__最大$7.05のサービス収益__を獲得できる構造が、Azure/AWSよりも有利なエコノミクスを生み出しており、Google First シフトが業界内で加速している。
-- GoogleはFDE（フォワードデプロイドエンジニア）をAccenture・Capgemini・Cognizant・Deloitte・PwCなどに常駐配置。[[AIエージェント]]本番稼働を半年以内に実現する支援体制が整いつつある。
+- 【事実】：Google Cloudが4月のCloud Next 2026で[[AIパートナーファンド]]$750M（約1,100億円）を設立。Accenture（450+エージェント構築）・Deloitte（100+エージェント展開、「最大投資」と明言）・KPMG（$100M自己資本投入）・PwC（$400Mセキュリティ・コンプライアンス特化）が参画。
+- 【背景】：コンサルが1ドルのGoogle Cloud支出から__最大$7.05のサービス収益__を獲得できる構造が、Azure/AWSよりも有利なエコノミクスを生み出しており、Google First シフトが業界内で加速している。
+- 【展望】：GoogleはFDE（フォワードデプロイドエンジニア）をAccenture・Capgemini・Cognizant・Deloitte・PwCなどに常駐配置。[[AIエージェント]]本番稼働を半年以内に実現する支援体制が整いつつある。
 
 ---
 
@@ -56,9 +56,9 @@ tags:
 
 ![thumb](https://fortune.com/img-assets/wp-content/uploads/2026/05/55281101353_f680158e4f_4k.jpg?resize=1200,600)
 
-- AccentureのグローバルCDO Beck Baileyが「[[新卒採用]]を2025年より増やす」と明言。ChatGPT登場後に大学入学したGen Z世代は「AI流暢さ」を生得的に持ち、コンサルの組織変革を後押しする存在と位置付ける。
-- AIが中堅層（マネージャー〜シニアコンサルタント）の定型業務を侵食する中、__新卒←→パートナーの二極構造__へのシフトが鮮明に。Meta・PwCが新卒採用を絞る中でAccentureのみ逆張りしている。
-- Accentureは現在85,000人超のAI・データ専門家を抱え年度末目標を前倒し達成。求める最重要スキルはMLエンジニアリング・データアーキテクチャ・AIエージェント開発・POC→本番化の実装力。
+- 【事実】：AccentureのグローバルCDO Beck Baileyが「[[新卒採用]]を2025年より増やす」と明言。ChatGPT登場後に大学入学したGen Z世代は「AI流暢さ」を生得的に持ち、コンサルの組織変革を後押しする存在と位置付ける。
+- 【背景】：AIが中堅層（マネージャー〜シニアコンサルタント）の定型業務を侵食する中、__新卒←→パートナーの二極構造__へのシフトが鮮明に。Meta・PwCが新卒採用を絞る中でAccentureのみ逆張りしている。
+- 【展望】：Accentureは現在85,000人超のAI・データ専門家を抱え年度末目標を前倒し達成。求める最重要スキルはMLエンジニアリング・データアーキテクチャ・AIエージェント開発・POC→本番化の実装力。
 
 ---
 
@@ -70,9 +70,9 @@ tags:
 
 ![thumb](https://plusai.com/62375700635d76646ef2457f/690130bb00d5d62159784ce8_openai-gives-mckinsey-company-an-award-for-passing-100-v0-78mcg23u09xf1.webp)
 
-- OpenAIが2月に発足させた[[Frontier Alliances]]にMcKinsey・BCG・Accentureが参画。GPT-5.5を活用した企業変革プロジェクトを成果連動型フィーモデルで展開する体制が確立された。
-- BCGは2025年AI収益$3.6B（全体の約25%）を初開示し、Big4・Big3コンサルのAI収益化が数値として可視化されてきた。__収益モデルの転換点__が業界全体で同時進行している。
-- AnthropicのClaude、Google CloudのGemini、OpenAIのGPT-5.5を使い分ける「マルチLLM」戦略が業界標準に。単一ベンダー依存リスクを分散しながら各案件に最適なモデルを選択する形態へ。
+- 【事実】：OpenAIが2月に発足させた[[Frontier Alliances]]にMcKinsey・BCG・Accentureが参画。GPT-5.5を活用した企業変革プロジェクトを成果連動型フィーモデルで展開する体制が確立された。
+- 【背景】：BCGは2025年AI収益$3.6B（全体の約25%）を初開示し、Big4・Big3コンサルのAI収益化が数値として可視化されてきた。__収益モデルの転換点__が業界全体で同時進行している。
+- 【展望】：AnthropicのClaude、Google CloudのGemini、OpenAIのGPT-5.5を使い分ける「マルチLLM」戦略が業界標準に。単一ベンダー依存リスクを分散しながら各案件に最適なモデルを選択する形態へ。
 
 ---
 
@@ -84,9 +84,9 @@ tags:
 
 ![thumb](https://www.nttdata.com/jp/ja/-/media/nttdatajapan/images/data-insight/2026/032502/index_list.jpg?rev=c1b53132b2a44862b7f4badf483c3961)
 
-- NTTデータグループが米シリコンバレーに「NTT DATA [[AIVista]]」を設立。自然言語指示でAIエージェントを構築できる「LITRON Builder」を2026年4月から提供開始し、製造・金融・流通向けエージェントの本番稼働を半年以内に実現する。
-- 2030年にEBITDA1.2兆円（2025年比約50%増）を目指す成長戦略の中核であり、__グローバル5万人のAI支援専門家__を配置する計画。Gemini Intelligence衝撃波を受け、導入支援→エージェント本番稼働への転換を急いでいる。
-- アクセンチュアの450+エージェント・DeloitteのGoogle Cloud100+エージェントに対し、NTTデータ独自のLITRONが差別化軸となるか、競争優位確立が急務。
+- 【事実】：NTTデータグループが米シリコンバレーに「NTT DATA [[AIVista]]」を設立。自然言語指示でAIエージェントを構築できる「LITRON Builder」を2026年4月から提供開始し、製造・金融・流通向けエージェントの本番稼働を半年以内に実現する。
+- 【背景】：2030年にEBITDA1.2兆円（2025年比約50%増）を目指す成長戦略の中核であり、__グローバル5万人のAI支援専門家__を配置する計画。Gemini Intelligence衝撃波を受け、導入支援→エージェント本番稼働への転換を急いでいる。
+- 【展望】：アクセンチュアの450+エージェント・DeloitteのGoogle Cloud100+エージェントに対し、NTTデータ独自のLITRONが差別化軸となるか、競争優位確立が急務。
 
 ---
 
@@ -98,9 +98,9 @@ tags:
 
 ![thumb](https://global.fujitsu/-/media/Project/Fujitsu/Fujitsu-HQ/insight/tl-scm-digital-rehearsal-202600302/ogp-scm-digital-rehearsal-1200x630.jpg?rev=ba1097759e624e8d9f393d536834e1bd)
 
-- 富士通が独自LLM「[[Takane]]」を核とした「AI-Driven Software Development Platform」を医療・自治体向け全67種ソフトウェアに2026年度末までに適用完了する計画を公開。SEナレッジを大量学習した国内公共セクター特化型。
-- 要件定義から実装までの__自動化率60%超__を目標とし、従来型の人的工数集約モデルからの脱却を図る。ローカルLLM戦略でAccenture/NTTデータのGlobal Cloud路線と差別化する。
-- Gemini Intelligenceがグローバルコンサルのワークフロー自動化事業に直撃する中、富士通は「国内公共セクターの規制対応型AI」という防衛的ポジションを固める方針を維持している。
+- 【事実】：富士通が独自LLM「[[Takane]]」を核とした「AI-Driven Software Development Platform」を医療・自治体向け全67種ソフトウェアに2026年度末までに適用完了する計画を公開。SEナレッジを大量学習した国内公共セクター特化型。
+- 【背景】：要件定義から実装までの__自動化率60%超__を目標とし、従来型の人的工数集約モデルからの脱却を図る。ローカルLLM戦略でAccenture/NTTデータのGlobal Cloud路線と差別化する。
+- 【展望】：Gemini Intelligenceがグローバルコンサルのワークフロー自動化事業に直撃する中、富士通は「国内公共セクターの規制対応型AI」という防衛的ポジションを固める方針を維持している。
 
 ---
 
