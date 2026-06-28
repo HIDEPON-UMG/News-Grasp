@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+REQUIRED_HORIZONTAL_LANES: tuple[str, ...] = ("runner", "repair", "state", "report")
+
+
 @dataclass(frozen=True)
 class HistoricalFailureScenario:
     issue_date: str
@@ -13,6 +16,21 @@ class HistoricalFailureScenario:
     cheapest_e2e_or_fixture: str
     evidence_path: str
     expected_status: str
+
+    @property
+    def horizontal_lanes(self) -> tuple[str, ...]:
+        """全 incident で同じ横並び調査レーンを要求する。"""
+        return REQUIRED_HORIZONTAL_LANES
+
+    @property
+    def horizontal_scan_summary(self) -> str:
+        """既存 scenario 情報から runner/repair/state/report 調査観点を生成する。"""
+        return (
+            f"runner stage={self.stage}; "
+            f"repair root_pattern={self.root_pattern}; "
+            f"state missing_invariant={self.missing_invariant}; "
+            f"report evidence_path={self.evidence_path}"
+        )
 
 
 @dataclass(frozen=True)
@@ -215,6 +233,26 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "same-date artifact cleanup must use runner predicates, internal failures must not fallback, and current-day publish gates must be separated from historical audits",
         "runner contract tests, repair matrix fixtures, current DeepDive URL gate, and incident report validation",
         "docs/incidents/2026-06-28-daily-batch-recovery-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-28",
+        "E2E artifact boundary / runner precheck",
+        "pre-DeepDive E2E artifacts remained under same-date production paths and collided with the production runner artifact predicate",
+        "E2E artifact collision and production predicate drift",
+        "E2E output cleanup must be verified with the same predicate/glob/state that the production runner uses before daily batch readiness is claimed",
+        "incident report contract plus same-predicate artifact-boundary fixture",
+        "docs/incidents/2026-06-28-e2e-artifact-collision-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-06-28",
+        "full runner recovery / cross-feature bug taxonomy",
+        "full runner recovery exposed wrapper non-termination, repair scope gaps, state reconciliation drift, internal fallback overclaim, current/historical URL coupling, and evidence observability gaps",
+        "full runner bug-pattern taxonomy and horizontal scan",
+        "recovery reports must inventory related runner/repair/state/report features and classify newly suspected bug candidates instead of collapsing the incident into a recovered status",
+        "incident report contract covering Class A-H and targeted runner/repair contracts",
+        "docs/incidents/2026-06-28-full-runner-bug-patterns-report.html",
         "runtime_e2e_required",
     ),
 )

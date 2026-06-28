@@ -68,6 +68,8 @@ ROLES: dict[str, Role] = {
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n.*?\r?\n---\r?\n", re.DOTALL)
 _TURN_RE = re.compile(r"^(若手|先輩)[:：]\s*(.+?)\s*$")
 _ROLE_LABELS = {"若手": "junior", "先輩": "senior"}
+_DUPLICATE_CHECK_RE = re.compile(r"[\s\u3000、。，．・…「」『』（）()\[\]【】!！?？:：;；,.\-—–_#>*`~|/\\]")
+_MIN_DUPLICATE_CHARS = 18
 
 
 def _warn(message: str) -> None:
@@ -86,6 +88,10 @@ def parse_dialogue(markdown: str) -> list[DialogueTurn]:
     return turns
 
 
+def _dialogue_quality_key(text: str) -> str:
+    return _DUPLICATE_CHECK_RE.sub("", text).casefold()
+
+
 def validate_dialogue(turns: list[DialogueTurn]) -> list[str]:
     issues: list[str] = []
     role_keys = {turn.role_key for turn in turns}
@@ -99,6 +105,22 @@ def validate_dialogue(turns: list[DialogueTurn]) -> list[str]:
         issues.append(f"字数不足: {char_count}字 (必要: {MIN_DIALOGUE_CHARS}〜{MAX_DIALOGUE_CHARS}字)")
     elif char_count > MAX_DIALOGUE_CHARS:
         issues.append(f"字数超過: {char_count}字 (必要: {MIN_DIALOGUE_CHARS}〜{MAX_DIALOGUE_CHARS}字)")
+    long_keys: list[str] = []
+    for turn in turns:
+        key = _dialogue_quality_key(turn.text)
+        if len(key) >= _MIN_DUPLICATE_CHARS:
+            long_keys.append(f"{turn.role_key}:{key}")
+    duplicated_turns = sorted({key for key in long_keys if long_keys.count(key) > 1})
+    if duplicated_turns:
+        issues.append(f"重複セリフ: 同一セリフが反復しています ({len(duplicated_turns)}種類)")
+    for block_size in (2, 3, 4):
+        blocks = [
+            tuple(long_keys[idx : idx + block_size])
+            for idx in range(0, max(0, len(long_keys) - block_size + 1))
+        ]
+        if any(blocks.count(block) > 1 for block in blocks):
+            issues.append(f"反復ブロック: {block_size}セリフ単位のやりとりが反復しています")
+            break
     return issues
 
 

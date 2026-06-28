@@ -6,6 +6,7 @@ from tools.historical_failure_scenarios import compound_failure_scenarios, histo
 
 
 ROOT = Path(__file__).resolve().parent.parent
+REQUIRED_HORIZONTAL_LANES = {"runner", "repair", "state", "report"}
 
 
 def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
@@ -62,6 +63,25 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         assert scenario.cheapest_e2e_or_fixture
         assert scenario.expected_status in {"runtime_e2e_required", "fixture_required"}
         assert (ROOT / scenario.evidence_path).exists(), scenario.evidence_path
+
+
+def test_every_historical_failure_has_runner_repair_state_report_horizontal_scan() -> None:
+    """過去障害を単独原因で閉じず、同じ incident 内で 4 レーン影響調査を固定する。"""
+    scenarios = historical_failure_scenarios()
+
+    assert scenarios
+    for scenario in scenarios:
+        lanes = set(getattr(scenario, "horizontal_lanes", ()))
+        assert lanes == REQUIRED_HORIZONTAL_LANES, scenario
+        assert getattr(scenario, "horizontal_scan_summary", ""), scenario
+        summary = scenario.horizontal_scan_summary
+        for phrase in [
+            "runner",
+            "repair",
+            "state",
+            "report",
+        ]:
+            assert phrase in summary, scenario
 
 
 def test_historical_failure_matrix_marks_runtime_e2e_rows() -> None:

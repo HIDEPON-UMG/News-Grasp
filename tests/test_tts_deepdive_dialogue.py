@@ -55,6 +55,34 @@ def test_validate_dialogue_requires_both_roles_and_reasonable_length():
     assert any("字数不足" in issue for issue in issues)
 
 
+def test_validate_dialogue_rejects_repeated_tail_exchange():
+    turns = [
+        deepdive_dialogue.DialogueTurn("junior", "今日のDeepDiveは、AIエージェントの導入設計が焦点でした。"),
+        deepdive_dialogue.DialogueTurn("senior", "前回は操作代行の広がりを扱い、今回は権限設計と監査責任へ論点が移りました。"),
+        deepdive_dialogue.DialogueTurn("junior", "つまり、モデル性能より業務の渡し方が大事になったということですね。"),
+        deepdive_dialogue.DialogueTurn("senior", "その通りです。誰が委任し、誰が検収し、どの手順を再利用するかが実務上の分岐点です。"),
+        deepdive_dialogue.DialogueTurn("junior", "最後に、現場で今日から確認できることはありますか。"),
+        deepdive_dialogue.DialogueTurn(
+            "senior",
+            "契約通貨、更新時期、価格改定の余地、代替調達先を確認することだね。政策ニュースを見たら、必ず自分たちの費用と収益の前提に引き直す。",
+        ),
+        deepdive_dialogue.DialogueTurn("junior", "最後に、現場で今日から確認できることはありますか。"),
+        deepdive_dialogue.DialogueTurn(
+            "senior",
+            "契約通貨、更新時期、価格改定の余地、代替調達先を確認することだね。政策ニュースを見たら、必ず自分たちの費用と収益の前提に引き直す。",
+        ),
+        deepdive_dialogue.DialogueTurn("junior", "最後に、現場で今日から確認できることはありますか。"),
+        deepdive_dialogue.DialogueTurn(
+            "senior",
+            "契約通貨、更新時期、価格改定の余地、代替調達先を確認することだね。政策ニュースを見たら、必ず自分たちの費用と収益の前提に引き直す。",
+        ),
+    ]
+
+    issues = deepdive_dialogue.validate_dialogue(turns)
+
+    assert any("反復" in issue or "重複" in issue for issue in issues)
+
+
 def test_synthesize_dialogue_uses_role_specific_style_ids(tmp_path, monkeypatch):
     script_path = tmp_path / "dialogue.md"
     script_path.write_text(

@@ -210,6 +210,32 @@ def test_product_constitution_defines_repair_completeness_proof() -> None:
         assert phrase in text
 
 
+def test_product_constitution_requires_horizontal_incident_bugfix_investigation() -> None:
+    """バグ修正を単一部品で閉じず、runner/repair/state/report を同じ incident で見る。"""
+    text = _read(SPEC)
+    headings = _headings(text)
+    agents = _read(AGENTS)
+    claude = _read(CLAUDE)
+
+    assert "Incident Bugfix Horizontal Investigation Covenant" in headings
+    for phrase in [
+        "runner / repair / state / report の横並び調査",
+        "同じ incident 単位",
+        "runner: 実行体、wrapper、stage 遷移、live copy、scheduler、NoPublish/RecoverOnly",
+        "repair: coverage matrix、registry、handler 実装、same-gate re-verify",
+        "state: runner state、distribution manifest、gate attempts、publish-complete、recovery proof",
+        "report: incident report、bug class、横並び類似候補、新規バグ候補、恒久対策",
+        "1 レーンでも未調査なら修正完了にしてはならない",
+        "tools.historical_failure_scenarios",
+    ]:
+        assert phrase in text
+
+    for text in [agents, claude]:
+        assert "runner / repair / state / report の横並び調査" in text
+        assert "同じ incident 単位" in text
+        assert "1 レーンでも未調査なら修正完了にしてはならない" in text
+
+
 def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> None:
     text = _read(SPEC)
 

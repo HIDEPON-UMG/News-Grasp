@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-06-26
+> **Last Updated**: 2026-06-28
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -111,6 +111,19 @@ runner、watcher、repair、publish verification、podcast verification、distri
 非自明な変更計画と完了報告には、必ず「Affected matrix rows」「Gate update decision」「Verification command」を書く。該当する row が無い機能を追加、削除、修正する場合は、実装と同じ変更単位でこの `Feature Change Quality Gate Matrix` と `tests/test_product_spec_contract.py` を更新してから完了扱いにする。
 
 今回の 2026-06-21 Podcast 検証障害のように、公開成果物は正常でも検証 API 側だけが 401 を返す場合は、成果物を未公開扱いにせず、別経路の公開確認へ fallback する。ただし fallback は無条件成功ではない。watch / playlist / public status のいずれかで同じ videoId、playlistId、title、日付を確認できる場合だけ Green とする。
+
+## Incident Bugfix Horizontal Investigation Covenant
+
+News-Grasp のバグ修正は、直接原因を 1 つの部品に閉じて扱ってはならない。原因が runner、repair、state、report のどこに見えていても、同じ incident 単位で runner / repair / state / report の横並び調査を必ず実施し、1 レーンでも未調査なら修正完了にしてはならない。
+
+| Lane | Required investigation |
+|---|---|
+| runner | runner: 実行体、wrapper、stage 遷移、live copy、scheduler、NoPublish/RecoverOnly を調べ、実行 path と repo path の drift を分ける。 |
+| repair | repair: coverage matrix、registry、handler 実装、same-gate re-verify を調べ、unknown / unimplemented / internal Red を Green に倒していないことを確認する。 |
+| state | state: runner state、distribution manifest、gate attempts、publish-complete、recovery proof を調べ、同じ日付、同じ run intent、同じ HEAD を指すことを確認する。 |
+| report | report: incident report、bug class、横並び類似候補、新規バグ候補、恒久対策を記録し、局所復旧だけで根因を閉じない。 |
+
+過去障害と今後の障害は `tools.historical_failure_scenarios` の scenario 単位でこの 4 レーンを持つ。新しい incident、E2E 障害、runner 障害、repair 障害、公開確認障害を追加する場合は、該当 evidence と同時に 4 レーン横並び調査の summary を更新し、`tests/test_historical_failure_scenarios.py` で全 scenario に同じ契約がかかることを確認する。
 
 ## Category Schedule Source of Truth
 
