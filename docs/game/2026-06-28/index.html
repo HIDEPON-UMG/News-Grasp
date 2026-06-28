@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260628 — Game</title>
+<meta name="description" content="きょうのゲームは、大型運営タイトルが夏イベントや機種拡大で裾野を広げる一方、個人開発の初動成功とベテランクリエイターの新企画も浮上した。IP寿命を伸ばす運営力と、新しい作り手を支える流通設計の両方が見えた朝だった。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/game/2026-06-28/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260628 — Game">
+<meta property="og:description" content="きょうのゲームは、大型運営タイトルが夏イベントや機種拡大で裾野を広げる一方、個人開発の初動成功とベテランクリエイターの新企画も浮上した。IP寿命を伸ばす運営力と、新しい作り手を支える流通設計の両方が見えた朝だった。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/game/2026-06-28/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260628 — Game">
+<meta name="twitter:description" content="きょうのゲームは、大型運営タイトルが夏イベントや機種拡大で裾野を広げる一方、個人開発の初動成功とベテランクリエイターの新企画も浮上した。IP寿命を伸ばす運営力と、新しい作り手を支える流通設計の両方が見えた朝だった。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="game">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill is-active" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-28 · #20260628</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ GAMING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">▶</span>
+      <h1 class="cat-hero__title">ゲーム.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">きょうのゲームは、大型運営タイトルが夏イベントや機種拡大で裾野を広げる一方、個人開発の初動成功とベテランクリエイターの新企画も浮上した。IP寿命を伸ばす運営力と、新しい作り手を支える流通設計の両方が見えた朝だった。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">84</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·28</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260628</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">← BACK TO GAMING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-28 06:00 · AUTOMATON</span>
+    <span class="top-story__score">92</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://automaton-media.com/articles/newsjp/gbvsr-20260627-452327/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://automaton-media.com/wp-content/uploads/2026/06/gbvsr-20260627-452327-header.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://automaton-media.com/articles/newsjp/gbvsr-20260627-452327/" rel="noopener nofollow" target="_blank" style="color: inherit;">GBVSR、9月17日に新キャラ「イド」参戦　Switch 2版も同日発売</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">GBVSR</strong>は<strong>9月17日に新DLCキャラ「イド」を追加</strong>し、<span class="emph-und">Switch 2版を同日に出してプレイヤー母集団を一気に広げる</span>構えを見せた。</li><li>Nintendo Switch 2版は<strong>これまでのDLC40キャラを最初から使える</strong>仕様で、<span class="emph-und">後発移植でも見劣りしない完全版訴求</span>を前面に出した。</li><li>ローカル通信対戦と既存の<strong class="emph-bold">クロスプレイ</strong>対応がそろうことで、<strong>家庭用の遊びやすさと継続運営を両立</strong>できるかが<span class="emph-und">秋商戦の焦点</span>になる。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">▶ GAMING</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-28</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ▶ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-28 10:00</span>
+        <span>· 電撃オンライン</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://dengekionline.com/article/202606/79644" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://cimg.kgl-systems.io/camion/files/79644/ogp_toYY.jpg?x=1280" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://dengekionline.com/article/202606/79644" rel="noopener nofollow" target="_blank">NIKKE、7月2日に夏イベント開始　水着シンデレラなど新SSR投入</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">NIKKE</strong>は<strong>7月2日開始の夏イベント「WAVE TO YOU」</strong>を発表し、<span class="emph-und">大型ライブ運営の定番である水着施策を早めに投入</span>した。</li><li>新SSRの<strong class="emph-bold">シンデレラ：クリスタルウェーブ</strong>と<strong class="emph-bold">マルチャーナ：マリンスタディ</strong>に加え、<strong>7月23日まで話題を刻む段階投入</strong>で<span class="emph-und">夏商戦を長く引っ張る設計</span>が見える。</li><li>6月27日SP放送では<strong>『ペルソナ』コラボ示唆まで出し</strong>、<span class="emph-und">イベント消化後の次の山を先に匂わせる</span>ことで既存ユーザーの離脱抑制を狙う。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-27 19:05</span>
+        <span>· AUTOMATON</span>
+        <span class="more-card__score">83</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://automaton-media.com/articles/newsjp/20260627-452319/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://automaton-media.com/wp-content/uploads/2026/06/20260627-452319-header.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://automaton-media.com/articles/newsjp/20260627-452319/" rel="noopener nofollow" target="_blank">『Garbage Growth』、宣伝薄でも発売3日で3000本　Steam推薦が初動押し上げ</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Garbage-Growth</strong>は<strong>発売3日で3000本、ウィッシュリスト2000件</strong>という初動を示し、<span class="emph-und">Steam定説に揺さぶり</span>をかけた。</li><li>開発者は<strong>大規模な動画宣伝よりデモ版の改善とSteamホーム推薦が効いた</strong>と説明し、<span class="emph-und">小規模開発の勝ち筋が体験改善に寄る</span>ことを示した。</li><li>7月1日までの10%オフと今後の<strong class="emph-bold">月エリア</strong>追加が控えるため、<strong>珍しいロケットスタートを継続売上へ変えられるか</strong>が<span class="emph-und">インディー市場の観測点</span>になる。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-28 07:38</span>
+        <span>· ENCOUNT</span>
+        <span class="more-card__score">74</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://encount.press/archives/1016510/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://encount.press/wp-content/uploads/2026/06/18135658/668e07132e746e4a0503057d4e534b95.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://encount.press/archives/1016510/" rel="noopener nofollow" target="_blank">『メガテン』生みの親・鈴木一也氏、新作ゲーム企画を予告</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li>『<strong class="emph-bold">女神転生</strong>』の生みの親である<strong class="emph-bold">鈴木一也</strong>氏は、<strong>「システムも世界観も斬新」な新作ゲーム企画が進行中</strong>だと明かし、<span class="emph-und">ベテランIPクリエイターの現役感</span>を示した。</li><li>同氏は連載小説と並行して企画を動かしており、<strong>頓挫した過去プロジェクトの発想を別媒体で生かす</strong>姿勢からも<span class="emph-und">作り続ける人材層の厚さ</span>が見える。</li><li>具体的な発売時期や対応機種は未公表で、今後は<strong>企画がインディー規模か商業タイトルか</strong>を見極めることが<span class="emph-und">続報の焦点</span>になる。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§06 OF 7 · GAMING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">GBVSR</strong> の Switch 2 同時展開、<strong class="emph-bold">NIKKE</strong> の夏イベント、<strong class="emph-bold">Garbage Growth</strong> の Steam 初動、<strong class="emph-bold">鈴木一也</strong> 氏の新企画が並び、<strong>発売点の派手さ</strong> より <span class="emph-und">どう運営し、どこで伸ばすか</span> が前に出ました。IP を長く回すには、話題化と継続導線を同時に置く必要があります。ゲームも、単発ヒットではなく運営の積み上げで差がつく朝でした。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-28/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · GAMING · 2026-06-28
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

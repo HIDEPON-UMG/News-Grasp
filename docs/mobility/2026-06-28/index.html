@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260628 — Mobility</title>
+<meta name="description" content="モビリティは制度標準と量産拡大が先に動き、個社のソフト課金や運行モデルが後から追う日になった。ロボタクシーも公共交通も「作れるか」より「どの規則と運営網で広げるか」が勝負になりつつある。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-28/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260628 — Mobility">
+<meta property="og:description" content="モビリティは制度標準と量産拡大が先に動き、個社のソフト課金や運行モデルが後から追う日になった。ロボタクシーも公共交通も「作れるか」より「どの規則と運営網で広げるか」が勝負になりつつある。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/mobility/2026-06-28/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260628 — Mobility">
+<meta name="twitter:description" content="モビリティは制度標準と量産拡大が先に動き、個社のソフト課金や運行モデルが後から追う日になった。ロボタクシーも公共交通も「作れるか」より「どの規則と運営網で広げるか」が勝負になりつつある。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="mobility">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill is-active" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-28 · #20260628</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/mobility.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MOBILITY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◎</span>
+      <h1 class="cat-hero__title">モビリティ.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">モビリティは制度標準と量産拡大が先に動き、個社のソフト課金や運行モデルが後から追う日になった。ロボタクシーも公共交通も「作れるか」より「どの規則と運営網で広げるか」が勝負になりつつある。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">90</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·28</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260628</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">← BACK TO MOBILITY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-27 07:00 · 自動運転ラボ</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://jidounten-lab.com/u_64178" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://jidounten-lab.com/wp/wp-content/uploads/2022/06/un-e1656200041796.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://jidounten-lab.com/u_64178" rel="noopener nofollow" target="_blank" style="color: inherit;">自動運転レベル4の世界共通ルール採択、日本主導で越境認証へ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li>国連WP29は<strong class="emph-bold">自動運転レベル4</strong>向けの共通ルールを採択し、<strong>約50〜60カ国で通用する認証の土台</strong>を先に整えた。</li><li>日本はGRVA副議長として議論を主導し、<span class="emph-und">「有能で注意深い人間以上」を求める性能思想</span>を国際基準へ持ち込んだ。</li><li>重要なのはWaymoやTeslaの個社競争より、<strong class="emph-bold">ロボタクシー</strong>量産で最大だった<strong>制度の分断コストが先に縮み始めた</strong>点だ。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◎ MOBILITY</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-28</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◎ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-28 07:00</span>
+        <span>· 自動運転ラボ</span>
+        <span class="more-card__score">93</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://jidounten-lab.com/u_64181" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://jidounten-lab.com/wp/wp-content/uploads/2023/04/toyota.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://jidounten-lab.com/u_64181" rel="noopener nofollow" target="_blank">May Mobility、中国配車大手と組みロボタクシー10万台計画</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">May Mobility</strong>はCaoCaoと組み、<strong>2030年に10万台規模のロボタクシー展開</strong>を狙う欧州起点の商用化計画を打ち出した。</li><li>車両保有と配車運営をCaoCao、ソフトをMayが担う形で、<span class="emph-und">技術と運営を分ける水平分業</span>がロボタクシーでも現実味を帯びた。</li><li>トヨタやNTTが関わる資本網まで踏まえると、<strong class="emph-bold">自動運転</strong>の勝負は単独開発力より<strong>各地域で誰が運営面を握るか</strong>へ移りつつある。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-28 08:00</span>
+        <span>· GIGAZINE</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://gigazine.net/news/20260628-tesla-fsd-transfer-cost/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i.gzn.jp/img/2026/06/28/tesla-fsd-transfer-cost/00.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://gigazine.net/news/20260628-tesla-fsd-transfer-cost/" rel="noopener nofollow" target="_blank">Tesla、FSD移行でCybertruck購入者に追加2万ドル負担</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Tesla</strong>はFSD移行プログラムの条件変更で、<strong>安価なCybertruckからの移行希望者に実質2万ドルの追加負担</strong>を迫る形になった。</li><li>当初は3月末までの注文が条件だったのに、後から納車完了条件へ変わり、<span class="emph-und">ソフト収益を積み上げたいTeslaの都合</span>がユーザー反発を招いた。</li><li>注目点は<strong class="emph-bold">FSD</strong>の価格そのものより、<strong>EVを売った後の継続課金モデルをどこまで強引に最適化できるか</strong>というSaaS的な論点だ。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-28 09:30</span>
+        <span>· 36Kr Japan</span>
+        <span class="more-card__score">88</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://36kr.jp/498286/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://36krjp-1316517779.cos.ap-tokyo.myqcloud.com/uploads/2023/03/20230324104501v2_356006b41f2f499aa860c79820358507_img_000243.png" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://36kr.jp/498286/" rel="noopener nofollow" target="_blank">Leapmotor、累計150万台突破で中国新興EVの輸出拡大鮮明</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Leapmotor</strong>の累計納車は150万台に達し、<strong>100万台から150万台までを8カ月で駆け抜けた</strong>ことで量産スピードが一段上がった。</li><li>5月単月8万台超、1〜5月輸出台数7万5000台超という伸びは、<span class="emph-und">中国新興EVが国内価格競争だけでなく海外販売網で稼ぎ始めた</span>ことを示す。</li><li>ステランティスとの連携や欧州・東南アジアの生産計画まで見ると、<strong class="emph-bold">EV販売拡大</strong>の焦点は<strong>補助金より供給網と現地化の速さ</strong>に移っている。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-27 11:20</span>
+        <span>· AFPBB News</span>
+        <span class="more-card__score">83</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.afpbb.com/articles/biz/3641439?ctm_campaign=biz_news" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://afpbb.ismcdn.jp/mwimgs/e/9/1000x/img_e9f538218638dec5581a5a684ee4ad55120888.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.afpbb.com/articles/biz/3641439?ctm_campaign=biz_news" rel="noopener nofollow" target="_blank">韓国・益山市、C-ITS連動の自動運転大型EVバスを7月試験運行</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li>韓国・益山市の<strong class="emph-bold">自動運転バス</strong>は、<strong>信号残時間をC-ITSと連動して先読みする大型EVバス</strong>として7月中旬に無料試験運行へ入る。</li><li>2028年まで市民向けに走らせる計画と193億6500万ウォンの投資は、<span class="emph-und">実証を越えて公共交通の本配備を見据えた案件</span>であることを示す。</li><li>重要なのはロボタクシーだけでなく、<strong class="emph-bold">公共交通</strong>でも<strong>地方都市が運行データと安全検証を先に積み始めた</strong>点だ。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MOBILITY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">自動運転レベル4</strong> の国際ルール、<strong class="emph-bold">May Mobility</strong> と CaoCao の 10 万台計画、<strong class="emph-bold">Tesla</strong> の FSD 移行条件変更、<strong class="emph-bold">Leapmotor</strong> の累計 150 万台が同じ面に並び、<strong>車両性能</strong> より <span class="emph-und">通すルール</span> と <span class="emph-und">広げる網</span> が勝負になりました。ロボタクシーも EV も、運行と収益の設計が先です。技術の勝ち負けより、どの規則でどの地域から広げるかが実務の焦点です。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-28/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MOBILITY · 2026-06-28
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/">MOBILITY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

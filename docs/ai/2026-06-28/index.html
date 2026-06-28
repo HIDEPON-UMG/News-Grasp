@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260628 — AI</title>
+<meta name="description" content="きょうのAIは、モデル性能そのものより 誰に配るか、どこまで任せるか、どの市場を先に押さえるか が競争軸になった。OpenAI はCodexの社内標準化とGPT-5.6の承認制配布を並行させ、Google はGeminiに操作能力を常設化した。Anthropic はMythos 5の再開範囲を米国内へ絞り、最上位モデルが国家管理の対象になりつつある。勢いの…">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-28/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260628 — AI">
+<meta property="og:description" content="きょうのAIは、モデル性能そのものより 誰に配るか、どこまで任せるか、どの市場を先に押さえるか が競争軸になった。OpenAI はCodexの社内標準化とGPT-5.6の承認制配布を並行させ、Google はGeminiに操作能力を常設化した。Anthropic はMythos 5の再開範囲を米国内へ絞り、最上位モデルが国家管理の対象になりつつある。勢いの…">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/ai/2026-06-28/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260628 — AI">
+<meta name="twitter:description" content="きょうのAIは、モデル性能そのものより 誰に配るか、どこまで任せるか、どの市場を先に押さえるか が競争軸になった。OpenAI はCodexの社内標準化とGPT-5.6の承認制配布を並行させ、Google はGeminiに操作能力を常設化した。Anthropic はMythos 5の再開範囲を米国内へ絞り、最上位モデルが国家管理の対象になりつつある。勢いの…">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="ai">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill is-active" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+    
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+    
+    <span class="lens-nav__meta">2026-06-28 · #20260628</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ARTIFICIAL INTELLIGENCE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">◆</span>
+      <h1 class="cat-hero__title">AI.</h1>
+    </div>
+    
+    <div class="cat-hero__summary">きょうのAIは、モデル性能そのものより <strong>誰に配るか、どこまで任せるか、どの市場を先に押さえるか</strong> が競争軸になった。<strong class="emph-bold">OpenAI</strong> はCodexの社内標準化とGPT-5.6の承認制配布を並行させ、<strong class="emph-bold">Google</strong> はGeminiに操作能力を常設化した。<strong class="emph-bold">Anthropic</strong> はMythos 5の再開範囲を米国内へ絞り、最上位モデルが国家管理の対象になりつつある。勢いの差は、現場定着・統制・海外展開の三つで見えてきた。</div>
+    
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">92</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">06·28</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260628</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">← BACK TO ARTIFICIAL INTELLIGENCE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-06-28 06:00 · ビジネス+IT</span>
+    <span class="top-story__score">96</span>
+  </div>
+  <div class="top-story__grid">
+    
+    
+    <div class="top-story__thumb-wrap">
+      
+      <a href="https://www.sbbit.jp/article/cont1/185928" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.sbbit.jp/article/image/185928/OGP_bit202606280601055259.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.sbbit.jp/article/cont1/185928" rel="noopener nofollow" target="_blank" style="color: inherit;">OpenAIのCodex利用が全社標準化、非エンジニア利用も189倍へ</a>
+        
+      </h2>
+      <ul class="top-story__bullets">
+        <li><strong class="emph-bold">Codex</strong> は <strong>OpenAI社員の97.9%が使う標準基盤</strong> となり、<span class="emph-und">社内AI出力トークンの99.8%</span> を占めた。</li><li>外部では非開発者の利用が個人で137倍、組織で189倍に伸び、<strong class="emph-bold">OpenAI</strong> の価値軸がチャット応答から業務委任へ移っている。</li><li>前回は社内浸透が主題だったが、今回は <span class="emph-und">法務・採用・財務まで広がる利用定着</span> と長時間タスク委任の増加が新材料だ。</li>
+      </ul>
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">◆ ARTIFICIAL INTELLIGENCE</span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-06-28</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ◆ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-06-27 12:00</span>
+        <span>· ビジネス+IT</span>
+        <span class="more-card__score">94</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.sbbit.jp/article/cont1/185926" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.sbbit.jp/article/image/185926/OGP_bit202606271524181070.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.sbbit.jp/article/cont1/185926" rel="noopener nofollow" target="_blank">OpenAI、GPT-5.6を3階層で限定公開　政府承認つきの配布体制へ</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">GPT-5.6</strong> は <strong>Sol・Terra・Lunaの3階層</strong> で出し分けられ、<span class="emph-und">初期提供は承認済み企業に限定</span> された。</li><li>最上位のSolは長時間エージェント処理、Terraは性能とコスト、Lunaは速度優先と役割が分かれ、<strong class="emph-bold">OpenAI</strong> は配布と価格の両面で層別化を進める。</li><li>読者が次に見るべきは、<span class="emph-und">承認制がどこまで常態化するか</span> と、企業導入がTerra/Luna中心に寄るのかSolまで広がるのかだ。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-06-27 16:00</span>
+        <span>· ビジネス+IT</span>
+        <span class="more-card__score">92</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.sbbit.jp/article/cont1/185927" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.sbbit.jp/article/image/185927/OGP_bit202606272223445185.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.sbbit.jp/article/cont1/185927" rel="noopener nofollow" target="_blank">Google、Gemini 3.5 FlashにComputer Use統合　操作AIを標準機能化</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Gemini 3.5 Flash</strong> に <strong>Computer Useを標準統合</strong> し、<span class="emph-und">別モデルなしで画面操作エージェント</span> を組めるようになった。</li><li>OSWorldスコアは78.4で旧Gemini 3 Flashの65.1から改善し、<strong class="emph-bold">Google</strong> はブラウザやデスクトップ自動化の基盤競争で一歩前へ出た。</li><li>前回は統合発表自体が中心だったが、今回は <span class="emph-und">標準API化で開発構成が簡素化</span> し、企業向けの確認ガードまで付いた点が新しい。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-06-27 14:00</span>
+        <span>· ビジネス+IT</span>
+        <span class="more-card__score">90</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://www.sbbit.jp/article/cont1/185925" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.sbbit.jp/article/image/185925/OGP_bit202606271407302838.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.sbbit.jp/article/cont1/185925" rel="noopener nofollow" target="_blank">AnthropicのMythos 5、一部再開も米企業限定　最上位AIが輸出管理下へ</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">Anthropic</strong> は停止していた <strong>Mythos 5を約100の米組織向けに一部再開</strong> した一方、<span class="emph-und">Fable 5の一般提供はなお停止</span> した。</li><li>発端はAmazon研究者によるジェイルブレイク実証で、政府命令を受けて最上位モデルの配布範囲が国家安全保障の監督下へ入った。</li><li>読者が次に見るべきは、<span class="emph-und">Mythosの再開範囲が海外へ広がるか</span> と、同じ統制が<strong class="emph-bold">OpenAI</strong> や<strong class="emph-bold">Google</strong>の次世代モデルにも波及するかだ。</li>
+      </ul>
+    </article>
+    
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-06-27 03:15</span>
+        <span>· BigGo News</span>
+        <span class="more-card__score">86</span>
+      </div>
+      
+      <div class="more-card__thumb-wrap">
+        
+        
+        <a href="https://finance.biggo.jp/news/37704f92-4d92-47a6-817e-b74347ce0c7d" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.biggo.com/CrEWOED0x-Rz6ZI8mXGNWffcEEr2ijWHudQP_n6czBk/fit/1720/0/sm/1/aHR0cHM6Ly9pbWcuYmdvLm9uZS9uZXdzLWltYWdlL2FpX2dlbmVyYXRlZC8yMDI2LTA2LzM3NzA0ZjkyLTRkOTItNDdhNi04MTdlLWI3NDM0N2NlMGM3ZF8xNzgyNTg1MzAxX2RlZmF1bHQuanBn.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://finance.biggo.jp/news/37704f92-4d92-47a6-817e-b74347ce0c7d" rel="noopener nofollow" target="_blank">OpenAI、インド統括責任者を新設　米国外での拡大競争を加速</a>
+        
+      </h3>
+      <ul class="more-card__bullets">
+        <li><strong class="emph-bold">OpenAI</strong> は元Uber India社長の <strong>プラブジート・シン氏を初のインド統括責任者に任命</strong> し、<span class="emph-und">米国外で最大級の成長市場</span> に専任トップを置いた。</li><li>対象は消費者向け成長だけでなく企業導入、規制対応、現地提携まで広く、ニューデリー・ムンバイ・ベンガルールの拠点拡大と一体で進む。</li><li>次の焦点は、<span class="emph-und">インドでの導入速度がAnthropicやGoogleとのシェア争いをどう変えるか</span> と、教育・開発者基盤をどこまで囲い込めるかだ。</li>
+      </ul>
+    </article>
+    
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§03 OF 7 · ARTIFICIAL INTELLIGENCE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+      
+      <p><strong class="emph-bold">OpenAI</strong> の Codex は非エンジニア利用が 189 倍まで伸び、<strong class="emph-bold">Google</strong> は Computer Use を標準統合、<strong class="emph-bold">Anthropic</strong> は米国内限定で再開と、<strong>どのモデルが賢いか</strong> から <strong>どこまで任せるか</strong> へ論点が移りました。<span class="emph-und">配る範囲</span> と <span class="emph-und">止め方</span> が、性能と同じくらい重いです。AI は答える道具から、長い業務を預ける相手へ移っており、使う側の設計責任が一段増しています。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-06-28/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+      
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+      
+      <div class="editorial__outline-row is-active">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+      
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ARTIFICIAL INTELLIGENCE · 2026-06-28
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/">ARTIFICIAL INTELLIGENCE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
