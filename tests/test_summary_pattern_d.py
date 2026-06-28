@@ -157,6 +157,10 @@ def test_summary_essay_sections_use_same_layer_lane_component(built_summary: str
         assert f'data-role="{role}"' in built_summary
     for short in ("FACT", "CONTEXT", "OUTLOOK"):
         assert short in built_summary
+    for marker in ("【事実・概要】", "【背景・要点】", "【影響・展望】"):
+        assert marker in built_summary
+    for stale_marker in ("【事実】", "【背景】", "【展望】"):
+        assert stale_marker not in built_summary
     for persona in ("記者", "解説者", "予測者"):
         assert persona not in built_summary
     assert "summary-lane__label" not in built_summary

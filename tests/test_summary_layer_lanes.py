@@ -96,6 +96,10 @@ def _assert_layer_lanes(html: str) -> None:
     assert "summary-lane__label" not in html
     for short in ("FACT", "CONTEXT", "OUTLOOK"):
         assert short in html
+    for marker in ("【事実・概要】", "【背景・要点】", "【影響・展望】"):
+        assert marker in html
+    for stale_marker in ("【事実】", "【背景】", "【展望】"):
+        assert stale_marker not in html
     for persona in ("記者", "解説者", "予測者"):
         assert persona not in html
 

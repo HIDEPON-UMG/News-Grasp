@@ -3235,7 +3235,7 @@ strong {
   .pub-matrix__wd { font-size: 11px; min-width: 36px; }
   .pub-matrix__cell { font-size: 15px; padding: 8px 0; }
   .pub-matrix__legend { font-size: 10px; gap: 14px; }
-  .home-nav { padding-left: 18px; padding-right: 18px; }
+  .home-nav { padding-left: 10px; padding-right: 10px; }
   .home-nav__bar { gap: 8px; flex-wrap: nowrap; }
   .home-nav__day {
     min-width: 0;
@@ -3245,9 +3245,9 @@ strong {
   }
   .home-nav__today,
   .home-nav__yesterday { white-space: nowrap; }
-  .home-nav__actions { gap: 6px; }
+  .home-nav__actions { gap: 4px; }
   .home-nav__podcast,
-  .home-nav__archive { padding: 7px 10px; font-size: 10px; letter-spacing: 0.1em; }
+  .home-nav__archive { padding: 4px 6px; font-size: 9px; letter-spacing: 0.08em; }
   .home-nav__podcast { background: var(--color-navy); color: var(--color-cream); border-color: var(--color-navy); }
 }
 /* Daily audio player */

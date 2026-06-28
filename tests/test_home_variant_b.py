@@ -112,6 +112,15 @@ def test_home_nav_mobile_keeps_today_yesterday_readable():
     assert min(sizes) >= 15
 
 
+def test_home_nav_mobile_uses_compact_yesterday_snapshot_for_actions():
+    """PODCAST / ARCHIVE は YESTERDAY に被らない昨日断面の小型ボタンに戻す。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert ".home-nav { padding-left: 10px; padding-right: 10px; }" in css
+    assert ".home-nav__actions { gap: 4px; }" in css
+    assert ".home-nav__archive { padding: 4px 6px; font-size: 9px; letter-spacing: 0.08em; }" in css
+    assert ".home-nav__archive { padding: 7px 10px; font-size: 10px;" not in css
+
+
 def test_home_brand_mobile_uses_compact_issue_header():
     """スマホのブランド帯は、日付メタを上段へ寄せて縦幅を圧縮する。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")

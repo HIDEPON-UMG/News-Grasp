@@ -2,19 +2,19 @@
   {
     "key": "fact",
     "short": "FACT",
-    "marker": "事実",
+    "marker": "事実・概要",
     "icon": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><line x1=\"15.5\" y1=\"15.5\" x2=\"21\" y2=\"21\"/>"
   },
   {
     "key": "context",
     "short": "CONTEXT",
-    "marker": "背景",
+    "marker": "背景・要点",
     "icon": "<rect x=\"6\" y=\"5\" width=\"5\" height=\"14\"/><rect x=\"13\" y=\"5\" width=\"5\" height=\"14\"/>"
   },
   {
     "key": "outlook",
     "short": "OUTLOOK",
-    "marker": "展望",
+    "marker": "影響・展望",
     "icon": "<polyline points=\"4 16 9 11 13 14 20 7\"/><polyline points=\"15 7 20 7 20 12\"/>"
   }
 ] %}
@@ -27,9 +27,15 @@
   {% for bullet in lane_items %}
   {% set role = summary_lane_roles[loop.index0] %}
   {% set body = (bullet|string)
+    |replace("【事実・概要】：", "")
+    |replace("【背景・要点】：", "")
+    |replace("【影響・展望】：", "")
     |replace("【事実】：", "")
     |replace("【背景】：", "")
     |replace("【展望】：", "")
+    |replace("【事実・概要】:", "")
+    |replace("【背景・要点】:", "")
+    |replace("【影響・展望】:", "")
     |replace("【事実】:", "")
     |replace("【背景】:", "")
     |replace("【展望】:", "")

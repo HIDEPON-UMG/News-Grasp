@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-ROLE_PREFIXES = ("【事実】：", "【背景】：", "【展望】：")
+ROLE_PREFIXES = ("【事実・概要】：", "【背景・要点】：", "【影響・展望】：")
+LEGACY_ROLE_PREFIXES = ("【事実】：", "【背景】：", "【展望】：")
 _CATEGORY_DIRS = {
     "ai",
     "economy",
@@ -63,7 +64,7 @@ def _split_article_blocks(text: str) -> list[tuple[int, int]]:
 
 def _strip_existing_prefix(body: str) -> str:
     s = body.strip()
-    for prefix in ROLE_PREFIXES:
+    for prefix in (*ROLE_PREFIXES, *LEGACY_ROLE_PREFIXES):
         if s.startswith(prefix):
             return s[len(prefix):].strip()
         ascii_prefix = prefix.replace("：", ":")

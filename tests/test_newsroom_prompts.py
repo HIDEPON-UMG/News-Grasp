@@ -72,6 +72,16 @@ def test_reporter_prompt_date_and_thumb_contracts() -> None:
     assert "記事公開日ではない" in text
 
 
+def test_reporter_prompt_uses_current_summary_frame_labels() -> None:
+    """Reporter は生成段階から公開UIと同じ3層ラベルを使う。"""
+    for path in [REPORTER_PROMPT, ROUTINE_PROMPT]:
+        text = _read(path)
+        for label in ["【事実・概要】：", "【背景・要点】：", "【影響・展望】："]:
+            assert label in text, path
+        for stale in ["【事実】：", "【背景】：", "【展望】："]:
+            assert stale not in text, path
+
+
 def test_reporter_prompt_does_not_override_freshness_gate_for_manufacturing() -> None:
     """manufacturing 例外でも validator の鮮度窓を破らせない。"""
     text = _read(REPORTER_PROMPT)
