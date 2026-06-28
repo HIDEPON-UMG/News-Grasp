@@ -82,18 +82,23 @@ def _build(tmp_path: Path) -> dict[str, str]:
     }
 
 
-def _assert_lane_roles(html: str) -> None:
+def _assert_layer_lanes(html: str) -> None:
     for role in ("fact", "context", "outlook"):
         assert f'data-role="{role}"' in html
-    assert html.count("summary-lane__avatar") >= 3
     assert "summary-lanes__spine" in html
-    assert "summary-lane__icon" in html
+    assert "summary-lane__marker" in html
+    assert "summary-lane__avatar" not in html
+    assert "summary-lane__icon" not in html
+    assert "summary-lane__short" not in html
+    assert "summary-lane__label" not in html
+    for persona in ("記者", "解説者", "予測者"):
+        assert persona not in html
 
 
-def test_page_cards_render_three_persona_lanes_and_keep_card_shell(tmp_path):
+def test_page_cards_render_three_layer_lanes_and_keep_card_shell(tmp_path):
     html = _build(tmp_path)["page"]
 
-    _assert_lane_roles(html)
+    _assert_layer_lanes(html)
     assert "top-story__thumb-wrap" in html
     assert "more-card__thumb-wrap" in html
     assert "top-story__bullets" not in html
@@ -112,4 +117,4 @@ def test_home_featured_story_uses_same_lane_component(tmp_path):
     html = _build(tmp_path)["home"]
 
     assert "home-featured" in html
-    _assert_lane_roles(html)
+    _assert_layer_lanes(html)

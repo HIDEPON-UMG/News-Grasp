@@ -182,18 +182,18 @@ SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実�
 
 Codex はこの Human Commitment を自己判断で変更してはならない。repo-local pytest Green は実装証跡であり、人間承認ではない。full E2E 未実施時に 1時間以内の完全完走証明済み と報告してはならない。
 
-## Summary Persona Lanes Commitment
+## Summary Layer Lanes Commitment
 
 | Field | Value |
 |---|---|
 | approval_status | Committed |
 | committed_by_human | true |
-| approved_by_user_text | PLEASE IMPLEMENT THIS PLAN: / 本修正は品質ゲートと完全に仕様をリンクすること。実装後に結合テストを実施しGreenの場合のみpushする。Yellow以下はGreenになるまで修正→テストすること。 |
-| approved_goal_statement | News-Grasp 記事カード要約UIを3行 persona lane 化し、カテゴリ別過去 digest の記事要約を事実・背景・展望の3層へ正規化する。 |
-| approval_evidence_ref | current chat turn: user message `PLEASE IMPLEMENT THIS PLAN:` with summary redesign plan body and follow-up quality gate / integration test / push instruction |
-| approved_at | 2026-06-28 |
-| commitment_version | summary-persona-lanes-2026-06-28 |
-| commitment_scope | Article card summary UI in `page-template.html`, `category-template.html`, and `index-template.html`; category digest article bullet normalization excluding `digest/Summary`; local generation and integration verification. |
+| approved_by_user_text | PLEASE IMPLEMENT THIS PLAN: / 本修正は品質ゲートと完全に仕様をリンクすること。実装後に結合テストを実施しGreenの場合のみpushする。Yellow以下はGreenになるまで修正→テストすること。 / ここの「記者」「解説者」「予測者」は不要。すべてのテンプレから削除すること。品質ゲートも含めて合わせて修正せよ。ESSAY部分は中途半端に適用されているが、いっそのことカテゴリー別の様式と合わせたほうが良い。 / 別件ですが、スマホ版のページトップの見え方を右側の写真のようにして、上部の帯を圧縮してほしい。 |
+| approved_goal_statement | News-Grasp 記事カード要約UIと ESSAY 要約部を、役割者名を出さない事実・背景・展望の3層レーンへ統一する。スマホ版トップ帯は日付メタを上段に寄せ、tagline / ISSUE label / TOKYO 行を畳んだ圧縮表示へ寄せる。 |
+| approval_evidence_ref | current chat turn: user messages `PLEASE IMPLEMENT THIS PLAN:` plus follow-up quality gate / integration test / push instruction, 2026-06-29 role-name removal / ESSAY alignment instruction, and mobile compact header screenshot instruction |
+| approved_at | 2026-06-29 |
+| commitment_version | summary-layer-lanes-2026-06-29 |
+| commitment_scope | Article card summary UI in `page-template.html`, `category-template.html`, and `index-template.html`; ESSAY summary bullets in `summary-template.html`; mobile top brand band in `index-template.html` / `docs/assets/site.css`; category digest article bullet normalization excluding `digest/Summary`; local generation and integration verification. |
 | open_questions | None for implementation when quality gates are Green. Commit/push is allowed only after Green verification and safe-commit gate. |
 
 この改修は `Feature Change Quality Gate Matrix` の次の行に完全リンクする。
@@ -201,8 +201,8 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 | Link item | Decision |
 |---|---|
 | Affected matrix rows | `Public UI / OGP / PWA / thumbnails`; `Summary / editorial reflection` |
-| Gate update decision | 記事カード要約UIは `tests/test_summary_persona_lanes.py` で lane role / avatar SVG / spine / card shell preservation を固定する。過去記事要約3層リライトは `tests/test_rewrite_bullets_3layer.py` で3 bullet、URL、数値、固有名詞、`[[...]]` / `**...**` / `__...__` の保持を固定する。 |
-| Verification command | `.venv\Scripts\python.exe -m pytest tests/test_summary_persona_lanes.py tests/test_rewrite_bullets_3layer.py tests/test_card_summary_strip_markdown.py tests/test_generate_pages.py tests/test_product_spec_contract.py -q`; `.venv\Scripts\python.exe tools/generate_pages.py --full`; `designmd lint .\DESIGN.md` |
+| Gate update decision | 記事カード要約UIは `tests/test_summary_layer_lanes.py` で lane role / marker / spine / card shell preservation と役割者名表示の不在を固定する。ESSAY 側は `tests/test_summary_pattern_d.py` で `summary-template.html` が同じ3層レーン部品を使い、旧 `summary-sec__bullets` に退行しないことを固定する。スマホ版トップ帯は `tests/test_home_variant_b.py::test_home_brand_mobile_uses_compact_issue_header` で日付メタ上段化、tagline / ISSUE label / TOKYO 行の非表示、Issue 番号の下段配置を固定する。過去記事要約3層リライトは `tests/test_rewrite_bullets_3layer.py` で3 bullet、URL、数値、固有名詞、`[[...]]` / `**...**` / `__...__` の保持を固定する。 |
+| Verification command | `.venv\Scripts\python.exe -m pytest tests/test_summary_layer_lanes.py tests/test_summary_pattern_d.py tests/test_home_variant_b.py tests/test_rewrite_bullets_3layer.py tests/test_card_summary_strip_markdown.py tests/test_generate_pages.py tests/test_product_spec_contract.py -q`; `.venv\Scripts\python.exe tools/generate_pages.py --full`; `designmd lint .\DESIGN.md` |
 | Integration gate | 結合テスト Green の場合のみ commit/push する。Yellow 以下は修正と再テストを継続し、push しない。 |
 | Public boundary | push 後の公開 URL / GitHub Pages / remote HEAD 確認は push を実行した場合だけ行う。 |
 

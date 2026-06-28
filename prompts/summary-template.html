@@ -1,3 +1,4 @@
+{% from "_partials.html" import summary_lanes %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -140,11 +141,7 @@
         <h3 class="summary-sec__title">{{ sec.heading }}</h3>
         <p class="summary-sec__body">{{ sec.body|render_emph }}</p>
         {% if sec.bullets %}
-        <ul class="summary-sec__bullets">
-          {% for b in sec.bullets %}
-          <li>{{ b|safe }}</li>
-          {% endfor %}
-        </ul>
+        {{ summary_lanes(sec.bullets, "essay") }}
         {% endif %}
         {% if sec.canonical %}
         <a class="summary-sec__more" href="{{ sec.canonical }}" style="color: {{ sec.color }};">→ §{{ "%02d"|format(sec.number) }} {{ sec.tag }} 詳細を読む</a>

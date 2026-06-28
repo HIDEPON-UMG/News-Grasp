@@ -112,6 +112,17 @@ def test_home_nav_mobile_keeps_today_yesterday_readable():
     assert min(sizes) >= 15
 
 
+def test_home_brand_mobile_uses_compact_issue_header():
+    """スマホのブランド帯は、日付メタを上段へ寄せて縦幅を圧縮する。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert ".home-brand__left, .home-brand__title, .home-brand__issue { display: contents; }" in css
+    assert ".home-brand__tagline, .home-brand__issue-label, .home-brand__issue-loc { display: none; }" in css
+    assert ".home-brand__issue-meta br { display: none; }" in css
+    assert ".home-brand__eyebrow { grid-column: 1; grid-row: 1; }" in css
+    assert ".home-brand__issue-meta { grid-column: 2; grid-row: 1;" in css
+    assert ".home-brand__issue-num { grid-column: 1 / -1; grid-row: 3;" in css
+
+
 def test_hero_2col_structure(built_home: str):
     """home-hero の左 (76px theme title) + 右 (Editor's Top 5 + Stats 2x2) が両方存在。
 

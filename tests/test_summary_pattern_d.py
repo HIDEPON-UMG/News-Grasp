@@ -55,6 +55,7 @@ categoryId: {cat_id}
 
 - bullet 1
 - bullet 2
+- bullet 3
 
 ---
 
@@ -141,6 +142,17 @@ def test_7_sections_always_rendered(built_summary: str):
     # 固定 tag
     for tag in _SUMMARY_SECTION_TAGS:
         assert f'>{tag}<' in built_summary, f"section tag {tag!r} missing"
+
+
+def test_summary_essay_sections_use_same_layer_lane_component(built_summary: str):
+    """ESSAY 側の3層要約も記事カードと同じレーン様式に揃える。"""
+    assert "summary-lanes--essay" in built_summary
+    assert "summary-sec__bullets" not in built_summary
+    assert "summary-lane__marker" in built_summary
+    for role in ("fact", "context", "outlook"):
+        assert f'data-role="{role}"' in built_summary
+    for persona in ("記者", "解説者", "予測者", "summary-lane__avatar", "summary-lane__icon"):
+        assert persona not in built_summary
 
 
 def test_section_accent_colors_used(built_summary: str):
