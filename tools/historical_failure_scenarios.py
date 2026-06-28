@@ -44,6 +44,18 @@ class CompoundFailureScenario:
     evidence_basis: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class HistoricalFailureHorizontalAudit:
+    issue_date: str
+    stage: str
+    evidence_path: str
+    lanes: dict[str, str]
+    confirmed_gap: str
+    current_contract: str
+    residual_risk: str
+    required_followup: str
+
+
 SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
     HistoricalFailureScenario(
         "2026-06-12",
@@ -255,7 +267,82 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-06-28-full-runner-bug-patterns-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-06-28",
+        "historical failure audit / four-lane proof",
+        "historical failure coverage could be mistaken for detailed four-lane evidence audit",
+        "horizontal audit evidence granularity",
+        "every historical incident must have runner/repair/state/report audit records and a report artifact synchronized with the matrix",
+        "historical failure audit fixture requiring detailed lanes and report corpus sync",
+        "docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html",
+        "fixture_required",
+    ),
 )
+
+
+def _evidence_kind(evidence_path: str) -> str:
+    if evidence_path.endswith(".json"):
+        return "state JSON"
+    if evidence_path.endswith(".md"):
+        return "incident markdown"
+    if evidence_path.endswith(".html"):
+        return "incident HTML"
+    return "evidence artifact"
+
+
+def _followup_for(scenario: HistoricalFailureScenario) -> str:
+    if scenario.expected_status == "runtime_e2e_required":
+        return (
+            "runtime E2E / dry-run / runner で同じ stage を再通過させ、"
+            f"{scenario.cheapest_e2e_or_fixture} を publish 前の証跡に残す。"
+        )
+    return (
+        "fixture / contract / pytest で同じ invariant を固定し、"
+        f"{scenario.cheapest_e2e_or_fixture} を regression gate に残す。"
+    )
+
+
+def _horizontal_audit_for(scenario: HistoricalFailureScenario) -> HistoricalFailureHorizontalAudit:
+    kind = _evidence_kind(scenario.evidence_path)
+    lanes = {
+        "runner": (
+            f"runner 実行点は {scenario.stage}。直接原因は {scenario.direct_cause}。"
+            "停止位置と次 stage 未到達を同じ incident 内で読む。"
+        ),
+        "repair": (
+            f"repair 観点は root pattern={scenario.root_pattern}。"
+            f"必要最小 proof は {scenario.cheapest_e2e_or_fixture}。"
+            "同一 gate 再検証または NoPublish 境界を契約化する。"
+        ),
+        "state": (
+            f"state 観点は {kind} の {scenario.evidence_path} を正本証跡にする。"
+            f"欠落 invariant は {scenario.missing_invariant}。"
+            "publish complete と local proof を混同しない。"
+        ),
+        "report": (
+            f"report 観点は {scenario.evidence_path} に記録された bug class を、"
+            "historical failure matrix と incident report validator の両方へ反映する。"
+        ),
+    }
+    return HistoricalFailureHorizontalAudit(
+        issue_date=scenario.issue_date,
+        stage=scenario.stage,
+        evidence_path=scenario.evidence_path,
+        lanes=lanes,
+        confirmed_gap=(
+            f"{scenario.root_pattern} が {scenario.stage} で発生し、"
+            f"{scenario.missing_invariant} が未固定だった。"
+        ),
+        current_contract=(
+            f"{scenario.cheapest_e2e_or_fixture} を最小検出点にして、"
+            "runner / repair / state / report の横並び調査を全 incident に要求する。"
+        ),
+        residual_risk=(
+            "同じ class が別 stage で再発する場合は、この row の最小 proof だけでは足りないため、"
+            "新 incident として matrix へ追記する。"
+        ),
+        required_followup=_followup_for(scenario),
+    )
 
 
 COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
@@ -300,6 +387,10 @@ COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
 
 def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
     return SCENARIOS
+
+
+def historical_failure_horizontal_audits() -> tuple[HistoricalFailureHorizontalAudit, ...]:
+    return tuple(_horizontal_audit_for(scenario) for scenario in SCENARIOS)
 
 
 def compound_failure_scenarios() -> tuple[CompoundFailureScenario, ...]:

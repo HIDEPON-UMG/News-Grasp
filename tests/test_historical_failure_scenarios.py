@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tools.historical_failure_scenarios import compound_failure_scenarios, historical_failure_scenarios
+from tools.historical_failure_scenarios import (
+    compound_failure_scenarios,
+    historical_failure_horizontal_audits,
+    historical_failure_scenarios,
+)
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -82,6 +86,54 @@ def test_every_historical_failure_has_runner_repair_state_report_horizontal_scan
             "report",
         ]:
             assert phrase in summary, scenario
+
+
+def test_every_historical_failure_has_detailed_four_lane_audit() -> None:
+    """4レーン再監査を抽象サマリで済ませず、各 evidence の実査記録として固定する。"""
+    scenarios = historical_failure_scenarios()
+    audits = historical_failure_horizontal_audits()
+    audit_by_key = {
+        (audit.issue_date, audit.stage, audit.evidence_path): audit
+        for audit in audits
+    }
+
+    assert len(audits) == len(scenarios)
+    for scenario in scenarios:
+        key = (scenario.issue_date, scenario.stage, scenario.evidence_path)
+        assert key in audit_by_key, scenario
+        audit = audit_by_key[key]
+        assert audit.lanes.keys() == REQUIRED_HORIZONTAL_LANES
+        for lane_name, lane_text in audit.lanes.items():
+            assert len(lane_text) >= 32, (scenario, lane_name, lane_text)
+            assert not any(
+                placeholder in lane_text.casefold()
+                for placeholder in ("todo", "tbd", "generic", "same as above", "未確認")
+            ), (scenario, lane_name, lane_text)
+        assert audit.confirmed_gap
+        assert audit.current_contract
+        assert audit.residual_risk
+        if scenario.expected_status == "runtime_e2e_required":
+            assert any(
+                marker in audit.required_followup.casefold()
+                for marker in ("runtime", "e2e", "dry-run", "runner")
+            ), audit
+        if scenario.expected_status == "fixture_required":
+            assert any(
+                marker in audit.required_followup.casefold()
+                for marker in ("fixture", "contract", "pytest")
+            ), audit
+
+
+def test_historical_failure_horizontal_audit_report_covers_entire_corpus() -> None:
+    report_path = ROOT / "docs" / "incidents" / "2026-06-28-historical-failure-horizontal-audit-report.html"
+    assert report_path.exists()
+    html = report_path.read_text(encoding="utf-8")
+
+    assert "過去障害全件詳細再監査" in html
+    assert "runner / repair / state / report" in html
+    for scenario in historical_failure_scenarios():
+        assert scenario.issue_date in html
+        assert Path(scenario.evidence_path).name in html
 
 
 def test_historical_failure_matrix_marks_runtime_e2e_rows() -> None:

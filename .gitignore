@@ -95,6 +95,7 @@ build/codex-usage/
 build/*.log
 build/reporter-artifacts/
 build/reporter-prompts/
+build/render-proof/
 build/runner-smoke-*
 build/runner-smoke-logs/
 build/evidence/
@@ -127,6 +128,7 @@ docs/evidence/
 docs/incidents/*-report.html
 !docs/incidents/2026-06-28-e2e-artifact-collision-report.html
 !docs/incidents/2026-06-28-full-runner-bug-patterns-report.html
+!docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html
 # Project-specific
 artifacts/
 coverage/
