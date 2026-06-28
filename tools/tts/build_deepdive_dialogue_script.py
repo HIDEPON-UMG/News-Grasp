@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import re
 from pathlib import Path
 
+from tools.deepdive_context_pack import context_sources_for_deepdive as _shared_context_sources_for_deepdive
 from tools.tts import deepdive_dialogue
 
 
@@ -16,6 +17,7 @@ MIN_CONTEXT_SOURCES = 2
 MAX_CONTEXT_SOURCES = 4
 RELATION_KINDS = ("続報", "主役共有", "波及", "対比")
 GENERIC_TAGS = {"deepdive", "daily", "weekly", "news-grasp"}
+LOW_SIGNAL_CONTEXT_TERMS = {"ai"}
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 _CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
 _HEADING_RE = re.compile(r"^#{1,6}\s+.*$", re.MULTILINE)
@@ -183,6 +185,16 @@ def _context_change(
     return f"前回の「{context_title}」と今回の「{current_title}」を対比すると、同じAI導入でも価値の出方が変わっている。"
 
 
+def _context_signal_terms(tag_overlap: set[str], title_overlap: set[str]) -> set[str]:
+    return {term for term in (tag_overlap | title_overlap) if term.casefold() not in LOW_SIGNAL_CONTEXT_TERMS}
+
+
+def _is_relevant_context(*, related: dict[str, str] | None, tag_overlap: set[str], title_overlap: set[str]) -> bool:
+    if related:
+        return True
+    return bool(_context_signal_terms(tag_overlap, title_overlap))
+
+
 def _load_context_sources(
     source_markdown: str,
     *,
@@ -197,7 +209,6 @@ def _load_context_sources(
     resolved_archive_dir = _archive_dir_for_source(source_name, archive_dir)
     source_filename = Path(source_name).name
     candidates: list[ContextSource] = []
-    recent_fallback: list[ContextSource] = []
     for path in sorted(resolved_archive_dir.glob("*-DeepDive.md")):
         if path.name == source_filename:
             continue
@@ -213,7 +224,10 @@ def _load_context_sources(
         tag_overlap = source_terms & item_terms
         title_overlap = _title_terms(source_title) & _title_terms(title)
         related = related_map.get(item_date.isoformat())
-        score = len(tag_overlap) * 3 + len(title_overlap)
+        if not _is_relevant_context(related=related, tag_overlap=tag_overlap, title_overlap=title_overlap):
+            continue
+        signal_terms = _context_signal_terms(tag_overlap, title_overlap)
+        score = len(signal_terms) * 3 + (3 if title_overlap else 0)
         if related:
             score += 20
         summary = _clip((_body_sentences(text, limit=1) or [title])[0], 78)
@@ -232,22 +246,11 @@ def _load_context_sources(
             summary=summary,
             score=score,
         )
-        recent_fallback.append(context)
-        if score > 0:
-            candidates.append(context)
+        candidates.append(context)
     candidates.sort(key=lambda item: (item.score, item.date), reverse=True)
     selected = candidates[:MAX_CONTEXT_SOURCES]
     if len(selected) < MIN_CONTEXT_SOURCES:
-        known = {item.date for item in selected}
-        for context in sorted(recent_fallback, key=lambda item: item.date, reverse=True):
-            if context.date in known:
-                continue
-            selected.append(context)
-            known.add(context.date)
-            if len(selected) >= MIN_CONTEXT_SOURCES:
-                break
-    if len(selected) < MIN_CONTEXT_SOURCES:
-        raise ValueError(f"過去DeepDive文脈不足: {len(selected)}件 (必要: {MIN_CONTEXT_SOURCES}件以上)")
+        raise ValueError(f"関連DeepDive文脈不足: {len(selected)}件 (必要: {MIN_CONTEXT_SOURCES}件以上)")
     return selected[:MAX_CONTEXT_SOURCES]
 
 
@@ -328,14 +331,16 @@ def build_dialogue_markdown(
     *,
     source_name: str,
     archive_dir: Path | None = None,
+    context_pack_path: Path | None = None,
     context_days: int = DEFAULT_CONTEXT_DAYS,
 ) -> str:
     title = _frontmatter_value(source_markdown, "title", "DeepDive")
     issue_date = _frontmatter_value(source_markdown, "date", "")
-    contexts = _load_context_sources(
+    contexts = _shared_context_sources_for_deepdive(
         source_markdown,
         source_name=source_name,
         archive_dir=archive_dir,
+        context_pack_path=context_pack_path,
         context_days=context_days,
     )
     turns = _turns(title, _body_sentences(source_markdown), contexts)
@@ -365,7 +370,13 @@ roles:
     return markdown
 
 
-def build_dialogue_script(source: Path, *, output: Path | None = None, force: bool = False) -> Path:
+def build_dialogue_script(
+    source: Path,
+    *,
+    output: Path | None = None,
+    force: bool = False,
+    context_pack_path: Path | None = None,
+) -> Path:
     output = output or source.with_name(source.name.replace("-DeepDive.md", "-DeepDive-dialogue.md"))
     if output.exists() and not force:
         existing = output.read_text(encoding="utf-8-sig")
@@ -375,6 +386,7 @@ def build_dialogue_script(source: Path, *, output: Path | None = None, force: bo
         source.read_text(encoding="utf-8"),
         source_name=source.as_posix(),
         archive_dir=source.parent,
+        context_pack_path=context_pack_path,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(markdown, encoding="utf-8")
@@ -385,9 +397,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="DeepDive 本文から TTS 対談台本を生成します。")
     parser.add_argument("source", type=Path, help="digest/DeepDive/YYYY-MM-DD-DeepDive.md")
     parser.add_argument("--output", type=Path, help="出力する dialogue Markdown")
+    parser.add_argument("--context-pack", type=Path, help="build/deepdive-context/YYYY-MM-DD.json")
     parser.add_argument("--force", action="store_true", help="既存台本があっても再生成する")
     args = parser.parse_args(argv)
-    out = build_dialogue_script(args.source, output=args.output, force=args.force)
+    out = build_dialogue_script(
+        args.source,
+        output=args.output,
+        force=args.force,
+        context_pack_path=args.context_pack,
+    )
     print(f"[tts] DeepDive dialogue script ready: {out}")
     return 0
 

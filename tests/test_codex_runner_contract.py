@@ -129,3 +129,30 @@ def test_codex_mode_routes_repair_and_deepdive_to_codex_wrapper() -> None:
     assert "deepdive wrapper invoke START (agent=codex" in runner
     assert "& $Wrapper -ClaudeExe $ClaudeExe -PromptFile $repairPrompt" not in runner
     assert "& $Wrapper -ClaudeExe $ClaudeExe -PromptFile $DeepDivePromptFile" not in runner
+
+
+def test_runner_builds_context_pack_before_deepdive_and_passes_it_to_tts() -> None:
+    """DeepDive前処理はStage4起動より前、TTS台本生成には同じpackを渡す。"""
+    runner = (ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    pack_build = runner.index("tools.deepdive_context_pack")
+    deepdive_start = runner.index("deepdive wrapper invoke START")
+    tts_build = runner.index("deepdive dialogue script build")
+    tts_context_arg = runner.index("--context-pack", tts_build)
+
+    assert pack_build < deepdive_start
+    assert tts_build < tts_context_arg
+    assert "$DeepDiveContextPack" in runner
+    assert "skipping deepdive codex because context pack failed" in runner
+    assert "packなしで旧方式に戻さない" not in runner
+
+
+def test_deepdive_prompts_use_context_pack_instead_of_broad_past_reads() -> None:
+    runner_prompt = (ROOT / "prompts" / "deepdive-runner-prompt.md").read_text(encoding="utf-8-sig")
+    system_prompt = (ROOT / "prompts" / "deepdive-research-system.md").read_text(encoding="utf-8-sig")
+    combined = runner_prompt + "\n" + system_prompt
+
+    assert "build/deepdive-context/{YYYY-MM-DD}.json" in combined
+    assert "tools.deepdive_context_pack" in combined
+    assert "digest/DeepDive/` 配下の**直近 3 本**の `.md`" not in combined
+    assert "直近 3 本の frontmatter" not in combined

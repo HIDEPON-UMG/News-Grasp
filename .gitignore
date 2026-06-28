@@ -105,6 +105,7 @@ build/live-runner-backups/
 build/deepdive-*.png
 build/*-last-message.txt
 build/deepdive-render-check/
+build/deepdive-context/
 build/*.wrapper.log
 build/tts/
 build/youtube-podcast/

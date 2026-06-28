@@ -2646,12 +2646,32 @@ if ($StopBeforeDeepDive) {
 #   - DeepDive は付随機能なので非致命: 失敗 / timeout / 休載でも digest の公開は絶対に止めない
 #     (digest が主、DeepDive は additive)。エラーは WARN ログのみで step 3 以降に進む。
 $DeepDivePromptFile = Join-Path $RepoDir 'prompts\deepdive-runner-prompt.md'
+$DeepDiveContextPack = Join-Path $RepoDir ("build\deepdive-context\$DateStamp.json")
 $DeepDiveTimeoutSec = 1800
 $DeepDiveModel = Get-ModelPolicyValue -Role 'deepdive' -Key 'default'
+$DeepDiveContextPackFailed = $false
+if ((-not $RecoverOnly) -and (-not $ResumeAfterDeepDive)) {
+    Write-Log "deepdive context pack build start ($DeepDiveContextPack)"
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.deepdive_context_pack' '--date' $DateStamp '--repo-root' $RepoDir '--output' $DeepDiveContextPack }
+        $DeepDiveContextPackRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($DeepDiveContextPackRc -ne 0) {
+        $DeepDiveContextPackFailed = $true
+        Write-Log "WARN: deepdive context pack failed rc=$DeepDiveContextPackRc; skipping deepdive codex because context pack failed"
+    } else {
+        Write-Log 'deepdive context pack build OK'
+    }
+}
 if ($RecoverOnly) {
     Write-Log "RecoverOnly mode: skipping deepdive codex; keeping existing DeepDive state"
 } elseif ($ResumeAfterDeepDive) {
     Write-Log 'ResumeFromStage mode: skipping deepdive codex; using existing DeepDive artifact'
+} elseif ($DeepDiveContextPackFailed) {
+    Write-Log 'skipping deepdive codex because context pack failed'
 } else {
     Write-Log "deepdive wrapper invoke START (agent=codex, Model=$DeepDiveModel, TimeoutSec=$DeepDiveTimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
     # 2026-06-10: IdleTimeoutSec 0 → 900 (digest 側と同じ理由。stream-json 既定化で
@@ -2934,7 +2954,7 @@ $DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDi
 $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp)
 if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run') }
 foreach ($deepDiveTtsStep in @(
-    @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript) },
+    @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript, '--context-pack', $DeepDiveContextPack) },
     @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
     @{ Name = 'deepdive dialogue publish'; Args = $deepDiveTtsPublishArgs }
 )) {
