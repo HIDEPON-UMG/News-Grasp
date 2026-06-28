@@ -300,8 +300,16 @@ def _turns(title: str, sentences: list[str], contexts: list[ContextSource]) -> l
         ("先輩", f"{first.date}回では、{_clip(first.summary, 150)} {_clip(first.change, 180)}"),
         ("若手", f"関係の種類でいうと、これは「{first.relation}」ですね。単なる再説明ではなく、論点の位置が変わっている。"),
         ("先輩", f"そう。接点は{first.link}だ。過去回を踏まえると、今回のニュースは新機能紹介ではなく、運用責任の置き場を問う材料になる。"),
+        ("若手", f"各過去回を、今回の実務判断に変換すると、{first.date}回からは何を持ち込むべきでしょうか。"),
+        ("先輩", f"{first.title}から持ち込むべきなのは、{_clip(first.change, 160)}という見方だね。今回の現場では、導入前提、責任分界、レビュー手順を先に言語化できているかを確認する問いに変わる。"),
+        ("若手", "つまり、過去回は背景知識ではなく、今回の判断項目を作る材料になるんですね。"),
+        ("先輩", f"そう。{first.relation}として読むなら、前回の論点を一段具体化し、誰が何を承認し、どこで止めるかまで確認する必要がある。"),
         ("若手", f"もう一つ、{second.date} の「{second.title}」も関係しますか。"),
         ("先輩", f"関係する。{second.date}回では、{_clip(second.summary, 150)} {_clip(second.change, 180)}"),
+        ("若手", f"{second.title}のほうは、今回の読みをどう深めますか。"),
+        ("先輩", f"こちらは{second.link}が接点になる。{_clip(second.change, 160)} だから、今回は単に技術の普及を見るのではなく、顧客説明、費用対効果、運用後の責任まで一続きで見るべきだ。"),
+        ("若手", "二つの過去回を並べると、今回の記事で見るべき粒度が上がりますね。"),
+        ("先輩", "その通り。過去回で見た構造を、今回の導入判断、現場統制、顧客への説明責任へ落とし込むことで、音声としても単なる要約から一段深い解説になる。"),
         ("若手", "つまり、AIを使うかどうかではなく、AIで変わった業務を誰が説明できるかが焦点になるんですね。"),
         ("先輩", f"その通り。{_clip(s[1], 150)} ここを外すと、導入率や利用率の数字だけを追ってしまう。"),
         ("若手", "ITコンサルタントの実務示唆としては、どこを顧客に確認すべきでしょうか。"),
@@ -345,12 +353,13 @@ def build_dialogue_markdown(
     )
     turns = _turns(title, _body_sentences(source_markdown), contexts)
     body = "\n\n".join(f"{speaker}: {text}" for speaker, text in turns)
+    audio_target_minutes = 6 if len(contexts) >= MIN_CONTEXT_SOURCES else 5
     markdown = f"""---
 title: "DeepDive解説対談: {title}"
 date: "{issue_date}"
 source: "{source_name}"
 type: "deepdive-dialogue"
-audio_target_minutes: 5
+audio_target_minutes: {audio_target_minutes}
 {_context_frontmatter(contexts)}
 roles:
   senior:

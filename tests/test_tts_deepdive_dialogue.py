@@ -55,6 +55,25 @@ def test_validate_dialogue_requires_both_roles_and_reasonable_length():
     assert any("字数不足" in issue for issue in issues)
 
 
+def test_validate_dialogue_keeps_long_side_as_runaway_guard_only():
+    turns = []
+    for index in range(10):
+        role = "junior" if index % 2 == 0 else "senior"
+        turns.append(
+            deepdive_dialogue.DialogueTurn(
+                role,
+                f"第{index}観点では、過去DeepDiveの論点を今回の実務判断に変換します。"
+                "導入前提、責任分界、レビュー手順、顧客説明、運用後の見直しを順に確認し、"
+                "単なる記事要約ではなく、現場が次に確認する判断項目として整理します。",
+            )
+        )
+
+    issues = deepdive_dialogue.validate_dialogue(turns)
+
+    assert deepdive_dialogue.MAX_DIALOGUE_CHARS >= 3600
+    assert not any("字数超過" in issue for issue in issues)
+
+
 def test_validate_dialogue_rejects_repeated_tail_exchange():
     turns = [
         deepdive_dialogue.DialogueTurn("junior", "今日のDeepDiveは、AIエージェントの導入設計が焦点でした。"),

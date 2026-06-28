@@ -16,8 +16,10 @@ BUILD_DIR = REPO_ROOT / "build" / "tts" / "deepdive"
 DEFAULT_BGM_PATH = REPO_ROOT / "build" / "office-daily-bgm-standalone.mp3"
 BGM_VOLUME_DB = 1.5
 BGM_EQ_FILTER = "highpass=f=110,equalizer=f=170:t=q:w=0.9:g=-4.0"
-MIN_DIALOGUE_CHARS = 1200
-MAX_DIALOGUE_CHARS = 2600
+MIN_DIALOGUE_CHARS = 1600
+# 6分想定の品質調整は短すぎる場合だけ行う。上限は長尺化を抑えるためではなく、
+# 生成暴走や貼り込み事故を止める安全弁として広めに置く。
+MAX_DIALOGUE_CHARS = 3600
 MIN_SECONDS = 4 * 60
 MAX_SECONDS = 9 * 60
 MAX_SYNTHESIS_SECONDS = 18 * 60

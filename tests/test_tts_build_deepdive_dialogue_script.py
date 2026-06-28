@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.tts import deepdive_dialogue
+from tools.tts import build_script, deepdive_dialogue
 from tools.tts.build_deepdive_dialogue_script import build_dialogue_markdown, build_dialogue_script
 
 
@@ -235,6 +235,52 @@ Codexは業務を割り振る実行基盤として使われ始めた。
     assert "2026-06-21" in markdown
     assert "context_sources:" in markdown
     assert not deepdive_dialogue.validate_dialogue(deepdive_dialogue.parse_dialogue(markdown))
+
+
+def test_build_dialogue_markdown_expands_when_two_context_sources_exist(tmp_path: Path) -> None:
+    archive = tmp_path / "digest" / "DeepDive"
+    source = """---
+title: "Codex浸透、全社業務OSへ"
+date: "2026-06-28"
+tags: ["deepdive", "OpenAI", "Codex", "AI-agent", "workflow", "skills"]
+---
+
+## 背景
+
+Codexは業務を割り振る実行基盤として使われ始めた。
+委任、検収、skills再利用が実務上の焦点になっている。
+
+## 深掘り
+
+導入率を見るだけでは不十分で、権限、レビュー、再利用可能な作業手順まで見ないと実装の深さは測れない。
+"""
+    _write_deepdive(
+        archive / "2026-06-20-DeepDive.md",
+        title="AIエージェントは操作代行から統制設計へ",
+        tags=["deepdive", "OpenAI", "AI-agent", "workflow"],
+        body="## 背景\n前回はAIエージェントの統制設計を扱った。委任、監査、成果物レビューの境界が企業導入の焦点になった。\n",
+    )
+    _write_deepdive(
+        archive / "2026-06-21-DeepDive.md",
+        title="Codex導入と検収責任",
+        tags=["deepdive", "Codex", "workflow", "skills"],
+        body="## 背景\n前回はCodex導入と検収責任を扱った。業務設計、価格モデル、検収責任が顧客説明の中心になった。\n",
+    )
+
+    markdown = build_dialogue_markdown(
+        source,
+        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+        archive_dir=archive,
+    )
+    turns = deepdive_dialogue.parse_dialogue(markdown)
+    char_count = build_script.effective_char_count("\n".join(turn.text for turn in turns))
+
+    assert "audio_target_minutes: 6" in markdown
+    assert len(turns) >= 28
+    assert char_count >= 1600
+    assert "各過去回を、今回の実務判断に変換すると" in markdown
+    assert "最後に、現場で今日から確認できることはありますか" not in markdown
+    assert not deepdive_dialogue.validate_dialogue(turns)
 
 
 def test_build_dialogue_markdown_rejects_context_pack_candidate_without_evidence(tmp_path: Path) -> None:
