@@ -422,9 +422,12 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
         url = str(row.get("url") or "").strip()
         if not url:
             continue
+        thumb = row.get("thumb")
+        thumb_missing = thumb is None or not str(thumb).strip() or str(thumb).strip().casefold() == "null"
         if not (
             _is_stale_current_source_url(issue_day=issue_day, url=url)
             or _is_unreviewed_stale_followup(issue_day=issue_day, row=row)
+            or thumb_missing
         ):
             continue
         cat_id = _record_category_id(row)

@@ -409,6 +409,90 @@ def test_url_quarantine_refill_handler_repairs_stale_followup_from_registry(tmp_
     assert reserve_url in digest.read_text(encoding="utf-8")
 
 
+def test_url_quarantine_refill_handler_repairs_missing_thumb_record(tmp_path: Path) -> None:
+    issue = "2026-06-30"
+    bad_url = "https://example.com/no-thumb"
+    reserve_url = "https://example.com/thumb-reserve"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    records = tmp_path / "tmp" / "newsroom" / issue / "it.records.jsonl"
+    articles = tmp_path / "data" / "articles.jsonl"
+    audit = tmp_path / "data" / "search_audit" / issue / "it.json"
+    candidate_dir = tmp_path / "build" / "deduped-candidates"
+    for path in (digest, records, articles, audit, candidate_dir / "it_candidates.jsonl"):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    good_rows = [
+        {
+            "date": issue,
+            "genre": "IT-Consulting",
+            "title": f"good {idx}",
+            "title_ja": f"good {idx}",
+            "summary": f"summary {idx}",
+            "url": f"https://example.com/good-{idx}",
+            "thumb": "https://example.com/thumb.jpg",
+            "source": "Example",
+            "published": issue,
+            "date_evidence_source": "rss_pubDate",
+        }
+        for idx in range(1, 5)
+    ]
+    bad = {
+        "date": issue,
+        "genre": "IT-Consulting",
+        "title": "no thumb",
+        "title_ja": "no thumb",
+        "summary": "missing thumbnail",
+        "url": bad_url,
+        "thumb": None,
+        "source": "Example",
+        "published": issue,
+        "date_evidence_source": "rss_pubDate",
+    }
+    all_rows = [*good_rows, bad]
+    digest.write_text(
+        "# IT\n"
+        + "\n---\n".join(
+            f"### [7{idx}] {row['title']}\n\n{issue} · 🔗 [元記事]({row['url']})\n\n![thumb]({row['thumb'] if row['thumb'] else 'null'})"
+            for idx, row in enumerate(all_rows, start=1)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    payload = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in all_rows)
+    records.write_text(payload, encoding="utf-8")
+    articles.write_text(payload, encoding="utf-8")
+    audit.write_text(
+        json.dumps({"category_id": "it", "date": issue, "selected_total": 5, "dropped": []}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    reserve = {
+        "category": "it",
+        "pubDate": f"{issue}T09:35:00+00:00",
+        "source": "Reserve",
+        "title": "thumb reserve",
+        "url": reserve_url,
+        "thumb": "https://example.com/reserve-thumb.jpg",
+    }
+    (candidate_dir / "it_candidates.jsonl").write_text(json.dumps(reserve, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/IT-Consulting/{issue}-IT-Consulting.md", "data/articles.jsonl", f"data/search_audit/{issue}"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert bad_url not in records.read_text(encoding="utf-8")
+    assert bad_url not in articles.read_text(encoding="utf-8")
+    assert bad_url not in digest.read_text(encoding="utf-8")
+    assert reserve_url in records.read_text(encoding="utf-8")
+    assert reserve_url in articles.read_text(encoding="utf-8")
+    assert reserve_url in digest.read_text(encoding="utf-8")
+
+
 def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path) -> None:
     issue = "2026-06-28"
     digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"

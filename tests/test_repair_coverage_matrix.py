@@ -182,6 +182,26 @@ def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> Non
     assert decisions[1].artifact_paths == ("digest/AI/2026-06-28-AI.md",)
 
 
+def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -> None:
+    output = "\n".join(
+        [
+            "ERROR: digest\\Summary\\2026-06-30.md: reflection section §07 lacks required emphasis: [[ ]] marker",
+            "ERROR: digest\\Summary\\2026-06-30.md: reflection section §09 lacks required emphasis: ** ** bold",
+            "ERROR: digest\\IT-Consulting\\2026-06-30-IT-Consulting.md: card #04 ソトバコ、AI棚卸SaaS「ラクだな」を提供開始 工数67%削減: thumb が空です。公開ページがカテゴリ fallback サムネになります。",
+        ]
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert [decision.issue_code for decision in decisions] == [
+        "summary_reflection_emphasis_missing",
+        "summary_reflection_emphasis_missing",
+        "thumb_invalid_or_missing",
+    ]
+    assert decisions[0].handler_id == "summary-emphasis-patch"
+    assert decisions[2].handler_id == "url-quarantine-refill"
+
+
 def test_generation_quality_text_fallback_prioritizes_digest_mismatch_before_audio() -> None:
     output = "\n".join(
         [

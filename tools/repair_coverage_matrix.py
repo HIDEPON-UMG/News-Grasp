@@ -105,10 +105,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "daily-quality",
         "thumb_invalid_or_missing",
         RepairClass.DETERMINISTIC_HANDLER,
-        "record-thumb-quarantine-patch",
-        ("data/articles.jsonl", "data/search_audit/{date}"),
-        "record-schema",
-        "blocked_deterministic_repair_failed",
+        "url-quarantine-refill",
+        (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
+        "url-liveness",
+        "blocked_refill_unresolved",
     ),
     CoverageRow(
         "daily-quality",
@@ -755,6 +760,18 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                             )
                         )
                 return issues
+    issue_lines = [line.strip() for line in output.splitlines() if line.strip().startswith("ERROR:")]
+    if issue_lines:
+        return [
+            RepairIssue(
+                gate_id=gate_id,
+                issue_code=_issue_code_from_text(gate_id, line),
+                message=line,
+                raw_output=output,
+                evidence={},
+            )
+            for line in issue_lines
+        ]
     return [
         RepairIssue(
             gate_id=gate_id,
@@ -775,7 +792,10 @@ def _issue_priority(issue_code: str) -> int:
         "missing_artifact": 10,
         "summary_hero_missing": 20,
         "summary_reflection_missing": 21,
+        "summary_reflection_emphasis_missing": 22,
+        "category_card_emphasis_missing": 23,
         "deepdive_structure_invalid": 30,
+        "thumb_invalid_or_missing": 60,
         "audio_script_quality_invalid": 90,
     }
     return priority.get(issue_code, 50)
