@@ -239,6 +239,96 @@ def strip_inline(text: str) -> str:
     return s
 
 
+_SCORE_SIGNAL_PREFIXES = ("event/", "topic/", "industry/")
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_KEY_NUMBER_PATTERNS = (
+    re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?\s*(?:%|％)"),
+    re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?\s*(?:兆|億|万)?(?:円|ドル)"),
+    re.compile(r"\d+(?:\.\d+)?\s*倍"),
+    re.compile(r"\d{4}年(?:\d{1,2}月期|度|まで)?"),
+    re.compile(r"\d+(?:,\d{3})*\s*万?件"),
+)
+
+
+def _clean_signal_tag(tag: str) -> str:
+    for prefix in _SCORE_SIGNAL_PREFIXES:
+        if tag.startswith(prefix):
+            return tag[len(prefix):].replace("-", " ").strip()
+    return ""
+
+
+def _score_signals(top: dict[str, Any] | None, limit: int = 3) -> list[str]:
+    """SCORE NOTE の根拠として表示できる tag signal を現行データから抽出する。"""
+    if not top:
+        return []
+    signals: list[str] = []
+    tags = [str(t) for t in (top.get("tags") or [])]
+    for prefix in _SCORE_SIGNAL_PREFIXES:
+        for tag in tags:
+            if not tag.startswith(prefix):
+                continue
+            signal = _clean_signal_tag(tag)
+            if signal and signal not in signals:
+                signals.append(signal)
+                break
+        if len(signals) >= limit:
+            break
+    return signals[:limit]
+
+
+def _feature_text_for_numbers(top: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for key in ("title_ja", "title", "summary"):
+        value = str(top.get(key) or "").strip()
+        if value:
+            parts.append(value)
+    for bullet in (top.get("bullets") or []):
+        parts.append(str(bullet))
+    plain = " ".join(parts)
+    plain = _html.unescape(_HTML_TAG_RE.sub("", plain))
+    plain = strip_inline(plain)
+    return re.sub(r"\s+", " ", plain)
+
+
+def _key_numbers(top: dict[str, Any] | None, limit: int = 3) -> list[str]:
+    """左下メタ欄で使う重要数値を、title/summary/bullets から優先順で抽出する。"""
+    if not top:
+        return []
+    text = _feature_text_for_numbers(top)
+    numbers: list[str] = []
+    for pattern in _KEY_NUMBER_PATTERNS:
+        for match in pattern.findall(text):
+            number = re.sub(r"\s+", "", str(match))
+            if number and number not in numbers:
+                numbers.append(number)
+            if len(numbers) >= limit:
+                return numbers
+    return numbers[:limit]
+
+
+def _score_note(top: dict[str, Any] | None, category_jp: str) -> str:
+    """現行データで可能な signal から、画像下に置く一行説明を作る。
+
+    厳密な採点内訳フィールドは無いので、`SCORE BREAKDOWN` ではなく
+    `event/topic/industry` タグ由来の `SCORE NOTE` として表示する。
+    """
+    if not top:
+        return ""
+    score = str(top.get("score") or "").strip()
+    signals = _score_signals(top)
+    if signals:
+        score_part = f"SCORE {score}" if score else "高スコア"
+        cat_part = category_jp or "当カテゴリ"
+        return f"{'、'.join(signals)}が重なり、{cat_part}で{score_part}。"
+
+    bullets = top.get("bullets") or []
+    if bullets:
+        plain = strip_inline(_html.unescape(_HTML_TAG_RE.sub("", str(bullets[0]))))
+        plain = re.sub(r"^【[^】]+】：?", "", plain).strip()
+        return truncate(plain, 64)
+    return ""
+
+
 def _parse_article_block(block: str) -> dict[str, Any] | None:
     """記事 1 ブロック (### 行から次の `---` まで) を dict に変換。
 
@@ -757,6 +847,10 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "top_source_url": top.get("source_url", ""),
         "top_date": top.get("date", ""),
         "top_bullets": top.get("bullets", []),
+        "top_tags": top.get("tags", []),
+        "score_note": _score_note(top, cat_meta.get("jp", ctx["category_jp"])),
+        "score_signals": _score_signals(top),
+        "key_numbers": _key_numbers(top),
         "articles_count": articles_count,
         # Overview C 用
         "scores": scores,

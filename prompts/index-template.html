@@ -265,15 +265,40 @@
       <span>{{ hero_story.category_label|upper }} · SCORE {{ hero_story.top_score }}</span>
     </div>
     <div class="home-featured__grid">
-      <div class="home-featured__thumb-wrap">
-        {% if hero_story.top_thumb %}
-          {% if hero_story.top_source_url %}
-          <a href="{{ hero_story.top_source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      <div class="home-featured__media">
+        <div class="home-featured__thumb-wrap">
+          {% if hero_story.top_thumb %}
+            {% if hero_story.top_source_url %}
+            <a href="{{ hero_story.top_source_url }}" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+            {% else %}
+            <img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+            {% endif %}
           {% else %}
-          <img src="{{ hero_story.top_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+            <a href="{{ hero_story.canonical }}" aria-label="記事詳細ページを開く"><img src="{{ base_url }}/assets/og/{{ hero_story.category_id }}.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
           {% endif %}
-        {% else %}
-          <a href="{{ hero_story.canonical }}" aria-label="記事詳細ページを開く"><img src="{{ base_url }}/assets/og/{{ hero_story.category_id }}.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+        </div>
+        {% if hero_story.score_note %}
+        <div class="feature-note">
+          <div class="feature-note__label">SCORE NOTE</div>
+          <p>{{ hero_story.score_note }}</p>
+          {% if hero_story.key_numbers %}
+          <div class="feature-note__block">
+            <div class="feature-note__subhead">KEY NUMBERS</div>
+            <div class="feature-note__numbers">
+              {% for number in hero_story.key_numbers %}
+              <span class="feature-note__number">{{ number }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% if hero_story.score_signals %}
+          <div class="feature-note__chips feature-note__chips--signals">
+            {% for signal in hero_story.score_signals %}
+            <span class="feature-note__chip">{{ signal }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
         {% endif %}
       </div>
       <div>

@@ -1688,8 +1688,12 @@ strong {
 .home-featured__badge.cat-summary  { background: var(--color-accent-summary); }
 .home-featured__grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 40px;
+}
+.home-featured__media,
+.top-story__media {
+  min-width: 0;
 }
 .home-featured__thumb-wrap {
   width: 100%;
@@ -1709,6 +1713,74 @@ strong {
   transition: opacity 0.2s ease, transform 0.4s ease;
 }
 .home-featured__thumb-wrap a:hover img { opacity: 0.92; transform: scale(1.02); }
+.feature-note {
+  margin-top: 14px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-ink);
+}
+.feature-note__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--featured-accent, var(--accent-current, var(--color-ink-dim)));
+  margin-bottom: 6px;
+}
+.feature-note p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.78;
+}
+.feature-note__block {
+  margin-top: 14px;
+}
+.feature-note__subhead {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--color-ink-dim);
+  margin-bottom: 7px;
+}
+.feature-note__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.feature-note__chips--signals {
+  margin-top: 12px;
+}
+.feature-note__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid var(--color-border);
+  background: var(--color-paper-dim);
+  color: var(--featured-accent, var(--accent-current, var(--color-ink)));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.feature-note__numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.feature-note__number {
+  display: block;
+  border-top: 1px solid var(--color-border);
+  padding-top: 7px;
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
 .home-featured__title {
   font-family: var(--font-serif);
   font-size: 32px;

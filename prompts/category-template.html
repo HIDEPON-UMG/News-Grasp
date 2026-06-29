@@ -221,8 +221,33 @@
   </div>
   <div class="top-story__grid">
     {% set _feat_thumb = featured.top_thumb or (base_url ~ '/assets/og/' ~ category_id ~ '.jpg') %}
-    <div class="top-story__thumb-wrap{% if not featured.top_thumb %} top-story__thumb-wrap--fallback{% endif %}">
-      <a href="{{ featured.canonical }}" aria-label="記事詳細ページを開く"><img src="{{ _feat_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+    <div class="top-story__media">
+      <div class="top-story__thumb-wrap{% if not featured.top_thumb %} top-story__thumb-wrap--fallback{% endif %}">
+        <a href="{{ featured.canonical }}" aria-label="記事詳細ページを開く"><img src="{{ _feat_thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+      </div>
+      {% if featured.score_note %}
+      <div class="feature-note">
+        <div class="feature-note__label">SCORE NOTE</div>
+        <p>{{ featured.score_note }}</p>
+        {% if featured.key_numbers %}
+        <div class="feature-note__block">
+          <div class="feature-note__subhead">KEY NUMBERS</div>
+          <div class="feature-note__numbers">
+            {% for number in featured.key_numbers %}
+            <span class="feature-note__number">{{ number }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        {% if featured.score_signals %}
+        <div class="feature-note__chips feature-note__chips--signals">
+          {% for signal in featured.score_signals %}
+          <span class="feature-note__chip">{{ signal }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
     <div>
       <h2 class="top-story__title">

@@ -25,9 +25,13 @@ sys.path.insert(0, str(ROOT))
 from tools.generate_pages import (  # noqa: E402
     _split_theme_phrases,
     build_all,
+    build_category_pages,
     build_index,
     scan_digests,
     _collect_entries,
+    _key_numbers,
+    _score_note,
+    _score_signals,
 )
 from tools.config import CATEGORIES  # noqa: E402
 
@@ -37,8 +41,8 @@ from tools.config import CATEGORIES  # noqa: E402
 # ============================================================
 
 @pytest.fixture(scope="module")
-def built_home(tmp_path_factory) -> str:
-    """Phase 3 開発用 fixture。実 digest 全件を tmp に再 build して index.html を返す。"""
+def built_docs_root(tmp_path_factory) -> Path:
+    """実 digest 全件を tmp に再 build して LP / category pages を返す。"""
     docs_root = tmp_path_factory.mktemp("home_b")
     podcast_state = docs_root.parent / "build" / "youtube-podcast"
     podcast_state.mkdir(parents=True, exist_ok=True)
@@ -60,7 +64,15 @@ def built_home(tmp_path_factory) -> str:
     assert entries, "_collect_entries が空: digest scan に失敗"
     out = build_index(entries, docs_root)
     assert out.exists(), f"build_index が index.html を生成しなかった: {out}"
-    return out.read_text(encoding="utf-8")
+    category_pages = build_category_pages(entries, docs_root)
+    assert category_pages, "build_category_pages がカテゴリーページを生成しなかった"
+    return docs_root
+
+
+@pytest.fixture(scope="module")
+def built_home(built_docs_root: Path) -> str:
+    """Phase 3 開発用 fixture。再 build 済み index.html を返す。"""
+    return (built_docs_root / "index.html").read_text(encoding="utf-8")
 
 
 # ============================================================
@@ -235,6 +247,113 @@ def test_home_hero_grid_columns_clamped_to_container():
     assert "grid-template-columns: minmax(0, 1fr); gap: 24px;" in css, (
         ".home-hero__inner (mobile @768px) の列が minmax(0, 1fr) でなくなっている。"
     )
+
+
+def test_top_story_media_note_uses_score_note_without_claiming_breakdown(built_home: str):
+    """TOP STORY 左下には厳密な内訳ではなく一行説明の SCORE NOTE を表示する。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);" in css, (
+        ".home-featured__grid は中央線で左右を分ける 1:1 の列指定にする。"
+    )
+    assert 'class="home-featured__media"' in built_home
+    assert 'class="feature-note"' in built_home
+    assert "SCORE NOTE" in built_home
+    assert "KEY NUMBERS" in built_home
+    assert "設備投資" in built_home
+    assert "半導体部品" in built_home
+    assert "6500億円" in built_home
+    assert "3倍" in built_home
+    assert ">SIGNALS<" not in built_home
+    assert "SCORE BREAKDOWN" not in built_home
+    feature_note = built_home[
+        built_home.index('class="feature-note"'):
+        built_home.index('class="home-featured__title"')
+    ]
+    note_pos = feature_note.index("SCORE NOTE")
+    key_pos = feature_note.index("KEY NUMBERS")
+    number_pos = feature_note.index("6500億円")
+    signal_chip_pos = feature_note.index("feature-note__chips--signals")
+    assert note_pos < key_pos < number_pos < signal_chip_pos
+    assert ".feature-note__label {\n  font-family: var(--font-mono);\n  font-size: 11px;" in css
+    assert ".feature-note p {\n  margin: 0;\n  font-family: var(--font-serif);\n  font-size: 17px;" in css
+    assert ".feature-note__chips" in css
+    assert ".feature-note__chips--signals" in css
+    assert ".feature-note__numbers" in css
+
+
+def test_category_top_feature_uses_same_score_note_layout(built_docs_root: Path):
+    """category index の TOP FEATURE も同じ順序で左下メタ欄を表示する。"""
+    page = built_docs_root / "it" / "index.html"
+    category_html = page.read_text(encoding="utf-8")
+    assert "TOP FEATURE" in category_html
+    assert 'class="top-story__media"' in category_html
+    assert 'class="feature-note"' in category_html
+    assert ">SIGNALS<" not in category_html
+    assert "SCORE BREAKDOWN" not in category_html
+    feature_note = category_html[
+        category_html.index('class="feature-note"'):
+        category_html.index('class="top-story__title"')
+    ]
+    assert feature_note.index("SCORE NOTE") < feature_note.index("KEY NUMBERS")
+    assert feature_note.index("KEY NUMBERS") < feature_note.index("feature-note__chips--signals")
+
+
+def test_feature_note_is_limited_to_lp_and_category_templates():
+    """個別記事 / Archive / DeepDive へ今回部品を混入させない。"""
+    forbidden_templates = (
+        "prompts/page-template.html",
+        "prompts/archive-template.html",
+        "prompts/deepdive-template.html",
+        "prompts/deepdive-archive-template.html",
+    )
+    for rel in forbidden_templates:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert "feature-note" not in text, f"{rel} に feature-note が混入している"
+        assert "score_note" not in text, f"{rel} に score_note が混入している"
+
+
+def test_score_note_publish_bumps_service_worker_version():
+    """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
+    sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
+    assert "2026-06-29-score-note-1" in sw
+
+
+def test_score_note_prefers_current_dataset_signals():
+    """現行データで可能な tag signal から一行説明を作る。"""
+    top = {
+        "score": "96",
+        "tags": [
+            "co/京セラ",
+            "topic/半導体部品",
+            "industry/半導体",
+            "event/設備投資",
+            "score/高",
+        ],
+        "bullets": [],
+    }
+    note = _score_note(top, "製造")
+    assert note == "設備投資、半導体部品、半導体が重なり、製造でSCORE 96。"
+    assert _score_signals(top) == ["設備投資", "半導体部品", "半導体"]
+
+
+def test_key_numbers_prefers_current_dataset_numbers():
+    """現行データの title/summary/bullets から左下に置ける重要数値を抽出する。"""
+    assert _key_numbers(
+        {
+            "title": "京セラ、部品事業に6500億円投資 AI半導体向け売上高3倍へ",
+            "summary": "京セラが2031年3月期までに部品事業へ6500億円を投じる。",
+            "bullets": [],
+        }
+    )[:3] == ["6500億円", "3倍", "2031年3月期"]
+    assert _key_numbers(
+        {
+            "title": "Snowflake急騰、エージェント時代でもSaaS課金が崩れない根拠が鮮明に",
+            "summary": "Snowflakeの好決算と株価50％急騰が、AIエージェントでSaaS課金が崩れるという見方を揺さぶった。",
+            "bullets": [
+                "【背景・要点】：[[SaaS課金モデル]]を巡っては**2850億ドル規模の論争**が続いていた。",
+            ],
+        }
+    )[:2] == ["50％", "2850億ドル"]
 
 
 def test_home_deepdive_does_not_show_ad_hoc_podcast_cta(built_home: str):
