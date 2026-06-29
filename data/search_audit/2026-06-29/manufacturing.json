@@ -1,0 +1,48 @@
+{
+  "date": "2026-06-29",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "tmp/newsroom/2026-06-29/manufacturing.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/manufacturing.jsonl",
+    "site:www.nikkei.com 京セラ 部品事業 6500億円投資 AI半導体向け 売上高3倍へ",
+    "site:business.nikkei.com TSMC熊本工場に技能者7500人超",
+    "site:www.nikkan.co.jp フジキン 長尺水素タンク破裂防ぐ 安全弁部品量産",
+    "site:www.nikkei.com 日揮HD 半導体・蓄電池向け 加速",
+    "site:www.nikkan.co.jp 米IBM 0.7ナノ半導体 立体積層"
+  ],
+  "raw_results_total": 9,
+  "candidates_total": 8,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "チュングエン、東南アジア最大規模のインスタントコーヒー工場着工",
+      "url": "https://www.viet-jo.com/news/economy/260626154752.html",
+      "reason": "freshness gate: published 2026-06-26 via htmldate, exceeds max-source-age-days 1"
+    },
+    {
+      "title": "ＪＳＲ、台湾に半導体研磨材の開発中枢移管 現地対応で迅速化",
+      "url": "https://chemicaldaily.com/archives/821014",
+      "reason": "上位5件選定で除外。台湾近接開発は重要だが、当日号は設備投資・施工力・量産部材の構造変化を優先"
+    },
+    {
+      "title": "ファストリ、供給網の人権を厳格管理 世界700工場で 欧州の規制強化備え",
+      "url": "https://www.nikkei.com/article/DGKKZO97217210Z20C26A6MM8000/",
+      "reason": "上位5件選定で除外。製造供給網テーマだが、当日号は半導体・水素の能力増強案件を優先"
+    },
+    {
+      "title": "大阪 プラスチック製品製造会社で火事 消火活動続く",
+      "url": "https://news.web.nhk/newsweb/na/nb-2000103719",
+      "reason": "上位5件選定で除外。事故報道で当日性は高いが、産業構造への波及が限定的"
+    }
+  ]
+}

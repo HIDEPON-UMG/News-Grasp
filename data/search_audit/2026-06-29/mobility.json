@@ -1,0 +1,74 @@
+{
+  "date": "2026-06-29",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "site:nikkei.com 交通空白 29年までに解消 自動運転を活用",
+    "site:asahi.com 自動運転タクシーの実現に向け newmo 大阪で道路データ収集中",
+    "site:jidounten-lab.com トヨタ出資 May Mobility 中国で10万台規模で展開へ",
+    "site:chiba-tv.com スズキがEV初投入 eビターラ発売"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "selected_urls": [
+    "https://www.nikkei.com/article/DGXZQOUA272H80X20C26A6000000/",
+    "https://www.asahi.com/articles/ASV6V35CXV6VPLFA003M.html",
+    "https://jidounten-lab.com/u_64181",
+    "https://www.chiba-tv.com/plus/detail/2026061795612"
+  ],
+  "dropped_examples": [
+    {
+      "title": "越前市に続いて坂井市も…自動運転の実証事業を休止",
+      "resolved_url": "https://www.fukuishimbun.co.jp/articles/-/2621219",
+      "published_date": "2026-06-09",
+      "reason": "actual_source_age_gt_1d"
+    },
+    {
+      "title": "大阪メトロが使用断念した中国製ＥＶバス１００台以上、産廃処理場へ「出発」",
+      "resolved_url": "https://www.yomiuri.co.jp/national/20260626-GYT1T00389/",
+      "published_date": "2026-06-26",
+      "reason": "actual_source_age_gt_1d"
+    },
+    {
+      "title": "自動運転に初の包括的国際規則 国連傘下機関、量産後押し",
+      "resolved_url": "https://kumanichi.com/articles/2006389",
+      "published_date": "2026-06-24",
+      "reason": "actual_source_age_gt_1d"
+    }
+  ],
+  "notes": [
+    "広域収集と横断dedupは未実施。Stage1 dedup済み候補のみを使用。",
+    "Google News unresolved候補は exact-title の site: 解決で canonical を確認した。",
+    "selected_total が 5 未満のため quality_shortfall_reason を全records行に付与した。"
+  ],
+  "dropped": [
+    {
+      "title": "越前市に続いて坂井市も…自動運転の実証事業を休止",
+      "resolved_url": "https://www.fukuishimbun.co.jp/articles/-/2621219",
+      "published_date": "2026-06-09",
+      "reason": "actual_source_age_gt_1d"
+    },
+    {
+      "title": "大阪メトロが使用断念した中国製ＥＶバス１００台以上、産廃処理場へ「出発」",
+      "resolved_url": "https://www.yomiuri.co.jp/national/20260626-GYT1T00389/",
+      "published_date": "2026-06-26",
+      "reason": "actual_source_age_gt_1d"
+    },
+    {
+      "title": "自動運転に初の包括的国際規則 国連傘下機関、量産後押し",
+      "resolved_url": "https://kumanichi.com/articles/2006389",
+      "published_date": "2026-06-24",
+      "reason": "actual_source_age_gt_1d"
+    }
+  ],
+  "coverage_terms_checked": [
+    "BYD",
+    "Tesla",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ]
+}

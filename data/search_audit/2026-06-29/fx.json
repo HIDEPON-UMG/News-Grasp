@@ -1,0 +1,56 @@
+{
+  "date": "2026-06-29",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 deduped candidates: build/deduped-candidates/fx.jsonl",
+    "site:ig.com 今週のドル円見通し 39年半ぶり162円台視野 米雇用統計焦点",
+    "site:zai.diamond.jp 6月29日 週 為替相場の注目材料スケジュールと焦点",
+    "site:finance.biggo.jp 1550ウォン 当局介入 シグナル",
+    "\"外貨運用に思わぬ落とし穴\" \"為替差益は課税対象\"",
+    "site:diamond.jp 植田日銀 金利正常化 27年夏"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "来週のドル円相場はどうなる？6/29週のイベント予定 2026年6月28日",
+      "url": "https://www.gaitame.com/media/entry/2026/06/28/070000_1",
+      "reason": "週間見通しとして IG と ZAI の採用記事で主要論点をカバーでき、重複度が高い"
+    },
+    {
+      "title": "欧米為替見通し：ドル・円は伸び悩みか、日本の為替介入警戒で上値の重さを意識(フィスコ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/37ce60ad4616de1317dce7d3f90c64f07f0194f6",
+      "reason": "検索結果時点で 6月17日配信の古い記事が混在し、当日性の確認が弱い"
+    },
+    {
+      "title": "じわり広がる「おとなのFX」 レバレッジ控えめ、円安が追い風",
+      "url": "https://www.nikkei.com/article/DGXZQOCD262YN0W6A620C2000000/",
+      "reason": "個人投資家動向として興味深いが、当日の政策・相場材料より読者判断への直結度が低い"
+    },
+    {
+      "title": "円安で「メルカリ」海外利用者が約1.4倍増 取引ジャンルはアニメ・アイドルグッズが席巻／メルカリ調査",
+      "url": "https://markezine.jp/news/detail/71180",
+      "reason": "検索結果に 2022年記事が混在し、当日号の為替カテゴリとしては鮮度不適合"
+    },
+    {
+      "title": "サイバーセキュリティ株式オープン(為替ヘッジなし)予想分配金提示型【03319211】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/",
+      "reason": "金融商品ページでありニュース記事ではない"
+    },
+    {
+      "title": "SBI・iシェアーズ・ゴールドファンド(為替ヘッジなし)【8931A236】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/",
+      "reason": "金融商品ページでありニュース記事ではない"
+    }
+  ]
+}

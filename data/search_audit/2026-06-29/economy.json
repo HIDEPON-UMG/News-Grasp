@@ -1,0 +1,35 @@
+{
+  "date": "2026-06-29",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:b.hatena.ne.jp \"高市内閣支持2ポイント上昇68% 食品消費税1%案に賛成49%\"",
+    "site:b.hatena.ne.jp \"人権デューデリジェンス 日本勢「実施せず」が過半数\"",
+    "site:b.hatena.ne.jp \"うどんから見た景気 訪日客需要に伸びしろ\"",
+    "site:mainichi.jp \"NISAより使いにくい？複雑すぎる「イデコ」の壁\"",
+    "site:kabutan.jp \"今週の決算発表予定 Ｊフロント、しまむら、高島屋など (6月29日～7月3日)\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "NISAより使いにくい？複雑すぎる「イデコ」の壁",
+      "url": "https://mainichi.jp/premier/business/articles/20260624/biz/00m/020/004000c",
+      "reason": "freshness gate: published_date 2026-06-24 age=5d > 1d"
+    },
+    {
+      "title": "経団連副会長が中国訪問 経済交流「糸口探りたい」 政府関係者らと面会へ",
+      "url": "https://abema.tv/video/episode/89-44_s0_p514254",
+      "reason": "freshness gate: htmldate 2026-06-23 の動画で当日号対象から除外"
+    }
+  ]
+}
