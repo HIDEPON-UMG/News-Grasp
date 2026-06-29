@@ -1,0 +1,10 @@
+{
+    "date":  "2026-06-29",
+    "pre_publish_commit":  "64a515ec0993ad614eeb951240ef23a0ceadec7b",
+    "publish_commit":  "",
+    "primary_podcast_state":  "build/youtube-podcast/uploads.json",
+    "deepdive_podcast_state":  "build/youtube-podcast-deepdive/uploads.json",
+    "latest_audio_state":  "build/tts/latest_audio.json",
+    "deepdive_audio_state":  "build/tts/deepdive/latest_audio.json",
+    "generated_at":  "2026-06-29T10:11:42.577+09:00"
+}
