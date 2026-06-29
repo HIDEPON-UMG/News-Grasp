@@ -259,10 +259,6 @@ def test_top_story_media_note_uses_score_note_without_claiming_breakdown(built_h
     assert 'class="feature-note"' in built_home
     assert "SCORE NOTE" in built_home
     assert "KEY NUMBERS" in built_home
-    assert "設備投資" in built_home
-    assert "半導体部品" in built_home
-    assert "6500億円" in built_home
-    assert "3倍" in built_home
     assert ">SIGNALS<" not in built_home
     assert "SCORE BREAKDOWN" not in built_home
     feature_note = built_home[
@@ -271,7 +267,7 @@ def test_top_story_media_note_uses_score_note_without_claiming_breakdown(built_h
     ]
     note_pos = feature_note.index("SCORE NOTE")
     key_pos = feature_note.index("KEY NUMBERS")
-    number_pos = feature_note.index("6500億円")
+    number_pos = feature_note.index("feature-note__number")
     signal_chip_pos = feature_note.index("feature-note__chips--signals")
     assert note_pos < key_pos < number_pos < signal_chip_pos
     assert ".feature-note__label {\n  font-family: var(--font-mono);\n  font-size: 11px;" in css

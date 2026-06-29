@@ -303,6 +303,9 @@ def _key_numbers(top: dict[str, Any] | None, limit: int = 3) -> list[str]:
                 numbers.append(number)
             if len(numbers) >= limit:
                 return numbers
+    score = str(top.get("score") or "").strip()
+    if score:
+        numbers.append(f"SCORE {score}")
     return numbers[:limit]
 
 
