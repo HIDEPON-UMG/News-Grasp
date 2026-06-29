@@ -9,8 +9,8 @@
     "https://www.boj.or.jp/rss/whatsnew.xml",
     "https://www.mof.go.jp/english/news.rss"
   ],
-  "raw_results_total": 229,
-  "candidates_total": 224,
+  "raw_results_total": 325,
+  "candidates_total": 323,
   "selected_total": 50,
   "source_breakdown": {
     "google_news:為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d": {
@@ -18,23 +18,23 @@
       "mode": "google_news_rss",
       "trust_tier": "search",
       "raw": 100,
-      "candidates": 97,
-      "dropped": 3
+      "candidates": 100,
+      "dropped": 0
     },
     "google_news:ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d": {
       "url": "https://news.google.com/rss/search?q=%E3%83%89%E3%83%AB%E5%86%86+OR+USDJPY+OR+%E6%97%A5%E9%8A%80+OR+BOJ+OR+%E7%82%BA%E6%9B%BF%E4%BB%8B%E5%85%A5+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
       "mode": "google_news_rss",
       "trust_tier": "search",
-      "raw": 40,
-      "candidates": 39,
+      "raw": 100,
+      "candidates": 99,
       "dropped": 1
     },
     "google_news:FRB OR Fed OR ECB OR 金利 OR forex when:1d": {
       "url": "https://news.google.com/rss/search?q=FRB+OR+Fed+OR+ECB+OR+%E9%87%91%E5%88%A9+OR+forex+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
       "mode": "google_news_rss",
       "trust_tier": "search",
-      "raw": 64,
-      "candidates": 64,
+      "raw": 100,
+      "candidates": 100,
       "dropped": 0
     },
     "www.forexlive.com/feed": {
@@ -71,18 +71,9 @@
     }
   },
   "negative_filter_dropped": {
-    "global:jobs": 2,
-    "global:ranking_only": 1,
-    "fx:technical_analysis_only": 1,
+    "global:jobs": 1,
     "global:homepage_or_section": 1
   },
   "scrapling_sources_used": [],
-  "broken_sources": [],
-  "coverage_terms_checked": [
-    "BOJ",
-    "ECB",
-    "EURUSD",
-    "Fed",
-    "USDJPY"
-  ]
+  "broken_sources": []
 }

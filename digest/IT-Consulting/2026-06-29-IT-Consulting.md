@@ -14,43 +14,94 @@ tags:
   - news-grasp
   - issue-20260629
   - cat/it
-  - co/アストン
-  - co/メディアフュージョン
+  - co/Cloudbase
+  - co/CCアーキテクト
+  - co/Microsoft
+  - co/Snowflake
+  - co/マネーフォワード
+  - co/ライズ・コンサルティング・グループ
+  - co/リコー
   - country/日本
-  - person/上西龍
+  - country/米国
+  - person/大山晃
+  - person/岡嵜禎
+  - person/松岡竜大
+  - person/梅津良昭
 ---
 # ▲ IT-Consulting — IT & Consulting
 
 > [!summary]
-> IT-Consultingは2件。きょうの軸は、IT人材不足やDX知識の不足を、既存業務の再設計と情報基盤の再編で埋める動きだ。障害者雇用をIT運用へ接続する受け皿づくりと、実証ノウハウをカテゴリ横断で束ねる情報整備が並び、現場に埋め込む実装力が主役に出た。
+> IT-Consultingは5件。きょうは、AI導入をPoCから本番運用へ移す実装力、MCPで業務SaaSを仕事道具へつなぐ接続設計、そして委託先やオンプレ資産まで含めた運用統制の再設計が同時に前景化した。
 
 ---
 
-### [87] IT業務で障害者雇用を創出　アストンが法定雇用率引き上げを商機に
+### [93] Snowflake急騰、エージェント時代でもSaaS課金が崩れない根拠が鮮明に
 
-📅 2026-06-29 05:00 · 📰 週刊エコノミスト Online · 🔗 [元記事](https://weekly-economist.mainichi.jp/articles/20260707/se1/00m/020/052000c)
+📅 2026-06-29 13:00 · 📰 Forbes JAPAN · 🔗 [元記事](https://forbesjapan.com/articles/detail/99893)
 
-#cat/it #co/アストン #person/上西龍 #country/日本 #topic/障害者雇用 #event/事業開始 #score/高
+#cat/it #co/Snowflake #country/米国 #topic/SaaS課金モデル #event/決算反応 #score/高
 
-![thumb](https://cdn.mainichi.jp/vol1/2026/06/25/20260625se100m020047000q/0c10.jpg?1)
+![thumb](https://images.forbesjapan.com/media/article/99893/images/main_image_c794d30aad6bcdf439cd46e5721266d917b58de2.jpg)
 
-- 【事実・概要】：[[アストン]]は**障害者を自社IT就業センターで受け入れ、企業のITサポート業務へつなぐモデル**を打ち出し、__法定雇用率引き上げを背景に事業拡大__を狙う。
-- 【背景・要点】：[[障害者雇用率]]は**7月に2.5％から2.7％へ引き上げ**られる一方、受け入れ設計や業務切り出しに悩む企業が多く、__IT人材不足と雇用義務を同時に解く受け皿__が不足していた。
-- 【影響・展望】：[[IT運用BPO]]では**キッティングや社内サポートの定型業務**から再設計が進みやすく、__人材確保と業務標準化を一緒に提案できるか__が情シス支援やITコンサルの差になる。
+- 【事実・概要】：[[Snowflake]]は**好決算を受けて株価が50％急騰**し、__AIエージェントがSaaSの席巻で既存課金を壊すという悲観論__に反証を与えた。
+- 【背景・要点】：[[SaaS課金モデル]]を巡っては**2850億ドル規模の論争**が続いていたが、記事は利用席数ではなく成果連動の設計へ進化すれば伸び余地があると示した。
+- 【影響・展望】：[[ITコンサル]]は**ライセンス再販前提の提案**から、__AIエージェント時代の価格設計・定着KPI・利益配分をどう再設計するか__まで踏み込む必要がある。
 
 ---
 
-### [81] メディアフュージョン、DX実務向けのIT情報基盤を公開
+### [91] リコーとライズ、AI実装専業の新会社を設立　構想から定着まで一貫支援へ
 
-📅 2026-06-29 05:00 · 📰 PR TIMES · 🔗 [元記事](https://prtimes.jp/main/html/rd/p/000000050.000155089.html)
+📅 2026-06-29 11:00 · 📰 PR TIMES · 🔗 [元記事](https://prtimes.jp/main/html/rd/p/000000041.000058161.html)
 
-#cat/it #co/メディアフュージョン #country/日本 #topic/DX情報基盤 #event/サイト公開 #score/中
+#cat/it #co/リコー #co/ライズ・コンサルティング・グループ #country/日本 #topic/AX #event/合弁会社設立 #score/高
 
-![thumb](https://prcdn.freetls.fastly.net/release_image/155089/50/155089-50-93a8d1c7947745e401141c03dfbdcb7e-364x114.png?format=jpeg&auto=webp&fit=bounds&width=2400&height=1260)
+![thumb](https://prcdn.freetls.fastly.net/release_image/58161/41/58161-41-0a336c7aaa92de52b7082424585b3a9d-664x344.jpg?format=jpeg&auto=webp&fit=bounds&width=2400&height=1260)
 
-- 【事実・概要】：[[メディアフュージョン]]は**技術ブログとNEWSを統合した「MEDIA FUSION IT-ONLINE」**を公開し、__DX・IT情報をカテゴリ別に再編した情報発信基盤__を始動した。
-- 【背景・要点】：[[DX推進]]の現場では**技術情報と実証事例が媒体ごとに分散**し、導入判断の材料を横断参照しにくい課題があり、__実証ノウハウを一元化する設計__を価値として前面に出している。
-- 【影響・展望】：[[実証ノウハウ]]を**Power BIやPower Automate、AI、Securityまで横断整理**する試みは、__情シス支援やITコンサルで『何を読ませるか』を標準化する動き__として波及しやすい。
+- 【事実・概要】：[[リコー]]と[[ライズ・コンサルティング・グループ]]は**AI実装に特化した合弁会社を設立**し、__AXを構想から定着まで一気通貫で支援する体制__を打ち出した。
+- 【背景・要点】：[[生成AI活用]]は**「Chatting」から「Operating」へ移る局面**に入る一方、どの業務へ適用し、どう定着させるかで止まる企業が多く、PoC止まりが課題になっている。
+- 【影響・展望】：[[AI導入支援]]は**2026年7月の事業開始**を起点に、__製品導入より業務再設計・KPI設計・運用定着を束ねる伴走型コンサル__へ重心が移る可能性が高い。
+
+---
+
+### [88] マネーフォワード、会計データをMCP経由でMicrosoft 365へ連携
+
+📅 2026-06-29 11:00 · 📰 PR TIMES · 🔗 [元記事](https://prtimes.jp/main/html/rd/p/000001642.000008962.html)
+
+#cat/it #co/マネーフォワード #co/Microsoft #country/日本 #topic/会計DX #event/連携開始 #score/高
+
+![thumb](https://prcdn.freetls.fastly.net/release_image/8962/1642/8962-1642-3b8ae1d25ea476adafc551a44ffac719-1280x670.jpg?format=jpeg&auto=webp&fit=bounds&width=2400&height=1260)
+
+- 【事実・概要】：[[マネーフォワード クラウド会計]]は**リモートMCPサーバーでMicrosoft 365 Copilot Coworkと連携**し、__会計データをExcelやPowerPointへ自然言語で反映できる経路__を開いた。
+- 【背景・要点】：[[バックオフィスAI]]では**CursorやClaude向け連携に続くMCP拡張**として、普段使うMicrosoft 365上でデータを再利用したいという実務需要が強かった。
+- 【影響・展望】：[[会計DX]]は**資料作成やレポート作成の工数削減**だけでなく、__業務SaaSをAIクライアントへどう安全につなぐか__がITコンサルの設計論点になる。
+
+---
+
+### [84] 3CXクラウドに不正アクセス　監視委託先の認証情報漏えいが管理画面侵入に波及
+
+📅 2026-06-29 08:05 · 📰 ScanNetSecurity · 🔗 [元記事](https://scan.netsecurity.ne.jp/article/2026/06/29/55589.html)
+
+#cat/it #co/CCアーキテクト #country/日本 #topic/不正アクセス #event/セキュリティインシデント #score/中
+
+![thumb](https://scan.netsecurity.ne.jp/imgs/ogp_f/53511.jpg)
+
+- 【事実・概要】：[[3CXクラウドサービス]]では**外部監視サービスのアカウント漏えいを起点に管理画面へ不正アクセス**され、__SIPトランク認証情報が閲覧された可能性__が判明した。
+- 【背景・要点】：[[監視委託先管理]]の弱さが**海外サーバからの侵入と国際電話の不正発信**につながっており、委託先アカウントの権限最小化やMFA徹底が論点として浮上した。
+- 【影響・展望】：[[音声基盤セキュリティ]]では**監査ログ確認や認証情報の一斉変更**だけでなく、__外部SaaSを含む運用委託境界をどう設計し直すか__がITコンサルの緊急テーマになる。
+
+---
+
+### [79] Cloudbase、オンプレ資産も含む統合脆弱性管理を訴求　資産棚卸しが出発点に
+
+📅 2026-06-29 08:10 · 📰 ScanNetSecurity · 🔗 [元記事](https://scan.netsecurity.ne.jp/article/2026/06/29/55591.html)
+
+#cat/it #co/Cloudbase #country/日本 #topic/脆弱性管理 #event/製品動向 #score/中
+
+![thumb](https://scan.netsecurity.ne.jp/imgs/ogp_f/53532.png)
+
+- 【事実・概要】：[[Cloudbase]]は**クラウドとオンプレミスをまたぐ統合脆弱性管理**を打ち出し、__資産発見・脆弱性検出・優先付けの3段階__で管理する考え方を示した。
+- 【背景・要点】：[[オンプレ資産台帳]]は**VPN装置や拠点内サーバーが残る一方で更新漏れが多く**、シャドーITや管理外端末が見えないままリスク判断が分断されやすい。
+- 【影響・展望】：[[脆弱性管理]]は**Cloudbase Sensorで同一ネットワーク内資産を検出**する発想が広がると、__情シス刷新やゼロトラスト提案でも『まず資産を掴む』工程の重み__が増す。
 
 ---
 

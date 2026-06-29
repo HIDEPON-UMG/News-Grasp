@@ -1,17 +1,20 @@
 {
   "date": "2026-06-29",
   "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
   "queries": [
-    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
-    "site:sbbit.jp \"富士通、Transformerと比べ475倍効率な新LLMアーキテクチャ「PHOTON」を発表\"",
-    "site:sbbit.jp \"OpenAIの自律型AI「Codex」の利用急増、企業の非エンジニアの利用が189倍に\"",
-    "site:sbbit.jp \"Googleが学習ツール「Study Notebooks」を提供開始、Geminiが専属の先生に\"",
-    "site:forbesjapan.com Anthropic Alibaba 25000 偽アカウント Claude 蒸留",
-    "Google Meta Gemini access restricted capacity Bloomberg June 2026"
+    "stage1-file build/deduped-candidates/ai.jsonl",
+    "site:gigazine.net トランプ政権 Anthropic Claude Fable 5 復帰 7月上旬 制限解除",
+    "site:jp.ricoh.com リコー AIコンサルティング株式会社 設立 2026 0629",
+    "site:newsdig.tbs.co.jp 生成AIを業務で活用している企業 宮崎県内は3割程度",
+    "site:note.com Google Gemini note #AIと始めてみた 審査結果",
+    "site:prtimes.jp playknot Anthropic Claude Partner Network"
   ],
   "raw_results_total": 25,
   "candidates_total": 25,
-  "selected_total": 4,
+  "selected_total": 3,
   "coverage_terms_checked": [
     "OpenAI",
     "Anthropic",
@@ -28,54 +31,40 @@
       "reason": "用語解説で当日ニュース性が弱い"
     },
     {
-      "title": "AIは「社員」 OpenClawとClaude Coworkが示した未来",
-      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE43dmNET1ZSMm1SR2txRXE3TGpXM0E1UHBxMHVScmZXZHVMTXhKNjQ2TDEtMVJneXlwaTY1SXZudjdTRE4ybXFXMkJkbE9YZWd3OTgxYklOYTZuSHVKQ1lR?oc=5",
-      "reason": "論考色が強く、定量的新材料のある候補を優先"
-    },
-    {
-      "title": "MS、OpenAI、AnthropicがGensparkと「AIエージェント連合」構築…アジア市場攻略を加速",
-      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE5hQkVHckcwWVRzYjBMUVlvYjdGZGVsWXR5RnRrWDRWWTdCRlpqMVg2MXlKSWFYSnhiVHNKYjdTdEZlZ1Vwd3BuN0hsdTZfMVBkLUdyUFBnQlowRzQtRm1oQ1E1eThxZ0RJdVBWZ1plTk5JbWMw?oc=5",
-      "reason": "一次情報距離が遠い集約記事"
-    },
-    {
-      "title": "エスケー・テクノ、生成ＡＩ動画を提案",
-      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9aMC1PUjhUOGZCZDFnb2JFaDFrNkZZYU5RazQ1SnZVT19XNFFPRXVvQWRyUGNmU2VMc3R4cmhRcmJYcWZaSUh1WnVvREdFcl9tdW84?oc=5",
-      "reason": "影響範囲が限定的"
-    },
-    {
-      "title": "圧倒的レビュー数をどう活かす？生成AI時代のEC戦略を「and ST」が語る (1/3)：commercezine",
-      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1zU2hZcS0zZEhTMGtIRWZzVVZxdEE4N1R5cWNqaE5GM01sRE9zMHdpZnFtSlJWdnFKc2RWck45Z1J1VldxYkEtb2xNQTRkUlA5Sjlj?oc=5",
-      "reason": "AIカテゴリより個社EC施策寄り"
-    },
-    {
-      "title": "製造業の暗黙知を、生成ＡＩで「使える知」に変える（ニュースイッチ）",
-      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFA5ZGJ6NHpPcjIwbndrWTNxZHdhYzE1WXZqdTh3T3FvQi1QdmdCYV9fY3pRcExMSExfQlJDUW12VVE0dksxYmRHSENLVFhpTHpHdEx3U3VzNVA4Z2N2TjVrdnF0ZXZaYkpwNGEzdm1IOEJxSVMwSFZ1eXJTOXUtSHc?oc=5",
-      "reason": "製造寄りテーマのため本日はAI総論側を優先"
-    },
-    {
-      "title": "グーグルがGeminiをアップグレード、AIがあなたのコンピューターを直接操作",
-      "url": "https://forbesjapan.com/articles/detail/99915",
-      "reason": "Computer Use統合の記事と論点重複"
-    },
-    {
       "title": "「Whisper」OpenAIが開発したオープンソースの音声認識AIモデル",
       "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5vaGktWEloMHhjSFU5VlBUYVRyeTdtR28tcUdxZ1BIeFM4RkRVcFRxdTNGN01YR215OUhKbGQyQ3FONU4yVVZOU2dOb09HR0xPZE5Qa08wa0FqZ0F6WTBMU0hVRjZpSjdsOTJGMQ?oc=5",
-      "reason": "用語解説で当日性が弱い"
+      "reason": "解説記事で新材料がない"
     },
     {
-      "title": "OpenAI Codex責任者アンドリュー・アンブロジーノ氏：「実装はもはや安価——希少資源は『センス』だ」",
-      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAzcGJ2V004dTRKd1NPbjhWdHNhVk5FQ1NPUW1UcW54emFlWFdkRmxFWXdsQmpQal9PbXd0NFJUTFhoV3Q3eDVyTC12MVZwZ2REVVJ3VFhsY2FqQQ?oc=5",
-      "reason": "Codex利用実態記事と論点が近く、定量性で劣後"
+      "title": "Claude Code Web版の完全ガイド：ブラウザだけで始めるAI自動コーディング",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE1Ic3JNS2tjSWJSZGtmWDhEOXk1ckNKaHp6MVZlQzJ3Smt6MnU3Z3Axc3VaN2pTRm9pUlJnSENqRmZLd0Z6WjRBQjZ1OC0zcDI0bzNMakF4REdRT3RfVDd3eGV5ZWlkeGNR?oc=5",
+      "reason": "ガイド記事で日次優先度を満たさない"
     },
     {
-      "title": "GoogleがMeta PlatformsのGemini AIアクセスを制限、計算需要が供給を上回る 執筆",
-      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBaUjhvcTlIdXlSRm1jb3dHX0FZVVZMelV4eDUwUjVnREJDV0tTZkdEc2Z3LXlvQWN5VFNzRDN4MnN4eWsycTVhSzl0YTBJdjlXMmIyMnZjTG9VWnRjbVhHYXNzeVo4UnBTM1E?oc=5",
-      "reason": "同一論点でReuters/Yahoo Finance版を採用"
+      "title": "生成AI・DX・セキュリティの最新ソリューションを集結「RICOH Value Presentation 2026 in NARA」開催",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5EelNFTlZaX3dkemswZUVhOEd6dF84cU93bjRCaFZmSkRhUmdaUzJsZjlZZ3l4Yy1KM2lGRlJRTUdvRFVVblY3UXpKMVZqcVdLaFRlMmZ6eGRsNmxzS1lOb3gtODJfczhNQVE?oc=5",
+      "reason": "イベント告知で即時の構造変化が小さい"
     },
     {
-      "url": "https://forbesjapan.com/articles/detail/99919",
+      "title": "ForcepointがAnthropic連携によりAIガバナンス強化を支援 - Forcepoint、Claude Compliance APIに参画し 安全な活用を推進 -",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFBLYkduS2lBM1NDeHRMSjZiS1k0empVUldVNGZRem9pYmJEX1pHSzdyNERMc3I0blNiNmxRZ2xSVjEySmRyVE5ySy1oOS1sUQ?oc=5",
+      "reason": "企業PRで影響範囲が限定的"
+    },
+    {
+      "title": "株式会社playknot、Anthropic「Claude Partner Network」に認定",
+      "url": "https://prtimes.jp/main/html/rd/p/000000139.000106964.html",
+      "reason": "Claude導入支援の広がりは見えるが、個社PRとしては優先度が一段低い"
+    },
+    {
+      "title": "OpenAIが「GPT-5.6」シリーズを発表、Claude Mythos 5超えだがアメリカ政府の指示で限定プレビュー公開",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFAxY1Rhd01POGcxbUg2eVBRc0djR2JGMkdCSEx1UlBoSXZXTC1TQzlnZkRGQ052X0UxdWh4TXZYeXp5WVpkM2FZQzdkN2xtOERNZWVMWVJZNzlMSWduc2Vuc21TOWcwZTJtN3c?oc=5",
+      "reason": "同日中に一次確認を十分積めず、確度基準を満たさない"
+    },
+    {
+      "url": "https://jp.ricoh.com/release/2026/0629_1",
       "reason": "quarantined by gate"
     }
   ],
-  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine",
+  "notes": "build/deduped-candidates/ai.jsonl の Stage1 dedup済み候補のみを使用。広域収集と横断dedupの再実行は行っていない。"
 }

@@ -11,7 +11,7 @@
     "https://semiwiki.com/feed/"
   ],
   "raw_results_total": 337,
-  "candidates_total": 330,
+  "candidates_total": 335,
   "selected_total": 50,
   "source_breakdown": {
     "google_news:製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d": {
@@ -27,16 +27,16 @@
       "mode": "google_news_rss",
       "trust_tier": "search",
       "raw": 100,
-      "candidates": 97,
-      "dropped": 3
+      "candidates": 99,
+      "dropped": 1
     },
     "google_news:工場 OR サプライチェーン OR 製造業 OR 特許 when:1d": {
       "url": "https://news.google.com/rss/search?q=%E5%B7%A5%E5%A0%B4+OR+%E3%82%B5%E3%83%97%E3%83%A9%E3%82%A4%E3%83%81%E3%82%A7%E3%83%BC%E3%83%B3+OR+%E8%A3%BD%E9%80%A0%E6%A5%AD+OR+%E7%89%B9%E8%A8%B1+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
       "mode": "google_news_rss",
       "trust_tier": "search",
       "raw": 100,
-      "candidates": 99,
-      "dropped": 1
+      "candidates": 100,
+      "dropped": 0
     },
     "semiengineering.com/feed": {
       "url": "https://semiengineering.com/feed/",
@@ -59,16 +59,16 @@
       "mode": "rss",
       "trust_tier": "industry",
       "raw": 8,
-      "candidates": 7,
-      "dropped": 1
+      "candidates": 8,
+      "dropped": 0
     },
     "www.supplychainbrain.com/rss/topic/1148-technology": {
       "url": "https://www.supplychainbrain.com/rss/topic/1148-technology",
       "mode": "rss",
       "trust_tier": "industry",
       "raw": 6,
-      "candidates": 5,
-      "dropped": 1
+      "candidates": 6,
+      "dropped": 0
     },
     "semiwiki.com/feed": {
       "url": "https://semiwiki.com/feed/",
@@ -80,18 +80,8 @@
     }
   },
   "negative_filter_dropped": {
-    "global:homepage_or_section": 3,
-    "global:jobs": 3,
-    "global:podcast_only": 1
+    "global:jobs": 2
   },
   "scrapling_sources_used": [],
-  "broken_sources": [],
-  "coverage_terms_checked": [
-    "Foxconn",
-    "Intel",
-    "NVIDIA",
-    "Samsung",
-    "TSMC",
-    "Toyota"
-  ]
+  "broken_sources": []
 }

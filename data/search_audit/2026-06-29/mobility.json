@@ -70,5 +70,6 @@
     "Toyota",
     "Uber",
     "Waymo"
-  ]
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
 }

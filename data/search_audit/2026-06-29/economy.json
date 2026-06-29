@@ -2,16 +2,19 @@
   "date": "2026-06-29",
   "category_id": "economy",
   "queries": [
-    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
-    "site:b.hatena.ne.jp \"高市内閣支持2ポイント上昇68% 食品消費税1%案に賛成49%\"",
-    "site:b.hatena.ne.jp \"人権デューデリジェンス 日本勢「実施せず」が過半数\"",
-    "site:b.hatena.ne.jp \"うどんから見た景気 訪日客需要に伸びしろ\"",
-    "site:mainichi.jp \"NISAより使いにくい？複雑すぎる「イデコ」の壁\"",
-    "site:kabutan.jp \"今週の決算発表予定 Ｊフロント、しまむら、高島屋など (6月29日～7月3日)\""
+    "stage1-deduped-candidates: build/deduped-candidates/economy.jsonl",
+    "canonical-resolve: x ReutersJapan \"総合的な国力強く、名目3％超の経済成長を定着 骨太原案が判明\"",
+    "canonical-resolve: x ReutersJapanBiz \"世界経済は依然 ドル中心 変化ほぼない\"",
+    "canonical-resolve: x WSJJapan \"ドイツ支えた開放経済、今や最大の弱点に\"",
+    "canonical-resolve: site:www.dlri.co.jp \"欧州を襲う熱波の影響は？\"",
+    "canonical-resolve: site:www.jetro.go.jp \"東ティモールの経済・産業（4）ASEAN加盟後、制度履行が焦点\""
   ],
   "raw_results_total": 25,
   "candidates_total": 25,
-  "selected_total": 4,
+  "selected_total": 5,
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
   "coverage_terms_checked": [
     "Nikkei",
     "S&P 500",
@@ -20,16 +23,35 @@
     "SoftBank",
     "NVIDIA"
   ],
+  "resolution_actions": [
+    "stage1 候補タイトル起点で canonical URL を source-only で補完",
+    "200 応答の HTML から公開日と OGP を確認し、records に反映"
+  ],
   "dropped": [
     {
-      "title": "NISAより使いにくい？複雑すぎる「イデコ」の壁",
-      "url": "https://mainichi.jp/premier/business/articles/20260624/biz/00m/020/004000c",
-      "reason": "freshness gate: published_date 2026-06-24 age=5d > 1d"
+      "title": "予想インフレ率2%割れ 長期金利低下限られ実質金利は上昇",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBOSjMwZFEwREUwdlZ3dGZPX3hnc0M0S09GckltMVRfN1pNYmJtTTUydF9FWjhobjVyRDk1bTg5eWg4cUNnWWY2N2JPRHNONlVrX1dOYlRvb0Q4cnhoNlRYZkdzLW8yaUZLRmI2RA?oc=5",
+      "reason": "Nikkei 見出しの reader value は高いが、stage1 入力から source-only の canonical URL を確定できず不採用"
     },
     {
-      "title": "経団連副会長が中国訪問 経済交流「糸口探りたい」 政府関係者らと面会へ",
-      "url": "https://abema.tv/video/episode/89-44_s0_p514254",
-      "reason": "freshness gate: htmldate 2026-06-23 の動画で当日号対象から除外"
+      "title": "政府、骨太方針に適切な金融政策「非常に重要」明記へ－資料",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFA4ZWg0R1JsVUs5Tl82b1pMLWFSYjFBRGYzV25YSldTX3NWTVdLV0lMbUdiUlJfWG9Edk1OTTVMZF9BM1oyczl5a0dydTZYMktGN3p4UTBUTTNvLW85SkZyOVJnREFjWlk1SkdTUEIxeFNwOUk1ZUZZ?oc=5",
+      "reason": "Reuters の骨太原案記事と論点が重複するため、政策全体像を示す原記事を優先して不採用"
+    },
+    {
+      "title": "世界経済、米イラン戦闘再開なら大きなリスク＝ＩＭＦチーフエコノミスト",
+      "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFBIR3JHeUNVZ1Z4Snp3dm1KblY2UnFlYjRoOHBYRVFKcXBEMkZGZldTWlFCQVN5cjlpWlFwSzhMVTVfS0hXNVlqQnB1WmRFZW5Ga2c2bVhIMllJWV9XUEQ4ZF9mSFEycFRoTUswblRFUnVBVEpZU2pJMGRB?oc=5",
+      "reason": "同一 IMF インタビュー由来で selected のドル体制記事と重なり、視点の重複回避を優先して不採用"
+    },
+    {
+      "title": "経済産業省北海道経済産業局における消費者相談の概要（2025年度）",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFAxeFNrd0NETVVfVEJWaThIbi05THY2YW9OeEdfYUlMcXdyM3ItQ3BvNmVySmNqQy1uRjI4Vl9MeDhxM2FSR2RyU3hwN2tMOVRVZjhxU0dOdXFWN0VBY0kybQ?oc=5",
+      "reason": "当日更新だが地域行政統計の色が強く、全国読者の業務判断へ直結する政策・構造テーマを優先して不採用"
+    },
+    {
+      "title": "ソロモン諸島に対する無償資金協力2件（人材育成奨学計画及び経済社会開発計画）に関する書簡の署名・交換",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFAxV29SbUJOcmlUbFZsTlZCQ0ExbTBoTlJ2OERsUVpjQzFGUVNzXzRGSHAzR3RyYkcyeHlIWDgxTG4zUkNHN2dEUnJQSmswUFVQd0ZseDdsMWQ0LVRvSkJMTFpxbHlhQ2E2eE83SzhYckR6dFlfLUVZ?oc=5",
+      "reason": "対外支援案件として重要だが、当日のマクロ・産業構造変化を優先して経済面の主戦場から外した"
     }
   ]
 }

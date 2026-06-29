@@ -6,15 +6,22 @@
   "source_policy": "stage0_stage1_only",
   "queries": [
     "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
-    "site:prtimes.jp \"MEDIA FUSION IT-ONLINE\"",
-    "site:weekly-economist.mainichi.jp 上西龍 IT 業務 障害者雇用",
-    "site:productzine.jp \"SaaSのID課金からどう変わるか、マネーフォワードとPeopleXがAIエージェントの課金設計を語る\"",
-    "site:productzine.jp \"One Capital、最新の「ホリゾンタルSaaS カオスマップ」を公開\"",
-    "site:productzine.jp \"アイスマイリー、バーティカルSaaS AIカオスマップを無償公開\""
+    "site:forbesjapan.com \"エージェンティックAIがSaaS終末論を覆す、Snowflake株価50％急騰の舞台裏\"",
+    "site:prtimes.jp \"リコーAIコンサルティング株式会社を設立\"",
+    "site:prtimes.jp \"マネーフォワード クラウド会計\" \"リモートMCPサーバー\" \"Copilot Cowork\"",
+    "site:scan.netsecurity.ne.jp \"3CXクラウドサービス\" \"SIPトランク認証情報\"",
+    "site:scan.netsecurity.ne.jp \"Cloudbase Blog 第15回\""
   ],
   "raw_results_total": 25,
   "candidates_total": 25,
-  "selected_total": 2,
+  "selected_total": 5,
+  "selected_urls": [
+    "https://forbesjapan.com/articles/detail/99893",
+    "https://prtimes.jp/main/html/rd/p/000000041.000058161.html",
+    "https://prtimes.jp/main/html/rd/p/000001642.000008962.html",
+    "https://scan.netsecurity.ne.jp/article/2026/06/29/55589.html",
+    "https://scan.netsecurity.ne.jp/article/2026/06/29/55591.html"
+  ],
   "coverage_terms_checked": [
     "McKinsey",
     "BCG",
@@ -23,11 +30,21 @@
     "PwC",
     "NTT"
   ],
+  "notes": [
+    "広域収集と横断dedupは未実施。Stage1 dedup済み候補のみを使用。",
+    "Google News unresolved候補は exact-title の site: 解決で canonical を確認した。",
+    "5件を確保したため quality_shortfall_reason は不要。"
+  ],
   "dropped": [
     {
-      "title": "インテルも強調、AI PCが台頭する必然性とは 脱・クラウド依存とエッジAIによるパラダイムシフト",
-      "url": "https://enterprisezine.jp/article/detail/24487",
-      "reason": "canonical 解決後の公開日が 2026-06-16 で当日性不足"
+      "title": "Slay the Spire - Downfall ボードゲーム 日本語版",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1tcm9kckU5SkFJM05OOWtZNVkzczlzMXgxNU9xSDVqeHcyZzhmNTlXZ2JyVGozR3ZadDlRSmtYWGxlODVEemc5WGdKZldYbk9iSDZR?oc=5",
+      "reason": "ゲーム案件で IT-Consulting 対象外"
+    },
+    {
+      "title": "札幌の未来へ「新しい視点を」IT企業経営者の入澤拓也氏が来年春の市長選へ立候補表明",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9CVTVHLU9maVFqVEZ4NmtQSnhJNjUzZ3loZDZnQU1lek1sVFNabUExNmt1VUJjQklfeEhkTFpQYU5HQkVrbWpRejJVYmtMeVRkaENmSU1ENGwzQQ?oc=5",
+      "reason": "政治ニュースで IT-Consulting 対象性が不足"
     },
     {
       "title": "SaaSのID課金からどう変わるか、マネーフォワードとPeopleXがAIエージェントの課金設計を語る",
@@ -40,19 +57,9 @@
       "reason": "canonical 解決後の公開日が 2023-09-14 で当日性不足"
     },
     {
-      "title": "アイスマイリー、バーティカルSaaS AIカオスマップを無償公開",
-      "url": "https://productzine.jp/article/detail/1497",
-      "reason": "canonical 解決後の公開日が 2022-12-14 で当日性不足"
-    },
-    {
-      "title": "妊産婦さんとご家族が安心して過ごせる環境を目指して",
-      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1UVW81NEhYVXNUNENDOHIwdm4zQl9aaU9PYmwtZTU4S3FVR1hRZmpoVFBXb1VuNnN5WHJ2STRFUWFmOUNVU0p5UWZ2Sl9jZw?oc=5",
-      "reason": "クラウドファンディング案件で IT-Consulting 対象性が不足"
-    },
-    {
-      "title": "今の私。",
-      "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTFA2Qmp3VW05WGxiLUJNOS04VzNSRnNUUVRjbmhGeEtweTRfd0lRX2lHSlJTanBGNmlUdXh4d3pLVWUteGRSdDl3MHFJLU4zc3k5RjR4dmtNWmpPMmFzN0RicjhzaUNJVVI4SzNSaE1B?oc=5",
-      "reason": "芸能記事で IT-Consulting 対象外"
+      "title": "DMARC解析サービス「DMARC/25 Analyze」、クラウド安全性の国際規格「ISO/IEC 27017」認証を取得",
+      "url": "https://scan.netsecurity.ne.jp/article/2026/06/29/55590.html",
+      "reason": "当日性はあるが認証取得単独で、採用5件より実務インパクトが弱い"
     }
   ]
 }

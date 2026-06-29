@@ -23,6 +23,13 @@
             "edb4d09f2529fb86"
           ],
           "category": "generated"
+        },
+        "95b64d3d50d52635": {
+          "failures": 1,
+          "artifact_hashes": [
+            "17f72354926a707e"
+          ],
+          "category": "generated"
         }
       },
       "categories": {

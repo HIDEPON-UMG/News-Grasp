@@ -2,6 +2,7 @@
   "date": "2026-06-29",
   "category_id": "fx",
   "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
   "source_policy": "stage0_stage1_only",
   "queries": [
     "Stage1 deduped candidates: build/deduped-candidates/fx.jsonl",
