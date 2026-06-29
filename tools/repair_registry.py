@@ -153,6 +153,18 @@ def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
                 repaired_content = repaired_content.replace(head, f"**{head}**", 1)
                 changed = True
 
+        if ("[[" not in repaired_content or "]]" not in repaired_content) and "**" in repaired_content:
+            bold_match = re.search(r"\*\*(?!\[\[)(?P<label>[^*\n]{2,100}?)\*\*", repaired_content)
+            if bold_match:
+                label = bold_match.group("label").strip()
+                if label:
+                    repaired_content = (
+                        repaired_content[:bold_match.end()]
+                        + f"（[[{label}]]）"
+                        + repaired_content[bold_match.end():]
+                    )
+                    changed = True
+
         if "__" in repaired_content:
             repaired_lines.append(prefix + repaired_content + newline)
             continue

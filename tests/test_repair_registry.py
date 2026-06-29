@@ -57,7 +57,7 @@ def test_summary_emphasis_patch_updates_existing_summary_only(tmp_path: Path) ->
     assert result.status == "repaired"
     repaired = summary.read_text(encoding="utf-8")
     assert "**市場の変化**" in repaired
-    assert "__**市場の変化**を整理する。__" in repaired
+    assert "__**市場の変化**（[[市場の変化]]）を整理する。__" in repaired
     assert other.read_text(encoding="utf-8") == "# AI\n\nこのファイルは触らない。\n"
 
 
@@ -144,6 +144,35 @@ def test_summary_emphasis_patch_repairs_missing_underline_when_bold_exists(tmp_p
     assert validate_summary_emphasis(summary) == []
 
 
+def test_summary_emphasis_patch_repairs_missing_wikilink_when_bold_and_underline_exist(tmp_path: Path) -> None:
+    issue = "2026-06-30"
+    summary = tmp_path / "digest" / "Summary" / f"{issue}.md"
+    summary.parent.mkdir(parents=True)
+    summary.write_text(
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "> [[政策イベント]] は **企業実装** と __運用体制__ を同時に動かした。\n\n"
+        "### §03 IT — Jiraと観測基盤が運用をつなぐ\n\n"
+        "__**Copilot for Jira の一般提供、Kiro 連携の可観測性、Amazon MSK のエージェントスキル**"
+        "が揃い、開発、運用、委託先リスクが一本につながりました。__\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="summary-emphasis-patch",
+            artifacts=[f"digest/Summary/{issue}.md"],
+        )
+    )
+
+    repaired = summary.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "[[Copilot for Jira の一般提供、Kiro 連携の可観測性、Amazon MSK のエージェントスキル]]" in repaired
+    assert validate_summary_emphasis(summary) == []
+
+
 def test_registry_blocks_handler_scope_violation(tmp_path: Path) -> None:
     summary = tmp_path / "digest" / "Summary" / "2026-06-25.md"
     summary.parent.mkdir(parents=True)
@@ -190,7 +219,7 @@ def test_summary_emphasis_patch_ignores_unrelated_gate_artifacts(tmp_path: Path)
     assert result.artifacts == (f"digest/Summary/{issue}.md",)
     repaired = summary.read_text(encoding="utf-8")
     assert "**市場の変化**" in repaired
-    assert "__**市場の変化**を整理する。__" in repaired
+    assert "__**市場の変化**（[[市場の変化]]）を整理する。__" in repaired
     assert other.read_text(encoding="utf-8") == "# AI\n\nこのファイルは触らない。\n"
 
 
