@@ -883,6 +883,71 @@ function Get-ModelPolicyValue {
     }
 }
 
+function Select-NewsroomEditorModel {
+    param(
+        [int] $GateFailCount,
+        [int] $DedupConflictCount,
+        [bool] $AppendMismatch,
+        [int] $SummaryQualityScore,
+        [int] $DeepDiveThemeCount
+    )
+    $appendMismatchLiteral = if ($AppendMismatch) { 'True' } else { 'False' }
+    Push-Location $RepoDir
+    try {
+        $code = @"
+from tools.model_policy import select_newsroom_editor_model
+print(select_newsroom_editor_model(
+    gate_fail_count=$GateFailCount,
+    dedup_conflict_count=$DedupConflictCount,
+    append_mismatch=$appendMismatchLiteral,
+    summary_quality_score=$SummaryQualityScore,
+    deepdive_theme_count=$DeepDiveThemeCount,
+))
+"@
+        $value = & $PyExe -c $code
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($value)) {
+            throw "model_policy.py newsroom editor selection failed rc=$LASTEXITCODE"
+        }
+        return [string]$value
+    } finally {
+        Pop-Location
+    }
+}
+
+function Select-RepairModel {
+    param(
+        [int] $IssueCount,
+        [bool] $PreviousClassifyFailed,
+        [bool] $ScopeAmbiguous,
+        [bool] $MissingArtifactGeneration,
+        [bool] $CompoundGateFailure
+    )
+    $previousClassifyFailedLiteral = if ($PreviousClassifyFailed) { 'True' } else { 'False' }
+    $scopeAmbiguousLiteral = if ($ScopeAmbiguous) { 'True' } else { 'False' }
+    $missingArtifactGenerationLiteral = if ($MissingArtifactGeneration) { 'True' } else { 'False' }
+    $compoundGateFailureLiteral = if ($CompoundGateFailure) { 'True' } else { 'False' }
+    Push-Location $RepoDir
+    try {
+        $code = @"
+from tools.model_policy import select_repair_model
+print(select_repair_model(
+    issue_count=$IssueCount,
+    previous_classify_failed=$previousClassifyFailedLiteral,
+    scope_ambiguous=$scopeAmbiguousLiteral,
+    missing_artifact_generation=$missingArtifactGenerationLiteral,
+    compound_gate_failure=$compoundGateFailureLiteral,
+))
+"@
+        $value = & $PyExe -c $code
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($value)) {
+            throw "model_policy.py repair selection failed rc=$LASTEXITCODE"
+        }
+        return [string]$value
+    } finally {
+        Pop-Location
+    }
+}
+
 function Test-CodexAuthReadiness {
     $authPath = Join-Path $env:USERPROFILE '.codex\auth.json'
     if (-not (Test-Path -LiteralPath $authPath)) {
@@ -1137,8 +1202,17 @@ $failureText
 - rg / Get-ChildItem -Recurse / 広域 Select-String は禁止。読む場合は失敗ログと artifacts に列挙された最小ファイルだけに限定する。
 "@
     [System.IO.File]::WriteAllText($repairPrompt, $prompt, [System.Text.UTF8Encoding]::new($false))
-    $repairModel = Get-ModelPolicyValue -Role 'editor' -Key 'default'
-    Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, Model=$repairModel, TimeoutSec=900)"
+    $issueCount = 1
+    if ($decision.issue_ledger) {
+        $issueCount = @($decision.issue_ledger).Count
+    } elseif ($decision.issues) {
+        $issueCount = @($decision.issues).Count
+    }
+    $scopeAmbiguous = @('repair_context_scope_mismatch', 'repair_context_overbroad') -contains [string]$decision.failure_status
+    $missingArtifactGeneration = ([string]$decision.repair_class -eq 'llm_generate_missing_artifact')
+    $compoundGateFailure = ($GateId -in @('daily-quality', 'generation-quality') -and $issueCount -gt 1)
+    $repairModel = Select-RepairModel -IssueCount $issueCount -PreviousClassifyFailed:$false -ScopeAmbiguous:$scopeAmbiguous -MissingArtifactGeneration:$missingArtifactGeneration -CompoundGateFailure:$compoundGateFailure
+    Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, Model=$repairModel, issue_count=$issueCount, missing_artifact_generation=$missingArtifactGeneration, TimeoutSec=900)"
     Update-RunnerProgress -Phase 'repair' -Step "repair wrapper invoke: $GateId" -GateId $GateId -Category $Category
     $repairRc = Invoke-CodexWrapper -PromptFile $repairPrompt -TimeoutSec 900 -IdleTimeoutSec 300 -Model $repairModel -FlowName "repair:$GateId"
     Write-Log "repair wrapper invoke END (agent=codex, gate=$GateId, rc=$repairRc)"
@@ -2513,11 +2587,12 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     Write-Log "editor prompt date injected: header='$DateHeader' -> $EditorPromptFile"
 
     $MaxAgentAttempts = 3
-    $NewsroomEditorModel = Get-ModelPolicyValue -Role 'newsroom_editor' -Key 'default'
     $preHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
     $agentRc = $null
     for ($attempt = 1; $attempt -le $MaxAgentAttempts; $attempt++) {
-        Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
+        $priorGateFailCount = [Math]::Max(0, $attempt - 1)
+        $NewsroomEditorModel = Select-NewsroomEditorModel -GateFailCount $priorGateFailCount -DedupConflictCount 0 -AppendMismatch:$false -SummaryQualityScore 5 -DeepDiveThemeCount 1
+        Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, gate_fail_count=$priorGateFailCount, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
         $editorSuccessProbe = "py -3.12 -m tools.validate_summary_reflection; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_daily_quality --date $DateStamp"
         $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor' -SuccessProbeCommand $editorSuccessProbe -SuccessProbeIntervalSec 30 -SuccessProbeMinElapsedSec 120
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"

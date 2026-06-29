@@ -7,8 +7,10 @@ from pathlib import Path
 
 from tools.model_policy import (
     DEFAULT_MODEL_POLICY,
+    select_repair_model,
     select_newsroom_editor_model,
     should_escalate_reporter,
+    should_escalate_repair,
     should_escalate_newsroom_editor,
     should_rewrite_with_editor,
 )
@@ -56,6 +58,82 @@ def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default()
     assert should_rewrite_with_editor(naturalness_score=3, style_score=5, validator_failed=False) is True
     assert should_rewrite_with_editor(naturalness_score=4, style_score=4, validator_failed=False) is False
     assert should_rewrite_with_editor(naturalness_score=5, style_score=5, validator_failed=True) is True
+
+
+def test_repair_policy_is_separate_from_style_editor_and_not_mini() -> None:
+    """repair は文体 editor ではなく、修復判断用 role のモデルを使う。"""
+    repair = DEFAULT_MODEL_POLICY["repair"]
+    assert repair["default"] == "gpt-5.4"
+    assert repair["scope"] == "llm_repair_worker"
+    assert repair["default"] != DEFAULT_MODEL_POLICY["editor"]["default"]
+    assert "mini" not in str(repair["default"])
+    assert select_repair_model(
+        issue_count=1,
+        previous_classify_failed=False,
+        scope_ambiguous=False,
+        missing_artifact_generation=True,
+        compound_gate_failure=False,
+    ) == "gpt-5.4"
+
+
+def test_repair_model_escalates_complex_patterns_to_gpt54() -> None:
+    """複雑な repair pattern は mini に落とさず gpt-5.4 を選ぶ。"""
+    cases = [
+        (
+            "compound issue ledger",
+            dict(
+                issue_count=2,
+                previous_classify_failed=False,
+                scope_ambiguous=False,
+                missing_artifact_generation=False,
+                compound_gate_failure=False,
+            ),
+        ),
+        (
+            "previous classify failure",
+            dict(
+                issue_count=1,
+                previous_classify_failed=True,
+                scope_ambiguous=False,
+                missing_artifact_generation=False,
+                compound_gate_failure=False,
+            ),
+        ),
+        (
+            "scope ambiguity",
+            dict(
+                issue_count=1,
+                previous_classify_failed=False,
+                scope_ambiguous=True,
+                missing_artifact_generation=False,
+                compound_gate_failure=False,
+            ),
+        ),
+        (
+            "missing artifact generation",
+            dict(
+                issue_count=1,
+                previous_classify_failed=False,
+                scope_ambiguous=False,
+                missing_artifact_generation=True,
+                compound_gate_failure=False,
+            ),
+        ),
+        (
+            "compound gate failure",
+            dict(
+                issue_count=1,
+                previous_classify_failed=False,
+                scope_ambiguous=False,
+                missing_artifact_generation=False,
+                compound_gate_failure=True,
+            ),
+        ),
+    ]
+
+    for label, signals in cases:
+        assert should_escalate_repair(**signals) is True, label
+        assert select_repair_model(**signals) == "gpt-5.4", label
 
 
 def test_newsroom_editor_policy_uses_full_duty_eval_not_style_rewrite() -> None:

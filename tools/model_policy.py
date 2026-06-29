@@ -28,6 +28,24 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
         "min_style_score": 4,
         "reasoning": "medium",
     },
+    "repair": {
+        "default": "gpt-5.4",
+        "escalate": "gpt-5.4",
+        "selection_source": "repair_decision_debt_policy",
+        "scope": "llm_repair_worker",
+        "reasoning": "medium",
+        "escalate_reasoning": "medium",
+        "escalation_thresholds": {
+            "issue_count_above": 1,
+        },
+        "escalate_when": [
+            "compound issue ledger requires repair judgment",
+            "previous classify failed before repair",
+            "scope ambiguity or mismatch is detected",
+            "missing artifact generation is required",
+            "compound gate failure requires bounded recovery",
+        ],
+    },
     "newsroom_editor": {
         "default": "gpt-5.4-mini",
         "escalate": "gpt-5.4",
@@ -100,6 +118,51 @@ def should_rewrite_with_editor(
     if style_score < int(editor["min_style_score"]):
         return True
     return False
+
+
+def should_escalate_repair(
+    *,
+    issue_count: int,
+    previous_classify_failed: bool,
+    scope_ambiguous: bool,
+    missing_artifact_generation: bool,
+    compound_gate_failure: bool,
+) -> bool:
+    """repair worker は文体 editor ではなく修復判断用 role で昇格要否を判定する。"""
+    repair = DEFAULT_MODEL_POLICY["repair"]
+    thresholds = repair["escalation_thresholds"]
+    if issue_count > int(thresholds["issue_count_above"]):
+        return True
+    if previous_classify_failed:
+        return True
+    if scope_ambiguous:
+        return True
+    if missing_artifact_generation:
+        return True
+    if compound_gate_failure:
+        return True
+    return False
+
+
+def select_repair_model(
+    *,
+    issue_count: int,
+    previous_classify_failed: bool,
+    scope_ambiguous: bool,
+    missing_artifact_generation: bool,
+    compound_gate_failure: bool,
+) -> str:
+    """LLM repair worker 用モデルを返す。mini editor default は使わない。"""
+    policy = DEFAULT_MODEL_POLICY["repair"]
+    if should_escalate_repair(
+        issue_count=issue_count,
+        previous_classify_failed=previous_classify_failed,
+        scope_ambiguous=scope_ambiguous,
+        missing_artifact_generation=missing_artifact_generation,
+        compound_gate_failure=compound_gate_failure,
+    ):
+        return str(policy["escalate"])
+    return str(policy["default"])
 
 
 def should_escalate_newsroom_editor(

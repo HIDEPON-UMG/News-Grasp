@@ -40,7 +40,8 @@ def test_runner_main_codex_call_uses_newsroom_editor_model_policy() -> None:
     """runner-prompt/newsroom-editor-system を読む単一 Codex 呼び出しは編集長モデルを使う。"""
     runner = _read(RUNNER)
     stage = runner.split("$MaxAgentAttempts = 3", 1)[1].split("if ($agentRc -eq 124)", 1)[0]
-    assert "Get-ModelPolicyValue -Role 'newsroom_editor' -Key 'default'" in stage
+    assert "Select-NewsroomEditorModel" in stage
+    assert "Get-ModelPolicyValue -Role 'newsroom_editor' -Key 'default'" not in stage
     assert "Get-ModelPolicyValue -Role 'reporter' -Key 'default'" not in stage
     assert "$NewsroomEditorModel" in stage
 

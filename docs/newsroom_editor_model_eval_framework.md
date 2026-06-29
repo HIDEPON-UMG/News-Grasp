@@ -58,7 +58,7 @@
 
 ## Current Status
 
-`build/model-eval-newsroom-editor/newsroom_editor_summary.json` を Codex CLI サブスク認証経由で生成済み。
+`tools/model_policy.py` は、過去に Codex CLI サブスク認証経由で生成した `build/model-eval-newsroom-editor/newsroom_editor_summary.json` の評価結果をもとに、以下の採用状態を記録している。モデル選定を変更する場合は、この build 証跡を再生成し、policy と docs を同じ変更単位で更新する。
 
 | Variant | Quality | Cost weight | Cost-adjusted | Result |
 | --- | ---: | ---: | ---: | --- |
@@ -67,6 +67,12 @@
 | newsroom-editor-55 | 4.510 | 5.0 | 0.902 | not selected |
 
 既定は `newsroom-editor-mini`。複雑な gate repair、横断 dedup、Summary planning で品質余地が必要な日は `newsroom-editor-54` に昇格する。`newsroom-editor-55` は今回 fixture では品質・コストの両面で採用根拠がない。
+
+## Runner Wiring Contract
+
+runner は `newsroom_editor.default` を直取りしてはならない。`Select-NewsroomEditorModel` から `tools.model_policy.select_newsroom_editor_model()` を呼び、機械シグナルに応じて default / escalation を選ぶ。
+
+LLM repair worker は文体 `editor` role を流用してはならない。repair は `repair` role と `tools.model_policy.select_repair_model()` を使い、missing artifact generation や複合 issue の修復判断を `gpt-5.4-mini` に委ねない。
 
 ## Operational Escalation
 

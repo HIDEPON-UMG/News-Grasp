@@ -557,6 +557,15 @@ def test_codex_auth_preflight_runs_before_llm_repair() -> None:
     assert repair_body.index("Test-CodexAuthReadiness") < repair_body.index("Invoke-CodexWrapper")
 
 
+def test_llm_repair_uses_repair_model_policy_not_style_editor() -> None:
+    """LLM repair は文体 editor の mini default を流用せず repair role を使う。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
+
+    assert "Select-RepairModel" in repair_body
+    assert "Get-ModelPolicyValue -Role 'editor' -Key 'default'" not in repair_body
+
+
 def test_runner_never_passes_long_prompt_or_html_via_native_argument() -> None:
     """長大 prompt/report/html 本文は file/stdin 境界に閉じ、native argv へ載せない。"""
     runner_path = OPS_DIR / "news-grasp-runner.ps1"
