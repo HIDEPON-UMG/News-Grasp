@@ -1,0 +1,90 @@
+{
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "Nintendo OR Switch 2 OR PlayStation OR Steam when:1d",
+    "ゲーム株 OR gamebiz OR ファミ通 OR Game Watch when:1d",
+    "https://www.gematsu.com/feed/",
+    "https://www.gamesindustry.biz/feed",
+    "https://www.gamedeveloper.com/rss.xml",
+    "https://www.videogameschronicle.com/feed/",
+    "https://www.nintendo.co.uk/news.xml"
+  ],
+  "raw_results_total": 230,
+  "candidates_total": 202,
+  "selected_total": 50,
+  "source_breakdown": {
+    "google_news:ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E3%82%B2%E3%83%BC%E3%83%A0+OR+Nintendo+OR+PlayStation+OR+Steam+OR+%E3%82%B2%E3%83%BC%E3%83%A0%E6%A5%AD%E7%95%8C+OR+%22video+game%22+OR+%22game+release%22+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 88,
+      "dropped": 12
+    },
+    "google_news:Nintendo OR Switch 2 OR PlayStation OR Steam when:1d": {
+      "url": "https://news.google.com/rss/search?q=Nintendo+OR+Switch+2+OR+PlayStation+OR+Steam+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 50,
+      "candidates": 43,
+      "dropped": 7
+    },
+    "google_news:ゲーム株 OR gamebiz OR ファミ通 OR Game Watch when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E3%82%B2%E3%83%BC%E3%83%A0%E6%A0%AA+OR+gamebiz+OR+%E3%83%95%E3%82%A1%E3%83%9F%E9%80%9A+OR+Game+Watch+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 41,
+      "candidates": 35,
+      "dropped": 6
+    },
+    "www.gematsu.com/feed": {
+      "url": "https://www.gematsu.com/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 10,
+      "candidates": 10,
+      "dropped": 0
+    },
+    "www.gamesindustry.biz/feed": {
+      "url": "https://www.gamesindustry.biz/feed",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 7,
+      "dropped": 1
+    },
+    "www.gamedeveloper.com/rss.xml": {
+      "url": "https://www.gamedeveloper.com/rss.xml",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 7,
+      "dropped": 1
+    },
+    "www.videogameschronicle.com/feed": {
+      "url": "https://www.videogameschronicle.com/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 7,
+      "dropped": 1
+    },
+    "www.nintendo.co.uk/news.xml": {
+      "url": "https://www.nintendo.co.uk/news.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    }
+  },
+  "negative_filter_dropped": {
+    "game:sports_result": 4,
+    "global:homepage_or_section": 2,
+    "game:guide_sale_patch": 21,
+    "global:ranking_only": 1
+  },
+  "scrapling_sources_used": [],
+  "broken_sources": []
+}

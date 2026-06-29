@@ -1,0 +1,87 @@
+{
+  "date": "2026-06-30",
+  "category_id": "economy",
+  "queries": [
+    "stage1-deduped-candidates: build/deduped-candidates/economy.jsonl",
+    "resolve-current: https://newsdas.mopita.com/Article/MyNews/NewsDetail/Genre/961571 (時事通信 骨太原案)",
+    "resolve-current: https://newsdig.tbs.co.jp/articles/-/2766308 (経産省ガソリン補助金)",
+    "resolve-current: https://fx.minkabu.jp/news/371694 (ラガルド総裁)",
+    "resolve-current: https://mainichi.jp/premier/business/articles/20260628/biz/00m/020/006000c (東電株主総会)"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "coverage_terms_checked": [
+    "骨太方針",
+    "ガソリン補助金",
+    "ECB",
+    "東京電力",
+    "予想インフレ率",
+    "インド訪問",
+    "BOJ",
+    "Fed",
+    "NVIDIA",
+    "Nikkei",
+    "S&P 500",
+    "SoftBank"
+  ],
+  "resolution_actions": [
+    "stage1 economy 候補だけを母集団にし、4件は 200 応答の article-level URL を確定",
+    "公開日とサムネは page meta / htmldate / fetch_ogp で確認し records へ反映"
+  ],
+  "dropped": [
+    {
+      "title": "予想インフレ率2%割れ 長期金利低下限られ実質金利は上昇",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBOSjMwZFEwREUwdlZ3dGZPX3hnc0M0S09GckltMVRfN1pNYmJtTTUydF9FWjhobjVyRDk1bTg5eWg4cUNnWWY2N2JPRHNONlVrX1dOYlRvb0Q4cnhoNlRYZkdzLW8yaUZLRmI2RA?oc=5",
+      "reason": "日経公式X teaser までは確認できたが、article-level canonical を stage1 source-only で確定できず不採用"
+    },
+    {
+      "title": "高市首相 1日からインド訪問 経済安保やAIで成果文書調整",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1McWhRbUZZTDIzazFQOUFfMlNNWllPeUIxb0UybmhpdkxTSHh1VE45VElBY1BHRkNVRDduWksyUVd4dzR1dEFjeHgtYm92RS1xRWtzRHR2SFZiOHdKamZ3?oc=5",
+      "reason": "最新候補と同日記事の canonical を確定できず、確認できた派生記事は 2026-06-26 掲載で freshness 条件を外れるため不採用"
+    },
+    {
+      "title": "欧州の国防費「GDP5％」拡大の経済効果、成長押し上げ期待の“軍拡の経済学”3つのボトルネック",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE9tMGtVX0c5VTdlSXRQS0Z3TUktbjBaRUdkTzg4RTZHS3FQandHVUk2U1l5ZzhTWlQ4WnB0LS1xVTcycVJVR3lzcjhFX1XSAU9BVV95cUxNajVDZzItYUFDTnJ0MFB3ZmVXYmwwOThVaDM3VHQwZnlYTGNJNmQ1endnNEVOdVdDV3BOcVlhbDVXLUFFVk80ZGNXdVBSOC1B?oc=5",
+      "reason": "論説色の強い長尺解説で、当日マクロの政策・市場変化を先に押さえる読者価値を優先して不採用"
+    },
+    {
+      "title": "＜おうちの経済＞大雨による被害 スノーダクト、事前に点検 小谷野輝之",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFBsODdDVHRWQU0wU0o0UGxOdnNHaG5NUHF1Mm9qTko5OG1KeGhvZEdpVFZBYXh3MVJWUmt0aUVTSjFQMHBxUTB0Qk94NGZ2a0JaUk9zTUNKNmRPdw?oc=5",
+      "reason": "生活ハウツー寄りで、経済面の全国読者が見るべき政策・市場・企業判断への波及が限定的"
+    },
+    {
+      "title": "「NEDOデスク」設置しています",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE9TOXU3UHQ3OGg1aEFoV0FVWV9NWVlCYlBsSnU4RllmU2tuZ1lBQWhScFRVazRNdlAyaF92UjMwRUdIMklKandHOVZMamc4emF6cHRzSGhZRVY3Z1lLZldsY1JJS3pKbjFoUlRFM3lwVVVuX0xzNTRv?oc=5",
+      "reason": "行政告知でニュース性が薄く、当日4件の政策・市場テーマを優先して不採用"
+    },
+    {
+      "title": "地域経済の今（18）大阪・摂津市のキャリア教育 学校と接点、地元中小動く",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5hV1NEVURJcC1tV0RyRzFKc1M1WmlUam9WQTFfT3dTUnJKY19XZU5KMVhUZGV1WHdkdm5wbDZod0JfMGlVS1RFNHh0aDVFdk9Sb0dmX2pmZlVNWmc?oc=5",
+      "reason": "良記事だがローカル教育事例で reader value が限定的。全国マクロと資本配分の論点を優先"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.aba-j.or.jp/info/industry/27469/",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.logi-today.com/970627",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.logi-today.com/970313",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://mainichi.jp/premier/business/articles/20260628/biz/00m/020/006000c",
+      "reason": "source URL date is outside 1-day issue window"
+    }
+  ]
+}

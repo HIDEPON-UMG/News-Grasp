@@ -1,0 +1,76 @@
+{
+  "date": "2026-06-30",
+  "category_id": "manufacturing",
+  "queries": [
+    "Stage1 deduped candidates only: build/deduped-candidates/manufacturing.jsonl",
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:jp.reuters.com 韓国が半導体・ＡＩで新産業戦略 南西部の産業集積地にサムスン・ＳＫが大規模投資",
+    "site:jp.reuters.com 独政府、ＶＷの国内工場閉鎖阻止目指す 最大10万人削減検討受け",
+    "\"韓国サムスンとSKハイニックス、DRAM半導体分野へ約84兆円の巨額投資計画を発表\"",
+    "site:logi-today.com \"SMFL、東洋製罐工場に太陽光PPA導入\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "quality_shortfall_reason": "Stage1 dedup済み候補25件のうち、当日性を保った元記事URLと製造インパクトが両立した4件のみ採用。旧聞化した同名記事、相場解説、重複角度を除外した。",
+  "dropped": [
+    {
+      "title": "清水建設、半導体工場にバイオ炭コンクリ 工程汚染防ぐ",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE1mMFVCWHNKdUJaZ3JzSkJlSlVXemt6a1FFU0RhbnBaaHNqcy1jOGkwbTNMYkV3LWdJN1U0cGhVSDVNRHJHbWNod0Q4VGVwWmc3M3lfQmNtdkN5QkdOeTUzTHZNRm9Db29NcF9fQzJvZ3JVX0pYdkM0?oc=5",
+      "reason": "同名で確認できた一次ページが2026-06-26公開に留まり、2026-06-30号の freshness gate を満たさない"
+    },
+    {
+      "title": "AWS、製造業向けAIエージェント 個別生産・工程変更へ柔軟に対応",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE9lenBlVEN4N1JqZ3FpZU5UczN3dGc3b2p1QVRLQmo2VktHaERnQXBEVVZ5a3B2ZzRoRnhfUTVtSTJBV2h2dnA5NGJUTl9UOTJyRVFyNXB4bUVXRmpvaWZfMzNJWTlnVlp5?oc=5",
+      "reason": "確認できた元記事は2026-06-15公開で旧聞化しており、当日ニュースとして採用できない"
+    },
+    {
+      "title": "既に3万台の製造に人型ロボ活用、第4段階に入った工場の自動化",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5WTHhvZGJLMWlFbm45UjRWdWN4WGZlRjhxNXhiUThpZmJ6bFNOM2xDbmhaTFN1WGt5QldRaUxBNXM1YXd0TlcwSUU1UEo0TV8wWjRLZUpKTGJiNUlybXg1OGxaNlp3Y3dU?oc=5",
+      "reason": "確認できた元記事は2026-05-21公開で、Stage1候補の時刻と一致する当日記事URLを追加探索なしでは確定できなかった"
+    },
+    {
+      "title": "台湾IT19社、5月38%増収 AIサーバー量産が寄与",
+      "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxPVkVCT0JzWVE0Ry11RmFUa2g3WEJ6OUZnNmIxbzlFVFBtN2VxZXd6dUY5NXRQdkthN1VEY2FNTVBRdjR2X01YMWNGZjR0WUpIbU9wb0hUWG1KQ3pWdWxNUG1GY05jZDJTTWJfcHh1WVZMRkcxWk9aSXNLTHpOYmh5REFsN191YjdDc1JmNDg2U3V4bmVfbWxtcg?oc=5",
+      "reason": "Stage1候補と限定検索だけでは同日公開の元記事URLを確定できず、広域再収集なし条件を優先して見送った"
+    },
+    {
+      "title": "アーム株3倍超に上昇、半導体の自前開発で業績拡大に期待",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTFBJdEo4bzFXbmJfR05BQmNGOU00TGNBN0dEQWFnaTQ4eXdBTWFxRzJoY1FZNUgzcW52SjhRN2JJRGFnTDctQ3ZWQ2t2NTlVSUl0YTVqemlrV2d4bnpwMmticVNkRjYwcm4wMFpnYzB1NzF3OUFwNnA0OEJ1MmpJZw?oc=5",
+      "reason": "株価反応の解説色が強く、当日号の manufacturing で優先すべき新規生産計画・工場再編より製造インパクトが弱い"
+    },
+    {
+      "title": "AI半導体相場は終わったのか？ここからの注目点",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPdGlMMjc5VVZYV1d6X1RtT1Ezc1NjYmtVTkFHcWstLWFLMHl3c25tZEVkb2tnYVFMTFpTak1feWFFdFhLSGxKT09HVmcxcTVvemxibkdtbGhpcDNSYjFXbGpoaGdaN3NvdjE0d0JTM21Pdm13R3lzQTJQM3hrMnRTVDhvQ1NhRlJ3?oc=5",
+      "reason": "投資見通し中心で、工場・供給網・量産能力の構造変化を示す一次材料が薄い"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.aba-j.or.jp/info/industry/27469/",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.logi-today.com/970627",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.logi-today.com/970313",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://mainichi.jp/premier/business/articles/20260628/biz/00m/020/006000c",
+      "reason": "source URL date is outside 1-day issue window"
+    }
+  ]
+}

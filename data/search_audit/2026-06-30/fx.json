@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-30",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 deduped candidates: build/deduped-candidates/fx.jsonl",
+    "Google News decode -> NHK 円相場 一時1ドル=161円90銭台後半",
+    "Google News decode -> Gaitame 米雇用統計の予想とドル円展望",
+    "Google News decode -> Gaitame ドル/円 今夜の見通し 162円の壁と介入警戒",
+    "Google News decode -> Gaitame FX個人投資家動向 メキシコペソ・トルコリラ",
+    "Google News decode -> みんかぶ ECBシントラ会合 利上げ観測とユーロ支援"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "ＮＹ外為市場＝ドル／円162円台に迫る、約40年ぶり円安水準 介入警戒続く",
+      "url": "https://jp.reuters.com/opinion/2NSELIOGWNJX5FZ4WBZBAKQE7I-2026-06-29/",
+      "reason": "同じ円安進行テーマはNHKで主要事実を確認でき、速報重複のため採用を1本に絞った。"
+    },
+    {
+      "title": "【速報】円安進行1ドル＝161円97銭～99銭 約39年半ぶり安値",
+      "url": "https://newsdig.tbs.co.jp/articles/-/2767119",
+      "reason": "同一値動きの速報でNHK採用記事と論点が重なるため重複整理した。"
+    },
+    {
+      "title": "円39年半ぶり安値、一時161円97銭 ドル買い圧力強く",
+      "url": "https://www.nikkei.com/article/DGXZQOUB18CSV0Y6A610C2000000/",
+      "reason": "円安進行の主要論点は既に採用済みで、相場テーマの重複が大きかった。"
+    },
+    {
+      "title": "県内地銀3行、利上げを歓迎 識者「稼ぐ力支援を」 中小企業は倒産リスクを危惧",
+      "url": "https://www.okinawatimes.co.jp/articles/-/1869961",
+      "reason": "利上げの地域波及として補助的だが、当日号では為替本流の中銀・雇用統計・ポジション材料を優先した。"
+    },
+    {
+      "title": "【テクニカル】週足テクニカル・ドル円 サポート＆レジスタンス",
+      "url": "https://www.gaitame.com/media/entry/2026/06/29/233732",
+      "reason": "価格帯整理として有用だが、新規材料よりもテクニカル解説中心で優先度を下げた。"
+    }
+  ]
+}

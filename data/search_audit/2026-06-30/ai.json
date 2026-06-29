@@ -1,0 +1,61 @@
+{
+  "date": "2026-06-30",
+  "category_id": "ai",
+  "queries": [
+    "stage1: build/deduped-candidates/ai.jsonl",
+    "site:aismiley.co.jp \"OpenAI Partner Network\" 認定コンサルタント 30万人",
+    "site:ai.watch.impress.co.jp \"Claude Mythos 5へのアクセスを再開\"",
+    "site:forest.watch.impress.co.jp \"Gemini\" \"学習カリキュラム作成機能\"",
+    "site:atpress.ne.jp \"Claude\" リセラー契約 アシスト Anthropic AWS",
+    "site:finance.yahoo.co.jp \"アドウェイズ－続伸 生成AIを活用した広告マーケティング支援開始\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Google、Geminiで学習用「study notebooks」を提供、学習テーマに沿ったレッスンと練習問題で学べる",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE91Tm9rbklLTlNqMDRxM09EMWMzV2NuMm9sdXV2NnBDS0ZhZU5qZ2tXMjJHc0JXRzdfQ3RRc2RHREJ5U3UtT3RmVUlwZENRVFRNTzNiWFNfQmxvOHNUeVo1WlVOSTRoZw?oc=5",
+      "reason": "同テーマの窓の杜記事を採用し重複回避"
+    },
+    {
+      "title": "Googleが学習ツール「Study Notebooks」を提供開始、Geminiが専属の先生に（ビジネス＋IT）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9SV0RaRTZPSVV5QWtBR3Q2SU91bDltS1hZVmZHY0xWZTRfRVdUMDVLR0kxX1hLX2xvMDJmUXFia2VMbnJrdkpqMXNtWTFHN3NWUGZiNjR0dDdCRVpIQ2tpZmNXRGJYS1M2Zm9FY0dRb2lfcHRQSlhoVWQ3b1c3MXc?oc=5",
+      "reason": "同テーマの一次情報に近い窓の杜記事を優先"
+    },
+    {
+      "title": "トランプ政権がAnthropicの「Claude Fable 5」復帰を近く容認か、早ければ7月上旬にも制限解除の可能性",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE5BRXhrMTBuOXhLampDVjFMZjhsNFJzdE01endIZTRJTVFmY2toeC03aUt4NXRobTFqTENMWHFXSVI4OHVxVklVR3BEVnd6U2RkMVl5Y0RKSWh0TnNZZGNHeE1VYUFxVEN1ODNScVgxdlRwRm8?oc=5",
+      "reason": "前号掲載テーマと近接し新材料が一部再開より弱い"
+    },
+    {
+      "title": "広島県、中小企業の生成AI活用を伴走支援 モデル事例創出へ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9Kb1d2VDZrMTA3czJwM0VPYVRyX01wUW5aemhIeUJXb3VETGlfOWsyWTVheWI0YWlJYWZ6Nkx5Yk5ZbWR3Z3hoOVRlTDVLMS0zOXFiVkhJVC1LY0hjdEJ2TkdSQkM4MUVhR3VkZA?oc=5",
+      "reason": "canonical解決が安定せず、同日性の高い他候補を優先"
+    },
+    {
+      "title": "エンジニア不在でも“即日システム構築” 裾野市のkintone×生成AI活用術：「外部アクセス制限」をどう乗り越えた？",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5kRzR3T19aWTRTYkthYmdtQk52QlVNWHBsUHpiV0VSWGQxT2c4eUI1UldMT3Y5R0RmVHczMXVscGE2Uk9SOGg2dDV0U0VIbTBncVVnZkZhdWxCSnh4ZlpfSkhvYkZqbXpfMlEybA?oc=5",
+      "reason": "旧事例再編集の疑いが強く、24時間窓の価値が弱い"
+    },
+    {
+      "title": "教育現場の生成AI活用、普及の鍵は「現場キーパーソン」",
+      "url": "https://prtimes.jp/main/html/rd/p/000000345.000073012.html",
+      "reason": "PR由来で一次性はあるが、AI実装の市場影響が限定的"
+    },
+    {
+      "title": "生成ＡＩ活用セミナーを開催 ズーム",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTFBGeUcwTXlIWVFsbTd0cWJ0cnhQNW9qT2pBRnBaMWRlb1p2SVBzdEppNlQ0VFJJaDlhQjgzbDNmY2RHcy1Lc2VxMnRxYjE3WG1kZVJ1b1BzVGlFLV9TSzlQVkZWcEU?oc=5",
+      "reason": "セミナー告知で読者の意思決定インパクトが小さい"
+    }
+  ]
+}

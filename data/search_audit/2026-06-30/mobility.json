@@ -1,0 +1,74 @@
+{
+  "date": "2026-06-30",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jidounten-lab.com \"ロボタクシー1周年\" Tesla",
+    "site:aba-j.or.jp WP29 自動運転 レベル4 2027年1月",
+    "site:sbbit.jp \"自動運転車向けブレーキ基準の見直し案を公表\"",
+    "Volkswagen Bosch autonomous driving partnership end Bild Reuters June 28 2026",
+    "site:logi-today.com \"ロート製薬、関東-関西間で自動運転輸送を実証\""
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Tesla=候補1と採用記事で確認",
+    "Waymo=候補5と採用記事比較軸で確認",
+    "BYD=候補13を確認",
+    "Toyota=候補14と候補23を確認",
+    "Uber=候補5を確認",
+    "BYD",
+    "Tesla",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ],
+  "dropped": [
+    {
+      "title": "WaymoとUberがフェニックスでのロボタクシー提携を終えた",
+      "url": "https://mezha.net/jp/bukvy/83c19acd_waymo_and_uber/",
+      "reason": "翻訳二次ソースで一次情報距離が遠く、同日規制・商用化案件を優先"
+    },
+    {
+      "title": "ティアフォー7月上場 米中先行の自動運転、日本に軸足",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE5vbXBBcXN0R1BweUt0M3E3S3RnZXJhblNQclhjSFNKRnZrM2lMd0M1TWdrYzM0Q1B6X3loSjMyR1NtVDh4am9yUGR0TFN0ckZ4b3BBOXVPSHc?oc=5",
+      "reason": "購読壁付き候補で元記事 canonical を確認できず未採用"
+    },
+    {
+      "title": "トヨタ、次世代EVの開発中止 次世代電池やギガキャスト開発は継続",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBDR0VjX1R4RUo4R1czRWdfSEl2d0VwUzM1bldvTHhucWlKeml2SmprRE8tbzVUdXlSMndSVmFUMl9scUh6ejNaSENtYnFiQ2JuN1pRWXR1QTRjUQ?oc=5",
+      "reason": "元記事の canonical と個別サムネを確認できず未採用"
+    },
+    {
+      "title": "BYDの軽EVの価格いくら？ 発売まで1カ月、識者・店舗の声から読む",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBWaVZhYmJaRDN6cG9wQXhHYjJtYmd4dW9ZOXhwY2F1anNrc0ZrcmNQZ2wwRXVhUWpCVGdLcEl5TXM0RWU2US0weWlXR0M5YklPaTRjQXh0UlE0TkxUbTV0Mk9aTVFVQk5jS3o?oc=5",
+      "reason": "商品価格観測が中心で、制度・運行構造の変化を示す記事を優先"
+    },
+    {
+      "title": "社用車市場低迷で新規登録台数減も、EV割合は拡大（ベルギー）",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE1ualRsSEZoSkd1OXl0bjUxN0VWeVhGVWR6MlJOZGxYT1RrYVZTcFVLZDFjY0Nobi1RbWIzcl80MUNQTUxwY0xNSlVtaWtFYXJoRnNlLV84aw?oc=5",
+      "reason": "地域分析として有用だが、当日性の強い規制・商用運行案件を優先"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.aba-j.or.jp/info/industry/27469/",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.logi-today.com/970627",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://www.logi-today.com/970313",
+      "reason": "thumb no_meta: article has no OGP/twitter image; category fallback would fail daily-quality"
+    },
+    {
+      "title": "quality gate quarantine",
+      "url": "https://mainichi.jp/premier/business/articles/20260628/biz/00m/020/006000c",
+      "reason": "source URL date is outside 1-day issue window"
+    }
+  ]
+}

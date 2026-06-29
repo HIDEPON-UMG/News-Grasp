@@ -1,0 +1,69 @@
+{
+  "date": "2026-06-30",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:productzine.jp \"プロデリア・パートナーズ、NECのPMM人材育成に着手。PMM OSで越境人材の「型」を10か月で定着\"",
+    "site:productzine.jp \"Lupe、リサーチプラットフォームに「コンテキスト」機能を追加。事業・プロジェクトの文脈をAI設問作成・AIインタビュアーに反映\"",
+    "site:productzine.jp \"AI時代に「売れるプロダクト」の正体を問う。SmartHRとラクスが「SaaS is Dead」に挑むBtoB Synergy FORUM\"",
+    "site:aws.amazon.com \"キヤノンIT ソリューションズ様と取り組むホテルのフードロス削減\"",
+    "McKinsey OR BCG OR Accenture OR Deloitte OR PwC OR NTT 2026-06-29 IT"
+  ],
+  "raw_results_total": 29,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "selected_urls": [
+    "https://aws.amazon.com/jp/blogs/news/sustainability-case-study-canon-its-chronos-2-foodloss-management/",
+    "https://productzine.jp/article/detail/4399",
+    "https://productzine.jp/article/detail/4398",
+    "https://productzine.jp/article/detail/4397"
+  ],
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "notes": [
+    "広域収集と横断 dedup は再実行していない。Stage1 dedup 済み候補を起点に exact-title 補完のみ実施。",
+    "当日性は 2026-06-29/2026-06-30 の公開日時が HTML から確認できた記事に限定した。",
+    "canonical URL が媒体トップへ丸まる案件、または IT-Consulting 適合が弱い案件は採用しなかった。"
+  ],
+  "dropped": [
+    {
+      "title": "クラウドベースの CAD が従来の設計ワークフローを置き換える理由",
+      "url": "https://www.autodesk.com/products/fusion-360/blog/cloud-cad-autodesk-fusion/",
+      "reason": "公開日が 2026-05-27 で 1 日窓外"
+    },
+    {
+      "title": "日本発SaaSはアメリカで勝てるのか？米国事業を2年で数十倍に伸ばしたキャディ加藤CEOの答え",
+      "url": "https://diamond.jp/",
+      "reason": "媒体トップまでは確認できたが元記事 canonical を確定できず採用不可"
+    },
+    {
+      "title": "建機レンタルのアクティオ、5年越しでOracle Exadataをクラウドへ",
+      "url": "https://www.oracle.com/jp/news/announcement/aktio-establishes-core-systems-construction-equipment-rental-operations-2026-04-06/",
+      "reason": "参照できた一次情報は 2026-04-06 の旧件で 1 日窓外"
+    },
+    {
+      "title": "サイバー被害額「10億円超」の企業を初確認、サイバーセキュリティサーベイ2026",
+      "url": "https://prtimes.jp/main/html/rd/p/000000093.000141127.html",
+      "reason": "参照できた一次情報は 2026-02-26 の旧件で 1 日窓外"
+    },
+    {
+      "title": "【横浜・金沢の海】第52回金沢まつり花火大会を未来へ",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE04cXhTTUk5SC02SktFcjZBS1FFeWVRLU44VTR2QXV6SWZPUkdwaVRqWXg1WFRsaDZsTWZKUC05T2JNX0VFQ01mVmFoak5NQS14SG80?oc=5",
+      "reason": "IT-Consulting 対象外"
+    },
+    {
+      "title": "IT運用支援ツールの自動化・AI機能を活用した運用課題解決のご紹介 - イベント・セミナー - Key Technology｜CTC",
+      "url": "https://www.ctc-g.co.jp/",
+      "reason": "イベント告知ページへの確定 URL を得られず、元記事単位 URL に解像できなかった"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-30",
+  "category_id": "game",
+  "queries": [
+    "stage1: build/deduped-candidates/game.jsonl",
+    "site:nintendo.com \"スプラトゥーン レイダース Direct 2026.6.30\"",
+    "site:automaton-media.com \"スイカゲーム』突如Steamに出現\"",
+    "site:0115765.com \"コンテンツ産業補助金の「大規模作品支援」で27社採択\"",
+    "site:game.watch.impress.co.jp \"完全新規ゲームタイトル「FUJI（仮）」\"",
+    "site:gamespark.jp Steam Machine コンパニオンキューブ ケース 販売中止 返金 Valve"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "7/20(月祝) サンサンと遊ぼう！ゲーム＆ワークショップ《くもりんDAY》",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBpRl9OWUZtYlZ3OXBGcUlrdm9PRTdGUEM3NWRNT0tKMGdocUduTGllTVJGSDdjUkxBVXh3WTFjWGd3T3MwcTRnY0FTMUI4c1RhMmhsRU9idzV5V0ttRXJjbHZOeU5ZNTl2ZGc?oc=5",
+      "reason": "地域イベント告知中心で、読者の仕事や投資判断に効く新材料が薄い"
+    },
+    {
+      "title": "横浜FC ホームゲーム来場時の交通手段に関するアンケート結果のご報告",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFAyai1mQVBrSWZGbllSNGEwWUV0SHdSRFNFNWUwLUpGYkN2SDVQVV9jVXhqektPdThsSktmNEdNenVZS3hXWTRfNDdVYzViMkVQR2RCb3VhLWlWOWVVUlFF?oc=5",
+      "reason": "スポーツ興行のホームゲーム文脈であり、ゲーム業界ニュースとしては主題がぶれる"
+    },
+    {
+      "title": "OPENREC.tv「工藤大輝の強くてニューゲーム2」生配信(大輝)",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE1aSGRERzRaMVdWbFFfZ1NqS0pDd1RPdDZGRXlaaEhGT3AzRkhmSU5Qckl2WjFwX2VxeVY5bUxTS1NTMHg0bUJvOG9EeVBUNThrVkhPNmhuS1dPQ1Fn?oc=5",
+      "reason": "配信番組の告知で産業的な変化や一次情報の厚みが足りない"
+    },
+    {
+      "title": "『青鬼』PlayStation®5版が7月3日に発売決定！ | UUUM株式会社のプレスリリース",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE53blNnNy1xUjhBelQzYThEdm02aVRRV0h3WUNEd0t1aXkzQUZCY2hwaXJ3ODBYcV9HRUFEX0RIUGs0ZnhxQ094dGoxUWR0dkRsN2xQSVJrMDFwNHR5QVlYR1d5Nkx3UENqUUE?oc=5",
+      "reason": "単独PRとしては読者価値がやや狭く、より広い需給や投資線の動きを優先した"
+    },
+    {
+      "title": "「「バトルランナー」や「ハンガー・ゲーム」の源流にあたる半世紀前の小説を、古臭さを感じさせず巧みに映画化」ロングウォーク 高森郁哉さんの映画レビュー（感想・評価）",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE5ZX3hfMVBCYnRKc1ZfOVhQcERnNjloZk9rMWQycjUyTVNvdDNXbVpqSFhxck1OWkJOV2xWamlkVktIajJDdWRqRlZFVXlmNHJLN3p3Z1pZMHRrQQ?oc=5",
+      "reason": "映画レビューであり、ゲームカテゴリへの混入ノイズと判断した"
+    }
+  ]
+}
