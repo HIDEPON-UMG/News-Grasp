@@ -3259,6 +3259,21 @@ if ($NoPush) {
     }
     Write-Log 'deepdive podcast verification OK'
 
+    Write-Log 'podcast playlist audit start'
+    Update-RunnerProgress -Phase 'podcast-playlist-audit' -Step 'podcast playlist audit start'
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.youtube_podcast.upload_episode' $DateStamp '--audit-playlists' }
+        $podcastPlaylistAuditRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($podcastPlaylistAuditRc -ne 0) {
+        Write-Log "ERROR: podcast playlist audit failed (rc=$podcastPlaylistAuditRc). same-date duplicate or deleted playlist item remains."
+        Invoke-AutonomousCompletionPolicy -FailureKind 'distribution' -GateId 'podcast-playlist-audit' -Reason 'podcast playlist audit failed' -ExitCode $podcastPlaylistAuditRc
+    }
+    Write-Log 'podcast playlist audit OK'
+
     Write-Log 'publish-complete manifest verification start'
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
     Push-Location $RepoDir

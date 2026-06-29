@@ -291,8 +291,8 @@ def test_deepdive_metadata_and_upload_state_are_separate(tmp_path, monkeypatch):
     assert result["metadata"]["title"] == metadata["title"]
 
 
-def test_deepdive_finalize_adds_video_to_primary_podcast_playlist_too(tmp_path, monkeypatch):
-    """DeepDive 対談は DeepDive 補助リストだけでなく News-Grasp Podcast 本体にも載せる。"""
+def test_deepdive_finalize_keeps_video_out_of_primary_podcast_playlist(tmp_path, monkeypatch):
+    """DeepDive 対談は DeepDive 専用 playlist にだけ載せ、Daily Podcast 本体へ混入させない。"""
     from tools.youtube_podcast import upload_episode
 
     deepdive_build_dir = tmp_path / "build" / "youtube-podcast-deepdive"
@@ -338,12 +338,70 @@ def test_deepdive_finalize_adds_video_to_primary_podcast_playlist_too(tmp_path, 
 
     assert result["playlistId"] == "playlist-deepdive"
     assert result["playlistItemId"] == "item-playlist-deepdive"
-    assert result["primaryPodcastPlaylistId"] == "playlist-primary"
-    assert result["primaryPodcastPlaylistItemId"] == "item-playlist-primary"
+    assert "primaryPodcastPlaylistId" not in result
+    assert "primaryPodcastPlaylistItemId" not in result
     assert calls == [
         ("ensure_playlist", "deepdive"),
         ("update_video_privacy", "deepdive-video-1:public"),
         ("add_video_to_playlist", "deepdive-video-1:playlist-deepdive"),
-        ("ensure_playlist", "daily"),
-        ("add_video_to_playlist", "deepdive-video-1:playlist-primary"),
     ]
+
+
+def test_audit_playlist_uniqueness_rejects_e2e_leftovers(tmp_path, monkeypatch):
+    """公開 E2E 後に同日重複や Deleted video item が残れば Green にしない。"""
+    from tools.youtube_podcast import upload_episode
+
+    daily_build_dir = tmp_path / "build" / "youtube-podcast"
+    deepdive_build_dir = tmp_path / "build" / "youtube-podcast-deepdive"
+    daily_build_dir.mkdir(parents=True)
+    deepdive_build_dir.mkdir(parents=True)
+    monkeypatch.setattr(upload_episode, "BUILD_DIR", daily_build_dir)
+    monkeypatch.setattr(upload_episode, "DEEPDIVE_BUILD_DIR", deepdive_build_dir)
+    (daily_build_dir / "uploads.json").write_text(
+        json.dumps(
+            {
+                "2026-06-29": {
+                    "status": "public",
+                    "videoId": "daily-current",
+                    "playlistId": "playlist-primary",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    (deepdive_build_dir / "uploads.json").write_text(
+        json.dumps(
+            {
+                "2026-06-29": {
+                    "status": "public",
+                    "videoId": "deepdive-current",
+                    "playlistId": "playlist-deepdive",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeClient:
+        def list_playlist_items(self, *, playlist_id):
+            if playlist_id == "playlist-primary":
+                return [
+                    {"playlistItemId": "item-daily", "videoId": "daily-current", "title": "News-Grasp Daily News Briefing 2026-06-29"},
+                    {"playlistItemId": "item-deepdive", "videoId": "deepdive-current", "title": "News-Grasp DeepDive Dialogue 2026-06-29"},
+                    {"playlistItemId": "item-deleted", "videoId": "old-daily", "title": "Deleted video"},
+                ]
+            if playlist_id == "playlist-deepdive":
+                return [
+                    {"playlistItemId": "item-deepdive-main", "videoId": "deepdive-current", "title": "News-Grasp DeepDive Dialogue 2026-06-29"},
+                    {"playlistItemId": "item-deepdive-old", "videoId": "old-deepdive", "title": "Deleted video"},
+                ]
+            raise AssertionError(playlist_id)
+
+    result = upload_episode.audit_playlist_uniqueness("2026-06-29", client=FakeClient())
+
+    assert result["ok"] is False
+    assert {issue["reason"] for issue in result["issues"]} == {
+        "podcast_playlist_unexpected_same_date_video",
+        "podcast_playlist_deleted_video_item",
+    }
+    assert any(issue.get("videoId") == "deepdive-current" for issue in result["issues"])

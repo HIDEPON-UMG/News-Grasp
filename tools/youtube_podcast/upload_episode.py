@@ -29,6 +29,7 @@ class PodcastClient(Protocol):
     def upload_video(self, mp4_path: Path, metadata: dict[str, Any], *, privacy_status: str) -> str: ...
     def update_video_privacy(self, *, video_id: str, privacy_status: str) -> dict[str, Any]: ...
     def add_video_to_playlist(self, *, video_id: str, playlist_id: str) -> str: ...
+    def list_playlist_items(self, *, playlist_id: str) -> list[dict[str, Any]]: ...
 
 
 def _warn(message: str) -> None:
@@ -196,27 +197,6 @@ def _ensure_playlist(client: PodcastClient, kind: str) -> str:
         return client.ensure_playlist()
 
 
-def _ensure_primary_podcast_membership(
-    row: dict[str, Any],
-    *,
-    client: PodcastClient,
-    video_id: str,
-    kind: str,
-) -> None:
-    if kind != "deepdive":
-        return
-    primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or _ensure_playlist(client, "daily"))
-    current_playlist_id = str(row.get("playlistId") or "")
-    primary_playlist_item_id = str(row.get("primaryPodcastPlaylistItemId") or "")
-    if not primary_playlist_item_id:
-        if primary_playlist_id == current_playlist_id:
-            primary_playlist_item_id = str(row.get("playlistItemId") or "")
-        else:
-            primary_playlist_item_id = client.add_video_to_playlist(video_id=video_id, playlist_id=primary_playlist_id)
-    row["primaryPodcastPlaylistId"] = primary_playlist_id
-    row["primaryPodcastPlaylistItemId"] = primary_playlist_item_id
-
-
 class YouTubePodcastClient:
     def __init__(self, service: Any):
         self.service = service
@@ -331,6 +311,32 @@ class YouTubePodcastClient:
         response = request.execute()
         return str(response.get("id") or "")
 
+    def list_playlist_items(self, *, playlist_id: str) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        page_token: str | None = None
+        while True:
+            response = self.service.playlistItems().list(
+                part="snippet,contentDetails",
+                playlistId=playlist_id,
+                maxResults=50,
+                pageToken=page_token,
+            ).execute()
+            for item in response.get("items", []):
+                snippet = item.get("snippet", {}) if isinstance(item, dict) else {}
+                resource = snippet.get("resourceId", {}) if isinstance(snippet, dict) else {}
+                content = item.get("contentDetails", {}) if isinstance(item, dict) else {}
+                items.append(
+                    {
+                        "playlistItemId": item.get("id"),
+                        "videoId": resource.get("videoId") or content.get("videoId") or "",
+                        "title": snippet.get("title") or "",
+                        "position": snippet.get("position"),
+                    }
+                )
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                return items
+
 
 def _mp4_and_hash(day: str, kind: str = "daily") -> tuple[Path, str]:
     if not _DATE_RE.match(day):
@@ -408,7 +414,6 @@ def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "dail
             "playlistItemId": playlist_item_id,
         }
     )
-    _ensure_primary_podcast_membership(row, client=active_client, video_id=video_id, kind=kind)
     uploads[day] = row
     _write_uploads(uploads, kind)
     result = {"date": day, "skipped": False, **row}
@@ -454,13 +459,81 @@ def publish(
         "playlistItemId": playlist_item_id,
         "mp4_sha256": mp4_hash,
     }
-    _ensure_primary_podcast_membership(row, client=active_client, video_id=video_id, kind=kind)
     uploads = _load_uploads(kind)
     uploads[day] = row
     _write_uploads(uploads, kind)
     result = {"date": day, "skipped": False, **uploads[day]}
     print(json.dumps(result, ensure_ascii=False))
     return result
+
+
+def audit_playlist_uniqueness(day: str, *, client: PodcastClient | None = None) -> dict[str, Any]:
+    if not _DATE_RE.match(day):
+        raise ValueError(f"invalid date: {day}")
+    active_client = client or YouTubePodcastClient.from_local_secrets()
+    checks: list[dict[str, str]] = []
+    for kind in ("daily", "deepdive"):
+        row = _load_uploads(kind).get(day)
+        if not isinstance(row, dict):
+            continue
+        video_id = str(row.get("videoId") or "")
+        playlist_id = str(row.get("playlistId") or "")
+        if video_id and playlist_id:
+            checks.append({"kind": kind, "videoId": video_id, "playlistId": playlist_id})
+
+    issues: list[dict[str, Any]] = []
+    surfaces: list[dict[str, Any]] = []
+    for check in checks:
+        items = active_client.list_playlist_items(playlist_id=check["playlistId"])
+        matched = [item for item in items if item.get("videoId") == check["videoId"]]
+        dated_unexpected = [
+            item
+            for item in items
+            if day in str(item.get("title") or "") and item.get("videoId") != check["videoId"]
+        ]
+        deleted_items = [item for item in items if str(item.get("title") or "") == "Deleted video"]
+        if len(matched) != 1:
+            issues.append(
+                {
+                    "reason": "podcast_playlist_expected_video_count",
+                    "kind": check["kind"],
+                    "playlistId": check["playlistId"],
+                    "videoId": check["videoId"],
+                    "count": len(matched),
+                }
+            )
+        for item in dated_unexpected:
+            issues.append(
+                {
+                    "reason": "podcast_playlist_unexpected_same_date_video",
+                    "kind": check["kind"],
+                    "playlistId": check["playlistId"],
+                    "videoId": item.get("videoId"),
+                    "title": item.get("title"),
+                    "playlistItemId": item.get("playlistItemId"),
+                }
+            )
+        for item in deleted_items:
+            issues.append(
+                {
+                    "reason": "podcast_playlist_deleted_video_item",
+                    "kind": check["kind"],
+                    "playlistId": check["playlistId"],
+                    "videoId": item.get("videoId"),
+                    "playlistItemId": item.get("playlistItemId"),
+                }
+            )
+        surfaces.append(
+            {
+                "kind": check["kind"],
+                "playlistId": check["playlistId"],
+                "videoId": check["videoId"],
+                "matched_count": len(matched),
+                "unexpected_same_date_count": len(dated_unexpected),
+                "deleted_item_count": len(deleted_items),
+            }
+        )
+    return {"ok": not issues, "date": day, "surfaces": surfaces, "issues": issues}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -471,10 +544,15 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--prepare", action="store_true", help="push 前に private video として upload する。")
     mode.add_argument("--finalize", action="store_true", help="Web 公開確認後に public 化して playlist に追加する。")
     mode.add_argument("--publish", action="store_true", help="YouTube へ公開 upload して podcast playlist に追加する。")
+    mode.add_argument("--audit-playlists", action="store_true", help="公開 playlist に同日重複や Deleted video item が残っていないか検査する。")
     parser.add_argument("--dry-run", action="store_true", help="YouTube API を呼ばず mp4 と metadata を検査する。")
     parser.add_argument("--privacy-status", default="public", choices=["public", "private", "unlisted"])
     args = parser.parse_args(argv)
     try:
+        if args.audit_playlists:
+            result = audit_playlist_uniqueness(args.date)
+            print(json.dumps(result, ensure_ascii=False))
+            return 0 if result.get("ok") else 1
         if args.prepare:
             prepare(args.date, dry_run=args.dry_run, kind=args.kind)
         elif args.finalize:

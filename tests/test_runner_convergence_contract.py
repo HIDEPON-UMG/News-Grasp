@@ -1190,6 +1190,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
         ("distribution", "deepdive-youtube-podcast-finalize"),
         ("distribution", "podcast-verify"),
         ("distribution", "deepdive-podcast-verify"),
+        ("distribution", "podcast-playlist-audit"),
         ("publish", "publish-complete"),
     }
     covered_kinds = {"content", "artifact", "local-tool", "external", "publish", "distribution"}
@@ -1820,6 +1821,8 @@ def test_runner_publish_verification_includes_public_audio_sentinel() -> None:
     assert "tools.daily_self_heal" in runner
     assert "verify-publish" in runner
     assert "verify-podcast" in runner
+    assert "podcast playlist audit" in runner
+    assert "--audit-playlists" in runner
     assert runner.index("publish verification start") < runner.index("publish verification OK")
 
 
@@ -1841,6 +1844,7 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
 
     assert "verify-publish-complete" in runner
     assert runner.index("deepdive podcast verification OK") < runner.index("verify-publish-complete")
+    assert runner.index("podcast playlist audit OK") < runner.index("verify-publish-complete")
     assert runner.index("verify-publish-complete") < runner.index("send_push start")
     assert runner.index("verify-publish-complete") < runner.rindex("news-grasp-runner.ps1 OK")
     block = runner.split("publish-complete manifest verification start", 1)[1].split("send_push start", 1)[0]
