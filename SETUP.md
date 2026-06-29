@@ -133,17 +133,17 @@ npx wrangler secret put LIST_TOKEN
 - wrapper の claude 既定引数は `--print --output-format stream-json --verbose`（2026-06-10 無出力ハング事故対策）。init / assistant / tool 各イベントが JSONL でログに流れるため、「ハング（init 後沈黙）/ 迷走（tool_use の内訳）/ 生成中（イベント継続）」を日次ログから区別できる。既定退行は `tests/test_runner_wrapper_smoke.py::test_wrapper_default_args_use_stream_json` が物理検知する
 - Claude 終了後に ps1 が継続して Content Gate 群 → bounded repair worker (同一失敗 1 回だけ) → `tools/generate_pages.py` → `tools.validate_public_home` → Availability Gate → docs commit → `git push origin main` → `tools/send_push.py` を順に走らせる
 - record schema gate (step 2.65) は 2026-06-12 から `tools.validate_record --recent 7 --issue-date <号日>` で実行する。当日 `seen_at` のレコードが `date != 号日` のとき fatal（06-11 号の 21 件誤記 = 「date を記事公開日と誤解釈」する class of bugs の機械検査）
-- Content Gate が収束しない場合、本日号は通常公開せず、`tools.publish_fallback` で直近成功号に「本日の更新は品質確認中」notice を挿入し、`tools.validate_availability` を通して fallback publish する
+- Content Gate が収束しない場合、本日号は通常公開せず typed Red で停止する。通常日次バッチ経路の fallback publish は禁止し、手動緊急公開が必要な場合だけ別承認の例外経路として扱う
 - wrapper は hard timeout に加えて idle timeout を持つ。標準設定では `TimeoutSec=4800`、`IdleTimeoutSec=900`。stream-json 既定化により「動いている限り stdout が継続する」前提が成立するため、15 分無出力 = 真のハングとして 80 分の hard timeout を待たずに kill する。heartbeat は途中ログに elapsed/idle 秒を残す
 - gate failed 後の復旧は `-RecoverOnly` を使う。Claude / DeepDive を再実行せず、手修正済みのローカル状態から gate 群 → docs 再生成 → docs commit → push → Web Push だけを再開する
-- 手動慣らし運転や Codex からの実行では `news-grasp-runner.ps1` を foreground で直接待たない。`watch-news-grasp-runner.ps1` が runner を hidden 起動し、`news-grasp-runner-state.json` と日次ログを poll して `ok` / `fallback_ok` / `error` / stale を機械判定する
+- 手動慣らし運転や Codex からの実行では `news-grasp-runner.ps1` を foreground で直接待たない。`watch-news-grasp-runner.ps1` が runner を hidden 起動し、`news-grasp-runner-state.json` と日次ログを poll して `ok` / typed Red / stale を機械判定する。`fallback_ok` は通常完走の終端状態に含めない
 - 手動公開で runner を通さない場合は `python tools/publish_update.py` を使う。Web Push 通知が必要な更新だけ `--notify` を付ける（微細修正では付けない）
 - ファイルは **UTF-8 BOM 必須**（PS5.1 が BOM 無しを CP932 解釈して日本語コメントごと壊す既知問題。`enforce_script_encoding.ps1` hook が自動付与する）
 
 ### 3-1. 通常公開完了条件
 
 News-Grasp の自走修正で「直った」と言ってよいのは、Activation Path 全体が通ったときだけ。
-fallback_ok は復旧完了ではなく本線保護であり、直近成功号に notice を出しただけなら通常公開未達として扱う。
+fallback_ok / published_fallback_with_notice は通常公開完了条件ではない。旧 fallback 証跡を読む場合は、歴史データまたは手動緊急公開の痕跡として扱い、通常完走に昇格しない。
 上流契約で防げる漏れを高コスト E2E に委ねない。E2E は省略せず必要な統合検証として残すが、E2E を設計漏れのバグ発見機として濫用しない。E2E が見つけた前提漏れは runner / watcher / prompt / publish の責務境界、静的契約、文面契約、bounded dry-run へ戻して固定する。
 
 通常公開完了条件:
@@ -217,10 +217,10 @@ git push
 | 黒い画面が開いてすぐ閉じる | ログに `ERROR: ...` が出る → `news-grasp-invoked.log` から原因切り分け |
 | `claude` が見つからない | ps1 内のフルパスを `where claude` で確認した結果に差し替え |
 | 画像が壊れる（公開 Web 内） | `assets/` の JPG が repo にあるか確認 → `tools/generate_pages.py` の thumb fallback 処理を確認 |
-| `public HTML gate failed` | runner が同一失敗を 1 回だけ targeted repair worker に戻す。再発時は通常号を出さず fallback notice 付き公開へ切替。手動調査は `python -m tools.validate_public_home --date YYYY-MM-DD` |
+| `public HTML gate failed` | runner が targeted repair worker に戻す。収束しなければ通常号を出さず typed Red で停止する。手動調査は `python -m tools.validate_public_home --date YYYY-MM-DD` |
 | `claude TIMEOUT` / `IDLE TIMEOUT` | ログの `PromptFile loaded`、`WorkingDirectory resolved`、heartbeat / elapsed 秒数を確認。partial artifacts は未検証なので通常公開せず、必要なら手修正後に `-RecoverOnly` |
-| pre-push gate / `generate_pages.py` 失敗 | runner が bounded repair を試し、収束しなければ `published_fallback_with_notice` として直近成功号を公開維持。`failed_before_push` は secret/security/破壊的リスク時だけを原則にする |
-| `summary reflection gate failed` | runner が `digest/Summary/YYYY-MM-DD.md` を対象に 1 回だけ repair worker を呼ぶ。再発時は fallback publish し、同一 `failure_signature` は `data/gate_attempts/YYYY-MM-DD.json` に残る |
+| pre-push gate / `generate_pages.py` 失敗 | runner が deterministic repair を試し、収束しなければ typed Red で停止する。`failed_before_push` は secret/security/破壊的リスク時だけを原則にする |
+| `summary reflection gate failed` | runner が selected issue artifacts だけを対象に repair worker を呼ぶ。収束しなければ typed Red と同一 `failure_signature` を `data/gate_attempts/YYYY-MM-DD.json` に残す |
 | 手動 push 後に Web Push が届かない | runner 外の `git push` では `tools/send_push.py` が走らない。手動公開は `python tools/publish_update.py` を使い、通知が必要な更新だけ `--notify` を付ける |
 | Web Push が届かない | `python tools/send_push.py --dry-run` で疎通確認 → Worker URL / `LIST_TOKEN` / VAPID 公開鍵の食い違いを点検 |
 | Obsidian で digest（記事 .md）が反映されない | サブリポ `News-Grasp/` 担当の Runner が `git pull` を内包しているので、サブリポは自動更新。手動なら `git -C "...\News-Grasp" pull` |

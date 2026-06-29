@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Availability fallback publish の契約テスト。"""
+"""手動緊急 fallback publish helper の契約テスト。"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -49,7 +49,7 @@ def test_mark_ok_resets_status_after_fallback(tmp_path: Path) -> None:
     """成功公開時 mark_ok が publish-status.json を published_ok に戻す契約 (2026-06-12 疑義 C)。
 
     # なぜ重要か
-    fallback publish は published_fallback_with_notice を残すが、通常号が成功しても
+    手動緊急 fallback は published_fallback_with_notice を残すが、通常号が成功しても
     これを戻す機構が無く stale なままだった。send_push はこの状態を読んで fallback 中の
     通知を抑止するため、mark_ok が status を戻さないと成功公開後も push が永久に抑止
     される。本テストは「fallback → mark_ok で result=published_ok・date 更新」を locked-in。

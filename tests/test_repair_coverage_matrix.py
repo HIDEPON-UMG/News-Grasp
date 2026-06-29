@@ -5,8 +5,10 @@ import json
 import pytest
 
 from tools.repair_coverage_matrix import (
+    COVERAGE_ROWS,
     RepairClass,
     RepairIssue,
+    classify_gate_issues,
     classify_gate_output,
     classify_repair_issue,
     missing_coverage,
@@ -48,6 +50,19 @@ def test_repair_coverage_matrix_covers_required_rows_and_has_no_unimplemented() 
 
     assert not missing, "\n".join(f"{gate_id}:{issue_code}" for gate_id, issue_code in missing)
     assert not unimplemented_rows(), "final Green requires zero handler_unimplemented_red rows"
+
+
+def test_repair_coverage_rows_have_explicit_non_unimplemented_failure_status() -> None:
+    missing_status = [f"{row.gate_id}:{row.issue_code}" for row in COVERAGE_ROWS if not row.status_on_failure]
+    assert not missing_status
+
+    illegal = [
+        f"{row.gate_id}:{row.issue_code}"
+        for row in COVERAGE_ROWS
+        if row.repair_class != RepairClass.HANDLER_UNIMPLEMENTED_RED
+        and row.status_on_failure == "blocked_repair_handler_unimplemented"
+    ]
+    assert not illegal, "handler_unimplemented は registry handler absence のみで使う"
 
 
 def test_unknown_issue_never_defaults_to_repairable() -> None:
@@ -132,6 +147,39 @@ def test_generation_quality_multi_issue_prioritizes_state_consistency_before_aud
     assert decision.issue_code == "articles_issue_empty"
     assert decision.handler_id == "digest-articles-reconcile-patch"
     assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
+
+
+def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "errors": [
+                {
+                    "code": "audio_script_quality_invalid",
+                    "artifact": "digest/Summary/2026-06-28-audio-script.md",
+                },
+                {
+                    "code": "articles_issue_empty",
+                    "artifact": "data/articles.jsonl",
+                },
+                {
+                    "code": "digest_article_url_mismatch",
+                    "artifact": "digest/AI/2026-06-28-AI.md",
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    decisions = classify_gate_issues("generation-quality", output)
+
+    assert [decision.issue_code for decision in decisions] == [
+        "articles_issue_empty",
+        "digest_article_url_mismatch",
+        "audio_script_quality_invalid",
+    ]
+    assert decisions[0].artifact_paths == ("data/articles.jsonl",)
+    assert decisions[1].artifact_paths == ("digest/AI/2026-06-28-AI.md",)
 
 
 def test_generation_quality_text_fallback_prioritizes_digest_mismatch_before_audio() -> None:

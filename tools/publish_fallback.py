@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Content Gate 失敗時に公開面を fallback notice 付きへ退避する。"""
+"""手動緊急公開用の fallback notice helper。
+
+通常日次 runner は fallback publish を完走経路として使わない。
+"""
 from __future__ import annotations
 
 import argparse
@@ -69,7 +72,7 @@ def write_fallback(docs_dir: Path, *, date: str, reason: str, notice: str = DEFA
 def mark_ok(docs_dir: Path, *, date: str) -> None:
     """通常号の成功公開時に publish-status.json を published_ok へリセットする。
 
-    fallback publish は publish-status.json に published_fallback_with_notice を残すが、
+    手動緊急 fallback は publish-status.json に published_fallback_with_notice を残すが、
     通常号が成功公開されても誰もこれを戻さず stale なままだった (2026-06-12 発覚)。
     send_push.py はこの状態を読んで「fallback 公開中は通知を抑止」するため、成功経路で
     必ず本関数を呼び published_ok に戻すことが fallback 抑止を解除する状態同期点になる

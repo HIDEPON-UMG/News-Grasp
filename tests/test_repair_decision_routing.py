@@ -20,7 +20,7 @@ def test_deterministic_issue_routes_to_handler_metadata() -> None:
     assert decision.handler_id == "summary-hero-patch"
     assert decision.allowed_artifacts == ("digest/Summary/{date}.md",)
     assert decision.verify_gate == "generation-quality"
-    assert decision.status_on_failure == "blocked_repair_handler_unimplemented"
+    assert decision.status_on_failure == "blocked_deterministic_repair_failed"
 
 
 def test_llm_missing_artifact_rejects_partial_existing_artifacts() -> None:

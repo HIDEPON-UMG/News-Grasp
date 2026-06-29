@@ -34,7 +34,7 @@ REQUIRED_MODEL_POLICY_KEYS = (
     ("deepdive", "default"),
 )
 
-ALLOWED_PUBLISH_RESULTS = {"published_ok", "published_fallback_with_notice"}
+ALLOWED_PUBLISH_RESULTS = {"published_ok"}
 SW_VERSION_RE = re.compile(r"\bSW_VERSION\s*=\s*['\"]([^'\"]+)['\"]")
 
 

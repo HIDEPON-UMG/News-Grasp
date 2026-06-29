@@ -149,11 +149,11 @@ Category schedule impact map:
 |---|---|
 | Runner Stage0 / Stage2 reporter fan-out | `scheduled_category_ids(issue)` の結果だけを fan-out し、固定 7 カテゴリを作らない。 |
 | Editor manifest / newsroom prompt | 当日必須カテゴリだけを統合対象にし、非対象カテゴリ不足を editorial defect にしない。 |
-| publish inventory / repair scope | required artifact だけを missing / repair 対象にし、非対象カテゴリ artifact は fallback_ok でも failure でもない補助情報として扱う。 |
+| publish inventory / repair scope | required artifact だけを missing / repair 対象にし、非対象カテゴリ artifact は通常完走でも failure でもない補助情報として扱う。 |
 | generate_pages / public UI | 存在する artifact は公開できるが、当日 issue の required 判定には戻さない。 |
 | validate_daily_quality / validate_generation_quality / reconcile | date から必須カテゴリを解決し、非対象カテゴリを required missing にしない。 |
 | YouTube Podcast / publish_complete | required web/audio/deepdive の公開状態と Podcast/playlist 状態を確認し、非対象カテゴリ有無で完了判定を変えない。 |
-| fallback_ok | fallback が許されるのは公開品質保護のためであり、非対象カテゴリ探索失敗を fallback 理由にしない。 |
+| historical fallback evidence | 旧 fallback 証跡は通常完走ではなく、非対象カテゴリ探索失敗や required artifact 欠落の成功理由にしない。 |
 | verify-publish-complete | public URL、publish-status、audio、Podcast の日付 sentinel を確認し、曜日別カテゴリ仕様と矛盾させない。 |
 
 ## Operational Premise Fidelity
@@ -218,13 +218,50 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 
 ## Sustainable Complete Repair
 
-外部システム要因以外で公開面が揃わない停止は許容しない。fallback は通常日次完走ではない。fallback は読者向け公開面を壊さないための暫定保護であり、通常日次バッチ、Podcast、DeepDive、distribution、notification の完了証跡ではない。
+外部システム要因以外で公開面が揃わない停止は許容しない。fallback は通常日次完走ではない。通常日次バッチ経路の fallback publish は完全禁止とし、fallback_ok や published_fallback_with_notice を OK marker、terminal success、Podcast、DeepDive、distribution、notification の完了証跡として扱ってはならない。旧 fallback 証跡を読む場合は、歴史データまたは手動緊急公開の痕跡として扱い、通常完走に昇格しない。
 
 handler 未実装は Red とする。coverage matrix に未掲載の failure は blocked_unknown_repair_class として止め、prose hint だけで repairable に倒してはならない。handler_unimplemented_red は最終 Green 条件では 0 件でなければならない。
 
 repair completeness = coverage matrix + zero unimplemented + fixture repair + runner single path。existing artifact repair では LLM worker を起動しない。既存 artifact がある場合は deterministic handler または typed not-applicable / blocked status で扱い、対象 artifact が全 missing かつ typed reason がある場合だけ missing artifact generation を許可する。
 
 live runner 上書きは backup + 明示承認 + rollback を満たす場合だけ許可する。repo runner と live runner の SHA 一致は必要条件であり、runner 実行・公開検証・Podcast 検証の代替にはならない。
+
+## Repair Decision Debt Covenant
+
+repair の根本対策は、repair の回数を増やすことではなく、validator / coverage matrix / orchestrator / registry / runner が何を決める責務を持つかを上流で固定することである。新しい repair failure を下流 test や smoke で塞ぐ前に、どの層が source of truth を読み、どの層が routing を決め、どの層が artifact scope を縮約し、どの層が terminal state を出すかを定義する。
+
+| Layer | Decision responsibility |
+|---|---|
+| Validator | `issue_code`、対象 artifact、日付、category、evidence を構造化 issue として出す。prose だけの failure は legacy 補助であり、通常完走の完全性証跡ではない。 |
+| Coverage matrix | `issue_code` から repair class、handler、allowed scope、failure status を一意に決める。未掲載は `blocked_unknown_repair_class`。 |
+| Orchestrator | 複数 issue を ordered repair ledger として扱い、最初の issue だけで複合障害を代表させない。 |
+| Registry | handler の存在、入力 scope、handler not-applicable、出力 scope を別 status で返す。 |
+| Runner | selected issue artifacts だけを handler に渡し、typed status を `handler_unimplemented` や generic error へ丸めない。 |
+
+決定債務 status は次を正本とする。
+
+| Status | Meaning |
+|---|---|
+| `repair_context_overbroad` | gate が対象外 artifact も渡したが、in-scope artifact があり runner/registry が縮約して続行できた。 |
+| `repair_context_scope_mismatch` | 選択された handler に渡せる artifact が 1 件もない。classifier / validator / matrix の接続バグとして Red。 |
+| `blocked_repair_handler_unimplemented` | handler_id が registry に存在しない場合だけ。scope mismatch や handler 失敗をこの status に丸めない。 |
+| `blocked_deterministic_repair_not_applicable` | handler は存在するが現 artifact を修復できず、別 issue へ継続できない。 |
+| `repair_handler_output_scope_violation` | handler が許可 scope 外 artifact を返す、または変更しようとした。hard block。 |
+| `blocked_unknown_repair_class` | coverage matrix 未掲載または未知 issue。推測 repair しない。 |
+
+## Repair Decision Debt Commitment
+
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_by_user_text | 横並び調査の上で決定債務のあるべきを定義せよ / fallback を禁止しているにもかかわらずバッチが一度も完走しない状態は spec.md 違反 / 下流でテストやチェック対応検討する前に、必ず上流工程からそもそもバグが発生しないよう整理する / fallback_policy=完全禁止 / repair_scope=News-Grasp全repair |
+| approved_goal_statement | News-Grasp 全 repair の決定責務を定義し、通常日次 fallback 完全禁止、上流工程優先、2週間未完走違反の再発防止を spec / harness / repair / runner / tests に固定する。 |
+| approval_evidence_ref | current chat 2026-06-29 latest user request and explicit implementation approval `PLEASE IMPLEMENT THIS PLAN:` |
+| approved_at | 2026-06-29 |
+| commitment_version | repair-decision-debt-2026-06-29 |
+| commitment_scope | News-Grasp local spec/provenance, repair coverage matrix, registry, orchestrator, runner, watcher, self-heal/publish/push status semantics, local AGENTS/CLAUDE, News-Grasp repair/e2e skills, local tests. Excludes push, live runner overwrite, full production E2E, public publish, rollback, and ProjectFolders-wide implementation unless separately approved. |
+| open_questions | None for local implementation. Public actions remain separately approval-gated. |
 
 ## Acceptance Scenarios
 

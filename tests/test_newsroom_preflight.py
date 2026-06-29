@@ -152,6 +152,18 @@ def test_newsroom_preflight_rejects_invalid_publish_status(tmp_path: Path) -> No
     assert any("publish-status invalid result" in error for error in errors)
 
 
+def test_newsroom_preflight_rejects_fallback_publish_status(tmp_path: Path) -> None:
+    repo = _minimal_repo(tmp_path)
+    _write_json(
+        repo / "docs" / "publish-status.json",
+        {"date": ISSUE_DATE, "result": "published_fallback_with_notice"},
+    )
+
+    errors = _run_preflight(repo)
+
+    assert any("publish-status invalid result" in error for error in errors)
+
+
 def test_newsroom_preflight_rejects_distribution_inventory_missing_sentinel(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

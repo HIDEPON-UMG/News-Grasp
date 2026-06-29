@@ -18,7 +18,11 @@ UNIMPLEMENTED_STATUS = "blocked_repair_handler_unimplemented"
 REPAIRED_STATUS = "repaired"
 NOOP_STATUS = "noop"
 NOT_APPLICABLE_STATUS = "not_applicable"
-SCOPE_VIOLATION_STATUS = "blocked_scope_violation"
+CONTEXT_OVERSCOPE_STATUS = "repair_context_overbroad"
+CONTEXT_SCOPE_MISMATCH_STATUS = "repair_context_scope_mismatch"
+DETERMINISTIC_NOT_APPLICABLE_STATUS = "blocked_deterministic_repair_not_applicable"
+OUTPUT_SCOPE_VIOLATION_STATUS = "repair_handler_output_scope_violation"
+SCOPE_VIOLATION_STATUS = OUTPUT_SCOPE_VIOLATION_STATUS
 AMBIGUOUS_STATUS = "blocked_ambiguous_repair"
 
 
@@ -86,16 +90,21 @@ def _scope_violation(ctx: RepairContext, handler: RepairHandler) -> str | None:
     return None
 
 
-def _scoped_context(ctx: RepairContext, handler: RepairHandler) -> RepairContext:
+def _artifact_scope_partition(ctx: RepairContext, handler: RepairHandler) -> tuple[list[str], list[str], list[str]]:
     artifacts = [_normalize_rel(artifact) for artifact in ctx.artifacts if _normalize_rel(artifact)]
-    if not artifacts:
-        return ctx
-    scoped = [
-        artifact
-        for artifact in artifacts
-        if _artifact_in_scope(artifact, handler.allowed_artifacts, ctx.issue)
-    ]
-    if not scoped:
+    scoped: list[str] = []
+    out_of_scope: list[str] = []
+    for artifact in artifacts:
+        if _artifact_in_scope(artifact, handler.allowed_artifacts, ctx.issue):
+            scoped.append(artifact)
+        else:
+            out_of_scope.append(artifact)
+    return artifacts, scoped, out_of_scope
+
+
+def _scoped_context(ctx: RepairContext, handler: RepairHandler) -> RepairContext:
+    artifacts, scoped, _ = _artifact_scope_partition(ctx, handler)
+    if not artifacts or not scoped:
         return ctx
     return RepairContext(
         repo_root=ctx.repo_root,
@@ -780,6 +789,14 @@ def repair_with_registry(ctx: RepairContext) -> RepairResult:
     handler = find_handler(ctx.handler_id)
     if handler is None:
         return RepairResult(ctx.handler_id, UNIMPLEMENTED_STATUS, False)
+    artifacts, scoped, out_of_scope = _artifact_scope_partition(ctx, handler)
+    if artifacts and not scoped:
+        return RepairResult(
+            ctx.handler_id,
+            CONTEXT_SCOPE_MISMATCH_STATUS,
+            False,
+            message="no artifact matches handler allowed scope: " + ", ".join(out_of_scope),
+        )
     scoped_ctx = _scoped_context(ctx, handler)
     violation = _scope_violation(scoped_ctx, handler)
     if violation is not None:
@@ -794,10 +811,21 @@ def repair_with_registry(ctx: RepairContext) -> RepairResult:
         if not _artifact_in_scope(artifact, handler.allowed_artifacts, ctx.issue):
             return RepairResult(
                 ctx.handler_id,
-                SCOPE_VIOLATION_STATUS,
+                OUTPUT_SCOPE_VIOLATION_STATUS,
                 False,
                 message=f"handler returned artifact outside allowed scope: {artifact}",
             )
+    if result.status == NOT_APPLICABLE_STATUS:
+        return RepairResult(
+            result.handler_id,
+            DETERMINISTIC_NOT_APPLICABLE_STATUS,
+            False,
+            result.artifacts,
+            result.message or "deterministic handler returned not_applicable",
+        )
+    if out_of_scope and result.status in {REPAIRED_STATUS, NOOP_STATUS}:
+        message = result.message or f"{CONTEXT_OVERSCOPE_STATUS}: ignored " + ", ".join(out_of_scope)
+        return RepairResult(result.handler_id, result.status, result.changed, result.artifacts, message)
     return result
 
 

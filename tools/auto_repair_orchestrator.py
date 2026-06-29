@@ -12,6 +12,7 @@ from tools.gate_policy import GateAction, classify_gate_failure
 from tools.repair_coverage_matrix import (
     RepairClass,
     RepairDecision,
+    classify_gate_issues,
     classify_gate_output,
 )
 from tools.repair_registry import UNIMPLEMENTED_STATUS, metadata as repair_metadata
@@ -88,7 +89,21 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     tmp.replace(path)
 
 
-def _payload_from_decision(decision: RepairDecision) -> dict[str, Any]:
+def _decision_ledger_entry(decision: RepairDecision) -> dict[str, Any]:
+    return {
+        "gate_id": decision.gate_id,
+        "issue_code": decision.issue_code,
+        "repair_class": str(decision.repair_class),
+        "handler_id": decision.handler_id,
+        "artifact_paths": list(decision.artifact_paths),
+        "allowed_artifacts": list(decision.allowed_artifacts),
+        "verify_gate": decision.verify_gate,
+        "failure_status": decision.status_on_failure,
+        "reason": decision.reason,
+    }
+
+
+def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDecision] | None = None) -> dict[str, Any]:
     if decision.repair_class == RepairClass.DETERMINISTIC_HANDLER:
         if decision.handler_id == "url-quarantine-refill":
             handler = "deterministic-repair"
@@ -113,6 +128,8 @@ def _payload_from_decision(decision: RepairDecision) -> dict[str, Any]:
         "action": str(action),
         "handler": handler,
         "failure_status": decision.status_on_failure,
+        "artifact_paths": list(decision.artifact_paths),
+        "selected_artifacts": list(decision.artifact_paths),
         "verify_gate": decision.verify_gate,
         "reason": decision.reason,
         "external_kind": decision.external_kind,
@@ -124,13 +141,16 @@ def _payload_from_decision(decision: RepairDecision) -> dict[str, Any]:
         payload.update(repair_metadata(decision.handler_id) or {})
     elif decision.allowed_artifacts:
         payload["allowed_artifacts"] = list(decision.allowed_artifacts)
+    if decisions is not None:
+        payload["issues"] = [_decision_ledger_entry(item) for item in decisions]
     return payload
 
 
 def classify(gate_id: str, output: str) -> dict[str, Any]:
-    decision = classify_gate_output(gate_id, output)
+    decisions = classify_gate_issues(gate_id, output)
+    decision = decisions[0] if decisions else classify_gate_output(gate_id, output)
     if decision.status_on_failure != "blocked_unknown_repair_class":
-        return _payload_from_decision(decision)
+        return _payload_from_decision(decision, decisions=decisions)
 
     # 既存互換: URL 404/410 等の明示 quarantine だけは旧 gate policy へ委譲する。
     # 未知 failure を repairable へ倒す用途には使わない。
@@ -156,7 +176,7 @@ def classify(gate_id: str, output: str) -> dict[str, Any]:
             "failure_status": "blocked_unknown_repair_class",
         }
 
-    return _payload_from_decision(decision)
+    return _payload_from_decision(decision, decisions=decisions)
 
 
 def _legacy_classify(gate_id: str, output: str) -> dict[str, Any]:

@@ -117,7 +117,7 @@ def test_product_constitution_maps_category_schedule_impact() -> None:
         "generate_pages / public UI",
         "validate_daily_quality / validate_generation_quality / reconcile",
         "YouTube Podcast / publish_complete",
-        "fallback_ok",
+        "historical fallback evidence",
         "verify-publish-complete",
     ]:
         assert phrase in text
@@ -165,8 +165,33 @@ def test_product_constitution_defines_sustainable_complete_repair_invariants() -
     for phrase in [
         "外部システム要因以外で公開面が揃わない停止は許容しない",
         "fallback は通常日次完走ではない",
+        "通常日次バッチ経路の fallback publish は完全禁止",
+        "fallback_ok や published_fallback_with_notice を OK marker",
         "handler 未実装は Red とする",
         "live runner 上書きは backup + 明示承認 + rollback",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_defines_repair_decision_debt_covenant() -> None:
+    """repair の恒久対策を retry 回数ではなく決定責務で固定する。"""
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "Repair Decision Debt Covenant" in headings
+    assert "Repair Decision Debt Commitment" in headings
+    for phrase in [
+        "repair の回数を増やすことではなく",
+        "validator / coverage matrix / orchestrator / registry / runner",
+        "複数 issue を ordered repair ledger",
+        "selected issue artifacts",
+        "repair_context_overbroad",
+        "repair_context_scope_mismatch",
+        "blocked_repair_handler_unimplemented",
+        "blocked_deterministic_repair_not_applicable",
+        "repair_handler_output_scope_violation",
+        "blocked_unknown_repair_class",
+        "repair-decision-debt-2026-06-29",
     ]:
         assert phrase in text
 

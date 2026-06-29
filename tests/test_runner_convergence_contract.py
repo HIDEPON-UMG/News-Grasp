@@ -14,10 +14,10 @@ RUNNER_PROMPT = ROOT / "prompts" / "runner-prompt.md"
 ROUTINE_SYSTEM = ROOT / "prompts" / "routine-system.md"
 DEEPDIVE_PROMPT = ROOT / "prompts" / "deepdive-runner-prompt.md"
 SETUP_DOC = ROOT / "SETUP.md"
-RUNNER_PS1 = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
-WATCHER_PS1 = Path(os.environ.get("NEWS_GRASP_WATCHER", str(Path.home() / "bin" / "watch-news-grasp-runner.ps1")))
 POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
 OPS_DIR = ROOT / "scripts" / "ops"
+RUNNER_PS1 = Path(os.environ.get("NEWS_GRASP_RUNNER", str(OPS_DIR / "news-grasp-runner.ps1")))
+WATCHER_PS1 = Path(os.environ.get("NEWS_GRASP_WATCHER", str(OPS_DIR / "watch-news-grasp-runner.ps1")))
 
 
 def _normalized_powershell_statements(text: str, marker: str) -> list[str]:
@@ -186,7 +186,7 @@ Invoke-AutonomousCompletionPolicy -FailureKind $env:NEWS_GRASP_FAILURE_KIND -Gat
     return json.loads(result.stdout)
 
 
-def _mock_direct_fallback_publish_no_publish() -> dict[str, str]:
+def _mock_direct_fallback_publish_disabled() -> dict[str, str]:
     script = r"""
 function Write-Log {
   param([string]$Text)
@@ -204,7 +204,7 @@ function Exit-Runner {
 }
 $script:Logs = @()
 $runner = Get-Content -LiteralPath $env:NEWS_GRASP_RUNNER_PATH -Raw -Encoding UTF8
-$NoPublish = $true
+$NoPublish = $false
 $start = $runner.IndexOf('function Invoke-FallbackPublish')
 if ($start -lt 0) { Write-Error 'Invoke-FallbackPublish missing'; exit 2 }
 $end = $runner.IndexOf('function Invoke-AutonomousCompletionPolicy', $start)
@@ -411,15 +411,15 @@ def test_deepdive_prompt_does_not_delegate_git_to_agent() -> None:
     assert "runner が DeepDive / data/_status.md の commit と publish を一元管理" in prompt
 
 
-def test_runner_has_bounded_repair_and_fallback_publish() -> None:
-    """gate 失敗後の戻り先が無制限 loop ではなく bounded repair + fallback であること。"""
+def test_runner_has_bounded_repair_without_normal_fallback_publish() -> None:
+    """通常日次の gate 失敗は bounded repair / typed Red で扱い、fallback publish へ逃げない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    normal_policy = runner.split("function Invoke-AutonomousCompletionPolicy", 1)[1].split("function Write-RecoverOnlyInputManifest", 1)[0]
 
     assert "Invoke-TargetedRepair" in runner
     assert "tools.gate_attempts" in runner
-    assert "Invoke-FallbackPublish" in runner
-    assert "published_fallback_with_notice" in runner
-    assert "tools.validate_availability" in runner
+    assert "Invoke-FallbackPublish" not in normal_policy
+    assert "published_fallback_with_notice" not in normal_policy
 
 
 def test_setup_defines_daily_fix_completion_as_full_activation_path() -> None:
@@ -427,7 +427,7 @@ def test_setup_defines_daily_fix_completion_as_full_activation_path() -> None:
     setup = SETUP_DOC.read_text(encoding="utf-8")
 
     assert "通常公開完了条件" in setup
-    assert "fallback_ok は復旧完了ではなく本線保護" in setup
+    assert "fallback_ok / published_fallback_with_notice は通常公開完了条件ではない" in setup
     assert "上流契約で防げる漏れを高コスト E2E に委ねない" in setup
     assert "E2E は省略せず必要な統合検証として残す" in setup
     assert "E2E を設計漏れのバグ発見機として濫用しない" in setup
@@ -710,7 +710,9 @@ def test_runner_invokes_repair_registry_before_llm_worker() -> None:
     assert "function Invoke-DeterministicRegistryRepair" in runner
     assert "tools.repair_registry" in runner
     assert "blocked_repair_handler_unimplemented" in runner
+    assert "Get-RepairDecisionArtifacts" in runner
     assert "Invoke-DeterministicRegistryRepair -GateId $GateId -CapturePath $CapturePath -Artifacts $Artifacts -ClassifyPath $ClassifyPath" in repair_body
+    assert "foreach ($artifact in $repairArtifacts)" in runner
     assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Test-RepairWorkerPreflight")
     assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Invoke-CodexWrapper")
 
@@ -886,16 +888,18 @@ def test_preflight_only_writes_terminal_state() -> None:
     assert "Exit-Runner -Status 'preflight_ok'" in preflight_block
 
 
-def test_fallback_publish_quarantines_unverified_generated_artifacts() -> None:
-    """fallback は復旧可能な当日 artifact を削除せず quarantine に保存する。"""
+def test_runner_fallback_publish_is_disabled_before_public_actions() -> None:
+    """通常 runner の direct fallback publish は公開操作前に forbidden_fallback で止まる。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     fallback_body = runner.split("function Invoke-FallbackPublish", 1)[1].split("# ===== sentinel", 1)[0]
 
     assert "function Preserve-UnverifiedGeneratedArtifacts" in runner
     assert "function Resolve-LastGoodDocsRef" in runner
-    assert "Preserve-UnverifiedGeneratedArtifacts" in fallback_body
-    assert "Resolve-LastGoodDocsRef" in fallback_body
-    assert "checkout $lastGoodDocsRef -- 'docs/'" in fallback_body
+    assert "fallback publish is disabled in the daily runner path" in fallback_body
+    assert "Exit-Runner -Status 'forbidden_fallback'" in fallback_body
+    assert "Preserve-UnverifiedGeneratedArtifacts" not in fallback_body
+    assert "Resolve-LastGoodDocsRef" not in fallback_body
+    assert "checkout $lastGoodDocsRef -- 'docs/'" not in fallback_body
     assert "build\\quarantine\\$DateStamp" in runner
     assert "Copy-Item" in runner
     assert "Remove-Item -LiteralPath $full -Recurse -Force" not in runner
@@ -961,14 +965,15 @@ $childAllowed = Test-RepairStatusPathAllowed -Path 'data/search_audit/2026-06-23
     }
 
 
-def test_fallback_publish_never_sends_web_push() -> None:
-    """fallback publish は公開本体の保護だけで、購読通知へは到達させない。"""
+def test_disabled_runner_fallback_publish_never_sends_web_push() -> None:
+    """disabled fallback publish は送信・push・docs restore へ到達しない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     fallback_body = runner.split("function Invoke-FallbackPublish", 1)[1].split("# ===== sentinel", 1)[0]
 
-    assert "fallback notification skipped: not a normal batch" in fallback_body
+    assert "fallback notification skipped: not a normal batch" not in fallback_body
     assert "tools\\send_push.py" not in fallback_body
     assert "fallback send_push" not in fallback_body
+    assert "git push origin main" not in fallback_body
 
 
 def test_send_push_requires_normal_batch_publish_verification() -> None:
@@ -1140,12 +1145,12 @@ def test_no_publish_autonomous_policy_never_fallbacks_for_any_failure_kind() -> 
 
 
 def test_no_publish_direct_fallback_publish_is_blocked_before_public_actions() -> None:
-    """NoPublish E2E は direct fallback publish 呼び出しも公開操作前に止める。"""
-    result = _mock_direct_fallback_publish_no_publish()
+    """direct fallback publish 呼び出しは NoPublish に限らず公開操作前に止める。"""
+    result = _mock_direct_fallback_publish_disabled()
 
-    assert result["exit_status"] == "publish_dry_run_failed"
+    assert result["exit_status"] == "forbidden_fallback"
     assert result["exit_code"] == 73
-    assert "NoPublish mode: direct fallback publish blocked" in result["exit_message"]
+    assert "fallback publish is disabled in the daily runner path" in result["exit_message"]
     assert all("fallback publish start" not in line for line in result["logs"])
     assert all("fallback push origin main done" not in line for line in result["logs"])
 
@@ -1235,9 +1240,21 @@ def test_runner_writes_machine_readable_state() -> None:
     assert "-Status 'running' -Message 'runner started'" in runner
     assert "-Status 'publish_complete' -Message $Text -ExitCode 0" in runner
     assert "-Status 'ok' -Message $Text -ExitCode 0" not in runner
-    assert "-Status 'fallback_ok' -Message $Text -ExitCode 0" in runner
+    assert "-Status 'fallback_ok' -Message $Text -ExitCode 0" not in runner
     assert "-Status 'smoke_ok' -Message $Text -ExitCode 0" in runner
     assert "-Status 'error' -Message $Text -ExitCode 1" in runner
+
+
+def test_runner_preserves_registry_typed_status_without_unimplemented_rounding() -> None:
+    """registry の scope / not-applicable / output violation を handler_unimplemented に丸めない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    registry_body = runner.split("function Invoke-DeterministicRegistryRepair", 1)[1].split("function New-RepairTransactionId", 1)[0]
+
+    assert "repair_context_scope_mismatch" in runner
+    assert "repair_handler_output_scope_violation" in runner
+    assert "blocked_deterministic_repair_not_applicable" in runner
+    assert "$registryStatus" in registry_body
+    assert "Exit-Runner -Status $registryStatus" in registry_body
 
 
 def test_runner_typed_terminal_state_can_replace_generic_error() -> None:

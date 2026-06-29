@@ -541,8 +541,6 @@ function Write-Log {
         Set-RunnerState -Status 'error' -Message $Text -ExitCode 1
     } elseif ($Text -eq 'news-grasp-runner.ps1 OK') {
         Set-RunnerState -Status 'publish_complete' -Message $Text -ExitCode 0 -PublishManifestPath $script:PublishCompleteManifestPath -PublishCommit $script:PublishCompleteCommit
-    } elseif ($Text -eq 'news-grasp-runner.ps1 OK (published_fallback_with_notice)') {
-        Set-RunnerState -Status 'fallback_ok' -Message $Text -ExitCode 0
     } elseif ($Text -eq 'news-grasp-runner.ps1 SMOKE OK') {
         Set-RunnerState -Status 'smoke_ok' -Message $Text -ExitCode 0
     } elseif ($Text -eq 'news-grasp-runner.ps1 PRE DEEPDIVE E2E OK') {
@@ -1148,6 +1146,28 @@ $failureText
     return $repairRc
 }
 
+function Get-RepairDecisionArtifacts {
+    param(
+        [object] $RepairDecision,
+        [string[]] $FallbackArtifacts = @()
+    )
+    $selected = New-Object System.Collections.Generic.List[string]
+    if ($null -ne $RepairDecision) {
+        foreach ($propName in @('artifact_paths', 'selected_artifacts')) {
+            if ($RepairDecision.PSObject.Properties.Name -contains $propName) {
+                foreach ($artifact in @($RepairDecision.$propName)) {
+                    $text = ([string] $artifact).Trim()
+                    if ($text) { $selected.Add($text) }
+                }
+            }
+        }
+    }
+    if ($selected.Count -gt 0) {
+        return $selected.ToArray()
+    }
+    return @()
+}
+
 function Invoke-DeterministicRegistryRepair {
     # registry handler traceability: summary-emphasis-patch / category-card-emphasis-patch / audio-script-length-patch
     param(
@@ -1167,6 +1187,13 @@ function Invoke-DeterministicRegistryRepair {
     if ($decision.handler -ne 'deterministic-repair' -or -not $decision.handler_id) {
         return 2
     }
+    $typedRegistryStatuses = @(
+        'repair_context_scope_mismatch',
+        'repair_handler_output_scope_violation',
+        'blocked_deterministic_repair_not_applicable',
+        'blocked_repair_handler_unimplemented'
+    )
+    $repairArtifacts = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts $Artifacts)
 
     $registryArgs = @(
         '-m', 'tools.repair_registry',
@@ -1175,20 +1202,37 @@ function Invoke-DeterministicRegistryRepair {
         '--repo-root', $RepoDir,
         '--date', $DateStamp
     )
-    foreach ($artifact in $Artifacts) {
+    foreach ($artifact in $repairArtifacts) {
         $registryArgs += @('--artifact', $artifact)
     }
+    $registryCapture = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-registry-repair-$GateId-$DateStamp.json")
 
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe @registryArgs }
+        Invoke-LoggedCapture -Block { & $PyExe @registryArgs } -CapturePath $registryCapture
         $registryRc = $LASTEXITCODE
     } finally {
         Pop-Location
     }
+    $registryStatus = ''
+    $registryMessage = ''
+    if (Test-Path -LiteralPath $registryCapture) {
+        try {
+            $registryPayload = Get-Content -LiteralPath $registryCapture -Raw -Encoding UTF8 | ConvertFrom-Json
+            $registryStatus = [string] $registryPayload.status
+            $registryMessage = [string] $registryPayload.message
+        } catch {
+            $registryStatus = ''
+            $registryMessage = ''
+        }
+    }
     if ($registryRc -eq 0) {
         Write-Log "deterministic registry repair OK (gate=$GateId, handler=$($decision.handler_id))"
         return 0
+    }
+    if ($registryStatus -and $typedRegistryStatuses -contains $registryStatus) {
+        Write-Log "ERROR: deterministic registry repair typed block (gate=$GateId, handler=$($decision.handler_id), status=$registryStatus, message=$registryMessage)"
+        Exit-Runner -Status $registryStatus -Message "deterministic registry repair typed block for ${GateId}: $registryMessage" -ExitCode 73
     }
     if ($decision.failure_status -eq 'blocked_repair_handler_unimplemented') {
         Write-Log "ERROR: deterministic repair handler unavailable (gate=$GateId, handler=$($decision.handler_id), status=blocked_repair_handler_unimplemented)"
@@ -1695,66 +1739,10 @@ function Resolve-LastGoodDocsRef {
 
 function Invoke-FallbackPublish {
     param([string] $Reason)
-    if ($NoPublish) {
-        $message = "NoPublish mode: direct fallback publish blocked (reason=$Reason)"
-        Write-Log "ERROR: $message"
-        Exit-Runner -Status 'publish_dry_run_failed' -Message $message -ExitCode 73
-        return
-    }
-    Write-Log "fallback publish start (reason=$Reason)"
-    Preserve-UnverifiedGeneratedArtifacts
-    $lastGoodDocsRef = Resolve-LastGoodDocsRef
-    if ($lastGoodDocsRef) {
-        Write-Log "fallback docs restore from last-good ref $lastGoodDocsRef"
-        Invoke-Logged { & $GitExe -C $RepoDir checkout $lastGoodDocsRef -- 'docs/' }
-    } else {
-        Write-Log "WARN: last-good docs ref not found; restoring docs from HEAD"
-        Invoke-Logged { & $GitExe -C $RepoDir checkout -- 'docs/' }
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log "ERROR: docs restore for fallback failed (rc=$LASTEXITCODE)"
-        exit 1
-    }
-
-    Push-Location $RepoDir
-    try {
-        Invoke-Logged { & $PyExe '-m' 'tools.publish_fallback' 'fallback' '--date' $DateStamp '--reason' $Reason }
-        $fallbackRc = $LASTEXITCODE
-        if ($fallbackRc -eq 0) {
-            Invoke-Logged { & $PyExe '-m' 'tools.validate_availability' '--expect-fallback' }
-            $availabilityRc = $LASTEXITCODE
-        } else {
-            $availabilityRc = 1
-        }
-    } finally {
-        Pop-Location
-    }
-    if ($fallbackRc -ne 0 -or $availabilityRc -ne 0) {
-        Write-Log "ERROR: fallback availability gate failed (fallbackRc=$fallbackRc, availabilityRc=$availabilityRc)"
-        exit 1
-    }
-
-    Invoke-Logged { & $GitExe -C $RepoDir add 'docs/' }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add fallback docs failed (rc=$LASTEXITCODE)"; exit 1 }
-    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- 'docs/' }
-    $fallbackDiffRc = $LASTEXITCODE
-    if ($fallbackDiffRc -eq 1) {
-        Invoke-Logged { & $GitExe -C $RepoDir commit -m "docs: publish fallback notice for $DateStamp" }
-        if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: fallback docs commit failed (rc=$LASTEXITCODE)"; exit 1 }
-    } elseif ($fallbackDiffRc -eq 0) {
-        Write-Log 'fallback docs no changes; pushing existing public state'
-    } else {
-        Write-Log "ERROR: fallback diff failed (rc=$fallbackDiffRc)"
-        exit 1
-    }
-    Invoke-Logged { & $GitExe -C $RepoDir push origin main }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: fallback push failed (rc=$LASTEXITCODE)"; exit 1 }
-    Write-Log 'fallback push origin main done'
-
-    Write-Log 'fallback notification skipped: not a normal batch'
-    Write-CodexUsageWindowSnapshot -Phase 'end'
-    Write-Log 'news-grasp-runner.ps1 OK (published_fallback_with_notice)'
-    exit 0
+    $message = "fallback publish is disabled in the daily runner path (reason=$Reason)"
+    Write-Log "ERROR: $message"
+    Exit-Runner -Status 'forbidden_fallback' -Message $message -ExitCode 73
+    return
 }
 
 function Invoke-AutonomousCompletionPolicy {
@@ -3084,10 +3072,10 @@ if ($availabilityGateRc -ne 0) {
 }
 Write-Log 'availability gate OK'
 
-# ===== 3.5 publish-status を published_ok にリセット (fallback 抑止の状態同期) =====
-# fallback publish は docs/publish-status.json に published_fallback_with_notice を残すが、
-# 通常号が成功してもこれを戻す機構が無く stale なままだった (2026-06-12)。send_push は
-# この状態を読んで fallback 中の通知を抑止するため、成功経路で必ず published_ok に戻す。
+# ===== 3.5 publish-status を published_ok にリセット (手動/歴史 fallback 状態の同期) =====
+# 通常日次経路の fallback publish は禁止。ただし過去または手動緊急公開の
+# published_fallback_with_notice が残ると send_push が通知を抑止するため、
+# 成功経路では必ず published_ok に戻す。
 # docs/ 配下なので直後の git add docs/ で commit + push され、公開面の状態が同期する。
 Push-Location $RepoDir
 try {

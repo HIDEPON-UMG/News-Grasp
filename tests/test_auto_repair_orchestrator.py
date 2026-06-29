@@ -36,6 +36,30 @@ def test_classify_routes_summary_emphasis_to_deterministic_handler(capsys) -> No
     assert payload["handler"] == "deterministic-repair"
     assert payload["handler_id"] == "summary-emphasis-patch"
     assert payload["handler_kind"] == "deterministic"
-    assert payload["failure_status"] == "blocked_repair_handler_unimplemented"
+    assert payload["failure_status"] == "blocked_deterministic_repair_failed"
     assert "digest/Summary/{date}.md" in payload["allowed_artifacts"]
     assert payload["verify_gate"] == "daily-quality"
+
+
+def test_classify_emits_ordered_issue_ledger_and_selected_artifacts(capsys) -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "errors": [
+                {"code": "audio_script_quality_invalid", "artifact": "digest/Summary/2026-06-28-audio-script.md"},
+                {"code": "articles_issue_empty", "artifact": "data/articles.jsonl"},
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    rc = main(["classify", "--gate-id", "generation-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["issue_code"] == "articles_issue_empty"
+    assert payload["artifact_paths"] == ["data/articles.jsonl"]
+    assert [issue["issue_code"] for issue in payload["issues"]] == [
+        "articles_issue_empty",
+        "audio_script_quality_invalid",
+    ]

@@ -158,7 +158,7 @@ def test_registry_blocks_handler_scope_violation(tmp_path: Path) -> None:
         )
     )
 
-    assert result.status == "blocked_scope_violation"
+    assert result.status == "repair_context_scope_mismatch"
     assert not result.changed
     assert "**市場の変化**" not in summary.read_text(encoding="utf-8")
 
@@ -192,6 +192,62 @@ def test_summary_emphasis_patch_ignores_unrelated_gate_artifacts(tmp_path: Path)
     assert "**市場の変化**" in repaired
     assert "__**市場の変化**を整理する。__" in repaired
     assert other.read_text(encoding="utf-8") == "# AI\n\nこのファイルは触らない。\n"
+
+
+def test_registry_reports_output_scope_violation_separately(tmp_path: Path, monkeypatch) -> None:
+    import tools.repair_registry as registry
+
+    def bad_repair(ctx: RepairContext) -> registry.RepairResult:
+        return registry.RepairResult(ctx.handler_id, "repaired", True, ("docs/index.html",))
+
+    handler = registry.RepairHandler(
+        handler_id="bad-output-scope-test",
+        kind="deterministic",
+        allowed_artifacts=("digest/Summary/{date}.md",),
+        verify_gate="daily-quality",
+        repair=bad_repair,
+    )
+    monkeypatch.setitem(registry.REGISTRY, handler.handler_id, handler)
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue="2026-06-25",
+            handler_id=handler.handler_id,
+            artifacts=["digest/Summary/2026-06-25.md"],
+        )
+    )
+
+    assert result.status == "repair_handler_output_scope_violation"
+    assert not result.changed
+
+
+def test_registry_maps_handler_not_applicable_to_typed_block(tmp_path: Path, monkeypatch) -> None:
+    import tools.repair_registry as registry
+
+    def no_match(ctx: RepairContext) -> registry.RepairResult:
+        return registry.RepairResult(ctx.handler_id, registry.NOT_APPLICABLE_STATUS, False)
+
+    handler = registry.RepairHandler(
+        handler_id="not-applicable-test",
+        kind="deterministic",
+        allowed_artifacts=("digest/Summary/{date}.md",),
+        verify_gate="daily-quality",
+        repair=no_match,
+    )
+    monkeypatch.setitem(registry.REGISTRY, handler.handler_id, handler)
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue="2026-06-25",
+            handler_id=handler.handler_id,
+            artifacts=["digest/Summary/2026-06-25.md"],
+        )
+    )
+
+    assert result.status == "blocked_deterministic_repair_not_applicable"
+    assert not result.changed
 
 
 def test_search_audit_metadata_patch_promotes_dropped_examples_and_terms(tmp_path: Path) -> None:

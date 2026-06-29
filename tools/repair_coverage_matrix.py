@@ -36,6 +36,7 @@ class RepairDecision:
     allowed_artifacts: tuple[str, ...] = ()
     verify_gate: str = ""
     status_on_failure: str = ""
+    artifact_paths: tuple[str, ...] = ()
     external_kind: str = ""
     external_system: str = ""
     evidence: dict[str, Any] = field(default_factory=dict)
@@ -50,7 +51,7 @@ class CoverageRow:
     handler_id: str = ""
     allowed_artifacts: tuple[str, ...] = ()
     verify_gate: str = ""
-    status_on_failure: str = "blocked_repair_handler_unimplemented"
+    status_on_failure: str = ""
     external_kind: str = ""
     external_system: str = ""
     reason: str = ""
@@ -64,6 +65,7 @@ class CoverageRow:
             allowed_artifacts=self.allowed_artifacts,
             verify_gate=self.verify_gate or issue.gate_id,
             status_on_failure=status_override or self.status_on_failure,
+            artifact_paths=issue.artifact_paths,
             external_kind=str(issue.evidence.get("external_kind") or self.external_kind),
             external_system=str(issue.evidence.get("external_system") or self.external_system),
             evidence=dict(issue.evidence),
@@ -79,6 +81,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "summary-emphasis-patch",
         ("digest/Summary/{date}.md",),
         "daily-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -87,6 +90,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "category-card-emphasis-patch",
         ("digest/{category}/{date}-{category}.md",),
         "daily-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -95,6 +99,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "summary-hero-patch",
         ("digest/Summary/{date}.md",),
         "daily-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -103,6 +108,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "record-thumb-quarantine-patch",
         ("data/articles.jsonl", "data/search_audit/{date}"),
         "record-schema",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -111,6 +117,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "search-audit-metadata-patch",
         ("data/search_audit/{date}",),
         "daily-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -119,6 +126,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "published-docs-regenerate",
         ("docs/{date}/index.html", "docs/deepdive/{date}/index.html"),
         "deepdive-required",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -170,6 +178,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "summary-hero-patch",
         ("digest/Summary/{date}.md",),
         "generation-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -178,6 +187,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "summary-reflection-patch",
         ("digest/Summary/{date}.md",),
         "generation-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -363,6 +373,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "date-evidence-source-patch",
         ("data/articles.jsonl",),
         "generation-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -371,6 +382,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "deepdive-structure-patch",
         ("digest/DeepDive/{date}.md",),
         "generation-quality",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "digest-articles-reconcile",
@@ -397,6 +409,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "record-title-ja-patch",
         ("data/articles.jsonl",),
         "record-schema",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "record-schema",
@@ -405,6 +418,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "record-issue-date-patch",
         ("data/articles.jsonl",),
         "record-schema",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "record-schema",
@@ -413,6 +427,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "record-thumb-quarantine-patch",
         ("data/articles.jsonl", "data/search_audit/{date}"),
         "record-schema",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "url-liveness",
@@ -421,6 +436,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "url-quarantine-refill",
         ("data/articles.jsonl", "data/search_audit/{date}"),
         "url-liveness",
+        "blocked_refill_unresolved",
     ),
     CoverageRow(
         "public-html",
@@ -429,6 +445,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "public-home-regenerate",
         ("docs/index.html", "digest/Summary/{date}.md"),
         "public-html",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "public-surface",
@@ -459,6 +476,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "published-docs-regenerate",
         ("docs/{date}/index.html", "docs/deepdive/{date}/index.html"),
         "deepdive-required",
+        "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
         "youtube-podcast",
@@ -717,7 +735,7 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                 for raw in raw_issues:
                     if isinstance(raw, dict):
                         issue_code = str(raw.get("issue_code") or raw.get("code") or "unknown")
-                        artifacts = raw.get("artifact_paths") or raw.get("artifacts") or []
+                        artifacts = raw.get("artifact_paths") or raw.get("artifacts") or raw.get("artifact") or []
                         if isinstance(artifacts, str):
                             artifacts = [artifacts]
                         evidence = raw.get("evidence")
@@ -748,10 +766,7 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
     ]
 
 
-def classify_gate_output(gate_id: str, output: str) -> RepairDecision:
-    issues = issues_from_gate_output(gate_id, output)
-    if not issues:
-        return classify_repair_issue(RepairIssue(gate_id=gate_id, issue_code="unknown", raw_output=output))
+def _issue_priority(issue_code: str) -> int:
     priority = {
         "articles_json_invalid": 0,
         "articles_issue_empty": 1,
@@ -763,5 +778,16 @@ def classify_gate_output(gate_id: str, output: str) -> RepairDecision:
         "deepdive_structure_invalid": 30,
         "audio_script_quality_invalid": 90,
     }
-    ordered = sorted(issues, key=lambda item: priority.get(item.issue_code, 50))
-    return classify_repair_issue(ordered[0])
+    return priority.get(issue_code, 50)
+
+
+def classify_gate_issues(gate_id: str, output: str) -> list[RepairDecision]:
+    issues = issues_from_gate_output(gate_id, output)
+    if not issues:
+        issues = [RepairIssue(gate_id=gate_id, issue_code="unknown", raw_output=output)]
+    ordered = sorted(issues, key=lambda item: _issue_priority(item.issue_code))
+    return [classify_repair_issue(issue) for issue in ordered]
+
+
+def classify_gate_output(gate_id: str, output: str) -> RepairDecision:
+    return classify_gate_issues(gate_id, output)[0]
