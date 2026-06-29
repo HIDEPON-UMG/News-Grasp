@@ -657,7 +657,7 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
     if slug is None:
         return {"ok": False, "reason": "deploy_workflow_unavailable", "remote_url": remote_url}
     owner, repo = slug
-    query = urlencode({"branch": branch, "head_sha": expected_commit, "event": "push", "per_page": 5})
+    query = urlencode({"branch": branch, "head_sha": expected_commit, "per_page": 10})
     url = (
         f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/actions/workflows/"
         f"{quote(workflow_file, safe='')}/runs?{query}"
@@ -707,6 +707,7 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
         "status": status,
         "conclusion": conclusion,
         "head_sha": str(run.get("head_sha") or ""),
+        "event": str(run.get("event") or ""),
         "run_id": run.get("id", ""),
         "html_url": run.get("html_url", ""),
         "url": url,

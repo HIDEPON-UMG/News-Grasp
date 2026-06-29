@@ -289,7 +289,7 @@ def test_verify_deploy_workflow_uses_workflow_file_api_contract_and_timeout(monk
         {
             "url": (
                 "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/"
-                f"deploy-pages.yml/runs?branch=main&head_sha={head}&event=push&per_page=5"
+                f"deploy-pages.yml/runs?branch=main&head_sha={head}&per_page=10"
             ),
             "accept": "application/vnd.github+json",
             "version": "2026-03-10",
@@ -297,6 +297,49 @@ def test_verify_deploy_workflow_uses_workflow_file_api_contract_and_timeout(monk
             "timeout": 10,
         }
     ]
+
+
+def test_verify_deploy_workflow_accepts_manual_dispatch_for_same_head(monkeypatch, tmp_path: Path) -> None:
+    """code-only push 後の手動 Deploy Pages も同じ head の公開証跡として扱う。"""
+    _write_deploy_workflow(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {
+                            "id": 456,
+                            "event": "workflow_dispatch",
+                            "head_sha": head,
+                            "status": "completed",
+                            "conclusion": "success",
+                            "html_url": "https://github.example/run/456",
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse())
+
+    result = dsh.verify_deploy_workflow(repo_root=tmp_path, remote="origin", branch="main", expected_commit=head)
+
+    assert result["ok"] is True
+    assert result["run_id"] == 456
+    assert result["event"] == "workflow_dispatch"
 
 
 def test_verify_deploy_workflow_normalizes_api_errors_and_bad_payloads(monkeypatch, tmp_path: Path) -> None:
