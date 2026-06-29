@@ -180,9 +180,10 @@ def test_repair_audio_script_length_extends_short_script_to_safe_range(tmp_path)
         f"date: {issue}\n"
         "---\n\n"
         "今日は6月24日です。朝のニュースをお伝えします。"
+        "ニュース グラスプです。"
         "為替 AI IT-Consulting モビリティ 製造 経済。"
         + ("今日は認証と防御と供給網の順番を確認する日でした。" * 92)
-        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。"
+        + "最後に、今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。ニュース グラスプでした。"
     )
     target = summary_dir / f"{issue}-audio-script.md"
     target.write_text(short_script, encoding="utf-8")
@@ -193,6 +194,8 @@ def test_repair_audio_script_length_extends_short_script_to_safe_range(tmp_path)
     repaired_body = repaired.split("---", 2)[2].strip()
     count = build_script.effective_char_count(repaired)
     assert 2600 <= count <= 2800
+    assert "ニュース グラスプでした。" not in repaired
+    assert "最後に、今日の観点・考察です。" not in repaired
     assert build_script.validate_script(
         repaired_body,
         date=issue,

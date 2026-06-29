@@ -1540,7 +1540,7 @@ function Invoke-PythonGateWithRepair {
         [datetime] $DeadlineAt = [datetime]::MaxValue,
         [switch] $NoRepair
     )
-    $maxGateAttempts = 2
+    $maxGateAttempts = 5
     for ($attempt = 1; $attempt -le $maxGateAttempts; $attempt++) {
         if ((Get-Date) -ge $DeadlineAt) {
             Write-Log "$GateId gate deadline exceeded before attempt $attempt"
@@ -1619,7 +1619,7 @@ function Invoke-AutonomousGate {
     )
     $statePath = Join-Path $RepoDir "data\gate_attempts\$DateStamp-$GateId.json"
     $deadline = (Get-Date).AddSeconds($GateDeadlineSec)
-    Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=2, signature_repair=1, state=$statePath)"
+    Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=5, signature_repair=1, state=$statePath)"
     Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
     $gateRc = Invoke-PythonGateWithRepair -GateId $GateId -Category $Category -PythonArgs $PythonArgs -Artifacts $Artifacts -DeadlineAt $deadline -NoRepair:$NoRepair
     if ($gateRc -eq 0) {

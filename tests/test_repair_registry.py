@@ -55,7 +55,9 @@ def test_summary_emphasis_patch_updates_existing_summary_only(tmp_path: Path) ->
 
     assert result.changed
     assert result.status == "repaired"
-    assert "**市場の変化**を整理する。" in summary.read_text(encoding="utf-8")
+    repaired = summary.read_text(encoding="utf-8")
+    assert "**市場の変化**" in repaired
+    assert "__**市場の変化**を整理する。__" in repaired
     assert other.read_text(encoding="utf-8") == "# AI\n\nこのファイルは触らない。\n"
 
 
@@ -114,6 +116,34 @@ def test_summary_emphasis_patch_preserves_frontmatter_and_repairs_reflection(tmp
     assert validate_summary_emphasis(summary) == []
 
 
+def test_summary_emphasis_patch_repairs_missing_underline_when_bold_exists(tmp_path: Path) -> None:
+    issue = "2026-06-25"
+    summary = tmp_path / "digest" / "Summary" / f"{issue}.md"
+    summary.parent.mkdir(parents=True)
+    summary.write_text(
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "> [[政策イベント]] は **企業実装** と並んだが、継続運用の視点も必要だ。\n\n"
+        "### §01 総論 — 実装力を見る日\n\n"
+        "[[AI導入]] は **継続運用できる体制** で評価される。\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="summary-emphasis-patch",
+            artifacts=[f"digest/Summary/{issue}.md"],
+        )
+    )
+
+    repaired = summary.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "__" in repaired
+    assert validate_summary_emphasis(summary) == []
+
+
 def test_registry_blocks_handler_scope_violation(tmp_path: Path) -> None:
     summary = tmp_path / "digest" / "Summary" / "2026-06-25.md"
     summary.parent.mkdir(parents=True)
@@ -131,6 +161,80 @@ def test_registry_blocks_handler_scope_violation(tmp_path: Path) -> None:
     assert result.status == "blocked_scope_violation"
     assert not result.changed
     assert "**市場の変化**" not in summary.read_text(encoding="utf-8")
+
+
+def test_summary_emphasis_patch_ignores_unrelated_gate_artifacts(tmp_path: Path) -> None:
+    issue = "2026-06-25"
+    summary = tmp_path / "digest" / "Summary" / f"{issue}.md"
+    other = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    summary.parent.mkdir(parents=True)
+    other.parent.mkdir(parents=True)
+    summary.write_text("# Summary\n\n### AI\n\n市場の変化を整理する。\n", encoding="utf-8")
+    other.write_text("# AI\n\nこのファイルは触らない。\n", encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="summary-emphasis-patch",
+            artifacts=[
+                f"digest/Summary/{issue}.md",
+                f"digest/AI/{issue}-AI.md",
+                "data/articles.jsonl",
+                f"data/search_audit/{issue}/mobility.json",
+            ],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert result.artifacts == (f"digest/Summary/{issue}.md",)
+    repaired = summary.read_text(encoding="utf-8")
+    assert "**市場の変化**" in repaired
+    assert "__**市場の変化**を整理する。__" in repaired
+    assert other.read_text(encoding="utf-8") == "# AI\n\nこのファイルは触らない。\n"
+
+
+def test_search_audit_metadata_patch_promotes_dropped_examples_and_terms(tmp_path: Path) -> None:
+    issue = "2026-06-25"
+    audit = tmp_path / "data" / "search_audit" / issue / "mobility.json"
+    audit.parent.mkdir(parents=True)
+    audit.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "category_id": "mobility",
+                "queries": ["q1", "q2", "q3"],
+                "raw_results_total": 25,
+                "candidates_total": 25,
+                "selected_total": 4,
+                "dropped_examples": [
+                    {
+                        "title": "old candidate",
+                        "resolved_url": "https://example.com/old",
+                        "published_date": "2026-06-01",
+                        "reason": "actual_source_age_gt_1d",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="search-audit-metadata-patch",
+            artifacts=[f"data/search_audit/{issue}/mobility.json"],
+        )
+    )
+
+    repaired = json.loads(audit.read_text(encoding="utf-8"))
+    assert result.status == "repaired"
+    assert repaired["dropped"] == repaired["dropped_examples"]
+    assert {"BYD", "Tesla", "Toyota", "Uber", "Waymo"}.issubset(set(repaired["coverage_terms_checked"]))
 
 
 def test_url_quarantine_refill_handler_repairs_stale_followup_from_registry(tmp_path: Path) -> None:

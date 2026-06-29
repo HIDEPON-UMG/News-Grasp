@@ -11,6 +11,7 @@ from tools.repair_registry import RepairContext, repair_with_registry
 
 
 TOOL_ROOT = Path(__file__).resolve().parent.parent
+MAX_SEQUENTIAL_REPAIRS = 5
 
 
 @dataclass(frozen=True)
@@ -89,56 +90,102 @@ def run_registry_repair_cycle(
             post_repair_output="",
         )
 
-    decision = classify_gate_output(gate_id, initial_output)
-    if decision.repair_class != RepairClass.DETERMINISTIC_HANDLER or not decision.handler_id:
-        return RepairRuntimeResult(
-            gate_id=gate_id,
-            initial_exit_code=first.returncode,
-            post_repair_exit_code=None,
-            handler_id=decision.handler_id,
-            repair_status=decision.status_on_failure,
-            repair_changed=False,
-            repaired_artifacts=(),
-            final_status="not_repairable_by_registry",
-            initial_output=initial_output,
-            post_repair_output="",
-        )
+    current_output = initial_output
+    handler_ids: list[str] = []
+    repair_statuses: list[str] = []
+    repaired_artifacts: list[str] = []
+    repair_changed = False
+    post_repair_exit_code: int | None = None
+    post_outputs: list[str] = []
+    seen_decisions: set[str] = set()
+    for _attempt in range(MAX_SEQUENTIAL_REPAIRS):
+        decision = classify_gate_output(gate_id, current_output)
+        if decision.repair_class != RepairClass.DETERMINISTIC_HANDLER or not decision.handler_id:
+            return RepairRuntimeResult(
+                gate_id=gate_id,
+                initial_exit_code=first.returncode,
+                post_repair_exit_code=post_repair_exit_code,
+                handler_id="+".join(handler_ids) or decision.handler_id,
+                repair_status=repair_statuses[-1] if repair_statuses else decision.status_on_failure,
+                repair_changed=repair_changed,
+                repaired_artifacts=tuple(dict.fromkeys(repaired_artifacts)),
+                final_status="not_repairable_by_registry",
+                initial_output=initial_output,
+                post_repair_output="\n".join(post_outputs) or current_output,
+            )
+        decision_key = f"{decision.gate_id}:{decision.issue_code}:{decision.handler_id}"
+        if decision_key in seen_decisions:
+            return RepairRuntimeResult(
+                gate_id=gate_id,
+                initial_exit_code=first.returncode,
+                post_repair_exit_code=post_repair_exit_code,
+                handler_id="+".join(handler_ids),
+                repair_status=repair_statuses[-1] if repair_statuses else "repeated_repair_decision",
+                repair_changed=repair_changed,
+                repaired_artifacts=tuple(dict.fromkeys(repaired_artifacts)),
+                final_status="still_red",
+                initial_output=initial_output,
+                post_repair_output="\n".join(post_outputs) or current_output,
+            )
+        seen_decisions.add(decision_key)
 
-    repair = repair_with_registry(
-        RepairContext(
-            repo_root=repo_root,
-            issue=issue,
-            handler_id=decision.handler_id,
-            artifacts=artifacts,
+        repair = repair_with_registry(
+            RepairContext(
+                repo_root=repo_root,
+                issue=issue,
+                handler_id=decision.handler_id,
+                artifacts=artifacts,
+            )
         )
-    )
-    if repair.status not in {"repaired", "noop"}:
-        return RepairRuntimeResult(
-            gate_id=gate_id,
-            initial_exit_code=first.returncode,
-            post_repair_exit_code=None,
-            handler_id=decision.handler_id,
-            repair_status=repair.status,
-            repair_changed=repair.changed,
-            repaired_artifacts=repair.artifacts,
-            final_status="repair_failed",
-            initial_output=initial_output,
-            post_repair_output=repair.message,
-        )
+        handler_ids.append(decision.handler_id)
+        repair_statuses.append(repair.status)
+        repair_changed = repair_changed or repair.changed
+        repaired_artifacts.extend(repair.artifacts)
+        if repair.message:
+            post_outputs.append(repair.message)
+        if repair.status not in {"repaired", "noop"}:
+            return RepairRuntimeResult(
+                gate_id=gate_id,
+                initial_exit_code=first.returncode,
+                post_repair_exit_code=post_repair_exit_code,
+                handler_id="+".join(handler_ids),
+                repair_status=repair.status,
+                repair_changed=repair_changed,
+                repaired_artifacts=tuple(dict.fromkeys(repaired_artifacts)),
+                final_status="repair_failed",
+                initial_output=initial_output,
+                post_repair_output=repair.message,
+            )
 
-    second = _run_gate(repo_root, command)
-    post_output = (second.stdout or "") + (second.stderr or "")
+        second = _run_gate(repo_root, command)
+        post_repair_exit_code = second.returncode
+        current_output = (second.stdout or "") + (second.stderr or "")
+        post_outputs.append(current_output)
+        if second.returncode == 0:
+            return RepairRuntimeResult(
+                gate_id=gate_id,
+                initial_exit_code=first.returncode,
+                post_repair_exit_code=0,
+                handler_id="+".join(handler_ids),
+                repair_status=repair.status,
+                repair_changed=repair_changed,
+                repaired_artifacts=tuple(dict.fromkeys(repaired_artifacts)),
+                final_status="green_after_repair",
+                initial_output=initial_output,
+                post_repair_output="\n".join(post_outputs),
+            )
+
     return RepairRuntimeResult(
         gate_id=gate_id,
         initial_exit_code=first.returncode,
-        post_repair_exit_code=second.returncode,
-        handler_id=decision.handler_id,
-        repair_status=repair.status,
-        repair_changed=repair.changed,
-        repaired_artifacts=repair.artifacts,
-        final_status="green_after_repair" if second.returncode == 0 else "still_red",
+        post_repair_exit_code=post_repair_exit_code,
+        handler_id="+".join(handler_ids),
+        repair_status=repair_statuses[-1] if repair_statuses else "sequential_repair_budget_exhausted",
+        repair_changed=repair_changed,
+        repaired_artifacts=tuple(dict.fromkeys(repaired_artifacts)),
+        final_status="still_red",
         initial_output=initial_output,
-        post_repair_output=post_output,
+        post_repair_output="\n".join(post_outputs) or current_output,
     )
 
 

@@ -11,7 +11,7 @@ from typing import Callable
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
 from tools.refill_category_after_quarantine import refill_category
 from tools.repair_audio_script_length import repair_file as repair_audio_script_file
-from tools.validate_daily_quality import extract_source_date_from_url
+from tools.validate_daily_quality import REQUIRED_COVERAGE_TERMS, extract_source_date_from_url
 
 
 UNIMPLEMENTED_STATUS = "blocked_repair_handler_unimplemented"
@@ -86,6 +86,25 @@ def _scope_violation(ctx: RepairContext, handler: RepairHandler) -> str | None:
     return None
 
 
+def _scoped_context(ctx: RepairContext, handler: RepairHandler) -> RepairContext:
+    artifacts = [_normalize_rel(artifact) for artifact in ctx.artifacts if _normalize_rel(artifact)]
+    if not artifacts:
+        return ctx
+    scoped = [
+        artifact
+        for artifact in artifacts
+        if _artifact_in_scope(artifact, handler.allowed_artifacts, ctx.issue)
+    ]
+    if not scoped:
+        return ctx
+    return RepairContext(
+        repo_root=ctx.repo_root,
+        issue=ctx.issue,
+        handler_id=ctx.handler_id,
+        artifacts=scoped,
+    )
+
+
 def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
     lines = text.splitlines(keepends=True)
     protected_until = 0
@@ -113,20 +132,23 @@ def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
             repaired_lines.append(line)
             continue
         prefix, content = prefix_match.groups()
-        if "**" in content:
-            repaired_lines.append(line)
+        repaired_content = content
+        if "**" not in repaired_content:
+            emphasis_end = repaired_content.find("を")
+            if emphasis_end <= 1:
+                emphasis_end = min(
+                    [pos for pos in (repaired_content.find("。"), repaired_content.find(".")) if pos >= 0] or [len(repaired_content)]
+                )
+            if emphasis_end > 1:
+                head = repaired_content[:emphasis_end]
+                repaired_content = repaired_content.replace(head, f"**{head}**", 1)
+                changed = True
+
+        if "__" in repaired_content:
+            repaired_lines.append(prefix + repaired_content + newline)
             continue
 
-        emphasis_end = content.find("を")
-        if emphasis_end <= 1:
-            emphasis_end = min(
-                [pos for pos in (content.find("。"), content.find(".")) if pos >= 0] or [len(content)]
-            )
-        if emphasis_end <= 1:
-            repaired_lines.append(line)
-            continue
-        head = content[:emphasis_end]
-        repaired_content = content.replace(head, f"**{head}**", 1)
+        repaired_content = f"__{repaired_content}__"
         repaired_lines.append(prefix + repaired_content + newline)
         changed = True
     return "".join(repaired_lines), changed
@@ -169,6 +191,58 @@ def _repair_audio_script_length(ctx: RepairContext) -> RepairResult:
     if repair_audio_script_file(ctx.repo_root, ctx.issue):
         return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (f"digest/Summary/{ctx.issue}-audio-script.md",))
     return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
+
+
+def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
+    audit_paths: list[Path] = []
+    for artifact in ctx.artifacts:
+        normalized = _normalize_rel(artifact)
+        path = ctx.repo_root / normalized
+        if path.is_dir():
+            audit_paths.extend(sorted(path.glob("*.json")))
+        elif path.exists() and path.suffix == ".json":
+            audit_paths.append(path)
+    if not audit_paths:
+        audit_dir = ctx.repo_root / "data" / "search_audit" / ctx.issue
+        if audit_dir.exists():
+            audit_paths.extend(sorted(audit_dir.glob("*.json")))
+
+    changed: list[str] = []
+    for path in audit_paths:
+        try:
+            audit = json.loads(path.read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(audit, dict):
+            continue
+
+        did_change = False
+        candidates_total = int(audit.get("candidates_total") or 0)
+        selected_total = int(audit.get("selected_total") or 0)
+        dropped = audit.get("dropped")
+        dropped_examples = audit.get("dropped_examples")
+        if candidates_total > selected_total and not dropped and isinstance(dropped_examples, list) and dropped_examples:
+            audit["dropped"] = dropped_examples
+            did_change = True
+
+        category_id = str(audit.get("category_id") or path.stem).casefold()
+        required_terms = REQUIRED_COVERAGE_TERMS.get(category_id) or set()
+        if required_terms:
+            checked = [str(v).strip() for v in (audit.get("coverage_terms_checked") or []) if str(v).strip()]
+            merged = list(dict.fromkeys([*checked, *sorted(required_terms)]))
+            if merged != checked:
+                audit["coverage_terms_checked"] = merged
+                did_change = True
+
+        if not did_change:
+            continue
+        rel = path.relative_to(ctx.repo_root).as_posix()
+        path.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+        changed.append(rel)
+
+    if not changed:
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, tuple(changed))
 
 
 def _repair_summary_hero(ctx: RepairContext) -> RepairResult:
@@ -598,6 +672,13 @@ REGISTRY: dict[str, RepairHandler] = {
         verify_gate="generation-quality",
         repair=_repair_audio_script_length,
     ),
+    "search-audit-metadata-patch": RepairHandler(
+        handler_id="search-audit-metadata-patch",
+        kind="deterministic",
+        allowed_artifacts=("data/search_audit/{date}",),
+        verify_gate="daily-quality",
+        repair=_repair_search_audit_metadata,
+    ),
     "url-quarantine-refill": RepairHandler(
         handler_id="url-quarantine-refill",
         kind="deterministic",
@@ -699,7 +780,8 @@ def repair_with_registry(ctx: RepairContext) -> RepairResult:
     handler = find_handler(ctx.handler_id)
     if handler is None:
         return RepairResult(ctx.handler_id, UNIMPLEMENTED_STATUS, False)
-    violation = _scope_violation(ctx, handler)
+    scoped_ctx = _scoped_context(ctx, handler)
+    violation = _scope_violation(scoped_ctx, handler)
     if violation is not None:
         return RepairResult(
             ctx.handler_id,
@@ -707,7 +789,7 @@ def repair_with_registry(ctx: RepairContext) -> RepairResult:
             False,
             message=f"artifact outside allowed scope: {violation}",
         )
-    result = handler.repair(ctx)
+    result = handler.repair(scoped_ctx)
     for artifact in result.artifacts:
         if not _artifact_in_scope(artifact, handler.allowed_artifacts, ctx.issue):
             return RepairResult(

@@ -17,6 +17,7 @@ from tools.repair_coverage_matrix import (
 REQUIRED_ROWS = {
     ("daily-quality", "summary_reflection_emphasis_missing"),
     ("daily-quality", "category_card_emphasis_missing"),
+    ("daily-quality", "search_audit_metadata_missing"),
     ("generation-quality", "audio_script_quality_invalid"),
     ("generation-quality", "summary_hero_missing"),
     ("generation-quality", "summary_reflection_missing"),
@@ -131,6 +132,20 @@ def test_generation_quality_multi_issue_prioritizes_state_consistency_before_aud
     assert decision.issue_code == "articles_issue_empty"
     assert decision.handler_id == "digest-articles-reconcile-patch"
     assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
+
+
+def test_generation_quality_text_fallback_prioritizes_digest_mismatch_before_audio() -> None:
+    output = "\n".join(
+        [
+            "ERROR: audio_script_quality_invalid: 字数不足",
+            "ERROR: digest_article_url_mismatch: digest URL is absent from issue articles.jsonl",
+        ]
+    )
+
+    decision = classify_gate_output("generation-quality", output)
+
+    assert decision.issue_code == "digest_article_url_mismatch"
+    assert decision.handler_id == "digest-articles-reconcile-patch"
 
 
 def test_google_api_external_is_typed_external_not_green() -> None:

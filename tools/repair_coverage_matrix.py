@@ -106,6 +106,14 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
+        "search_audit_metadata_missing",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "search-audit-metadata-patch",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+    ),
+    CoverageRow(
+        "daily-quality",
         "published_docs_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "published-docs-regenerate",
@@ -641,6 +649,8 @@ def classify_repair_issue(issue: RepairIssue) -> RepairDecision:
 
 def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
+    if "digest_article_url_mismatch" in text or "digest url" in text:
+        return "digest_article_url_mismatch"
     if "audio_script_quality_invalid" in text:
         return "audio_script_quality_invalid"
     if "summary_hero_missing" in text or "hero_left" in text or "hero_right" in text:
@@ -657,14 +667,14 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "category_card_emphasis_missing"
     if "lacks required emphasis" in text:
         return "summary_reflection_emphasis_missing"
-    if "digest_article_url_mismatch" in text or "digest url" in text:
-        return "digest_article_url_mismatch"
     if "号日不整合" in text or "issue-date" in text and "date" in text:
         return "issue_date_mismatch"
     if "title_ja" in text:
         return "title_ja_missing"
     if "thumb" in text or "thumbnail" in text:
         return "thumb_invalid_or_missing"
+    if "dropped reasons are required" in text or "coverage_terms_checked missing required terms" in text:
+        return "search_audit_metadata_missing"
     if gate_id == "url-liveness" or "404" in text or "410" in text or "stale" in text:
         return "url_dead_or_stale"
     if "public_home_fallback" in text or "fallback" in text:

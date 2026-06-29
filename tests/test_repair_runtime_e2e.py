@@ -174,6 +174,63 @@ def test_daily_quality_runtime_repair_cycle_reruns_same_gate(tmp_path: Path) -> 
     assert "**[[政策イベント]] と __企業実装__ が同じ日に並んだ**。" in repaired
 
 
+def test_daily_quality_runtime_repairs_sequential_known_failures(tmp_path: Path) -> None:
+    issue = "2026-06-25"
+    summary = tmp_path / "digest" / "Summary" / f"{issue}.md"
+    audit = tmp_path / "data" / "search_audit" / issue / "mobility.json"
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    audit.parent.mkdir(parents=True, exist_ok=True)
+    summary.write_text(
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "> [[政策イベント]] が並んだ。\n\n"
+        "### §01 総論 — 実装力を見る日\n\n"
+        "[[AI導入]] は継続運用できる体制で評価される。\n",
+        encoding="utf-8",
+    )
+    audit.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "category_id": "mobility",
+                "candidates_total": 25,
+                "selected_total": 4,
+                "dropped_examples": [{"title": "old", "reason": "actual_source_age_gt_1d"}],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    gate_code = (
+        "from pathlib import Path\n"
+        "import json, sys\n"
+        f"root=Path({str(tmp_path)!r}); issue={issue!r}\n"
+        "summary=(root/'digest'/'Summary'/f'{issue}.md').read_text(encoding='utf-8')\n"
+        "audit=json.loads((root/'data'/'search_audit'/issue/'mobility.json').read_text(encoding='utf-8'))\n"
+        "if '**' not in summary or '__' not in summary:\n"
+        "    print(f'ERROR: digest/Summary/{issue}.md: reflection section §01 lacks required emphasis: ** ** bold, __ __ underline', file=sys.stderr)\n"
+        "    raise SystemExit(1)\n"
+        "if 'dropped' not in audit or 'coverage_terms_checked' not in audit:\n"
+        "    print(f'ERROR: data/search_audit/{issue}/mobility.json: dropped reasons are required when candidates were excluded.', file=sys.stderr)\n"
+        "    print(f'ERROR: data/search_audit/{issue}/mobility.json: coverage_terms_checked missing required terms: BYD, Tesla, Toyota, Uber, Waymo', file=sys.stderr)\n"
+        "    raise SystemExit(1)\n"
+    )
+
+    result = run_registry_repair_cycle(
+        repo_root=tmp_path,
+        issue=issue,
+        gate_id="daily-quality",
+        command=[sys.executable, "-c", gate_code],
+        artifacts=[f"digest/Summary/{issue}.md", f"data/search_audit/{issue}"],
+    )
+
+    assert result.initial_exit_code == 1
+    assert result.post_repair_exit_code == 0
+    assert result.final_status == "green_after_repair"
+    assert result.handler_id == "summary-emphasis-patch+search-audit-metadata-patch"
+
+
 def _write_valid_article(path: Path, issue: str, *, title_ja: str = "日本語タイトル", date: str | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     record = {
@@ -254,7 +311,8 @@ def test_compound_repair_plan_repairs_residual_known_failure_before_terminal(tmp
     )
 
     assert result.final_status == "green_after_compound_repair"
-    assert result.steps[0].final_status == "green_after_recovery"
+    assert result.steps[0].final_status == "green_after_repair"
+    assert result.steps[0].handler_id == "record-issue-date-patch+record-title-ja-patch"
     assert result.steps[0].repair_status == "repaired"
     assert "autonomous_recovery" in result.steps[0].post_repair_output
     assert '"date": "2026-06-25"' in articles.read_text(encoding="utf-8")

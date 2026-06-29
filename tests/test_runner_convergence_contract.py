@@ -637,7 +637,7 @@ def test_python_gate_skips_repair_after_final_attempt_failure() -> None:
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
 
-    assert "$maxGateAttempts = 2" in gate_body
+    assert "$maxGateAttempts = 5" in gate_body
     assert "if ($attempt -ge $maxGateAttempts)" in gate_body
     assert "final attempt failed; skipping repair" in gate_body
     assert gate_body.index("final attempt failed; skipping repair") < gate_body.index("tools.auto_repair_orchestrator")
