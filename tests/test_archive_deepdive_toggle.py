@@ -107,11 +107,35 @@ def test_build_archive_places_podcast_after_deepdive_and_removes_density(tmp_pat
     html = out.read_text(encoding="utf-8")
     assert "DENSITY" not in html
     assert "COMFORTABLE" not in html
-    assert 'ng-modeswitch__btn ng-modeswitch__btn--link' in html
+    assert 'ng-modeswitch__btn ng-modeswitch__btn--podcast ng-modeswitch__btn--link' in html
     assert "https://www.youtube.com/@newsgrasp/podcasts" in html
     assert "https://www.youtube.com/playlist?list=archive-playlist" not in html
     assert "https://www.youtube.com/watch?v=archive-video" not in html
     assert html.index('data-view="deepdive"') < html.index("PODCAST")
+
+
+def test_build_archive_mode_switch_uses_silhouette_icons(tmp_path: Path) -> None:
+    """日付アーカイブの DIGEST / DEEP DIVE / PODCAST も文字記号ではなく小アイコンで識別する。"""
+    podcast_state = tmp_path.parent / "build" / "youtube-podcast"
+    podcast_state.mkdir(parents=True, exist_ok=True)
+    (podcast_state / "uploads.json").write_text(
+        json.dumps({"2026-06-21": {"status": "public", "videoId": "v", "playlistId": "p"}}),
+        encoding="utf-8",
+    )
+    dd = collect_archive_items(digest_dir=_FIXTURE_DIR)
+    out = build_archive(_sample_entries(), tmp_path,
+                        deepdive_items=dd["items"], lens_chips=dd["chips"])
+    html = out.read_text(encoding="utf-8")
+    assert 'ng-modeswitch__btn ng-modeswitch__btn--digest is-active' in html
+    assert 'ng-modeswitch__btn ng-modeswitch__btn--deepdive' in html
+    assert 'ng-modeswitch__btn ng-modeswitch__btn--podcast ng-modeswitch__btn--link' in html
+    modeswitch = html[html.index('class="ng-modeswitch"'):html.index('class="ng-search"')]
+    assert ">❖ DEEP DIVE<" not in modeswitch
+    assert ".ng-modeswitch__btn::before" in html
+    assert ".ng-modeswitch__btn--digest::before" in html
+    assert ".ng-modeswitch__btn--deepdive::before" in html
+    assert ".ng-modeswitch__btn--podcast::before" in html
+    assert "mask-image:" in html
 
 
 def test_build_archive_deepdive_rows_have_filter_attrs(tmp_path: Path) -> None:

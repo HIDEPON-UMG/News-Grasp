@@ -1441,6 +1441,10 @@ strong {
   border: none;
   border-right: 1px solid var(--color-border);
   padding: 7px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
@@ -1452,6 +1456,28 @@ strong {
 .home-hero__switch-btn:last-child { border-right: none; }
 .home-hero__switch-btn:hover { color: var(--color-navy); }
 .home-hero__switch-btn.is-active { background: var(--color-navy); color: var(--color-cream); }
+.home-hero__switch-btn::before {
+  content: "";
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 0.88em;
+  height: 0.88em;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.home-hero__switch-btn--summary::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 3h11l3 3v15H5V3Zm3 5h8V6H8v2Zm0 4h8v-2H8v2Zm0 4h6v-2H8v2Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 3h11l3 3v15H5V3Zm3 5h8V6H8v2Zm0 4h8v-2H8v2Zm0 4h6v-2H8v2Z'/%3E%3C/svg%3E");
+}
+.home-hero__switch-btn--deepdive::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 2 22 12 12 22 2 12 12 2Zm0 5.2L7.2 12 12 16.8 16.8 12 12 7.2Zm0 2.8 2 2-2 2-2-2 2-2Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 2 22 12 12 22 2 12 12 2Zm0 5.2L7.2 12 12 16.8 16.8 12 12 7.2Zm0 2.8 2 2-2 2-2-2 2-2Z'/%3E%3C/svg%3E");
+}
 
 /* 2 スライドを横並びにし track を translateX で左右にスライド。
    track 幅 200% / 各 slide 50% (= コンテナ幅と等しい)。高さは高い方のスライドに揃う。 */

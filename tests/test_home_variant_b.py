@@ -123,6 +123,18 @@ def test_home_nav_uses_silhouette_icons_and_plain_today(built_home: str):
     assert "mask-image:" in css
 
 
+def test_home_theme_switch_uses_summary_and_deepdive_icons(built_home: str):
+    """SUMMARY/DEEP DIVE スイッチもナビと同じ小さなシルエット体系にそろえる。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert 'home-hero__switch-btn home-hero__switch-btn--summary is-active' in built_home
+    assert 'home-hero__switch-btn home-hero__switch-btn--deepdive' in built_home
+    assert ">❖ DEEP DIVE<" not in built_home
+    assert ".home-hero__switch-btn::before" in css
+    assert ".home-hero__switch-btn--summary::before" in css
+    assert ".home-hero__switch-btn--deepdive::before" in css
+    assert "mask-image:" in css
+
+
 def test_home_nav_mobile_keeps_today_yesterday_readable():
     """Podcast追加後も、モバイルで TODAY / YESTERDAY を小さく潰さない。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
@@ -352,7 +364,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-06-30-lp-editorial-nav-icons" in sw
+    assert "2026-07-01-archive-nav-icons" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
