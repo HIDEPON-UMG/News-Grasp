@@ -3004,16 +3004,6 @@ strong {
     margin-top: 0;
     gap: 6px;
   }
-  .feature-note__chips--signals::before {
-    content: "SIGNATURE";
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    color: var(--color-ink-dim);
-    flex-basis: 100%;
-    margin-bottom: 1px;
-  }
   .feature-note__chip {
     min-height: 22px;
     padding: 3px 6px;

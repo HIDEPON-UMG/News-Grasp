@@ -309,8 +309,8 @@ def test_category_top_feature_uses_same_score_note_layout(built_docs_root: Path)
 def test_feature_note_mobile_collapses_to_signature_chips_only():
     """スマホでは画像とタイトルの間に SCORE NOTE / KEY NUMBERS 本文を挟まずタグだけ残す。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
-    assert css.count(".feature-note__chips--signals::before") == 1
-    assert '.feature-note__chips--signals::before {\n    content: "SIGNATURE";' in css
+    assert ".feature-note__chips--signals::before" not in css
+    assert 'content: "SIGNATURE";' not in css
     assert (
         ".feature-note__label,\n"
         "  .feature-note p,\n"
@@ -338,7 +338,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-06-30-mobile-feature-note-1" in sw
+    assert "2026-06-30-mobile-feature-note-2" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
