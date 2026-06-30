@@ -1,0 +1,455 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-07-01</title>
+<meta name="description" content="2026-07-01 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-07-01/summary/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-07-01">
+<meta property="og:description" content="2026-07-01 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-07-01/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-07-01">
+<meta name="twitter:description" content="2026-07-01 の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary">
+
+<!-- ============= Brand zone (compact 56px wordmark) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-01/">DIGEST</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
+<div class="summary-mode-pill">
+  <a class="summary-mode-pill__off" href="https://hidepon-umg.github.io/News-Grasp/2026-07-01/">NEWS DIGEST</a>
+  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
+</div>
+
+<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
+<section class="summary-hero">
+  <div class="summary-hero__inner">
+    <div>
+      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #20260701</div>
+      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#20260701</span></h2>
+
+      <div class="summary-hero__subtitle">「守る線と広げる線」</div>
+
+      <div class="summary-hero__lead">今日は、<strong class="emph-bold">AI</strong> の配布と認証、<strong class="emph-bold">IT</strong> の統制、<strong class="emph-bold">Mobility</strong> の安全対応、<strong class="emph-bold">Manufacturing</strong> の拠点再編、<strong class="emph-bold">Economy</strong> の政策修正が一度に進み、<strong>広げる前に守る線をどこへ引くか</strong> が主題になりました。<strong class="emph-bold">FX</strong> も円安と介入警戒で揺れ、数字の強さより <span class="emph-und">置き場所の見直し</span> が効く朝です。規制、投資、配布、運用の順番が入れ替わり、誰が責任を持って回せるかが先に問われました。以下、各カテゴリを横断して読み解く。</div>
+      <div class="summary-hero__stats">
+        <span><span class="summary-hero__stat-num">8</span>SECTIONS</span>
+        <span><span class="summary-hero__stat-num">~9</span>MIN READ</span>
+        <span><span class="summary-hero__stat-num">3</span>TAKEAWAYS</span>
+        <span><span class="summary-hero__stat-num">27</span>SOURCES</span>
+      </div>
+    </div>
+    <div class="summary-hero__sigil">§</div>
+  </div>
+</section>
+
+
+<section class="daily-audio daily-audio--summary" aria-label="今日のニュース朗読">
+  <div class="daily-audio__inner">
+    <div class="daily-audio__meta">
+      <span class="daily-audio__kicker">LISTEN</span>
+      <span class="daily-audio__title">今日のニュース朗読</span>
+      <span class="daily-audio__date">2026-07-01</span>
+    </div>
+    <div class="daily-audio__controls">
+      <audio preload="none" controls>
+        <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-07-01.mp3?v=1bd306edd6f8" type="audio/mpeg">
+      </audio>
+      <div class="daily-audio__rates" role="group" aria-label="再生速度">
+        <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+        <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= Pull quote ============= -->
+<section class="summary-pull">
+  <div class="summary-pull__inner">
+    <div class="summary-pull__quote">&ldquo;</div>
+    <div>
+      <div class="summary-pull__text"><span class="emph-und"><strong>守る線を先に引ける会社や現場が、あとから広げる順番を静かに決めていきました。</strong></span></div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= 7 sections (2-column grid) ============= -->
+<section class="summary-sections">
+  <div class="summary-sections__inner">
+    <div class="summary-sections__head">
+      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
+      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
+    </div>
+    <div class="summary-sections__grid">
+
+      <div class="summary-sec summary-sec--lead" style="--accent-current: #1A1A1A;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #1A1A1A;">§01</span>
+          <span class="summary-sec__tag" style="background: #1A1A1A;">総論</span>
+        </div>
+        <h3 class="summary-sec__title">総論 — 守る線を先に引く朝</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">AI</strong> と <strong class="emph-bold">IT</strong> は配布前の認証と統制、<strong class="emph-bold">Mobility</strong> は安全対応、<strong class="emph-bold">Manufacturing</strong> は置き場所の再編、<strong class="emph-bold">Economy</strong> は政策の修正が前に出ました。<strong>目立つのは新機能より線引き</strong> で、<span class="emph-und">誰が責任を持つか</span> を先に決めた材料が多い一日です。<strong class="emph-bold">FX</strong> の円安はその緊張をさらに強め、現場の判断を急がせました。</p>
+
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§02</span>
+          <span class="summary-sec__tag" style="background: #475569;">FX</span>
+        </div>
+        <h3 class="summary-sec__title">FX — 円安の先にある説明責任</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">円安</strong> は 162 円台で重さが増し、政府の介入姿勢と日銀の警戒発言が同じ方向を向きました。<strong>水準そのもの</strong> より <span class="emph-und">政策の一貫性</span> が試され、米側では利上げ再開観測も残ります。市場は数字だけでなく、どこまで説明が通るかを値付けし始めています。</p>
+
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #2D5BB8;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2D5BB8;">§03</span>
+          <span class="summary-sec__tag" style="background: #2D5BB8;">AI</span>
+        </div>
+        <h3 class="summary-sec__title">AI — 配布網と認証が先に立つ</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ソブリンクラウド</strong> で国産 AI が動き、生成 AI 利用クラウドの認定制度が始まり、<strong class="emph-bold">OpenAI</strong> は Codex 向け入力デバイスを予告しました。<strong>使える場を増やす動き</strong> と <span class="emph-und">安全に配る仕組み</span> が並び、<strong class="emph-bold">Google Meet</strong> の Gemini と <strong class="emph-bold">Anthropic</strong> の利用実態も、導入の次段階を示しています。</p>
+
+
+
+<div class="summary-lanes summary-lanes--essay" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">ASPIC</strong> が <strong>生成AI利用クラウドサービス向け情報開示認定制度</strong> を新設し、<span class="emph-und">申請受付</span> を6月30日に開始した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">18年分の認定運用実績と最新ガイドラインを踏まえ、<strong class="emph-bold">AIガバナンス</strong> の可視化を進める狙いだ。<strong>2028年3月末まで手数料無料</strong> として制度参加を促している。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">生成AI基盤を選ぶ企業は <strong class="emph-bold">情報開示</strong> の比較軸を持ちやすくなり、<strong>安全性や運用体制を示せる事業者</strong> が案件獲得で優位に立ちやすくなる。</div>
+    </div>
+  </div>
+
+</div>
+
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/ai/" style="color: #2D5BB8;">→ §03 AI 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #2E6B52;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #2E6B52;">§04</span>
+          <span class="summary-sec__tag" style="background: #2E6B52;">IT</span>
+        </div>
+        <h3 class="summary-sec__title">IT — 統制と理解が実装を決める</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">ガバメントクラウド</strong> の期限未達、AML 対応 SaaS、<strong class="emph-bold">サイバー防衛</strong> の経営課題化、BPS と SaaS 運用支援の一体化が並びました。<strong>システムの新規導入</strong> だけでは足りず、<span class="emph-und">運用・権限・理解の差</span> が成果を分けます。経営層の IT 理解不足をどう埋めるかが、今日の実務の焦点でした。</p>
+
+
+
+<div class="summary-lanes summary-lanes--essay" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">ガバメントクラウド</strong>移行は<strong>全国1788自治体のうち1015団体が期限未達</strong>となり、<span class="emph-und">地方システム標準化の主工程が今年3月末に収まり切らなかった実態</span>が表面化した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">デジタル庁</strong>は<strong>事業者への発注集中とSE不足</strong>を主因に挙げ、<span class="emph-und">自治体DXがクラウド選定より実装人材の供給制約に左右される段階</span>へ入ったと示した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">公共IT</strong>では<strong>今年度末に全体の9割完了</strong>を見込む一方、<span class="emph-und">自治体案件を担うSI・コンサルには移行計画の平準化と運用要員確保を同時に設計する力</span>が求められる。</div>
+    </div>
+  </div>
+
+</div>
+
+
+
+        <a class="summary-sec__more" href="https://hidepon-umg.github.io/News-Grasp/it/" style="color: #2E6B52;">→ §04 IT 詳細を読む</a>
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§05</span>
+          <span class="summary-sec__tag" style="background: #475569;">Mobility</span>
+        </div>
+        <h3 class="summary-sec__title">Mobility — 安全条件と運行設計の再調整</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">自動運転</strong> のペダル義務撤廃案と Waymo のリコール、Uber との提携終了は、<strong>技術の進歩</strong> がそのまま商用拡張に直結しないことを示しました。<strong class="emph-bold">Toyota</strong> と <strong class="emph-bold">Joby</strong> の合弁、<strong class="emph-bold">チェリー系EV</strong> の日本参入も含め、<span class="emph-und">運行条件と提携設計</span> を先に決めた側が前へ出ます。</p>
+
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§06</span>
+          <span class="summary-sec__tag" style="background: #475569;">Manufacturing</span>
+        </div>
+        <h3 class="summary-sec__title">Manufacturing — 拠点と工程を置き直す</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">日立建機</strong> の中国 OEM 化、<strong class="emph-bold">ニコン</strong> の ArF 露光装置、<strong class="emph-bold">LIXIL</strong> の工場閉鎖、天津工場の拡張、<strong class="emph-bold">トヨタ</strong> の電池セル特許が同居しました。<strong>拠点を増やす話</strong> だけでなく <span class="emph-und">生産をどこへ置き直すか</span> が問われ、設備・電力・材料の再編が競争力になります。</p>
+
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #475569;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #475569;">§07</span>
+          <span class="summary-sec__tag" style="background: #475569;">Economy</span>
+        </div>
+        <h3 class="summary-sec__title">Economy — 数字の改善と体感のずれ</h3>
+        <p class="summary-sec__body"><strong class="emph-bold">景気判断</strong> は維持されても、<strong class="emph-bold">円安</strong> と <strong class="emph-bold">米金利</strong> の引き締め観測が家計と企業の受け止め方を揺らしました。<strong>数字の改善</strong> と <span class="emph-und">体感の重さ</span> がずれやすく、独インフレ鈍化や骨太原案も含め、政策は成長と負担感を同時に見る局面です。</p>
+
+
+      </div>
+
+      <div class="summary-sec" style="--accent-current: #C9A155;">
+        <div class="summary-sec__head">
+          <span class="summary-sec__no" style="color: #C9A155;">§08</span>
+          <span class="summary-sec__tag" style="background: #C9A155;">明日へ</span>
+        </div>
+        <h3 class="summary-sec__title">明日へ — 線引きが運用に落ちるか</h3>
+        <p class="summary-sec__body"><strong>明日は、<strong class="emph-bold">円安</strong> の持続、<strong class="emph-bold">AI</strong> の配布設計、<strong class="emph-bold">IT</strong> の統制、<strong class="emph-bold">Mobility</strong> の運行条件、<strong class="emph-bold">Manufacturing</strong> の移転計画、<strong class="emph-bold">Economy</strong> の政策文言</strong> が実際に回るかを見ます。<span class="emph-und">今日引いた線</span> が運用に落ちるほど、次の一手は少し読みやすくなります。</p>
+
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============= Key Takeaways (3-col) ============= -->
+<section class="summary-takeaways">
+  <div class="summary-takeaways__inner">
+    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
+    <div class="summary-takeaways__grid">
+
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #3A7B8C;">01</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #3A7B8C;">MOBILITY</div>
+          <div class="summary-take__text">トランプ政権、完全自動運転車のペダル義務撤廃案</div>
+        </div>
+      </div>
+
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #5A6B7B;">02</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #5A6B7B;">MANUFACTURING</div>
+          <div class="summary-take__text">日立建機、新ブランド「WIXIM」を中国OEM製造へ 東南アジア攻略で転換</div>
+        </div>
+      </div>
+
+      <div class="summary-take">
+        <div class="summary-take__n" style="background: #B8860B;">03</div>
+        <div class="summary-take__body">
+          <div class="summary-take__tag" style="color: #B8860B;">FOREIGN EXCHANGE</div>
+          <div class="summary-take__text">円安162円台、政策不信が債券売りを呼ぶリスク浮上</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA band ============= -->
+<section class="summary-cta">
+  <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-07-01/">全27本のニュースを読む →</a>
+  <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+</section>
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-07-01 · #20260701
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-01/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
