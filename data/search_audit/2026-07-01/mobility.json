@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-01",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "\"トランプ氏「自動運転車にブレーキ不要」 ペダル設置義務、撤廃へ\"",
+    "\"Googleロボタクシーのウェイモが約4,000台リコール 2年間で台数が約9倍に\"",
+    "\"ウーバーとウェイモ、米フェニックスでのロボタクシー提携を終了\"",
+    "\"Jobyとトヨタ、空のモビリティ実現に向け、電動垂直離着陸機（eVTOL）の生産を行う合弁会社の設立に着手\"",
+    "\"中国自動車大手チェリーら出資の新ブランド「EMTA」が軽EVで日本参入！社員3分の1が日産OB、標的を「非EVユーザー」に据える理由\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla=規制改正の受益候補として確認",
+    "Waymo=リコール記事と提携終了記事で確認",
+    "BYD=EMTA記事の競合文脈として確認",
+    "Toyota=Joby合弁記事で確認",
+    "Uber=Waymo提携終了記事で確認",
+    "BYD",
+    "Tesla",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ],
+  "dropped": [
+    {
+      "title": "大阪メトロのEVバス問題、新社長「7月めどに検証結果を公表」 [大阪府]",
+      "url": "https://digital.asahi.com/sp/articles/ASV6Z3K07V6ZPTIL00LM.html?iref=twitter",
+      "reason": "自治体・事業者の局地的な不具合対応で、規制変更と市場再編を軸にした当日上位5件より全国読者への影響範囲が狭い"
+    },
+    {
+      "title": "DMP、米自動運転コンテストに地図データ提供",
+      "url": "https://www.logi-today.com/971283",
+      "reason": "学生コンテスト向け供給で新規性はあるが、商用運行・制度変更・市場参入に比べ読者の意思決定への直結度が低い"
+    },
+    {
+      "title": "ティアフォー、東証グロース市場に7月22日上場",
+      "url": "https://www.logi-today.com/971292",
+      "reason": "資本市場イベントとして重要だが、当日は規制・運行・量産体制の変化を優先した"
+    },
+    {
+      "title": "SBS・東芝など3社、改造EVトラック実証開始",
+      "url": "https://www.logi-today.com/971015",
+      "reason": "物流実証として有用だが、実証規模が限定的で全国的な制度・市場変化を示す記事を優先した"
+    },
+    {
+      "title": "GoogleのE2E特許､自動運転もロボも NVIDIAは基盤重視",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBPSk9xLVN2LUM4eDFwUE85OGVuREl3eG5yZTJWLVRFZmx4ZENDX0x0YUhNaU9vSVcwTFkxZ0pwRVVjdm5XTDVnZDVYZzhXZTNXb1NyaENiLW5IWXU4OHRDZHM0SEVaNl9qUURBUk5jY0VFQ3hieXdCaWllLU1HWTg?oc=5",
+      "reason": "canonical URL を記事単位で確定できず、URL品質契約を満たせないため未採用"
+    }
+  ]
+}

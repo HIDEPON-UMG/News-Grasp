@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-01",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"BIPROGY\" \"Trabotic\"",
+    "\"NTTデータ・ウィズのBPSとAI活用 SaaSの真価を引き出す支援\"",
+    "\"経営が向き合うAI時代のサイバーセキュリティ対応\"",
+    "\"ITを知らない経営層\" 投資を判断する実態 失敗しないIT戦略の描き方",
+    "\"山口県森林総合情報クラウドシステム\" 運用を開始します",
+    "\"ガバメントクラウドへの移行 半数以上の自治体が間に合わず、デジ庁\""
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 7,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "「山口県森林総合情報クラウドシステム」の運用を開始します",
+      "url": "https://www.pref.yamaguchi.lg.jp/press/353028.html",
+      "reason": "dedup freshness gate で published 2021-01-01 判定となり除外"
+    },
+    {
+      "title": "クラウドの価値を最大化するカギ 規定×データ×人の運用支援",
+      "url": "https://www.projectdesign.jp/articles/9e5251fc-32a4-4aa3-b375-9aba0b40d583",
+      "reason": "同日の運用支援テーマだが、公共クラウド遅延・金融AML SaaS・サイバー経営課題・自治体SaaS運用・IT戦略論を優先"
+    }
+  ]
+}

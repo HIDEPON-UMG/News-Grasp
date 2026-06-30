@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-01",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "\"為替変動、以前に比べ物価への影響大きくなる可能性＝佐藤日銀委員\"",
+    "\"円安進行、一時１６２円台半ば ３９年半ぶり水準―東京市場\"",
+    "\"歴史的な円安水準1ドル＝162円台 片山さつき財務大臣が為替介入の可能性について触れるも市場の反応は限定的\"",
+    "\"極まる円安、原油下落かき消す信認リスク 日銀後手懸念で債券売りも\"",
+    "\"日本の為替政策が米国債の資金調達にリスクをもたらす可能性＝ＮＹ為替\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [],
+  "candidate_file": "tmp/newsroom/2026-07-01/fx.candidates.merged.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-01/fx.filtered.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

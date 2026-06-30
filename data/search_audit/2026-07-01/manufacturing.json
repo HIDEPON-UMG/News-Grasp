@@ -1,0 +1,50 @@
+{
+  "date": "2026-07-01",
+  "category_id": "manufacturing",
+  "queries": [
+    "Stage1 deduped candidates only: build/deduped-candidates/manufacturing.jsonl",
+    "\"【独自】日立建機が新ブランドで中国メーカー製建機を販売へ！“宿敵”に製造を委託する「戦略大転換」に至った裏事情\"",
+    "ニコン社長 半導体装置でASML対抗策 ArFの2社購買 ASML 対抗策 ArF 2社購買",
+    "\"LIXILの名張工場、来年3月に閉鎖する背景事情\" 2026",
+    "\"自動養鶏設備のハイテム 中国工場を移転拡張 12億円投資 アジア販売拡大\"",
+    "トヨタ 急速充電時の温度制御に優れる電池セル 特許"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "京セラ、部品に6500億円投資 半導体製造やAIデータ拠点向け 関連売上高2.8倍へ",
+      "url": "https://www.nikkei.com/article/DGKKZO97262520Q6A630C2TB2000/",
+      "reason": "前日号で同テーマを掲載済みで、Stage1注釈でも follow-up 扱い。新材料が限定的だったため見送った"
+    },
+    {
+      "title": "九州で倉庫・工場向けロボ展、27年2月初開催",
+      "url": "https://www.logi-today.com/971257",
+      "reason": "展示会告知としては新しいが、当日号で優先した生産移管・OEM・設備投資案件より産業インパクトが一段弱い"
+    },
+    {
+      "title": "今から狙うならどの銘柄？半導体関連株の成長期待を探る",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE4zcXdGZDU0VW9fa25nYXJJMHFzNVR4bXUyZS1PdEMzRnpzQmhwSFBKaW9Sa0FPd0VmR3R3NUVFd0FnUXBmdUx3T3ZySk1ULUJObzZDQ0RfSmdfN1ZSWldDbQ?oc=5",
+      "reason": "投資解説が中心で、作る側の能力増強や供給網再編の新材料が薄い"
+    },
+    {
+      "title": "半導体株、四半期は過去最高の上昇ペース－市場は持続性見極め",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE11b3R1dG1IMG9VU19FdGNFTkJaVWNOYWxnbzB0SVdrQlVmUHRodFgzX0FReFpLcEx2WDF1aDdaa0k5RF9oei1GS01yQk9TOFp2TTAtaFZxTm9XTTZnWFgwQWFZQnZHWlNiWm9CZ0gwV1VJUjlFeDFj?oc=5",
+      "reason": "株価モメンタム中心で、manufacturing の採点軸で重視する生産能力・立地・設備計画の具体性が不足した"
+    },
+    {
+      "url": "https://newswitch.jp/p/49597",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

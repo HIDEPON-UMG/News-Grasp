@@ -1,0 +1,98 @@
+{
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "GDP OR インフレ OR 金融政策 OR 決算 OR 日経平均 when:1d",
+    "景気 OR 雇用統計 OR 消費者物価 OR interest rate when:1d",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://www.federalreserve.gov/feeds/press_all.xml",
+    "https://www.boj.or.jp/rss/whatsnew.xml",
+    "https://www.mof.go.jp/english/news.rss",
+    "https://www.fsa.go.jp/fsaEnNewsList_rss2.xml",
+    "https://www.cnbc.com/id/10001147/device/rss/rss.html"
+  ],
+  "raw_results_total": 248,
+  "candidates_total": 238,
+  "selected_total": 50,
+  "source_breakdown": {
+    "google_news:経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E7%B5%8C%E6%B8%88+OR+%E6%99%AF%E6%B0%97+OR+GDP+OR+%E3%82%A4%E3%83%B3%E3%83%95%E3%83%AC+OR+%E9%87%91%E8%9E%8D%E6%94%BF%E7%AD%96+OR+%E6%B1%BA%E7%AE%97+OR+%22economy%22+OR+%22interest+rate%22+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 100,
+      "dropped": 0
+    },
+    "google_news:GDP OR インフレ OR 金融政策 OR 決算 OR 日経平均 when:1d": {
+      "url": "https://news.google.com/rss/search?q=GDP+OR+%E3%82%A4%E3%83%B3%E3%83%95%E3%83%AC+OR+%E9%87%91%E8%9E%8D%E6%94%BF%E7%AD%96+OR+%E6%B1%BA%E7%AE%97+OR+%E6%97%A5%E7%B5%8C%E5%B9%B3%E5%9D%87+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 92,
+      "dropped": 8
+    },
+    "google_news:景気 OR 雇用統計 OR 消費者物価 OR interest rate when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E6%99%AF%E6%B0%97+OR+%E9%9B%87%E7%94%A8%E7%B5%B1%E8%A8%88+OR+%E6%B6%88%E8%B2%BB%E8%80%85%E7%89%A9%E4%BE%A1+OR+interest+rate+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 10,
+      "candidates": 10,
+      "dropped": 0
+    },
+    "feeds.bbci.co.uk/news/business/rss.xml": {
+      "url": "https://feeds.bbci.co.uk/news/business/rss.xml",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 10,
+      "candidates": 10,
+      "dropped": 0
+    },
+    "www.federalreserve.gov/feeds/press_all.xml": {
+      "url": "https://www.federalreserve.gov/feeds/press_all.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    },
+    "www.boj.or.jp/rss/whatsnew.xml": {
+      "url": "https://www.boj.or.jp/rss/whatsnew.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    },
+    "www.mof.go.jp/english/news.rss": {
+      "url": "https://www.mof.go.jp/english/news.rss",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 3,
+      "dropped": 2
+    },
+    "www.fsa.go.jp/fsaEnNewsList_rss2.xml": {
+      "url": "https://www.fsa.go.jp/fsaEnNewsList_rss2.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    },
+    "www.cnbc.com/id/10001147/device/rss/rss.html": {
+      "url": "https://www.cnbc.com/id/10001147/device/rss/rss.html",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 8,
+      "dropped": 0
+    }
+  },
+  "negative_filter_dropped": {
+    "economy:individual_stock": 6,
+    "global:homepage_or_section": 3,
+    "global:ranking_only": 1
+  },
+  "scrapling_sources_used": [],
+  "broken_sources": []
+}

@@ -1,0 +1,64 @@
+{
+  "date": "2026-07-01",
+  "category_id": "ai",
+  "queries": [
+    "stage1: build/deduped-candidates/ai.jsonl",
+    "site:softbank.jp \"Cloud PF Type A\" Sarashina",
+    "site:aspicjapan.org \"生成AI利用クラウドサービス(ASP・SaaS)情報開示認定制度\"",
+    "site:itmedia.co.jp \"Codex向けデバイス\"",
+    "site:forest.watch.impress.co.jp \"Google Meet\" \"Gemini\" 議事録",
+    "site:sbbit.jp \"Claude利用実態レポート\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "TOKAIコミュニケーションズ、米Anthropic社と AWS上で提供するAIモデル「Claude」のリセラー契約を締結",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE43cmUzU1llaFA3YWkyb005YWMxeGNHQzZQVS1IZjlsMTN3MVh3Q0x3a2o3SzQwTFh6TDNRTFd3bzloYVUydnhjSlJHTk9paC1Cek9qd0F3TkVTT0FfTmhESkdzdV96cVFNSUE?oc=5",
+      "reason": "前号のBedrock経由Claude再販と論点が近く、今日の5本では制度・基盤・利用面の広がりを優先した。"
+    },
+    {
+      "title": "デンソーテン、RAGを車載エッジで省メモリ稼働する生成AI技術を開発",
+      "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTFBLS1MyenF1MktGNHJ1X1VRUEdSRWFVX2J1aFNoM055anV6MElGVVpPZ190UkhTclE2MjdWOWhSRWhEeFcxY2hkM3pwQnprbHl3Q1BIbU5BVjNPQkpKRWd0VFYwS2YwTjk1VTBZMGc5cw?oc=5",
+      "reason": "技術新規性は高いが、AI専属面よりモビリティ/製造寄りの文脈が強く、当日のAIトップ5からは外した。"
+    },
+    {
+      "title": "AWSとOpenAI・Anthropicは互恵関係、有力AIモデルの確保が欠かせず",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOb3MtRmJrdU1qcnQ3bFpzdUV5WkJQZ1p1NHhqM0dEakdJX3V0TktqVElzNmVSREZNZTJVamd3WTZyV0RGVmx1anA1VUtnZXBtWjdlejROTWdNTEpXaEUtUUs5NVIwZUQ2LWZBZ0xfcWdUVmNYWVhJRUhYcnA3LVpNdS1qb0dDZW1TRXQwenYxN3I3bWwtTkhaUVdseHhvbE9pME9KVDVaa1o?oc=5",
+      "reason": "分析色が強く、新たな一次発表や制度変更に比べて当日ニュースとしての更新幅が小さい。"
+    },
+    {
+      "title": "中国のオープンウェイトモデル「GLM-5.2」が脆弱性検出ベンチマークでClaude Codeを上回る",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE5GOERoU1I5aUVyWE1wN29jczczZWJpdDY5MWExRVR1ZXZXa2V4RDV2WFpfeUFMRmt4STJjdWJHM0l5ZHB2cWxUUTZ5VHg2Nm9fNlJHY0pybGZXVE1ZRUc3ZURwYUl6NlB1VmRxVGVwWXZHMlhqSm41WmhEcE9pZw?oc=5",
+      "reason": "単一ベンチマーク由来で読者の業務判断へ直結する材料がまだ薄く、検証待ちの要素が多い。"
+    },
+    {
+      "title": "Metaが社内でClaude CodeとCodexを禁止：AIモデル「蒸留」を巡る攻防戦",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE12bjlTcDk4anVRRjBlS2d1d2trMEprZ0hZR3dQazFFWVg2UGY3YlpHSHlkbWlLaVVraGE3S3pnVFZKRDlOVXpCSTJCY0J4d3lnelZHS2ZXbG9pVTZrUVQxdzFOSzdVSVRhS2RfZFE4Q1hzTDJf?oc=5",
+      "reason": "候補媒体の一次性が弱く、公式確認なしで採用するには裏取り強度が足りない。"
+    },
+    {
+      "title": "「経営コンサルの倒産」が過去最多の恐れ…4兆円市場に異変、生成AIだけじゃない苦境のワケ",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE5OcmxsMHdybEFoNWRsN0FOMDFFYmFvREtnSjB2WDQ1TU9obmtrMTdKZzQwNWFSZ0MwRjFaNlVNQ0pjb2JhNnotRks3dWrSAU9BVV95cUxQZENaQVJKZ2psQ3R2RmVGWl9HenFqVkwtRlJ5aU1aWU95bmtUTXE4T1lZYnhFVENiSnVhQzV3OEdXQW1RQmtmZXlLX3RIRWZv?oc=5",
+      "reason": "主題がコンサル業界の市況で、AIカテゴリの主戦場であるモデル供給・導入基盤・プロダクト更新から外れる。"
+    },
+    {
+      "url": "https://www.softbank.jp/business/news/2026/0630-01",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,35 @@
+{
+  "date": "2026-07-01",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "\"独6月インフレ率2.4％に鈍化、エネルギー高減速 波及懸念和らぐ\"",
+    "\"クリーブランド連銀総裁、利上げ必要になる可能性言及－インフレ抑制\" Bloomberg",
+    "\"景気拡大73カ月\" いざなみ 6月 月例経済報告",
+    "\"経済財政諮問会議\" site:www5.cao.go.jp",
+    "\"円が40年ぶりの安値を記録、日本政府は対応の準備があると表明\""
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 6,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "インフレ高止まりなら利上げも＝米クリーブランド連銀総裁",
+      "url": "https://finance.yahoo.co.jp/news/detail/5e4d046636f933646c5a67ce29cacca5c1eeeaaf",
+      "reason": "同一論点のBloomberg配信を採用し、重複するFRB高官発言の別配信として除外"
+    },
+    {
+      "url": "https://www5.cao.go.jp/keizai-shimon/kaigi/minutes/2026/0630agenda.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
