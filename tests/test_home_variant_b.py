@@ -186,6 +186,18 @@ def test_editors_top_uses_canonical_category_glyphs(built_home: str):
         meta = CATEGORIES[cat_id]
         expected = f"{meta['glyph']} {meta['label'].upper()}"
         assert html.unescape(text) == expected
+
+
+def test_editors_top_mobile_keeps_long_category_badges_on_one_line():
+    """スマホで MANUFACTURING の末尾だけが縦落ちしないよう badge は nowrap に固定する。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert ".home-top3__badge {\n  display: inline-flex;" in css
+    assert "white-space: nowrap;" in css
+    assert "word-break: keep-all;" in css
+    assert ".home-top3__badge.cat-manufacturing {\n    font-size: 9px;" in css
+    assert "letter-spacing: 0.06em;" in css
+
+
 def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
     """LP の nav / category cards / publication matrix は canonical glyph を使う。"""
     for cat_id, meta in CATEGORIES.items():
@@ -294,6 +306,21 @@ def test_category_top_feature_uses_same_score_note_layout(built_docs_root: Path)
     assert feature_note.index("KEY NUMBERS") < feature_note.index("feature-note__chips--signals")
 
 
+def test_feature_note_mobile_collapses_to_signature_chips_only():
+    """スマホでは画像とタイトルの間に SCORE NOTE / KEY NUMBERS 本文を挟まずタグだけ残す。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert css.count(".feature-note__chips--signals::before") == 1
+    assert '.feature-note__chips--signals::before {\n    content: "SIGNATURE";' in css
+    assert (
+        ".feature-note__label,\n"
+        "  .feature-note p,\n"
+        "  .feature-note__block {\n"
+        "    display: none;\n"
+        "  }"
+    ) in css
+    assert ".feature-note__chips--signals {\n    margin-top: 0;" in css
+
+
 def test_feature_note_is_limited_to_lp_and_category_templates():
     """個別記事 / Archive / DeepDive へ今回部品を混入させない。"""
     forbidden_templates = (
@@ -311,7 +338,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-06-30-incident-report-removal-1" in sw
+    assert "2026-06-30-mobile-feature-note-1" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():

@@ -1584,12 +1584,17 @@ strong {
   display: flex; align-items: center; gap: 7px; margin-bottom: 5px;
 }
 .home-top3__badge {
+  display: inline-flex;
+  align-items: center;
   color: #fff;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   padding: 2px 7px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 .home-top3__badge.cat-fx       { background: var(--color-accent-fx); }
 .home-top3__badge.cat-ai       { background: var(--color-accent-ai); }
@@ -2973,6 +2978,48 @@ strong {
   .home-featured__thumb-wrap { height: 200px; }
   .home-featured__title { font-size: 22px; }
   .home-featured__bullets li { font-size: 16px; line-height: 1.8; }
+  .home-top3__meta { gap: 6px; }
+  .home-top3__badge {
+    flex: 0 0 auto;
+    max-width: none;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    line-height: 1.25;
+  }
+  .home-top3__badge.cat-manufacturing {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    padding-inline: 6px;
+  }
+  .feature-note {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+  .feature-note__label,
+  .feature-note p,
+  .feature-note__block {
+    display: none;
+  }
+  .feature-note__chips--signals {
+    margin-top: 0;
+    gap: 6px;
+  }
+  .feature-note__chips--signals::before {
+    content: "SIGNATURE";
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--color-ink-dim);
+    flex-basis: 100%;
+    margin-bottom: 1px;
+  }
+  .feature-note__chip {
+    min-height: 22px;
+    padding: 3px 6px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
   .home-cats { padding: 24px 16px; }
   .home-cats__head h2 { font-size: 22px; }
   .home-cats__grid { grid-template-columns: 1fr 1fr; gap: 12px; }
