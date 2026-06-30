@@ -65,8 +65,17 @@ def test_product_constitution_maps_feature_changes_to_quality_gates() -> None:
     for phrase in [
         "機能を追加、削除、修正する場合",
         "同じ変更単位で品質 gate",
+        "Quality gate / predicate",
+        "Up/downstream artifacts",
+        "Required verification",
         "Source collection / URL freshness / dedup",
+        "tools.audit_all_article_urls.blocking_url_dates(issue_date)",
+        "TODAY / YESTERDAY",
+        "2日以上前の過去URL不良",
+        "warning / inventory / repair candidate",
         "Article data / schema / tags",
+        "tools.publish_inventory.scheduled_category_ids(issue)",
+        "tools.validate_daily_quality --date <date> --docs-root docs --require-deepdive",
         "Web publish surface",
         "Deploy workflow success",
         "workflow Pages status built",
@@ -86,7 +95,12 @@ def test_product_constitution_maps_feature_changes_to_quality_gates() -> None:
         "--audit-playlists",
         "Notification",
         "Runner / state / recovery",
+        "NEWS_GRASP_SKIP_URL_CHECK=1",
+        '-m "not network"',
         "Incident / reporting",
+        "recovery evidence",
+        "新規 `docs/incidents/*-report.html` は追跡・公開しない",
+        "build/incidents/",
         "Affected matrix rows",
         "Gate update decision",
         "Verification command",
@@ -305,6 +319,9 @@ def test_product_constitution_requires_horizontal_incident_bugfix_investigation(
         assert "runner / repair / state / report の横並び調査" in text
         assert "同じ incident 単位" in text
         assert "1 レーンでも未調査なら修正完了にしてはならない" in text
+        assert "Do not place new `docs/incidents/*-report.html` files in git or GitHub Pages" in text
+        assert "untracked `build/incidents/`" in text
+        assert "unless the user separately approves public publication" in text
 
 
 def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> None:

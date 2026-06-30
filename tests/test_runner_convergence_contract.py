@@ -1105,6 +1105,18 @@ def test_existing_artifact_guard_allows_explicit_resume() -> None:
     assert "Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts." in runner
 
 
+def test_no_publish_e2e_forbids_force_full_rerun_after_artifacts_exist() -> None:
+    """修正後の NoPublish/E2E は full rerun へ戻らず、既存 artifact から resume させる。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    guard = runner.split("Assert-RunnerBinaryInSync", 1)[1].split("Write-CodexUsageWindowSnapshot -Phase 'start'", 1)[0]
+
+    assert "$IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive" in guard
+    assert "E2E full rerun forbidden after existing artifacts" in guard
+    assert "Use -ResumeFromStage deepdive, post-daily-quality, or post-deepdive" in guard
+    assert guard.index("E2E full rerun forbidden after existing artifacts") < guard.index("existing daily artifacts detected")
+    assert "-not $ForceFullRerun" not in guard.split("E2E full rerun forbidden after existing artifacts", 1)[0]
+
+
 def test_no_publish_e2e_does_not_mark_publish_complete() -> None:
     """NoPublish E2E は成功しても publish_complete ではなく publish_dry_run_ok にする。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")

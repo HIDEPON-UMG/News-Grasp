@@ -19,7 +19,7 @@ URL を捏造することが判明 (DeepDive の捏造 URL は実は日次 diges
 ./.venv/Scripts/python.exe tools/audit_all_article_urls.py             # 全期間
 ./.venv/Scripts/python.exe tools/audit_all_article_urls.py --recent 7  # 直近7日のみ
 ./.venv/Scripts/python.exe tools/audit_all_article_urls.py --gate      # push gate モード
-                                                                      # (recent 7 + 厳格 exit)
+                                                                      # (号日+前日 + 厳格 exit)
 ./.venv/Scripts/python.exe tools/audit_all_article_urls.py --gate --match-session
                                                                       # 案②-Lite: gate に
                                                                       # 加え当日 LLM
@@ -27,7 +27,7 @@ URL を捏造することが判明 (DeepDive の捏造 URL は実は日次 diges
                                                                       # 確認した URL リスト
                                                                       # (data/_session_urls.json)
                                                                       # と articles.jsonl
-                                                                      # 直近 N 日 URL を
+                                                                      # 当日 URL を
                                                                       # 物理照合
 ```
 
@@ -64,6 +64,19 @@ class DropResult:
     digest_cards_dropped: int
     touched_digest_files: int
     search_audit_updated: int = 0
+
+
+def blocking_url_dates(issue_date: date) -> set[str]:
+    """daily publish を止める URL liveness 対象日。
+
+    外部ニュースサイトの古い URL は時間とともに消えるため、日次公開 gate は
+    TODAY / YESTERDAY として表示される号日と前日だけを blocking にする。
+    2 日以上前は ad-hoc 監査、warning、repair candidate の領域で扱う。
+    """
+    return {
+        issue_date.strftime("%Y-%m-%d"),
+        (issue_date - timedelta(days=1)).strftime("%Y-%m-%d"),
+    }
 
 
 def _normalize_url_for_match(url: str) -> str:
@@ -326,7 +339,7 @@ def main() -> int:
                     help="直近 N 日に絞る (0 = 全件)")
     ap.add_argument("--max-workers", type=int, default=16)
     ap.add_argument("--gate", action="store_true",
-                    help="push gate モード (--recent 7 と同等 + 致命的フェイルで非ゼロ exit)")
+                    help="push gate モード (号日+前日 + 致命的フェイルで非ゼロ exit)")
     ap.add_argument("--match-session", action="store_true",
                     help="案②-Lite: data/_session_urls.json (= 当日 LLM が WebSearch で "
                          "200 確認した URL の白リスト) に articles.jsonl の直近 N 日 URL "
@@ -350,8 +363,6 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true",
                     help="--quarantine-articles の変更を実反映する (既定は dry-run)")
     args = ap.parse_args()
-    if args.gate and not args.recent:
-        args.recent = 7  # gate は直近 7 日のみ走査 (push 速度のため・歴史的死リンクは別 ad-hoc で)
 
     jsonl = _PKG_ROOT / "data" / "articles.jsonl"
     if not jsonl.exists():
@@ -359,14 +370,16 @@ def main() -> int:
         return 2
 
     today = date.today()
+    issue_day = today
     issue_date_str = today.strftime("%Y-%m-%d")
     if args.issue_date:
         try:
-            datetime.strptime(args.issue_date, "%Y-%m-%d")
+            issue_day = datetime.strptime(args.issue_date, "%Y-%m-%d").date()
         except ValueError:
             print(f"FATAL: --issue-date は YYYY-MM-DD 形式: {args.issue_date!r}", file=sys.stderr)
             return 2
-        issue_date_str = args.issue_date
+        issue_date_str = issue_day.strftime("%Y-%m-%d")
+    gate_dates = blocking_url_dates(issue_day) if args.gate and not args.recent else None
     cutoff = today - timedelta(days=args.recent) if args.recent else None
 
     items: list[tuple[str, str, str]] = []  # (date, title, url)
@@ -391,7 +404,10 @@ def main() -> int:
             title = str(d.get("title", "")).strip()
             if not url.startswith("http"):
                 continue
-            if args.issue_date and dt_str != issue_date_str:
+            if gate_dates is not None:
+                if dt_str not in gate_dates:
+                    continue
+            elif args.issue_date and dt_str != issue_date_str:
                 continue
             if cutoff:
                 try:
@@ -417,13 +433,19 @@ def main() -> int:
             items = [
                 (dt_str, title, url)
                 for dt_str, title, url in items
-                if _normalize_url_for_match(url) in current_norm
+                if dt_str != issue_date_str or _normalize_url_for_match(url) in current_norm
             ]
             if not items:
                 print(f"対象 URL が 0 件 (--issue-date {issue_date_str}, current reporter manifest)")
                 return 0
 
-    print(f"対象 URL: {len(items)} 件 ({'直近 ' + str(args.recent) + ' 日' if cutoff else '全期間'})")
+    if gate_dates is not None:
+        scope_label = f"号日/前日 {min(gate_dates)}..{max(gate_dates)}"
+    elif cutoff:
+        scope_label = f"直近 {args.recent} 日"
+    else:
+        scope_label = "全期間"
+    print(f"対象 URL: {len(items)} 件 ({scope_label})")
 
     # 案②-Lite: session 白リスト照合 (gate と独立に動かせるが、本番運用は --gate と同時指定)
     session_fatal: list[tuple[str, str, str]] = []  # (date, title, url)
@@ -494,8 +516,7 @@ def main() -> int:
         # 当日 + 前日のレコードを対象にする。当日のみだと「古い記事に date=前日を
         # 付ける」変種が検証対象外になり、既存 _stale_* (issue-1 まで許容) も
         # 素通りさせるため。digest 掲載が許される date 範囲 = 検証対象範囲で揃える。
-        target_dates = {today.strftime("%Y-%m-%d"),
-                        (today - timedelta(days=1)).strftime("%Y-%m-%d")}
+        target_dates = blocking_url_dates(issue_day)
         targets = [it for it in items if it[0] in target_dates]
         if not targets:
             print(f"日付証拠検証: 当日/前日 ({min(target_dates)}..{max(target_dates)}) "

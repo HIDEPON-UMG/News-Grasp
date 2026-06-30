@@ -1954,6 +1954,12 @@ Add-Content -Path $LogPath -Value '==========================================' -
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
 Assert-RunnerBinaryInSync
+$IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive
+if ($IsE2EOrDryRun -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
+    Write-Log "ERROR: E2E full rerun forbidden after existing artifacts date=$DateStamp. Use -ResumeFromStage deepdive, post-daily-quality, or post-deepdive."
+    Set-RunnerState -Status 'blocked_e2e_full_rerun_forbidden' -Message 'E2E full rerun forbidden after existing artifacts' -ExitCode 65
+    exit 65
+}
 if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
     Write-Log "ERROR: existing daily artifacts detected; refusing full rerun for date=$DateStamp. Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts."
     Set-RunnerState -Status 'failed' -Message 'existing daily artifacts detected; refusing full rerun' -ExitCode 64

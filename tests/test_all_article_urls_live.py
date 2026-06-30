@@ -8,12 +8,12 @@
 セッションが「ありそうな URL」を記憶ベースで生成し、`runner.ps1` がそのまま push、
 GitHub Pages で読者が踏んで死リンクに当たる構図が常態化していた。
 
-本テストは `tools/audit_all_article_urls.py --recent 7` を呼び、直近 7 日に
-追加された URL の 404/410 を locked-in で防ぐ:
+本テストは `tools/audit_all_article_urls.py --gate` を呼び、TODAY / YESTERDAY
+として公開される URL の 404/410 を locked-in で防ぐ:
 
   1. `runner.ps1` の push gate と同じロジックを CI/開発時にも適用 (=境界の二重化)
-  2. 直近窓に限定することでテスト時間を ~30 秒以内に抑える
-  3. 歴史的死リンク (リンク切れになった真正記事) は対象外 (別 ad-hoc 監査で扱う)
+  2. TODAY / YESTERDAY に限定することで、過去 URL の自然消滅で公開を止めない
+  3. 歴史的死リンク (リンク切れになった真正記事) は warning / repair candidate で扱う
 
 実行:
   pytest tests/test_all_article_urls_live.py -v
@@ -339,6 +339,136 @@ def test_issue_date_url_gate_uses_current_manifest_urls_only(monkeypatch, tmp_pa
     assert captured_refs == [current_url]
 
 
+def test_gate_issue_date_blocks_today_and_yesterday_only(monkeypatch, tmp_path):
+    """daily URL gate は issue date と前日だけを blocking 対象にする。"""
+    import json as _json
+
+    from tools import audit_all_article_urls as mod
+
+    issue = "2026-06-30"
+    previous = "2026-06-29"
+    older = "2026-06-28"
+    current_url = "https://example.com/current"
+    stale_same_day = "https://example.com/stale-same-day"
+    previous_url = "https://example.com/previous"
+    older_url = "https://example.com/older-dead"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        "\n".join(
+            _json.dumps(row, ensure_ascii=False)
+            for row in [
+                {"date": issue, "genre": "AI", "title": "current", "url": current_url},
+                {"date": issue, "genre": "AI", "title": "stale", "url": stale_same_day},
+                {"date": previous, "genre": "AI", "title": "previous", "url": previous_url},
+                {"date": older, "genre": "AI", "title": "older", "url": older_url},
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    records.parent.mkdir(parents=True)
+    records.write_text(
+        _json.dumps({"date": issue, "genre": "AI", "title": "current", "url": current_url}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        _json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    captured_refs: list[str] = []
+
+    def _fake_verify(refs, max_workers=0):
+        captured_refs.extend(ref.url for ref in refs)
+        return []
+
+    monkeypatch.setattr(mod, "_PKG_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "verify_urls", _fake_verify)
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_all_article_urls",
+            "--gate",
+            "--no-verify-dates",
+            "--issue-date",
+            issue,
+        ],
+    )
+
+    rc = mod.main()
+
+    assert rc == 0
+    assert captured_refs == [current_url, previous_url]
+
+
+def test_date_evidence_uses_issue_date_window_not_wall_clock(monkeypatch, tmp_path):
+    """日付証拠検証も実行日ではなく issue date と前日を対象にする。"""
+    import json as _json
+
+    from tools import audit_all_article_urls as mod
+    import tools.date_evidence as de
+
+    issue = "2026-06-24"
+    previous = "2026-06-23"
+    older = "2026-06-22"
+    issue_url = "https://example.com/issue"
+    previous_url = "https://example.com/previous"
+    older_url = "https://example.com/older"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "articles.jsonl").write_text(
+        "\n".join(
+            _json.dumps(row, ensure_ascii=False)
+            for row in [
+                {"date": issue, "title": "issue", "url": issue_url, "published_date": issue},
+                {"date": previous, "title": "previous", "url": previous_url, "published_date": previous},
+                {"date": older, "title": "older", "url": older_url, "published_date": older},
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    captured_urls: list[str] = []
+
+    def _fake_evaluate(claimed, url, html, record_title=None):
+        captured_urls.append(url)
+        return de.DateEvidence(url=url, claimed=claimed, warnings=[], method="htmldate", fatal_reason=None)
+
+    monkeypatch.setattr(mod, "_PKG_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "verify_urls", lambda refs, max_workers=0: [])
+    monkeypatch.setattr(de, "fetch_html", lambda url, **kw: "<html></html>")
+    monkeypatch.setattr(de, "evaluate_date_evidence", _fake_evaluate)
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit_all_article_urls",
+            "--gate",
+            "--verify-dates",
+            "--issue-date",
+            issue,
+        ],
+    )
+
+    rc = mod.main()
+
+    assert rc == 0
+    assert captured_urls == [issue_url, previous_url]
+
+
 def test_quarantine_does_not_delete_session_mismatch_urls(monkeypatch, tmp_path):
     """session 未確認は削除せず停止する。quarantine は物理/date fatal 限定。"""
     import json as _json
@@ -399,7 +529,7 @@ def test_quarantine_does_not_delete_session_mismatch_urls(monkeypatch, tmp_path)
 @pytest.mark.network
 @needs_network
 def test_recent_article_urls_are_alive():
-    """直近 7 日の articles.jsonl URL がすべて生存している契約。
+    """TODAY / YESTERDAY の articles.jsonl URL がすべて生存している契約。
 
     audit_all_article_urls.py --gate を CLI 経由で呼び、exit 0 を確認する。runner.ps1
     の URL liveness gate と同じ境界モジュールを通すので、本テストが通れば push gate も
@@ -417,6 +547,6 @@ def test_recent_article_urls_are_alive():
         timeout=180,
     )
     assert result.returncode == 0, (
-        "直近 7 日の articles.jsonl に死リンクあり (捏造または恒久 404)。\n"
+        "TODAY / YESTERDAY の articles.jsonl に死リンクあり (捏造または恒久 404)。\n"
         f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}"
     )
