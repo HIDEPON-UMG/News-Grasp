@@ -134,7 +134,8 @@ def test_home_categories_render_all_cards_with_thumbnail_and_layout(synthetic_ho
 
 
 def test_home_editorial_uses_three_lanes_and_existing_emphasis(synthetic_home: str) -> None:
-    assert "home-editorial__masthead" in synthetic_home
+    assert "home-editorial__masthead" not in synthetic_home
+    assert "━━ 2b" not in synthetic_home
     assert "home-editorial__panel" in synthetic_home
     assert "home-editorial-lane__icon" not in synthetic_home
     assert 'data-editorial-lanes="true"' in synthetic_home
@@ -142,6 +143,8 @@ def test_home_editorial_uses_three_lanes_and_existing_emphasis(synthetic_home: s
         assert f'data-editorial-lane="{lane}"' in synthetic_home
         assert f"home-editorial-lane__shape--{lane}" in synthetic_home
         assert f">{index:02d}</div>" in synthetic_home
+    for label in ("FACT", "CONTEXT", "OUTLOOK", "事実・概要", "背景・要点", "影響・展望"):
+        assert label in synthetic_home
 
     editorial = synthetic_home.split('data-editorial-lanes="true"', 1)[1].split(
         "home-editorial__cta", 1
@@ -152,6 +155,16 @@ def test_home_editorial_uses_three_lanes_and_existing_emphasis(synthetic_home: s
     assert '<strong class="emph-bold">AI投資</strong>' in editorial
     assert '<span class="emph-und">制度整備</span>' in editorial
     assert "<strong>供給網</strong>" in editorial
+
+
+def test_home_editorial_lane_labels_are_readable_size() -> None:
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    en = re.search(r"\.home-editorial-lane__en\s*\{[^}]*font-size:\s*(\d+)px", css)
+    jp = re.search(r"\.home-editorial-lane__jp\s*\{[^}]*font-size:\s*(\d+)px", css)
+    assert en, "FACT / CONTEXT / OUTLOOK label font-size is missing"
+    assert jp, "Japanese lane helper label font-size is missing"
+    assert int(en.group(1)) >= 14
+    assert int(jp.group(1)) >= 13
 
 
 def test_home_editorial_strips_decorated_info_callout_heading(

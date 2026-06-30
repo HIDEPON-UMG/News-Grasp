@@ -109,6 +109,20 @@ def test_home_nav_places_podcast_before_archive_as_channel_podcasts_link(built_h
     assert built_home.index('class="home-nav__podcast"') < built_home.index('class="home-nav__archive"')
 
 
+def test_home_nav_uses_silhouette_icons_and_plain_today(built_home: str):
+    """PODCAST/ARCHIVE と TODAY/YESTERDAY は小さなシルエットで識別し、TODAY の <> は出さない。"""
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    assert 'class="home-nav__today home-nav__day-link home-nav__day-link--today">TODAY</span>' in built_home
+    assert 'home-nav__day-link--yesterday">YESTERDAY</a>' in built_home
+    assert "&lt;TODAY&gt;" not in built_home
+    assert "<TODAY>" not in built_home
+    assert ".home-nav__podcast::before" in css
+    assert ".home-nav__archive::before" in css
+    assert ".home-nav__day-link--today::before" in css
+    assert ".home-nav__day-link--yesterday::before" in css
+    assert "mask-image:" in css
+
+
 def test_home_nav_mobile_keeps_today_yesterday_readable():
     """Podcast追加後も、モバイルで TODAY / YESTERDAY を小さく潰さない。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
@@ -129,7 +143,7 @@ def test_home_nav_mobile_uses_compact_yesterday_snapshot_for_actions():
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
     assert ".home-nav { padding-left: 10px; padding-right: 10px; }" in css
     assert ".home-nav__actions { gap: 4px; }" in css
-    assert ".home-nav__archive { padding: 4px 6px; font-size: 9px; letter-spacing: 0.08em; }" in css
+    assert ".home-nav__archive { gap: 4px; padding: 4px 5px; font-size: 9px; letter-spacing: 0.08em; }" in css
     assert ".home-nav__archive { padding: 7px 10px; font-size: 10px;" not in css
 
 
@@ -338,7 +352,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-06-30-lp-editorial-board-fix" in sw
+    assert "2026-06-30-lp-editorial-nav-icons" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
@@ -526,16 +540,16 @@ def test_yesterday_lp_nav_is_reversed(yesterday_lp):
     (今日 LP とは TODAY/YESTERDAY のアクティブが逆転し、相互に行き来できる)。"""
     from tools.config import BASE_URL
     html, _ = yesterday_lp
-    assert '<span class="home-nav__today">YESTERDAY</span>' in html, \
+    assert '<span class="home-nav__today home-nav__day-link home-nav__day-link--yesterday">YESTERDAY</span>' in html, \
         "昨日 LP では YESTERDAY が現在地 (active span) であるべき"
-    assert f'href="{BASE_URL}/" class="home-nav__yesterday">TODAY</a>' in html, \
+    assert f'href="{BASE_URL}/" class="home-nav__yesterday home-nav__day-link home-nav__day-link--today">TODAY</a>' in html, \
         "昨日 LP の TODAY は当日 LP (ルート) へのリンクであるべき"
 
 
 def test_today_lp_has_yesterday_link(built_home):
     """当日 LP の sticky nav は TODAY が現在地・YESTERDAY が前日 LP へのリンク。"""
-    assert '<span class="home-nav__today">TODAY</span>' in built_home
-    assert 'class="home-nav__yesterday">YESTERDAY</a>' in built_home
+    assert '<span class="home-nav__today home-nav__day-link home-nav__day-link--today">TODAY</span>' in built_home
+    assert 'class="home-nav__yesterday home-nav__day-link home-nav__day-link--yesterday">YESTERDAY</a>' in built_home
 
 
 def test_yesterday_lp_deepdive_is_not_today(yesterday_lp):
