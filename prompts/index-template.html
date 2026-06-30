@@ -348,11 +348,35 @@
           {% endif %}
         </div>
         <div class="home-cat-card__body">
-          <p class="home-cat-card__summary">{% if c.summary %}{{ c.summary|truncate(96, true, '…') }}{% else %}本日のダイジェスト準備中{% endif %}</p>
+          <div class="home-cat-card__meta">
+            <span class="home-cat-card__dot" aria-hidden="true"></span>
+            <span>{% if c.is_rest %}NO ISSUE{% else %}{{ c.stories }}件{% endif %}</span>
+            {% if c.top_published %}<span>·</span><span>{{ c.top_published }}</span>{% endif %}
+            {% if c.top_source %}<span>·</span><span>{{ c.top_source }}</span>{% endif %}
+          </div>
+          <h3 class="home-cat-card__top-title">{{ c.top_title or "本日休載" }}</h3>
+          {% if c.key_points %}
+          <div class="home-cat-card__points">
+            {% for point in c.key_points[:2] %}
+            <span class="home-cat-card__point"><i aria-hidden="true"></i><span>{{ point }}</span></span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if c.keywords %}
+          <div class="home-cat-card__keywords">
+            {% for keyword in c.keywords[:3] %}
+            <span class="home-cat-card__keyword">{{ keyword }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if c.is_rest %}
+          <div class="home-cat-card__no-issue">NO ISSUE</div>
+          {% else %}
           <div class="home-cat-card__foot">
             <span>{{ c.stories }} STORIES</span>
             <span class="home-cat-card__arrow">→</span>
           </div>
+          {% endif %}
         </div>
       </a>
       {% endfor %}

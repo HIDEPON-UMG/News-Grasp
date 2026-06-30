@@ -336,6 +336,62 @@ def _score_note(top: dict[str, Any] | None, category_jp: str) -> str:
     return ""
 
 
+def _category_card_points(entry: dict[str, Any] | None, limit: int = 2) -> list[str]:
+    """LP by Category 3d カード用に、記事 bullet から短い論点を作る。"""
+    if not entry:
+        return []
+    points: list[str] = []
+    for bullet in entry.get("top_bullets") or []:
+        plain = strip_inline(_html.unescape(_HTML_TAG_RE.sub("", str(bullet))))
+        plain = re.sub(r"^【[^】]+】：?", "", plain).strip()
+        plain = re.sub(r"\s+", " ", plain)
+        if plain and plain not in points:
+            points.append(truncate(plain, 44))
+        if len(points) >= limit:
+            break
+    return points
+
+
+def _category_card_keywords(entry: dict[str, Any] | None, limit: int = 3) -> list[str]:
+    """LP by Category 3d カード用の短いキーワード帯を、既存の tag/数値から作る。"""
+    if not entry:
+        return []
+    keywords: list[str] = []
+    for tag in entry.get("top_tags") or []:
+        label = str(tag).strip()
+        if "/" in label:
+            label = label.split("/", 1)[1]
+        label = label.replace("-", " ").strip()
+        if label and label not in keywords:
+            keywords.append(truncate(label, 12))
+        if len(keywords) >= limit:
+            return keywords
+    for number in entry.get("key_numbers") or []:
+        label = str(number).strip()
+        if label and label not in keywords:
+            keywords.append(label)
+        if len(keywords) >= limit:
+            return keywords
+    title = strip_inline(str(entry.get("top_title") or entry.get("top_title_ja") or ""))
+    for word in re.split(r"[、，。\s・/／:：()（）「」『』]+", title):
+        word = word.strip()
+        if 2 <= len(word) <= 12 and word not in keywords:
+            keywords.append(word)
+        if len(keywords) >= limit:
+            break
+    return keywords[:limit]
+
+
+def _category_card_time(entry: dict[str, Any] | None) -> str:
+    if not entry:
+        return ""
+    raw = str(entry.get("top_published") or entry.get("top_date") or "").strip()
+    match = re.search(r"\b(\d{1,2}:\d{2})\b", raw)
+    if match:
+        return match.group(1)
+    return ""
+
+
 def _parse_article_block(block: str) -> dict[str, Any] | None:
     """記事 1 ブロック (### 行から次の `---` まで) を dict に変換。
 
@@ -1408,6 +1464,8 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         top_score = e.get("top_score", 0) if e and not is_rest else 0
         top_thumb = e.get("top_thumb", "") if e and not is_rest else ""
         top_title = e.get("top_title") or e.get("top_title_ja") if e else ""
+        key_points = _category_card_points(e) if e and not is_rest else []
+        keywords = _category_card_keywords(e) if e and not is_rest else []
         lens_cards.append({
             "id": cid,
             "name_jp": meta["jp"],
@@ -1418,14 +1476,20 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "canonical": e["canonical"] if e else f"{BASE_URL}/{cid}/",
             "stories": stories,
             "top_thumb": top_thumb,
-            "top_title": top_title,
+            "top_title": top_title if not is_rest else "本日休載",
             "top_source": e.get("top_source", "") if e else "",
+            "top_published": _category_card_time(e),
             "top_score": top_score,
+            "key_points": key_points,
+            "keywords": keywords,
             "has_thumb": bool(top_thumb),
             "show_score": top_score > 0,
             "is_rest": is_rest,
-            "layout": "wide" if index == 6 else "standard",
+            "layout": "standard",
         })
+    lens_cards.sort(key=lambda c: (int(c.get("top_score") or 0), int(c.get("stories") or 0)), reverse=True)
+    for index, card in enumerate(lens_cards):
+        card["layout"] = "wide" if index == 6 else "standard"
 
     # Editorial preview: 同日の summary digest を引く。無ければ全 entry から最新の summary を探す
     editorial = next((e for e in same_day if e["category_id"] == "summary"), None)

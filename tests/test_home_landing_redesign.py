@@ -53,7 +53,7 @@ def _entry(category_id: str, *, score: int, thumb: bool = True, count: int = 3) 
             gp.inline_html("【背景・要点】：供給条件と制度対応が焦点。"),
             gp.inline_html("【影響・展望】：明日の判断材料を整理。"),
         ],
-        "top_tags": [],
+        "top_tags": ["制度整備", "供給網", "販売"],
         "score_note": "",
         "score_signals": [],
         "key_numbers": [],
@@ -123,14 +123,39 @@ def test_home_categories_render_all_cards_with_thumbnail_and_layout(synthetic_ho
     assert "home-cat-card__thumb-img" in synthetic_home
 
     game = _card_segment(synthetic_home, "game")
-    assert "home-cat-card--wide" in game
     assert "home-cat-card--rest" in game
     assert "NO PHOTO" in game
     assert "home-cat-card__score" not in game
 
     security = _card_segment(synthetic_home, "security")
-    assert "home-cat-card--standard" in security
-    assert "home-cat-card--wide" not in security
+    assert "home-cat-card--wide" in security
+
+
+def test_home_category_cards_use_3d_structured_body(synthetic_home: str) -> None:
+    """by Category 3d は長文 summary ではなくメタ・代表見出し・論点・キーワードで読ませる。"""
+    fx = _card_segment(synthetic_home, "fx")
+    assert "home-cat-card__meta" in fx
+    assert "home-cat-card__top-title" in fx
+    assert "home-cat-card__points" in fx
+    assert fx.count("home-cat-card__point") >= 2
+    assert "home-cat-card__keywords" in fx
+    assert "home-cat-card__keyword" in fx
+    assert "Example News" in fx
+    assert "FX トップ記事" not in fx
+    assert "為替 トップ記事" in fx
+    assert "制度整備" in fx
+    assert "供給網" in fx
+    assert "home-cat-card__summary" not in fx
+    assert "[[" not in fx
+
+
+def test_home_category_rest_card_uses_no_issue_fallback(synthetic_home: str) -> None:
+    """0件カテゴリはカードを落とさず、休載状態として成立させる。"""
+    game = _card_segment(synthetic_home, "game")
+    assert "home-cat-card--rest" in game
+    assert "本日休載" in game
+    assert "NO ISSUE" in game
+    assert "home-cat-card__foot" not in game
 
 
 def test_home_editorial_uses_three_lanes_and_existing_emphasis(synthetic_home: str) -> None:
