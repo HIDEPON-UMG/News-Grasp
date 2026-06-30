@@ -325,16 +325,30 @@
       <h2><span class="by">by</span> Category.</h2>
       <div class="home-cats__head-meta">7 lenses, {{ stats.stories }} stories ↘</div>
     </div>
-    <div class="home-cats__grid">
-      {% for c in lens_cards %}
-      <a class="home-cat-card cat-{{ c.id }}" href="{{ c.canonical }}">
-        <div class="home-cat-card__band">
-          <div class="home-cat-card__glyph">{{ c.glyph }}</div>
+    <div class="home-cats__grid" data-home-category-grid="true">
+      {% for c in lens_cards_all or lens_cards %}
+      <a class="home-cat-card home-cat-card--{{ c.layout }}{% if c.is_rest %} home-cat-card--rest{% endif %} cat-{{ c.id }}"
+         href="{{ c.canonical }}"
+         data-category-card="{{ c.id }}"
+         style="--cat: {{ c.accent }};">
+        <div class="home-cat-card__media">
+          {% if c.has_thumb %}
+          <img class="home-cat-card__thumb-img" src="{{ c.top_thumb }}" alt="{{ c.top_title or c.name_jp }}" loading="lazy">
+          {% else %}
+          <div class="home-cat-card__thumb home-cat-card__thumb--fallback" aria-hidden="true">
+            <span>{{ c.glyph }}</span>
+            <em>NO PHOTO</em>
+          </div>
+          {% endif %}
+          <div class="home-cat-card__shade" aria-hidden="true"></div>
           <div class="home-cat-card__en">{{ c.name_en|upper }}</div>
           <div class="home-cat-card__jp">{{ c.name_jp }}</div>
+          {% if c.show_score %}
+          <div class="home-cat-card__score">SCORE {{ c.top_score }}</div>
+          {% endif %}
         </div>
         <div class="home-cat-card__body">
-          <p class="home-cat-card__summary">{% if c.summary %}{{ c.summary|truncate(60, true, '…') }}{% else %}本日のダイジェスト準備中{% endif %}</p>
+          <p class="home-cat-card__summary">{% if c.summary %}{{ c.summary|truncate(96, true, '…') }}{% else %}本日のダイジェスト準備中{% endif %}</p>
           <div class="home-cat-card__foot">
             <span>{{ c.stories }} STORIES</span>
             <span class="home-cat-card__arrow">→</span>
@@ -360,7 +374,26 @@
       {% if hero_phrase_left and hero_phrase_right %}
       <div class="home-editorial__subtitle">「{{ hero_phrase_left }}と{{ hero_phrase_right }}」</div>
       {% endif %}
-      <p>{{ editorial_essay|render_emph }}</p>
+      <div class="home-editorial__lanes" data-editorial-lanes="true">
+        {% for lane in home_editorial_lanes %}
+        <div class="home-editorial-lane home-editorial-lane--{{ lane.key }}" data-editorial-lane="{{ lane.key }}">
+          <div class="home-editorial-lane__icon" aria-hidden="true">
+            {% if lane.key == "fact" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+            {% elif lane.key == "context" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+            {% endif %}
+            <span>{{ lane.short }}</span>
+          </div>
+          <div class="home-editorial-lane__content">
+            <div class="home-editorial-lane__marker">【{{ lane.marker }}】</div>
+            <div class="home-editorial-lane__body">{{ lane.body|render_emph }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
       <div class="home-editorial__cta">
         <a href="{{ base_url }}/{{ editorial.date }}/summary/" class="btn-gold">READ FULL ESSAY →</a>
         <a href="{{ base_url }}/archive/" class="btn-ghost">ALL SECTIONS</a>

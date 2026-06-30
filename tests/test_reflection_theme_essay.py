@@ -194,6 +194,20 @@ def test_theme_essay_for_home_strips_trailer_and_markup():
     assert "[[" not in out
 
 
+def test_theme_essay_for_home_strips_decorated_info_callout_heading():
+    lead = (
+        "*__*[!info] Today's Theme**__ "
+        "今日は、[[AI]] の計算資源が並び、**機能の派手さ**より "
+        "__前提条件__ が主役でした。"
+    )
+    out = _theme_essay_for_home(lead)
+    assert "Today's Theme" not in out
+    assert "[!info]" not in out
+    assert out.startswith("今日は、AI")
+    assert "機能の派手さ" in out
+    assert "前提条件" in out
+
+
 def test_parse_reflection_extracts_all_blocks():
     r = parse_reflection(_SUMMARY_DIGEST)
     # lead = 多カテゴリ横断の考察文 (為替単独ではない)

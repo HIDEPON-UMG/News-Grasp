@@ -104,6 +104,10 @@ _TAKEAWAY_ITEM_RE = re.compile(r"^-\s+\*\*\[([^\]]+)\]\*\*\s*(.+?)\s*$", re.MULT
 _HOME_LEAD_TRAILER_RE = re.compile(
     r"以下[、,]?\s*各カテゴリを横断して読み解く[。\.\-—─]*\s*$"
 )
+_HOME_LEAD_CALLOUT_LABEL_RE = re.compile(
+    r"^\s*(?:[*_>\s]+)?\[!(?:info|note)\]\s*(?:Today's\s+Theme|Today’s\s+Theme)?(?:[*_\s]+)?",
+    re.IGNORECASE,
+)
 # 考察 §NN 見出しの先頭ラベル (為替/AI/...) を category id に対応付ける。
 # CATEGORIES["it"]["jp"] は "IT-Consulting" だが、digest 見出しは "IT —" 表記なので別途 alias。
 TAG_TO_CID: dict[str, str] = {
@@ -1352,10 +1356,21 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "editor_top3": [],
             "lens_cards": [{"id": cid, "name_jp": meta["jp"], "name_en": meta["label"],
                             "glyph": meta["glyph"], "accent": meta["accent"],
-                            "summary": "", "canonical": f"{BASE_URL}/{cid}/", "stories": 0}
-                           for cid, meta in CATEGORIES.items() if cid != "summary"],
+                            "summary": "", "canonical": f"{BASE_URL}/{cid}/", "stories": 0,
+                            "top_thumb": "", "top_title": "", "top_score": 0,
+                            "has_thumb": False, "show_score": False, "is_rest": True,
+                            "layout": "wide" if index == 6 else "standard"}
+                           for index, (cid, meta) in enumerate((c, m) for c, m in CATEGORIES.items() if c != "summary")],
+            "lens_cards_all": [{"id": cid, "name_jp": meta["jp"], "name_en": meta["label"],
+                                "glyph": meta["glyph"], "accent": meta["accent"],
+                                "summary": "", "canonical": f"{BASE_URL}/{cid}/", "stories": 0,
+                                "top_thumb": "", "top_title": "", "top_score": 0,
+                                "has_thumb": False, "show_score": False, "is_rest": True,
+                                "layout": "wide" if index == 6 else "standard"}
+                               for index, (cid, meta) in enumerate((c, m) for c, m in CATEGORIES.items() if c != "summary")],
+            "home_editorial_lanes": [],
             "editorial": None,
-            "stats": {"stories": 0, "categories": 6, "essay": 7, "reading_min": 15},
+            "stats": {"stories": 0, "categories": len([c for c in CATEGORIES if c != "summary"]), "essay": 7, "reading_min": 15},
             "categories": [{"id": k, **v} for k, v in CATEGORIES.items()],
             "latest_deepdive": _latest_deepdive_card(),
             "podcast_url": _podcast_url(docs_root),
@@ -1376,17 +1391,23 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     editor_top3 = sorted_by_score[:5]  # 右ヒーローは TOP5 (左の DeepDive スライダーと縦幅を揃える)
     hero_story = sorted_by_score[0] if sorted_by_score else None
 
-    # 6 lens cards (summary を除く 6 カテゴリ、同日最新 entry を引く)
+    # Lens cards: summary を除く全カテゴリを CATEGORIES 順に出す。
+    # 7 件目だけ wide、8 件目以降は standard として DOM から落とさない。
     by_cat: dict[str, dict[str, Any]] = {}
     for e in same_day:
         cid = e["category_id"]
         if cid != "summary" and cid not in by_cat:
             by_cat[cid] = e
     lens_cards: list[dict[str, Any]] = []
-    for cid, meta in CATEGORIES.items():
+    for index, (cid, meta) in enumerate((c, m) for c, m in CATEGORIES.items() if c != "summary"):
         if cid == "summary":
             continue
         e = by_cat.get(cid)
+        stories = e.get("articles_count", 0) if e else 0
+        is_rest = stories <= 0
+        top_score = e.get("top_score", 0) if e and not is_rest else 0
+        top_thumb = e.get("top_thumb", "") if e and not is_rest else ""
+        top_title = e.get("top_title") or e.get("top_title_ja") if e else ""
         lens_cards.append({
             "id": cid,
             "name_jp": meta["jp"],
@@ -1395,7 +1416,15 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "accent": meta["accent"],
             "summary": strip_inline(e["summary_text"]) if e else "",
             "canonical": e["canonical"] if e else f"{BASE_URL}/{cid}/",
-            "stories": e.get("articles_count", 0) if e else 0,
+            "stories": stories,
+            "top_thumb": top_thumb,
+            "top_title": top_title,
+            "top_source": e.get("top_source", "") if e else "",
+            "top_score": top_score,
+            "has_thumb": bool(top_thumb),
+            "show_score": top_score > 0,
+            "is_rest": is_rest,
+            "layout": "wide" if index == 6 else "standard",
         })
 
     # Editorial preview: 同日の summary digest を引く。無ければ全 entry から最新の summary を探す
@@ -1416,6 +1445,11 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     editorial_essay = _strip_lead_trailer(reflection.get("lead", ""))
     if not editorial_essay and editorial:
         editorial_essay = editorial.get("summary_text", "")
+    home_editorial_lanes = _home_editorial_lanes(
+        reflection,
+        editorial_essay,
+        editorial.get("summary_text", "") if editorial else "",
+    )
 
     # Hero lead: LP 上部 TODAY'S THEME の導入文。同じ考察を装飾なしの素テキストで簡潔に。
     hero_lead = strip_inline(editorial_essay)
@@ -1460,11 +1494,13 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         "hero_story": hero_story,
         "editor_top3": editor_top3,
         "lens_cards": lens_cards,
+        "lens_cards_all": lens_cards,
+        "home_editorial_lanes": home_editorial_lanes,
         "editorial": editorial,
 
         "stats": {
             "stories": stories_total,
-            "categories": 6,
+            "categories": len(lens_cards),
             "essay": 7,
             "reading_min": 15,
         },
@@ -1725,17 +1761,74 @@ def parse_reflection(body: str) -> dict[str, Any]:
 
 
 def _strip_lead_trailer(lead: str) -> str:
-    """lead 末尾の定型遷移句 (「以下、各カテゴリを横断して読み解く。」) を除去。装飾記法は保持。
+    """lead 先頭の callout label と末尾遷移句を除去。装飾記法は保持。
 
     LP「本日のテーマ考察」ボックスは render_emph で太字/下線/マーカーを描画するため、
-    `[[ ]]` `__ __` `**` を残したまま末尾の遷移句だけ落とす。
+    `[[ ]]` `__ __` `**` を残したまま表示用ではない見出しだけ落とす。
     """
-    return _HOME_LEAD_TRAILER_RE.sub("", (lead or "").strip()).rstrip()
+    text = (lead or "").strip()
+    text = _HOME_LEAD_CALLOUT_LABEL_RE.sub("", text).strip()
+    return _HOME_LEAD_TRAILER_RE.sub("", text).rstrip()
 
 
 def _theme_essay_for_home(lead: str) -> str:
     """LP Hero リード用に lead を素テキスト化し末尾遷移句も除去 (装飾なしの簡潔表示向け)。"""
     return strip_inline(_strip_lead_trailer(lead))
+
+
+def _home_editorial_sentences(text: str) -> list[str]:
+    """LP editorial lane 用に日本語文を 1 文単位へ粗く分割する。装飾記法は保持する。"""
+    source = re.sub(r"\s+", " ", (text or "").strip())
+    if not source:
+        return []
+    parts = re.findall(r"[^。！？!?]+[。！？!?]?", source)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _home_editorial_lanes(reflection: dict[str, Any],
+                          editorial_essay: str,
+                          summary_text: str) -> list[dict[str, str]]:
+    """LP「本日のテーマ考察」を FACT / CONTEXT / OUTLOOK の 3 レーンに分ける。
+
+    lead が 3 文以上あれば先頭・中間・末尾で分ける。旧 digest などで不足するときは
+    reflection sections と summary_text で補い、raw marker はテンプレの render_emph へ渡す。
+    """
+    roles = [
+        {"key": "fact", "short": "FACT", "marker": "事実・概要"},
+        {"key": "context", "short": "CONTEXT", "marker": "背景・要点"},
+        {"key": "outlook", "short": "OUTLOOK", "marker": "影響・展望"},
+    ]
+    lead = _strip_lead_trailer((reflection or {}).get("lead", "")) or editorial_essay or ""
+    sentences = _home_editorial_sentences(lead)
+    bodies: list[str] = []
+    if len(sentences) >= 3:
+        bodies = [sentences[0], "".join(sentences[1:-1]), sentences[-1]]
+    else:
+        bodies = list(sentences)
+
+    sections = (reflection or {}).get("sections") or {}
+    for num in sorted(sections.keys()):
+        body = (sections[num].get("body", "") or "").strip()
+        if body and body not in bodies:
+            bodies.append(body)
+        if len(bodies) >= 3:
+            break
+
+    if len(bodies) < 3 and summary_text:
+        for sentence in _home_editorial_sentences(summary_text):
+            if sentence and sentence not in bodies:
+                bodies.append(sentence)
+            if len(bodies) >= 3:
+                break
+
+    while len(bodies) < 3:
+        bodies.append("")
+
+    return [
+        {**role, "body": bodies[index]}
+        for index, role in enumerate(roles)
+        if bodies[index]
+    ]
 
 
 def _section_label(heading: str) -> str:

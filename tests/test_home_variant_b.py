@@ -199,15 +199,15 @@ def test_editors_top_mobile_keeps_long_category_badges_on_one_line():
 
 
 def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
-    """LP の nav / category cards / publication matrix は canonical glyph を使う。"""
+    """LP の nav / category cards / publication matrix は canonical category 情報を使う。"""
     for cat_id, meta in CATEGORIES.items():
         if cat_id == "summary":
             continue
         label_html = html.escape(meta["label"].upper())
         assert f"home-nav__lens-{cat_id}" in built_home
         assert f"{meta['glyph']}</span>{label_html}" in built_home
-        assert f'class="home-cat-card cat-{cat_id}"' in built_home
-        assert f'<div class="home-cat-card__glyph">{meta["glyph"]}</div>' in built_home
+        assert f'data-category-card="{cat_id}"' in built_home
+        assert f"class=\"home-cat-card" in built_home
         assert f'<span class="pub-matrix__cat-glyph">{meta["glyph"]}</span>{meta["jp"]}' in built_home
 
 
@@ -338,7 +338,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-06-30-mobile-feature-note-2" in sw
+    assert "2026-06-30-lp-category-editorial-redesign" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
@@ -387,9 +387,9 @@ def test_home_deepdive_does_not_show_ad_hoc_podcast_cta(built_home: str):
 
 def test_categories_7_lens_cards(built_home: str):
     """home-cats__grid に 7 lens card が並ぶ。"""
-    assert 'class="home-cats__grid"' in built_home
+    assert 'data-home-category-grid="true"' in built_home
     for lens in ("fx", "ai", "it", "mobility", "manufacturing", "economy", "game"):
-        assert f'class="home-cat-card cat-{lens}"' in built_home, \
+        assert f'data-category-card="{lens}"' in built_home, \
             f"home-cat-card for {lens} missing"
 
 
