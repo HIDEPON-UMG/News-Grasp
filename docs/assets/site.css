@@ -1429,13 +1429,18 @@ strong {
 }
 
 /* ---- Hero SUMMARY ⇆ DEEP DIVE スイッチ + スライダー ---- */
+.home-hero__theme {
+  position: relative;
+}
 .home-hero__switch {
+  position: absolute;
+  top: -52px;
+  left: 0;
   display: inline-flex;
   flex-wrap: nowrap;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   margin: 0;
-  margin-bottom: 28px;
   max-width: 100%;
 }
 .home-hero__switch-btn {
@@ -3295,15 +3300,15 @@ strong {
   .home-nav__bar { align-items: flex-start; }
   .home-nav__links { gap: 12px; font-size: 10px; }
   .home-nav__right { display: none; }
-  .home-hero { padding: 24px 16px 24px; }
+  .home-hero { padding: 40px 16px 24px; }
   .home-hero__inner { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .home-hero__title { font-size: 38px; }
   .home-hero__lead { font-size: 14px; line-height: 1.7; }
   .home-hero__switch {
     display: flex;
+    top: -40px;
     width: fit-content;
     max-width: 100%;
-    margin-bottom: 18px;
     overflow: hidden;
   }
   .home-hero__switch-btn {

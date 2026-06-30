@@ -143,13 +143,18 @@ def test_home_theme_switch_sits_above_today_theme_heading(built_home: str):
     assert theme.index('class="home-hero__switch"') < theme.index('class="home-hero__eyebrow"')
 
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    theme_rule = re.search(r"\.home-hero__theme\s*\{(?P<body>[^}]*)\}", css, re.S)
     switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", css, re.S)
     button = re.search(r"\.home-hero__switch-btn\s*\{(?P<body>[^}]*)\}", css, re.S)
     mobile_switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", css.split("@media (max-width: 768px)", 1)[1], re.S)
-    assert switch and button and mobile_switch
-    assert "margin-bottom" in switch.group("body")
+    assert theme_rule and switch and button and mobile_switch
+    assert "position: relative" in theme_rule.group("body")
+    assert "position: absolute" in switch.group("body")
+    assert "top: -52px" in switch.group("body")
+    assert "left: 0" in switch.group("body")
     assert "flex-wrap: nowrap" in switch.group("body")
     assert "white-space: nowrap" in button.group("body")
+    assert "top: -40px" in mobile_switch.group("body")
     assert "max-width: 100%" in mobile_switch.group("body")
     assert "overflow: hidden" in mobile_switch.group("body")
 
@@ -383,7 +388,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-07-01-theme-switch-top" in sw
+    assert "2026-07-01-theme-switch-float" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
