@@ -694,8 +694,33 @@ def _get_jinja_env():
             s = re.sub(r"([、。，．・])", r"\1<wbr>", s)
             return Markup(s)
 
+        def _category_label_break(text: str) -> Markup:
+            """二語カテゴリの英字ラベルを明示 span に分割する。
+
+            CSS の自動折返しだけに任せると、mobile 幅で長い単語列が潰れる。
+            `Foreign Exchange` / `Artificial Intelligence` / `IT & Consulting`
+            はカテゴリ名として 2 行表示を許す正本なので、テンプレート出力時点で
+            行境界を持たせる。
+            """
+            if text is None:
+                return Markup("")
+            raw = str(text).strip()
+            upper = raw.upper()
+            if upper == "IT & CONSULTING":
+                lines = ["IT &", "CONSULTING"]
+            else:
+                parts = upper.split()
+                lines = parts if len(parts) == 2 else [upper]
+            return Markup(
+                "\n".join(
+                    f'<span class="category-label-break__line">{_html.escape(line, quote=False)}</span>'
+                    for line in lines
+                )
+            )
+
         _jinja_env.filters["render_emph"] = _render_emph
         _jinja_env.filters["insert_wbr"] = _insert_wbr
+        _jinja_env.filters["category_label_break"] = _category_label_break
     return _jinja_env
 
 
@@ -2615,4 +2640,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

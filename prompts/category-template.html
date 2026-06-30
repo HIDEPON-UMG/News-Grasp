@@ -260,7 +260,10 @@
       <p style="font-family: var(--font-serif); font-size: 18px; line-height: 1.85; color: var(--color-ink); margin: 0;">{{ featured.summary_text|truncate(220, true, '…') }}</p>
       {% endif %}
       <div class="top-story__tags">
-        <span class="top-story__tag is-accent">{{ glyph }} {{ category_label|upper }}</span>
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">{{ glyph }}</span>
+          <span class="category-label-break">{{ category_label|category_label_break }}</span>
+        </span>
         <span class="top-story__tag">#LATEST</span>
         <span class="top-story__tag">#{{ featured.date }}</span>
       </div>

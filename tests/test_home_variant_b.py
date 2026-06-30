@@ -15,6 +15,7 @@ import html
 import json
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -34,6 +35,41 @@ from tools.generate_pages import (  # noqa: E402
     _score_signals,
 )
 from tools.config import CATEGORIES  # noqa: E402
+
+
+class _EditorsTopBadgeParser(HTMLParser):
+    """home-top3__badge の入れ子 span を含むテキストを抽出する。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.badges: list[tuple[str, str]] = []
+        self._current_cat: str | None = None
+        self._depth = 0
+        self._chunks: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr = dict(attrs)
+        class_name = attr.get("class", "")
+        if tag == "span" and self._current_cat is None and class_name.startswith("home-top3__badge cat-"):
+            self._current_cat = class_name.removeprefix("home-top3__badge cat-")
+            self._depth = 1
+            self._chunks = []
+            return
+        if self._current_cat is not None and tag == "span":
+            self._depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._current_cat is None or tag != "span":
+            return
+        self._depth -= 1
+        if self._depth == 0:
+            self.badges.append((self._current_cat, "".join(self._chunks)))
+            self._current_cat = None
+            self._chunks = []
+
+    def handle_data(self, data: str) -> None:
+        if self._current_cat is not None:
+            self._chunks.append(data)
 
 
 # ============================================================
@@ -230,22 +266,28 @@ def test_editors_top_uses_canonical_category_glyphs(built_home: str):
     for marker in forbidden:
         assert marker not in built_home
 
-    badges = re.findall(r'class="home-top3__badge cat-([^"]+)">([^<]+)</span>', built_home)
+    parser = _EditorsTopBadgeParser()
+    parser.feed(built_home)
+    badges = parser.badges
     assert badges, "Editor's Top のカテゴリーバッジが見つからない"
     for cat_id, text in badges:
         meta = CATEGORIES[cat_id]
         expected = f"{meta['glyph']} {meta['label'].upper()}"
-        assert html.unescape(text) == expected
+        normalized = " ".join(html.unescape(text).split())
+        assert normalized == expected
 
 
-def test_editors_top_mobile_keeps_long_category_badges_on_one_line():
-    """スマホで MANUFACTURING の末尾だけが縦落ちしないよう badge は nowrap に固定する。"""
+def test_mobile_category_badges_allow_two_term_line_breaks(built_home: str):
+    """二語カテゴリは潰さず、明示 span と CSS で二行表示を許す。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
     assert ".home-top3__badge {\n  display: inline-flex;" in css
-    assert "white-space: nowrap;" in css
-    assert "word-break: keep-all;" in css
-    assert ".home-top3__badge.cat-manufacturing {\n    font-size: 9px;" in css
-    assert "letter-spacing: 0.06em;" in css
+    assert ".category-label-break" in css
+    assert "white-space: normal;" in css
+    assert "max-width: min(100%, 17ch);" in css
+    assert "ARTIFICIAL</span>" in built_home
+    assert "INTELLIGENCE</span>" in built_home
+    assert "FOREIGN</span>" in built_home
+    assert "EXCHANGE</span>" in built_home
 
 
 def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
@@ -259,6 +301,18 @@ def test_home_category_surfaces_use_canonical_glyphs(built_home: str):
         assert f'data-category-card="{cat_id}"' in built_home
         assert f"class=\"home-cat-card" in built_home
         assert f'<span class="pub-matrix__cat-glyph">{meta["glyph"]}</span>{meta["jp"]}' in built_home
+
+
+def test_home_category_card_uses_split_english_label(built_home: str):
+    """home-cat-card__en は二語カテゴリを span 分割して mobile 二行化できる。"""
+    ai_match = re.search(
+        r'<div class="home-cat-card__en">\s*'
+        r'<span class="category-label-break__line">ARTIFICIAL</span>\s*'
+        r'<span class="category-label-break__line">INTELLIGENCE</span>\s*'
+        r"</div>",
+        built_home,
+    )
+    assert ai_match, "AI card の英字カテゴリが二行用 span に分割されていない"
 
 
 def test_featured_story_section(built_home: str):
@@ -388,7 +442,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-07-01-theme-switch-float" in sw
+    assert "2026-07-01-category-label-wrap" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():

@@ -220,7 +220,10 @@
           <span class="home-top3__no">{{ "%02d"|format(loop.index) }}</span>
           <div class="home-top3__main">
             <div class="home-top3__meta">
-              <span class="home-top3__badge cat-{{ it.category_id }}">{{ it.glyph }} {{ it.category_label|upper }}</span>
+              <span class="home-top3__badge cat-{{ it.category_id }}">
+                <span class="category-label-break__glyph">{{ it.glyph }}</span>
+                <span class="category-label-break">{{ it.category_label|category_label_break }}</span>
+              </span>
               {% if it.top_date %}<span class="home-top3__time">{{ it.top_date }}</span>{% endif %}
             </div>
             <h3 class="home-top3__title">
@@ -342,7 +345,9 @@
           </div>
           {% endif %}
           <div class="home-cat-card__shade" aria-hidden="true"></div>
-          <div class="home-cat-card__en">{{ c.name_en|upper }}</div>
+          <div class="home-cat-card__en">
+            {{ c.name_en|category_label_break }}
+          </div>
           <div class="home-cat-card__jp">{{ c.name_jp }}</div>
           {% if c.show_score %}
           <div class="home-cat-card__score">SCORE {{ c.top_score }}</div>

@@ -140,7 +140,10 @@
       </h2>
       {{ summary_lanes(top.bullets, "full") }}
       <div class="top-story__tags">
-        <span class="top-story__tag is-accent">{{ glyph }} {{ category_label|upper }}</span>
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">{{ glyph }}</span>
+          <span class="category-label-break">{{ category_label|category_label_break }}</span>
+        </span>
         <span class="top-story__tag">#FEATURED</span>
         <span class="top-story__tag">#{{ date }}</span>
       </div>
