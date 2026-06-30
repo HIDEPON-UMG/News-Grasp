@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -222,6 +224,96 @@ def test_home_category_card_text_is_readable_and_not_css_truncated() -> None:
     assert float(re.search(r"font-size:\s*([\d.]+)px", meta_body).group(1)) >= 10
     assert "-webkit-line-clamp" not in title_body
     assert "text-overflow" not in point_body
+
+
+def test_home_category_cards_computed_visual_contract(
+    synthetic_home: str,
+    tmp_path: Path,
+) -> None:
+    """By Category の本文領域を、実CSS適用後の computed style で固定する。"""
+    html_path = tmp_path / "home.html"
+    html_path.write_text(synthetic_home, encoding="utf-8")
+    css_path = ROOT / "docs" / "assets" / "site.css"
+    script = r"""
+const fs = require('fs');
+const { chromium } = require('playwright');
+
+const [htmlPath, cssPath] = process.argv.slice(1);
+const html = fs.readFileSync(htmlPath, 'utf8');
+const css = fs.readFileSync(cssPath, 'utf8');
+const styleTag = `<style>${css}</style>`;
+const documentHtml = html.includes('site.css')
+  ? html.replace(/<link[^>]+site\.css[^>]*>/, styleTag)
+  : html.replace('</head>', `${styleTag}</head>`);
+
+async function launchBrowser() {
+  try {
+    return await chromium.launch({ channel: 'chrome', headless: true });
+  } catch (error) {
+    return await chromium.launch({ headless: true });
+  }
+}
+
+(async () => {
+  const browser = await launchBrowser();
+  const viewports = [
+    { name: 'desktop', width: 1366, height: 900 },
+    { name: 'mobile', width: 390, height: 844 },
+  ];
+  const results = [];
+  for (const viewport of viewports) {
+    const page = await browser.newPage({ viewport });
+    await page.setContent(documentHtml, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.home-cats');
+    results.push(await page.evaluate((name) => {
+      const cats = document.querySelector('.home-cats');
+      const pointSpans = Array.from(document.querySelectorAll('.home-cat-card__point span'));
+      const titles = Array.from(document.querySelectorAll('.home-cat-card__top-title'));
+      const pointSizes = pointSpans.map((node) => parseFloat(getComputedStyle(node).fontSize));
+      const titleSizes = titles.map((node) => parseFloat(getComputedStyle(node).fontSize));
+      return {
+        viewport: name,
+        pointCount: pointSpans.length,
+        titleCount: titles.length,
+        minPointFontSize: Math.min(...pointSizes),
+        minTitleFontSize: Math.min(...titleSizes),
+        noEllipsisInHomeCats: !cats.innerText.includes('…'),
+        emphasisCount: cats.querySelectorAll('.home-cat-card__point .emph-bold, .home-cat-card__point .emph-und, .home-cat-card__point strong').length,
+        horizontalOverflowPx: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    }, viewport.name));
+    await page.close();
+  }
+  await browser.close();
+  const failures = results.filter((result) =>
+    result.pointCount < 1 ||
+    result.titleCount < 1 ||
+    result.minPointFontSize < 13 ||
+    result.minTitleFontSize < 16 ||
+    !result.noEllipsisInHomeCats ||
+    result.emphasisCount < 1 ||
+    result.horizontalOverflowPx > 1
+  );
+  if (failures.length > 0) {
+    console.error(JSON.stringify({ results, failures }, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify({ results }, null, 2));
+})();
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(html_path), str(css_path)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    metrics = json.loads(result.stdout)
+    assert {item["viewport"] for item in metrics["results"]} == {"desktop", "mobile"}
 
 
 def test_home_editorial_strips_decorated_info_callout_heading(
