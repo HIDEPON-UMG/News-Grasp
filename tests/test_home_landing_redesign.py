@@ -134,9 +134,14 @@ def test_home_categories_render_all_cards_with_thumbnail_and_layout(synthetic_ho
 
 
 def test_home_editorial_uses_three_lanes_and_existing_emphasis(synthetic_home: str) -> None:
+    assert "home-editorial__masthead" in synthetic_home
+    assert "home-editorial__panel" in synthetic_home
+    assert "home-editorial-lane__icon" not in synthetic_home
     assert 'data-editorial-lanes="true"' in synthetic_home
-    for lane in ("fact", "context", "outlook"):
+    for index, lane in enumerate(("fact", "context", "outlook"), start=1):
         assert f'data-editorial-lane="{lane}"' in synthetic_home
+        assert f"home-editorial-lane__shape--{lane}" in synthetic_home
+        assert f">{index:02d}</div>" in synthetic_home
 
     editorial = synthetic_home.split('data-editorial-lanes="true"', 1)[1].split(
         "home-editorial__cta", 1
