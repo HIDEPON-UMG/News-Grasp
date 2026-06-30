@@ -130,12 +130,12 @@
 
     <!-- LEFT: Today's theme (SUMMARY ⇆ DEEP DIVE スライダー) -->
     <div class="home-hero__theme">
-      <div class="home-hero__eyebrow"><span class="rule">━━</span> {% if is_yesterday %}YESTERDAY{% else %}TODAY{% endif %}'S THEME</div>
       {% if latest_deepdive %}
       <div class="home-hero__switch" role="tablist" aria-label="本日のテーマ表示切替">
         <button type="button" class="home-hero__switch-btn home-hero__switch-btn--summary is-active" data-slide="summary" role="tab" aria-selected="true">SUMMARY</button>
         <button type="button" class="home-hero__switch-btn home-hero__switch-btn--deepdive" data-slide="deepdive" role="tab" aria-selected="false">DEEP DIVE</button>
       </div>
+      <div class="home-hero__eyebrow"><span class="rule">━━</span> {% if is_yesterday %}YESTERDAY{% else %}TODAY{% endif %}'S THEME</div>
       <div class="home-hero__slides">
         <div class="home-hero__track" data-active="summary">
           <!-- slide: SUMMARY (本日の考察) -->
@@ -189,6 +189,7 @@
         </div>
       </div>
       {% else %}
+      <div class="home-hero__eyebrow"><span class="rule">━━</span> {% if is_yesterday %}YESTERDAY{% else %}TODAY{% endif %}'S THEME</div>
       <h2 class="home-hero__title">
         {% if hero_phrase_left %}
           <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>

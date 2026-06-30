@@ -1431,9 +1431,12 @@ strong {
 /* ---- Hero SUMMARY ⇆ DEEP DIVE スイッチ + スライダー ---- */
 .home-hero__switch {
   display: inline-flex;
+  flex-wrap: nowrap;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  margin-bottom: 22px;
+  margin: 0;
+  margin-bottom: 28px;
+  max-width: 100%;
 }
 .home-hero__switch-btn {
   appearance: none;
@@ -1452,6 +1455,7 @@ strong {
   color: var(--color-ink-dim);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
 }
 .home-hero__switch-btn:last-child { border-right: none; }
 .home-hero__switch-btn:hover { color: var(--color-navy); }
@@ -3295,8 +3299,20 @@ strong {
   .home-hero__inner { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .home-hero__title { font-size: 38px; }
   .home-hero__lead { font-size: 14px; line-height: 1.7; }
-  .home-hero__switch { margin-bottom: 18px; }
-  .home-hero__switch-btn { padding: 7px 14px; }
+  .home-hero__switch {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .home-hero__switch-btn {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 7px 12px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
   .home-hero__title.home-hero__title--dd { font-size: 30px; line-height: 1.22; }
   .home-hero__dd-meta { margin-bottom: 14px; }
   .home-hero__slide--dd { padding: 22px 18px 24px; }

@@ -135,6 +135,25 @@ def test_home_theme_switch_uses_summary_and_deepdive_icons(built_home: str):
     assert "mask-image:" in css
 
 
+def test_home_theme_switch_sits_above_today_theme_heading(built_home: str):
+    """SUMMARY/DEEP DIVE は TODAY'S THEME 見出し上の余白に置く。"""
+    theme = built_home.split('class="home-hero__theme"', 1)[1].split(
+        '<div class="home-hero__right"', 1
+    )[0]
+    assert theme.index('class="home-hero__switch"') < theme.index('class="home-hero__eyebrow"')
+
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", css, re.S)
+    button = re.search(r"\.home-hero__switch-btn\s*\{(?P<body>[^}]*)\}", css, re.S)
+    mobile_switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", css.split("@media (max-width: 768px)", 1)[1], re.S)
+    assert switch and button and mobile_switch
+    assert "margin-bottom" in switch.group("body")
+    assert "flex-wrap: nowrap" in switch.group("body")
+    assert "white-space: nowrap" in button.group("body")
+    assert "max-width: 100%" in mobile_switch.group("body")
+    assert "overflow: hidden" in mobile_switch.group("body")
+
+
 def test_home_nav_mobile_keeps_today_yesterday_readable():
     """Podcast追加後も、モバイルで TODAY / YESTERDAY を小さく潰さない。"""
     css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
@@ -364,7 +383,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-07-01-bycategory-readable" in sw
+    assert "2026-07-01-theme-switch-top" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
