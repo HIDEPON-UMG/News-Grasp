@@ -145,6 +145,9 @@ def test_home_category_cards_use_3d_structured_body(synthetic_home: str) -> None
     assert "為替 トップ記事" in fx
     assert "制度整備" in fx
     assert "供給網" in fx
+    assert "MORE 3 STORIES" in fx
+    assert "この先の論点を見る" in fx
+    assert "詳細はこちら" not in fx
     assert "home-cat-card__summary" not in fx
     assert "[[" not in fx
 

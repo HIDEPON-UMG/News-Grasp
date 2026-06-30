@@ -1026,6 +1026,19 @@ def test_og_image_falls_back_to_real_image_not_site_root() -> None:
     assert "/assets/og/" in ctx["og_image"]
 
 
+def test_archived_deepdive_keeps_dialogue_audio_after_full_render() -> None:
+    """過去日の DeepDive 個別ページでも、公開済み対談音声があれば消さずに埋め込む。"""
+    src = ROOT / "digest" / "DeepDive" / "2026-06-28-DeepDive.md"
+    mp3 = ROOT / "build" / "tts" / "deepdive" / "2026-06-28.mp3"
+    if not src.exists() or not mp3.exists():
+        pytest.skip("2026-06-28 DeepDive audio fixture is not available")
+
+    ctx = build_deepdive_context(src)
+
+    assert ctx["deepdive_audio_date"] == "2026-06-28"
+    assert "/audio-deepdive/2026-06-28.mp3" in ctx["deepdive_audio_url"]
+
+
 def test_build_writes_page_to_deepdive_path(tmp_path: Path) -> None:
     """docs/deepdive/{date}/index.html に出力し、本文の主要要素を含む。"""
     pages = build_deepdive_pages(

@@ -1755,7 +1755,7 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
         "theme": theme,
         "tags": tags,
         "read_min": read_min,
-        **deepdive_audio_for_pages(date_str, enforce_recent=True, digest_dir=Path(md_path).parent),
+        **deepdive_audio_for_pages(date_str, digest_dir=Path(md_path).parent),
         "canonical": canonical,
         "og_title": title,
         "og_description": theme[:180],
