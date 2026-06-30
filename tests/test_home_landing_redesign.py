@@ -49,11 +49,17 @@ def _entry(category_id: str, *, score: int, thumb: bool = True, count: int = 3) 
         "top_source_url": f"https://example.test/{category_id}",
         "top_date": DATE,
         "top_bullets": [
-            gp.inline_html(f"【事実・概要】：{meta['jp']}の主要ニュースを確認。"),
-            gp.inline_html("【背景・要点】：供給条件と制度対応が焦点。"),
+            gp.inline_html(
+                f"【事実・概要】：{meta['jp']}の[[重要論点]]を中心に、"
+                "__制度整備__と**供給網**の変化をカード内で最後まで確認できる。"
+            ),
+            gp.inline_html(
+                "【背景・要点】：供給条件と制度対応が焦点で、"
+                "短い導線だけではなく最低限の判断材料を持ち帰れる。"
+            ),
             gp.inline_html("【影響・展望】：明日の判断材料を整理。"),
         ],
-        "top_tags": ["制度整備", "供給網", "販売"],
+        "top_tags": ["制度整備", "co/キヤノンITソリューションズ", "供給網"],
         "score_note": "",
         "score_signals": [],
         "key_numbers": [],
@@ -144,7 +150,14 @@ def test_home_category_cards_use_3d_structured_body(synthetic_home: str) -> None
     assert "FX トップ記事" not in fx
     assert "為替 トップ記事" in fx
     assert "制度整備" in fx
+    assert "キヤノンITソリューションズ" in fx
     assert "供給網" in fx
+    assert "カード内で最後まで確認できる" in fx
+    assert "最低限の判断材料を持ち帰れる" in fx
+    assert "…" not in fx
+    assert '<strong class="emph-bold">重要論点</strong>' in fx
+    assert '<span class="emph-und">制度整備</span>' in fx
+    assert "<strong>供給網</strong>" in fx
     assert "MORE 3 STORIES" in fx
     assert "この先の論点を見る" in fx
     assert "詳細はこちら" not in fx
@@ -193,6 +206,22 @@ def test_home_editorial_lane_labels_are_readable_size() -> None:
     assert jp, "Japanese lane helper label font-size is missing"
     assert int(en.group(1)) >= 14
     assert int(jp.group(1)) >= 13
+
+
+def test_home_category_card_text_is_readable_and_not_css_truncated() -> None:
+    css = (ROOT / "docs" / "assets" / "site.css").read_text(encoding="utf-8")
+    title = re.search(r"\.home-cat-card__top-title\s*\{(?P<body>[^}]*)\}", css)
+    point = re.search(r"\.home-cat-card__point span\s*\{(?P<body>[^}]*)\}", css)
+    meta = re.search(r"\.home-cat-card__meta\s*\{(?P<body>[^}]*)\}", css)
+    assert title and point and meta
+    title_body = title.group("body")
+    point_body = point.group("body")
+    meta_body = meta.group("body")
+    assert int(float(re.search(r"font-size:\s*([\d.]+)px", title_body).group(1))) >= 16
+    assert int(float(re.search(r"font-size:\s*([\d.]+)px", point_body).group(1))) >= 13
+    assert float(re.search(r"font-size:\s*([\d.]+)px", meta_body).group(1)) >= 10
+    assert "-webkit-line-clamp" not in title_body
+    assert "text-overflow" not in point_body
 
 
 def test_home_editorial_strips_decorated_info_callout_heading(

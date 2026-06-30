@@ -354,11 +354,11 @@
             {% if c.top_published %}<span>·</span><span>{{ c.top_published }}</span>{% endif %}
             {% if c.top_source %}<span>·</span><span>{{ c.top_source }}</span>{% endif %}
           </div>
-          <h3 class="home-cat-card__top-title">{{ c.top_title or "本日休載" }}</h3>
+          <h3 class="home-cat-card__top-title">{{ (c.top_title or "本日休載")|render_emph }}</h3>
           {% if c.key_points %}
           <div class="home-cat-card__points">
             {% for point in c.key_points[:2] %}
-            <span class="home-cat-card__point"><i aria-hidden="true"></i><span>{{ point }}</span></span>
+            <span class="home-cat-card__point"><i aria-hidden="true"></i><span>{{ point|safe }}</span></span>
             {% endfor %}
           </div>
           {% endif %}

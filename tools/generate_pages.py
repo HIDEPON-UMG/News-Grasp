@@ -245,6 +245,12 @@ def strip_inline(text: str) -> str:
 
 _SCORE_SIGNAL_PREFIXES = ("event/", "topic/", "industry/")
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
+_ALLOWED_EMPH_TAG_RE = re.compile(
+    r'(?:<strong>|</strong>|<strong class="emph-bold">|<span class="emph-und">|</span>)'
+)
+_EMPH_TAG_SPLIT_RE = re.compile(
+    r'(<strong>|</strong>|<strong class="emph-bold">|<span class="emph-und">|</span>)'
+)
 _KEY_NUMBER_PATTERNS = (
     re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?\s*(?:%|％)"),
     re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?\s*(?:兆|億|万)?(?:円|ドル)"),
@@ -252,6 +258,19 @@ _KEY_NUMBER_PATTERNS = (
     re.compile(r"\d{4}年(?:\d{1,2}月期|度|まで)?"),
     re.compile(r"\d+(?:,\d{3})*\s*万?件"),
 )
+
+
+def _sanitize_emph_html(html: str) -> str:
+    """inline_html 由来の強調タグだけを許可し、それ以外の HTML は文字として逃がす。"""
+    safe_parts: list[str] = []
+    for part in _EMPH_TAG_SPLIT_RE.split(html):
+        if not part:
+            continue
+        if _ALLOWED_EMPH_TAG_RE.fullmatch(part):
+            safe_parts.append(part)
+        else:
+            safe_parts.append(_html.escape(_html.unescape(part), quote=False))
+    return "".join(safe_parts)
 
 
 def _clean_signal_tag(tag: str) -> str:
@@ -337,16 +356,26 @@ def _score_note(top: dict[str, Any] | None, category_jp: str) -> str:
 
 
 def _category_card_points(entry: dict[str, Any] | None, limit: int = 2) -> list[str]:
-    """LP by Category 3d カード用に、記事 bullet から短い論点を作る。"""
+    """LP by Category 3d カード用に、記事 bullet から論点を作る。
+
+    カード単体で最低限の情報を持ち帰れるよう、本文は切り詰めない。
+    bullet は通常 inline_html 済みなので、強調タグを保持したまま先頭ラベルだけ外す。
+    """
     if not entry:
         return []
     points: list[str] = []
     for bullet in entry.get("top_bullets") or []:
-        plain = strip_inline(_html.unescape(_HTML_TAG_RE.sub("", str(bullet))))
-        plain = re.sub(r"^【[^】]+】：?", "", plain).strip()
-        plain = re.sub(r"\s+", " ", plain)
-        if plain and plain not in points:
-            points.append(truncate(plain, 44))
+        html = str(bullet or "").strip()
+        if "<" not in html and ">" not in html:
+            html = inline_html(html)
+        html = re.sub(r"^\s*【[^】]+】：?", "", html).strip()
+        html = re.sub(r"\s+", " ", html)
+        html = _sanitize_emph_html(html)
+        plain_key = strip_inline(_html.unescape(_HTML_TAG_RE.sub("", html))).strip()
+        if html and plain_key and plain_key not in [
+            strip_inline(_html.unescape(_HTML_TAG_RE.sub("", p))).strip() for p in points
+        ]:
+            points.append(html)
         if len(points) >= limit:
             break
     return points
@@ -363,7 +392,7 @@ def _category_card_keywords(entry: dict[str, Any] | None, limit: int = 3) -> lis
             label = label.split("/", 1)[1]
         label = label.replace("-", " ").strip()
         if label and label not in keywords:
-            keywords.append(truncate(label, 12))
+            keywords.append(label)
         if len(keywords) >= limit:
             return keywords
     for number in entry.get("key_numbers") or []:

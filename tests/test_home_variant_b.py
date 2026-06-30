@@ -364,7 +364,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-07-01-bycategory-cta" in sw
+    assert "2026-07-01-bycategory-readable" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():
