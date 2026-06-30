@@ -110,6 +110,8 @@ runner、watcher、repair、publish verification、podcast verification、distri
 
 非自明な変更計画と完了報告には、必ず「Affected matrix rows」「Gate update decision」「Verification command」を書く。該当する row が無い機能を追加、削除、修正する場合は、実装と同じ変更単位でこの `Feature Change Quality Gate Matrix` と `tests/test_product_spec_contract.py` を更新してから完了扱いにする。
 
+UI 修正、CSS 修正、PWA 修正、generated docs 修正が public surface に届く場合、local test pass や local DOM/visual sentinel だけでは完了ではない。公開が成功条件に含まれる作業は、commit、push、local HEAD / remote HEAD 一致、GitHub Pages 反映、public CSS、`docs/sw.js` service worker version、public DOM sentinel、番号付き要求 coverage を確認するまで `残タスクなし` と報告してはならない。未実施の gate は完了報告の `ToDo（今後の作業）` に residual work として残す。
+
 今回の 2026-06-21 Podcast 検証障害のように、公開成果物は正常でも検証 API 側だけが 401 を返す場合は、成果物を未公開扱いにせず、別経路の公開確認へ fallback する。ただし fallback は無条件成功ではない。watch / playlist / public status のいずれかで同じ videoId、playlistId、title、日付を確認できる場合だけ Green とする。
 
 ## Incident Bugfix Horizontal Investigation Covenant

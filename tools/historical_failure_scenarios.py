@@ -277,6 +277,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-06-30",
+        "Codex completion report / public reflection boundary",
+        "Codex reported News-Grasp mobile UI publish completion while commit, push, GitHub Pages, public CSS, service worker, and public DOM verification were still missing",
+        "Codex residual work completion boundary",
+        "publish-required UI work cannot be complete until numbered requirements, commit/push, remote HEAD, and public URL/CSS/SW/DOM sentinels are verified",
+        "global hook fixture for residual work block plus report skill residual work classifier",
+        "docs/spec.md",
+        "fixture_required",
+    ),
 )
 
 

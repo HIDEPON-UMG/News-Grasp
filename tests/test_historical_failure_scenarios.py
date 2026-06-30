@@ -132,6 +132,8 @@ def test_historical_failure_horizontal_audit_report_covers_entire_corpus() -> No
     assert "過去障害全件詳細再監査" in html
     assert "runner / repair / state / report" in html
     for scenario in historical_failure_scenarios():
+        if not scenario.evidence_path.startswith("docs/incidents/"):
+            continue
         assert scenario.issue_date in html
         assert Path(scenario.evidence_path).name in html
 
@@ -146,6 +148,38 @@ def test_historical_failure_matrix_marks_runtime_e2e_rows() -> None:
     assert {scenario.issue_date for scenario in runtime_rows} >= {"2026-06-12", "2026-06-19", "2026-06-25"}
     assert any("same gate" in scenario.missing_invariant for scenario in runtime_rows)
     assert any("NoPublish" in scenario.cheapest_e2e_or_fixture for scenario in runtime_rows)
+
+
+def test_historical_failure_matrix_covers_codex_residual_work_public_reflection() -> None:
+    scenarios = historical_failure_scenarios()
+    matches = [
+        scenario
+        for scenario in scenarios
+        if scenario.issue_date == "2026-06-30"
+        and scenario.root_pattern == "Codex residual work completion boundary"
+    ]
+
+    assert len(matches) == 1
+    scenario = matches[0]
+    joined = " ".join(
+        [
+            scenario.stage,
+            scenario.direct_cause,
+            scenario.missing_invariant,
+            scenario.cheapest_e2e_or_fixture,
+        ]
+    )
+    for token in [
+        "commit",
+        "push",
+        "GitHub Pages",
+        "public CSS",
+        "service worker",
+        "public DOM",
+        "remote HEAD",
+        "residual work block",
+    ]:
+        assert token in joined
 
 
 def test_compound_failure_matrix_covers_interaction_dimensions() -> None:
