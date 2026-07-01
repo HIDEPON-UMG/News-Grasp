@@ -160,9 +160,15 @@
       </div>
       {% else %}
       <div class="cat-hero__body">
-        <ul class="cat-hero__bullets">
-          {% for bullet in hero.body_bullets %}
-          <li class="cat-hero__bullet"><span class="cat-hero__marker"></span><span class="cat-hero__bullet-text">{{ bullet }}</span></li>
+        <ul class="cat-hero__point-list">
+          {% for item in hero.body_rows %}
+          <li class="cat-hero__point-item">
+            <span class="cat-hero__marker"></span>
+            <span class="cat-hero__point-copy">
+              <span class="cat-hero__point-key">{{ item.label }}</span>
+              <span class="cat-hero__bullet-text cat-hero__point-text">{{ item.text|render_emph }}</span>
+            </span>
+          </li>
           {% endfor %}
         </ul>
         {% if hero.has_more %}

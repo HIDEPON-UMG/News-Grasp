@@ -925,6 +925,38 @@ def _hero_score_int(value: Any) -> int:
         return 0
 
 
+_CATEGORY_HERO_BODY_LABELS = ("今日の焦点", "背景", "次の視点")
+
+
+def _emphasize_hero_sentence(text: str) -> str:
+    """ヒーロー本文の構造行に最低限の強調を付ける。
+
+    AI側で `[[ ]]` / `** **` / `__ __` が既に入っている場合は尊重し、
+    無い場合だけ文頭の主語相当を `[[ ]]` でマークする。
+    """
+    if not text:
+        return ""
+    if any(mark in text for mark in ("[[", "**", "__")):
+        return text
+    match = re.match(r"^(.{2,18}?)(は|が|を|も|で|に|へ|と)", text)
+    if not match:
+        return f"[[{text[:-1]}]]。" if text.endswith("。") and len(text) <= 18 else text
+    subject, particle = match.group(1), match.group(2)
+    if subject.startswith("[["):
+        return text
+    return f"[[{subject}]]{particle}{text[match.end():]}"
+
+
+def _hero_body_rows(bullets: list[str]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for idx, bullet in enumerate(bullets[: len(_CATEGORY_HERO_BODY_LABELS)]):
+        rows.append({
+            "label": _CATEGORY_HERO_BODY_LABELS[idx],
+            "text": _emphasize_hero_sentence(str(bullet)),
+        })
+    return rows
+
+
 def build_category_hero_context(
     *,
     category_id: str,
@@ -961,6 +993,7 @@ def build_category_hero_context(
         "issue": featured_date.replace("-", "") if featured_date else "",
         "recent_count": recent_count or len(past_7) or 0,
         "body_bullets": sentence_fit.get("bullets") or [],
+        "body_rows": _hero_body_rows(sentence_fit.get("bullets") or []),
         "has_more": bool(sentence_fit.get("has_more")),
         "read_more_label": _CATEGORY_HERO_READ_MORE_LABEL,
         "stats": {
@@ -2894,7 +2927,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
             {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
         ]
         hero_summary_fit = fit_to_sentences(
-            strip_inline(featured.get("summary_text", "") or ""),
+            featured.get("summary_text", "") or "",
             max_chars=_CATEGORY_HERO_BODY_MAX_CHARS,
         )
         hero_context = build_category_hero_context(

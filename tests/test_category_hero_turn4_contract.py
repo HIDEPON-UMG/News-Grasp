@@ -83,9 +83,14 @@ def test_fx_hero_uses_turn4a_live_rates_and_sentence_bullets() -> None:
     assert ">LIVE RATES<" in html
     assert 'data-panel="rates"' in html
     assert "USD/JPY" in html
-    assert '<span class="cat-hero__bullet-text">ドル円は高止まりした。</span>' in html
-    assert '<span class="cat-hero__bullet-text">米金利の見通しが焦点になった。</span>' in html
-    assert '<span class="cat-hero__bullet-text">日銀の利上げ観測' not in html
+    assert "cat-hero__point-list" in html
+    assert "今日の焦点" in html
+    assert "背景" in html
+    assert '<strong class="emph-bold">ドル円</strong>は高止まりした。' in html
+    assert '<strong class="emph-bold">米金利の見通し</strong>が焦点になった。' in html
+    assert "次の視点" not in html
+    hero_body = html.split('class="cat-hero__body"', 1)[1].split('class="cat-hero__stats"', 1)[0]
+    assert '日銀の利上げ観測' not in hero_body
     assert "…" not in html.split('class="cat-hero__body"', 1)[1].split('class="cat-hero__stats"', 1)[0]
     assert "続きを読む →" in html
     assert ">USD / JPY<" in html
@@ -150,9 +155,15 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert "grid-template-columns: 1.06fr .94fr" in css
     assert ".cat-hero__tab-fade" in css
     assert ".cat-hero__tab-arrow" in css
+    assert ".cat-hero__point-list" in css
+    assert ".cat-hero__point-key" in css
+    assert ".cat-hero__point-text .emph-bold" in css
     assert ".cat-hero__body--rest" in css
     assert "box-shadow: inset 4px 0 0 var(--hero-accent);" in css
     assert ".cat-hero__body--rest .emph-bold" in css
     assert ".cat-hero__body--rest .emph-und" in css
+    assert ".cat-hero__visual-label" in css
+    assert "color: rgba(255, 255, 255, 0.96);" in css
+    assert "color: #1a1206;" not in css.split(".cat-hero__visual {", 1)[1].split(".cat-hero__watermark", 1)[0]
     assert "@media (max-width: 720px)" in css
     assert "grid-template-columns: 1fr" in css

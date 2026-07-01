@@ -174,10 +174,23 @@
   flex-direction: column;
   gap: 13px;
 }
+.cat-hero__point-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
 .cat-hero__bullet {
   display: flex;
   align-items: baseline;
   gap: 11px;
+}
+.cat-hero__point-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 11px;
+  align-items: baseline;
 }
 .cat-hero__marker {
   flex: 0 0 auto;
@@ -187,12 +200,35 @@
   background: var(--hero-accent);
   transform: translateY(-3px);
 }
+.cat-hero__point-copy {
+  display: grid;
+  gap: 3px;
+}
+.cat-hero__point-key {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--hero-accent);
+}
 .cat-hero__bullet-text {
   font-family: var(--font-serif);
   font-size: 16px;
   font-weight: 500;
   line-height: 1.72;
   color: var(--hero-text);
+}
+.cat-hero__point-text strong {
+  font-weight: 900;
+  color: var(--hero-heading);
+}
+.cat-hero__point-text .emph-bold {
+  background: color-mix(in srgb, var(--hero-accent) 30%, transparent);
+  color: var(--hero-heading);
+}
+.cat-hero__point-text .emph-und {
+  border-bottom-color: var(--hero-accent);
+  color: var(--hero-heading);
 }
 .cat-hero__read-more {
   display: inline-block;
@@ -309,7 +345,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  color: #1a1206;
+  color: rgba(255, 255, 255, 0.94);
   background:
     linear-gradient(
       150deg,
@@ -339,7 +375,7 @@
 }
 .cat-hero__chart polyline {
   fill: none;
-  stroke: #1a1206;
+  stroke: rgba(255, 255, 255, 0.72);
   stroke-width: 0.8;
 }
 .cat-hero__visual-label {
@@ -349,7 +385,8 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.2em;
-  color: rgba(26, 18, 6, 0.6);
+  color: rgba(255, 255, 255, 0.74);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.38);
 }
 .cat-hero__rate-row,
 .cat-hero__score-row {
@@ -365,19 +402,22 @@
   font-size: 62px;
   font-weight: 800;
   line-height: 0.9;
-  color: #1a1206;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45);
 }
 .cat-hero__rate-delta {
   font-family: var(--font-mono);
   font-size: 26px;
   font-weight: 800;
-  color: #1a1206;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.44);
 }
 .cat-hero__score-unit {
   font-family: var(--font-mono);
   font-size: 20px;
   font-weight: 800;
-  color: rgba(26, 18, 6, 0.72);
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
 }
 .cat-hero__visual-note,
 .cat-hero__updated,
@@ -387,8 +427,9 @@
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
-  color: rgba(26, 18, 6, 0.72);
+  color: rgba(255, 255, 255, 0.78);
   text-align: right;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
 }
 .cat-hero__attribution {
   text-decoration: underline;
@@ -531,6 +572,9 @@
   .cat-hero__bullets {
     gap: 11px;
   }
+  .cat-hero__point-list {
+    gap: 11px;
+  }
   .cat-hero__marker {
     width: 5px;
     height: 5px;
@@ -538,6 +582,9 @@
   .cat-hero__bullet-text {
     font-size: 14px;
     line-height: 1.68;
+  }
+  .cat-hero__point-key {
+    font-size: 8px;
   }
   .cat-hero[data-hero-contract="turn4-category"] .cat-hero__stats {
     padding-top: 18px;
@@ -5874,7 +5921,7 @@ strong {
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  color: #1a1206;
+  color: rgba(255, 255, 255, 0.94);
   background:
     linear-gradient(
       150deg,
