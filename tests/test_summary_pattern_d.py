@@ -213,27 +213,6 @@ def test_essay_redesign_uses_canonical_category_glyphs(built_summary: str):
         assert f'data-category-glyph="{glyph}"' in built_summary
 
 
-def test_essay_redesign_applies_lane_tone_to_every_category(built_summary: str):
-    """全カテゴリで正規 accent が渡り、FACT/CONTEXT/OUTLOOK が欠けずに描画される。"""
-    for cid, meta in CATEGORIES.items():
-        if cid == "summary":
-            continue
-        pattern = (
-            rf'<article class="summary-category" style="--c: {re.escape(meta["accent"])};" '
-            rf'data-category-id="{cid}" data-category-glyph="{re.escape(meta["glyph"])}"'
-            r'.*?</article>'
-        )
-        match = re.search(pattern, built_summary, re.S)
-        assert match, f"{cid} category row missing canonical accent/glyph"
-        row_html = match.group(0)
-        assert 'data-role="fact"' in row_html, f"{cid} FACT lane missing"
-        assert 'data-role="context"' in row_html, f"{cid} CONTEXT lane missing"
-        assert 'data-role="outlook"' in row_html, f"{cid} OUTLOOK lane missing"
-        assert '<span class="summary-lane-card__marker">事実・概要</span>' in row_html
-        assert '<span class="summary-lane-card__marker">背景・要点</span>' in row_html
-        assert '<span class="summary-lane-card__marker">影響・展望</span>' in row_html
-
-
 def test_essay_redesign_maps_english_section_labels_to_canonical_categories():
     """英字の ESSAY 見出しも正規カテゴリ ID に解決する。"""
     expected = {

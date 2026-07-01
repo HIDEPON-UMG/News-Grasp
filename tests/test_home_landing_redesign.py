@@ -161,7 +161,8 @@ def test_home_category_cards_use_3d_structured_body(synthetic_home: str) -> None
     assert '<span class="emph-und">制度整備</span>' in fx
     assert "<strong>供給網</strong>" in fx
     assert "MORE 3 STORIES" in fx
-    assert "この先の論点を見る" in fx
+    assert "次の一手まで読む" in fx
+    assert "この先の論点を見る" not in fx
     assert "詳細はこちら" not in fx
     assert "home-cat-card__summary" not in fx
     assert "[[" not in fx
@@ -219,11 +220,12 @@ def test_home_category_card_text_is_readable_and_not_css_truncated() -> None:
     title_body = title.group("body")
     point_body = point.group("body")
     meta_body = meta.group("body")
-    assert int(float(re.search(r"font-size:\s*([\d.]+)px", title_body).group(1))) >= 16
-    assert int(float(re.search(r"font-size:\s*([\d.]+)px", point_body).group(1))) >= 13
-    assert float(re.search(r"font-size:\s*([\d.]+)px", meta_body).group(1)) >= 10
+    assert int(float(re.search(r"font-size:\s*([\d.]+)px", title_body).group(1))) >= 18
+    assert int(float(re.search(r"font-size:\s*([\d.]+)px", point_body).group(1))) >= 15
+    assert float(re.search(r"font-size:\s*([\d.]+)px", meta_body).group(1)) >= 11
     assert "-webkit-line-clamp" not in title_body
     assert "text-overflow" not in point_body
+    assert "-webkit-line-clamp" not in point_body
 
 
 def test_home_category_cards_computed_visual_contract(
@@ -314,6 +316,9 @@ async function launchBrowser() {
     assert result.returncode == 0, result.stderr or result.stdout
     metrics = json.loads(result.stdout)
     assert {item["viewport"] for item in metrics["results"]} == {"desktop", "mobile"}
+    for item in metrics["results"]:
+        assert item["minPointFontSize"] >= 15
+        assert item["minTitleFontSize"] >= 18
 
 
 def test_home_editorial_strips_decorated_info_callout_heading(

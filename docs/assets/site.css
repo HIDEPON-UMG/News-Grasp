@@ -2106,7 +2106,7 @@ strong {
   min-width: 0;
   margin-bottom: 8px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: 0.06em;
@@ -2121,7 +2121,7 @@ strong {
 .home-cat-card__top-title {
   margin: 0 0 10px;
   font-family: var(--font-serif);
-  font-size: 16.5px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.48;
   color: var(--color-navy);
@@ -2159,9 +2159,9 @@ strong {
 }
 .home-cat-card__point span {
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
-  line-height: 1.65;
+  line-height: 1.68;
   color: #454B5C;
 }
 .home-cat-card__point strong,
@@ -2173,7 +2173,7 @@ strong {
   color: var(--color-navy);
   border-bottom-color: var(--cat);
 }
-.home-cat-card--wide .home-cat-card__point span { font-size: 13.5px; }
+.home-cat-card--wide .home-cat-card__point span { font-size: 15.5px; }
 .home-cat-card__keywords {
   display: flex;
   flex-wrap: wrap;
@@ -2224,7 +2224,7 @@ strong {
 .home-cat-card__foot-sub {
   color: color-mix(in srgb, var(--color-navy) 86%, var(--cat) 14%);
   font-family: var(--font-serif);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -3781,14 +3781,14 @@ strong {
   .home-cat-card--wide .home-cat-card__body { padding: 12px 13px 13px; }
   .home-cat-card__jp { font-size: 22px; }
   .home-cat-card--wide .home-cat-card__top-title {
-    font-size: 16.5px;
+    font-size: 18px;
     line-height: 1.48;
   }
   .home-cat-card--wide .home-cat-card__points {
     flex-direction: column;
     gap: 6px;
   }
-  .home-cat-card--wide .home-cat-card__point span { font-size: 13px; }
+  .home-cat-card--wide .home-cat-card__point span { font-size: 15px; }
   .home-editorial { padding: 30px 16px 40px; }
   .home-editorial__panel { padding: 24px 20px 26px; }
   .home-editorial__panel-head {
