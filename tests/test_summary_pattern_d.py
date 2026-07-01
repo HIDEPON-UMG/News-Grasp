@@ -241,6 +241,17 @@ def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_sum
 def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built_summary: str):
     """マーカーは濃色ベタにせず、カテゴリ色の淡色背景+カテゴリ文字にする。"""
     css = CSS_PATH.read_text(encoding="utf-8")
+    assert 'class="summary-conclusion__chip"' in built_summary
+    assert re.search(r'<article class="summary-conclusion"[^>]+data-category-id="(?:fx|ai|it|mobility|manufacturing|economy|game)"', built_summary)
+    assert any(glyph in built_summary for glyph in ("¥", "◆", "⌗", "◎", "⬢", "■", "▶"))
+    conclusion_chip_start = css.rindex(".summary-conclusion__chip {\n")
+    conclusion_chip_block = css[conclusion_chip_start:css.index("}", conclusion_chip_start)]
+    assert "background: color-mix(in srgb, var(--c) 16%, var(--color-surface))" in conclusion_chip_block
+    assert "color: color-mix(in srgb, var(--c) 86%, var(--color-navy))" in conclusion_chip_block
+    lane_head_start = css.rindex(".summary-lane-card__head {\n  display")
+    lane_head_block = css[lane_head_start:css.index("}", lane_head_start)]
+    assert "border-left: 4px solid var(--c)" in lane_head_block
+    assert "background: color-mix(in srgb, var(--c) 8%, var(--color-surface))" in lane_head_block
     marker_start = css.index(".summary-lane-card__marker {\n  display")
     marker_block = css[marker_start:css.index("}", marker_start)]
     assert "background: color-mix(in srgb, var(--c) 14%, var(--color-surface))" in marker_block

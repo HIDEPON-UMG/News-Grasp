@@ -2970,11 +2970,37 @@ strong {
   background: #fff;
   padding: 18px 18px 16px;
 }
+.summary-conclusion__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
 .summary-conclusion__n {
   font-family: var(--font-sans);
   font-size: 28px;
   font-weight: 900;
   color: var(--accent-current);
+  line-height: 1;
+}
+.summary-conclusion__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent-current) 38%, var(--color-border));
+  background: color-mix(in srgb, var(--accent-current) 16%, var(--color-surface));
+  color: color-mix(in srgb, var(--accent-current) 86%, var(--color-navy));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.summary-conclusion__chip span {
+  font-size: 13px;
   line-height: 1;
 }
 .summary-conclusion p {
@@ -4534,15 +4560,41 @@ strong {
 }
 .summary-conclusion {
   border: 1px solid var(--color-border);
-  border-top: 3px solid var(--color-gold);
+  border-top: 3px solid var(--c);
   background: #fff;
   padding: 22px 22px 24px;
+}
+.summary-conclusion__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 .summary-conclusion__n {
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 900;
-  color: var(--color-gold);
+  color: var(--c);
+}
+.summary-conclusion__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--c) 38%, var(--color-border));
+  background: color-mix(in srgb, var(--c) 16%, var(--color-surface));
+  color: color-mix(in srgb, var(--c) 86%, var(--color-navy));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.summary-conclusion__chip span {
+  font-size: 13px;
+  line-height: 1;
 }
 .summary-conclusion p {
   margin: 10px 0 16px;
@@ -4756,7 +4808,11 @@ strong {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 11px;
+  margin-bottom: 13px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--c) 30%, var(--color-border));
+  border-left: 4px solid var(--c);
+  background: color-mix(in srgb, var(--c) 8%, var(--color-surface));
   min-width: 0;
 }
 .summary-lane-card__badge {

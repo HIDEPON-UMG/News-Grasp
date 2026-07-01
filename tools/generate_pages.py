@@ -2357,10 +2357,13 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         for i, t in enumerate(takeaways_raw[:3]):
             tag = t.get("tag") or _SUMMARY_SECTION_TAGS[1 + i]
             cid = TAG_TO_CID.get(tag)
-            color = CATEGORIES[cid]["accent"] if cid else _SUMMARY_SECTION_COLORS[1 + i]
+            cat = CATEGORIES.get(cid or "")
+            color = cat["accent"] if cat else _SUMMARY_SECTION_COLORS[1 + i]
             takeaways.append({
                 "n": i + 1,
                 "tag": tag,
+                "category_id": cid or "",
+                "glyph": cat.get("glyph", "") if cat else "",
                 "color": color,
                 "text": t.get("text") or "",
             })
@@ -2373,6 +2376,8 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
             takeaways.append({
                 "n": i + 1,
                 "tag": e["category_label"],
+                "category_id": e.get("category_id", ""),
+                "glyph": CATEGORIES.get(e.get("category_id", ""), {}).get("glyph", ""),
                 "color": e["accent"],
                 "text": e.get("top_title") or e.get("summary_text", ""),
             })
@@ -2381,6 +2386,8 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
             takeaways.append({
                 "n": len(takeaways) + 1,
                 "tag": "—",
+                "category_id": "",
+                "glyph": "",
                 "color": "#5C5A52",
                 "text": "本日の結論準備中。",
             })

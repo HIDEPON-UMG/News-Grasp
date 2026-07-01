@@ -173,10 +173,15 @@
       </div>
       <div class="summary-conclusions__grid">
         {% for t in takeaways[:3] %}
-        <article class="summary-conclusion" style="--c: {{ t.color }};">
-          <div class="summary-conclusion__n">{{ "%02d"|format(t.n) }}</div>
+        <article class="summary-conclusion" style="--c: {{ t.color }};"{% if t.category_id %} data-category-id="{{ t.category_id }}"{% endif %}>
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">{{ "%02d"|format(t.n) }}</div>
+            <div class="summary-conclusion__chip">
+              {% if t.glyph %}<span aria-hidden="true">{{ t.glyph }}</span>{% endif %}{{ t.tag }}
+            </div>
+          </div>
           <p>{{ t.text|render_emph }}</p>
-          <div class="summary-conclusion__impact"><span></span>影響先 {{ t.tag }}</div>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
         {% endfor %}
       </div>
