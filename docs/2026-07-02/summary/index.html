@@ -1,0 +1,938 @@
+
+
+
+
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-07-02</title>
+<meta name="description" content="2026-07-02 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-07-02/summary/">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-07-02">
+<meta property="og:description" content="2026-07-02 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-07-02/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-07-02">
+<meta name="twitter:description" content="2026-07-02 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary" class="summary-page">
+
+<svg class="summary-icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="ic-fx" viewBox="0 0 20 20"><path d="M10 2v16M5 5.5 10 10l5-4.5M5 10.5h10M5 14.5h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></symbol>
+    <symbol id="ic-ai" viewBox="0 0 20 20"><path d="M10 2 18 10 10 18 2 10Z" fill="currentColor"/></symbol>
+    <symbol id="ic-it" viewBox="0 0 20 20"><path d="M7 2v16M13 2v16M3 7h14M2 13h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+    <symbol id="ic-mob" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="ic-man" viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6Z" fill="currentColor"/></symbol>
+    <symbol id="ic-eco" viewBox="0 0 20 20"><path d="M4 4h12v12H4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-game" viewBox="0 0 20 20"><path d="M5 3.5 16.5 10 5 16.5Z" fill="currentColor"/></symbol>
+    <symbol id="ic-summary" viewBox="0 0 20 20"><path d="M10 2 12.4 7.4 18 8 13.8 11.8 15 17.3 10 14.4 5 17.3 6.2 11.8 2 8 7.6 7.4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-fact" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-context" viewBox="0 0 24 24"><rect x="6" y="5" width="5" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="5" width="5" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-outlook" viewBox="0 0 24 24"><polyline points="4 16 9 11 13 14 20 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15 7 20 7 20 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<section class="brand-zone brand-zone--summary">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <label class="brand-search brand-search--summary">
+      <span class="brand-search__icon">⌕</span>
+      <input id="summary-search" type="search" autocomplete="off"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 07-02)"
+             aria-label="本文を検索">
+    </label>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-02/">DIGEST</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-02/summary/" aria-current="page">ESSAY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<nav class="lens-nav lens-nav--summary">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill" style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-02/summary/" class="lens-pill lens-pill--essay is-active">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+    <span class="lens-nav__meta">35 SOURCES · 8 SECTIONS</span>
+  </div>
+</nav>
+
+<main>
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+
+  <section class="daily-audio daily-audio--summary" aria-label="今日のニュース朗読">
+    <div class="daily-audio__inner">
+      <div class="daily-audio__meta">
+        <span class="daily-audio__kicker">LISTEN</span>
+        <span class="daily-audio__title">今日のニュース朗読</span>
+        <span class="daily-audio__date">2026-07-02</span>
+      </div>
+      <div class="daily-audio__controls">
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-07-02.mp3?v=9b88da4ef415" type="audio/mpeg">
+        </audio>
+        <div class="daily-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="summary-hero" data-summary-search="2026-07-02 本日のテーマ考察 Editorial Summary 回る条件と拡張順番 今日は、AI の巨額出資と配布設計、IT の導入審査と運用再編、Mobility の価格改定と安全標準、Manufacturing の対印投資と量産再設計、Economy の物価と中銀メッセージ、Game のデジタル移行と安全対応が同時に動き、何を広げるか より どの条件なら回るか が主題になりました。FX も 162 円台後半で揺れ、価格と運用の線引きが全体を貫いています。派手さより、誰が条件を受け持つかが今日の軸です。">
+    <div class="summary-hero__inner">
+      <div class="summary-hero__main">
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
+        <h1 class="summary-hero__title">本日のテーマ考察</h1>
+
+        <p class="summary-hero__subtitle">「回る条件と拡張順番」</p>
+
+        <p class="summary-hero__lead">今日は、<strong class="emph-bold">AI</strong> の巨額出資と配布設計、<strong class="emph-bold">IT</strong> の導入審査と運用再編、<strong class="emph-bold">Mobility</strong> の価格改定と安全標準、<strong class="emph-bold">Manufacturing</strong> の対印投資と量産再設計、<strong class="emph-bold">Economy</strong> の物価と中銀メッセージ、<strong class="emph-bold">Game</strong> のデジタル移行と安全対応が同時に動き、<strong>何を広げるか</strong> より <span class="emph-und">どの条件なら回るか</span> が主題になりました。<strong class="emph-bold">FX</strong> も 162 円台後半で揺れ、価格と運用の線引きが全体を貫いています。派手さより、誰が条件を受け持つかが今日の軸です。</p>
+        <div class="summary-hero__chips" aria-label="支配軸">
+
+          <span>制度・標準</span>
+
+          <span>供給・販路</span>
+
+          <span>実装・拡張</span>
+
+        </div>
+      </div>
+      <aside class="summary-glance" aria-label="At a glance">
+        <div class="summary-glance__kicker">AT A GLANCE</div>
+        <div class="summary-glance__temp">
+          <span class="summary-glance__temp-label">TEMP</span>
+          <strong>HIGH</strong>
+        </div>
+        <div class="summary-glance__heat" aria-hidden="true">
+
+          <span class="is-on"></span>
+
+          <span class="is-on"></span>
+
+          <span class="is-on"></span>
+
+          <span class=""></span>
+
+        </div>
+        <dl class="summary-glance__stats">
+          <div><dt>横断カテゴリ</dt><dd>7</dd></div>
+          <div><dt>読了</dt><dd>9min</dd></div>
+          <div><dt>参照ソース</dt><dd>35</dd></div>
+        </dl>
+      </aside>
+      <div class="summary-flow" aria-label="今日の支配軸フロー">
+
+        <div class="summary-flow__node">
+          <span>LAYER 1</span>
+          <strong>制度・標準</strong>
+        </div>
+        <div class="summary-flow__arrow">→</div>
+
+        <div class="summary-flow__node">
+          <span>LAYER 2</span>
+          <strong>供給・販路</strong>
+        </div>
+        <div class="summary-flow__arrow">→</div>
+
+        <div class="summary-flow__node is-final">
+          <span>LAYER 3</span>
+          <strong>実装・拡張</strong>
+        </div>
+
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-conclusions" aria-label="今日の3結論">
+    <div class="summary-conclusions__inner">
+      <div class="summary-section-label">
+        <span>TODAY'S 3 CONCLUSIONS</span>
+        <h2>今日の3結論</h2>
+      </div>
+      <div class="summary-conclusions__grid">
+
+        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing" data-summary-search="2026-07-02 Manufacturing 日印、製造投資2兆円 半導体材料工場やAI協業が120件">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">01</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">⬢</span>Manufacturing
+            </div>
+          </div>
+          <p>日印、製造投資2兆円 半導体材料工場やAI協業が120件</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+        <article class="summary-conclusion" style="--c: #5E3D8C;" data-category-id="game" data-summary-search="2026-07-02 Gaming SIE、2028年からPlayStation新作をダウンロード専売へ">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">02</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">▶</span>Gaming
+            </div>
+          </div>
+          <p>SIE、2028年からPlayStation新作をダウンロード専売へ</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-07-02 Foreign Exchange 40年ぶり円安、介入前夜のポジション偏重が再燃">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">03</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">¥</span>Foreign Exchange
+            </div>
+          </div>
+          <p>40年ぶり円安、介入前夜のポジション偏重が再燃</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-07-02 総論 総論 今日は、AI の巨額出資と配布設計、IT の導入審査と運用再編、Mobility の価格改定と安全標準、Manufacturing の対印投資と量産再設計、Economy の物価と中銀メッセージ、Game のデジタル移行と安全対応が同時に動き、何を広げるか より どの条件なら回るか が主題になりました。FX も 162 円台後半で揺れ、価格と運用の線引きが全体を貫いています。派手さより、誰が条件を受け持つかが今日の軸です。">
+    <div class="summary-synthesis__inner">
+      <div class="summary-synthesis__label">
+        <span>§ 00</span>
+        <strong>EDITORIAL SYNTHESIS / 総論</strong>
+      </div>
+      <h2>総論</h2>
+      <div class="summary-synthesis__grid">
+        <article class="summary-synthesis__panel">
+          <h3>今日の総論</h3>
+          <p>今日は、<strong class="emph-bold">AI</strong> の巨額出資と配布設計、<strong class="emph-bold">IT</strong> の導入審査と運用再編、<strong class="emph-bold">Mobility</strong> の価格改定と安全標準、<strong class="emph-bold">Manufacturing</strong> の対印投資と量産再設計、<strong class="emph-bold">Economy</strong> の物価と中銀メッセージ、<strong class="emph-bold">Game</strong> のデジタル移行と安全対応が同時に動き、<strong>何を広げるか</strong> より <span class="emph-und">どの条件なら回るか</span> が主題になりました。<strong class="emph-bold">FX</strong> も 162 円台後半で揺れ、価格と運用の線引きが全体を貫いています。派手さより、誰が条件を受け持つかが今日の軸です。</p>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>今日の論点マップ — CROSS-CATEGORY</h3>
+          <div class="summary-synthesis__layers">
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">制度・標準</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #B8860B;"><b>¥</b>為替</span>
+
+                <span style="--c: #3A7B8C;"><b>◎</b>モビリティ</span>
+
+                <span style="--c: #5E3D8C;"><b>▶</b>ゲーム</span>
+
+              </div>
+            </div>
+            <div class="summary-synthesis__down">↓</div>
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">供給・販路</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #2D5BB8;"><b>◆</b>AI</span>
+
+                <span style="--c: #5A6B7B;"><b>⬢</b>製造</span>
+
+              </div>
+            </div>
+            <div class="summary-synthesis__down">↓</div>
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">実装・拡張</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #2E6B52;"><b>⌗</b>IT</span>
+
+                <span style="--c: #8E2A19;"><b>■</b>経済</span>
+
+              </div>
+            </div>
+
+
+          </div>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>読者への示唆 — TAKEAWAYS</h3>
+          <ol class="summary-synthesis__implications">
+
+            <li><span>1</span><p>日印、製造投資2兆円 半導体材料工場やAI協業が120件</p></li>
+
+            <li><span>2</span><p>SIE、2028年からPlayStation新作をダウンロード専売へ</p></li>
+
+            <li><span>3</span><p>40年ぶり円安、介入前夜のポジション偏重が再燃</p></li>
+
+          </ol>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
+
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-07-02 Foreign Exchange 為替 162円台後半、言葉が相場を動かす">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§01</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
+            </div>
+            <h3>162円台後半、言葉が相場を動かす</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">USDJPY</strong>は<strong>162円後半</strong>へ上昇し、<span class="emph-und">24年7月介入前に似た局面</span>としてロイターが「暗黒月曜」再来リスクを報じた。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p>背景には<strong class="emph-bold">円売りポジション</strong>の偏りと<strong>政府・日銀の介入警戒</strong>があり、CFTC統計でも巻き戻し圧力の蓄積が意識されている。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p>介入が入れば<strong class="emph-bold">株安</strong>を伴う急反転もあり得るため、<strong>163円台接近時の当局メッセージ</strong>と<span class="emph-und">投機筋のショート解消</span>が次の焦点だ。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/fx/">→ §01 為替 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-07-02 Artificial Intelligence AI 資本の厚みが配布条件を変える">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§02</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
+            </div>
+            <h3>資本の厚みが配布条件を変える</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">ソフトバンクグループ</strong>が<strong>OpenAIへ100億ドル（1兆6273億円）</strong>の追加出資を実行し、300億ドル枠の第2弾を完了した。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p>出資は<span class="emph-und">4月の第1弾に続く大型資本投入</span>で、同日にブリッジ融資も実行された。モデル競争の裏側で資金調達力が差を広げている。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong class="emph-bold">OpenAI</strong>は計算資源と研究投資の余力を確保しやすくなり、<strong>AI基盤競争が性能だけでなく資本耐久戦</strong>になっていることが鮮明だ。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/ai/">→ §02 AI 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-07-02 IT &amp; Consulting IT 導入前審査が入口になる">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§03</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
+            </div>
+            <h3>導入前審査が入口になる</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">Meta</strong>は<strong>AI向け計算資源とモデル提供を外販するクラウド事業構想</strong>が伝わり、<span class="emph-und">日本時間7月1日夜に株価が6%超上昇</span>した。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><strong class="emph-bold">AIインフラ</strong>投資で積み上がる自前データセンターを収益化し、<strong>AWS・Azure・Google Cloudに対抗する新たな供給者</strong>を目指す構図だ。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong class="emph-bold">企業IT</strong>では<strong>生成AI基盤の調達先が増える可能性</strong>があり、<span class="emph-und">価格競争とモデル選択肢の拡大がIT投資判断を左右</span>する。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/it/">→ §03 IT 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-07-02 Mobility モビリティ 売り値より運用標準が前に出る">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§04</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
+            </div>
+            <h3>売り値より運用標準が前に出る</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">テスラコリア</strong>は「モデル3 プレミアムロングレンジRWD」を <strong>5299万ウォンから5999万ウォンへ700万ウォン</strong> 引き上げ、<span class="emph-und">他モデルも300万〜500万ウォン上げた</span>。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p>韓国政府は前日に<strong class="emph-bold">テスラを含む27社</strong>への下半期補助金継続を公表した。会社側は <strong>為替と原材料高</strong> を理由に挙げたが、<span class="emph-und">補助金を織り込んだ値上げではないか</span> との見方が広がった。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><strong class="emph-bold">テスラ</strong>は1〜5月に <strong>4万5020台</strong> を売って韓国EV市場を先導している。<span class="emph-und">補助金の恩恵が消費者価格に残るのか</span> と、競合各社が追随するかが次の焦点だ。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/">→ §04 モビリティ 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-07-02 Manufacturing 製造 量産の場所を組み替える">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§05</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
+            </div>
+            <h3>量産の場所を組み替える</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">日印協力</strong>で<strong>2兆円規模</strong>の事業創出が見込まれ、<span class="emph-und">120件の協力文書</span>が首脳会談に合わせて交わされる見通しだ。半導体材料工場の設立やAI協業が柱になった。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p>富士フイルムの半導体材料工場協力やスズキのバイオガス計画まで含み、単発の輸出ではなく現地生産と技術連携を束ねた。経済安保と供給網分散を同時に進める設計が鮮明だ。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und">10年で10兆円の対印投資目標</span>の実装段階に入るかが次の焦点で、製造業は用地・人材・現地調達の具体化速度を見極めたい。インドを量産拠点として組み込む動きが広がる可能性がある。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">→ §05 製造 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-07-02 Economy 経済 物価と金利の重さをどう吸うか">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§06</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
+            </div>
+            <h3>物価と金利の重さをどう吸うか</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">7月値上げ</strong>は<strong>2566品目</strong>に広がり、円相場は<span class="emph-und">1ドル=162円80銭台</span>まで下落して家計負担が一段と増した。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p>政府の<strong class="emph-bold">利上げけん制</strong>と財源不透明な経済対策が円安圧力を強め、輸入肉や包装資材のコスト上昇が値上げ連鎖を押し上げている。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p>次の焦点は<strong class="emph-bold">日銀</strong>の正常化判断と政府の物価対策で、<strong>円安の長期化</strong>なら秋以降の食品・日用品にも再値上げが波及しやすい。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/economy/">→ §06 経済 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-07-02 Gaming ゲーム 売り方と守り方が収益を決める">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§07</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
+            </div>
+            <h3>売り方と守り方が収益を決める</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><strong class="emph-bold">PlayStation</strong>は<strong>2028年1月以降の新作をダウンロード版のみに切り替える</strong>と告知し、<span class="emph-und">ディスク版の新規生産を止める</span>方針を示した。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p>物理媒体よりデジタル需要が上回ったと説明しており、<strong class="emph-bold">PS-Store</strong>中心へ販路を寄せる<strong>事業再設計</strong>の色が濃い。<span class="emph-und">従来の店頭前提モデルを畳む判断</span>でもある。</p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p>小売や限定版の売り方には見直し圧力がかかる一方、<strong class="emph-bold">Sony</strong>は<strong>購入導線の一元化</strong>で収益管理を深める。<span class="emph-und">中古流通や店頭特典の扱い</span>が次の論点だ。</p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/game/">→ §07 ゲーム 詳細を読む</a>
+
+      </div>
+    </article>
+
+  </section>
+
+  <section class="summary-tomorrow" aria-label="明日への観測ボード" style="--c: #C9A155;">
+    <div class="summary-tomorrow__inner">
+      <div class="summary-tomorrow__head">
+        <span>§ 08</span>
+        <strong>TOMORROW BOARD / 明日への観測ボード</strong>
+        <h2>明日、何を見て、何が起きたら見方が変わるか</h2>
+        <p>各カテゴリで「見るもの（Watch）」「変化シグナル（Signal）」「どう解釈するか（Implication）」を一枚に整理します。</p>
+      </div>
+      <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
+      <div class="summary-tomorrow__rows">
+
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-07-02 Foreign Exchange 為替 162円台後半、言葉が相場を動かす 背景には円売りポジションの偏りと政府・日銀の介入警戒があり、CFTC統計でも巻き戻し圧力の蓄積が意識されている。 介入が入れば株安を伴う急反転もあり得るため、163円台接近時の当局メッセージと投機筋のショート解消が次の焦点だ。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>162円台後半、言葉が相場を動かす</p></div>
+            <div><span>SIGNAL 変化</span><p>背景には<strong class="emph-bold">円売りポジション</strong>の偏りと<strong>政府・日銀の介入警戒</strong>があり、CFTC統計でも巻き戻し圧力の蓄積が意識されている。</p></div>
+            <div><span>IMPLICATION 解釈</span><p>介入が入れば<strong class="emph-bold">株安</strong>を伴う急反転もあり得るため、<strong>163円台接近時の当局メッセージ</strong>と<span class="emph-und">投機筋のショート解消</span>が次の焦点だ。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-07-02 Artificial Intelligence AI 資本の厚みが配布条件を変える 出資は4月の第1弾に続く大型資本投入で、同日にブリッジ融資も実行された。モデル競争の裏側で資金調達力が差を広げている。 OpenAIは計算資源と研究投資の余力を確保しやすくなり、AI基盤競争が性能だけでなく資本耐久戦になっていることが鮮明だ。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>資本の厚みが配布条件を変える</p></div>
+            <div><span>SIGNAL 変化</span><p>出資は<span class="emph-und">4月の第1弾に続く大型資本投入</span>で、同日にブリッジ融資も実行された。モデル競争の裏側で資金調達力が差を広げている。</p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong class="emph-bold">OpenAI</strong>は計算資源と研究投資の余力を確保しやすくなり、<strong>AI基盤競争が性能だけでなく資本耐久戦</strong>になっていることが鮮明だ。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-07-02 IT &amp; Consulting IT 導入前審査が入口になる AIインフラ投資で積み上がる自前データセンターを収益化し、AWS・Azure・Google Cloudに対抗する新たな供給者を目指す構図だ。 企業ITでは生成AI基盤の調達先が増える可能性があり、価格競争とモデル選択肢の拡大がIT投資判断を左右する。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>導入前審査が入口になる</p></div>
+            <div><span>SIGNAL 変化</span><p><strong class="emph-bold">AIインフラ</strong>投資で積み上がる自前データセンターを収益化し、<strong>AWS・Azure・Google Cloudに対抗する新たな供給者</strong>を目指す構図だ。</p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong class="emph-bold">企業IT</strong>では<strong>生成AI基盤の調達先が増える可能性</strong>があり、<span class="emph-und">価格競争とモデル選択肢の拡大がIT投資判断を左右</span>する。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-07-02 Mobility モビリティ 売り値より運用標準が前に出る 韓国政府は前日にテスラを含む27社への下半期補助金継続を公表した。会社側は 為替と原材料高 を理由に挙げたが、補助金を織り込んだ値上げではないか との見方が広がった。 テスラは1〜5月に 4万5020台 を売って韓国EV市場を先導している。補助金の恩恵が消費者価格に残るのか と、競合各社が追随するかが次の焦点だ。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>売り値より運用標準が前に出る</p></div>
+            <div><span>SIGNAL 変化</span><p>韓国政府は前日に<strong class="emph-bold">テスラを含む27社</strong>への下半期補助金継続を公表した。会社側は <strong>為替と原材料高</strong> を理由に挙げたが、<span class="emph-und">補助金を織り込んだ値上げではないか</span> との見方が広がった。</p></div>
+            <div><span>IMPLICATION 解釈</span><p><strong class="emph-bold">テスラ</strong>は1〜5月に <strong>4万5020台</strong> を売って韓国EV市場を先導している。<span class="emph-und">補助金の恩恵が消費者価格に残るのか</span> と、競合各社が追随するかが次の焦点だ。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-07-02 Manufacturing 製造 量産の場所を組み替える 富士フイルムの半導体材料工場協力やスズキのバイオガス計画まで含み、単発の輸出ではなく現地生産と技術連携を束ねた。経済安保と供給網分散を同時に進める設計が鮮明だ。 10年で10兆円の対印投資目標の実装段階に入るかが次の焦点で、製造業は用地・人材・現地調達の具体化速度を見極めたい。インドを量産拠点として組み込む動きが広がる可能性がある。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>量産の場所を組み替える</p></div>
+            <div><span>SIGNAL 変化</span><p>富士フイルムの半導体材料工場協力やスズキのバイオガス計画まで含み、単発の輸出ではなく現地生産と技術連携を束ねた。経済安保と供給網分散を同時に進める設計が鮮明だ。</p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und">10年で10兆円の対印投資目標</span>の実装段階に入るかが次の焦点で、製造業は用地・人材・現地調達の具体化速度を見極めたい。インドを量産拠点として組み込む動きが広がる可能性がある。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-07-02 Economy 経済 物価と金利の重さをどう吸うか 政府の利上げけん制と財源不透明な経済対策が円安圧力を強め、輸入肉や包装資材のコスト上昇が値上げ連鎖を押し上げている。 次の焦点は日銀の正常化判断と政府の物価対策で、円安の長期化なら秋以降の食品・日用品にも再値上げが波及しやすい。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>物価と金利の重さをどう吸うか</p></div>
+            <div><span>SIGNAL 変化</span><p>政府の<strong class="emph-bold">利上げけん制</strong>と財源不透明な経済対策が円安圧力を強め、輸入肉や包装資材のコスト上昇が値上げ連鎖を押し上げている。</p></div>
+            <div><span>IMPLICATION 解釈</span><p>次の焦点は<strong class="emph-bold">日銀</strong>の正常化判断と政府の物価対策で、<strong>円安の長期化</strong>なら秋以降の食品・日用品にも再値上げが波及しやすい。</p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-07-02 Gaming ゲーム 売り方と守り方が収益を決める 物理媒体よりデジタル需要が上回ったと説明しており、PS-Store中心へ販路を寄せる事業再設計の色が濃い。従来の店頭前提モデルを畳む判断でもある。 小売や限定版の売り方には見直し圧力がかかる一方、Sonyは購入導線の一元化で収益管理を深める。中古流通や店頭特典の扱いが次の論点だ。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>売り方と守り方が収益を決める</p></div>
+            <div><span>SIGNAL 変化</span><p>物理媒体よりデジタル需要が上回ったと説明しており、<strong class="emph-bold">PS-Store</strong>中心へ販路を寄せる<strong>事業再設計</strong>の色が濃い。<span class="emph-und">従来の店頭前提モデルを畳む判断</span>でもある。</p></div>
+            <div><span>IMPLICATION 解釈</span><p>小売や限定版の売り方には見直し圧力がかかる一方、<strong class="emph-bold">Sony</strong>は<strong>購入導線の一元化</strong>で収益管理を深める。<span class="emph-und">中古流通や店頭特典の扱い</span>が次の論点だ。</p></div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-cta">
+    <h2>今日の論点を、記事で確かめる</h2>
+    <div>
+      <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-07-02/">全35本のニュースを読む →</a>
+      <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-07-02 · #20260702
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-02/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
+})();
+</script>
+</body>
+</html>
