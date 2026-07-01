@@ -12,7 +12,7 @@
  *  activate 時に古いキャッシュをまとめて削除できる。
  */
 
-const SW_VERSION = '2026-07-01-category-hero-turn4-r1';
+const SW_VERSION = '2026-07-02-category-hero-container-essay-r3';
 const SCOPE_PREFIX = '/News-Grasp/';
 const HTML_CACHE = `news-grasp-html-${SW_VERSION}`;
 const ASSET_CACHE = `news-grasp-assets-${SW_VERSION}`;

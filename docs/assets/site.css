@@ -64,9 +64,10 @@
 
 /* ---------------- Category Hero Turn 4 ---------------- */
 .cat-hero[data-hero-contract="turn4-category"] {
-  max-width: 1160px;
+  width: 100%;
+  max-width: var(--container-max);
   height: auto;
-  margin: 34px auto 0;
+  margin: 0 auto;
   overflow: hidden;
   border-radius: 14px;
   box-shadow: 0 12px 44px rgba(0, 0, 0, 0.18);
@@ -238,7 +239,17 @@
   justify-content: space-between;
   align-items: flex-end;
   color: #1a1206;
-  background: linear-gradient(150deg, var(--hero-grad-from), var(--hero-grad-to));
+  background:
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--hero-grad-from) 78%, transparent),
+      color-mix(in srgb, var(--hero-grad-to) 84%, transparent)
+    ),
+    var(--hero-bg-image, none),
+    linear-gradient(150deg, var(--hero-grad-from), var(--hero-grad-to));
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: multiply, normal, normal;
 }
 .cat-hero__stripes {
   position: absolute;
@@ -5416,7 +5427,7 @@ strong {
 .summary-tomorrow__cells p {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.68;
   color: #e6e0d2;
 }
@@ -5470,28 +5481,28 @@ strong {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1 1 420px;
-  max-width: 520px;
-  min-width: min(100%, 280px);
+  flex: 1 1 auto;
+  max-width: 440px;
 }
 .brand-zone--summary .brand-search__icon {
   position: absolute;
-  left: 14px;
+  left: 12px;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-ink-dim);
   pointer-events: none;
 }
 .brand-zone--summary .brand-search input {
   width: 100%;
-  background: var(--color-neutral);
-  border: 1px solid rgba(201, 161, 85, 0.42);
+  background: var(--color-cream);
+  border: 1px solid var(--color-border);
   color: var(--color-ink);
   font-family: var(--font-mono);
   font-size: 12px;
-  letter-spacing: 0.05em;
-  padding: 13px 14px 13px 40px;
+  letter-spacing: 0.03em;
+  padding: 9px 12px 9px 30px;
   outline: none;
+  border-radius: 2px;
 }
 .brand-zone--summary .brand-search input::placeholder {
   color: var(--color-ink-dim);
@@ -5630,7 +5641,7 @@ strong {
   color: var(--color-gold);
 }
 .summary-tomorrow__cells p {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.78;
 }
 
@@ -5641,9 +5652,11 @@ strong {
     gap: 10px;
   }
   .brand-zone--summary .brand-search {
+    order: 3;
     flex-basis: 100%;
     max-width: none;
     width: 100%;
+    margin-top: 10px;
   }
   .brand-zone--summary .brand-search input {
     font-size: 11px;
@@ -5707,16 +5720,17 @@ strong {
     margin-left: 38px;
   }
   .summary-tomorrow__cells p {
-    font-size: 14.5px;
+    font-size: 16.5px;
     line-height: 1.68;
   }
 }
 
 /* ---------------- Category Hero Turn 4 final override ---------------- */
 .cat-hero[data-hero-contract="turn4-category"] {
-  max-width: 1160px;
+  width: 100%;
+  max-width: var(--container-max);
   height: auto;
-  margin: 34px auto 0;
+  margin: 0 auto;
   overflow: hidden;
   border-radius: 14px;
   box-shadow: 0 12px 44px rgba(0, 0, 0, 0.18);
@@ -5783,7 +5797,17 @@ strong {
   justify-content: space-between;
   align-items: flex-end;
   color: #1a1206;
-  background: linear-gradient(150deg, var(--hero-grad-from), var(--hero-grad-to));
+  background:
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--hero-grad-from) 78%, transparent),
+      color-mix(in srgb, var(--hero-grad-to) 84%, transparent)
+    ),
+    var(--hero-bg-image, none),
+    linear-gradient(150deg, var(--hero-grad-from), var(--hero-grad-to));
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: multiply, normal, normal;
 }
 .cat-hero[data-hero-contract="turn4-category"] .cat-hero__ticker-label,
 .cat-hero[data-hero-contract="turn4-category"] .cat-hero__ticker-text,

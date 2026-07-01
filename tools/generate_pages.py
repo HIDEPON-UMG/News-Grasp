@@ -2091,6 +2091,31 @@ def _build_summary_synthesis(sections: list[dict[str, Any]], hero_lead: str,
     }
 
 
+def _strip_tomorrow_watch_prefix(text: str, section: dict[str, Any], cat: dict[str, Any]) -> str:
+    """WATCH 本文から、上段カテゴリーチップと重複する接頭辞を落とす。"""
+    raw = (text or "").strip()
+    cid = str(section.get("category_id") or "")
+    prefixes = {
+        cid,
+        cid.upper(),
+        cid.title(),
+        str(section.get("tag") or ""),
+        str(section.get("category_label") or ""),
+        str(cat.get("label") or ""),
+        str(cat.get("jp") or ""),
+    }
+    if cid == "fx":
+        prefixes.add("FX")
+    cleaned = [re.escape(p.strip()) for p in prefixes if p and p.strip()]
+    if not cleaned:
+        return raw
+    prefix_re = re.compile(
+        r"^\s*(?:" + "|".join(sorted(cleaned, key=len, reverse=True)) + r")\s*[—–\-ー―:：/]+\s*",
+        re.IGNORECASE,
+    )
+    return prefix_re.sub("", raw, count=1).strip() or raw
+
+
 def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """カテゴリ別の「明日へ」観測ボードを生成する。"""
     rows: list[dict[str, Any]] = []
@@ -2102,6 +2127,7 @@ def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]
         sentences = _summary_sentence_parts(body)
         bullets = list(sec.get("bullets") or [])
         watch = sec.get("heading") or f"{sec.get('tag', '')}の観測点"
+        watch = _strip_tomorrow_watch_prefix(str(watch), sec, cat)
         signal = bullets[1] if len(bullets) > 1 else (sentences[1] if len(sentences) > 1 else body)
         implication = bullets[2] if len(bullets) > 2 else (sentences[-1] if sentences else body)
         rows.append({

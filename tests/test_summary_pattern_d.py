@@ -21,6 +21,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 CSS_PATH = ROOT / "docs" / "assets" / "site.css"
+SUMMARY_TEMPLATE = ROOT / "prompts" / "summary-template.html"
 
 from tools.generate_pages import (  # noqa: E402
     _section_label_to_cid,
@@ -278,6 +279,15 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     assert "padding: 5px 12px 5px 10px" in tomorrow_cat_block
     watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
     assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
+    desktop_css = css[:css.index("@media (max-width: 520px)")]
+    watch_body_block = _last_css_block(desktop_css, ".summary-tomorrow__cells p")
+    assert re.search(r"font-size:\s*20px", watch_body_block), watch_body_block
+    watch_texts = re.findall(r"<div><span>WATCH 見る</span><p>(.*?)</p></div>", built_summary, re.S)
+    assert watch_texts
+    assert not any(
+        re.match(r"\s*(?:FX|AI|IT|Mobility|Manufacturing|Economy|Game)\s*[—–\-ー―:：/]+", text)
+        for text in watch_texts
+    ), watch_texts
     assert not re.search(r"\.summary-tomorrow__cells\s+span\s*\{", css)
     inline_span_block = _last_css_block(css, ".summary-tomorrow__cells p span")
     assert "display: inline" in inline_span_block
@@ -285,7 +295,27 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     assert "color: inherit" in inline_span_block
     mobile_css = css[css.index("@media (max-width: 520px)"):]
     assert ".summary-tomorrow__cells p" in mobile_css
-    assert re.search(r"\.summary-tomorrow__cells p\s*\{[^}]*font-size:\s*14\.5px", mobile_css, re.S), mobile_css
+    assert re.search(r"\.summary-tomorrow__cells p\s*\{[^}]*font-size:\s*16\.5px", mobile_css, re.S), mobile_css
+
+
+def test_summary_header_search_matches_category_page_position_contract(built_summary: str):
+    """ESSAY の検索窓はカテゴリーページ同様、logo の外側で header 中央列に置く。"""
+    template = SUMMARY_TEMPLATE.read_text(encoding="utf-8")
+    label_pos = template.index('<label class="brand-search brand-search--summary">')
+    nav_pos = template.index('<nav class="brand-zone__nav">')
+    logo_close = template.index("</div>\n    <label", template.index('<div class="brand-zone__logo">'))
+    assert logo_close < label_pos < nav_pos
+    assert re.search(
+        r'<div class="brand-zone__logo">.*?</div>\s*<label class="brand-search brand-search--summary">',
+        built_summary,
+        re.S,
+    )
+    css = CSS_PATH.read_text(encoding="utf-8")
+    desktop_css = css[:css.index("@media (max-width: 520px)")]
+    summary_search_start = desktop_css.rindex(".brand-zone--summary .brand-search {\n")
+    summary_search_block = desktop_css[summary_search_start:desktop_css.index("}", summary_search_start)]
+    assert "flex: 1 1 auto" in summary_search_block
+    assert "max-width: 440px" in summary_search_block
 
 
 def test_essay_redesign_keeps_lane_texts_bound_to_their_roles(built_summary: str):

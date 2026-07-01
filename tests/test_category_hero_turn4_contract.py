@@ -90,6 +90,7 @@ def test_fx_hero_uses_turn4a_live_rates_and_sentence_bullets() -> None:
     assert "続きを読む →" in html
     assert ">USD / JPY<" in html
     assert ">TOTAL ENTRIES<" in html
+    assert "--hero-bg-image: url('https://hidepon-umg.github.io/News-Grasp/assets/og/fx.jpg');" in html
 
 
 def test_non_fx_hero_uses_turn4b_signals_and_score_panel() -> None:
@@ -100,6 +101,7 @@ def test_non_fx_hero_uses_turn4b_signals_and_score_panel() -> None:
     assert '<span class="cat-hero__score-value">93</span>' in html
     assert '<span class="cat-hero__score-unit">/100</span>' in html
     assert '<div class="cat-hero__watermark" aria-hidden="true">◆</div>' in html
+    assert "--hero-bg-image: url('https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg');" in html
 
 
 def test_turn4_theme_context_exists_for_all_seven_categories() -> None:
@@ -124,6 +126,11 @@ def test_turn4_theme_context_exists_for_all_seven_categories() -> None:
 def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     css = CSS.read_text(encoding="utf-8")
 
+    assert 'cat-hero[data-hero-contract="turn4-category"] {\n  width: 100%;\n  max-width: var(--container-max);' in css
+    assert 'cat-hero[data-hero-contract="turn4-category"] {\n  width: 100%;\n  max-width: none;' not in css
+    assert 'cat-hero[data-hero-contract="turn4-category"] {\n  max-width: 1160px;' not in css
+    assert "margin: 34px auto 0;" not in css
+    assert "var(--hero-bg-image, none)" in css
     assert "grid-template-columns: 1.06fr .94fr" in css
     assert ".cat-hero__tab-fade" in css
     assert ".cat-hero__tab-arrow" in css

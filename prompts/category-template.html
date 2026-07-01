@@ -206,7 +206,10 @@
         </div>
       </div>
     </section>
-    <aside class="cat-hero__visual" data-panel="{% if hero.is_fx %}rates{% else %}score{% endif %}" aria-label="{% if hero.is_fx %}FX rate panel{% else %}Representative score panel{% endif %}">
+    <aside class="cat-hero__visual"
+           data-panel="{% if hero.is_fx %}rates{% else %}score{% endif %}"
+           style="--hero-bg-image: url('{{ base_url }}/assets/og/{{ category_id }}.jpg');"
+           aria-label="{% if hero.is_fx %}FX rate panel{% else %}Representative score panel{% endif %}">
       <div class="cat-hero__stripes" aria-hidden="true"></div>
       {% if hero.is_fx %}
       <svg class="cat-hero__chart" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
