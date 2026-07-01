@@ -396,7 +396,8 @@ def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "dail
     row = uploads.get(day)
     if not isinstance(row, dict) or not row.get("videoId"):
         raise RuntimeError(f"prepared podcast upload not found for {day}")
-    if row.get("status") == "public" and row.get("playlistItemId"):
+    needs_primary_playlist = kind == "deepdive" and not row.get("primaryPodcastPlaylistItemId")
+    if row.get("status") == "public" and row.get("playlistItemId") and not needs_primary_playlist:
         return {"date": day, "skipped": True, **row}
 
     active_client = client or YouTubePodcastClient.from_local_secrets()
@@ -406,6 +407,16 @@ def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "dail
     playlist_item_id = str(row.get("playlistItemId") or "")
     if not playlist_item_id:
         playlist_item_id = active_client.add_video_to_playlist(video_id=video_id, playlist_id=playlist_id)
+    primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or "")
+    primary_playlist_item_id = str(row.get("primaryPodcastPlaylistItemId") or "")
+    if kind == "deepdive":
+        if not primary_playlist_id:
+            primary_playlist_id = _ensure_playlist(active_client, "daily")
+        if not primary_playlist_item_id:
+            primary_playlist_item_id = active_client.add_video_to_playlist(
+                video_id=video_id,
+                playlist_id=primary_playlist_id,
+            )
     row.update(
         {
             "phase": "finalized",
@@ -414,6 +425,13 @@ def finalize(day: str, *, client: PodcastClient | None = None, kind: str = "dail
             "playlistItemId": playlist_item_id,
         }
     )
+    if kind == "deepdive":
+        row.update(
+            {
+                "primaryPodcastPlaylistId": primary_playlist_id,
+                "primaryPodcastPlaylistItemId": primary_playlist_item_id,
+            }
+        )
     uploads[day] = row
     _write_uploads(uploads, kind)
     result = {"date": day, "skipped": False, **row}
@@ -472,6 +490,7 @@ def audit_playlist_uniqueness(day: str, *, client: PodcastClient | None = None) 
         raise ValueError(f"invalid date: {day}")
     active_client = client or YouTubePodcastClient.from_local_secrets()
     checks: list[dict[str, str]] = []
+    allowed_by_playlist: dict[str, set[str]] = {}
     for kind in ("daily", "deepdive"):
         row = _load_uploads(kind).get(day)
         if not isinstance(row, dict):
@@ -480,6 +499,11 @@ def audit_playlist_uniqueness(day: str, *, client: PodcastClient | None = None) 
         playlist_id = str(row.get("playlistId") or "")
         if video_id and playlist_id:
             checks.append({"kind": kind, "videoId": video_id, "playlistId": playlist_id})
+            allowed_by_playlist.setdefault(playlist_id, set()).add(video_id)
+        primary_playlist_id = str(row.get("primaryPodcastPlaylistId") or "")
+        if kind == "deepdive" and video_id and primary_playlist_id:
+            checks.append({"kind": "deepdive-primary", "videoId": video_id, "playlistId": primary_playlist_id})
+            allowed_by_playlist.setdefault(primary_playlist_id, set()).add(video_id)
 
     issues: list[dict[str, Any]] = []
     surfaces: list[dict[str, Any]] = []
@@ -489,7 +513,8 @@ def audit_playlist_uniqueness(day: str, *, client: PodcastClient | None = None) 
         dated_unexpected = [
             item
             for item in items
-            if day in str(item.get("title") or "") and item.get("videoId") != check["videoId"]
+            if day in str(item.get("title") or "")
+            and item.get("videoId") not in allowed_by_playlist.get(check["playlistId"], set())
         ]
         deleted_items = [item for item in items if str(item.get("title") or "") == "Deleted video"]
         if len(matched) != 1:

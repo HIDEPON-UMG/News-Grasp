@@ -5186,4 +5186,8 @@ strong {
     flex-basis: auto;
     margin-left: 38px;
   }
+  .summary-tomorrow__cells p {
+    font-size: 16px;
+    line-height: 1.72;
+  }
 }

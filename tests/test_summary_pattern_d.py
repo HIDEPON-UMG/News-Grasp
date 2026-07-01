@@ -61,9 +61,9 @@ categoryId: {cat_id}
 
 #cat/{cat_id} #topic/test #score/高
 
-- bullet 1
-- bullet 2
-- bullet 3
+- 【事実・概要】：FACT_SENTINEL は配信網と認証が先に立つ。
+- 【背景・要点】：CONTEXT_SENTINEL は制度参加と運用設計が焦点になる。
+- 【影響・展望】：OUTLOOK_SENTINEL は安全性と運用体制が案件獲得を左右する。
 
 ---
 
@@ -73,7 +73,7 @@ categoryId: {cat_id}
 
 #cat/{cat_id} #topic/test #score/中
 
-- bullet 1
+- 【事実・概要】：SECOND_FACT_SENTINEL
 
 ---
 
@@ -83,7 +83,7 @@ categoryId: {cat_id}
 
 #cat/{cat_id} #topic/test #score/中
 
-- bullet 1
+- 【事実・概要】：THIRD_FACT_SENTINEL
 """
 
 
@@ -168,7 +168,7 @@ def test_summary_essay_sections_use_dc_lane_cards(built_summary: str):
         assert short in built_summary
     for marker in ("事実・概要", "背景・要点", "影響・展望"):
         assert marker in built_summary
-    for stale_marker in ("【事実】", "【背景】", "【展望】"):
+    for stale_marker in ("【事実】", "【背景】", "【展望】", "【事実・概要】", "【背景・要点】", "【影響・展望】"):
         assert stale_marker not in built_summary
     for persona in ("記者", "解説者", "予測者"):
         assert persona not in built_summary
@@ -223,9 +223,11 @@ def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_sum
     """FACT/CONTEXT/OUTLOOK は正規 SVG と読めるラベルサイズ契約を持つ。"""
     for icon in (
         '<circle cx="10.5" cy="10.5" r="6.5"',
-        '<rect x="7" y="5.5" width="3.5" height="13"',
-        '<rect x="13.5" y="5.5" width="3.5" height="13"',
+        '<line x1="15.5" y1="15.5" x2="21" y2="21"',
+        '<rect x="6" y="5" width="5" height="14"',
+        '<rect x="13" y="5" width="5" height="14"',
         '<polyline points="4 16 9 11 13 14 20 7"',
+        '<polyline points="15 7 20 7 20 12"',
     ):
         assert icon in built_summary
     css = CSS_PATH.read_text(encoding="utf-8")
@@ -252,6 +254,42 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     assert "color: color-mix(in srgb, var(--c) 82%, var(--color-navy))" in emph_block
     watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
     assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
+    mobile_css = css[css.index("@media (max-width: 520px)"):]
+    assert ".summary-tomorrow__cells p" in mobile_css
+    assert re.search(r"\.summary-tomorrow__cells p\s*\{[^}]*font-size:\s*16px", mobile_css, re.S), mobile_css
+
+
+def test_essay_redesign_keeps_lane_texts_bound_to_their_roles(built_summary: str):
+    """記事 bullet の role prefix を本文に残さず、各 lane へ正しい順で流し込む。"""
+    fact_match = re.search(
+        r'<section class="summary-lane-card" data-role="fact".*?</section>',
+        built_summary,
+        re.S,
+    )
+    context_match = re.search(
+        r'<section class="summary-lane-card" data-role="context".*?</section>',
+        built_summary,
+        re.S,
+    )
+    outlook_match = re.search(
+        r'<section class="summary-lane-card" data-role="outlook".*?</section>',
+        built_summary,
+        re.S,
+    )
+    assert fact_match and context_match and outlook_match
+    fact_html = fact_match.group(0)
+    context_html = context_match.group(0)
+    outlook_html = outlook_match.group(0)
+    assert "FACT_SENTINEL" in fact_html
+    assert "CONTEXT_SENTINEL" in context_html
+    assert "OUTLOOK_SENTINEL" in outlook_html
+    assert "FACT_SENTINEL" not in context_html
+    assert "CONTEXT_SENTINEL" not in outlook_html
+    assert "OUTLOOK_SENTINEL" not in fact_html
+    for role_prefix in ("【事実・概要】", "【背景・要点】", "【影響・展望】"):
+        assert role_prefix not in fact_html
+        assert role_prefix not in context_html
+        assert role_prefix not in outlook_html
 
 
 def test_essay_redesign_expands_hero_text_and_aligns_glance_top(built_summary: str):

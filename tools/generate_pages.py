@@ -1813,6 +1813,20 @@ def _summary_board_text(text: str, *, fallback: str) -> str:
     return text or fallback
 
 
+_SUMMARY_ROLE_PREFIX_RE = re.compile(
+    r"^\s*【(?:事実・概要|背景・要点|影響・展望|事実|背景|展望)】[:：]\s*"
+)
+
+
+def _strip_summary_role_prefix(text: str) -> str:
+    """記事 bullet の role prefix を summary page の本文表示から取り除く。
+
+    `【事実・概要】：` などは記事カード側の入力契約であり、summary page では
+    lane chip / SIGNAL label が役割を担うため本文へ重複表示しない。
+    """
+    return _SUMMARY_ROLE_PREFIX_RE.sub("", (text or "").strip())
+
+
 def _summary_inline_html(text: str, *, fallback: str = "") -> str:
     """Summary board 用の本文を許可済み強調 HTML として返す。
 
@@ -1821,8 +1835,9 @@ def _summary_inline_html(text: str, *, fallback: str = "") -> str:
     `&lt;strong class="emph-bold"&gt;` のような断片を文字表示せず、許可済みの
     強調タグだけを通す。
     """
-    source = _summary_board_text(text, fallback=fallback)
+    source = _strip_summary_role_prefix(_summary_board_text(text, fallback=fallback))
     unescaped = _html.unescape(source)
+    unescaped = _strip_summary_role_prefix(unescaped)
     if _EMPH_TAG_SPLIT_RE.search(unescaped):
         return _sanitize_emph_html(unescaped)
     return inline_html(unescaped)
@@ -1881,7 +1896,7 @@ def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]
         sentences = _summary_sentence_parts(body)
         bullets = list(sec.get("bullets") or [])
         watch = sec.get("heading") or f"{sec.get('tag', '')}の観測点"
-        signal = bullets[1] if len(bullets) > 1 else (sentences[0] if sentences else body)
+        signal = bullets[1] if len(bullets) > 1 else (sentences[1] if len(sentences) > 1 else body)
         implication = bullets[2] if len(bullets) > 2 else (sentences[-1] if sentences else body)
         rows.append({
             "category_id": sec.get("category_id", ""),
@@ -1920,10 +1935,10 @@ def _summary_lane_texts(section: dict[str, Any]) -> list[dict[str, str]]:
     bullets = [str(b).strip() for b in (section.get("bullets") or []) if str(b).strip()]
     sentences = _summary_sentence_parts(body)
 
-    fact = sentences[0] if sentences else body
-    context_pool = bullets[:1] + sentences[1:-1]
-    outlook_pool = bullets[1:2] + (sentences[-1:] if len(sentences) > 1 else [])
-    context = context_pool[0] if context_pool else body
+    fact = bullets[0] if len(bullets) > 0 else (sentences[0] if sentences else body)
+    context_pool = (bullets[1:2] if len(bullets) > 1 else []) + sentences[1:-1]
+    outlook_pool = (bullets[2:3] if len(bullets) > 2 else []) + (sentences[-1:] if len(sentences) > 1 else [])
+    context = context_pool[0] if context_pool else (sentences[1] if len(sentences) > 1 else body)
     outlook = outlook_pool[0] if outlook_pool else (sentences[-1] if sentences else body)
 
     fallbacks = [
