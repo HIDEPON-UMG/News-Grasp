@@ -10,6 +10,45 @@ from tools.config import CATEGORIES
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "prompts" / "category-template.html"
 CSS = ROOT / "docs" / "assets" / "site.css"
+OG_DIR = ROOT / "docs" / "assets" / "og"
+
+
+def _jpeg_size(path: Path) -> tuple[int, int]:
+    data = path.read_bytes()
+    cursor = 2
+    sof_markers = {
+        0xC0,
+        0xC1,
+        0xC2,
+        0xC3,
+        0xC5,
+        0xC6,
+        0xC7,
+        0xC9,
+        0xCA,
+        0xCB,
+        0xCD,
+        0xCE,
+        0xCF,
+    }
+    while cursor < len(data):
+        if data[cursor] != 0xFF:
+            cursor += 1
+            continue
+        marker = data[cursor + 1]
+        cursor += 2
+        while marker == 0xFF:
+            marker = data[cursor]
+            cursor += 1
+        if marker in {0xD8, 0xD9} or 0xD0 <= marker <= 0xD7:
+            continue
+        segment_length = int.from_bytes(data[cursor : cursor + 2], "big")
+        if marker in sof_markers:
+            height = int.from_bytes(data[cursor + 3 : cursor + 5], "big")
+            width = int.from_bytes(data[cursor + 5 : cursor + 7], "big")
+            return width, height
+        cursor += segment_length
+    raise AssertionError(f"JPEG size not found: {path}")
 
 
 def _ctx(category_id: str, pause_notice: dict[str, object] | None = None) -> dict[str, object]:
@@ -167,3 +206,8 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert "color: #1a1206;" not in css.split(".cat-hero__visual {", 1)[1].split(".cat-hero__watermark", 1)[0]
     assert "@media (max-width: 720px)" in css
     assert "grid-template-columns: 1fr" in css
+
+
+def test_mobility_and_manufacturing_hero_background_assets_are_panel_sized() -> None:
+    assert _jpeg_size(OG_DIR / "mobility.jpg") == (1120, 587)
+    assert _jpeg_size(OG_DIR / "manufacturing.jpg") == (1120, 587)
