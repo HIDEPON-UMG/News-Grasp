@@ -3361,7 +3361,7 @@ strong {
   background: var(--color-navy);
   padding: 13px 14px;
 }
-.summary-tomorrow__cells span {
+.summary-tomorrow__cells div > span {
   display: block;
   margin-bottom: 7px;
   font-family: var(--font-mono);
@@ -4929,7 +4929,7 @@ strong {
   background: transparent;
   padding: 0;
 }
-.summary-tomorrow__cells span {
+.summary-tomorrow__cells div > span {
   display: block;
   margin-bottom: 5px;
   font-family: var(--font-mono);
@@ -5099,6 +5099,15 @@ strong {
   background: color-mix(in srgb, var(--c) 18%, transparent);
   color: color-mix(in srgb, var(--c) 82%, var(--color-cream));
 }
+.summary-tomorrow__cells p span {
+  display: inline;
+  margin-bottom: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0;
+  color: inherit;
+}
 .summary-lane-card p .emph-und,
 .summary-tomorrow__cells p .emph-und {
   border-bottom-color: var(--c);
@@ -5187,7 +5196,7 @@ strong {
     margin-left: 38px;
   }
   .summary-tomorrow__cells p {
-    font-size: 16px;
-    line-height: 1.72;
+    font-size: 14.5px;
+    line-height: 1.68;
   }
 }

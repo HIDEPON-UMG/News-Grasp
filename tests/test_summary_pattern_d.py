@@ -254,9 +254,14 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     assert "color: color-mix(in srgb, var(--c) 82%, var(--color-navy))" in emph_block
     watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
     assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
+    assert not re.search(r"\.summary-tomorrow__cells\s+span\s*\{", css)
+    inline_span_block = _last_css_block(css, ".summary-tomorrow__cells p span")
+    assert "display: inline" in inline_span_block
+    assert "font-size: inherit" in inline_span_block
+    assert "color: inherit" in inline_span_block
     mobile_css = css[css.index("@media (max-width: 520px)"):]
     assert ".summary-tomorrow__cells p" in mobile_css
-    assert re.search(r"\.summary-tomorrow__cells p\s*\{[^}]*font-size:\s*16px", mobile_css, re.S), mobile_css
+    assert re.search(r"\.summary-tomorrow__cells p\s*\{[^}]*font-size:\s*14\.5px", mobile_css, re.S), mobile_css
 
 
 def test_essay_redesign_keeps_lane_texts_bound_to_their_roles(built_summary: str):
