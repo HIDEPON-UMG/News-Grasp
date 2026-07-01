@@ -12,7 +12,7 @@
     - reflection パーサが lead / subtitle / pull_quote / §NN / KEY TAKEAWAYS を取り出す
     - LP の Editorial ボックスが為替偏重の summary_text ではなく多カテゴリの lead を出す
     - LP では lead 末尾の定型遷移句が除去される (単体で読めるように)
-    - summary ページが PULL QUOTE / 実 KEY TAKEAWAYS / §08 まで描画する
+    - summary ページが DC 正本の Hero / 3 conclusions / 総論 / カテゴリ / Tomorrow Board を描画する
 
 実行:
     pytest tests/test_reflection_theme_essay.py -v
@@ -292,35 +292,38 @@ def test_home_theme_phrases_from_frontmatter(built):
 # summary ページ (build_summary) 結合
 # ============================================================
 
-def test_summary_pull_quote_rendered(built):
-    """考察に PULL QUOTE があれば summary-pull セクションが出る。"""
+def test_summary_uses_dc_structure_without_legacy_pull_quote(built):
+    """DC正本では旧 pull quote 単独セクションを使わず、総論ボードへ統合する。"""
     summary = built["summary"]
-    assert 'class="summary-pull"' in summary
-    assert "単一のAI企業の評価額" in summary
+    assert 'class="summary-pull"' not in summary
+    assert 'class="summary-conclusions"' in summary
+    assert 'class="summary-synthesis"' in summary
+    assert 'class="summary-category-sections"' in summary
+    assert 'class="summary-tomorrow"' in summary
 
 
-def test_summary_pull_quote_renders_emph(built):
-    """考察由来テキスト (PULL QUOTE) の装飾マーカーが render_emph で描画され生マーカーが残らない。
+def test_summary_dc_structure_renders_emph(built):
+    """考察由来テキストの装飾マーカーが描画され、生マーカーやエスケープ済みHTML断片が残らない。
 
-    回帰防止 (2026-05-29): summary-template の pull_quote.text / hero_subtitle が
-    |safe / フィルタ無しだと __ __ や [[ ]] が生で漏れる。考察由来は必ず render_emph を通す契約。
+    回帰防止: summary-template の考察由来テキストで __ __ / [[ ]] や
+    `&lt;strong class="emph-bold"&gt;` が画面に漏れないこと。
     """
     summary = built["summary"]
-    # PULL QUOTE の __X__ が emph-und に変換される
-    assert '<span class="emph-und">金融政策の天井とAIの底なし井戸</span>' in summary
-    # 生マーカーが残らない
-    assert "__金融政策の天井とAIの底なし井戸__" not in summary
+    assert '<span class="emph-und">金融相場から実体相場へ</span>' in summary
+    assert '<strong class="emph-bold">Anthropic</strong>' in summary
+    assert "__金融相場から実体相場へ__" not in summary
+    assert '&lt;strong class="emph-bold"&gt;' not in summary
 
 
 def test_summary_renders_9_sections_with_mobility_and_manufacturing(built):
-    """digest の §01-§09 を data-driven 描画。モビリティ・製造・明日へが出る。"""
+    """digest のカテゴリ節を DC 正本のカテゴリセクション + Tomorrow Board へ data-driven 描画する。"""
     summary = built["summary"]
-    assert "§09" in summary
+    assert "§ 08" in summary
     assert "§06" in summary
     assert "§05" in summary
-    assert ">モビリティ<" in summary
-    assert ">製造<" in summary
-    assert ">明日へ<" in summary
+    assert "MOBILITY / モビリティ" in summary
+    assert "MANUFACTURING / 製造" in summary
+    assert "TOMORROW BOARD / 明日への観測ボード" in summary
     # §01 総論本文 (全文表示)。9,650億ドルは <strong> で囲まれるため後続テキストで確認。
     assert "に到達した同じ日" in summary
 

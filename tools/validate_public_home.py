@@ -111,6 +111,28 @@ def validate_public_home(docs_dir: Path, date: str | None = None) -> list[str]:
                     f"{summary_path}: summary-hero__lead が短すぎます "
                     f"({len(summary_lead)} chars, min={MIN_LEAD_CHARS})。"
                 )
+            required_summary_sentinels = {
+                "summary-masthead": "DC正本の masthead",
+                "summary-conclusions": "TODAY'S 3 CONCLUSIONS",
+                "summary-synthesis": "EDITORIAL SYNTHESIS",
+                "summary-category-sections": "カテゴリ別 FACT/CONTEXT/OUTLOOK",
+                "summary-tomorrow": "TOMORROW BOARD",
+                "summary-cta": "CTA",
+            }
+            for sentinel, label in required_summary_sentinels.items():
+                if sentinel not in summary_html:
+                    errors.append(f"{summary_path}: {label} ({sentinel}) が見つかりません。")
+            legacy_summary_sentinels = (
+                "brand-zone",
+                "summary-mode-pill",
+                "summary-sections__grid",
+                "summary-lanes--essay",
+                "summary-pull",
+                "summary-takeaways",
+            )
+            for sentinel in legacy_summary_sentinels:
+                if sentinel in summary_html:
+                    errors.append(f"{summary_path}: 旧summary構造 ({sentinel}) が残っています。")
 
     return errors
 

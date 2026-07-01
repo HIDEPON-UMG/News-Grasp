@@ -1,7 +1,8 @@
-{% from "_partials.html" import summary_lanes %}
 {% set glance_ctx = glance if glance is defined else {"temperature": "MID", "heat_on": 2, "categories": stats.sections} %}
-{% set synthesis_ctx = synthesis if synthesis is defined else {"lead": lead, "layers": [], "implications": []} %}
+{% set synthesis_ctx = synthesis if synthesis is defined else {"lead": hero_lead, "layers": [], "implications": []} %}
 {% set tomorrow_rows = tomorrow_board if tomorrow_board is defined else [] %}
+{% set category_rows = category_sections if category_sections is defined else [] %}
+{% set masthead_rows = masthead_categories if masthead_categories is defined else [] %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -9,31 +10,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>{{ site_title }} — Editorial Summary {{ date }}</title>
-<meta name="description" content="{{ date }} の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="description" content="{{ date }} の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
 <link rel="canonical" href="{{ canonical }}">
 
-<!-- Open Graph -->
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="{{ site_title }}">
 <meta property="og:title" content="{{ site_title }} — Editorial Summary {{ date }}">
-<meta property="og:description" content="{{ date }} の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta property="og:description" content="{{ date }} の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
 <meta property="og:url" content="{{ canonical }}">
 <meta property="og:image" content="{{ base_url }}/assets/og/summary.jpg">
 <meta property="og:image:width" content="1120">
 <meta property="og:image:height" content="587">
 <meta property="og:locale" content="ja_JP">
 
-<!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ site_title }} — Editorial Summary {{ date }}">
-<meta name="twitter:description" content="{{ date }} の Editorial Digest — 7 つの§セクションで今日のテーマを考察。">
+<meta name="twitter:description" content="{{ date }} の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
 <meta name="twitter:image" content="{{ base_url }}/assets/og/summary.jpg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
 
-<!-- Favicon: News Grasp N→ mark -->
 <link rel="icon" type="image/png" sizes="256x256" href="{{ base_url }}/assets/favicon-256.png">
 <link rel="icon" type="image/png" sizes="512x512" href="{{ base_url }}/assets/favicon-512.png">
 <link rel="apple-touch-icon" href="{{ base_url }}/assets/apple-touch-icon.png">
@@ -42,50 +40,59 @@
 
 <link rel="stylesheet" href="{{ base_url }}/assets/site.css">
 </head>
-<body data-category="summary">
+<body data-category="summary" class="summary-page">
 
-<!-- ============= Brand zone (compact 56px wordmark) ============= -->
-<section class="brand-zone">
-  <div class="brand-zone__inner">
-    <div class="brand-zone__logo">
-      <div class="brand-zone__title">
-        <div class="brand-zone__eyebrow">━━ THE</div>
-        <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a><img class="brand-icon" src="{{ base_url }}/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
-      </div>
-    </div>
-    <nav class="brand-zone__nav">
-      <a href="{{ base_url }}/">HOME</a>
-      <a href="{{ base_url }}/archive/">ARCHIVE</a>
-      <a href="{{ base_url }}/{{ date }}/">DIGEST</a>
-    </nav>
+<svg class="summary-icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="ic-fx" viewBox="0 0 20 20"><path d="M10 2v16M5 5.5 10 10l5-4.5M5 10.5h10M5 14.5h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></symbol>
+    <symbol id="ic-ai" viewBox="0 0 20 20"><path d="M10 2 18 10 10 18 2 10Z" fill="currentColor"/></symbol>
+    <symbol id="ic-it" viewBox="0 0 20 20"><path d="M7 2v16M13 2v16M3 7h14M2 13h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+    <symbol id="ic-mob" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="ic-man" viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6Z" fill="currentColor"/></symbol>
+    <symbol id="ic-eco" viewBox="0 0 20 20"><path d="M4 4h12v12H4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-game" viewBox="0 0 20 20"><path d="M5 3.5 16.5 10 5 16.5Z" fill="currentColor"/></symbol>
+    <symbol id="ic-summary" viewBox="0 0 20 20"><path d="M10 2 12.4 7.4 18 8 13.8 11.8 15 17.3 10 14.4 5 17.3 6.2 11.8 2 8 7.6 7.4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-fact" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m15.5 15.5 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></symbol>
+    <symbol id="ic-context" viewBox="0 0 24 24"><rect x="6" y="5" width="5" height="14" fill="currentColor"/><rect x="14" y="5" width="5" height="14" fill="currentColor"/></symbol>
+    <symbol id="ic-outlook" viewBox="0 0 24 24"><polyline points="4 16 9 11 13 14 20 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"/><path d="M20 7v6h-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"/></symbol>
+  </defs>
+</svg>
+
+<header class="summary-masthead">
+  <div class="summary-masthead__brand">
+    <a href="{{ base_url }}/">NEWS-GRASP</a>
+    <span>{{ date }}</span>
   </div>
-  <div class="brand-zone__rule"></div>
-</section>
-
-<!-- ============= Mode pill (NEWS DIGEST / § EDITORIAL SUMMARY) ============= -->
-<div class="summary-mode-pill">
-  <a class="summary-mode-pill__off" href="{{ base_url }}/{{ date }}/">NEWS DIGEST</a>
-  <span class="summary-mode-pill__on">§ EDITORIAL SUMMARY</span>
-</div>
-
-<!-- ============= Hero (dark navy, 56px + lead box) ============= -->
-<section class="summary-hero">
-  <div class="summary-hero__inner">
+  <div class="summary-masthead__index" aria-label="本日のカテゴリ">
+    <span>本日のカテゴリ {{ masthead_rows|length }}</span>
     <div>
-      <div class="summary-hero__eyebrow">━━━━━━━━━━━━━━━━━━━━<br/>EDITORIAL DIGEST · ISSUE #{{ issue_no }}</div>
-      <h2 class="summary-hero__title">本日のテーマ考察 <span class="summary-hero__title-issue">#{{ issue_no }}</span></h2>
-      {% if hero_subtitle %}
-      <div class="summary-hero__subtitle">「{{ hero_subtitle|render_emph }}」</div>
-      {% endif %}
-      <div class="summary-hero__lead">{{ hero_lead|render_emph }}</div>
-      <div class="summary-hero__stats">
-        <span><span class="summary-hero__stat-num">{{ stats.sections }}</span>SECTIONS</span>
-        <span><span class="summary-hero__stat-num">~{{ stats.read_min }}</span>MIN READ</span>
-        <span><span class="summary-hero__stat-num">{{ stats.takeaways }}</span>TAKEAWAYS</span>
-        <span><span class="summary-hero__stat-num">{{ stats.sources }}</span>SOURCES</span>
-      </div>
+      {% for item in masthead_rows %}
+      <i style="--c: {{ item.color }};" title="{{ item.tag }}"></i>
+      {% endfor %}
     </div>
-    <div class="summary-hero__aside">
+  </div>
+  <nav class="summary-masthead__switch" aria-label="表示切替">
+    <a href="{{ base_url }}/{{ date }}/">NEWS DIGEST</a>
+    <span>§ EDITORIAL SUMMARY</span>
+  </nav>
+</header>
+
+<main>
+  <section class="summary-hero">
+    <div class="summary-hero__inner">
+      <div class="summary-hero__main">
+        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <h1 class="summary-hero__title">本日のテーマ考察</h1>
+        {% if hero_subtitle %}
+        <p class="summary-hero__subtitle">「{{ hero_subtitle|render_emph }}」</p>
+        {% endif %}
+        <p class="summary-hero__lead">{{ hero_lead|render_emph }}</p>
+        <div class="summary-hero__chips" aria-label="支配軸">
+          {% for label in ["制度・標準", "供給・販路", "実装・拡張"] %}
+          <span>{{ label }}</span>
+          {% endfor %}
+        </div>
+      </div>
       <aside class="summary-glance" aria-label="At a glance">
         <div class="summary-glance__kicker">AT A GLANCE</div>
         <div class="summary-glance__temp">
@@ -103,185 +110,175 @@
           <div><dt>参照ソース</dt><dd>{{ stats.sources }}</dd></div>
         </dl>
       </aside>
-      <div class="summary-hero__sigil">§</div>
-    </div>
-  </div>
-</section>
-
-{% if latest_audio_url %}
-<section class="daily-audio daily-audio--summary" aria-label="{{ audio_label|default('今日のニュース朗読') }}">
-  <div class="daily-audio__inner">
-    <div class="daily-audio__meta">
-      <span class="daily-audio__kicker">LISTEN</span>
-      <span class="daily-audio__title">{{ audio_label|default('今日のニュース朗読') }}</span>
-      {% if latest_audio_date %}<span class="daily-audio__date">{{ latest_audio_date }}</span>{% endif %}
-    </div>
-    <div class="daily-audio__controls">
-      <audio preload="none" controls>
-        <source src="{{ latest_audio_url }}" type="audio/mpeg">
-      </audio>
-      <div class="daily-audio__rates" role="group" aria-label="再生速度">
-        <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
-        <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
-        <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
-        <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
-        <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
-        <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+      <div class="summary-flow" aria-label="今日の支配軸フロー">
+        {% for label in ["制度・標準", "供給・販路", "実装・拡張"] %}
+        <div class="summary-flow__node{% if loop.last %} is-final{% endif %}">
+          <span>LAYER {{ loop.index }}</span>
+          <strong>{{ label }}</strong>
+        </div>
+        {% if not loop.last %}<div class="summary-flow__arrow">→</div>{% endif %}
+        {% endfor %}
       </div>
     </div>
-  </div>
-</section>
-{% endif %}
+  </section>
 
-<!-- ============= Three conclusions ============= -->
-<section class="summary-conclusions" aria-label="今日の3結論">
-  <div class="summary-conclusions__inner">
-    <div class="summary-conclusions__head">━━ TODAY'S THREE CONCLUSIONS</div>
-    <div class="summary-conclusions__grid">
-      {% for t in takeaways[:3] %}
-      <article class="summary-conclusion" style="--accent-current: {{ t.color }};">
-        <div class="summary-conclusion__n">{{ "%02d"|format(t.n) }}</div>
-        <p>{{ t.text|render_emph }}</p>
-        <div class="summary-conclusion__impact"><span></span>{{ t.tag }}</div>
-      </article>
-      {% endfor %}
+  {% if latest_audio_url %}
+  <section class="daily-audio daily-audio--summary" aria-label="{{ audio_label|default('今日のニュース朗読') }}">
+    <div class="daily-audio__inner">
+      <div class="daily-audio__meta">
+        <span class="daily-audio__kicker">LISTEN</span>
+        <span class="daily-audio__title">{{ audio_label|default('今日のニュース朗読') }}</span>
+        {% if latest_audio_date %}<span class="daily-audio__date">{{ latest_audio_date }}</span>{% endif %}
+      </div>
+      <div class="daily-audio__controls">
+        <audio preload="none" controls>
+          <source src="{{ latest_audio_url }}" type="audio/mpeg">
+        </audio>
+        <div class="daily-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+  {% endif %}
 
-{% if pull_quote and pull_quote.text %}
-<!-- ============= Pull quote ============= -->
-<section class="summary-pull">
-  <div class="summary-pull__inner">
-    <div class="summary-pull__quote">&ldquo;</div>
-    <div>
-      <div class="summary-pull__text">{{ pull_quote.text|render_emph }}</div>
-      {% if pull_quote.from %}<div class="summary-pull__from">─── {{ pull_quote.from }} より</div>{% endif %}
+  <section class="summary-conclusions" aria-label="今日の3結論">
+    <div class="summary-conclusions__inner">
+      <div class="summary-section-label">
+        <span>TODAY'S 3 CONCLUSIONS</span>
+        <h2>今日の3結論</h2>
+      </div>
+      <div class="summary-conclusions__grid">
+        {% for t in takeaways[:3] %}
+        <article class="summary-conclusion" style="--c: {{ t.color }};">
+          <div class="summary-conclusion__n">{{ "%02d"|format(t.n) }}</div>
+          <p>{{ t.text|render_emph }}</p>
+          <div class="summary-conclusion__impact"><span></span>影響先 {{ t.tag }}</div>
+        </article>
+        {% endfor %}
+      </div>
     </div>
-  </div>
-</section>
-{% endif %}
+  </section>
 
-<!-- ============= Editorial synthesis ============= -->
-<section class="summary-synthesis" aria-label="総論">
-  <div class="summary-synthesis__inner">
-    <div class="summary-synthesis__head">
-      <span>━━ EDITORIAL SYNTHESIS</span>
-      <h2>総論</h2>
-    </div>
-    <div class="summary-synthesis__grid">
-      <article class="summary-synthesis__panel">
-        <h3>今日の総論</h3>
-        <p>{{ synthesis_ctx.lead|render_emph }}</p>
-      </article>
-      <article class="summary-synthesis__panel">
-        <h3>今日の論点マップ</h3>
-        <div class="summary-synthesis__layers">
-          {% for layer in synthesis_ctx.layers %}
-          <div class="summary-synthesis__layer">
-            <span class="summary-synthesis__layer-label">{{ layer.label }}</span>
-            <div class="summary-synthesis__chips">
+  <section class="summary-synthesis" aria-label="総論" style="--c: {{ synthesis_color|default('#1A1A1A') }};">
+    <div class="summary-synthesis__inner">
+      <div class="summary-synthesis__label">
+        <span>§ 00</span>
+        <strong>EDITORIAL SYNTHESIS / 総論</strong>
+      </div>
+      <h2>{{ synthesis_title|default("本日の横断論点")|render_emph }}</h2>
+      <div class="summary-synthesis__grid">
+        <article class="summary-synthesis__panel">
+          <h3>今日の総論</h3>
+          <p>{{ synthesis_ctx.lead|safe }}</p>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>今日の論点マップ — CROSS-CATEGORY</h3>
+          <div class="summary-synthesis__layers">
+            {% for layer in synthesis_ctx.layers %}
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">{{ layer.label }}</span>
+              <div class="summary-synthesis__chips">
                 {% for item in layer["items"] %}
-              <span style="--accent-current: {{ item.color }};"><b>{{ item.glyph }}</b>{{ item.tag }}</span>
-              {% endfor %}
+                <span style="--c: {{ item.color }};"><b>{{ item.glyph }}</b>{{ item.tag }}</span>
+                {% endfor %}
+              </div>
             </div>
+            {% if not loop.last %}<div class="summary-synthesis__down">↓</div>{% endif %}
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
-      </article>
-      <article class="summary-synthesis__panel">
-        <h3>読者への示唆</h3>
-        <ol class="summary-synthesis__implications">
-          {% for item in synthesis_ctx.implications %}
-          <li><span>{{ "%02d"|format(item.n) }}</span>{{ item.text|render_emph }}</li>
-          {% endfor %}
-        </ol>
-      </article>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>読者への示唆 — TAKEAWAYS</h3>
+          <ol class="summary-synthesis__implications">
+            {% for item in synthesis_ctx.implications %}
+            <li><span>{{ item.n }}</span><p>{{ item.text|safe }}</p></li>
+            {% endfor %}
+          </ol>
+        </article>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============= 7 sections (2-column grid) ============= -->
-<section class="summary-sections">
-  <div class="summary-sections__inner">
-    <div class="summary-sections__head">
-      <h2>7 つの <br class="summary-sections__head-br">§ セクション</h2>
-      <span class="summary-sections__head-meta">━━ FULL ESSAY OUTLINE</span>
-    </div>
-    <div class="summary-sections__grid">
-      {% for sec in sections %}
-      <div class="summary-sec{% if sec.number == 1 %} summary-sec--lead{% endif %}{% if sec.is_category %} summary-sec--category{% endif %}" style="--accent-current: {{ sec.color }};" data-category-id="{{ sec.category_id }}" data-category-glyph="{{ sec.category_glyph }}">
-        <div class="summary-sec__head">
-          <span class="summary-sec__no" style="color: {{ sec.color }};">§{{ "%02d"|format(sec.number) }}</span>
-          <span class="summary-sec__glyph" aria-hidden="true">{{ sec.category_glyph }}</span>
-          <span class="summary-sec__tag" style="background: {{ sec.color }};">{{ sec.tag }}</span>
+  <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
+    {% for sec in category_rows %}
+    <article class="summary-category" style="--c: {{ sec.color }};" data-category-id="{{ sec.category_id }}" data-category-glyph="{{ sec.category_glyph }}">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§{{ "%02d"|format(sec.display_number) }}</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><use href="#{{ sec.category_icon_id }}"></use></svg>
+              <span>{{ sec.category_label|upper }} / {{ sec.tag }}</span>
+            </div>
+            <h3>{{ sec.display_title|render_emph }}</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+          {% for lane in sec.lanes %}
+          <section class="summary-lane-card" data-role="{{ lane.key }}">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#{{ lane.icon_id }}"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">{{ lane.short }}</span>
+              <span class="summary-lane-card__marker">{{ lane.marker }}</span>
+            </div>
+            <p>{{ lane.body|safe }}</p>
+          </section>
+          {% endfor %}
         </div>
-        <h3 class="summary-sec__title">{{ sec.heading }}</h3>
-        <p class="summary-sec__body">{{ sec.body|render_emph }}</p>
-        {% if sec.bullets %}
-        {{ summary_lanes(sec.bullets, "essay") }}
-        {% endif %}
         {% if sec.canonical %}
-        <a class="summary-sec__more" href="{{ sec.canonical }}" style="color: {{ sec.color }};">→ §{{ "%02d"|format(sec.number) }} {{ sec.tag }} 詳細を読む</a>
+        <a class="summary-category__more" href="{{ sec.canonical }}">→ §{{ "%02d"|format(sec.display_number) }} {{ sec.tag }} 詳細を読む</a>
         {% endif %}
       </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
+    </article>
+    {% endfor %}
+  </section>
 
-<!-- ============= Tomorrow board ============= -->
-<section class="summary-tomorrow" aria-label="明日への観測ボード">
-  <div class="summary-tomorrow__inner">
-    <div class="summary-tomorrow__head">
-      <span>━━ TOMORROW BOARD</span>
-      <h2>明日へ</h2>
-      <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
-    </div>
-    <div class="summary-tomorrow__rows">
-      {% for row in tomorrow_rows %}
-      <article class="summary-tomorrow__row" style="--accent-current: {{ row.color }};" data-category-id="{{ row.category_id }}" data-category-glyph="{{ row.glyph }}">
-        <div class="summary-tomorrow__meta">
-          <span class="summary-tomorrow__glyph">{{ row.glyph }}</span>
-          <strong>{{ row.tag }}</strong>
-          <em class="summary-tomorrow__heat summary-tomorrow__heat--{{ row.heat|lower }}">{{ row.heat }}</em>
-        </div>
-        <div class="summary-tomorrow__cells">
-          <div><span>WATCH</span><p>{{ row.watch|render_emph }}</p></div>
-          <div><span>SIGNAL</span><p>{{ row.signal|render_emph }}</p></div>
-          <div><span>IMPLICATION</span><p>{{ row.implication|render_emph }}</p></div>
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<!-- ============= Key Takeaways (3-col) ============= -->
-<section class="summary-takeaways">
-  <div class="summary-takeaways__inner">
-    <div class="summary-takeaways__head">━━ KEY TAKEAWAYS · 今日の 3 つの結論</div>
-    <div class="summary-takeaways__grid">
-      {% for t in takeaways %}
-      <div class="summary-take">
-        <div class="summary-take__n" style="background: {{ t.color }};">{{ "%02d"|format(t.n) }}</div>
-        <div class="summary-take__body">
-          <div class="summary-take__tag" style="color: {{ t.color }};">{{ t.tag|upper }}</div>
-          <div class="summary-take__text">{{ t.text|render_emph }}</div>
-        </div>
+  <section class="summary-tomorrow" aria-label="明日への観測ボード" style="--c: {{ tomorrow_color|default('#C9A155') }};">
+    <div class="summary-tomorrow__inner">
+      <div class="summary-tomorrow__head">
+        <span>§ 08</span>
+        <strong>TOMORROW BOARD / 明日への観測ボード</strong>
+        <h2>明日、何を見て、何が起きたら見方が変わるか</h2>
+        <p>各カテゴリで「見るもの（Watch）」「変化シグナル（Signal）」「どう解釈するか（Implication）」を一枚に整理します。</p>
       </div>
-      {% endfor %}
+      <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
+      <div class="summary-tomorrow__rows">
+        {% for row in tomorrow_rows %}
+        <article class="summary-tomorrow__row" style="--c: {{ row.color }};" data-category-id="{{ row.category_id }}" data-category-glyph="{{ row.glyph }}">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><use href="#{{ row.icon_id }}"></use></svg>{{ row.tag }}
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--{{ row.heat|lower }}">{{ row.heat }}</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p>{{ row.watch|safe }}</p></div>
+            <div><span>SIGNAL 変化</span><p>{{ row.signal|safe }}</p></div>
+            <div><span>IMPLICATION 解釈</span><p>{{ row.implication|safe }}</p></div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============= CTA band ============= -->
-<section class="summary-cta">
-  <a class="summary-cta__primary" href="{{ base_url }}/{{ date }}/">全{{ stats.sources }}本のニュースを読む →</a>
-  <a class="summary-cta__ghost" href="{{ base_url }}/archive/">過去の考察を見る</a>
-</section>
+  <section class="summary-cta">
+    <h2>今日の論点を、記事で確かめる</h2>
+    <div>
+      <a class="summary-cta__primary" href="{{ base_url }}/{{ date }}/">全{{ stats.sources }}本のニュースを読む →</a>
+      <a class="summary-cta__ghost" href="{{ base_url }}/archive/">過去の考察を見る</a>
+    </div>
+  </section>
+</main>
 
-<!-- ============= Footer ============= -->
 <footer class="site-footer">
   <div>
     <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · {{ date }} · #{{ issue_no }}
@@ -312,6 +309,5 @@
   });
 })();
 </script>
-
 </body>
 </html>

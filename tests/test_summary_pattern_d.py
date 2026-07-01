@@ -12,6 +12,7 @@ Variant D の認識: site/desktop-extra.jsx の DesktopSummaryOnly を権威ソ�
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -28,9 +29,9 @@ from tools.generate_pages import (  # noqa: E402
     build_summary,
     parse_essay_sections,
     _collect_entries,
-    _SUMMARY_SECTION_TAGS,
     _SUMMARY_SECTION_COLORS,
 )
+from tools.config import CATEGORIES  # noqa: E402
 
 
 DIGEST_TEMPLATE = """---
@@ -114,52 +115,52 @@ def built_summary(tmp_path_factory) -> str:
 # 構造 pin
 # ============================================================
 
-def test_mode_pill_navigates_to_digest(built_summary: str):
-    """NEWS DIGEST / § EDITORIAL SUMMARY pill があり、§ EDITORIAL SUMMARY が active。"""
-    assert "summary-mode-pill" in built_summary
+def test_dc_masthead_replaces_legacy_brand_zone(built_summary: str):
+    """DC正本の masthead + mode switch を使い、旧 brand-zone / mode-pill は残さない。"""
+    assert 'class="summary-masthead"' in built_summary
+    assert "NEWS-GRASP" in built_summary
+    assert "本日のカテゴリ" in built_summary
     assert "NEWS DIGEST" in built_summary
     assert "§ EDITORIAL SUMMARY" in built_summary
-    assert 'class="summary-mode-pill__on"' in built_summary
+    assert "summary-mode-pill" not in built_summary
+    assert "brand-zone" not in built_summary
 
 
 def test_hero_dark_navy(built_summary: str):
-    """summary-hero (dark navy) に EDITORIAL DIGEST · ISSUE # + 56px 大見出しがある。"""
+    """DC正本の hero に theme / at-a-glance / flow がある。"""
     assert 'class="summary-hero"' in built_summary
-    assert "EDITORIAL DIGEST" in built_summary
-    assert "ISSUE #20260520" in built_summary
+    assert "本日のテーマ考察 / EDITORIAL SUMMARY" in built_summary
     assert "本日のテーマ考察" in built_summary
-    # 4 stats
-    assert "SECTIONS" in built_summary
-    assert "MIN READ" in built_summary
-    assert "TAKEAWAYS" in built_summary
-    assert "SOURCES" in built_summary
-    # 200px § sigil
-    assert 'class="summary-hero__sigil">§' in built_summary
+    assert "AT A GLANCE" in built_summary
+    assert "制度・標準" in built_summary
+    assert "供給・販路" in built_summary
+    assert "実装・拡張" in built_summary
 
 
-def test_7_sections_always_rendered(built_summary: str):
-    """γ schema 無しでも fallback で 7 sections (§01-§07) が必ず出る。"""
-    for i in range(1, 8):
+def test_dc_category_sections_render_categories_without_legacy_outline(built_summary: str):
+    """DC正本どおり、総論/明日へを独立させ、カテゴリセクションを全件出す。"""
+    assert "§ 00" in built_summary
+    assert "§ 08" in built_summary
+    for i, cid in enumerate([c for c in CATEGORIES if c != "summary"], start=1):
         assert f"§{i:02d}" in built_summary, f"§{i:02d} missing"
-    # 固定 tag
-    for tag in _SUMMARY_SECTION_TAGS:
-        assert f'>{tag}<' in built_summary, f"section tag {tag!r} missing"
+        assert f'data-category-id="{cid}"' in built_summary
+    assert "summary-sections__grid" not in built_summary
+    assert "FULL ESSAY OUTLINE" not in built_summary
 
 
-def test_summary_essay_sections_use_same_layer_lane_component(built_summary: str):
-    """ESSAY 側の3層要約も記事カードと同じレーン様式に揃える。"""
-    assert "summary-lanes--essay" in built_summary
+def test_summary_essay_sections_use_dc_lane_cards(built_summary: str):
+    """ESSAYカテゴリは DC正本の FACT/CONTEXT/OUTLOOK 3レーンを使う。"""
+    assert "summary-lanes--essay" not in built_summary
     assert "summary-sec__bullets" not in built_summary
-    assert "summary-lane__avatar-col" in built_summary
-    assert "summary-lane__avatar" in built_summary
-    assert "summary-lane__icon" in built_summary
-    assert "summary-lane__short" in built_summary
-    assert "summary-lane__marker" in built_summary
+    assert "summary-lane-card" in built_summary
+    assert "summary-lane-card__badge" in built_summary
+    assert "summary-lane-card__short" in built_summary
+    assert "summary-lane-card__marker" in built_summary
     for role in ("fact", "context", "outlook"):
         assert f'data-role="{role}"' in built_summary
     for short in ("FACT", "CONTEXT", "OUTLOOK"):
         assert short in built_summary
-    for marker in ("【事実・概要】", "【背景・要点】", "【影響・展望】"):
+    for marker in ("事実・概要", "背景・要点", "影響・展望"):
         assert marker in built_summary
     for stale_marker in ("【事実】", "【背景】", "【展望】"):
         assert stale_marker not in built_summary
@@ -175,6 +176,7 @@ def test_essay_redesign_renders_analysis_board_shell(built_summary: str):
         'class="summary-conclusions"',
         'class="summary-synthesis"',
         'class="summary-tomorrow"',
+        'class="summary-category-sections"',
         "WATCH",
         "SIGNAL",
         "IMPLICATION",
@@ -220,9 +222,9 @@ def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_sum
     ):
         assert icon in built_summary
     css = CSS_PATH.read_text(encoding="utf-8")
-    assert ".summary-lanes--essay .summary-lane__short" in css
-    assert "font-size: 8px" not in css[css.index(".summary-lanes--essay .summary-lane__short"):
-                                      css.index("}", css.index(".summary-lanes--essay .summary-lane__short"))]
+    assert ".summary-lane-card__short" in css
+    assert "font-size: 8px" not in css[css.index(".summary-lane-card__short"):
+                                      css.index("}", css.index(".summary-lane-card__short"))]
 
 
 def test_section_accent_colors_used(built_summary: str):
@@ -232,10 +234,11 @@ def test_section_accent_colors_used(built_summary: str):
 
 
 def test_3_takeaways_always_rendered(built_summary: str):
-    """KEY TAKEAWAYS に必ず 3 件出る。"""
-    assert "KEY TAKEAWAYS" in built_summary
-    assert "今日の 3 つの結論" in built_summary
-    assert "summary-take__n" in built_summary
+    """TODAY'S 3 CONCLUSIONS に必ず 3 件出る。"""
+    assert "TODAY'S 3 CONCLUSIONS" in built_summary
+    assert "今日の 3 つの結論" not in built_summary
+    assert "summary-takeaways" not in built_summary
+    assert "summary-conclusion__n" in built_summary
     # 番号 01 / 02 / 03 が出る
     assert ">01<" in built_summary
     assert ">02<" in built_summary
@@ -307,10 +310,43 @@ def test_favicon_links_present(built_summary: str):
 
 
 def test_pull_quote_hidden_in_fallback(built_summary: str):
-    """γ schema 未対応の fallback では pull quote セクションは出ない。"""
-    # pull_quote.text が空のときは class="summary-pull" のセクションごと出ないこと
-    assert 'class="summary-pull"' not in built_summary, \
-        "Pull quote should be hidden when γ pull_quote is empty (fallback)"
+    """DC正本では pull quote セクション自体を使わない。"""
+    assert 'class="summary-pull"' not in built_summary
+
+
+def test_summary_public_html_contains_no_raw_emphasis_markers(tmp_path):
+    """summary page では [[ ]] / ** ** / __ __ を public HTML に残さない。"""
+    root = tmp_path
+    docs = root / "docs"
+    sources: list[Path] = []
+    for cat_id, label in [("fx", "FX"), ("ai", "AI"), ("it", "IT-Consulting")]:
+        digest_dir = root / "digest" / label.upper()
+        digest_dir.mkdir(parents=True, exist_ok=True)
+        p = digest_dir / f"2026-05-20-{label}.md"
+        p.write_text(
+            DIGEST_TEMPLATE.format(label=label, LABEL=label.upper(), cat_id=cat_id),
+            encoding="utf-8",
+        )
+        sources.append(p)
+
+    sum_dir = root / "digest" / "Summary"
+    sum_dir.mkdir(parents=True, exist_ok=True)
+    sum_path = sum_dir / "2026-05-20.md"
+    sum_path.write_text(_SUMMARY_DIGEST_WITH_ESSAY, encoding="utf-8")
+    sources.append(sum_path)
+
+    build_all(full=True, docs_root=docs, digests=sources)
+    entries = _collect_entries(sources)
+    out = build_summary("2026-05-20", entries, docs, digest_sources=sources)
+    html_text = out.read_text(encoding="utf-8")
+
+    assert "[[" not in html_text
+    assert "]]" not in html_text
+    assert "**" not in html_text
+    assert not re.search(r"(?<![A-Za-z0-9])__(?![A-Za-z0-9])", html_text)
+    assert '&lt;strong class="emph-bold"&gt;' not in html_text
+    assert "&lt;strong&gt;" not in html_text
+    assert '&lt;span class="emph-und"&gt;' not in html_text
 
 
 # ============================================================

@@ -1756,6 +1756,16 @@ _SUMMARY_SECTION_COLORS = ["#1A1A1A", "#B8860B", "#2D5BB8", "#2E6B52", "#3A7B8C"
 # §02-08 を担当する category id (順序固定)。先頭 (総論) と末尾 (明日へ) は None。
 _SUMMARY_CAT_ORDER = [None, "fx", "ai", "it", "mobility", "manufacturing", "economy", "game", None]
 _ESSAY_LAYER_LABELS = ("制度・標準", "供給・販路", "実装・拡張")
+_SUMMARY_CATEGORY_ICON_IDS = {
+    "fx": "ic-fx",
+    "ai": "ic-ai",
+    "it": "ic-it",
+    "mobility": "ic-mob",
+    "manufacturing": "ic-man",
+    "economy": "ic-eco",
+    "game": "ic-game",
+    "summary": "ic-summary",
+}
 
 
 def _summary_section_meta(cid: str | None, tag: str) -> dict[str, Any]:
@@ -1769,6 +1779,7 @@ def _summary_section_meta(cid: str | None, tag: str) -> dict[str, Any]:
         return {
             "category_id": cid,
             "category_glyph": cat.get("glyph", ""),
+            "category_icon_id": _SUMMARY_CATEGORY_ICON_IDS.get(cid, "ic-summary"),
             "category_label": cat.get("label", tag),
             "category_jp": cat.get("jp", tag),
             "is_category": True,
@@ -1777,6 +1788,7 @@ def _summary_section_meta(cid: str | None, tag: str) -> dict[str, Any]:
         return {
             "category_id": "summary",
             "category_glyph": CATEGORIES["summary"]["glyph"],
+            "category_icon_id": _SUMMARY_CATEGORY_ICON_IDS["summary"],
             "category_label": CATEGORIES["summary"]["label"],
             "category_jp": CATEGORIES["summary"]["jp"],
             "is_category": False,
@@ -1784,6 +1796,7 @@ def _summary_section_meta(cid: str | None, tag: str) -> dict[str, Any]:
     return {
         "category_id": "",
         "category_glyph": "→",
+        "category_icon_id": "ic-outlook",
         "category_label": tag,
         "category_jp": tag,
         "is_category": False,
@@ -1800,13 +1813,28 @@ def _summary_board_text(text: str, *, fallback: str) -> str:
     return text or fallback
 
 
+def _summary_inline_html(text: str, *, fallback: str = "") -> str:
+    """Summary board 用の本文を許可済み強調 HTML として返す。
+
+    入力は日次 digest 由来の raw marker (`[[ ]]` / `** **` / `__ __`) と、
+    既存 parser 由来の `inline_html` 済みタグが混在しうる。公開 HTML では
+    `&lt;strong class="emph-bold"&gt;` のような断片を文字表示せず、許可済みの
+    強調タグだけを通す。
+    """
+    source = _summary_board_text(text, fallback=fallback)
+    unescaped = _html.unescape(source)
+    if _EMPH_TAG_SPLIT_RE.search(unescaped):
+        return _sanitize_emph_html(unescaped)
+    return inline_html(unescaped)
+
+
 def _build_summary_synthesis(sections: list[dict[str, Any]], hero_lead: str,
                              takeaways: list[dict[str, Any]]) -> dict[str, Any]:
     """総論ボードを既存 digest から決定的に作る。"""
     lead = next((s for s in sections if s.get("tag") == "総論"), None)
     category_sections = [s for s in sections if s.get("is_category")]
-    lead_body = _summary_board_text((lead or {}).get("body", "") or hero_lead,
-                                    fallback="本日の横断論点を整理中。")
+    lead_body = _summary_inline_html((lead or {}).get("body", "") or hero_lead,
+                                     fallback="本日の横断論点を整理中。")
 
     layer_rows = []
     for i, label in enumerate(_ESSAY_LAYER_LABELS):
@@ -1826,15 +1854,15 @@ def _build_summary_synthesis(sections: list[dict[str, Any]], hero_lead: str,
     implications = [
         {
             "n": i + 1,
-            "text": _summary_board_text(t.get("text", ""),
-                                        fallback="今日の判断材料を整理。"),
+            "text": _summary_inline_html(t.get("text", ""),
+                                         fallback="今日の判断材料を整理。"),
         }
         for i, t in enumerate(takeaways[:3])
     ]
     while len(implications) < 3:
         implications.append({
             "n": len(implications) + 1,
-            "text": "次に見るべき観点を整理中。",
+            "text": inline_html("次に見るべき観点を整理中。"),
         })
 
     return {
@@ -1859,13 +1887,71 @@ def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]
             "category_id": sec.get("category_id", ""),
             "tag": sec.get("tag", ""),
             "glyph": sec.get("category_glyph", ""),
+            "icon_id": sec.get("category_icon_id", "ic-summary"),
             "color": sec.get("color", "#475569"),
             "heat": heat_cycle[min(idx, len(heat_cycle) - 1)],
-            "watch": _summary_board_text(watch, fallback="観測点を整理中。"),
-            "signal": _summary_board_text(signal, fallback="変化の兆しを整理中。"),
-            "implication": _summary_board_text(implication, fallback="解釈を整理中。"),
+            "watch": _summary_inline_html(watch, fallback="観測点を整理中。"),
+            "signal": _summary_inline_html(signal, fallback="変化の兆しを整理中。"),
+            "implication": _summary_inline_html(implication, fallback="解釈を整理中。"),
         })
     return rows
+
+
+def _summary_section_title(heading: str, tag: str) -> str:
+    """`為替 — 副題` の副題側をカテゴリカード見出しとして返す。"""
+    title = re.split(r"\s*[—–\-]\s*", heading or "", maxsplit=1)
+    if len(title) > 1 and title[1].strip():
+        return title[1].strip()
+    return (heading or tag or "本日のテーマ").strip()
+
+
+def _summary_lane_texts(section: dict[str, Any]) -> list[dict[str, str]]:
+    """カテゴリ考察本文を DC 正本の FACT / CONTEXT / OUTLOOK 3 レーンへ配分する。
+
+    上流 digest は書き換えず、公開 HTML 表示用にだけ文単位で分ける。
+    raw emphasis marker は保持し、template の render_emph で描画する。
+    """
+    roles = [
+        {"key": "fact", "short": "FACT", "marker": "事実・概要", "icon_id": "ic-fact"},
+        {"key": "context", "short": "CONTEXT", "marker": "背景・要点", "icon_id": "ic-context"},
+        {"key": "outlook", "short": "OUTLOOK", "marker": "影響・展望", "icon_id": "ic-outlook"},
+    ]
+    body = (section.get("body") or "").strip()
+    bullets = [str(b).strip() for b in (section.get("bullets") or []) if str(b).strip()]
+    sentences = _summary_sentence_parts(body)
+
+    fact = sentences[0] if sentences else body
+    context_pool = bullets[:1] + sentences[1:-1]
+    outlook_pool = bullets[1:2] + (sentences[-1:] if len(sentences) > 1 else [])
+    context = context_pool[0] if context_pool else body
+    outlook = outlook_pool[0] if outlook_pool else (sentences[-1] if sentences else body)
+
+    fallbacks = [
+        f"{section.get('tag', '本日')}の主要事実を整理中。",
+        f"{section.get('tag', '本日')}の背景と要点を整理中。",
+        f"{section.get('tag', '本日')}の次の見方を整理中。",
+    ]
+    bodies = [fact, context, outlook]
+    return [
+        {**role, "body": _summary_inline_html(bodies[index], fallback=fallbacks[index])}
+        for index, role in enumerate(roles)
+    ]
+
+
+def _summary_category_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """DC 正本のカテゴリセクション用に、カテゴリだけを CATEGORIES 順へ整列する。"""
+    by_cid = {s.get("category_id"): s for s in sections if s.get("is_category")}
+    out: list[dict[str, Any]] = []
+    for display_index, cid in enumerate((c for c in CATEGORIES if c != "summary"), start=1):
+        src = by_cid.get(cid)
+        if not src:
+            continue
+        item = dict(src)
+        item["display_number"] = display_index
+        item["display_title"] = _summary_section_title(str(item.get("heading") or ""), str(item.get("tag") or ""))
+        item["lanes"] = _summary_lane_texts(item)
+        out.append(item)
+    return out
 
 
 def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
@@ -2293,6 +2379,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         "sources": sources_count or len(same_day),
     }
     category_sections = [s for s in sections if s.get("is_category")]
+    dc_category_sections = _summary_category_sections(sections)
     glance = {
         "temperature": "HIGH" if len(category_sections) >= 6 else "MID",
         "heat_on": 3 if len(category_sections) >= 6 else 2,
@@ -2301,7 +2388,23 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         "sources": stats["sources"],
     }
     synthesis = _build_summary_synthesis(sections, hero_lead, takeaways)
+    synthesis_lead = next((s for s in sections if s.get("tag") == "総論"), None)
+    tomorrow_lead = next((s for s in sections if s.get("tag") == "明日へ"), None)
+    synthesis_title = _summary_section_title(
+        str((synthesis_lead or {}).get("heading") or ""),
+        "総論",
+    )
     tomorrow_board = _build_tomorrow_board(sections)
+    masthead_categories = [
+        {
+            "id": s.get("category_id", ""),
+            "tag": s.get("tag", ""),
+            "color": s.get("color", "#475569"),
+            "glyph": s.get("category_glyph", ""),
+            "icon_id": s.get("category_icon_id", "ic-summary"),
+        }
+        for s in dc_category_sections
+    ]
 
     # ---- Render ----
     issue_no = date.replace("-", "")
@@ -2320,10 +2423,15 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
 
         "pull_quote": pull_quote,
         "sections": sections,
+        "category_sections": dc_category_sections,
         "takeaways": takeaways,
         "glance": glance,
         "synthesis": synthesis,
+        "synthesis_title": synthesis_title,
+        "synthesis_color": (synthesis_lead or {}).get("color", "#1A1A1A"),
         "tomorrow_board": tomorrow_board,
+        "tomorrow_color": (tomorrow_lead or {}).get("color", "#C9A155"),
+        "masthead_categories": masthead_categories,
         "stats": stats,
         "audio_label": "今日のニュース朗読",
         **latest_audio_for_pages(date),

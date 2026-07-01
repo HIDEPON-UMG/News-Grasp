@@ -43,9 +43,15 @@ def _write_public_html(root: Path, *, top_img: bool = True, color_panel: bool = 
     (summary / "index.html").write_text(
         f"""
 <!doctype html>
+<header class="summary-masthead"></header>
 <section class="summary-hero">
   <div class="summary-hero__lead">{summary_lead}</div>
 </section>
+<section class="summary-conclusions"></section>
+<section class="summary-synthesis"></section>
+<section class="summary-category-sections"></section>
+<section class="summary-tomorrow"></section>
+<section class="summary-cta"></section>
 """,
         encoding="utf-8",
     )
@@ -92,6 +98,20 @@ def test_validate_public_home_rejects_short_summary_lead(tmp_path: Path) -> None
     errs = validate_public_home(tmp_path / "docs", "2026-06-09")
 
     assert any("summary-hero__lead が短すぎます" in e for e in errs)
+
+
+def test_validate_public_home_rejects_legacy_summary_structure(tmp_path: Path) -> None:
+    """旧summary構造が再混入したら公開HTML gateで落とす。"""
+    _write_public_html(tmp_path)
+    summary_path = tmp_path / "docs" / "2026-06-09" / "summary" / "index.html"
+    summary_path.write_text(
+        summary_path.read_text(encoding="utf-8") + '<section class="summary-sections__grid"></section>',
+        encoding="utf-8",
+    )
+
+    errs = validate_public_home(tmp_path / "docs", "2026-06-09")
+
+    assert any("旧summary構造" in e for e in errs)
 
 
 def test_cli_returns_nonzero_for_public_html_regression(tmp_path: Path, capsys) -> None:
