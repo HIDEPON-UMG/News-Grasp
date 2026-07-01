@@ -1,4 +1,7 @@
 {% from "_partials.html" import summary_lanes %}
+{% set glance_ctx = glance if glance is defined else {"temperature": "MID", "heat_on": 2, "categories": stats.sections} %}
+{% set synthesis_ctx = synthesis if synthesis is defined else {"lead": lead, "layers": [], "implications": []} %}
+{% set tomorrow_rows = tomorrow_board if tomorrow_board is defined else [] %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -82,7 +85,26 @@
         <span><span class="summary-hero__stat-num">{{ stats.sources }}</span>SOURCES</span>
       </div>
     </div>
-    <div class="summary-hero__sigil">§</div>
+    <div class="summary-hero__aside">
+      <aside class="summary-glance" aria-label="At a glance">
+        <div class="summary-glance__kicker">AT A GLANCE</div>
+        <div class="summary-glance__temp">
+          <span class="summary-glance__temp-label">TEMP</span>
+          <strong>{{ glance_ctx.temperature }}</strong>
+        </div>
+        <div class="summary-glance__heat" aria-hidden="true">
+          {% for i in range(4) %}
+          <span class="{% if i < glance_ctx.heat_on %}is-on{% endif %}"></span>
+          {% endfor %}
+        </div>
+        <dl class="summary-glance__stats">
+          <div><dt>横断カテゴリ</dt><dd>{{ glance_ctx.categories }}</dd></div>
+          <div><dt>読了</dt><dd>{{ stats.read_min }}min</dd></div>
+          <div><dt>参照ソース</dt><dd>{{ stats.sources }}</dd></div>
+        </dl>
+      </aside>
+      <div class="summary-hero__sigil">§</div>
+    </div>
   </div>
 </section>
 
@@ -111,6 +133,22 @@
 </section>
 {% endif %}
 
+<!-- ============= Three conclusions ============= -->
+<section class="summary-conclusions" aria-label="今日の3結論">
+  <div class="summary-conclusions__inner">
+    <div class="summary-conclusions__head">━━ TODAY'S THREE CONCLUSIONS</div>
+    <div class="summary-conclusions__grid">
+      {% for t in takeaways[:3] %}
+      <article class="summary-conclusion" style="--accent-current: {{ t.color }};">
+        <div class="summary-conclusion__n">{{ "%02d"|format(t.n) }}</div>
+        <p>{{ t.text|render_emph }}</p>
+        <div class="summary-conclusion__impact"><span></span>{{ t.tag }}</div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 {% if pull_quote and pull_quote.text %}
 <!-- ============= Pull quote ============= -->
 <section class="summary-pull">
@@ -124,6 +162,45 @@
 </section>
 {% endif %}
 
+<!-- ============= Editorial synthesis ============= -->
+<section class="summary-synthesis" aria-label="総論">
+  <div class="summary-synthesis__inner">
+    <div class="summary-synthesis__head">
+      <span>━━ EDITORIAL SYNTHESIS</span>
+      <h2>総論</h2>
+    </div>
+    <div class="summary-synthesis__grid">
+      <article class="summary-synthesis__panel">
+        <h3>今日の総論</h3>
+        <p>{{ synthesis_ctx.lead|render_emph }}</p>
+      </article>
+      <article class="summary-synthesis__panel">
+        <h3>今日の論点マップ</h3>
+        <div class="summary-synthesis__layers">
+          {% for layer in synthesis_ctx.layers %}
+          <div class="summary-synthesis__layer">
+            <span class="summary-synthesis__layer-label">{{ layer.label }}</span>
+            <div class="summary-synthesis__chips">
+                {% for item in layer["items"] %}
+              <span style="--accent-current: {{ item.color }};"><b>{{ item.glyph }}</b>{{ item.tag }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </article>
+      <article class="summary-synthesis__panel">
+        <h3>読者への示唆</h3>
+        <ol class="summary-synthesis__implications">
+          {% for item in synthesis_ctx.implications %}
+          <li><span>{{ "%02d"|format(item.n) }}</span>{{ item.text|render_emph }}</li>
+          {% endfor %}
+        </ol>
+      </article>
+    </div>
+  </div>
+</section>
+
 <!-- ============= 7 sections (2-column grid) ============= -->
 <section class="summary-sections">
   <div class="summary-sections__inner">
@@ -133,9 +210,10 @@
     </div>
     <div class="summary-sections__grid">
       {% for sec in sections %}
-      <div class="summary-sec{% if sec.number == 1 %} summary-sec--lead{% endif %}" style="--accent-current: {{ sec.color }};">
+      <div class="summary-sec{% if sec.number == 1 %} summary-sec--lead{% endif %}{% if sec.is_category %} summary-sec--category{% endif %}" style="--accent-current: {{ sec.color }};" data-category-id="{{ sec.category_id }}" data-category-glyph="{{ sec.category_glyph }}">
         <div class="summary-sec__head">
           <span class="summary-sec__no" style="color: {{ sec.color }};">§{{ "%02d"|format(sec.number) }}</span>
+          <span class="summary-sec__glyph" aria-hidden="true">{{ sec.category_glyph }}</span>
           <span class="summary-sec__tag" style="background: {{ sec.color }};">{{ sec.tag }}</span>
         </div>
         <h3 class="summary-sec__title">{{ sec.heading }}</h3>
@@ -147,6 +225,33 @@
         <a class="summary-sec__more" href="{{ sec.canonical }}" style="color: {{ sec.color }};">→ §{{ "%02d"|format(sec.number) }} {{ sec.tag }} 詳細を読む</a>
         {% endif %}
       </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ============= Tomorrow board ============= -->
+<section class="summary-tomorrow" aria-label="明日への観測ボード">
+  <div class="summary-tomorrow__inner">
+    <div class="summary-tomorrow__head">
+      <span>━━ TOMORROW BOARD</span>
+      <h2>明日へ</h2>
+      <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
+    </div>
+    <div class="summary-tomorrow__rows">
+      {% for row in tomorrow_rows %}
+      <article class="summary-tomorrow__row" style="--accent-current: {{ row.color }};" data-category-id="{{ row.category_id }}" data-category-glyph="{{ row.glyph }}">
+        <div class="summary-tomorrow__meta">
+          <span class="summary-tomorrow__glyph">{{ row.glyph }}</span>
+          <strong>{{ row.tag }}</strong>
+          <em class="summary-tomorrow__heat summary-tomorrow__heat--{{ row.heat|lower }}">{{ row.heat }}</em>
+        </div>
+        <div class="summary-tomorrow__cells">
+          <div><span>WATCH</span><p>{{ row.watch|render_emph }}</p></div>
+          <div><span>SIGNAL</span><p>{{ row.signal|render_emph }}</p></div>
+          <div><span>IMPLICATION</span><p>{{ row.implication|render_emph }}</p></div>
+        </div>
+      </article>
       {% endfor %}
     </div>
   </div>

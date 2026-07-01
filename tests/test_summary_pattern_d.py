@@ -19,8 +19,10 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+CSS_PATH = ROOT / "docs" / "assets" / "site.css"
 
 from tools.generate_pages import (  # noqa: E402
+    _section_label_to_cid,
     build_all,
     build_all_summaries,
     build_summary,
@@ -164,6 +166,63 @@ def test_summary_essay_sections_use_same_layer_lane_component(built_summary: str
     for persona in ("記者", "解説者", "予測者"):
         assert persona not in built_summary
     assert "summary-lane__label" not in built_summary
+
+
+def test_essay_redesign_renders_analysis_board_shell(built_summary: str):
+    """ESSAY redesign は Hero 以降を分析ボードとして構造化する。"""
+    for required in (
+        'class="summary-glance"',
+        'class="summary-conclusions"',
+        'class="summary-synthesis"',
+        'class="summary-tomorrow"',
+        "WATCH",
+        "SIGNAL",
+        "IMPLICATION",
+    ):
+        assert required in built_summary
+
+
+def test_essay_redesign_uses_canonical_category_glyphs(built_summary: str):
+    """カテゴリの見様見真似アイコンを使わず CATEGORIES の正規 glyph を出す。"""
+    expected = {
+        "fx": "¥",
+        "ai": "◆",
+        "it": "⌗",
+        "mobility": "◎",
+        "manufacturing": "⬢",
+        "economy": "■",
+        "game": "▶",
+    }
+    for cid, glyph in expected.items():
+        assert f'data-category-id="{cid}"' in built_summary
+        assert f'data-category-glyph="{glyph}"' in built_summary
+
+
+def test_essay_redesign_maps_english_section_labels_to_canonical_categories():
+    """英字の ESSAY 見出しも正規カテゴリ ID に解決する。"""
+    expected = {
+        "FX — 161円台後半": "fx",
+        "Mobility — ルール先行": "mobility",
+        "Manufacturing — 資本投下": "manufacturing",
+        "Economy — 成長率": "economy",
+        "Game — IP支援": "game",
+    }
+    for heading, cid in expected.items():
+        assert _section_label_to_cid(heading) == cid
+
+
+def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_summary: str):
+    """FACT/CONTEXT/OUTLOOK は正規 SVG と読めるラベルサイズ契約を持つ。"""
+    for icon in (
+        '<circle cx="10.5" cy="10.5" r="6.5"',
+        '<rect x="6" y="5" width="5" height="14"',
+        '<polyline points="4 16 9 11 13 14 20 7"',
+    ):
+        assert icon in built_summary
+    css = CSS_PATH.read_text(encoding="utf-8")
+    assert ".summary-lanes--essay .summary-lane__short" in css
+    assert "font-size: 8px" not in css[css.index(".summary-lanes--essay .summary-lane__short"):
+                                      css.index("}", css.index(".summary-lanes--essay .summary-lane__short"))]
 
 
 def test_section_accent_colors_used(built_summary: str):

@@ -112,13 +112,22 @@ _HOME_LEAD_CALLOUT_LABEL_RE = re.compile(
 # CATEGORIES["it"]["jp"] は "IT-Consulting" だが、digest 見出しは "IT —" 表記なので別途 alias。
 TAG_TO_CID: dict[str, str] = {
     "為替": "fx",
+    "FX": "fx",
+    "Foreign Exchange": "fx",
     "AI": "ai",
+    "Artificial Intelligence": "ai",
     "IT": "it",
     "IT-Consulting": "it",
+    "IT & Consulting": "it",
     "モビリティ": "mobility",
+    "Mobility": "mobility",
     "製造": "manufacturing",
+    "Manufacturing": "manufacturing",
     "経済": "economy",
+    "Economy": "economy",
     "ゲーム": "game",
+    "Game": "game",
+    "Gaming": "game",
 }
 
 
@@ -1746,6 +1755,117 @@ _SUMMARY_SECTION_TAGS = ["総論", "為替", "AI", "IT", "モビリティ", "製
 _SUMMARY_SECTION_COLORS = ["#1A1A1A", "#B8860B", "#2D5BB8", "#2E6B52", "#3A7B8C", "#5A6B7B", "#8E2A19", "#5E3D8C", "#C9A155"]
 # §02-08 を担当する category id (順序固定)。先頭 (総論) と末尾 (明日へ) は None。
 _SUMMARY_CAT_ORDER = [None, "fx", "ai", "it", "mobility", "manufacturing", "economy", "game", None]
+_ESSAY_LAYER_LABELS = ("制度・標準", "供給・販路", "実装・拡張")
+
+
+def _summary_section_meta(cid: str | None, tag: str) -> dict[str, Any]:
+    """ESSAY section で使う正規 category 表示 metadata。
+
+    カテゴリ glyph / accent は `tools.config.CATEGORIES` だけを正本にする。
+    デザイン案側の仮SVGや絵文字へ寄せないため、template はこの metadata を描画する。
+    """
+    if cid and cid in CATEGORIES:
+        cat = CATEGORIES[cid]
+        return {
+            "category_id": cid,
+            "category_glyph": cat.get("glyph", ""),
+            "category_label": cat.get("label", tag),
+            "category_jp": cat.get("jp", tag),
+            "is_category": True,
+        }
+    if tag == "総論":
+        return {
+            "category_id": "summary",
+            "category_glyph": CATEGORIES["summary"]["glyph"],
+            "category_label": CATEGORIES["summary"]["label"],
+            "category_jp": CATEGORIES["summary"]["jp"],
+            "is_category": False,
+        }
+    return {
+        "category_id": "",
+        "category_glyph": "→",
+        "category_label": tag,
+        "category_jp": tag,
+        "is_category": False,
+    }
+
+
+def _summary_sentence_parts(text: str) -> list[str]:
+    """ESSAY board 用に長文を文単位へ粗く分割する。装飾記法は保持する。"""
+    return _home_editorial_sentences(text)
+
+
+def _summary_board_text(text: str, *, fallback: str) -> str:
+    text = re.sub(r"\s+", " ", (text or "")).strip()
+    return text or fallback
+
+
+def _build_summary_synthesis(sections: list[dict[str, Any]], hero_lead: str,
+                             takeaways: list[dict[str, Any]]) -> dict[str, Any]:
+    """総論ボードを既存 digest から決定的に作る。"""
+    lead = next((s for s in sections if s.get("tag") == "総論"), None)
+    category_sections = [s for s in sections if s.get("is_category")]
+    lead_body = _summary_board_text((lead or {}).get("body", "") or hero_lead,
+                                    fallback="本日の横断論点を整理中。")
+
+    layer_rows = []
+    for i, label in enumerate(_ESSAY_LAYER_LABELS):
+        chunk = category_sections[i::len(_ESSAY_LAYER_LABELS)]
+        layer_rows.append({
+            "label": label,
+            "items": [
+                {
+                    "tag": s.get("tag", ""),
+                    "color": s.get("color", "#475569"),
+                    "glyph": s.get("category_glyph", ""),
+                }
+                for s in chunk[:3]
+            ],
+        })
+
+    implications = [
+        {
+            "n": i + 1,
+            "text": _summary_board_text(t.get("text", ""),
+                                        fallback="今日の判断材料を整理。"),
+        }
+        for i, t in enumerate(takeaways[:3])
+    ]
+    while len(implications) < 3:
+        implications.append({
+            "n": len(implications) + 1,
+            "text": "次に見るべき観点を整理中。",
+        })
+
+    return {
+        "lead": lead_body,
+        "layers": layer_rows,
+        "implications": implications,
+    }
+
+
+def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """カテゴリ別の「明日へ」観測ボードを生成する。"""
+    rows: list[dict[str, Any]] = []
+    heat_cycle = ("HIGH", "MID", "MID", "LOW")
+    for idx, sec in enumerate(s for s in sections if s.get("is_category")):
+        body = sec.get("body", "")
+        sentences = _summary_sentence_parts(body)
+        bullets = list(sec.get("bullets") or [])
+        watch = sec.get("heading") or f"{sec.get('tag', '')}の観測点"
+        signal = bullets[1] if len(bullets) > 1 else (sentences[0] if sentences else body)
+        implication = bullets[2] if len(bullets) > 2 else (sentences[-1] if sentences else body)
+        rows.append({
+            "category_id": sec.get("category_id", ""),
+            "tag": sec.get("tag", ""),
+            "glyph": sec.get("category_glyph", ""),
+            "color": sec.get("color", "#475569"),
+            "heat": heat_cycle[min(idx, len(heat_cycle) - 1)],
+            "watch": _summary_board_text(watch, fallback="観測点を整理中。"),
+            "signal": _summary_board_text(signal, fallback="変化の兆しを整理中。"),
+            "implication": _summary_board_text(implication, fallback="解釈を整理中。"),
+        })
+    return rows
 
 
 def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
@@ -2001,7 +2121,7 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
         label = _section_label(heading)
         cid = TAG_TO_CID.get(label)
         bullets: list[str] = []
-        if num == 1 or "総論" in heading:
+        if "総論" in heading or "総論" in label:
             tag, color, canonical = "総論", "#1A1A1A", ""
         elif "明日" in heading or "明日" in label:
             tag, color, canonical = "明日へ", "#C9A155", ""
@@ -2013,6 +2133,7 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
             bullets = list((e.get("top_bullets") if e else []) or [])[:3]
         else:
             tag, color, canonical = (label or f"§{num:02d}"), "#475569", ""
+        meta = _summary_section_meta(cid, tag)
         out.append({
             "number": num,
             "tag": tag,
@@ -2021,6 +2142,7 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
             "body": body,
             "bullets": bullets,
             "canonical": canonical,
+            **meta,
         })
     return out
 
@@ -2068,6 +2190,7 @@ def _fallback_sections(editorial: dict[str, Any] | None,
             "body": body,
             "bullets": bullets,
             "canonical": canonical,
+            **_summary_section_meta(cid, tag),
         })
     return sections
 
@@ -2169,6 +2292,16 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         "takeaways": len(takeaways),
         "sources": sources_count or len(same_day),
     }
+    category_sections = [s for s in sections if s.get("is_category")]
+    glance = {
+        "temperature": "HIGH" if len(category_sections) >= 6 else "MID",
+        "heat_on": 3 if len(category_sections) >= 6 else 2,
+        "categories": len(category_sections),
+        "read_min": stats["read_min"],
+        "sources": stats["sources"],
+    }
+    synthesis = _build_summary_synthesis(sections, hero_lead, takeaways)
+    tomorrow_board = _build_tomorrow_board(sections)
 
     # ---- Render ----
     issue_no = date.replace("-", "")
@@ -2188,6 +2321,9 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         "pull_quote": pull_quote,
         "sections": sections,
         "takeaways": takeaways,
+        "glance": glance,
+        "synthesis": synthesis,
+        "tomorrow_board": tomorrow_board,
         "stats": stats,
         "audio_label": "今日のニュース朗読",
         **latest_audio_for_pages(date),
