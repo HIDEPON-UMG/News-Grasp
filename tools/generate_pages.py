@@ -1254,17 +1254,32 @@ def is_category_scheduled_on(cat_id: str, date_str: str) -> bool:
     return cat_id in _PUBLICATION_SCHEDULE.get(weekday, set())
 
 
-def _category_pause_notice(cat_id: str, today_date: str) -> dict[str, str] | None:
+def _category_pause_notice(cat_id: str, today_date: str) -> dict[str, Any] | None:
     """今日の配信対象外カテゴリならカテゴリトップ用の休載表示を返す。"""
     if is_category_scheduled_on(cat_id, today_date):
         return None
     weekday = _date_weekday_jp(today_date)
+    meta = CATEGORIES.get(cat_id, {})
+    jp = str(meta.get("jp") or cat_id)
     return {
-        "title": "本日は休載です。",
+        "title": "本日は[[休載]]です。",
         "label": "REST DAY",
         "date": today_date,
         "weekday": weekday,
-        "body": "このカテゴリは本日の配信対象外です。直近の掲載号を下に表示しています。",
+        "rows": [
+            {
+                "label": "配信状態",
+                "text": f"[[{jp}]]は本日の新規配信対象外です。",
+            },
+            {
+                "label": "表示内容",
+                "text": "直近の掲載号を**下の一覧**に残し、__過去記事として読める順序__で表示しています。",
+            },
+            {
+                "label": "次回更新",
+                "text": "次の配信日に、最新記事・要約・代表スコアをこのヒーローへ反映します。",
+            },
+        ],
     }
 
 

@@ -12,7 +12,7 @@ TEMPLATE = ROOT / "prompts" / "category-template.html"
 CSS = ROOT / "docs" / "assets" / "site.css"
 
 
-def _ctx(category_id: str) -> dict[str, object]:
+def _ctx(category_id: str, pause_notice: dict[str, object] | None = None) -> dict[str, object]:
     meta = CATEGORIES[category_id]
     featured = {
         "date": "2026-07-01",
@@ -65,13 +65,13 @@ def _ctx(category_id: str) -> dict[str, object]:
         "grid_9": [],
         "past_7": [featured] * 7,
         "nav_categories": hero["nav_categories"],
-        "pause_notice": None,
+        "pause_notice": pause_notice,
         "hero": hero,
     }
 
 
-def _render(category_id: str) -> str:
-    return generate_pages.render_template(TEMPLATE.read_text(encoding="utf-8"), _ctx(category_id))
+def _render(category_id: str, pause_notice: dict[str, object] | None = None) -> str:
+    return generate_pages.render_template(TEMPLATE.read_text(encoding="utf-8"), _ctx(category_id, pause_notice))
 
 
 def test_fx_hero_uses_turn4a_live_rates_and_sentence_bullets() -> None:
@@ -104,6 +104,22 @@ def test_non_fx_hero_uses_turn4b_signals_and_score_panel() -> None:
     assert "--hero-bg-image: url('https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg');" in html
 
 
+def test_rest_day_hero_keeps_turn4_theme_and_structured_emphasis() -> None:
+    html = _render("game", generate_pages._category_pause_notice("game", "2026-07-01"))
+
+    assert 'data-hero-contract="turn4-category"' in html
+    assert 'data-category="game"' in html
+    assert "--hero-bg-image: url('https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg');" in html
+    assert "cat-break-notice" not in html
+    assert "cat-hero__body cat-hero__body--rest" in html
+    assert "REST DAY · 2026-07-01" in html
+    assert '<strong class="emph-bold">休載</strong>' in html
+    assert "配信状態" in html and "表示内容" in html and "次回更新" in html
+    assert '<strong class="emph-bold">ゲーム</strong>' in html
+    assert "<strong>下の一覧</strong>" in html
+    assert '<span class="emph-und">過去記事として読める順序</span>' in html
+
+
 def test_turn4_theme_context_exists_for_all_seven_categories() -> None:
     for cid in [c for c in CATEGORIES if c != "summary"]:
         hero = generate_pages.build_category_hero_context(
@@ -134,5 +150,9 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert "grid-template-columns: 1.06fr .94fr" in css
     assert ".cat-hero__tab-fade" in css
     assert ".cat-hero__tab-arrow" in css
+    assert ".cat-hero__body--rest" in css
+    assert "box-shadow: inset 4px 0 0 var(--hero-accent);" in css
+    assert ".cat-hero__body--rest .emph-bold" in css
+    assert ".cat-hero__body--rest .emph-und" in css
     assert "@media (max-width: 720px)" in css
     assert "grid-template-columns: 1fr" in css

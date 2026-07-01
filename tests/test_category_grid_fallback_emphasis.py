@@ -269,10 +269,17 @@ def test_category_rest_day_notice_appears_on_unscheduled_today(tmp_path: Path):
 
     manufacturing_html = (docs / "manufacturing" / "index.html").read_text(encoding="utf-8")
     ai_html = (docs / "ai" / "index.html").read_text(encoding="utf-8")
-    assert "本日は休載です。" in manufacturing_html
-    assert "このカテゴリは本日の配信対象外です" in manufacturing_html
+    assert "本日は" in manufacturing_html and "休載" in manufacturing_html
+    assert "cat-break-notice" not in manufacturing_html
+    assert "cat-hero__body cat-hero__body--rest" in manufacturing_html
+    assert "配信状態" in manufacturing_html
+    assert "表示内容" in manufacturing_html
+    assert "次回更新" in manufacturing_html
+    assert '<strong class="emph-bold">製造</strong>' in manufacturing_html
+    assert "<strong>下の一覧</strong>" in manufacturing_html
+    assert '<span class="emph-und">過去記事として読める順序</span>' in manufacturing_html
     assert "SENT_FEAT" in manufacturing_html
-    assert "本日は休載です。" not in ai_html
+    assert "cat-hero__body--rest" not in ai_html
 
 
 def test_category_top_more_stories_uses_same_day_articles_not_previous_issues(tmp_path: Path):
