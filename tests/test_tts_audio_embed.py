@@ -69,6 +69,8 @@ def test_summary_template_embeds_latest_release_audio_when_url_is_present():
     assert 'data-rate="1.25"' not in html
     assert 'data-rate="2"' not in html
     assert "playbackRate" in html
+    assert html.index('class="lens-nav lens-nav--summary"') < html.index('class="daily-audio daily-audio--summary"')
+    assert html.index('class="daily-audio daily-audio--summary"') < html.index('class="summary-hero"')
 
 
 def test_audio_block_is_absent_without_latest_audio_url():

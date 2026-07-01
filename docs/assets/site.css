@@ -3683,7 +3683,7 @@ strong {
   .home-nav__bar { align-items: flex-start; }
   .home-nav__links { gap: 12px; font-size: 10px; }
   .home-nav__right { display: none; }
-  .home-hero { padding: 40px 16px 24px; }
+  .home-hero { padding: 56px 16px 24px; }
   .home-hero__inner { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .home-hero__title { font-size: 38px; }
   .home-hero__lead { font-size: 14px; line-height: 1.7; }

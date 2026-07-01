@@ -99,6 +99,31 @@
 
 <main>
   <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  {% if latest_audio_url %}
+  <section class="daily-audio daily-audio--summary" aria-label="{{ audio_label|default('今日のニュース朗読') }}">
+    <div class="daily-audio__inner">
+      <div class="daily-audio__meta">
+        <span class="daily-audio__kicker">LISTEN</span>
+        <span class="daily-audio__title">{{ audio_label|default('今日のニュース朗読') }}</span>
+        {% if latest_audio_date %}<span class="daily-audio__date">{{ latest_audio_date }}</span>{% endif %}
+      </div>
+      <div class="daily-audio__controls">
+        <audio preload="none" controls>
+          <source src="{{ latest_audio_url }}" type="audio/mpeg">
+        </audio>
+        <div class="daily-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <section class="summary-hero" data-summary-search="{{ date }} 本日のテーマ考察 Editorial Summary {{ hero_subtitle|render_emph|striptags }} {{ hero_lead|render_emph|striptags }}">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
@@ -142,31 +167,6 @@
       </div>
     </div>
   </section>
-
-  {% if latest_audio_url %}
-  <section class="daily-audio daily-audio--summary" aria-label="{{ audio_label|default('今日のニュース朗読') }}">
-    <div class="daily-audio__inner">
-      <div class="daily-audio__meta">
-        <span class="daily-audio__kicker">LISTEN</span>
-        <span class="daily-audio__title">{{ audio_label|default('今日のニュース朗読') }}</span>
-        {% if latest_audio_date %}<span class="daily-audio__date">{{ latest_audio_date }}</span>{% endif %}
-      </div>
-      <div class="daily-audio__controls">
-        <audio preload="none" controls>
-          <source src="{{ latest_audio_url }}" type="audio/mpeg">
-        </audio>
-        <div class="daily-audio__rates" role="group" aria-label="再生速度">
-          <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
-          <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
-          <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
-          <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
-          <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
-          <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
-        </div>
-      </div>
-    </div>
-  </section>
-  {% endif %}
 
   <section class="summary-conclusions" aria-label="今日の3結論">
     <div class="summary-conclusions__inner">

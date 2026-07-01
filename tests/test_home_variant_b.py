@@ -182,14 +182,17 @@ def test_home_theme_switch_sits_above_today_theme_heading(built_home: str):
     theme_rule = re.search(r"\.home-hero__theme\s*\{(?P<body>[^}]*)\}", css, re.S)
     switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", css, re.S)
     button = re.search(r"\.home-hero__switch-btn\s*\{(?P<body>[^}]*)\}", css, re.S)
-    mobile_switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", css.split("@media (max-width: 768px)", 1)[1], re.S)
-    assert theme_rule and switch and button and mobile_switch
+    mobile_css = css.split("@media (max-width: 768px)", 1)[1]
+    mobile_hero = re.search(r"\.home-hero\s*\{(?P<body>[^}]*)\}", mobile_css, re.S)
+    mobile_switch = re.search(r"\.home-hero__switch\s*\{(?P<body>[^}]*)\}", mobile_css, re.S)
+    assert theme_rule and switch and button and mobile_hero and mobile_switch
     assert "position: relative" in theme_rule.group("body")
     assert "position: absolute" in switch.group("body")
     assert "top: -52px" in switch.group("body")
     assert "left: 0" in switch.group("body")
     assert "flex-wrap: nowrap" in switch.group("body")
     assert "white-space: nowrap" in button.group("body")
+    assert "padding: 56px 16px 24px" in mobile_hero.group("body")
     assert "top: -40px" in mobile_switch.group("body")
     assert "max-width: 100%" in mobile_switch.group("body")
     assert "overflow: hidden" in mobile_switch.group("body")
