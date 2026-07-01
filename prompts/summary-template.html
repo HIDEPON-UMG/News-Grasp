@@ -58,24 +58,42 @@
   </defs>
 </svg>
 
-<header class="summary-masthead">
-  <div class="summary-masthead__brand">
-    <a href="{{ base_url }}/">NEWS-GRASP</a>
-    <span>{{ date }}</span>
-  </div>
-  <div class="summary-masthead__index" aria-label="本日のカテゴリ">
-    <span>本日のカテゴリ {{ masthead_rows|length }}</span>
-    <div>
-      {% for item in masthead_rows %}
-      <i style="--c: {{ item.color }};" title="{{ item.tag }}"></i>
-      {% endfor %}
+<section class="brand-zone brand-zone--summary">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a><img class="brand-icon" src="{{ base_url }}/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+      <div class="brand-zone__summary-mark">
+        <span>SECTION</span>
+        <strong>本日のテーマ考察</strong>
+      </div>
     </div>
+    <nav class="brand-zone__nav">
+      <a href="{{ base_url }}/">HOME</a>
+      <a href="{{ base_url }}/archive/">ARCHIVE</a>
+      <a href="{{ base_url }}/{{ date }}/">DIGEST</a>
+      <a href="{{ canonical }}" aria-current="page">ESSAY</a>
+    </nav>
   </div>
-  <nav class="summary-masthead__switch" aria-label="表示切替">
-    <a href="{{ base_url }}/{{ date }}/">NEWS DIGEST</a>
-    <span>§ EDITORIAL SUMMARY</span>
-  </nav>
-</header>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<nav class="lens-nav lens-nav--summary">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+    {% for c in nav_categories %}
+    <a href="{{ base_url }}/{{ c.id }}/" class="lens-pill" style="color: {{ c.accent }};">
+      <span class="lens-pill__glyph">{{ c.glyph }}</span>{{ c.name_en|upper }}
+    </a>
+    {% endfor %}
+    <a href="{{ canonical }}" class="lens-pill lens-pill--essay is-active">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+    <span class="lens-nav__meta">{{ stats.sources }} SOURCES · {{ stats.sections }} SECTIONS</span>
+  </div>
+</nav>
 
 <main>
   <section class="summary-hero">
@@ -213,7 +231,7 @@
           <span class="summary-category__no">§{{ "%02d"|format(sec.display_number) }}</span>
           <div class="summary-category__titlebox">
             <div class="summary-category__chip">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><use href="#{{ sec.category_icon_id }}"></use></svg>
+              <span class="summary-category__glyph" aria-hidden="true">{{ sec.category_glyph }}</span>
               <span>{{ sec.category_label|upper }} / {{ sec.tag }}</span>
             </div>
             <h3>{{ sec.display_title|render_emph }}</h3>
@@ -255,7 +273,7 @@
         <article class="summary-tomorrow__row" style="--c: {{ row.color }};" data-category-id="{{ row.category_id }}" data-category-glyph="{{ row.glyph }}">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><use href="#{{ row.icon_id }}"></use></svg>{{ row.tag }}
+              <span class="summary-tomorrow__glyph" aria-hidden="true">{{ row.glyph }}</span>{{ row.tag }}
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--{{ row.heat|lower }}">{{ row.heat }}</em>
           </div>

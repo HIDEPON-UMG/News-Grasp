@@ -34,6 +34,11 @@ from tools.generate_pages import (  # noqa: E402
 from tools.config import CATEGORIES  # noqa: E402
 
 
+def _last_css_block(css: str, selector: str) -> str:
+    start = css.rindex(selector)
+    return css[start:css.index("}", start)]
+
+
 DIGEST_TEMPLATE = """---
 title: "News Grasp #20260520 — {label}"
 date: 2026-05-20
@@ -116,14 +121,15 @@ def built_summary(tmp_path_factory) -> str:
 # ============================================================
 
 def test_dc_masthead_replaces_legacy_brand_zone(built_summary: str):
-    """DC正本の masthead + mode switch を使い、旧 brand-zone / mode-pill は残さない。"""
-    assert 'class="summary-masthead"' in built_summary
-    assert "NEWS-GRASP" in built_summary
-    assert "本日のカテゴリ" in built_summary
-    assert "NEWS DIGEST" in built_summary
-    assert "§ EDITORIAL SUMMARY" in built_summary
+    """カテゴリー別と同じ brand-zone + lens-nav を使い、旧 summary 専用スイッチは残さない。"""
+    assert 'class="brand-zone brand-zone--summary"' in built_summary
+    assert 'class="lens-nav lens-nav--summary"' in built_summary
+    assert 'class="lens-pill lens-pill--essay is-active"' in built_summary
+    assert "News Grasp" in built_summary
+    assert "LENSES" in built_summary
+    assert "ESSAY" in built_summary
+    assert "summary-masthead" not in built_summary
     assert "summary-mode-pill" not in built_summary
-    assert "brand-zone" not in built_summary
 
 
 def test_hero_dark_navy(built_summary: str):
@@ -225,6 +231,37 @@ def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_sum
     assert ".summary-lane-card__short" in css
     assert "font-size: 8px" not in css[css.index(".summary-lane-card__short"):
                                       css.index("}", css.index(".summary-lane-card__short"))]
+    short_block = _last_css_block(css, ".summary-lane-card__short")
+    assert re.search(r"font-size:\s*(?:15|16)px", short_block), short_block
+
+
+def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built_summary: str):
+    """マーカーはカテゴリ色背景+白文字、Tomorrow Board の WATCH ラベルは読みやすくする。"""
+    css = CSS_PATH.read_text(encoding="utf-8")
+    marker_start = css.index(".summary-lane-card__marker {\n  display")
+    marker_block = css[marker_start:css.index("}", marker_start)]
+    assert "background: var(--c)" in marker_block
+    assert "color: #fff" in marker_block
+    watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
+    assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
+
+
+def test_essay_redesign_expands_hero_text_and_aligns_glance_top(built_summary: str):
+    """本日のテーマ考察本文を右へ伸ばし、AT A GLANCE の上端を本文ブロックと揃える。"""
+    css = CSS_PATH.read_text(encoding="utf-8")
+    inner_start = css.index(".summary-hero__inner {\n  display: grid;")
+    inner_block = css[inner_start:css.index("}", inner_start)]
+    assert "grid-template-columns" in inner_block
+    assert "minmax(0, 1fr)" in inner_block
+    assert "minmax(320px, 380px)" in inner_block
+    lead_start = css.index(".summary-hero__lead {\n  max-width: 68ch;")
+    lead_block = css[lead_start:css.index("}", lead_start)]
+    assert "max-width: 68ch" in lead_block
+    glance_start = css.index(".summary-glance {\n  grid-column: 2;")
+    glance_block = css[glance_start:css.index("}", glance_start)]
+    assert "margin-top: 56px" in glance_block
+    kicker_block = _last_css_block(css, ".summary-glance__kicker")
+    assert re.search(r"font-size:\s*(?:14|15|16)px", kicker_block), kicker_block
 
 
 def test_section_accent_colors_used(built_summary: str):

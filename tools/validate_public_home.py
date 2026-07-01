@@ -112,7 +112,8 @@ def validate_public_home(docs_dir: Path, date: str | None = None) -> list[str]:
                     f"({len(summary_lead)} chars, min={MIN_LEAD_CHARS})。"
                 )
             required_summary_sentinels = {
-                "summary-masthead": "DC正本の masthead",
+                "brand-zone--summary": "カテゴリー別と統一した brand zone",
+                "lens-nav--summary": "カテゴリー別と統一した lens nav",
                 "summary-conclusions": "TODAY'S 3 CONCLUSIONS",
                 "summary-synthesis": "EDITORIAL SYNTHESIS",
                 "summary-category-sections": "カテゴリ別 FACT/CONTEXT/OUTLOOK",
@@ -123,7 +124,7 @@ def validate_public_home(docs_dir: Path, date: str | None = None) -> list[str]:
                 if sentinel not in summary_html:
                     errors.append(f"{summary_path}: {label} ({sentinel}) が見つかりません。")
             legacy_summary_sentinels = (
-                "brand-zone",
+                "summary-masthead",
                 "summary-mode-pill",
                 "summary-sections__grid",
                 "summary-lanes--essay",

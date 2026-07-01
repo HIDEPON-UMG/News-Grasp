@@ -2405,6 +2405,18 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         }
         for s in dc_category_sections
     ]
+    summary_nav_categories = [
+        {
+            "id": cid,
+            "name_jp": meta["jp"],
+            "name_en": meta["label"],
+            "glyph": meta["glyph"],
+            "accent": meta["accent"],
+            "is_active": False,
+        }
+        for cid, meta in CATEGORIES.items()
+        if cid != "summary"
+    ]
 
     # ---- Render ----
     issue_no = date.replace("-", "")
@@ -2432,6 +2444,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
         "tomorrow_board": tomorrow_board,
         "tomorrow_color": (tomorrow_lead or {}).get("color", "#C9A155"),
         "masthead_categories": masthead_categories,
+        "nav_categories": summary_nav_categories,
         "stats": stats,
         "audio_label": "今日のニュース朗読",
         **latest_audio_for_pages(date),

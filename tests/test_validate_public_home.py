@@ -43,7 +43,8 @@ def _write_public_html(root: Path, *, top_img: bool = True, color_panel: bool = 
     (summary / "index.html").write_text(
         f"""
 <!doctype html>
-<header class="summary-masthead"></header>
+<section class="brand-zone brand-zone--summary"></section>
+<nav class="lens-nav lens-nav--summary"></nav>
 <section class="summary-hero">
   <div class="summary-hero__lead">{summary_lead}</div>
 </section>
