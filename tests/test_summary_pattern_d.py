@@ -223,7 +223,8 @@ def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_sum
     """FACT/CONTEXT/OUTLOOK は正規 SVG と読めるラベルサイズ契約を持つ。"""
     for icon in (
         '<circle cx="10.5" cy="10.5" r="6.5"',
-        '<rect x="6" y="5" width="5" height="14"',
+        '<rect x="7" y="5.5" width="3.5" height="13"',
+        '<rect x="13.5" y="5.5" width="3.5" height="13"',
         '<polyline points="4 16 9 11 13 14 20 7"',
     ):
         assert icon in built_summary
@@ -236,12 +237,19 @@ def test_essay_redesign_keeps_canonical_lane_icons_and_readable_labels(built_sum
 
 
 def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built_summary: str):
-    """マーカーはカテゴリ色背景+白文字、Tomorrow Board の WATCH ラベルは読みやすくする。"""
+    """マーカーは濃色ベタにせず、カテゴリ色の淡色背景+カテゴリ文字にする。"""
     css = CSS_PATH.read_text(encoding="utf-8")
     marker_start = css.index(".summary-lane-card__marker {\n  display")
     marker_block = css[marker_start:css.index("}", marker_start)]
-    assert "background: var(--c)" in marker_block
-    assert "color: #fff" in marker_block
+    assert "background: color-mix(in srgb, var(--c) 14%, var(--color-surface))" in marker_block
+    assert "color: color-mix(in srgb, var(--c) 84%, var(--color-navy))" in marker_block
+    assert "color: #fff" not in marker_block
+    assert "background: var(--c)" not in marker_block
+    assert '.summary-lane-card[data-role="context"] .summary-lane-card__badge' in css
+    assert '.summary-lane-card[data-role="outlook"] .summary-lane-card__badge' in css
+    emph_block = _last_css_block(css, ".summary-lane-card p .emph-bold")
+    assert "background: color-mix(in srgb, var(--c) 18%, transparent)" in emph_block
+    assert "color: color-mix(in srgb, var(--c) 82%, var(--color-navy))" in emph_block
     watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
     assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
 

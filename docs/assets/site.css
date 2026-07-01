@@ -5064,29 +5064,40 @@ strong {
   display: none;
 }
 .summary-lane-card__badge {
-  background: var(--color-accent-summary);
+  background: var(--c);
   color: var(--color-cream);
+}
+.summary-lane-card[data-role="context"] .summary-lane-card__badge {
+  background: color-mix(in srgb, var(--c) 72%, var(--color-surface));
+}
+.summary-lane-card[data-role="outlook"] .summary-lane-card__badge {
+  background: color-mix(in srgb, var(--c) 46%, var(--color-surface));
 }
 .summary-lane-card__short {
   font-size: 15px;
   letter-spacing: 0.08em;
+  color: var(--c);
 }
 .summary-lane-card__marker {
   display: inline-flex;
   align-items: center;
   padding: 4px 9px;
-  background: var(--c);
-  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--c) 38%, var(--color-border));
+  background: color-mix(in srgb, var(--c) 14%, var(--color-surface));
+  color: color-mix(in srgb, var(--c) 84%, var(--color-navy));
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
   white-space: nowrap;
 }
-.summary-lane-card p .emph-bold,
+.summary-lane-card p .emph-bold {
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  color: color-mix(in srgb, var(--c) 82%, var(--color-navy));
+}
 .summary-tomorrow__cells p .emph-bold {
-  background: var(--c);
-  color: #fff;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  color: color-mix(in srgb, var(--c) 82%, var(--color-cream));
 }
 .summary-lane-card p .emph-und,
 .summary-tomorrow__cells p .emph-und {
