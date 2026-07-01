@@ -1892,6 +1892,8 @@ def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]
     rows: list[dict[str, Any]] = []
     heat_cycle = ("HIGH", "MID", "MID", "LOW")
     for idx, sec in enumerate(s for s in sections if s.get("is_category")):
+        cid = sec.get("category_id", "")
+        cat = CATEGORIES.get(cid, {})
         body = sec.get("body", "")
         sentences = _summary_sentence_parts(body)
         bullets = list(sec.get("bullets") or [])
@@ -1899,8 +1901,9 @@ def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]
         signal = bullets[1] if len(bullets) > 1 else (sentences[1] if len(sentences) > 1 else body)
         implication = bullets[2] if len(bullets) > 2 else (sentences[-1] if sentences else body)
         rows.append({
-            "category_id": sec.get("category_id", ""),
+            "category_id": cid,
             "tag": sec.get("tag", ""),
+            "category_label": cat.get("label", sec.get("category_label", sec.get("tag", ""))),
             "glyph": sec.get("category_glyph", ""),
             "icon_id": sec.get("category_icon_id", "ic-summary"),
             "color": sec.get("color", "#475569"),

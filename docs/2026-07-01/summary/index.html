@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 07-01)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-07-01 本日のテーマ考察 Editorial Summary 守る線と広げる線 今日は、AI の配布と認証、IT の統制、Mobility の安全対応、Manufacturing の拠点再編、Economy の政策修正が一度に進み、広げる前に守る線をどこへ引くか が主題になりました。FX も円安と介入警戒で揺れ、数字の強さより 置き場所の見直し が効く朝です。規制、投資、配布、運用の順番が入れ替わり、誰が責任を持って回せるかが先に問われました。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「守る線と広げる線」</p>
@@ -263,7 +266,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-07-01 Mobility トランプ政権、完全自動運転車のペダル義務撤廃案">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -274,7 +277,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing">
+        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing" data-summary-search="2026-07-01 Manufacturing 日立建機、新ブランド「WIXIM」を中国OEM製造へ 東南アジア攻略で転換">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -285,7 +288,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-07-01 Foreign Exchange 円安162円台、政策不信が債券売りを呼ぶリスク浮上">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -300,7 +303,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-07-01 総論 守る線を先に引く朝 AI と IT は配布前の認証と統制、Mobility は安全対応、Manufacturing は置き場所の再編、Economy は政策の修正が前に出ました。目立つのは新機能より線引き で、誰が責任を持つか を先に決めた材料が多い一日です。FX の円安はその緊張をさらに強め、現場の判断を急がせました。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -372,7 +375,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-07-01 Foreign Exchange 為替 円安の先にある説明責任">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -426,7 +429,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-07-01 Artificial Intelligence AI 配布網と認証が先に立つ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -480,7 +483,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-07-01 IT &amp; Consulting IT 統制と理解が実装を決める">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -534,7 +537,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-07-01 Mobility モビリティ 安全条件と運行設計の再調整">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -588,7 +591,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-07-01 Manufacturing 製造 拠点と工程を置き直す">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -642,7 +645,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-07-01 Economy 経済 数字の改善と体感のずれ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -709,10 +712,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-07-01 Foreign Exchange 為替 FX — 円安の先にある説明責任 背景にはFedの高金利観測に加え、BOJの追加利上げが後手に回るのではないかという見方があり、為替だけでなく国債市場の信認も問われている。 円安が長期金利の上昇圧力と結び付けば、輸入コストと国債費の双方に波及し、政策メッセージの修正有無が次の焦点になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -723,10 +727,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-07-01 Artificial Intelligence AI AI — 配布網と認証が先に立つ 18年分の認定運用実績と最新ガイドラインを踏まえ、AIガバナンス の可視化を進める狙いだ。2028年3月末まで手数料無料 として制度参加を促している。 生成AI基盤を選ぶ企業は 情報開示 の比較軸を持ちやすくなり、安全性や運用体制を示せる事業者 が案件獲得で優位に立ちやすくなる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -737,10 +742,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-07-01 IT &amp; Consulting IT IT — 統制と理解が実装を決める デジタル庁は事業者への発注集中とSE不足を主因に挙げ、自治体DXがクラウド選定より実装人材の供給制約に左右される段階へ入ったと示した。 公共ITでは今年度末に全体の9割完了を見込む一方、自治体案件を担うSI・コンサルには移行計画の平準化と運用要員確保を同時に設計する力が求められる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -751,10 +757,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-07-01 Mobility モビリティ Mobility — 安全条件と運行設計の再調整 現行制度ではメーカーが個別免除申請を出しても、年間最大2,500台の上限が量産の壁だった。TeslaやZooxのような無人前提車両は、ここが設計自由度のボトルネックだった。 改正が通ればロボタクシーや無人配送車の車内設計と量産計画が前倒しされる。パブリックコメント後の確定条文が、米国での商用展開速度を左右する。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -765,10 +772,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-07-01 Manufacturing 製造 Manufacturing — 拠点と工程を置き直す 油圧ショベル以外の需要が広がる一方で、中国勢がアジア市場でシェアを拡大しており、非主力機種を外部製造で補う戦略が必要になった。 日本勢の販売網が中国OEMを組み込む流れが定着すれば、原価設計とブランド管理を分ける建機供給網へ競争軸が移る。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -779,10 +787,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-07-01 Economy 経済 Economy — 数字の改善と体感のずれ 中東情勢と日米金利差が円売り圧力を強め、円安は輸入物価とエネルギー負担を通じて国内景気の採算を揺らしやすい。 市場の次の焦点は為替介入の有無と日銀追加利上げの現実味で、USDJPYの防衛ラインが東京市場の心理を左右する。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -834,6 +843,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

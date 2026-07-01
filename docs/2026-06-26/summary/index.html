@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-26)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-26 本日のテーマ考察 Editorial Summary 実装段取りと投資回収 今日は、Gemini 3.5 Flash の Computer Use 統合とOpenAI Codex の社内定着、freee の AI エージェント実装、ホンダの EV 再配分、アンドゥリルの追浜工場転用、IMF の米景気評価が同じ朝に並び、試す技術より運用に落とす段取りと投資回収の順番が前面に出ました。機能の派手さより、誰が実装を引き受け、どこで利益に変えるかが見えた一日です。為替も製造も、値段やスペックそのものより、次の仕事をどこへつなぐかが問われました。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「実装段取りと投資回収」</p>
@@ -263,7 +266,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing">
+        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing" data-summary-search="2026-06-26 Manufacturing アンドゥリル、日産追浜工場の取得協議 ドローン量産拠点へ">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -274,7 +277,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-06-26 Foreign Exchange ドル円161円後半、米利上げ観測後退でも介入警戒続く">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -285,7 +288,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #8E2A19;" data-category-id="economy">
+        <article class="summary-conclusion" style="--c: #8E2A19;" data-category-id="economy" data-summary-search="2026-06-26 Economy IMF、米景気は堅調と評価 Fed据え置き支持">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -300,7 +303,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-26 総論 実装と回収の入口を見る AI と IT は機能追加の話から業務をどこまで動かすかへ移り、Mobility と Manufacturing は設備の転用や増設でどの拠点から回収するかが前に出ました。FX と Economy は、金利差と景気の底堅さが値動きの説明軸を支えています。今日は、見栄えよりも実装の入口と回収の出口をそろえる朝でした。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -372,7 +375,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-26 Foreign Exchange 為替 161円台後半、介入警戒と金利差">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -426,7 +429,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-26 Artificial Intelligence AI エージェントは本番と防御へ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -480,7 +483,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-26 IT &amp; Consulting IT SaaSは業務実行基盤に寄る">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -534,7 +537,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-26 Mobility モビリティ EVの勝負は認証と回路">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -588,7 +591,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-26 Manufacturing 製造 工場、材料、電力の再配置">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -642,7 +645,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-26 Economy 経済 米景気は強く、債務は物差しを固定">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -709,10 +712,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-26 Foreign Exchange 為替 為替 — 161円台後半、介入警戒と金利差 5月PCEは前年比4.1%と予想通りだった一方、前月比は予想をやや下回り、ドル買い一辺倒の流れを鈍らせた。 FRBの7月利上げ確率は約30%へ低下したが、日米政策差はなお大きいため、介入警戒だけが上値抑制役として残った。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -723,10 +727,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-26 Artificial Intelligence AI AI — エージェントは本番と防御へ Web・モバイル・デスクトップをまたぐ実行経路が一つのモデルに寄ったため、長手順の自動化を設計しやすく、Gemini API の実装負荷も下がる。 不正な指示の注入を検知して停止する保護策まで同時に出した点は、企業導入の壁が性能ではなくガバナンスへ移ったことを示し、AIエージェントの本番投入を早める。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -737,10 +742,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-26 IT &amp; Consulting IT IT — SaaSは業務実行基盤に寄る Amazon-Bedrock上で複数エージェントを本番稼働させ、MCPサーバーと382本のAPIを公開済みと説明したことで、外部AIから国内実務を呼び出す接続面まで見えた。 介護現場の経費精算を月30分から2分へ縮めた事例や、SLMの精度10ポイント超改善・推論5倍超を示し、AI導入がPoCではなく運用KPIの段階に入ったことを示した。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -751,10 +757,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-26 Mobility モビリティ モビリティ — EVの勝負は認証と回路 3月の会社発表では米EV需要鈍化と中国勢との競争激化を理由に、0 SUV・0 Saloon・Acura RSXの計画中止とハイブリッド再強化を打ち出している。 読者が次に見るべきは電動化戦略の後退そのものより、日米中で商品配分と投資回収をどう組み直すかだ。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -765,10 +772,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-26 Manufacturing 製造 製造 — 工場、材料、電力の再配置 関係者によれば従業員の多くを再雇用する意向もあり、工場閉鎖後の雇用と技能を防衛生産へ移す絵が見え始めた。 重要なのは日本製部品だけを使うドローン構想と結びつく点で、自動車の遊休設備が防衛産業基盤へ流れ込む可能性が国内製造の再配置を加速させる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -779,10 +787,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-26 Economy 経済 経済 — 米景気は強く、債務は物差しを固定 同日に出たGDP確報値の上方修正も追い風で、Fedの判断は景気失速懸念より物価管理を優先する流れを補強した。 同日に出たGDP確報値の上方修正も追い風で、Fedの判断は景気失速懸念より物価管理を優先する流れを補強した。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -834,6 +843,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

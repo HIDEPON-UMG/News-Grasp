@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-23)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-23 本日のテーマ考察 Editorial Summary 条件設計と現場実装 円安警戒とAI統制、供給網再配置、工場立地が同じ朝に並び、何を先に固めるかが見出しを決めた。為替は介入カード、AIは供給と利用ルール、Mobilityは運用網、Manufacturingは立地と供給力。今日は見出しの派手さより、実際に回る条件を先に置くかどうかが勝負でした。制度、供給、運用、立地の順番をそろえた側が、あとから広げる余地を持てます。速さより条件設計が主役です。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「条件設計と現場実装」</p>
@@ -263,7 +266,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-06-23 Foreign Exchange 161円90銭台で日米財務トップが緊急協議 介入カードを再点検">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -274,7 +277,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-06-23 Mobility CATL、欧州でEVトラック向け電池交換網 英Octopusと合弁">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -285,7 +288,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing">
+        <article class="summary-conclusion" style="--c: #5A6B7B;" data-category-id="manufacturing" data-summary-search="2026-06-23 Manufacturing イグス、栃木さくら工場を稼働 4拠点集約で供給力を底上げ">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -300,7 +303,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-23 総論 伸び方より支え方が先に見えた 円安、国産LLM、電池交換網、工場新設が一列に並ぶと、今日は成長率の話より、どの条件を先に固めたかが主役だと分かります。資本も制度も供給も、入口を広げる前に出口を作る流れがはっきりしました。速く広げる話と支える設計の差が、全カテゴリに出ています。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -374,7 +377,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-23 Foreign Exchange 為替 介入カードと利上げ観測が交錯">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -428,7 +431,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-23 Artificial Intelligence AI 作る人と支える部材と止めるルール">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -482,7 +485,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-23 IT &amp; Consulting IT 国内化とMCPで摩擦を減らす">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -536,7 +539,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-23 Mobility モビリティ 網を張る力と止まる条件">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -590,7 +593,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-23 Manufacturing 製造 立地と供給力の置き方が競争力">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -644,7 +647,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-23 Economy 経済 中央銀行と供給網地政学">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -698,7 +701,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-23 Gaming ゲーム 流通とIP運用が主題">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -765,10 +768,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-23 Foreign Exchange 為替 為替 — 介入カードと利上げ観測が交錯 片山財務相とベッセント米財務長官のオンライン会談が入り、為替介入を含む対応の選択肢が市場の中心シナリオへ戻った。 4月末から5月にかけての介入総額は約11兆7000億円に達しており、FRBの利上げ観測が続く限り、次の一手は規模よりタイミングが問われる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -779,10 +783,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-23 Artificial Intelligence AI AI — 作る人と支える部材と止めるルール 対応コンテキスト長は64kから256kへ拡張され、長文の業務文書処理やエージェント運用を前提にした実務投入がしやすくなった。 PFNは日本語ベンチマークとコスト効率を前面に出しており、OpenAIやAnthropicへの依存を減らしたい国内企業の比較軸を作りに来た。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -793,10 +798,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-23 IT &amp; Consulting IT IT — 国内化とMCPで摩擦を減らす 新拠点は計算・ストレージ・ネットワークを国内冗長化し、高可用性とBCPを前面に出して、日本企業の基幹系クラウド需要を取り込みにいく。 同時にModel StudioとQwen3_7-Plusを日本リージョンで提供し、インフラ確保とAI実装支援を同じ契約面で束ねる戦い方へ踏み込んだ。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -807,10 +813,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-23 Mobility モビリティ モビリティ — 網を張る力と止まる条件 狙いは車両本体と電池を切り離し、導入コストと充電停止時間を同時に下げて大型EV普及の壁を崩すことだ。 読者視点では電池交換が、乗用車の実験論ではなく物流幹線の採算を左右するインフラ投資テーマへ進んだ意味が大きい。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -821,10 +828,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-23 Manufacturing 製造 製造 — 立地と供給力の置き方が競争力 新工場では高層ラックと組み立てライン効率化を入れ、在庫保管能力を旧4拠点比で約70%増とすることで欠品リスクと拠点間輸送を同時に縮める。 約4.2万平方メートルの敷地に追加拡張余地も残しており、需要増を前提にした先回り投資として日本市場向けの供給弾力性を高める。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -835,10 +843,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-23 Economy 経済 経済 — 中央銀行と供給網地政学 1987年のブラックマンデーや01年同時テロ後の利下げで市場を支え、米金融政策が危機時にどこまで踏み込むかの原型を作った。 一方で、長期の低金利と規制緩和が08年金融危機の土壌になったとの批判も根強く、市場安定と過剰リスク抑制の境界を改めて問い直す材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -849,10 +858,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-23 Gaming ゲーム ゲーム — 流通とIP運用が主題 AMD製セミカスタムCPU/GPUや16GB DDR5、8GB GDDR6 VRAMを備え、SteamOS前提でSteam Deckの6倍超性能を訴求する構成は、リビング向けPC市場の再挑戦として重い。 日本ではKOMODO経由の販売見込みにとどまり時期は未公表で、価格帯と供給量がどこまで日本市場に合うか、Steam Deck後の販路設計が次の焦点になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -904,6 +914,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

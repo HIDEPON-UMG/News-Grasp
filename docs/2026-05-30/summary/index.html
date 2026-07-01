@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-30)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-05-30 本日のテーマ考察 Editorial Summary Opus 4.8・ドル全面安・中国ロボタクシー拡大・Switch 2値上げ、週末に重なった5つの構造変化 Claude Opus 4.8リリースとPony.aiら中国勢のロボタクシー拡大が重なった土曜日、AI・モビリティ・FXが「競争から実装」へ移行する同一の構造変化を映した。NVIDIAとOpenAIの10GW契約、ECBの利上げ転換、任天堂のSwitch 2値上げ、コナミ9年連続最高益と、5カテゴリが互いに増幅し合う週の締めくくりとなった。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「Opus 4.8・ドル全面安・中国ロボタクシー拡大・Switch 2値上げ、週末に重なった5つの構造変化」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-05-30 為替 ドル円は米・イラン合意とECBタカ派転換で159.14円に下落。来週のECB政策会合が次のドル方向性を決める。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-05-30 AI Anthropic Opus 4.8とNVIDIA 10GW提携が同時に産業実装期の深化を宣言。計算資源の覇権競争が主舞台に。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-05-30 産業 コナミ・カプコン揃って最高益更新。日本ゲームIPのグローバル収益力が2026年も健在であることを証明した。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-05-30 総論 5分野に共通する「実装移行」の週 本日の5分野は「競争から実装へ」という同一の構造変化を互いに映し合った。AnthropicのOpus 4.8は信頼性を4倍に高め、Pony.aiら中国勢は商業ロボタクシー隊を一気に拡大し、NTTデータはAIコンサル組織を本格稼働させた。ドル円は159.14円で週を終え、コナミ・カプコンは揃って最高益を更新した。各業界で「誰が実装を制するか」が2026年の最大テーマであることが、この1日で改めて浮き彫りになった。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -349,7 +352,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-30 Foreign Exchange 為替 ドル全面安と中銀三重奏の週明け">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -403,7 +406,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-30 Artificial Intelligence AI Opus 4.8とNVIDIA 10GWが産業実装期を宣言">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -457,7 +460,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-30 IT &amp; Consulting IT コンサル業界の地殻変動が加速">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -511,7 +514,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-05-30 Mobility モビリティ 実装競争が空・地・電池の全方位へ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -565,7 +568,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-30 Economy 経済 本日休載">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -619,7 +622,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-30 Gaming ゲーム 日本IPのグローバル競争力">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -686,10 +689,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-30 Foreign Exchange 為替 為替 — ドル全面安と中銀三重奏の週明け 背景は米・イランによる停戦延長合意の報道で、地政学リスク後退がリスクオフ後退→ドル売りを呼んだ構図。 方向感が定まらないまま週末入り。来週はECB政策会合と米雇用統計が次のドル方向性を決めるカタリスト。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -700,10 +704,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-30 Artificial Intelligence AI AI — Opus 4.8とNVIDIA 10GWが産業実装期を宣言 Fast Modeは2.5倍高速・3倍廉価になり、数百サブエージェントを並列管理するDynamic Workflows機能を追加。 AIエージェントとしての完成度が一段高まった節目リリース。Messages APIのリアルタイム命令変更機能でエンタープライズ採用が加速。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -714,10 +719,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-30 IT &amp; Consulting IT IT — コンサル業界の地殻変動が加速 2030年EBITDA1.2兆円目標の達成に向け、AIを武器に従来型SIからAI-empowered New Valueモデルへのシフトを加速。 国内IT大手がSIerからコンサルタントへ転身する試みの中でも最大規模の構造変革。Accentureへのキャッチアップが明確な意図。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -728,10 +734,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-05-30 Mobility モビリティ モビリティ — 実装競争が空・地・電池の全方位へ トランプ政権のパイロットプログラムが商用化を後押しする一方、内紛はFAA型式認証のスケジュール遅延リスクを高めている。 勝者総取りになりがちな新市場で、各社は技術より先に「訴訟で相手を止める」戦術に傾きつつある。投資家心理への影響が次の焦点。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -742,10 +749,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-30 Economy 経済 経済 — 本日休載 経済カテゴリは土曜日のため本日休載。 経済カテゴリは土曜日のため本日休載。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -756,10 +764,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-30 Gaming ゲーム ゲーム — 日本IPのグローバル競争力 販売台数は19.86M台に達しており（2026年3月末）、Mario Kart World 14.70M本が単品タイトル史上最速の記録を更新中。 価格弾力性よりソフトウェアラインナップの密度で需要を維持する任天堂の戦略が今秋に試される。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -811,6 +820,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-18)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-05-18 本日のテーマ考察 Editorial Summary 週明けGoogle I/O前夜に世界は同時進行で動く — 5月第4週のクロスロード 本日4分野・20本のニュースから浮かび上がる最大のテーマは AI再編 と 円安の臨界点 の同時進行である。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「週明けGoogle I/O前夜に世界は同時進行で動く — 5月第4週のクロスロード」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-05-18 為替 BOJ利上げ確率77%でも円安は続く — 次の介入トリガーは159〜160円。ドル円 を動かすのは政策発表ではなく、財務省の「行動」だ。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-05-18 AI OpenAIの「スーパーアプリ」とAnthropicの「公共財」は相反しない。AIは同時に「商業プロダクト」と「社会インフラ」として拡大する。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-05-18 産業 Deloitteの職名廃止は終わりではなく始まり。「アナリスト」「コンサルタント」の定義が2026年末 には全産業で問われる。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-05-18 総論 同時多発のリセットが示す「転換の週」 Google I/O 前夜のこの日曜日、OpenAIの組織再編・Deloitteの職名廃止・BOJの利上げ先読みが同時に動いた。いずれも「昨日までの構造が今日終わる」という性格のニュースであり、週明けは前週と異なる地図で市場と産業が動き始める 可能性が高い。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -391,6 +394,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

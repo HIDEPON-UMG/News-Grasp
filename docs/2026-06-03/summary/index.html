@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-03)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-03 本日のテーマ考察 Editorial Summary AnthropicのIPOが示す資本の加速、トヨタのEV撤退が問いかける速度論 本日6分野・25本のニュースから浮かび上がるテーマは、Anthropicの電撃IPO申請とトヨタのEV車種廃止という一見無関係な2つの出来事が、実は「産業転換の速度」という共通軸で繋がっていることだ。AIはIPO評価額9650億ドル規模のマネーを一気に動員する一方で、自動車産業では超高速と立ち止まりが同時進行している。ドル円159円台の膠着、S&amp;P500の最高値更新とWaymoのスケール拡大もこの構図をさらに複雑にする。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「AnthropicのIPOが示す資本の加速、トヨタのEV撤退が問いかける速度論」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-06-03 AI AnthropicのIPO申請は単なる上場以上の意味を持つ。ARR $47Bという数字は「AIが主要産業になった」ことの経済的証明であり、SpaceX・OpenAI・Anthropicとの3兆ドル上場ラッシュは資本市場のAI化を完成させる最終局面かもしれない。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-06-03 為替 Warsh初FOMCを前に市場は静観。159円台は「介入警戒×タカ派期待」のせめぎ合いが生んだ仮の均衡点。6月17日の発言内容とFOMC後の為替動向が、今後数ヶ月の相場方向を決定する分岐点となる。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-06-03 モビリティ Waymoの10都市展開とトヨタのEV撤退が同日に報じられた。これは技術路線の「速い者勝ち」と「長期賭け」の二極化を象徴する。Waymoは今スケールし、トヨタは2027年の全固体電池に賭ける。どちらが正解かは2028年頃に判明するだろう。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-03 総論 AI資本と産業の分岐が同時進行した一日 今日のマーケットは「AI時代の資本主義の形成」と「旧来産業の現実的調整」が同時進行している。Anthropicの評価額9650億ドルIPO申請、NVIDIAの年間52兆円売上予測という数字が、もはやデジタル産業の規模を超えて「国家経済に匹敵する企業」の輪郭を描き始めている。一方でトヨタはEV車種を廃止し、現実路線への回帰を選択した。加速と減速が同日に報じられたことが今日の通底テーマだ。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -349,7 +352,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-03 Foreign Exchange 為替 159円台の膠着とWarsh初FOMCへの視線">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -403,7 +406,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-03 Artificial Intelligence AI Anthropic、OpenAI、SpaceX──3兆ドル上場ラッシュの幕開け">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -457,7 +460,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-03 IT &amp; Consulting IT アクセンチュアのAI受注最高と日本SIerのコンサル転換競争">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -511,7 +514,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-03 Mobility モビリティ Waymoが10都市制覇、トヨタが撤退した同じ日">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -565,7 +568,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-03 Economy 経済 S&amp;P500最高値更新の「狭い土台」とCPI3.8%のジレンマ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -619,7 +622,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-03 Gaming ゲーム ゲームカテゴリ本日休載">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -686,10 +689,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-03 Foreign Exchange 為替 為替 — 159円台の膠着とWarsh初FOMCへの視線 6月17日のWarsh新FRB議長による初回FOMC会合を前に、タカ派シフト期待からドルが底堅く推移。7月利上げ観測が新たな相場の重しに 政府・日銀が160円防衛ラインを堅持しており、投機的な上昇は介入警戒で抑制。USD/JPY は狭いレンジ内で方向感を探る展開が続く">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -700,10 +704,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-03 Artificial Intelligence AI AI — Anthropic、OpenAI、SpaceX──3兆ドル上場ラッシュの幕開け ARR $47B（前年末$10B比約5倍）の爆発的成長が上場の後押し。Series H 650億ドル調達完了直後の申請で時価総額1兆ドルデビューを狙う 2026年はAI上場ラッシュの年：SpaceX・OpenAI・Anthropicが3社同時に1兆ドル規模の上場を目指す前例なき状況に">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -714,10 +719,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-03 IT &amp; Consulting IT IT — アクセンチュアのAI受注最高と日本SIerのコンサル転換競争 AI関連で四半期booking $100M超の顧客が記録的な41社に達成。生成AIを活用した大型案件が急増しており、コンサル業界のAI化が加速 「規模の生成AI」時代に入った：大手顧客がPoC（概念実証）から本番展開へ移行し、Managed Services（$9.2B）が成長を牽引">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -728,10 +734,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-03 Mobility モビリティ モビリティ — Waymoが10都市制覇、トヨタが撤退した同じ日 トヨタはEV販売目標を100万台（当初150万台から大幅下方修正）に縮小。HEV・PHEVとの並走戦略に軸足を移す 世界最大の自動車メーカーの戦略転換が市場に与えるシグナルは大きく、純EV一辺倒の波が引く可能性を示唆している">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -742,10 +749,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-03 Economy 経済 経済 — S&amp;P500最高値更新の「狭い土台」とCPI3.8%のジレンマ 11セクター中2セクターが上昇（IT・エネルギー）、9セクターが下落。原油高によるインフレ懸念が広範なセクターの重しに 狭い土台の強さ：AI半導体という一点に集中した上昇が続いており、ハイテク以外への波及が見えない構造的懸念も浮上">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -756,10 +764,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-03 Gaming ゲーム ゲーム — ゲームカテゴリ本日休載 昨日6月2日発売の FF7リバース Switch 2版の初週売上動向は、木曜（6月5日）に取り上げる予定。 任天堂のSwitch 2向け6月ラインナップ発表の反響についても同日に分析予定。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -811,6 +820,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-03)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-05-03 本日のテーマ考察 Editorial Summary Pentagon除外・Sonnet 4.8・介入後の円安・Switch 2ソフト攻勢——制限と加速が交差する日曜 本日4分野・20本のニュースから浮かび上がる最大のテーマは AI地政学の再編 と GW後の相場再起動 の同時進行である。PentagonがAnthropicを排除し、為替介入が160円に蓋をし、コンサルが数字でAI特需を証明し、Switch 2が5月ソフト攻勢で欧米回復を狙う。制限する力と加速する力が同じ24時間の中に共存した日だ。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「Pentagon除外・Sonnet 4.8・介入後の円安・Switch 2ソフト攻勢——制限と加速が交差する日曜」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-05-03 為替 為替介入で160円が当面の天井となったが構造的円安は継続。FRB利下げ・日銀利上げという二つの条件が揃うまで円高転換は幻想。GW明けの6月日銀会合が真の分岐点。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-05-03 AI PentagonのAnthropicへの「サプライチェーンリスク」認定はAI業界最大の地政学的イベント。安全guardrailと軍事活用の折り合いが今後の業界標準を決める。Anthropicの次の一手に注目。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-05-03 産業 Accenture Q2過去最高受注+BCG AI収益25%——コンサルのAI特需が「予測から実績へ」。McKinsey/PwC/KPMGのAIエージェント基盤競争が本格化し、ファームの価値基準が「人員数」から「AIの実装力」へと移行中。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-05-03 総論 「制限」が新たな競争軸になった日 今日の4つのカテゴリに共通するのは「何かが制限された」という構図だ。USD/JPYは160円に上限が設けられ、AnthropicはPentagon市場から締め出され、Switch 2は欧米普及に苦戦し、コンサル業界は従来型の雇用モデルを縮小している。しかし制限は悲観を意味しない。为替介入は新たな均衡を模索する過程であり、Anthropicの孤立はAI安全性原則の価値を証明し、Switch 2の苦戦は5月ソフト攻勢によって覆されようとしている。制限の裏側に加速が隠れている局面だ。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -391,6 +394,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

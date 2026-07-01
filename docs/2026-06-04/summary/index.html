@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-04)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-04 本日のテーマ考察 Editorial Summary 介入か利上げかの二択が迫る160円攻防、コーディングAI多極化、ロボタクシー台数格差が同時進行する木曜 本日7分野・31本が示す最大の構図はBOJ・FRBの6月決戦とAIコーディング多極化の同時進行だ。為替は160円防衛ラインに押し込まれ、明日の雇用統計が分水嶺となる。AIではMicrosoftがOpenAI依存脱却へ自社モデルを投入し、モビリティではWaymoが週50万ライドでTeslaを量の戦いで圧倒しつつある。製造・経済・ゲームでも構造変化が同時進行する。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「介入か利上げかの二択が迫る160円攻防、コーディングAI多極化、ロボタクシー台数格差が同時進行する木曜」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-06-04 為替 BOJ6月16日の利上げ確率66%とWarsh初FOMC（6/17）が重なる「二重試練の週」。160円防衛ラインを巡る日米金融当局の攻防は明日の雇用統計を起点に始まる。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-06-04 AI Microsoft MAI-Code-1-Flash投入とGoogleのGemini 3.5 Flash Search昇格で、コーディングAI市場の多極化が加速。AnthropicのIPO申請と同時進行するエージェント課金分離が業界収益構造を再定義する。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-06-04 産業 Waymo 週50万ライド×10都市に対しTesla 39台という台数の格差100倍超。BYDは4nm ADASチップ量産開始で垂直統合を完成形に近づけ、日本の産業連合は時間を失っている。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-04 総論 6月第1週終盤、3つの「分水嶺」が収束する木曜 今日は160円攻防・雇用統計前夜・AIコーディング覇権という3本の軸が同時に先鋭化した一日。為替・AI・自動運転の3分野で既存の優位者への挑戦が加速しており、「誰が守りに入り、誰が攻めに出ているか」が各セクターで読み取れる。中国は製造・EV・半導体で日米への技術侵食を続け、構造的な競争優位の再編が静かに進んでいる。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -351,7 +354,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-04 Foreign Exchange 為替 160円前後で「二重試練」に備える攻防">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -405,7 +408,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-04 Artificial Intelligence AI 「OpenAI依存脱却」が技術競争の新テーマに浮上">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -459,7 +462,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-04 IT &amp; Consulting IT DeployCoが「コンサルの解体業者」として上陸">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -513,7 +516,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-04 Mobility モビリティ Waymoが「量」でTeslaを圧倒、中国が第三極に浮上">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -567,7 +570,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-04 Manufacturing 製造 BYDの垂直統合完成、日本の統合交渉は足踏み">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -621,7 +624,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #C9A155;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #C9A155;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-04 Economy 明日へ 明日の雇用統計が「利上げか据え置きか」の判定試合">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -673,7 +676,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-04 Gaming ゲーム 任天堂の「懐古×新作×レトロ」三刀流が6月全開">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -740,10 +743,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-04 Foreign Exchange 為替 為替 — 160円前後で「二重試練」に備える攻防 6月16日のBOJ（スワップ市場66%利上げ織り込み）と6月17日のFOMC（ウォーシュタカ派初会合）が相場を挟む「バイナリー」な政策週 介入か利上げかの二択が迫る 介入の発動ラインは直近の160.00〜160.73円レンジ上端とみられており、5月末以降の¥11.73兆円介入効果が既に薄れていることが短期勢の攻勢材料に">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -754,10 +758,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-04 Artificial Intelligence AI AI — 「OpenAI依存脱却」が技術競争の新テーマに浮上 OpenAIへのコスト依存と競合リスクを軽減する戦略的自立化の一手。MicrosoftはAzure経由でOpenAIモデルを再販しながら並行して自社モデルを育成する二重構造を採用 「SaaSからAIへ」の体内化：クラウド大手が自社AIを持つことでモデルプロバイダーへの依存度を下げる動きが加速。GitHub Copilotの課金体系も6月1日からAIクレジット制に移行">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -768,10 +773,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-04 IT &amp; Consulting IT IT — DeployCoが「コンサルの解体業者」として上陸 AI咨询会社Tomoroを買収し150名のForward Deployed Engineer（FDE）を即日投入。クライアント企業内部に入り込んでワークフローをゼロから再構築するモデルはコンサルの知識販売型と根本的に異なる 「独占を崩す楔」：BCG・McKinseyが戦略・オペモデル担当、Accenture・Capgeminiがシステム統合担当という旧来の分業体制に、OpenAIがシステム実装の直接受注という楔を打ち込んだ形">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -782,10 +788,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-04 Mobility モビリティ モビリティ — Waymoが「量」でTeslaを圧倒、中国が第三極に浮上 ダラスとヒューストンは4月のローンチから車両数がゼロ成長（3台と6台のまま）。マスクは「FSD v15のリライト完了後（2026年末〜2027年初）に本格増車」と述べ、5都市への拡大も延期 「版図は広げたが兵士がいない」：オースティン全域カバーは戦略的訴求力があるが、Waymoが同10都市で週50万ライドを提供しているのと並べると拡大速度の差は歴然">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -796,10 +803,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-04 Manufacturing 製造 製造 — BYDの垂直統合完成、日本の統合交渉は足踏み 80 TOPS（毎秒80兆回演算）の処理性能を持ち、NVIDIA DRIVEやHorizon Roboticsに対抗。BYD-TSMC・MediaTek協業の4nm次世代コックピットチップとは別ライン 垂直統合の最終章：EV本体→電池（FinDreams）→パワー半導体→ADASチップ、とサプライチェーン全体を内製化。「中国EVメーカー」から「車載半導体メーカー」へのパラダイムシフトが完成しつつある">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -810,10 +818,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #C9A155;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #C9A155;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-04 Economy 明日へ 経済 — 明日の雇用統計が「利上げか据え置きか」の判定試合 明日の5月雇用統計が+130,000人超なら利上げシナリオが現実化し、ドル円・S&amp;P500・長期金利が連動して動くリスクがある。 「熱すぎる経済が市場に火をつける可能性」は排除できない。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>明日へ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 明日へ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -824,10 +833,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-04 Gaming ゲーム ゲーム — 任天堂の「懐古×新作×レトロ」三刀流が6月全開 6月10日までのDL版早期購入セールで20%オフ（5,262円）。PS5版の続編として期待される今作はFF7リメイク三部作の第2章 Switch 2が「高グラフィック大作の受け皿」になれるか：初週数字が任天堂とスクエニの戦略に直結。1週目2万本なら「プレスリリース戦略の再考必至」という見方も（昨日の事前報道）">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -879,6 +889,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-07)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-07 本日のテーマ考察 Editorial Summary BOJとFRBが逆方向を向く6月、AnthropicがOpenAIを抜いて最大AI企業の座に就き、Waymoとテスラが世界各地で自動運転の旗を立てる。 2026年6月第1週末、複数の戦場で「覇権争い」が同時進行している。為替市場では日銀とFRBの政策乖離が歴史的な金利差縮小局面を迎えつつあり、160円という一線が攻防の舞台になっている。AI市場ではAnthropicの電撃IPO申請がOpenAIとの評価逆転という象徴的な出来事を引き起こした。モビリティではTeslaが念願の中国FSD展開を実現した一方、Waymoが週100万回ライドと20都市という数字を掲げてスケール競争に突入した。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「BOJとFRBが逆方向を向く6月、AnthropicがOpenAIを抜いて最大AI企業の座に就き、Waymoとテスラが世界各地で自動運転の旗を立てる。」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-06-07 FX 6/16-17の超過密週（BOJ利上げ+FOMC同時開催）でUSD/JPYの介入ゲームが最終局面へ。160円の攻防が来週の最大の市場イベント。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-06-07 AI AnthropicがOpenAIを抜いて最大AI企業に就任しIPO申請。AI CEO4社の生物兵器警告と合わせ、AI産業が「成長」と「リスク管理」を同時に走る構造が鮮明に。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-06-07 産業 TeslaのFSD中国展開・Waymoの1M目標・FF7完結編発表——複数の産業で覇権が同時移行する週末。最大の問いは「スケールが決める」時代に誰が量産の覇者になるか。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-07 総論 覇権の複数同時移行 2026年6月は複数の産業で覇権が動く月になった。AI・FX・モビリティ・ゲームの各戦場で「誰が次の覇者か」という問いが同時に浮上し、週末だけでAnthropicのIPO申請・TeslaのFSD中国解禁・FF7完結編発表という3大ニュースが重なった。共通のテーマは「スケールが覇権を決める」という構造シフトだ。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -345,7 +348,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-07 Foreign Exchange 為替 超過密週への備え">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -399,7 +402,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-07 Artificial Intelligence AI IPO戦争と安全問題の同時進行">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -453,7 +456,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-07 Mobility モビリティ 自動運転の地政学">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -507,7 +510,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-07 Gaming ゲーム 6月発表祭りの中核週">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -574,10 +577,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-07 Foreign Exchange 為替 為替 — 超過密週への備え USD/JPY 160円が介入トリガーとして市場が意識する節目で、大蔵省が「decisive action」を繰り返し警告。直近2ヶ月で11.7兆円介入済み。 円の命運は6/16-17の双方イベントが同時到来する「超過密週」で決まる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -588,10 +592,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-07 Artificial Intelligence AI AI — IPO戦争と安全問題の同時進行 合成DNAのオンライン注文・AI支援設計への強制スクリーニングを求め、Twist BioscienceやAnsa Biotechnologiesも署名——産業界横断の規制要求として異例。 競合4社が脅威で連帯した日——AIリスクガバナンスが新局面に入った。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -602,10 +607,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-07 Mobility モビリティ モビリティ — 自動運転の地政学 先行する小鵬・Huawei ADS 3.0・BYDはすでに成熟した都市型NOA機能で城塞を構築中——中国独自の複雑交通環境への適応がTeslaの次の試練。 中国FSD解禁は開戦の合図——ローカルADAS勢との技術戦争が今週から本格化する。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -616,10 +622,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-07 Gaming ゲーム ゲーム — 6月発表祭りの中核週 PS5・Xbox Series X/S・PC・Nintendo Switch 2同時リリース（Spring 2027）、ヴィンセント・ヴァレンタインとシド・ハイウインドが操作可能キャラとして復活——ファン待望の完結編。 FF7リメイク三部作の完結——スクエニが2027年の最大タイトルを全プラットフォーム同時投入することでSony独占時代の終幕を宣言。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -671,6 +678,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

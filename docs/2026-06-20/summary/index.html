@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-20)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-20 本日のテーマ考察 Editorial Summary 自動化と制御境界 AIの操作自動化、FXの金利再評価、Mobilityの運行実証、Manufacturingの装置規制、GameのIP運営は、別々のニュースに見えて自動化を広げるほど制御点が重要になるという同じ問いを含んでいる。何を速くするかだけでは足りず、どこで止めるか、誰が監査するかが実務上の差になる。今日の号は、スピードと安全弁をセットで読む朝だった。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「自動化と制御境界」</p>
@@ -263,7 +266,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-summary-search="2026-06-20 AI・IT OpenAI、Microsoft、Googleは、自動化の入口を広げる一方で、広告・権限・統制の境界を同時に問われている。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -274,7 +277,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-summary-search="2026-06-20 為替・経済・製造 FRB、BOE、ASML、Lam Researchは、金利と供給網の制御点がまだ再配置中であることを示した。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -285,7 +288,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-06-20 モビリティ・ゲーム Waymo、日本郵便、holo Indie、MAPPAは、運用導線を設計する側が普及速度とIP寿命を左右する流れを映している。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -300,7 +303,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-20 総論 自動化は制御境界の設計へ移った OpenAIの広告テストとCodexの操作録画、Microsoftの自律エージェント、Waymoのリコールは、今日は自動化の効用だけでなく権限と停止条件をどう置くかを問う材料になった。自動で回る仕組みは増えるが、判断不能なまま任せると事故や不信に変わる。導入側は便利さより先に、制御境界を図にできるかを見られる。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -374,7 +377,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-20 Foreign Exchange 為替 ドル高は金利再評価と介入警戒の綱引き">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -428,7 +431,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-20 Artificial Intelligence AI 操作の自動化ほど信頼境界が前に出る">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -482,7 +485,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-20 IT &amp; Consulting IT 門番型の統制と人材育成が実装を支える">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -536,7 +539,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-20 Mobility モビリティ 自動運転は車両より運行制御で問われる">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -590,7 +593,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-20 Manufacturing 製造 装置と素材の支配点が供給網を決める">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -644,7 +647,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-20 Economy 経済 物価と金利は地域ごとに速度が違う">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -698,7 +701,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-20 Gaming ゲーム IP運営は発売前から導線を作る">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -765,10 +768,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-20 Foreign Exchange 為替 為替 — ドル高は金利再評価と介入警戒の綱引き FRBを軸に、金利スワップ市場が9月までの0.25ポイント利上げを織り込み、原油高でドル買いが再加速。金利差と通貨防衛のどちらを先に見るかという観点で見ると、このカードは為替面の判断材料になる。 FRBを軸に、金利スワップ市場が9月までの0.25ポイント利上げを織り込み、原油高でドル買いが再加速。金利差と通貨防衛のどちらを先に見るかという観点で見ると、このカードは為替面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -779,10 +783,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-20 Artificial Intelligence AI AI — 操作の自動化ほど信頼境界が前に出る OpenAIを軸に、OpenAIが無料版とGo向けに広告表示を試験導入。自動化を広げる設計と信頼境界をどう分けるかという観点で見ると、このカードはAI面の判断材料になる。 OpenAIを軸に、OpenAIが無料版とGo向けに広告表示を試験導入。自動化を広げる設計と信頼境界をどう分けるかという観点で見ると、このカードはAI面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -793,10 +798,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-20 IT &amp; Consulting IT IT — 門番型の統制と人材育成が実装を支える Accentureを軸に、アクセンチュア急落を受け、NECや富士通など国内ITサービス株にもAI収益性懸念の連想売りが波及した。AI統制と業務実装を同じ運用面で見られるかという観点で見ると、このカードはIT面の判断材料になる。 Accentureを軸に、アクセンチュア急落を受け、NECや富士通など国内ITサービス株にもAI収益性懸念の連想売りが波及した。AI統制と業務実装を同じ運用面で見られるかという観点で見ると、このカードはIT面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -807,10 +813,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-20 Mobility モビリティ モビリティ — 自動運転は車両より運行制御で問われる Waymoを軸に、Waymoが工事区間誤進入を受け約3900台をリコール。車両性能より運行制御とインフラ接続を優先できるかという観点で見ると、このカードはモビリティ面の判断材料になる。 Waymoを軸に、Waymoが工事区間誤進入を受け約3900台をリコール。車両性能より運行制御とインフラ接続を優先できるかという観点で見ると、このカードはモビリティ面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -821,10 +828,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-20 Manufacturing 製造 製造 — 装置と素材の支配点が供給網を決める 東京エレクトロンを軸に、中国の装置国産化が進み、日系大手5社の26年3月期対中売上は初の前年比減。装置供給と素材工程の主導権を誰が握るかという観点で見ると、このカードは製造面の判断材料になる。 東京エレクトロンを軸に、中国の装置国産化が進み、日系大手5社の26年3月期対中売上は初の前年比減。装置供給と素材工程の主導権を誰が握るかという観点で見ると、このカードは製造面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -835,10 +843,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-20 Economy 経済 経済 — 物価と金利は地域ごとに速度が違う 利下げを軸に、ロシア中銀が9会合連続で利下げしたが、インフレはなお目標超え。物価と金利の再調整をどの地域から読むかという観点で見ると、このカードは経済面の判断材料になる。 利下げを軸に、ロシア中銀が9会合連続で利下げしたが、インフレはなお目標超え。物価と金利の再調整をどの地域から読むかという観点で見ると、このカードは経済面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -849,10 +858,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-20 Gaming ゲーム ゲーム — IP運営は発売前から導線を作る カバーを軸に、カバーの二次創作ゲームブランド「holo Indie」が応募審査を年3回のシーズン制へ移行し、総DL300万超の実績。IPを作品単体でなく運営導線として伸ばせるかという観点で見ると、このカードはゲーム面の判断材料になる。 カバーを軸に、カバーの二次創作ゲームブランド「holo Indie」が応募審査を年3回のシーズン制へ移行し、総DL300万超の実績。IPを作品単体でなく運営導線として伸ばせるかという観点で見ると、このカードはゲーム面の判断材料になる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -904,6 +914,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

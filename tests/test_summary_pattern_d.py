@@ -123,8 +123,14 @@ def built_summary(tmp_path_factory) -> str:
 def test_dc_masthead_replaces_legacy_brand_zone(built_summary: str):
     """カテゴリー別と同じ brand-zone + lens-nav を使い、旧 summary 専用スイッチは残さない。"""
     assert 'class="brand-zone brand-zone--summary"' in built_summary
+    masthead = built_summary.split('<nav class="lens-nav lens-nav--summary">', 1)[0]
     assert 'class="lens-nav lens-nav--summary"' in built_summary
     assert 'class="lens-pill lens-pill--essay is-active"' in built_summary
+    assert 'class="brand-search brand-search--summary"' in masthead
+    assert 'id="summary-search"' in masthead
+    assert "brand-zone__summary-mark" not in masthead
+    assert "SECTION" not in masthead
+    assert "本日のテーマ考察" not in masthead
     assert "News Grasp" in built_summary
     assert "LENSES" in built_summary
     assert "ESSAY" in built_summary
@@ -135,7 +141,8 @@ def test_dc_masthead_replaces_legacy_brand_zone(built_summary: str):
 def test_hero_dark_navy(built_summary: str):
     """DC正本の hero に theme / at-a-glance / flow がある。"""
     assert 'class="summary-hero"' in built_summary
-    assert "本日のテーマ考察 / EDITORIAL SUMMARY" in built_summary
+    assert "EDITORIAL SUMMARY" in built_summary
+    assert "本日のテーマ考察 / EDITORIAL SUMMARY" not in built_summary
     assert "本日のテーマ考察" in built_summary
     assert "AT A GLANCE" in built_summary
     assert "制度・標準" in built_summary
@@ -263,6 +270,12 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     emph_block = _last_css_block(css, ".summary-lane-card p .emph-bold")
     assert "background: color-mix(in srgb, var(--c) 18%, transparent)" in emph_block
     assert "color: color-mix(in srgb, var(--c) 82%, var(--color-navy))" in emph_block
+    assert 'class="summary-tomorrow__cat"' in built_summary
+    assert re.search(r'<span class="summary-tomorrow__cat">\s*<span class="summary-tomorrow__glyph"[^>]*>.*?</span>\s*<span>[A-Z &]+ / ', built_summary, re.S)
+    tomorrow_cat_start = css.rindex(".summary-tomorrow__cat {\n")
+    tomorrow_cat_block = css[tomorrow_cat_start:css.index("}", tomorrow_cat_start)]
+    assert "background: var(--c)" in tomorrow_cat_block
+    assert "padding: 5px 12px 5px 10px" in tomorrow_cat_block
     watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
     assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
     assert not re.search(r"\.summary-tomorrow__cells\s+span\s*\{", css)

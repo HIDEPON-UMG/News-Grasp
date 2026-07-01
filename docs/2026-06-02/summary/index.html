@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-02)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-02 本日のテーマ考察 Editorial Summary Anthropicが評価額でOpenAIを超え、日経平均は66,329円——構造変化と一時的高揚をどう見分けるか Anthropicが評価額$965BでOpenAIを超えIPO申請、日経平均は66,329円で史上最高値を更新——2026年6月2日は「AIの兆ドル化」と「株高・円安の共振」が同時進行した日として記録される。為替・株・AI・モビリティ・ゲームの5分野で同じ構図が反復し、構造的な変化が一時的な投機熱と混在している。BYD Gods Eyeが自動運転保険で先制、MicrosoftはClaude Codeを廃止しCopilot CLIへ——技術覇権の境界線は毎日塗り替えられている。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「Anthropicが評価額でOpenAIを超え、日経平均は66,329円——構造変化と一時的高揚をどう見分けるか」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-06-02 AI Anthropicの評価額$965B達成はAI産業が「兆ドル時代」に突入した象徴。IPOを機に資本・人材・技術のさらなる集中が加速する。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #8E2A19;" data-category-id="economy">
+        <article class="summary-conclusion" style="--c: #8E2A19;" data-category-id="economy" data-summary-search="2026-06-02 経済 日経平均66,329円はAI・半導体主導の構造的上昇だが、ウォーシュFRBのタカ派転換が「下押しトリガー」として常に背後に控える。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-06-02 モビリティ BYD Gods Eyeの事故補償全引き受けは、自動運転の差別化軸を「技術性能」から「責任の可視化」にシフトさせる歴史的な転換点となりうる。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-02 総論 AI兆ドル時代の幕開けと複合上昇の構造 AnthropicのIPO申請（評価額$965B）と日経平均66,329円の同日達成は、AIと資本市場の深部で同じ力学が働いていることを示す。金利差による円安→輸出株高→AI関連株への資金流入という連鎖が、個別の動きを超えた構造的な上昇トレンドを形成している。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -349,7 +352,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-02 Foreign Exchange 為替 160円の攻防とウォーシュFOMCの分水嶺">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -403,7 +406,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-02 Artificial Intelligence AI Anthropic 9650億ドルの意味——評価額競争はIPOへ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -457,7 +460,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-02 IT &amp; Consulting IT NTTデータ×OpenAIが示す日本ITの再定義">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -511,7 +514,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-02 Mobility モビリティ BYD保険革命とWaymoの台数圧勝——自動運転の現実">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -565,7 +568,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-02 Economy 経済 日経平均66,329円の根拠と不確実性の同居">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -619,7 +622,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-02 Gaming ゲーム FFVII Rebirth発売前夜——Switch 2の真価が試される">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -686,10 +689,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-02 Foreign Exchange 為替 為替 — 160円の攻防とウォーシュFOMCの分水嶺 CME FedWatchでは6月据え置き確率が99%を維持している一方、年内の利上げ観測が浮上。4月非農業部門雇用者数115,000人増も雇用の底堅さを示した。 日米金利差（約2.9%ポイント）は円売りを誘引し、ドル円は159〜160円台で推移。FOMCの結果が年後半の為替方向感を決める最大の分岐点となる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -700,10 +704,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-02 Artificial Intelligence AI AI — Anthropic 9650億ドルの意味——評価額競争はIPOへ 躍進の原動力はClaude Code。エンタープライズ顧客急増で年初来収益率は130%増を見込み、月換算収益は$47Bラン。今秋（10月想定）のNASDAQ上場が有力視されている。 前回2月ラウンド（$380B）からわずか4か月での評価額2.5倍は、AIマーケットの重力が変化したことを示す数字。IPOレース上のライバルOpenAIへのプレッシャーも一段と高まった。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -714,10 +719,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-02 IT &amp; Consulting IT IT — NTTデータ×OpenAIが示す日本ITの再定義 提携の核心はAIエージェントの共同開発・グローバル展開。NTTデータが持つ業界特化の業務知識とOpenAIのモデル力を掛け合わせ、金融・製造・公共向けに垂直統合ソリューションを展開する方針。 NTT DATA Foresight Day 2026で公表されたグローバル戦略では、「コンサル×AIの統合」を軸に、日本の伝統的SIer業態を根本から変えるという変革の意志が明示された。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -728,10 +734,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-02 Mobility モビリティ モビリティ — BYD保険革命とWaymoの台数圧勝——自動運転の現実 BYDによると前版でスマートパーキング使用率が21%→93%に急増し、事故率は低水準を維持。レベル2.5相当のシステム（LiDAR搭載）で、この保険戦略は「信頼経済」の真の差別化を狙う。 レースの構図は変化した。技術の速度ではなく責任の取り方が選択基準になれば、規制環境の整った日欧市場でBYDが優位に立つシナリオが現実化し始める。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -742,10 +749,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-02 Economy 経済 経済 — 日経平均66,329円の根拠と不確実性の同居 上昇の背景は原油安（米イラン停戦合意観測）、円安継続（輸出株への恩恵）、AI投資ブームの3重奏。MLCC（積層セラミックコンデンサ）関連などインフラ素材にも波及している。 野村証券ストラテジストは「ハイボラ相場の入口」と警告。過熱感はあるが上値を狙う環境は継続しており、週明けからの崩れには慎重な検証が必要と指摘する。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -756,10 +764,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-02 Gaming ゲーム ゲーム — FFVII Rebirth発売前夜——Switch 2の真価が試される 本作は「FFVIIリメイクプロジェクト」3部作の第2弾。PS5版は2024年2月に発売済みで、Switch 2版はグラフィック最適化とポータブルプレイ対応が追加された移植版となる。 ただし前作Switch 2版「FFVIIリメイクインターグレード」（2026年1月発売）の初週パッケージ売上はわずか23,428本にとどまり、スクエニのSwitch 2戦略に対する市場の懐疑が今作の初週成績の試金石となる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -811,6 +820,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

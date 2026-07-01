@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-06)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-06 本日のテーマ考察 Editorial Summary Gemma 4 12B とロボタクシー一般開放 — AI と MaaS が同じ日に民主化の扉を開いた 本日5分野・23本のニュースを貫く通底テーマは Gemma 4 12B のオープンソース化 と Waymo の5都市一般開放 に象徴される「テクノロジーの民主化」と「AGI タイムラインの短縮」の同時進行である。AI ではGoogle DeepMindがフロンティアモデルをラップトップで動かせる水準まで引き下げる一方、デミス・ハサビスが AGI 達成を 2029 年と明言し産業・教育・政策への再設計圧力を高めた。モビリティでは Waymo がマイアミ・オーランドの招待制を廃止し「乗りたい人が今すぐ乗れる」フェーズに突入。為替は FOMC を前に EUR/USD が 1.16 台に後退し、BOJ 6月利上げへの期待が 160 円圏のドル高を綱引きする。IT コンサルでは OpenAI Frontier Alliance が大手コンサルを通じてエンタープライズ AI の流通を制度化した。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「Gemma 4 12B とロボタクシー一般開放 — AI と MaaS が同じ日に民主化の扉を開いた」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-06-06 AI Google DeepMind の Gemma 4 12B がエッジ推論の「実用下限」を更新。オープン vs. プロプライエタリの戦場はモデル性能からエコシステム占有率へ移行。ハサビス AGI 2029 宣言が政策・教育・産業再編を促す時計を早める。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-06-06 モビリティ Waymo がマイアミ・オーランドを一般開放し2026年内5都市展開へ。「招待制→誰でも乗れる」の転換は商業 MaaS のティッピングポイント通過を示す。BYD は世界販売で Tesla を50万台 vs 37万台で圧倒し EV 市場の主役交代が鮮明。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-06-06 産業×為替 OpenAI Frontier Alliance がコンサル大手を公認流通チャネル化し、エンタープライズ AI の制度化が完了。EUR/USD 1.16 台割れと USD/JPY 160 円圏は6/16-17 FOMC が転換点になるか注目。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-06 総論 本日の総論 Gemma 4 12B がクラウド不要で手元の PC に動く時代を告げる一方、ハサビス CEO は AGI を 2029〜2030 年に前倒し。GPT-5.6 が6月内にリリースされ、AI サイクルは週単位で回転するフェーズに入った。モビリティでは Waymo が5都市での一般開放で「招待制」という最後の障壁を取り除いた。カプコン はバイオハザード 690 万本を確定し2ケタ増収。ポケモン チャンピオンズ の6/17リリースと Nintendo Direct 6/9 開催で今週末はゲーム情報も目が離せない。土曜は製造・経済が休載だが、AI・モビリティ・ゲームの3軸だけで2026年後半の方向感が凝縮された一日。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -351,7 +354,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-06 Foreign Exchange 為替 EUR/USD 1.16 台割れと FOMC 前の綱引き">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -405,7 +408,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-06 Artificial Intelligence AI Gemma 4 12B、AGI 2029、そして GPT-5.6 の加速サイクル">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -459,7 +462,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-06 IT &amp; Consulting IT OpenAI Frontier Alliance と富士通フライホイールがコンサル地図を再描">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -513,7 +516,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-06 Mobility モビリティ Waymo 一般開放と BYD の量販攻勢">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -567,7 +570,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-06 Manufacturing 製造 製造は本日休載（平日のみ）">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -621,7 +624,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-06 Economy 経済 経済は本日休載（平日のみ）">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -675,7 +678,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-06 Gaming ゲーム Nintendo Direct 6/9 確定とカプコン好決算の週末">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -742,10 +745,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-06 Foreign Exchange 為替 為替 — EUR/USD 1.16 台割れと FOMC 前の綱引き 6月16-17日の FOMC では政策金利の据え置きが 99% 超の確率で織り込み済み。ただし年内利下げ確率は 69.6% を維持しており、長期的な利下げ軌道への期待がドル上値を制限。 雇用強さが利下げを遠ざけ、それがドル高→円安を加速する二重構造が継続。EUR/USD は ECB 利上げ VS FRB 据え置きの綱引きで 1.15〜1.17 のレンジ推移が当面の公算。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -756,10 +760,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-06 Artificial Intelligence AI AI — Gemma 4 12B、AGI 2029、そして GPT-5.6 の加速サイクル パラメータ数は上位の Gemma 4 26B MoE の 半分以下のメモリで、ほぼ同等の推論性能を達成。一般的なノート PC や開発用ワークステーションで動作するクラウド不要 AIを実現。 エッジ推論の「実用下限」を更新した節目のリリース。Anthropic のプロプライエタリ路線に対し、Google は一般開発者を取り込むオープン戦略でエコシステム占有率を獲りにきた。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -770,10 +775,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-06 IT &amp; Consulting IT IT — OpenAI Frontier Alliance と富士通フライホイールがコンサル地図を再描 アクセンチュアの AI Platform 群（Azure OpenAI Service 活用）を TEPCO の基幹インフラに統合。保全計画 AI アシスタントと需要予測エンジンを先行導入するとしている。 インフラ企業の AI 採用はコンサル業界の &#34;次の大型市場&#34; を示す指標。電力・鉄道・水道などのパブリックインフラが本格参入することで、エンタープライズ AI の市場規模がもう一段拡張する局面。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -784,10 +790,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-06 Mobility モビリティ モビリティ — Waymo 一般開放と BYD の量販攻勢 Tesla の Cybercab ロボタクシーサービスはテキサスの限定エリアで試験中にとどまり、都市展開の速度差が顕在化。Waymo の走行データ蓄積量は現時点で最も競争力の高い参入障壁と見られている。 自動運転の「都市カバレッジ競争」が本格化した転換点。運行都市数が増えるほど学習データが積み上がり、安全性と信頼性の優位が指数的に拡大する構造が確立しつつある。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -798,10 +805,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-06 Manufacturing 製造 製造 — 製造は本日休載（平日のみ） 直近の2026-06-05-Manufacturingではトヨタ LF-ZC 量産中止とデンソー SiC 半導体の中計発表をお届けしました。 直近の2026-06-05-Manufacturingではトヨタ LF-ZC 量産中止とデンソー SiC 半導体の中計発表をお届けしました。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -812,10 +820,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-06 Economy 経済 経済 — 経済は本日休載（平日のみ） 直近の2026-06-05-Economyでは日経平均 68,000 円台突破と SoftBank の仏 AI DC 投資を掲載しました。 直近の2026-06-05-Economyでは日経平均 68,000 円台突破と SoftBank の仏 AI DC 投資を掲載しました。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -826,10 +835,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-06 Gaming ゲーム ゲーム — Nintendo Direct 6/9 確定とカプコン好決算の週末 メインゲームプレイは1対1のターン制バトルで、歴代ポケモンを収集・強化しリーグ戦を勝ち抜くシステム。TCG (ポケモンカード) を意識したデジタル実装でカード連動機能も確認されている。 モバイル×コレクション×対戦の三重構造は長期マネタイズに最適化された設計。ポケモン GO の位置情報路線と異なる純粋対戦軸で、コアゲーマー層への訴求を狙う。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -881,6 +891,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-28)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-05-28 本日のテーマ考察 Editorial Summary PCE高止まりが市場の分水嶺となる日、AnthropicはBig4を取り込みエコシステムの覇権を狙う 本日5分野・25本のニュースから浮かびあがる最大のテーマは 高インフレの踊り場 と Anthropicの資本攻勢 が同日に収斂したことだ。米4月PCEとGDP第2次推計が21:30JSTに公表され、タカ派ならドル高・株安の反転、ハト派なら日経7万円台シナリオの現実化と180度違う翌朝を迎える可能性がある。同時にAnthropicはSequoia主導$300億調達・KPMG同盟・Claude for Small Business・Stainless買収と四連打を決め、AIのエコシステム支配を一気に固める史上最大級の週を演出した。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「PCE高止まりが市場の分水嶺となる日、AnthropicはBig4を取り込みエコシステムの覇権を狙う」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-05-28 為替 本日21:30JSTの米PCEが利下げか利上げかの分水嶺。3.8%CPI追認ならUSD/JPY 160円接近、予想内収束ならドル売り転換の好機。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-05-28 AI Anthropicの$300億調達・Stainless買収・KPMG同盟・Small Businessの四連打は「資金・インフラ・企業・消費者」の全4層を一週間で押さえた史上初の攻勢。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-05-28 モビリティ Waymo 3,000台 vs Tesla 20台——自動運転の実力差150倍超が確定し、BYDの10%値引きで日系OEMの生存戦略が問い直される週。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-05-28 総論 インフレとAIが同日に分岐点を迎える PCE・GDP・Anthropic資本攻勢という三本の軸が本日2026年5月28日に収斂した。インフレは高止まりか鎮静化かの答えが今夜出る。AIはエコシステムの主導権争いが資本・M&amp;A・アライアンスという三次元で同時展開された。モビリティではWaymo vs Tesla の実力差が公式化し、BYD価格戦争が日系OEMの生存を問い直す。この三つが交差する水曜日は、年後半の相場観を決める分水嶺になる可能性がある。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -349,7 +352,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-28 Foreign Exchange 為替 PCE公開前夜のドル円は「待機即応型」">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -403,7 +406,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-28 Artificial Intelligence AI Anthropicの四連打が示すエコシステム支配の法則">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -457,7 +460,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-28 IT &amp; Consulting IT Big 4のAI軸足がAnthropicに傾く">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -511,7 +514,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-05-28 Mobility モビリティ 自動運転の「実力差」が公式化した週">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -565,7 +568,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-28 Economy 経済 日経65,800、PCE次第で7万円か調整か">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -619,7 +622,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-28 Gaming ゲーム 本日休載（水曜日）">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -686,10 +689,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-28 Foreign Exchange 為替 為替 — PCE公開前夜のドル円は「待機即応型」 コアPCEが3月の3.2%から上振れした場合、FRBの年内利下げシナリオは実質的に崩壊し、タカ派路線が固定化される可能性が高い。 一方でホルムズ海峡再開交渉による原油安がインフレ押し下げ材料として機能し、PCEが予想内に収まればドル売り転換の好機となる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -700,10 +704,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-28 Artificial Intelligence AI AI — Anthropicの四連打が示すエコシステム支配の法則 ダリオ・アモデイCEOは「ARRが2月$140億から4月$300億へ12週で2倍」と報告し、ChatGPTとの差を縮めながらエンタープライズ市場での圧倒的な伸びを強調。 AIの覇権は資金力と生態系の掌握で決まる段階に入り、Anthropicが今週だけで調達・製品・M&amp;Aを三連打した事実が示すのはスピードを競うフェーズの到達点だ。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -714,10 +719,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-28 IT &amp; Consulting IT IT — Big 4のAI軸足がAnthropicに傾く PEファーム・税務クライアント向けの「KPMG Blaze」はClaude Codeでレガシーシステムのモダナイズを自動化し、エージェントワークフロー構築が従来数週間→数分に短縮されると実演。 Big 4がAnthropicの旗艦エンタープライズパートナーに並ぶ流れは、Claudeが「コンサル業界の標準AI」として定着しつつある証左であり、競合コンサルへのブランド・スイッチコストをさらに高める。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -728,10 +734,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-05-28 Mobility モビリティ モビリティ — 自動運転の「実力差」が公式化した週 Alphabet傘下が今年調達した$160億（バリュエーション$1260億）の大部分はMagna International製造拠点（アリゾナ州メサ）整備に充当され、年産2,000台超の拡大生産ラインが始動中。 Waymoが「2026年はロボタクシー元年」という業界テーゼを単独で証明しつつある一方、Tesla・Waymoという二強の格差が可視化され、自動運転市場の「勝者総取り」構造が鮮明になってきた。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -742,10 +749,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-28 Economy 経済 経済 — 日経65,800、PCE次第で7万円か調整か 東証大引けの主役はNVIDIA決算好調を追い風に動く半導体関連とソフトバンクの+8%超で、外国人投資家の買い継続と円安効果が押し上げ要因として機能している。 本日21:30JSTに米PCEとGDPが同時公開されるため、後場は様子見ムードが台頭——タカ派データなら翌日の調整圧力、ハト派なら7万円台シナリオの現実味が増すという二択の瀬戸際に立つ。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -756,10 +764,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-28 Gaming ゲーム ゲーム — 本日休載（水曜日） 次回木曜（2026-05-29）にGame枠を再開。 Nintendo Switch 2値上げ後市場の動向、SIE PlayStation State of Play（6月2日）の続報は翌日号を参照。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -811,6 +820,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

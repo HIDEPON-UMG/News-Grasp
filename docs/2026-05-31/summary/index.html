@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-31)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-05-31 本日のテーマ考察 Editorial Summary Claude Opus 4.8の1,000並列が自律AIの新標準を宣言し、ドル円159円台が引き続き緊張をはらむ日曜版 本日5分野・25件のニュースから浮かび上がる通底テーマはClaude Opus 4.8のDynamic Workflows（1,000並列）という「AIが自らチームになる」転換と、ドル円159円台という「人間が介入ラインを守り続ける」現実の対照だ。WaymoのOjaiロボタクシーが週50万件・11都市に達し、任天堂Switch 2が2,000万台目前という3分野の「量」が加速する一方で、エンタープライズAIの80%が業績改善なしというギャップは「量より質」の課題を突き刺す。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「Claude Opus 4.8の1,000並列が自律AIの新標準を宣言し、ドル円159円台が引き続き緊張をはらむ日曜版」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-05-31 AI Claude Opus 4.8のDynamic Workflows（1,000並列）とDreaming（セッション間学習）が「AIがチームになる」時代を宣言。エンタープライズAI導入の「量から質」への転換を加速する触媒になるか注目。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility">
+        <article class="summary-conclusion" style="--c: #3A7B8C;" data-category-id="mobility" data-summary-search="2026-05-31 モビリティ Waymo Ojai ($20,000以下・週50万ライド・577台)対Tesla Robotaxi (42台・事故17件)という公式数字の対比が、ロボタクシー競争の「信頼性フェーズ」への移行を宣言した。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-05-31 為替 ドル円159円台と日銀6月利上げ期待75%が共存。週明けの東京CPI速報・財務省介入実績公表が「介入か利上げか」という円安対応の構造を決める決定的なデータポイントとなる。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-05-31 総論 量のAIと質の現実が同時に動いた週末 Claude Opus 4.8の1,000並列Dynamic Workflows・Waymoの週50万ライド・Switch 2累計1,986万台という「量」の到達点が揃い踏みした週末だ。その一方でMcKinseyの調査が「GenAIプロジェクト80%が業績改善なし」という「質のギャップ」を突きつける。量の到達と質の不在が共存するという2026年AIシーンの根本矛盾が最も鮮明に表れた週として記録される。量から質への転換点がいつ来るかが、今後6か月の焦点だ。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -349,7 +352,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-31 Foreign Exchange 為替 ドル円159円台——三つの綱引きが週末も続く">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -403,7 +406,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-31 Artificial Intelligence AI Claude Opus 4.8の1,000並列——AIがチームになった">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -457,7 +460,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-31 IT &amp; Consulting IT Accenture $5.9Bと80%ギャップ——コンサルが橋を渡す">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -511,7 +514,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-05-31 Mobility モビリティ Ojai・577対42・17件——数字が語るロボタクシー現在地">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -565,7 +568,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-31 Economy 経済 経済カテゴリは本日休載（日曜版）">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -619,7 +622,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-31 Gaming ゲーム Switch 2・スプラレイダース・HoYoverse——夏布陣が固まる">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -686,10 +689,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-31 Foreign Exchange 為替 為替 — ドル円159円台——三つの綱引きが週末も続く 米・イラン60日間停戦延長合意報道を受けドル安が優勢となる局面も見られたが、上値は介入警戒で抑制され方向感に乏しい展開が続く。 均衡なき均衡という状態でドル円は週明けへ突入。東京CPI速報値と財務省介入実績公表が6月の相場方向を決定づける。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -700,10 +704,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-31 Artificial Intelligence AI AI — Claude Opus 4.8の1,000並列——AIがチームになった 新機能「Dynamic Workflows」は最大1,000サブエージェント並列実行を可能にし、数十万行規模のコードベース移行を一括自動化。「Dreaming」はセッション間で記憶を整理・学習しエージェントが使うほど賢くなる仕組み。 エージェント・オーケストレーションの制高点をAnthropicが握り、OpenAI・Geminiとの差別化軸が「長期自律作業の信頼性」に集約されてきた。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -714,10 +719,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-31 IT &amp; Consulting IT IT — Accenture $5.9Bと80%ギャップ——コンサルが橋を渡す CEO Julie Sweetが「エンタープライズ全体でAIを採用しスケールするターニングポイント」を宣言し、FY2026のGenAI受注$9.3B超を予想する強気見通しを提示。 「AI戦略なき企業」がコンサルの新客層として浮上しており、GenAIの実装支援という需要が従来型SIやERP導入より単価・成長率ともに高い事業へとAccentureを転換させつつある。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -728,10 +734,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-05-31 Mobility モビリティ モビリティ — Ojai・577対42・17件——数字が語るロボタクシー現在地 Waymoは11都市・1,400平方マイルをカバーし週50万件の有償ライドを達成済み。TeslaはAustin拡大後にDallas・Houstonへ展開中だが事故17件の公開も同時進行。 576台の差は「信頼性」の蓄積差でもある。Waymoの完全自動運転（Level 4）とTeslaの監視付き自動運転（Level 2.5〜3）という技術アーキテクチャの根本差異が実際の数字として可視化された。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -742,10 +749,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-31 Economy 経済 経済 — 経済カテゴリは本日休載（日曜版） 週明け月曜（6/1）は米国PCEデフレーター・ISM製造業指数の発表が予定されており、インフレ継続vs景気鈍化という二択の判断材料が揃う。 来週の相場方向はPCEとISMが決めるという意味で、月曜開幕が週の全体像を左右する重要なデータポイントとなる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -756,10 +764,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-31 Gaming ゲーム ゲーム — Switch 2・スプラレイダース・HoYoverse——夏布陣が固まる Mario Kart World 1,470万本・Donkey Kong Bananza 452万本・Pokemon Pokopia 400万本超がトップ3を形成。値上げ後も完売基調が継続し高価格ハードの需要弾力性の低さを示した。 Switch 2の成功はSwitch初代の再現を超えているという評価が各社アナリストから出ており、任天堂が次の世代でも「エンタメ産業のプリンター（キャッシュカウ）」としての地位を維持するか問われる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -811,6 +820,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

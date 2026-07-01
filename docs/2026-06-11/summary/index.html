@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 06-11)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-06-11 本日のテーマ考察 Editorial Summary ECB利上げ再開・CPI高止まり・Nintendo直撃発表が同じ週に重なった引き締めとリニューアルの日。 ECBの3年ぶり利上げ再開と任天堂の「ニンテンドーダイレクト」翌日報道が重なった。金融政策の引き締め局面ではECB・BOJ・Fedが同時期に政策転換の局面にあり、為替・株式に複合的な圧力をかけている。ゲーム領域では「ゼルダの伝説 時のオカリナ」Switch 2フルリメイクという28年ぶりの復活発表が業界を席巻した。AI分野ではClaude Fable 5の後続波及と企業AI支出$7,500/月/人という衝撃データが並び、デジタル経済の変容が具体的な数値で可視化されている。引き締めとリニューアルが同時に進行する局面では、変化に乗り遅れたプレーヤーが最も大きなコストを払う。以下、各カテゴリを横断して読み解く。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「ECB利上げ再開・CPI高止まり・Nintendo直撃発表が同じ週に重なった引き締めとリニューアルの日。」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-summary-search="2026-06-11 為替×経済 ECBの3年ぶり利上げとFed据え置きが同週に並び、USD/JPYは160円台・EUR/USD 1.1540の攻防へ。BOJ 6月16日利上げが次の分岐点となる。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-summary-search="2026-06-11 AI×IT Claude Fable 5の後続波及と企業AI支出$7,500/月/人という衝撃データが示すのは、AIはもはや「使う」ではなく「どれだけのインフラを確保するか」の競争に移ったということ。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #5E3D8C;" data-category-id="game">
+        <article class="summary-conclusion" style="--c: #5E3D8C;" data-category-id="game" data-summary-search="2026-06-11 ゲーム 任天堂のNintendo Direct 2026.6.9はゼルダ時のオカリナ28年ぶりリメイク・KH4確定・33タイトル公開で、Switch 2後半戦のコンテンツ供給を一挙に可視化した。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-06-11 総論 引き締めとリニューアルが同時に動いた日 ECBの利上げ再開と任天堂のSwitch 2大型発表が同じ週に並んだ今日は、「金融環境の変化」と「消費・エンタメ需要の更新」が同時に起きた日として記録される。ECB・BOJ・Fedという3つの中央銀行が引き締め・据え置き・様子見の各フェーズにありながら、いずれも「2026年後半の分岐点」に立っている。ゲーム産業では28年ぶりのゼルダリメイクが世代を跨いだ消費の復活を示唆している。引き締めとリニューアルは相反しているようで、両者が重なる局面こそ新しい市場構造が生まれる。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -351,7 +354,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-11 Foreign Exchange 為替 ECB利上げは「終わりの始まり」か「材料出尽くし」か">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -405,7 +408,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-11 Artificial Intelligence AI Fable 5反響継続とAI安全ガバナンスの亀裂">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -459,7 +462,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-11 IT &amp; Consulting IT エンタープライズAI支出$7,500の衝撃と欧州実装加速">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -513,7 +516,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-11 Mobility モビリティ BYDがFordを超え、Waymoがベンチマークを再定義">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§04</span>
@@ -567,7 +570,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-11 Manufacturing 製造 TSMCの5月売上+30.1%が半導体需要の床を証明">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§05</span>
@@ -621,7 +624,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-11 Economy 経済 CPI4.2%とFedの沈黙が7月以降の焦点を決める">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -675,7 +678,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-11 Gaming ゲーム ゼルダ28年ぶりの復活とSwitch 2後半戦の可視化">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -742,10 +745,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-06-11 Foreign Exchange 為替 為替 — ECB利上げは「終わりの始まり」か「材料出尽くし」か ラガルド総裁の記者会見では「データ依存」を強調しつつ7月追加利上げへの言質は避けると予測。EUR/USD の反応は「利上げ確定後の利食い売り」シナリオが警戒される。 USD/JPY は160.33付近で推移。ECB利上げ後にユーロ高・ドル安の流れが生じれば一時的に円高方向の波及も起こりえる。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -756,10 +760,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-06-11 Artificial Intelligence AI AI — Fable 5反響継続とAI安全ガバナンスの亀裂 gHacks分析では「コーディング能力において前世代Opus 4.8を大幅に超え、Claude Code連携でのエージェント精度が飛躍的に向上」と評価。 AnthropicのIPO申請（評価額$965B）と同時期に公開されており、企業ユーザー獲得を加速させる戦略的タイミングとして機能している。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -770,10 +775,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-06-11 IT &amp; Consulting IT IT — エンタープライズAI支出$7,500の衝撃と欧州実装加速 支出の中心は LLM API（OpenAI/Anthropic/Google）、AIコーディングアシスタント（Claude Code/GitHub Copilot）、エージェント管理基盤の三つ。 一方でAI ROIの定量評価は難しく、「使えば使うほど良い」という信仰的な導入が中小企業に広がりつつある状況への警鐘でもある。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -784,10 +790,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎">
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-06-11 Mobility モビリティ モビリティ — BYDがFordを超え、Waymoがベンチマークを再定義 BYDは純EV（BEV）だけでなくプラグインハイブリッド（DM）が中国市場で爆発的に普及。中国EV普及率は80%到達が近いとBYD幹部が発言。 一方でQ1純利益は前年比55.4%減（CN¥4.1B）と収益性に課題。中国国内での価格競争が激化し、利益よりシェア拡大を優先するフェーズにある。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>モビリティ
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -798,10 +805,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢">
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-06-11 Manufacturing 製造 製造 — TSMCの5月売上+30.1%が半導体需要の床を証明 AI向け先端プロセス（N3/N5）の需要が好調で、Apple・NVIDIA・Anthropic/Google向けのTPU/GPU製造がフル稼働を継続。 2026年通年売上高ガイダンスは前年比+25〜30%成長を維持。熊本第2工場（JASM 2）の建設加速も追い風になる見込み。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>製造
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -812,10 +820,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-06-11 Economy 経済 経済 — CPI4.2%とFedの沈黙が7月以降の焦点を決める コアCPI（食品・エネルギー除く）は+3.4%と落ち着いており、エネルギー価格が一時的に剥落すればインフレ鈍化トレンドは維持との見方が優勢。 Fed は6月FOMCで据え置き確定済み。7月以降の利上げ再開シナリオは後退したが、高金利長期化シナリオは維持される。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -826,10 +835,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-06-11 Gaming ゲーム ゲーム — ゼルダ28年ぶりの復活とSwitch 2後半戦の可視化 ティザー映像では幼少期リンクが森に横たわるシーンが映し出され、3DS版（2011年）と異なる全面リビルドであることをファミ通が確認。ゲームシステム・追加要素の詳細は後日発表。 歴代ゼルダ最高傑作と評される作品の28年ぶりの蘇りは、Switch 2後半戦の&#34;キラーコンテンツ戦略&#34;の核心。任天堂がリメイク路線でSwitch 2需要を確保する意図が鮮明になった。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -881,6 +891,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

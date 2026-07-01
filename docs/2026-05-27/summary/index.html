@@ -109,10 +109,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 05-27)"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
@@ -164,10 +166,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="2026-05-27 本日のテーマ考察 Editorial Summary AIの技術フロンティアとエネルギー地政学が同時に動く週、FOMCとPCEが全市場の針路を決める 本日4分野・20本超のニュースから浮かび上がる最大テーマは AI統合フェーズへの移行 と 地政学リスク緩和の好機 の同時進行である。Claude MythosがProject Glasswingで1万件超の重大脆弱性を自律発見し、AIの能力が安全保障領域に侵食。OpenAI DeployCoはコンサル業界の心臓部に参入し、PwC・Accentureの地位を揺るがす。一方でホルムズ海峡再開交渉が進み、原油安・株高の連鎖がFRBの利下げ路線を早める好機ともなり得る。5/28 FOMC議事録と5/30 PCEが、このすべての行方を左右する。">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
 
         <p class="summary-hero__subtitle">「AIの技術フロンティアとエネルギー地政学が同時に動く週、FOMCとPCEが全市場の針路を決める」</p>
@@ -240,7 +243,7 @@
       </div>
       <div class="summary-conclusions__grid">
 
-        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx">
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-05-27 FX USD/JPY 158円台で方向感なく週明けへ。5/28 FOMC議事録がドル高・円安の次の基準点を決める。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">01</div>
             <div class="summary-conclusion__chip">
@@ -251,7 +254,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai">
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-05-27 AI Claude Mythosが1万件超の脆弱性を自律検出。AIの戦場はモデル性能から「実装・安全・エコシステム統合」へ本格シフト。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">02</div>
             <div class="summary-conclusion__chip">
@@ -262,7 +265,7 @@
           <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
         </article>
 
-        <article class="summary-conclusion" style="--c: #2E6B52;">
+        <article class="summary-conclusion" style="--c: #2E6B52;" data-summary-search="2026-05-27 産業 OpenAI DeployCoのコンサル参入でIT大手の収益モデルが根底から問われる局面。富士通・NTTデータの国内特化戦略が試される。">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">03</div>
             <div class="summary-conclusion__chip">
@@ -277,7 +280,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;">
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-05-27 総論 AI実装・地政学・金融政策が同時に動く複合週 本日4カテゴリのニュースは、AIが「技術」から「インフラ」へ成熟しつつある段階を如実に示す。Claude Mythosの脆弱性自律発見はAI安全保障の主戦場が変わった証左であり、OpenAI DeployCoはコンサルという人間産業の核心に斬り込んだ。同時にホルムズ海峡再開交渉は原油安を通じてインフレ鎮静化を後押しし、全市場が5/28 FOMC議事録待ちというフェーズへ突入した。">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -347,7 +350,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
 
-    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-27 Foreign Exchange 為替 158円台の膠着、FOMC待ちで方向感なく週明けへ">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§01</span>
@@ -401,7 +404,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-27 Artificial Intelligence AI Mythos・Spark・DeployCoで「AIが人間の領域に踏み込む」週">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§02</span>
@@ -455,7 +458,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-27 IT &amp; Consulting IT OpenAI DeployCoがコンサル聖域に参入">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§03</span>
@@ -509,7 +512,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-27 Economy 経済 Micron 1兆ドル・日経65,408円・5/28 FOMC議事録が今週を決める">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§06</span>
@@ -563,7 +566,7 @@
       </div>
     </article>
 
-    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-27 Gaming ゲーム 本日休載">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§07</span>
@@ -630,10 +633,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
 
-        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥">
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-05-27 Foreign Exchange 為替 為替 — 158円台の膠着、FOMC待ちで方向感なく週明けへ 介入ライン160円が再び意識され始め、財務省・日銀の牽制発言も増加。4月末・5月頭の円買い介入（推定5兆円規模）の効果が薄れつつある段階。 市場の次の焦点は5/28 FOMC議事録。タカ派・ハト派の温度差が確認されれば、ドル円の方向感が一時的に定まる可能性。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>為替
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
           </div>
@@ -644,10 +648,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆">
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-05-27 Artificial Intelligence AI AI — Mythos・Spark・DeployCoで「AIが人間の領域に踏み込む」週 特筆すべきは27年前のFreeBSD RCE脆弱性（NFS経由でroot取得可能）を完全自律で発見・エクスプロイト作成した事例。wolfSSL（数十億台搭載）では偽証明書生成の手口を実証済み。脆弱性発見の容易さと修正の難しさが新たなボトルネックと指摘。 Anthropicは一般公開の前提として「現時点でどの企業も構築できていないセーフガード」の実現を挙げており、リスクと能力の非対称問題に正面から向き合う姿勢を示した。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>AI
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -658,10 +663,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗">
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-05-27 IT &amp; Consulting IT IT — OpenAI DeployCoがコンサル聖域に参入 FDE（Forward Deployed Engineers）150名が顧客企業に直接常駐し、AIワークフローを既存システムに組み込む——これはアクセンチュア・マッキンゼーが数十年間独占してきたビジネスモデルそのもの。コンサル業界が自ら育てた競合が牙を剥く構図。 Tomoro社の買収でFDE人材を即時補強。企業の「実験的AI → 本番運用」移行を年単位から月単位に短縮する狙いで、$3750億のエンタープライズIT市場を直接狙う。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>IT
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
           </div>
@@ -672,10 +678,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■">
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-05-27 Economy 経済 経済 — Micron 1兆ドル・日経65,408円・5/28 FOMC議事録が今週を決める AI半導体・データセンター需要の強さが米企業業績を牽引。S&amp;P500全体のQ1 EPSは+27%（4年ぶり好決算）の恩恵が今も市場心理を強気に保つ。半導体がバロメーターとなる相場構造が定着。 ただしダウ工業株は-118ドルと逆行。テック集中vs.景気敏感の二極化が一段と鮮明で、割高懸念も燻る。5/28 FOMC議事録が過熱を冷ます材料になり得る。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>経済
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -686,10 +693,11 @@
           </div>
         </article>
 
-        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶">
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-05-27 Gaming ゲーム ゲーム — 本日休載 火・木・土・日がGame掲載日。 次回は5/28（木）に、Nintendo・SQUARE ENIXを中心とした最新動向をお届けする。">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>ゲーム
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
           </div>
@@ -741,6 +749,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>

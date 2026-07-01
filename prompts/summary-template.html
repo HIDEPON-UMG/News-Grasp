@@ -65,10 +65,12 @@
         <div class="brand-zone__eyebrow">━━ THE</div>
         <h1 class="brand-zone__name"><a href="{{ base_url }}/">News Grasp</a><img class="brand-icon" src="{{ base_url }}/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
       </div>
-      <div class="brand-zone__summary-mark">
-        <span>SECTION</span>
-        <strong>本日のテーマ考察</strong>
-      </div>
+      <label class="brand-search brand-search--summary">
+        <span class="brand-search__icon">⌕</span>
+        <input id="summary-search" type="search" autocomplete="off"
+               placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, {{ date[5:] }})"
+               aria-label="本文を検索">
+      </label>
     </div>
     <nav class="brand-zone__nav">
       <a href="{{ base_url }}/">HOME</a>
@@ -96,10 +98,11 @@
 </nav>
 
 <main>
-  <section class="summary-hero">
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+  <section class="summary-hero" data-summary-search="{{ date }} 本日のテーマ考察 Editorial Summary {{ hero_subtitle|render_emph|striptags }} {{ hero_lead|render_emph|striptags }}">
     <div class="summary-hero__inner">
       <div class="summary-hero__main">
-        <div class="summary-hero__kicker">本日のテーマ考察 / EDITORIAL SUMMARY</div>
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
         <h1 class="summary-hero__title">本日のテーマ考察</h1>
         {% if hero_subtitle %}
         <p class="summary-hero__subtitle">「{{ hero_subtitle|render_emph }}」</p>
@@ -173,7 +176,7 @@
       </div>
       <div class="summary-conclusions__grid">
         {% for t in takeaways[:3] %}
-        <article class="summary-conclusion" style="--c: {{ t.color }};"{% if t.category_id %} data-category-id="{{ t.category_id }}"{% endif %}>
+        <article class="summary-conclusion" style="--c: {{ t.color }};"{% if t.category_id %} data-category-id="{{ t.category_id }}"{% endif %} data-summary-search="{{ date }} {{ t.tag }} {{ t.text|render_emph|striptags }}">
           <div class="summary-conclusion__top">
             <div class="summary-conclusion__n">{{ "%02d"|format(t.n) }}</div>
             <div class="summary-conclusion__chip">
@@ -188,7 +191,7 @@
     </div>
   </section>
 
-  <section class="summary-synthesis" aria-label="総論" style="--c: {{ synthesis_color|default('#1A1A1A') }};">
+  <section class="summary-synthesis" aria-label="総論" style="--c: {{ synthesis_color|default('#1A1A1A') }};" data-summary-search="{{ date }} 総論 {{ synthesis_title|default('本日の横断論点')|render_emph|striptags }} {{ synthesis_ctx.lead|striptags }}">
     <div class="summary-synthesis__inner">
       <div class="summary-synthesis__label">
         <span>§ 00</span>
@@ -230,7 +233,7 @@
 
   <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
     {% for sec in category_rows %}
-    <article class="summary-category" style="--c: {{ sec.color }};" data-category-id="{{ sec.category_id }}" data-category-glyph="{{ sec.category_glyph }}">
+    <article class="summary-category" style="--c: {{ sec.color }};" data-category-id="{{ sec.category_id }}" data-category-glyph="{{ sec.category_glyph }}" data-summary-search="{{ date }} {{ sec.category_label }} {{ sec.tag }} {{ sec.display_title|render_emph|striptags }}">
       <div class="summary-category__inner">
         <header class="summary-category__head">
           <span class="summary-category__no">§{{ "%02d"|format(sec.display_number) }}</span>
@@ -275,10 +278,11 @@
       <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
       <div class="summary-tomorrow__rows">
         {% for row in tomorrow_rows %}
-        <article class="summary-tomorrow__row" style="--c: {{ row.color }};" data-category-id="{{ row.category_id }}" data-category-glyph="{{ row.glyph }}">
+        <article class="summary-tomorrow__row" style="--c: {{ row.color }};" data-category-id="{{ row.category_id }}" data-category-glyph="{{ row.glyph }}" data-summary-search="{{ date }} {{ row.category_label }} {{ row.tag }} {{ row.watch|striptags }} {{ row.signal|striptags }} {{ row.implication|striptags }}">
           <div class="summary-tomorrow__meta">
             <span class="summary-tomorrow__cat">
-              <span class="summary-tomorrow__glyph" aria-hidden="true">{{ row.glyph }}</span>{{ row.tag }}
+              <span class="summary-tomorrow__glyph" aria-hidden="true">{{ row.glyph }}</span>
+              <span>{{ row.category_label|upper }} / {{ row.tag }}</span>
             </span>
             <em class="summary-tomorrow__heat summary-tomorrow__heat--{{ row.heat|lower }}">{{ row.heat }}</em>
           </div>
@@ -330,6 +334,24 @@
       });
     });
   });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
 })();
 </script>
 </body>
