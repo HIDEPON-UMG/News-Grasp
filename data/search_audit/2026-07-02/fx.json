@@ -1,0 +1,52 @@
+{
+  "date": "2026-07-02",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "\"FRBの利上げ観測、短期金融市場で拡大－ショートポジションに偏り\" Bloomberg",
+    "\"アングル：40年ぶり円安で介入警戒、「暗黒月曜」再現はあるか 変動マグマ蓄積\" Newsweek",
+    "\"マクロスコープ：企業の積極的な価格転嫁姿勢、日銀正常化を後押し 政権との調整は難路\" Newsweek",
+    "\"米FRBウォーシュ議長 7月の利上げ検討は明言せず\" TBS",
+    "\"ドル売り優勢に ウォーシュ議長の発言に反応＝ＮＹ為替\" みんかぶ"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "午後3時のドルは162円後半で小動き、ＦＲＢ議長の発言に注目",
+      "url": "https://www.newsweekjapan.jp/articles/-/327173",
+      "reason": "同一論点の後続材料として03:40の発言記事と23:26の反応記事を優先"
+    },
+    {
+      "title": "円安に耐えるFX勢 ロスカット164~165円か、介入効果を左右",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBvWWpMcWU3ZnVTUHpxdWF3YVJ4Zi1sS0VUWWxrMTl2YkxGOGlNRHFDMjVtUzQyRFM1S2JheUVFVDYycThieGgtcEVKaE9tSWFYQW4tTXVxT1Nrb29jS0RYc1hfZHRvZXhzWHhDSg?oc=5",
+      "reason": "元記事URLを確認できず、Google News中継のままでは採用不可"
+    },
+    {
+      "title": "ドル円、１６３円を視野に 財務官発言も反応一時的＝ＮＹ為替序盤",
+      "url": "https://fx.minkabu.jp/news/371971",
+      "reason": "同一セッションの続報で23:26更新の反応記事を採用"
+    },
+    {
+      "title": "県内景況感、高水準を維持 日銀6月短観、価格転嫁の進展映す",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNbXdrUzdnRHFfQXBiQWtjcEpfdVJzVjdqWkxybldoT05QYTJtMWFpN3c1MVhha3lWYm1SaUtvTXdlbUhnb3RiZUVmTTN2QTMxNTlOSHZaVkRQUmh5WWFOS1ZIcUZqcDg3NW5TbzNETXZidG9JTE5yeE91T2RuWUh1SDhoN0NGVmlDWGNqQk80aTc2N3RKWld6aXQxRnE3UkZ2YWFuWklJRjY?oc=5",
+      "reason": "地域短観の再掲色が強く、全国論点を扱うReuters macroを採用"
+    },
+    {
+      "title": "円安が記録的水準に 影響と今後は？ 食品は7月も値上がり スーパーや輸入商社では？",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFA1R3ZXSWRLWnBYOWtiY1EtdjJaOW1fbXBsTks5LW05S2ZCbW43My02X0JCUHVmNjJMMnBFU1dfWWFVUXNlQ19ma3B1NG5HSG0tVGxySmdVcndWLUZLUW9kb3ZsYXh5QUU?oc=5",
+      "reason": "生活者向け影響整理として有益だが、為替専属号では政策・市場直接材料を優先"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-02/fx.filtered.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

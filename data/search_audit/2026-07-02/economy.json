@@ -1,0 +1,49 @@
+{
+  "date": "2026-07-02",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "\"米FRBウォーシュ議長 7月の利上げ検討は明言せず\" newsdig.tbs.co.jp",
+    "\"きょう日印首脳会談 経済安全保障分野などで協力確認\" newsdig.tbs.co.jp",
+    "site:newsdig.tbs.co.jp list/withbloomberg 金融",
+    "\"パンにカップ麺・ウインナーも…7月値上げは2566品目\" newsdig.tbs.co.jp"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "ＦＲＢ議長、利上げ巡り予断示さず インフレ目標2％維持を強調",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPbEhFZlhMTktCVFlVRUxXVGVCNFR6dzR1eTJaeHQxNkZZTDg0Y3JSakFGdmJ3cU8tT3YtaXVralBUSURGLVNHQUdSUTh6LW9UQUlkR0wyR0VZRkNaQk9oZEtMQmZ2Ukdzd3BuX0I0Q3d3VEd3WVp0VlZkdEgtWEp1NA?oc=5",
+      "reason": "同テーマのTBS/Bloomberg転載で元記事単位URLと公開日時を確保できたため差し替え"
+    },
+    {
+      "title": "ユーロ圏のインフレ・成長リスク、より広範に均衡＝ＥＣＢ総裁",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQeklRekktakVyZXRCd3lBNERDSnBUSVFqYU9teVdrOEZzbHBNOFpndndFY3RuQ2hJb2U2R0tKM1hGdVNzRFhfLWlyV3hoajctdE1oY3dyM056WDVsYW5nQ1lZNjNPMS1kRDFCNkwxUnZIeFA2NUd0VXVtOEh0ZkpCNA?oc=5",
+      "reason": "ラガルド発言単体より6月CPI実績値の記事の方が読者判断に直結すると判断"
+    },
+    {
+      "title": "日銀、増える為替への言及 米国発「円安インフレ」に身構え",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE4yVm1WbzFnNjRmb0JmUlRONzctb2lNTWd1SF9jSkRVcmNEaGdrXy1uMExMcGVGbG94UktnZGh2a3JJclFXdTVmZ3RZU0t2YjcwdEM2OVpkMWJ0dHNwWVJJNEE2WFk2TTY4aE9hRg?oc=5",
+      "reason": "円安と家計物価への波及を扱うTBS記事と論点が重なり、直接影響が大きい後者を採用"
+    },
+    {
+      "title": "ウォーシュFRB議長、フォワードガイダンス示さない考え改めて表明",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE12cndaOU9PY21PM2FvMThwVGg4cV80Z1pWamZQazlmSEM1RmpYakpyd0FmZkU1amdkdW8wYnlOZDVPbDJ4X2VXalM0TTRNdGJWSjlJVFFPSTBtaGRKeE9mMVJnTldja2hKMDZPUUhWZXdJNXpCYWk0?oc=5",
+      "reason": "同一主題のTBS/Bloomberg記事で7月会合への示唆とインフレ認識を一度に押さえられるため統合"
+    },
+    {
+      "title": "（シン・経済圏）大転売時代、公正なルールは？ 空港駐車場やビザ申請予約枠・食玩・マンション…",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFBIeGhFN2V6QTRmUWxGUzVGbklXQmdnR1kwMVEwMkFqdlFRazV6UDZEQUNpU3VSNmZ5OXJ6c1FBQ0dfR1RxQkdzS2gwUHowQ1hxeUIweDZNcmxnS1B6?oc=5",
+      "reason": "特集性が高く当日のマクロ政策・物価・金融市場の主線より優先度を下げた"
+    }
+  ]
+}

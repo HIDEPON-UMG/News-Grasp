@@ -74,3 +74,5 @@
 | 2026-06-29 | ✅DeepDive | Gemini制限、AI計算資源の主戦場 | 約20分 | 0 | daily deepdive / 波及(06-28 Codex浸透→AI利用増の計算資源制約へ)・主役共有(06-20 AI実行基盤) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件枠で停止・採用URL5件(FT・Alphabet IR・Meta IR×2・Google Docs) / git add・commit・pushなし |
 | 2026-06-30 | ✅DeepDive | 円安162円目前、介入再試験 | 約20分 | 0 | daily deepdive / 続報(06-23 円安161円台→161円90銭付近と米雇用統計前の介入判断へ)・主役共有(06-22 BOJ 1%・Fed高金利) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL6件(Barron's・MOF・Trading Economics・BOJ・Fed・BLS) / git add・commit・pushなし |
 | 2026-07-01 | ✅DeepDive | Joby・Toyota、空飛ぶ量産の入口へ | 約20分 | 0 | daily deepdive / 新規テーマ(Joby×Toyota eVTOL製造JV) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL6件(Toyota公式・SEC×2・Joby公式×2・FAA) / git add・commit・pushなし |
+| 2026-07-02 | 休載 | 前日DeepDiveと実質同一候補のため新規深掘りなし | - | 0 | deepdive skip / Joby×Toyota eVTOL製造JVは2026-07-01に生成済み、新材料なしの重複を除外 / git add・commit・pushなし |
+| 2026-07-02 | ✅DeepDive | PlayStation、物理流通の終点へ | 約20分 | 0 | daily deepdive / 波及(06-25 公開ルールと供給線→PSN/物理流通/所有権へ論点移動) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL4件(TechCrunch・Sony FY25.4Q・Sony FY25.1Q・Sony FY24.4Q) / git add・commit・pushなし |

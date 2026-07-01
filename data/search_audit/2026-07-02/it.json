@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-02",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:s.kabutan.jp \"メタが上昇 クラウドインフラ事業の構想を進めていると伝わる\"",
+    "site:www.ntt-east.co.jp \"ひかりクラウド電話 for Zoom Phone を提供開始\"",
+    "site:prtimes.jp \"Assuredクラウド評価 金融版\"",
+    "site:www.pwc.com \"PwCコンサルティング、2027年度執行体制を発表\"",
+    "site:www.iij.ad.jp \"世界のサイバーセキュリティトレンド（2026年7月号）\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "nec 商品 NEC ハイブリッドIT環境のエッジサーバとしてシステムの安定稼働を支援する Express5800シリーズ 新商品を発売 日本電気 株式会社のプレスリリース",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE81YXV4ck5GTWk5TTc2MFFCR2cwRVRxcGRicmJaVUdvT0VEb1lDLTJRWTU2WmdodXVvM1NsSFpCRXFVNUdweVI3Q0VHVFhtY19lZHc4Wg?oc=5",
+      "reason": "発行元が richardajkeys.com で公式NEC記事の canonical を確認できず採用見送り"
+    },
+    {
+      "title": "Windows 11の起動不能を自動修復、クラウド経由で復旧策を取得",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBhTXNrR3JoX3E5ckRMbnVJOUZXZVQwaFFzNG5EREVLdlZ5MV8zYXpuMlc2ZWNoQlRudk5ULVZnWUJvYmxfMWZMNDFucnEwQUg3c3dzOFNJdlZzc1lhLW0xb0x6LW9XWUZTSGh6dQ?oc=5",
+      "reason": "Stage1 候補から元記事 canonical を確定できず採用見送り"
+    },
+    {
+      "title": "第21回出雲神話まつり",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFAxR0R1UDdYak41SnJuRGVuSjZzYmdMVVVVb3hVN3pCd2t1REp4Rlh5Z3d5NVE2c09Namc5a0hIc0lwU0JCZ0sxcDFEMmNjWVRFcWl4dHdrYw?oc=5",
+      "reason": "IT-Consulting カテゴリと無関係"
+    },
+    {
+      "title": "AIアプリケーション診断",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9hbHpuV1BLSmtyYjdCcEVvQjVMbnN2bDdyaUNDLXlhVlltajViZGtaZXNIZzVfTGxiSGtTUUxyQWkxT2wtdnhsMU1BUTd3R1NrZW5EU3hpcTA?oc=5",
+      "reason": "恒常的なサービス紹介ページで当日のニュース性が薄い"
+    },
+    {
+      "title": "クラウド参入報道でメタ株9%高 競争懸念のスペースXは8%安",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBlVWRRWDJ0S3NlQ2E1akU4bVN1SGdaUTgtSDQzcjROX2Q3NVBUd1FXOXJpNDVNSU5hc1lvVnVWbVk5N29mcm5lb1dReUxUNlFrbUdzVjVIYWtsSlQ1d0ZXUjZRNXhLSFd2Mmt3MQ?oc=5",
+      "reason": "同一論点のメタ記事群から canonical と説明量が最も明確な株探記事を採用し重複除外"
+    }
+  ]
+}

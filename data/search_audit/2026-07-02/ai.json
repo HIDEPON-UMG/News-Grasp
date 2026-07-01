@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-02",
+  "category_id": "ai",
+  "queries": [
+    "stage1-file build/deduped-candidates/ai.jsonl",
+    "site:itmedia.co.jp \"ソフトバンクG、OpenAIに1兆6273億円の追加出資 第3弾は10月に\"",
+    "site:forest.watch.impress.co.jp \"Anthropic、「Claude Sonnet 5」を発表\"",
+    "site:forest.watch.impress.co.jp \"一時停止されていた「Claude Fable 5」、米国時間7月1日より再展開\"",
+    "site:watch.impress.co.jp \"AIエージェント「Gemini Spark」がmacOSに 連携アプリも拡大\"",
+    "site:gigazine.net \"OpenAIのエンジニアがAIの推論コストを半分以下に削減する方法を見つけたとの報道\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "生成AI活用率100% 日立・北海道支社のAI組織変革の具体的な手順とは",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFA4OTdNYWtQN2EwUWU5UmVhN01Qb1JkSl83RDd3aUU0WWgzOUNkazlLNWNrcU51cWh6S0VUeDFNOXk3OHZKcnA4dzl3R3ZFelFwV01ibEJRQjczcGNsUFZRSkI3TWlKLWNJR2tiX3prZ0phZw?oc=5",
+      "reason": "導入事例としては有用だが、当日の市場・供給条件変化よりインパクトが限定的"
+    },
+    {
+      "title": "必要なのはプロンプトではなくセンス？生成AIによる論文検索",
+      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxNZWpQMjFwZnQyd25BR0U0VkRnRVpGdlQ1S0tvbWxNeFVKM3NvN1JOakZ1eG55WDZ1Z2sxNjFjczQ5R0ltSC1EcFBMVzdsaVBEOGZ5OW5heWx3bWRUOFRzU2tCTDNqWm0yd0JDLWVLSjZTdEo4LUNGaU1hYmVxZkJJM1FpVnNGd2N2eUE?oc=5",
+      "reason": "研究支援ノウハウ記事であり、単独ニュースとしての発生事実が薄い"
+    },
+    {
+      "title": "中学生向け｜生成AIを活用した課題解決手順書",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTFB1VFpOQXBfRWxmR1FXU0hhXzZ4aWlwZ3ZiWmp0Rm55a0E3cHc1RnFLSkhZQTF6SjhXRHZyQzN4enNrVUMwUHktMFl2dEhIaUdNOUJaOG5BT2dWZVI2UEYyajN1eUpqZGRJYWt6eXpjQjZ3cVFBYUFzMktnZXN2dw?oc=5",
+      "reason": "自治体資料で鮮度はあるが、AI業界全体への波及が小さい"
+    },
+    {
+      "title": "読むから「眺める」へ。Claudeでつくる「自分専用マインドマップ」活用術",
+      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPbGVET2doUVlVXzI1U2lBRUNOS3ZtTWtZN2ZidDVGRFdDZFBKYmR6a28wQ2F4OVVRbEo4Nzk0NDdSNEt2Y2JBWFRyVXh0UVphdnNuaGNDQWw3Umlta0ZHbUtQOU1OUTJPQVFvb2VMZldDS0Y5anB1Uy0tQ1N5Uy1mRVNfYTAybXlsZ2h5ZzdrM18wTmlYZ0s1R2RCak1yYTNLNUEya3lPWjBzVHZ0bFJSUGxBTHk?oc=5",
+      "reason": "活用術としては実践的だが、速報性と影響範囲で上位5件に届かなかった"
+    },
+    {
+      "title": "Anthropicが科学者向けAIアプリ「Claude Science」を公開、文献調査や図表作成を単一アプリで実行可能",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5PZ3VCbTRkekpVZEd1aTc0VWhYUUhROFBMNm1QY0FMRHhXYXl5Vll2VktOM3ljYVg5OVJXbFJoMzBheGpYZFFQMGowdGFmQ0ozdThnR1R6YWUzNGNjb2g5V0VGTU5XMk83SENmUA?oc=5",
+      "reason": "研究者向け実行環境として重要だが、同日のSonnet 5投入とFable 5再開の方が読者への即時影響が大きい"
+    },
+    {
+      "title": "Microsoftが用意した4つの「頭脳」、OpenAIとの独占解消で戦略再構築",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOUVZsVnNlbTlzMm9TSzYwMk5od1JHTzlkZ2Ixc0NqcHpaOTdXWS0ybl8wMExqb1l5TWpJZkVfdHRsYldkSk02RU52MUw1Z3hOLTJadkQ0ME5yeFR6dEpyUm5yTkFBbHAwWnhtZENFcFo2MEpKVTNEdGs2VTNPdFEyZkFUcmhyM251UWNUbmNLOFlKRW0weFg1TGUwLWpST250bDZYTWhYczF5eHBn?oc=5",
+      "reason": "論点は大きいが、当日中に安定した canonical と公開本文の追加裏取りが不足したため見送った"
+    }
+  ]
+}

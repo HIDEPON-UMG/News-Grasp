@@ -1,0 +1,52 @@
+{
+  "date": "2026-07-02",
+  "category_id": "game",
+  "queries": [
+    "stage1: build/deduped-candidates/game.jsonl",
+    "site:blog.ja.playstation.com \"PlayStation コンソール向け新作ゲームのディスク生産を2028年1月に終了\"",
+    "site:blog.ja.playstation.com \"PS3 PS Vita向けPlayStation Storeに関するお知らせ\"",
+    "site:nintendo.com \"マリオカート ワールド 無料アップデート\"",
+    "site:nintendo.com \"ピクミンテラス in 宮島SA リニューアル\"",
+    "site:about.roblox.com \"ゲーム内レポートツールの大幅な更新\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-02/game.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ゲームアップデートのお知らせ(7/1 20:00実施)",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFAweFNZN1ZINXp2ZVJKREdMTDVmTTVvRUhObXNLMlU0MzlhVUpfekV0akZYRnRNdWFYdGVWRUV2NGYyTzNfZVRrU1EtOHRTMFZZcWd0bQ?oc=5",
+      "reason": "個別運営の定例更新で、プラットフォーム変化や需給線への波及が相対的に小さい"
+    },
+    {
+      "title": "「スイカゲーム」Steam版が浮上　Aladdin XがPC向けストアページ公開",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxORzJOZVZZbzRzdlN4clVfVlVKanVxeVlRMExIS004cGVYX2FZeE44MG45ZlBkbjJCQnFoNFlCdHlSZWxqNFRocjZlcEdqU0RYQ2ZHNFJ5TnJDRFlkYUVHOXI2Q2NaTUZFb1ZtSVE3UlRTbmJ6dDNXc3pFUTNHQ19QMWpPWHY3QQ?oc=5",
+      "reason": "前号で同テーマを既に扱っており、当号はより大きい販売・運営転換を優先した"
+    },
+    {
+      "title": "PS5 / PS4のディスク版ゲーム発売は2027年で終了 以降はダウンロード版のみ用意",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFB1Z0c0QzNnQmdqRWkxY1QyR3VWNDhyaE9ZbWVWMG1XWmZGVUpyMXJmbmJiWlVBaVlQNndwR1lJZmNkUEp6eXlHM2tDRnZTM2xBWnRyOG9NelMtbmx0cjVLZnQxNlhkQlZqcUM3eUpQYThFVWZ1c19faDNqVWQ3TUU?oc=5",
+      "reason": "同一発表の二次報道であり、一次ソースのPlayStation.Blogを採用した"
+    },
+    {
+      "title": "PS3、PS Vita向けPS Storeが2027年7月にサービス終了",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE4tTHZ2cTRzNVNJcHFtMG9JWURtU1pjbEZuV2JYeG9sbW5jekdJQlJDLXlzaEJ3T0ptS3FPNWtHRk1qZ2JWa2hWdlU2ekJwb0dhS2tBeGx1VFJSSTRGODdFeE5aVHgyVnpFWlhkY2ZEODdkVXRvUDM4NzdmQzAxQ1U?oc=5",
+      "reason": "同一発表の二次報道であり、一次ソースのPlayStation.Blogを採用した"
+    },
+    {
+      "title": "予算度外視で最高のモバイルゲーム機を手に入れる。MSI Claw 8 EX AI+を使ってみた",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQYVBuYUsxRnQ0b1VWRTdmU2FFU0pNSlh6UFF0TGdIeVRKV0JLbXByZmVvR0drRGdEdldJM0J0b0w0NC1ocWN0MmFlWm9jT3F1aUlDQXAwalAwX3pEQWRkTnlQTlFoNnhLUGEyOUtfZmFyZ3Q3U19yTi1jbzU2amRnRmRWcWFDWHk0?oc=5",
+      "reason": "単体レビューであり、当日の産業・運営転換を追うカテゴリ方針から外した"
+    }
+  ]
+}

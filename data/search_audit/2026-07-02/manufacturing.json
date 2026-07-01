@@ -1,0 +1,50 @@
+{
+  "date": "2026-07-02",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "google_news_decode:読売新聞:インド事業創出2兆円投資",
+    "google_news_decode:日本経済新聞:アイ・ピース iPS量産拠点",
+    "google_news_decode:中部経済新聞:トヨタ紡織 新工場",
+    "google_news_decode:日経ヴェリタス:NGK 半導体装置部材",
+    "google_news_decode:朝日新聞:製造業 6月短観"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 16,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "【速報】工場で火災「建物が燃えている」と通報 隣接8棟に延焼しおよそ1000平方メートルが燃焼 10代男性が軽傷 消防車46台出動し消火中 大阪・東淀川区",
+      "url": "https://www.ktv.jp/news/articles/?id=28013",
+      "reason": "個別事故で産業構造や量産計画への波及が限定的"
+    },
+    {
+      "title": "雪印メグミルク チーズ増産へ工場増強 生乳処理能力３０万トンに",
+      "url": "https://www.agrinews.co.jp/news/index/390883",
+      "reason": "増産投資として有力だが、選定5件より構造変化の射程が狭い"
+    },
+    {
+      "title": "【特許】警察庁、高精度な中性子検出装置 核物質発見に",
+      "url": "https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC2532J0V20C26A6000000",
+      "reason": "技術単体の記事で量産化・設備投資の具体性が不足"
+    },
+    {
+      "title": "王者NVIDIAの死角 推論用AI半導体、メモリー方式から読み解く",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/03646/061800005/",
+      "reason": "分析記事で当日の新たな生産計画や投資判断が薄い"
+    },
+    {
+      "title": "JDI会長、茂原工場売却は「財務改善に寄与する価格で」 株主総会で",
+      "url": "https://www.nikkei.com/article/DGXZQOUC0191S0R00C26A7000000/",
+      "reason": "資産売却の話題で、当日号では工場新設や量産投資の情報価値を優先"
+    }
+  ]
+}

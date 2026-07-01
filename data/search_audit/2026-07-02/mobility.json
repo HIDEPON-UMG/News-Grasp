@@ -1,0 +1,59 @@
+{
+  "date": "2026-07-02",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "\"英ＥＶメーカー、ＥＵの原産地規則問題未解決なら14億ポンドの関税支払いへ\" ロイター",
+    "\"テスラ 韓国で「モデル3」など値上げ＝EV補助金決定翌日に\"",
+    "スズキ インド 次世代 自動運転 モビリティー 覚書",
+    "NTTモビリティ 自動運転安全管理委員会 2026 7 1",
+    "\"豊田通商ら11社、自動運転トラック実証採択\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "ロート製薬、T2の自動運転トラックでスキンケア関連製品等の輸送実証を開始",
+      "url": "https://www.rohto.co.jp/news/release/2026/0629_01",
+      "reason": "freshness gate で published 2026-06-29。max-source-age-days 1 を超過したため未採用。"
+    },
+    {
+      "title": "東北道で自動運転トラック実証、協力者募集",
+      "url": "https://www.logi-today.com/971543",
+      "reason": "抽出された公開日が stale と判定され freshness gate を通らず。路車協調実験の趣旨は把握したが記者出力には使わない。"
+    },
+    {
+      "title": "L4自動運転トレーラー実証、国交省事業に採択",
+      "url": "https://www.logi-today.com/971733",
+      "reason": "抽出された公開日が stale と判定され freshness gate を通らず。類似テーマは豊田通商コンソーシアム案件を優先。"
+    },
+    {
+      "title": "欧州で中国車が日本車を逆転 EV補助金が復活、BYDは関税下でも安く",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE52cFFjM2dYeERsWXlIZHVTMzNrYWFsc0p0MERQNWRaVUl4by1lU0lzLTMyN3FvMHlMcndsM0FnUGtOSkFBaEcyZ0NUZFRwaG5ScW5CRzdYNEJfQWVJMmZSQ0ZQNURZM0laOGVXMQ?oc=5",
+      "reason": "Stage1 候補の canonical URL を記事単位で解決できず、Google News RSS URL のままのため未採用。"
+    },
+    {
+      "title": "BYD「ラッコ」、航続距離が最大320キロ 軽EVで最長",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1mYWZoY2tldXRyQUYzM0xWVEVnWklJYlV0VGZjLVA5RTlMX29OY3M0bGhNVXRucURlckNpRmpwWlVXSmJ0SDBPYm5GQWtlN1hURy1ZQ3Z5N0h6T2Q0TDdVazdaNEJKTVgtLVZVZw?oc=5",
+      "reason": "BYD coverage は確認したが、元記事 canonical を当日内に確定できず URL 品質契約を満たさないため未採用。"
+    },
+    {
+      "title": "TOYOTA Wallet「EV充電サービス」にプラゴの充電器が対応",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5UWlFMS05lZzJWWjdRUE1vZDVfdlJkU2pPamNFRXNEYjRpN1k2NlJPOUtZWGlRS19WRTVpWVNYYnpMdEhQT182TzlTUzNPLUtpd3laZi14YjhkMTVteE00ZTZQLTBJMjdKcVE?oc=5",
+      "reason": "Toyota coverage は確保したが、PR色が強く全国読者の判断材料としては価格・政策・実装案件より優先度が低かった。"
+    },
+    {
+      "title": "テスラが試験走行開始 自動運転タクシーの映像公開",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE1sUUtBc0JjOGt2YW5FMXh1YVBEWlV5SWJ4RUNSbTVXQURjczc3RGpBekw4bEtuWTBFUzluSnlyMGtRUGlWRTNjNXhJWkQ0VWFpWFNuV0tyb3I1bm1SeHc?oc=5",
+      "reason": "Tesla coverage は価格改定記事を優先。こちらは前日までの robotaxi 話題の延長で、新材料の厚みが相対的に薄かった。"
+    }
+  ]
+}
