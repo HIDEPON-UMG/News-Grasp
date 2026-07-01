@@ -398,7 +398,7 @@ py tools/fetch_ogp.py "https://example.com/article"
   "nameEn": "Artificial Intelligence",
   "accent": "#2D5BB8",
   "glyph": "◆",
-  "summary": "...",                // カテゴリ全体の 1 文要約（80 字程度）
+  "summary": "...",                // カテゴリ全体の要約。2〜3 文・合計 100 字以内。各文は必ず「。」で終える。体言止め・途中終了は禁止。文中で省略記号「…」を使って切らない。
   "items": [ /* 原則5件、ニュース性の低い候補で埋めない場合は5件未満可 */ ]
 }
 ```
@@ -551,7 +551,7 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   "url": "...",
   "url_norm": "...",
   "source": "...",
-  "summary": "80 字程度",
+  "summary": "2〜3 文・合計 100 字以内。各文は必ず「。」で終える。体言止め・途中終了は禁止。文中で省略記号「…」を使って切らない。",
 
   "entities": {
     "companies": [], "countries": [], "services": [], "people": [], "tickers": []

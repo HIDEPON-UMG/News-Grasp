@@ -403,12 +403,12 @@ def test_category_top_feature_uses_same_score_note_layout(built_docs_root: Path)
     assert "TOP FEATURE" in category_html
     assert 'class="top-story__media"' in category_html
     assert 'class="feature-note"' in category_html
-    assert ">SIGNALS<" not in category_html
     assert "SCORE BREAKDOWN" not in category_html
     feature_note = category_html[
         category_html.index('class="feature-note"'):
         category_html.index('class="top-story__title"')
     ]
+    assert ">SIGNALS<" not in feature_note
     assert feature_note.index("SCORE NOTE") < feature_note.index("KEY NUMBERS")
     assert feature_note.index("KEY NUMBERS") < feature_note.index("feature-note__chips--signals")
 
@@ -445,7 +445,7 @@ def test_feature_note_is_limited_to_lp_and_category_templates():
 def test_score_note_publish_bumps_service_worker_version():
     """CSS / 生成HTML の公開時に古いPWAキャッシュへ残らないよう SW_VERSION を上げる。"""
     sw = (ROOT / "docs" / "sw.js").read_text(encoding="utf-8")
-    assert "2026-07-01-bycategory-readable-cta-r1" in sw
+    assert "2026-07-01-category-hero-turn4-r1" in sw
 
 
 def test_score_note_prefers_current_dataset_signals():

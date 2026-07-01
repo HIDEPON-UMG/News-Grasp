@@ -40,6 +40,7 @@ from tools.config import (  # noqa: E402
     TOP_RECENT_DAYS,
 )
 from tools.dedup import same_event_by_tokens, significant_tokens  # noqa: E402  (表示層 dedup で再利用)
+from tools.fx_rates import get_fx_panel  # noqa: E402
 from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
@@ -47,6 +48,91 @@ _TTS_BUILD_DIR = _PKG_ROOT / "build" / "tts"
 _PODCAST_UPLOADS = Path("build") / "youtube-podcast" / "uploads.json"
 _DEEPDIVE_PODCAST_UPLOADS = Path("build") / "youtube-podcast-deepdive" / "uploads.json"
 _PODCAST_CHANNEL_URL = "https://www.youtube.com/@newsgrasp/podcasts"
+
+_CATEGORY_HERO_BODY_MAX_CHARS = 104
+_CATEGORY_HERO_READ_MORE_LABEL = "続きを読む →"
+
+_CATEGORY_HERO_THEMES: dict[str, dict[str, str]] = {
+    "fx": {
+        "base": "#B8860B",
+        "dark": "#17130a",
+        "ticker": "#141008",
+        "gradient_from": "#c79413",
+        "gradient_to": "#7d5b07",
+        "accent": "#F1CE74",
+        "text": "#F3EEE0",
+        "heading": "#F5EFE1",
+    },
+    "ai": {
+        "base": "#2D5BB8",
+        "dark": "#11151f",
+        "ticker": "#0b0f1c",
+        "gradient_from": "#4f7fd6",
+        "gradient_to": "#1e3a70",
+        "accent": "#A6C2F2",
+        "text": "#E4EBF7",
+        "heading": "#EAF0FB",
+    },
+    "it": {
+        "base": "#2E6B52",
+        "dark": "#0f2419",
+        "ticker": "#08160f",
+        "gradient_from": "#4f9578",
+        "gradient_to": "#1f4c38",
+        "accent": "#9FD8BB",
+        "text": "#E2F4EA",
+        "heading": "#EDF9F2",
+    },
+    "mobility": {
+        "base": "#3A7B8C",
+        "dark": "#122a31",
+        "ticker": "#091a1f",
+        "gradient_from": "#5ba3b6",
+        "gradient_to": "#245b68",
+        "accent": "#ABDEE9",
+        "text": "#E3F5F8",
+        "heading": "#EFFBFD",
+    },
+    "manufacturing": {
+        "base": "#5A6B7B",
+        "dark": "#212932",
+        "ticker": "#141a20",
+        "gradient_from": "#8496a6",
+        "gradient_to": "#3b4a58",
+        "accent": "#CBD8E2",
+        "text": "#EDF2F5",
+        "heading": "#F6FAFC",
+    },
+    "economy": {
+        "base": "#8E2A19",
+        "dark": "#2f0d07",
+        "ticker": "#1c0805",
+        "gradient_from": "#c04b34",
+        "gradient_to": "#6d1d10",
+        "accent": "#F1A896",
+        "text": "#F9E5DF",
+        "heading": "#FFF1ED",
+    },
+    "game": {
+        "base": "#5E3D8C",
+        "dark": "#20143a",
+        "ticker": "#130b24",
+        "gradient_from": "#8a63c0",
+        "gradient_to": "#42236f",
+        "accent": "#CEB5EE",
+        "text": "#F0E8FB",
+        "heading": "#F8F3FF",
+    },
+}
+
+_CATEGORY_SIGNALS: dict[str, str] = {
+    "ai": "大規模推論 · 評価設計 · オープン重み · 計算資源 · 安全性規制",
+    "it": "IT投資 · クラウド移行 · セキュリティ · SI再編 · 生成AI実装",
+    "mobility": "EV需要 · 自動運転 · 電池供給網 · 物流DX · 規制変更",
+    "manufacturing": "半導体 · 工場自動化 · 部材価格 · サプライチェーン · 品質投資",
+    "economy": "金利 · 物価 · 決算 · 雇用 · 政策期待",
+    "game": "新作投入 · プラットフォーム · IP展開 · eスポーツ · 課金規制",
+}
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
@@ -743,6 +829,13 @@ def render_page(ctx: dict[str, Any], out_path: Path, template_name: str = "page-
     return out_path
 
 
+def render_template(template_text: str, ctx: dict[str, Any]) -> str:
+    """テスト用に既存 Jinja filter と同じ環境でテンプレ文字列を描画する。"""
+    env = _get_jinja_env()
+    template = env.from_string(template_text)
+    return "\n".join(line.rstrip() for line in template.render(**ctx).splitlines()) + "\n"
+
+
 def _local_audio_for_pages(date: str | None) -> dict[str, str]:
     if not date:
         return {"latest_audio_url": "", "latest_audio_date": ""}
@@ -770,6 +863,117 @@ def latest_audio_for_pages(date: str | None = None) -> dict[str, str]:
     return {
         "latest_audio_url": str(data.get("latest_audio_url") or ""),
         "latest_audio_date": str(data.get("latest_audio_date") or ""),
+    }
+
+
+def split_sentences(text: str) -> list[str]:
+    """README 正典の `splitSentences` と同じく句点を文に残して分割する。"""
+    out: list[str] = []
+    current = ""
+    for ch in text or "":
+        current += ch
+        if ch == "。":
+            out.append(current)
+            current = ""
+    if current.strip():
+        out.append(current)
+    return out
+
+
+def fit_to_sentences(text: str, max_chars: int = _CATEGORY_HERO_BODY_MAX_CHARS) -> dict[str, Any]:
+    """文単位で予算内に詰める。文中 `…` 切断は絶対に行わない。"""
+    sentences = split_sentences(text)
+    acc = ""
+    idx = 0
+    for idx, sentence in enumerate(sentences):
+        if acc and len(acc + sentence) > max_chars:
+            break
+        acc += sentence
+    else:
+        idx = len(sentences)
+    if not acc and sentences:
+        acc = sentences[0]
+        idx = 1
+    return {
+        "body": acc,
+        "bullets": split_sentences(acc),
+        "has_more": idx < len(sentences),
+    }
+
+
+def default_fx_hero_panel() -> dict[str, Any]:
+    """テストと API 失敗時に使う README 値の FX panel。"""
+    return {
+        "source": "fallback",
+        "has_provider_data": False,
+        "ticker_label": "LIVE RATES",
+        "ticker_text": "USD/JPY 162.24 ▲ · EUR/USD 1.0912 ▼ · GBP/JPY 188.45 ▲ · AUD/USD 0.6485 ▼ · USD/CNH 7.2104 ◆ · USD/CHF 0.8932 ▼",
+        "primary_pair": "USD / JPY",
+        "primary_value": "162.24",
+        "primary_delta": "▲",
+        "note": "39年半ぶりの円安水準 · +0.6%",
+        "updated_at": "fallback",
+        "attribution_label": "Rates By Exchange Rate API",
+        "attribution_url": "https://www.exchangerate-api.com",
+    }
+
+
+def _hero_score_int(value: Any) -> int:
+    try:
+        return int(value) if str(value).strip().isdigit() else 0
+    except (TypeError, ValueError):
+        return 0
+
+
+def build_category_hero_context(
+    *,
+    category_id: str,
+    featured: dict[str, Any],
+    entries: list[dict[str, Any]],
+    past_7: list[dict[str, Any]],
+    nav_categories: list[dict[str, Any]],
+    sentence_fit: dict[str, Any],
+    fx_panel: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Turn 4 4a/4b/4c 用のカテゴリーヒーロー context を作る。"""
+    meta = CATEGORIES.get(category_id, {})
+    theme = _CATEGORY_HERO_THEMES.get(category_id, _CATEGORY_HERO_THEMES["ai"])
+    featured_date = str(featured.get("date") or "")
+    recent_count = sum(1 for e in entries if str(e.get("date") or "") == featured_date) if featured_date else 0
+    top_score = _hero_score_int(featured.get("top_score") or featured.get("score"))
+    if not top_score:
+        top_score = max((_hero_score_int(e.get("top_score") or e.get("score")) for e in entries), default=0)
+    if not top_score:
+        top_score = 93
+
+    signal_text = _CATEGORY_SIGNALS.get(category_id, "主要論点 · 政策変化 · 企業戦略 · 市場反応 · 次の焦点")
+    is_fx = category_id == "fx"
+    panel = fx_panel or default_fx_hero_panel()
+    return {
+        "contract": "turn4-category",
+        "is_fx": is_fx,
+        "theme": theme,
+        "ticker_label": panel["ticker_label"] if is_fx else "SIGNALS",
+        "ticker_text": panel["ticker_text"] if is_fx else signal_text,
+        "label": meta.get("label", category_id),
+        "jp": meta.get("jp", category_id),
+        "glyph": meta.get("glyph", ""),
+        "issue": featured_date.replace("-", "") if featured_date else "",
+        "recent_count": recent_count or len(past_7) or 0,
+        "body_bullets": sentence_fit.get("bullets") or [],
+        "has_more": bool(sentence_fit.get("has_more")),
+        "read_more_label": _CATEGORY_HERO_READ_MORE_LABEL,
+        "stats": {
+            "total_entries": len(entries),
+            "past_week": len(past_7),
+            "top_score": top_score,
+        },
+        "visual": {
+            "fx": panel,
+            "score": top_score,
+            "score_note": f"最高スコア記事 · {featured.get('top_title') or featured.get('title') or '主要指標'}",
+        },
+        "nav_categories": nav_categories,
     }
 
 
@@ -2577,6 +2781,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
         nav_categories : 6 lens pill 用 (summary 除く)、is_active で現カテゴリ強調
     """
     written: list[Path] = []
+    fx_panel = get_fx_panel()
     # nav_categories は全 cat 共通 (is_active は内側でセット)。summary 除く 6 lens
     nav_base = [
         {
@@ -2647,6 +2852,19 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
         nav_categories = [
             {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
         ]
+        hero_summary_fit = fit_to_sentences(
+            strip_inline(featured.get("summary_text", "") or ""),
+            max_chars=_CATEGORY_HERO_BODY_MAX_CHARS,
+        )
+        hero_context = build_category_hero_context(
+            category_id=cat_id,
+            featured=featured,
+            entries=cat_entries_sorted,
+            past_7=past_7,
+            nav_categories=nav_categories,
+            sentence_fit=hero_summary_fit,
+            fx_panel=fx_panel,
+        )
         ctx = {
             "site_title": SITE_TITLE,
             "base_url": BASE_URL,
@@ -2663,6 +2881,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
             "grid_9": grid_9,
             "past_7": past_7,
             "nav_categories": nav_categories,
+            "hero": hero_context,
             "pause_notice": _category_pause_notice(cat_id, today_date),
         }
         out = Path(docs_root) / cat_id / "index.html"

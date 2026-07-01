@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Turn 4 4a/4b/4c category hero contract tests."""
+from __future__ import annotations
+
+from pathlib import Path
+
+from tools import generate_pages
+from tools.config import CATEGORIES
+
+ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE = ROOT / "prompts" / "category-template.html"
+CSS = ROOT / "docs" / "assets" / "site.css"
+
+
+def _ctx(category_id: str) -> dict[str, object]:
+    meta = CATEGORIES[category_id]
+    featured = {
+        "date": "2026-07-01",
+        "summary_text": (
+            "ドル円は高止まりした。米金利の見通しが焦点になった。"
+            "日銀の利上げ観測と米利下げ時期が交差し、来週の指標で方向感が変わる。"
+        ),
+        "top_score": 93,
+        "top_title": "テスト記事",
+        "top_title_ja": "",
+        "top_thumb": "",
+        "top_source": "Test",
+        "top_bullets": [],
+        "canonical": "https://example.com/article",
+    }
+    fit = generate_pages.fit_to_sentences(str(featured["summary_text"]), max_chars=31)
+    hero = generate_pages.build_category_hero_context(
+        category_id=category_id,
+        featured=featured,
+        entries=[featured] * 64,
+        past_7=[featured] * 7,
+        nav_categories=[
+            {
+                "id": cid,
+                "name_en": m["label"],
+                "name_jp": m["jp"],
+                "glyph": m["glyph"],
+                "accent": m["accent"],
+                "is_active": cid == category_id,
+            }
+            for cid, m in CATEGORIES.items()
+            if cid != "summary"
+        ],
+        sentence_fit=fit,
+        fx_panel=generate_pages.default_fx_hero_panel(),
+    )
+    return {
+        "site_title": "News Grasp",
+        "base_url": "https://hidepon-umg.github.io/News-Grasp",
+        "canonical": f"https://hidepon-umg.github.io/News-Grasp/{category_id}/",
+        "category_id": category_id,
+        "category_label": meta["label"],
+        "category_jp": meta["jp"],
+        "glyph": meta["glyph"],
+        "accent": meta["accent"],
+        "entries": [featured] * 64,
+        "featured": featured,
+        "editorial_heading": "",
+        "editorial_essay": "",
+        "grid_9": [],
+        "past_7": [featured] * 7,
+        "nav_categories": hero["nav_categories"],
+        "pause_notice": None,
+        "hero": hero,
+    }
+
+
+def _render(category_id: str) -> str:
+    return generate_pages.render_template(TEMPLATE.read_text(encoding="utf-8"), _ctx(category_id))
+
+
+def test_fx_hero_uses_turn4a_live_rates_and_sentence_bullets() -> None:
+    html = _render("fx")
+
+    assert 'data-hero-contract="turn4-category"' in html
+    assert "cat-hero__bg" not in html
+    assert "cat-hero__date" not in html
+    assert ">LIVE RATES<" in html
+    assert 'data-panel="rates"' in html
+    assert "USD/JPY" in html
+    assert '<span class="cat-hero__bullet-text">ドル円は高止まりした。</span>' in html
+    assert '<span class="cat-hero__bullet-text">米金利の見通しが焦点になった。</span>' in html
+    assert '<span class="cat-hero__bullet-text">日銀の利上げ観測' not in html
+    assert "…" not in html.split('class="cat-hero__body"', 1)[1].split('class="cat-hero__stats"', 1)[0]
+    assert "続きを読む →" in html
+    assert ">USD / JPY<" in html
+    assert ">TOTAL ENTRIES<" in html
+
+
+def test_non_fx_hero_uses_turn4b_signals_and_score_panel() -> None:
+    html = _render("ai")
+
+    assert ">SIGNALS<" in html
+    assert 'data-panel="score"' in html
+    assert '<span class="cat-hero__score-value">93</span>' in html
+    assert '<span class="cat-hero__score-unit">/100</span>' in html
+    assert '<div class="cat-hero__watermark" aria-hidden="true">◆</div>' in html
+
+
+def test_turn4_theme_context_exists_for_all_seven_categories() -> None:
+    for cid in [c for c in CATEGORIES if c != "summary"]:
+        hero = generate_pages.build_category_hero_context(
+            category_id=cid,
+            featured={"date": "2026-07-01", "summary_text": "主要論点を整理した。"},
+            entries=[],
+            past_7=[],
+            nav_categories=[],
+            sentence_fit=generate_pages.fit_to_sentences("主要論点を整理した。"),
+            fx_panel=generate_pages.default_fx_hero_panel(),
+        )
+        theme = hero["theme"]
+        assert theme["base"]
+        assert theme["dark"]
+        assert theme["gradient_from"]
+        assert theme["gradient_to"]
+        assert theme["accent"]
+
+
+def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
+    css = CSS.read_text(encoding="utf-8")
+
+    assert "grid-template-columns: 1.06fr .94fr" in css
+    assert ".cat-hero__tab-fade" in css
+    assert ".cat-hero__tab-arrow" in css
+    assert "@media (max-width: 720px)" in css
+    assert "grid-template-columns: 1fr" in css

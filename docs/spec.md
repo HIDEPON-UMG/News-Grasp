@@ -208,6 +208,30 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 | Integration gate | 結合テスト Green の場合のみ commit/push する。Yellow 以下は修正と再テストを継続し、push しない。 |
 | Public boundary | push 後の公開 URL / GitHub Pages / remote HEAD 確認は push を実行した場合だけ行う。 |
 
+## Category Hero Card Turn 4 Commitment
+
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_by_user_text | PLEASE IMPLEMENT THIS PLAN: |
+| approved_goal_statement | News-Grasp のカテゴリートップ画面「ヒーローカード」を、`design_handoff_fx_hero_card/README.md` を正典として Turn 4 の 4a / 4b / 4c だけで hifi 実装する。 |
+| approval_evidence_ref | current chat turn: user request `News Grasp のカテゴリートップ画面「ヒーローカード」を改善実装してください。` and follow-up `PLEASE IMPLEMENT THIS PLAN:` |
+| approved_at | 2026-07-01 |
+| commitment_version | category-hero-turn4-2026-07-01 |
+| commitment_scope | `prompts/category-template.html`, `docs/assets/site.css`, `tools/generate_pages.py`, FX external rate helper, newsroom/routine prompts, generated category docs, service worker cache version, commit/push/public verification. |
+| open_questions | None after ChatGPT review pass. API outage, GitHub outage, or remote divergence remains typed blocker and must not be force-pushed. |
+
+この改修は `Feature Change Quality Gate Matrix` の次の行に完全リンクする。
+
+| Link item | Decision |
+|---|---|
+| Affected matrix rows | `Public UI / OGP / PWA / thumbnails`; `Summary / editorial reflection`; `External integration / auth` |
+| Gate update decision | ヒーローカードは `為替レンズ ヒーローカード改善` README を Visual Source of Truth とし、実装対象を Turn 4 の 4a / 4b / 4c のみに固定する。Turn 1/2/3 の旧方向比較・一覧・検証 strip を UI として採用しない。要約は文単位で `body_max_chars=104` に収まる文だけを箇条書き表示し、文中 `…` で切らない。あふれた場合だけ `続きを読む →` を出す。FX だけ `ExchangeRate-API Open` の `https://open.er-api.com/v6/latest/USD` を使い、公開 UI には `Rates By Exchange Rate API` の attribution と最終更新時刻を表示する。非FXは同じレイアウトで代表スコア / 主要指標 panel を使う。 |
+| Verification command | `.venv\Scripts\python.exe -m pytest tests/test_category_hero_sentence_fit.py tests/test_category_hero_turn4_contract.py tests/test_fx_rates.py tests/test_newsroom_prompts.py tests/test_category_editorial_essay.py tests/test_category_grid_fallback_emphasis.py tests/test_product_spec_contract.py -q`; `.venv\Scripts\python.exe tools/generate_pages.py --full`; `designmd lint .\DESIGN.md`; Playwright desktop/mobile visual smoke; push 後 public DOM/CSS/SW sentinel。 |
+| Integration gate | Red tests を先に追加し、Green になるまで実装を続ける。ローカル Green 後のみ safe-commit、push、remote HEAD 一致、GitHub Pages public sentinel 確認へ進む。 |
+| Public boundary | `docs/assets/site.css`、`prompts/category-template.html`、generated docs を変更するため、`docs/sw.js` の `SW_VERSION` bump と public CSS / public DOM / service worker version の確認を同じ変更単位に含める。 |
+
 ## User Answer Provenance
 
 | Date | Source | Exact user text |
@@ -217,6 +241,11 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 | 2026-06-26 | Current chat implementation approval | PLEASE IMPLEMENT THIS PLAN: |
 | 2026-06-28 | Current chat implementation approval | PLEASE IMPLEMENT THIS PLAN: |
 | 2026-06-28 | Current chat quality gate instruction | 本修正は品質ゲートと完全に仕様をリンクすること。実装後に結合テストを実施しGreenの場合のみpushする。Yellow以下はGreenになるまで修正→テストすること。 |
+| 2026-07-01 | Current chat implementation request | News Grasp のカテゴリートップ画面「ヒーローカード」を改善実装してください。デザイン仕様は同梱の `README.md` が正典です。まず `README.md` を通読してから着手してください。 |
+| 2026-07-01 | Current chat design selection | 採用は Turn 4 の 4a / 4b / 4c の3つだけ |
+| 2026-07-01 | Current chat external data selection | 外部API連携 |
+| 2026-07-01 | Current chat publish scope selection | pushまで含める |
+| 2026-07-01 | Current chat review gate request | ChatGTPレビューを受けてから再提出して。 |
 
 ## Sustainable Complete Repair
 

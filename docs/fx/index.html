@@ -221,55 +221,117 @@
   </div>
 </nav>
 
-<!-- ============= Hero (480px category KV) ============= -->
-<header class="cat-hero">
-  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/fx.jpg" alt="" loading="eager">
-  <div class="cat-hero__gradient"></div>
-  <div class="cat-hero__title-block">
-    <div class="cat-hero__eyebrow">━━━━━━━━━━ LENS / FOREIGN EXCHANGE</div>
-    <div class="cat-hero__title-row">
-      <span class="cat-hero__glyph">¥</span>
-      <h1 class="cat-hero__title">為替.</h1>
+<!-- ============= Hero (Turn 4 category card) ============= -->
+<header class="cat-hero"
+        data-hero-contract="turn4-category"
+        data-category="fx"
+        style="--hero-base: #B8860B; --hero-dark: #17130a; --hero-ticker: #141008; --hero-grad-from: #c79413; --hero-grad-to: #7d5b07; --hero-accent: #F1CE74; --hero-text: #F3EEE0; --hero-heading: #F5EFE1;">
+  <div class="cat-hero__ticker" aria-label="LIVE RATES">
+    <span class="cat-hero__ticker-label">LIVE RATES</span>
+    <span class="cat-hero__ticker-text">USD/JPY 162.50 ▲ · EUR/USD 1.1407 ▼ · GBP/JPY 215.26 ▲ · AUD/USD 0.6903 ▼ · USD/CNH 6.7898 ◆ · USD/CHF 0.8086 ▼</span>
+  </div>
+  <div class="cat-hero__grid">
+    <section class="cat-hero__content">
+      <div class="cat-hero__eyebrow">
+        <span>¥</span>
+        FOREIGN EXCHANGE
+        <span>· #20260701</span>
+      </div>
+      <div class="cat-hero__heading-row">
+        <h1 class="cat-hero__title"><span class="cat-hero__glyph">¥</span>為替<span class="cat-hero__dot">.</span></h1>
+        <span class="cat-hero__badge">直近 1件</span>
+      </div>
+
+      <div class="cat-hero__body">
+        <ul class="cat-hero__bullets">
+
+          <li class="cat-hero__bullet"><span class="cat-hero__marker"></span><span class="cat-hero__bullet-text">為替は5件。</span></li>
+
+          <li class="cat-hero__bullet"><span class="cat-hero__marker"></span><span class="cat-hero__bullet-text">ドル円は162円台へ水準を切り上げ、東京時間の節目突破がNY市場の上値追いと政策信認不安を同時に呼び込んだ。</span></li>
+
+          <li class="cat-hero__bullet"><span class="cat-hero__marker"></span><span class="cat-hero__bullet-text">日銀の新審議委員は為替の物価波及を警戒し、財務相の口先介入は効き目の鈍さも示した。</span></li>
+
+        </ul>
+
+        <a class="cat-hero__read-more" href="#category-stream">続きを読む →</a>
+
+      </div>
+
+      <div class="cat-hero__stats">
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">64</div>
+          <div class="cat-hero__stat-label">TOTAL ENTRIES</div>
+        </div>
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">7</div>
+          <div class="cat-hero__stat-label">PAST 1 WEEK</div>
+        </div>
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">95</div>
+          <div class="cat-hero__stat-label">TOP SCORE</div>
+        </div>
+      </div>
+    </section>
+    <aside class="cat-hero__visual" data-panel="rates" aria-label="FX rate panel">
+      <div class="cat-hero__stripes" aria-hidden="true"></div>
+
+      <svg class="cat-hero__chart" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="0,30 12,24 24,28 36,15 48,22 60,7 72,18 84,25 96,13"></polyline>
+      </svg>
+      <div class="cat-hero__visual-label">USD / JPY</div>
+      <div class="cat-hero__rate-row">
+        <span class="cat-hero__rate">162.50</span>
+        <span class="cat-hero__rate-delta">▲</span>
+      </div>
+      <div class="cat-hero__visual-note">ExchangeRate-API Open · daily refreshed</div>
+      <a class="cat-hero__attribution" href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
+      <div class="cat-hero__updated">UPDATED Wed, 01 Jul 2026 00:02:31 +0000</div>
+
+    </aside>
+  </div>
+  <nav class="cat-hero__tabs" aria-label="Category lenses">
+    <span class="cat-hero__tabs-label">LENSES</span>
+    <div class="cat-hero__tab-scroll">
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="cat-hero__tab is-active" style="--tab-accent: #B8860B;">
+        <span>¥</span> FX
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="cat-hero__tab " style="--tab-accent: #2D5BB8;">
+        <span>◆</span> ARTIFICIAL INTELLIGENCE
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="cat-hero__tab " style="--tab-accent: #2E6B52;">
+        <span>⌗</span> IT &amp; CONSULTING
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="cat-hero__tab " style="--tab-accent: #3A7B8C;">
+        <span>◎</span> MOBILITY
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="cat-hero__tab " style="--tab-accent: #5A6B7B;">
+        <span>⬢</span> MANUFACTURING
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="cat-hero__tab " style="--tab-accent: #8E2A19;">
+        <span>■</span> ECONOMY
+      </a>
+
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="cat-hero__tab " style="--tab-accent: #5E3D8C;">
+        <span>▶</span> GAMING
+      </a>
+
     </div>
-
-
-    <div class="cat-hero__summary">為替は5件。ドル円は162円台へ水準を切り上げ、東京時間の節目突破がNY市場の上値追いと政策信認不安を同時に呼び込んだ。日銀の新審議委員は為替の物価波及を警戒し、財務相の口先介入は効き目の鈍さも示した。次は実弾介入か、追加利上げの示唆か、日米金利差をどう扱うかが焦点になる。</div>
-
-    <div class="cat-hero__stats">
-      <div>
-        <div class="stat-num">64</div>
-        <div class="stat-label">ENTRIES</div>
-      </div>
-      <div>
-        <div class="stat-num">7</div>
-        <div class="stat-label">PAST 1 WEEK</div>
-      </div>
-
-      <div>
-        <div class="stat-num">95</div>
-        <div class="stat-label">TOP SCORE</div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="cat-hero__date">
-    <div class="cat-hero__date-label">LATEST</div>
-    <div class="cat-hero__date-big">07·01</div>
-    <div class="cat-hero__date-small">2026 · #20260701</div>
-  </div>
-
-  <div class="cat-hero__bottom-bar">
-    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">← ALL ARCHIVE</a>
-    <span>SCROLL TO BEGIN ↓</span>
-  </div>
+    <span class="cat-hero__tab-fade" aria-hidden="true"></span>
+    <span class="cat-hero__tab-arrow" aria-hidden="true">›</span>
+  </nav>
 </header>
 
 <div class="cat-container">
 
 
 <!-- ============= TOP feature (最新 1 件) ============= -->
-<section class="top-story" data-search="2026-07-01 円安162円台、政策不信が債券売りを呼ぶリスク浮上 日本経済新聞">
+<section id="category-stream" class="top-story" data-search="2026-07-01 円安162円台、政策不信が債券売りを呼ぶリスク浮上 日本経済新聞">
   <div class="top-story__meta">
     <span class="top-story__badge">TOP FEATURE</span>
     <span>2026-07-01 · 日本経済新聞</span>

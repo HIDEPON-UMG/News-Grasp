@@ -295,6 +295,34 @@ def test_product_constitution_defines_repair_completeness_proof() -> None:
         assert phrase in text
 
 
+def test_product_constitution_has_category_hero_turn4_commitment() -> None:
+    """カテゴリートップヒーローカード改善を spec と品質 gate に結び付ける。"""
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "Category Hero Card Turn 4 Commitment" in headings
+    for phrase in [
+        "category-hero-turn4-2026-07-01",
+        "ヒーローカード",
+        "Turn 4 の 4a / 4b / 4c",
+        "為替レンズ ヒーローカード改善",
+        "文単位",
+        "続きを読む →",
+        "body_max_chars=104",
+        "ExchangeRate-API Open",
+        "https://open.er-api.com/v6/latest/USD",
+        "Rates By Exchange Rate API",
+        "Public UI / OGP / PWA / thumbnails",
+        "Summary / editorial reflection",
+        "tests/test_category_hero_sentence_fit.py",
+        "tests/test_category_hero_turn4_contract.py",
+        "tests/test_fx_rates.py",
+        "ChatGTPレビューを受けてから再提出して。",
+        "pushまで含める",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_requires_horizontal_incident_bugfix_investigation() -> None:
     """バグ修正を単一部品で閉じず、runner/repair/state/report を同じ incident で見る。"""
     text = _read(SPEC)

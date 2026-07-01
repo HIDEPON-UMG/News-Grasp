@@ -82,6 +82,19 @@ def test_reporter_prompt_uses_current_summary_frame_labels() -> None:
             assert stale not in text, path
 
 
+def test_category_summary_prompts_require_sentence_complete_100_chars() -> None:
+    """カテゴリートップ hero 用 summary は生成段階でも文単位完結を要求する。"""
+    for path in [REPORTER_PROMPT, ROUTINE_PROMPT]:
+        text = _read(path)
+        for phrase in [
+            "2〜3 文・合計 100 字以内",
+            "各文は必ず「。」で終える",
+            "体言止め・途中終了は禁止",
+            "文中で省略記号「…」を使って切らない",
+        ]:
+            assert phrase in text, path
+
+
 def test_reporter_prompt_does_not_override_freshness_gate_for_manufacturing() -> None:
     """manufacturing 例外でも validator の鮮度窓を破らせない。"""
     text = _read(REPORTER_PROMPT)

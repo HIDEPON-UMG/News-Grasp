@@ -153,67 +153,103 @@
   </div>
 </nav>
 
-<!-- ============= Hero (480px category KV) ============= -->
-<header class="cat-hero">
-  <img class="cat-hero__bg" src="{{ base_url }}/assets/og/{{ category_id }}.jpg" alt="" loading="eager">
-  <div class="cat-hero__gradient"></div>
-  <div class="cat-hero__title-block">
-    <div class="cat-hero__eyebrow">━━━━━━━━━━ LENS / {{ category_label|upper }}</div>
-    <div class="cat-hero__title-row">
-      <span class="cat-hero__glyph">{{ glyph }}</span>
-      <h1 class="cat-hero__title">{{ category_jp }}.</h1>
-    </div>
-    {% if pause_notice %}
-    <div class="cat-break-notice" role="status" aria-live="polite">
-      <div class="cat-break-notice__label">{{ pause_notice.label }} · {{ pause_notice.date }}{% if pause_notice.weekday %} {{ pause_notice.weekday }}{% endif %}</div>
-      <div class="cat-break-notice__title">{{ pause_notice.title }}</div>
-      <p>{{ pause_notice.body }}</p>
-    </div>
-    {% elif featured and featured.summary_text %}
-    {# 装飾記法を render_emph で強調表示 (長さは CSS の -webkit-line-clamp で制御)。 #}
-    <div class="cat-hero__summary">{{ featured.summary_text|render_emph }}</div>
-    {% endif %}
-    <div class="cat-hero__stats">
-      <div>
-        <div class="stat-num">{{ entries|length }}</div>
-        <div class="stat-label">ENTRIES</div>
+<!-- ============= Hero (Turn 4 category card) ============= -->
+<header class="cat-hero"
+        data-hero-contract="{{ hero.contract }}"
+        data-category="{{ category_id }}"
+        style="--hero-base: {{ hero.theme.base }}; --hero-dark: {{ hero.theme.dark }}; --hero-ticker: {{ hero.theme.ticker }}; --hero-grad-from: {{ hero.theme.gradient_from }}; --hero-grad-to: {{ hero.theme.gradient_to }}; --hero-accent: {{ hero.theme.accent }}; --hero-text: {{ hero.theme.text }}; --hero-heading: {{ hero.theme.heading }};">
+  <div class="cat-hero__ticker" aria-label="{{ hero.ticker_label }}">
+    <span class="cat-hero__ticker-label">{{ hero.ticker_label }}</span>
+    <span class="cat-hero__ticker-text">{{ hero.ticker_text }}</span>
+  </div>
+  <div class="cat-hero__grid">
+    <section class="cat-hero__content">
+      <div class="cat-hero__eyebrow">
+        <span>{{ hero.glyph }}</span>
+        {% if hero.is_fx %}FOREIGN EXCHANGE{% else %}{{ hero.label|upper }}{% endif %}
+        {% if hero.issue %}<span>· #{{ hero.issue }}</span>{% endif %}
       </div>
-      <div>
-        <div class="stat-num">{{ past_7|length }}</div>
-        <div class="stat-label">PAST 1 WEEK</div>
+      <div class="cat-hero__heading-row">
+        <h1 class="cat-hero__title"><span class="cat-hero__glyph">{{ hero.glyph }}</span>{{ hero.jp }}<span class="cat-hero__dot">.</span></h1>
+        <span class="cat-hero__badge">直近 {{ hero.recent_count }}件</span>
       </div>
-      {% if featured %}
-      <div>
-        <div class="stat-num">{{ featured.top_score or "—" }}</div>
-        <div class="stat-label">TOP SCORE</div>
+      {% if pause_notice %}
+      <div class="cat-break-notice" role="status" aria-live="polite">
+        <div class="cat-break-notice__label">{{ pause_notice.label }} · {{ pause_notice.date }}{% if pause_notice.weekday %} {{ pause_notice.weekday }}{% endif %}</div>
+        <div class="cat-break-notice__title">{{ pause_notice.title }}</div>
+        <p>{{ pause_notice.body }}</p>
+      </div>
+      {% else %}
+      <div class="cat-hero__body">
+        <ul class="cat-hero__bullets">
+          {% for bullet in hero.body_bullets %}
+          <li class="cat-hero__bullet"><span class="cat-hero__marker"></span><span class="cat-hero__bullet-text">{{ bullet }}</span></li>
+          {% endfor %}
+        </ul>
+        {% if hero.has_more %}
+        <a class="cat-hero__read-more" href="#category-stream">{{ hero.read_more_label }}</a>
+        {% endif %}
       </div>
       {% endif %}
+      <div class="cat-hero__stats">
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">{{ hero.stats.total_entries }}</div>
+          <div class="cat-hero__stat-label">TOTAL ENTRIES</div>
+        </div>
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">{{ hero.stats.past_week }}</div>
+          <div class="cat-hero__stat-label">PAST 1 WEEK</div>
+        </div>
+        <div class="cat-hero__stat">
+          <div class="cat-hero__stat-num">{{ hero.stats.top_score }}</div>
+          <div class="cat-hero__stat-label">TOP SCORE</div>
+        </div>
+      </div>
+    </section>
+    <aside class="cat-hero__visual" data-panel="{% if hero.is_fx %}rates{% else %}score{% endif %}" aria-label="{% if hero.is_fx %}FX rate panel{% else %}Representative score panel{% endif %}">
+      <div class="cat-hero__stripes" aria-hidden="true"></div>
+      {% if hero.is_fx %}
+      <svg class="cat-hero__chart" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="0,30 12,24 24,28 36,15 48,22 60,7 72,18 84,25 96,13"></polyline>
+      </svg>
+      <div class="cat-hero__visual-label">{{ hero.visual.fx.primary_pair }}</div>
+      <div class="cat-hero__rate-row">
+        <span class="cat-hero__rate">{{ hero.visual.fx.primary_value }}</span>
+        <span class="cat-hero__rate-delta">{{ hero.visual.fx.primary_delta }}</span>
+      </div>
+      <div class="cat-hero__visual-note">{{ hero.visual.fx.note }}</div>
+      <a class="cat-hero__attribution" href="{{ hero.visual.fx.attribution_url }}">{{ hero.visual.fx.attribution_label }}</a>
+      {% if hero.visual.fx.updated_at %}<div class="cat-hero__updated">UPDATED {{ hero.visual.fx.updated_at }}</div>{% endif %}
+      {% else %}
+      <div class="cat-hero__watermark" aria-hidden="true">{{ hero.glyph }}</div>
+      <div class="cat-hero__visual-label">REPRESENTATIVE SCORE</div>
+      <div class="cat-hero__score-row">
+        <span class="cat-hero__score-value">{{ hero.visual.score }}</span>
+        <span class="cat-hero__score-unit">/100</span>
+      </div>
+      <div class="cat-hero__visual-note">{{ hero.visual.score_note }}</div>
+      {% endif %}
+    </aside>
+  </div>
+  <nav class="cat-hero__tabs" aria-label="Category lenses">
+    <span class="cat-hero__tabs-label">LENSES</span>
+    <div class="cat-hero__tab-scroll">
+      {% for c in hero.nav_categories %}
+      <a href="{{ base_url }}/{{ c.id }}/" class="cat-hero__tab {% if c.is_active %}is-active{% endif %}" style="--tab-accent: {{ c.accent }};">
+        <span>{{ c.glyph }}</span> {% if c.id == 'fx' %}FX{% else %}{{ c.name_en|upper }}{% endif %}
+      </a>
+      {% endfor %}
     </div>
-  </div>
-  {% if pause_notice %}
-  <div class="cat-hero__date">
-    <div class="cat-hero__date-label">TODAY</div>
-    <div class="cat-hero__date-big">{{ pause_notice.date[5:7] }}·{{ pause_notice.date[8:10] }}</div>
-    <div class="cat-hero__date-small">休載日{% if pause_notice.weekday %} · {{ pause_notice.weekday }}{% endif %}</div>
-  </div>
-  {% elif featured and featured.date %}
-  <div class="cat-hero__date">
-    <div class="cat-hero__date-label">LATEST</div>
-    <div class="cat-hero__date-big">{{ featured.date[5:7] }}·{{ featured.date[8:10] }}</div>
-    <div class="cat-hero__date-small">{{ featured.date[:4] }} · #{{ featured.date|replace('-', '') }}</div>
-  </div>
-  {% endif %}
-  <div class="cat-hero__bottom-bar">
-    <a href="{{ base_url }}/archive/">← ALL ARCHIVE</a>
-    <span>SCROLL TO BEGIN ↓</span>
-  </div>
+    <span class="cat-hero__tab-fade" aria-hidden="true"></span>
+    <span class="cat-hero__tab-arrow" aria-hidden="true">›</span>
+  </nav>
 </header>
 
 <div class="cat-container">
 
 {% if featured %}
 <!-- ============= TOP feature (最新 1 件) ============= -->
-<section class="top-story" data-search="{{ featured.date }} {{ featured.top_title or featured.title }} {{ featured.top_source }}">
+<section id="category-stream" class="top-story" data-search="{{ featured.date }} {{ featured.top_title or featured.title }} {{ featured.top_source }}">
   <div class="top-story__meta">
     <span class="top-story__badge">TOP FEATURE</span>
     <span>{{ featured.date }}{% if featured.top_source %} · {{ featured.top_source }}{% endif %}</span>

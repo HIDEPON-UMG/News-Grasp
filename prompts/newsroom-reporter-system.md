@@ -226,7 +226,7 @@ dedup を通過した候補から **スコア降順で 5 件** 確定する。**
   "url": "https://...",              // http(s):// で始まる・200 を確認した URL
   "url_norm": "...",                 // dedup が付ける正規化 URL（dedup 出力をそのまま使う）
   "source": "媒体名",                // 媒体名
-  "summary": "80 字程度の日本語要約",  // 日本語
+  "summary": "2〜3 文・合計 100 字以内の日本語要約。各文は必ず「。」で終える。体言止め・途中終了は禁止。文中で省略記号「…」を使って切らない。",  // 日本語
   "thumb": "https://.../og.jpg",     // ★ OGP URL or null。キー省略は gate FAIL（段階 1 を必ず実行）
   "score": 95,                       // 0〜100
   "entities": {"companies": [], "countries": [], "services": [], "people": [], "tickers": []},
