@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import re
 import sys
 
 from tools.publish_inventory import scheduled_category_ids
@@ -12,6 +13,7 @@ from tools.tts.build_script import effective_char_count, validate_script
 
 TARGET_MIN = 2600
 TARGET_MAX = 2800
+_SENTENCE_RE = re.compile(r"[^。！？\n]+[。！？]")
 
 SUPPLEMENT_SENTENCES = (
     "補足すると、今日の材料は新しい機能の多さより、どの条件を先に満たすかを見た方が整理しやすい一日でした。",
@@ -143,8 +145,23 @@ def _daily_supplement_sentences(issue: str) -> list[str]:
     return sentences
 
 
-def _daily_closing_sentence(_issue: str) -> str:
-    return "今日の観点・考察として、判断軸は成長の速さそのものではなく、責任分界と供給条件を先に言語化できているかにあります。"
+def _daily_closing_sentence(issue: str) -> str:
+    issue_jp = _issue_japanese(issue)
+    return f"{issue_jp}の今日の観点・考察として、判断軸は成長の速さそのものではなく、責任分界と供給条件を先に言語化できているかにあります。"
+
+
+def _sentence_fingerprint(sentence: str) -> str:
+    return re.sub(r"\s+", "", sentence)
+
+
+def _history_sentence_fingerprints(history_texts: list[str] | None) -> set[str]:
+    fingerprints: set[str] = set()
+    for history in history_texts or []:
+        for match in _SENTENCE_RE.finditer(re.sub(r"\s+", "", history)):
+            sentence = match.group(0).strip()
+            if len(sentence) >= 8:
+                fingerprints.add(_sentence_fingerprint(sentence))
+    return fingerprints
 
 
 def _recent_history_texts(repo_root: Path, issue: str) -> list[str]:
@@ -173,6 +190,7 @@ def _repair_repeated_closing(body: str, *, issue: str) -> tuple[str, bool]:
 def repair_text(raw: str, *, issue: str, history_texts: list[str] | None = None) -> tuple[str, bool]:
     frontmatter, body = _split_frontmatter(raw)
     repaired_body, changed = _repair_repeated_closing(body, issue=issue)
+    history_fingerprints = _history_sentence_fingerprints(history_texts)
 
     additions: list[str] = []
     if effective_char_count(repaired_body) < TARGET_MIN:
@@ -181,6 +199,8 @@ def repair_text(raw: str, *, issue: str, history_texts: list[str] | None = None)
         for _ in range(4):
             for sentence in supplement_sentences:
                 if sentence in repaired_body or sentence in additions:
+                    continue
+                if _sentence_fingerprint(sentence) in history_fingerprints:
                     continue
                 candidate_additions = additions + [sentence]
                 if closing_sentence not in repaired_body and closing_sentence not in candidate_additions:

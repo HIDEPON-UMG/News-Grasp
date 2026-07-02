@@ -217,6 +217,50 @@ def test_repair_audio_script_length_extends_short_script_to_safe_range(tmp_path)
     ) == []
 
 
+def test_repair_audio_script_length_repairs_near_complete_thematic_shortfall(tmp_path):
+    issue = "2026-07-03"
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True)
+    history = (
+        "7月2日、朝のニュースをお伝えします。"
+        "今日の観点・考察です。数字だけでなく責任の持ち方を確認します。"
+        "誰が説明し、誰が運用するかを見ると、続報も読みやすくなります。"
+        "今日の観点・考察としては、成長の速さそのものより、認証、監査、供給、説明責任をどの順番で固めるかが焦点です。"
+        "今日の観点・考察として、判断軸は成長の速さそのものではなく、責任分界と供給条件を先に言語化できているかにあります。"
+    )
+    (summary_dir / "2026-07-02-audio-script.md").write_text(history, encoding="utf-8")
+    short_script = (
+        "# ニュース グラスプ #20260703 音声朗読原稿\n\n"
+        "7月3日、朝のニュースをお伝えします。ニュース グラスプ、7月3日号です。"
+        "今朝の材料は、景気が少し鈍る気配と、供給側がむしろ前へ出る動きが同時に見えたところが印象的でした。"
+        "為替では政策の距離感、AIとITでは計算資源と契約、モビリティでは制度と燃料、製造では後工程と材料、経済では資源と輸出の裾野が見えました。"
+        "為替は、ドル円の水準そのものより、米金利の低下と日本の正常化期待がぶつかる場所として見る必要があります。"
+        "AIは、モデル名の更新より、誰が計算資源を確保し、誰が既存契約に乗せ、誰が業務画面へ自然に差し込めるかが焦点です。"
+        "ITは、導入後に守り切れる基盤をどう商品にするかの勝負です。"
+        "モビリティは、走る技術そのものより、違反時の責任、給油の段取り、保守、遠隔対応まで含めて回せるかが問われます。"
+        "製造は、メモリーだけでなく、後工程、基板、光配線までそろえて初めて供給が前へ進みます。"
+        "経済は、金利観測が少し緩んだ日に、資源、輸出、供給網の争点が逆にはっきりしました。"
+        + ("供給を誰が引き受けるかを見ると、発表額や性能だけでは見えない実装条件が見えてきます。" * 18)
+        + "今日の観点・考察です。7月3日のニュースを通して見えたのは、需要の強さより、供給を誰が引き受けるかという競争でした。"
+        "次に見るべきなのは、その前進が実際の受注、量産、運行、価格へ落ちるかどうかです。"
+        "ニュース グラスプ、7月3日号はここまでです。"
+    )
+    target = summary_dir / f"{issue}-audio-script.md"
+    target.write_text(short_script, encoding="utf-8")
+
+    assert repair_audio_script_length.repair_file(tmp_path, issue) is True
+
+    repaired = target.read_text(encoding="utf-8")
+    count = build_script.effective_char_count(repaired)
+    assert 2600 <= count <= 2800
+    assert build_script.validate_script(
+        repaired,
+        date=issue,
+        history_texts=[history],
+        required_categories=("fx", "ai", "it", "mobility", "manufacturing", "economy"),
+    ) == []
+
+
 def test_newsroom_editor_prompt_requires_tts_history_and_no_example_copy():
     prompt = (Path(__file__).resolve().parent.parent / "prompts" / "newsroom-editor-system.md").read_text(encoding="utf-8")
 
