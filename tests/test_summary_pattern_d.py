@@ -279,7 +279,7 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     assert "padding: 5px 12px 5px 10px" in tomorrow_cat_block
     watch_block = _last_css_block(css, ".summary-tomorrow__cells div > span")
     assert re.search(r"font-size:\s*(?:14|15|16)px", watch_block), watch_block
-    desktop_css = css[:css.index("@media (max-width: 520px)")]
+    desktop_css = css[:css.rindex("@media (max-width: 520px)")]
     watch_body_block = _last_css_block(desktop_css, ".summary-tomorrow__cells p")
     assert re.search(r"font-size:\s*20px", watch_body_block), watch_body_block
     watch_texts = re.findall(r"<div><span>WATCH 見る</span><p>(.*?)</p></div>", built_summary, re.S)
@@ -299,29 +299,41 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
 
 
 def test_tomorrow_board_heading_is_readable_and_compact_on_desktop_and_mobile(built_summary: str):
-    """§08 と TOMORROW BOARD は離しすぎず、PC/スマホで読める見出しサイズにする。"""
+    """§08 は §01〜§07 と同じ番号階層にし、TOMORROW BOARD は近くに置く。"""
     assert "<span>§ 08</span>" in built_summary
     assert "<strong>TOMORROW BOARD / 明日への観測ボード</strong>" in built_summary
 
     css = CSS_PATH.read_text(encoding="utf-8")
     desktop_css = css[:css.index("@media (max-width: 520px)")]
+    category_no_block = _last_css_block(desktop_css, ".summary-category__no")
+    assert re.search(r"font-size:\s*clamp\(34px,\s*5vw,\s*52px\)", category_no_block), category_no_block
+    assert "line-height: 0.85" in category_no_block
+
     head_block = _last_css_block(desktop_css, ".summary-tomorrow__head {\n")
     assert "grid-template-columns: auto minmax(0, 1fr)" in head_block
-    assert "column-gap: 14px" in head_block
-    assert "row-gap: 10px" in head_block
+    assert "column-gap: 18px" in head_block
+    assert "row-gap: 14px" in head_block
 
-    section_block = _last_css_block(desktop_css, ".summary-tomorrow__head > span")
-    assert re.search(r"font-size:\s*20px", section_block), section_block
+    section_block = _last_css_block(desktop_css, ".summary-tomorrow__head > span {\n")
+    assert "grid-column: auto" in section_block
+    assert re.search(r"font-size:\s*clamp\(34px,\s*5vw,\s*52px\)", section_block), section_block
+    assert "line-height: 0.85" in section_block
+    first_child_block = _last_css_block(desktop_css, ".summary-tomorrow__head > span:first-child")
+    assert "grid-column: auto" in first_child_block
     board_title_block = _last_css_block(desktop_css, ".summary-tomorrow__head strong")
-    assert re.search(r"font-size:\s*clamp\(18px,\s*1\.7vw,\s*24px\)", board_title_block), board_title_block
-    assert "letter-spacing: 0.1em" in board_title_block
+    assert "grid-column: auto" in board_title_block
+    assert re.search(r"font-size:\s*clamp\(17px,\s*1\.55vw,\s*22px\)", board_title_block), board_title_block
+    assert "letter-spacing: 0.09em" in board_title_block
 
     mobile_css = css[css.index("@media (max-width: 520px)"):]
     mobile_head_block = _last_css_block(mobile_css, ".summary-tomorrow__head {\n")
     assert "grid-template-columns: 1fr" in mobile_head_block
-    assert "gap: 6px" in mobile_head_block
+    assert "gap: 8px" in mobile_head_block
+    mobile_section_block = _last_css_block(mobile_css, ".summary-tomorrow__head > span")
+    assert re.search(r"font-size:\s*34px", mobile_section_block), mobile_section_block
     mobile_title_block = _last_css_block(mobile_css, ".summary-tomorrow__head strong")
-    assert re.search(r"font-size:\s*18px", mobile_title_block), mobile_title_block
+    assert re.search(r"font-size:\s*16px", mobile_title_block), mobile_title_block
+    assert "letter-spacing: 0.04em" in mobile_title_block
 
 
 def test_summary_header_search_matches_category_page_position_contract(built_summary: str):
