@@ -63,9 +63,25 @@ def _complete_deepdive_body(*, chart_count: int = 2) -> str:
 
 def _complete_audio_script(extra: str = "") -> str:
     return (
+        "<!-- tts-outline\n"
+        "中心論点: 需要の強さではなく、供給責任と運用条件を誰が引き受けるかを見る日。\n"
+        "背景: 為替、AI、IT、モビリティ、製造、経済、ゲームの材料が同じ日に並んだ。\n"
+        "なぜ今: 投資、制度、価格、供給網の変更が同じ日に出て、実装順序の判断が必要になった。\n"
+        "因果関係: 発表内容から、現場の制約、利用者への影響、明日以降の観測点へつなぐ。\n"
+        "カテゴリ論点:\n"
+        "- fx: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "- ai: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "- it: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "- mobility: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "- manufacturing: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "- economy: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "- game: 当日の事実から、制約、影響、次の観測点まで踏み込む。\n"
+        "リスク・未確定: 発表額や性能だけでは、責任分界、費用負担、継続運用の重さはまだ見えない。\n"
+        "次の観測点: 受注、量産、価格、制度適用、利用場面への落ち方を追う。\n"
+        "-->\n\n"
         "今日は6月16日です。朝のニュースをお伝えします。"
         "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
-        + ("今日は条件設計を確認する日でした。" * 152)
+        + ("背景には投資と制度と供給網の制約があり、影響とリスクを分けて次の観測点を確認する日でした。" * 60)
         + extra
         + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。"
     )
@@ -211,8 +227,23 @@ def test_generation_quality_audio_script_uses_scheduled_categories_only_on_wedne
         f"date: {issue}\n"
         "type: audio-script\n"
         "---\n\n"
+        "<!-- tts-outline\n"
+        "中心論点: 需要の強さではなく、実装責任と運用条件を誰が引き受けるかを見る日。\n"
+        "背景: 為替、AI、IT、モビリティ、製造、経済が同じ日に動いた。\n"
+        "なぜ今: 投資、制度、価格、供給網の変更が重なった。\n"
+        "因果関係: 発表内容から制約、影響、次の観測点へつなぐ。\n"
+        "カテゴリ論点:\n"
+        "- fx: 事実、制約、影響、次の観測点を踏み込む。\n"
+        "- ai: 事実、制約、影響、次の観測点を踏み込む。\n"
+        "- it: 事実、制約、影響、次の観測点を踏み込む。\n"
+        "- mobility: 事実、制約、影響、次の観測点を踏み込む。\n"
+        "- manufacturing: 事実、制約、影響、次の観測点を踏み込む。\n"
+        "- economy: 事実、制約、影響、次の観測点を踏み込む。\n"
+        "リスク・未確定: 責任分界と継続運用の重さはまだ見えない。\n"
+        "次の観測点: 受注、量産、価格、制度適用を追う。\n"
+        "-->\n\n"
         f"今日は6月24日です。朝のニュースをお伝えします。{scheduled_terms}。"
-        + ("今日は投資と認証と防御の置き方を確認する日でした。" * 110)
+        + ("背景には投資と認証と防御の置き方があり、影響とリスクを分けて次の観測点を確認する日でした。" * 61)
         + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。",
         encoding="utf-8",
     )
@@ -321,6 +352,32 @@ def test_generation_quality_rejects_invalid_audio_script(tmp_path: Path) -> None
         err.code == "audio_script_quality_invalid"
         and err.artifact.endswith(f"{ISSUE}-audio-script.md")
         and err.retryable is True
+        for err in result.errors
+    )
+
+
+def test_generation_quality_rejects_audio_script_without_topic_outline(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    audio_script = tmp_path / "digest" / "Summary" / f"{ISSUE}-audio-script.md"
+    audio_script.write_text(
+        "---\n"
+        "title: Audio Script\n"
+        f"date: {ISSUE}\n"
+        "type: audio-script\n"
+        "---\n\n"
+        "今日は6月16日です。朝のニュースをお伝えします。"
+        "為替 AI IT-Consulting モビリティ 製造 経済 ゲーム。"
+        + ("背景と影響とリスクと次の観測点を含めて条件設計を確認する日でした。" * 95)
+        + "今日の観点・考察です。責任分界と供給制約を誰が引き受けるかが焦点です。",
+        encoding="utf-8",
+    )
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 1
+    assert any(
+        err.code == "audio_script_quality_invalid"
+        and "論点設計メモ不足" in err.reason
         for err in result.errors
     )
 

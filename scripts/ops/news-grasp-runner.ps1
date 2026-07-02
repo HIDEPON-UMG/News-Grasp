@@ -1191,7 +1191,10 @@ $failureText
 
 音声台本の収束条件:
 - 失敗ログの code が audio_script_quality_invalid の場合、対象の audio-script だけを修正する。
-- 字数不足は 2500 字ぎりぎりを狙わず、tools.tts.build_script.effective_char_count で 2600〜2800 字に収める。
+- 修正は末尾追記ではなく、論点設計メモから本文全体を再構成する。既存本文の良い事実・固有名詞・数値は保持してよいが、段落構成と橋渡しは作り直す。
+- 対象ファイルの本文冒頭に `<!-- tts-outline ... -->` を必ず置く。outline には `中心論点`、`背景`、`なぜ今`、`因果関係`、`カテゴリ論点`、`リスク・未確定`、`次の観測点` を含める。
+- 失敗ログの `論点設計メモ不足`、`論点充足不足`、`字数不足`、`今日の観点・考察不足` をそのまま不足観点として扱い、本文側で背景、影響、リスク、次の観測点を具体化する。
+- 字数不足は 2500 字ぎりぎりを狙わず、tools.tts.build_script.effective_char_count で 2600〜2800 字に収める。字数を満たすための定型補足文、カテゴリ名だけを差し替えた文、同じ締め文の追加は禁止。
 - 同じ runner_python で tools.validate_generation_quality を再実行し、audio_script_quality_invalid が消えたことを確認する。
 
 制約:

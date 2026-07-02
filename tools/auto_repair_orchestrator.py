@@ -114,6 +114,9 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
     elif decision.repair_class == RepairClass.LLM_GENERATE_MISSING_ARTIFACT:
         handler = "targeted-repair"
         action = GateAction.REPAIRABLE
+    elif decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT:
+        handler = "targeted-repair"
+        action = GateAction.REPAIRABLE
     elif decision.repair_class == RepairClass.TYPED_EXTERNAL:
         handler = "external-readiness"
         action = GateAction.FATAL

@@ -9,6 +9,7 @@ from typing import Any, Iterable
 class RepairClass(StrEnum):
     DETERMINISTIC_HANDLER = "deterministic_handler"
     LLM_GENERATE_MISSING_ARTIFACT = "llm_generate_missing_artifact"
+    LLM_REWRITE_EXISTING_ARTIFACT = "llm_rewrite_existing_artifact"
     TYPED_EXTERNAL = "typed_external"
     TYPED_FATAL = "typed_fatal"
     HANDLER_UNIMPLEMENTED_RED = "handler_unimplemented_red"
@@ -136,11 +137,11 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "daily-quality",
         "audio_script_quality_invalid",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "audio-script-length-patch",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "audio-script-depth-rewrite",
         ("digest/Summary/{date}-audio-script.md",),
         "generation-quality",
-        "blocked_deterministic_repair_failed",
+        "blocked_audio_script_rewrite_failed",
     ),
     CoverageRow(
         "daily-quality",
@@ -170,11 +171,11 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "generation-quality",
         "audio_script_quality_invalid",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "audio-script-length-patch",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "audio-script-depth-rewrite",
         ("digest/Summary/{date}-audio-script.md",),
         "generation-quality",
-        "blocked_deterministic_repair_failed",
+        "blocked_audio_script_rewrite_failed",
     ),
     CoverageRow(
         "generation-quality",

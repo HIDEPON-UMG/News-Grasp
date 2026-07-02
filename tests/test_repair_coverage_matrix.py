@@ -182,6 +182,25 @@ def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> Non
     assert decisions[1].artifact_paths == ("digest/AI/2026-06-28-AI.md",)
 
 
+def test_audio_script_quality_invalid_routes_to_llm_rewrite_not_append_patch() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="generation-quality",
+            issue_code="audio_script_quality_invalid",
+            message="論点設計メモ不足; 論点充足不足; 字数不足",
+            artifact_paths=("digest/Summary/2026-06-28-audio-script.md",),
+            issue_date="2026-06-28",
+            category="summary",
+            raw_output="ERROR[audio_script_quality_invalid] ...",
+        )
+    )
+
+    assert decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+    assert decision.handler_id == "audio-script-depth-rewrite"
+    assert decision.verify_gate == "generation-quality"
+    assert decision.status_on_failure == "blocked_audio_script_rewrite_failed"
+
+
 def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -> None:
     output = "\n".join(
         [

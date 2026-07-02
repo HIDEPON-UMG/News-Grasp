@@ -40,6 +40,7 @@ PRONUNCIATION_REPLACEMENTS = {
 }
 
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n.*?\r?\n---\r?\n", re.DOTALL)
+_TTS_OUTLINE_RE = re.compile(r"<!--\s*tts-outline\s*(?P<body>.*?)-->", re.DOTALL | re.IGNORECASE)
 _URL_RE = re.compile(r"https?://\S+")
 _WIKILINK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]")
 _MARKDOWN_TOKEN_RE = re.compile(r"^[#>\-\*\s]+", re.MULTILINE)
@@ -103,6 +104,21 @@ _CATEGORY_SENTENCE_RE = re.compile(
     r"(?:IT-Consulting|Manufacturing|Artificial Intelligence|Foreign Exchange|Mobility|Economy|Gaming|AI|IT|FX|EV|Game|為替|人工知能|コンサル|モビリティ|製造|半導体|経済|ゲーム)"
     r"(?:では|は|の動きは)[^。！？\n]{8,160}[。！？]"
 )
+_OUTLINE_REQUIRED_LABELS = (
+    "中心論点",
+    "背景",
+    "なぜ今",
+    "因果関係",
+    "カテゴリ論点",
+    "リスク・未確定",
+    "次の観測点",
+)
+_DEPTH_BODY_TERMS = {
+    "背景": ("背景", "前提", "なぜなら", "文脈"),
+    "影響": ("影響", "効", "波及", "負担", "利用者", "現場"),
+    "リスク": ("リスク", "未確定", "ただし", "一方", "懸念", "課題"),
+    "次の観測点": ("次に", "明日以降", "続報", "観測点", "追う", "確認します"),
+}
 
 
 def _warn(message: str) -> None:
@@ -116,6 +132,7 @@ def load_script(date: str) -> str:
 
 
 def effective_char_count(text: str) -> int:
+    text = _strip_tts_outline(_FRONTMATTER_RE.sub("", _strip_audio_title_lines(text)))
     return len(_COUNT_IGNORE_RE.sub("", text))
 
 
@@ -161,6 +178,15 @@ def _strip_audio_title_lines(text: str) -> str:
         if not _AUDIO_TITLE_LINE_RE.match(line.strip())
     ]
     return "\n".join(lines)
+
+
+def _extract_tts_outline(text: str) -> str:
+    match = _TTS_OUTLINE_RE.search(text)
+    return match.group("body").strip() if match else ""
+
+
+def _strip_tts_outline(text: str) -> str:
+    return _TTS_OUTLINE_RE.sub("", text)
 
 
 def _date_japanese(date: str) -> str:
@@ -217,6 +243,54 @@ def _history_issues(text: str, history_texts: list[str]) -> list[str]:
     return issues
 
 
+def _category_present_in_outline(outline: str, cat_id: str) -> bool:
+    lowered = outline.casefold()
+    aliases = CATEGORY_ALIASES.get(cat_id, (cat_id,))
+    return cat_id.casefold() in lowered or any(alias.casefold() in lowered for alias in aliases)
+
+
+def _outline_line(outline: str, label: str) -> str:
+    for line in outline.splitlines():
+        if line.strip().startswith(label):
+            return line.split(":", 1)[-1].strip() if ":" in line else line.strip()
+    return ""
+
+
+def _outline_issues(raw_text: str, categories: tuple[str, ...]) -> list[str]:
+    outline = _extract_tts_outline(raw_text)
+    if not outline:
+        return ["論点設計メモ不足: 音声原稿の前に <!-- tts-outline ... --> で中心論点、背景、因果、カテゴリ論点、リスク、次の観測点を固定する"]
+
+    issues: list[str] = []
+    missing_labels = [label for label in _OUTLINE_REQUIRED_LABELS if label not in outline]
+    if missing_labels:
+        issues.append("論点設計メモ不足: 必須項目が足りません (" + ", ".join(missing_labels) + ")")
+
+    central_focus = _outline_line(outline, "中心論点")
+    if effective_char_count(central_focus) < 20:
+        issues.append("論点設計メモ不足: 中心論点が短すぎます")
+
+    missing_categories = [cat_id for cat_id in categories if not _category_present_in_outline(outline, cat_id)]
+    if missing_categories:
+        issues.append("論点設計メモ不足: カテゴリ論点が足りません (" + ", ".join(missing_categories) + ")")
+
+    if effective_char_count(outline) < 180:
+        issues.append("論点設計メモ不足: 論点設計が短すぎます")
+    return issues
+
+
+def _depth_coverage_issues(text: str) -> list[str]:
+    compact = re.sub(r"\s+", "", text)
+    missing = [
+        label
+        for label, terms in _DEPTH_BODY_TERMS.items()
+        if not any(term in compact for term in terms)
+    ]
+    if missing:
+        return ["論点充足不足: 本文に不足観点があります (" + ", ".join(missing) + ")"]
+    return []
+
+
 def _category_template_repetition_issues(text: str) -> list[str]:
     skeleton_counts: dict[str, int] = {}
     for match in _CATEGORY_SENTENCE_RE.finditer(re.sub(r"\s+", "", text)):
@@ -242,7 +316,8 @@ def validate_script(
     required_categories: list[str] | tuple[str, ...] | None = None,
 ) -> list[str]:
     issues: list[str] = []
-    text = _strip_audio_title_lines(text)
+    raw_text = text
+    text = _strip_tts_outline(_strip_audio_title_lines(text))
     missing: list[str] = []
     categories = tuple(required_categories) if required_categories is not None else tuple(CATEGORY_ALIASES)
     for cat_id in categories:
@@ -253,6 +328,8 @@ def validate_script(
         issues.append(f"カテゴリ不足: {', '.join(missing)}")
 
     if date:
+        issues.extend(_outline_issues(raw_text, categories))
+        issues.extend(_depth_coverage_issues(text))
         first_line = next((line.strip() for line in text.splitlines() if line.strip()), "")
         expected_date = _date_japanese(date)
         if expected_date not in first_line or "朝のニュース" not in first_line:
@@ -277,6 +354,7 @@ def validate_script(
 
 def normalize_for_tts(text: str) -> str:
     text = _FRONTMATTER_RE.sub("", text)
+    text = _strip_tts_outline(text)
     text = _strip_audio_title_lines(text)
     text = _WIKILINK_RE.sub(lambda m: m.group(2) or m.group(1), text)
     text = _URL_RE.sub("", text)

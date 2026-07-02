@@ -63,3 +63,28 @@ def test_classify_emits_ordered_issue_ledger_and_selected_artifacts(capsys) -> N
         "articles_issue_empty",
         "audio_script_quality_invalid",
     ]
+
+
+def test_classify_routes_audio_script_quality_to_targeted_rewrite(capsys) -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "errors": [
+                {
+                    "code": "audio_script_quality_invalid",
+                    "artifact": "digest/Summary/2026-06-28-audio-script.md",
+                    "reason": "論点設計メモ不足; 論点充足不足; 字数不足",
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    rc = main(["classify", "--gate-id", "generation-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["action"] == "repairable"
+    assert payload["handler"] == "targeted-repair"
+    assert payload["handler_id"] == "audio-script-depth-rewrite"
+    assert payload["failure_status"] == "blocked_audio_script_rewrite_failed"

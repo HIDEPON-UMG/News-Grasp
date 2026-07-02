@@ -616,7 +616,7 @@ def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_
     assert "https://example.com/current" in repaired
 
 
-def test_audio_script_length_patch_repairs_repeated_closing(tmp_path: Path) -> None:
+def test_audio_script_length_patch_blocks_outline_missing_repeated_closing(tmp_path: Path) -> None:
     issue = "2026-06-28"
     summary_dir = tmp_path / "digest" / "Summary"
     summary_dir.mkdir(parents=True)
@@ -643,13 +643,11 @@ def test_audio_script_length_patch_repairs_repeated_closing(tmp_path: Path) -> N
         )
     )
 
-    repaired = (summary_dir / f"{issue}-audio-script.md").read_text(encoding="utf-8")
-    assert result.status == "repaired"
-    assert "ニュースグラスプ、6月28日号でした。" in repaired
-    assert "今日の整理はここで区切ります。" in repaired
+    assert result.status == "blocked_deterministic_repair_not_applicable"
+    assert not result.changed
 
 
-def test_audio_script_length_patch_extends_short_complete_daily_script(tmp_path: Path) -> None:
+def test_audio_script_length_patch_blocks_outline_missing_short_script(tmp_path: Path) -> None:
     issue = "2026-07-02"
     summary_dir = tmp_path / "digest" / "Summary"
     summary_dir.mkdir(parents=True)
@@ -676,10 +674,5 @@ def test_audio_script_length_patch_extends_short_complete_daily_script(tmp_path:
         )
     )
 
-    repaired = (summary_dir / f"{issue}-audio-script.md").read_text(encoding="utf-8")
-    assert result.status == "repaired"
-    assert result.changed
-    assert "7月2日号の補足整理です。" in repaired
-    assert "FX、AI、IT、Mobility、Manufacturing、Economy、Game" in repaired
-    assert "FXは、ドル円の水準そのものより" in repaired
-    assert repaired.count("見出しの強さだけでなく") == 0
+    assert result.status == "blocked_deterministic_repair_not_applicable"
+    assert not result.changed
