@@ -317,6 +317,8 @@ def test_product_constitution_has_category_hero_turn4_commitment() -> None:
         "ExchangeRate-API Open",
         "https://open.er-api.com/v6/latest/USD",
         "Rates By Exchange Rate API",
+        "lead_title_lines",
+        "category hero lead title line quality",
         "Public UI / OGP / PWA / thumbnails",
         "Summary / editorial reflection",
         "tests/test_category_hero_sentence_fit.py",

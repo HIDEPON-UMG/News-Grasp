@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from tools import generate_pages
 from tools.config import CATEGORIES
 
@@ -201,6 +203,62 @@ def test_category_lead_title_lines_keep_short_subject_with_topic_phrase() -> Non
         "メタ、AIクラウド",
         "外販構想で上昇",
     ]
+
+
+def test_category_lead_title_lines_cover_current_category_hero_titles() -> None:
+    cases = {
+        "ai": (
+            "ソフトバンクG、OpenAIへ1兆6273億円を追加出資　第3弾は10月予定",
+            ["ソフトバンクG", "OpenAIへ1兆6273億円", "を追加出資", "第3弾は10月予定"],
+        ),
+        "economy": (
+            "7月値上げ2566品目　円安162円台が家計圧力を増幅",
+            ["7月値上げ2566品目", "円安162円台が家計圧力を増幅"],
+        ),
+        "game": (
+            "SIE、2028年からPlayStation新作をダウンロード専売へ",
+            ["SIE、2028年から", "PlayStation新作を", "ダウンロード専売へ"],
+        ),
+        "it": (
+            "メタ、AIクラウド外販構想で上昇",
+            ["メタ、AIクラウド", "外販構想で上昇"],
+        ),
+        "manufacturing": (
+            "日印、製造投資2兆円 半導体材料工場やAI協業が120件",
+            ["日印、製造投資2兆円", "半導体材料工場や", "AI協業が120件"],
+        ),
+        "mobility": (
+            "テスラ韓国法人、補助金継続決定の翌日に主力EVを値上げ",
+            ["テスラ韓国法人", "補助金継続決定の翌日に", "主力EVを値上げ"],
+        ),
+    }
+
+    for category_id, (title, expected) in cases.items():
+        lines = generate_pages._category_lead_title_lines(title)
+        assert lines == expected, category_id
+        assert generate_pages._category_lead_title_quality_errors(title, lines) == []
+
+
+def test_category_hero_context_rejects_invalid_lead_title_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    featured = {
+        "date": "2026-07-02",
+        "summary_text": "主要論点を整理した。",
+        "top_score": 92,
+        "top_title": "長すぎる見出し",
+    }
+
+    monkeypatch.setattr(generate_pages, "_category_lead_title_lines", lambda _title: ["孤立", "長すぎる長すぎる長すぎる長すぎる長すぎる"])
+
+    with pytest.raises(ValueError, match="category hero lead title line quality failed"):
+        generate_pages.build_category_hero_context(
+            category_id="it",
+            featured=featured,
+            entries=[featured],
+            past_7=[featured],
+            nav_categories=[],
+            sentence_fit=generate_pages.fit_to_sentences(str(featured["summary_text"]), max_chars=80),
+            fx_panel=generate_pages.default_fx_hero_panel(),
+        )
 
 
 def test_rest_day_hero_keeps_turn4_theme_and_structured_emphasis() -> None:

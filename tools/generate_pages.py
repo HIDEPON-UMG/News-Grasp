@@ -51,6 +51,15 @@ _PODCAST_CHANNEL_URL = "https://www.youtube.com/@newsgrasp/podcasts"
 
 _CATEGORY_HERO_BODY_MAX_CHARS = 104
 _CATEGORY_HERO_READ_MORE_LABEL = "続きを読む →"
+_CATEGORY_LEAD_TITLE_TARGET_WIDTH = 14
+_CATEGORY_LEAD_TITLE_HARD_WIDTH = 18
+_CATEGORY_LEAD_TITLE_MAX_LINES = 4
+_CATEGORY_LEAD_TITLE_EVENT_MARKERS = (
+    "外販構想",
+    "ダウンロード専売",
+    "主力EV",
+    "AI協業",
+)
 
 _CATEGORY_HERO_THEMES: dict[str, dict[str, str]] = {
     "fx": {
@@ -1002,6 +1011,110 @@ def _category_lead_note(featured: dict[str, Any]) -> str:
     return ""
 
 
+def _title_display_width(text: str) -> float:
+    """hero 見出しの行長を日本語表示寄りの概算幅で返す。"""
+    width = 0.0
+    for ch in text:
+        if ch.isascii() and ch.isalnum():
+            width += 0.62
+        elif ch.isascii():
+            width += 0.5
+        elif ch in "、。，．・｜|／/":
+            width += 0.5
+        else:
+            width += 1.0
+    return width
+
+
+def _split_title_unit(unit: str) -> list[str]:
+    """見出しを意味単位の候補へ分ける。CSS の自動折返しに任せない。"""
+    if not unit:
+        return []
+
+    amount_split = re.match(
+        r"^(.+?(?:億円|兆円|億ドル|兆ドル|万ドル|％|%))((?:を|へ|に|で|が|は).+)$",
+        unit,
+    )
+    if amount_split and len(unit) >= 13:
+        return [amount_split.group(1), amount_split.group(2)]
+
+    chunks = [unit]
+    for marker in _CATEGORY_LEAD_TITLE_EVENT_MARKERS:
+        next_chunks: list[str] = []
+        for chunk in chunks:
+            if marker in chunk and not chunk.startswith(marker):
+                before, after = chunk.split(marker, 1)
+                next_chunks.extend([before, marker + after])
+            else:
+                next_chunks.append(chunk)
+        chunks = next_chunks
+
+    parts: list[str] = []
+    particle_re = re.compile(r"(.+?(?:から|まで|より|には|では|への|の|に|へ|で|が|は|を|や|と))(.+)")
+    for chunk in chunks:
+        rest = chunk
+        while rest and _title_display_width(rest) > _CATEGORY_LEAD_TITLE_TARGET_WIDTH:
+            match = particle_re.match(rest)
+            if not match:
+                break
+            parts.append(match.group(1))
+            rest = match.group(2)
+        if rest:
+            parts.append(rest)
+    return [p for p in parts if p]
+
+
+def _pack_title_lines(units: list[str]) -> list[str]:
+    """候補単位をモバイルheroに収まる行へ詰める。"""
+    lines: list[str] = []
+    current = ""
+    for unit in units:
+        if not current:
+            current = unit
+            continue
+        if unit.startswith("第") or any(unit.startswith(marker) for marker in _CATEGORY_LEAD_TITLE_EVENT_MARKERS):
+            lines.append(current)
+            current = unit
+            continue
+        joined = current + unit
+        if _title_display_width(joined) <= _CATEGORY_LEAD_TITLE_TARGET_WIDTH:
+            current = joined
+        else:
+            lines.append(current)
+            current = unit
+    if current:
+        lines.append(current)
+
+    last_is_forced_boundary = lines and (
+        lines[-1].startswith("第")
+        or any(lines[-1].startswith(marker) for marker in _CATEGORY_LEAD_TITLE_EVENT_MARKERS)
+    )
+    if len(lines) >= 2 and not last_is_forced_boundary and _title_display_width(lines[-1]) <= 8:
+        merged = lines[-2] + lines[-1]
+        if _title_display_width(merged) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+            lines = [*lines[:-2], merged]
+    return lines
+
+
+def _category_lead_title_quality_errors(title: str, lines: list[str]) -> list[str]:
+    """公開前にhero見出しの不自然な表示行を止める契約チェック。"""
+    errors: list[str] = []
+    if not lines:
+        errors.append("lead title lines empty")
+        return errors
+    if len(lines) > _CATEGORY_LEAD_TITLE_MAX_LINES:
+        errors.append(f"too many lead title lines: {len(lines)}")
+    for idx, line in enumerate(lines, start=1):
+        width = _title_display_width(line)
+        if width > _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+            errors.append(f"line {idx} too long: width={width} text={line}")
+        if width <= 4 and len(lines) > 1:
+            errors.append(f"line {idx} too short and isolated: text={line}")
+        if re.search(r"[、。，．・｜|／/]\s*$", line):
+            errors.append(f"line {idx} ends with separator: text={line}")
+    return errors
+
+
 def _category_lead_title_lines(title: str) -> list[str]:
     """モバイル hero で文節途中の不自然な改行を避ける表示行を作る。"""
     text = re.sub(r"\s+", " ", strip_inline(str(title or ""))).strip()
@@ -1009,28 +1122,17 @@ def _category_lead_title_lines(title: str) -> list[str]:
         return []
 
     raw_parts = [part.strip() for part in re.split(r"[、。，．・｜|／/]+|\s+", text) if part.strip()]
-    lines: list[str] = []
-
+    units: list[str] = []
     for part in raw_parts:
-        subparts = [
-            p.strip()
-            for p in re.split(r"(?=第[0-9０-９]+弾)", part)
-            if p.strip()
-        ]
-        for subpart in subparts:
-            amount_split = re.match(r"^(.+?(?:億円|兆円|億ドル|兆ドル|万ドル|％|%))((?:を|へ|に|で|が|は).+)$", subpart)
-            if amount_split and len(subpart) >= 13:
-                lines.extend([amount_split.group(1), amount_split.group(2)])
-                continue
+        for subpart in [p.strip() for p in re.split(r"(?=第[0-9０-９]+弾)", part) if p.strip()]:
+            units.extend(_split_title_unit(subpart))
 
-            marker_split = re.match(r"^(.+?)(外販構想.+)$", subpart)
-            if marker_split and len(marker_split.group(1)) >= 4:
-                lines.extend([marker_split.group(1), marker_split.group(2)])
-            else:
-                lines.append(subpart)
+    if len(units) >= 2 and _title_display_width(units[0]) <= 4:
+        first_pair = f"{units[0]}、{units[1]}"
+        if _title_display_width(first_pair) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+            units = [first_pair, *units[2:]]
 
-    if len(lines) >= 2 and len(lines[0]) <= 4 and len(lines[0] + "、" + lines[1]) <= 14:
-        lines = [f"{lines[0]}、{lines[1]}", *lines[2:]]
+    lines = _pack_title_lines(units)
     return lines or [text]
 
 
@@ -1104,6 +1206,14 @@ def build_category_hero_context(
         )
         if part
     )
+    lead_title_lines = _category_lead_title_lines(lead_title)
+    lead_title_line_errors = _category_lead_title_quality_errors(lead_title, lead_title_lines)
+    if lead_title_line_errors:
+        raise ValueError(
+            "category hero lead title line quality failed: "
+            + "; ".join(lead_title_line_errors)
+            + f" (title={lead_title})"
+        )
     return {
         "contract": "turn4-category",
         "is_fx": is_fx,
@@ -1133,7 +1243,8 @@ def build_category_hero_context(
             "score": top_score,
             "lead_label": "最重要シグナル",
             "lead_title": lead_title,
-            "lead_title_lines": _category_lead_title_lines(lead_title),
+            "lead_title_lines": lead_title_lines,
+            "lead_title_line_errors": lead_title_line_errors,
             "lead_meta": lead_meta,
             "lead_note": _category_lead_note(featured),
             "lead_url": featured.get("canonical") or "",
