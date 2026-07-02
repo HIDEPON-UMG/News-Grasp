@@ -153,6 +153,20 @@ def test_audio_script_rejects_repeated_motifs_from_recent_history():
     assert any("過去原稿との定型表現" in issue for issue in issues)
 
 
+def test_audio_script_rejects_category_template_repetition():
+    repeated = (
+        "FXでは、見出しの強さだけでなく、誰が説明責任を持つかが焦点です。"
+        "AIでは、見出しの強さだけでなく、誰が説明責任を持つかが焦点です。"
+        "ITでは、見出しの強さだけでなく、誰が説明責任を持つかが焦点です。"
+        "Mobilityでは、見出しの強さだけでなく、誰が説明責任を持つかが焦点です。"
+    )
+    current = _valid_script(repeated)
+
+    issues = build_script.validate_script(current, date="2026-06-16")
+
+    assert any("カテゴリ別補足の同型反復" in issue for issue in issues)
+
+
 def test_audio_script_compares_against_one_available_history_day():
     repeated = (
         "ここは少し身構えます。"

@@ -136,16 +136,18 @@ def test_repair_model_escalates_complex_patterns_to_gpt54() -> None:
         assert select_repair_model(**signals) == "gpt-5.4", label
 
 
-def test_newsroom_editor_policy_uses_full_duty_eval_not_style_rewrite() -> None:
-    """編集長モデルは full-duty 評価で決め、文体 rewrite 評価では決めない。"""
+def test_newsroom_editor_policy_uses_gpt54_for_tts_script_quality() -> None:
+    """日次TTS原稿を含む編集長生成は、原稿品質を優先して gpt-5.4 を使う。"""
     newsroom_editor = DEFAULT_MODEL_POLICY["newsroom_editor"]
     assert newsroom_editor["selection_summary"] == "build/model-eval-newsroom-editor/newsroom_editor_summary.json"
-    assert newsroom_editor["selection_status"] == "selected"
-    assert newsroom_editor["default"] == "gpt-5.4-mini"
-    assert newsroom_editor["selection_variant"] == "newsroom-editor-mini"
+    assert newsroom_editor["selection_status"] == "overridden"
+    assert newsroom_editor["default"] == "gpt-5.4"
+    assert newsroom_editor["selection_variant"] == "newsroom-editor-54"
     assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-54"
     assert newsroom_editor["escalate"] == "gpt-5.4"
-    assert newsroom_editor["selection_source"] == "full_duty_newsroom_editor_eval"
+    assert newsroom_editor["selection_source"] == "tts_script_quality_override_2026_07_02"
+    assert newsroom_editor["previous_selection_source"] == "full_duty_newsroom_editor_eval"
+    assert DEFAULT_MODEL_POLICY["deepdive"]["default"] == "gpt-5.5"
 
 
 def test_newsroom_editor_escalation_uses_machine_signals() -> None:
@@ -194,7 +196,7 @@ def test_select_newsroom_editor_model_returns_default_or_quality_leader() -> Non
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.4-mini"
+    ) == "gpt-5.4"
     assert select_newsroom_editor_model(
         gate_fail_count=1,
         dedup_conflict_count=0,

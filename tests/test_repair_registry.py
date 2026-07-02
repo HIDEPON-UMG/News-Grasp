@@ -647,3 +647,39 @@ def test_audio_script_length_patch_repairs_repeated_closing(tmp_path: Path) -> N
     assert result.status == "repaired"
     assert "ニュースグラスプ、6月28日号でした。" in repaired
     assert "今日の整理はここで区切ります。" in repaired
+
+
+def test_audio_script_length_patch_extends_short_complete_daily_script(tmp_path: Path) -> None:
+    issue = "2026-07-02"
+    summary_dir = tmp_path / "digest" / "Summary"
+    summary_dir.mkdir(parents=True)
+    body = (
+        "7月2日の朝のニュースをお伝えします。ニュース グラスプ、7月2日号です。\n"
+        "FX、AI、IT、Mobility、Manufacturing、Economy、Gameを順に見ます。\n"
+        "FXでは円安と政策発言の受け止めを確認します。\n"
+        "AIでは投資と配布面の競争を確認します。\n"
+        "ITでは導入前後の審査と監視を確認します。\n"
+        "Mobilityでは安全標準と運行条件を確認します。\n"
+        "Manufacturingでは量産拠点と供給網を確認します。\n"
+        "Economyでは物価と金利の重さを確認します。\n"
+        "Gameでは販路と安全設計を確認します。\n"
+        "今日の観点・考察として、条件を先にそろえることが重要です。\n"
+    )
+    (summary_dir / f"{issue}-audio-script.md").write_text(body, encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="audio-script-length-patch",
+            artifacts=[f"digest/Summary/{issue}-audio-script.md"],
+        )
+    )
+
+    repaired = (summary_dir / f"{issue}-audio-script.md").read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert result.changed
+    assert "7月2日号の補足整理です。" in repaired
+    assert "FX、AI、IT、Mobility、Manufacturing、Economy、Game" in repaired
+    assert "FXは、ドル円の水準そのものより" in repaired
+    assert repaired.count("見出しの強さだけでなく") == 0

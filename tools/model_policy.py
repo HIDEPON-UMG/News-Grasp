@@ -47,13 +47,14 @@ DEFAULT_MODEL_POLICY: dict[str, dict[str, object]] = {
         ],
     },
     "newsroom_editor": {
-        "default": "gpt-5.4-mini",
+        "default": "gpt-5.4",
         "escalate": "gpt-5.4",
-        "selection_status": "selected",
-        "selection_variant": "newsroom-editor-mini",
+        "selection_status": "overridden",
+        "selection_variant": "newsroom-editor-54",
         "quality_leader_variant": "newsroom-editor-54",
         "selection_summary": "build/model-eval-newsroom-editor/newsroom_editor_summary.json",
-        "selection_source": "full_duty_newsroom_editor_eval",
+        "selection_source": "tts_script_quality_override_2026_07_02",
+        "previous_selection_source": "full_duty_newsroom_editor_eval",
         "candidate_variants": [
             "newsroom-editor-mini",
             "newsroom-editor-54",

@@ -77,6 +77,32 @@ _REPEATED_MOTIFS = (
     "誰が運用",
     "後工程",
 )
+_CATEGORY_TEMPLATE_LABELS = (
+    "IT-Consulting",
+    "Manufacturing",
+    "Artificial Intelligence",
+    "Foreign Exchange",
+    "Mobility",
+    "Economy",
+    "Gaming",
+    "AI",
+    "IT",
+    "FX",
+    "EV",
+    "Game",
+    "為替",
+    "人工知能",
+    "コンサル",
+    "モビリティ",
+    "製造",
+    "半導体",
+    "経済",
+    "ゲーム",
+)
+_CATEGORY_SENTENCE_RE = re.compile(
+    r"(?:IT-Consulting|Manufacturing|Artificial Intelligence|Foreign Exchange|Mobility|Economy|Gaming|AI|IT|FX|EV|Game|為替|人工知能|コンサル|モビリティ|製造|半導体|経済|ゲーム)"
+    r"(?:では|は|の動きは)[^。！？\n]{8,160}[。！？]"
+)
 
 
 def _warn(message: str) -> None:
@@ -191,6 +217,23 @@ def _history_issues(text: str, history_texts: list[str]) -> list[str]:
     return issues
 
 
+def _category_template_repetition_issues(text: str) -> list[str]:
+    skeleton_counts: dict[str, int] = {}
+    for match in _CATEGORY_SENTENCE_RE.finditer(re.sub(r"\s+", "", text)):
+        skeleton = match.group(0)
+        for label in _CATEGORY_TEMPLATE_LABELS:
+            skeleton = skeleton.replace(label, "{CATEGORY}")
+        skeleton_counts[skeleton] = skeleton_counts.get(skeleton, 0) + 1
+
+    if any(count >= 3 for count in skeleton_counts.values()):
+        return ["カテゴリ別補足の同型反復: カテゴリ名だけを差し替えた補足文が3件以上あります"]
+
+    if text.count("見出しの強さだけでなく") >= 3:
+        return ["カテゴリ別補足の同型反復: 同じ補足表現がカテゴリ横断で反復しています"]
+
+    return []
+
+
 def validate_script(
     text: str,
     *,
@@ -221,6 +264,7 @@ def validate_script(
     if _PATRONIZING_RE.search(text):
         issues.append("上から目線コメント: 聞き手に説教せず、今日の観点・考察を具体化する")
 
+    issues.extend(_category_template_repetition_issues(text))
     issues.extend(_history_issues(text, history_texts or []))
 
     count = effective_char_count(text)
