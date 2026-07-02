@@ -298,6 +298,32 @@ def test_essay_redesign_uses_category_marker_chips_and_larger_watch_labels(built
     assert re.search(r"\.summary-tomorrow__cells p\s*\{[^}]*font-size:\s*16\.5px", mobile_css, re.S), mobile_css
 
 
+def test_tomorrow_board_heading_is_readable_and_compact_on_desktop_and_mobile(built_summary: str):
+    """§08 と TOMORROW BOARD は離しすぎず、PC/スマホで読める見出しサイズにする。"""
+    assert "<span>§ 08</span>" in built_summary
+    assert "<strong>TOMORROW BOARD / 明日への観測ボード</strong>" in built_summary
+
+    css = CSS_PATH.read_text(encoding="utf-8")
+    desktop_css = css[:css.index("@media (max-width: 520px)")]
+    head_block = _last_css_block(desktop_css, ".summary-tomorrow__head {\n")
+    assert "grid-template-columns: auto minmax(0, 1fr)" in head_block
+    assert "column-gap: 14px" in head_block
+    assert "row-gap: 10px" in head_block
+
+    section_block = _last_css_block(desktop_css, ".summary-tomorrow__head > span")
+    assert re.search(r"font-size:\s*20px", section_block), section_block
+    board_title_block = _last_css_block(desktop_css, ".summary-tomorrow__head strong")
+    assert re.search(r"font-size:\s*clamp\(18px,\s*1\.7vw,\s*24px\)", board_title_block), board_title_block
+    assert "letter-spacing: 0.1em" in board_title_block
+
+    mobile_css = css[css.index("@media (max-width: 520px)"):]
+    mobile_head_block = _last_css_block(mobile_css, ".summary-tomorrow__head {\n")
+    assert "grid-template-columns: 1fr" in mobile_head_block
+    assert "gap: 6px" in mobile_head_block
+    mobile_title_block = _last_css_block(mobile_css, ".summary-tomorrow__head strong")
+    assert re.search(r"font-size:\s*18px", mobile_title_block), mobile_title_block
+
+
 def test_summary_header_search_matches_category_page_position_contract(built_summary: str):
     """ESSAY の検索窓はカテゴリーページ同様、logo の外側で header 中央列に置く。"""
     template = SUMMARY_TEMPLATE.read_text(encoding="utf-8")
