@@ -183,6 +183,17 @@ def test_category_focus_title_prefers_summary_section_heading_over_count_sentenc
     assert hero["visual"]["lead_title"] == "メタ、AIクラウド外販構想で上昇"
 
 
+def test_category_lead_title_lines_keep_mobile_breaks_at_phrase_boundaries() -> None:
+    title = "ソフトバンクG、OpenAIへ1兆6273億円を追加出資　第3弾は10月予定"
+
+    assert generate_pages._category_lead_title_lines(title) == [
+        "ソフトバンクG",
+        "OpenAIへ1兆6273億円",
+        "を追加出資",
+        "第3弾は10月予定",
+    ]
+
+
 def test_rest_day_hero_keeps_turn4_theme_and_structured_emphasis() -> None:
     html = _render("game", generate_pages._category_pause_notice("game", "2026-07-01"))
 
@@ -229,6 +240,15 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert "grid-template-columns: 1.06fr .94fr" in css
     assert ".cat-hero__tab-fade" in css
     assert ".cat-hero__tab-arrow" in css
+    tab_scroll_rule = css.split(".cat-hero__tab-scroll {", 1)[1].split("}", 1)[0]
+    assert "overflow-x: auto;" in tab_scroll_rule
+    assert "-webkit-overflow-scrolling: touch;" in tab_scroll_rule
+    assert "scroll-snap-type: x proximity;" in tab_scroll_rule
+    assert "scrollbar-width: none;" in tab_scroll_rule
+    tab_fade_rule = css.split(".cat-hero__tab-fade {", 1)[1].split("}", 1)[0]
+    assert "pointer-events: none;" in tab_fade_rule
+    tab_arrow_rule = css.split(".cat-hero__tab-arrow {", 1)[1].split("}", 1)[0]
+    assert "pointer-events: none;" in tab_arrow_rule
     assert ".cat-hero__point-list" in css
     assert ".cat-hero__point-key" in css
     focus_label_rule = css.split(".cat-hero__focus-label {", 1)[1].split("}", 1)[0]
@@ -239,6 +259,15 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     lead_rule = css.split(".cat-hero__lead-title {", 1)[1].split("}", 1)[0]
     assert "font-size: 44px;" in lead_rule
     assert "line-height: 1.16;" in lead_rule
+    assert ".cat-hero__lead-title-line" in css
+    assert 'content: " ";' in css
+    mobile_rule = css.split("@media (max-width: 720px)", 1)[1]
+    assert "text-align: left;" in mobile_rule
+    assert "word-break: keep-all;" in mobile_rule
+    assert "overflow-wrap: normal;" in mobile_rule
+    assert "content: none;" in mobile_rule
+    mobile_note_rule = mobile_rule.split(".cat-hero__lead .cat-hero__visual-note {", 1)[1].split("}", 1)[0]
+    assert "text-align: left;" in mobile_note_rule
     lead_meta_rule = css.split(".cat-hero__lead-meta {", 1)[1].split("}", 1)[0]
     assert "font-size: 13px;" in lead_meta_rule
     lead_note_rule = css.split(".cat-hero__lead .cat-hero__visual-note {", 1)[1].split("}", 1)[0]

@@ -1002,6 +1002,33 @@ def _category_lead_note(featured: dict[str, Any]) -> str:
     return ""
 
 
+def _category_lead_title_lines(title: str) -> list[str]:
+    """モバイル hero で文節途中の不自然な改行を避ける表示行を作る。"""
+    text = re.sub(r"\s+", " ", strip_inline(str(title or ""))).strip()
+    if not text:
+        return []
+
+    raw_parts = [
+        part.strip()
+        for part in re.split(r"[、。，．・｜|／/]+|\s+", text)
+        if part.strip()
+    ]
+    lines: list[str] = []
+    for part in raw_parts:
+        subparts = [
+            p.strip()
+            for p in re.split(r"(?=第[0-9０-９]+弾)", part)
+            if p.strip()
+        ]
+        for subpart in subparts:
+            amount_split = re.match(r"^(.+?(?:億円|兆円|億ドル|兆ドル|万ドル|％|%))((?:を|へ|に|で|が|は).+)$", subpart)
+            if amount_split and len(subpart) >= 13:
+                lines.extend([amount_split.group(1), amount_split.group(2)])
+            else:
+                lines.append(subpart)
+    return lines or [text]
+
+
 def _emphasize_hero_sentence(text: str) -> str:
     """ヒーロー本文の構造行に最低限の強調を付ける。
 
@@ -1101,6 +1128,7 @@ def build_category_hero_context(
             "score": top_score,
             "lead_label": "最重要シグナル",
             "lead_title": lead_title,
+            "lead_title_lines": _category_lead_title_lines(lead_title),
             "lead_meta": lead_meta,
             "lead_note": _category_lead_note(featured),
             "lead_url": featured.get("canonical") or "",

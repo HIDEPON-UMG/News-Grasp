@@ -217,8 +217,10 @@
       <div class="cat-hero__watermark" aria-hidden="true">{{ hero.glyph }}</div>
       <div class="cat-hero__lead">
         <div class="cat-hero__visual-label">{{ hero.visual.lead_label }}</div>
-        {% if hero.visual.lead_url %}<a class="cat-hero__lead-title" href="{{ hero.visual.lead_url }}">{% else %}<span class="cat-hero__lead-title">{% endif %}
-          {{ hero.visual.lead_title }}
+        {% if hero.visual.lead_url %}<a class="cat-hero__lead-title" href="{{ hero.visual.lead_url }}" aria-label="{{ hero.visual.lead_title }}">{% else %}<span class="cat-hero__lead-title">{% endif %}
+          {%- for line in hero.visual.lead_title_lines -%}
+          <span class="cat-hero__lead-title-line">{{ line }}</span>
+          {%- endfor -%}
         {% if hero.visual.lead_url %}</a>{% else %}</span>{% endif %}
         {% if hero.visual.lead_meta %}<div class="cat-hero__lead-meta">{{ hero.visual.lead_meta }}</div>{% endif %}
         {% if hero.visual.lead_note %}<div class="cat-hero__visual-note">{{ hero.visual.lead_note|render_emph }}</div>{% endif %}
