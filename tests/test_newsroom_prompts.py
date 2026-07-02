@@ -224,3 +224,18 @@ def test_editor_prompt_audio_script_uses_scheduled_categories_not_fixed_seven() 
         assert "朗読原稿" in prompt
         assert "scheduled_categories 件" in prompt
         assert "カテゴリ巡回 7 件を各" not in prompt
+
+
+def test_editor_prompt_audio_script_requires_thematic_depth_not_padding() -> None:
+    """1000字不足を補足文の水増しではなく、テーマ深掘り不足として扱う。"""
+    text = _read(EDITOR_PROMPT)
+
+    required_phrases = [
+        "字数不足はテーマ深掘り不足",
+        "なぜ今このニュースなのか",
+        "どの制約や前提が変わったのか",
+        "次に観測すべきシグナル",
+        "字数合わせの補足文で埋めない",
+    ]
+    for phrase in required_phrases:
+        assert phrase in text

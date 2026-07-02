@@ -159,6 +159,7 @@ def test_runner_newsroom_editor_uses_success_probe_for_artifact_gate_completion(
     assert "$editorSuccessProbe" in stage
     assert "tools.validate_summary_reflection" in stage
     assert "tools.validate_daily_quality --date $DateStamp" in stage
+    assert "tools.validate_generation_quality --date $DateStamp" in stage
     assert "-SuccessProbeCommand $editorSuccessProbe" in stage
     assert "-SuccessProbeMinElapsedSec 120" in stage
 
