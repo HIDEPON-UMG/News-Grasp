@@ -231,9 +231,18 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert ".cat-hero__tab-arrow" in css
     assert ".cat-hero__point-list" in css
     assert ".cat-hero__point-key" in css
+    focus_label_rule = css.split(".cat-hero__focus-label {", 1)[1].split("}", 1)[0]
+    assert "font-size: 15px;" in focus_label_rule
     assert ".cat-hero__focus-title" in css
     focus_rule = css.split(".cat-hero__focus-title {", 1)[1].split("}", 1)[0]
     assert "font-size: 30px;" in focus_rule
+    lead_rule = css.split(".cat-hero__lead-title {", 1)[1].split("}", 1)[0]
+    assert "font-size: 44px;" in lead_rule
+    assert "line-height: 1.16;" in lead_rule
+    lead_meta_rule = css.split(".cat-hero__lead-meta {", 1)[1].split("}", 1)[0]
+    assert "font-size: 13px;" in lead_meta_rule
+    lead_note_rule = css.split(".cat-hero__lead .cat-hero__visual-note {", 1)[1].split("}", 1)[0]
+    assert "font-size: 15px;" in lead_note_rule
     assert ".cat-hero__point-text .emph-bold" in css
     assert ".cat-hero__body--rest" in css
     assert "box-shadow: inset 4px 0 0 var(--hero-accent);" in css

@@ -211,6 +211,10 @@
   letter-spacing: 0.16em;
   color: var(--hero-accent);
 }
+.cat-hero__focus-label {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+}
 .cat-hero__focus-title {
   display: block;
   max-width: 18em;
@@ -446,8 +450,8 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 12px;
-  max-width: min(430px, 82%);
+  gap: 14px;
+  max-width: min(640px, 88%);
   margin-top: auto;
   margin-left: auto;
   text-align: right;
@@ -455,22 +459,23 @@
 .cat-hero__lead-title {
   display: block;
   font-family: var(--font-serif);
-  font-size: 30px;
+  font-size: 44px;
   font-weight: 900;
-  line-height: 1.26;
+  line-height: 1.16;
   color: rgba(255, 255, 255, 0.96);
   text-decoration: none;
   text-shadow: 0 3px 18px rgba(0, 0, 0, 0.48);
   text-wrap: pretty;
 }
 .cat-hero__lead-meta {
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 13px;
+  letter-spacing: 0.12em;
 }
 .cat-hero__lead .cat-hero__visual-note {
   max-width: 36em;
   margin-left: auto;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.62;
 }
 .cat-hero__attribution {
   text-decoration: underline;
@@ -630,6 +635,9 @@
   .cat-hero__point-key {
     font-size: 8px;
   }
+  .cat-hero__focus-label {
+    font-size: 14px;
+  }
   .cat-hero[data-hero-contract="turn4-category"] .cat-hero__stats {
     padding-top: 18px;
     margin-top: 18px;
@@ -654,7 +662,14 @@
     max-width: 100%;
   }
   .cat-hero__lead-title {
-    font-size: 23px;
+    font-size: 28px;
+    line-height: 1.18;
+  }
+  .cat-hero__lead-meta {
+    font-size: 11px;
+  }
+  .cat-hero__lead .cat-hero__visual-note {
+    font-size: 13px;
   }
   .cat-hero__watermark {
     font-size: 120px;
