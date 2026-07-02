@@ -135,6 +135,9 @@ def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
         if not stripped or stripped.startswith(("#", "---", "|")):
             repaired_lines.append(line)
             continue
+        if re.match(r"^[-*]\s*【(?:事実・概要|背景・要点|影響・展望)】：", stripped):
+            repaired_lines.append(line)
+            continue
 
         prefix_match = re.match(r"^(\s*(?:>\s*)?(?:[-*]\s*)?)(.+)$", line_body)
         if not prefix_match:

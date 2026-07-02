@@ -460,12 +460,12 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
         "outlook": "【影響・展望】：明日以降の観測軸を1文で示す。"
       }
     },
-    { "number": 2, "tag": "為替",       "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
-    { "number": 3, "tag": "AI",         "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
-    { "number": 4, "tag": "IT",         "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
-    { "number": 5, "tag": "モビリティ", "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
-    { "number": 6, "tag": "製造",       "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
-    { "number": 7, "tag": "経済",       "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 2, "tag": "為替",       "heading": "為替 — 政策発言が値動きを縛る", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 3, "tag": "AI",         "heading": "AI — 資本と配布面が常用の条件になる", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 4, "tag": "IT",         "heading": "IT — 導入前審査が入口になる", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 5, "tag": "モビリティ", "heading": "モビリティ — 安全標準が市場を選別する", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 6, "tag": "製造",       "heading": "製造 — 量産配置が供給網を決める", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 7, "tag": "経済",       "heading": "経済 — 金利負担の行き先が焦点になる", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
     { "number": 8, "tag": "明日へ",     "heading": "明日への示唆", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } }
   ],
 
@@ -516,6 +516,11 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   Markdown 出力では各 `### §NN` の body 段落の直後に
   `- 【事実・概要】：...` / `- 【背景・要点】：...` / `- 【影響・展望】：...` を置く。
   各行は1文で終え、役割を混ぜない。
+- **カテゴリ section 見出しはカテゴリートップ hero の「今日の焦点」の正本**。各カテゴリ section は必ず
+  `### §NN {tag} — {focus_title}` 形式にし、`focus_title` は 8〜32 字で「そのカテゴリで今日どの条件・判断軸・制約が変わったか」を端的に述べる。
+  `AIは5件`、`IT-Consultingは5件`、`為替ニュース` のような件数文・記事数・カテゴリ名だけの見出しは禁止。
+  `focus_title` はカテゴリートップ hero にそのまま出るため、body と lanes は focus_title を説明する内容にそろえる。
+  `tools.validate_summary_reflection` がこの紐付けを gate する。
 
 #### 旧 schema (5 sections) からの差分
 

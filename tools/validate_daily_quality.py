@@ -19,6 +19,7 @@ from tools.generate_pages import (
 )
 from tools.publish_inventory import required_published_docs_artifacts
 from tools.publish_inventory import scheduled_category_ids
+from tools.validate_summary_reflection import validate_summary_category_focus
 from tools.url_quality import (
     is_google_news_proxy_thumb,
     is_google_news_rss_url,
@@ -890,6 +891,10 @@ def validate_daily_quality(
     summary_path = digest_root / "Summary" / f"{issue.isoformat()}.md"
     errs.extend(validate_summary_hero(summary_path))
     errs.extend(validate_summary_emphasis(summary_path))
+    errs.extend(validate_summary_category_focus(
+        summary_path,
+        required_category_ids=scheduled_category_ids(issue),
+    ))
     errs.extend(validate_card_emphasis_coverage(digest_root, issue))
     errs.extend(validate_digest_style_quality(digest_root, issue))
     errs.extend(validate_issue_schedule(digest_root, issue))
@@ -934,6 +939,8 @@ def daily_quality_issue_code(message: str) -> str:
         return "category_card_emphasis_missing"
     if "lacks required emphasis" in text:
         return "summary_reflection_emphasis_missing"
+    if "category hero focus" in text or "reflection category section missing" in text:
+        return "summary_category_focus_invalid"
     if "thumbnail" in text or "thumb" in text:
         return "thumb_invalid_or_missing"
     if "published docs" in text or "published doc" in text or "docs/" in text:

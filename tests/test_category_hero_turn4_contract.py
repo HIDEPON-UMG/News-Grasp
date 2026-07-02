@@ -64,6 +64,7 @@ def _ctx(category_id: str, pause_notice: dict[str, object] | None = None) -> dic
         "top_title_ja": "",
         "top_thumb": "",
         "top_source": "Test",
+        "top_date": "2026-07-01 09:00",
         "top_bullets": [],
         "canonical": "https://example.com/article",
     }
@@ -124,6 +125,8 @@ def test_fx_hero_uses_turn4a_live_rates_and_sentence_bullets() -> None:
     assert "USD/JPY" in html
     assert "cat-hero__point-list" in html
     assert "今日の焦点" in html
+    assert "cat-hero__focus-title" in html
+    assert "テスト記事" in html
     assert "背景" in html
     assert '<strong class="emph-bold">ドル円</strong>は高止まりした。' in html
     assert '<strong class="emph-bold">米金利の見通し</strong>が焦点になった。' in html
@@ -141,11 +144,43 @@ def test_non_fx_hero_uses_turn4b_signals_and_score_panel() -> None:
     html = _render("ai")
 
     assert ">SIGNALS<" in html
-    assert 'data-panel="score"' in html
-    assert '<span class="cat-hero__score-value">93</span>' in html
-    assert '<span class="cat-hero__score-unit">/100</span>' in html
+    assert 'data-panel="lead-signal"' in html
+    assert "REPRESENTATIVE SCORE" not in html
+    assert "cat-hero__score-value" not in html
+    assert "cat-hero__score-unit" not in html
+    assert "最重要シグナル" in html
+    assert "テスト記事" in html
+    assert "Test · 2026-07-01 09:00" in html
     assert '<div class="cat-hero__watermark" aria-hidden="true">◆</div>' in html
     assert "--hero-bg-image: url('https://hidepon-umg.github.io/News-Grasp/assets/og/ai.jpg');" in html
+
+
+def test_category_focus_title_prefers_summary_section_heading_over_count_sentence() -> None:
+    featured = {
+        "date": "2026-07-02",
+        "summary_text": "IT-Consultingは5件。きょうは、導入前審査と運用再編が共通論点になった。",
+        "top_score": 92,
+        "top_title": "メタ、AIクラウド外販構想で上昇",
+        "top_source": "株探",
+        "top_date": "2026-07-01 22:47",
+        "canonical": "https://example.com/article",
+    }
+    fit = generate_pages.fit_to_sentences(str(featured["summary_text"]), max_chars=80)
+
+    hero = generate_pages.build_category_hero_context(
+        category_id="it",
+        featured=featured,
+        entries=[featured],
+        past_7=[featured],
+        nav_categories=[],
+        sentence_fit=fit,
+        focus_heading="IT — 導入前審査が入口になる",
+        fx_panel=generate_pages.default_fx_hero_panel(),
+    )
+
+    assert hero["focus"]["title"] == "導入前審査が入口になる"
+    assert not hero["focus"]["title"].endswith("5件。")
+    assert hero["visual"]["lead_title"] == "メタ、AIクラウド外販構想で上昇"
 
 
 def test_rest_day_hero_keeps_turn4_theme_and_structured_emphasis() -> None:
@@ -196,6 +231,9 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert ".cat-hero__tab-arrow" in css
     assert ".cat-hero__point-list" in css
     assert ".cat-hero__point-key" in css
+    assert ".cat-hero__focus-title" in css
+    focus_rule = css.split(".cat-hero__focus-title {", 1)[1].split("}", 1)[0]
+    assert "font-size: 30px;" in focus_rule
     assert ".cat-hero__point-text .emph-bold" in css
     assert ".cat-hero__body--rest" in css
     assert "box-shadow: inset 4px 0 0 var(--hero-accent);" in css
@@ -203,6 +241,9 @@ def test_css_contains_turn4_mobile_stack_and_tab_fade() -> None:
     assert ".cat-hero__body--rest .emph-und" in css
     assert ".cat-hero__visual-label" in css
     assert "color: rgba(255, 255, 255, 0.96);" in css
+    assert "border-radius: 14px;" not in css
+    assert "border-radius: 12px;" not in css
+    assert "border-radius: 7px;" not in css
     assert "color: #1a1206;" not in css.split(".cat-hero__visual {", 1)[1].split(".cat-hero__watermark", 1)[0]
     assert "@media (max-width: 720px)" in css
     assert "grid-template-columns: 1fr" in css

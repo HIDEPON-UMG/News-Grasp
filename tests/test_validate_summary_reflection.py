@@ -7,6 +7,7 @@ from pathlib import Path
 from tools.validate_summary_reflection import (
     find_latest_summary,
     main,
+    validate_summary_category_focus,
     validate_summary_reflection,
 )
 
@@ -64,6 +65,52 @@ def test_validate_summary_reflection_rejects_short_lead_even_with_sections(tmp_p
     errs = validate_summary_reflection(summary)
 
     assert any("短すぎます" in e for e in errs)
+
+
+def test_validate_summary_reflection_rejects_count_like_category_focus(tmp_path: Path) -> None:
+    """カテゴリ § 見出しが件数文なら、hero の今日の焦点として使わせない。"""
+    summary = tmp_path / "2026-06-08.md"
+    summary.write_text(
+        "# News Grasp #20260608\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "*AI と市場が同時に動いた一日*\n\n"
+        "> [[AI]] と __市場__ の変化が同じ方向を向き、**投資判断**と産業戦略が同時に更新された。"
+        "今日は単一カテゴリの速報ではなく、政策イベント、企業AI、半導体供給網、ゲーム供給計画が同時に読まれる日だった。"
+        "短期の市場反応と中期の実装力を分けて読み、どの材料が継続して運用できるかを確認する必要がある。"
+        "LPではこの段落が読者の入口になるため、単なる一文要約ではなく、複数カテゴリの関係を十分に説明する。\n\n"
+        "### §02 AI — AIは5件\n\n"
+        "[[AI]] の **配布面** と __導入条件__ が焦点になった。\n"
+        "- 【事実・概要】：AI関連の発表が複数出た。\n"
+        "- 【背景・要点】：配布と審査の条件が変わった。\n"
+        "- 【影響・展望】：次は導入前審査を見る。\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_summary_reflection(summary)
+
+    assert any("category hero focus is count/list-like" in e for e in errs)
+
+
+def test_validate_summary_category_focus_accepts_concise_focus_and_required_link(tmp_path: Path) -> None:
+    """カテゴリ § 見出し・lanes・required category の紐付けが揃えば通す。"""
+    summary = tmp_path / "2026-06-08.md"
+    summary.write_text(
+        "# News Grasp #20260608\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "*AI と市場が同時に動いた一日*\n\n"
+        "> [[AI]] と __市場__ の変化が同じ方向を向き、**投資判断**と産業戦略が同時に更新された。"
+        "今日は単一カテゴリの速報ではなく、政策イベント、企業AI、半導体供給網、ゲーム供給計画が同時に読まれる日だった。"
+        "短期の市場反応と中期の実装力を分けて読み、どの材料が継続して運用できるかを確認する必要がある。"
+        "LPではこの段落が読者の入口になるため、単なる一文要約ではなく、複数カテゴリの関係を十分に説明する。\n\n"
+        "### §02 AI — 資本と配布面が常用の条件になる\n\n"
+        "[[AI]] の **配布面** と __導入条件__ が焦点になった。\n"
+        "- 【事実・概要】：AI関連の発表が複数出た。\n"
+        "- 【背景・要点】：配布と審査の条件が変わった。\n"
+        "- 【影響・展望】：次は導入前審査を見る。\n",
+        encoding="utf-8",
+    )
+
+    assert validate_summary_category_focus(summary, required_category_ids=["ai"]) == []
 
 
 def test_find_latest_summary_uses_yyyy_mm_dd_name(tmp_path: Path) -> None:

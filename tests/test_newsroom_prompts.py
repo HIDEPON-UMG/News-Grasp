@@ -202,6 +202,22 @@ def test_summary_prompts_generate_section_lanes_for_category_boards() -> None:
             assert phrase in text, path
 
 
+def test_summary_prompts_bind_category_focus_heading_to_category_hero() -> None:
+    """生成段階でカテゴリートップ hero の今日の焦点を § 見出しに持たせる。"""
+    for path in [EDITOR_PROMPT, ROUTINE_PROMPT]:
+        text = _read(path)
+        for phrase in [
+            "カテゴリートップ hero の「今日の焦点」",
+            "`### §NN {tag} — {focus_title}`",
+            "8〜32 字",
+            "件数文",
+            "記事数・カテゴリ名だけの見出しは禁止",
+            "body と lanes は focus_title を説明する",
+            "tools.validate_summary_reflection",
+        ]:
+            assert phrase in text, path
+
+
 def test_editor_prompt_forbids_unscheduled_summary_sections() -> None:
     """編集長 prompt は非対象カテゴリを休載文でも Summary に載せさせない。"""
     text = _read(EDITOR_PROMPT)

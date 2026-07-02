@@ -140,6 +140,46 @@ def _write_monday_scheduled_digests(root: Path) -> None:
         _write_category_digest(root, cat_id, folder)
 
 
+def _write_summary_with_monday_focus_sections(root: Path) -> None:
+    """月曜 scheduled categories 分の Summary reflection section を作る。"""
+    summary_dir = root / "digest" / "Summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    sections = [
+        ("01", "総論 — 実装力を見る日"),
+        ("02", "為替 — 政策発言が値動きを縛る"),
+        ("03", "AI — 資本と配布面が常用の条件になる"),
+        ("04", "IT — 導入前審査が入口になる"),
+        ("05", "モビリティ — 安全標準が市場を選別する"),
+        ("06", "製造 — 量産配置が供給網を決める"),
+        ("07", "経済 — 金利負担の行き先が焦点になる"),
+        ("08", "明日へ — 条件変化を追う日になる"),
+    ]
+    body_parts = []
+    for num, heading in sections:
+        body_parts.append(
+            f"### §{num} {heading}\n\n"
+            "[[導入条件]] は **発表数** ではなく、__継続運用できる体制__ で評価される。\n"
+            "- 【事実・概要】：今日起きた事実を1文で示す。\n"
+            "- 【背景・要点】：背景と制約を1文で示す。\n"
+            "- 【影響・展望】：次に見る条件を1文で示す。\n"
+        )
+    (summary_dir / "2026-06-08.md").write_text(
+        "---\n"
+        "title: Summary\n"
+        "date: 2026-06-08\n"
+        "category: Daily Summary\n"
+        "hero_left: プラットフォーム再編\n"
+        "hero_right: 市場へ波及\n"
+        "---\n\n"
+        "# Summary\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "*政策と市場の接点*\n\n"
+        "> [[政策イベント]] と **企業実装** が同じ日に並び、__運用力の差__ が見えた。\n\n"
+        + "\n".join(body_parts),
+        encoding="utf-8",
+    )
+
+
 def _write_category_digest_for_issue(
     root: Path,
     *,
@@ -264,6 +304,31 @@ def test_daily_quality_rejects_missing_summary_hero(tmp_path: Path) -> None:
     )
 
     assert any("hero_left / hero_right" in e for e in errs)
+
+
+def test_daily_quality_rejects_missing_scheduled_category_focus_section(tmp_path: Path) -> None:
+    """Summary § があるなら、当日対象カテゴリの hero 焦点も同じ section から生成させる。"""
+    _write_summary_with_reflection(
+        tmp_path,
+        lead=(
+            "[[AI]] と __市場__ の変化が同じ方向を向き、**投資判断**と産業戦略が同時に更新された。"
+            "今日は単一カテゴリの速報ではなく、政策イベント、企業AI、半導体供給網、ゲーム供給計画が同時に読まれる日だった。"
+            "短期の市場反応と中期の実装力を分けて読み、どの材料が継続して運用できるかを確認する必要がある。"
+            "LPではこの段落が読者の入口になるため、複数カテゴリの関係を十分に説明する。"
+        ),
+        section_body="[[総論]] **実装力** __市場波及__ が交差した。\n",
+    )
+    url = "https://example.com/2026/06/08/fresh-news"
+    _write_category(tmp_path, url)
+    _write_jsonl(tmp_path, url)
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+    )
+
+    assert any("reflection category section missing for scheduled category" in e for e in errs)
 
 
 def test_daily_quality_rejects_all_null_thumbnails_for_issue(tmp_path: Path) -> None:
@@ -410,12 +475,8 @@ def test_daily_quality_rejects_summary_reflection_without_three_tier_emphasis(tm
 
 def test_daily_quality_accepts_summary_reflection_with_three_tier_emphasis(tmp_path: Path) -> None:
     """Summary 考察 lead / § 本文が 3 階層強調を含めば通す。"""
-    _write_summary_with_reflection(
-        tmp_path,
-        lead="[[政策イベント]] と **企業実装** が同じ日に並び、__運用力の差__ が見えた。",
-        section_body="[[AI導入]] は **発表数** ではなく、__継続運用できる体制__ で評価される。",
-    )
-    _write_category(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_summary_with_monday_focus_sections(tmp_path)
+    _write_monday_scheduled_digests(tmp_path)
     _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
 
     assert validate_daily_quality(

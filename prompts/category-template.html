@@ -165,7 +165,12 @@
           <li class="cat-hero__point-item">
             <span class="cat-hero__marker"></span>
             <span class="cat-hero__point-copy">
+              {% if loop.first %}
+              <span class="cat-hero__point-key cat-hero__focus-label">{{ hero.focus.label }}</span>
+              <span class="cat-hero__focus-title">{{ hero.focus.title|render_emph }}</span>
+              {% else %}
               <span class="cat-hero__point-key">{{ item.label }}</span>
+              {% endif %}
               <span class="cat-hero__bullet-text cat-hero__point-text">{{ item.text|render_emph }}</span>
             </span>
           </li>
@@ -192,9 +197,9 @@
       </div>
     </section>
     <aside class="cat-hero__visual"
-           data-panel="{% if hero.is_fx %}rates{% else %}score{% endif %}"
+           data-panel="{% if hero.is_fx %}rates{% else %}lead-signal{% endif %}"
            style="--hero-bg-image: url('{{ base_url }}/assets/og/{{ category_id }}.jpg');"
-           aria-label="{% if hero.is_fx %}FX rate panel{% else %}Representative score panel{% endif %}">
+           aria-label="{% if hero.is_fx %}FX rate panel{% else %}Lead signal panel{% endif %}">
       <div class="cat-hero__stripes" aria-hidden="true"></div>
       {% if hero.is_fx %}
       <svg class="cat-hero__chart" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
@@ -210,12 +215,14 @@
       {% if hero.visual.fx.updated_at %}<div class="cat-hero__updated">UPDATED {{ hero.visual.fx.updated_at }}</div>{% endif %}
       {% else %}
       <div class="cat-hero__watermark" aria-hidden="true">{{ hero.glyph }}</div>
-      <div class="cat-hero__visual-label">REPRESENTATIVE SCORE</div>
-      <div class="cat-hero__score-row">
-        <span class="cat-hero__score-value">{{ hero.visual.score }}</span>
-        <span class="cat-hero__score-unit">/100</span>
+      <div class="cat-hero__lead">
+        <div class="cat-hero__visual-label">{{ hero.visual.lead_label }}</div>
+        {% if hero.visual.lead_url %}<a class="cat-hero__lead-title" href="{{ hero.visual.lead_url }}">{% else %}<span class="cat-hero__lead-title">{% endif %}
+          {{ hero.visual.lead_title }}
+        {% if hero.visual.lead_url %}</a>{% else %}</span>{% endif %}
+        {% if hero.visual.lead_meta %}<div class="cat-hero__lead-meta">{{ hero.visual.lead_meta }}</div>{% endif %}
+        {% if hero.visual.lead_note %}<div class="cat-hero__visual-note">{{ hero.visual.lead_note|render_emph }}</div>{% endif %}
       </div>
-      <div class="cat-hero__visual-note">{{ hero.visual.score_note }}</div>
       {% endif %}
     </aside>
   </div>

@@ -154,6 +154,7 @@ cat tmp/newsroom/{号日}/*.records.jsonl \
 - **pull_quote.text は 40〜80 字**。`{text, emphasis, from}` のオブジェクト。
 - **各 section body は 150〜250 字**。各 § ごとに 3 階層の強調をすべて使う（`[[マーカー]]` 1-2 + `**太字**` 1 + `__下線__` 1）。
 - **各 section の lanes は必須**。カテゴリ別 FACT / CONTEXT / OUTLOOK カードと Tomorrow Board は `各 section の lanes` を正本にする。本文 `body` を後から文分割して割り振らない。各 `### §NN` の body 段落直後に `- 【事実・概要】：...` / `- 【背景・要点】：...` / `- 【影響・展望】：...` を置く。schema上は `"lanes": {"fact": "...", "context": "...", "outlook": "..."}` として考え、表示用Markdownへ落とす。
+- **カテゴリ section 見出しはカテゴリートップ hero の「今日の焦点」の正本**。各カテゴリ section は必ず `### §NN {tag} — {focus_title}` 形式にし、`focus_title` は 8〜32 字で「そのカテゴリで今日どの条件・判断軸・制約が変わったか」を端的に述べる。`AIは5件`、`IT-Consultingは5件`、`為替ニュース` のような件数文・記事数・カテゴリ名だけの見出しは禁止。`focus_title` はカテゴリートップ hero にそのまま出るため、body と lanes は focus_title を説明する内容にそろえる。`tools.validate_summary_reflection` がこの紐付けを gate する。
 
 > γ schema の完全な定義（フィールド名・色候補・旧 schema 差分）は `prompts/routine-system.md` ステップ 4 を参照すること（本ドキュメントは要約）。Summary 執筆は重いデータの Read を伴わない（各カテゴリの digest md カード本文を全文 Read せず、記者が返したコンパクト JSON のタイトル一覧と自分の収集知識で書く）。
 

@@ -5,11 +5,110 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
-from tools.generate_pages import parse_reflection
+from tools.generate_pages import CATEGORIES, TAG_TO_CID, parse_reflection
 
 _DATE_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
+_HEADING_SPLIT_RE = re.compile(r"\s+[—–-]\s+", re.ASCII)
+_COUNT_ONLY_RE = re.compile(r"(?:\d+|[一二三四五六七八九十]+)\s*件")
+_INLINE_MARK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]|\*\*(.+?)\*\*|__(.+?)__")
+
+
+def _plain_text(text: str) -> str:
+    """Markdown 装飾を外して validator 用の短い素テキストにする。"""
+    def repl(match: re.Match[str]) -> str:
+        return next((g for g in match.groups() if g), "")
+
+    return _INLINE_MARK_RE.sub(repl, text).strip()
+
+
+def _split_category_focus(heading: str) -> tuple[str, str]:
+    parts = _HEADING_SPLIT_RE.split((heading or "").strip(), maxsplit=1)
+    if len(parts) == 1:
+        return (parts[0].strip(), "")
+    return (parts[0].strip(), parts[1].strip())
+
+
+def _focus_quality_errors(path: Path, *, num: int, heading: str) -> list[str]:
+    label, focus = _split_category_focus(heading)
+    cat_id = TAG_TO_CID.get(label)
+    if not cat_id:
+        return []
+
+    errs: list[str] = []
+    label_name = CATEGORIES.get(cat_id, {}).get("jp", cat_id)
+    plain = _plain_text(focus)
+    if not plain:
+        errs.append(
+            f"{path}: reflection section §{num:02d} category hero focus missing "
+            f"({cat_id}). 見出しは `### §NN {label} — 端的な今日の焦点` 形式にしてください。"
+        )
+        return errs
+    if len(plain) < 8 or len(plain) > 32:
+        errs.append(
+            f"{path}: reflection section §{num:02d} category hero focus length invalid "
+            f"({cat_id}, {len(plain)} chars): {plain}"
+        )
+    if _COUNT_ONLY_RE.search(plain) or "記事" in plain or "カテゴリ" in plain:
+        errs.append(
+            f"{path}: reflection section §{num:02d} category hero focus is count/list-like "
+            f"({cat_id}): {plain}"
+        )
+    if plain == label or plain == label_name or plain.startswith(f"{label}は"):
+        errs.append(
+            f"{path}: reflection section §{num:02d} category hero focus repeats category label "
+            f"({cat_id}): {plain}"
+        )
+    if len(re.findall(r"[、,／/・]", plain)) >= 2:
+        errs.append(
+            f"{path}: reflection section §{num:02d} category hero focus is too list-like "
+            f"({cat_id}): {plain}"
+        )
+    return errs
+
+
+def validate_summary_category_focus(
+    path: Path,
+    *,
+    required_category_ids: Iterable[str] | None = None,
+) -> list[str]:
+    """Summary § 見出しがカテゴリートップ hero の「今日の焦点」正本になるか検査する。"""
+    if not path.exists():
+        return []
+    body = path.read_text(encoding="utf-8-sig", errors="replace")
+    reflection = parse_reflection(body)
+    sections = reflection.get("sections") or {}
+    if not sections:
+        return []
+
+    errs: list[str] = []
+    present: set[str] = set()
+    for num, sec in sorted(sections.items()):
+        heading = str((sec or {}).get("heading") or "")
+        label, _focus = _split_category_focus(heading)
+        cat_id = TAG_TO_CID.get(label)
+        if not cat_id:
+            continue
+        present.add(cat_id)
+        errs.extend(_focus_quality_errors(path, num=num, heading=heading))
+        if not (sec or {}).get("lanes"):
+            errs.append(
+                f"{path}: reflection section §{num:02d} category lanes missing ({cat_id}). "
+                "カテゴリ別 FACT / CONTEXT / OUTLOOK と hero 焦点を同じ section に紐付けてください。"
+            )
+
+    if required_category_ids is not None:
+        required = [str(cid).strip().casefold() for cid in required_category_ids if str(cid).strip()]
+        for cat_id in required:
+            if cat_id not in present:
+                label = CATEGORIES.get(cat_id, {}).get("jp", cat_id)
+                errs.append(
+                    f"{path}: reflection category section missing for scheduled category "
+                    f"({cat_id}: {label}). カテゴリートップ hero の今日の焦点を生成できません。"
+                )
+    return errs
 
 
 def find_latest_summary(summary_dir: Path) -> Path:
@@ -40,6 +139,7 @@ def validate_summary_reflection(path: Path) -> list[str]:
             f"{path}: reflection lead が短すぎます ({len(lead.strip())} chars)。",
             "LP の TODAY'S THEME に出る本文として、`## § 本日のテーマ考察` 直下へ180文字以上の blockquote lead を置いてください。",
         ])
+    errs.extend(validate_summary_category_focus(path))
     return errs
 
 

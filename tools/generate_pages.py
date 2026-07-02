@@ -928,6 +928,80 @@ def _hero_score_int(value: Any) -> int:
 _CATEGORY_HERO_BODY_LABELS = ("今日の焦点", "背景", "次の視点")
 
 
+def _strip_category_count_lead(text: str, *, category_jp: str, category_label: str) -> str:
+    """カテゴリ件数だけの先頭文を hero 本文から外す。"""
+    plain = strip_inline(str(text or "")).strip()
+    if not plain:
+        return ""
+    names = [
+        re.escape(n)
+        for n in {category_jp, category_label, category_label.replace(" & ", "-")}
+        if n
+    ]
+    if not names:
+        return plain
+    pattern = rf"^(?:{'|'.join(names)})は\d+件。"
+    return re.sub(pattern, "", plain).strip() or plain
+
+
+def _clean_category_focus_title(raw: str, *, category_jp: str, category_label: str) -> str:
+    """Summary § 見出しや記事タイトルをカテゴリhero用の短い焦点見出しへ整える。"""
+    text = strip_inline(str(raw or "")).strip()
+    text = re.sub(r"^§\d+\s*", "", text)
+    text = re.sub(r"^[A-Za-z0-9& ＆/・]+\s*[—\-:：]\s*", "", text).strip()
+    for prefix in (category_jp, category_label, category_label.replace(" & ", "-")):
+        if prefix:
+            text = re.sub(rf"^{re.escape(prefix)}\s*[—\-:：]\s*", "", text).strip()
+    text = _strip_category_count_lead(text, category_jp=category_jp, category_label=category_label)
+    if "。" in text:
+        text = text.split("。", 1)[0].strip()
+    return truncate(text, 32)
+
+
+def _category_focus_title(
+    *,
+    category_jp: str,
+    category_label: str,
+    featured: dict[str, Any],
+    focus_heading: str = "",
+) -> str:
+    """hero の「今日の焦点」見出しを作る。
+
+    Summary のカテゴリ別 § 見出しを第一候補にし、件数文へ落ちる場合は
+    最高スコア記事タイトルを使う。
+    """
+    candidates = [
+        focus_heading,
+        featured.get("theme", ""),
+        featured.get("top_title_ja", ""),
+        featured.get("top_title", ""),
+        featured.get("title", ""),
+        featured.get("summary_text", ""),
+    ]
+    for candidate in candidates:
+        title = _clean_category_focus_title(
+            str(candidate or ""),
+            category_jp=category_jp,
+            category_label=category_label,
+        )
+        if title and not re.search(r"は\d+件$", title):
+            return title
+    return f"{category_jp}の焦点"
+
+
+def _category_lead_note(featured: dict[str, Any]) -> str:
+    """右側リードパネル用に最高スコア記事の要点を短く抜く。"""
+    for bullet in featured.get("top_bullets") or []:
+        plain = _html.unescape(_HTML_TAG_RE.sub("", str(bullet or "")))
+        plain = re.sub(r"^\s*【[^】]+】：?", "", strip_inline(plain)).strip()
+        if plain:
+            return truncate(plain, 78)
+    score_note = str(featured.get("score_note") or "").strip()
+    if score_note:
+        return truncate(score_note, 78)
+    return ""
+
+
 def _emphasize_hero_sentence(text: str) -> str:
     """ヒーロー本文の構造行に最低限の強調を付ける。
 
@@ -965,6 +1039,7 @@ def build_category_hero_context(
     past_7: list[dict[str, Any]],
     nav_categories: list[dict[str, Any]],
     sentence_fit: dict[str, Any],
+    focus_heading: str = "",
     fx_panel: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Turn 4 4a/4b/4c 用のカテゴリーヒーロー context を作る。"""
@@ -981,19 +1056,39 @@ def build_category_hero_context(
     signal_text = _CATEGORY_SIGNALS.get(category_id, "主要論点 · 政策変化 · 企業戦略 · 市場反応 · 次の焦点")
     is_fx = category_id == "fx"
     panel = fx_panel or default_fx_hero_panel()
+    category_jp = meta.get("jp", category_id)
+    category_label = meta.get("label", category_id)
+    focus_title = _category_focus_title(
+        category_jp=category_jp,
+        category_label=category_label,
+        featured=featured,
+        focus_heading=focus_heading,
+    )
+    lead_title = str(featured.get("top_title") or featured.get("title") or focus_title).strip()
+    lead_meta = " · ".join(
+        part for part in (
+            str(featured.get("top_source") or "").strip(),
+            str(featured.get("top_date") or featured.get("date") or "").strip(),
+        )
+        if part
+    )
     return {
         "contract": "turn4-category",
         "is_fx": is_fx,
         "theme": theme,
         "ticker_label": panel["ticker_label"] if is_fx else "SIGNALS",
         "ticker_text": panel["ticker_text"] if is_fx else signal_text,
-        "label": meta.get("label", category_id),
-        "jp": meta.get("jp", category_id),
+        "label": category_label,
+        "jp": category_jp,
         "glyph": meta.get("glyph", ""),
         "issue": featured_date.replace("-", "") if featured_date else "",
         "recent_count": recent_count or len(past_7) or 0,
         "body_bullets": sentence_fit.get("bullets") or [],
         "body_rows": _hero_body_rows(sentence_fit.get("bullets") or []),
+        "focus": {
+            "label": "今日の焦点",
+            "title": focus_title,
+        },
         "has_more": bool(sentence_fit.get("has_more")),
         "read_more_label": _CATEGORY_HERO_READ_MORE_LABEL,
         "stats": {
@@ -1004,7 +1099,11 @@ def build_category_hero_context(
         "visual": {
             "fx": panel,
             "score": top_score,
-            "score_note": f"最高スコア記事 · {featured.get('top_title') or featured.get('title') or '主要指標'}",
+            "lead_label": "最重要シグナル",
+            "lead_title": lead_title,
+            "lead_meta": lead_meta,
+            "lead_note": _category_lead_note(featured),
+            "lead_url": featured.get("canonical") or "",
         },
         "nav_categories": nav_categories,
     }
@@ -2992,8 +3091,13 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
         nav_categories = [
             {**n, "is_active": (n["id"] == cat_id)} for n in nav_base
         ]
-        hero_summary_fit = fit_to_sentences(
+        hero_body_source = editorial_essay or _strip_category_count_lead(
             featured.get("summary_text", "") or "",
+            category_jp=cat["jp"],
+            category_label=cat["label"],
+        )
+        hero_summary_fit = fit_to_sentences(
+            hero_body_source,
             max_chars=_CATEGORY_HERO_BODY_MAX_CHARS,
         )
         hero_context = build_category_hero_context(
@@ -3003,6 +3107,7 @@ def build_category_pages(entries: list[dict[str, Any]], docs_root: Path,
             past_7=past_7,
             nav_categories=nav_categories,
             sentence_fit=hero_summary_fit,
+            focus_heading=editorial_heading,
             fx_panel=fx_panel,
         )
         ctx = {
