@@ -1008,12 +1008,9 @@ def _category_lead_title_lines(title: str) -> list[str]:
     if not text:
         return []
 
-    raw_parts = [
-        part.strip()
-        for part in re.split(r"[、。，．・｜|／/]+|\s+", text)
-        if part.strip()
-    ]
+    raw_parts = [part.strip() for part in re.split(r"[、。，．・｜|／/]+|\s+", text) if part.strip()]
     lines: list[str] = []
+
     for part in raw_parts:
         subparts = [
             p.strip()
@@ -1024,8 +1021,16 @@ def _category_lead_title_lines(title: str) -> list[str]:
             amount_split = re.match(r"^(.+?(?:億円|兆円|億ドル|兆ドル|万ドル|％|%))((?:を|へ|に|で|が|は).+)$", subpart)
             if amount_split and len(subpart) >= 13:
                 lines.extend([amount_split.group(1), amount_split.group(2)])
+                continue
+
+            marker_split = re.match(r"^(.+?)(外販構想.+)$", subpart)
+            if marker_split and len(marker_split.group(1)) >= 4:
+                lines.extend([marker_split.group(1), marker_split.group(2)])
             else:
                 lines.append(subpart)
+
+    if len(lines) >= 2 and len(lines[0]) <= 4 and len(lines[0] + "、" + lines[1]) <= 14:
+        lines = [f"{lines[0]}、{lines[1]}", *lines[2:]]
     return lines or [text]
 
 

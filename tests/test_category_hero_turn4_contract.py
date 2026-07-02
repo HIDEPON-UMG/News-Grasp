@@ -194,6 +194,15 @@ def test_category_lead_title_lines_keep_mobile_breaks_at_phrase_boundaries() -> 
     ]
 
 
+def test_category_lead_title_lines_keep_short_subject_with_topic_phrase() -> None:
+    title = "メタ、AIクラウド外販構想で上昇"
+
+    assert generate_pages._category_lead_title_lines(title) == [
+        "メタ、AIクラウド",
+        "外販構想で上昇",
+    ]
+
+
 def test_rest_day_hero_keeps_turn4_theme_and_structured_emphasis() -> None:
     html = _render("game", generate_pages._category_pause_notice("game", "2026-07-01"))
 
