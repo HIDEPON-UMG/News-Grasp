@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-03",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "\"日銀の早期利上げを促す材料が増加、円安進行と堅調な日本経済で\" Bloomberg",
+    "\"ドル一時161円前半、1円強下振れした後切り返す\" Reuters",
+    "\"ＮＹ外為市場・序盤＝ドル急落、対円160円台後半 米雇用統計受け利上げ観測後退\" Reuters",
+    "\"7月米利上げ観測後退、雇用統計下振れで 9月は依然有力\" Reuters",
+    "\"コメントできない＝ドル／円急落で財務省為替市場課\" Reuters",
+    "\"ラガルド総裁、ＥＣＢは６月利上げという正しい選択をした\" ECB"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "FX実践解説、ドル円上昇要因「論理的なメカニズム」（2026年7月2日）",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1DZF9ZalI3bkkxYk14UzNBQjhzdmZhREhqNkozR2s4V0syYjRPTC1lR0pLTUZKa012Sk9XQmNvWldHSE1kcXFvMEVnekFHN1RFejB5ZjJhOHEzRTFFbS1CZGlBMA?oc=5",
+      "reason": "解説色が強く、当日発生の政策・市場材料を優先"
+    },
+    {
+      "title": "「弱い円」と日本経済(下) 為替変動に強い企業体質に 鯉渕賢・中央大学教授",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE41QVlVdVE5OWc2NC1iTmx0ek9Sc3RJTnlXZVZnN1djQ0VVb3Fuai1VVmYzZVh6SWpXcWhFX3lTWlYtS3RpM1p1TTNwNVdXcDRnSUdxbkxxQUgzU0htUVBoRkdLbnNVX1dCbVczYg?oc=5",
+      "reason": "論説であり、速報性の高い価格変動と中銀材料を優先"
+    },
+    {
+      "title": "ラガルド総裁、ＥＣＢは６月利上げという正しい選択をした",
+      "url": "https://fx.minkabu.jp/news/372104",
+      "reason": "ECBの確認材料として調査したが、当日のドル円主導5本を優先"
+    },
+    {
+      "title": "ドル円、米雇用統計と介入警戒の雰囲気で利益確定売り強める＝ＮＹ為替",
+      "url": "https://minkabu.jp/news/4561317",
+      "reason": "同一セッションの補足であり、Reutersの雇用統計記事と利上げ確率記事で主論点を充足"
+    },
+    {
+      "title": "介入リスクを理由にドル円の戦術的ショート推奨も＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9ZczVtNGtHTDFwUGlRQU1XcXhJNldDTXpRdGFWcWl4T3hBRzd4aG9BY2RwaXl2eGYyZlVnWDFhNkU5cENQdE1NZg?oc=5",
+      "reason": "売買戦術メモで新規事実が薄く、ニュース性で劣後"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

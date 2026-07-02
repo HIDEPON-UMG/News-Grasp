@@ -1,0 +1,41 @@
+{
+  "date": "2026-07-03",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "\"決め手欠く雇用統計、FRBの焦点はインフレ\"",
+    "\"デーリーSF連銀総裁、インフレ鈍化見込むも先行きに強い不透明感\" \"finance.yahoo.co.jp\"",
+    "\"高市総理、インドで経済フォーラムに出席\"",
+    "\"韓国･６月輸出入額はともに過去最高を更新\"",
+    "\"原油価格下落でＥＣＢの利上げ継続は？\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "山田経済産業副大臣が日ウクライナ・エネルギー分野協力ダイアログに参加しました",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE1vNVFpRU90Z3c2eWJ6OGtZMDRMVlg3SzFCLWczMExpMXBCWGdLSDI2YUQ5eFQ3OW1ic2Y3UWl4bEVLdFVmajNhTHB0V0ZIbExCWHdrVU5IR0RGc3ZrbUZsUURfU3lqYmRWRnNFMjExbU55VGc?oc=5",
+      "reason": "官民協力の前進は確認できるが、投資家の当日判断に直結する市場・物価テーマを優先した"
+    },
+    {
+      "title": "「370兆円」投資計画では日本経済は再生しない、高市政権が切り込むべき“本丸”",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE9kbWZudHlLMWlxZVphN0VWN2NVLW9hS3UzRF82dXRIUzQwOXdmZDlHUFZwcFlNbHQydGN4c3NNNE82c2l6WFZVbkRIZlk?oc=5",
+      "reason": "論考色が強く、同日データで動いた雇用・中銀・貿易統計より優先度を下げた"
+    },
+    {
+      "title": "兵庫県経済は「バランス良い」",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxQaTlRbnNZVEpaelk3dmhKdERoaHU3cmVFOFF6RU8tVUlPWlFVUzc4WE5YZVZEOGpteXNVTFJXeU9fRG5Fc2QzckZwU2JDNERSOGdKd0JzalV5Z3Awclg0LXpqbGZTRlpIcVNDZVd4TTVvMmJXdml5c01RSHdqakU4dnBaV200WTRXbGRLY0tzZ05VUThxQS1wSC1NQi1tLVJFTUVraVBRZi0?oc=5",
+      "reason": "地域景況感としては有用だが、グローバル金利・輸出・投資案件の方が波及範囲が広い"
+    }
+  ]
+}

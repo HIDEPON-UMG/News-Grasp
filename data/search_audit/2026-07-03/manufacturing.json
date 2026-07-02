@@ -1,0 +1,58 @@
+{
+  "date": "2026-07-03",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "google_news_decode:日本経済新聞:半導体装置の26年度販売見通し、1兆円上方修正 半年間で大幅上振れ",
+    "google_news_decode:日本経済新聞:住友電工、光通信の半導体材料生産3倍 AI需要で従来計画引き上げ",
+    "title_exact:Infineonがパワー半導体新工場 拠点の能力倍増でAI需要に対応",
+    "title_exact:ＳＫハイニックス、韓国中部の半導体工場に640億ドル投資へ ＡＩ需要対応で",
+    "title_exact:住友化、サムスン電機と合弁設立＝先端半導体向けガラスコア基板",
+    "official_release:住友化学 ガラスコア基板 合弁"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 20,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "【速報】工場で火災「建物が燃えている」と通報 隣接8棟に延焼しおよそ1000平方メートルが燃焼 10代男性が軽傷 消防車46台出動し消火中 大阪・東淀川区",
+      "reason": "個別事故で産業構造や量産計画への波及が限定的"
+    },
+    {
+      "title": "U.S. factory orders rebound moderately in May",
+      "reason": "マクロ指標寄りで工場・供給網の具体的な再編材料が薄い"
+    },
+    {
+      "title": "Anthropic's valuation soars on Samsung chip partnership talks",
+      "reason": "株価反応中心で製造能力や設備投資の確定情報が乏しい"
+    },
+    {
+      "title": "王者NVIDIAの死角 推論用AI半導体、メモリー方式から読み解く",
+      "reason": "分析色が強く、当日の量産計画や設備投資の確定材料が薄い"
+    },
+    {
+      "title": "「ガラス繊維」の日本火薬、半導体製造装置向け部材に期待",
+      "reason": "企業プロフィール色が強く当日の新規投資・能力増強の情報量で劣後"
+    },
+    {
+      "title": "半導体工場と内需主導の韓国経済、今後の課題は",
+      "reason": "分析記事で当日の量産計画や投資決定の新規性が弱い"
+    },
+    {
+      "title": "インタビュー：半導体・薬品・鉄鋼…日本経済を支える現場改革の裏側",
+      "reason": "freshness gateで6月23日判定となり当日号から除外"
+    },
+    {
+      "title": "政策支援で進む製造回帰、次の焦点は人材とエネルギー",
+      "reason": "公開日根拠を解決できず採用見送り"
+    }
+  ]
+}

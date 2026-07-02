@@ -1,0 +1,59 @@
+{
+  "date": "2026-07-03",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jp.reuters.com テスラ 中国製 EV 販売 6月 24.4% 増",
+    "site:newsdig.tbs.co.jp 自動運転車両 取り締まる 法律 カリフォルニア州 施行",
+    "site:www.logi-today.com 出光 T2 いすゞ RD燃料で自動運転幹線輸送",
+    "site:www.rinkobus.co.jp 自動運転バス AI 川崎 2026 07 02",
+    "site:www.logi-today.com 短距離重負荷でEV シャックマンが北アで実証",
+    "Waymo Tesla BYD Toyota Uber July 2 2026 mobility"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 10,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "トヨタ、次世代EV中止で補償 部品各社に数百億円",
+      "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQeWZpX0xRcmtjTUx3Vjg3aExQTHd4ZDFpSzdiZXRoRFJmempQUVN2bjFnLTRDai0xYlU0VTZDMkpqdlVRemVCdXNlc1lGN3BDS3dkdm5sMV9wODVyWjctR01rV2R5ZzJxR243OHJIMXJKQ3ppOEtBblRiZWpZNnZfdkU1WExpYXJlNkhKQlVBVnRpODBZQlJvN3BFSlJreElZNWZRZVhR?oc=5",
+      "reason": "主題が製品計画とサプライヤー補償で manufacturing 境界に寄るため不採用"
+    },
+    {
+      "title": "中国バイドゥのロボタクシー、スイスで走行試験 欧州市場に攻勢",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPLVA1WnVHVlk3d3NBWDVoUi05dV9OTm9kODlRVHZaTUV1clo2R2Nzb0JiNGRpZ19GeXM0bmhTdXY2ckl0X2RaclpxcWo3THpIODZScWQ5RF84TlRNRlV6X2NuaUFmOWNtNTJZNUJXNnVqQnlvYm00bHNWOE1makwtSm9ocC1rUVlrVGZIcw?oc=5",
+      "reason": "検索で確認できた一次発表が6月中旬の既報中心で、号日向けの新材料を確認できず不採用"
+    },
+    {
+      "title": "インドで次世代EV促進 スズキ 新興2社と交通網整備",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxQdnh6T3FmMnFVZE5pQzJTNTRUVzRGdEo5UUY2QUxHY0JjZmJUU28ta1hTMzJ1aFp6VVV4VEFvZXNJcXFnUlNYeWtCS1ZHV0hPOW5RS01PV2JuOGNwSGc1TlpCRnk2eU5CZEMtLWxOcWV3eDFaa3o3eGxPQjVNY045Z3FLTGJseDVCdkU3UkNESDhpTUJ2LXhFZkkxemxwWjJ4dlZxc216WGs?oc=5",
+      "reason": "確認できた公式発表が2026-07-01で、7月3日号では鮮度が足りず follow-up の新材料も薄いため除外"
+    },
+    {
+      "title": "オリックス自動車など、トラック自動運転を実証 遠隔監視で運行管理",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5Jal9paEhsSG5ZcmlwQlpBR0RTRG9IMlg1bEUtMmtzdE8xdDRFOGNSWk96aUVxbnllSmZSVjdveDV3NjdjTTZwOVFoRHNoWUJHRFZ4dEg4X2FuQUJnNFZ3bDc4Nk9ZRWNMVzhmaQ?oc=5",
+      "reason": "確認できた一次ソースが2026-07-01公表で、同テーマのより新しい燃料連携記事を優先した"
+    },
+    {
+      "title": "テスラ、4〜6月世界販売25%増 欧州でEV回復鮮明も株価は下落",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5jNTZpbjlnbHE1dTJQaURzMUxyMU03UDZkTHdxTHdyZUY1OVdoUFByaEtlYTFmb09CZ3cwOHR4c0RfRlc3Tmh0aHZuZ0hOckNjZVRzbGxSTEZib29NTF9zV25EeExmMVBRLVVOTA?oc=5",
+      "reason": "テスラ販売の論点が中国生産EV販売記事と重なり、同社関連記事の重複を避けて除外"
+    },
+    {
+      "url": "https://www.logi-today.com/972685",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/972540",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

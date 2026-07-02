@@ -76,3 +76,4 @@
 | 2026-07-01 | ✅DeepDive | Joby・Toyota、空飛ぶ量産の入口へ | 約20分 | 0 | daily deepdive / 新規テーマ(Joby×Toyota eVTOL製造JV) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL6件(Toyota公式・SEC×2・Joby公式×2・FAA) / git add・commit・pushなし |
 | 2026-07-02 | 休載 | 前日DeepDiveと実質同一候補のため新規深掘りなし | - | 0 | deepdive skip / Joby×Toyota eVTOL製造JVは2026-07-01に生成済み、新材料なしの重複を除外 / git add・commit・pushなし |
 | 2026-07-02 | ✅DeepDive | PlayStation、物理流通の終点へ | 約20分 | 0 | daily deepdive / 波及(06-25 公開ルールと供給線→PSN/物理流通/所有権へ論点移動) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL4件(TechCrunch・Sony FY25.4Q・Sony FY25.1Q・Sony FY24.4Q) / git add・commit・pushなし |
+| 2026-07-03 | ✅DeepDive | AI半導体、供給網再配線へ | 約20分 | 0 | daily deepdive / 波及(06-24 Anthropic急拡大→AI需要がメモリから装置・後工程素材・電力半導体・光通信へ拡張) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL6件(Reuters/WHBL・Infineon・SEAJ・Samsung Electro-Mechanics・住友電工・SEMI) / git add・commit・pushなし |

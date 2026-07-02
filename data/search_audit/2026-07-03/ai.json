@@ -1,0 +1,59 @@
+{
+  "date": "2026-07-03",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1: build/deduped-candidates/ai.jsonl",
+    "\"Claude in Microsoft Foundry\" 一般提供 Azure Entra ID Anthropicモデル 窓の杜",
+    "\"OpenAI\" \"5%\" FT Trump administration equity",
+    "\"安くて速い！米Google、新型画像・動画生成AIモデル2種類を提供開始\"",
+    "\"Anthropicの営業はAIエージェントをこう使う\" AWS Summit Japan 2026",
+    "\"Anthropic、OpenAIに追随し自社AIチップ開発へ\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "ソフトバンクグループがOpenAIへ100億ドルを追加出資実行（ビジネス＋IT）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE84UW5WcnNEcGJBMU93ZGl5eG5RY1V4bC1CcTFVOUxVQ0pDb0JEODg5UGd2aHUxSjVJZHNpSmZacHB0bVVobGRPaHo0aGR5UnZvX0k1S2dBUHNNbU9DVWNCTkRLQjltbnlSOUQ4d1did1dmZnR2SHphRldSenhHWDA?oc=5",
+      "reason": "前号で大型出資の主要事実を掲載済みで、新材料が薄い"
+    },
+    {
+      "title": "「Claude Fable 5」が復活、7月7日まではプランの上限内で試用可能（窓の杜）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1fZ284ZzJxNVB5dVZvdFJRWUdPNUFJczlsVWZWX3RFdm5rWGhmVDFvTUJHY2cwUDlsQUM5LUZJZlhUbEdraDhLSlUydU0xdmtlekUwZlR6bGVvZGlnbnlzdEdHZ1BfS3dUX0ZTa0I1RnRKLS1YNm1iNEZsVFJqVlk?oc=5",
+      "reason": "前号で提供再開を掲載済みで、今回は利用条件の追補に留まる"
+    },
+    {
+      "title": "生成AIでユーザーのインサイトに迫る 感情と行動と信念の違い",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5rVGRHSlNrYU9lR3pVczN5ZGJHN01URkhOTkNOal9WM0FKUzN6bTB6RnpyWDlTczBNVWV5UktfUTA5dmFtVjVJUnFuUGtFZmRKd2gyTGp0d0VpMTFuUDV5NnI2QTZtLVZsYnJOUA?oc=5",
+      "reason": "解説寄りで当日ニュース性が低い"
+    },
+    {
+      "title": "「“全社に生成AIを配って終わり”を卒業する。さくらのVPS×Difyで作る“業務完遂型”の生成AIシステム — 契約書レビューを例に」にてクラウド事業戦略本部 高木が登壇します",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxPXzVSU3JFTkxoT0RLTFRtYTlPM2RUSHpHX1JMQUdFMGVBWG5SWkc3MmxlWnI0SXl4VzBrSThHZ2VsSWdtQkRtVTJ4LThHbGtCLUVmajI4TS1Sb1RUOC1BQ09EX2k4dS1KcWlGT2ZkTGZGSGJOV0hsY2lVRWxUR1lvbUFB?oc=5",
+      "reason": "イベント告知の色が強く、独自ニュースとしては弱い"
+    },
+    {
+      "title": "HEROZ、「DXフォーラム 2026 in 山形」に出展決定！ ― 生成AIプラットフォーム「HEROZ ASK」をご体験いただけます ―",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5hMWpXR1hQWWwydEVsOVZiNjQ5MFdOZ3dxOFI2by1QLUo4ZWtRR0FCemIxSlk3RzNER3BQaW5QRDlDSUxvMGx0eUpKcE96MXFpREJNNGlQUHAtRDQ?oc=5",
+      "reason": "PRで読者の意思決定に直結しにくい"
+    },
+    {
+      "title": "Anthropicの安全テストリストが示す中国AIの台頭：Kimi K2.7が唯一選出、ビジネスモデルはシリコンバレー大手に迫る",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1zTEl2N0NiSmoyU3czaG1VOU10eklFM0FRaW9sdk5Xbm53SFJ0WDVDX3NnU0xrWU5XTGdSTTRVaFVyX1d4M1hveENhajZSMXJiOHd4Q3JLb3UwUUJDVTFfR29zZk1Sd3VUVTh2OV9MRTR5dllI?oc=5",
+      "reason": "論点は大きいが二次要約色が濃く、今回はより一次情報に近い5件を優先した"
+    }
+  ]
+}

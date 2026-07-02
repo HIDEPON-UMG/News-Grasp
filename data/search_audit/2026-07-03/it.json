@@ -1,0 +1,58 @@
+{
+  "date": "2026-07-03",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:www.sbbit.jp \"ソフトバンクが米国にネオクラウドの新会社「SB Neo」を設立\"",
+    "site:k-tai.watch.impress.co.jp \"ソラコム、自社のクラウドモバイルコア技術を外部展開\"",
+    "site:cloud.watch.impress.co.jp \"GMOインターネット、「GMO GPUクラウド」のマネージドHPCクラスタにEDRセキュリティ監視を標準搭載\"",
+    "site:corp.obc.co.jp \"OBC、AI時代の事業継続を支える『奉行クラウド』のセキュリティ＆AI戦略を発表\"",
+    "site:japan.zdnet.com \"東京高専とさくらインターネット、国産クラウド・AI活用による次世代技術者育成へ基本合意を締結\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "米メタ、余剰ＡＩ計算能力販売へクラウド事業構築を計画＝報道",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNQXBtcDJjdkNKdFVIT0ZrVDNkT0JodjRpTnlmc0Fta0dOb20tT0g1dUdMbUF6SmJTZ0tqZEVGUlFqUVlnT3o0UnQyNlRUZ0hoX1M5M2ZTNWQyTGdrMWxiMGlfX2o0VTNWMFZXc2U4aVIzNEZaT2ROVGczWDRpQW5ENg?oc=5",
+      "reason": "同日性は高いが stage1 候補から Reuters canonical を安定確認できず採用見送り"
+    },
+    {
+      "title": "3大クラウドを日本パートナーが評価、AIが加わりユーザーの選択が難しく",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9yUy1TTUlOaVFSY2ltanQ2WDZNX0pHZUpCejRRLS1hR2pTcTk4WU9qX1JLOW11LUlUVmZmRVZNTEIyUTZvWGZsV0RqTVUyYTZHaHptOFdfVmFwSmNHR1BWR3FUTjBjeWlXVF9QUg?oc=5",
+      "reason": "比較解説として有用だが当日の新事実より分析色が強く、速報性で選外"
+    },
+    {
+      "title": "AWSの恩恵を自ら放棄？ クラウドの「乗り換え自由」はリスクを生むだけなのか：「ベンダーロックイン」への誤解",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1LcHo3VEdxNzBnQjY0NW1DSnpLRWd3cS16eWN0b0htSlpVOHk1cDhDcWFmblNZbXR3eEFCNTBCWlczQlA4UENVZkZuZ3JFdDBDZWJuZ1lEV053YW5yd2o5QTRqdnR1QUZvcWstTQ?oc=5",
+      "reason": "エバーグリーンな解説記事で当日号のニュース性が薄い"
+    },
+    {
+      "title": "［新連載］NEC×アンソロピック電撃提携の舞台裏 「SIerの死」に先手",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5lZ3NYR0NpT3FCRVV6SjBuZXRxR3ZOMk1kYTI4MXVkblpfTExJeVFPWWFoMFh2a2haa1ZsdzlLM3A3ZU42QXNGampuUGw4UjNhVnQzUTBULWNudTYtaV9VSmlmbGFCdWc?oc=5",
+      "reason": "参照元の主要発表が 2026-04-23 で 1 日窓を外れるため freshness gate で除外"
+    },
+    {
+      "title": "インドIT、AI台頭で買収攻勢 パーシステントやタタ系",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBZeXE4YjlNRmlMeXhzUDczclc3RkJsQ2RPLXFPS204VzVSeFdZX0VTUjJUX3FCTTJkN2NLcFgzNE9uWGI5OEdCaEYteE1MWG1jV1Z1akgzQ0hQUmIyY0k2WlJzTWQ3T0Vjc3BvaQ?oc=5",
+      "reason": "業界潮流として重要だが canonical の確定ができず、同日号の速報枠では採用を見送った"
+    },
+    {
+      "title": "クラウドストライク、2026 IDC MarketScape for Worldwide SIEMにおいてリーダーの1社に位置付け",
+      "url": "https://www.crowdstrike.com/content/crowdstrike-www/locale-sites/jp/ja-jp/press-releases/crowdstrike-named-leader-in-2026-idc-marketscape-for-worldwide-siem.html",
+      "reason": "同日リリースだがベンダー評価の自己発信色が強く、読者の行動変化に直結する5件を優先した"
+    }
+  ]
+}
