@@ -2068,6 +2068,36 @@ def _summary_board_text(text: str, *, fallback: str) -> str:
 _SUMMARY_ROLE_PREFIX_RE = re.compile(
     r"^\s*【(?:事実・概要|背景・要点|影響・展望|事実|背景|展望)】[:：]\s*"
 )
+_SUMMARY_ROLE_LINE_RE = re.compile(
+    r"^\s*-\s*【(?P<label>事実・概要|背景・要点|影響・展望|事実|背景|展望)】[:：]\s*(?P<body>.+?)\s*$",
+    re.MULTILINE,
+)
+_SUMMARY_ROLE_TO_KEY = {
+    "事実・概要": "fact",
+    "事実": "fact",
+    "背景・要点": "context",
+    "背景": "context",
+    "影響・展望": "outlook",
+    "展望": "outlook",
+}
+
+
+def _extract_summary_role_lanes(text: str) -> dict[str, str]:
+    """`- 【事実・概要】：...` 形式の role 行を FACT/CONTEXT/OUTLOOK に構造化する。"""
+    lanes: dict[str, str] = {}
+    for match in _SUMMARY_ROLE_LINE_RE.finditer(text or ""):
+        key = _SUMMARY_ROLE_TO_KEY.get(match.group("label"))
+        body = match.group("body").strip()
+        if key and body and key not in lanes:
+            lanes[key] = body
+    return lanes
+
+
+def _remove_summary_role_lane_lines(text: str) -> str:
+    """読み物本文から role lane 行だけを取り除く。"""
+    cleaned = _SUMMARY_ROLE_LINE_RE.sub("", text or "")
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def _strip_summary_role_prefix(text: str) -> str:
@@ -2174,10 +2204,16 @@ def _build_tomorrow_board(sections: list[dict[str, Any]]) -> list[dict[str, Any]
         body = sec.get("body", "")
         sentences = _summary_sentence_parts(body)
         bullets = list(sec.get("bullets") or [])
-        watch = sec.get("heading") or f"{sec.get('tag', '')}の観測点"
-        watch = _strip_tomorrow_watch_prefix(str(watch), sec, cat)
-        signal = bullets[1] if len(bullets) > 1 else (sentences[1] if len(sentences) > 1 else body)
-        implication = bullets[2] if len(bullets) > 2 else (sentences[-1] if sentences else body)
+        lanes = sec.get("lanes") if isinstance(sec.get("lanes"), dict) else {}
+        if lanes:
+            watch = str(lanes.get("fact") or sec.get("heading") or f"{sec.get('tag', '')}の観測点")
+            signal = str(lanes.get("context") or "")
+            implication = str(lanes.get("outlook") or "")
+        else:
+            watch = sec.get("heading") or f"{sec.get('tag', '')}の観測点"
+            watch = _strip_tomorrow_watch_prefix(str(watch), sec, cat)
+            signal = bullets[1] if len(bullets) > 1 else (sentences[1] if len(sentences) > 1 else body)
+            implication = bullets[2] if len(bullets) > 2 else (sentences[-1] if sentences else body)
         rows.append({
             "category_id": cid,
             "tag": sec.get("tag", ""),
@@ -2204,7 +2240,7 @@ def _summary_section_title(heading: str, tag: str) -> str:
 def _summary_lane_texts(section: dict[str, Any]) -> list[dict[str, str]]:
     """カテゴリ考察本文を DC 正本の FACT / CONTEXT / OUTLOOK 3 レーンへ配分する。
 
-    上流 digest は書き換えず、公開 HTML 表示用にだけ文単位で分ける。
+    新 digest は section.lanes を正本にする。旧 digest だけ文単位 fallback を使う。
     raw emphasis marker は保持し、template の render_emph で描画する。
     """
     roles = [
@@ -2215,12 +2251,18 @@ def _summary_lane_texts(section: dict[str, Any]) -> list[dict[str, str]]:
     body = (section.get("body") or "").strip()
     bullets = [str(b).strip() for b in (section.get("bullets") or []) if str(b).strip()]
     sentences = _summary_sentence_parts(body)
+    explicit_lanes = section.get("lanes") if isinstance(section.get("lanes"), dict) else {}
 
-    fact = bullets[0] if len(bullets) > 0 else (sentences[0] if sentences else body)
-    context_pool = (bullets[1:2] if len(bullets) > 1 else []) + sentences[1:-1]
-    outlook_pool = (bullets[2:3] if len(bullets) > 2 else []) + (sentences[-1:] if len(sentences) > 1 else [])
-    context = context_pool[0] if context_pool else (sentences[1] if len(sentences) > 1 else body)
-    outlook = outlook_pool[0] if outlook_pool else (sentences[-1] if sentences else body)
+    if explicit_lanes:
+        fact = str(explicit_lanes.get("fact") or "")
+        context = str(explicit_lanes.get("context") or "")
+        outlook = str(explicit_lanes.get("outlook") or "")
+    else:
+        fact = bullets[0] if len(bullets) > 0 else (sentences[0] if sentences else body)
+        context_pool = (bullets[1:2] if len(bullets) > 1 else []) + sentences[1:-1]
+        outlook_pool = (bullets[2:3] if len(bullets) > 2 else []) + (sentences[-1:] if len(sentences) > 1 else [])
+        context = context_pool[0] if context_pool else (sentences[1] if len(sentences) > 1 else body)
+        outlook = outlook_pool[0] if outlook_pool else (sentences[-1] if sentences else body)
 
     fallbacks = [
         f"{section.get('tag', '本日')}の主要事実を整理中。",
@@ -2250,7 +2292,7 @@ def _summary_category_sections(sections: list[dict[str, Any]]) -> list[dict[str,
     return out
 
 
-def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
+def parse_essay_sections(body: str) -> dict[int, dict[str, Any]]:
     """summary digest md 本文から `### §NN ...` の 7 セクションを構造化辞書で返す。
 
     キーは 1..7、値は `{heading, body}`。
@@ -2260,7 +2302,7 @@ def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
     digest が §01-§07 全部含む前提だが、欠けていればその番号のキーは作らない。
     """
     matches = list(_ESSAY_SECTION_RE.finditer(body))
-    sections: dict[int, dict[str, str]] = {}
+    sections: dict[int, dict[str, Any]] = {}
     for idx, m in enumerate(matches):
         num = int(m.group(1))
         heading = m.group(2).strip()
@@ -2274,11 +2316,25 @@ def parse_essay_sections(body: str) -> dict[int, dict[str, str]]:
         cut = re.search(r"^(?:#{2,3}\s+KEY\s+TAKEAWAYS\s*$|###\s)", section_body, re.MULTILINE)
         if cut:
             section_body = section_body[: cut.start()]
+        lanes = _extract_summary_role_lanes(section_body)
+        section_body = _remove_summary_role_lane_lines(section_body)
         sections[num] = {
             "heading": heading,
             "body": section_body.strip(),
         }
+        if lanes:
+            sections[num]["lanes"] = lanes
     return sections
+
+
+def _theme_intro_region(body: str) -> str:
+    """`## § 本日のテーマ考察` 直下から最初の `###` 手前までを返す。"""
+    m = _THEME_ESSAY_HEADER_RE.search(body)
+    if not m:
+        return ""
+    rest = body[m.end():]
+    nxt = re.search(r"^###\s", rest, re.MULTILINE)
+    return rest[: nxt.start()] if nxt else rest
 
 
 def _parse_theme_intro(body: str) -> tuple[str, str]:
@@ -2291,12 +2347,9 @@ def _parse_theme_intro(body: str) -> tuple[str, str]:
         > [!quote] PULL QUOTE   ← lead はここの手前で切る
     lead は最初に現れる「callout でない blockquote ブロック」。取れなければ ("", "")。
     """
-    m = _THEME_ESSAY_HEADER_RE.search(body)
-    if not m:
+    region = _theme_intro_region(body)
+    if not region:
         return ("", "")
-    rest = body[m.end():]
-    nxt = re.search(r"^###\s", rest, re.MULTILINE)
-    region = rest[: nxt.start()] if nxt else rest
 
     subtitle = ""
     sub_m = re.search(r"^\*(.+?)\*\s*$", region, re.MULTILINE)
@@ -2329,6 +2382,11 @@ def _parse_theme_intro(body: str) -> tuple[str, str]:
         # 短文 fallback に退化しないようにする。正規形は subtitle + blockquote lead。
         lead = subtitle
     return (subtitle, lead)
+
+
+def _parse_theme_lanes(body: str) -> dict[str, str]:
+    """LP「本日のテーマ考察」3レーン用の明示 role 行を返す。"""
+    return _extract_summary_role_lanes(_theme_intro_region(body))
 
 
 def _parse_pull_quote(body: str) -> dict[str, str]:
@@ -2374,6 +2432,7 @@ def parse_reflection(body: str) -> dict[str, Any]:
     return {
         "subtitle": subtitle,
         "lead": lead,
+        "theme_lanes": _parse_theme_lanes(body),
         "pull_quote": _parse_pull_quote(body),
         "sections": parse_essay_sections(body),
         "takeaways": _parse_takeaways(body),
@@ -2410,7 +2469,7 @@ def _home_editorial_lanes(reflection: dict[str, Any],
                           summary_text: str) -> list[dict[str, str]]:
     """LP「本日のテーマ考察」を FACT / CONTEXT / OUTLOOK の 3 レーンに分ける。
 
-    lead が 3 文以上あれば先頭・中間・末尾で分ける。旧 digest などで不足するときは
+    新 digest は theme_lanes を正本にする。旧 digest などで不足するときは
     reflection sections と summary_text で補い、raw marker はテンプレの render_emph へ渡す。
     """
     roles = [
@@ -2418,13 +2477,17 @@ def _home_editorial_lanes(reflection: dict[str, Any],
         {"key": "context", "short": "CONTEXT", "marker": "背景・要点"},
         {"key": "outlook", "short": "OUTLOOK", "marker": "影響・展望"},
     ]
-    lead = _strip_lead_trailer((reflection or {}).get("lead", "")) or editorial_essay or ""
-    sentences = _home_editorial_sentences(lead)
+    explicit_lanes = (reflection or {}).get("theme_lanes")
     bodies: list[str] = []
-    if len(sentences) >= 3:
-        bodies = [sentences[0], "".join(sentences[1:-1]), sentences[-1]]
+    if isinstance(explicit_lanes, dict) and any(explicit_lanes.get(role["key"]) for role in roles):
+        bodies = [str(explicit_lanes.get(role["key"]) or "").strip() for role in roles]
     else:
-        bodies = list(sentences)
+        lead = _strip_lead_trailer((reflection or {}).get("lead", "")) or editorial_essay or ""
+        sentences = _home_editorial_sentences(lead)
+        if len(sentences) >= 3:
+            bodies = [sentences[0], "".join(sentences[1:-1]), sentences[-1]]
+        else:
+            bodies = list(sentences)
 
     sections = (reflection or {}).get("sections") or {}
     for num in sorted(sections.keys()):
@@ -2516,7 +2579,7 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
         else:
             tag, color, canonical = (label or f"§{num:02d}"), "#475569", ""
         meta = _summary_section_meta(cid, tag)
-        out.append({
+        item = {
             "number": num,
             "tag": tag,
             "color": color,
@@ -2525,7 +2588,10 @@ def _build_essay_sections(sections: dict[int, dict[str, str]],
             "bullets": bullets,
             "canonical": canonical,
             **meta,
-        })
+        }
+        if es.get("lanes"):
+            item["lanes"] = dict(es["lanes"])
+        out.append(item)
     return out
 
 

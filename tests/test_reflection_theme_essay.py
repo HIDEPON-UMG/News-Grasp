@@ -32,8 +32,12 @@ from tools.generate_pages import (  # noqa: E402
     build_index,
     build_summary,
     parse_reflection,
+    parse_essay_sections,
     strip_inline,
     _theme_essay_for_home,
+    _home_editorial_lanes,
+    _summary_lane_texts,
+    _build_tomorrow_board,
     _collect_entries,
 )
 
@@ -249,9 +253,127 @@ def test_parse_reflection_empty_on_plain_digest():
     """考察ブロックの無い digest では各値が空 (fallback に委ねる)。"""
     r = parse_reflection("# foo\n\n> [!summary]\n> bar\n")
     assert r["lead"] == ""
+    assert r["theme_lanes"] == {}
     assert r["sections"] == {}
     assert r["takeaways"] == []
     assert r["pull_quote"]["text"] == ""
+
+
+def test_parse_reflection_extracts_explicit_theme_lanes():
+    """LP 本日のテーマ考察は lead 分割ではなく明示 theme_lanes を読める。"""
+    body = """# Summary
+
+## § 本日のテーマ考察
+
+> これは後方互換用の長い lead です。FACT に見せる文ではありません。OUTLOOK にも見せません。
+
+- 【事実・概要】：THEME_FACT_SENTINEL は今日起きた事実を一文で示す。
+- 【背景・要点】：THEME_CONTEXT_SENTINEL はその背景と構造を一文で示す。
+- 【影響・展望】：THEME_OUTLOOK_SENTINEL は明日以降に見る条件を一文で示す。
+
+> [!quote] PULL QUOTE
+> 引用
+"""
+    r = parse_reflection(body)
+    assert r["theme_lanes"]["fact"].startswith("THEME_FACT_SENTINEL")
+    assert r["theme_lanes"]["context"].startswith("THEME_CONTEXT_SENTINEL")
+    assert r["theme_lanes"]["outlook"].startswith("THEME_OUTLOOK_SENTINEL")
+
+
+def test_home_editorial_lanes_prefer_explicit_theme_lanes():
+    """LP 3 レーンは lead の先頭・中間・末尾より theme_lanes を優先する。"""
+    reflection = {
+        "lead": "LEAD_FACT。LEAD_CONTEXT。LEAD_OUTLOOK。",
+        "theme_lanes": {
+            "fact": "THEME_FACT_SENTINEL は今日起きた事実。",
+            "context": "THEME_CONTEXT_SENTINEL は背景構造。",
+            "outlook": "THEME_OUTLOOK_SENTINEL は次の観測軸。",
+        },
+        "sections": {},
+    }
+    lanes = _home_editorial_lanes(reflection, "", "")
+    bodies = {lane["key"]: lane["body"] for lane in lanes}
+    assert "THEME_FACT_SENTINEL" in bodies["fact"]
+    assert "THEME_CONTEXT_SENTINEL" in bodies["context"]
+    assert "THEME_OUTLOOK_SENTINEL" in bodies["outlook"]
+    assert "LEAD_FACT" not in "".join(bodies.values())
+
+
+def test_parse_essay_sections_extracts_role_lanes_without_polluting_body():
+    """カテゴリ section は body 本文と3観点 lanes を別データとして保持する。"""
+    body = """## § 本日のテーマ考察
+
+### §02 AI — 配布条件の再設計
+
+本文段落はカテゴリ考察の読み物として残す。
+
+- 【事実・概要】：SECTION_FACT_SENTINEL は主役と出来事を示す。
+- 【背景・要点】：SECTION_CONTEXT_SENTINEL はなぜ重要かを示す。
+- 【影響・展望】：SECTION_OUTLOOK_SENTINEL は次に見る影響を示す。
+
+### KEY TAKEAWAYS
+
+- **[AI]** take
+"""
+    sections = parse_essay_sections(body)
+    assert sections[2]["body"] == "本文段落はカテゴリ考察の読み物として残す。"
+    assert sections[2]["lanes"]["fact"].startswith("SECTION_FACT_SENTINEL")
+    assert sections[2]["lanes"]["context"].startswith("SECTION_CONTEXT_SENTINEL")
+    assert sections[2]["lanes"]["outlook"].startswith("SECTION_OUTLOOK_SENTINEL")
+
+
+def test_summary_lane_texts_prefer_section_lanes_over_article_bullets():
+    """Summaryカテゴリカードは記事カードbulletではなくsection lanesを優先する。"""
+    lanes = _summary_lane_texts({
+        "tag": "AI",
+        "body": "BODY_FACT。BODY_CONTEXT。BODY_OUTLOOK。",
+        "bullets": [
+            "ARTICLE_FACT_SHOULD_NOT_RENDER。",
+            "ARTICLE_CONTEXT_SHOULD_NOT_RENDER。",
+            "ARTICLE_OUTLOOK_SHOULD_NOT_RENDER。",
+        ],
+        "lanes": {
+            "fact": "SECTION_FACT_SENTINEL は生成時点の事実。",
+            "context": "SECTION_CONTEXT_SENTINEL は生成時点の背景。",
+            "outlook": "SECTION_OUTLOOK_SENTINEL は生成時点の展望。",
+        },
+    })
+    html = {lane["key"]: lane["body"] for lane in lanes}
+    assert "SECTION_FACT_SENTINEL" in html["fact"]
+    assert "SECTION_CONTEXT_SENTINEL" in html["context"]
+    assert "SECTION_OUTLOOK_SENTINEL" in html["outlook"]
+    assert "ARTICLE_" not in "".join(html.values())
+
+
+def test_tomorrow_board_uses_section_lanes_before_sentence_or_article_fallback():
+    """Tomorrow Board も同じ後処理崩れを避け、明示 lanes から組む。"""
+    rows = _build_tomorrow_board([{
+        "is_category": True,
+        "category_id": "ai",
+        "tag": "AI",
+        "category_label": "ARTIFICIAL INTELLIGENCE",
+        "category_glyph": "◆",
+        "category_icon_id": "ic-ai",
+        "color": "#2D5BB8",
+        "heading": "AI — 古い見出し",
+        "body": "BODY_FACT。BODY_CONTEXT。BODY_OUTLOOK。",
+        "bullets": [
+            "ARTICLE_FACT_SHOULD_NOT_RENDER。",
+            "ARTICLE_CONTEXT_SHOULD_NOT_RENDER。",
+            "ARTICLE_OUTLOOK_SHOULD_NOT_RENDER。",
+        ],
+        "lanes": {
+            "fact": "SECTION_FACT_SENTINEL は見るべき現象。",
+            "context": "SECTION_CONTEXT_SENTINEL は変化シグナル。",
+            "outlook": "SECTION_OUTLOOK_SENTINEL は解釈。",
+        },
+    }])
+    row = rows[0]
+    joined = f"{row['watch']} {row['signal']} {row['implication']}"
+    assert "SECTION_FACT_SENTINEL" in row["watch"]
+    assert "SECTION_CONTEXT_SENTINEL" in row["signal"]
+    assert "SECTION_OUTLOOK_SENTINEL" in row["implication"]
+    assert "ARTICLE_" not in joined
 
 
 # ============================================================

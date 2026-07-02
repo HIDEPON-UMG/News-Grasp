@@ -150,8 +150,10 @@ cat tmp/newsroom/{号日}/*.records.jsonl \
 - **sections は scheduled_categories だけで構成**する。総論 → scheduled_categories の公開順 → 明日へ、の順にする。水曜は Game section を作らない。土日は Manufacturing / Economy section を作らない。非対象カテゴリを休載文で繋がない。
 - **takeaways は必ず 3 件**（`n` は 1/2/3、`color` はカテゴリ accent から選ぶ）。
 - **lead は 220〜250 字**。`tools.validate_summary_reflection` は LP TODAY'S THEME 用 lead を 180文字以上で gate するため、ぎりぎりを狙わず 220 字以上で書く。3 階層の強調をすべて使う（`[[ ]]` 2-4 + `**太字**` 1-2 + `__下線__` 1）。為替・AI に偏らせず、その日動いた主要カテゴリ 3 分野以上を横断する。
+- **theme_lanes は必須**。LP「本日のテーマ考察」の `FACT / CONTEXT / OUTLOOK` は `theme_lanes` を正本にする。現在の lead を後から文分割して割り振らない。Markdown 出力では lead の直後に `- 【事実・概要】：...` / `- 【背景・要点】：...` / `- 【影響・展望】：...` を置く。`"fact"` は今日起きた事実、`"context"` は背景・構造、`"outlook"` は次に見る条件・影響だけを書く。
 - **pull_quote.text は 40〜80 字**。`{text, emphasis, from}` のオブジェクト。
 - **各 section body は 150〜250 字**。各 § ごとに 3 階層の強調をすべて使う（`[[マーカー]]` 1-2 + `**太字**` 1 + `__下線__` 1）。
+- **各 section の lanes は必須**。カテゴリ別 FACT / CONTEXT / OUTLOOK カードと Tomorrow Board は `各 section の lanes` を正本にする。本文 `body` を後から文分割して割り振らない。各 `### §NN` の body 段落直後に `- 【事実・概要】：...` / `- 【背景・要点】：...` / `- 【影響・展望】：...` を置く。schema上は `"lanes": {"fact": "...", "context": "...", "outlook": "..."}` として考え、表示用Markdownへ落とす。
 
 > γ schema の完全な定義（フィールド名・色候補・旧 schema 差分）は `prompts/routine-system.md` ステップ 4 を参照すること（本ドキュメントは要約）。Summary 執筆は重いデータの Read を伴わない（各カテゴリの digest md カード本文を全文 Read せず、記者が返したコンパクト JSON のタイトル一覧と自分の収集知識で書く）。
 

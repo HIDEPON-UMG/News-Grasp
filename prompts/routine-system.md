@@ -430,6 +430,14 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   // 為替偏重を避け、その日動いた主要 3 分野以上を横断して言及する。
   "lead": "本日6分野・30 本のニュースから浮かび上がる最大のテーマは [[X]] と [[Y]] の同時進行である。AI・経済・モビリティ各分野でも同じ構図が反復し、…(主要カテゴリの広がりを 1〜2 文で書き切る)。以下、各カテゴリを横断して読み解く。",
 
+  // LP「本日のテーマ考察」3レーンの正本。現在の lead を後から文分割して割り振らない。
+  // 各 1 文・60〜90 字・必ず句点で終える。FACT / CONTEXT / OUTLOOK の役割を混ぜない。
+  "theme_lanes": {
+    "fact": "今日起きた主要事実を、3分野以上のカテゴリ横断で1文にまとめる。",
+    "context": "その事実が同じ論点に見える背景・条件・構造を1文で説明する。",
+    "outlook": "明日以降に何を見れば判断できるか、観測軸と影響を1文で示す。"
+  },
+
   // Pull quote (Georgia 120px " + 28px 引用 + gold underline)。
   // emphasis は引用中の gold underline 強調語句（1 つだけ）。from はそれが出る§
   "pull_quote": {
@@ -441,14 +449,24 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   // **scheduled_categories 準拠のセクション**: 総論 / scheduled_categories の公開順 / 明日へ
   // 非対象カテゴリの section は作らない。color はテンプレ側で固定値 (_SUMMARY_SECTION_COLORS) を当てるので不要
   "sections": [
-    { "number": 1, "tag": "総論",       "heading": "本日の総論",       "body": "..." },
-    { "number": 2, "tag": "為替",       "heading": "...",             "body": "..." },
-    { "number": 3, "tag": "AI",         "heading": "...",             "body": "..." },
-    { "number": 4, "tag": "IT",         "heading": "...",             "body": "..." },
-    { "number": 5, "tag": "モビリティ", "heading": "...",             "body": "..." },
-    { "number": 6, "tag": "製造",       "heading": "...",             "body": "..." },
-    { "number": 7, "tag": "経済",       "heading": "...",             "body": "..." },
-    { "number": 8, "tag": "明日へ",     "heading": "明日への示唆",     "body": "..." }
+    {
+      "number": 1,
+      "tag": "総論",
+      "heading": "本日の総論",
+      "body": "...",
+      "lanes": {
+        "fact": "【事実・概要】：総論として今日起きたことを1文で示す。",
+        "context": "【背景・要点】：背景・条件・構造を1文で示す。",
+        "outlook": "【影響・展望】：明日以降の観測軸を1文で示す。"
+      }
+    },
+    { "number": 2, "tag": "為替",       "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 3, "tag": "AI",         "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 4, "tag": "IT",         "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 5, "tag": "モビリティ", "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 6, "tag": "製造",       "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 7, "tag": "経済",       "heading": "...", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } },
+    { "number": 8, "tag": "明日へ",     "heading": "明日への示唆", "body": "...", "lanes": { "fact": "【事実・概要】：...", "context": "【背景・要点】：...", "outlook": "【影響・展望】：..." } }
   ],
 
   // **ちょうど 3 件**: KEY TAKEAWAYS (3 カラム / 64px 番号バー + tag + 本文)
@@ -486,9 +504,18 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
   横断して読み解く。」は LP 表示時に自動除去されるため、**それを除いた本文だけで「今日が何のテーマで
   選ばれたのか」が単体で読み切れる**よう、1〜2 文目で当日の通底テーマと主要カテゴリの広がりを書き切る。
   （「結局どんなニュースだったか」の列挙は §01 総論の役割。lead は WHY=枠組み、総論は WHAT=中身、と分担する）
+- **theme_lanes は必須**。LP「本日のテーマ考察」の `FACT / CONTEXT / OUTLOOK` は `theme_lanes` を正本にする。
+  現在の lead を後から文分割して割り振らない。Markdown 出力では lead の直後に次の3行を置く:
+  `- 【事実・概要】：...` / `- 【背景・要点】：...` / `- 【影響・展望】：...`。
+  FACT は「今日起きた事実」、CONTEXT は「なぜ同じ論点に見えるか」、OUTLOOK は「次に見る条件・影響」だけを書く。
 - **各 section body は 150〜250 字**。各 § ごとに **3 階層の強調をすべて使う**:
   `[[マーカー]]` を 1〜2 箇所 + `**太字**` を 1 箇所 + `__下線__` を 1 箇所。
   Summary ページ本文は `render_emph` でこの 3 種を描画するため、素の文章だけで出力しない。
+- **各 section の lanes は必須**。カテゴリ別 FACT / CONTEXT / OUTLOOK カードと Tomorrow Board は
+  `各 section の lanes` を正本にする。本文 `body` を後から文分割して割り振らない。
+  Markdown 出力では各 `### §NN` の body 段落の直後に
+  `- 【事実・概要】：...` / `- 【背景・要点】：...` / `- 【影響・展望】：...` を置く。
+  各行は1文で終え、役割を混ぜない。
 
 #### 旧 schema (5 sections) からの差分
 

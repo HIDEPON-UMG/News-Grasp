@@ -172,6 +172,36 @@ def test_editor_prompt_sets_reflection_lead_floor_above_validator_threshold() ->
     assert "180文字以上" in routine_text
 
 
+def test_summary_prompts_generate_theme_lanes_before_display_split() -> None:
+    """本日のテーマ考察は表示側の文分割ではなく生成時点で3観点を持つ。"""
+    for path in [EDITOR_PROMPT, ROUTINE_PROMPT]:
+        text = _read(path)
+        for phrase in [
+            "theme_lanes",
+            '"fact"',
+            '"context"',
+            '"outlook"',
+            "FACT / CONTEXT / OUTLOOK",
+            "現在の lead を後から文分割して割り振らない",
+        ]:
+            assert phrase in text, path
+
+
+def test_summary_prompts_generate_section_lanes_for_category_boards() -> None:
+    """カテゴリ別考察も body からの後処理ではなく role 別本文を生成する。"""
+    for path in [EDITOR_PROMPT, ROUTINE_PROMPT]:
+        text = _read(path)
+        for phrase in [
+            '"lanes"',
+            "事実・概要",
+            "背景・要点",
+            "影響・展望",
+            "各 section の lanes",
+            "Tomorrow Board",
+        ]:
+            assert phrase in text, path
+
+
 def test_editor_prompt_forbids_unscheduled_summary_sections() -> None:
     """編集長 prompt は非対象カテゴリを休載文でも Summary に載せさせない。"""
     text = _read(EDITOR_PROMPT)
