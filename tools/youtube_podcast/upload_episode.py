@@ -82,10 +82,20 @@ def _state_path(kind: str = "daily") -> Path:
 def _clean_script_text(text: str) -> str:
     lines: list[str] = []
     in_frontmatter = False
+    in_html_comment = False
     for raw in text.splitlines():
         line = raw.strip()
         if line == "---":
             in_frontmatter = not in_frontmatter
+            continue
+        if line.startswith("<!--"):
+            in_html_comment = True
+            if "-->" in line:
+                in_html_comment = False
+            continue
+        if in_html_comment:
+            if "-->" in line:
+                in_html_comment = False
             continue
         if in_frontmatter or not line or line.startswith("#") or line.startswith("```"):
             continue

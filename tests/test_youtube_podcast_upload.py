@@ -29,6 +29,28 @@ def test_metadata_uses_daily_briefing_title_and_summary_sources(tmp_path, monkey
     assert "ニュース" in metadata["tags"]
 
 
+def test_metadata_strips_tts_outline_comment_from_daily_description(tmp_path, monkeypatch):
+    from tools.youtube_podcast import upload_episode
+
+    digest_summary = tmp_path / "digest" / "Summary"
+    digest_summary.mkdir(parents=True)
+    (digest_summary / "2026-07-04-audio-script.md").write_text(
+        "# News-Grasp 朗読\n\n"
+        "<!-- tts-outline\n"
+        "中心論点: テスト用の設計メモ\n"
+        "-->\n\n"
+        "7月4日土曜日、朝のニュースをお伝えします。\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(upload_episode, "REPO_ROOT", tmp_path)
+
+    metadata = upload_episode.build_metadata("2026-07-04")
+
+    assert "<!--" not in metadata["description"]
+    assert "tts-outline" not in metadata["description"]
+    assert "7月4日土曜日、朝のニュースをお伝えします。" in metadata["description"]
+
+
 def test_publish_skips_api_when_same_date_is_already_public(tmp_path, monkeypatch):
     from tools.youtube_podcast import upload_episode
 
