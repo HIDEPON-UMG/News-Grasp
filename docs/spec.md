@@ -39,6 +39,10 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 | Notification | 通知送信が完了するか、送信不能理由が typed status として残っている。 |
 | State | runner state、distribution state、OK marker が同じ日付と同じ run intent を指している。 |
 
+### News-Grasp 通常公開 inventory 必須
+
+`news-grasp-publish-inventory-required`: News-Grasp の通常公開・本日分公開・途中再開を完了報告する場合、7カテゴリ digest、Summary、DeepDive md、DeepDive HTML、日付 docs、`docs/publish-status.json` の `published_ok`、公開 URL sentinel、`validate_daily_quality --require-deepdive` の証跡を必ず列挙する。公開に必要なコンテンツが 1 つでも欠ける場合は、正当な欠落理由と検証 gate を明記し、完了と言わない。
+
 ## Editorial Quality Bar
 
 News-Grasp の記事は、ITコンサルタントが業務の隙間で読むことを前提にする。単なるニュース羅列ではなく、論点、背景、示唆、関係性、次の確認観点を明確にする。
