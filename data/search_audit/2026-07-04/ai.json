@@ -1,0 +1,79 @@
+{
+  "date": "2026-07-04",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-04/_work_ai/final.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:sbbit.jp OpenAI 米政府に株式5%の譲渡を提案 規制圧力の緩和と公的ファンド設立を狙う",
+    "site:itmedia.co.jp Anthropic Samsung 独自AIチップで協議か 報道受けNVIDIAなど半導体関連株が下落",
+    "site:resemom.jp 文科省 生成AIとセキュリティ指針を改訂 次世代校務DX",
+    "site:zaikei.co.jp Google 自律型AI Gemini Spark Mac版ベータ ローカルファイル連携 リアルタイム追跡",
+    "site:aismiley.co.jp 静岡県藤枝市 全国初となる国産生成AIの公共活用実証実施 ソフトバンクと共同で窓口対応での有用性検証"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Googleが学習ツール「Study Notebooks」を提供開始、Geminiが専属の先生に（ビジネス＋IT）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9SV0RaRTZPSVV5QWtBR3Q2SU91bDltS1hZVmZHY0xWZTRfRVdUMDVLR0kxX1hLX2xvMDJmUXFia2VMbnJrdkpqMXNtWTFHN3NWUGZiNjR0dDdCRVpIQ2tpZmNXRGJYS1M2Zm9FY0dRb2lfcHRQSlhoVWQ3b1c3MXc?oc=5",
+      "reason": "canonical 解決先が 6月公開の follow-up 既出記事で、新材料が今回採用品より弱い"
+    },
+    {
+      "title": "「Claude Fable 5」をサブスクの標準機能に――AnthropicのエンジニアがXに投稿 7月8日以降の「早期復活目指す」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBqNnplaU9lLXZKRDZUZURMYjlqN3piNm5wLVJsM3plN2M4OG5aXzlPVEJyN0JlYXBPR1RNRlN6WnA2Q2RFRW0zejE0amotanNNZThtTjFISHdNU0E2ZDRWVGlJbHNOc0xick9wUw?oc=5",
+      "reason": "follow-up の新展開が限定的で、復旧告知の域を出ない"
+    },
+    {
+      "title": "ストックフォトのPIXTA、生成AI素材と決別 リアル体験ビジネス拡大",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9WcDlMbU5iRnpQdEw0X1owMHhoOTIyZ0t6X0FlbFZYUzd6dnRLbk5zLXY3UWo1YXFLVUxsdlV2TWhOUEpfN1hkM1diLVFRSFZseW9VU1ItMUNfeGk2LWZiQXprbVN2NFpGWng2Xw?oc=5",
+      "reason": "ニッチ事業の戦略転換として重要だが、当日上位5件より読者影響が狭い"
+    },
+    {
+      "title": "キオクシア 最先端メモリのサンプル出荷開始 生成AI需要に対応",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFBUdjFqNWdQR0J0YlczMkRSX284NkJoSmpsQ0N4TWxjaHFaeURzbXJoNXdKbjJqdHVUMUZ3THZBWWRWc3JxQmQ4cmhWYmFMM1NsTDYyU2o0VGpPa25UcDYw?oc=5",
+      "reason": "AIインフラの強い材料だが、当日号では政策・資本・実装面の記事を優先して次点"
+    },
+    {
+      "title": "exaBase AI、最新モデル「Claude Sonnet 5」を提供開始",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE1zY05HbFctbm5xS2ZxMndtUVFzSGZPdWxXSGNneV85Z3NPN0dtRFJLdlpZV1RoUjhuTlBCWU96cnhGVEc0OFpYcXNIVnB6R2pJMHB1RFRMZnBiR2hFWTlfUy1CMk90a3N1T0E?oc=5",
+      "reason": "再販系の導入ニュースで一次性と影響範囲が限定的"
+    },
+    {
+      "title": "生成AIツール「業務で活用」個人の6割 「簡易的な業務にしか使えていない」課題も",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE9qRkQwd1V1b1NBQy1iWHFCWDZrdWdJZGFUQ09EZGhWcUpvc0RnSzZ4QXlfSFpTTjdsdzNxNUtlNmlxQzZpcXdTNFZzNENXRGNla3ltTE9vNk1SVnlXZmUzSEoyZHdkZ25TbThObFNrc291Nk81X0E?oc=5",
+      "reason": "調査結果は示唆があるが、サンプル記事でトップ5の制度・供給網ニュースより相対重要度が低い"
+    },
+    {
+      "title": "Claudeが見つけたチケット販売網の重大な脆弱性──米音楽フェスのVIPパスも発行可能に",
+      "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxONXI2Z05VSzI5S2hXaktJVmsyM1UtekpWdkp6SDJQTDUtQjNJZU94ZHY2QlcwM2ZpQkxaejVIVmFYMlRzZTF4NzRBeF9wVHBRMmF2ZUI0TnBteEpIQjBTeHhKMzhld2l2ZHZQUkd5b0Q2akpkQ3J1OUZkWDJNVXFJNnpldW9MNm9Rbk5rdmZhcEVPbjhQak14anlqdzFGZVRDU3NKeDJqdDZSbHQ4R0FN?oc=5",
+      "reason": "セキュリティ事例として興味深いが、AI産業全体への波及が限定的"
+    },
+    {
+      "title": "OpenAI副社長「AI推論が長引くほど韓国メモリー需要が爆発的に増加」",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE4yNWVGS2xNV3Z2ZmcyeXZKNVh2X1hySDBneW9NTHBiQ19hZ1RGTndvUUt2UXZCTTZxU0RZbXpGRGNVYTA4b1h3eFY5YXRlQzB1ODk5UVU4ZUsxSWxpWW02WFR6Tm45N3g2aTc5bXI4V3VMMnNn?oc=5",
+      "reason": "相場コメント色が強く、半導体需給の実データ更新としては薄い"
+    },
+    {
+      "title": "Anthropic、「Claude Sonnet 5」を発表 ～「Opus 4.8」に迫る性能をリーズナブルな価格で【7月3日追記】（窓の杜）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBlY0d1QVhaWkRpWkdlMVAyQU5EZFkzOVlBOGtKOUFTbTdnRHFlQ25zLTgxLW9kcUpVQ1pBRDlDdWd0MHhHejFRVE9JWnkwbTc0U1ZEejhnbkRFdmhZNmJPandrSWVLZHZGNFdGblBXSi10R3M0VThlU0FvcnNVSjg?oc=5",
+      "reason": "モデル発表の再掲で follow-up 差分が弱く、同日の独自チップ記事を優先"
+    },
+    {
+      "title": "「Claude」を活用した開発とセキュリティのセミナーを開催",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBOYW9xQzRWZElzTU9WbFIzZHpLa0VsQ08tQVhPZ2dSUW9rWGJuaWVWYUFZTHQwYXlwSEl5Xy0taC1hVF9TQXlsTGhocEVFOER2SmJz?oc=5",
+      "reason": "イベント告知でニュース価値が限定的"
+    }
+  ]
+}

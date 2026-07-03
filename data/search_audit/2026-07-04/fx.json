@@ -1,0 +1,58 @@
+{
+  "date": "2026-07-04",
+  "category_id": "fx",
+  "queries": [
+    "stage1: build/deduped-candidates/fx.jsonl",
+    "\"日銀版需給ギャップ、1―3月期は＋0.53％ 17四半期連続のプラス\"",
+    "\"長期金利上昇、30年ぶり2.81% 市場は政府利上げけん制を懸念\"",
+    "\"来週の東京外国為替市場見通し＝ウォーシュＦＲＢ議長就任後初の６月ＦＯＭＣ議事要旨に注目\"",
+    "\"2026年夏休み（7月15日～8月31日）の旅行動向\"",
+    "\"東京為替：ドル・円は161円台を維持、円売り継続\""
+  ],
+  "raw_results_total": 22,
+  "candidates_total": 22,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "「日銀は独自判断で『1～2％』へ利上げを」黒田東彦・前日本銀行総裁",
+      "url": "https://www.nikkinonline.com/journal/article/400130",
+      "reason": "htmldate で published_date=2026-06-25。号日2026-07-04の当日窓外"
+    },
+    {
+      "title": "【欧州市況】株が最高値更新－利上げ観測で短期ゾーン中心に金利上昇",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE1wd183STZTbnhMMGpwdEpNbThlaTdZQUVHZkVuR3dQZjJsUEZlQ01hM1R6dmFHOGdQTXY5UDA4eEVLZkF0QUFUUElSZk9reG1CUC1rN0k3SUpSbXd0d1JhY1FlbURObUFMS1kwSmR5ay00SDFnV19r?oc=5",
+      "reason": "Google News encoded URL のまま元記事解決に失敗。欧州短期金利中心で fx 主題としても優先度が低い"
+    },
+    {
+      "title": "トランプ氏がFRBけん制 「利上げ視野」受け",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBNU3NTZklvV3NRQ3kwQ2RRUW9OZ2NaUmFMSUppVGl0SW45TXg1LVJwa0NSV3dZelZZMlhtVHRMWG1pU3B6S3VuUjBubWpGMm5IMHFtVWhidi1xRlZfNVE?oc=5",
+      "reason": "元記事URL解決に失敗し、為替への直接インパクトが他の採用候補より薄い"
+    },
+    {
+      "title": "外為：1ドル161円12銭前後とドル高・円安で推移",
+      "url": "https://finance.yahoo.co.jp/news/detail/765bb88d10a0664b0e650ae87c411e414612b88d",
+      "reason": "終値近辺の補足として確認したが、同時間帯のフィスコ記事の方が EURUSD を含み情報量が多い"
+    },
+    {
+      "title": "【テクニカル】日足テクニカル・ドル円＝基準線の戻りに沿って持ち直す流れ想定",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBWenhiT2haMnc1NlFWSU5xRWVyZTVwV3ZmeExBeWVvTkFoMTNROXpFZkpseHVRS1VlbnZyZVc3WlVzNGJOWjhVR3RDOHZHazB4VUpkNEJxYm1uNlVDUVNMQmRnWQ?oc=5",
+      "reason": "テクニカル解説で新規事実が薄く、政策・金利・実需材料を優先"
+    },
+    {
+      "title": "夏休み海外旅行は8%減、円安で北米・豪州を敬遠",
+      "url": "https://www.jtbcorp.jp/jp/newsroom/2026/07/02_jtb_doukou.html",
+      "reason": "Stage3 editor の横断 freshness gate で published_date=2026-07-02、号日2026-07-04 から2日古いため最終掲載から除外"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

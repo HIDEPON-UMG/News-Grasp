@@ -1,0 +1,52 @@
+{
+  "date": "2026-07-04",
+  "category_id": "game",
+  "queries": [
+    "stage1: build/deduped-candidates/game.jsonl",
+    "site:nintendo.com \"スプラトゥーン レイダース\" \"スプラトゥーン3\"",
+    "site:nintendo.com \"空の軌跡 the 1st\" \"いっせいトライアル\"",
+    "site:prtimes.jp \"hololive Dreams\" 7月23日 Steam",
+    "site:nintendo.com \"スーパーマリオ\" ランイベント 北海道",
+    "site:nintendo.com \"カラオケJOYSOUND for Nintendo Switch\" 10日間 無料キャンペーン"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ディスク生産終了に進むPlayStationが示す、あまりに暗い未来",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE9pYlVMZE9vdFRleFpaS3BOU2piNExHRm9UU3BlRmFxUl84VVhUbG9paTVYcURpWmhpODB4UnQ5UHZJUEJ1aExyTDdHc3k1WUowSlBEQQ?oc=5",
+      "reason": "前日号でPlayStationの一次発表を既掲載。今回候補は分析・二次報道中心で新材料が薄い"
+    },
+    {
+      "title": "ソニーのプレステ、新作ゲームのディスク販売終了 割を食うのは誰か",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1rTENjTzlYVFUwSXFuWlREU0Y5UE1yUW1sTkRBWWFJZ2RQQnRRUVFFSnpGdmh3WnhWVGJGeVpKLWowYmRvbENTaFQtaXpnd2hmNFB0VnlhVW5EX3FjT1ZxWFduYi1adkVRc05kcg?oc=5",
+      "reason": "同一テーマの二次報道であり、stage1制約下では既掲載一次ソースとの差分を十分に立てられない"
+    },
+    {
+      "title": "混血のカレコレ Plottがハイブリッドカジュアルゲーム市場に本格参入 混血のカレコレ のゲーム化や ドズル社 とのゲーム開発・パブリッシングを発表",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5tVjlxSXhqcksxWklXUndrVXZlcDRTUlR1M0ZDLWtDOEdPb2gxeDVzNEJZYlc4NDBsZEVES3EwLXJMSVhTNXpDaVN2U2RLMFpKVjRGbQ?oc=5",
+      "reason": "canonical 解決先が 2024-11-28 の古い発表で、当日性を満たさない"
+    },
+    {
+      "title": "7月9日20時！「電撃ゲームライブ」で『亰都ザナドゥ』先行プレイ！",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE5hTW1jQ2RqWkk2Tzl2eExvLVNEZ1ExaGJubUwtbXRaYTJkRGxKRmJuSkZzbWJYeXRoS1Y2RWJQcUNxbkRJTElJb0ZmTWNtVGJlREE?oc=5",
+      "reason": "番組告知としては明快だが、発売・収益・規模の変化を示す新材料が相対的に弱い"
+    },
+    {
+      "title": "ニンテンドーeショップ新作ソフト情報 7/3（金）号。",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNS3hrZEtGQ0tISDZfS21uQ1VRUTJFbkthdkh6Ty1jVVJzZ2l3YXVGUk5PSWxvZk5rbEZJVERTVHpLbDR5YVVCLUpxMGJSZ3ZaYVFOM3kzUUIwQlJzRFVPd2tCSWliS0hxaGsyUnNSY0VtU3QwSWlOSU05RVdqUTFWdXFEWlFGQQ?oc=5",
+      "reason": "定例 roundup で独自の変化点が薄く、同日の個別施策記事を優先した"
+    }
+  ]
+}

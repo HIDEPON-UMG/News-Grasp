@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "gates": {
+    "daily-quality": {
+      "signatures": {
+        "7f447098fe95b84a": {
+          "failures": 1,
+          "artifact_hashes": [
+            "da7271a5337df1d7"
+          ],
+          "category": "daily"
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    },
+    "generation-quality": {
+      "signatures": {
+        "dae714faecdc5ceb": {
+          "failures": 1,
+          "artifact_hashes": [
+            "57a9120b6f04441c"
+          ],
+          "category": "generated"
+        }
+      },
+      "categories": {
+        "generated": 1
+      }
+    }
+  },
+  "retry_budget_policy_version": 4
+}

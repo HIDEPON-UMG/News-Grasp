@@ -1,0 +1,38 @@
+{
+  "date": "2026-07-04",
+  "category_id": "mobility",
+  "queries": [
+    "build/deduped-candidates/mobility.jsonl (stage1 dedup済み候補を起点に使用)",
+    "site:newsweekjapan.jp 中国 省エネ車 EV 車船税 優遇 27年",
+    "site:news.jp テスラ 世界販売 25％増 4～6月",
+    "site:logi-today.com T2 自動運転トラック 商用化体制整備",
+    "site:jidounten-lab.com Waymo ドイツ進出",
+    "site:newsweekjapan.jp ロシア 燃料供給逼迫 EV",
+    "site:newsdig.tbs.co.jp 電動モビリティ 飲酒運転 取締り"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-04/mobility.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "警視庁が電動モビリティの飲酒運転取締り 電動キックボードや電動アシスト自転車を「酒気帯び運転」で摘発",
+      "url": "https://newsdig.tbs.co.jp/articles/-/2780017",
+      "reason": "当日性は高いが、政策・販売・商用化・海外展開を優先した5本に対して構造変化の射程が相対的に狭いため不採用"
+    },
+    {
+      "url": "https://www.logi-today.com/973084",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

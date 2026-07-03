@@ -1,0 +1,68 @@
+{
+  "date": "2026-07-04",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage1_dedup_candidates_only_with_canonical_resolution",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:newsdig.tbs.co.jp \"ソフトバンクGとメタ、ネオクラウドに参入－コアウィーブ脅かす恐れ\"",
+    "site:gmo-cybersecurity.com \"19年以上見過ごされていたLinux kernelのゼロデイ脆弱性を報告した話\"",
+    "site:www.sbbit.jp \"Googleが追加学習不要の予測モデル「TabFM」を発表\"",
+    "site:it.impress.co.jp \"クラウドERP「HUE」、新リース会計基準に備えグループ間リース取引の連結消去機能を追加\"",
+    "site:www.atpartners.co.jp \"防衛クラウドのSecond Front Systems、Cohereとアラブ首長国連邦でソブリンAI基盤の展開に成功\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTTデータ",
+    "クラウド",
+    "サイバーセキュリティ"
+  ],
+  "selected_titles": [
+    "ソフトバンクGとメタ、ネオクラウドに参入－コアウィーブ脅かす恐れ",
+    "19年以上見過ごされていたLinux kernelのゼロデイ脆弱性を報告した話：CVE-2026-43456",
+    "Googleが追加学習不要の予測モデル「TabFM」を発表",
+    "クラウドERP「HUE」、新リース会計基準に備えグループ間リース取引の連結消去機能を追加",
+    "防衛クラウドのSecond Front Systems、Cohereとアラブ首長国連邦でソブリンAI基盤の展開に成功"
+  ],
+  "selected_urls": [
+    "https://newsdig.tbs.co.jp/articles/withbloomberg/2780021?display=1",
+    "https://gmo-cybersecurity.com/blog/19-year-old-linux-kernel-zero-day/",
+    "https://www.sbbit.jp/article/cont1/186002",
+    "https://it.impress.co.jp/articles/-/29541",
+    "https://www.atpartners.co.jp/news/2026-07-03-defense-cloud-provider-second-front-systems-and-cohere-successfully-deploy-a-sovereign-ai-infrastructure-in-the-united-arab-emirates"
+  ],
+  "dropped": [
+    {
+      "title": "クラウド向けソフトウェア大手に立ち入り 独禁法違反容疑 公取委（朝日新聞）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBjYVoxLXJMVnd4cDVwMEVtbmJvYVZRSnI4MUcwblZzaEVaMVJETXp3blZZWng3ZjdvZ1pacmtWbUFuTU9HOHNMRjFoeWwtVVk0ZEkwb3daeTFZZnNYVTUyTHF3MFFnb3BUbTZrT1B1U1lRU09NLWNyLWZ2c2xYV2s?oc=5",
+      "reason": "canonical を追うと公取委のブロードコム処理完了発表に収れんし、stage1 タイトルと論点がずれたため採用を見送った"
+    },
+    {
+      "title": "AIは新しい侵入口になるのか？ 攻撃者視点で考えるAI利用のセキュリティ",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE1YbXh2UWtUc3dkX1AzMWVjRW1aaHBQak9NZ0RxOUwyVV81eTNVb1VsSDE1SnFoMTVVRUpUWUlwTGY5Q2hyOGJoQUx0TDB3VXh4LU10bFdyWjBEMmYzVmdRTGtB?oc=5",
+      "reason": "論考色が強く、当日号で優先したい新規発表や制度・市場変化より速報性が弱かった"
+    },
+    {
+      "title": "西鉄ストアが進める「母子店舗」運営にクラウドカメラ「Safie One」を導入",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE4yT1UtYlRFakxGYVpPRWxGemNDaWdnYk5PTThMS25PeFpNQlFEOWpmVkcxSU9HbmhEbHFsVjRkNW4tWnU1OVotQW8tamhvUG9qNWFxVHZtSjNxdS1mdXlEbEJWX0xOaVVZOGc?oc=5",
+      "reason": "実運用の参考にはなるが、個別導入事例で読者全体の意思決定を動かす規模感では5件に届かなかった"
+    },
+    {
+      "title": "海康威視（Hikvision）のDeepinView、世界初のCCTVカメラとしてEUの厳格なサイバーセキュリティ認証を取得",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE01UVU5RFY2bGJvSnNMVWNnQ0Z4OC15TEY2S2xobEZHNDJJdHNDMEdwVGNlbVRuZnNKUEVnbmNxN3Q0N3RsakVLZjdwTzNmeWItSTRjemRMc3l6OHVfa01TTEpJRS11V0ZlWGRUNXlwb01PQnFO?oc=5",
+      "reason": "認証取得自体は重要だが、vendor 主導の告知色が強く、日本のIT投資判断へ直結する波及が相対的に弱かった"
+    },
+    {
+      "title": "全国で5か所目 東京のIT企業「ウイズ・ワン」 石川県小松市に拠点を開設（MRO北陸放送）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1qTS1lZ3ZWTmdOSDVpS1A1T2l1dnh5VlVPUmVmSkNVTWRrRFhtMFp0aHRKcmhubUdaVTdTdWI0ZkYtTGtzVFhmcy1IejVScjQtZTNBVExWbGFLcG5iQ1c2QmlNRUtIVG5SQVZEMlNSa1FMSEhHYkNyNTlEVnhUUDg?oc=5",
+      "reason": "地域展開のニュースとしては明快だが、全国のIT・コンサル読者に対する影響範囲で他候補を下回った"
+    }
+  ],
+  "reporter_dedup_result": "5 passed, 0 dropped against data/articles.jsonl with followup/freshness gate"
+}
