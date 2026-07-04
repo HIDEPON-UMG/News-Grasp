@@ -131,6 +131,7 @@ docs/incidents/*-report.html
 !docs/incidents/2026-06-28-e2e-artifact-collision-report.html
 !docs/incidents/2026-06-28-full-runner-bug-patterns-report.html
 !docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html
+build/incidents/
 # Project-specific
 artifacts/
 coverage/

@@ -4,6 +4,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_GLOB = "docs/incidents/*-report.html"
+BUILD_REPORT_GLOB = "build/incidents/"
 REMOVED_PUBLIC_REPORT = "docs/incidents/2026-06-30-daily-batch-recovery-report.html"
 
 # Historical files that were already tracked before the 2026-06-30 removal.
@@ -44,6 +45,7 @@ def test_incident_report_html_is_gitignored() -> None:
     gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
     assert REPORT_GLOB in gitignore
+    assert BUILD_REPORT_GLOB in gitignore
 
 
 def test_no_new_incident_report_html_is_tracked() -> None:
