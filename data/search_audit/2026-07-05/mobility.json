@@ -1,0 +1,61 @@
+{
+  "date": "2026-07-05",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 candidate file: build/deduped-candidates/mobility.jsonl",
+    "\"ドイツ、ＥＶ販売回復の兆し\" イラン情勢 補助金再開",
+    "\"ロート製薬\" \"自動運転トラック\" T2",
+    "\"ロボタクシーへの違反切符\" 罰金",
+    "\"TOCKLE\" 掛川市 BRJ",
+    "site:audi.jp Audi charging hub Thank you Campaign 39円"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0?oc=5",
+      "reason": "株価ページであり記事単位のニュースではない"
+    },
+    {
+      "title": "独、EV販売回復兆し 燃料高騰追い風",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE93ZXYwQjVwZC1YMGsyLXJtanh3ZHJyMGt1WW9hcEVaNzJHRTVsaG11d3ZFVldPRmpLeVJhWTZybXFuNGJFRDV6MHQyT1Rzd1JmZUhpejA0bzVYcjR0cFE?oc=5",
+      "reason": "ドイツEV回復の同一テーマ重複"
+    },
+    {
+      "title": "トヨタＥＶ中止で損失補償",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBpRE1wTXgwN2JSX0ZoX2QtQWZvcnRmWTNKdGZCeXM4Q3ZkYVdKTHk0MWVhU2k5MkdlWk91WHQxT0FGaGJGemttcHZPV01XVGlrU2Y0bnBIVTQ3YjhJRDBqeEc4d3o3M0EzQXlVdg?oc=5",
+      "reason": "完成車の開発中止補償が主題で manufacturing 寄り"
+    },
+    {
+      "title": "ホーチミン市で無人自動運転車を試験運行｜クアンチュンソフトウェアパークでレベル4実証実験",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQdU5kUnIxRHhCdDBFQ3VpR1pfeVZEalJRbkdnX0VRd2xlX2ZxRm9GckVMY2VnSGNYMUFlV2szRzA3NkVRQWZNekMyakxkOHB5aEh2Z0UyWFdQeWhBQ2lRTjRnNXV4a21uOU53enFaOW84RVo0NWZSSnBtZG1mOWY5dQ?oc=5",
+      "reason": "実証ニュースとして有力だが国内制度・物流・需要テーマより優先度を下げた"
+    },
+    {
+      "title": "日産「リーフ」NISMO復活へ！ クロスオーバーEVは“走る楽しさ”をどう進化させるのか【写真・2枚目】",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTFB3N3dEbG9Vckx6MzIyMGNoNk8zRjFoTDZsQ0JSeDRkTEdTaVlTMXJkOG1MaGNhVjJnU2o3ZkFjSGZ5LThuNlNHWkNJMGtXN1ZYSXNYOEFFMFdDVGF6VE5yMTlNWWF5RzNpVlU4?oc=5",
+      "reason": "新材料よりも車種レビュー色が強い"
+    },
+    {
+      "url": "https://www.rohto.co.jp/news/release/2026/0629_01",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.audi.jp/e-tron/charging/ach/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,45 @@
+{
+  "date": "2026-07-05",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"SaaSは死んだ\" \"AIが使うソフトウェア基盤への進化と次世代モデル\"",
+    "\"AI相場に警告サイン点灯か－トークン利用単価に変調、見極め難しく\"",
+    "\"Cognition、セキュリティ自律化システムを発表 エンジニアリングと同等のスピードで脆弱性対処を\"",
+    "\"KiteRa\" \"AI利用実態調査\""
+  ],
+  "raw_results_total": 29,
+  "candidates_total": 8,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "サウナを次のステージへ！水着着用で男女共に楽しめる湯らっくす2号店を福岡に開店",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1vS3dTdzJOT3h6dnZqbHlJa2E1OVltTmxETzUzNnJDNlpxRTNJT2NwTW1GNEI5cUpxY1FJcWlNN2cxeXNRUzF5LWd5TTJGYmVnNWVJ?oc=5",
+      "reason": "クラウドファンディング案件でIT-Consulting読者への直接性が弱い"
+    },
+    {
+      "title": "AIセキュリティ事業に進出したサイバーセキュリティクラウド、製品の第一弾は「ゲートウェイ（門番）」",
+      "url": "https://enterprisezine.jp/news/detail/24485",
+      "reason": "canonical確認で2026-06-15公開と判明し当日性要件から外れた"
+    },
+    {
+      "title": "LRM、愛知県「サイバーセキュリティ対策支援事業」を受託 ～2026年8月6日、名古屋で中小企業向け「サイバー攻撃対策セミナー」を開催～",
+      "url": "https://prtimes.jp/main/html/rd/p/000000260.000054434.html",
+      "reason": "2026-07-01公開で近接性はあるが、7月5日号の当日性優先で補欠扱い"
+    },
+    {
+      "title": "札幌市長選にIT企業社長で札幌市の最高デジタル責任者補佐官の入澤拓也氏(46)が出馬表明-ー経営者の経験生かし「未来を見据えた新しい視点」強調＿民間の力を活用して市政の転換を目指す",
+      "url": "https://www.uhb.jp/news/single.html?id=60390",
+      "reason": "地方政治が主題で、IT業界動向としての波及範囲が限定的"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

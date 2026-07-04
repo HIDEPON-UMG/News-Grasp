@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-05",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-05/ai.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:finance.biggo.jp \"Claude Science Workbench\"",
+    "site:36kr.jp \"Claudeの6分の1\" Kimi ARR480億円",
+    "site:gigazine.net アリババ Claude Code 使用 禁止 セキュリティリスク",
+    "site:gizmodo.jp Gemini パーソナルスナップショット",
+    "site:zaikei.co.jp \"Claude Fable 5\" デバッグスコア 70% 低下"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Claude Science: AI for biology and drug discovery",
+      "url": "https://www.anthropic.com/news/claude-science-ai-workbench",
+      "reason": "一次情報として重要だが公開日が2026-06-30で、当日号の鮮度条件では同テーマの7月4日記事を優先"
+    },
+    {
+      "title": "OpenAI、ChatGPT新モデル「GPT-5.6」を近日発表か　リーク情報が話題に",
+      "url": "https://finance.biggo.jp/news/5ef1dc53-6ffd-4dc5-81bc-5874af707ca1",
+      "reason": "リーク色が強く一次確認が取れず、確度基準を満たさない"
+    },
+    {
+      "title": "Anthropicが「Claude Sonnet 5」、GPT-5.6に対抗する新モデル",
+      "url": "https://productzine.jp/article/detail/4345",
+      "reason": "公開日が2026-06-08で古く、日次号の上位材料としては不適"
+    },
+    {
+      "title": "マイクロン 日本への投資額1000億円積み増し 人材育成支援も",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBidk5zWTVwZXJ2dVlmWWl1S3pjNndtTVg2alBDdFk4T2pnWFBlcVdmZnY5clhHOU5GWk9KdTE5d3ZzY0YyRWRYQ0Q1UFJ0bU5xc2QzaHVoT1hTc3BwWkVtQ3NfQk5GbUh2Y0MycGhFZUxTV25qaHc",
+      "reason": "NHK系の候補だが安全に使える canonical URL を確定できず採用見送り"
+    },
+    {
+      "title": "「グッと堪えて、こちら！」 Geminiのしりとり大失敗が5万いいねを集めた理由",
+      "url": "https://hashout.jp/ai/2807/",
+      "reason": "話題性は高いが産業インパクトは上位5件より弱く、今回は次点"
+    }
+  ]
+}

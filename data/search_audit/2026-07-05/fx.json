@@ -1,0 +1,47 @@
+{
+  "date": "2026-07-05",
+  "category_id": "fx",
+  "queries": [
+    "stage1: build/deduped-candidates/fx.jsonl",
+    "\"ゴールドマン・サックスがドル円予測を上方修正、新たな目標値を発表\"",
+    "\"官房長官「為替、必要に応じていつでも適切に対応」\"",
+    "\"来週の東京外国為替市場見通し＝ウォーシュＦＲＢ議長就任後初の６月ＦＯＭＣ議事要旨に注目\"",
+    "\"東京為替：ドル・円は161円台を維持、円売り継続\""
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "歴史的円安で市場に警戒感 ＡＩ半導体ブーム 民間投資先行、政府は規制緩和を",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTFBDU0lZTFRTakFaWUdZelg5SXpFT3ZEYXBzaFAxb2h5U0dveEsxR0JSc2xqVEVYQnpLcmljbUZUQUNKeU9HblRFTHgtWQ?oc=5",
+      "reason": "円安の背景解説が中心で、新規の為替市場材料としては薄かった"
+    },
+    {
+      "title": "外為特会はなぜ約200兆円まで膨れ上がったのか？運用益はすでに重要財源､円安で含み益｢50兆円｣も活用は簡単ではない",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE1xVndwWlN5WU56S25zUXhhRFNSdnF2Z3ZOYjBsbUVmTFZQZWFQRDlXR3U2YkpWRlhKNEZCYUp0cVhBWHFWbmZKMXZ1UFZWNzgwUGpLMmdwMWZCbUU?oc=5",
+      "reason": "解説記事であり、7月5日号の即時性を優先して採用を見送った"
+    },
+    {
+      "title": "夏休みの海外旅行者 8.8％減 燃油高や円安が影響",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE1nN00yb210dldINDcxNGZZNXMzYkM4bVE1a3A3X1c4MHJxTEdkdnQxRk5LNE9weXZxX1BEd1hDMDVJTWFrd0UxdEFkWGpuRGZMM2JrazdGSWhrNk1wcFE?oc=5",
+      "reason": "円安の波及先としては有用だが、FX本流の政策・金利・相場材料より優先度を下げた"
+    },
+    {
+      "title": "利上げ視野のＦＲＢけん制　トランプ氏｜四国新聞WEB朝刊",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE5ZTFVvbTA1cFVPdWFIZUp6TWlKT1FfSWZ5S3ZUZEtjWVV6cy1vbXdXWlJqM0RXYU85cU41VGd2WkUxckVsVktvUWhOLTc3UWduU0V3WmhZM0JYOGZTSEY0LWtWb0V4VHdVd2tEd0pFdG9HYVYtZm1F0gF8QVVfeXFMT1NOQ25UY1Z3RVF3OWdDSEtQSHF4ZkJZd2dlanhXMmEtU2FCb3hQNWtVOEdvYW5KX1dMbHloYk9kYnR6SzhmQm1pYWdoTFYwWjRPMmlKSUIyU2ZJdTU0VFNvOHRRZ2RJcEo3SnRSRFlSU2loOWFRX21UdWYtMw?oc=5",
+      "reason": "FRB観測の補助材料にはなるが、採用4本で論点をカバーできたため見送った"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

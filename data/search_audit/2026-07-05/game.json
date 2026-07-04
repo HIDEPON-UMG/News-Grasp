@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-05",
+  "category_id": "game",
+  "queries": [
+    "stage1: build/deduped-candidates/game.jsonl",
+    "\"プレステ ゲームはディスク終了 ダウンロードのみに\"",
+    "site:prtimes.jp \"BLEACH Mirrors High\" 久保帯人 新キャラクター 2名",
+    "\"Echoes of Aincrad\" デスゲームチャレンジ",
+    "site:inside-games.jp \"ポケモン\" 30周年 UT 第2弾"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "ニンテンドーeショップ新作ソフト情報 7/3（金）号。",
+      "url": "https://www.nintendo.com/jp/topics/article/ea926760-06a4-4801-bb73-4e760f4b350a",
+      "reason": "公式情報だが定例 roundup のため、当日号では販促色が強く優先度を下げた"
+    },
+    {
+      "title": "藤岡市（群馬）と羽咋市（石川）が格闘ゲーム「ストリートファイター６」で激突 土俵を縁に姉妹都市40周年で８月にeスポーツ大会",
+      "url": "https://www.city.fujioka.gunma.jp/soshiki/kikakubu/kikaku/5_1/2/11629.html",
+      "reason": "自治体催事としては面白いが、全国のゲーム事業者への波及が限定的"
+    },
+    {
+      "title": "BMX小沢美晴V、スケボー吉沢恋2位 Xゲーム千葉大会が開幕",
+      "url": "https://www.nikkei.com/",
+      "reason": "アクションスポーツ大会であり、ビデオゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "有吉ぃぃｅｅｅｅｅ！～そうだ！今からお前んチでゲームしない？",
+      "url": "https://www.tv-tokyo.co.jp/",
+      "reason": "テレビ番組情報で、ゲーム産業の動きとしての新規性が薄い"
+    },
+    {
+      "title": "ルートインホテルズpresents BCリーグオールスターゲーム 2026",
+      "url": "https://abema.tv/",
+      "reason": "野球の試合名称で非対象カテゴリ"
+    },
+    {
+      "title": "セガサターン『NiGHTS』30周年。ほかのゲームでは味わえない華麗な飛行感覚に誰もが夢中になった。",
+      "url": "https://news.yahoo.co.jp/",
+      "reason": "回顧記事で当日性が弱く、速報枠より歴史読み物に近い"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
