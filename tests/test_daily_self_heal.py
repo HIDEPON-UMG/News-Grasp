@@ -342,6 +342,96 @@ def test_verify_deploy_workflow_accepts_manual_dispatch_for_same_head(monkeypatc
     assert result["event"] == "workflow_dispatch"
 
 
+def test_verify_deploy_workflow_recommends_fresh_dispatch_for_completed_failure(monkeypatch, tmp_path: Path) -> None:
+    """completed/failure の Deploy Pages は rerun ではなく fresh workflow dispatch で復旧する。"""
+    _write_deploy_workflow(tmp_path)
+    head = "a" * 40
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {
+                            "id": 789,
+                            "head_sha": head,
+                            "status": "completed",
+                            "conclusion": "failure",
+                            "html_url": "https://github.example/run/789",
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse())
+
+    result = dsh.verify_deploy_workflow(repo_root=tmp_path, remote="origin", branch="main", expected_commit=head)
+
+    assert result["ok"] is False
+    assert result["reason"] == "deploy_workflow_not_success"
+    assert result["status"] == "completed"
+    assert result["conclusion"] == "failure"
+    assert result["recovery"]["action"] == "workflow_dispatch"
+    assert result["recovery"]["workflow_file"] == "deploy-pages.yml"
+    assert result["recovery"]["branch"] == "main"
+    assert "rerun" not in " ".join(result["recovery"]["command"])
+
+
+def test_dispatch_deploy_workflow_if_failed_posts_workflow_dispatch(monkeypatch, tmp_path: Path) -> None:
+    """fresh dispatch command は同一 HEAD failure を確認して workflow dispatch endpoint へ POST する。"""
+    head = "a" * 40
+    seen: dict[str, object] = {}
+
+    def fake_git(_repo: Path, args: list[str]) -> str:
+        if args == ["rev-parse", "HEAD"]:
+            return head
+        if args == ["config", "--get", "remote.origin.url"]:
+            return "https://github.com/HIDEPON-UMG/News-Grasp.git"
+        raise AssertionError(args)
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(
+        dsh,
+        "verify_deploy_workflow",
+        lambda **_kwargs: {
+            "ok": False,
+            "reason": "deploy_workflow_not_success",
+            "status": "completed",
+            "conclusion": "failure",
+            "head_sha": head,
+            "recovery": {"action": "workflow_dispatch"},
+        },
+    )
+
+    def fake_post(url: str, payload: dict) -> int:
+        seen["url"] = url
+        seen["payload"] = payload
+        return 204
+
+    monkeypatch.setattr(dsh, "_github_api_post", fake_post)
+
+    result = dsh.dispatch_deploy_workflow_if_failed(tmp_path, remote="origin", branch="main")
+
+    assert result["ok"] is True
+    assert result["action"] == "workflow_dispatch"
+    assert seen == {
+        "url": "https://api.github.com/repos/HIDEPON-UMG/News-Grasp/actions/workflows/deploy-pages.yml/dispatches",
+        "payload": {"ref": "main"},
+    }
+
+
 def test_verify_deploy_workflow_normalizes_api_errors_and_bad_payloads(monkeypatch, tmp_path: Path) -> None:
     """Actions API 失敗や壊れた payload は deploy_workflow_unavailable に正規化する。"""
     _write_deploy_workflow(tmp_path)

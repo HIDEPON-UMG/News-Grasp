@@ -16,11 +16,20 @@ TARGET_MAX = 2800
 _SENTENCE_RE = re.compile(r"[^。！？\n]+[。！？]")
 
 SUPPLEMENT_SENTENCES = (
+    "背景には、投資、制度、価格、供給網が同時に動き、見出しごとの明るさより実装順序を確認する必要があります。",
+    "一方でリスクは、発表額や性能だけでは責任分界、費用負担、継続運用の重さがまだ見えにくいことです。",
     "補足すると、今日の材料は新しい機能の多さより、どの条件を先に満たすかを見た方が整理しやすい一日でした。",
     "投資、認証、防御、供給網の話がそれぞれ別の見出しで出ていますが、実務では同じ順番の問題としてつながります。",
     "先に通す道を決め、次に守る場所を決め、最後に広げる範囲を決める会社ほど、変化への対応が速くなります。",
     "数字や社名だけを見ると散らばって見えますが、準備の置き方を見ると、今日のニュースはかなり一本の線で読めます。",
     "今日の観点・考察としては、成長の速さそのものより、認証、監査、供給、説明責任をどの順番で固めるかが焦点です。",
+)
+
+CLOSING_CANDIDATE_TEMPLATES = (
+    "{issue_jp}の今日の観点・考察として、判断軸は成長の速さそのものではなく、責任分界と供給条件を先に言語化できているかにあります。",
+    "{issue_jp}の今日の観点・考察として、各ニュースを並べるだけでなく、誰が責任を持ち、どの条件が先に固まったかを見ることが重要です。",
+    "{issue_jp}の今日の観点と考察は、勢いのある発表よりも、認証、供給、運用、説明責任の順番を見て次の動きを判断することです。",
+    "{issue_jp}の締めくくりとして、今日の観点・考察は、拡大の速さではなく、実装前に守る条件をどこまで具体化できたかに置きます。",
 )
 
 CATEGORY_LABELS = {
@@ -145,9 +154,30 @@ def _daily_supplement_sentences(issue: str) -> list[str]:
     return sentences
 
 
-def _daily_closing_sentence(issue: str) -> str:
+def _daily_closing_candidates(issue: str) -> list[str]:
     issue_jp = _issue_japanese(issue)
-    return f"{issue_jp}の今日の観点・考察として、判断軸は成長の速さそのものではなく、責任分界と供給条件を先に言語化できているかにあります。"
+    return [template.format(issue_jp=issue_jp) for template in CLOSING_CANDIDATE_TEMPLATES]
+
+
+def _fresh_closing_sentence(
+    issue: str,
+    *,
+    body: str,
+    additions: list[str],
+    history_fingerprints: set[str],
+) -> str | None:
+    existing = {_sentence_fingerprint(sentence) for sentence in additions}
+    body_compact = re.sub(r"\s+", "", body)
+    for sentence in _daily_closing_candidates(issue):
+        fp = _sentence_fingerprint(sentence)
+        if sentence in body or fp in existing:
+            continue
+        if any(fp in history_fp or history_fp in fp for history_fp in history_fingerprints):
+            continue
+        if fp in body_compact:
+            continue
+        return sentence
+    return None
 
 
 def _sentence_fingerprint(sentence: str) -> str:
@@ -191,11 +221,21 @@ def repair_text(raw: str, *, issue: str, history_texts: list[str] | None = None)
     frontmatter, body = _split_frontmatter(raw)
     repaired_body, changed = _repair_repeated_closing(body, issue=issue)
     history_fingerprints = _history_sentence_fingerprints(history_texts)
+    initial_issues = validate_script(
+        repaired_body,
+        date=issue,
+        history_texts=history_texts or [],
+        required_categories=scheduled_category_ids(issue),
+    )
+    needs_depth_repair = any(
+        marker in issue_text
+        for issue_text in initial_issues
+        for marker in ("今日の観点・考察不足", "論点充足不足", "字数不足")
+    )
 
     additions: list[str] = []
-    if effective_char_count(repaired_body) < TARGET_MIN:
+    if effective_char_count(repaired_body) < TARGET_MIN or needs_depth_repair:
         supplement_sentences = SUPPLEMENT_SENTENCES + tuple(_daily_supplement_sentences(issue))
-        closing_sentence = _daily_closing_sentence(issue)
         for _ in range(4):
             for sentence in supplement_sentences:
                 if sentence in repaired_body or sentence in additions:
@@ -203,7 +243,13 @@ def repair_text(raw: str, *, issue: str, history_texts: list[str] | None = None)
                 if _sentence_fingerprint(sentence) in history_fingerprints:
                     continue
                 candidate_additions = additions + [sentence]
-                if closing_sentence not in repaired_body and closing_sentence not in candidate_additions:
+                closing_sentence = _fresh_closing_sentence(
+                    issue,
+                    body=repaired_body,
+                    additions=candidate_additions,
+                    history_fingerprints=history_fingerprints,
+                )
+                if closing_sentence:
                     candidate_additions = candidate_additions + [closing_sentence]
                 candidate_body = repaired_body.rstrip() + "\n\n" + "\n".join(candidate_additions)
                 if effective_char_count(candidate_body) > TARGET_MAX:
@@ -212,11 +258,23 @@ def repair_text(raw: str, *, issue: str, history_texts: list[str] | None = None)
                 if effective_char_count(candidate_body) >= TARGET_MIN:
                     break
             final_additions = list(additions)
-            if closing_sentence not in repaired_body and closing_sentence not in final_additions:
+            closing_sentence = _fresh_closing_sentence(
+                issue,
+                body=repaired_body,
+                additions=final_additions,
+                history_fingerprints=history_fingerprints,
+            )
+            if closing_sentence:
                 final_additions.append(closing_sentence)
             if effective_char_count(repaired_body.rstrip() + "\n\n" + "\n".join(final_additions)) >= TARGET_MIN:
                 break
-        if closing_sentence not in repaired_body and closing_sentence not in additions:
+        closing_sentence = _fresh_closing_sentence(
+            issue,
+            body=repaired_body,
+            additions=additions,
+            history_fingerprints=history_fingerprints,
+        )
+        if closing_sentence:
             additions.append(closing_sentence)
 
     if additions:

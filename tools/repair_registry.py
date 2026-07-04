@@ -11,7 +11,12 @@ from typing import Callable
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
 from tools.refill_category_after_quarantine import refill_category
 from tools.repair_audio_script_length import repair_file as repair_audio_script_file
-from tools.validate_daily_quality import REQUIRED_COVERAGE_TERMS, extract_source_date_from_url
+from tools.validate_daily_quality import (
+    REQUIRED_COVERAGE_TERMS,
+    extract_source_date_from_url,
+    parse_articles,
+    parse_frontmatter,
+)
 
 
 UNIMPLEMENTED_STATUS = "blocked_repair_handler_unimplemented"
@@ -232,6 +237,23 @@ def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
             audit_paths.extend(sorted(audit_dir.glob("*.json")))
 
     changed: list[str] = []
+
+    def _digest_article_count_for(category_id: str) -> int | None:
+        digest_root = ctx.repo_root / "digest"
+        for digest_path in sorted(digest_root.glob(f"*/*{ctx.issue}*.md")):
+            if digest_path.parent.name in {"Summary", "DeepDive"}:
+                continue
+            try:
+                fm, body = parse_frontmatter(digest_path.read_text(encoding="utf-8-sig", errors="replace"))
+            except OSError:
+                continue
+            digest_category = str(
+                fm.get("categoryId") or fm.get("category") or digest_path.parent.name
+            ).strip().casefold()
+            if digest_category == category_id.casefold():
+                return len(parse_articles(body))
+        return None
+
     for path in audit_paths:
         try:
             audit = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -250,6 +272,12 @@ def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
             did_change = True
 
         category_id = str(audit.get("category_id") or path.stem).casefold()
+        digest_count = _digest_article_count_for(category_id)
+        if digest_count is not None and selected_total != digest_count:
+            audit["selected_total"] = digest_count
+            selected_total = digest_count
+            did_change = True
+
         required_terms = REQUIRED_COVERAGE_TERMS.get(category_id) or set()
         if required_terms:
             checked = [str(v).strip() for v in (audit.get("coverage_terms_checked") or []) if str(v).strip()]

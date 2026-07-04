@@ -544,6 +544,27 @@ def _github_api_json(url: str) -> dict:
     return payload
 
 
+def _github_api_post(url: str, payload: dict) -> int:
+    token = os.environ.get("GITHUB_TOKEN", "").strip() or os.environ.get("GH_TOKEN", "").strip()
+    tried_auth = bool(token)
+    data = json.dumps(payload).encode("utf-8")
+    headers = {**_github_headers(token), "Content-Type": "application/json"}
+    try:
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
+            return int(getattr(res, "status", 204))
+    except urllib.error.HTTPError as exc:
+        if exc.code not in {401, 403, 404} or tried_auth:
+            raise
+        token = _gh_auth_token()
+        if not token:
+            raise
+        headers = {**_github_headers(token), "Content-Type": "application/json"}
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310 - fixed GitHub API URL derived from origin
+            return int(getattr(res, "status", 204))
+
+
 def _verify_workflow_pages_status(*, owner: str, repo: str, branch: str, expected_commit: str, latest_detail: str = "") -> dict:
     url = f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/pages"
     try:
@@ -690,7 +711,7 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
     status = str(run.get("status") or "")
     conclusion = str(run.get("conclusion") or "")
     if status != "completed" or conclusion != "success":
-        return {
+        result = {
             "ok": False,
             "reason": "deploy_workflow_not_success",
             "status": status,
@@ -701,6 +722,10 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
             "url": url,
             "workflow_file": workflow_file,
         }
+        recovery = _deploy_workflow_fresh_dispatch_recovery(result=result, branch=branch, remote=remote)
+        if recovery is not None:
+            result["recovery"] = recovery
+        return result
     return {
         "ok": True,
         "reason": "",
@@ -712,6 +737,89 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
         "html_url": run.get("html_url", ""),
         "url": url,
         "workflow_file": workflow_file,
+    }
+
+
+def _deploy_workflow_fresh_dispatch_recovery(*, result: dict, branch: str, remote: str) -> dict | None:
+    if result.get("ok") or result.get("reason") != "deploy_workflow_not_success":
+        return None
+    status = str(result.get("status") or "")
+    conclusion = str(result.get("conclusion") or "")
+    if status != "completed" or not conclusion or conclusion == "success":
+        return None
+    return {
+        "action": "workflow_dispatch",
+        "workflow_file": "deploy-pages.yml",
+        "branch": branch,
+        "remote": remote,
+        "reason": "completed_failure",
+        "command": [
+            "python",
+            "-m",
+            "tools.daily_self_heal",
+            "dispatch-deploy-workflow",
+            "--repo-root",
+            ".",
+            "--remote",
+            remote,
+            "--branch",
+            branch,
+        ],
+    }
+
+
+def dispatch_deploy_workflow_if_failed(repo_root: Path, remote: str, branch: str) -> dict:
+    """同一 HEAD の Deploy Pages が completed/failure のときだけ fresh workflow dispatch する。"""
+    workflow_file = "deploy-pages.yml"
+    try:
+        expected_commit = _git_output(repo_root, ["rev-parse", "HEAD"])
+    except Exception as exc:
+        return {"ok": False, "reason": "deploy_workflow_dispatch_unavailable", "detail": str(exc)}
+    current = verify_deploy_workflow(
+        repo_root=repo_root,
+        remote=remote,
+        branch=branch,
+        expected_commit=expected_commit,
+    )
+    recovery = _deploy_workflow_fresh_dispatch_recovery(result=current, branch=branch, remote=remote)
+    if recovery is None:
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_dispatch_not_applicable",
+            "deploy_workflow": current,
+        }
+    try:
+        remote_url = _git_output(repo_root, ["config", "--get", f"remote.{remote}.url"])
+    except Exception as exc:
+        return {"ok": False, "reason": "deploy_workflow_dispatch_unavailable", "detail": str(exc)}
+    slug = _repo_slug_from_remote_url(remote_url)
+    if slug is None:
+        return {"ok": False, "reason": "deploy_workflow_dispatch_unavailable", "remote_url": remote_url}
+    owner, repo = slug
+    url = (
+        f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/actions/workflows/"
+        f"{quote(workflow_file, safe='')}/dispatches"
+    )
+    try:
+        status = _github_api_post(url, {"ref": branch})
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, UnicodeEncodeError, ValueError) as exc:
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_dispatch_failed",
+            "url": url,
+            "detail": str(exc),
+            "deploy_workflow": current,
+        }
+    return {
+        "ok": True,
+        "reason": "",
+        "action": "workflow_dispatch",
+        "workflow_file": workflow_file,
+        "branch": branch,
+        "status": status,
+        "expected_commit": expected_commit,
+        "url": url,
+        "deploy_workflow": current,
     }
 
 
@@ -1056,6 +1164,11 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("--require-podcast", action="store_true")
     verify.add_argument("--podcast-state", type=Path, default=None)
 
+    dispatch = sub.add_parser("dispatch-deploy-workflow")
+    dispatch.add_argument("--repo-root", type=Path, required=True)
+    dispatch.add_argument("--remote", default="origin")
+    dispatch.add_argument("--branch", default="main")
+
     podcast = sub.add_parser("verify-podcast")
     podcast.add_argument("--date", required=True)
     podcast.add_argument("--state", type=Path, default=Path("build") / "youtube-podcast" / "uploads.json")
@@ -1114,6 +1227,14 @@ def main(argv: list[str] | None = None) -> int:
             poll_sec=args.poll_sec,
             require_podcast=args.require_podcast,
             podcast_state_path=args.podcast_state,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["ok"] else 1
+    if args.cmd == "dispatch-deploy-workflow":
+        result = dispatch_deploy_workflow_if_failed(
+            repo_root=args.repo_root,
+            remote=args.remote,
+            branch=args.branch,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["ok"] else 1

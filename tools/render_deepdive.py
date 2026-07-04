@@ -747,6 +747,61 @@ def _band_layout(
         if k not in anchor_rows:
             _space_row(row, {i: _bary(i) for i in row})
 
+    def _seg_point_dist_xy(ax: float, ay: float, bx: float, by: float, px: float, py: float) -> float:
+        dx, dy = bx - ax, by - ay
+        l2 = dx * dx + dy * dy
+        if l2 < 1e-9:
+            return math.hypot(px - ax, py - ay)
+        t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / l2))
+        return math.hypot(px - (ax + dx * t), py - (ay + dy * t))
+
+    def _x_on_segment_at_y(ax: float, ay: float, bx: float, by: float, py: float) -> float:
+        if abs(by - ay) < 1e-9:
+            return (ax + bx) / 2.0
+        t = max(0.0, min(1.0, (py - ay) / (by - ay)))
+        return ax + (bx - ax) * t
+
+    def _relieve_long_edge_crossings() -> None:
+        """複数 band をまたぐ edge が中間の単独ノード円を貫通する配置を後処理で逃がす。
+
+        2026-07-04 AI 基盤図では、AWS→Anthropic の長い供給線が中間 band の
+        Samsung 円を貫通した。これは同段 peer ではなく、flow layering 後の単独 row が
+        長距離 edge の線上へ重心配置される事故なので、row 内衝突のない単独ノードだけを
+        線分から左右へ逃がす。
+        """
+        for _ in range(4):
+            moved = False
+            for e in edges:
+                a, b = str(e.get("from", "")), str(e.get("to", ""))
+                if a not in x or b not in x or a not in band_of or b not in band_of:
+                    continue
+                ka, kb = band_of[a], band_of[b]
+                if abs(ka - kb) < 2:
+                    continue
+                lo_band, hi_band = sorted((ka, kb))
+                ax, ay, bx, by = x[a], band_y[ka], x[b], band_y[kb]
+                for c in ids:
+                    kc = band_of.get(c)
+                    if c in (a, b) or kc is None or not (lo_band < kc < hi_band):
+                        continue
+                    if len(rows[kc]) != 1:
+                        continue
+                    cy = band_y[kc]
+                    clearance = node_r(c) + 22.0
+                    if _seg_point_dist_xy(ax, ay, bx, by, x[c], cy) >= clearance:
+                        continue
+                    line_x = _x_on_segment_at_y(ax, ay, bx, by, cy)
+                    side_sign = 1.0 if x[c] >= line_x else -1.0
+                    target = line_x + side_sign * (clearance + 36.0)
+                    clamped = min(max(target, node_r(c) + 8.0), vb_w - node_r(c) - 8.0)
+                    if abs(clamped - x[c]) > 0.5:
+                        x[c] = clamped
+                        moved = True
+            if not moved:
+                break
+
+    _relieve_long_edge_crossings()
+
     placed = []
     for nd in nodes:
         i = str(nd.get("id", ""))

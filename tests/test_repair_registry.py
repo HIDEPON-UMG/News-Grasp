@@ -322,6 +322,68 @@ def test_search_audit_metadata_patch_promotes_dropped_examples_and_terms(tmp_pat
     assert {"BYD", "Tesla", "Toyota", "Uber", "Waymo"}.issubset(set(repaired["coverage_terms_checked"]))
 
 
+def test_search_audit_metadata_patch_syncs_selected_total_from_digest_cards(tmp_path: Path) -> None:
+    """final digest で落ちた記事数を search_audit selected_total へ同じ述語で戻す。"""
+    issue = "2026-07-04"
+    digest = tmp_path / "digest" / "FX" / f"{issue}-FX.md"
+    digest.parent.mkdir(parents=True)
+    cards = []
+    for idx in range(4):
+        cards.append(
+            f"### [{90 - idx}] FX article {idx + 1}\n\n"
+            f"📅 2026-07-04 06:0{idx} · 📰 Example · 🔗 [元記事](https://example.com/2026/07/04/fx-{idx})\n\n"
+            f"![thumb](https://example.com/thumb-fx-{idx}.jpg)\n\n"
+            "- [[FX]] **policy** __market signal__\n\n"
+            "---\n"
+        )
+    digest.write_text(
+        "---\n"
+        "title: FX\n"
+        f"date: {issue}\n"
+        "categoryId: fx\n"
+        "---\n\n"
+        + "\n".join(cards),
+        encoding="utf-8",
+    )
+    audit = tmp_path / "data" / "search_audit" / issue / "fx.json"
+    audit.parent.mkdir(parents=True)
+    audit.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "category_id": "fx",
+                "queries": ["q1", "q2", "q3"],
+                "raw_results_total": 25,
+                "candidates_total": 5,
+                "selected_total": 5,
+                "dropped": [
+                    {
+                        "title": "stale travel demand item",
+                        "reason": "freshness gate: published 2026-07-02, exceeds max-source-age-days 1",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="search-audit-metadata-patch",
+            artifacts=[f"data/search_audit/{issue}/fx.json"],
+        )
+    )
+
+    repaired = json.loads(audit.read_text(encoding="utf-8"))
+    assert result.status == "repaired"
+    assert result.changed
+    assert repaired["selected_total"] == 4
+
+
 def test_url_quarantine_refill_handler_repairs_stale_followup_from_registry(tmp_path: Path) -> None:
     issue = "2026-06-28"
     stale_url = "https://example.com/no-date/followup-topic"

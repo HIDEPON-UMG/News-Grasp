@@ -1859,6 +1859,20 @@ def test_runner_publish_verify_uses_wait_window_before_finalize() -> None:
     assert "'--require-podcast'" not in block
 
 
+def test_runner_fresh_dispatches_failed_deploy_workflow_before_publish_fail() -> None:
+    """Deploy Pages completed/failure は publish_failed 確定前に fresh workflow dispatch を 1 回試す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    block = runner.split("publish verification start", 1)[1].split("youtube podcast finalize start", 1)[0]
+
+    assert "'verify-publish'" in block
+    assert "'dispatch-deploy-workflow'" in block
+    assert block.index("'verify-publish'") < block.index("'dispatch-deploy-workflow'")
+    assert block.index("'dispatch-deploy-workflow'") < block.rindex("'verify-publish'")
+    assert "gh run rerun" not in block
+    assert "rerun --failed" not in block
+
+
 def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     """publish_complete 前に unified manifest verifier を通す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")

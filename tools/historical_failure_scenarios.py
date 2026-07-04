@@ -287,6 +287,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/spec.md",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-04",
+        "daily-quality / TTS repair / DeepDive relation / Pages deploy",
+        "same run exposed search audit selected_total drift, shallow audio repair, relation edge crossing, and completed/failure Deploy Pages handling",
+        "multi-stage repair and deploy convergence boundary",
+        "daily recovery must reconcile final digest counts, repair thematic audio gaps without historical reuse, reject relation crossings, and retry transient deploy by fresh dispatch",
+        "contract fixtures for search audit metadata, audio script thematic repair, DeepDive relation crossing, and fresh deploy workflow dispatch",
+        "docs/incidents/2026-07-04-daily-batch-recovery.md",
+        "fixture_required",
+    ),
 )
 
 

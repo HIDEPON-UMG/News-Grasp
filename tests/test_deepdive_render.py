@@ -660,6 +660,48 @@ def test_relations_same_band_peer_edge_no_pierce() -> None:
                 f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
 
 
+_AI_INFRA_20260704_CROSSING_REL = {
+    "title": "2026-07-04 AI基盤再設計: Samsung/AWS 競合線を含む",
+    "nodes": [
+        {"id": "openai", "label": "OpenAI", "group": "モデル事業者"},
+        {"id": "anthropic", "label": "Anthropic", "group": "モデル事業者"},
+        {"id": "meta", "label": "Meta", "group": "計算資源"},
+        {"id": "samsung", "label": "Samsung", "group": "半導体"},
+        {"id": "aws", "label": "Amazon/AWS", "group": "クラウド"},
+        {"id": "softbank", "label": "SoftBank", "group": "資本"},
+        {"id": "usgov", "label": "米政府", "group": "規制"},
+    ],
+    "edges": [
+        {"from": "softbank", "to": "openai", "label": "最大400億ドル投資", "kind": "出資"},
+        {"from": "usgov", "to": "openai", "label": "5%持分案", "kind": "規制"},
+        {"from": "anthropic", "to": "samsung", "label": "専用チップ協議", "kind": "供給"},
+        {"from": "aws", "to": "anthropic", "label": "主要訓練基盤", "kind": "供給"},
+        {"from": "meta", "to": "openai", "label": "AI基盤競争", "kind": "競合"},
+        {"from": "meta", "to": "aws", "label": "外販クラウド対抗", "kind": "競合"},
+        {"from": "samsung", "to": "aws", "label": "チップ供給競争", "kind": "競合"},
+    ],
+}
+
+
+def test_relations_ai_infra_20260704_competition_edge_no_pierce() -> None:
+    """2026-07-04 系 AI 基盤図で Samsung/AWS 競合線が第三ノードを貫通しない。
+
+    なぜ重要か: 2026-07-04 日次バッチで、Samsung→AWS の競合線が
+    Samsung ノード円を距離 19.6 で貫通し、DeepDive renderer の静的品質ゲートで
+    停止した。事故 edge を削る編集で即時復旧したが、恒久対策では同じ意味構造を
+    入れても renderer 側で通せることを locked-in する。
+    """
+    svg = relations_svg(_AI_INFRA_20260704_CROSSING_REL)
+    circles = _node_circles(svg)
+    segs = [(float(a), float(b), float(c), float(d))
+            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
+    assert len(circles) == 7 and len(segs) >= 7
+    for seg in segs:
+        for ncx, ncy, ncr in circles:
+            assert _seg_point_dist(seg, ncx, ncy) >= ncr - 1.0, \
+                f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
+
+
 def test_relations_too_many_edges_hard_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """関係図の実描画ラベルが 9 枚以上 (上限 8 枚) の DeepDive md は build が hard fail。
 

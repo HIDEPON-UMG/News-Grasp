@@ -266,7 +266,7 @@ def test_repair_audio_script_length_extends_short_script_to_safe_range(tmp_path)
     ) == []
 
 
-def test_repair_audio_script_length_does_not_patch_thematic_shortfall(tmp_path):
+def test_repair_audio_script_length_patches_thematic_shortfall_without_repeating_history(tmp_path):
     issue = "2026-07-03"
     summary_dir = tmp_path / "digest" / "Summary"
     summary_dir.mkdir(parents=True)
@@ -298,7 +298,20 @@ def test_repair_audio_script_length_does_not_patch_thematic_shortfall(tmp_path):
     target = summary_dir / f"{issue}-audio-script.md"
     target.write_text(short_script, encoding="utf-8")
 
-    assert repair_audio_script_length.repair_file(tmp_path, issue) is False
+    assert repair_audio_script_length.repair_file(tmp_path, issue) is True
+
+    repaired = target.read_text(encoding="utf-8")
+    repaired_body = repaired.split("---", 2)[-1].strip()
+    count = build_script.effective_char_count(repaired)
+    assert 2600 <= count <= 2800
+    assert "今日の観点・考察としては、成長の速さそのものより、認証、監査、供給、説明責任をどの順番で固めるかが焦点です。" not in repaired
+    assert "今日の観点・考察として、判断軸は成長の速さそのものではなく、責任分界と供給条件を先に言語化できているかにあります。" not in repaired
+    assert build_script.validate_script(
+        repaired_body,
+        date=issue,
+        history_texts=[history],
+        required_categories=("fx", "ai", "it", "mobility", "manufacturing", "economy"),
+    ) == []
 
 
 def test_newsroom_editor_prompt_requires_tts_history_and_no_example_copy():

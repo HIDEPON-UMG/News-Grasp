@@ -3279,6 +3279,28 @@ if ($NoPush) {
         Pop-Location
     }
     if ($publishVerifyRc -ne 0) {
+        Write-Log "WARN: publish verification failed (rc=$publishVerifyRc). trying Deploy Pages fresh workflow dispatch if the same-head workflow completed with failure."
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'dispatch-deploy-workflow' '--repo-root' $RepoDir '--remote' 'origin' '--branch' 'main' }
+            $deployDispatchRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($deployDispatchRc -eq 0) {
+            Write-Log 'Deploy Pages fresh workflow dispatch issued; retrying publish verification'
+            Push-Location $RepoDir
+            try {
+                Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' $PublishVerifyWaitSec '--poll-sec' $PublishVerifyPollSec }
+                $publishVerifyRc = $LASTEXITCODE
+            } finally {
+                Pop-Location
+            }
+        } else {
+            Write-Log "Deploy Pages fresh workflow dispatch was not applicable or failed (rc=$deployDispatchRc)."
+        }
+    }
+    if ($publishVerifyRc -ne 0) {
         Write-Log "ERROR: publish verification failed (rc=$publishVerifyRc). remote/pages/public/audio sentinel did not converge."
         Set-RunnerState -Status 'publish_failed' -Message 'publish verification failed' -ExitCode 1
         exit 1
