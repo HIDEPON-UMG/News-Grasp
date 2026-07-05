@@ -1,0 +1,506 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260706 — FX</title>
+<meta name="description" content="為替は4件。米雇用の急減速で年内利上げ観測は後退したが、FOMC議事要旨、日本の長期金利上昇、RBNZ会合が金利差と円安圧力の残り方を測らせる。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/fx/2026-07-06/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260706 — FX">
+<meta property="og:description" content="為替は4件。米雇用の急減速で年内利上げ観測は後退したが、FOMC議事要旨、日本の長期金利上昇、RBNZ会合が金利差と円安圧力の残り方を測らせる。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/fx/2026-07-06/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/fx.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260706 — FX">
+<meta name="twitter:description" content="為替は4件。米雇用の急減速で年内利上げ観測は後退したが、FOMC議事要旨、日本の長期金利上昇、RBNZ会合が金利差と円安圧力の残り方を測らせる。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/fx.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="fx">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/fx/">FOREIGN EXCHANGE</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill is-active" style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-07-06 · #20260706</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/fx.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ FOREIGN EXCHANGE EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">¥</span>
+      <h1 class="cat-hero__title">為替.</h1>
+    </div>
+
+    <div class="cat-hero__summary">為替は4件。米雇用の急減速で年内利上げ観測は後退したが、FOMC議事要旨、日本の長期金利上昇、RBNZ会合が金利差と円安圧力の残り方を測らせる。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">93</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">07·06</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260706</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/">← BACK TO FOREIGN EXCHANGE ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-07-06 05:25 · BigGo ファイナンス</span>
+    <span class="top-story__score">96</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://finance.biggo.jp/news/e2b2479d-ad74-47db-bf75-11a5ce24b089" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://img.biggo.com/Vow2Zb5B1praa9U8MY_Jvk8WWtRzVQnZAZmUNVDh0NA/fit/1720/0/sm/1/aHR0cHM6Ly9pbWcuYmdvLm9uZS9uZXdzLWltYWdlL2FpX2dlbmVyYXRlZC8yMDI2LTA3L2UyYjI0NzlkLWFkNzQtNDdkYi1iZjc1LTExYTVjZTI0YjA4OV8xNzgzMjgzMzc2X2RlZmF1bHQuanBn.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://finance.biggo.jp/news/e2b2479d-ad74-47db-bf75-11a5ce24b089" rel="noopener nofollow" target="_blank" style="color: inherit;">米6月雇用統計、5.7万人増と急減速 FRB年内利上げ観測が後退</a>
+
+      </h2>
+
+
+<div class="summary-lanes summary-lanes--full" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">米6月雇用統計</strong>は<strong>5.7万人増</strong>と予想11.3万人増を大きく下回った。<span class="emph-und">ドル指数は101割れを試し、利上げの織り込みが後退</span>した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">失業率</strong>は<strong>4.2%</strong>へ低下したが、労働参加率低下が主因で強い雇用とは言いにくい。<span class="emph-und">4・5月分の7.4万人下方修正</span>も、米景気の減速サインを強めた。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">FOMC議事要旨</strong>がタカ派でも、<strong>年内利上げの再点火には追加の物価上振れ材料</strong>が要る。<span class="emph-und">ドル円は米金利の戻りが弱ければ上値追いより押し目探り</span>になりやすい。</div>
+    </div>
+  </div>
+
+</div>
+
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">¥</span>
+          <span class="category-label-break"><span class="category-label-break__line">FOREIGN</span>
+<span class="category-label-break__line">EXCHANGE</span></span>
+        </span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-07-06</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ¥ stories</h2>
+    <span class="more-stories__head-meta">2 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-07-05 17:00</span>
+        <span>· IG証券</span>
+        <span class="more-card__score">93</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.ig.com/jp/news-and-trade-ideas/sdjpy-weekly-forecast-fomc-minutes-dollar-strength-260705" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://a.c-dn.net/c/content/dam/publicsites/igcom/uk/images/news-article-image-folder/BB_USDJPY_FX_409565386.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.ig.com/jp/news-and-trade-ideas/sdjpy-weekly-forecast-fomc-minutes-dollar-strength-260705" rel="noopener nofollow" target="_blank">ドル円見通し：FOMC議事要旨でドル高再燃も、159-162.60円の攻防注視</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">IG証券</strong>は来週の<strong class="emph-bold">USDJPY</strong>想定レンジを<strong>159.00〜162.60円</strong>と置き、焦点を<span class="emph-und">6月FOMC議事要旨</span>に据えた。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">原油安で<strong class="emph-bold">期待インフレ率</strong>が低下しても、<strong>2年債利回りは4.1%台</strong>と高止まりしている。<span class="emph-und">実質金利の上昇がドル高を支える構図</span>が崩れていない。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">FOMC議事要旨</strong>で追加利上げの議論が確認されれば、<strong>162円台再挑戦</strong>が現実味を増す。<span class="emph-und">160.70円近辺のサポート維持</span>が崩れるかどうかも次の分岐点だ。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-07-05 19:20</span>
+        <span>· FNNプライムオンライン</span>
+        <span class="more-card__score">90</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.fnn.jp/articles/-/1070395" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://fnn.ismcdn.jp/mwimgs/1/6/600/img_16421cdc12f20c08f3930e21e62c47c92411544.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.fnn.jp/articles/-/1070395" rel="noopener nofollow" target="_blank">長期金利3％視野、「財政健全化」文言後退で円安圧力</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">日本の長期金利</strong>は新発10年債で<strong>一時2.810%</strong>まで上昇し、<strong class="emph-bold">USDJPY</strong>は<span class="emph-und">162円台後半から161円台へ荒く往復</span>した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">政府の<strong class="emph-bold">骨太の方針</strong>から<strong>「財政健全化」文言</strong>が消え、日銀へのけん制も意識された。<span class="emph-und">財政懸念と金融正常化の遅れ</span>が同時に円売り材料になっている。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">日銀</strong>が動きにくいままなら、<strong>円安で食品減税効果が削られる</strong>構図が強まりやすい。<span class="emph-und">金利3%接近と介入警戒</span>を両にらみで追う必要がある。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§02 OF 7 · FOREIGN EXCHANGE</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p><strong class="emph-bold">米6月雇用統計</strong>の急減速で<strong>FRB年内利上げ観測</strong>は後退しましたが、相場がそのまま円高へ振れ切ったわけではありません。<strong class="emph-bold">日本の長期金利</strong>上昇と財政懸念が残り、<span class="emph-und">円安圧力の土台</span>はまだ崩れていないからです。<strong class="emph-bold">RBNZ</strong>会合も含め、高金利通貨をどう選別するかが今週の為替の判断軸になりました。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-06/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · FOREIGN EXCHANGE · 2026-07-06
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/">FOREIGN EXCHANGE</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
