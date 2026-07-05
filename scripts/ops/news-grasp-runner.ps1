@@ -208,6 +208,7 @@ function Initialize-RunnerIdentity {
 
 Initialize-RunnerIdentity
 $NormalPublishVerified = $false
+$NotificationStatePath = ''
 $script:RunnerStartedAt = Get-Date
 
 function Convert-PublishInventoryJson {
@@ -2602,7 +2603,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         $priorGateFailCount = [Math]::Max(0, $attempt - 1)
         $NewsroomEditorModel = Select-NewsroomEditorModel -GateFailCount $priorGateFailCount -DedupConflictCount 0 -AppendMismatch:$false -SummaryQualityScore 5 -DeepDiveThemeCount 1
         Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, gate_fail_count=$priorGateFailCount, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
-        $editorSuccessProbe = "py -3.12 -m tools.validate_summary_reflection; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_daily_quality --date $DateStamp; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_generation_quality --date $DateStamp"
+        $editorSuccessProbe = "py -3.12 -m tools.validate_summary_reflection --date $DateStamp; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_daily_quality --date $DateStamp; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_generation_quality --date $DateStamp"
         $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor' -SuccessProbeCommand $editorSuccessProbe -SuccessProbeIntervalSec 30 -SuccessProbeMinElapsedSec 120
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"
 
@@ -2638,8 +2639,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 # 後段 pytest で初めて止まった。生成直後の境界で fail loud にし、どの Summary を
 # 直せばよいかを runner log に明示する。判定は `tools.generate_pages.parse_reflection`
 # を使う `tools.validate_summary_reflection` に集約し、公開 HTML 側の抽出仕様と分岐させない。
-Write-Log 'summary reflection gate start (validate_summary_reflection --latest)'
-$summaryReflectionRc = Invoke-AutonomousGate -GateId 'summary-reflection' -Category 'summary' -PythonArgs @('-m', 'tools.validate_summary_reflection') -Artifacts @("digest/Summary/$DateStamp.md")
+Write-Log 'summary reflection gate start (validate_summary_reflection --date)'
+$summaryReflectionRc = Invoke-AutonomousGate -GateId 'summary-reflection' -Category 'summary' -PythonArgs @('-m', 'tools.validate_summary_reflection', '--date', $DateStamp) -Artifacts @("digest/Summary/$DateStamp.md")
 if ($summaryReflectionRc -ne 0) {
     Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'summary-reflection' -Reason 'summary reflection autonomous gate failed' -ExitCode $summaryReflectionRc
 }
@@ -3263,6 +3264,7 @@ if ($NoPublish) {
 # 同時 push する。
 if ($NoPush) {
     Write-Log 'NoPush mode: skipping git push origin main'
+    Write-Log 'NoPush mode: skipping send_push'
 } else {
     Write-Log 'push origin main start (digest + docs を同時公開)'
     Invoke-Logged { & $GitExe -C $RepoDir push origin main }
@@ -3288,7 +3290,19 @@ if ($NoPush) {
             Pop-Location
         }
         if ($deployDispatchRc -eq 0) {
-            Write-Log 'Deploy Pages fresh workflow dispatch issued; retrying publish verification'
+            Write-Log 'Deploy Pages fresh workflow dispatch issued; waiting for same-head workflow convergence'
+            Push-Location $RepoDir
+            try {
+                Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'wait-deploy-workflow' '--repo-root' $RepoDir '--remote' 'origin' '--branch' 'main' '--wait-sec' $PublishVerifyWaitSec '--poll-sec' $PublishVerifyPollSec }
+                $deployWaitRc = $LASTEXITCODE
+            } finally {
+                Pop-Location
+            }
+            if ($deployWaitRc -ne 0) {
+                Write-Log "WARN: Deploy Pages fresh workflow did not converge yet (rc=$deployWaitRc). retrying publish verification once with typed evidence."
+            } else {
+                Write-Log 'Deploy Pages fresh workflow convergence OK; retrying publish verification'
+            }
             Push-Location $RepoDir
             try {
                 Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' $PublishVerifyWaitSec '--poll-sec' $PublishVerifyPollSec }
@@ -3302,10 +3316,10 @@ if ($NoPush) {
     }
     if ($publishVerifyRc -ne 0) {
         Write-Log "ERROR: publish verification failed (rc=$publishVerifyRc). remote/pages/public/audio sentinel did not converge."
-        Set-RunnerState -Status 'publish_failed' -Message 'publish verification failed' -ExitCode 1
-        exit 1
+        Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-verify' -Reason 'publish verification failed' -ExitCode $publishVerifyRc
     }
     Write-Log 'publish verification OK'
+    $NormalPublishVerified = $true
 
     Write-Log 'youtube podcast finalize start'
     Push-Location $RepoDir
@@ -3380,11 +3394,48 @@ if ($NoPush) {
     }
     Write-Log 'podcast playlist audit OK'
 
+    # ===== 6. Web Push 通知（docs 公開後・publish-complete 前に state 化） =====
+    # 通知自体は付随機能として非致命だが、System Integrity 上は notification の結果も
+    # completion proof に含める。send_push は --record-state で machine-readable JSON を残す。
+    $NotificationStatePath = Join-Path $RepoDir "build\notification\$DateStamp.json"
+    if (Should-SendNormalBatchNotification) {
+        Write-Log 'send_push start'
+        Push-Location $RepoDir
+        try {
+            Invoke-Logged { & $PyExe 'tools\send_push.py' '--record-state' $NotificationStatePath }
+            $pushRc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+        if ($pushRc -ne 0) { Write-Log "WARN: send_push exited $pushRc (non-fatal)" }
+        Write-Log "send_push done rc=$pushRc"
+    } else {
+        if ($RecoverOnly) {
+            Write-Log 'RecoverOnly mode: skipping send_push (not a normal batch)'
+        } elseif (-not $NormalPublishVerified) {
+            Write-Log 'send_push skipped: publish verification not confirmed'
+        } else {
+            Write-Log 'send_push skipped: not a normal batch'
+        }
+        $notificationDir = Split-Path -Parent $NotificationStatePath
+        New-Item -ItemType Directory -Path $notificationDir -Force | Out-Null
+        [ordered]@{
+            date = $DateStamp
+            status = 'skipped_not_normal'
+            ok = $true
+            source = 'runner'
+            subscription_count = 0
+            sent_count = 0
+            detail = 'NoPush/RecoverOnly/not-normal-batch'
+            recorded_at = (Get-Date).ToString('o')
+        } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $NotificationStatePath -Encoding UTF8
+    }
+
     Write-Log 'publish-complete manifest verification start'
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--output' $publishCompleteManifest }
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--output' $publishCompleteManifest }
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -3405,36 +3456,7 @@ if ($NoPush) {
         Write-Log 'ERROR: publish-complete manifest missing publish_commit'
         Invoke-AutonomousCompletionPolicy -FailureKind 'publish' -GateId 'publish-complete' -Reason 'publish-complete manifest missing publish_commit' -ExitCode 1
     }
-    $NormalPublishVerified = $true
     Write-Log 'publish-complete manifest verification OK'
-}
-
-# ===== 6. Web Push 通知（docs 公開後・.venv python = $PyExe で送る） =====
-# 2026-05-30 に push を .bat 側へ移したが、タスクスケジューラが実行する実行体は本 .ps1。
-# .ps1 に push ステップが無く 2026-05-31 朝の通知が一度も飛ばなかった事故の恒久修正
-# （.bat と .ps1 の二重管理で修正が実行経路に入らなかった）。
-# 2026-06-16: 通知は正常な通常公開バッチだけに限定し、fallback / RecoverOnly / NoPush /
-# publish verify 未完了では send_push.py 自体を呼ばない。
-# push は付随機能なので非致命（send_push 自身が購読 0 / 鍵無しでも exit 0 を返す）。
-if (Should-SendNormalBatchNotification) {
-    Write-Log 'send_push start'
-    Push-Location $RepoDir
-    try {
-        Invoke-Logged { & $PyExe 'tools\send_push.py' }
-        $pushRc = $LASTEXITCODE
-    } finally {
-        Pop-Location
-    }
-    if ($pushRc -ne 0) { Write-Log "WARN: send_push exited $pushRc (non-fatal)" }
-    Write-Log "send_push done rc=$pushRc"
-} elseif ($NoPush) {
-    Write-Log 'NoPush mode: skipping send_push'
-} elseif ($RecoverOnly) {
-    Write-Log 'RecoverOnly mode: skipping send_push (not a normal batch)'
-} elseif (-not $NormalPublishVerified) {
-    Write-Log 'send_push skipped: publish verification not confirmed'
-} else {
-    Write-Log 'send_push skipped: not a normal batch'
 }
 
 Write-CodexUsageWindowSnapshot -Phase 'end'

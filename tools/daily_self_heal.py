@@ -1046,6 +1046,7 @@ def verify_publish_complete(
     poll_sec: int,
     primary_podcast_state_path: Path | None = None,
     deepdive_podcast_state_path: Path | None = None,
+    notification_state_path: Path | None = None,
 ) -> dict:
     """公開完了を remote/public/audio/podcast/local inventory の同一 manifest として検証する。"""
     distribution = _distribution_artifact_manifest(repo_root, date)
@@ -1118,6 +1119,12 @@ def verify_publish_complete(
     if not deepdive.get("ok"):
         return {**manifest, "reason": "deepdive_podcast_missing"}
 
+    if notification_state_path is not None:
+        notification = _load_notification_state(notification_state_path, date)
+        manifest["notification"] = notification.get("state", {})
+        if notification.get("reason"):
+            return {**manifest, "reason": notification["reason"], "notification": notification}
+
     return {
         **manifest,
         "ok": True,
@@ -1132,6 +1139,46 @@ def verify_publish_complete(
             "distribution_pre_publish_commit": pre_publish_commit,
         },
     }
+
+
+_KNOWN_NOTIFICATION_STATUSES = {
+    "sent",
+    "send_failed",
+    "no_subscribers",
+    "dry_run",
+    "skipped_fallback",
+    "skipped_not_normal",
+    "config_error",
+    "external_error",
+}
+
+
+def _load_notification_state(path: Path, date: str) -> dict:
+    if not path.exists():
+        return {"path": str(path), "state": {}, "reason": "notification_state_missing"}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError) as exc:
+        return {"path": str(path), "state": {}, "reason": "notification_state_invalid", "detail": str(exc)}
+    if not isinstance(payload, dict):
+        return {"path": str(path), "state": {}, "reason": "notification_state_invalid", "detail": "not_object"}
+    status = str(payload.get("status") or "")
+    if status not in _KNOWN_NOTIFICATION_STATUSES:
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_state_invalid",
+            "detail": f"unknown_status:{status}",
+        }
+    payload_date = str(payload.get("date") or "")
+    if payload_date and payload_date != date:
+        return {
+            "path": str(path),
+            "state": payload,
+            "reason": "notification_state_mismatch",
+            "detail": f"date:{payload_date}",
+        }
+    return {"path": str(path), "state": payload, "reason": ""}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1169,6 +1216,13 @@ def main(argv: list[str] | None = None) -> int:
     dispatch.add_argument("--remote", default="origin")
     dispatch.add_argument("--branch", default="main")
 
+    wait_deploy = sub.add_parser("wait-deploy-workflow")
+    wait_deploy.add_argument("--repo-root", type=Path, required=True)
+    wait_deploy.add_argument("--remote", default="origin")
+    wait_deploy.add_argument("--branch", default="main")
+    wait_deploy.add_argument("--wait-sec", type=int, default=600)
+    wait_deploy.add_argument("--poll-sec", type=int, default=30)
+
     podcast = sub.add_parser("verify-podcast")
     podcast.add_argument("--date", required=True)
     podcast.add_argument("--state", type=Path, default=Path("build") / "youtube-podcast" / "uploads.json")
@@ -1186,6 +1240,7 @@ def main(argv: list[str] | None = None) -> int:
     complete.add_argument("--poll-sec", type=int, default=30)
     complete.add_argument("--primary-podcast-state", type=Path, default=None)
     complete.add_argument("--deepdive-podcast-state", type=Path, default=None)
+    complete.add_argument("--notification-state", type=Path, default=None)
     complete.add_argument("--output", type=Path, default=None)
 
     args = parser.parse_args(argv)
@@ -1238,6 +1293,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["ok"] else 1
+    if args.cmd == "wait-deploy-workflow":
+        expected_commit = _git_output(args.repo_root, ["rev-parse", "HEAD"])
+        result = wait_for_deploy_workflow(
+            repo_root=args.repo_root,
+            remote=args.remote,
+            branch=args.branch,
+            expected_commit=expected_commit,
+            deadline=time.monotonic() + max(0, args.wait_sec),
+            poll_sec=args.poll_sec,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["ok"] else 1
     if args.cmd == "verify-podcast":
         result = verify_podcast(
             date=args.date,
@@ -1259,6 +1326,7 @@ def main(argv: list[str] | None = None) -> int:
             poll_sec=args.poll_sec,
             primary_podcast_state_path=args.primary_podcast_state,
             deepdive_podcast_state_path=args.deepdive_podcast_state,
+            notification_state_path=args.notification_state,
         )
         text = json.dumps(result, ensure_ascii=False, indent=2)
         if args.output:

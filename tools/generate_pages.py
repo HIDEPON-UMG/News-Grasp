@@ -41,6 +41,7 @@ from tools.config import (  # noqa: E402
 )
 from tools.dedup import same_event_by_tokens, significant_tokens  # noqa: E402  (表示層 dedup で再利用)
 from tools.fx_rates import get_fx_panel  # noqa: E402
+from tools.publish_inventory import PUBLICATION_SCHEDULE as CANONICAL_SCHEDULE_BY_WEEKDAY  # noqa: E402
 from tools.tts.deepdive_audio import deepdive_audio_for_pages  # noqa: E402
 
 _LATEST_AUDIO_JSON = _PKG_ROOT / "build" / "tts" / "latest_audio.json"
@@ -1498,26 +1499,6 @@ def _date_weekday_jp(date_str: str) -> str:
         return ""
 
 
-# 配信スケジュール (確定ルール / prompts/routine-system.md L78-84 に準拠)
-#   月=0 ... 日=6。値は配信するカテゴリ ID のセット。
-#   月: FX/AI/IT/Mobility/Manufacturing/Economy (6)
-#   火: + Game (7)
-#   水: 月と同じ (6)
-#   木: 火と同じ (7)
-#   金: 月と同じ (6)
-#   土: FX/AI/IT/Mobility/Game (Manufacturing・Economy 除く、5)
-#   日: 土と同じ (5)
-_PUBLICATION_SCHEDULE: dict[int, set[str]] = {
-    0: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},          # 月
-    1: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game"},  # 火
-    2: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},          # 水
-    3: {"fx", "ai", "it", "mobility", "manufacturing", "economy", "game"},  # 木
-    4: {"fx", "ai", "it", "mobility", "manufacturing", "economy"},          # 金
-    5: {"fx", "ai", "it", "mobility", "game"},             # 土
-    6: {"fx", "ai", "it", "mobility", "game"},             # 日
-}
-
-
 def is_category_scheduled_on(cat_id: str, date_str: str) -> bool:
     """指定日がカテゴリの配信日なら True。"""
     from datetime import date as _date
@@ -1527,7 +1508,7 @@ def is_category_scheduled_on(cat_id: str, date_str: str) -> bool:
         weekday = _date(int(date_str[0:4]), int(date_str[5:7]), int(date_str[8:10])).weekday()
     except (ValueError, IndexError):
         return True
-    return cat_id in _PUBLICATION_SCHEDULE.get(weekday, set())
+    return cat_id in CANONICAL_SCHEDULE_BY_WEEKDAY.get(weekday, set())
 
 
 def _category_pause_notice(cat_id: str, today_date: str) -> dict[str, Any] | None:
@@ -1690,8 +1671,8 @@ def compute_publication_matrix(entries: list[dict[str, Any]],
                                 days: int = 30) -> dict[str, Any]:
     """配信スケジュール (確定ルール) を行列形式で返す。
 
-    routine-system.md L78-84 の表を _PUBLICATION_SCHEDULE に固定値で持つ。
-    entries / days 引数は後方互換のため受けるが、確定ルールの返却には使わない。
+    schedule は tools.publish_inventory を正本にする。entries / days 引数は
+    後方互換のため受けるが、確定ルールの返却には使わない。
 
     返却 dict:
       {
@@ -1719,7 +1700,7 @@ def compute_publication_matrix(entries: list[dict[str, Any]],
         if cid == "summary":
             continue
         cells = [
-            {"scheduled": (cid in _PUBLICATION_SCHEDULE[i])}
+            {"scheduled": (cid in CANONICAL_SCHEDULE_BY_WEEKDAY[i])}
             for i in range(7)
         ]
         rows.append({

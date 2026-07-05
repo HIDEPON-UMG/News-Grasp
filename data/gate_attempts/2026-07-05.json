@@ -1,41 +1,27 @@
 {
-  "version": 1,
-  "gates": {
-    "daily-quality": {
-      "signatures": {
-        "f9eb5213dea5bc98": {
-          "failures": 1,
-          "artifact_hashes": [
-            "8b38dee370930829"
-          ],
-          "category": "daily"
-        }
-      },
-      "categories": {
-        "daily": 1
-      }
-    },
-    "generation-quality": {
-      "signatures": {
-        "a6a8dcd4ec19c82c": {
-          "failures": 1,
-          "artifact_hashes": [
-            "95fce96bb428141e"
-          ],
-          "category": "generated"
-        },
-        "ab6884c0cd7f4835": {
-          "failures": 1,
-          "artifact_hashes": [
-            "9fc824c583c18a80"
-          ],
-          "category": "generated"
-        }
-      },
-      "categories": {
-        "generated": 1
-      }
-    }
+  "date": "2026-07-05",
+  "incident": "publish verification convergence and runner state drift",
+  "runner": {
+    "observed_status": "publish_failed",
+    "failure_point": "publish verification after Deploy Pages fresh workflow dispatch",
+    "missing_invariant": "runner must wait for same-head fresh workflow convergence before terminal publish_failed"
   },
-  "retry_budget_policy_version": 4
+  "repair": {
+    "root_pattern": "publish convergence and state reconciliation boundary",
+    "required_contracts": [
+      "runner date-bound Summary gate",
+      "fresh deploy workflow wait",
+      "publish-complete notification state",
+      "batch history state drift classification"
+    ]
+  },
+  "state": {
+    "publish_complete_manifest": "build/publish-complete/2026-07-05.json",
+    "live_runner_state": "C:/Users/hidek/bin/news-grasp-runner-state.json",
+    "required_status": "state_reconciliation_required when stale publish_failed conflicts with manifest Green"
+  },
+  "report": {
+    "historical_failure_scenario": "2026-07-05 publish verification / Deploy Pages / runner state",
+    "coverage_lanes": ["runner", "repair", "state", "report"]
+  }
 }

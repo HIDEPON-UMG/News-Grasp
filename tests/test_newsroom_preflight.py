@@ -69,6 +69,13 @@ def _minimal_repo(tmp_path: Path) -> Path:
     (repo / "tools").mkdir(parents=True, exist_ok=True)
     (repo / "tools/verify_reporter_output.py").write_text("# fixture\n", encoding="utf-8")
     (repo / "tools/fetch_article_body.py").write_text("# fixture\n", encoding="utf-8")
+    (repo / "tools/generate_pages.py").write_text("# fixture\n", encoding="utf-8")
+    (repo / "tools/send_push.py").write_text("# fixture\n", encoding="utf-8")
+    (repo / "scripts" / "ops").mkdir(parents=True, exist_ok=True)
+    (repo / "scripts/ops/news-grasp-runner.ps1").write_text(
+        "py -3.12 -m tools.validate_summary_reflection --date $DateStamp\n",
+        encoding="utf-8",
+    )
     (repo / "docs").mkdir(parents=True, exist_ok=True)
     (repo / "docs/sw.js").write_text("const SW_VERSION = 'ng-2026-06-23-001';\n", encoding="utf-8")
     _write_json(
@@ -178,3 +185,33 @@ def test_newsroom_preflight_rejects_distribution_inventory_missing_sentinel(
     errors = _run_preflight(repo)
 
     assert any("distribution inventory missing required sentinel" in error for error in errors)
+
+
+def test_newsroom_preflight_rejects_date_less_summary_reflection_gate(tmp_path: Path) -> None:
+    """Summary gate は latest fallback ではなく対象日で固定する。"""
+    repo = _minimal_repo(tmp_path)
+    (repo / "scripts/ops/news-grasp-runner.ps1").write_text(
+        "py -3.12 -m tools.validate_summary_reflection\n",
+        encoding="utf-8",
+    )
+
+    errors = _run_preflight(repo)
+
+    assert any("flow impact summary reflection gate must pass --date" in error for error in errors)
+
+
+def test_newsroom_preflight_rejects_duplicate_schedule_sources(tmp_path: Path) -> None:
+    """配信 schedule は publish_inventory だけを正本にする。"""
+    repo = _minimal_repo(tmp_path)
+    (repo / "tools/generate_pages.py").write_text(
+        "_PUBLICATION_SCHEDULE = {0: {'fx'}}\n",
+        encoding="utf-8",
+    )
+    (repo / "tools/send_push.py").write_text(
+        "_PUBLISH_SCHEDULE = (('為替', {0}),)\n",
+        encoding="utf-8",
+    )
+
+    errors = _run_preflight(repo)
+
+    assert any("flow impact duplicate schedule source" in error for error in errors)

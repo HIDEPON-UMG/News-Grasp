@@ -33,6 +33,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-06-25",
         "2026-06-26",
         "2026-07-04",
+        "2026-07-05",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -60,6 +61,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "completion gate and source-of-truth drift",
         "publish boundary and distribution manifest",
         "multi-stage repair and deploy convergence boundary",
+        "publish convergence and state reconciliation boundary",
     }
 
     for scenario in scenarios:

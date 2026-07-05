@@ -4,6 +4,7 @@ import argparse
 from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 import json
+import os
 from pathlib import Path
 
 
@@ -24,10 +25,17 @@ def _load_json(path: Path) -> dict:
 
 
 def _state_for_date(repo_root: Path, issue_date: str) -> tuple[dict, Path]:
-    candidates = (
-        repo_root / "state" / "news-grasp-runner-state.json",
-        repo_root / "news-grasp-runner-state.json",
-        repo_root / "build" / "runner-state" / f"{issue_date}.json",
+    candidates: list[Path] = []
+    env_state = os.environ.get("NEWS_GRASP_RUNNER_STATE_FILE", "").strip()
+    if env_state:
+        candidates.append(Path(env_state))
+    candidates.extend(
+        [
+            Path.home() / "bin" / "news-grasp-runner-state.json",
+            repo_root / "state" / "news-grasp-runner-state.json",
+            repo_root / "news-grasp-runner-state.json",
+            repo_root / "build" / "runner-state" / f"{issue_date}.json",
+        ]
     )
     for path in candidates:
         payload = _load_json(path)
@@ -36,9 +44,22 @@ def _state_for_date(repo_root: Path, issue_date: str) -> tuple[dict, Path]:
     return {}, candidates[0]
 
 
+def _publish_complete_for_date(repo_root: Path, issue_date: str) -> tuple[dict, Path]:
+    path = repo_root / "build" / "publish-complete" / f"{issue_date}.json"
+    payload = _load_json(path)
+    if payload and str(payload.get("date") or issue_date) == issue_date:
+        return payload, path
+    return {}, path
+
+
+def _publish_complete_ok(payload: dict, issue_date: str) -> bool:
+    return bool(payload.get("ok")) and str(payload.get("date") or issue_date) == issue_date
+
+
 def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
     repo_root = repo_root.resolve()
     state, state_path = _state_for_date(repo_root, issue_date)
+    publish_complete, publish_complete_path = _publish_complete_for_date(repo_root, issue_date)
     publish_path = repo_root / "docs" / "publish-status.json"
     distribution_path = repo_root / "data" / "distribution" / f"{issue_date}.json"
     log_paths = sorted((repo_root / "logs").glob(f"*{issue_date}*.log")) if (repo_root / "logs").exists() else []
@@ -51,7 +72,14 @@ def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
     distribution = _load_json(distribution_path)
     evidence = tuple(
         str(path)
-        for path in (state_path, publish_path, distribution_path, *log_paths[:3], *incident_paths[:3])
+        for path in (
+            state_path,
+            publish_complete_path,
+            publish_path,
+            distribution_path,
+            *log_paths[:3],
+            *incident_paths[:3],
+        )
         if path.exists()
     )
 
@@ -62,6 +90,20 @@ def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
             issue_date,
             "forbidden_fallback",
             "通常日次 fallback 完走扱いは禁止",
+            evidence,
+        )
+    if _publish_complete_ok(publish_complete, issue_date) and publish_result == "published_ok" and distribution:
+        if state_status and state_status != "publish_complete":
+            return DayCompletion(
+                issue_date,
+                "state_reconciliation_required",
+                f"publish_complete manifest conflicts with runner state {state_status}",
+                evidence,
+            )
+        return DayCompletion(
+            issue_date,
+            "complete",
+            "publish-complete manifest + published_ok + distribution manifest",
             evidence,
         )
     if state_status == "publish_complete" and publish_result == "published_ok" and distribution:

@@ -135,6 +135,34 @@ def test_main_no_subscribers_returns_zero(tmp_path, monkeypatch, capsys):
     assert "0 件" in out or "0 人" in out
 
 
+def test_main_no_subscribers_records_machine_readable_state(tmp_path, monkeypatch, capsys):
+    """購読者 0 人も completion proof に載せられる notification state を残す。"""
+    empty = tmp_path / "subs.json"
+    state = tmp_path / "notification.json"
+    no_token = tmp_path / "no_token.txt"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "send_push.py",
+            "--subscriptions-file",
+            str(empty),
+            "--token-file",
+            str(no_token),
+            "--record-state",
+            str(state),
+        ],
+    )
+
+    assert main() == 0
+    capsys.readouterr()
+    payload = json.loads(state.read_text(encoding="utf-8"))
+    assert payload["status"] == "no_subscribers"
+    assert payload["ok"] is True
+    assert payload["subscription_count"] == 0
+    assert payload["sent_count"] == 0
+
+
 def test_main_dry_run_does_not_send(tmp_path, monkeypatch, capsys):
     """購読者がいても --dry-run なら送信処理に入らず exit 0。"""
     f = tmp_path / "subs.json"
@@ -149,6 +177,35 @@ def test_main_dry_run_does_not_send(tmp_path, monkeypatch, capsys):
     assert main() == 0
     out = capsys.readouterr().out
     assert "DRY-RUN" in out
+
+
+def test_main_dry_run_records_machine_readable_state(tmp_path, monkeypatch, capsys):
+    """dry-run も publish complete へ誤昇格しない状態として記録する。"""
+    f = tmp_path / "subs.json"
+    f.write_text(json.dumps([SAMPLE_SUB]), encoding="utf-8")
+    state = tmp_path / "notification.json"
+    no_token = tmp_path / "no_token.txt"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "send_push.py",
+            "--dry-run",
+            "--subscriptions-file",
+            str(f),
+            "--token-file",
+            str(no_token),
+            "--record-state",
+            str(state),
+        ],
+    )
+
+    assert main() == 0
+    capsys.readouterr()
+    payload = json.loads(state.read_text(encoding="utf-8"))
+    assert payload["status"] == "dry_run"
+    assert payload["ok"] is True
+    assert payload["subscription_count"] == 1
 
 
 # --- 送信契約: TTL ---------------------------------------------------------

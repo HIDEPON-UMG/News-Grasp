@@ -136,6 +136,43 @@ def _audit_distribution_inventory(issue_date: str) -> list[str]:
     return []
 
 
+def _runner_text(repo_root: Path) -> str:
+    repo_runner = repo_root / "scripts" / "ops" / "news-grasp-runner.ps1"
+    live_runner = Path.home() / "bin" / "news-grasp-runner.ps1"
+    for path in (repo_runner, live_runner):
+        if path.exists():
+            return path.read_text(encoding="utf-8-sig")
+    return ""
+
+
+def _audit_flow_impact_contracts(repo_root: Path, runner: str) -> list[str]:
+    """日次バッチ flow の上流 anti-pattern を preflight で落とす。"""
+    errors: list[str] = []
+    if "tools.validate_summary_reflection" in runner:
+        date_bound_markers = (
+            "tools.validate_summary_reflection --date $DateStamp",
+            "'tools.validate_summary_reflection', '--date', $DateStamp",
+        )
+        if not all(marker in runner for marker in date_bound_markers):
+            errors.append("flow impact summary reflection gate must pass --date $DateStamp")
+
+    duplicate_schedule_sources: list[str] = []
+    for rel, marker in (
+        ("tools/generate_pages.py", "_PUBLICATION_SCHEDULE"),
+        ("tools/send_push.py", "_PUBLISH_SCHEDULE"),
+    ):
+        path = repo_root / rel
+        if path.exists() and marker in path.read_text(encoding="utf-8-sig"):
+            duplicate_schedule_sources.append(rel)
+    if duplicate_schedule_sources:
+        errors.append(
+            "flow impact duplicate schedule source: "
+            + ", ".join(duplicate_schedule_sources)
+            + " must use tools.publish_inventory"
+        )
+    return errors
+
+
 def audit_source_of_truth_drift(repo_root: Path, issue_date: str) -> list[str]:
     errors: list[str] = []
     errors.extend(_audit_category_sources())
@@ -160,8 +197,7 @@ def run(repo_root: Path, issue_date: str | None = None) -> list[str]:
     editor_schema = _load_json(repo_root / "schemas/editor_summary.schema.json")
     reporter_prompt = (repo_root / "prompts/newsroom-reporter-system.md").read_text(encoding="utf-8-sig")
     editor_prompt = (repo_root / "prompts/newsroom-editor-system.md").read_text(encoding="utf-8-sig")
-    runner_path = Path.home() / "bin" / "news-grasp-runner.ps1"
-    runner = runner_path.read_text(encoding="utf-8-sig") if runner_path.exists() else ""
+    runner = _runner_text(repo_root)
 
     reporter_required = set(reporter_schema.get("required", []))
     for key in ["category", "issue_date", "records_file", "digest_file", "search_audit", "selected_count", "titles"]:
@@ -210,6 +246,7 @@ def run(repo_root: Path, issue_date: str | None = None) -> list[str]:
             errors.append("runner must build CodexUsageLog after DateStamp with dated jsonl path")
 
     errors.extend(audit_source_of_truth_drift(repo_root, issue_date))
+    errors.extend(_audit_flow_impact_contracts(repo_root, runner))
     return errors
 
 

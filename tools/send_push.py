@@ -38,7 +38,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.config import BASE_URL, PUSH_WORKER_URL  # noqa: E402  URL の単一ソース
+from tools.config import BASE_URL, CATEGORIES, PUSH_WORKER_URL  # noqa: E402  URL の単一ソース
+from tools.publish_inventory import CATEGORY_ORDER, PUBLICATION_SCHEDULE  # noqa: E402
 
 DEFAULT_VAPID_KEY_FILE = Path.home() / ".secrets" / "news-grasp-vapid.pem"
 DEFAULT_TOKEN_FILE = Path.home() / ".secrets" / "news-grasp-push-token.txt"
@@ -70,23 +71,16 @@ DEFAULT_TTL_SECONDS = 12 * 60 * 60
 # "high" は FCM 優先度 high / apns-priority 10 にマップされ Doze を貫通して即時配信する。
 DEFAULT_URGENCY = "high"
 
-# 配信曜日マトリクス（prompts/routine-system.md ステップ1 と一致させること）。
-# Python の weekday(): 月=0, 火=1, ... 日=6。
-#   為替/AI/IT/モビリティ … 毎日固定 / 製造・経済 … 平日のみ / ゲーム … 火木土日のみ
-_PUBLISH_SCHEDULE = (
-    ("為替",       {0, 1, 2, 3, 4, 5, 6}),
-    ("AI",         {0, 1, 2, 3, 4, 5, 6}),
-    ("IT",         {0, 1, 2, 3, 4, 5, 6}),
-    ("モビリティ", {0, 1, 2, 3, 4, 5, 6}),
-    ("製造",       {0, 1, 2, 3, 4}),
-    ("経済",       {0, 1, 2, 3, 4}),
-    ("ゲーム",     {1, 3, 5, 6}),
-)
-
-
 def categories_for_weekday(weekday: int) -> list[str]:
     """その曜日に配信されるカテゴリ表示名を、配信順で返す。"""
-    return [name for name, days in _PUBLISH_SCHEDULE if weekday in days]
+    scheduled = PUBLICATION_SCHEDULE.get(weekday, set())
+    names: list[str] = []
+    for cat_id in CATEGORY_ORDER:
+        if cat_id not in scheduled:
+            continue
+        name = str(CATEGORIES[cat_id]["jp"])
+        names.append("IT" if name == "IT-Consulting" else name)
+    return names
 
 
 def default_body_for_today(weekday: int | None = None) -> str:
@@ -117,7 +111,38 @@ def parse_args() -> argparse.Namespace:
                    help=f"VAPID 秘密鍵 PEM（既定: {DEFAULT_VAPID_KEY_FILE}）")
     p.add_argument("--dry-run", action="store_true",
                    help="送信せず、取得元・対象数・payload だけ表示")
+    p.add_argument("--record-state", default=None,
+                   help="通知結果を publish-complete 用 JSON として保存するパス")
     return p.parse_args()
+
+
+def _write_notification_state(path: str | None, payload: dict) -> None:
+    if not path:
+        return
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _notification_state(
+    *,
+    status: str,
+    ok: bool,
+    source: str = "",
+    subscription_count: int = 0,
+    sent_count: int = 0,
+    detail: str = "",
+) -> dict:
+    return {
+        "date": _today_jst_str(),
+        "status": status,
+        "ok": ok,
+        "source": source,
+        "subscription_count": subscription_count,
+        "sent_count": sent_count,
+        "detail": detail,
+        "recorded_at": datetime.now().isoformat(),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -280,14 +305,26 @@ def main() -> int:
                     f"{args.token_file} の内容と Worker の secret を確認してください",
                     file=sys.stderr,
                 )
+                _write_notification_state(
+                    args.record_state,
+                    _notification_state(status="config_error", ok=False, source="worker", detail="worker_list_401"),
+                )
                 return 1
             # その他の HTTP エラーは付随機能として今朝はスキップ（Runner を止めない）
             print(f"警告: Worker /list が HTTP {e.code}。今朝の push をスキップします（exit 0）",
                   file=sys.stderr)
+            _write_notification_state(
+                args.record_state,
+                _notification_state(status="external_error", ok=False, source="worker", detail=f"http_{e.code}"),
+            )
             return 0
         except urllib.error.URLError as e:
             print(f"警告: Worker に接続できません（{e.reason}）。今朝の push をスキップします（exit 0）",
                   file=sys.stderr)
+            _write_notification_state(
+                args.record_state,
+                _notification_state(status="external_error", ok=False, source="worker", detail=str(e.reason)),
+            )
             return 0
     else:
         source = "file"
@@ -302,10 +339,30 @@ def main() -> int:
 
     if not subs:
         print("送信対象がいないため終了します（exit 0）。")
+        _write_notification_state(
+            args.record_state,
+            _notification_state(
+                status="no_subscribers",
+                ok=True,
+                source=source,
+                subscription_count=0,
+                sent_count=0,
+            ),
+        )
         return 0
 
     if args.dry_run:
         print("DRY-RUN: 送信せず終了")
+        _write_notification_state(
+            args.record_state,
+            _notification_state(
+                status="dry_run",
+                ok=True,
+                source=source,
+                subscription_count=len(subs),
+                sent_count=0,
+            ),
+        )
         return 0
 
     # fallback 公開中 (品質確認中 notice) は通常文面の push で旧号へ誘導すると誤誘導に
@@ -314,6 +371,16 @@ def main() -> int:
     if publish_status_is_fallback(PUBLISH_STATUS_FILE, _today_jst_str()):
         print("fallback 公開中 (品質確認中 notice) のため push を抑止します (exit 0)。"
               "通常号が確定すれば publish_fallback mark-ok で抑止が解除されます。")
+        _write_notification_state(
+            args.record_state,
+            _notification_state(
+                status="skipped_fallback",
+                ok=True,
+                source=source,
+                subscription_count=len(subs),
+                sent_count=0,
+            ),
+        )
         return 0
 
     key_file = Path(args.vapid_key_file)
@@ -323,6 +390,17 @@ def main() -> int:
             f"FAIL: VAPID 秘密鍵が見つかりません: {key_file}\n"
             "→ `python tools/gen_vapid_keys.py` で生成してください",
             file=sys.stderr,
+        )
+        _write_notification_state(
+            args.record_state,
+            _notification_state(
+                status="config_error",
+                ok=False,
+                source=source,
+                subscription_count=len(subs),
+                sent_count=0,
+                detail=f"missing_vapid_key:{key_file}",
+            ),
         )
         return 1
 
@@ -338,6 +416,16 @@ def main() -> int:
                 stale_endpoints.append(sub["endpoint"])
 
     print(f"OK: {ok}/{len(subs)} 件に送信成功")
+    _write_notification_state(
+        args.record_state,
+        _notification_state(
+            status="sent" if ok else "send_failed",
+            ok=ok > 0,
+            source=source,
+            subscription_count=len(subs),
+            sent_count=ok,
+        ),
+    )
 
     # 失効した購読を取得元から自動除去（次回以降のノイズを消す）
     if stale_endpoints:

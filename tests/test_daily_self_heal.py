@@ -1781,6 +1781,96 @@ def test_verify_publish_complete_requires_deepdive_podcast(monkeypatch, tmp_path
     assert result["podcasts"]["deepdive"]["reason"] == "public_podcast_missing"
 
 
+def test_verify_publish_complete_requires_notification_state_when_requested(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """runner が notification state を指定した場合、欠落を completion proof にしない。"""
+    _write_publish_complete_inventory(tmp_path)
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "https://example.com/News-Grasp/publish-status.json",
+            "pwa": {"ok": True},
+            "audio": {"ok": True},
+            "podcast": {"ok": True, "videoId": "primary-video"},
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_podcast",
+        lambda **_kwargs: {"ok": True, "videoId": "deepdive-video", "title": "News-Grasp DeepDive Dialogue 2026-06-20"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+        notification_state_path=tmp_path / "build" / "notification" / "2026-06-20.json",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "notification_state_missing"
+
+
+def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_path: Path) -> None:
+    """notification 結果を publish-complete manifest に含める。"""
+    _write_publish_complete_inventory(tmp_path)
+    notification = tmp_path / "build" / "notification" / "2026-06-20.json"
+    notification.parent.mkdir(parents=True)
+    notification.write_text(
+        json.dumps(
+            {
+                "status": "no_subscribers",
+                "ok": True,
+                "date": "2026-06-20",
+                "subscription_count": 0,
+                "sent_count": 0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "https://example.com/News-Grasp/publish-status.json",
+            "pwa": {"ok": True},
+            "audio": {"ok": True},
+            "podcast": {"ok": True, "videoId": "primary-video"},
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_podcast",
+        lambda **_kwargs: {"ok": True, "videoId": "deepdive-video", "title": "News-Grasp DeepDive Dialogue 2026-06-20"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+        notification_state_path=notification,
+    )
+
+    assert result["ok"] is True
+    assert result["notification"]["status"] == "no_subscribers"
+
+
 def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Path, capsys) -> None:
     """CLI は既定 stdout、明示 `--output` のみ local manifest を書く。"""
     _write_publish_complete_inventory(tmp_path)

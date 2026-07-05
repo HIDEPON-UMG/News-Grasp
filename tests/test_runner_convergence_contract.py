@@ -1212,6 +1212,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
         ("distribution", "podcast-verify"),
         ("distribution", "deepdive-podcast-verify"),
         ("distribution", "podcast-playlist-audit"),
+        ("publish", "publish-verify"),
         ("publish", "publish-complete"),
     }
     covered_kinds = {"content", "artifact", "local-tool", "external", "publish", "distribution"}
@@ -1767,6 +1768,20 @@ def test_runner_preflight_passes_issue_date_to_newsroom_preflight() -> None:
     assert "$DateStamp" in block
 
 
+def test_runner_summary_reflection_gate_is_date_bound() -> None:
+    """Summary reflection は latest fallback ではなく対象日を検証する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    probe_block = runner.split("wrapper invoke START (agent=codex, role=newsroom_editor", 1)[1].split(
+        "wrapper invoke END (agent=codex, role=newsroom_editor",
+        1,
+    )[0]
+    gate_block = runner.split("summary reflection gate start", 1)[1].split("daily quality gate start", 1)[0]
+
+    assert "tools.validate_summary_reflection --date $DateStamp" in probe_block
+    assert "'tools.validate_summary_reflection', '--date', $DateStamp" in gate_block
+    assert "validate_summary_reflection --latest" not in runner
+
+
 def test_recoveronly_writes_input_manifest_before_reuse(tmp_path: Path) -> None:
     """RecoverOnly は再利用する入力を machine-readable manifest に残す。"""
     manifest = _mock_recoveronly_manifest(tmp_path)
@@ -1867,10 +1882,15 @@ def test_runner_fresh_dispatches_failed_deploy_workflow_before_publish_fail() ->
 
     assert "'verify-publish'" in block
     assert "'dispatch-deploy-workflow'" in block
+    assert "'wait-deploy-workflow'" in block
     assert block.index("'verify-publish'") < block.index("'dispatch-deploy-workflow'")
-    assert block.index("'dispatch-deploy-workflow'") < block.rindex("'verify-publish'")
+    assert block.index("'dispatch-deploy-workflow'") < block.index("'wait-deploy-workflow'")
+    assert block.index("'wait-deploy-workflow'") < block.rindex("'verify-publish'")
     assert "gh run rerun" not in block
     assert "rerun --failed" not in block
+    assert "Set-RunnerState -Status 'publish_failed'" not in block
+    assert "Invoke-AutonomousCompletionPolicy" in block
+    assert "-GateId 'publish-verify'" in block
 
 
 def test_runner_verifies_publish_complete_manifest_before_success() -> None:
@@ -1880,9 +1900,9 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert "verify-publish-complete" in runner
     assert runner.index("deepdive podcast verification OK") < runner.index("verify-publish-complete")
     assert runner.index("podcast playlist audit OK") < runner.index("verify-publish-complete")
-    assert runner.index("verify-publish-complete") < runner.index("send_push start")
+    assert runner.index("send_push start") < runner.index("verify-publish-complete")
     assert runner.index("verify-publish-complete") < runner.rindex("news-grasp-runner.ps1 OK")
-    block = runner.split("publish-complete manifest verification start", 1)[1].split("send_push start", 1)[0]
+    block = runner.split("publish-complete manifest verification start", 1)[1].split("news-grasp-runner.ps1 OK", 1)[0]
     before_block = runner.split("$distributionSummary = Write-DistributionManifest", 1)[1].split(
         "# ===== 5. digest + docs",
         1,
@@ -1895,6 +1915,8 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert runner.index("$distributionSummary = Write-DistributionManifest") < runner.index("push origin main start")
     assert "$DateStamp.json" in distribution_body
     assert "build\\publish-complete\\$DateStamp.json" in block
+    assert "build\\notification\\$DateStamp.json" in runner
+    assert "'--notification-state'" in block
     assert "Invoke-AutonomousCompletionPolicy" in block
     assert "-FailureKind 'publish'" in block
     assert "-GateId 'publish-complete'" in block

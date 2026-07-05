@@ -297,6 +297,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-04-daily-batch-recovery.md",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-05",
+        "publish verification / Deploy Pages / runner state",
+        "runner recorded publish_failed after fresh Deploy Pages dispatch even though publish-complete later verified Green",
+        "publish convergence and state reconciliation boundary",
+        "runner, publish-complete manifest, live state, and history must converge on the same date/head instead of leaving stale publish_failed",
+        "runner convergence fixture plus batch history state-drift fixture and notification state manifest",
+        "data/gate_attempts/2026-07-05.json",
+        "fixture_required",
+    ),
 )
 
 
