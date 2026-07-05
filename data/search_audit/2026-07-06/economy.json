@@ -1,0 +1,50 @@
+{
+  "date": "2026-07-06",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:nikkei.com \"東南アジアで50億円富豪急増 インドネシア首位\"",
+    "site:txbiz.tv-tokyo.co.jp \"AIはインフレ抑制か加速か\"",
+    "site:finance.yahoo.co.jp \"今週の決算発表予定 アサヒ、イオン、ファストリなど\"",
+    "site:diamond.jp \"新規制ESR\" \"保険業界各社が2025年度決算で\"",
+    "site:news.ntv.co.jp \"県内の景気判断\" \"日本銀行富山事務所\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "AIはインフレ抑制か加速か｜Newsモーニングサテライト（モーサテ）",
+      "url": "https://www.tv-tokyo.co.jp/broad_tvtokyo/program/detail/202607/14445_202607030545.html",
+      "reason": "2026-07-03 の番組告知で当日性が不足"
+    },
+    {
+      "title": "県内の景気判断「緩やかに回復」 日本銀行富山事務所が７期連続（2026年7月5日掲載）｜KNB NEWS NNN",
+      "url": "https://news.ntv.co.jp/n/knb/category/society/knbed2cf169ae8471c8afa6cd371850b1f",
+      "reason": "地域景況感としては有用だが全国経済面の影響範囲が限定的"
+    },
+    {
+      "title": "あおぞら投信、販売社数100社に 新商品でインフレヘッジ",
+      "url": "https://www.nikkinonline.com/article/404353",
+      "reason": "投信販促色が強く政策・市場全体への波及が限定的"
+    },
+    {
+      "title": "インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBDTjlOZzdQUEdTdXdtbG1meUpMcWtGZmZhdmhuYkhadW1qbURDdkpYMTB2TWF6cWYwSzdTQVlpZ0pXbzZuVl9QMnlFRlFHRC1wMTZydw?oc=5",
+      "reason": "基準価額ページでニュース性が低い"
+    },
+    {
+      "title": "ピクテ･バイオ医薬品ファンド(毎月決算型)為替ヘッジなしコース【4231104A】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5ickY0ZkxKaHd3VG9lSjZxTWdWZEZnYnNUTHRlcTlzVlYxWE9pLWh4dzdsOGM0MHV0TktFXzVrWlZyWjhnR1BFQVFWd0hxd2hJV3hBUg?oc=5",
+      "reason": "基準価額ページでニュース性が低い"
+    }
+  ]
+}

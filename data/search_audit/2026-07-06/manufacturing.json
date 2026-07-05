@@ -1,0 +1,48 @@
+{
+  "date": "2026-07-06",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-06/manufacturing.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "Google News batchexecute decode -> news.yahoo.co.jp / Micron Hiroshima next-generation memory plant",
+    "Google News batchexecute decode -> chemicaldaily.com / Infineon Germany power semiconductor plant",
+    "Google News batchexecute decode -> xtech.nikkei.com / JGC HD semiconductor battery materials",
+    "Google News batchexecute decode -> xtech.nikkei.com / Geely 48.41% engine mass production",
+    "Google News batchexecute decode -> xtech.nikkei.com / Broadcom NVIDIA CPO photonics"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "眞和興業、メッキ前後工程を内製化 新工場で一貫生産",
+      "url": "https://www.nikkan.co.jp/articles/view/00785912",
+      "reason": "愛知の一貫生産化は重要だが、当日の上位5件と比べると産業波及が個社最適の範囲にとどまった"
+    },
+    {
+      "title": "漂白剤のミツエイ、関西か中部に新工場検討 セブンやドンキPBで成長",
+      "url": "https://www.nikkei.com/article/DGXZQOCC235JZ0T20C26A4000000/",
+      "reason": "国内供給網の話題としては有意義だが、本日は半導体・先端製造の構造変化を優先した"
+    },
+    {
+      "title": "半導体メモリー、世界で投資バトル…AIブームで需要が急拡大 激しい浮き沈みのリスクも",
+      "url": "https://www.sankei.com/article/20260705-PBY53FIG2NMW5FPUHUQRAHZ7YE/",
+      "reason": "投資競争の整理記事で新規の単独意思決定が薄く、MicronやInfineonの具体案件を優先した"
+    },
+    {
+      "title": "中国CXMT・YMTCがIPO推進…韓国メモリーに3年差まで迫る",
+      "url": "https://finance.biggo.jp/news/846cbb30-bf64-4ae0-84e5-60e6fb9d0cc3",
+      "reason": "二次配信色が強く、一次資料への到達を十分に確認できなかった"
+    }
+  ]
+}

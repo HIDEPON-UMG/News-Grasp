@@ -1,0 +1,49 @@
+{
+  "date": "2026-07-06",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-06/ai.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:exawizards.com \"もうプロンプトは書かない\" \"ループエンジニアリング\"",
+    "\"AI生成の顔\" 豪国立大 site:mainichi.jp",
+    "site:xenospectrum.com \"ClaudeのAPI費用が激減\" システムプロンプト 画像",
+    "\"雪印がパッケージ制作に生成AI初導入 1500万人の消費者データで評価\"",
+    "site:fct.co.jp \"福島県内の企業約3割が業務で生成AIを活用\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "生成ＡＩ 著作権侵害恐れ 急拡大…国際ルール導入も焦点",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE1EN2ZrZnRFQVI4ZUxKbDZfOFJTQ0hEWlEybWJkMVdsOUF1REtneGd6UmNrUUtYRHRLU2JsZUZ0V0hORTlLVWhER1VTZ1VwVVREd1BGMUpiUDBzNFlLVUZCbE9n?oc=5",
+      "reason": "論点は強いが、読売記事の canonical URL を安定確定できず、記事単位 URL の契約を満たせなかった"
+    },
+    {
+      "title": "Anthropicに7500万ドルの著作権侵害訴訟",
+      "url": "https://jp.beincrypto.com/anthropic-new-75-million-lawsuit-pirating-books-claude/",
+      "reason": "Cloudflare 応答で本文確認が不安定で、事実関係を十分に検証できなかった"
+    },
+    {
+      "title": "OpenAIが米政府に株式5％譲渡を提案か――AIの利益還元は政府関与を正当化するか #エキスパートトピ",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOSFlsOHBtTFpVMGl0dE9LVFRRTXYxUzVsRS1YMnFQd0tmanBkbGtNYUpCTHlqbHk3NERVMXlTbVVJVWNkVEJSVVBtMHYwcFB4SHVwVVZpY1FMWnFLeEpLRDRYcGhrZDUzM1RnSVVmMEFWZ1JON01fLTFzX1RkU0ZCTWtUTWV5SUpl?oc=5",
+      "reason": "専門家コメント主体で一次確認が弱く、当日上位5件の実務インパクトを下回った"
+    },
+    {
+      "title": "AIトークン費用が社員給与の30%に…Salesforce、Microsoft、生き残り戦略が急変",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE12NVBHbmc1Rk9xOGJuN0lXRDB2ZDgzdUNrRF9WeUMwQ1RjS2hpWmxYbmstSWR6ZXlsRko3TjMxSTFMcXNjQUZfbUxiQW9PamRpakNUSGRUekZmMGpiX0FkMUNPZEVoQ25EWlRLREFGcjFvanBy?oc=5",
+      "reason": "二次要約色が強く、一次ソースや元データへの到達ができなかった"
+    }
+  ]
+}

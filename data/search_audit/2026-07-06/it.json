@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-06",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"Metaのネオクラウドとハイパースケーラーをめぐるアナリストの5つの見解\"",
+    "site:forbesjapan.com \"AI時代のSaaS企業が生き残るための新たなルール\"",
+    "site:forbesjapan.com \"エージェントAI時代に求められる運用ガバナンスとは\"",
+    "site:forbesjapan.com \"AIがもたらす隠れたコスト：手頃な価格のテクノロジーを脅かす世界的なメモリ不足\"",
+    "site:forbesjapan.com \"23万人がAIを使うJPモルガンの全社変革、成果と人員削減方針の両面から教訓を探る\""
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 12,
+  "selected_total": 2,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "stage1_candidates_inspected": 25,
+  "supplemental_search_rounds": 1,
+  "supplemental_scope": "exact-title and site-specific only; no broad recollection, no cross-category dedup rerun",
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "SaaSのID課金からどう変わるか、マネーフォワードとPeopleXがAIエージェントの課金設計を語る",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5XQXF0WGpYS2NadTdKZV9fSnNTcmZJak14blExeGppTThTay1EcjdoQnZaNlloWkZpTG8yaWFsbUxDTDNuVE5XVUx3SHFpcmpRZ0pCNA?oc=5",
+      "reason": "canonical確認で https://productzine.jp/article/detail/4293 / 2026-05-18 公開と判明し、当日性要件から外した"
+    },
+    {
+      "title": "トレンドの影響を受けるシステム調達、今だからこそ留意すべき3つの非機能要求",
+      "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPTzA0ek1MWlFCTkd5TV9ZV2xTVjM0cTUxUXpFdzAyRzdGT2hQVHp4YXJ1UnhKQndaTWFjR1ZmU3VDenp5VC1jVTFmZjlWVTRWN1FUa1RKNzJnS0RzVlMzV0t4c2RXTm51MG5FcmtoanhoZ25IMENrdlpralZDenU1czlJNVFtNEgtcjA0N19XaDEyNWM?oc=5",
+      "reason": "canonical確認で active.nikkeibp.co.jp の過去記事へ解決し、2026-07-05 号の新規性を満たさなかった"
+    },
+    {
+      "title": "情報処理技術者試験が大改定 消える応用・高度試験、難易度は変えない意向",
+      "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNOS1wTVdTcHFFWC1VVk5QVTVSYVNUOTJjX3pPdlctN1E1QlF5Yzh4VEdpUmNyMWJZOWxSMU9lckFoZmRjQUpZdC1fOXl4NHZXbVMyaDQ5Z0NUZi11RTB4NHl3RVYyUEQ1SjB3VnBFTHZDcWZsdmZfWlVQTVVacU5iSmxidWhaZlZBSkFTNHFGYUEycjQ?oc=5",
+      "reason": "canonical確認で active.nikkeibp.co.jp の旧記事へ解決し、当日記事ではなかった"
+    },
+    {
+      "title": "IT値上げの連鎖、企業を襲う調達異常",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1udzgzOE0wSUZkaGFlR1NPRVo5cXg3RUU5UkRWY1FBbGtBVWI1MHJhV09CZUtwa0J0UGQxa0RvbWY1c20xcXNoTURuRkRQR2VwNkxBclI0WlIyWXRLbXZN?oc=5",
+      "reason": "タイトル再検索で xTECH の 2026-06-24 系記事へ収束し、07-06号の鮮度枠から外した"
+    },
+    {
+      "title": "【フィリピン】ＫＤＤＩ、比と越でＡＩドローン事業を調査［ＩＴ］",
+      "url": "https://www.chiba-tv.com/plus/detail/2026071821133",
+      "reason": "当日性は十分だが本文が短く、IT-Consulting の上位5件に必要な波及解像度が足りず補欠扱い"
+    },
+    {
+      "title": "約102兆円の受注残、投資家はオラクルの「AI事業拡大の真の規模」を見過ごしているのか",
+      "url": "https://forbesjapan.com/articles/detail/100220",
+      "reason": "AIインフラ需給論点は強いが、SaaS再設計・統治・全社実装に比べると市場視点が重く、5件上限で見送った"
+    },
+    {
+      "title": "企業内で勝手に動き出すAI、その制御不能なリスク",
+      "url": "https://forbesjapan.com/articles/detail/100281",
+      "reason": "エージェントAI統治記事と論点が近く、同号内の重複を避けて補欠扱いにした"
+    },
+    {
+      "url": "https://jp.investing.com/news/stock-market-news/article-1592595",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,62 @@
+{
+  "date": "2026-07-06",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 candidate file: build/deduped-candidates/mobility.jsonl",
+    "site:response.jp T2 国交省 自動運転トラック 支援事業 レベル4",
+    "site:recordchina.co.jp 造車新勢力 上半期 販売台数 零跑 小米 理想 小鵬 2026年7月5日",
+    "site:smart-mobility.jp スズキ 小型EV 専用レーン 隊列自動運行 インド",
+    "site:response.jp ロボトラック 豊田通商 11社連合 自動運転トラック",
+    "site:motor-fan.jp ヤマハ GEAREV 100km走行"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "「ロボタクシー」が変える配車サービス【日英字幕付き】",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFAyUzFRdlpmRXhZeEdkV3FtOTdma1JSWHR6QjR3eWNlekxuWktvUjVtd0dUanZxR1Fabkk0TUE5WUZGSS15eGJLTmVtUENzOUw0aWk0MWxhOEMtdmFVdFZORWRKSWJKblJyUnRfV2VkalNwZ0R1SDF3?oc=5",
+      "reason": "解説動画色が強く、当日の独立ニュースより優先度を下げた"
+    },
+    {
+      "title": "T2、トラックで自動運転のまま料金所通過に成功 誤差10cm以内",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE4xdG1Xd1Z1ZFRmT1pvTUV6QUZyZ3JzOHA3a2hyVVVvcWZwaHVuUU5idnE4bFJ1XzN6WS1XUUxHNnlDRHkxMGxZcGZUNlZHS2dFTF94U2EtTFdUV28?oc=5",
+      "reason": "自動運転トラック枠は同日の採択・実装案件を優先し、同テーマ重複を避けた"
+    },
+    {
+      "title": "ホンダ、小型ＥＶを公開 ２２日から発売、経営再起図る | 全国のニュース",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9OUEQ3M2tQNlhxUHJocjIwcjlsVThNWlFOa3NreFZRNmJHNDdHdjJHQmdzYmlxRXBjeDB0OFIwaWxMT2tnUVhtYXd2R1pMU3pNZ2pLMWZ5TU5iVlhjdU9yend6MWNtNHVTQ3ppZw?oc=5",
+      "reason": "元発表が5月21日の再掲で、当日性の高い新材料としては弱い"
+    },
+    {
+      "title": "ホーチミン：自動運転車の試験走行開始、国産技術を活用［経済］",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTFBNQ0hfY0pPV1NObE9OZjFGUmhLTXc1MmxMQkNQZ2l6anZpTGRVV1hkRHdWUDNGVmkzZHN5X1E4ZVMxbE4yYmJQRE4yVHh5b1BkR1JFaHZqZlpCSlJYR19JSkhDWmI?oc=5",
+      "reason": "source domain 限定で canonical 解決を試みたが安定した元記事 URL を確定できなかった"
+    },
+    {
+      "title": "ダイセーロジ、埼玉物流拠点で自動運転モビ実証",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBaU1hxUDZib2o4SllCeER0czNVY3F6cTVvM0t6MnRYeXR2ZXJ6QzNlb1F0OVRwbGdsR1FYWXpfa2VnbEFyTFpnTEl2RkFvSUdZYzN3?oc=5",
+      "reason": "新規性はあるが公開情報が薄く、上位5本より論点を広げにくかった"
+    },
+    {
+      "title": "小池都時事が進めた東京都の自動運転バス、実は中国BYD製だった",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFBpdVhHWDVWX2w5NEZyVzF1OXVZS2FBbUE5TW9yQVVrQnRFQzJlLXhaVWVMTFRhd0dSazFkWXlLcmFRT05kMTFkMQ?oc=5",
+      "reason": "話題化要素はあるが、事業実装や販売動向のインパクトより優先度を下げた"
+    },
+    {
+      "title": "2026年7月",
+      "url": "https://news.google.com/rss/articles/CBMiQ0FVX3lxTFA5VGFTZDN4MURwWHJNUFRta0JPcGd6WWhOQ1M3OXdFS29rYlNyMGZLWjdEMzFxRzk1SDN0UW1LXzhpRjg?oc=5",
+      "reason": "記事単位ではなくアーカイブページ"
+    }
+  ]
+}

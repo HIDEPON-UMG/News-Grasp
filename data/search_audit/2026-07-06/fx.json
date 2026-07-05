@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-06",
+  "category_id": "fx",
+  "queries": [
+    "stage1: build/deduped-candidates/fx.jsonl",
+    "decode: Google News RSS -> canonical URLs for stage1 FX candidates",
+    "review: FOMC / payroll / BOJ-yen / RBNZ candidates from stage1 set",
+    "fetch_article_body: selected canonical URLs",
+    "fetch_ogp: selected canonical URLs"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "ユーロ/円【EURJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://finance.yahoo.co.jp/quote/EURJPY=FX",
+      "reason": "相場表示ページで記事単位の新規ニュースではないため除外"
+    },
+    {
+      "title": "S＆P 500の指数情報・推移",
+      "url": "https://finance.yahoo.co.jp/quote/%5EGSPC",
+      "reason": "指数のクオートページであり、当日材料の説明記事ではないため除外"
+    },
+    {
+      "title": "39年半ぶり 1ドル162円歴史的円安 66年つけ続けた家計簿に刻まれた物価高 “同じ162円”40年前の「希望の星」今は…【サンデーモーニング】",
+      "url": "https://newsdig.tbs.co.jp/articles/-/2781155",
+      "reason": "生活者向け特集で、政策・金利・相場の新材料より優先度を下げた"
+    },
+    {
+      "title": "NZドル/円 見通し「3年ぶり利上げへ...今後の利上げのペースがカギに」注目の高金利通貨 7月5日号",
+      "url": "https://www.gaitame.com/media/entry/2026/07/05/060100",
+      "reason": "RBNZ材料としては有用だが、投票構図と織り込み低下を詳述したみんかぶ記事を優先した"
+    },
+    {
+      "title": "韓国銀行、16日に利上げか——米雇用ショックで「相反する金融政策」が現実化する可能性",
+      "url": "https://finance.biggo.jp/news/db1fbbcd-278e-4fc0-a411-e24b048c019d",
+      "reason": "アジア金利差の示唆はあるが、当日号では米雇用・ドル円・円安政策材料の方が読者影響が大きいと判断した"
+    },
+    {
+      "title": "産油７カ国、８月に生産枠拡大",
+      "url": "https://www.oanda.jp/lab-education/market_news/kn_2026070501001627/",
+      "reason": "原油経由の間接材料であり、FX本流の金利・中銀テーマより優先度が下回った"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only"
+}
