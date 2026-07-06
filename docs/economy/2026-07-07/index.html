@@ -1,0 +1,577 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260707 — Economy</title>
+<meta name="description" content="米金融政策の警戒軸は雇用から物価へ戻り、欧州では中東情勢と米資産調整の連鎖が景気下押しリスクとして意識された。日本ではエネルギー備蓄の具体化と企業の海外成長投資が並び、政策と企業戦略の両面で資源・資本の配分が動き始めている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/economy/2026-07-07/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260707 — Economy">
+<meta property="og:description" content="米金融政策の警戒軸は雇用から物価へ戻り、欧州では中東情勢と米資産調整の連鎖が景気下押しリスクとして意識された。日本ではエネルギー備蓄の具体化と企業の海外成長投資が並び、政策と企業戦略の両面で資源・資本の配分が動き始めている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/economy/2026-07-07/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260707 — Economy">
+<meta name="twitter:description" content="米金融政策の警戒軸は雇用から物価へ戻り、欧州では中東情勢と米資産調整の連鎖が景気下押しリスクとして意識された。日本ではエネルギー備蓄の具体化と企業の海外成長投資が並び、政策と企業戦略の両面で資源・資本の配分が動き始めている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="economy">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill is-active" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-07-07 · #20260707</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/economy.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ ECONOMY EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">■</span>
+      <h1 class="cat-hero__title">経済.</h1>
+    </div>
+
+    <div class="cat-hero__summary">米金融政策の警戒軸は雇用から物価へ戻り、欧州では中東情勢と米資産調整の連鎖が景気下押しリスクとして意識された。日本ではエネルギー備蓄の具体化と企業の海外成長投資が並び、政策と企業戦略の両面で資源・資本の配分が動き始めている。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">89</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">07·07</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260707</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">← BACK TO ECONOMY ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-07-07 04:27 · ニューズウィーク日本版（ロイター）</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://www.newsweekjapan.jp/articles/-/327604" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://newsweekjapan.ismcdn.jp/mwimgs/6/1/1200x/img_61d50d84be9e18bf232166c1f19e8d8674825.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.newsweekjapan.jp/articles/-/327604" rel="noopener nofollow" target="_blank" style="color: inherit;">ウォラー理事、高インフレを最大リスク視</a>
+
+      </h2>
+
+
+<div class="summary-lanes summary-lanes--full" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">クリストファー・ウォラー</strong>理事は、<strong>米労働市場の安定</strong>を踏まえ、<span class="emph-und">FRBの最大リスクは高インフレ</span>だと述べた。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">1年前は雇用悪化を警戒して利下げを支持していたが、いまは<strong class="emph-bold">雇用の底堅さ</strong>と<strong>物価上昇圧力</strong>が政策判断を逆回転させている。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">次は<strong class="emph-bold">6月CPI</strong>と7月FOMCで、<span class="emph-und">利上げ再開の織り込み</span>が強まれば<strong>S&amp;P500と長期金利</strong>の反応が大きくなりやすい。</div>
+    </div>
+  </div>
+
+</div>
+
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">■</span>
+          <span class="category-label-break"><span class="category-label-break__line">ECONOMY</span></span>
+        </span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-07-07</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ■ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-07-06 19:22</span>
+        <span>· ニューズウィーク日本版（ロイター）</span>
+        <span class="more-card__score">92</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.newsweekjapan.jp/articles/-/327591" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://newsweekjapan.ismcdn.jp/mwimgs/f/f/1200x/img_ff7c5319b2a07cb0a78726a845610ea159250.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.newsweekjapan.jp/articles/-/327591" rel="noopener nofollow" target="_blank">ESM、ユーロ圏の二大下振れ要因を警告</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">欧州安定メカニズム</strong>は、<strong>中東紛争</strong>と<span class="emph-und">米国資産売り</span>が同時に起きるとユーロ圏景気が後退しうると警告した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">ユーロ圏の<strong class="emph-bold">対米GDPエクスポージャー</strong>は2013年の18%から昨年47%へ拡大し、<strong>米株高の反動</strong>が欧州へ波及しやすくなっている。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">次は<strong class="emph-bold">エネルギー価格</strong>と米市場の調整で、<span class="emph-und">インフレ率5%近辺</span>まで跳ねるケースが意識されれば<strong>ECBの政策余地</strong>は狭まりやすい。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-07-07 05:00</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">86</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.nikkei.com/article/DGXZQOUC069KY0W6A700C2000000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSXZQO3272919006072026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=619efc98b40d53fc97b81dafd4baa587" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGXZQOUC069KY0W6A700C2000000/" rel="noopener nofollow" target="_blank">サッポロ、カールスバーグ提携で海外再成長へ</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">サッポロビール</strong>は<strong class="emph-bold">カールスバーグ</strong>と組み、<strong>アジアで合弁会社</strong>を設けて<span class="emph-und">海外市場の立て直し</span>を狙う。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">過去の大型買収で苦戦した反省から、<strong class="emph-bold">25%出資</strong>の少数持ち分で<strong>成長機会とリスク管理</strong>を両立する設計に切り替えた。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">次は<strong class="emph-bold">10年後150億円利益</strong>の達成確度で、<span class="emph-und">海外酒類事業の再構築</span>が進めば<strong>日本の消費関連株の評価軸</strong>も変わりやすい。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-07-07 02:00</span>
+        <span>· 日本経済新聞</span>
+        <span class="more-card__score">82</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.nikkei.com/article/DGKKZO97386630W6A700C2TB2000/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://article-image-ix.nikkei.com/https%3A%2F%2Fimgix-proxy.n8s.jp%2FDSKZZO9738785006072026000000-1.jpg?auto=compress&amp;bg=FFFF&amp;crop=focalpoint&amp;fit=crop&amp;fm=jpg&amp;h=630&amp;w=1200&amp;s=c9cd3fa3969bfea11c1bcdbc05e2e611" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.nikkei.com/article/DGKKZO97386630W6A700C2TB2000/" rel="noopener nofollow" target="_blank">キオクシア、NAND首位奪還へ号令</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">キオクシアHD</strong>の太田裕雄社長は株主総会で、<strong>NAND型フラッシュメモリー首位奪還</strong>へ<span class="emph-und">成長戦略を前面</span>に出した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">足元では<strong class="emph-bold">半導体株高</strong>が追い風だが、韓国勢に先行を許しており、<strong>技術優位の回復</strong>を投資家へ示す局面にある。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">次は<strong class="emph-bold">AI向けメモリー需要</strong>と収益性で、<span class="emph-und">復権シナリオの実現性</span>が見えれば<strong>日本の半導体投資期待</strong>を押し上げやすい。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§05 OF 7 · ECONOMY</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p><strong class="emph-bold">ウォラー理事</strong>の高インフレ警戒、ESMの二大リスク警告、日UAEの備蓄協議、サッポロの少数出資提携は、景気の方向より<strong>先に守る条件を決める</strong>ニュースが目立ちました。金利、エネルギー、資本配分を早めに固定し、<span class="emph-und">荒れた局面でも選択肢を残せるか</span>が経済の評価軸になっています。単純な景気観より防御力が買われています。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-07/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · ECONOMY · 2026-07-07
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/">ECONOMY</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
