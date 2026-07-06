@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-07",
+  "category_id": "it",
+  "queries": [
+    "stage1 input: build/deduped-candidates/it.jsonl",
+    "site:business.nikkei.com \"AIはSaaSを殺さない\"",
+    "site:cloud.watch.impress.co.jp \"アシュアード、金融機関が求める評価基準でクラウドサービスのセキュリティを評価する新サービス\"",
+    "site:thebridge.jp \"吉田氏に聞く、クラウドワークス18社買収の「答え合わせ」と「AI化への道」\"",
+    "site:xtech.nikkei.com \"IBMの量子クラウド、10年の軌跡\"",
+    "site:news.sap.com/japan Victrola社 パブリッククラウド 成長 モダン 加速"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_candidates_inspected": 25,
+  "supplemental_search_rounds": 1,
+  "supplemental_scope": "stage1 exact-title and source-specific canonical resolution only; no broad recollection, no cross-category dedup rerun",
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "ＩＴで酔っと 日本酒活性化 アプリ開発へ金沢でハッカソン 発信や差別化 課題話し合う",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5TYUdxVDdMU3RzeEc2TlhtWWp5MXNVdV9qUUxRSUduMTdQT2NpblJVMFUyZERrX2ZkUXJFOG5CczlFakg3N2pLMEFQTGVUMDNjRkZWR1dqc3g0cDVmMDB4a2s5Rk1BWUZI?oc=5",
+      "reason": "地域イベント色が強く、IT-Consultingの読者価値より地場プロモーション要素が先に立った"
+    },
+    {
+      "title": "ANG2026『陸上は、ライブだ！！』8月14日(金)15日(土)",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE5XNmtKcFhjeUZGbW8zVC1xTTl5dDlxblVIamdyVWJEcHVvbjNQdmVIUkNtQ0I5T1lxVXZQTWZ2NWc4UkN2QXBMdGNkU1U?oc=5",
+      "reason": "クラウドやSI、コンサル実務との接点が薄くカテゴリ適合性を満たさない"
+    },
+    {
+      "title": "インドIT大手、「パーフェクトストーム」に直面──AIの破壊的影響と需要低迷が2027年度見通しを圧迫",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE9JdC1oRHFIRkg4UVpwNzVtOUVMVGZxR3Mwb3hMMHV5S0d5SUJnWV96WG5rOEY3QUNjRFp2NkFfQTYtalQ4MnJQYU9fUkJRZlpOQUMtNk9fZmJqNkVhZ0VuWEJjbHpyNTIxaXNCTjkyUkFwcWpn?oc=5",
+      "reason": "参照先が投資情報アグリゲータで一次情報まで詰め切れず、source healthを優先して見送った"
+    },
+    {
+      "title": "「250万超AIエージェント作成」の裏で同時多発する課題を回し切ったIT部門の運用術",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE9JV1ZiNzRtRWtJQzhDQ2tRNG93NzhHSzAyaGJOaUUzMXNqY2hvRTJvdW40bEVzdkJ0Q3NSSWdhMzh3NW1qeDhObHZfR1gzemZXNVhXWWFCV0Y4WW83aEo5a1UyY0JfWFI4dVNVeDZ3Qkx2dw?oc=5",
+      "reason": "当日中に元記事canonicalを確証できず、Google News中継URLのまま採用できなかった"
+    },
+    {
+      "title": "金融ITフォーカス 2026年7月号",
+      "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE4zOGk4RWVROFVNRnQzb3A1U1pNZGJQT04tVUJ2bU1rME5Ha25mOElETE1Kall1eDZfV1hPX0N1ajZVZkFHVGxjbDVSRDgzNzdsdVRQcUpqYXNxcUZ2VVJxV25TRXhnYVV6LTJfRlAwcHJ1TnkweWpqV1ZCLVY?oc=5",
+      "reason": "刊行物案内としては有用だが、同日の個別ニュース5件より読者の行動変化を促す材料が弱かった"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "date": "2026-07-07",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-07/ai.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:diamond.jp 三菱UFJFG AI戦略 Google OpenAI 半沢社長",
+    "site:netshop.impress.co.jp Square ChatGPT Claude 連携 AI経由での店舗発見と直接注文を実現",
+    "site:enterprisezine.jp NEC ぎょうせい 生成AI 自治体選挙事務 横浜市 仙台市 実証",
+    "site:gigazine.net AIエージェントは通常の生成AIよりも最大136倍エネルギーを消費する",
+    "site:sbbit.jp LLMは与えられた「社会的役割」によって振る舞いを変える 米大学 リスク 指摘",
+    "site:sbbit.jp 米Anthropic 独自AIチップ製造でサムスン電子と協議を開始",
+    "site:asahi.com 大学1年生 9割 生成AIを普段から利用 私大が調査"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "米Anthropic、独自AIチップ製造でサムスン電子と協議を開始（ビジネス＋IT）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5HTnQxTUR0aXdnTkJHbjhJcnRmTXpJN09GbG1TWWt4X3hQanVuWkJIOU9XdWJPTlhLbVVUUUhkSXlpUDdzd1FyQ1hhcFZyQWhMWXc3NWNGa2JDbFpvZ3VQejdoclpRdnJBUFVIQW5rRmNiX2hYUEp4U2ZWdVFDcVU?oc=5",
+      "reason": "canonical の一次記事を確認すると掲載日は 2026-07-04 で、issue 2026-07-07 の freshness window から外れた"
+    },
+    {
+      "title": "大学1年生の9割「生成AIを普段から利用」私大が調査 どう使う？ [AIの時代]",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9jRGc1c19nYkVmajJxSVZLMmtqVFpvVk13QVRhN2JCUXNTNVp4NVJyX1hta0dpdW1mbHIxT1JRN2Vpel9UYU13WTRqeUJnNE1McTJuZjdyZnNqWlZTenplTEpxSWxqUGM?oc=5",
+      "reason": "利用実態の示唆はあるが、特定大学調査でスコープが狭く、当日上位5件の実務インパクトを下回った"
+    },
+    {
+      "title": "パランティアCEOがOpenAIやAnthropicを批判 「AIモデルを強化するためのデータをなぜ顧客が渡すのか」",
+      "url": "https://www.itmedia.co.jp/aiplus/article/2607/06/2000000161/",
+      "reason": "経営者コメント中心の follow-up で、新たな一次材料より意見色が強かった"
+    },
+    {
+      "title": "提供が再開された「Claude Fable 5」の使いこなし術を解説した書籍が無料公開",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5nY0VVZHBwa2FKd0hlSGQ1WW1TNHRmcWdvNndCYTFTSTIyWTBsa0E3VFF3cnMyNmJ3SmM0WXg0NDJhSjI5LUpETXNpN1plU0ZoUWxodWVXT2tlUTBsV0tlTXduQUZnaTJxbVNtWnM5b3o2RFppM1E?oc=5",
+      "reason": "書籍告知で一次性とニュース重要度が弱く、当日上位5件の判断材料としては不足した"
+    },
+    {
+      "title": "AIグラスはMeta超え？ Googleが描く「Geminiの未来」が7分で早分かり",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE9JWGlwaUdyZVV5ZV9OaW5EbE1zd1VRUWpVT1pmLV9MVlJSbEJXeWtueDRHRzNQdWxNc0lBVlhia0VsY1dIYmhlbUk0VXhZd19reTd3V0VONWdoOWtQY2plVFZwaVdHUQ?oc=5",
+      "reason": "将来像の解説色が強く、具体的な制度変更や実装開始を伴う記事を優先した"
+    },
+    {
+      "title": "人気LLM「Qwen3」を起動、動作する主なモデルを押さえる",
+      "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQcVlwYmx5al82YUFKVjB1aHNKeUpMLTFKUjU2aWpyY1MwWkZSUUxPVmhiOWduX0luVlZfaWNVWUxsU3YwbXl5Yi1rSzZsTTVnQUtsRlJQU2pUdnZ3ZkxvZTRKX20zcnZyT0J4S25FMGJ3NS0tNFdOSUNFUVFxd3QtVkQ2SFc?oc=5",
+      "reason": "ハウツー記事で当日ニュース性が弱く、企業実装や研究結果の変化を優先した"
+    }
+  ]
+}

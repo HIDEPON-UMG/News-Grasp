@@ -1,0 +1,78 @@
+{
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d",
+    "FRB OR Fed OR ECB OR 金利 OR forex when:1d",
+    "https://www.forexlive.com/feed/",
+    "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    "https://www.boj.or.jp/rss/whatsnew.xml",
+    "https://www.mof.go.jp/english/news.rss"
+  ],
+  "raw_results_total": 325,
+  "candidates_total": 324,
+  "selected_total": 50,
+  "source_breakdown": {
+    "google_news:為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E7%82%BA%E6%9B%BF+OR+%E3%83%89%E3%83%AB%E5%86%86+OR+%E5%86%86%E5%AE%89+OR+FX+OR+%E5%88%A9%E4%B8%8A%E3%81%92+OR+FOMC+OR+%E6%97%A5%E9%8A%80+OR+forex+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 99,
+      "dropped": 1
+    },
+    "google_news:ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E3%83%89%E3%83%AB%E5%86%86+OR+USDJPY+OR+%E6%97%A5%E9%8A%80+OR+BOJ+OR+%E7%82%BA%E6%9B%BF%E4%BB%8B%E5%85%A5+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 100,
+      "dropped": 0
+    },
+    "google_news:FRB OR Fed OR ECB OR 金利 OR forex when:1d": {
+      "url": "https://news.google.com/rss/search?q=FRB+OR+Fed+OR+ECB+OR+%E9%87%91%E5%88%A9+OR+forex+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 100,
+      "dropped": 0
+    },
+    "www.forexlive.com/feed": {
+      "url": "https://www.forexlive.com/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 10,
+      "candidates": 10,
+      "dropped": 0
+    },
+    "www.federalreserve.gov/feeds/press_monetary.xml": {
+      "url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    },
+    "www.boj.or.jp/rss/whatsnew.xml": {
+      "url": "https://www.boj.or.jp/rss/whatsnew.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    },
+    "www.mof.go.jp/english/news.rss": {
+      "url": "https://www.mof.go.jp/english/news.rss",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    }
+  },
+  "negative_filter_dropped": {
+    "global:ranking_only": 1
+  },
+  "scrapling_sources_used": [],
+  "broken_sources": []
+}

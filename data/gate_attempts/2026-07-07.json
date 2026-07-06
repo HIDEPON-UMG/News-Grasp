@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "gates": {
+    "summary-reflection": {
+      "signatures": {
+        "892c319ba0fb1868": {
+          "failures": 1,
+          "artifact_hashes": [
+            "d029c473ff182374"
+          ],
+          "category": "summary"
+        }
+      },
+      "categories": {
+        "summary": 1
+      }
+    },
+    "daily-quality": {
+      "signatures": {
+        "d46d68e888c83823": {
+          "failures": 1,
+          "artifact_hashes": [
+            "dfd7eb350aea11ff"
+          ],
+          "category": "daily"
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    },
+    "generation-quality": {
+      "signatures": {
+        "4d2d05b403648598": {
+          "failures": 1,
+          "artifact_hashes": [
+            "b9089ed9c78ac536"
+          ],
+          "category": "generated"
+        }
+      },
+      "categories": {
+        "generated": 1
+      }
+    }
+  },
+  "retry_budget_policy_version": 4
+}

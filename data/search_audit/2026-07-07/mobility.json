@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-07",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "\"テスラ、米フロリダ州マイアミでロボタクシー事業開始\"",
+    "\"Google無人タクシー、Uberと決別！配車は「自社アプリ」のみに\"",
+    "\"大阪メトロ自動運転バスがEV断念へ 万博で不具合続出で\"",
+    "\"ポルシェ、SUV『カイエン』のEV公開 2.5秒で時速100キロ\"",
+    "\"ビンファスト、低価格の都市型ミニEV『VF 2』発売 9月納車開始\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "selected_titles": [
+    "テスラ、米フロリダ州マイアミでロボタクシー事業開始",
+    "Google無人タクシー、Uberと決別！配車は「自社アプリ」のみに",
+    "大阪メトロ自動運転バスがEV断念へ 万博で不具合続出で",
+    "ポルシェ、SUV「カイエン」のEV公開 2.5秒で時速100キロ",
+    "ビンファスト、低価格の都市型ミニEV「VF 2」発売 9月納車開始"
+  ],
+  "dropped": [
+    {
+      "title": "東広島市とJR西、自動運転BRTの全区間走行試験",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1OaWpSeTdTTjBRS1NDZHpIS3hsLWZOLUdwSE1vU0tLNEZmcnl2VFJ1U1FZdGcxQTRUVS1sY2p5WGVXalZVZHBQRA?oc=5",
+      "reason": "地域実装として重要だが、当日はロボタクシー再編とEV価格戦略を優先して選外"
+    },
+    {
+      "title": "日産、EVレースで中国開拓 フォーミュラE参戦、会場で展示 シェア回復へ性能PR",
+      "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxQUTNia041bGdLRldvVTc5S0s1NS1uNTktc2kxV1ZiYjN2SW9JOWNVZUdMakI0akV2U2o0eE1LdDktZnBMSDlqMU5ZRllqNWMzY0RQdmFtZTVrcFpQMXlIN3hDbTkya0swQnZ1QjQxSmYxS3NUTkJ4cGoyRDdEbUxJdHg2cHpKX1NqcW42TUJHTlRlQmJoRHlQeGladFp3WHNDRGc?oc=5",
+      "reason": "中国戦略の示唆はあるが、当日の構造変化としては上位5件より影響範囲が狭い"
+    },
+    {
+      "title": "EV新車、実質100万円切る 日産とホンダ、国・都の補助厚く 一部車種は中古と逆転",
+      "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxObGtxYmF2ZkZUQlVvM0dQWjBDQjNtRXhNUnNWU05NZnVGbVFfWTZfbjNTZXlCZjVTYXdHTEc5VzNpR2tMTmxPUndNMG9wN1hGOXhjcWdXdEx5bzR0NXY0c2xCUWNjQ1VvQXlMdm5ZS21md0g4WGlaNGFpczkzWFlmV0RvSXJ2SWdMNW1ETHVEWkdZNFYyeHAtdjZtVmRqTlhEWUpjbkRR?oc=5",
+      "reason": "補助金起点の価格逆転は注目だが、同日の低価格EV本命としてはVinFast新車投入を採用"
+    },
+    {
+      "title": "モビリティ決済プラットフォーム「Smooth Pay」を提供する株式会社Smooth、シードラウンドで累計6,000万円の資金調達を実施",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5VTWxoeDdTVGxiZFBDY3MwRGh5b3N1amNnaXJBZ2ZFSW05emh2Tm1kMDlOMnBTR3BmTzc1UnVrcDVLUjI1U2pvTGdYWllOdkItc1RKYVhmMVFZNzQ4VXM1VEwtajBkTXVSTEE?oc=5",
+      "reason": "一次情報だが資金調達PR中心で、読者の即時判断材料としては優先度を下げた"
+    }
+  ]
+}

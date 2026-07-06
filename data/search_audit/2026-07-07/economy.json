@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-07",
+  "category_id": "economy",
+  "queries": [
+    "stage1: build/deduped-candidates/economy.jsonl",
+    "canonical: \"高インフレが最大リスク、労働市場は安定＝ウォラーＦＲＢ理事\"",
+    "canonical: \"ユーロ圏経済、中東紛争と米国資産売りが2大リスク＝ＥＳＭ\"",
+    "canonical: \"赤澤経済産業大臣がジャーベル アブダビ国営石油会社（ADNOC）Group CEO兼UAE産業・先端技術大臣兼日本担当特使と会談を行いました\"",
+    "canonical: Nikkei search \"サッポロ、「身の丈」投資で海外挽回 巨人カールスバーグと提携\"",
+    "canonical: Nikkei search \"キオクシア「メモリー首位奪還」狙う 社長、総会で表明\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "フォワードガイダンスは有用、柔軟性欠けば阻害要因に＝ウォラーＦＲＢ理事",
+      "url": "https://www.newsweekjapan.jp/articles/-/327602",
+      "reason": "同一登壇者の政策コミュニケーション論点で、インフレリスク記事と重複度が高いため非採用"
+    },
+    {
+      "title": "サッポロ、海外で巻き返し 不動産売却資金を活用",
+      "url": "https://www.nikkei.com/article/DGKKZO97386560W6A700C2TB2000/",
+      "reason": "カールスバーグ提携を扱う同一テーマの詳細記事を採用し、重複を避けた"
+    },
+    {
+      "title": "南米と経済連携、家計に影響は メルコスールと交渉開始へ ブラジル産牛肉、安く食卓に？",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE03cWhNZExiV1c5NFJyRUlua0JkN29UM1BGSTNna0RWX0pWY09ZSEZRaFktNHFPTExrZ255WGVFdTFhZEowa1d1S0ZpbzdmUS10MnZ4QVNTQjBuZzFf?oc=5",
+      "reason": "当日号で元記事 canonical を安定解決できず、Google News URLのままでは契約違反になるため除外"
+    },
+    {
+      "title": "ＥＣＢシュナーベル氏、ユーロ圏経済「イラン戦争前に戻っていない」 物価圧力継続",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE9oR3dKSEhna0pWWGYtYTdTUlBGTkRyal95djI1Z1k5ejFTZmxFd2tQb1hFc1VLVzVwM0I2TDI1MGw0Um1SZEpGb05JMjdiTmRaVzkyeWtzMDBBcGV4OEQyRjQ3ZkJrM2RqQWlvZVJaTmJWaUJOUEN2bA?oc=5",
+      "reason": "X/索引ページ以外の安定した記事単位URLを確定できず除外"
+    },
+    {
+      "url": "https://www.meti.go.jp/press/2026/07/20260706001.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,49 @@
+{
+  "date": "2026-07-07",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "\"円安シグナル発するオプション市場、介入見送り－金利差なおドル有利\"",
+    "\"39年半ぶり円安からの円高反転は“短命”か、投機の円売り支える「貿易赤字」の実需\"",
+    "\"植田日銀は「受動型」政策運営から転換するのか？テイラールールで検証する“2％インフレ時代”の利上げ判断と春闘の重要性\"",
+    "\"【FX】7/6 不意打ち介入はない？ドル円今週の注目材料は？\"",
+    "\"FX個人投資家動向｜ポジションは買い優勢に、金利上昇で悪い円安も意識 2026年7月6日\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 10,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "ＮＹ外為市場＝ドル／円162円台前半、約40年ぶり円安圏 介入警戒続く",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE9NUjd0eGEwa3FPM1BiVkJTRzhPbEhWd2FELThYeS14Q05OenFzMkRjc2JpcDQzVG1sT0MzYkFBVGZrVWZQRDN5WHhhRTNuV0lua1J5NUF5V294eHNrTTQ4aW10TW8wMkZQUTdfYy1TWVJsNWx3b3JSLQ?oc=5",
+      "reason": "canonical未解決のため未採用"
+    },
+    {
+      "title": "家計負担、年１．６万円増も 歴史的円安、中小企業にも逆風",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBhTVJzWVJJdFg0M0VXVVRtUFptcWxNOWNYSFVjVEpNYTNGYzNDa3kyWnZTdWw3dVpHanNsRGwxM05JWWYxQUx0aTZjUzdGRUMwZDE2QWZDR1FENkdndzMyMFU0SQ?oc=5",
+      "reason": "canonical未解決のため未採用"
+    },
+    {
+      "title": "トヨタ系主要7社の今期 円安で500億円増益効果 業績上振れ余地 成長投資・株主還元が課題",
+      "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxOS09PRXV0dEQ2WW9mRXo4MFRJaVM2N0NETlA0N0tzcU9DS0ZrVDhrQTNyVVhrVFZFZTk0ajBEbFVtZzVGSEYwdkFpbEtiQjhIbHBJem1pOVZRWW5DRWtMb01ocnFJSldaWnlKa1NHR0FUeVY2OGpPM3B2aC0xaWN6dThfOFpRX19CSW1NY0RiMUpfT2xmZnNwTDFzUy1vY0RyeEE?oc=5",
+      "reason": "canonical未解決のため未採用"
+    },
+    {
+      "title": "米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFBzbWxqc1ltSU1ndEE0VElnZldUTGdyRVJpOTdKeXBsc0RDSm40dm9kLTJqaDZlOVpoR2E5eEZIX1o0bFR1SFR2N2k4WjRiTnN5dHVBTHJn?oc=5",
+      "reason": "記事単位でなくレートページのため未採用"
+    },
+    {
+      "title": "FX/為替「ドル/円今日の見通し｜米インフレ巡り焦点はISM非製造業」 外為どっとコム トゥデイ 2026年7月6日号",
+      "url": "https://www.gaitame.com/media/entry/2026/07/06/082131",
+      "reason": "週次見通しと論点が重複したため未採用"
+    }
+  ]
+}

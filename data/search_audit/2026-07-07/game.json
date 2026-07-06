@@ -1,0 +1,82 @@
+{
+  "date": "2026-07-07",
+  "category_id": "game",
+  "queries": [
+    "stage1: ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:techno-edge.net 任天堂 欧州でSwitch終売 バッテリー規制 Switch 2 容量1%減 重量10g増",
+    "site:k-tai.watch.impress.co.jp YouTube ゲームルーム 開始",
+    "site:watch.impress.co.jp 2028年 ディスク生産中止 SIE ゲームディスク流通 終了 背景",
+    "site:gamespark.jp The Binding of Isaac Rebirth 15万人 最高同時接続",
+    "site:one-piece.com ドーンストライク 7月 順次 稼働開始"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "Steam公式ゲーミングPC「Steam Machine」用の電子ペーパー式情報表示ディスプレイがオープンソース化されて誰でも作成可能に",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9mS2k0N2lQSXRxbWpfY2ZsZEZLTGFwSjFodHJFbnlQU2F1bnluMFVfSWlaVmVnVmEzV3Y3LXpuYVFad2szbi04Z21uTXhlWVRqQzlaaTdNVUlLODJKOTlvWElMUjhlSEZrQkMyQg?oc=5",
+      "reason": "ニッチな周辺改造ニュースで、当日号の主題である流通・規制・主要配信面の変化より読者影響が小さい"
+    },
+    {
+      "title": "ソニーが吉田・十時改革で過去最高益も「絶頂」は永続せず！稼ぎ頭のゲーム事業の賞味期限は5年!?半導体、エレキなど主要ビジネスのリスク要因を徹底分析",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE5NT3ZaMklleW45ZzBycUlNRnI0MGVfWkR5UUQ5MXRpaFlOYjBjc2RjaW5jSkRacUZmdHpHM1VZeTl3UDJrLTZwTmt6SkXSAU9BVV95cUxPOVo0YzBUelVWd1BWcXE5YnU0aExEbXBvVDI5T3Q1UGxZVlpfYnJrbU9HUkJRdmMtZGJ0c3l5cDNiRWxoT2ttWldlbE4zckJZ?oc=5",
+      "reason": "投資分析色が強く、SIEの流通転換を具体化したImpress Watch記事で代替できる"
+    },
+    {
+      "title": "“あなたのおすすめ”を大募集！今のうちに買うべき「ゲームアーカイブス」はどれ？ PS3・PS VitaのPS Store終了前に、要チェック作品を洗い出そう【アンケート】",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE9iQk8zcmJnZ3FnVWprQ3lraHBGRTU5MHJteDhLQXpjdjJqNUM5ZVJsRGVvbVh4c3Y2bjI5YW5PckM1YUtsSVFhMGFKNzcwWEx0WTJxRGY1ZHRmbFJONkJpMTVDc0ZnNWNJWnc?oc=5",
+      "reason": "アンケート募集が主で、新規事実や経営判断の材料が薄い"
+    },
+    {
+      "title": "【Amazonプライムデー】ゲームコントローラー「Backbone Pro」がお買い得。スマホに装着して精密操作が可能【2026】",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFBXdWJ4d016UEVJVjNvOVFfanppUmttclBOMk1KbEFCbkM5S19aZ0gyRjZqbk1jdzBjaGlTbEkteG05ZEZ3Nzh1bnF5dE5YT2pGVkRjTFlfc3dNRmxtZnEtakpTOElaZw?oc=5",
+      "reason": "セール告知であり、当日号の業界構造変化より優先度が低い"
+    },
+    {
+      "title": "フランス発、スマホ用コントローラー「Playtiles」が日本初上陸。本日7月6日より販売開始",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE8yLU83OVYwdjdablFIbFRKYVdIVEo1WnR5Sm5SV3U5ZENET3Z6R2lvRWRlRTc1SUZodjU4ZkxvNVFSOXpKTTVsWnlMS3NUX0ZXMUdFdUJXS25PNGN1YnVnamNkTE1tZw?oc=5",
+      "reason": "製品自体は興味深いが、主要5本より読者の業務判断に直結しにくい"
+    },
+    {
+      "title": "《絆》と《裏切り》が渦巻くゲームショー『TRADE ROOM』（トレードルーム）開幕!!",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE1TQjNYUmQyTnpCT3M0WlIxbnhSWmtscWdEVkp6Y0hKOGZ1UzNJU1RmMFBQNUlKY0ZiaUVFS2tRSDRTWVI0bTdFamZ0Ri1pcEpaS3BHTmw4V1NCVWFfdVlGMG5Qcm9zazBNX0E?oc=5",
+      "reason": "PR色が強く、一次情報性は高いが業界インパクトが限定的"
+    },
+    {
+      "title": "てんすいのサクナヒメ NHK ゲームゲノム 第8回 天穂のサクナヒメ 視聴レポート",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE16aDBNbkxPTWZrWnY0Q0JZb2FjSHp6S0Vrd2J5NFpmazk5SkZxLXIwQkVpSDRKcVlCbnBJUXAxaEJrdEFXOHZCRnU3UWluMXNBY3J4Q3Iydm8?oc=5",
+      "reason": "参照先が誤分類サイトで canonical 解決の信頼性が低い"
+    },
+    {
+      "title": "ゲームtシャツ コーデ 昨日の動画を写真でも 今週入荷の新作ゲームT",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFBSVWs1RnY5VGhnOGduRnpGeWRXbkN1M2E5eGM5dzh0U2xrWW03NTEwek5mNVBPZWpIX2hQVU1CcF9RaXg0c3hkNHhQLU9QNFJObE10bVpVT29hUQ?oc=5",
+      "reason": "ゲーム業界ニュースではなくファッション投稿の誤混入"
+    },
+    {
+      "title": "学校の怪談 ゲーム 90年代の名作ホラー 学校であった怖い話 がスイッチで復活",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1XSDdDSTVRZkhYUk5jbkpNbGVteUZpTXZQOV9OQV96VTJWYzh0REhGVzlTMXZHUHV2ZmwyMWxycHZfb1M3MEkwaE8xV21peXRGaDFVLXotdjU1UQ?oc=5",
+      "reason": "参照先が誤分類サイトで、信頼できる記事単位URLを確認できなかった"
+    },
+    {
+      "title": "【高校野球】開幕ゲーム 西彼杵・長崎鶴洋・上対馬（３校連合）vs壱岐商業 夏の高校野球長崎大会1回戦",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9WRHdjS1d2dkJqNkV3TjhEUC1UNjdTODk0QUMxT1hLRDVMSjl0b1JRQ1I2cm96aF8weDdLU1owRGVQZ0tMWmwzZVZuZC1YQUQ1akpQV0JoSG0?oc=5",
+      "reason": "スポーツの試合告知で、ゲームカテゴリの対象外"
+    },
+    {
+      "title": "四国銀は電話研修にAI、香川銀は卓上ゲーム 四国の地銀、新人研修を工夫",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOamVYdEZqZy1mcGttZGQweWVNRmI2UmJJTW55MEtnX2pPdTNTaU15aGJ5Q0ZPbmF3R0VUc1FZMkRUNFEwdXNsazV0R0ZSTUdKN2dhTVR4bU56QVZGSE5EdFlULVVERmlZUnBnQVpuZGhBNFkzNUFsY0RJU3FqdTcxTUM2WTJHc3dmcC02YlYtblhfOTNsaW15cWNGa2dOeEpKS09pb09UYUE?oc=5",
+      "reason": "卓上ゲームの比喩的利用で、ゲーム業界のニュースではない"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "date": "2026-07-07",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-seed: 製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "news.yahoo.co.jp/search?p=キオクシア 岩手県北上工場 AI向け第10世代NANDメモリ サンプル出荷",
+    "news.yahoo.co.jp/search?p=ブロードコム AI向けカスタム半導体供給 アップル 契約拡大 Bloomberg",
+    "www.logi-today.com/?s=旭化成 半導体パッケージ材料 台湾供給強化",
+    "www.logi-today.com/?s=FDA 米国内医薬品製造支援 協和キリン"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "ダウ平均が続伸 ナスダックは大幅高 半導体に買戻し＝米国株概況",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE9HTDR4ZlRfeW1SQnV6OVU4QlVhRHNrczFadWVBRzlVcTJWdGltTV9VMmNEN1N6dEgzTlhVRXlOVURGazdEUGZTMUZ1MldiRE9lYkdxQTc0WVhXZ1ZHblhyTk1B?oc=5",
+      "reason": "市況速報であり製造の構造変化が主題ではない"
+    },
+    {
+      "title": "サプライチェーン圧力指数、6月は1.25に低下＝ＮＹ連銀",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNTmVFVmlRQS1ja1ctUU1NY29JdzNWbE5JNC1mUUZYYTFUTGNtbGdGdnNZZm5UekhiU1lHVEFBTmxOakVjMkxDX1huTDNNOC1icEl5NUt5S2l0UFVPcW1URUdtMDJlU0VRamJGV3VRTnQ5UDhoSk41b085bXJ3d0ljcg?oc=5",
+      "reason": "マクロ指標であり製造個社の設備・技術シグナルが薄い"
+    },
+    {
+      "title": "HarvestX、三菱商事と植物工場を海外展開",
+      "url": "https://www.logi-today.com/973826",
+      "reason": "方向性は有望だが当日の産業インパクトは上位4件より小さい"
+    },
+    {
+      "title": "【特許】信越化学、粉体の被覆率算出に機械学習 高精度",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOdURBUW1TZFR4TDF3Y082cGRYWElucjl3aHhUSWZXTnRuU3NMR2VaMzBKZFQ4dUJVa2dNNHlrZHktblcyNlpwcHZ6YXhJMGhwaExKbEt5cEJUVVhXSmpDdUtSTEZObzVZR0htbDRDSUhlX2s3VjFYcWVuaVFSSmJfRnFBanRpRTdJZGUyTGI4SWJWbFlIRFFfSnIwNHhCSUJOcjgyaHNQcGRURG5u?oc=5",
+      "reason": "技術深度はあるが当日中に実体確認できる公開本文が不足した"
+    },
+    {
+      "url": "https://www.logi-today.com/973572",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
