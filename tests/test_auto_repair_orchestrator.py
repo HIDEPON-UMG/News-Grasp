@@ -59,9 +59,36 @@ def test_classify_emits_ordered_issue_ledger_and_selected_artifacts(capsys) -> N
     payload = json.loads(capsys.readouterr().out)
     assert payload["issue_code"] == "articles_issue_empty"
     assert payload["artifact_paths"] == ["data/articles.jsonl"]
+    assert payload["selected_artifacts"] == [
+        "data/articles.jsonl",
+        "digest/Summary/2026-06-28-audio-script.md",
+    ]
     assert [issue["issue_code"] for issue in payload["issues"]] == [
         "articles_issue_empty",
         "audio_script_quality_invalid",
+    ]
+
+
+def test_classify_routes_search_audit_count_mismatch_to_metadata_patch(capsys) -> None:
+    output = "\n".join(
+        [
+            "ERROR: opaque validator text without a registered issue code",
+            "ERROR: data\\search_audit\\2026-07-06\\fx.json: selected_total=5 does not match digest article count 3.",
+        ]
+    )
+
+    rc = main(["classify", "--gate-id", "daily-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["action"] == "repairable"
+    assert payload["handler"] == "deterministic-repair"
+    assert payload["handler_id"] == "search-audit-metadata-patch"
+    assert payload["issue_code"] == "search_audit_count_mismatch"
+    assert payload["artifact_paths"] == ["data/search_audit/2026-07-06/fx.json"]
+    assert [issue["issue_code"] for issue in payload["issues"]] == [
+        "search_audit_count_mismatch",
+        "unknown",
     ]
 
 

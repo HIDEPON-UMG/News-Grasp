@@ -405,6 +405,47 @@ def _repair_record_issue_date(ctx: RepairContext) -> RepairResult:
     return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,), "autonomous_recovery: issue_date_mismatch")
 
 
+def _digest_thumb_index(ctx: RepairContext) -> dict[str, str]:
+    thumbs: dict[str, str] = {}
+    for cat_id in scheduled_category_ids(ctx.issue):
+        folder = str(CATEGORY_PATHS[cat_id]["digest_folder"])
+        path = ctx.repo_root / "digest" / folder / f"{ctx.issue}-{folder}.md"
+        if not path.exists():
+            continue
+        body = path.read_text(encoding="utf-8-sig", errors="replace")
+        for article in parse_articles(body):
+            url = str(article.get("source_url") or article.get("url") or "").strip()
+            thumb = str(article.get("thumb") or "").strip()
+            if url and thumb and thumb.casefold() != "null":
+                thumbs[url] = thumb
+    return thumbs
+
+
+def _repair_record_thumb(ctx: RepairContext) -> RepairResult:
+    rel = "data/articles.jsonl"
+    path = ctx.repo_root / rel
+    if not path.exists():
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"missing artifact: {rel}")
+    thumb_by_url = _digest_thumb_index(ctx)
+    changed = False
+    rows: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if isinstance(row, dict) and str(row.get("date") or "") == ctx.issue:
+            thumb = row.get("thumb")
+            if "thumb" not in row or thumb is None or not str(thumb).strip():
+                url = str(row.get("url") or "").strip()
+                row["thumb"] = thumb_by_url.get(url)
+                changed = True
+        rows.append(row)
+    if not changed:
+        return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
+    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8", newline="\n")
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,), "autonomous_recovery: record_thumb_synced_from_digest")
+
+
 def _record_category_id(row: dict[str, object]) -> str | None:
     for key in ("category_id", "category", "cat_id"):
         value = str(row.get(key) or "").strip().casefold()
@@ -436,12 +477,41 @@ def _is_unreviewed_stale_followup(*, issue_day: date, row: dict[str, object]) ->
 
 
 def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[str]]:
-    path = ctx.repo_root / "data" / "articles.jsonl"
-    if not path.exists():
-        return {}
-    issue_day = date.fromisoformat(ctx.issue)
+    scoped_categories: set[str] = set()
+    for artifact in ctx.artifacts:
+        rel = _normalize_rel(artifact)
+        for cat_id, info in CATEGORY_PATHS.items():
+            folder = str(info.get("digest_folder") or "")
+            if rel.startswith(f"digest/{folder}/"):
+                scoped_categories.add(cat_id)
+
     by_category: dict[str, list[str]] = {}
     seen: set[tuple[str, str]] = set()
+    for artifact in ctx.artifacts:
+        rel = _normalize_rel(artifact)
+        for cat_id, info in CATEGORY_PATHS.items():
+            folder = str(info.get("digest_folder") or "")
+            if not rel.startswith(f"digest/{folder}/"):
+                continue
+            digest_path = ctx.repo_root / rel
+            if not digest_path.exists():
+                continue
+            body = digest_path.read_text(encoding="utf-8-sig", errors="replace")
+            for article in parse_articles(body):
+                url = str(article.get("url") or article.get("source_url") or "").strip()
+                thumb = str(article.get("thumb") or "").strip()
+                if not url or (thumb and thumb.casefold() != "null"):
+                    continue
+                key = (cat_id, url)
+                if key in seen:
+                    continue
+                seen.add(key)
+                by_category.setdefault(cat_id, []).append(url)
+
+    path = ctx.repo_root / "data" / "articles.jsonl"
+    if not path.exists():
+        return by_category
+    issue_day = date.fromisoformat(ctx.issue)
     for line in path.read_text(encoding="utf-8-sig").splitlines():
         if not line.strip():
             continue
@@ -454,7 +524,7 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
         if not url:
             continue
         thumb = row.get("thumb")
-        thumb_missing = thumb is None or not str(thumb).strip() or str(thumb).strip().casefold() == "null"
+        thumb_missing = "thumb" in row and (thumb is None or not str(thumb).strip() or str(thumb).strip().casefold() == "null")
         if not (
             _is_stale_current_source_url(issue_day=issue_day, url=url)
             or _is_unreviewed_stale_followup(issue_day=issue_day, row=row)
@@ -463,6 +533,8 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
             continue
         cat_id = _record_category_id(row)
         if cat_id is None:
+            continue
+        if scoped_categories and cat_id not in scoped_categories:
             continue
         key = (cat_id, url)
         if key in seen:
@@ -796,7 +868,7 @@ REGISTRY: dict[str, RepairHandler] = {
         kind="deterministic",
         allowed_artifacts=("data/articles.jsonl", "data/search_audit/{date}"),
         verify_gate="record-schema",
-        repair=_blocked_ambiguous,
+        repair=_repair_record_thumb,
     ),
     "public-home-regenerate": RepairHandler(
         handler_id="public-home-regenerate",

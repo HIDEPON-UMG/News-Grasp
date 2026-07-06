@@ -20,6 +20,7 @@ REQUIRED_ROWS = {
     ("daily-quality", "summary_reflection_emphasis_missing"),
     ("daily-quality", "category_card_emphasis_missing"),
     ("daily-quality", "search_audit_metadata_missing"),
+    ("daily-quality", "search_audit_count_mismatch"),
     ("generation-quality", "audio_script_quality_invalid"),
     ("generation-quality", "summary_hero_missing"),
     ("generation-quality", "summary_reflection_missing"),
@@ -130,7 +131,7 @@ def test_repair_coverage_inventory_has_no_missing_known_validator_issue() -> Non
 
 
 def test_generation_quality_multi_issue_prioritizes_state_consistency_before_audio() -> None:
-    output = json.dumps(
+    output = "\ufeff" + json.dumps(
         {
             "ok": False,
             "errors": [
@@ -201,6 +202,33 @@ def test_audio_script_quality_invalid_routes_to_llm_rewrite_not_append_patch() -
     assert decision.status_on_failure == "blocked_audio_script_rewrite_failed"
 
 
+def test_generation_quality_missing_artifact_json_routes_to_llm_generation() -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "errors": [
+                {
+                    "code": "missing_artifact",
+                    "artifact": "digest/Summary/2026-07-07-audio-script.md",
+                    "category": "Summary",
+                    "reason": "required generated artifact is missing",
+                    "expected": "file exists",
+                    "actual": "missing",
+                    "retryable": True,
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    decision = classify_gate_output("generation-quality", output)
+
+    assert decision.issue_code == "missing_artifact"
+    assert decision.repair_class == RepairClass.LLM_GENERATE_MISSING_ARTIFACT
+    assert decision.artifact_paths == ("digest/Summary/2026-07-07-audio-script.md",)
+    assert decision.evidence["typed_reason"] == "missing_artifact"
+
+
 def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -> None:
     output = "\n".join(
         [
@@ -219,6 +247,41 @@ def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -
     ]
     assert decisions[0].handler_id == "summary-emphasis-patch"
     assert decisions[2].handler_id == "url-quarantine-refill"
+    assert decisions[2].artifact_paths == ("digest/IT-Consulting/2026-06-30-IT-Consulting.md",)
+    assert decisions[2].evidence["category"] == "it"
+
+
+def test_daily_quality_selected_total_mismatch_routes_to_search_audit_metadata_patch() -> None:
+    output = (
+        "ERROR: data\\search_audit\\2026-07-06\\fx.json: "
+        "selected_total=5 does not match digest article count 3."
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "search_audit_count_mismatch"
+    assert decisions[0].handler_id == "search-audit-metadata-patch"
+    assert decisions[0].artifact_paths == ("data/search_audit/2026-07-06/fx.json",)
+    assert decisions[0].evidence == {
+        "selected_total": 5,
+        "digest_article_count": 3,
+    }
+
+
+def test_unknown_daily_quality_line_does_not_mask_known_deterministic_issue() -> None:
+    output = "\n".join(
+        [
+            "ERROR: opaque validator text without a registered issue code",
+            "ERROR: data\\search_audit\\2026-07-06\\fx.json: selected_total=5 does not match digest article count 3.",
+        ]
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "search_audit_count_mismatch"
+    assert decisions[0].handler_id == "search-audit-metadata-patch"
+    assert decisions[-1].issue_code == "unknown"
+    assert decisions[-1].status_on_failure == "blocked_unknown_repair_class"
 
 
 def test_generation_quality_text_fallback_prioritizes_digest_mismatch_before_audio() -> None:

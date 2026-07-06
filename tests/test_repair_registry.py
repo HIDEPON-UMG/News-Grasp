@@ -555,6 +555,91 @@ def test_url_quarantine_refill_handler_repairs_missing_thumb_record(tmp_path: Pa
     assert reserve_url in digest.read_text(encoding="utf-8")
 
 
+def test_url_quarantine_refill_handler_uses_digest_source_url_for_missing_thumb(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import tools.repair_registry as registry
+
+    issue = "2026-06-30"
+    bad_url = "https://example.com/no-thumb-digest"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "# IT\n\n"
+        "### [90] no thumb digest\n\n"
+        f"📅 {issue} 09:00 · 📰 Example · 🔗 [元記事]({bad_url})\n\n"
+        "#cat/it-consulting #score/高\n\n"
+        "![thumb](null)\n\n"
+        "- [[AI]] **policy** __market signal__\n",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_refill_category(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "mode": "refilled", "removed": 1, "refilled": 1}
+
+    monkeypatch.setattr(registry, "refill_category", fake_refill_category)
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/IT-Consulting/{issue}-IT-Consulting.md"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert captured["category"] == "it"
+    assert captured["bad_urls"] == [bad_url]
+
+
+def test_record_thumb_patch_syncs_missing_thumb_from_digest(tmp_path: Path) -> None:
+    issue = "2026-06-30"
+    url = "https://example.com/story"
+    thumb = "https://example.com/thumb.jpg"
+    articles = tmp_path / "data" / "articles.jsonl"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    articles.parent.mkdir(parents=True)
+    digest.parent.mkdir(parents=True)
+    articles.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "genre": "IT-Consulting",
+                "title": "story",
+                "title_ja": "story",
+                "url": url,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    digest.write_text(
+        "# IT\n\n"
+        "### [90] story\n\n"
+        f"📅 {issue} 09:00 · 📰 Example · 🔗 [元記事]({url})\n\n"
+        f"![thumb]({thumb})\n\n"
+        "- [[AI]] **policy** __market signal__\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="record-thumb-quarantine-patch",
+            artifacts=["data/articles.jsonl", f"digest/IT-Consulting/{issue}-IT-Consulting.md"],
+        )
+    )
+
+    repaired = json.loads(articles.read_text(encoding="utf-8").strip())
+    assert result.status == "repaired"
+    assert repaired["thumb"] == thumb
+
+
 def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path) -> None:
     issue = "2026-06-28"
     digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"

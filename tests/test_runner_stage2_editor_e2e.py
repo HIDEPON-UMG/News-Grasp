@@ -15,9 +15,9 @@ from pathlib import Path
 
 from tools.publish_inventory import scheduled_category_ids
 
-RUNNER = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
-POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
 ROOT = Path(__file__).resolve().parent.parent
+RUNNER = Path(os.environ.get("NEWS_GRASP_RUNNER", str(ROOT / "scripts" / "ops" / "news-grasp-runner.ps1")))
+POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
 ISSUE = "2026-06-14"
 CATEGORIES = tuple(scheduled_category_ids(ISSUE))
 
@@ -311,6 +311,9 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     manifest = repo / "build" / "reporter-artifacts" / ISSUE / "editor-input-manifest.json"
     assert manifest.exists()
     assert (repo / "build" / "codex-last-message.txt").exists()
+    assert (repo / "digest" / "Summary" / f"{ISSUE}.md").read_text(encoding="utf-8-sig").strip() == "Smoke summary"
+    articles = (repo / "data" / "articles.jsonl").read_text(encoding="utf-8")
+    assert '"genre":"Summary"' in articles
     assert not root_last_message_written_during_test
     state = json.loads(state_file.read_text(encoding="utf-8"))
     assert state["status"] == "smoke_ok"

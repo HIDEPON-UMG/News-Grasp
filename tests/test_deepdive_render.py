@@ -1187,10 +1187,11 @@ def test_build_fails_on_single_chart(tmp_path: Path) -> None:
     assert "chart" in str(exc.value)
 
 
-def test_real_digest_is_complete(tmp_path: Path) -> None:
+def test_real_digest_is_complete(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """実 digest (本番公開対象) は必須ブロックを全て備え、hard fail せず render できる。"""
     if not _REAL.exists():
         return  # 実 digest が無い環境では skip
+    monkeypatch.setenv("NEWS_GRASP_SKIP_URL_CHECK", "1")
     ctx = build_deepdive_context(_REAL)        # 欠落があればここで例外 = テスト失敗
     assert ctx["relations_svg"], "実記事に関係図 (relations) が無い"
     assert ctx["table"], "実記事にデータ表 (table) が無い"

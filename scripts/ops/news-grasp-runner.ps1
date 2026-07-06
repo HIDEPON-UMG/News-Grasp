@@ -1040,6 +1040,84 @@ function Invoke-CodexWrapper {
     return $wrapperRc
 }
 
+function ConvertTo-JsonlLine {
+    param([Parameter(Mandatory=$true)] $Value)
+    return ($Value | ConvertTo-Json -Depth 20 -Compress)
+}
+
+function Add-JsonlRecordsIfMissing {
+    param(
+        [Parameter(Mandatory=$true)][string] $Path,
+        [Parameter(Mandatory=$true)] $Records
+    )
+    $dir = Split-Path -Parent $Path
+    if ($dir) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+    $existingKeys = New-Object 'System.Collections.Generic.HashSet[string]'
+    if (Test-Path -LiteralPath $Path) {
+        foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+            if ([string]::IsNullOrWhiteSpace($line)) { continue }
+            try {
+                $row = $line | ConvertFrom-Json
+                $key = "$($row.date)|$($row.url)"
+                if (-not [string]::IsNullOrWhiteSpace($key)) { [void]$existingKeys.Add($key) }
+            } catch {
+                continue
+            }
+        }
+    }
+
+    $newLines = New-Object System.Collections.Generic.List[string]
+    foreach ($record in @($Records)) {
+        $key = "$($record.date)|$($record.url)"
+        if ([string]::IsNullOrWhiteSpace([string]$record.url) -or $existingKeys.Contains($key)) {
+            continue
+        }
+        [void]$existingKeys.Add($key)
+        $newLines.Add((ConvertTo-JsonlLine -Value $record))
+    }
+    if ($newLines.Count -gt 0) {
+        Add-Content -LiteralPath $Path -Value $newLines.ToArray() -Encoding UTF8
+    }
+    return $newLines.Count
+}
+
+function Sync-EditorOutputPreview {
+    param(
+        [Parameter(Mandatory=$true)][string] $PreviewPath,
+        [string] $FallbackPath = ''
+    )
+    $sourcePath = $PreviewPath
+    if (-not (Test-Path -LiteralPath $sourcePath)) {
+        if ($FallbackPath -and (Test-Path -LiteralPath $FallbackPath)) {
+            $sourcePath = $FallbackPath
+        } else {
+            Write-Log "editor output preview missing: $PreviewPath"
+            return
+        }
+    }
+    try {
+        $payload = Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        Write-Log "ERROR: editor output preview JSON parse failed: $sourcePath reason=$($_.Exception.Message)"
+        return
+    }
+
+    $summary = [string] $payload.summary_markdown
+    if (-not [string]::IsNullOrWhiteSpace($summary)) {
+        $summaryPath = Join-Path $RepoDir "digest\Summary\$DateStamp.md"
+        New-Item -ItemType Directory -Path (Split-Path -Parent $summaryPath) -Force | Out-Null
+        [System.IO.File]::WriteAllText($summaryPath, ($summary.TrimEnd() + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+        Write-Log "editor summary materialized: $summaryPath"
+    }
+
+    if ($payload.PSObject.Properties.Name -contains 'append_records') {
+        $articlesPath = Join-Path $RepoDir 'data\articles.jsonl'
+        $added = Add-JsonlRecordsIfMissing -Path $articlesPath -Records @($payload.append_records)
+        Write-Log "editor append_records materialized: added=$added path=$articlesPath"
+    }
+}
+
 function Read-RepairDecision {
     param(
         [string] $GateId,
@@ -1139,7 +1217,12 @@ function Invoke-TargetedRepair {
         return 1
     }
 
-    if (-not (Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId -RepairDecision $decision)) {
+    $llmRepairArtifacts = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts $Artifacts)
+    if ($llmRepairArtifacts.Count -eq 0) {
+        $llmRepairArtifacts = @($Artifacts)
+    }
+
+    if (-not (Test-RepairWorkerPreflight -GateId $GateId -Artifacts $llmRepairArtifacts -RepairTransactionId $RepairTransactionId -RepairDecision $decision)) {
         Write-Log "pre-repair policy denied LLM repair worker (gate=$GateId, status=blocked_pre_repair_recreate)"
         return 1
     }
@@ -1156,7 +1239,7 @@ function Invoke-TargetedRepair {
     if (Test-Path $CapturePath) {
         $failureText = Get-Content -LiteralPath $CapturePath -Raw -Encoding UTF8
     }
-    $artifactText = [string]::Join(', ', $Artifacts)
+    $artifactText = [string]::Join(', ', $llmRepairArtifacts)
     $repairTransactionDir = Get-RepairTransactionDir -TransactionId $RepairTransactionId
     $prompt = @"
 News-Grasp RecoverOnly targeted repair.
@@ -2607,7 +2690,11 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor' -SuccessProbeCommand $editorSuccessProbe -SuccessProbeIntervalSec 30 -SuccessProbeMinElapsedSec 120
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"
 
-        if ($agentRc -eq 0) { break }
+        if ($agentRc -eq 0) {
+            $editorOutputPreview = Join-Path $ReporterArtifactDir 'editor-output.preview.json'
+            Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage
+            break
+        }
 
         if ($agentRc -eq 124) {
             $postHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
@@ -2628,6 +2715,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         Stop-ExternalReadiness -Reason "codex exited with $agentRc" -ExitCode $agentRc -Kind 'codex_cli_failed' -System 'openai_codex' -ExternalStatus "rc=$agentRc" -ExternalDetail 'codex newsroom editor invocation'
     }
     if ($StopAfterEditorStart) {
+        $editorOutputPreview = Join-Path $ReporterArtifactDir 'editor-output.preview.json'
+        Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage
         Write-Log 'StopAfterEditorStart mode: editor wrapper succeeded; skipping downstream gates'
         Write-Log 'news-grasp-runner.ps1 SMOKE OK'
         exit 0

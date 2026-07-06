@@ -731,7 +731,8 @@ def test_runner_blocks_llm_worker_unless_matrix_allows_missing_artifact_generati
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function New-RepairTransactionId", 1)[0]
 
-    assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId -RepairDecision $decision" in repair_body
+    assert "$llmRepairArtifacts = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts $Artifacts)" in repair_body
+    assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $llmRepairArtifacts -RepairTransactionId $RepairTransactionId -RepairDecision $decision" in repair_body
     assert "llm_generate_missing_artifact" in repair_body
     assert "blocked_existing_artifact_llm_recreate" in runner
     assert repair_body.index("llm_generate_missing_artifact") < repair_body.index("codex auth readiness gate start")
@@ -756,7 +757,8 @@ def test_repair_preflight_blocks_llm_worker_before_existing_artifact_recreate() 
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicRegistryRepair", 1)[0]
 
-    assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $Artifacts -RepairTransactionId $RepairTransactionId" in repair_body
+    assert "$llmRepairArtifacts = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts $Artifacts)" in repair_body
+    assert "Test-RepairWorkerPreflight -GateId $GateId -Artifacts $llmRepairArtifacts -RepairTransactionId $RepairTransactionId" in repair_body
     assert "pre-repair policy denied LLM repair worker" in runner
     assert "blocked_pre_repair_recreate" in runner
     assert repair_body.index("Test-RepairWorkerPreflight") < repair_body.index("codex auth readiness gate start")

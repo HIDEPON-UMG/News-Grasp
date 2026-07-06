@@ -124,6 +124,14 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
         handler = "fatal"
         action = GateAction.FATAL
 
+    selected_artifacts = list(decision.artifact_paths)
+    if decisions is not None:
+        selected_artifacts = []
+        for item in decisions:
+            for artifact in item.artifact_paths:
+                if artifact not in selected_artifacts:
+                    selected_artifacts.append(artifact)
+
     payload: dict[str, Any] = {
         "gate_id": decision.gate_id,
         "issue_code": decision.issue_code,
@@ -132,7 +140,7 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
         "handler": handler,
         "failure_status": decision.status_on_failure,
         "artifact_paths": list(decision.artifact_paths),
-        "selected_artifacts": list(decision.artifact_paths),
+        "selected_artifacts": selected_artifacts,
         "verify_gate": decision.verify_gate,
         "reason": decision.reason,
         "external_kind": decision.external_kind,

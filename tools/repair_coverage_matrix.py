@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 import json
+import re
 from typing import Any, Iterable
 
 
@@ -119,6 +120,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "daily-quality",
         "search_audit_metadata_missing",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "search-audit-metadata-patch",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_count_mismatch",
         RepairClass.DETERMINISTIC_HANDLER,
         "search-audit-metadata-patch",
         ("data/search_audit/{date}",),
@@ -671,8 +681,68 @@ def classify_repair_issue(issue: RepairIssue) -> RepairDecision:
     return row.to_decision(issue)
 
 
+SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
+    r"(?P<artifact>.*?data[\\/]+search_audit[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})"
+    r"[\\/]+(?P<category>[^\\/:\s]+)\.json): selected_total=(?P<selected>\d+) "
+    r"does not match digest article count (?P<count>\d+)\."
+)
+DIGEST_ARTIFACT_RE = re.compile(
+    r"(?P<artifact>digest[\\/]+(?P<folder>[^\\/:\s]+)[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-[^\\/:\s]+\.md):"
+)
+DIGEST_FOLDER_TO_CATEGORY = {
+    "FX": "fx",
+    "AI": "ai",
+    "IT-Consulting": "it",
+    "Mobility": "mobility",
+    "Manufacturing": "manufacturing",
+    "Economy": "economy",
+    "Game": "game",
+}
+
+
+def _repo_relative_artifact(path_text: str) -> str:
+    normalized = path_text.replace("\\", "/")
+    marker = "data/search_audit/"
+    if marker in normalized:
+        return marker + normalized.split(marker, 1)[1]
+    return normalized
+
+
+def _search_audit_count_mismatch_metadata(output: str) -> dict[str, Any]:
+    match = SEARCH_AUDIT_COUNT_MISMATCH_RE.search(output)
+    if not match:
+        return {}
+    return {
+        "artifact_paths": (_repo_relative_artifact(match.group("artifact")),),
+        "issue_date": match.group("issue"),
+        "category": match.group("category"),
+        "evidence": {
+            "selected_total": int(match.group("selected")),
+            "digest_article_count": int(match.group("count")),
+        },
+    }
+
+
+def _digest_artifact_metadata(output: str) -> dict[str, Any]:
+    match = DIGEST_ARTIFACT_RE.search(output)
+    if not match:
+        return {}
+    folder = match.group("folder")
+    category = DIGEST_FOLDER_TO_CATEGORY.get(folder, folder.casefold())
+    return {
+        "artifact_paths": (_repo_relative_artifact(match.group("artifact")),),
+        "issue_date": match.group("issue"),
+        "category": category,
+        "evidence": {"category": category, "digest_folder": folder},
+    }
+
+
 def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
+    if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(output) or (
+        "selected_total=" in text and "does not match digest article count" in text
+    ):
+        return "search_audit_count_mismatch"
     if "digest_article_url_mismatch" in text or "digest url" in text:
         return "digest_article_url_mismatch"
     if "audio_script_quality_invalid" in text:
@@ -728,7 +798,7 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
 
 def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
     output = output or ""
-    stripped = output.strip()
+    stripped = output.strip().lstrip("\ufeff")
     if stripped:
         try:
             payload = json.loads(stripped)
@@ -747,6 +817,8 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                         evidence = raw.get("evidence")
                         if not isinstance(evidence, dict):
                             evidence = {}
+                        if issue_code == "missing_artifact" and not evidence.get("typed_reason"):
+                            evidence = {**evidence, "typed_reason": "missing_artifact"}
                         issues.append(
                             RepairIssue(
                                 gate_id=str(raw.get("gate_id") or gate_id),
@@ -763,23 +835,33 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                 return issues
     issue_lines = [line.strip() for line in output.splitlines() if line.strip().startswith("ERROR:")]
     if issue_lines:
-        return [
-            RepairIssue(
-                gate_id=gate_id,
-                issue_code=_issue_code_from_text(gate_id, line),
-                message=line,
-                raw_output=output,
-                evidence={},
+        issues: list[RepairIssue] = []
+        for line in issue_lines:
+            metadata = _search_audit_count_mismatch_metadata(line) or _digest_artifact_metadata(line)
+            issues.append(
+                RepairIssue(
+                    gate_id=gate_id,
+                    issue_code=_issue_code_from_text(gate_id, line),
+                    message=line,
+                    raw_output=output,
+                    artifact_paths=tuple(metadata.get("artifact_paths", ())),
+                    issue_date=str(metadata.get("issue_date", "")),
+                    category=str(metadata.get("category", "")),
+                    evidence=dict(metadata.get("evidence", {})),
+                )
             )
-            for line in issue_lines
-        ]
+        return issues
+    metadata = _search_audit_count_mismatch_metadata(output) or _digest_artifact_metadata(output)
     return [
         RepairIssue(
             gate_id=gate_id,
             issue_code=_issue_code_from_text(gate_id, output),
             message=output.strip(),
             raw_output=output,
-            evidence={},
+            artifact_paths=tuple(metadata.get("artifact_paths", ())),
+            issue_date=str(metadata.get("issue_date", "")),
+            category=str(metadata.get("category", "")),
+            evidence=dict(metadata.get("evidence", {})),
         )
     ]
 
@@ -795,11 +877,14 @@ def _issue_priority(issue_code: str) -> int:
         "summary_reflection_missing": 21,
         "summary_reflection_emphasis_missing": 22,
         "category_card_emphasis_missing": 23,
+        "search_audit_count_mismatch": 24,
+        "search_audit_metadata_missing": 25,
         "deepdive_structure_invalid": 30,
         "thumb_invalid_or_missing": 60,
         "audio_script_quality_invalid": 90,
+        "unknown": 1000,
     }
-    return priority.get(issue_code, 50)
+    return priority.get(issue_code, 900)
 
 
 def classify_gate_issues(gate_id: str, output: str) -> list[RepairDecision]:
