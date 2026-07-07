@@ -35,6 +35,20 @@
       "categories": {
         "generated": 1
       }
+    },
+    "deepdive-required": {
+      "signatures": {
+        "f35590aac976d32a": {
+          "failures": 1,
+          "artifact_hashes": [
+            "943dd0210072a645"
+          ],
+          "category": "daily"
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
     }
   },
   "retry_budget_policy_version": 4
