@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-08",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1-seed: 製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:newsdig.tbs.co.jp トヨタ テキサス工場 5800億円 タコマ",
+    "site:finance.yahoo.co.jp シノプシス 半導体製造管理ソフト 提供停止",
+    "site:news.yahoo.co.jp 富山 ZEVバス FUSO BUS 三菱ふそう Foxconn",
+    "site:www.mixonline.jp 日本血液製剤機構 千歳 新工場 免疫グロブリン",
+    "site:www.japanmetal.com 日鉄ステンレス鋼管 クリーンパイプ 湘南 フル操業"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "独インフィニオン株が最高値圏 パワー半導体世界首位、新工場稼働に高まる期待",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE5FRVlfRnNpRzJzR3NUOExZZGs2TjZQRUxlakNxZ28tOFdZUThsYXQwNmw3M2VJZFB4R1pMUlNnZVEzdlJrOG05YzlUQk42MGNkNl9tR3RCQy1xZG5YMFFwc3ZubGNhQmFpMkpiazF6MHdiSUxRSF9hakhpQkhmUQ?oc=5",
+      "reason": "株価評価が主で、当日の工場投資や量産判断の新材料を本文確認しきれなかった"
+    },
+    {
+      "title": "ニコン社長、半導体露光装置「2社購買に商機」 ASML対抗へ顧客目線徹底",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1nZHp2ZGlxWDk3bE9Tbjk3UVVQYmN2MXpJUktONURkbC02bzFNOVhIQ3Q5S1EtWnhVX0JRcG9SQkJmb3JJVkdQYml3eTU5OWt5UHdMUlV0X0xjYmVFNTlrR2tGb2ZGczdrd3o0SQ?oc=5",
+      "reason": "実公開日の鮮度と今回号向けの新規シグナルが弱く、古い論点の再掲リスクを残した"
+    },
+    {
+      "title": "ナフサ危機は去ったのか――サプライチェーン強靭化から読む石油化学の今後",
+      "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE80bXl5clczNVBWVnFQY0NHNXo1ejJsT2F6a0l4QXZiT19ZTzd0YXRoMUI2T3RKQUJMX3l6em5OR0VITFhIOWVJd0cwNEo2aXRNTGVsVElkaVl5MGpsNWtPbXI4Smw3OW42cWFuMXlWbw?oc=5",
+      "reason": "分析記事であり、当日の設備投資や生産再編を示す新しい事実が相対的に薄い"
+    },
+    {
+      "title": "日本GX、サプライチェーン排出量を可視化",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1fWnBiRXdtRnlWeUd3TDhaRGRmSGlCcWxhSWVFOU1iU3NmRy1KVUI2V1hra2VQRUZlXzJ0VDM4cmFMck9lLWxLVA?oc=5",
+      "reason": "可視化サービスの紹介で、量産能力や製造拠点の構造変化としては上位5件に劣後した"
+    },
+    {
+      "url": "https://www.mixonline.jp/tabid55.html?artid=80527",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

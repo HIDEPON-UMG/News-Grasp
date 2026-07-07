@@ -1,0 +1,60 @@
+{
+  "date": "2026-07-08",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "Reuters 浅田 日銀 内生的な力 利上げ 2026年7月8日",
+    "Reuters 円安 債券安 骨太相場 市場への不信 2026年7月7日",
+    "site:newsweekjapan.jp \"ＮＹ外為市場 ドル 円 161円台後半 介入警戒\"",
+    "site:diamond.jp \"日銀は「中立金利到達」を何で判断するのか？米国の経験則から浮かぶ3つの注目指標\"",
+    "site:dlri.co.jp \"韓国ウォンの下落から考える円安の背景\"",
+    "site:gaitame.com \"7/7 七夕介入！？ 30年債入札で40年ぶり高値更新も\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "【FX】7/7 七夕介入！？ 30年債入札で40年ぶり高値更新も ｜為替市場ニュースの振り返り、今日の見通し",
+      "url": "https://www.gaitame.com/media/entry/2026/07/07/113000",
+      "reason": "骨太・介入論点が他の採用記事と重複し、30年債入札の補足に留まるため未採用"
+    },
+    {
+      "title": "政府が介入すると経済が悪化? 識者2人に聞く｢中央銀行の独立性｣",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5EaVYwbjdUNjg0ZmI2YzdlTHhpZ1hVckJjbzM0VHpWUFNQQTlCcFl3ZHFqOURGUnFGRV9Gc2tTbC1lbXg4WDZXaTB5NjBJM3o2YllMZUtqb0ZHRklEZTd3WWhUZnQxRjA?oc=5",
+      "reason": "canonical未解決で元記事URLを確認できず未採用"
+    },
+    {
+      "title": "アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型の基準価額・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1zckZSdHVvbExXV2xBc3Qtdk51MGlVVU9UNHZWeVRPMnRTNFJ6RTlfMjByUlZ6UEc4WGhvVURYd2RIRW5Oa0hXeXVMd0xETDdqamdPZw?oc=5",
+      "reason": "投信の基準価額ページでニュース記事ではないため未採用"
+    },
+    {
+      "title": "日経225先物：8日夜間取引終値＝850円安、6万7570円",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTFA2dFNMRTNUOHFwZVpsWnhEaGNwbjN5akdzMXZleS1CaWxKT2F3OURHSktNemFEVzJnX1BCUVVuYnRCNmZaVVZwMzBpU1dHRzRGTXc?oc=5",
+      "reason": "株価指数中心で為替カテゴリの主題が弱いため未採用"
+    },
+    {
+      "title": "７日の為替市場の四本値（ドル円・ユーロドル・ユーロ円）",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE4xWGdENXNZYXJfU0xMTTcxLWFuaGxjVVUtbDZXanJ6TzFhT3l6VzV2bGstSWhudThDOHhBM3U3X0ZYNVBZVmpaTg?oc=5",
+      "reason": "定型の値動きデータで独自材料が乏しいため未採用"
+    },
+    {
+      "title": "FX実践解説、あなたはどっち派「ドル円、介入警戒／円キャリー」（2026年7月7日）",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFAzZEpXMlB3TV9BZC1oNWlFb056SF8tVFptUVotWTY5cWlBX3JZVVN0U1B1OWNiSEdpUDN6dENqaHV5clpVMUJVNnhYSG5RMHp3bnJLZzZtczZMTi1NenVvSWkyOA?oc=5",
+      "reason": "動画解説で新材料より市況整理が中心のため未採用"
+    },
+    {
+      "title": "為替相場 8日（日本時間 6時）",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE9OdGNBT1JQU3hwUXVsM2JPMjhpbXFuSXZTTWh5bTNkQThwOU9JaGduZ05NQUVlWW5fRVo2aE9tRDR3dE9hU2tNZjlFbw?oc=5",
+      "reason": "相場の定点観測のみで、採用5本を押しのける新規性が不足したため未採用"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "date": "2026-07-08",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1 file: build/deduped-candidates/mobility.jsonl",
+    "site:jidounten-lab.com \"トヨタの自動運転e-Palette、アメリカ輸出『解禁』か\"",
+    "site:jidounten-lab.com \"NTTが自動運転に本格参入へ 最難関エリアで実証実験\"",
+    "site:japanjournals.com \"ロボタクシー競争が本格化 ウーバー ウェイブ ウェイモ ロンドン\"",
+    "site:viet-jo.com \"ビンファスト 低価格の都市型ミニEV VF 2\"",
+    "site:response.jp \"MG Bセグ電動ハッチ 2台のEVコンセプト グッドウッド2026\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "自動運転制度",
+    "自治体実証",
+    "ロボタクシー",
+    "低価格EV",
+    "欧州EV商品計画",
+    "BYD",
+    "Tesla",
+    "Toyota",
+    "Uber",
+    "Waymo"
+  ],
+  "selected_titles": [
+    "トヨタの自動運転e-Palette、アメリカ輸出「解禁」か",
+    "NTTが自動運転に本格参入へ 最難関エリアで実証実験",
+    "ロボタクシー競争が本格化…ウーバー、ウェイブ、ウェイモがロンドンで激突へ",
+    "ビンファスト、低価格の都市型ミニEV「VF 2」発売 9月納車開始",
+    "MG、Bセグ電動ハッチなど2台のEVコンセプト世界初公開へ…グッドウッド2026"
+  ],
+  "dropped": [
+    {
+      "title": "テスラのFSD自動運転､欧州で体験 米国と異なる安全設計",
+      "reason": "制度変更のe-Palette記事と論点が近く、今回採用5件との相対スコア比較で劣後"
+    },
+    {
+      "title": "誤差10cm以内…T2が自動運転で料金所通過に成功、無人トラックの幹線輸送実現へ",
+      "reason": "幹線物流の前進として重要だが、制度・都市実装・価格競争を優先した今回は波及範囲で劣後"
+    },
+    {
+      "title": "豊田市・トヨタ・中部電ミライズ、EV電池を定置用に 電力供給「平準化」",
+      "reason": "当日窓では新材料の量が相対的に薄く、読者体験と一次情報度の総合評価で見送り"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

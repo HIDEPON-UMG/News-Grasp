@@ -1,0 +1,88 @@
+{
+  "date": "2026-07-08",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1: 経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "resolve: site:newsweekjapan.jp \"米1年先インフレ期待3.7％、23年9月以来の高水準＝ＮＹ連銀調査\"",
+    "resolve: site:smart.asahi.com \"骨太原案の金融政策の記述、政府が一部修正検討 金利上昇に配慮か\"",
+    "resolve: site:newsweekjapan.jp \"ＮＹ連銀総裁、インフレ見通しを楽観 エネ価格下落で懸念後退\"",
+    "resolve: site:excite.co.jp \"NY株反落、130ドル安 インフレ警戒で売り優勢\"",
+    "resolve: site:newsdig.tbs.co.jp \"サムスン決算が利益確定促す、AI関連から出遅れ業種へ資金シフト\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "中部経済界、開業に高まる期待 街の魅力づくりが急務",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFA3akprRmZUeW1zOGc3c2tmMDl2TVFnMV81MHRBMjEzZFVfMTA0eXlnVnQ1aDJmQkF5eFpCeHNNNXRkb2prMHU2cVVadGtnUjM4LWRJUVYxVzhLak1jVWFySXB4ZGFsT1FPamx0MGpuRUpLWEk?oc=5",
+      "reason": "地域経済のローカル色が強く、全国の政策・市場への波及が限定的"
+    },
+    {
+      "title": "地銀決算は過去最高益の「中身」で比較せよ！本業復活の持続力を左右する、残酷な“実力差”の見抜き方",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE9hN05ZOHZqM3QtYm1QTmNUMzVlTEI5NnhfUnFuSTJMa1dkTXJqV3k0VHlHSUQ3YlNsSWxOak1lREZUMEJWSEJscS16bEzSAU9BVV95cUxPN19XUm1jREI0blNMOWRzbEpqNzdKN3NlMGx1X0pXT0VTaWZsc2lSdGVZNUc5a1lTcE1JaWs0aEg3cVhEeVZkbzQ4ZzNYblhj?oc=5",
+      "reason": "解説色が強く、単独の新しい事実や決定が薄い"
+    },
+    {
+      "title": "強い経済、伸びる賃金物価に負けない持続的な賃上げ | お知らせ | ニュース",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE95N2trbmZzQVloTWZUZ2FZWnJzR0JLXzBaS0Mxa25MVk5EcGZ2ZXRQNEwtbGNvZThUUXJxbmNwQnFWSHp4Y3c2aV9CekVuSlA4bkVCZFIwLUV4d1NvSXc?oc=5",
+      "reason": "政党発信で新しい政策決定や数値開示がなく、観測材料として弱い"
+    },
+    {
+      "title": "米インフレ1年先予想、3年ぶり高水準 NY連銀調査",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE15eEs3SnN0V05LbF9VTHNDWjBHTUFjVU0wQ0I1aHhoTHhzUVdULUctOERLbklGa0NFb1VJTFZOeC0xb0hHMXVpWWFKRzduNmJKTk9JdmhYamRNQ0dpbEdWdTFub29xOXA4WGE4MQ?oc=5",
+      "reason": "同テーマで一次ソースに近いロイター配信を採用"
+    },
+    {
+      "title": "洪水対策で経済損失8億ドル回避…NEC、ニューヨークの防災効果を定量化",
+      "url": "https://news.google.com/rss/articles/CBMiQkFVX3lxTFBXbXZ2SngwLS1VSHY5ajhnTWFIYzQ0Z2Z0aXJGSFpNNlBsZDhkclN5eXZiang5ZW1uZ1drM09TNlgtUQ?oc=5",
+      "reason": "企業事例としては有用だが、当日のマクロ・市場判断への直結性が弱い"
+    },
+    {
+      "title": "インフレ時代が到来！株以外も関心アップ！？",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1BNDN3eFE3RGdTbWVoeTVDQTZWeklpQXB5bEhvRkt3b2JaNkpza0dScjV5bDNnNGdGaEJsUm42MksxYk5ZMW0zVWVkMmZkMS05NVBnSXlrRDMwQnV2NjZVZWNna0U3emE1WXRv?oc=5",
+      "reason": "番組告知寄りで、新しい数値や政策判断の材料が薄い"
+    },
+    {
+      "title": "本日の経済スケジュール ─ 国際収支など",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE1EOHhFUlI3YkNMM3lFN0kwaExoZUdvNWxqczN5RGlLNzExQUdSRXdrei1JeWRRRmthLVZrTDVEbGxfRk94TG9LbktZd3FSUnZfY3c?oc=5",
+      "reason": "予定一覧であり、独立したニュースカードの新規性が低い"
+    },
+    {
+      "title": "積極財政の謎 経済学者 成田悠輔",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE1ERXpDUGJxYnl5VG9IZ3hVWTVQWnhEVDd1TkRzM0pUdnZ6QW8wWDNLNExvUmNKZDJmV1hrSVhvaDFfc0J5QjBSVGhCc0NtdThjOWZILWJzcFhGQnpKU2c?oc=5",
+      "reason": "論考中心で、当日発生の出来事として扱うには新材料が不足"
+    },
+    {
+      "title": "本日の決算発表予定 … アサヒ、ツルハＨＤ、ＡＢＣマートなど 11社 (7月8日)(株探ニュース)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQT2FsVHBONEZRMFBKang1QnB6cWRIMzE1bUFzVVY2bkJxRHBNZ2hISkF1bFlnUUwzcDVoUGhDQVBMMm1VVWxYNXBNQ3N4MnoxVVl6dGQyVGhmdDZJWWtRTmgtcVlQSG5yYWRnQTI4a1JWZmRPUE9EWDJaWXE4V2RkelJfRXcyek0?oc=5",
+      "reason": "予定表であり、新事実よりカレンダー情報が中心"
+    },
+    {
+      "title": "膨張サムスン、インフレ招く 4～6月営業益19倍 メモリー高、スマホに波及 通商摩擦リスクも",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9HRHliM3RNRkFRZHJMNVo3czJsSHVNdXZ2akowbDQxZ0pMdHIzcGZjaUNUTGtxS1BFVXIxSFVNYTJZSzNMT2N5VlZlR1RGS0RGWXQzYTZBcG1nQlRyYS1FT0J1UE81NXNWS1Nobg?oc=5",
+      "reason": "同テーマで市場の資金移動まで読めるBloomberg配信を優先"
+    },
+    {
+      "title": "日程・試合データ",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQX0l0RWUxWl90bXJicnpSQ2lwTkRWN2dBWWdkbklVbG5pVFpNV1JVNkVndXhRb3FGX25wc0liamtiRlEzc2FtbEcxZ2VMc3ZyaXhqc0l3Rl9WaU11UFVsS2Rjdk94NTl5ZFJEa0dBV21VQlJQM2hSa1BmTUZfMjl4ejFn?oc=5",
+      "reason": "経済カテゴリに不適合な誤混入候補"
+    },
+    {
+      "url": "https://smart.asahi.com/v/article/ASV772SGZV77ULFA006M.php",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,87 @@
+{
+  "date": "2026-07-08",
+  "category_id": "it",
+  "queries": [
+    "stage1 input: build/deduped-candidates/it.jsonl",
+    "site:www.oracle.com \"日本のSaaS事業者、オラクルのテクノロジーで次世代のAI搭載サービスを構築\"",
+    "\"情シス957社調査から分かった『守りから攻め』の課題とリーダーの資質\"",
+    "site:jbpress.ismedia.jp \"誰も置いていかない\" SUBARU CIO",
+    "site:cloud.watch.impress.co.jp \"今治市が経費精算クラウド『楽楽精算』を導入\"",
+    "site:corp.moneyforward.com \"『マネーフォワード クラウド請求書Plus』、「プロジェクトマスタ」を提供開始\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_candidates_inspected": 25,
+  "supplemental_search_rounds": 1,
+  "supplemental_scope": "stage1 exact-title and source-specific canonical resolution only; no broad recollection, no cross-category dedup rerun",
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1LamFweU1fQTFzZVBHZGVpNHEyWkZtZGQtR254Nm5jNVJRcmFQeHZ3S3RybEFKQmJKbDlNUGM0SGxIMjFnck1Ya2Nfcnc5Zw?oc=5",
+      "reason": "文化支援のクラウドファンディングで、IT-Consulting読者の業務判断に直結する材料が薄い"
+    },
+    {
+      "title": "フェス・ゴジラ応援企画｜「バーニングミレニアムゴジラ」スーツ制作プロジェクト",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBQTmpZc05yUjJtM09MM3Y1MVV3bElMRmpNOFJEcnNwWTB4S2lpeFNQVHJhRnZUYU5aQVdYQnZ0eVFBMUZSSTJHbndTMUZ0ek5PUGV3?oc=5",
+      "reason": "エンタメ系クラウドファンディングでカテゴリ適合性を満たさない"
+    },
+    {
+      "title": "海外から投資、首相旗振り 米ＩＴなど面会次々、成長戦略掲げ",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFAzZFI4QXRqOHlLV09xV3Jya0VzNk51ajJRSEhTaEdqWmRLTkp5OXdjZUl3RnBtYk56VVRaMXBYQ3JuVUxkWUFVOG11V2hpRTFNT1J0bzN1QjBhZmlm?oc=5",
+      "reason": "政策・投資外交の色が強く、IT-Consulting固有の実装論点より経済面が主題"
+    },
+    {
+      "title": "無料枠を活用してクラウドバックアップ、OneDriveとAmazon Photosを併用（5ページ目）",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE80SHdqdUd2VE84dzdxNG1EOFpKeEIxWnU5d2RtNDFiaEhRUXNHblljc0xqeFQ1Z3czYjNSempCOFdyTlFzQ180M2pRS2NlZjJxbzhXRWNmUmV1V2RqQVlXclF3SENzV2RsUTc0djNZbTNPQQ?oc=5",
+      "reason": "連載の途中ページで、当日ニュースとしての新規シグナルが弱い"
+    },
+    {
+      "title": "中部経済新聞に補助金クラウドが紹介されました",
+      "url": "https://news.google.com/rss/articles/CBMiR0FVX3lxTE50U0xRQTVWcTNUR1pzTDhVWThoQldEQTBYVDNrWTVMY1ViRTdNS1E4ZmRTUGItNlBDT2hpOWtKMWkxVG44REpR?oc=5",
+      "reason": "媒体掲載告知の自己言及で、製品・顧客・制度の新展開が乏しい"
+    },
+    {
+      "title": "米国のサイバーセキュリティ大手株が2倍に。ここに3つの核心的要因がある",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOcDJGeG94dzhFUmhEbzdhRTZwZVpNN2NrNHo3RG9NcFpvUl9pbkNmYnhtV1o5Mmo1YW1reThHbjJsWFprSTM4UXAwTlZmTGl3bTJrcmpSb2pVanhxaldPNVdZRXNmbkZ6bE1wWTc3R2FfTTZsNzhneTJnVXdMMmh5Zkh5LXpHVDc5bllJVXJHanduU3ZFVkppNGs2cGFXTU5tZU5md2p5MGw?oc=5",
+      "reason": "市場 commentary 寄りで、一次情報まで詰めた実装論点に届かなかった"
+    },
+    {
+      "title": "【GRAND調査】IT/セキュリティの決裁関与層は13.6%｜GRAND視聴者の約7人に1人(n=1,036)",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE9kMU1wYndhd05keFdNaVQ4LXF4Njc1U2JaSVllaC1TMEt3Zm9Yd2JBcTZUWlhZbnItWjI0dG1md18wMzd2YktyRXgzTlAwMURWR2NocVZEc01NdlRKcGJpSmFwT29lRmlieWc?oc=5",
+      "reason": "限定的な視聴者調査で、IT投資や組織運営の構造変化を示す強度が足りない"
+    },
+    {
+      "title": "退職代行の次は「辞めさせるDX」へ──海外で進む「オフボーディングSaaS」と日本が取り残される理由（AMP［アンプ］）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1jRVp3ZkZPSk1HYVBqUkN6ajVFcXhEMjNHNGZzbFB4XzZEUXVqektoUXJxRlU2SzZ3dG02QVc4eXZ6ZHVPdnpPSmNqSHNDdVdlZV90LTdmNzlFcE5ITHFYYmdrQUtPNHkwbFZscVBFeDlDUmY3WFhfeURGVGRHM0U?oc=5",
+      "reason": "exact-title 再検索でも原文 canonical を安定確証できず、間接面だけで採用しなかった"
+    },
+    {
+      "title": "ソラコム、LTE内蔵の屋外クラウドカメラ投入",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE5INFFJajFpTHRmLXNZRE9yRlB5Y2hxOVRNWk1YX25sRGlwTnAwNkx6d3pMQVUxdk9oRjg5aHZsdzIxQUZmTVFJMw?oc=5",
+      "reason": "現場IoTとしては有用だが、トップ5と比べると組織変革や投資判断への波及が一段弱かった"
+    },
+    {
+      "title": "納期は遅れ、コストは膨れ上がり、精神は疲弊する……ITプロジェクトで情シスに必須の「調整力」を学ぼう",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE5QU0NEenNsWXRWaTRNSThkM2ZhMmtsZlNucEJDNzg1TDNQOUNULWRnZE15Z0NtZmp4X1cyZkpsTGM0SW4wMFZRWWo5TTl6YzFIb2hmU1N3?oc=5",
+      "reason": "イベント告知色が強く、同日の実装・導入ニュース5件より優先度を下げた"
+    },
+    {
+      "url": "https://jbpress.ismedia.jp/list/jir/week/cioweek",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": "build/deduped-candidates/it.jsonl の stage1 dedup済み候補のみを起点に選別。広域収集と横断 dedup の再実行は行っていない。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

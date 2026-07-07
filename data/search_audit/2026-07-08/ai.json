@@ -1,0 +1,64 @@
+{
+  "date": "2026-07-08",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-08/ai.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:newsdig.tbs.co.jp マイクロソフト Excel Outlook AI 自社製 OpenAI依存縮小",
+    "site:www.itmedia.co.jp Anthropic J-space J-lens 可視化 安全性監視",
+    "site:finance.yahoo.co.jp メタ ミューズ・イメージ 画像生成AIモデル",
+    "site:www.malwarebytes.com Claude Code hidden tracker experiment Anthropic",
+    "site:www.itmedia.co.jp Claude Fable 5 サブスク 延長 日本時間13日午後"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「Claudeの母」はAIの心を見守る 反抗期恐れるテック界で進むしつけ",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE56RGlhV0Uza05IenctX3lCMF91Rnk3X0VJZjJKeWwxQXNMUGtWYmhXSjhySnF0SHQ1WDc2cldGblcxS0RHUmkyaWVydkViYk1lQjU3eUJlX1A2Y2YzWFdqeHNGYlJuVjhXQWNneA?oc=5",
+      "reason": "人物像に寄った特集で、当日中の製品変更・研究公開・供給条件変更より実務インパクトが弱かった"
+    },
+    {
+      "title": "ＤＸハイスクール・科学技術高 生成ＡＩでアプリ開発 生徒ら挑戦、先端技術学ぶ | 学校・教育 | 福井のニュース",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE9fMDZVNmR6VWlBSGY0eHVRbEROSm5jd196dUhNa2JWQXFRcmlQWnZ5OWFtdGgxYkFZeU1CdzdTTGltZzhZOVlLMTNOWnFES3JIejR5ZVNyTjhwWEdwS2c?oc=5",
+      "reason": "教育現場の取組として意義はあるが、全国的な制度変更や主要AI企業の動向に比べて影響範囲が狭かった"
+    },
+    {
+      "title": "Anthropic の Claude Cowork がマルチプラットフォームに対応：バックグラウンドでの AI タスクがモバイルおよび Web で実行可能に",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5DYm5oSXRJTURDaklya2hZMWlZTEotdTlvNy1tMUU2aEhtU3c5TXpwMzJuOVExdEYyS0ZkU1VEU2tYZ0o2WVdqdW1qWTJ5VVBBZnRydkp4aFpVN05Qdi1rTm5aMkJIMEVKN0V0OFIzWksyQzRKYUdzYUVZMEZ0LXM?oc=5",
+      "reason": "モバイル/Web展開は確認したが、採用上位5件に比べると一次情報距離が遠く、同日のAnthropic関連記事の中では優先度を下げた"
+    },
+    {
+      "title": "グーグル、Gemini 3.5 Proの発表を7月17日に延期――アーキテクチャを完全再構築",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1yZWZ4bmVMRE9IMWxFblVZOEQ5S09FWGplUkpaaVVuSjdCYzJzTlVKaHUxT3FlTUlhYmtyWUE4WFh2ejRoZ1R0R19Ld2hRbk5FMEJUREExTXFTVTlLaEVFZUpxeXc3TWZUVG9EUkYyQTJvY3Fj?oc=5",
+      "reason": "二次ソース色が強く、発表延期の裏付けを当日中に十分取れなかったため採用を見送った"
+    },
+    {
+      "title": "Gemini、米国でコミッション無料の株式取引を開始(NADA NEWS)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNTC1VMk56MHdHalRwQm5UOTRDbEdkQzY1MVF2NzZBakxNUTg5ZnowN3MzbjdhOVhpUDdpMkEzeTJFSHZYUlMyaDJGMmdZcWktcDNiSy1NRHZfY3cyTDJPcy0xS3ltSUhyVHQ1aWJHOS1ic0Rlc0lvS0hpMDhPMkJSd0VudFMtZnc?oc=5",
+      "reason": "GoogleのGeminiではなく同名金融ブランドの話題で、AIカテゴリの対象外と判断した"
+    },
+    {
+      "title": "町工場の婿専務、Claudeで1億円システム自作 寸法管理など30メニュー",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9KekZxck55bElOZ3hRYlRfRF90aWdpMUltbnlIVVozc2E3ZFZESzVHVlFBUHNWR0VDbGtuRmxFc3MtS1MyVHp0bmdTZi1hVVhmMVdCT3FhR2I5SnZpNFBicHNXZnltQXM?oc=5",
+      "reason": "導入事例としては強いが、単一企業の事例であり、主要プラットフォームの供給戦略やモデル研究公開を優先した"
+    },
+    {
+      "title": "AIエージェントの消費エネルギー、通常の生成AIの最大136倍…韓国研究チームが試算 ｜Seizo Trend",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE9nVFFkU0NHX2FXQ2tob3RPQ1VFM095TmtlTG8xUnd4dXAwSFpGOEhRRUhnU3hQVTFUZnF2YmJBVklaUWFzSFh5QzNXeDF2bUk?oc=5",
+      "reason": "7月7日号で既に近い研究を掲載済みで、新規材料が薄い follow-up と判断した"
+    }
+  ]
+}
