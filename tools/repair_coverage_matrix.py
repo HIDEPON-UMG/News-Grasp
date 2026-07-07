@@ -39,6 +39,8 @@ class RepairDecision:
     verify_gate: str = ""
     status_on_failure: str = ""
     artifact_paths: tuple[str, ...] = ()
+    issue_date: str = ""
+    category: str = ""
     external_kind: str = ""
     external_system: str = ""
     evidence: dict[str, Any] = field(default_factory=dict)
@@ -68,6 +70,8 @@ class CoverageRow:
             verify_gate=self.verify_gate or issue.gate_id,
             status_on_failure=status_override or self.status_on_failure,
             artifact_paths=issue.artifact_paths,
+            issue_date=issue.issue_date,
+            category=issue.category,
             external_kind=str(issue.evidence.get("external_kind") or self.external_kind),
             external_system=str(issue.evidence.get("external_system") or self.external_system),
             evidence=dict(issue.evidence),
@@ -167,6 +171,16 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         ),
         "url-liveness",
         "blocked_refill_unresolved",
+    ),
+    CoverageRow(
+        "summary-reflection",
+        "missing_artifact",
+        RepairClass.LLM_GENERATE_MISSING_ARTIFACT,
+        "llm-missing-generated-artifact",
+        ("required generated artifact only",),
+        "summary-reflection",
+        "blocked_repair_budget_exhausted",
+        reason="missing_artifact",
     ),
     CoverageRow(
         "daily-quality",
@@ -689,6 +703,9 @@ SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
 DIGEST_ARTIFACT_RE = re.compile(
     r"(?P<artifact>digest[\\/]+(?P<folder>[^\\/:\s]+)[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-[^\\/:\s]+\.md):"
 )
+SUMMARY_DIGEST_MISSING_RE = re.compile(
+    r"Summary digest が存在しません:\s*(?P<artifact>digest[\\/]+Summary[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})\.md)"
+)
 DIGEST_FOLDER_TO_CATEGORY = {
     "FX": "fx",
     "AI": "ai",
@@ -737,6 +754,18 @@ def _digest_artifact_metadata(output: str) -> dict[str, Any]:
     }
 
 
+def _summary_digest_missing_metadata(output: str) -> dict[str, Any]:
+    match = SUMMARY_DIGEST_MISSING_RE.search(output)
+    if not match:
+        return {}
+    return {
+        "artifact_paths": (_repo_relative_artifact(match.group("artifact")),),
+        "issue_date": match.group("issue"),
+        "category": "summary",
+        "evidence": {"typed_reason": "missing_artifact", "category": "summary"},
+    }
+
+
 def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
     if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(output) or (
@@ -755,6 +784,8 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "date_evidence_source_missing"
     if "deepdive_structure_invalid" in text:
         return "deepdive_structure_invalid"
+    if SUMMARY_DIGEST_MISSING_RE.search(output):
+        return "missing_artifact"
     if "missing_artifact" in text:
         return "missing_artifact"
     if "card #" in text and "lacks required emphasis" in text:
@@ -837,7 +868,11 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
     if issue_lines:
         issues: list[RepairIssue] = []
         for line in issue_lines:
-            metadata = _search_audit_count_mismatch_metadata(line) or _digest_artifact_metadata(line)
+            metadata = (
+                _search_audit_count_mismatch_metadata(line)
+                or _summary_digest_missing_metadata(line)
+                or _digest_artifact_metadata(line)
+            )
             issues.append(
                 RepairIssue(
                     gate_id=gate_id,
@@ -851,7 +886,11 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                 )
             )
         return issues
-    metadata = _search_audit_count_mismatch_metadata(output) or _digest_artifact_metadata(output)
+    metadata = (
+        _search_audit_count_mismatch_metadata(output)
+        or _summary_digest_missing_metadata(output)
+        or _digest_artifact_metadata(output)
+    )
     return [
         RepairIssue(
             gate_id=gate_id,

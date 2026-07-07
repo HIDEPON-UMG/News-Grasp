@@ -34,6 +34,8 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-06-26",
         "2026-07-04",
         "2026-07-05",
+        "2026-07-06",
+        "2026-07-07",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -62,6 +64,8 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "publish boundary and distribution manifest",
         "multi-stage repair and deploy convergence boundary",
         "publish convergence and state reconciliation boundary",
+        "repair decision routing and report fidelity boundary",
+        "summary materialize and compound repair routing boundary",
     }
 
     for scenario in scenarios:
@@ -194,6 +198,7 @@ def test_compound_failure_matrix_covers_interaction_dimensions() -> None:
         "multi_gate_repair_before_publish_boundary",
         "external_block_plus_local_repair",
         "weekday_inventory_plus_distribution_manifest",
+        "summary_materialize_missing_plus_downstream_repair_blockers",
     }
     assert any(
         {"record-schema", "residual-schema"} <= set(scenario.gates)
@@ -202,6 +207,11 @@ def test_compound_failure_matrix_covers_interaction_dimensions() -> None:
     )
     assert any(
         scenario.no_publish_required and "fallback_publish" in scenario.forbidden_public_actions
+        for scenario in scenarios
+    )
+    assert any(
+        {"summary-reflection", "generation-quality", "record-schema", "pytest-static"} <= set(scenario.gates)
+        and scenario.expected_status == "green_after_compound_repair"
         for scenario in scenarios
     )
     for scenario in scenarios:

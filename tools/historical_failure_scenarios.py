@@ -307,6 +307,26 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "data/gate_attempts/2026-07-05.json",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-06",
+        "daily-quality / auto-repair classify / incident report",
+        "selected_total digest count mismatch was classified as unknown and stale incident report evidence copied prior incident facts",
+        "repair decision routing and report fidelity boundary",
+        "selected_total mismatch must have a structured deterministic issue code and incident reports must reject stale evidence sentinels",
+        "daily-quality selected_total fixture, orchestrator classify fixture, runtime repair cycle, and incident report sentinel validator",
+        "docs/incidents/2026-07-06-human-caused-recurrence.md",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-07-07",
+        "summary-reflection / daily-quality / generation-quality / record-schema / pytest-static",
+        "newsroom editor preview contained summary_markdown and append_records, but the runner did not materialize them before summary-reflection",
+        "summary materialize and compound repair routing boundary",
+        "editor success must create official Summary and article ledger artifacts, and downstream repair blockers must stay typed instead of collapsing to unknown",
+        "summary missing-artifact classifier fixture, editor materialize contract, compound repair scenario, and public recovery proof",
+        "docs/incidents/2026-07-07-summary-materialize-recovery.md",
+        "fixture_required",
+    ),
 )
 
 
@@ -411,6 +431,26 @@ COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
         forbidden_public_actions=(),
         expected_status="green_after_inventory_manifest_reverify",
         evidence_basis=("weekday category schedule", "distribution manifest commit/date anchor"),
+    ),
+    CompoundFailureScenario(
+        scenario_id="summary_materialize_missing_plus_downstream_repair_blockers",
+        dimensions=(
+            "editor preview",
+            "summary materialize",
+            "missing generated artifact",
+            "record thumb repair",
+            "pytest-static isolation",
+        ),
+        gates=("summary-reflection", "daily-quality", "generation-quality", "record-schema", "pytest-static"),
+        no_publish_required=True,
+        forbidden_public_actions=("fallback_publish",),
+        expected_status="green_after_compound_repair",
+        evidence_basis=(
+            "2026-07-07 summary-reflection missing Summary",
+            "generation-quality missing audio script typed artifact",
+            "record-schema thumb key repair",
+            "pytest-static external URL isolation",
+        ),
     ),
 )
 

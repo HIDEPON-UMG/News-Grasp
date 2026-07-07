@@ -229,6 +229,19 @@ def test_generation_quality_missing_artifact_json_routes_to_llm_generation() -> 
     assert decision.evidence["typed_reason"] == "missing_artifact"
 
 
+def test_summary_reflection_missing_summary_routes_to_typed_missing_artifact() -> None:
+    output = "ERROR: Summary digest が存在しません: digest\\Summary\\2026-07-07.md"
+
+    decision = classify_gate_output("summary-reflection", output)
+
+    assert decision.issue_code == "missing_artifact"
+    assert decision.repair_class == RepairClass.LLM_GENERATE_MISSING_ARTIFACT
+    assert decision.artifact_paths == ("digest/Summary/2026-07-07.md",)
+    assert decision.issue_date == "2026-07-07"
+    assert decision.category == "summary"
+    assert decision.evidence["typed_reason"] == "missing_artifact"
+
+
 def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -> None:
     output = "\n".join(
         [
