@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>AIエージェント、電力採算の入口へ — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="AIエージェントのSaaS組み込みは、商流を広げながら電力と待ち時間をどう設計課題に変えるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-08/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="AIエージェント、電力採算の入口へ">
+<meta property="og:description" content="AIエージェントのSaaS組み込みは、商流を広げながら電力と待ち時間をどう設計課題に変えるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-08/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AIエージェント、電力採算の入口へ">
+<meta name="twitter:description" content="AIエージェントのSaaS組み込みは、商流を広げながら電力と待ち時間をどう設計課題に変えるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #2D5BB8;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(45,91,184,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(45,91,184,0.22);
+  --accent-underline: rgba(45,91,184,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+.dd-audio { max-width: 760px; margin: 26px 0 0; padding: 16px 18px; border: 1px solid var(--border);
+            background: rgba(255,255,255,.42); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.dd-audio__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 10px; }
+.dd-audio__kicker,
+.dd-audio__date { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--soft); }
+.dd-audio__kicker { color: var(--accent); }
+.dd-audio__title { font-family: var(--serif); font-size: 18px; font-weight: 800; color: var(--ink); }
+.dd-audio audio { display: block; width: 100%; min-width: 0; }
+.dd-audio__rates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dd-audio__rate { min-width: 52px; border: 1px solid var(--border); background: var(--paper);
+                  color: var(--ink); padding: 4px 10px; font-family: var(--mono); font-size: 11px;
+                  font-weight: 700; letter-spacing: .08em; }
+.dd-audio__rate.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.dd-audio__rate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-audio { padding: 14px; }
+  .dd-audio__rates { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .dd-audio__rate { min-width: 0; width: 100%; padding: 4px 4px; font-size: 10px; letter-spacing: .04em; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260708</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">◆</span>ARTIFICIAL INTELLIGENCE · AI</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.07.08</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260708</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">9 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">AIエージェント、電力採算の入口へ</h1>
+
+      <section class="dd-audio" aria-label="DeepDive解説対談">
+        <div class="dd-audio__meta">
+          <span class="dd-audio__kicker">LISTEN</span>
+          <span class="dd-audio__title">DeepDive 解説対談</span>
+          <span class="dd-audio__date">2026-07-08</span>
+        </div>
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-07-08.mp3?v=61db7d4726b1" type="audio/mpeg">
+        </audio>
+        <div class="dd-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="dd-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </section>
+
+      <p class="dd-hero__theme">AIエージェントのSaaS組み込みは、商流を広げながら電力と待ち時間をどう設計課題に変えるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#daily</span><span>#news-grasp</span><span>#issue-20260708</span><span>#AIエージェント</span><span>#Square</span><span>#OpenAI</span><span>#Anthropic</span><span>#KAIST</span><span>#IEA</span><span>#data-centers</span></div>
+    </header>
+
+
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+
+        <li class="dd-related__item" style="border-left-color: #2D5BB8">
+
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #2D5BB8">波及</span>
+            <span class="dd-related__chip">AI基盤 -&gt; 利用時電力</span>
+          </div>
+
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-04/" style="border-bottom-color: #2D5BB8">AI基盤、資本と統治の再設計へ</a>
+            <span class="dd-related__date">2026.07.04</span>
+          </div>
+          <p class="dd-related__change">前回は公的持分、専用チップ、外販クラウドという供給側の統治を扱った。今回の変化点は、AIエージェントが店舗注文や業務導線へ入り、使われるたびの電力、待ち時間、手数料設計が論点化したことだ。</p>
+        </li>
+
+        <li class="dd-related__item" style="border-left-color: #2D5BB8">
+
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #2D5BB8">波及</span>
+            <span class="dd-related__chip">配布導線 -&gt; 商取引</span>
+          </div>
+
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-06-19/" style="border-bottom-color: #2D5BB8">AIの勝負は賢さから配布と可用性へ</a>
+            <span class="dd-related__date">2026.06.19</span>
+          </div>
+          <p class="dd-related__change">前回はAI入口競争を扱った。今回の変化点は、AIが検索入口だけでなくPOS、注文、店舗運営の取引面へ入り、配布の勝負が電力採算と運用可用性を同時に問う段階へ進んだことだ。</p>
+        </li>
+
+      </ul>
+    </aside>
+
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><strong class="emph-bold">AIエージェント</strong>をめぐる焦点は、<strong>モデルの賢さ</strong>から<strong>使われるたびの採算</strong>へ移っている。前回はAI基盤の資本統治を見たが、今回の変化点は、<strong class="emph-bold">Square</strong>がChatGPTとClaudeを注文導線へつなぎ、同じ週に<strong class="emph-bold">KAIST</strong>がエージェント実行の電力負荷を数値で示したことだ。つまり論点は、<span class="emph-und">AIをどこへ置くかではなく、何回動かせる設計にするか</span>へ移った。</p><p><strong class="emph-bold">Square</strong>の発表が示したのは、AIエージェントが<strong>単なるチャットUI</strong>ではなく<strong>POSと注文管理へ入る商流</strong>になり始めたことだ。米国のFood &amp; Beverage店舗では、ChatGPTやClaude上で発見、メニュー閲覧、注文ができ、注文はSquare Online Ordering、POS、Kitchen Display Systemへ流れる。店舗から見ると、<span class="emph-und">AI入口は新しい広告枠ではなく、新しい販売チャネル</span>になる。</p><p>ただし<strong class="emph-bold">KAIST</strong>の計測は、この販売チャネルが<strong>無料の検索流入</strong>では済まないことを示す。エージェントは計画、ツール呼び出し、再試行を重ねるため、待ち時間は最大<strong>153.7倍</strong>、外部ツール待ちでGPUが遊ぶ時間は<strong>54.5%</strong>に達する。会話が売上を作るほど、<span class="emph-und">売上1件あたりの推論費と電力費を誰が負担するか</span>が表に出る。</p><p>このため<strong class="emph-bold">OpenAI</strong>と<strong class="emph-bold">Anthropic</strong>の競争は、モデル精度やアプリ配布だけでなく、<strong>注文・照会・予約のような高頻度処理をどこまで軽量化できるか</strong>へ広がる。IEAが指摘するように、データセンター側は2024年時点で世界電力の約<strong>1.5%</strong>を使い、2030年には約<strong>3%</strong>へ近づく。企業導入の実務では、<span class="emph-und">AIエージェントを全件に走らせる設計は、可用性とコストの両方で危うい</span>。</p></div>
+      <div class="dd-exhibits">
+
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">02</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>KAISTチームがHPCA 2026でAIエージェントの計算・電力コストを発表</p>
+                  <a href="https://news.kaist.ac.kr/newsen/"><span class="src">KAIST NEWS CENTER</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">07.01</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>SquareがChatGPTアプリとClaudeプラグインを発表し、米国F&amp;B店舗の注文導線をAIへ接続</p>
+                  <a href="https://squareup.com/us/en/press/claude-chatgpt-integrations"><span class="src">Square</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">07.06</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>KAISTがAIエージェントの隠れた電力コストを公表</p>
+                  <a href="https://news.kaist.ac.kr/newsen/"><span class="src">KAIST NEWS CENTER</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">07</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>IEAがデータセンター電力需要の更新見通しを示し、AI向け電力密度と系統制約を論点化</p>
+                  <a href="https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary"><span class="src">IEA</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+            </div>
+          </figure>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+
+            <div class="dd-player">
+              <div class="dd-player__name">Square</div>
+              <div class="dd-player__role">POS・注文基盤</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">ChatGPTアプリとClaudeプラグインで注文導線を既存POSへ接続</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">店舗側の追加開発や追加マーケットプレイス手数料を抑え、AI経由の発見と注文を取り込む</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">OpenAI / Anthropic</div>
+              <div class="dd-player__role">AI入口事業者</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">ChatGPTとClaudeを外部サービスの発見・注文面へ広げる</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">会話面を消費者の購買起点へ近づけ、配布導線を広げる</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">KAIST</div>
+              <div class="dd-player__role">AIインフラ計測の研究主体</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">70BモデルのAIエージェントで1リクエスト348.41Wh、通常推論比136.5倍を示した</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">エージェント普及の制約をGPU、待ち時間、電力の問題として可視化する</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">IEA</div>
+              <div class="dd-player__role">エネルギー需要見通しの国際機関</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">データセンター電力需要が2025年485TWhから2030年950TWhへ倍増する見通しを示した</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">AI導入の速度と電力・系統整備の速度差を警告する</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">店舗・業務部門</div>
+              <div class="dd-player__role">導入企業・利用現場</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">AI経由の注文、問い合わせ、業務自動化を受け入れる</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">売上機会と運用負荷を同時に評価する必要がある</p>
+            </div>
+
+          </div>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">AIエージェント商流と電力制約</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 940" width="1080" height="940" style="display:block;background:#FAF7F0" role="img" aria-label="AIエージェント商流と電力制約"><line x1="312.8" y1="413.7" x2="418.8" y2="742.3" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="418.8,742.3 411.8,735.1 420.3,732.4" fill="#2E6B52"/><line x1="329.0" y1="636.0" x2="402.6" y2="750.0" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="402.6,750.0 393.9,744.9 401.5,740.0" fill="#2E6B52"/><line x1="509.0" y1="808.0" x2="585.0" y2="808.0" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="585.0,808.0 576.0,812.5 576.0,803.5" fill="#2D5BB8"/><line x1="291.6" y1="417.0" x2="291.6" y2="509.0" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="291.6,509.0 287.1,500.0 296.1,500.0" fill="#8E2A19"/><polygon points="291.6,417.0 296.1,426.0 287.1,426.0" fill="#8E2A19"/><line x1="719.4" y1="348.0" x2="360.6" y2="348.0" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="360.6,348.0 369.6,343.5 369.6,352.5" fill="#2D5BB8"/><line x1="725.8" y1="377.0" x2="354.2" y2="549.0" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="354.2,549.0 360.5,541.1 364.3,549.3" fill="#2D5BB8"/><line x1="788.4" y1="173.0" x2="788.4" y2="279.0" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="788.4,279.0 783.9,270.0 792.9,270.0" fill="#2D5BB8"/><line x1="291.6" y1="398.0" x2="291.6" y2="430.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(255.5,450.0)"><rect width="146.5" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> ChatGPT注文</text></g><g transform="translate(296.3,680.0)"><rect width="139.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Claude注文</text></g><g transform="translate(468.5,795.0)"><rect width="116.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> POS同期</text></g><g transform="translate(218.4,417.0)"><rect width="146.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> AI入口で競合</text></g><g transform="translate(480.5,515.0)"><rect width="119.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 推論基盤</text></g><g transform="translate(728.9,213.0)"><rect width="119.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 電力供給</text></g><circle cx="291.6" cy="348.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="291.6" y="344.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">OpenAI</text><text x="291.6" y="366.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AI入口</text><circle cx="291.6" cy="578.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="291.6" y="574.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">Anthropic</text><text x="291.6" y="594.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">AI入口</text><circle cx="440.0" cy="808.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="440.0" y="804.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">Square</text><text x="440.0" y="826.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">SaaS/POS</text><circle cx="640.0" cy="808.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="640.0" y="804.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="11.4" fill="#1A1A1A" letter-spacing="-0.5">店舗・業務部門</text><text x="640.0" y="819.1" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">利用現場</text><circle cx="788.4" cy="348.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="788.4" y="344.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="13.1" fill="#1A1A1A" letter-spacing="-0.5">AIデータセンター</text><text x="788.4" y="360.1" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">基盤</text><circle cx="788.4" cy="118.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/><text x="788.4" y="114.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">電力網</text><text x="788.4" y="133.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">基盤</text></svg></div>
+
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+
+            </div>
+
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://squareup.com/us/en/press/claude-chatgpt-integrations">*3 Square</a> <a class="cite" href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">*4 IEA</a> <a class="cite" href="https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary">*5 IEA</a></span></div>
+          </figure>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>データの読み筋は、<strong class="emph-bold">AIエージェント</strong>のコストが<strong>モデル単価だけでは測れない</strong>という点にある。70Bモデルの単発推論は<strong>2.55Wh</strong>だが、Reflexion型のエージェントでは<strong>348.41Wh</strong>まで跳ねる。これは「高性能だから高い」ではなく、計画、検索、ツール待ち、再試行が積み上がる構造なので、<span class="emph-und">業務プロセス側の設計でしか抑えにくいコスト</span>だ。</p><p><strong class="emph-bold">Square</strong>型のAI注文導線は、売上機会としては強い。店舗は<strong>追加設定なし</strong>でAI経由の発見と注文を取り込め、注文元もレポートで見えるため、広告や配送アプリより運用に組み込みやすい。一方で利用が伸びるほど、<strong class="emph-bold">OpenAI</strong>や<strong class="emph-bold">Anthropic</strong>側では高頻度のメニュー照会、在庫確認、注文確定をエージェントが処理する。<span class="emph-und">手数料ゼロに見える導入ほど、背後の推論原価を別の形で回収する圧力が残る</span>。</p></div>
+
+      <div class="dd-charts">
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">世界データセンター電力需要の増加見通し</span></figcaption>
+          <div class="dd-chart__note">AI向けDC需要は2025年に50%増</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="世界データセンター電力需要の増加見通し"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">TWh</text><polyline points="104.0,149.6 280.0,138.7 456.0,66.5" fill="none" stroke="#2D5BB8" stroke-width="2.5"/><circle cx="104.0" cy="149.6" r="4" fill="#2D5BB8"/><text x="104.0" y="141.6" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">415</text><circle cx="280.0" cy="138.7" r="4" fill="#2D5BB8"/><text x="280.0" y="130.7" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">485</text><circle cx="456.0" cy="66.5" r="4" fill="#2D5BB8"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">950</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2024実績</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2025推計</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2030予測</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ AI向けDC需要は2025年に50%増</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 2030年に約3%の世界電力需要</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">*4 IEA</a> <a class="cite" href="https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary">*5 IEA</a></span></div>
+        </figure>
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">70Bモデル利用時の1リクエスト電力消費</span></figcaption>
+          <div class="dd-chart__note">Reflexionは単発推論比136.5倍</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="70Bモデル利用時の1リクエスト電力消費"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">Wh/query</text><rect x="49.4" y="212.9" width="109.1" height="1.1" fill="#2D5BB8"/><text x="104.0" y="204.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">2.55</text><rect x="225.4" y="146.9" width="109.1" height="67.1" fill="#2D5BB8"/><text x="280.0" y="138.9" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">158.48</text><rect x="401.4" y="66.5" width="109.1" height="147.5" fill="#2D5BB8"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">348.41</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">ShareGPT単発</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">LATS</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Reflexion</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ Reflexionは単発推論比136.5倍</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ LATSも62.1倍</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://arxiv.org/html/2506.04301v1">*1 arXiv</a></span></div>
+        </figure>
+
+      </div>
+
+
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">AIエージェント導入で見るべき採算指標</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>指標</th><th>値</th><th>読み方</th><th>出典</th></tr></thead>
+              <tbody>
+
+                <tr>
+
+                  <td class="head">70B単発推論</td>
+
+                  <td class="val">2.55 Wh/query</td>
+
+                  <td class="val">通常チャットの比較基準</td>
+
+                  <td class="src">arXiv</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">70B Reflexion</td>
+
+                  <td class="val">348.41 Wh/query</td>
+
+                  <td class="val">複雑タスクでは1回の実行が通常推論比136.5倍まで膨らむ</td>
+
+                  <td class="src">arXiv / KAIST</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">GPU待機時間</td>
+
+                  <td class="val">最大54.5%</td>
+
+                  <td class="val">外部ツール待ちがGPU効率を下げ、単純なGPU増設だけでは解けない</td>
+
+                  <td class="src">KAIST</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">将来トラフィック仮定</td>
+
+                  <td class="val">13.7 billion requests/day -&gt; 198.9 GW</td>
+
+                  <td class="val">検索規模まで普及すると電力系統側の制約が主論点になる</td>
+
+                  <td class="src">arXiv / KAIST</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">世界データセンター電力需要</td>
+
+                  <td class="val">2025年485TWh -&gt; 2030年950TWh</td>
+
+                  <td class="val">AI導入の速度に電力供給・系統整備が追いつくかを見る</td>
+
+                  <td class="src">IEA</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">Squareの店舗側条件</td>
+
+                  <td class="val">追加セットアップなし、追加Square marketplace commissionなし</td>
+
+                  <td class="val">普及しやすい分、利用量制御と原価配賦が後から効く</td>
+
+                  <td class="src">Square</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://arxiv.org/html/2506.04301v1">*1 arXiv</a> <a class="cite" href="https://squareup.com/us/en/press/claude-chatgpt-integrations">*3 Square</a> <a class="cite" href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">*4 IEA</a> <a class="cite" href="https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary">*5 IEA</a></span></div>
+        </figure>
+      </div>
+
+      <div class="dd-prose"><p>IEAの見通しは、この問題が一企業のクラウド請求に閉じないことを示す。世界のデータセンター電力消費は2024年の<strong>415TWh</strong>から2030年に<strong>945から950TWh</strong>級へ増える見込みで、AI向けデータセンターはさらに速く伸びる。<strong class="emph-bold">KAIST</strong>のエージェント計測と合わせると、企業が見るべき指標はAPI単価だけでなく、<span class="emph-und">1件の注文や1件の調査に何回モデルを呼ぶか</span>になる。</p><p>したがって実務上の論点は、<strong class="emph-bold">AIエージェント</strong>を<strong>全顧客接点へ常時開放</strong>するか、<strong>高価値取引だけに限定</strong>するかだ。SquareのようなSaaS事業者は導入摩擦を下げたいが、CIOやCFOは電力・GPU・待ち時間・問い合わせ単価を予算化しなければならない。<span class="emph-und">「AIを入れる」ではなく「AIを何回まで走らせるか」が設計書に入る段階</span>に入った。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>企業はAIエージェントをSaaS、POS、業務ワークフローへ組み込む際、どの処理を従量課金・制限・省電力設計の対象にするべきか。</p>
+          </div>
+          <div class="dd-decision__opts">
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">高価値注文・高単価業務だけにエージェントを限定する</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">全顧客接点へ開放し、利用量を先に取りに行く</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">軽量モデル、キャッシュ、人間確認を組み合わせて段階的に自動化する</p>
+            </div>
+
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026年下期のAIチャネル本番導入とデータセンター容量契約更新</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+
+              <ul class="dd-decision__deciders"><li>SaaS/POS事業者</li><li>OpenAI・AnthropicなどAI入口事業者</li><li>導入企業のCIO・CFO・店舗運営責任者</li></ul>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dd-prose"><p>短期で最も現実的なのは、<strong class="emph-bold">AIエージェント</strong>を<strong>全件自動化の魔法</strong>として扱わず、<strong>高価値・高摩擦の処理</strong>へ絞ることだ。全顧客接点へ開放すればデータは早く集まるが、低単価の照会まで348Wh級の処理を走らせると、売上より先に電力・GPU・待ち時間が増える。<span class="emph-und">導入初期は、注文確定や複雑な調査だけをエージェント化する線引きが合理的</span>だ。</p><p>中期では<strong class="emph-bold">Square</strong>のような事業者が、<strong>キャッシュ済みメニュー応答</strong>、<strong>軽量モデルでの前処理</strong>、<strong>人間確認つきの確定処理</strong>を標準部品にできるかを見る。OpenAIとAnthropicはAI入口で競うが、導入企業のCFOから見れば、勝者は賢いモデルではなく、電力と待ち時間を制御できる運用面だ。<span class="emph-und">エージェントの普及は、SaaSの機能比較からワークロード設計の比較へ移る</span>。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">AIエージェント</strong>は、SquareのChatGPT/Claude注文連携で<strong>店舗の販売チャネル</strong>へ入り始めた。一方で<strong class="emph-bold">KAIST</strong>は、70Bモデルのエージェントが通常推論比<strong>最大136.5倍</strong>の電力を使うと示した。IEAの電力需要見通しを合わせると、次の論点は<span class="emph-und">AIを導入するかではなく、どの業務で何回だけ走らせるか</span>になる。</p>
+        <div class="watermark">❖</div>
+      </div>
+
+
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+
+
+          <a class="dd-source" href="https://arxiv.org/html/2506.04301v1">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">arXiv</span>「The Cost of Dynamic Reasoning: Demystifying AI Agents and Test-Time Scaling from an AI Infrastructure Perspective」(2025-06) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://news.kaist.ac.kr/newsen/">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">KAIST NEWS CENTER</span>「KAIST Identifies the Hidden Energy Cost of AI Agents for the First Time」(2026-07) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://squareup.com/us/en/press/claude-chatgpt-integrations">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Square</span>「Square Introduces New ChatGPT and Claude Integrations, Helping Sellers Reach Customers Through AI-Powered Discovery」(2026-07-01) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">IEA</span>「Energy demand from AI」(2026) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">IEA</span>「Key Questions on Energy and AI, Executive summary」(2026) <span class="ext">↗</span></span>
+          </a>
+
+
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.dd-audio').forEach(function (block) {
+  var audio = block.querySelector('audio');
+  var buttons = block.querySelectorAll('[data-rate]');
+  if (!audio || !buttons.length) return;
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var rate = parseFloat(button.getAttribute('data-rate') || '1');
+      audio.playbackRate = rate;
+      buttons.forEach(function (b) { b.classList.toggle('is-active', b === button); });
+    });
+  });
+});
+</script>
+</body>
+</html>
