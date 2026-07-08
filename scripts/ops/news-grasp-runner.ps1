@@ -149,6 +149,12 @@ $RepoManagedWatcher = Join-Path $RepoDir 'scripts\ops\watch-news-grasp-runner.ps
 $PublicBaseUrl = 'https://hidepon-umg.github.io/News-Grasp/'
 $InvokedLog = Join-Path $env:USERPROFILE 'bin\news-grasp-invoked.log'
 $StateFile  = Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'
+$LiveBinDir = if ($PSCommandPath) { Split-Path -Parent $PSCommandPath } else { Join-Path $env:USERPROFILE 'bin' }
+$BootstrapSmokeStateFile = Join-Path $LiveBinDir 'ng-smoke-state.json'
+$BootstrapSmokeLogDir = Join-Path $LiveBinDir 'ng-smoke-logs'
+$BootstrapSmokeEarliestMinutes = 5 * 60 + 55
+$BootstrapSmokeFreshnessMinutes = 15
+$RunnerSyncReexecEnvVar = 'NEWS_GRASP_RUNNER_SYNC_REEXEC'
 $MaxParallelReporterJobs = 7
 
 if ($CodexWrapperOverride) { $CodexWrapper = $CodexWrapperOverride }
@@ -551,6 +557,107 @@ function Write-Log {
     }
 }
 
+function Test-PreRunBootstrapSmokeMarker {
+    if (-not (Test-Path -LiteralPath $BootstrapSmokeStateFile)) {
+        return $false
+    }
+    try {
+        $state = Get-Content -LiteralPath $BootstrapSmokeStateFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ([string]$state.status -ne 'smoke_ok') {
+            return $false
+        }
+        $item = Get-Item -LiteralPath $BootstrapSmokeStateFile -ErrorAction Stop
+        $updatedAt = $null
+        if ($state.updated_at) {
+            try { $updatedAt = [datetime]::Parse([string]$state.updated_at) } catch { $updatedAt = $null }
+        }
+        if (-not $updatedAt) {
+            $updatedAt = $item.LastWriteTime
+        }
+        $now = Get-Date
+        $markerMinutes = $updatedAt.Hour * 60 + $updatedAt.Minute
+        $mtimeMinutes = $item.LastWriteTime.Hour * 60 + $item.LastWriteTime.Minute
+        return (
+            $updatedAt.ToString('yyyy-MM-dd') -eq $DateStamp -and
+            $item.LastWriteTime.ToString('yyyy-MM-dd') -eq $DateStamp -and
+            $markerMinutes -ge $BootstrapSmokeEarliestMinutes -and
+            $mtimeMinutes -ge $BootstrapSmokeEarliestMinutes -and
+            ([int]($now - $updatedAt).TotalMinutes) -le $BootstrapSmokeFreshnessMinutes -and
+            ([int]($now - $item.LastWriteTime).TotalMinutes) -le $BootstrapSmokeFreshnessMinutes
+        )
+    } catch {
+        Write-Log "WARN: pre-run bootstrap marker unreadable path=$BootstrapSmokeStateFile reason=$($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Test-NormalDailyPublishRun {
+    return (
+        (-not $SmokeTest) -and
+        (-not $PreflightOnly) -and
+        (-not $RecoverOnly) -and
+        (-not $NoPublish) -and
+        (-not $NoPush) -and
+        (-not $Stage2EditorSmokeOnly) -and
+        (-not $StopAfterEditorStart) -and
+        (-not $StopBeforeDeepDive) -and
+        (-not $ResumeFromStage)
+    )
+}
+
+function Assert-PreRunBootstrapInterlock {
+    param([switch] $ForceRepair)
+
+    if (-not (Test-NormalDailyPublishRun)) {
+        Write-Log 'pre-run bootstrap interlock skipped: not a normal daily publish run'
+        return
+    }
+    if ((-not $ForceRepair) -and (Test-PreRunBootstrapSmokeMarker)) {
+        Write-Log "pre-run bootstrap interlock OK: marker=$BootstrapSmokeStateFile"
+        return
+    }
+    $bootstrapPath = Join-Path $LiveBinDir 'news-grasp-bootstrap.ps1'
+    if (-not (Test-Path -LiteralPath $bootstrapPath)) {
+        Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "pre-run bootstrap missing: $bootstrapPath" -ExitCode 72
+    }
+    $reason = if ($ForceRepair) { 'forced repo/live drift repair' } else { 'marker missing or stale' }
+    Write-Log "pre-run bootstrap interlock $reason; running bootstrap smoke path=$bootstrapPath"
+    $bootstrapArgs = @(
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        $bootstrapPath,
+        '-Start',
+        '-SmokeTest',
+        '-PollSeconds',
+        '1',
+        '-TimeoutMinutes',
+        '2',
+        '-StateFile',
+        $BootstrapSmokeStateFile,
+        '-LogDir',
+        $BootstrapSmokeLogDir,
+        '-RepoDir',
+        $RepoDir,
+        '-BinDir',
+        $LiveBinDir
+    )
+    try {
+        $proc = Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs -WindowStyle Hidden -PassThru -Wait
+    } catch {
+        Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "pre-run bootstrap launch failed: $($_.Exception.Message)" -ExitCode 72
+    }
+    if ($proc.ExitCode -ne 0) {
+        Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "pre-run bootstrap failed exit=$($proc.ExitCode)" -ExitCode 72
+    }
+    if (-not (Test-PreRunBootstrapSmokeMarker)) {
+        Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message 'pre-run bootstrap finished without fresh smoke_ok marker' -ExitCode 72
+    }
+    Write-Log "pre-run bootstrap interlock repaired startup path marker=$BootstrapSmokeStateFile"
+}
+
 function Convert-JsonStringArrayToStringList {
     param([string] $JsonText)
 
@@ -807,6 +914,32 @@ function Invoke-RunnerBinarySyncApprovalBlock {
     Exit-Runner -Status 'blocked_runner_sync_approval_required' -Message $message -ExitCode 72
 }
 
+function Invoke-SyncedRunnerReexec {
+    param([string] $Reason)
+
+    if ($env:NEWS_GRASP_RUNNER_SYNC_REEXEC -eq '1') {
+        Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "runner binary drift remains after synced runner reexec reason=$Reason" -ExitCode 72
+    }
+    $runnerArgs = Get-RunnerScriptArguments
+    Write-Log "runner binary drift repaired; relaunching synced runner reason=$Reason path=$PSCommandPath"
+    $previousSyncReexec = $env:NEWS_GRASP_RUNNER_SYNC_REEXEC
+    try {
+        $env:NEWS_GRASP_RUNNER_SYNC_REEXEC = '1'
+        $proc = Start-Process -FilePath 'powershell' -ArgumentList $runnerArgs -WindowStyle Hidden -PassThru -Wait
+        $exitCode = [int]$proc.ExitCode
+    } catch {
+        Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "synced runner reexec failed: $($_.Exception.Message)" -ExitCode 72
+    } finally {
+        if ($null -eq $previousSyncReexec) {
+            Remove-Item Env:\NEWS_GRASP_RUNNER_SYNC_REEXEC -ErrorAction SilentlyContinue
+        } else {
+            $env:NEWS_GRASP_RUNNER_SYNC_REEXEC = $previousSyncReexec
+        }
+    }
+    Write-Log "synced runner reexec completed exit=$exitCode"
+    exit $exitCode
+}
+
 function Assert-RunnerBinaryInSync {
     if ($RepoDirOverride) {
         Write-Log 'runner sync check skipped: RepoDirOverride is set'
@@ -823,6 +956,19 @@ function Assert-RunnerBinaryInSync {
     $taskAction = Get-ScheduledTaskActionSummary
     Write-Log "runner launch snapshot repo_dir=$RepoDir repo_head=$(& $GitExe -C $RepoDir rev-parse --short HEAD 2>$null) live_runner_sha=$liveRunnerSha repo_runner_sha=$repoRunnerSha repo_watcher_sha=$repoWatcherSha task_action=$taskAction"
     if ($liveRunnerSha -ne $repoRunnerSha) {
+        if (Test-NormalDailyPublishRun) {
+            if ($env:NEWS_GRASP_RUNNER_SYNC_REEXEC -eq '1') {
+                Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "runner binary drift remains after reexec live=$liveRunnerSha repo=$repoRunnerSha" -ExitCode 72
+            }
+            Write-Log "runner binary drift detected during normal daily run; forcing bootstrap self-repair before generation live=$liveRunnerSha repo=$repoRunnerSha"
+            Assert-PreRunBootstrapInterlock -ForceRepair
+            $liveRunnerShaAfterRepair = Get-FileSha256Hex -Path $PSCommandPath
+            $repoRunnerShaAfterRepair = Get-FileSha256Hex -Path $RepoManagedRunner
+            if (($liveRunnerShaAfterRepair) -and ($liveRunnerShaAfterRepair -eq $repoRunnerShaAfterRepair)) {
+                Invoke-SyncedRunnerReexec -Reason "repo/live runner drift repaired old_live=$liveRunnerSha repo=$repoRunnerShaAfterRepair"
+            }
+            Exit-Runner -Status 'blocked_startup_self_repair_failed' -Message "runner binary drift self-repair failed live=$liveRunnerShaAfterRepair repo=$repoRunnerShaAfterRepair" -ExitCode 72
+        }
         Invoke-RunnerBinarySyncApprovalBlock -LiveRunnerSha $liveRunnerSha -RepoRunnerSha $repoRunnerSha
     }
 }
@@ -2063,6 +2209,7 @@ Add-Content -Path $LogPath -Value '' -Encoding UTF8
 Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
+Assert-PreRunBootstrapInterlock
 Assert-RunnerBinaryInSync
 $IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive
 if ($IsE2EOrDryRun -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {

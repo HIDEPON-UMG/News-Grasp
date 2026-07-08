@@ -1375,8 +1375,8 @@ def test_reporter_codex_quota_uses_external_readiness_boundary() -> None:
     assert "terminalFailures" not in quota_block
 
 
-def test_runner_is_repo_managed_and_requires_approved_live_sync() -> None:
-    """bin 実行体 drift は勝手に上書きせず、backup + 明示承認 + rollback を要求する。"""
+def test_runner_is_repo_managed_and_requires_approved_live_sync_outside_normal_daily() -> None:
+    """手動・検証系の bin 実行体 drift は backup + 明示承認 + rollback を要求する。"""
     repo_runner = OPS_DIR / "news-grasp-runner.ps1"
     repo_watcher = OPS_DIR / "watch-news-grasp-runner.ps1"
     runner = repo_runner.read_text(encoding="utf-8-sig")
@@ -1390,8 +1390,6 @@ def test_runner_is_repo_managed_and_requires_approved_live_sync() -> None:
     assert "blocked_runner_sync_approval_required" in runner
     assert "backup + explicit approval + rollback plan" in runner
     assert "Copy-Item -LiteralPath $RepoManagedRunner -Destination $PSCommandPath -Force" not in runner
-    assert "NEWS_GRASP_RUNNER_SYNC_REEXEC" not in runner
-    assert "runner binary drift repaired; relaunching synced runner" not in runner
     assert "scripts\\ops\\news-grasp-runner.ps1" in runner
     assert "runner binary drift" in runner
     assert "Run scripts/ops/install-news-grasp-ops.ps1 before scheduled execution" not in runner
@@ -1458,8 +1456,55 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "Copy-Item -LiteralPath $destination -Destination" in text
     assert "Get-FileHash" in text
     assert "install-manifest.json" in text
+    assert "news-grasp-bootstrap.ps1" in text
+    assert "News-Grasp Bootstrap" in text
+    assert "register_failed_bootstrap_required" in text
+    assert "-SmokeTest -PollSeconds 1 -TimeoutMinutes 2" in text
+    assert "-StateFile ng-smoke-state.json -LogDir ng-smoke-logs" in text
     assert text.index("$BackupDir") < text.index("$files = @(")
     assert text.index("$BackupDir") < text.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
+    assert "Register-ScheduledTask" in text
+    assert "watch-news-grasp-runner.ps1" in text
+    assert "-Start" in text
+    assert "News-Grasp Runner" in text
+
+
+def test_watcher_repairs_live_ops_before_runner_start() -> None:
+    """6:00 入口の watcher は repo 管理 ops へ自己修復してから runner を起動する。"""
+    watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Repair-LiveOpsFromRepo" in watcher
+    assert "news-grasp-bootstrap.ps1" in watcher
+    assert "news-grasp-runner.ps1" in watcher
+    assert "watch-news-grasp-runner.ps1" in watcher
+    assert "news-grasp-deadman.ps1" in watcher
+    assert "auto-repair-manifest.json" in watcher
+    assert "Copy-Item -LiteralPath $source -Destination $destination -Force" in watcher
+    assert "before_sha256" in watcher
+    assert "after_sha256" in watcher
+    assert "Repair-LiveOpsFromRepo" in watcher.split("$proc = Start-RunnerProcess", 1)[0]
+
+
+def test_bootstrap_smoke_uses_isolated_state_and_backed_up_self_repair() -> None:
+    """05:55 bootstrap smoke は本番 state/log を汚染せず、live overwrite 証跡を残す。"""
+    bootstrap = OPS_DIR / "news-grasp-bootstrap.ps1"
+    text = bootstrap.read_text(encoding="utf-8-sig")
+
+    assert bootstrap.exists()
+    assert "build\\bootstrap-task-smoke\\state.json" in text
+    assert "build\\bootstrap-task-smoke\\logs" in text
+    assert "build\\live-bootstrap-self-repair" in text
+    assert "auto-repair-manifest.json" in text
+    assert "Copy-Item -LiteralPath $destination -Destination $backup -Force" in text
+    assert "before_sha256" in text
+    assert "after_sha256" in text
+    assert "if ($SmokeTest)" in text
+    smoke_block = text.split("if ($SmokeTest)", 1)[1].split("foreach ($file", 1)[0]
+    assert "$StateFile = Join-Path $RepoDir 'build\\bootstrap-task-smoke\\state.json'" in smoke_block
+    assert "$LogDir = Join-Path $RepoDir 'build\\bootstrap-task-smoke\\logs'" in smoke_block
+    assert "[System.IO.Path]::IsPathRooted($StateFile)" in text
+    assert "$StateFile = Join-Path $BinDir $StateFile" in text
+    assert "$LogDir = Join-Path $BinDir $LogDir" in text
 
 
 def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
@@ -1472,12 +1517,78 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     assert "[int] $TimeoutMinutes = 120" in watcher
     assert "Start-Process -FilePath 'powershell'" in watcher
     assert "-WindowStyle Hidden" in watcher
+    assert "-DateStampOverride" in watcher
+    assert "-LogDirOverride" in watcher
+    assert "-StateFileOverride" in watcher
     assert "@('publish_complete', 'smoke_ok')" in watcher
     assert "@('ok', 'smoke_ok')" not in watcher
     assert "fallback_ok" not in watcher.split("function Test-TerminalState", 1)[1].split("function", 1)[0]
     assert "runner process exited without publish_complete marker" in watcher
     assert "log has not changed for" in watcher
     assert "watch timeout after" in watcher
+
+
+def test_direct_runner_has_pre_run_bootstrap_interlock_before_generation() -> None:
+    """06:00 direct runner 残存時も、本番生成へ進む前に bootstrap smoke interlock を通す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Assert-PreRunBootstrapInterlock" in runner
+    assert "ng-smoke-state.json" in runner
+    assert "ng-smoke-logs" in runner
+    assert "$BootstrapSmokeEarliestMinutes = 5 * 60 + 55" in runner
+    assert "$BootstrapSmokeFreshnessMinutes = 15" in runner
+    assert "updated_at" in runner.split("function Test-PreRunBootstrapSmokeMarker", 1)[1].split(
+        "function Assert-PreRunBootstrapInterlock",
+        1,
+    )[0]
+    assert "LastWriteTime" in runner.split("function Test-PreRunBootstrapSmokeMarker", 1)[1].split(
+        "function Assert-PreRunBootstrapInterlock",
+        1,
+    )[0]
+    assert "blocked_startup_self_repair_failed" in runner
+    assert "-SmokeTest" in runner.split("function Assert-PreRunBootstrapInterlock", 1)[1].split(
+        "# ===== sentinel: 起動できた事実 =====",
+        1,
+    )[0]
+    assert runner.index("Assert-PreRunBootstrapInterlock") < runner.index("Assert-RunnerBinaryInSync")
+    start_block = runner.split("# ===== sentinel: 起動できた事実 =====", 1)[1].split(
+        "$IsE2EOrDryRun",
+        1,
+    )[0]
+    assert "Assert-PreRunBootstrapInterlock" in start_block
+    assert start_block.index("Assert-PreRunBootstrapInterlock") < start_block.index("Assert-RunnerBinaryInSync")
+
+
+def test_direct_runner_reexecutes_synced_runner_after_bootstrap_repairs_hash_drift() -> None:
+    """fresh marker 後の repo/live drift は異常終了ではなく bootstrap repair + 同期済み runner 再起動へ収束する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "NEWS_GRASP_RUNNER_SYNC_REEXEC" in runner
+    assert "function Invoke-SyncedRunnerReexec" in runner
+    assert "runner binary drift repaired; relaunching synced runner" in runner
+    assert "function Test-NormalDailyPublishRun" in runner
+
+    sync_body = runner.split("function Assert-RunnerBinaryInSync", 1)[1].split(
+        "# ===== sentinel: 起動できた事実 =====",
+        1,
+    )[0]
+    reexec_body = runner.split("function Invoke-SyncedRunnerReexec", 1)[1].split(
+        "function Assert-RunnerBinaryInSync",
+        1,
+    )[0]
+
+    assert "Test-NormalDailyPublishRun" in sync_body
+    assert "Assert-PreRunBootstrapInterlock -ForceRepair" in sync_body
+    assert "Invoke-SyncedRunnerReexec" in sync_body
+    assert sync_body.index("Assert-PreRunBootstrapInterlock -ForceRepair") < sync_body.index(
+        "Invoke-SyncedRunnerReexec"
+    )
+    assert sync_body.index("Test-NormalDailyPublishRun") < sync_body.index("Invoke-RunnerBinarySyncApprovalBlock")
+
+    assert "Start-Process" in reexec_body
+    assert "-Wait" in reexec_body
+    assert "$env:NEWS_GRASP_RUNNER_SYNC_REEXEC = '1'" in reexec_body
+    assert "exit $exitCode" in reexec_body
 
 
 def test_runner_smoke_test_writes_terminal_smoke_ok_state() -> None:

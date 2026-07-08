@@ -30,6 +30,9 @@ ALERT_STATUSES = {
     "stale",
 }
 
+RUNNER_START_MINUTES = 6 * 60
+BOOTSTRAP_START_MINUTES = 5 * 60 + 55
+
 
 def _parse_dt(value: str | None) -> datetime | None:
     if not value:
@@ -74,8 +77,283 @@ def _default_live_runner_path() -> Path:
     return Path.home() / "bin" / "news-grasp-runner.ps1"
 
 
+def _default_live_watcher_path() -> Path:
+    return Path.home() / "bin" / "watch-news-grasp-runner.ps1"
+
+
+def _default_live_bootstrap_path() -> Path:
+    return Path.home() / "bin" / "news-grasp-bootstrap.ps1"
+
+
 def _command_path_text(value: Path | str) -> str:
     return str(value).strip().strip('"').replace("/", "\\").lower()
+
+
+def _safe_int(value: object) -> int | None:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def _time_minutes_from_text(value: object) -> int | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    match = re.search(r"(?:T|\s)(\d{1,2}):(\d{2})(?::\d{2})?\s*([AP]M)?", text, re.IGNORECASE)
+    if not match:
+        return None
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    marker = (match.group(3) or "").upper()
+    if marker == "PM" and hour < 12:
+        hour += 12
+    elif marker == "AM" and hour == 12:
+        hour = 0
+    if hour > 23 or minute > 59:
+        return None
+    return hour * 60 + minute
+
+
+def _next_run_time_matches(details: dict, expected_minutes: int) -> bool:
+    return _time_minutes_from_text(details.get("next_run_time")) == expected_minutes
+
+
+def _missed_runs_zero(details: dict) -> bool:
+    return _safe_int(details.get("number_of_missed_runs")) == 0
+
+
+def _action_has_switch(action_summary: str, switch: str) -> bool:
+    return bool(re.search(rf"(?i)(?:^|\s){re.escape(switch)}(?:\s|$)", action_summary))
+
+
+def _action_option_value(action_summary: str, option: str) -> str:
+    match = re.search(
+        rf"(?i)(?:^|\s){re.escape(option)}\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))",
+        action_summary,
+    )
+    if not match:
+        return ""
+    return next((part for part in match.groups() if part), "")
+
+
+def _action_option_int(action_summary: str, option: str) -> int | None:
+    return _safe_int(_action_option_value(action_summary, option))
+
+
+def _is_isolated_smoke_path(value: str, *, kind: str) -> bool:
+    text = _command_path_text(value)
+    if not text:
+        return False
+    if kind == "state":
+        return "smoke" in text and not text.endswith("\\news-grasp-runner-state.json")
+    return "smoke" in text and "news-grasp-logs" not in text
+
+
+def _bootstrap_action_smoke_contract(action_summary: str, *, bootstrap_path_text: str, watcher_text: str) -> dict:
+    action_text = _command_path_text(action_summary)
+    timeout_minutes = _action_option_int(action_summary, "-TimeoutMinutes")
+    state_file = _action_option_value(action_summary, "-StateFile")
+    log_dir = _action_option_value(action_summary, "-LogDir")
+    targets_live_bootstrap = bool(bootstrap_path_text in action_text)
+    targets_live_watcher = bool(watcher_text in action_text)
+    return {
+        "targets_live_bootstrap": targets_live_bootstrap,
+        "targets_live_watcher": targets_live_watcher,
+        "is_smoke_test": _action_has_switch(action_summary, "-SmokeTest"),
+        "uses_short_timeout": isinstance(timeout_minutes, int) and timeout_minutes <= 2,
+        "uses_isolated_state_log": _is_isolated_smoke_path(state_file, kind="state")
+        and _is_isolated_smoke_path(log_dir, kind="log"),
+        "state_file": state_file,
+        "log_dir": log_dir,
+        "timeout_minutes": timeout_minutes,
+    }
+
+
+def _runner_action_start_contract(
+    action_summary: str,
+    *,
+    targets_live_watcher: bool,
+    targets_live_bootstrap: bool,
+    targets_live_runner: bool,
+) -> dict:
+    forbidden_switches = [
+        "-SmokeTest",
+        "-Status",
+        "-StartOnly",
+        "-PreflightOnly",
+        "-RecoverOnly",
+        "-NoPublish",
+        "-NoPush",
+        "-Stage2EditorSmokeOnly",
+        "-StopAfterEditorStart",
+        "-StopBeforeDeepDive",
+        "-ResumeFromStage",
+    ]
+    found_forbidden = [switch for switch in forbidden_switches if _action_has_switch(action_summary, switch)]
+    requires_start = bool(targets_live_watcher or targets_live_bootstrap)
+    has_start = _action_has_switch(action_summary, "-Start")
+    targets_known_entrypoint = bool(targets_live_watcher or targets_live_bootstrap or targets_live_runner)
+    return {
+        "is_production_start": bool(
+            targets_known_entrypoint
+            and not found_forbidden
+            and ((not requires_start) or has_start)
+        ),
+        "requires_start": requires_start,
+        "has_start": has_start,
+        "forbidden_switches": found_forbidden,
+    }
+
+
+def _runner_has_pre_run_bootstrap_interlock(live_runner_path: Path) -> bool:
+    try:
+        text = live_runner_path.read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return False
+    try:
+        marker_body = text.split("function Test-PreRunBootstrapSmokeMarker", 1)[1].split(
+            "function Assert-PreRunBootstrapInterlock",
+            1,
+        )[0]
+        interlock_body = text.split("function Assert-PreRunBootstrapInterlock", 1)[1].split(
+            "function Convert-JsonStringArrayToStringList",
+            1,
+        )[0]
+        reexec_body = text.split("function Invoke-SyncedRunnerReexec", 1)[1].split(
+            "function Assert-RunnerBinaryInSync",
+            1,
+        )[0]
+        sync_body = text.split("function Assert-RunnerBinaryInSync", 1)[1].split(
+            "function Invoke-Logged",
+            1,
+        )[0]
+        start_block = text.split("# ===== sentinel: 起動できた事実 =====", 1)[1].split(
+            "$IsE2EOrDryRun",
+            1,
+        )[0]
+    except IndexError:
+        return False
+    required_marker_body = (
+        "$BootstrapSmokeEarliestMinutes",
+        "$BootstrapSmokeFreshnessMinutes",
+        "updated_at",
+        "LastWriteTime",
+        "TotalMinutes",
+    )
+    required_interlock_body = (
+        "Start-Process",
+        "$bootstrapArgs",
+        "-SmokeTest",
+        "-PollSeconds",
+        "1",
+        "-TimeoutMinutes",
+        "2",
+        "-StateFile",
+        "$BootstrapSmokeStateFile",
+        "-LogDir",
+        "$BootstrapSmokeLogDir",
+        "blocked_startup_self_repair_failed",
+    )
+    required_reexec_body = (
+        "NEWS_GRASP_RUNNER_SYNC_REEXEC",
+        "Get-RunnerScriptArguments",
+        "Start-Process",
+        "-Wait",
+        "runner binary drift repaired; relaunching synced runner",
+        "exit $exitCode",
+    )
+    required_sync_body = (
+        "Test-NormalDailyPublishRun",
+        "Assert-PreRunBootstrapInterlock -ForceRepair",
+        "Invoke-SyncedRunnerReexec",
+        "Invoke-RunnerBinarySyncApprovalBlock",
+        "blocked_startup_self_repair_failed",
+    )
+    return bool(
+        all(marker in text for marker in ("ng-smoke-state.json", "ng-smoke-logs", "function Test-NormalDailyPublishRun"))
+        and all(marker in marker_body for marker in required_marker_body)
+        and all(marker in interlock_body for marker in required_interlock_body)
+        and all(marker in reexec_body for marker in required_reexec_body)
+        and all(marker in sync_body for marker in required_sync_body)
+        and sync_body.index("Assert-PreRunBootstrapInterlock -ForceRepair") < sync_body.index("Invoke-SyncedRunnerReexec")
+        and sync_body.index("Test-NormalDailyPublishRun") < sync_body.index("Invoke-RunnerBinarySyncApprovalBlock")
+        and "Assert-PreRunBootstrapInterlock" in start_block
+        and "Assert-RunnerBinaryInSync" in start_block
+        and start_block.index("Assert-PreRunBootstrapInterlock") < start_block.index("Assert-RunnerBinaryInSync")
+    )
+
+
+def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
+    """publish-complete 履歴から再利用できる live ops readiness の正本判定。"""
+    if not isinstance(readiness, dict) or not readiness.get("ok"):
+        return False
+    repo_runner = readiness.get("repo_runner") if isinstance(readiness.get("repo_runner"), dict) else {}
+    live_runner = readiness.get("live_runner") if isinstance(readiness.get("live_runner"), dict) else {}
+    repo_watcher = readiness.get("repo_watcher") if isinstance(readiness.get("repo_watcher"), dict) else {}
+    live_watcher = readiness.get("live_watcher") if isinstance(readiness.get("live_watcher"), dict) else {}
+    repo_bootstrap = readiness.get("repo_bootstrap") if isinstance(readiness.get("repo_bootstrap"), dict) else {}
+    live_bootstrap = readiness.get("live_bootstrap") if isinstance(readiness.get("live_bootstrap"), dict) else {}
+    scheduled_task = readiness.get("scheduled_task") if isinstance(readiness.get("scheduled_task"), dict) else {}
+    canary = readiness.get("canary") if isinstance(readiness.get("canary"), dict) else {}
+    repo_sha = str(repo_runner.get("sha256") or "")
+    live_sha = str(live_runner.get("sha256") or "")
+    repo_watcher_sha = str(repo_watcher.get("sha256") or "")
+    live_watcher_sha = str(live_watcher.get("sha256") or "")
+    repo_bootstrap_sha = str(repo_bootstrap.get("sha256") or "")
+    live_bootstrap_sha = str(live_bootstrap.get("sha256") or "")
+    runner_schedule_ok = bool(
+        scheduled_task.get("ok") is True
+        and str(scheduled_task.get("state") or "") in {"Ready", "Running"}
+        and _safe_int(scheduled_task.get("trigger_start_minutes")) == RUNNER_START_MINUTES
+        and _time_minutes_from_text(scheduled_task.get("next_run_time")) == RUNNER_START_MINUTES
+        and _safe_int(scheduled_task.get("number_of_missed_runs")) == 0
+    )
+    bootstrap_contract_ok = bool(
+        scheduled_task.get("bootstrap_targets_live_bootstrap") is True
+        and scheduled_task.get("bootstrap_action_is_smoke_test") is True
+        and scheduled_task.get("bootstrap_action_uses_short_timeout") is True
+        and scheduled_task.get("bootstrap_action_uses_isolated_state_log") is True
+        and str(scheduled_task.get("bootstrap_state") or "") in {"Ready", "Running"}
+        and scheduled_task.get("bootstrap_last_task_result") == 0
+        and _safe_int(scheduled_task.get("bootstrap_trigger_start_minutes")) == BOOTSTRAP_START_MINUTES
+        and _time_minutes_from_text(scheduled_task.get("bootstrap_next_run_time")) == BOOTSTRAP_START_MINUTES
+        and _safe_int(scheduled_task.get("bootstrap_number_of_missed_runs")) == 0
+        and scheduled_task.get("bootstrap_before_runner") is True
+        and scheduled_task.get("bootstrap_repairs_before_run") is True
+    )
+    direct_runner_ok = bool(
+        not scheduled_task.get("targets_live_runner")
+        or (
+            scheduled_task.get("direct_runner_pre_run_interlock") is True
+            and scheduled_task.get("direct_runner_pre_run_reexec") is True
+        )
+    )
+    runner_target_ok = bool(
+        scheduled_task.get("runner_action_is_production_start") is True
+        and bootstrap_contract_ok
+        and direct_runner_ok
+        and (
+            scheduled_task.get("targets_live_watcher")
+            or scheduled_task.get("targets_live_bootstrap")
+            or scheduled_task.get("targets_live_runner")
+        )
+    )
+    return bool(
+        repo_sha
+        and live_sha
+        and repo_sha == live_sha
+        and repo_watcher_sha
+        and live_watcher_sha
+        and repo_watcher_sha == live_watcher_sha
+        and repo_bootstrap_sha
+        and live_bootstrap_sha
+        and repo_bootstrap_sha == live_bootstrap_sha
+        and runner_schedule_ok
+        and runner_target_ok
+        and canary.get("ok") is True
+        and str(canary.get("status") or "") == "smoke_ok"
+    )
 
 
 def _scheduled_task_action_summary(
@@ -108,11 +386,81 @@ def _scheduled_task_action_summary(
     return proc.stdout.strip()
 
 
-def _run_live_runner_canary(
+def _scheduled_task_details(
+    *,
+    task_name: str = "News-Grasp Runner",
+    powershell_exe: str = "powershell.exe",
+) -> dict:
+    safe_task_name = task_name.replace("'", "''")
+    command = (
+        f"$task=Get-ScheduledTask -TaskName '{safe_task_name}' -ErrorAction Stop; "
+        f"$info=Get-ScheduledTaskInfo -TaskName '{safe_task_name}' -ErrorAction Stop; "
+        "$actions=(@($task.Actions) | ForEach-Object { "
+        "(([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()) "
+        "}) -join ' ; '; "
+        "$triggers=@($task.Triggers) | ForEach-Object { "
+        "[ordered]@{ start_boundary=[string]$_.StartBoundary; enabled=[bool]$_.Enabled } "
+        "}; "
+        "[ordered]@{ "
+        "ok=$true; "
+        "task_name=[string]$task.TaskName; "
+        "state=[string]$task.State; "
+        "action_summary=$actions; "
+        "triggers=$triggers; "
+        "last_run_time=[string]$info.LastRunTime; "
+        "last_task_result=[int]$info.LastTaskResult; "
+        "next_run_time=[string]$info.NextRunTime; "
+        "number_of_missed_runs=[int]$info.NumberOfMissedRuns "
+        "} | ConvertTo-Json -Depth 8"
+    )
+    try:
+        proc = subprocess.run(
+            [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"ok": False, "reason": f"unavailable: {exc}", "action_summary": f"unavailable: {exc}"}
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        reason = f"unavailable: {detail or f'rc={proc.returncode}'}"
+        return {"ok": False, "reason": reason, "action_summary": reason}
+    try:
+        payload = json.loads(proc.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return {"ok": False, "reason": "scheduled_task_json_invalid", "action_summary": proc.stdout.strip()}
+    return payload if isinstance(payload, dict) else {"ok": False, "reason": "scheduled_task_json_not_object"}
+
+
+def _trigger_start_minutes(details: dict) -> int | None:
+    triggers = details.get("triggers")
+    if isinstance(triggers, dict):
+        triggers = [triggers]
+    if not isinstance(triggers, list):
+        return None
+    minutes: list[int] = []
+    for trigger in triggers:
+        if not isinstance(trigger, dict):
+            continue
+        if trigger.get("enabled") is False:
+            continue
+        boundary = str(trigger.get("start_boundary") or "")
+        match = re.search(r"T(\d{2}):(\d{2})(?::\d{2})?", boundary)
+        if match:
+            minutes.append(int(match.group(1)) * 60 + int(match.group(2)))
+    return min(minutes) if minutes else None
+
+
+def _run_live_startup_canary(
     *,
     repo_root: Path,
-    live_runner_path: Path,
+    startup_path: Path,
     date: str,
+    live_runner_path: Path | None = None,
     timeout_sec: int = 60,
     powershell_exe: str = "powershell.exe",
 ) -> dict:
@@ -124,6 +472,8 @@ def _run_live_runner_canary(
     log_dir.mkdir(parents=True, exist_ok=True)
     if state_file.exists():
         state_file.unlink()
+    if log_file.exists():
+        log_file.unlink()
     command = [
         powershell_exe,
         "-NoProfile",
@@ -131,16 +481,25 @@ def _run_live_runner_canary(
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        str(live_runner_path),
+        str(startup_path),
+        "-Start",
         "-SmokeTest",
-        "-Stage2EditorSmokeOnly",
-        "-DateStampOverride",
+        "-PollSeconds",
+        "1",
+        "-StaleMinutes",
+        "2",
+        "-TimeoutMinutes",
+        "2",
+        "-DateStamp",
         date,
-        "-LogDirOverride",
+        "-LogDir",
         str(log_dir),
-        "-StateFileOverride",
+        "-StateFile",
         str(state_file),
     ]
+    if live_runner_path is not None:
+        command += ["-RunnerPath", str(live_runner_path), "-BinDir", str(live_runner_path.parent)]
+    command += ["-RepoDir", str(repo_root)]
     try:
         proc = subprocess.run(
             command,
@@ -215,56 +574,249 @@ def verify_live_runner_readiness(
     repo_root: Path,
     date: str,
     live_runner_path: Path | None = None,
+    live_watcher_path: Path | None = None,
+    live_bootstrap_path: Path | None = None,
     task_name: str = "News-Grasp Runner",
+    bootstrap_task_name: str = "News-Grasp Bootstrap",
     run_canary: bool = True,
     canary_timeout_sec: int = 60,
     powershell_exe: str = "powershell.exe",
 ) -> dict:
     repo_root = repo_root.resolve()
     live_runner_path = live_runner_path or _default_live_runner_path()
+    live_watcher_path = live_watcher_path or _default_live_watcher_path()
+    live_bootstrap_path = live_bootstrap_path or _default_live_bootstrap_path()
     repo_runner = repo_root / "scripts" / "ops" / "news-grasp-runner.ps1"
-    checksum = compare_files(repo_runner, live_runner_path)
+    repo_watcher = repo_root / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = repo_root / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    runner_checksum = compare_files(repo_runner, live_runner_path)
+    watcher_checksum = compare_files(repo_watcher, live_watcher_path)
+    bootstrap_checksum = compare_files(repo_bootstrap, live_bootstrap_path)
     result = {
         "ok": False,
         "reason": "",
         "date": date,
         "repo_runner": {
             "path": str(repo_runner),
-            "exists": checksum["repo_exists"],
-            "sha256": checksum["repo_sha256"],
+            "exists": runner_checksum["repo_exists"],
+            "sha256": runner_checksum["repo_sha256"],
         },
         "live_runner": {
             "path": str(live_runner_path),
-            "exists": checksum["live_exists"],
-            "sha256": checksum["live_sha256"],
+            "exists": runner_checksum["live_exists"],
+            "sha256": runner_checksum["live_sha256"],
+        },
+        "repo_watcher": {
+            "path": str(repo_watcher),
+            "exists": watcher_checksum["repo_exists"],
+            "sha256": watcher_checksum["repo_sha256"],
+        },
+        "live_watcher": {
+            "path": str(live_watcher_path),
+            "exists": watcher_checksum["live_exists"],
+            "sha256": watcher_checksum["live_sha256"],
+        },
+        "repo_bootstrap": {
+            "path": str(repo_bootstrap),
+            "exists": bootstrap_checksum["repo_exists"],
+            "sha256": bootstrap_checksum["repo_sha256"],
+        },
+        "live_bootstrap": {
+            "path": str(live_bootstrap_path),
+            "exists": bootstrap_checksum["live_exists"],
+            "sha256": bootstrap_checksum["live_sha256"],
         },
         "scheduled_task": {},
         "canary": {},
     }
-    if not checksum["repo_exists"]:
+    if not runner_checksum["repo_exists"]:
         return {**result, "reason": "repo_runner_missing"}
-    if not checksum["live_exists"]:
+    if not runner_checksum["live_exists"]:
         return {**result, "reason": "live_runner_missing"}
-    if not checksum["synced"]:
+    if not watcher_checksum["repo_exists"]:
+        return {**result, "reason": "repo_watcher_missing"}
+    if not watcher_checksum["live_exists"]:
+        return {**result, "reason": "live_watcher_missing"}
+    if not bootstrap_checksum["repo_exists"]:
+        return {**result, "reason": "repo_bootstrap_missing"}
+    if not bootstrap_checksum["live_exists"]:
+        return {**result, "reason": "live_bootstrap_missing"}
+    if not runner_checksum["synced"]:
         return {**result, "reason": "live_runner_hash_mismatch"}
+    if not watcher_checksum["synced"]:
+        return {**result, "reason": "live_watcher_hash_mismatch"}
+    if not bootstrap_checksum["synced"]:
+        return {**result, "reason": "live_bootstrap_hash_mismatch"}
 
-    action_summary = _scheduled_task_action_summary(task_name=task_name, powershell_exe=powershell_exe)
+    task_details = _scheduled_task_details(task_name=task_name, powershell_exe=powershell_exe)
+    action_summary = str(task_details.get("action_summary") or "")
     action_text = _command_path_text(action_summary)
-    live_text = _command_path_text(live_runner_path)
-    task_ok = bool(action_summary and not action_summary.startswith("unavailable:") and live_text in action_text)
+    watcher_text = _command_path_text(live_watcher_path)
+    runner_text = _command_path_text(live_runner_path)
+    bootstrap_path_text = _command_path_text(live_bootstrap_path)
+    runner_targets_watcher = bool(action_summary and not action_summary.startswith("unavailable:") and watcher_text in action_text)
+    runner_targets_runner = bool(action_summary and not action_summary.startswith("unavailable:") and runner_text in action_text)
+    runner_targets_bootstrap = bool(
+        action_summary and not action_summary.startswith("unavailable:") and bootstrap_path_text in action_text
+    )
+    runner_action_contract = _runner_action_start_contract(
+        action_summary,
+        targets_live_watcher=runner_targets_watcher,
+        targets_live_bootstrap=runner_targets_bootstrap,
+        targets_live_runner=runner_targets_runner,
+    )
+    direct_runner_pre_run_interlock = _runner_has_pre_run_bootstrap_interlock(live_runner_path)
+    direct_runner_pre_run_reexec = direct_runner_pre_run_interlock
+    bootstrap_details = _scheduled_task_details(task_name=bootstrap_task_name, powershell_exe=powershell_exe)
+    bootstrap_summary = str(bootstrap_details.get("action_summary") or "")
+    bootstrap_text = _command_path_text(bootstrap_summary)
+    bootstrap_action_contract = _bootstrap_action_smoke_contract(
+        bootstrap_summary,
+        bootstrap_path_text=bootstrap_path_text,
+        watcher_text=watcher_text,
+    )
+    bootstrap_targets_watcher = bool(
+        bootstrap_summary
+        and not bootstrap_summary.startswith("unavailable:")
+        and (watcher_text in bootstrap_text or bootstrap_path_text in bootstrap_text)
+    )
+    runner_state_ok = str(task_details.get("state") or "") in {"Ready", "Running"}
+    bootstrap_state_ok = str(bootstrap_details.get("state") or "") in {"Ready", "Running"}
+    bootstrap_last_result_ok = bootstrap_details.get("last_task_result") == 0
+    runner_start = _trigger_start_minutes(task_details)
+    bootstrap_start = _trigger_start_minutes(bootstrap_details)
+    runner_trigger_ok = runner_start == RUNNER_START_MINUTES
+    runner_next_run_ok = _next_run_time_matches(task_details, RUNNER_START_MINUTES)
+    runner_missed_runs_ok = _missed_runs_zero(task_details)
+    bootstrap_trigger_ok = bootstrap_start == BOOTSTRAP_START_MINUTES
+    bootstrap_next_run_ok = _next_run_time_matches(bootstrap_details, BOOTSTRAP_START_MINUTES)
+    bootstrap_missed_runs_ok = _missed_runs_zero(bootstrap_details)
+    bootstrap_smoke_contract_ok = bool(
+        bootstrap_action_contract["targets_live_bootstrap"]
+        and bootstrap_action_contract["is_smoke_test"]
+        and bootstrap_action_contract["uses_short_timeout"]
+        and bootstrap_action_contract["uses_isolated_state_log"]
+    )
+    bootstrap_before_runner = (
+        isinstance(bootstrap_start, int)
+        and isinstance(runner_start, int)
+        and bootstrap_start < runner_start
+    )
+    bootstrap_pre_run_ok = bool(
+        bootstrap_smoke_contract_ok
+        and bootstrap_state_ok
+        and bootstrap_last_result_ok
+        and bootstrap_trigger_ok
+        and bootstrap_next_run_ok
+        and bootstrap_missed_runs_ok
+        and bootstrap_before_runner
+    )
+    runner_schedule_ok = bool(
+        runner_state_ok
+        and runner_trigger_ok
+        and runner_next_run_ok
+        and runner_missed_runs_ok
+    )
+    task_ok = bool(
+        runner_schedule_ok
+        and runner_action_contract["is_production_start"]
+        and bootstrap_pre_run_ok
+        and (not runner_targets_runner or (direct_runner_pre_run_interlock and direct_runner_pre_run_reexec))
+        and (
+            runner_targets_watcher
+            or runner_targets_bootstrap
+            or runner_targets_runner
+        )
+    )
     result["scheduled_task"] = {
         "ok": task_ok,
         "task_name": task_name,
         "action_summary": action_summary,
-        "targets_live_runner": task_ok,
+        "state": task_details.get("state"),
+        "next_run_time": task_details.get("next_run_time"),
+        "last_task_result": task_details.get("last_task_result"),
+        "number_of_missed_runs": task_details.get("number_of_missed_runs"),
+        "trigger_start_minutes": runner_start,
+        "trigger_is_daily_0600": runner_trigger_ok,
+        "next_run_time_is_0600": runner_next_run_ok,
+        "number_of_missed_runs_ok": runner_missed_runs_ok,
+        "runner_action_is_production_start": runner_action_contract["is_production_start"],
+        "runner_action_requires_start": runner_action_contract["requires_start"],
+        "runner_action_has_start": runner_action_contract["has_start"],
+        "runner_action_forbidden_switches": runner_action_contract["forbidden_switches"],
+        "targets_live_watcher": runner_targets_watcher,
+        "targets_live_runner": runner_targets_runner,
+        "targets_live_bootstrap": runner_targets_bootstrap,
+        "direct_runner_pre_run_interlock": direct_runner_pre_run_interlock,
+        "direct_runner_pre_run_reexec": direct_runner_pre_run_reexec,
+        "bootstrap_task_name": bootstrap_task_name,
+        "bootstrap_action_summary": bootstrap_summary,
+        "bootstrap_state": bootstrap_details.get("state"),
+        "bootstrap_next_run_time": bootstrap_details.get("next_run_time"),
+        "bootstrap_last_run_time": bootstrap_details.get("last_run_time"),
+        "bootstrap_last_task_result": bootstrap_details.get("last_task_result"),
+        "bootstrap_number_of_missed_runs": bootstrap_details.get("number_of_missed_runs"),
+        "bootstrap_trigger_start_minutes": bootstrap_start,
+        "bootstrap_trigger_is_0555": bootstrap_trigger_ok,
+        "bootstrap_next_run_time_is_0555": bootstrap_next_run_ok,
+        "bootstrap_number_of_missed_runs_ok": bootstrap_missed_runs_ok,
+        "bootstrap_targets_watcher_or_bootstrap": bootstrap_targets_watcher,
+        "bootstrap_targets_live_bootstrap": bootstrap_action_contract["targets_live_bootstrap"],
+        "bootstrap_targets_live_watcher": bootstrap_action_contract["targets_live_watcher"],
+        "bootstrap_action_is_smoke_test": bootstrap_action_contract["is_smoke_test"],
+        "bootstrap_action_uses_short_timeout": bootstrap_action_contract["uses_short_timeout"],
+        "bootstrap_action_uses_isolated_state_log": bootstrap_action_contract["uses_isolated_state_log"],
+        "bootstrap_action_state_file": bootstrap_action_contract["state_file"],
+        "bootstrap_action_log_dir": bootstrap_action_contract["log_dir"],
+        "bootstrap_action_timeout_minutes": bootstrap_action_contract["timeout_minutes"],
+        "bootstrap_before_runner": bootstrap_before_runner,
+        "bootstrap_repairs_before_run": bootstrap_pre_run_ok,
     }
     if not task_ok:
-        reason = "scheduled_task_unavailable" if action_summary.startswith("unavailable:") else "scheduled_task_target_mismatch"
+        if not task_details.get("ok"):
+            reason = "scheduled_task_unavailable"
+        elif not runner_state_ok:
+            reason = "scheduled_task_disabled"
+        elif not runner_trigger_ok:
+            reason = "scheduled_task_not_0600"
+        elif not runner_next_run_ok:
+            reason = "scheduled_task_next_run_missing"
+        elif not runner_missed_runs_ok:
+            reason = "scheduled_task_missed_runs"
+        elif not (runner_targets_watcher or runner_targets_bootstrap or runner_targets_runner):
+            reason = "scheduled_task_target_mismatch"
+        elif not runner_action_contract["is_production_start"]:
+            reason = "scheduled_task_action_not_production_start"
+        elif runner_targets_runner and not direct_runner_pre_run_interlock:
+            reason = "direct_runner_pre_run_interlock_missing"
+        elif runner_targets_runner and not direct_runner_pre_run_reexec:
+            reason = "direct_runner_pre_run_reexec_missing"
+        elif runner_targets_runner and not bootstrap_action_contract["targets_live_bootstrap"]:
+            reason = "bootstrap_task_target_mismatch"
+        elif runner_targets_runner and not bootstrap_smoke_contract_ok:
+            reason = "bootstrap_task_smoke_contract_invalid"
+        elif runner_targets_runner and not bootstrap_state_ok:
+            reason = "bootstrap_task_disabled"
+        elif runner_targets_runner and not bootstrap_trigger_ok:
+            reason = "bootstrap_task_not_0555"
+        elif runner_targets_runner and not bootstrap_next_run_ok:
+            reason = "bootstrap_task_next_run_missing"
+        elif runner_targets_runner and not bootstrap_missed_runs_ok:
+            reason = "bootstrap_task_missed_runs"
+        elif runner_targets_runner and not bootstrap_last_result_ok:
+            reason = "bootstrap_task_last_result_not_ok"
+        elif runner_targets_runner and not bootstrap_before_runner:
+            reason = "bootstrap_task_not_before_runner"
+        else:
+            reason = "scheduled_task_target_mismatch"
         return {**result, "reason": reason}
 
     if run_canary:
-        canary = _run_live_runner_canary(
+        canary = _run_live_startup_canary(
             repo_root=repo_root,
+            startup_path=live_bootstrap_path
+            if runner_targets_bootstrap or (runner_targets_runner and bootstrap_action_contract["targets_live_bootstrap"])
+            else live_watcher_path,
             live_runner_path=live_runner_path,
             date=date,
             timeout_sec=canary_timeout_sec,
@@ -1460,7 +2012,10 @@ def main(argv: list[str] | None = None) -> int:
     live_ready.add_argument("--repo-root", type=Path, required=True)
     live_ready.add_argument("--date", required=True)
     live_ready.add_argument("--live-runner", type=Path, default=None)
+    live_ready.add_argument("--live-watcher", type=Path, default=None)
+    live_ready.add_argument("--live-bootstrap", type=Path, default=None)
     live_ready.add_argument("--task-name", default="News-Grasp Runner")
+    live_ready.add_argument("--bootstrap-task-name", default="News-Grasp Bootstrap")
     live_ready.add_argument("--skip-canary", action="store_true")
     live_ready.add_argument("--canary-timeout-sec", type=int, default=60)
     live_ready.add_argument("--powershell-exe", default="powershell.exe")
@@ -1562,7 +2117,10 @@ def main(argv: list[str] | None = None) -> int:
             repo_root=args.repo_root,
             date=args.date,
             live_runner_path=args.live_runner,
+            live_watcher_path=args.live_watcher,
+            live_bootstrap_path=args.live_bootstrap,
             task_name=args.task_name,
+            bootstrap_task_name=args.bootstrap_task_name,
             run_canary=not args.skip_canary,
             canary_timeout_sec=args.canary_timeout_sec,
             powershell_exe=args.powershell_exe,

@@ -54,6 +54,51 @@ def _write_deploy_workflow(repo_root: Path) -> None:
     (workflow_dir / "deploy-pages.yml").write_text("name: Deploy Pages\n", encoding="utf-8")
 
 
+def _runner_with_pre_run_interlock_source() -> str:
+    return """
+$BootstrapSmokeStateFile = 'ng-smoke-state.json'
+$BootstrapSmokeLogDir = 'ng-smoke-logs'
+$BootstrapSmokeEarliestMinutes = 5 * 60 + 55
+$BootstrapSmokeFreshnessMinutes = 15
+function Test-NormalDailyPublishRun { return $true }
+function Test-PreRunBootstrapSmokeMarker {
+    $state.updated_at | Out-Null
+    $item.LastWriteTime | Out-Null
+    $BootstrapSmokeEarliestMinutes | Out-Null
+    $BootstrapSmokeFreshnessMinutes | Out-Null
+    $now = Get-Date
+    ($now - $state.updated_at).TotalMinutes | Out-Null
+}
+function Assert-PreRunBootstrapInterlock {
+    $bootstrapArgs = @('-SmokeTest', '-PollSeconds', '1', '-TimeoutMinutes', '2', '-StateFile', $BootstrapSmokeStateFile, '-LogDir', $BootstrapSmokeLogDir)
+    Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs
+    blocked_startup_self_repair_failed
+}
+function Convert-JsonStringArrayToStringList {}
+function Invoke-SyncedRunnerReexec {
+    $env:NEWS_GRASP_RUNNER_SYNC_REEXEC = '1'
+    $runnerArgs = Get-RunnerScriptArguments
+    Write-Log 'runner binary drift repaired; relaunching synced runner'
+    $proc = Start-Process -FilePath 'powershell' -ArgumentList $runnerArgs -Wait
+    $exitCode = [int]$proc.ExitCode
+    exit $exitCode
+}
+function Assert-RunnerBinaryInSync {
+    if (Test-NormalDailyPublishRun) {
+        Assert-PreRunBootstrapInterlock -ForceRepair
+        Invoke-SyncedRunnerReexec
+    }
+    Invoke-RunnerBinarySyncApprovalBlock
+    blocked_startup_self_repair_failed
+}
+function Invoke-Logged {}
+# ===== sentinel: 起動できた事実 =====
+Assert-PreRunBootstrapInterlock
+Assert-RunnerBinaryInSync
+$IsE2EOrDryRun = $false
+"""
+
+
 def _live_runner_readiness_ok() -> dict:
     return {
         "ok": True,
@@ -1558,53 +1603,677 @@ def test_verify_publish_complete_requires_distribution_inventory(monkeypatch, tm
 
 
 def test_verify_live_runner_readiness_requires_hash_task_and_canary(monkeypatch, tmp_path: Path) -> None:
-    """live runner readiness は repo/live hash、Scheduled Task target、実起動 canary をまとめて見る。"""
+    """live runner readiness は repo/live ops hash、watcher task target、実起動 canary をまとめて見る。"""
     repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
     live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
     repo_runner.parent.mkdir(parents=True)
     live_runner.parent.mkdir(parents=True)
-    repo_runner.write_text("runner", encoding="utf-8")
-    live_runner.write_text("runner", encoding="utf-8")
-    monkeypatch.setattr(
-        dsh,
-        "_scheduled_task_action_summary",
-        lambda **_kwargs: f'powershell.exe -File "{live_runner}"',
-    )
-    monkeypatch.setattr(dsh, "_run_live_runner_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    repo_runner.write_text(runner_with_interlock, encoding="utf-8")
+    repo_watcher.write_text("watcher", encoding="utf-8")
+    repo_bootstrap.write_text("bootstrap", encoding="utf-8")
+    live_runner.write_text(runner_with_interlock, encoding="utf-8")
+    live_watcher.write_text("watcher", encoding="utf-8")
+    live_bootstrap.write_text("bootstrap", encoding="utf-8")
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_bootstrap}" -Start',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 0,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
 
     result = dsh.verify_live_runner_readiness(
         repo_root=tmp_path,
         live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
         date="2026-06-20",
         run_canary=True,
     )
 
     assert result["ok"] is True
     assert result["repo_runner"]["sha256"] == result["live_runner"]["sha256"]
-    assert result["scheduled_task"]["targets_live_runner"] is True
+    assert result["repo_watcher"]["sha256"] == result["live_watcher"]["sha256"]
+    assert result["repo_bootstrap"]["sha256"] == result["live_bootstrap"]["sha256"]
+    assert result["scheduled_task"]["targets_live_bootstrap"] is True
+    assert result["scheduled_task"]["runner_action_is_production_start"] is True
+    assert result["scheduled_task"]["direct_runner_pre_run_reexec"] is True
     assert result["canary"]["status"] == "smoke_ok"
 
 
 def test_verify_live_runner_readiness_rejects_scheduler_target_drift(monkeypatch, tmp_path: Path) -> None:
-    """Scheduled Task が別 runner を指す日は next-run ready ではない。"""
+    """Scheduled Task が watcher bootstrap 以外を指す日は next-run ready ではない。"""
     repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
     live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
     repo_runner.parent.mkdir(parents=True)
     live_runner.parent.mkdir(parents=True)
-    repo_runner.write_text("runner", encoding="utf-8")
-    live_runner.write_text("runner", encoding="utf-8")
-    monkeypatch.setattr(dsh, "_scheduled_task_action_summary", lambda **_kwargs: "powershell.exe -File C:\\old\\runner.ps1")
-    monkeypatch.setattr(dsh, "_run_live_runner_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    repo_runner.write_text(runner_with_interlock, encoding="utf-8")
+    repo_watcher.write_text("watcher", encoding="utf-8")
+    repo_bootstrap.write_text("bootstrap", encoding="utf-8")
+    live_runner.write_text(runner_with_interlock, encoding="utf-8")
+    live_watcher.write_text("watcher", encoding="utf-8")
+    live_bootstrap.write_text("bootstrap", encoding="utf-8")
+    monkeypatch.setattr(
+        dsh,
+        "_scheduled_task_details",
+        lambda **_kwargs: {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": "powershell.exe -File C:\\old\\runner.ps1",
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 0,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        },
+    )
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
 
     result = dsh.verify_live_runner_readiness(
         repo_root=tmp_path,
         live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
         date="2026-06-20",
         run_canary=True,
     )
 
     assert result["ok"] is False
     assert result["reason"] == "scheduled_task_target_mismatch"
+
+
+def test_verify_live_runner_readiness_rejects_runner_without_0600_next_run(monkeypatch, tmp_path: Path) -> None:
+    """Runner task は target だけでなく 06:00 trigger と次回実行予定を必須にする。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    for path, content in (
+        (repo_runner, runner_with_interlock),
+        (live_runner, runner_with_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    monkeypatch.setattr(
+        dsh,
+        "_scheduled_task_details",
+        lambda **_kwargs: {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_bootstrap}" -Start',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:05:00"}],
+            "last_task_result": 0,
+            "next_run_time": "",
+            "number_of_missed_runs": 0,
+        },
+    )
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_not_0600"
+
+
+def test_verify_live_runner_readiness_rejects_nonproduction_runner_task_action(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """06:00 task が bootstrap/watcher を指していても smoke/status/start-only action は本番起動ではない。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    for path, content in (
+        (repo_runner, runner_with_interlock),
+        (live_runner, runner_with_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 0,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_action_not_production_start"
+
+
+def test_verify_live_runner_readiness_rejects_thin_direct_interlock_marker(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """direct runner interlock は文字列だけでなく、呼び出し順序と bootstrap args contract まで見る。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    thin_interlock = "function Assert-PreRunBootstrapInterlock { 'ng-smoke-state.json'; 'ng-smoke-logs'; blocked_startup_self_repair_failed }"
+    for path, content in (
+        (repo_runner, thin_interlock),
+        (live_runner, thin_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "direct_runner_pre_run_interlock_missing"
+
+
+def test_verify_live_runner_readiness_rejects_direct_interlock_without_reexec(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """direct runner は marker/interlock だけでなく、drift repair 後の synced reexec まで必須にする。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    interlock_without_reexec = """
+$BootstrapSmokeStateFile = 'ng-smoke-state.json'
+$BootstrapSmokeLogDir = 'ng-smoke-logs'
+$BootstrapSmokeEarliestMinutes = 5 * 60 + 55
+$BootstrapSmokeFreshnessMinutes = 15
+function Test-NormalDailyPublishRun { return $true }
+function Test-PreRunBootstrapSmokeMarker {
+    $state.updated_at | Out-Null
+    $item.LastWriteTime | Out-Null
+    $BootstrapSmokeEarliestMinutes | Out-Null
+    $BootstrapSmokeFreshnessMinutes | Out-Null
+    $now = Get-Date
+    ($now - $state.updated_at).TotalMinutes | Out-Null
+}
+function Assert-PreRunBootstrapInterlock {
+    $bootstrapArgs = @('-SmokeTest', '-PollSeconds', '1', '-TimeoutMinutes', '2', '-StateFile', $BootstrapSmokeStateFile, '-LogDir', $BootstrapSmokeLogDir)
+    Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs
+    blocked_startup_self_repair_failed
+}
+function Convert-JsonStringArrayToStringList {}
+function Assert-RunnerBinaryInSync {
+    if (Test-NormalDailyPublishRun) {
+        Assert-PreRunBootstrapInterlock -ForceRepair
+    }
+    Invoke-RunnerBinarySyncApprovalBlock
+}
+function Invoke-Logged {}
+# ===== sentinel: 起動できた事実 =====
+Assert-PreRunBootstrapInterlock
+Assert-RunnerBinaryInSync
+$IsE2EOrDryRun = $false
+"""
+    for path, content in (
+        (repo_runner, interlock_without_reexec),
+        (live_runner, interlock_without_reexec),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "direct_runner_pre_run_interlock_missing"
+
+
+def test_verify_live_runner_readiness_accepts_bootstrap_before_direct_runner(monkeypatch, tmp_path: Path) -> None:
+    """既存 runner task を変更できない環境でも、事前 bootstrap が watcher を指せば self-heal ready とする。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    repo_runner.write_text(runner_with_interlock, encoding="utf-8")
+    repo_watcher.write_text("watcher", encoding="utf-8")
+    repo_bootstrap.write_text("bootstrap", encoding="utf-8")
+    live_runner.write_text(runner_with_interlock, encoding="utf-8")
+    live_watcher.write_text("watcher", encoding="utf-8")
+    live_bootstrap.write_text("bootstrap", encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T05:55:00",
+                "last_run_time": "2026-06-20T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+        run_canary=True,
+    )
+
+    assert result["ok"] is True
+    assert result["scheduled_task"]["targets_live_runner"] is True
+    assert result["scheduled_task"]["direct_runner_pre_run_interlock"] is True
+    assert result["scheduled_task"]["direct_runner_pre_run_reexec"] is True
+    assert result["scheduled_task"]["bootstrap_repairs_before_run"] is True
+
+
+def test_verify_live_runner_readiness_rejects_bootstrap_last_result_failure(monkeypatch, tmp_path: Path) -> None:
+    """bootstrap task が未成功なら、Action が正しくても next-run self-heal ready ではない。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    for path, content in (
+        (repo_runner, runner_with_interlock),
+        (live_runner, runner_with_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 267011,
+                "next_run_time": "2026-06-21T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "bootstrap_task_last_result_not_ok"
+
+
+def test_verify_live_runner_readiness_rejects_bootstrap_after_runner(monkeypatch, tmp_path: Path) -> None:
+    """bootstrap task が 06:00 runner の後なら、初手自己修復の証明にはならない。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    for path, content in (
+        (repo_runner, runner_with_interlock),
+        (live_runner, runner_with_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:05:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T06:05:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "bootstrap_task_not_0555"
+
+
+def test_verify_live_runner_readiness_rejects_bootstrap_missed_or_unscheduled(monkeypatch, tmp_path: Path) -> None:
+    """事前 bootstrap は missed run なし、次回 05:55 予約ありでなければ self-heal 証明にならない。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    for path, content in (
+        (repo_runner, runner_with_interlock),
+        (live_runner, runner_with_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": (
+                    f'powershell.exe -File "{live_bootstrap}" -Start -SmokeTest '
+                    "-PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+                ),
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "",
+                "number_of_missed_runs": 1,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "bootstrap_task_next_run_missing"
+
+
+def test_verify_live_runner_readiness_rejects_bootstrap_without_isolated_smoke_action(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Bootstrap task は -SmokeTest、短い timeout、隔離 state/log を Action に明示する。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_watcher = tmp_path / "bin" / "watch-news-grasp-runner.ps1"
+    live_bootstrap = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    for path, content in (
+        (repo_runner, runner_with_interlock),
+        (live_runner, runner_with_interlock),
+        (repo_watcher, "watcher"),
+        (live_watcher, "watcher"),
+        (repo_bootstrap, "bootstrap"),
+        (live_bootstrap, "bootstrap"),
+    ):
+        path.write_text(content, encoding="utf-8")
+
+    def fake_task_details(**kwargs):
+        if kwargs.get("task_name") == "News-Grasp Bootstrap":
+            return {
+                "ok": True,
+                "state": "Ready",
+                "action_summary": f'powershell.exe -File "{live_bootstrap}" -Start',
+                "triggers": [{"enabled": True, "start_boundary": "2026-06-20T05:55:00"}],
+                "last_task_result": 0,
+                "next_run_time": "2026-06-21T05:55:00",
+                "number_of_missed_runs": 0,
+            }
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'powershell.exe -File "{live_runner}"',
+            "triggers": [{"enabled": True, "start_boundary": "2026-06-20T06:00:00"}],
+            "last_task_result": 72,
+            "next_run_time": "2026-06-21T06:00:00",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_watcher,
+        live_bootstrap_path=live_bootstrap,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "bootstrap_task_smoke_contract_invalid"
 
 
 def test_live_runner_canary_rejects_command_not_found_stderr(monkeypatch, tmp_path: Path) -> None:
@@ -1619,8 +2288,8 @@ def test_live_runner_canary_rejects_command_not_found_stderr(monkeypatch, tmp_pa
         stderr = "Get-FileHash : The term 'Get-FileHash' is not recognized\nCommandNotFoundException\n"
 
     def fake_run(command, **_kwargs):
-        state_file = Path(command[command.index("-StateFileOverride") + 1])
-        log_dir = Path(command[command.index("-LogDirOverride") + 1])
+        state_file = Path(command[command.index("-StateFile") + 1])
+        log_dir = Path(command[command.index("-LogDir") + 1])
         state_file.parent.mkdir(parents=True, exist_ok=True)
         log_dir.mkdir(parents=True, exist_ok=True)
         state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")
@@ -1629,14 +2298,49 @@ def test_live_runner_canary_rejects_command_not_found_stderr(monkeypatch, tmp_pa
 
     monkeypatch.setattr(dsh.subprocess, "run", fake_run)
 
-    result = dsh._run_live_runner_canary(
+    result = dsh._run_live_startup_canary(
         repo_root=tmp_path,
-        live_runner_path=live_runner,
+        startup_path=live_runner,
         date="2026-06-20",
     )
 
     assert result["ok"] is False
     assert result["reason"] == "canary_stderr_error"
+
+
+def test_live_startup_canary_removes_stale_log_before_run(monkeypatch, tmp_path: Path) -> None:
+    """canary は同一日付の古い log に汚染されず、今回の state/log だけで判定する。"""
+    startup = tmp_path / "bin" / "news-grasp-bootstrap.ps1"
+    startup.parent.mkdir(parents=True)
+    startup.write_text("bootstrap", encoding="utf-8")
+    stale_log = tmp_path / "build" / "live-runner-canary" / "2026-06-20" / "logs" / "2026-06-20.log"
+    stale_log.parent.mkdir(parents=True, exist_ok=True)
+    stale_log.write_text("old log without smoke\n", encoding="utf-8")
+
+    class Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(command, **_kwargs):
+        state_file = Path(command[command.index("-StateFile") + 1])
+        log_dir = Path(command[command.index("-LogDir") + 1])
+        assert not (log_dir / "2026-06-20.log").exists()
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")
+        (log_dir / "2026-06-20.log").write_text("news-grasp-runner.ps1 SMOKE OK\n", encoding="utf-8")
+        return Proc()
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+
+    result = dsh._run_live_startup_canary(
+        repo_root=tmp_path,
+        startup_path=startup,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is True
 
 
 def test_verify_publish_complete_requires_live_runner_readiness(monkeypatch, tmp_path: Path) -> None:

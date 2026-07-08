@@ -1,6 +1,10 @@
 ﻿param(
     [string] $RepoDir = '',
-    [string] $BinDir = (Join-Path $env:USERPROFILE 'bin')
+    [string] $BinDir = (Join-Path $env:USERPROFILE 'bin'),
+    [string] $RunnerTaskName = 'News-Grasp Runner',
+    [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
+    [string] $DeadmanTaskName = 'News-Grasp Deadman',
+    [switch] $SkipTaskRegistration
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,6 +44,7 @@ $ManifestPath = Join-Path $BackupDir 'install-manifest.json'
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
 $files = @(
+    'news-grasp-bootstrap.ps1',
     'news-grasp-runner.ps1',
     'watch-news-grasp-runner.ps1',
     'news-grasp-deadman.ps1',
@@ -71,11 +76,97 @@ foreach ($file in $files) {
 }
 
 $rollbackCommands = @(
+    "Copy-Item -LiteralPath `"$BackupDir\news-grasp-bootstrap.ps1`" -Destination `"$BinDir\news-grasp-bootstrap.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-runner.ps1`" -Destination `"$BinDir\news-grasp-runner.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\watch-news-grasp-runner.ps1`" -Destination `"$BinDir\watch-news-grasp-runner.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-deadman.ps1`" -Destination `"$BinDir\news-grasp-deadman.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-deadman-launcher.pyw`" -Destination `"$BinDir\news-grasp-deadman-launcher.pyw`" -Force"
 )
+
+$scheduledTasks = @()
+if (-not $SkipTaskRegistration) {
+    $watcherPath = Join-Path $BinDir 'watch-news-grasp-runner.ps1'
+    $bootstrapPath = Join-Path $BinDir 'news-grasp-bootstrap.ps1'
+    $deadmanLauncherPath = Join-Path $BinDir 'news-grasp-deadman-launcher.pyw'
+
+    $runnerArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$bootstrapPath`" -Start"
+    $runnerAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $runnerArgs
+    $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
+    $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
+    $runnerRegistered = $false
+    $runnerRegisterError = ''
+    try {
+        Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings -Description 'News-Grasp daily runner bootstrap. Repairs live ops from repo before starting runner.' -Force -ErrorAction Stop | Out-Null
+        $runnerRegistered = $true
+        $scheduledTasks += [ordered]@{
+            task_name = $RunnerTaskName
+            execute = 'powershell.exe'
+            arguments = $runnerArgs
+            trigger = 'daily 06:00'
+            status = 'registered_watcher_entrypoint'
+        }
+    } catch {
+        $runnerRegisterError = $_.Exception.Message
+        $scheduledTasks += [ordered]@{
+            task_name = $RunnerTaskName
+            execute = 'powershell.exe'
+            arguments = $runnerArgs
+            trigger = 'daily 06:00'
+            status = 'register_failed_bootstrap_required'
+            error = $runnerRegisterError
+        }
+    }
+
+    $bootstrapArgs = "-NoP -NonI -W Hidden -ExecutionPolicy Bypass -File `"$bootstrapPath`" -Start -SmokeTest -PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
+    & schtasks.exe /Create /TN $BootstrapTaskName /SC DAILY /ST 05:55 /TR "powershell.exe $bootstrapArgs" /F | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        if (-not $runnerRegistered) {
+            throw "failed to register $RunnerTaskName and failed to create $BootstrapTaskName"
+        }
+        $scheduledTasks += [ordered]@{
+            task_name = $BootstrapTaskName
+            execute = 'powershell.exe'
+            arguments = $bootstrapArgs
+            trigger = 'daily 05:55'
+            status = 'create_failed'
+        }
+    } else {
+        $scheduledTasks += [ordered]@{
+            task_name = $BootstrapTaskName
+            execute = 'powershell.exe'
+            arguments = $bootstrapArgs
+            trigger = 'daily 05:55'
+            status = 'registered_pre_run_self_repair'
+        }
+    }
+
+    $pythonw = Join-Path $RepoDir '.venv\Scripts\pythonw.exe'
+    if (-not (Test-Path -LiteralPath $pythonw)) {
+        $pythonw = 'pythonw.exe'
+    }
+    & schtasks.exe /Query /TN $DeadmanTaskName | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $scheduledTasks += [ordered]@{
+            task_name = $DeadmanTaskName
+            execute = $pythonw
+            arguments = "`"$deadmanLauncherPath`""
+            trigger = 'existing'
+            status = 'already_registered'
+        }
+    } else {
+        & schtasks.exe /Create /TN $DeadmanTaskName /SC HOURLY /MO 1 /ST 06:40 /TR "`"$pythonw`" `"$deadmanLauncherPath`"" /F | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "failed to create $DeadmanTaskName"
+        }
+        $scheduledTasks += [ordered]@{
+            task_name = $DeadmanTaskName
+            execute = $pythonw
+            arguments = "`"$deadmanLauncherPath`""
+            trigger = 'hourly from 06:40'
+            status = 'registered_deadman'
+        }
+    }
+}
 
 [ordered]@{
     created_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
@@ -84,6 +175,7 @@ $rollbackCommands = @(
     backup_dir = $BackupDir
     files = $manifestFiles
     rollback_commands = $rollbackCommands
+    scheduled_tasks = $scheduledTasks
 } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ManifestPath -Encoding UTF8
 
 Write-Host "News-Grasp ops scripts installed to $BinDir"

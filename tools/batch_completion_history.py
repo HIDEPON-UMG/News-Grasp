@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 
+from tools.daily_self_heal import live_runner_readiness_manifest_ok
+
 
 @dataclass(frozen=True)
 class DayCompletion:
@@ -58,22 +60,7 @@ def _publish_complete_ok(payload: dict, issue_date: str) -> bool:
 
 def _live_readiness_ok(payload: dict) -> bool:
     readiness = payload.get("live_runner_readiness")
-    if not isinstance(readiness, dict) or not readiness.get("ok"):
-        return False
-    repo_runner = readiness.get("repo_runner") if isinstance(readiness.get("repo_runner"), dict) else {}
-    live_runner = readiness.get("live_runner") if isinstance(readiness.get("live_runner"), dict) else {}
-    scheduled_task = readiness.get("scheduled_task") if isinstance(readiness.get("scheduled_task"), dict) else {}
-    canary = readiness.get("canary") if isinstance(readiness.get("canary"), dict) else {}
-    repo_sha = str(repo_runner.get("sha256") or "")
-    live_sha = str(live_runner.get("sha256") or "")
-    return bool(
-        repo_sha
-        and live_sha
-        and repo_sha == live_sha
-        and scheduled_task.get("targets_live_runner")
-        and canary.get("ok") is True
-        and str(canary.get("status") or "") == "smoke_ok"
-    )
+    return live_runner_readiness_manifest_ok(readiness) if isinstance(readiness, dict) else False
 
 
 def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
@@ -117,7 +104,7 @@ def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
             return DayCompletion(
                 issue_date,
                 "completion_overclaim",
-                "publish_complete lacks live runner readiness: repo/live SHA + Scheduled Task target + smoke canary",
+                "publish_complete lacks live ops readiness: repo/live runner SHA + repo/live watcher SHA + repo/live bootstrap SHA + Runner 06:00 production action/NextRunTime/missed-run + direct runner pre-run bootstrap interlock/reexec + Bootstrap 05:55 smoke contract/fresh canary",
                 evidence,
             )
         if state_status and state_status != "publish_complete":

@@ -69,6 +69,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "summary materialize and compound repair routing boundary",
         "repair coverage gate drift",
         "live runner readiness completion overclaim",
+        "live ops bootstrap self-repair gap",
     }
 
     for scenario in scenarios:

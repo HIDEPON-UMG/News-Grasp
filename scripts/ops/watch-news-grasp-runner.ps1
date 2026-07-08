@@ -16,16 +16,57 @@ param(
     [int] $TimeoutMinutes = 120,
     [string] $RunnerPath = (Join-Path $env:USERPROFILE 'bin\news-grasp-runner.ps1'),
     [string] $StateFile = (Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'),
-    [string] $LogDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-logs')
+    [string] $LogDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-logs'),
+    [string] $DateStamp = (Get-Date -Format 'yyyy-MM-dd'),
+    [string] $RepoDir = '',
+    [string] $BinDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+function Resolve-NewsGraspRepoDir {
+    param([string] $Override)
+    if ($Override) {
+        return (Resolve-Path -LiteralPath $Override).Path
+    }
+    if ($env:NEWS_GRASP_REPO_DIR) {
+        return (Resolve-Path -LiteralPath $env:NEWS_GRASP_REPO_DIR).Path
+    }
+    if ($PSScriptRoot) {
+        $repoFromOps = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+        if (Test-Path -LiteralPath (Join-Path $repoFromOps 'tools\daily_self_heal.py')) {
+            return $repoFromOps
+        }
+    }
+    $candidates = @(
+        (Join-Path $env:USERPROFILE 'OneDrive\ドキュメント\ProjectFolders\News-Grasp'),
+        (Join-Path $env:USERPROFILE "Obsidian\New's Grasp\News-Grasp")
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath (Join-Path $candidate 'tools\daily_self_heal.py')) {
+            return $candidate
+        }
+    }
+    throw 'News-Grasp repo not found. Set NEWS_GRASP_REPO_DIR or pass -RepoDir.'
+}
+
+if (-not $BinDir) {
+    $BinDir = Split-Path -Parent $RunnerPath
+}
+$RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+$BootstrapLog = Join-Path $LogDir "bootstrap-$DateStamp.log"
+
 function Get-LogPath {
-    $date = Get-Date -Format 'yyyy-MM-dd'
-    return Join-Path $LogDir "$date.log"
+    return Join-Path $LogDir "$DateStamp.log"
+}
+
+function Write-BootstrapLog {
+    param([string] $Message)
+    New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+    $line = "[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK'), $Message
+    Add-Content -LiteralPath $BootstrapLog -Value $line -Encoding UTF8
 }
 
 function Get-StringSha256Hex {
@@ -42,6 +83,106 @@ function Get-StringSha256Hex {
 function Get-CommandLineFingerprint {
     param([string] $CommandLine)
     return Get-StringSha256Hex -Text ([string]$CommandLine).Trim().ToLowerInvariant()
+}
+
+function Get-FileSha256Hex {
+    param([string] $Path)
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return ''
+    }
+    try {
+        if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
+            return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    } catch {
+        Write-BootstrapLog "WARN: Get-FileHash failed path=$Path reason=$($_.Exception.Message)"
+    }
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        try {
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+                $bytes = $sha.ComputeHash($stream)
+                return ([System.BitConverter]::ToString($bytes) -replace '-', '').ToLowerInvariant()
+            } finally {
+                $sha.Dispose()
+            }
+        } finally {
+            $stream.Dispose()
+        }
+    } catch {
+        Write-BootstrapLog "ERROR: sha256 calculation failed path=$Path reason=$($_.Exception.Message)"
+        return ''
+    }
+}
+
+function Repair-LiveOpsFromRepo {
+    $opsDir = Join-Path $RepoDir 'scripts\ops'
+    if (-not (Test-Path -LiteralPath $opsDir)) {
+        throw "repo ops directory not found: $opsDir"
+    }
+    New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+    $files = @(
+        'news-grasp-bootstrap.ps1',
+        'news-grasp-runner.ps1',
+        'watch-news-grasp-runner.ps1',
+        'news-grasp-deadman.ps1',
+        'news-grasp-deadman-launcher.pyw'
+    )
+    $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $backupDir = Join-Path $RepoDir "build\live-runner-self-repair\$timestamp"
+    $manifestPath = Join-Path $backupDir 'auto-repair-manifest.json'
+    $manifestFiles = @()
+    $changed = $false
+
+    foreach ($file in $files) {
+        $source = Join-Path $opsDir $file
+        $destination = Join-Path $BinDir $file
+        if (-not (Test-Path -LiteralPath $source)) {
+            throw "repo ops script missing: $source"
+        }
+        $sourceHash = Get-FileSha256Hex -Path $source
+        $beforeHash = Get-FileSha256Hex -Path $destination
+        $backup = Join-Path $backupDir $file
+        $status = 'unchanged'
+        if (-not $sourceHash) {
+            throw "repo ops script hash unavailable: $source"
+        }
+        if ($sourceHash -ne $beforeHash) {
+            New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+            if (Test-Path -LiteralPath $destination) {
+                Copy-Item -LiteralPath $destination -Destination $backup -Force
+            }
+            Copy-Item -LiteralPath $source -Destination $destination -Force
+            $changed = $true
+            $status = 'repaired'
+            Write-BootstrapLog "live ops repaired file=$file before=$beforeHash source=$sourceHash"
+        }
+        $afterHash = Get-FileSha256Hex -Path $destination
+        $manifestFiles += [ordered]@{
+            file = $file
+            source = $source
+            destination = $destination
+            backup = if (Test-Path -LiteralPath $backup) { $backup } else { '' }
+            before_sha256 = $beforeHash
+            source_sha256 = $sourceHash
+            after_sha256 = $afterHash
+            status = $status
+        }
+    }
+
+    if ($changed) {
+        [ordered]@{
+            created_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+            repo_dir = $RepoDir
+            bin_dir = $BinDir
+            backup_dir = $backupDir
+            files = $manifestFiles
+        } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+        Write-BootstrapLog "live ops self-repair manifest=$manifestPath"
+    } else {
+        Write-BootstrapLog 'live ops already in sync'
+    }
 }
 
 function Read-State {
@@ -260,6 +401,9 @@ function Start-RunnerProcess {
     if ($RecoverOnly) {
         $args += '-RecoverOnly'
     }
+    $args += @('-DateStampOverride', $DateStamp)
+    $args += @('-LogDirOverride', $LogDir)
+    $args += @('-StateFileOverride', $StateFile)
     return Start-Process -FilePath 'powershell' -ArgumentList $args -WindowStyle Hidden -PassThru
 }
 
@@ -332,6 +476,7 @@ if ($PSCmdlet.ParameterSetName -eq 'Status') {
     exit 0
 }
 
+Repair-LiveOpsFromRepo
 $proc = Start-RunnerProcess
 if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
     Write-StartedJson -Process $proc
