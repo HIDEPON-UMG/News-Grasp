@@ -54,6 +54,17 @@ def _write_deploy_workflow(repo_root: Path) -> None:
     (workflow_dir / "deploy-pages.yml").write_text("name: Deploy Pages\n", encoding="utf-8")
 
 
+def _live_runner_readiness_ok() -> dict:
+    return {
+        "ok": True,
+        "reason": "",
+        "repo_runner": {"exists": True, "sha256": "runner-sha"},
+        "live_runner": {"exists": True, "sha256": "runner-sha"},
+        "scheduled_task": {"ok": True, "task_name": "News-Grasp Runner", "targets_live_runner": True},
+        "canary": {"ok": True, "status": "smoke_ok", "returncode": 0},
+    }
+
+
 def test_phase0_prioritizes_bin_drift_before_content_repair() -> None:
     """bin drift がある日は content repair へ進む前に同期不備を主因にする。"""
     snapshot = {
@@ -1546,6 +1557,130 @@ def test_verify_publish_complete_requires_distribution_inventory(monkeypatch, tm
     assert "build/youtube-podcast-deepdive/uploads.json" in result["distribution_artifacts"]["missing"]
 
 
+def test_verify_live_runner_readiness_requires_hash_task_and_canary(monkeypatch, tmp_path: Path) -> None:
+    """live runner readiness は repo/live hash、Scheduled Task target、実起動 canary をまとめて見る。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    repo_runner.write_text("runner", encoding="utf-8")
+    live_runner.write_text("runner", encoding="utf-8")
+    monkeypatch.setattr(
+        dsh,
+        "_scheduled_task_action_summary",
+        lambda **_kwargs: f'powershell.exe -File "{live_runner}"',
+    )
+    monkeypatch.setattr(dsh, "_run_live_runner_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        date="2026-06-20",
+        run_canary=True,
+    )
+
+    assert result["ok"] is True
+    assert result["repo_runner"]["sha256"] == result["live_runner"]["sha256"]
+    assert result["scheduled_task"]["targets_live_runner"] is True
+    assert result["canary"]["status"] == "smoke_ok"
+
+
+def test_verify_live_runner_readiness_rejects_scheduler_target_drift(monkeypatch, tmp_path: Path) -> None:
+    """Scheduled Task が別 runner を指す日は next-run ready ではない。"""
+    repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    repo_runner.parent.mkdir(parents=True)
+    live_runner.parent.mkdir(parents=True)
+    repo_runner.write_text("runner", encoding="utf-8")
+    live_runner.write_text("runner", encoding="utf-8")
+    monkeypatch.setattr(dsh, "_scheduled_task_action_summary", lambda **_kwargs: "powershell.exe -File C:\\old\\runner.ps1")
+    monkeypatch.setattr(dsh, "_run_live_runner_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        date="2026-06-20",
+        run_canary=True,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_target_mismatch"
+
+
+def test_live_runner_canary_rejects_command_not_found_stderr(monkeypatch, tmp_path: Path) -> None:
+    """canary は exit 0 でも PowerShell の致命 stderr を Green にしない。"""
+    live_runner = tmp_path / "bin" / "news-grasp-runner.ps1"
+    live_runner.parent.mkdir(parents=True)
+    live_runner.write_text("runner", encoding="utf-8")
+
+    class Proc:
+        returncode = 0
+        stdout = "news-grasp-runner.ps1 SMOKE OK\n"
+        stderr = "Get-FileHash : The term 'Get-FileHash' is not recognized\nCommandNotFoundException\n"
+
+    def fake_run(command, **_kwargs):
+        state_file = Path(command[command.index("-StateFileOverride") + 1])
+        log_dir = Path(command[command.index("-LogDirOverride") + 1])
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        state_file.write_text(json.dumps({"status": "smoke_ok"}), encoding="utf-8")
+        (log_dir / "2026-06-20.log").write_text("news-grasp-runner.ps1 SMOKE OK\n", encoding="utf-8")
+        return Proc()
+
+    monkeypatch.setattr(dsh.subprocess, "run", fake_run)
+
+    result = dsh._run_live_runner_canary(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        date="2026-06-20",
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "canary_stderr_error"
+
+
+def test_verify_publish_complete_requires_live_runner_readiness(monkeypatch, tmp_path: Path) -> None:
+    """public/distribution が揃っても live readiness が無ければ daily 完了にしない。"""
+    _write_publish_complete_inventory(tmp_path)
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "https://example.com/News-Grasp/publish-status.json",
+            "pwa": {"ok": True},
+            "audio": {"ok": True},
+            "podcast": {"ok": True, "videoId": "primary-video"},
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_podcast",
+        lambda **_kwargs: {"ok": True, "videoId": "deepdive-video", "title": "News-Grasp DeepDive Dialogue 2026-06-20"},
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_live_runner_readiness",
+        lambda **_kwargs: {"ok": False, "reason": "live_runner_hash_mismatch"},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "live_runner_hash_mismatch"
+    assert result["live_runner_readiness"]["ok"] is False
+
+
 def test_verify_publish_complete_rejects_invalid_distribution_manifest(monkeypatch, tmp_path: Path) -> None:
     """distribution manifest は存在だけでなく JSON/schema を満たす必要がある。"""
     _write_publish_complete_inventory(tmp_path, distribution_manifest="{not-json")
@@ -1855,6 +1990,7 @@ def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_pat
         "verify_podcast",
         lambda **_kwargs: {"ok": True, "videoId": "deepdive-video", "title": "News-Grasp DeepDive Dialogue 2026-06-20"},
     )
+    monkeypatch.setattr(dsh, "verify_live_runner_readiness", lambda **_kwargs: _live_runner_readiness_ok())
 
     result = dsh.verify_publish_complete(
         repo_root=tmp_path,
@@ -1869,6 +2005,7 @@ def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_pat
 
     assert result["ok"] is True
     assert result["notification"]["status"] == "no_subscribers"
+    assert result["live_runner_readiness"]["ok"] is True
 
 
 def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Path, capsys) -> None:
@@ -1893,6 +2030,7 @@ def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Pat
         "verify_podcast",
         lambda **_kwargs: {"ok": True, "videoId": "deepdive-video", "title": "News-Grasp DeepDive Dialogue 2026-06-20"},
     )
+    monkeypatch.setattr(dsh, "verify_live_runner_readiness", lambda **_kwargs: _live_runner_readiness_ok())
 
     rc = dsh.main(
         [

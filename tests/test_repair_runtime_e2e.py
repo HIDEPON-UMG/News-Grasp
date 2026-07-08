@@ -210,6 +210,91 @@ def test_daily_quality_runtime_repair_cycle_reruns_same_gate(tmp_path: Path) -> 
     assert "**[[政策イベント]] と __企業実装__ が同じ日に並んだ**。" in repaired
 
 
+def test_daily_quality_runtime_repairs_search_audit_count_mismatch(tmp_path: Path) -> None:
+    issue = "2026-06-25"
+    _write_daily_quality_repair_fixture(tmp_path, issue)
+    summary = tmp_path / "digest" / "Summary" / f"{issue}.md"
+    summary_text = summary.read_text(encoding="utf-8")
+    summary.write_text(
+        summary_text.replace(
+            "> [[政策イベント]] と __企業実装__ が同じ日に並んだ。",
+            "> **[[政策イベント]] と __企業実装__ が同じ日に並んだ**。",
+        ).replace(
+            "[[AI導入]] は __継続運用できる体制__ で評価される。",
+            "[[AI導入]] は **導入条件** と __継続運用できる体制__ で評価される。",
+        ),
+        encoding="utf-8",
+    )
+    ai_digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    ai_cards = []
+    for idx in range(3):
+        ai_cards.append(
+            f"### [{90 - idx}] AI article {idx + 1}\n\n"
+            f"📅 {issue} 06:0{idx} · 📰 Example · 🔗 [元記事](https://example.com/2026/06/25/ai-{idx})\n\n"
+            f"![thumb](https://example.com/thumb-ai-{idx}.jpg)\n\n"
+            "- [[論点]] **実装** __運用__\n\n"
+            "---\n"
+        )
+    ai_digest.write_text(
+        "---\n"
+        "title: AI\n"
+        f"date: {issue}\n"
+        "categoryId: ai\n"
+        "quality_shortfall_reason: selected quality shortfall\n"
+        "---\n\n"
+        + "\n".join(ai_cards),
+        encoding="utf-8",
+    )
+    audit = tmp_path / "data" / "search_audit" / issue / "ai.json"
+    audit.parent.mkdir(parents=True, exist_ok=True)
+    audit.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "category_id": "ai",
+                "queries": ["q1", "q2", "q3"],
+                "raw_results_total": 12,
+                "candidates_total": 6,
+                "selected_total": 8,
+                "coverage_terms_checked": [
+                    "OpenAI",
+                    "Anthropic",
+                    "Google",
+                    "Apple",
+                    "Microsoft",
+                    "Meta",
+                    "NVIDIA",
+                ],
+                "dropped": [{"title": "low", "reason": "quality shortfall"}],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_registry_repair_cycle(
+        repo_root=tmp_path,
+        issue=issue,
+        gate_id="daily-quality",
+        command=python_gate_command(
+            "tools.validate_daily_quality",
+            "--date",
+            issue,
+            "--json",
+        ),
+        artifacts=[f"data/search_audit/{issue}/ai.json"],
+    )
+
+    repaired = json.loads(audit.read_text(encoding="utf-8"))
+    assert result.initial_exit_code == 1
+    assert result.handler_id == "search-audit-metadata-patch"
+    assert result.repair_status == "repaired"
+    assert result.post_repair_exit_code == 0
+    assert result.final_status == "green_after_repair"
+    assert repaired["selected_total"] == 3
+
+
 def test_daily_quality_runtime_repairs_sequential_known_failures(tmp_path: Path) -> None:
     issue = "2026-06-25"
     summary = tmp_path / "digest" / "Summary" / f"{issue}.md"

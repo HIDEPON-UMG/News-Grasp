@@ -56,6 +56,26 @@ def _publish_complete_ok(payload: dict, issue_date: str) -> bool:
     return bool(payload.get("ok")) and str(payload.get("date") or issue_date) == issue_date
 
 
+def _live_readiness_ok(payload: dict) -> bool:
+    readiness = payload.get("live_runner_readiness")
+    if not isinstance(readiness, dict) or not readiness.get("ok"):
+        return False
+    repo_runner = readiness.get("repo_runner") if isinstance(readiness.get("repo_runner"), dict) else {}
+    live_runner = readiness.get("live_runner") if isinstance(readiness.get("live_runner"), dict) else {}
+    scheduled_task = readiness.get("scheduled_task") if isinstance(readiness.get("scheduled_task"), dict) else {}
+    canary = readiness.get("canary") if isinstance(readiness.get("canary"), dict) else {}
+    repo_sha = str(repo_runner.get("sha256") or "")
+    live_sha = str(live_runner.get("sha256") or "")
+    return bool(
+        repo_sha
+        and live_sha
+        and repo_sha == live_sha
+        and scheduled_task.get("targets_live_runner")
+        and canary.get("ok") is True
+        and str(canary.get("status") or "") == "smoke_ok"
+    )
+
+
 def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
     repo_root = repo_root.resolve()
     state, state_path = _state_for_date(repo_root, issue_date)
@@ -93,6 +113,13 @@ def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
             evidence,
         )
     if _publish_complete_ok(publish_complete, issue_date) and publish_result == "published_ok" and distribution:
+        if not _live_readiness_ok(publish_complete):
+            return DayCompletion(
+                issue_date,
+                "completion_overclaim",
+                "publish_complete lacks live runner readiness: repo/live SHA + Scheduled Task target + smoke canary",
+                evidence,
+            )
         if state_status and state_status != "publish_complete":
             return DayCompletion(
                 issue_date,
@@ -107,7 +134,12 @@ def classify_day(repo_root: Path, issue_date: str) -> DayCompletion:
             evidence,
         )
     if state_status == "publish_complete" and publish_result == "published_ok" and distribution:
-        return DayCompletion(issue_date, "complete", "publish_complete + published_ok + distribution manifest", evidence)
+        return DayCompletion(
+            issue_date,
+            "completion_overclaim",
+            "legacy publish_complete lacks live runner readiness manifest",
+            evidence,
+        )
     if state_status.startswith("blocked_external") or state_status in {"blocked_external_readiness"}:
         return DayCompletion(issue_date, "typed_external", state_status, evidence)
     if state_status in {

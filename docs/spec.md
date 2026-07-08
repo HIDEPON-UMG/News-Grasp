@@ -108,7 +108,7 @@ runner、watcher、repair、publish verification、podcast verification、distri
 | Audio / TTS | 音声生成、release URL、ページ埋め込み、再生可能性、TTS required gate を更新する。 | public audio、Release asset、HTML audio refs、distribution manifest。 | TTS publish gate、audio URL presence、`verify-publish` audio check。 |
 | YouTube Podcast / playlist | upload state、public video、playlist 反映、Daily Podcast と DeepDive Podcast の playlist 境界、同日重複禁止、Deleted video item 禁止、外部検証 fallback、token / quota / permission の typed status を更新する。 | YouTube video、playlist item、distribution manifest、Podcast metadata。 | `verify-podcast`、`tools.youtube_podcast.upload_episode <date> --audit-playlists`、`verify-publish --require-podcast`、外部 API 401/403/404 fallback 契約テスト、runner convergence 契約テスト。 |
 | Notification | 送信条件、通知不要条件、失敗時 typed status、再送可否を更新する。 | notification payload、distribution state、runner state。 | notification dry-run / typed status テスト、送信不要時の完了条件テスト。 |
-| Runner / state / recovery | full run / RecoverOnly / fallback publish / OK marker / distribution state の遷移を更新する。pytest-static は `NEWS_GRASP_SKIP_URL_CHECK=1` と `-m "not network"` を維持し、外部 URL liveness を混ぜない。 | runner ps1、state JSON、logs、gate attempts、distribution state。 | runner convergence / state watcher 契約テスト、full と RecoverOnly の両経路 dry-run。 |
+| Runner / state / recovery | full run / RecoverOnly / fallback publish / OK marker / distribution state / live runner readiness の遷移を更新する。通常 publish_complete は repo/live runner SHA 一致、Scheduled Task target、実起動 canary `smoke_ok` を含む `live_runner_readiness` 証跡なしに成立しない。pytest-static は `NEWS_GRASP_SKIP_URL_CHECK=1` と `-m "not network"` を維持し、外部 URL liveness を混ぜない。 | runner ps1、state JSON、logs、gate attempts、distribution state、live runner、Task Scheduler、`build/live-runner-canary/`。 | runner convergence / state watcher 契約テスト、`tools.daily_self_heal verify-live-runner-readiness`、full と RecoverOnly の両経路 dry-run。 |
 | Incident / reporting / recovery evidence | 障害 evidence、公開 inventory、完了報告の必須項目を更新する。新規 `docs/incidents/*-report.html` は追跡・公開しない。HTML 証跡が必要な場合は untracked の `build/incidents/` を既定置場にし、公開が必要な場合は別途明示承認を要する。 | `.gitignore`、`AGENTS.md`、`CLAUDE.md`、`build/incidents/`、historical failure scenario evidence。 | `tests/test_incident_report_tracking_policy.py`、`tests/test_product_spec_contract.py`、公開 inventory 確認。 |
 | External integration / auth | OAuth、API quota、権限、token expiry、公開反映遅延の failure domain を typed status に分ける。 | token / auth state、external API response、runner typed status。 | auth/quota/permission の fixture、retry しない fatal と fallback 可能な verify failure の分類テスト。 |
 
@@ -158,7 +158,7 @@ Category schedule impact map:
 | publish inventory / repair scope | required artifact だけを missing / repair 対象にし、非対象カテゴリ artifact は通常完走でも failure でもない補助情報として扱う。 |
 | generate_pages / public UI | 存在する artifact は公開できるが、当日 issue の required 判定には戻さない。 |
 | validate_daily_quality / validate_generation_quality / reconcile | date から必須カテゴリを解決し、非対象カテゴリを required missing にしない。 |
-| YouTube Podcast / publish_complete | required web/audio/deepdive の公開状態と Podcast/playlist 状態を確認し、非対象カテゴリ有無で完了判定を変えない。 |
+| YouTube Podcast / publish_complete | required web/audio/deepdive の公開状態、Podcast/playlist 状態、repo/live runner SHA、Scheduled Task target、実起動 canary `smoke_ok` を確認し、非対象カテゴリ有無で完了判定を変えない。 |
 | historical fallback evidence | 旧 fallback 証跡は通常完走ではなく、非対象カテゴリ探索失敗や required artifact 欠落の成功理由にしない。 |
 | verify-publish-complete | public URL、publish-status、audio、Podcast の日付 sentinel を確認し、曜日別カテゴリ仕様と矛盾させない。 |
 

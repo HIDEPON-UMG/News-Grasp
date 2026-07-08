@@ -733,7 +733,30 @@ function Get-FileSha256Hex {
     if (-not (Test-Path -LiteralPath $Path)) {
         return ''
     }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    try {
+        if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
+            return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    } catch {
+        Write-Log "WARN: Get-FileHash failed path=$Path reason=$($_.Exception.Message)"
+    }
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        try {
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+                $bytes = $sha.ComputeHash($stream)
+                return ([System.BitConverter]::ToString($bytes) -replace '-', '').ToLowerInvariant()
+            } finally {
+                $sha.Dispose()
+            }
+        } finally {
+            $stream.Dispose()
+        }
+    } catch {
+        Write-Log "ERROR: sha256 calculation failed path=$Path reason=$($_.Exception.Message)"
+        return ''
+    }
 }
 
 function Get-ScheduledTaskActionSummary {
@@ -2126,7 +2149,7 @@ if ($Stage2EditorSmokeOnly) {
 if ($SmokeTest) {
     Write-Log 'SmokeTest mode: skipping codex / push / generate_pages'
     Write-Log 'news-grasp-runner.ps1 SMOKE OK'
-    exit 0
+    Exit-Runner -Status 'smoke_ok' -Message 'news-grasp-runner.ps1 SMOKE OK' -ExitCode 0
 }
 
 if ($RecoverOnly) {

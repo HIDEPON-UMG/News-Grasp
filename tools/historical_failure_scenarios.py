@@ -327,6 +327,26 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-07-summary-materialize-recovery.md",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-08",
+        "runner binary drift / daily-quality / deepdive-required / publish-complete",
+        "live runner drift stopped the scheduled run while prior publish-complete history could still classify days as complete without live readiness evidence",
+        "live runner readiness completion overclaim",
+        "daily completion must include repo/live SHA, Scheduled Task target, and smoke_ok canary evidence in the publish-complete manifest",
+        "verify-live-runner-readiness contract plus batch history completion_overclaim fixture",
+        "tasks/audits/2026-07-08-live-readiness-overclaim-audit.md",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-07-08",
+        "daily-quality / deepdive-required repair routing",
+        "search audit repair routing missed deepdive-required selected_total mismatch after the runner drift recovery",
+        "repair coverage gate drift",
+        "validator output must route to the same deterministic handler across equivalent daily-quality and deepdive-required gates",
+        "repair coverage fixtures for search audit metadata and deepdive-required selected_total mismatch plus public surface proof",
+        "tasks/audits/2026-07-08-live-readiness-overclaim-audit.md",
+        "fixture_required",
+    ),
 )
 
 

@@ -134,9 +134,25 @@ code{background:#F1EBDC;word-break:break-all;overflow-wrap:anywhere}
 def test_reference_like_incident_report_follows_required_design(tmp_path: Path) -> None:
     report = tmp_path / "reference-like-report.html"
     _write_reference_like_report(report)
-    result = validate_report(report)
+    result = validate_report(
+        report,
+        required_texts=("公開前 gate",),
+        forbidden_texts=("17aihJtI-_w",),
+    )
 
     assert result.ok, result.errors
+
+
+def test_incident_report_content_sentinels_reject_stale_evidence(tmp_path: Path) -> None:
+    report = tmp_path / "reference-like-report.html"
+    _write_reference_like_report(report)
+    text = report.read_text(encoding="utf-8")
+    report.write_text(text + " stale video 17aihJtI-_w", encoding="utf-8")
+
+    result = validate_report(report, forbidden_texts=("17aihJtI-_w",))
+
+    assert not result.ok
+    assert any("禁止テキスト" in error for error in result.errors)
 
 
 def test_goal_completion_incident_report_keeps_e2e_unproven_when_not_run() -> None:

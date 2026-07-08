@@ -290,6 +290,36 @@ def _write_search_audit(
     )
 
 
+def test_daily_quality_cli_json_classifies_search_audit_count_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    _write_summary(tmp_path)
+    url = "https://example.com/2026/06/08/fresh-news"
+    _write_category(tmp_path, url, count=3, quality_shortfall_reason="selected quality shortfall")
+    _write_jsonl(tmp_path, url)
+    _write_search_audit(tmp_path, selected_total=5)
+    monkeypatch.chdir(tmp_path)
+
+    rc = main(["--date", "2026-06-08", "--json"])
+
+    payload = json.loads(capsys.readouterr().out)
+    matching = [
+        issue
+        for issue in payload["issues"]
+        if issue["issue_code"] == "search_audit_count_mismatch"
+    ]
+    assert rc == 1
+    assert matching
+    assert matching[0]["artifact_paths"] == ["data/search_audit/2026-06-08/ai.json"]
+    assert matching[0]["category"] == "ai"
+    assert matching[0]["evidence"] == {
+        "selected_total": 5,
+        "digest_article_count": 3,
+    }
+
+
 def test_daily_quality_rejects_missing_summary_hero(tmp_path: Path) -> None:
     """hero_left / hero_right が無い Summary は LP fallback 防止のため落とす。"""
     _write_summary(tmp_path, hero=False)

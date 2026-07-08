@@ -1480,6 +1480,26 @@ def test_runner_watcher_uses_hidden_start_and_terminal_state_polling() -> None:
     assert "watch timeout after" in watcher
 
 
+def test_runner_smoke_test_writes_terminal_smoke_ok_state() -> None:
+    """実起動 canary はログだけでなく state に smoke_ok を残す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    smoke_block = runner.rsplit("if ($SmokeTest)", 1)[1].split("if ($RecoverOnly)", 1)[0]
+
+    assert "news-grasp-runner.ps1 SMOKE OK" in smoke_block
+    assert "Exit-Runner -Status 'smoke_ok'" in smoke_block
+    assert "exit 0" not in smoke_block
+
+
+def test_runner_sha256_helper_has_dotnet_fallback() -> None:
+    """PowerShell 環境で Get-FileHash が欠けても runner drift guard を fail-open させない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    hash_body = runner.split("function Get-FileSha256Hex", 1)[1].split("function Get-ScheduledTaskActionSummary", 1)[0]
+
+    assert "Get-Command Get-FileHash" in hash_body
+    assert "[System.Security.Cryptography.SHA256]::Create()" in hash_body
+    assert "[System.BitConverter]::ToString" in hash_body
+
+
 def test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state() -> None:
     """watcher は照合済み runner だけを止め、照合不能・state破損では kill しない。"""
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")

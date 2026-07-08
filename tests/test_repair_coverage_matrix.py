@@ -21,6 +21,7 @@ REQUIRED_ROWS = {
     ("daily-quality", "category_card_emphasis_missing"),
     ("daily-quality", "search_audit_metadata_missing"),
     ("daily-quality", "search_audit_count_mismatch"),
+    ("deepdive-required", "search_audit_count_mismatch"),
     ("generation-quality", "audio_script_quality_invalid"),
     ("generation-quality", "summary_hero_missing"),
     ("generation-quality", "summary_reflection_missing"),
@@ -279,6 +280,39 @@ def test_daily_quality_selected_total_mismatch_routes_to_search_audit_metadata_p
         "selected_total": 5,
         "digest_article_count": 3,
     }
+
+
+def test_deepdive_required_selected_total_mismatch_routes_to_search_audit_metadata_patch() -> None:
+    output = (
+        "ERROR: data\\search_audit\\2026-07-08\\mobility.json: "
+        "selected_total=4 does not match digest article count 3."
+    )
+
+    decisions = classify_gate_issues("deepdive-required", output)
+
+    assert decisions[0].issue_code == "search_audit_count_mismatch"
+    assert decisions[0].handler_id == "search-audit-metadata-patch"
+    assert decisions[0].artifact_paths == ("data/search_audit/2026-07-08/mobility.json",)
+    assert decisions[0].verify_gate == "deepdive-required"
+    assert decisions[0].evidence == {
+        "selected_total": 4,
+        "digest_article_count": 3,
+    }
+
+
+def test_daily_quality_search_audit_coverage_terms_routes_with_audit_artifact() -> None:
+    output = (
+        "ERROR: data\\search_audit\\2026-07-08\\mobility.json: "
+        "coverage_terms_checked missing required terms: BYD, Tesla, Toyota, Uber, Waymo"
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "search_audit_metadata_missing"
+    assert decisions[0].handler_id == "search-audit-metadata-patch"
+    assert decisions[0].artifact_paths == ("data/search_audit/2026-07-08/mobility.json",)
+    assert decisions[0].issue_date == "2026-07-08"
+    assert decisions[0].category == "mobility"
 
 
 def test_unknown_daily_quality_line_does_not_mask_known_deterministic_issue() -> None:

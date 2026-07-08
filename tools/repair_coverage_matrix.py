@@ -509,6 +509,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
+        "deepdive-required",
+        "search_audit_count_mismatch",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "search-audit-metadata-patch",
+        ("data/search_audit/{date}",),
+        "deepdive-required",
+        "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
         "youtube-podcast",
         "oauth_invalid_grant",
         RepairClass.TYPED_EXTERNAL,
@@ -700,6 +709,11 @@ SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
     r"[\\/]+(?P<category>[^\\/:\s]+)\.json): selected_total=(?P<selected>\d+) "
     r"does not match digest article count (?P<count>\d+)\."
 )
+SEARCH_AUDIT_METADATA_RE = re.compile(
+    r"(?P<artifact>.*?data[\\/]+search_audit[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})"
+    r"[\\/]+(?P<category>[^\\/:\s]+)\.json): "
+    r"(?:coverage_terms_checked missing required terms|dropped reasons are required)"
+)
 DIGEST_ARTIFACT_RE = re.compile(
     r"(?P<artifact>digest[\\/]+(?P<folder>[^\\/:\s]+)[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-[^\\/:\s]+\.md):"
 )
@@ -737,6 +751,18 @@ def _search_audit_count_mismatch_metadata(output: str) -> dict[str, Any]:
             "selected_total": int(match.group("selected")),
             "digest_article_count": int(match.group("count")),
         },
+    }
+
+
+def _search_audit_metadata_missing_metadata(output: str) -> dict[str, Any]:
+    match = SEARCH_AUDIT_METADATA_RE.search(output)
+    if not match:
+        return {}
+    return {
+        "artifact_paths": (_repo_relative_artifact(match.group("artifact")),),
+        "issue_date": match.group("issue"),
+        "category": match.group("category"),
+        "evidence": {"category": match.group("category")},
     }
 
 
@@ -870,6 +896,7 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
         for line in issue_lines:
             metadata = (
                 _search_audit_count_mismatch_metadata(line)
+                or _search_audit_metadata_missing_metadata(line)
                 or _summary_digest_missing_metadata(line)
                 or _digest_artifact_metadata(line)
             )
@@ -888,6 +915,7 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
         return issues
     metadata = (
         _search_audit_count_mismatch_metadata(output)
+        or _search_audit_metadata_missing_metadata(output)
         or _summary_digest_missing_metadata(output)
         or _digest_artifact_metadata(output)
     )

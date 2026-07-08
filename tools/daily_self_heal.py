@@ -70,6 +70,214 @@ def compare_files(repo_path: Path, live_path: Path) -> dict:
     }
 
 
+def _default_live_runner_path() -> Path:
+    return Path.home() / "bin" / "news-grasp-runner.ps1"
+
+
+def _command_path_text(value: Path | str) -> str:
+    return str(value).strip().strip('"').replace("/", "\\").lower()
+
+
+def _scheduled_task_action_summary(
+    *,
+    task_name: str = "News-Grasp Runner",
+    powershell_exe: str = "powershell.exe",
+) -> str:
+    safe_task_name = task_name.replace("'", "''")
+    command = (
+        f"$task=Get-ScheduledTask -TaskName '{safe_task_name}' -ErrorAction Stop; "
+        "(@($task.Actions) | ForEach-Object { "
+        "(([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()) "
+        "}) -join ' ; '"
+    )
+    try:
+        proc = subprocess.run(
+            [powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"unavailable: {exc}"
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        return f"unavailable: {detail or f'rc={proc.returncode}'}"
+    return proc.stdout.strip()
+
+
+def _run_live_runner_canary(
+    *,
+    repo_root: Path,
+    live_runner_path: Path,
+    date: str,
+    timeout_sec: int = 60,
+    powershell_exe: str = "powershell.exe",
+) -> dict:
+    canary_root = repo_root / "build" / "live-runner-canary" / date
+    log_dir = canary_root / "logs"
+    state_file = canary_root / "state.json"
+    log_file = log_dir / f"{date}.log"
+    canary_root.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    if state_file.exists():
+        state_file.unlink()
+    command = [
+        powershell_exe,
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(live_runner_path),
+        "-SmokeTest",
+        "-Stage2EditorSmokeOnly",
+        "-DateStampOverride",
+        date,
+        "-LogDirOverride",
+        str(log_dir),
+        "-StateFileOverride",
+        str(state_file),
+    ]
+    try:
+        proc = subprocess.run(
+            command,
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout_sec,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "ok": False,
+            "reason": "canary_timeout",
+            "state_file": str(state_file),
+            "log_file": str(log_file),
+            "timeout_sec": timeout_sec,
+            "stdout": exc.stdout or "",
+            "stderr": exc.stderr or "",
+        }
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "ok": False,
+            "reason": "canary_launch_failed",
+            "state_file": str(state_file),
+            "log_file": str(log_file),
+            "detail": str(exc),
+        }
+    state: dict = {}
+    if state_file.exists():
+        try:
+            loaded = json.loads(state_file.read_text(encoding="utf-8-sig"))
+            if isinstance(loaded, dict):
+                state = loaded
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError):
+            state = {}
+    log_text = ""
+    if log_file.exists():
+        try:
+            log_text = log_file.read_text(encoding="utf-8-sig", errors="replace")
+        except (OSError, UnicodeDecodeError):
+            log_text = ""
+    status = str(state.get("status") or "")
+    log_smoke_ok = "news-grasp-runner.ps1 SMOKE OK" in log_text
+    stderr_tail = proc.stderr[-2000:]
+    if proc.returncode != 0:
+        reason = "canary_failed"
+    elif "CommandNotFoundException" in proc.stderr or "Get-FileHash" in proc.stderr:
+        reason = "canary_stderr_error"
+    elif status != "smoke_ok":
+        reason = "canary_state_not_smoke_ok"
+    elif not log_smoke_ok:
+        reason = "canary_log_missing_smoke_ok"
+    else:
+        reason = ""
+    return {
+        "ok": reason == "",
+        "reason": reason,
+        "returncode": proc.returncode,
+        "status": status,
+        "state_file": str(state_file),
+        "log_file": str(log_file),
+        "log_smoke_ok": log_smoke_ok,
+        "stdout": proc.stdout[-2000:],
+        "stderr": stderr_tail,
+    }
+
+
+def verify_live_runner_readiness(
+    *,
+    repo_root: Path,
+    date: str,
+    live_runner_path: Path | None = None,
+    task_name: str = "News-Grasp Runner",
+    run_canary: bool = True,
+    canary_timeout_sec: int = 60,
+    powershell_exe: str = "powershell.exe",
+) -> dict:
+    repo_root = repo_root.resolve()
+    live_runner_path = live_runner_path or _default_live_runner_path()
+    repo_runner = repo_root / "scripts" / "ops" / "news-grasp-runner.ps1"
+    checksum = compare_files(repo_runner, live_runner_path)
+    result = {
+        "ok": False,
+        "reason": "",
+        "date": date,
+        "repo_runner": {
+            "path": str(repo_runner),
+            "exists": checksum["repo_exists"],
+            "sha256": checksum["repo_sha256"],
+        },
+        "live_runner": {
+            "path": str(live_runner_path),
+            "exists": checksum["live_exists"],
+            "sha256": checksum["live_sha256"],
+        },
+        "scheduled_task": {},
+        "canary": {},
+    }
+    if not checksum["repo_exists"]:
+        return {**result, "reason": "repo_runner_missing"}
+    if not checksum["live_exists"]:
+        return {**result, "reason": "live_runner_missing"}
+    if not checksum["synced"]:
+        return {**result, "reason": "live_runner_hash_mismatch"}
+
+    action_summary = _scheduled_task_action_summary(task_name=task_name, powershell_exe=powershell_exe)
+    action_text = _command_path_text(action_summary)
+    live_text = _command_path_text(live_runner_path)
+    task_ok = bool(action_summary and not action_summary.startswith("unavailable:") and live_text in action_text)
+    result["scheduled_task"] = {
+        "ok": task_ok,
+        "task_name": task_name,
+        "action_summary": action_summary,
+        "targets_live_runner": task_ok,
+    }
+    if not task_ok:
+        reason = "scheduled_task_unavailable" if action_summary.startswith("unavailable:") else "scheduled_task_target_mismatch"
+        return {**result, "reason": reason}
+
+    if run_canary:
+        canary = _run_live_runner_canary(
+            repo_root=repo_root,
+            live_runner_path=live_runner_path,
+            date=date,
+            timeout_sec=canary_timeout_sec,
+            powershell_exe=powershell_exe,
+        )
+        result["canary"] = canary
+        if not canary.get("ok"):
+            return {**result, "reason": str(canary.get("reason") or "canary_failed")}
+    else:
+        result["canary"] = {"ok": True, "skipped": True}
+    return {**result, "ok": True, "reason": ""}
+
+
 def normalize_failure_signature(
     *, gate_id: str, error_code: str, artifact_identity: str = "", url_or_category: str = ""
 ) -> str:
@@ -1125,6 +1333,11 @@ def verify_publish_complete(
         if notification.get("reason"):
             return {**manifest, "reason": notification["reason"], "notification": notification}
 
+    live_readiness = verify_live_runner_readiness(repo_root=repo_root, date=date)
+    manifest["live_runner_readiness"] = live_readiness
+    if not live_readiness.get("ok"):
+        return {**manifest, "reason": str(live_readiness.get("reason") or "live_runner_readiness_failed")}
+
     return {
         **manifest,
         "ok": True,
@@ -1243,6 +1456,16 @@ def main(argv: list[str] | None = None) -> int:
     complete.add_argument("--notification-state", type=Path, default=None)
     complete.add_argument("--output", type=Path, default=None)
 
+    live_ready = sub.add_parser("verify-live-runner-readiness")
+    live_ready.add_argument("--repo-root", type=Path, required=True)
+    live_ready.add_argument("--date", required=True)
+    live_ready.add_argument("--live-runner", type=Path, default=None)
+    live_ready.add_argument("--task-name", default="News-Grasp Runner")
+    live_ready.add_argument("--skip-canary", action="store_true")
+    live_ready.add_argument("--canary-timeout-sec", type=int, default=60)
+    live_ready.add_argument("--powershell-exe", default="powershell.exe")
+    live_ready.add_argument("--output", type=Path, default=None)
+
     args = parser.parse_args(argv)
     if args.cmd == "checksum":
         result = compare_files(args.repo_path, args.live_path)
@@ -1327,6 +1550,22 @@ def main(argv: list[str] | None = None) -> int:
             primary_podcast_state_path=args.primary_podcast_state,
             deepdive_podcast_state_path=args.deepdive_podcast_state,
             notification_state_path=args.notification_state,
+        )
+        text = json.dumps(result, ensure_ascii=False, indent=2)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(text + "\n", encoding="utf-8")
+        print(text)
+        return 0 if result["ok"] else 1
+    if args.cmd == "verify-live-runner-readiness":
+        result = verify_live_runner_readiness(
+            repo_root=args.repo_root,
+            date=args.date,
+            live_runner_path=args.live_runner,
+            task_name=args.task_name,
+            run_canary=not args.skip_canary,
+            canary_timeout_sec=args.canary_timeout_sec,
+            powershell_exe=args.powershell_exe,
         )
         text = json.dumps(result, ensure_ascii=False, indent=2)
         if args.output:

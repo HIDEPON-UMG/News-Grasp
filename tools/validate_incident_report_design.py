@@ -62,7 +62,12 @@ def _external_urls(html: str) -> list[str]:
     return re.findall(r"""(?:src|href)=["'](https?://[^"']+)["']""", html, flags=re.IGNORECASE)
 
 
-def validate_report(path: Path) -> ValidationResult:
+def validate_report(
+    path: Path,
+    *,
+    required_texts: tuple[str, ...] = (),
+    forbidden_texts: tuple[str, ...] = (),
+) -> ValidationResult:
     errors: list[str] = []
     if not path.exists():
         return ValidationResult(False, (f"ファイルが存在しません: {path}",))
@@ -79,6 +84,14 @@ def validate_report(path: Path) -> ValidationResult:
     for text in REQUIRED_TEXTS:
         if text not in html:
             errors.append(f"必須テキストがありません: {text}")
+
+    for text in required_texts:
+        if text not in html:
+            errors.append(f"必須テキストがありません: {text}")
+
+    for text in forbidden_texts:
+        if text in html:
+            errors.append(f"禁止テキストが含まれています: {text}")
 
     for token in REQUIRED_TOKENS:
         if token not in html:
@@ -165,9 +178,15 @@ def validate_report(path: Path) -> ValidationResult:
 def main() -> int:
     parser = argparse.ArgumentParser(description="News-Grasp 障害レポートのデザイン仕様を検証します。")
     parser.add_argument("report", type=Path)
+    parser.add_argument("--require-text", action="append", default=[], help="この incident 固有の必須テキスト。")
+    parser.add_argument("--forbid-text", action="append", default=[], help="stale evidence などの禁止テキスト。")
     args = parser.parse_args()
 
-    result = validate_report(args.report)
+    result = validate_report(
+        args.report,
+        required_texts=tuple(args.require_text),
+        forbidden_texts=tuple(args.forbid_text),
+    )
     if result.ok:
         print(f"OK: {args.report}")
         return 0

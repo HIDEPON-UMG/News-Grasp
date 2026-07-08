@@ -931,8 +931,41 @@ def validate_daily_quality(
     return errs
 
 
+SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
+    r"(?P<artifact>.*?data[\\/]+search_audit[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})"
+    r"[\\/]+(?P<category>[^\\/:\s]+)\.json): selected_total=(?P<selected>\d+) "
+    r"does not match digest article count (?P<count>\d+)\."
+)
+
+
+def _repo_relative_artifact(path_text: str) -> str:
+    normalized = path_text.replace("\\", "/")
+    marker = "data/search_audit/"
+    if marker in normalized:
+        return marker + normalized.split(marker, 1)[1]
+    return normalized
+
+
+def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
+    match = SEARCH_AUDIT_COUNT_MISMATCH_RE.search(message)
+    if not match:
+        return {}
+    return {
+        "artifact_paths": [_repo_relative_artifact(match.group("artifact"))],
+        "category": match.group("category"),
+        "evidence": {
+            "selected_total": int(match.group("selected")),
+            "digest_article_count": int(match.group("count")),
+        },
+    }
+
+
 def daily_quality_issue_code(message: str) -> str:
     text = message.casefold()
+    if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(message) or (
+        "selected_total=" in text and "does not match digest article count" in text
+    ):
+        return "search_audit_count_mismatch"
     if "hero_left" in text or "hero_right" in text:
         return "summary_hero_missing"
     if "card #" in text and "lacks required emphasis" in text:
@@ -957,19 +990,21 @@ def daily_quality_issue_code(message: str) -> str:
 
 
 def daily_quality_json_payload(issue: str, errs: list[str]) -> dict[str, Any]:
+    issues = []
+    for err in errs:
+        entry: dict[str, Any] = {
+            "gate_id": "daily-quality",
+            "issue_code": daily_quality_issue_code(err),
+            "message": err,
+            "issue_date": issue,
+        }
+        entry.update(daily_quality_issue_metadata(err))
+        issues.append(entry)
     return {
         "ok": not errs,
         "gate_id": "daily-quality",
         "date": issue,
-        "issues": [
-            {
-                "gate_id": "daily-quality",
-                "issue_code": daily_quality_issue_code(err),
-                "message": err,
-                "issue_date": issue,
-            }
-            for err in errs
-        ],
+        "issues": issues,
     }
 
 

@@ -144,6 +144,9 @@ def test_product_constitution_maps_category_schedule_impact() -> None:
         "YouTube Podcast / publish_complete",
         "historical fallback evidence",
         "verify-publish-complete",
+        "repo/live runner SHA",
+        "Scheduled Task target",
+        "実起動 canary `smoke_ok`",
     ]:
         assert phrase in text
 
