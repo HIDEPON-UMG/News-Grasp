@@ -1,0 +1,69 @@
+{
+  "date": "2026-07-09",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-09/ai.records.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:www.itmedia.co.jp OpenAI GPT-5.6 一般公開",
+    "site:www.itmedia.co.jp Meta Muse Image Muse Video",
+    "site:www.itmedia.co.jp Claude Cowork Web モバイル Maxプラン",
+    "site:www.itmedia.co.jp Claude Max 20x OSS 開発者 無料",
+    "site:mainichi.jp AI検索 ゼロクリック 公取委 370社"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "かつて断ったOpenAIへの融資枠、BofAが供与－新規上場にらみ姿勢転換",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxNVnBHUlhnM0lRZnNpaGlCQWJ5cWNtdHNwbkJBVml5eUEzcndoYTZkMTdZdnNCaDN1MjRjekRIZkZlYV9UeHlNR05oWVppRlpoMUZxN2hoNFp6RzRfTWhSajhwWV9lbDU0cW1FaUUxUlpFZm9BQmRhbHlrZ19XaktSbEhkYzd3NDM1amJIeQ?oc=5",
+      "reason": "資金調達の周辺シグナルとしては重要だが、当日の製品公開と配信面の変更を優先した。"
+    },
+    {
+      "title": "OpenAI の音声モード GPT-Live-1 が同時送受信（フルデュプレックス）に対応、すべての ChatGPT ユーザーに順次展開",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxQdl80OFY0T1FydTdtejNMak4xYkFFcUFtQjBHa3FsSk5PbTJDR3JTR09rZThFMzhQLWxudXlDUDlFNTdFSHFySV9YOHdrSjFhQzFjUTdMTTd5eGRCdHFYZDctZEZMODFnalA0SlhXbWlhTXlEVEJaemcydVVpOVBNeWx6dU9YZVQ4NTBRMEJIcGY3OTBsQlVLYXVTYWJiTUxKQ2cxUW56bGM?oc=5",
+      "reason": "話題性は高いが二次ソース色が強く、一般公開時期が固いGPT-5.6本体を優先した。"
+    },
+    {
+      "title": "生成AIの普及を受けて刷新したNTTドコモソリューションズ 新卒エンジニア研修の中身",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE9mcVVMU01RRndLM1ZQZTRMVFNjbEpJUEFlWjJEaWZuazhSbW1tU0J6WXZIVDJ1dnFIVXFzRTZTbnVCV0dKeHpNdElieWxTaUFDWWxRVW5n?oc=5",
+      "reason": "現場実装の参考にはなるが、単一企業の研修事例で影響範囲が限定的だった。"
+    },
+    {
+      "title": "Claudeに「ゴースト」は宿ったのか？アンソロピックの新研究が暴いたAIの内面",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9RN1I3bi00cDAycnZVZlVpWUlLd09fM0hYUDFqWXQwQU0zUkVJb2VueHE1c1ZZZFdKemhTaDJ5LUpvWDhzOWc5dDRwZkFQRVVEVURj?oc=5",
+      "reason": "研究紹介としては面白いが、当日の製品投入と配信導線の変更に比べると実務インパクトが一段劣った。"
+    },
+    {
+      "title": "GIGA端末活用に偏り、生成AIに「自信ない」教員約半数…LINEヤフー調査",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE93b2wyaGlnanpTWWZKR25xOGlTQlJ3MGV0WEdtQzU5NGt0enN0bzlXUnYyeGx2cGtZUG5pUUpzUllUdWU2UVZBNHdfZDBVZTVvemI0TzM2VG1ubmRSUkppTFNfZU1OZw?oc=5",
+      "reason": "教育現場の温度感として有用だが、AI業界全体の供給戦略や規制論点より優先度を下げた。"
+    },
+    {
+      "title": "Anthropicとの戦略的協業に基づく初サービスを提供開始、商品企画や販促プランの作成をAIで完全自動化",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE1oWkNhc1FmTmtBTHNpM1Jta24tNXlnMGZXY3Vpbkg4UzZ4MjVfRXg1ZlpRSUdrSFQ3YlRLS0plajdEVWt5UU0yVmhzYWZ5QnEtQjZhMzMyWlVCbWdjVHc?oc=5",
+      "reason": "企業導入の個別案件で、プラットフォーム側の基盤変更ほどの横展開性が乏しかった。"
+    },
+    {
+      "title": "生成AIは「バブル」に決まってる、崩壊は必然だが気にする必要もない",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBJeHc2bC1zVWpKRFFwVE1Za25TV3hWUjBRdWltTjNGYzNKVnQ5VEhYbVJkOERSMjBoTFR1dzBiaWt6cl9waVZ0ZU5vakR6SmppbXFyMGppVndzNl9sanBWV0lLa0g5a00?oc=5",
+      "reason": "論考記事であり、当日動いた事実ベースのニュースを優先した。"
+    },
+    {
+      "title": "AI CROSS、建設業・Rise株式会社への生成AI活用支援を開始",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5SUnBPX0ZvVmlaVGdjVW1XR19zRkZzY3VvczM3M2NrQjVWdVVHNkJuNHY3UUwtcFVSWl93TzZDemt3VkMxdXRsZGFhTEJ4Rk13WllCVXNwM2lNamgyWENlUk5rWEJ1S0MtZVE?oc=5",
+      "reason": "PR色の強い個別案件で、カテゴリ内の構造変化を示すニュースより優先度が低かった。"
+    }
+  ]
+}

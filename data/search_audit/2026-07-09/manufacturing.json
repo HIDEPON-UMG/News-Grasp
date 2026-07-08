@@ -1,0 +1,51 @@
+{
+  "date": "2026-07-09",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1: build/deduped-candidates/manufacturing.jsonl",
+    "site:nikkei.com ラピダス 半導体受託価格 TSMC以下 小池淳義社長",
+    "site:newsweekjapan.jp アップル ブロードコム 半導体供給契約 300億ドル",
+    "site:kensetsunews.com 高砂熱学 グリーン水素 ビール製造 最大23%"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "quality_shortfall_reason": "Stage1 dedup候補から元記事URLと24時間窓の公開日根拠を満たす高確度記事のみ採用。bounded search後も同条件で上積みできず3件に絞った。",
+  "dropped": [
+    {
+      "title": "東和薬品・吉田社長 田辺の工場買収で特許満了医薬品の安定供給に一歩 長収品の「安全性情報は価値」",
+      "url": "https://www.mixonline.jp/tabid55.html?artid=80517",
+      "reason": "canonical確認後の公開日が2026-07-06で、issue日2026-07-09に対する24時間窓外"
+    },
+    {
+      "title": "中国のAI半導体闇市場 禁輸のエヌビディア製急騰",
+      "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOVjIxVTI1ay1XZlluSnYwTHBMY0ZQUVZQQmlwY2FuVDRad1lRZTRjYWY2dnJhZF9OYWpIQkppVEZYRFRKR1U5WDY5ZmV2d293akJleW1ySmFvRHkxdTJxaGtPU0hSbnk4SEZRaHg1clZFamhqU19lUzF1R3kxdGNQaGd0OTNjUFMwQVMwVzBzR2JraHM0MmVYRVFB?oc=5",
+      "reason": "bounded search内で元記事canonical URLを高確度に解決できず未採用"
+    },
+    {
+      "title": "光電融合、CPO量産の鍵「光の接続」 住友電工など存在感",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQRVhjY19zRjc2cGI3MXdHVWRrSzBidW5FRVVEeGhlRUkxUkZ2eWg3V25yamRpTm45MGoxX2ozcVBmUWN6ZEdVSTFuZlN0TkVRR0NjTGFtWDhKTzBQamVsS0pZdk5aSUUxZFp5YTdWQjhGTEpvcFVkV2hvUWFDZm82clpyYmE0b3RGejZ4d2JldUpFRkZxYy1fSUNQY0M4bTZFVDBsbWN3LTh6OWFF?oc=5",
+      "reason": "bounded search内で元記事canonical URLを高確度に解決できず未採用"
+    },
+    {
+      "title": "最新植物工場を視察 鈴木農相",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFB0SFNNNklOMC11YVlqZm1DWEM0aEdDTXM0dXNOQnBURnRYckRFLUtjdGR4ajV2cHRWUDAyWnB1MUtxZWxUSGp4Q0YxbEItVkI1ZTBVZWtFcw?oc=5",
+      "reason": "当日性はあるが、産業インパクトで選定3件を下回った"
+    },
+    {
+      "title": "工場レイアウト、デジタルツインで事前検証",
+      "url": "https://www.logi-today.com/974962",
+      "reason": "生産技術テーマとして有効だが、供給網再編と工場熱源転換を優先して補欠扱い"
+    }
+  ]
+}

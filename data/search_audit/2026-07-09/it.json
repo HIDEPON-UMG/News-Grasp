@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-09",
+  "category_id": "it",
+  "queries": [
+    "stage1 input: build/deduped-candidates/it.jsonl",
+    "site:www.nikkei.com \"電通総研、ITインフラで提携 日鉄ソリューションズとサイバー対策\"",
+    "site:enterprisezine.jp \"AI時代に耐えられない現存のITインフラ環境、限界に達する運用キャパシティ……Ciscoが出した答え\"",
+    "site:www.salesforce.com \"SalesforceのヘッドレスIT運用事例｜Slackで業務効率化＆安全なAI開発を両立\"",
+    "site:www.lnews.jp \"Spectee／リスク管理クラウドを強化、災害時の物流判断を迅速化\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_candidates_inspected": 25,
+  "supplemental_search_rounds": 1,
+  "supplemental_scope": "stage1 exact-title and source-specific canonical resolution only; no broad recollection, no cross-category dedup rerun",
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "SaaSの死で起きる業界再編、トヨクモが買収前倒し「買える企業がゴロゴロ」",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1pa1JXSVk5NEtseERuMkVPOWJRdUNnYjhLd1pQYW1Lazd2aHg3SmtZNFhiVDJVdEwtUjlVbEZtdFlSVzhyV0p5VFlyeEdUUzNOYVJxQ1htWWdxSVUyTS12RUtjdDg3aWs?oc=5",
+      "reason": "exact-title再確認で一次ソースの安定したcanonical URLを確証できず、トップ4より検証強度が落ちた"
+    },
+    {
+      "title": "社員と化すAIエージェント、費用は人件費？ 人事とITの境界溶かす",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5pdmpleEdvN2ZQZVRXYkhnSE5yUzZWbWM0TFlmaGxKajduN1JzbzFnVl9mRXdGa0FBWExJZzNLQldfTkwzZV9vWnYtMmREbWItbHJncHhnV09iV0VKZ2lkV0EyY1c1WEFQU1VHbg?oc=5",
+      "reason": "問題提起としては強いが、Stage1候補の中では具体施策より論考色が濃く、当日イベント性で後順位"
+    },
+    {
+      "title": "SaaS型ERP移行で始める「AI時代の業務変革」",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE9fdXhMZzZrelFvYUdyVkcteGZ3XzFVR2FkR0dMTHlSa19Lbm5kNlRpRjVnbGJMYUQ5Q01VZ0hJNEtfWGhfOG8zdnlFWmJaRzBFcTI3dzVENWJEODhNd2NpTTFReWNjdXVFVm1Ocm1tN1VHdw?oc=5",
+      "reason": "示唆はあるが具体的な導入・提携・プロダクト変更の新材料が薄く、同日の実務シグナル4件を優先"
+    },
+    {
+      "title": "【ウェビナー】世界でのサイバーセキュリティ政策とその対策ソリューション [7 月 30 日開催]｜お知らせ",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBOVW5lMWEwNEtWUUdiR0RVNFFfTjhJTE9ScHUwLVZvRDBNMU04eGtxejBHanp1N0t6dlA0cXRndi1xWE5hQVBCVUpGRERURXpTZmtWMzJKS21HMkkxMTlXQm5JN1VNNm82S05DRy1hN0pidUlHekRtelgxbUdiRnc?oc=5",
+      "reason": "イベント告知であり、当日ニュースとしての新規シグナルが弱い"
+    },
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1LamFweU1fQTFzZVBHZGVpNHEyWkZtZGQtR254Nm5jNVJRcmFQeHZ3S3RybEFKQmJKbDlNUGM0SGxIMjFnck1Ya2Nfcnc5Zw?oc=5",
+      "reason": "文化支援のクラウドファンディングで、IT-Consulting読者の業務判断に直結する材料が薄い"
+    }
+  ],
+  "notes": "build/deduped-candidates/it.jsonl の Stage1 dedup済み候補のみを起点に選別。広域収集と横断 dedup の再実行は行っていない。",
+  "quality_shortfall_reason": "Stage1 dedup済み候補のみを対象とし、カテゴリ適合性と一次情報性を満たす4件に絞った。exact-title再確認でも追加採用候補なし。"
+}

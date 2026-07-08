@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-09",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-09/economy.filtered.selected.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1: build/deduped-candidates/economy.jsonl",
+    "bing rss: IMF 26年世界成長予測を3.0％に引き下げ 27年に回復 Reuters",
+    "bing rss: site:www.jcer.or.jp 景気後退確率 1.8 5月",
+    "bing rss: site:www.yomiuri.co.jp 全東信 破産 600億円債務超過",
+    "site search: https://www.murc.jp/?s=グラフで見る関西経済"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 5,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "クレカ決済代行「全東信」が破産手続き開始決定、飲食店など20万店と契約も決済サービス中止",
+      "url": "https://www.yomiuri.co.jp/economy/20260707-GYT1T00100/",
+      "reason": "published_date=2026-07-07 で freshness gate 超過"
+    },
+    {
+      "title": "ＩＭＦ、26年世界成長予測を3.0％に引き下げ 27年に回復",
+      "url": "https://jp.reuters.com/markets/japan/OF3GXMRVJNIG3BTYVMOENXEPJ4-2026-07-08/",
+      "reason": "Reuters 直リンクが 401。AP の同テーマ記事を採用"
+    },
+    {
+      "title": "米卸売在庫、5月は0.1％増に下方改定 ＧＤＰ押し上げ効果に疑問符",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOWnZoSk9Xb1NlZGZQOHBzNkVEcXpoLWFINVVBSHQ1czdfNElDVVBZX1UzdExIZWlCZXBPbXpOYmlSck5CLXloemlsWDdnZlh2UDA1b2dEczRaY3FoOFlGWFMxYnE1bHYtc2ZVelhIcm10dzJLWTd3bkhaX295elNBZw?oc=5",
+      "reason": "canonical URL を 1 巡で確定できず非採用"
+    },
+    {
+      "title": "台湾洋上風力、インフレ打撃 コスト膨張、事業者撤退 投資呼び込み腐心",
+      "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxQQUFMdFFBTXNWcHMxS0xVcEpBOWV3WU8wY01CTHJBZThQcnZtQl9EOGJsY2RTSDJkQ1ppQk9nRXA4bEY5blZiN2tRNXFocE9iemxuVWFOS3BTMmFnelNsaTJkNmtOb3p1WmdkR01JdlkwbDBwanRSNjdYWGFZSkVVaXpabXhfSm1wVGxFcWdxMVFsQkJxZ0V0aTJn?oc=5",
+      "reason": "canonical URL を確定できず非採用"
+    },
+    {
+      "title": "街角の景気に「持ち直しの兆し」 6月調査、水準はまだ低く",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE81ZUxaTTRUQ0pOeld2ZFh2S1NUb294MnQ1Z0dUUVRvbVl1MlJsTlAyT1FraXk4THZWMGlWcVFmbDI3Wk5kTHluRmc2TGtJRHJXVDljb1RaRkgyMEJ2TkRhVFFKYlJraW8?oc=5",
+      "reason": "同テーマで当日 200 確認できた Yahoo/TBS 記事を採用"
+    },
+    {
+      "url": "https://www.jcer.or.jp/economic-forecast/recession-indicator",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,58 @@
+{
+  "date": "2026-07-09",
+  "category_id": "game",
+  "queries": [
+    "stage1: ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:nintendo.com \"ゲームボーイアドバンス＆ゲームボーイ Nintendo Classics\" 5タイトル",
+    "site:game.watch.impress.co.jp \"東京ゲームショウ2026\" 759社 51の国と地域",
+    "site:game.watch.impress.co.jp \"東京ゲームショウ2026\" プレミアムチケット",
+    "site:automaton-media.com \"Steam Machine\" Windows用ドライバー",
+    "site:gamespark.jp クレーンゲーム 景品 1000円以下 警察庁",
+    "site:tgs.cesa.or.jp ファミリーゲームパーク2026 開催決定",
+    "site:blog.ja.playstation.com \"Echoes of Aincrad\" 7月9日発売",
+    "\"Switch 2\" ゲーム 2026-07-08",
+    "Sony ゲーム 2026-07-08",
+    "Capcom ゲーム 2026-07-08",
+    "\"Square Enix\" ゲーム 2026-07-08"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 7,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-09/game.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "ファミリーゲームパーク2026開催決定！",
+      "url": "https://tgs.cesa.or.jp/2026/news/detail/00015",
+      "reason": "家族向け周辺企画で、同日の出展規模と価格設計の更新より業界インパクトが小さい"
+    },
+    {
+      "title": "『Echoes of Aincrad』明日7月9日発売！ 死と隣り合わせの仮想空間で仲間と共に戦うアクションRPG",
+      "url": "https://blog.ja.playstation.com/2026/07/08/20260708-eoa-launch-reminder-s/",
+      "reason": "発売前告知色が強く、プラットフォームや規制の変化を優先した"
+    },
+    {
+      "title": "8/8(土)徳島戦：《まとめ》ホームゲームチケット販売について",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE4tbEt0cVlxUUFxODZ6SktwVzNtWEZoMGJnZWgxU0FqTjI0c2x4aG5lMV9SaGNNTmxrVG1CeWhURnNyMm1pMGRWbzhSVzhZYUZaVndLRk9tdV9mbXl3dzdUbjB3?oc=5",
+      "reason": "スポーツ試合のチケット告知で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "ゲームマーケット、新ジャンル「TCG」設立 国内最大級のアナログゲーム即売会",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1CSE1mRWw3MXh0RE5HT1djQkhxMHV0SU5jcmxwNlpxcVpHQlJNa211bmQ2eDIzZTlvYkVhSDVuRnQ3RmxOWHdyeQ?oc=5",
+      "reason": "重要な制度変更ではあるが、当日号ではTGSの規模拡大と配信面の変化が上位だった"
+    },
+    {
+      "title": "【西武】３位・日本ハムとのゲーム差０に　７月初の連勝＆５カードぶりの勝ち越しならず　延長１０回に篠原響が３失点",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE8xMVVoZ1QycHp4cEpiTUpzMzh0ZmZJaE9pazczN1g3LUVwYWZ4YmRUMFVvdzgtRzFpM1JETGpBbERjdzhsVkQxUm1yUWx4N25LTmFYR3d30gFWQVVfeXFMTzExVWhnVDJwenhwSmJNSnMzOHRmZkloT2lrNzM3WDctRXBhZnhiZFQwVW93OC1HMWkzUkRMakFsRGN3OGxWRDFSbXJRbHg3bktOYVhHd3c?oc=5",
+      "reason": "野球の試合結果で、ゲームカテゴリの対象外"
+    }
+  ]
+}

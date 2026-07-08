@@ -1,0 +1,49 @@
+{
+  "date": "2026-07-09",
+  "category_id": "fx",
+  "queries": [
+    "stage1-file: build/deduped-candidates/fx.jsonl",
+    "site:newsweekjapan.jp \"高インフレ懸念強まる、一部から即時利上げ主張も＝ＦＯＭＣ議事録\"",
+    "\"ＦＯＭＣ議事録への反応限定的 ドル円は１６２円台半ば＝ＮＹ為替\"",
+    "\"骨太ショック\" 金利上昇止まらず 財政悪化 利上げ遅れ懸念 政府が文言修正",
+    "site:newsdig.tbs.co.jp 円安で 国民食 に迫る危機 すき家 牛丼30円値上げ",
+    "\"FOMC議事要旨：6月会合での利上げ論拠、数人が認識\""
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "高市政権の本質は円安誘導なのか",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE4zVW9vbGQxWndfYV9JNE1aeGRPNGNWLVo0SWpqQ3UyUXlET1VCSXQwUmRYOVNxU3hEQjJVYXpZSFJuN2FqT1VBVEtDU2o3MnRZVm54bTVxNnQtc25acldEcGtvbWVvcjJkVEpNcA?oc=5",
+      "reason": "Nikkei の元記事 canonical URL を確認できず採用見送り"
+    },
+    {
+      "title": "円安「再加速」一時1ドル162円突破、利上げや介入でも止まらぬ投機筋の円売りとウォーシュFRBのドル高圧力",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE12Q0xjUDlvdGFCem5obThHOE5wZGxkai1hbXlxRkgtOWJ4cVkwU1poN3hFajBHUXd6cmNoUlhMNU5fTHcxMnM4YU84OHLSAU9BVV95cUxOWEJmdFcyZzVzN2pCRWhSbnFhSURMU0tuXzVINkpLazFNUkJKbGp6QVpMVmVVN2xGNTJKOHNxTkl6YnJRaThWSEg4anN1UEZj?oc=5",
+      "reason": "分析色が強く、当日新材料はFOMC・骨太・実体経済波及の5本で充足"
+    },
+    {
+      "title": "【速報】米ＦＲＢの先月の会合で、物価高止まりなら利上げが妥当だとの意見が多数だった",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFB3bEJISTRkSWFQMTlRQjJ6bTVOXzdHWmlkY2h6czBReDdSd0RoOEdPNFdhVVRxeEhHd2doTGczamJDenJyRGpLQU5EWFUyS3h2SDNTVXR6Z3V4VUl1T2U2UlROZW9Gdw?oc=5",
+      "reason": "同一イベントの速報で、Reuters と Bloomberg の方が背景情報が厚い"
+    },
+    {
+      "title": "明日の為替相場見通し＝ＦＯＭＣ議事要旨を受けドル買い強まるか",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5teUZhd2EzZTZJS0pCQndWVHdidmNxOEY5UjhIU3QzeFYyWTQ0bDBscGZnTW9qY3JORzhjRnA0MWZQUzc1X244UHpULXU4Rko0aTFCZ1FpSHNLWVYwUmp6Vw?oc=5",
+      "reason": "事前見通しであり、議事録公表後の実反応記事に優先度で劣後"
+    },
+    {
+      "title": "40年ぶりの円安水準だが…麻生副総裁の「ひと言」で為替相場がひっくり返る？今月のドル円見通し",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE5yamlMaFNWMG1ic2VUcUowbHQxVExrQjNwU0w4S0U2R04wWVJjdGhfOWs1OTdxU1RwU25meXhzMzI2LTNld1FiTEFXQkFrMTYzRlZkVUtYbHN4dw?oc=5",
+      "reason": "月次見通しとして有用だが、当日ニュース性で5本目の実体経済波及記事を優先"
+    }
+  ]
+}

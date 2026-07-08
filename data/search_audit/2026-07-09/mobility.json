@@ -1,0 +1,76 @@
+{
+  "date": "2026-07-09",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "Toyota OR Tesla OR Waymo OR BYD OR ホンダ when:1d",
+    "site:waymo.com \"From the road — July 8, 2026\"",
+    "site:online.logi-biz.com \"T2、国土交通省による「自動運転トラック実装支援事業」に採択\"",
+    "site:www.logi-today.com \"NTTモビリティ、レベル4普及へ運行支援\"",
+    "site:www.pref.tokushima.lg.jp \"水素エンジン ハイブリッド車\" 技術実証",
+    "site:jidounten-lab.com \"中国 右ハンドル自動運転車を開発へ 狙いは日本か\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 7,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "selected_titles": [
+    "Waymo、4都市で完全無人運行へ Hyundai IONIQ 5の自動運転も開始",
+    "T2、国交省の自動運転トラック実装支援に採択",
+    "NTTモビリティ、レベル4向け運行支援を提供開始",
+    "WeRide陣営、右ハンドルの自動運転車開発 日本展開も視野",
+    "トヨタと徳島県、水素エンジンHVの公道実証を開始"
+  ],
+  "dropped": [
+    {
+      "title": "アイサン、つくば市の自動運転事業に参画",
+      "url": "https://www.logi-today.com/974541",
+      "reason": "つくば単独案件で、選定した5件に比べて影響範囲が狭い"
+    },
+    {
+      "title": "HTECとエンボテック、構内自動運転の展開加速",
+      "url": "https://www.logi-today.com/974683",
+      "reason": "構内物流向け色が強く、一般モビリティ読者への波及が限定的"
+    },
+    {
+      "title": "自動運転新興の中国モメンタ、1000億円投資 香港上場、トヨタなど出資 量産車にAI支援供給",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOMFdVV21KaWNleVNXdXBxMVkzX1k3ZXZibWRZM1prRm5fWlV2eGFFN3pGVmhaMTVRUmQ3V2pHdUZTNDBqZTVLbklTSXBZZjVWRk9jdGZnOGpvd0J0ajhaRWlEUDJ0ckl6eEtBVVQzWmt4ZVMwOFd2NFNRdzVEOVBGbFhUWHVDUnFacS1BS1BrcTZCWUVfSUpIWEJ1ZEFnNjI3b1ZsVzVoWXg?oc=5",
+      "reason": "Nikkei元記事のcanonical URLを検索結果で明示取得できず採用見送り"
+    },
+    {
+      "title": "EV走る 無限に デンソー、29年度に道路から無線給電：ニュース",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE42Y3EtM3hNUkVNTmJQeUkzZ1JtRmRFemhyOGtDdlFXSlJjVjZsNzMwQjdieFBNak5xLUd6b0U4OTBRalVxaEVYeGN0eDVES1M5NXFkcl9DUGxaYTc4OTln?oc=5",
+      "reason": "元記事canonicalの明示取得ができず、本文根拠を十分に固められなかった"
+    },
+    {
+      "title": "ボルボ、新型ＥＶ「ＥＸ９０」など２車種発売…年内にグーグル「ジェミニ」搭載見込み",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE1jZHZkMk5zRlBlYXRFX0N5b0xvLWRYUjNLMGptUVB5NkJpb1FWekpjWUg4Y1F1TWtrdjZqTElYYmF3QVZVYmZ4a2hheTZPekFYSnlCb2dxN3E5aFYwaU92N1MwQVU?oc=5",
+      "reason": "製品発表単体で、選定した上位5件より制度・運用面の変化が小さい"
+    },
+    {
+      "title": "ＥＶ国内販売数が前年比２・１倍、乗用車全体の３％に…新型車投入や国の購入補助金が追い風（読売新聞オンライン）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBDV3VjZ3kyS0M3MnRZblAxVE1sM0FMS1BfYXB3NW9xMkcyQ0hrTm5HSjByWUczU2Z1ZllGaXAtM2p6YUV4V3h4amw0a1NyX21wNEEwYU5rZ3pxcm9pRHFSNk1mSWhYMnFfTlZ5QXh1cERaUk5mTE1xY1J6UnVmR3M?oc=5",
+      "reason": "市場統計として重要だが、元記事canonical URLを明示取得できず採用を見送った"
+    },
+    {
+      "url": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/974902",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": [
+    "Stage1 dedup済み候補 build/deduped-candidates/mobility.jsonl のみを起点に選定",
+    "広域収集と横断dedupのやり直しは行っていない",
+    "選定前に dedup.py --followup-gate --freshness-gate --max-source-age-days 1 を通し、7件が通過"
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
