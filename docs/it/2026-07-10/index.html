@@ -1,0 +1,434 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260710 — IT-Consulting</title>
+<meta name="description" content="IT-Consultingは5件。きょうは、業務SaaSのエージェント化、金融接点プラットフォーム、海事サイバー対策、OT認証、教育クラウド刷新が並び、導入支援の論点が単なる実装から運用責任の設計へ広がった。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/it/2026-07-10/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260710 — IT-Consulting">
+<meta property="og:description" content="IT-Consultingは5件。きょうは、業務SaaSのエージェント化、金融接点プラットフォーム、海事サイバー対策、OT認証、教育クラウド刷新が並び、導入支援の論点が単なる実装から運用責任の設計へ広がった。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/it/2026-07-10/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260710 — IT-Consulting">
+<meta name="twitter:description" content="IT-Consultingは5件。きょうは、業務SaaSのエージェント化、金融接点プラットフォーム、海事サイバー対策、OT認証、教育クラウド刷新が並び、導入支援の論点が単なる実装から運用責任の設計へ広がった。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="it">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill is-active" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-07-10 · #20260710</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/it.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ IT &amp; CONSULTING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⌗</span>
+      <h1 class="cat-hero__title">IT-Consulting.</h1>
+    </div>
+
+    <div class="cat-hero__summary">IT-Consultingは5件。きょうは、<strong class="emph-bold">業務SaaSのエージェント化</strong>、<strong class="emph-bold">金融接点プラットフォーム</strong>、<strong class="emph-bold">海事サイバー対策</strong>、<strong class="emph-bold">OT認証</strong>、<strong class="emph-bold">教育クラウド刷新</strong>が並び、導入支援の論点が単なる実装から運用責任の設計へ広がった。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">2</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">82</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">07·10</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260710</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">← BACK TO IT &amp; CONSULTING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-07-10 04:25 · ニッキンONLINE</span>
+    <span class="top-story__score">89</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://www.nikkinonline.com/article/406220/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.nikkinonline.com/wp/wp-content/uploads/2026/07/m0710.15top.webp" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.nikkinonline.com/article/406220/" rel="noopener nofollow" target="_blank" style="color: inherit;">クラウドローン、地銀・信金50機関体制を視野</a>
+
+      </h2>
+
+
+<div class="summary-lanes summary-lanes--full" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">クラウドローン</strong>は<strong>地域銀行・信用金庫向けの個人融資接続基盤</strong> の提携先を6月末時点で40先へ広げ、<span class="emph-und">年内50機関超</span> を見込む。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">地方金融機関は来店減と都市部需要取り込みが課題で、<strong>自前集客より外部プラットフォームを営業窓口化するモデル</strong> が導入しやすい。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">金融ITでは<strong class="emph-bold">融資DX</strong>が、<strong>基幹刷新より顧客接点のSaaS連携と審査導線の内製/外製切り分け</strong> を問う段階に進み、<span class="emph-und">地銀の提携競争</span> が強まりそうだ。</div>
+    </div>
+  </div>
+
+</div>
+
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">⌗</span>
+          <span class="category-label-break"><span class="category-label-break__line">IT &amp;</span>
+<span class="category-label-break__line">CONSULTING</span></span>
+        </span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-07-10</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⌗ stories</h2>
+    <span class="more-stories__head-meta">1 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-07-09 16:30</span>
+        <span>· PR TIMES</span>
+        <span class="more-card__score">76</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://prtimes.jp/main/html/rd/p/000000178.000067516.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://prcdn.freetls.fastly.net/release_image/67516/178/67516-178-b9d094b85f71e6b4b898ae7dc3e96126-512x265.png?format=jpeg&amp;auto=webp&amp;fit=bounds&amp;width=2400&amp;height=1260" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://prtimes.jp/main/html/rd/p/000000178.000067516.html" rel="noopener nofollow" target="_blank">チエル、CaLabo Cloudを36画面監視対応へ刷新</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">チエル</strong>は<strong>CaLabo Cloud Ver.1.1</strong> で最大36画面の同時監視とWebカメラ確認を追加し、<span class="emph-und">大学のBYOD授業運用</span> を強化する。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">教育ICTでは端末持ち込み前提が定着し、<strong>教材配布・成果物回収・学習状況把握をクラウドで一体運用するUI/UX</strong> が選定基準になっている。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">IT導入支援では<strong class="emph-bold">教育SaaS</strong>の評価軸が、<strong>機能数より教員の運営負荷を下げる操作設計とサポート導線</strong> へ移り、<span class="emph-und">学内展開案件</span> の差が出そうだ。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§04 OF 7 · IT &amp; CONSULTING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p><strong class="emph-bold">Oracle</strong>の22業務特化AI、<strong class="emph-bold">クラウドローン</strong>の地域金融拡大、船舶サイバー対策、IEC62443認証、教育監視クラウド刷新は、ITが<strong>汎用AIの説明では受注しにくい</strong>段階に入ったことを示します。<span class="emph-und">業種ごとの運用制約へどこまで合わせ込めるか</span>が勝負で、仕様の細かさそのものが提案力になっています。AIを入れる話より、現場のフローへ噛ませる設計の差が大きい日でした。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-07-10/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · IT &amp; CONSULTING · 2026-07-10
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/">IT &amp; CONSULTING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
