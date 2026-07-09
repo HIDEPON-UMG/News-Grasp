@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-10",
+  "category_id": "fx",
+  "queries": [
+    "stage1-file: build/deduped-candidates/fx.jsonl",
+    "\"政府、骨太方針で日銀独立性に言及へ\"",
+    "\"長期金利、一時2.900％に到達 中東再び緊迫 財政拡張も意識\"",
+    "site:fx.minkabu.jp \"ドル円、１６２円台前半での推移 イラン情勢は緊迫化も比較的落ち着いたムード＝ＮＹ為替序盤\"",
+    "\"ＥＣＢ、物価目標超え長期化見込む 3回近く利上げ予測＝6月議事要旨\"",
+    "site:fx.minkabu.jp \"ユーロ、ＥＣＢの追加利上げ期待が支援＝ＮＹ為替\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "骨太の注釈に「日銀の独立性」明記へ 「あくまで市場対応」＝関係者",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE50NlA2Z1ZJSDFJR0pZdFFMY09JSHVxZFV3ODBDclY0LUdmeHlTWXNzV1ZJQXFkeFFjZUlJZWpCb0N1ak45akQ4Q2dtaVhTLURHWXR4TVRJU19aa195RmtnMlpVOWVYU1dmZzAxcWhCUWlrdHpsQVN6bWdCSmJPQQ?oc=5",
+      "reason": "同テーマで共同通信版の方が金利2.9％との連動まで明確で、重複回避のため不採用"
+    },
+    {
+      "title": "「円売られすぎ」は一服？ 米利上げ観測後退・介入警戒感で",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE91Yy1DYTNXbVZYbmlWVHp2Z0t0MmktbDRGZGk2LXFGTVJJTUhTT2RhY0VhRmlBU05LY2FHWWVYUlNSZEFJb05JaXBrQjRHWHRRVGVNWkttWTlUTWRmdXdYajhnakJHODNkRXoyXw?oc=5",
+      "reason": "観測記事の色合いが強く、採用したドル円実勢記事と論点が重複"
+    },
+    {
+      "title": "FOMC議事要旨、分かったこと、まだわからないこと",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5pNjFaaDNFcXBFalBmb3FGNS1sNXp1ZkhORlV1Q0I1YmZwbXJ3SW9rbzBrRVFlbV81cElmbHd2NE9KZ2ZEMHVoRFAwMHVrQWRyUGtySm41YUF2eGNZUGwzbmp3RDFJU2dGUC1GRlIwZmZqQUxROGV2Tmp1MUtNRmc?oc=5",
+      "reason": "前号でFOMCを厚く扱っており、新材料より解説比重が高かったため見送り"
+    },
+    {
+      "title": "「日銀けん制」とは受け止めず 骨太方針原案で―筒井経団連会長：時事ドットコム",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9rR2ZoZW0tMld5N1BqY2UzU01XVlgtOW53QW13QzA4VVdJX085czZPS3dPTFdRZDJHN0c2V2FDQ3lEOHRnS3dCOWRKWTQtekZrR2FtdXZTRUlvcHg0bjZGRWhfdw?oc=5",
+      "reason": "要人コメント単体で新規性が薄く、骨太修正文言そのものを優先"
+    },
+    {
+      "title": "ポンド上昇 米・イランの対立激化で英中銀の利上げ観測強まる＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE8yVTk5VDRReUplcXJoMjBUek9RSTZDX0dfU0UtRTV1WHd5RGxjWE9lY2pFRWNqU3IzVzEzQ3dUU2JubGV2NDlkZg?oc=5",
+      "reason": "ユーロ記事と同じ欧州金利テーマの中で、ECB議事要旨との連動が強いユーロ反応を優先"
+    },
+    {
+      "url": "https://fund.smtb.jp/smtbhp/qsearch.exe?F=mkt_news&KEY2=3217%2C3218",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,50 @@
+{
+  "date": "2026-07-10",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-10/ai.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "OpenAI「GPT-5.6」公開 下位モデルでも16分の1のコストでFable 5超えうたう",
+    "Anthropic、AIの危険な知識を消去/無効化する技術「GRAM」",
+    "OpenAIの最高未来学者 ジョシュア・アキアム 退社",
+    "アクセンチュア、OpenAIとの国内における協業を拡充 クラウド Watch",
+    "NYTなど米主要紙 OpenAIへの制裁を申請 証拠隠滅 虚偽説明",
+    "北九州市の中学校で初めて生成AIを使った授業が始まる"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "NYTなど米主要紙、OpenAIへの制裁を申請――証拠隠滅と虚偽説明の疑い",
+      "url": "https://finance.biggo.jp/news/b7c2041f-d815-4302-acfc-711f80dc9de5",
+      "reason": "訴訟論点は重要だが二次報道で一次資料との距離があり、当日は技術・導入・教育の直接材料を優先した。"
+    },
+    {
+      "title": "OpenAIの最新モデル、米政権と協議で「多くの変更」－アルトマンCEO",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE54ZEdnNHd5c0dyVFRJejdjMWk2QjJxLWY2ck9ON1dZX1pRRHh0NHI2S1lfSG1hT3lQR1JBbGI4Zm1BZHYwNl9KME9ucUNsZWxZRHNhWlE1aVNkZnlQbkh4Z200TWZ3U1NZaTRrWHhuM0w4dGxpcXpv?oc=5",
+      "reason": "Bloomberg記事単位のcanonical URLを確認できず、媒体トップ化のリスクを避けて未採用とした。"
+    },
+    {
+      "title": "OpenAIの逆襲、「Fable 5超え」のGPT-5.6で低価格アピール 4体分身で殴るコスト度外視モード「Ultra」も追加",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1xSzhwdlpUQk5CV3YzNDRWY2tUcXMta1JoMEJaMGtKZ2FZQ3k1SlVDakNQY05RZGdWOXdfQy1wSHVZMWc4blpQcjhVdkNvaG02QUNUcXhQMWQzeHgwMkoxNzlRbDA1QVU?oc=5",
+      "reason": "GPT-5.6本体と論点が近接しており、価格・性能材料はPC Watch記事で代表採用した。"
+    },
+    {
+      "title": "新大学生の９割超「生成ＡＩ使っている」 節約術・講義の理解補助に 東京工科大調査",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE4xOFBhNHd3dEVweVBvaFl0SUVUUjJ6MTcyTmJ2Z2R4MU9BTThMc3JRcnc2WV9tTndWRlVXRVJGa2xpeVMzSDJhaHFzTEt0ZDZma052aHJYYTgyU3lf?oc=5",
+      "reason": "利用実態の示唆は有用だが、元調査の初出が当日ではなく当日性の高い実装ニュースを優先した。"
+    }
+  ]
+}

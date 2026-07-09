@@ -1,0 +1,45 @@
+{
+  "date": "2026-07-10",
+  "category_id": "manufacturing",
+  "queries": [
+    "stage1: 製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:xtech.nikkei.com TSMC AI半導体チップに水流す冷却法 CoWoS 統合し信頼性評価",
+    "site:www3.nhk.or.jp フォルクスワーゲン 工場閉鎖案 監査役会",
+    "site:www.nikkei.com 丸紅 インド工作機械需要を開拓",
+    "site:www.asahi.com 三菱自 AIロボ 製造現場",
+    "site:www.nikkan.co.jp グランビルゴ 4割増産 半導体装置向け大型部品"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "ソニーの半導体事業に設備投資増額の圧力、「TSMCとの合弁」「補助金活用」が必須に…最大顧客アップルの要望はiPhoneカメラ性能の不断の向上",
+      "url": "https://diamond.jp/articles/-/394358",
+      "reason": "分析色が強く、当日決定や量産計画の新材料が相対的に薄い"
+    },
+    {
+      "title": "キリンビール千歳工場、熱工程に「再エネ水素」活用 - ニュース - メガソーラービジネス plus",
+      "url": "https://project.nikkeibp.co.jp/ms/atcl/19/news/00001/05934/?ST=msb",
+      "reason": "技術性は高いが、当日の製造供給網インパクト比較で上位5件に届かなかった"
+    },
+    {
+      "title": "中国 福建省の靴製造工場で火災 28人が死亡 工場内の廊下に大量の荷物…消火や救助活動に遅れ",
+      "url": "https://newsdig.tbs.co.jp/articles/-/2792774",
+      "reason": "重大事故だが、製造競争力・技術・供給網の変化を主題とする当日選定から外した"
+    },
+    {
+      "title": "[TKUニュース 26.07.09 19:00 ] 半導体に興味を持ってもらおうとＪＡＳＭが出前授業【熊本】",
+      "url": "https://www.tku.co.jp/news/?news_id=20260709-00000005",
+      "reason": "人材啓発としては重要だが、生産能力や技術実装の即時インパクトが相対的に小さい"
+    }
+  ]
+}

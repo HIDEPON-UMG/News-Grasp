@@ -1,0 +1,62 @@
+{
+  "date": "2026-07-10",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage1_only_with_targeted_canonical_confirmation",
+  "queries": [
+    "stage1: build/deduped-candidates/economy.jsonl",
+    "site:boj.or.jp 2026 地域経済報告 さくらレポート 7月",
+    "site:jcer.or.jp 月次GDP 2026年5月",
+    "site:fastretailing.com 2026 third quarter results July 9 2026",
+    "\"世界経済は中東戦争ショックにも強靱性維持、ＩＭＦなど国際機関が共同声明\"",
+    "\"マレーシア中銀、6会合連続金利据え置き 中東リスクでもインフレ抑制見込む\"",
+    "coverage check: Nikkei / S&P 500 / Fed / BOJ / SoftBank / NVIDIA"
+  ],
+  "raw_results_total": 31,
+  "candidates_total": 9,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "ＮＹ外為市場＝ドル続落、労働市場データが安定示唆 インフレ動向に注視",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5VeFlSeHE2bWJMT3hkZGl5M003dTVGbUZrekhXZ3A0b1d4YVVMNXdGdnEtSGV4RmlfWUJmSGxxWTBqVGVPbmVKVUVNQlRKdVkyMWNzUklFbEJ3QzNwRExHUHpXU055cy1uN29VNUExdzlFc0lCMkhtaQ?oc=5",
+      "reason": "Reuters 本体の canonical URL を確認できず、Google News 中継 URL のままでは採用不可"
+    },
+    {
+      "title": "国立大授業料にインフレ反映、文科省検討会が提言へ 交付金も連動",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBDVWY1NXlHWU9FZHdkQ1JJNHhIWFhXb0RISzFVOTJNYjhFNFlINEdmQ09lQXI5Z0lSbFMtNlR2dC14SF96SjFGTGUtMHc0aTZXOWo3NVczekhoN2ZISmwyWEhuN2ItYk9zSDh0OA?oc=5",
+      "reason": "当日内に公開確認できる一次ページを絞り切れず、Stage1 の unresolved 候補として見送り"
+    },
+    {
+      "title": "世界経済、今年の成長3.0％ 4月予想から0.1ポイント下げ IMF発表",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5faEdhT2syT01CcDJxRE8tYnlXWlQxVm8wWHNnQnJkNmlRYXRBdTE1ZHJnY2R1bVR0V3lVQWJQVzFNc2o3eGZaOHBiSHJyZXZMRmJCYWJJRjBodDA?oc=5",
+      "reason": "IMF の WEO 更新本体は 2026-07-08 公表で freshness 境界外のため、同日 Reuters 共同声明記事へ置換"
+    },
+    {
+      "title": "長期金利、日本経済映す 高市政権で上昇顕著、市場に強まる警戒感",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE1RY2ZCWk8zelEyNGt1aHNSdDhEcXhoUXE1dWJxU1d3X2l2UE5DOUZiYktObW9YeHpialYzTlNXTUN2eVlXa2ZHV25MLUZVY1hQMldfcGhzWnlSOHgz?oc=5",
+      "reason": "分析色が強く、当日号の採用枠では一次発表・統計・決算を優先"
+    },
+    {
+      "url": "https://www.fastretailing.com/eng/ir/financial/summary.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.jcer.or.jp/economic-forecast/2026079.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.boj.or.jp/research/brp/rer/rer260709.htm",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-10",
+  "category_id": "it",
+  "queries": [
+    "stage1 input: build/deduped-candidates/it.jsonl",
+    "site:blogs.oracle.com \"新しいFusion Agentic Applications – 詳細とデモ\"",
+    "site:www.nikkinonline.com \"クラウドローン、個人融資つなぐ基盤拡大 地域銀・信金50機関へ\"",
+    "site:corp.rakuten.co.jp \"楽天シンフォニーの船舶サイバーセキュリティソリューション「Rakuten Maritime」を韓国造船大手ハンファオーシャンが導入\"",
+    "site:www.tuvsud.com \"テュフズード、SMCに産業用制御システムのサイバーセキュリティ認証（IEC 62443-4-1:2018準拠）を発行\"",
+    "site:prtimes.jp \"チエル、クラウド型授業支援システム『CaLabo® Cloud』を Ver.1.1 にバージョンアップし、大学のBYOD授業をより強力に支援\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_candidates_inspected": 25,
+  "supplemental_search_rounds": 1,
+  "supplemental_scope": "stage1 exact-title and source-specific canonical resolution only; no broad recollection, no cross-category dedup rerun",
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "海底ケーブル切断でAIもクラウドも止まる 狙われる「データのシーレーン」",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9wM3FNOHY4cDhUa3Z4TXoxOExHbmJ3SFQ5OHhpRGgxQm5kTTlRWUxRb01mOWRMVnpaUzZwQzZvNG9YWmhYV1d1NjlSSXR4NWlQYk1qNHdoLXNWbC00QUlzbEE0bGNmYmM?oc=5",
+      "reason": "論点は強いが、Stage1候補の範囲では安定したcanonical URLとOGPを確証できず、当日採用の検証強度が不足"
+    },
+    {
+      "title": "MetaがGPUクラウド参入か、同社の「誤算」を読み解く",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE1yMWY1OTZxMWRtT19fN0dCM1B1U2lIMVVNQmZVVUVya3Y0cUlSdXR0dGMyc1djckwxQXptU0plTG05eHFDaHdpSzZsZDdOSWowX3hQRWFRRlUtbl9GYzVETjFzZk1nd2dxRWc?oc=5",
+      "reason": "観測記事としては有力だが、Stage1 source の xtech 本文確認を安定化できず、検証済み5件を優先"
+    },
+    {
+      "title": "IT基盤の主権を自社で守り抜く ソブリンDaaSが示す次世代の選択肢",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQYjcxWnBfSjNtWkdvS08zV0xHZ09tVVRBUVNnd2lXRUs2UkFKbi14c0lqdnUxWXAwQ1JjODg3SFBKRTdzTWY2bEQ5YURzZGp6dVJXWTBEVUdNdGI1WTNpbl80c3NOOFM0Y2FELXhZT25mRGpydE9GUzBKUVcyNWtuS0psYm9QWVYzaHpiMW9aYw?oc=5",
+      "reason": "テーマ性は合うがスポンサード色が強く、実務シグナルの明確な5件より後順位"
+    },
+    {
+      "title": "Top Cybersecurity News Stories From June 2026",
+      "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPSWt2ZlJBVzFMNFlIUkxkYUZXbDRrY0k0a1hfdkUtLVNrWXJtQ0dnSFU4YmdxYkJyVXpQUFdCVkc2T3RhU3pDQkpIYU9USFctdHZreVRLcUQ2eXFFY1RkVnRTRUYwTGVvSEJUVFdheUFnT19QNTN5bkRXWkVFUjZkZTRsNA?oc=5",
+      "reason": "6月総括のまとめ記事であり、当日号の新規イベントとしては鮮度と具体性が足りない"
+    },
+    {
+      "title": "NECの次世代サイバーセキュリティサービス「CyIOC（サイオック）」（30秒 後編）[NEC公式] [00:30]",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE9yTkZvRDJPaGxLZnJjZ2Iza0pVaGhpay1nOWVBczBTRFdMWU8xTDNVRlRQcVMzWEhBSlprNnF4X19uWE50ZWxPbVYtZWZzM2Foa01VLXNfTk84bkxtRWdodnc4dUpGT2l6SHh3?oc=5",
+      "reason": "動画告知が中心で、導入規模や顧客行動に結びつく新材料が薄い"
+    },
+    {
+      "url": "https://blogs.oracle.com/saas-jp/new-fusion-agentic-applications-details-and-demos-jp",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://corp.rakuten.co.jp/news/press/2026/0709_01.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.tuvsud.com/ja-jp/press-and-media/2026/july/tuv-sud-issues-cybersecurity-certification-to-smc",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": "build/deduped-candidates/it.jsonl の Stage1 dedup済み候補のみを起点に選別。広域収集と横断 dedup の再実行は行っていない。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

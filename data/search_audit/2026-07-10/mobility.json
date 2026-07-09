@@ -1,0 +1,71 @@
+{
+  "date": "2026-07-10",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "Toyota OR Tesla OR Waymo OR BYD OR ホンダ when:1d",
+    "site:b.hatena.ne.jp テスラ 日本 EV Grok",
+    "site:car.watch.impress.co.jp BYD ラッコ 7月28日発売",
+    "site:logi-today.com 米複合一貫ターミナル 自動運転トラック",
+    "site:carview.yahoo.co.jp サクラ 10万台 EV",
+    "site:logi-today.com 東京湾向けEVタグ2番船を建造"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "selected_titles": [
+    "テスラ、日本でEVに対話型AI「グロック」 走行中の情報検索しやすく",
+    "BYD、新型軽EV「ラッコ」7月28日発売 広瀬アリスさん出演の新CM放映開始",
+    "Venti、米複合一貫ターミナルに自動運転トラック",
+    "日産「サクラ」累計販売10万台を達成！国内EV販売の約3割を占める代表モデルに",
+    "ダイトーコーポ、東京湾向けEVタグ2番船を建造"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0?oc=5",
+      "reason": "株価ページであり元記事単位のニュースではない"
+    },
+    {
+      "title": "自動運転の実用で遅れる日本 自民党にも異なる立場、巻き返しなるか",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1QRHFXdmZLUU9ETDRFeUozNkEtOW5IUTVQOEdsMGZfb1NIWEdybWtFVHExMHVwcXJreW0yc3ByZ1RYcWZkOS1yNXl1ZnBUSzR5cEdwRFlSMmJ3UzQ0eFVObzJzazI1YW9lb0V4Rg?oc=5",
+      "reason": "解説色が強く、選定した5本より新しい決定や数値の変化が薄い"
+    },
+    {
+      "title": "トヨタ、次世代EVを中止 LF-ZCの後継車は決定",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5XLWdYV0Jic1dnbW9BeTJUOHZYSFdYUWtEOEpGVUtBeUJnQmNqMGtNQm5iVl9Xb1dKSGI4SlpLclN3MWs3RmxPOS1PRXF0ZWdWZW42QzFfV1M3bXhHSEVsMkNCUHY3ZE0?oc=5",
+      "reason": "canonical解決後の公開日が2026-06-09で、当日号の鮮度窓を外れる"
+    },
+    {
+      "title": "チューリング、軽量AIモデルを車載へ スバルとE2E自動運転の共同研究",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9uTkNSeVhKSEtmSzZLdGhwWlh5T1RVRmxIa2hvWlI1VDA1R3l6MVVFOGxuZ1lTLU05czhLTUoxUHRaTjNvYk50aE15aEFkNklISHVvcGpTWHpnOEwxUjBNVmlIVjV4SFk?oc=5",
+      "reason": "canonical解決後の公開日が2026-06-04で、当日号の鮮度窓を外れる"
+    },
+    {
+      "title": "個人情報含む国データの民間活用促進 AIや自動運転など先端技術の開発後押し",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE84TEIzQi1QVGlGRUxRcU4tYkczNV9Hb3YyUm4xcVRqMHFGU3FLQVRBQWZMaXJEWVRhemdWOXpFME84UXd0SEJlS3hidnB5bHc0SzdjVFZyRDlPc0tscFplV1hlN0tLaHlqR0dyTHQwalhjaUJGMHc?oc=5",
+      "reason": "モビリティへの波及はあるが、当日選定の5本に比べて直接性が弱い"
+    },
+    {
+      "url": "https://www.logi-today.com/975257",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/975418",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": [
+    "Stage1 dedup済み候補 build/deduped-candidates/mobility.jsonl のみを起点に選定",
+    "広域収集と横断dedupのやり直しは行っていない",
+    "canonical URL 解決後に page-visible-date を確認し、当日窓外の再浮上記事を除外した"
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
