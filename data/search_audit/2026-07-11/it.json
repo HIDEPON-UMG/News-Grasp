@@ -1,0 +1,65 @@
+{
+  "date": "2026-07-11",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d",
+    "stage1-only-select: 政府AI基盤 / AML AIエージェント / 船舶サイバー / ISMAP-LIU / IT資産管理"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "url": "https://readyfor.jp/projects/NFAJ2026",
+      "reason": "IT-Consulting と無関係なクラウドファンディング案件"
+    },
+    {
+      "title": "【BE:FIRST】史上最大規模のスタジアムライブより「Scream」のライブ映像を公開！ 新曲「Missing」は各音楽チャートを席巻中！",
+      "url": "https://avexnet.jp/news/1035009",
+      "reason": "カテゴリ外の音楽ニュース"
+    },
+    {
+      "title": "博士監修のドライマンゴー「ゴールデンチャージ」デビュー！",
+      "url": "https://newscast.jp/news/6132688",
+      "reason": "IT・クラウド・コンサル領域と無関係"
+    },
+    {
+      "title": "石上純也展ー徳島文化芸術ホールへと続く、風景と建築の思想ー再開催への挑戦",
+      "url": "https://motion-gallery.net/projects/ishigami-tokushima/updates/61853",
+      "reason": "カテゴリ外のアート系クラウドファンディング"
+    },
+    {
+      "title": "【NEWS】LOCAL SOUND STYLE、ツーマン企画『Doing It For The Kids』開催決定！",
+      "url": "https://satanic.jp/contents/1090803",
+      "reason": "IT-Consulting の読者価値に結び付かない音楽イベント告知"
+    },
+    {
+      "title": "「ワンランク上のインフラエンジニアへ：さくらのクラウド検定アドバンスド攻略ウェビナー」を開催いたします",
+      "url": "https://www.sakura.ad.jp/corporate/information/events/2026/07/10/1968225372/",
+      "reason": "実務インパクトより集客色が強いウェビナー告知"
+    },
+    {
+      "title": "欧州サイバーレジリエンス法において考慮すべき製造環境のサイバーセキュリティ",
+      "url": "https://www.pwc.com/jp/ja/knowledge/column/awareness-cyber-security/eu-cyber-resilience-act08.html",
+      "reason": "論点は重要だが当日ニュース性より解説色が強く、実装・調達の新規事実を優先"
+    },
+    {
+      "url": "https://jpn.nec.com/ad/onlinetv/cybersecutitycyioc2.html",
+      "reason": "quarantined by gate"
+    }
+  ]
+}

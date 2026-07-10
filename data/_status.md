@@ -84,3 +84,4 @@
 | 2026-07-08 | ✅DeepDive | AIエージェント、電力採算の入口へ | 約20分 | 0 | daily deepdive / 波及(07-04 AI基盤→利用時電力、06-19 AI配布導線→商取引) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch5件で停止・採用URL5件(arXiv・KAIST・Square・IEA×2) / git add・commit・pushなし |
 | 2026-07-09 | ✅DeepDive | Tacoma米国回帰、北米生産の再配線 | 約20分 | 0 | daily deepdive / 新規テーマ(Toyota×Tacoma×USMCA、context packのAI/FX既出候補と実質重複なし) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL6件(Toyota公式×3・USTR・Federal Register・Axios) / git add・commit・pushなし |
 | 2026-07-10 | ✅DeepDive | ECB再利上げ、円防衛の外圧 | 約20分 | 0 | daily deepdive / 続報(06-30 円安162円目前→ECB再利上げ・Fed議事要旨・円安/債券安同時進行へ論点移動) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件以内・採用URL3件(ECB・Fed・Barron's) / git add・commit・pushなし |
+| 2026-07-11 | ✅DeepDive | ロボタクシー、都市先行で量産局面へ | 約20分 | 0 | daily deepdive / 新規テーマ(Waymo 4都市拡大×NHTSA無人車規制見直し×自家用完全自動運転の普及時間差) / R1=2 R2=2 R3=2 R4=2 R5=2 total=10 / WebFetch6件で停止・採用URL6件(Waymo×3・NHTSA・McKinsey×2) / git add・commit・pushなし |

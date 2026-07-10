@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "gates": {
+    "daily-quality": {
+      "signatures": {
+        "72e19a48adbdfd6d": {
+          "failures": 1,
+          "artifact_hashes": [
+            "7e45e98792f929e9"
+          ],
+          "category": "daily"
+        }
+      },
+      "categories": {
+        "daily": 1
+      }
+    }
+  },
+  "retry_budget_policy_version": 7
+}

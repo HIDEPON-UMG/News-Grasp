@@ -1,0 +1,46 @@
+{
+  "date": "2026-07-11",
+  "category_id": "fx",
+  "queries": [
+    "stage1: 為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "local-review: USDJPY / EURUSD / BOJ / Fed / ECB coverage check",
+    "local-review: selected canonical URL and OGP verification"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "日銀、経済見通し引き上げの可能性 利上げ継続方針維持＝関係筋",
+      "url": "https://jp.reuters.com/opinion/XVFCPW3T5BJYNKSBIX4TQPUR2A-2026-07-10/",
+      "reason": "この環境では本文取得と 200 確認を再現できず未採用"
+    },
+    {
+      "title": "米利上げ見通し巡りドルに底堅さ、円主導の値動きにも注目＝来週の外為市場",
+      "url": "https://jp.reuters.com/opinion/SSQ2P36V5JL6XGH7K7735LOKXE-2026-07-10/",
+      "reason": "この環境では本文取得と 200 確認を再現できず未採用"
+    },
+    {
+      "title": "FRB不透明感、為替市場にボラティリティー復活の兆し－ヘッジ需要増",
+      "url": "https://www.bloomberg.com/jp/news/articles/2026-07-10/THYMAST96OSG00",
+      "reason": "この環境では本文取得と 200 確認を再現できず未採用"
+    },
+    {
+      "title": "【FX】7/10 片山発言でドル円急落 なにがあった？ ｜為替市場ニュースの振り返り、今日の見通し",
+      "url": "https://www.gaitame.com/media/entry/2026/07/10/113000",
+      "reason": "GPIF発言テーマが朝日新聞採用記事と重複"
+    },
+    {
+      "title": "ドル円、一時東京時間の安値に並ぶ 海外勢は本日の片山財務相の発言を注視＝ＮＹ為替 -",
+      "url": "https://fx.minkabu.jp/news/372876",
+      "reason": "GPIF発言テーマが朝日新聞採用記事と重複"
+    }
+  ]
+}

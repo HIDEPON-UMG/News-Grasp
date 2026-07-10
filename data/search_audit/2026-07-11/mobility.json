@@ -1,0 +1,90 @@
+{
+  "date": "2026-07-11",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-11/mobility.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "watchlist coverage check: Tesla / Waymo / BYD / Toyota / Uber",
+    "selected URL verification via fetch_article_body and fetch_ogp on shortlisted candidates"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 19,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "selected_titles": [
+    "ウェイモ、自動運転タクシーの提供をラスベガスなど4都市に拡大へ ｜Seizo Trend",
+    "ヤナセ、BYDの販売開始 中国EVが大手の流通網で国内浸透",
+    "自動運転車の「ハンドルなし」解禁へ？米NHTSA長官が規制見直しを示唆",
+    "自動運転車 普及は2040年以降に持ち越しか コスト増と技術の課題で",
+    "日東工業、国内メーカーで初の９．６ｋｗ ＥＶ向け高出力充電器投入 導入コストなど抑制"
+  ],
+  "dropped": [
+    {
+      "title": "【プレスリリース】平和島自動運転協議会 「公共交通ワーキンググループ」が発足しました ～自動運転車両による持続可能な公共交通と労働力確保を推進します～",
+      "url": "https://www.city.ota.tokyo.jp/kuseijoho/press/releaseR08/2026071001.html",
+      "reason": "dedup freshness gate: htmldate が 2026-01-01 を返し、当日鮮度窓から外れたため除外"
+    },
+    {
+      "title": "シェアモビリティ付き賃貸住宅“モビ×住む”",
+      "url": "https://www.city.kobe.lg.jp/a01110/kurashi/sumai/jutaku/information/mobisumu.html",
+      "reason": "dedup freshness gate: htmldate が 2025-09-30 を返し、当日鮮度窓から外れたため除外"
+    },
+    {
+      "title": "Terra Charge、物流・モビリティ脱炭素へ参画",
+      "url": "https://www.logi-today.com/975607",
+      "reason": "dedup freshness gate: htmldate が 2011-04-25 を返し、当日鮮度窓から外れたため除外"
+    },
+    {
+      "title": "ＥＶ国内販売数が前年比２・１倍、乗用車全体の３％に…新型車投入や国の購入補助金が追い風（読売新聞オンライン）",
+      "url": "https://news.yahoo.co.jp/articles/b7b5c319d373fbd1efbddc4fd75f9c9f466a32d4",
+      "reason": "dedup freshness gate: page-visible date が 2026-07-07 で、当日号の鮮度窓から外れたため除外"
+    },
+    {
+      "title": "Googleロボタクシー、駐車場ケチり「住宅街ぐるぐる」【迷惑行為】",
+      "url": "https://jidounten-lab.com/u_64744",
+      "reason": "dedup freshness gate: page-visible date が 2026-07-09 で、当日号の鮮度窓から外れたため除外"
+    },
+    {
+      "title": "EV蓄電池活用 豊スタの光熱費削減へ 豊田市、トヨタや中電ミライズ連携：ニュース",
+      "url": "https://biz.chunichi.co.jp/news/article/10/127874/",
+      "reason": "dedup freshness gate: page-visible date が 2026-07-09 で、Toyota 監視対象として確認したが当日採用には至らず"
+    },
+    {
+      "title": "世界のＥＶ登録台数、6月は7％増 欧州が中国・北米の低迷補う",
+      "url": "https://jp.reuters.com/markets/japan/2IS5EIYZQJLIRFKWDHLMIR5UBQ-2026-07-10/",
+      "reason": "公開本文と OGP の取得が安定せず、同日の採用候補より裏取り密度が落ちるため見送り"
+    },
+    {
+      "title": "BYDブランドを取り扱うヤナセの新ディーラー「ヤナセEVスクエア 磯子支店」（BYD AUTO 横浜南）7月11日オープン 新型軽EV「ラッコ」特別展示",
+      "url": "https://car.watch.impress.co.jp/docs/news/2124362.html",
+      "reason": "ヤナセ × BYD 販売開始と同テーマの近接重複で、より市場構造の変化が大きい日経記事を採用"
+    },
+    {
+      "title": "北九州市 ＥＶバスの運行を１１日から再開（KBC九州朝日放送）",
+      "url": "https://news.yahoo.co.jp/articles/e82b51652e8d95ac4e6ddb8ca9dccee937a0564b",
+      "reason": "地域運行再開の意義はあるが、制度・販路・運用基盤の全国変化としては優先度が下回る"
+    },
+    {
+      "title": "スバル｢最強6MT｣あえて復活 EV増やしマニュアル車投入に余地",
+      "url": "https://www.nikkei.com/article/DGXZQOUC096540Z00C26A7000000/",
+      "reason": "熱心なファン向け商品戦略が主題で、当日優先の EV・自動運転・インフラ変化より影響範囲が狭い"
+    },
+    {
+      "url": "https://www.chunichi.co.jp/article/1279614",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": [
+    "Stage1 dedup済み候補 build/deduped-candidates/mobility.jsonl のみを起点に選定",
+    "広域収集と横断 dedup のやり直しは行っていない",
+    "selected URL は fetch_article_body と fetch_ogp で公開本文と OGP を確認した"
+  ]
+}

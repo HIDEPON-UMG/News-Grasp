@@ -1,0 +1,64 @@
+{
+  "date": "2026-07-11",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/ai.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"アップル、企業秘密の盗用でOpenAIを提訴\"",
+    "\"GPT-5.6 を基盤とする ChatGPT ワーク\"",
+    "\"Claude、利用制限を全リセット\"",
+    "\"OpenAI デイブレイク ヒアリング\"",
+    "\"NTT系 中国現地社員 生成AI 見える化\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "GPT5.6提供開始 Anthropicに対抗",
+      "url": "https://news.yahoo.co.jp/pickup/6587436",
+      "reason": "主題がChatGPT Work・GPT-5.6公開と近く、公式OpenAI記事で代表採用した。"
+    },
+    {
+      "title": "OpenAI、音声AI「GPT-Live-1」発表：聞き、話し、同時に思考する新時代へ",
+      "url": "https://finance.biggo.jp/news/3428bd88-1532-4296-bcf2-a850698c9fe0",
+      "reason": "一次情報ではなく二次要約媒体で、公式公開日も7月8日と当日性で劣後した。"
+    },
+    {
+      "title": "SnykとClaude Securityから考える、AI時代の開発とセキュリティ",
+      "url": "https://www.lac.co.jp/lacwatch/service/20260710_004881.html",
+      "reason": "論考色が強く、新規の制度変更や製品発表より優先度を下げた。"
+    },
+    {
+      "title": "HashPort、Claude・ChatGPT等のAIエージェントを通じたウォレット制御を可能にする「HashPort Wallet MCP」を2026年9月にローンチ予定",
+      "url": "https://prtimes.jp/main/html/rd/p/000000179.000046288.html",
+      "reason": "構想自体は面白いが、AIカテゴリでは訴訟・基盤モデル・防御実装の影響範囲を優先した。"
+    },
+    {
+      "title": "生成AI利用経験者は約半数に 一方で勤務先の利用ルール「整備されていない」45.3％",
+      "url": "https://prtimes.jp/main/html/rd/p/000000220.000024100.html",
+      "reason": "ガバナンス論点は重要だが、調査発表より制度実装と競争変化の直接材料を優先した。"
+    },
+    {
+      "url": "https://www.bloomberg.com/jp/news/articles/2026-07-10/THZ7R8N3N09000?srnd=jp-homepage",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.jimin.jp/news/information/213782.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行していない。stage1 dedup済み候補 25 件から選別のみ実施。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

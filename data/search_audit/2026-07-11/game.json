@@ -1,0 +1,55 @@
+{
+  "date": "2026-07-11",
+  "category_id": "game",
+  "queries": [
+    "stage1 deduped pool: ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "watchlist coverage review: Nintendo / Switch 2 / Sony / Capcom / Square Enix",
+    "same-pool relevance screen: BilibiliWorld / Steam free weekend / Nintendo commerce / Tamagotchi"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "selection_notes": "Stage1 deduped candidates only. No broad recollection and no cross-category dedup rerun.",
+  "dropped": [
+    {
+      "title": "２０２６／２７明治安田Ｊ１リーグ 前半戦ホームゲームチケット販売スケジュールについて",
+      "url": "https://jefunited.co.jp/news/detail/5285",
+      "reason": "sports ticket の false positive"
+    },
+    {
+      "title": "8/22（土）愛媛FC戦 ホームゲーム観戦チケット販売、シーズンパス・招待券について",
+      "url": "https://www.yamaga-fc.com/archives/550437",
+      "reason": "sports ticket の false positive"
+    },
+    {
+      "title": "アーケードゲームファンの憧れだったハード「NEOGEO」35周年！ 今でも忘れない“100メガショック！”の衝撃",
+      "url": "https://game.watch.impress.co.jp/docs/kikaku/2123953.html",
+      "reason": "回顧企画で当日性が弱い"
+    },
+    {
+      "title": "中川大志主演で「ダーウィンズゲーム」実写映画化決定 Koki,、畑芽育、神尾楓珠、山本耕史ら集結 ティザー＆特報映像公開",
+      "url": "https://news.yahoo.co.jp/articles/36e3ef4e46dc1887071e965393d6cb25292339b7",
+      "reason": "映画化発表でゲーム業界の一次動向から距離がある"
+    },
+    {
+      "title": "アジア最大級のアニメやゲームの展示会Bilibiliworld開幕 上海",
+      "url": "https://www.fnn.jp/articles/-/1073579",
+      "reason": "同一テーマでTBS NEWS DIG版の方が出展規模の記述が明確"
+    },
+    {
+      "title": "【ONE PIECEカードゲーム 最新情報】明日7月11日(土)に6色スタートデッキ【ST-31】～【ST-36】が新発売！",
+      "url": "https://one-piece.com/news/80780/index.html",
+      "reason": "商品発売告知のみで波及が限定的"
+    }
+  ]
+}
