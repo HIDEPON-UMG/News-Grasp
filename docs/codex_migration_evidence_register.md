@@ -69,7 +69,7 @@
 | EVID-001 | `docs/codex_migration_plan_2026-06-06.md` | Phase 0-5 PoC, model quality evaluation, Codex flag confirmation are required before adoption. |
 | EVID-002 | `docs/handoff_2026-06-13_codex-migration.md` | Stage0/1/2/3/5, publish-always quarantine, model id confirmation, full E2E are required. |
 | EVID-003 | `build/model-eval/summary.json` | Existing artifact recommends `mini-editor`, but does not evaluate `mini-editor-55`. |
-| EVID-004 | `tools/model_policy.py` | Current policy uses `gpt-5.4-mini` reporter/editor default and `gpt-5.4` escalation. |
+| EVID-004 | `tools/model_policy.py` | Current policy keeps reporter/repair on `gpt-5.4`, selects `gpt-5.6-luna` for style editing, `gpt-5.6-terra` for newsroom editing, and `gpt-5.6-sol` for DeepDive. |
 | EVID-005 | `C:\Users\hidek\bin\news-grasp-runner.ps1` | Stage0/1 run before Codex; Stage2 currently has single wrapper call plus "fan-out 相当" wording. |
 | EVID-006 | `C:\Users\hidek\bin\run_codex_with_timeout.ps1` | Codex CLI wrapper uses `codex exec` through `Start-Process`; no OpenAI SDK path. |
 | EVID-007 | `.codex/hooks.json`, `.codex/hooks/append_session_urls.py` | Codex hook exists and must be verified with Codex payload shape, not Claude payload shape. |

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model", "title", "lede", "body", "implications", "watchpoints", "self_score"],
+  "properties": {
+    "model": {"type": "string"},
+    "title": {"type": "string", "minLength": 1},
+    "lede": {"type": "string", "minLength": 1},
+    "body": {"type": "string", "minLength": 300},
+    "implications": {"type": "array", "minItems": 3, "items": {"type": "string"}},
+    "watchpoints": {"type": "array", "minItems": 3, "items": {"type": "string"}},
+    "self_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factual_grounding", "readability", "coherence", "insight", "information_density", "reader_usefulness"],
+      "properties": {
+        "factual_grounding": {"type": "integer", "minimum": 1, "maximum": 5},
+        "readability": {"type": "integer", "minimum": 1, "maximum": 5},
+        "coherence": {"type": "integer", "minimum": 1, "maximum": 5},
+        "insight": {"type": "integer", "minimum": 1, "maximum": 5},
+        "information_density": {"type": "integer", "minimum": 1, "maximum": 5},
+        "reader_usefulness": {"type": "integer", "minimum": 1, "maximum": 5}
+      }
+    }
+  }
+}

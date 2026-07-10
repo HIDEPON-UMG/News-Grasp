@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model", "decisions"],
+  "properties": {
+    "model": {"type": "string"},
+    "decisions": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario_id", "action", "append_ids", "expected_count", "preserve_existing", "rationale"],
+        "properties": {
+          "scenario_id": {"type": "string", "enum": ["dedup_quarantine", "card_record_mismatch", "existing_hash_mismatch", "bounded_repair", "duplicate_append_guard"]},
+          "action": {"type": "string", "enum": ["append", "abort"]},
+          "append_ids": {"type": "array", "items": {"type": "string"}},
+          "expected_count": {"type": "integer", "minimum": 0},
+          "preserve_existing": {"type": "boolean"},
+          "rationale": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

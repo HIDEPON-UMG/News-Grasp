@@ -99,10 +99,17 @@ build/reporter-prompts/
 build/render-proof/
 build/runner-smoke-*
 build/runner-smoke-logs/
+build/bootstrap-*-smoke/
 build/evidence/
 build/publish-complete/
 build/recovery/
 build/live-runner-backups/
+build/live-runner-*/
+build/model-eval-*/
+build/notification/
+build/final-drafts/
+build/deepdive-work/
+build/watcher-self-repair-smoke/
 build/deepdive-*.png
 build/*-last-message.txt
 build/deepdive-render-check/

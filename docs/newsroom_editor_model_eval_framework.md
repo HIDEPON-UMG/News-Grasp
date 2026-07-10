@@ -42,41 +42,39 @@
 
 | Variant | Model | Role |
 | --- | --- | --- |
-| newsroom-editor-mini | gpt-5.4-mini | editor-in-chief candidate |
 | newsroom-editor-54 | gpt-5.4 | editor-in-chief candidate |
-| newsroom-editor-55 | gpt-5.5 | editor-in-chief candidate |
+| newsroom-editor-56-terra | gpt-5.6-terra | editor-in-chief candidate |
 
 ## Selection Rule
 
-採用は `build/model-eval-newsroom-editor/newsroom_editor_summary.json` のみを根拠にする。
+採用は `build/model-eval-5.6/benchmark/summary.json` と `build/model-eval-5.6/newsroom-append-safety/summary.json` を根拠にする。
 
-1. 全 candidate の結果が揃っていなければ `undecided`。
-2. `quality_score >= 4.5` を満たす候補だけを採用候補にする。
-3. quality floor を満たす候補の中で `cost_adjusted_score` が最大のものを既定候補にする。
-4. `quality_score` 最大の候補は `quality_leader_variant` として別に残し、複雑日・gate 多発日の escalation 判断に使う。
-5. style rewrite 評価を編集長モデル選定に流用しない。
+1. 同一fixture・同一reasoningで各候補を5回実行する。
+2. 文章品質、速度、費用を別軸で比較し、品質判断を速度・費用で相殺しない。
+3. append安全性は別fixtureで5回検証し、全scenario合格を採用条件にする。
+4. factual mutationなどのfatal gateが1件でもあれば採用しない。
+5. style rewrite評価を編集長モデル選定に流用しない。
 
 ## Current Status
 
-`tools/model_policy.py` は、過去に Codex CLI サブスク認証経由で生成した `build/model-eval-newsroom-editor/newsroom_editor_summary.json` の評価結果をもとに、以下の採用状態を記録している。モデル選定を変更する場合は、この build 証跡を再生成し、policy と docs を同じ変更単位で更新する。
+`tools/model_policy.py` は、2026-07-10にCodex CLIで実行した各5回のrole-matched benchmarkとappend安全性試験に基づき、以下の採用状態を記録している。モデル選定を変更する場合は、このbuild証跡を再生成し、policyとdocsを同じ変更単位で更新する。
 
-| Variant | Quality | Cost weight | Cost-adjusted | Result |
-| --- | ---: | ---: | ---: | --- |
-| newsroom-editor-mini | 4.571 | 1.6 | 2.857 | default |
-| newsroom-editor-54 | 4.878 | 3.3 | 1.478 | quality leader / escalation |
-| newsroom-editor-55 | 4.510 | 5.0 | 0.902 | not selected |
+| Variant | Quality delta | Pairwise | Time delta | Cost delta | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| newsroom-editor-54 | baseline | 2-7-1 | baseline | baseline | replaced |
+| newsroom-editor-56-terra | +0.343 | 7 wins | -22.9% | +5.4% | default / escalation |
 
-既定は `newsroom-editor-mini`。複雑な gate repair、横断 dedup、Summary planning で品質余地が必要な日は `newsroom-editor-54` に昇格する。`newsroom-editor-55` は今回 fixture では品質・コストの両面で採用根拠がない。
+`gpt-5.6-terra`は追加append安全性試験も5/5、全25scenario合格だったため、既定・昇格先の双方に採用する。将来、別のquality leaderを採用する場合に備えて機械シグナルによる選択経路は維持する。
 
 ## Runner Wiring Contract
 
 runner は `newsroom_editor.default` を直取りしてはならない。`Select-NewsroomEditorModel` から `tools.model_policy.select_newsroom_editor_model()` を呼び、機械シグナルに応じて default / escalation を選ぶ。
 
-LLM repair worker は文体 `editor` role を流用してはならない。repair は `repair` role と `tools.model_policy.select_repair_model()` を使い、missing artifact generation や複合 issue の修復判断を `gpt-5.4-mini` に委ねない。
+LLM repair worker は文体 `editor` role を流用してはならない。repair は `repair` role と `tools.model_policy.select_repair_model()` を使い、missing artifact generation や複合 issue の修復判断をstyle editorへ委ねない。
 
 ## Operational Escalation
 
-通常日は `gpt-5.4-mini` で開始する。次の機械シグナルが 1 つでも出た場合だけ `gpt-5.4` に昇格する。
+通常日と機械シグナル検出時はいずれも`gpt-5.6-terra`を使う。次のシグナル判定は、将来defaultとquality leaderを再び分離する場合の選択境界として維持する。
 
 | Signal | Escalation condition |
 | --- | --- |

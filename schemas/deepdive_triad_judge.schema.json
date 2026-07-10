@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["order", "run_reviews", "overall_winner", "overall_rationale"],
+  "properties": {
+    "order": {"type": "string"},
+    "run_reviews": {
+      "type": "array", "minItems": 5, "maxItems": 5,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["repeat", "a_scores", "b_scores", "c_scores", "winner", "fatal_issues", "rationale"],
+        "properties": {
+          "repeat": {"type": "integer", "minimum": 1, "maximum": 5},
+          "a_scores": {"$ref": "#/$defs/scores"},
+          "b_scores": {"$ref": "#/$defs/scores"},
+          "c_scores": {"$ref": "#/$defs/scores"},
+          "winner": {"type": "string", "enum": ["A", "B", "C", "tie"]},
+          "fatal_issues": {"type": "array", "items": {"type": "string"}},
+          "rationale": {"type": "string"}
+        }
+      }
+    },
+    "overall_winner": {"type": "string", "enum": ["A", "B", "C", "tie"]},
+    "overall_rationale": {"type": "string"}
+  },
+  "$defs": {
+    "scores": {
+      "type": "object", "additionalProperties": false,
+      "required": ["readability", "coherence", "natural_japanese", "information_density", "insight", "non_repetition", "reader_usefulness"],
+      "properties": {
+        "readability": {"type": "integer", "minimum": 1, "maximum": 5},
+        "coherence": {"type": "integer", "minimum": 1, "maximum": 5},
+        "natural_japanese": {"type": "integer", "minimum": 1, "maximum": 5},
+        "information_density": {"type": "integer", "minimum": 1, "maximum": 5},
+        "insight": {"type": "integer", "minimum": 1, "maximum": 5},
+        "non_repetition": {"type": "integer", "minimum": 1, "maximum": 5},
+        "reader_usefulness": {"type": "integer", "minimum": 1, "maximum": 5}
+      }
+    }
+  }
+}

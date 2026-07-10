@@ -48,10 +48,11 @@ def test_reporter_escalation_is_condition_based_not_category_based() -> None:
 
 def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default() -> None:
     editor = DEFAULT_MODEL_POLICY["editor"]
-    assert editor["default"] == "gpt-5.4-mini"
-    assert editor["selection_variant"] == "mini-editor"
-    assert editor["selection_summary"] == "build/model-eval-selection/combo_summary.json"
-    assert editor["selection_combo"] == "full__mini-editor"
+    assert editor["default"] == "gpt-5.6-luna"
+    assert editor["escalate"] == "gpt-5.6-luna"
+    assert editor["selection_variant"] == "style-editor-56-luna"
+    assert editor["selection_summary"] == "build/model-eval-5.6/benchmark/summary.json"
+    assert editor["selection_source"] == "role_matched_five_run_benchmark_2026_07_10"
     assert editor["scope"] == "style_rewrite_only"
     assert editor["mode"] == "selective_rewrite"
     assert editor["rewrite_all"] is False
@@ -136,18 +137,19 @@ def test_repair_model_escalates_complex_patterns_to_gpt54() -> None:
         assert select_repair_model(**signals) == "gpt-5.4", label
 
 
-def test_newsroom_editor_policy_uses_gpt54_for_tts_script_quality() -> None:
-    """日次TTS原稿を含む編集長生成は、原稿品質を優先して gpt-5.4 を使う。"""
+def test_newsroom_editor_policy_uses_terra_after_safety_benchmark() -> None:
+    """編集長生成は品質とappend安全性を確認済みの Terra を使う。"""
     newsroom_editor = DEFAULT_MODEL_POLICY["newsroom_editor"]
-    assert newsroom_editor["selection_summary"] == "build/model-eval-newsroom-editor/newsroom_editor_summary.json"
-    assert newsroom_editor["selection_status"] == "overridden"
-    assert newsroom_editor["default"] == "gpt-5.4"
-    assert newsroom_editor["selection_variant"] == "newsroom-editor-54"
-    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-54"
-    assert newsroom_editor["escalate"] == "gpt-5.4"
-    assert newsroom_editor["selection_source"] == "tts_script_quality_override_2026_07_02"
-    assert newsroom_editor["previous_selection_source"] == "full_duty_newsroom_editor_eval"
-    assert DEFAULT_MODEL_POLICY["deepdive"]["default"] == "gpt-5.5"
+    assert newsroom_editor["selection_summary"] == "build/model-eval-5.6/benchmark/summary.json"
+    assert newsroom_editor["safety_summary"] == "build/model-eval-5.6/newsroom-append-safety/summary.json"
+    assert newsroom_editor["selection_status"] == "selected"
+    assert newsroom_editor["default"] == "gpt-5.6-terra"
+    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-terra"
+    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-terra"
+    assert newsroom_editor["escalate"] == "gpt-5.6-terra"
+    assert newsroom_editor["selection_source"] == "role_matched_five_run_plus_append_safety_2026_07_10"
+    assert DEFAULT_MODEL_POLICY["deepdive"]["default"] == "gpt-5.6-sol"
+    assert DEFAULT_MODEL_POLICY["deepdive"]["selection_source"] == "weighted_triad_benchmark_2026_07_10"
 
 
 def test_newsroom_editor_escalation_uses_machine_signals() -> None:
@@ -196,14 +198,27 @@ def test_select_newsroom_editor_model_returns_default_or_quality_leader() -> Non
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.4"
+    ) == "gpt-5.6-terra"
     assert select_newsroom_editor_model(
         gate_fail_count=1,
         dedup_conflict_count=0,
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.4"
+    ) == "gpt-5.6-terra"
+
+
+def test_operational_prompts_match_selected_model_policy() -> None:
+    runner_prompt = Path("prompts/runner-prompt.md").read_text(encoding="utf-8-sig")
+    newsroom_prompt = Path("prompts/newsroom-editor-system.md").read_text(encoding="utf-8-sig")
+    deepdive_prompt = Path("prompts/deepdive-research-system.md").read_text(encoding="utf-8-sig")
+
+    assert "gpt-5.6-luna" in runner_prompt
+    assert "gpt-5.6-terra" in runner_prompt
+    assert "gpt-5.6-sol" in newsroom_prompt
+    assert "gpt-5.6-sol" in deepdive_prompt
+    assert "gpt-5.4-mini" not in runner_prompt
+    assert "gpt-5.5" not in deepdive_prompt
 
 
 def test_build_eval_fixture_samples_three_per_category(tmp_path: Path) -> None:
