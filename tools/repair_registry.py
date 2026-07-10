@@ -137,7 +137,7 @@ def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
         line_body = line.rstrip("\r\n")
         newline = line[len(line_body):]
         stripped = line_body.strip()
-        if not stripped or stripped.startswith(("#", "---", "|")):
+        if not stripped or stripped.startswith(("#", "---", "|", "![", "[![", "📅")):
             repaired_lines.append(line)
             continue
         if re.match(r"^[-*]\s*【(?:事実・概要|背景・要点|影響・展望)】：", stripped):

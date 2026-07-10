@@ -61,6 +61,28 @@ def test_summary_emphasis_patch_updates_existing_summary_only(tmp_path: Path) ->
     assert other.read_text(encoding="utf-8") == "# AI\n\nこのファイルは触らない。\n"
 
 
+def test_category_emphasis_patch_never_rewrites_thumbnail_markdown(tmp_path: Path) -> None:
+    digest = tmp_path / "digest" / "IT-Consulting" / "2026-07-11-IT-Consulting.md"
+    digest.parent.mkdir(parents=True)
+    thumb = "![thumb](https://example.com/thumb.jpg)"
+    digest.write_text(
+        f"---\ncategoryId: it\n---\n\n### [80] Test\n\n{thumb}\n\n- plain sentence without markers\n",
+        encoding="utf-8",
+    )
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue="2026-07-11",
+            handler_id="category-card-emphasis-patch",
+            artifacts=["digest/IT-Consulting/2026-07-11-IT-Consulting.md"],
+        )
+    )
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.changed
+    assert thumb in repaired
+    assert "[[![thumb" not in repaired
+
+
 def test_summary_emphasis_patch_is_idempotent(tmp_path: Path) -> None:
     summary = tmp_path / "digest" / "Summary" / "2026-06-25.md"
     summary.parent.mkdir(parents=True)

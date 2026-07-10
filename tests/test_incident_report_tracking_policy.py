@@ -23,6 +23,13 @@ LEGACY_TRACKED_REPORTS = {
     "docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html",
 }
 
+# 2026-07-11 6:40 監査 automation は
+# docs/incidents/YYYY-MM-DD-<slug>-report.html への公開を明示指示した。
+# 通常時の非公開契約を維持できるよう、明示承認は historical baseline と分ける。
+EXPLICITLY_APPROVED_REPORTS = {
+    "docs/incidents/2026-07-11-daily-batch-editor-repair-routing-report.html",
+}
+
 
 def _git_lines(*args: str) -> list[str]:
     result = subprocess.run(
@@ -49,7 +56,8 @@ def test_incident_report_html_is_gitignored() -> None:
 
 
 def test_no_new_incident_report_html_is_tracked() -> None:
-    unexpected = sorted(_tracked_reports() - LEGACY_TRACKED_REPORTS)
+    approved = LEGACY_TRACKED_REPORTS | EXPLICITLY_APPROVED_REPORTS
+    unexpected = sorted(_tracked_reports() - approved)
 
     assert not unexpected, f"{REPORT_GLOB} must not be tracked: {unexpected}"
 

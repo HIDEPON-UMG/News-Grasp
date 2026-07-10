@@ -357,6 +357,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "tasks/audits/2026-07-08-live-readiness-overclaim-audit.md",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-11",
+        "newsroom-editor-preview / daily-quality / generation-quality / url-liveness / pytest-static / publish-complete",
+        "editor abort payload was materialized, structured repair metadata was incomplete, and runner policy rejected matrix-owned repairs before public convergence",
+        "compound repair decision debt across editor materialization and downstream gate routing",
+        "editor preview must pass semantic validation before materialization; validator issue metadata, coverage matrix, retry policy, registry scope, and runner repair class must stay connected through same-gate re-verification",
+        "editor preview semantic fixture plus structured daily-quality metadata, matrix-owned rewrite, thumbnail preservation, full non-network pytest, and public recovery proof",
+        "docs/incidents/2026-07-11-daily-batch-editor-repair-routing-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

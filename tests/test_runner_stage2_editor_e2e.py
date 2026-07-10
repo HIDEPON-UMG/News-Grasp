@@ -39,6 +39,13 @@ def _copy_minimal_repo(dst: Path) -> None:
         "verify_reporter_output.py",
     ]:
         shutil.copy2(ROOT / "tools" / name, dst / "tools" / name)
+    # semantic details are covered by test_validate_editor_output_preview.py;
+    # this isolated runner fixture only proves the pre-materialization call boundary.
+    (dst / "tools" / "validate_editor_output_preview.py").write_text(
+        "import argparse\nfrom pathlib import Path\n"
+        "p=argparse.ArgumentParser(); p.add_argument('preview', type=Path); p.add_argument('--date', required=True); a=p.parse_args(); raise SystemExit(0 if a.preview.exists() else 1)\n",
+        encoding="utf-8",
+    )
     (dst / "data").mkdir()
     (dst / "data" / "articles.jsonl").write_text("", encoding="utf-8")
     dedup_dir = dst / "build" / "deduped-candidates"
@@ -218,7 +225,7 @@ if ($FlowName -eq 'newsroom_editor') {
                 summary = "Smoke summary"
                 bullets = @("Smoke bullet")
             })
-            summary_markdown = "Smoke summary"
+            summary_markdown = "## § 本日のテーマ考察`n`n> $(('主要カテゴリを横断し、企業戦略と技術投資の接点を整理する。' * 8))`n`n### §01 FX — 為替市場の政策変化を追う`n`n- 【事実・概要】：市場変化。`n- 【背景・要点】：政策背景。`n- 【影響・展望】：判断材料。`n`n### §02 AI — 企業AI投資の責任を問う`n`n- 【事実・概要】：導入拡大。`n- 【背景・要点】：契約責任。`n- 【影響・展望】：監査強化。`n`n### §03 IT — 実装と運用責任を整理する`n`n- 【事実・概要】：実装進展。`n- 【背景・要点】：運用設計。`n- 【影響・展望】：責任分担。`n`n### §04 Mobility — 移動サービスの安全を測る`n`n- 【事実・概要】：都市展開。`n- 【背景・要点】：安全運用。`n- 【影響・展望】：規制対応。`n`n### §05 Game — 利用接点と継続性を考える`n`n- 【事実・概要】：接点拡大。`n- 【背景・要点】：利用導線。`n- 【影響・展望】：継続評価。"
         })
     }
     Add-TraceLine "wrapper END $FlowName"
@@ -311,7 +318,7 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     manifest = repo / "build" / "reporter-artifacts" / ISSUE / "editor-input-manifest.json"
     assert manifest.exists()
     assert (repo / "build" / "codex-last-message.txt").exists()
-    assert (repo / "digest" / "Summary" / f"{ISSUE}.md").read_text(encoding="utf-8-sig").strip() == "Smoke summary"
+    assert "## § 本日のテーマ考察" in (repo / "digest" / "Summary" / f"{ISSUE}.md").read_text(encoding="utf-8-sig")
     articles = (repo / "data" / "articles.jsonl").read_text(encoding="utf-8")
     assert '"genre":"Summary"' in articles
     assert not root_last_message_written_during_test
@@ -319,3 +326,15 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     assert state["status"] == "smoke_ok"
     assert state["repo_dir"] == str(repo)
     assert state["log_path"] == str(log_dir / f"{ISSUE}.log")
+
+
+def test_runner_validates_editor_preview_before_materialization() -> None:
+    """Semantic Red の editor JSON を Summary/articles へ反映してはならない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    success_block = runner.split("if ($agentRc -eq 0)", 1)[1].split("if ($agentRc -eq 124)", 1)[0]
+
+    validate = "tools.validate_editor_output_preview"
+    sync = "Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage\n"
+    assert validate in success_block
+    assert success_block.index(validate) < success_block.index(sync)
+    assert "editor preview semantic validation failed" in success_block

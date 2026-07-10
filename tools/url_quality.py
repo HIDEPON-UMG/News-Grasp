@@ -33,7 +33,10 @@ def is_google_news_proxy_thumb(url: object) -> bool:
     """Google News が配る代理サムネ URL なら True。"""
     if not isinstance(url, str):
         return False
-    parsed = urlparse(url)
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
     return parsed.scheme in {"http", "https"} and parsed.netloc.lower() == GOOGLE_NEWS_PROXY_THUMB_HOST
 
 

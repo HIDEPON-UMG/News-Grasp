@@ -765,6 +765,18 @@ def test_repair_preflight_blocks_llm_worker_before_existing_artifact_recreate() 
     assert repair_body.index("Test-RepairWorkerPreflight") < repair_body.index("Invoke-CodexWrapper")
 
 
+def test_repair_preflight_allows_matrix_owned_existing_artifact_rewrite() -> None:
+    """明示 handler 付き rewrite class は既存 artifact だけを bounded repair できる。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    target = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Invoke-DeterministicRegistryRepair", 1)[0]
+    preflight = runner.split("function Test-RepairWorkerPreflight", 1)[1].split("function Test-RepairPatchExistingPolicy", 1)[0]
+
+    assert "llm_rewrite_existing_artifact" in target
+    assert "$rewriteExistingAllowed" in preflight
+    assert "$missing.Count -eq 0" in preflight
+    assert "matrix_owned_existing_artifact_rewrite" in preflight
+
+
 def test_repair_downstream_guards_are_last_resort_after_upstream_preflight() -> None:
     """下流のdiff/scope検査は最後の砦であり、pre-repair防止より前面に出さない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
@@ -1192,6 +1204,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
     expected = {
         ("distribution", "distribution-manifest"),
         ("content", "newsroom-editor-timeout"),
+        ("content", "newsroom-editor-preview"),
         ("content", "summary-reflection"),
         ("content", "daily-quality"),
         ("artifact", "generation-normalize"),
@@ -1913,6 +1926,12 @@ def test_runner_summary_reflection_gate_is_date_bound() -> None:
     assert "tools.validate_summary_reflection --date $DateStamp" in probe_block
     assert "'tools.validate_summary_reflection', '--date', $DateStamp" in gate_block
     assert "validate_summary_reflection --latest" not in runner
+
+
+def test_runner_daily_quality_gate_uses_structured_json_output() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    gate_block = runner.split("daily quality gate start", 1)[1].split("Stage4: Codex DeepDive", 1)[0]
+    assert "'tools.validate_daily_quality', '--date', $DateStamp, '--json'" in gate_block
 
 
 def test_recoveronly_writes_input_manifest_before_reuse(tmp_path: Path) -> None:

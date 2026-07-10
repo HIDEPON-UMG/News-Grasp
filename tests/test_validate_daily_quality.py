@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import date
 
 from tools.validate_daily_quality import (
+    daily_quality_json_payload,
     main,
     validate_daily_quality,
     validate_card_emphasis_coverage,
@@ -19,6 +20,28 @@ from tools.validate_daily_quality import (
     validate_deepdive_relations_layout,
     validate_issue_schedule,
 )
+
+
+def test_daily_quality_json_emphasis_issue_owns_digest_artifact_and_category() -> None:
+    payload = daily_quality_json_payload(
+        "2026-07-11",
+        [r"digest\IT-Consulting\2026-07-11-IT-Consulting.md: card #06 lacks required emphasis: [[ ]] marker"],
+    )
+    issue = payload["issues"][0]
+    assert issue["issue_code"] == "category_card_emphasis_missing"
+    assert issue["artifact_paths"] == ["digest/IT-Consulting/2026-07-11-IT-Consulting.md"]
+    assert issue["category"] == "it"
+
+
+def test_thumbnail_validator_does_not_crash_on_malformed_markdown_url(tmp_path: Path) -> None:
+    digest = tmp_path / "digest" / "AI" / "2026-06-08-AI.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "---\ncategoryId: ai\n---\n\n### [80] Test\n\n![thumb]([![thumb](https://bad.example/x.jpg))\n",
+        encoding="utf-8",
+    )
+    errors = validate_digest_article_thumbnail_coverage(tmp_path / "digest", date(2026, 6, 8))
+    assert isinstance(errors, list)
 
 
 def _write_summary(root: Path, *, hero: bool = True, weekday: str | None = None) -> None:

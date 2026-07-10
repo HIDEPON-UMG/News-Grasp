@@ -231,6 +231,13 @@ def test_compound_failure_matrix_covers_interaction_dimensions() -> None:
         assert scenario.expected_status != "typed_red_not_complete"
 
 
+def test_2026_07_11_editor_repair_routing_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-11")
+    assert "newsroom-editor-preview" in scenario.stage
+    assert "structured daily-quality metadata" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-11-daily-batch-editor-repair-routing-report.html")
+
+
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:
     scenarios = compound_failure_scenarios()
 

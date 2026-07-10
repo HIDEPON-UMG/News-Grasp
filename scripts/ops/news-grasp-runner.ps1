@@ -1254,7 +1254,8 @@ function Add-JsonlRecordsIfMissing {
 function Sync-EditorOutputPreview {
     param(
         [Parameter(Mandatory=$true)][string] $PreviewPath,
-        [string] $FallbackPath = ''
+        [string] $FallbackPath = '',
+        [switch] $ValidateOnly
     )
     $sourcePath = $PreviewPath
     if (-not (Test-Path -LiteralPath $sourcePath)) {
@@ -1269,6 +1270,12 @@ function Sync-EditorOutputPreview {
         $payload = Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8 | ConvertFrom-Json
     } catch {
         Write-Log "ERROR: editor output preview JSON parse failed: $sourcePath reason=$($_.Exception.Message)"
+        return
+    }
+    if ($ValidateOnly) {
+        if ([System.IO.Path]::GetFullPath($sourcePath) -ne [System.IO.Path]::GetFullPath($PreviewPath)) {
+            Copy-Item -LiteralPath $sourcePath -Destination $PreviewPath -Force
+        }
         return
     }
 
@@ -1381,7 +1388,7 @@ function Invoke-TargetedRepair {
         return $registryRepairRc
     }
 
-    if ([string]$decision.repair_class -ne 'llm_generate_missing_artifact') {
+    if ([string]$decision.repair_class -notin @('llm_generate_missing_artifact', 'llm_rewrite_existing_artifact')) {
         Write-Log "repair matrix denied LLM repair worker (gate=$GateId, repair_class=$($decision.repair_class), status=$($decision.failure_status))"
         return 1
     }
@@ -1714,7 +1721,10 @@ function Test-RepairWorkerPreflight {
         $repairClass = [string]$RepairDecision.repair_class
     }
     $allMissing = ($existing.Count -eq 0)
-    $allowed = ($repairClass -eq 'llm_generate_missing_artifact' -and $allMissing)
+    $allExisting = ($missing.Count -eq 0 -and $existing.Count -gt 0)
+    $generateMissingAllowed = ($repairClass -eq 'llm_generate_missing_artifact' -and $allMissing)
+    $rewriteExistingAllowed = ($repairClass -eq 'llm_rewrite_existing_artifact' -and $allExisting)
+    $allowed = ($generateMissingAllowed -or $rewriteExistingAllowed)
     $deniedStatus = ''
     if (-not $allowed) {
         if (-not $allMissing) {
@@ -1728,7 +1738,7 @@ function Test-RepairWorkerPreflight {
         date = $DateStamp
         gate_id = $GateId
         allowed = [bool]$allowed
-        policy = 'llm_worker_only_when_matrix_allows_missing_artifact_and_all_artifacts_missing'
+        policy = if ($rewriteExistingAllowed) { 'matrix_owned_existing_artifact_rewrite' } else { 'llm_worker_only_when_matrix_allows_missing_artifact_and_all_artifacts_missing' }
         legacy_policy = 'llm_worker_only_when_all_artifacts_missing'
         repair_class = $repairClass
         issue_code = if ($null -eq $RepairDecision) { '' } else { [string]$RepairDecision.issue_code }
@@ -1741,7 +1751,11 @@ function Test-RepairWorkerPreflight {
         Write-Log ("pre-repair policy denied LLM repair worker before edits; status=$deniedStatus; existing artifacts require deterministic patch repair: " + ([string]::Join(', ', @($existing.ToArray()))))
         return $false
     }
-    Write-Log "pre-repair policy OK: coverage matrix allows missing artifact generation and all target artifacts are missing"
+    if ($rewriteExistingAllowed) {
+        Write-Log "pre-repair policy OK: coverage matrix explicitly allows bounded existing artifact rewrite"
+    } else {
+        Write-Log "pre-repair policy OK: coverage matrix allows missing artifact generation and all target artifacts are missing"
+    }
     return $true
 }
 
@@ -2862,8 +2876,23 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 
         if ($agentRc -eq 0) {
             $editorOutputPreview = Join-Path $ReporterArtifactDir 'editor-output.preview.json'
-            Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage
-            break
+            Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage -ValidateOnly
+            Push-Location $RepoDir
+            try {
+                Invoke-Logged { & $PyExe '-m' 'tools.validate_editor_output_preview' $editorOutputPreview '--date' $DateStamp }
+                $editorPreviewRc = $LASTEXITCODE
+            } finally {
+                Pop-Location
+            }
+            if ($editorPreviewRc -eq 0) {
+                Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage
+                break
+            }
+            Write-Log "WARN: editor preview semantic validation failed attempt=$attempt rc=$editorPreviewRc; output was not materialized"
+            if ($attempt -ge $MaxAgentAttempts) {
+                Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-preview' -Reason 'editor preview semantic validation failed' -ExitCode $editorPreviewRc
+            }
+            continue
         }
 
         if ($agentRc -eq 124) {
@@ -2911,7 +2940,7 @@ Write-Log 'summary reflection gate OK'
 # 落ちた。また、記事 record の date は収集日であり、URL パス上の発行日が前日以前
 # でも pre-push gate が検出できなかった。日次公開境界で両方を fail loud にする。
 Write-Log "daily quality gate start (validate_daily_quality --date $DateStamp)"
-$dailyQualityRc = Invoke-AutonomousGate -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp) -Artifacts $DailyDigestArtifacts
+$dailyQualityRc = Invoke-AutonomousGate -GateId 'daily-quality' -Category 'daily' -PythonArgs @('-m', 'tools.validate_daily_quality', '--date', $DateStamp, '--json') -Artifacts $DailyDigestArtifacts
 if ($dailyQualityRc -ne 0) {
     Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'daily-quality' -Reason 'daily quality autonomous gate failed' -ExitCode $dailyQualityRc
 }

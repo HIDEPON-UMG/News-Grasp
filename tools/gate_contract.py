@@ -12,7 +12,7 @@ from typing import Any
 
 DEFAULT_MAX_SAME_SIGNATURE_RETRIES = 1
 DEFAULT_MAX_CATEGORY_FAILURES = 2
-RETRY_BUDGET_POLICY_VERSION = 4
+RETRY_BUDGET_POLICY_VERSION = 7
 NON_RETRYABLE_PATTERNS = (
     "secret",
     "credential",
@@ -111,7 +111,15 @@ def hash_artifacts(repo_root: Path, artifact_paths: tuple[str, ...]) -> str:
     return h.hexdigest()[:16]
 
 
-def is_retryable_output(output: str) -> bool:
+def is_retryable_output(output: str, *, gate_id: str = "", category: str = "") -> bool:
+    """Security 境界だけで secret 類を non-retryable と判定する。
+
+    記事本文や見出しには「企業秘密」「token」等が通常語として現れるため、content gate
+    全体へ substring 判定を適用すると既知の deterministic repair まで誤停止する。
+    """
+    security_boundary = gate_id.casefold() in {"safe-commit", "security"} or category.casefold() == "security"
+    if not security_boundary:
+        return True
     lowered = output.lower()
     return not any(pat in lowered for pat in NON_RETRYABLE_PATTERNS)
 
@@ -167,7 +175,11 @@ def record_gate_failure(
     categories[failure.category] = category_failures
 
     same_signature_failures = int(sig_state["failures"])
-    retryable = failure.retryable and is_retryable_output(failure.output)
+    retryable = failure.retryable and is_retryable_output(
+        failure.output,
+        gate_id=failure.gate_id,
+        category=failure.category,
+    )
     unchanged_artifact = (
         len(sig_state["artifact_hashes"]) >= 2
         and sig_state["artifact_hashes"][-1] == sig_state["artifact_hashes"][-2]

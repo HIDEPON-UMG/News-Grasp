@@ -13,6 +13,7 @@ from typing import Any
 from tools.dedup import extract_source_date_from_url
 from tools.generate_pages import (
     CATEGORIES,
+    TAG_TO_CID,
     parse_articles,
     parse_frontmatter,
     parse_reflection,
@@ -936,6 +937,9 @@ SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
     r"[\\/]+(?P<category>[^\\/:\s]+)\.json): selected_total=(?P<selected>\d+) "
     r"does not match digest article count (?P<count>\d+)\."
 )
+DIGEST_ERROR_ARTIFACT_RE = re.compile(
+    r"(?P<artifact>.*?digest[\\/]+(?P<folder>[^\\/:]+)[\\/]+[^:\r\n]+\.md):"
+)
 
 
 def _repo_relative_artifact(path_text: str) -> str:
@@ -948,16 +952,26 @@ def _repo_relative_artifact(path_text: str) -> str:
 
 def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
     match = SEARCH_AUDIT_COUNT_MISMATCH_RE.search(message)
-    if not match:
-        return {}
-    return {
-        "artifact_paths": [_repo_relative_artifact(match.group("artifact"))],
-        "category": match.group("category"),
-        "evidence": {
-            "selected_total": int(match.group("selected")),
-            "digest_article_count": int(match.group("count")),
-        },
-    }
+    if match:
+        return {
+            "artifact_paths": [_repo_relative_artifact(match.group("artifact"))],
+            "category": match.group("category"),
+            "evidence": {
+                "selected_total": int(match.group("selected")),
+                "digest_article_count": int(match.group("count")),
+            },
+        }
+    digest_match = DIGEST_ERROR_ARTIFACT_RE.search(message)
+    if digest_match:
+        artifact = digest_match.group("artifact").replace("\\", "/")
+        marker = "digest/"
+        artifact = marker + artifact.split(marker, 1)[1] if marker in artifact else artifact
+        folder = digest_match.group("folder")
+        return {
+            "artifact_paths": [artifact],
+            "category": TAG_TO_CID.get(folder, folder.casefold()),
+        }
+    return {}
 
 
 def daily_quality_issue_code(message: str) -> str:

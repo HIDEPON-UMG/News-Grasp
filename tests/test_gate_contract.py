@@ -205,3 +205,22 @@ def test_non_retryable_security_failure_never_calls_repair(tmp_path: Path) -> No
 
     assert decision.retry_allowed is False
     assert decision.reason == "non-retryable failure class"
+
+
+def test_known_daily_quality_issue_codes_are_retryable(tmp_path: Path) -> None:
+    """matrix 登録済み daily-quality issue を prose hint 欠落で fatal 化しない。"""
+    for issue_code in ("search_audit_count_mismatch", "thumb_invalid_or_missing"):
+        state: dict = {"version": 1, "gates": {}}
+        artifact = tmp_path / f"{issue_code}.txt"
+        artifact.write_text("invalid", encoding="utf-8")
+        decision = record_gate_failure(
+            state,
+            GateFailure(
+                gate_id="daily-quality",
+                category="ai",
+                artifact_paths=(artifact.name,),
+                output=f'{{"issue_code":"{issue_code}","message":"企業秘密とtokenを扱う記事"}}',
+            ),
+            repo_root=tmp_path,
+        )
+        assert decision.retry_allowed is True, issue_code
