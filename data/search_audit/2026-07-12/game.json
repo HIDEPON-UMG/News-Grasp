@@ -1,0 +1,55 @@
+{
+  "date": "2026-07-12",
+  "category_id": "game",
+  "queries": [
+    "stage1-deduped-candidates: build/deduped-candidates/game.jsonl",
+    "selection-focus: Steam Sony PlayStation iRacing IndyCar Nintendo Pokemon streamer governance",
+    "followup-check: Nintendo / Switch 2 / Sony / Capcom / Square Enix coverage review"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "【無料公開！】野中大三の『ゲーム的プロレス論』！第105回「高難度と達成感」今年の『G1』は海野選手に注目!!【G136C】",
+      "url": "https://www.njpw.co.jp/659353",
+      "reason": "プロレス論でゲーム産業ニュースではない。"
+    },
+    {
+      "title": "【無料公開】パンチで敵をぶっ飛ばせ！ 近接格闘特化のコミック調アクション『HYPERFIST』Steamにて配信中",
+      "url": "https://www.gamespark.jp/article/2026/07/11/169144.html",
+      "reason": "無料配信開始のみで影響範囲が限定的。"
+    },
+    {
+      "title": "『ポケットモンスター 風と波』の価格が80ユーロとリーク：ゲームフリークの利益拡大の試み。",
+      "url": "https://www.vietnam.vn/ja/pokemon-winds-and-waves-ro-ri-muc-gia-80-euro-toan-tinh-tang-loi-nhuan-cua-game-freak",
+      "reason": "リーク依存で一次情報性が低い。"
+    },
+    {
+      "title": "ノベルゲーム「COCORO」の発売日が8月27日に決定！ (GAME Watch)",
+      "url": "https://news.yahoo.co.jp/articles/1e5e4eca077ffd98a24204a6147393454e14d660/images/000",
+      "reason": "Yahoo画像ページで元記事URL未解決のため採用見送り。"
+    },
+    {
+      "title": "ゲーセン救った日本のクレーンゲーム、なぜ台湾では「没落の象徴」なのか―台湾メディア",
+      "url": "https://topics.smt.docomo.ne.jp/amp/article/recordchina/business/recordchina-RC_984133",
+      "reason": "転載経由でソース距離が遠い。"
+    },
+    {
+      "title": "大谷翔平、ジャッジ上回る「99」 米ゲームで\"最高評価\"…兄貴分と球宴仕様で共演「史上最高」",
+      "url": "https://full-count.jp/2026/07/12/post1987856/",
+      "reason": "スポーツ話題が中心でゲーム産業の示唆が薄い。"
+    },
+    {
+      "url": "https://fan.books.rakuten.co.jp/articles/8984",
+      "reason": "quarantined by gate"
+    }
+  ]
+}

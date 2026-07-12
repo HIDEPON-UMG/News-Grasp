@@ -1,0 +1,62 @@
+{
+  "date": "2026-07-12",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/it.jsonl (stage1 dedup済み候補のみ使用)",
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d",
+    "https://www.infoq.com/feed/",
+    "https://www.ciodive.com/feeds/news/",
+    "https://www.cybersecuritydive.com/feeds/news/",
+    "https://www.theregister.com/software/headlines.atom"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "cloud",
+    "SaaS",
+    "cybersecurity",
+    "consulting",
+    "DX",
+    "Accenture",
+    "BCG",
+    "Deloitte",
+    "McKinsey",
+    "NTT",
+    "PwC"
+  ],
+  "dropped": [
+    {
+      "title": "暑 #りおたんの満開ブログ",
+      "url": "https://www.nogizaka46.com/s/n46/diary/detail/104714?ima=4508",
+      "reason": "ITカテゴリとは無関係な誤検知。"
+    },
+    {
+      "title": "【NVIDIAの恩返し】セガとNVIDIA30周年記念イベント開催 ジェンスンファンCEO秋葉降臨",
+      "url": "https://www.sbbit.jp/article/cont1/186060",
+      "reason": "記事実日付が2026-07-10で当日窓を外れ、主題も半導体・ゲームイベント寄りだった。"
+    },
+    {
+      "title": "情報処理技術者試験が大改定 消える応用・高度試験、難易度は変えない意向",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/03579/042400004/",
+      "reason": "記事実日付が2026-05-11で、stage1候補のpubDateより古い旧聞だった。"
+    },
+    {
+      "title": "JANOG58ミーティングに協賛、ITインフラ自動化に関するサービスをブース出展",
+      "url": "https://www.sanyonews.jp/article/1951987",
+      "reason": "記事実日付が2026-07-09で当日性が弱く、内容も協賛告知中心だった。"
+    },
+    {
+      "title": "Autodesk Revit でクラウド ワークシェアリング モデルを開くときに、「このモデルにアクセスするRevit Cloud Worksharing購入する」と表示される",
+      "url": "https://www.autodesk.com/jp/support/technical/article/caas/sfdcarticles/sfdcarticles/JPN/Subscribe-to-Revit-Cloud-Worksharing-to-access-this-model-when-opening-a-cloud-model-in-Autodesk-Revit.html",
+      "reason": "403で本文確認ができず、製品サポートFAQで当日ニュース性も薄かった。"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行していない。build/deduped-candidates/it.jsonl の25件だけを見直し、各記事ページの公開日と内容確認のみを追加した。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

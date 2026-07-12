@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-12",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/ai.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"Apple OpenAI 提訴\"",
+    "\"GPT-5.6 一般提供\"",
+    "\"NoLang API 34言語\"",
+    "\"リハ現場 生成AI利用率 86%\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "LINEで隠した機密のやりとり＝Apple対OpenAI訴訟が示す「暗黙知の値段」",
+      "url": "https://exawizards.com/column/ai-trend/news-07-11-2026/",
+      "reason": "Apple対OpenAI訴訟の論考で、同一論点は一次報道のBBCを代表採用した。"
+    },
+    {
+      "title": "Apple 営業秘密流用でOpenAI提訴",
+      "url": "https://news.yahoo.co.jp/pickup/6587501",
+      "reason": "同一訴訟の要約導線で、元記事のBBC採用に対して追加材料が薄かった。"
+    },
+    {
+      "title": "アップルが企業秘密の盗用でOpenAIを提訴…最高ハードウエア責任者のタン･タン氏も被告に",
+      "url": "https://toyokeizai.net/articles/-/951239?display=b",
+      "reason": "同一訴訟の重複報道で、当日枠では法務論点の代表記事を1本に絞った。"
+    },
+    {
+      "title": "Gemini本命でも使い分けが正解、ChatGPTとCopilotの得意技",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/03588/041400003/",
+      "reason": "比較コラム色が強く、当日性の高い新規イベント記事を優先した。"
+    },
+    {
+      "title": "KubeCon Europe 2026から生成AIの間違いを修正するにはデータの来歴を持つことが重要というセッションを紹介",
+      "url": "https://thinkit.co.jp/article/39254",
+      "reason": "記事実公開日が2026-06-08で、stage1候補には残っていたが当日窓より古いため除外した。"
+    },
+    {
+      "title": "「セミ見分け難しい」と言われ… 市が生成AIで診断ツール開発",
+      "url": "https://mainichi.jp/articles/20260709/k00/00m/040/133000c",
+      "reason": "自治体事例として面白いが、記事実公開日が2026-07-09で当日性が弱く、影響範囲も限定的だった。"
+    },
+    {
+      "title": "「AI女優」は“脅威”か“新たな選択肢”かーー。エンタメ業界への生成AI進出に意見が二分",
+      "url": "https://news.yahoo.co.jp/articles/d3c14ca060c995919b6e1ed35d8098f8019474dc?page=1",
+      "reason": "文化論としては重要だが、仕事・投資判断に直結する法務、基盤モデル、実務導入の4件を優先した。"
+    },
+    {
+      "title": "AnthropicとAirbnb、NYCに大型投資——億万長者の「脱出警告」を覆す",
+      "url": "https://finance.biggo.jp/news/42dd6206-5a85-4daa-8a35-4bf8f39e5015",
+      "reason": "二次要約媒体で一次情報への距離が遠く、当日枠では一次情報に近い記事を優先した。"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行していない。stage1 dedup済み候補25件から選別のみ実施し、個別記事の公開日と内容確認だけを追加で行った。",
+  "quality_shortfall_reason": "旧聞化した解説、同一訴訟の重複、二次要約媒体を除外した結果、当日性と読者影響が両立する4件に絞った。"
+}

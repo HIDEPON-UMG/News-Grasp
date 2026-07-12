@@ -1,0 +1,78 @@
+{
+  "date": "2026-07-12",
+  "category_id": "fx",
+  "queries": [
+    "stage1-only: build/deduped-candidates/fx.jsonl",
+    "local-normalize: url-path and visible timestamp to published_date",
+    "local-selection: USDJPY / EURUSD / BOJ / Fed / ECB coverage check"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "日銀4月会合 利上げの“サイン”はあるのか？ 日銀短観と支店長会議報告から 野村證券・岩下真理",
+      "url": "https://www.nomura.co.jp/wealthstyle/article/0682/",
+      "reason": "2026-07-12号の当日材料ではなく、5月公開の分析記事"
+    },
+    {
+      "title": "ピクテ･バイオ医薬品ファンド(毎月決算型)為替ヘッジなしコース【4231104A】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/4231104A",
+      "reason": "投信レートページでニュース記事ではない"
+    },
+    {
+      "title": "「語らないウォーシュFRB」がいずれ行き詰まる理由、情報発信簡素化の“説明不足”が招く信頼低下",
+      "url": "https://diamond.jp/articles/-/394470",
+      "reason": "論評色が強く、同論点はイベント予定記事でカバーした"
+    },
+    {
+      "title": "利上げ局面の成長戦略 「人生支える中長期的な関係を」 三菱UFJフィナンシャル・グループ半沢淳一社長",
+      "url": "https://www.tokyo-np.co.jp/article/500599?rct=economics",
+      "reason": "金融業の経営論が中心で、為替市場の直接材料としては弱い"
+    },
+    {
+      "title": "【最新FX・為替ニュース生解説】2026年7月13日～7月17日 YouTubeライブ配信スケジュール｜リアルマーケット分析",
+      "url": "https://www.gaitame.com/media/entry/2026/07/12/060000",
+      "reason": "番組告知でありニュース本体ではない"
+    },
+    {
+      "title": "金利上昇懸念で不動産株が急落 行き過ぎ感も、銀行株には追い風期待 野村證券ストラテジストが解説",
+      "url": "https://www.nomura.co.jp/wealthstyle/article/0728/",
+      "reason": "株式ストラテジー寄りで為替材料としては間接的"
+    },
+    {
+      "title": "超長期金利が高すぎるのか、5～10年金利が低すぎるのか 円金利見通しポイント 野村證券・宍戸知暁",
+      "url": "https://www.nomura.co.jp/wealthstyle/article/0718/",
+      "reason": "2026-05-01公開の分析記事で当日ニュースではない"
+    },
+    {
+      "title": "欧米為替見通し:ドル・円は伸び悩みか、中東に不透明感も為替介入に強い警戒(フィスコ)",
+      "url": "https://finance.yahoo.co.jp/news/detail/4e26775436040623778a1e52dda1d1b4b8342845",
+      "reason": "本文タイムスタンプが7月9日で、7月12日号の鮮度基準に届かない"
+    },
+    {
+      "title": "海外勢が日本の超長期国債に慎重姿勢、日銀正常化への懐疑根強く フォトギャラリー | TBS CROSS DIG with Bloomberg",
+      "url": "https://newsdig.tbs.co.jp/articles/gallery/2730976?station=withbloomberg&image=1",
+      "reason": "元記事が6月公開で、候補URLは再掲ギャラリーだった"
+    },
+    {
+      "url": "https://abema.tv/video/episode/89-44_s0_p518049",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://finance.yahoo.co.jp/quote/18312991",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
