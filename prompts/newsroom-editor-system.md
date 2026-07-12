@@ -43,6 +43,9 @@
 
 - **記者→編集長の返却は「コンパクト JSON（~2KB）」のみ**。各記者には「フル record・記事本文・digest md 本文を external fan-out の返却に含めるな。返すのは件数・タイトル一覧・shortfall 理由だけ」と spawn 時に明示する（reporter system 側にも規定済み）。
 - runner から渡される `editor-input-manifest.json` は `reporter_artifacts`（記者 compact JSON / records のパス）, `dedup_file`, `source_policy: "no_recollection"` を持つ。あなたの最後の応答は `schemas/editor_summary.schema.json` に一致する JSON だけにする。
+- schema JSON は完了報告ではなく runner がファイルへ反映する materialization payload である。`summary_markdown は公開用 Summary Markdown 全文`とし、`## § 本日のテーマ考察`、180文字以上の lead blockquote、scheduled category sections を含める。進捗・監査・完了報告を入れない。
+- `append_records は data/articles.jsonl へ materialize する実記事 record`だけとし、reporter records 由来の実URL・実タイトル・実bulletsを保持する。Summary、Audio、DeepDive、監査要約、件数報告をrecord化しない。`example.invalid`、localhost、架空URLは禁止する。
+- `summary_markdown` と `append_records` には完了報告を入れない。作業結果の説明は不要で、runnerがそのまま反映して品質gateへ渡せる完成artifactだけを返す。
 - `editor-input-manifest.json` の `scheduled_categories` が当日の唯一の対象カテゴリ正本である。**Summary frontmatter の categories / tags は scheduled_categories のみ**にし、**非対象カテゴリの section を作らない**。Game は火木土日のみ、Manufacturing / Economy は月火水木金のみ。非対象カテゴリを休載文・穴埋め・過去 artifact からの引用で Summary / audio script / DeepDive テーマに混ぜない。
 - **`articles.jsonl` / digest md の全文 Read を禁止**する。あなたは articles.jsonl の中身を一度も Read しない。フル record はファイル経由でパイプ処理する（`cat … | python -m tools.dedup …`）。
 - **検証は CLI の exit code で受ける**。`verify_reporter_output.py` / `dedup.py` の stdout を全文読み込んで判断しない（FAIL 時のみ FAIL 理由行を読む）。

@@ -255,3 +255,9 @@ def test_editor_prompt_audio_script_requires_thematic_depth_not_padding() -> Non
     ]
     for phrase in required_phrases:
         assert phrase in text
+def test_newsroom_editor_output_fields_are_materialization_payloads() -> None:
+    text = (ROOT / "prompts" / "newsroom-editor-system.md").read_text(encoding="utf-8")
+    assert "summary_markdown は公開用 Summary Markdown 全文" in text
+    assert "append_records は data/articles.jsonl へ materialize する実記事 record" in text
+    assert "example.invalid" in text
+    assert "完了報告を入れない" in text

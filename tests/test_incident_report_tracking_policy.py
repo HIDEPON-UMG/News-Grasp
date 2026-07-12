@@ -23,11 +23,12 @@ LEGACY_TRACKED_REPORTS = {
     "docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html",
 }
 
-# 2026-07-11 6:40 監査 automation は
+# 2026-07-11 / 2026-07-12 の 6:40 監査 automation は
 # docs/incidents/YYYY-MM-DD-<slug>-report.html への公開を明示指示した。
 # 通常時の非公開契約を維持できるよう、明示承認は historical baseline と分ける。
 EXPLICITLY_APPROVED_REPORTS = {
     "docs/incidents/2026-07-11-daily-batch-editor-repair-routing-report.html",
+    "docs/incidents/2026-07-12-daily-batch-editor-materialization-report.html",
 }
 
 

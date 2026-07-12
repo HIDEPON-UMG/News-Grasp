@@ -367,6 +367,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-11-daily-batch-editor-repair-routing-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-12",
+        "newsroom-editor-preview / editor workspace snapshot / repair routing / publish-complete",
+        "editor semantic retries restored an attempt workspace from a malformed aggregate reporter path and blocked convergence until the workspace and repair ledger were isolated per attempt",
+        "editor retry isolation and scalar artifact-path boundary",
+        "editor attempt snapshots must flatten reporter artifact paths, reset only issue-date mutable outputs, preserve an ordered repair ledger, and re-enter the production publish verifier on the recovered remote head",
+        "snapshot path contract, editor materialization fixtures, full pytest-static, publish-complete, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-12-daily-batch-editor-materialization-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

@@ -153,7 +153,7 @@ def _audit_flow_impact_contracts(repo_root: Path, runner: str) -> list[str]:
             "tools.validate_summary_reflection --date $DateStamp",
             "'tools.validate_summary_reflection', '--date', $DateStamp",
         )
-        if not all(marker in runner for marker in date_bound_markers):
+        if not any(marker in runner for marker in date_bound_markers):
             errors.append("flow impact summary reflection gate must pass --date $DateStamp")
 
     duplicate_schedule_sources: list[str] = []

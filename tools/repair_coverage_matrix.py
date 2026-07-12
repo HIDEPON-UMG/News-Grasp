@@ -141,6 +141,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
+        "followup_review_required",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "followup-review-note-patch",
+        ("data/articles.jsonl",),
+        "daily-quality",
+        "blocked_followup_review_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
         "published_docs_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "published-docs-regenerate",
@@ -712,13 +721,16 @@ SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
 SEARCH_AUDIT_METADATA_RE = re.compile(
     r"(?P<artifact>.*?data[\\/]+search_audit[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})"
     r"[\\/]+(?P<category>[^\\/:\s]+)\.json): "
-    r"(?:coverage_terms_checked missing required terms|dropped reasons are required)"
+    r"(?:coverage_terms_checked missing required terms|dropped reasons are required|queries must contain at least 3 search queries)"
 )
 DIGEST_ARTIFACT_RE = re.compile(
     r"(?P<artifact>digest[\\/]+(?P<folder>[^\\/:\s]+)[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-[^\\/:\s]+\.md):"
 )
 SUMMARY_DIGEST_MISSING_RE = re.compile(
     r"Summary digest が存在しません:\s*(?P<artifact>digest[\\/]+Summary[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})\.md)"
+)
+FOLLOWUP_REVIEW_RE = re.compile(
+    r"(?P<artifact>.*?data[\\/]+articles\.jsonl):\d+\s+\[[^\]]+\]: follow-up matched_with URL date .*? issue (?P<issue>\d{4}-\d{2}-\d{2})"
 )
 DIGEST_FOLDER_TO_CATEGORY = {
     "FX": "fx",
@@ -792,8 +804,21 @@ def _summary_digest_missing_metadata(output: str) -> dict[str, Any]:
     }
 
 
+def _followup_review_metadata(output: str) -> dict[str, Any]:
+    match = FOLLOWUP_REVIEW_RE.search(output)
+    if not match:
+        return {}
+    return {
+        "artifact_paths": ("data/articles.jsonl",),
+        "issue_date": match.group("issue"),
+        "evidence": {"typed_reason": "followup_review_required"},
+    }
+
+
 def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
+    if "add followup_review_note" in text or "follow-up matched_with url date" in text:
+        return "followup_review_required"
     if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(output) or (
         "selected_total=" in text and "does not match digest article count" in text
     ):
@@ -824,7 +849,11 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "title_ja_missing"
     if "thumb" in text or "thumbnail" in text:
         return "thumb_invalid_or_missing"
-    if "dropped reasons are required" in text or "coverage_terms_checked missing required terms" in text:
+    if (
+        "dropped reasons are required" in text
+        or "coverage_terms_checked missing required terms" in text
+        or "queries must contain at least 3 search queries" in text
+    ):
         return "search_audit_metadata_missing"
     if gate_id == "url-liveness" or "404" in text or "410" in text or "stale" in text:
         return "url_dead_or_stale"
@@ -895,7 +924,8 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
         issues: list[RepairIssue] = []
         for line in issue_lines:
             metadata = (
-                _search_audit_count_mismatch_metadata(line)
+                _followup_review_metadata(line)
+                or _search_audit_count_mismatch_metadata(line)
                 or _search_audit_metadata_missing_metadata(line)
                 or _summary_digest_missing_metadata(line)
                 or _digest_artifact_metadata(line)
@@ -914,7 +944,8 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
             )
         return issues
     metadata = (
-        _search_audit_count_mismatch_metadata(output)
+        _followup_review_metadata(output)
+        or _search_audit_count_mismatch_metadata(output)
         or _search_audit_metadata_missing_metadata(output)
         or _summary_digest_missing_metadata(output)
         or _digest_artifact_metadata(output)

@@ -37,6 +37,7 @@ def _copy_minimal_repo(dst: Path) -> None:
         "url_quality.py",
         "validate_record.py",
         "verify_reporter_output.py",
+        "prepare_editor_workspace.py",
     ]:
         shutil.copy2(ROOT / "tools" / name, dst / "tools" / name)
     # semantic details are covered by test_validate_editor_output_preview.py;
@@ -338,3 +339,39 @@ def test_runner_validates_editor_preview_before_materialization() -> None:
     assert validate in success_block
     assert success_block.index(validate) < success_block.index(sync)
     assert "editor preview semantic validation failed" in success_block
+
+
+def test_runner_restores_editor_workspace_after_preview_validation_failure() -> None:
+    """失敗した editor attempt の直接ファイル変更を次 attempt へ持ち越さない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    assert "New-EditorAttemptSnapshot" in runner
+    failure = runner.index("editor preview semantic validation failed")
+    restore = runner.index("Restore-EditorAttemptSnapshot", failure)
+    retry = runner.index("continue", restore)
+    assert failure < restore < retry
+
+
+def test_editor_attempt_snapshot_flattens_reporter_artifact_paths() -> None:
+    """配列値を空白連結した偽の相対パスとして snapshot してはならない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    assert "foreach ($artifactPath in @($artifact.records_file, $artifact.digest_file, $artifact.search_audit))" in runner
+    assert "foreach ($scalarPath in @($artifactPath))" in runner
+    assert "$paths += [string]$artifact.records_file" not in runner
+
+
+def test_newsroom_editor_does_not_use_stale_artifact_success_probe() -> None:
+    """既存の当日成果物だけで今回 editor attempt を早期成功させない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    start = runner.index("Invoke-CodexWrapper -PromptFile $EditorPromptFile")
+    end = runner.index("Write-Log \"wrapper invoke END", start)
+    invocation = runner[start:end]
+
+    assert "SuccessProbeCommand" not in invocation
+
+
+def test_runner_prepares_issue_date_workspace_before_newsroom_editor() -> None:
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    prepare = runner.index("tools.prepare_editor_workspace")
+    editor = runner.index("Invoke-CodexWrapper -PromptFile $EditorPromptFile")
+    assert prepare < editor

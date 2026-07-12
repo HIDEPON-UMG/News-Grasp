@@ -1959,7 +1959,7 @@ function Invoke-PythonGateWithRepair {
             Write-Log "$GateId gate final attempt failed; skipping repair"
             return $gateRc
         }
-        $classifyPath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-classify-$GateId-$DateStamp-attempt$attempt.json")
+        $classifyPath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-classify-$GateId-$DateStamp-$RunId-attempt$attempt.json")
         $gateCapturePathForClassify = $capturePath
         Push-Location $RepoDir
         try {
@@ -2223,6 +2223,17 @@ Add-Content -Path $LogPath -Value '' -Encoding UTF8
 Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
+
+$gateAttemptDir = Join-Path $RepoDir 'data\gate_attempts'
+$gateAttemptArchive = Join-Path $RepoDir "build\recovery\gate-attempt-archives\$DateStamp\$RunId"
+$priorGateAttempts = @(Get-ChildItem -LiteralPath $gateAttemptDir -Filter "$DateStamp*.json" -File -ErrorAction SilentlyContinue)
+if ($priorGateAttempts.Count -gt 0) {
+    New-Item -ItemType Directory -Path $gateAttemptArchive -Force | Out-Null
+    foreach ($priorAttempt in $priorGateAttempts) {
+        Move-Item -LiteralPath $priorAttempt.FullName -Destination (Join-Path $gateAttemptArchive $priorAttempt.Name) -Force
+    }
+    Write-Log "reset gate attempt ledger for run_id=$RunId archive=$gateAttemptArchive count=$($priorGateAttempts.Count)"
+}
 Assert-PreRunBootstrapInterlock
 Assert-RunnerBinaryInSync
 $IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive
@@ -2825,6 +2836,16 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         exit $ReporterTerminalExitCode
     }
 
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-m' 'tools.prepare_editor_workspace' '--repo-root' $RepoDir '--date' $DateStamp }
+        if ($LASTEXITCODE -ne 0) {
+            Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-workspace' -Reason 'failed to prepare issue-date editor workspace' -ExitCode $LASTEXITCODE
+        }
+    } finally {
+        Pop-Location
+    }
+
     foreach ($artifactCat in $Categories) {
         $catDedupFile = Join-Path $DedupedCandidateDir "$artifactCat.jsonl"
         $ReporterLastMessage = Join-Path $ReporterArtifactDir "$artifactCat.codex-last-message.json"
@@ -2863,15 +2884,65 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     Set-Content -Path $EditorPromptFile -Value ($DateHeader + "`n`n" + $PromptBody) -Encoding UTF8
     Write-Log "editor prompt date injected: header='$DateHeader' -> $EditorPromptFile"
 
+    function New-EditorAttemptSnapshot {
+        param([int] $Attempt)
+        $snapshotDir = Join-Path $RepoDir "build\editor-attempt-snapshots\$DateStamp\attempt-$Attempt"
+        if (Test-Path $snapshotDir) { Remove-Item -LiteralPath $snapshotDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $snapshotDir -Force | Out-Null
+        $paths = @('data/articles.jsonl', "digest/Summary/$DateStamp.md", "digest/Summary/$DateStamp-audio-script.md")
+        foreach ($artifact in $ReporterArtifacts) {
+            foreach ($artifactPath in @($artifact.records_file, $artifact.digest_file, $artifact.search_audit)) {
+                foreach ($scalarPath in @($artifactPath)) {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$scalarPath)) {
+                        $paths += [string]$scalarPath
+                    }
+                }
+            }
+        }
+        $entries = @()
+        foreach ($relativePath in @($paths | Select-Object -Unique)) {
+            $source = Join-Path $RepoDir $relativePath
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+                $snapshotName = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($relativePath)))).Replace('-', '').ToLowerInvariant()
+            } finally {
+                $sha.Dispose()
+            }
+            $snapshotPath = Join-Path $snapshotDir $snapshotName
+            $exists = Test-Path -LiteralPath $source
+            if ($exists) { Copy-Item -LiteralPath $source -Destination $snapshotPath -Force }
+            $entries += [pscustomobject]@{ relative_path = $relativePath; existed = $exists; snapshot_path = $snapshotPath }
+        }
+        $manifestPath = Join-Path $snapshotDir 'manifest.json'
+        $entries | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+        return $manifestPath
+    }
+
+    function Restore-EditorAttemptSnapshot {
+        param([string] $ManifestPath)
+        $entries = @(Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+        foreach ($entry in $entries) {
+            $destination = Join-Path $RepoDir ([string]$entry.relative_path)
+            if ([bool]$entry.existed) {
+                $parent = Split-Path -Parent $destination
+                if ($parent) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+                Copy-Item -LiteralPath ([string]$entry.snapshot_path) -Destination $destination -Force
+            } elseif (Test-Path -LiteralPath $destination) {
+                Remove-Item -LiteralPath $destination -Force
+            }
+        }
+        Write-Log "editor attempt workspace restored from snapshot: $ManifestPath"
+    }
+
     $MaxAgentAttempts = 3
     $preHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
     $agentRc = $null
     for ($attempt = 1; $attempt -le $MaxAgentAttempts; $attempt++) {
+        $editorAttemptSnapshot = New-EditorAttemptSnapshot -Attempt $attempt
         $priorGateFailCount = [Math]::Max(0, $attempt - 1)
         $NewsroomEditorModel = Select-NewsroomEditorModel -GateFailCount $priorGateFailCount -DedupConflictCount 0 -AppendMismatch:$false -SummaryQualityScore 5 -DeepDiveThemeCount 1
         Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, gate_fail_count=$priorGateFailCount, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
-        $editorSuccessProbe = "py -3.12 -m tools.validate_summary_reflection --date $DateStamp; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_daily_quality --date $DateStamp; if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }; py -3.12 -m tools.validate_generation_quality --date $DateStamp"
-        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor' -SuccessProbeCommand $editorSuccessProbe -SuccessProbeIntervalSec 30 -SuccessProbeMinElapsedSec 120
+        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor'
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"
 
         if ($agentRc -eq 0) {
@@ -2889,6 +2960,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 break
             }
             Write-Log "WARN: editor preview semantic validation failed attempt=$attempt rc=$editorPreviewRc; output was not materialized"
+            Restore-EditorAttemptSnapshot -ManifestPath $editorAttemptSnapshot
             if ($attempt -ge $MaxAgentAttempts) {
                 Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-preview' -Reason 'editor preview semantic validation failed' -ExitCode $editorPreviewRc
             }

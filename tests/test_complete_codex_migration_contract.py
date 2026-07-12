@@ -152,16 +152,16 @@ def test_runner_invokes_codex_wrapper_with_named_parameter_splatting() -> None:
     assert "'-CodexExe', $CodexExe" not in wrapper
 
 
-def test_runner_newsroom_editor_uses_success_probe_for_artifact_gate_completion() -> None:
+def test_runner_newsroom_editor_defers_artifact_gates_until_materialization() -> None:
     runner = _read(RUNNER)
     stage = runner.split("role=newsroom_editor", 1)[1].split("# ===== 2.1 Summary reflection gate", 1)[0]
 
-    assert "$editorSuccessProbe" in stage
-    assert "tools.validate_summary_reflection" in stage
-    assert "tools.validate_daily_quality --date $DateStamp" in stage
-    assert "tools.validate_generation_quality --date $DateStamp" in stage
-    assert "-SuccessProbeCommand $editorSuccessProbe" in stage
-    assert "-SuccessProbeMinElapsedSec 120" in stage
+    assert "$editorSuccessProbe" not in stage
+    assert "tools.validate_summary_reflection" not in stage
+    assert "tools.validate_daily_quality --date $DateStamp" not in stage
+    assert "tools.validate_generation_quality --date $DateStamp" not in stage
+    assert "-SuccessProbeCommand $editorSuccessProbe" not in stage
+    assert "-SuccessProbeMinElapsedSec 120" not in stage
 
 
 def test_runner_records_codex_usage_by_flow() -> None:

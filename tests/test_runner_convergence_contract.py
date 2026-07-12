@@ -1205,6 +1205,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
         ("distribution", "distribution-manifest"),
         ("content", "newsroom-editor-timeout"),
         ("content", "newsroom-editor-preview"),
+        ("content", "newsroom-editor-workspace"),
         ("content", "summary-reflection"),
         ("content", "daily-quality"),
         ("artifact", "generation-normalize"),
@@ -1923,7 +1924,7 @@ def test_runner_summary_reflection_gate_is_date_bound() -> None:
     )[0]
     gate_block = runner.split("summary reflection gate start", 1)[1].split("daily quality gate start", 1)[0]
 
-    assert "tools.validate_summary_reflection --date $DateStamp" in probe_block
+    assert "SuccessProbeCommand" not in probe_block
     assert "'tools.validate_summary_reflection', '--date', $DateStamp" in gate_block
     assert "validate_summary_reflection --latest" not in runner
 
@@ -2147,3 +2148,8 @@ def test_runner_stage0_harvest_uses_last_good_candidate_fallback() -> None:
     assert "Stage0 harvest no last-good candidates" in runner
     assert "Stop-ExternalReadiness" in runner
     assert "Copy-Item -LiteralPath $outPath -Destination $lastGoodPath -Force" in runner
+def test_runner_scopes_gate_retry_budget_to_current_run_intent() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    assert "gate-attempt-archives" in runner
+    assert "reset gate attempt ledger for run_id=" in runner
+    assert 'news-grasp-repair-classify-$GateId-$DateStamp-$RunId-attempt$attempt.json' in runner

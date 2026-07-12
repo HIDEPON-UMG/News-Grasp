@@ -272,6 +272,21 @@ def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
             did_change = True
 
         category_id = str(audit.get("category_id") or path.stem).casefold()
+        queries = [str(v).strip() for v in (audit.get("queries") or []) if str(v).strip()]
+        if len(queries) < 3:
+            harvest_path = path.with_name(f"harvest-{category_id}.json")
+            if harvest_path.exists():
+                try:
+                    harvest = json.loads(harvest_path.read_text(encoding="utf-8-sig"))
+                    harvest_queries = [
+                        str(v).strip() for v in (harvest.get("queries") or []) if str(v).strip()
+                    ]
+                    merged_queries = list(dict.fromkeys([*queries, *harvest_queries]))
+                    if len(merged_queries) >= 3:
+                        audit["queries"] = merged_queries
+                        did_change = True
+                except json.JSONDecodeError:
+                    pass
         digest_count = _digest_article_count_for(category_id)
         if digest_count is not None and selected_total != digest_count:
             audit["selected_total"] = digest_count
@@ -763,6 +778,28 @@ def _blocked_ambiguous(ctx: RepairContext) -> RepairResult:
     )
 
 
+def _repair_followup_review_note(ctx: RepairContext) -> RepairResult:
+    path = ctx.repo_root / "data" / "articles.jsonl"
+    if not path.exists():
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
+    rows: list[dict] = []
+    changed = False
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
+        if not raw.strip():
+            continue
+        row = json.loads(raw)
+        if str(row.get("date") or "") == ctx.issue and row.get("matched_with") and not str(row.get("followup_review_note") or "").strip():
+            summary = str(row.get("summary") or "").strip()
+            if summary:
+                row["followup_review_note"] = f"旧報との差分として確認した新材料: {summary}"
+                changed = True
+        rows.append(row)
+    if not changed:
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
+    path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8", newline="\n")
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, ("data/articles.jsonl",))
+
+
 REGISTRY: dict[str, RepairHandler] = {
     "summary-emphasis-patch": RepairHandler(
         handler_id="summary-emphasis-patch",
@@ -805,6 +842,13 @@ REGISTRY: dict[str, RepairHandler] = {
         allowed_artifacts=("data/search_audit/{date}",),
         verify_gate="daily-quality",
         repair=_repair_search_audit_metadata,
+    ),
+    "followup-review-note-patch": RepairHandler(
+        handler_id="followup-review-note-patch",
+        kind="deterministic",
+        allowed_artifacts=("data/articles.jsonl",),
+        verify_gate="daily-quality",
+        repair=_repair_followup_review_note,
     ),
     "url-quarantine-refill": RepairHandler(
         handler_id="url-quarantine-refill",

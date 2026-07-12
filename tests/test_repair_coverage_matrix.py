@@ -282,6 +282,27 @@ def test_daily_quality_selected_total_mismatch_routes_to_search_audit_metadata_p
     }
 
 
+def test_daily_quality_shortfall_query_metadata_routes_to_metadata_patch() -> None:
+    decisions = classify_gate_issues(
+        "daily-quality",
+        "ERROR: data\\search_audit\\2026-07-12\\it.json: queries must contain at least 3 search queries for shortfall review.",
+    )
+    assert decisions[0].issue_code == "search_audit_metadata_missing"
+    assert decisions[0].handler_id == "search-audit-metadata-patch"
+
+
+def test_daily_quality_followup_review_routes_to_llm_rewrite() -> None:
+    decisions = classify_gate_issues(
+        "daily-quality",
+        "ERROR: data\\articles.jsonl:1744 [FX]: follow-up matched_with URL date 2026-05-31 is 42 day(s) older than issue 2026-07-12\nadd followup_review_note for a verified new-material follow-up, or remove the record as stale.",
+    )
+    assert decisions[0].issue_code == "followup_review_required"
+    assert decisions[0].repair_class.value == "deterministic_handler"
+    assert decisions[0].handler_id == "followup-review-note-patch"
+    assert decisions[0].artifact_paths == ("data/articles.jsonl",)
+    assert decisions[0].issue_date == "2026-07-12"
+
+
 def test_deepdive_required_selected_total_mismatch_routes_to_search_audit_metadata_patch() -> None:
     output = (
         "ERROR: data\\search_audit\\2026-07-08\\mobility.json: "

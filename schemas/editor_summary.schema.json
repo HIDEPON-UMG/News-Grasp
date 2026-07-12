@@ -22,6 +22,7 @@
     },
     "append_records": {
       "type": "array",
+      "description": "data/articles.jsonlへmaterializeする実記事recordのみ。監査要約、Summary/Audio/DeepDive、placeholder URLは禁止。",
       "minItems": 1,
       "items": {
         "type": "object",
@@ -43,6 +44,6 @@
         }
       }
     },
-    "summary_markdown": { "type": "string", "minLength": 1 }
+    "summary_markdown": { "type": "string", "minLength": 1, "description": "公開用Summary Markdown全文。完了報告ではなく、本日のテーマ考察leadとscheduled category sectionsを含む。" }
   }
 }
