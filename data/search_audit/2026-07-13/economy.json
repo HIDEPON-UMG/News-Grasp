@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-13",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1: build/deduped-candidates/economy.jsonl",
+    "bing rss: site:diamond.jp 所得連動型給付導入 27年度同時実施 危険度",
+    "bing rss: 変質する地方分権 自治体の仕事どう減らす",
+    "bing rss: サウジ UAE 送金 制限 政治対立 経済 波及",
+    "web search: site:jakartashimbun.com 政府 経済外交 AI 通商で成長基盤強化"
+  ],
+  "raw_results_total": 29,
+  "candidates_total": 4,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "高齢おひとりさま問題「厚労省手引書」が示す今後の道",
+      "url": "https://mainichi.jp/premier/business/articles/20260707/biz/00m/020/003000c",
+      "reason": "published_date=2026-07-07 で freshness gate 超過"
+    },
+    {
+      "title": "コメ「需要に応じ」食糧法改正案 衆院通過、一定量保管義務付けも",
+      "url": "https://news.yahoo.co.jp/articles/403915f60c94e11e54cd8d7dedb4832e5eace8a1",
+      "reason": "published_date=2026-06-03 で freshness gate 超過"
+    },
+    {
+      "title": "【日本株週間展望】反発へ、米国のインフレ沈静化や銀行決算に期待感",
+      "url": "https://www.bloomberg.com/jp/news/articles/2026-07-10/THXNOLKK3NY900",
+      "reason": "published_date=2026-07-10 で freshness gate 超過かつ 403 応答"
+    },
+    {
+      "title": "アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型の基準価額・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1zckZSdHVvbExXV2xBc3Qtdk51MGlVVU9UNHZWeVRPMnRTNFJ6RTlfMjByUlZ6UEc4WGhvVURYd2RIRW5Oa0hXeXVMd0xETDdqamdPZw?oc=5",
+      "reason": "投信基準価額ページでカテゴリ要件を満たさず、canonical URL も解決対象外"
+    },
+    {
+      "title": "シナーが2連覇 ウィンブルドンテニス男子シングルス",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5ZZGxiaVBIaDd1ejA5OTI4am96WnNjanIxWHZDSndlcW00cm01Tk5aQ3Vrd045alVfVVM2dmtxWkRDcTc3eXl4UnNKc2NoZVRKUGZBbDd5T0xFcXV1Z3U5dlpOMnpKb1NxbnRnMw?oc=5",
+      "reason": "スポーツ記事で economy カテゴリ対象外"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

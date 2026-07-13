@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-13",
+  "category_id": "mobility",
+  "queries": [
+    "stage1-input: build/deduped-candidates/mobility.jsonl",
+    "site:autoprove.net \"Kiaが日本再上陸！ EVバン「PV5」とPBV戦略の最前線を韓国本社で探る\"",
+    "site:jidounten-lab.com \"小池都知事 都内の自動運転バス導入拡大に意欲\"",
+    "site:zaikei.co.jp \"トヨタ、米国製初の3列シート新型EV「ハイランダー」の生産を延期\"",
+    "site:levolant.jp \"戦略価格で放つボルボの新型7人乗りEV「EX90」。航続650kmのフラッグシップSUVが日本デビュー\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "BYDが軽EV「ラッコ」7月28日発売、N-BOXの牙城に挑む中国発の黒船",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1XVDF0OS1BUVJhWWg1clE2bDd6al9KZm81RlRtYXAzS2pIYUZSWmlIVzhxU215OF9QaFA0NmZBVW5wOGc4T3VPNm5MWE5xWlA0Z0JyMmZjcXk0dW4zOG9rWEVGbVk5VjBJLXBwZXJ3bHAzUFJ1?oc=5",
+      "reason": "2026-07-10号で発売日と軽EV参入を既掲載。新材料が競合比較中心で薄く、follow-up採用を見送った。"
+    },
+    {
+      "title": "自民党自動車議連の西村康稔会長、EV課税は「今年中に大きな方向性を出す」",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE15aFBrWW5iVVRfYndsUXpJSHh0RGVfYlZWd3puYXdXLXBLRTE4Qk02aTFNZFhoTHFzV3FBZWRYTlh3S0ZUenBFRlFBTFZlOGkxNEE?oc=5",
+      "reason": "Stage1では候補化されたが、source=netdenjd.com の元記事 canonical を検索で確定できず、直リンク創作を避けて除外した。"
+    },
+    {
+      "title": "ニデックeAxle､合弁解消も単独で継続 年内に第4世代",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBBaW9SMFF1alhhMGJZYlJFV3ZjMzRVV3l6cFdIaEtxaXBJTGJWRm5wbGRxcG1WcUNYb1ZLLUEwcUZ5aEJWeHc1OV8yRnpBN0dmV1pkc1p4ekFEWGhxaG42NnVxcHpqcWtYWVdvTGJLcmhBelVtZ1ZtTVltS3UyaVk?oc=5",
+      "reason": "重要度は高いが、Stage1の source=nikkei.com から当日記事の canonical を確認できず、URL品質契約を優先して見送った。"
+    },
+    {
+      "title": "バス・タクシーの自動運転レベル4を実現する遠隔運行支援ソリューション「NTTモビリティ 運行アシスト」提供開始",
+      "url": "https://www.ntt-mobility.com/news/20260708/newsrelease-260708/",
+      "reason": "公式リリースの公開日が2026-07-08で、canonical解決後は1日窓を外れたため当日記事カードから除外した。"
+    },
+    {
+      "title": "「プレミアム チャージング アライアンス」会員向けにEVチャージステーションを開放",
+      "url": "https://power-x.jp/ja/intl/newsroom/2026-07-09",
+      "reason": "提携自体は有意味だが、元リリースが2026-07-09で鮮度が不足し、当日優先度でも4本に届かなかった。"
+    },
+    {
+      "title": "GMジャパン、キャデラックのEV「リリック」に4年のリースプラン追加 CEV補助金受給可能に",
+      "url": "https://www.cadillacjapan.com/electric/lyriq/flat-plan",
+      "reason": "4年プランの実体は6月末からの施策で、当日候補としては新規性が弱く、短評で埋めるより除外を優先した。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

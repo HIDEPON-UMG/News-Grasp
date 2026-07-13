@@ -890,6 +890,17 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
             payload = json.loads(stripped)
         except json.JSONDecodeError:
             payload = None
+            # Validator は structured JSON の前に WARNING を出すことがある。
+            # 行 regex へ落とすと JSON の message 行を artifact path と誤認するため、
+            # 先頭の JSON object を構造のまま回収する。
+            json_start = stripped.find("{")
+            if json_start >= 0:
+                try:
+                    candidate, _ = json.JSONDecoder().raw_decode(stripped, json_start)
+                    if isinstance(candidate, dict):
+                        payload = candidate
+                except json.JSONDecodeError:
+                    payload = None
         if isinstance(payload, dict):
             raw_issues = payload.get("issues") or payload.get("errors") or []
             if isinstance(raw_issues, list) and raw_issues:

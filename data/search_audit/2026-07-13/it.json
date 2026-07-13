@@ -1,0 +1,62 @@
+{
+  "date": "2026-07-13",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/it.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"IT系上場企業の平均年収を業種別にみてみた 2026年版［後編］\" site:publickey1.jp",
+    "\"IT系上場企業の平均年収を業種別にみてみた 2026年版［前編］\" site:publickey1.jp",
+    "\"AI時代のSaaS、株価回復も業界構造は不可逆的に変化\" site:forbesjapan.com",
+    "\"フリーは『AIが使いやすい』SaaSを目指す、CAIO直下に新組織\"",
+    "\"企業が見直すべき『脅威像』 国家ハッカー AI\"",
+    "\"RICOH サイバーセキュリティパック IT資産管理サービス LANSCOPE for RICOH\"",
+    "site:enterprisezine.jp HPE エージェント型IT 統合運用"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "フリーは「AIが使いやすい」SaaSを目指す、CAIO直下に新組織",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBqOHFqQzkwT3RvYmg3b1phcGNOVkRkNUJNVXRIeGFkVlNlbkNjcm1WMlA2RGlLaDlyeTBzYTJYZ3FDMnJ2M1FrT2JLU1JwSXpIQ1RkWlZnR2N2ZllPV3g4U0ZCaXhweUJCT2FBOQ?oc=5",
+      "reason": "source候補がxtech系の会員記事で、stage1ファイルだけではcanonicalと当日材料の裏取りを閉じられなかった。"
+    },
+    {
+      "title": "企業が見直すべき「脅威像」～国家ハッカーが“あえてAIに全てを任せない”理由～：AIとサイバー攻防のダイナミクス",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE1xdEowNGV1b2NRYWJSUmZFbGE0TUFUN1dvLXYzVkEzd3podS15RnFYTWlfQ3hKMHdnVzY2cGtnS0VCenpGYUlmSUdzWHMzOWVQMnY1UXAzU2FKVzBzaDFiT3FsWFNHRzYwbW9nZWtGQWpmQQ?oc=5",
+      "reason": "canonical解決が不安定で、stage1候補だけでは記事単位のURL確定を安全に行えなかった。"
+    },
+    {
+      "title": "HPE、エージェント型ITの統合運用実現に向けた数々の新発表",
+      "url": "https://enterprisezine.jp/news/detail/24663",
+      "reason": "元記事の公開日が2026-07-10で、当日号の1日窓を外れた。"
+    },
+    {
+      "title": "「RICOH サイバーセキュリティパック IT資産管理サービス LANSCOPE for RICOH」を提供開始",
+      "url": "https://www.excite.co.jp/news/article/Prtimes_2026-07-13-6187-218/",
+      "reason": "同一発表の再掲色が強く、過去号からの新材料が薄かった。"
+    },
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1LamFweU1fQTFzZVBHZGVpNHEyWkZtZGQtR254Nm5jNVJRcmFQeHZ3S3RybEFKQmJKbDlNUGM0SGxIMjFnck1Ya2Nfcnc5Zw?oc=5",
+      "reason": "IT-Consultingカテゴリとは無関係な誤検知。"
+    },
+    {
+      "title": "＜次回予告＞「乃木坂工事中」",
+      "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTFB6ZnBaeF9ia29tZTlxQ3ZVLUhUOUYwaWJoT21YMUFiTUlSa1dJSlhnQ2tuRU1YZnFvUVc0bmQ5UHU1ZDVreW5SbUFjSHNWaktrcWdsaGhsRFA5RThCVWFXTjVEOU95aTk2R3dqdmhkUWQ3SjgzQWVJaFFDVUc?oc=5",
+      "reason": "カテゴリ外のエンタメ記事。"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行していない。build/deduped-candidates/it.jsonl の候補だけを使い、canonical解決・鮮度確認・カテゴリ適合性の見直しだけを行った。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

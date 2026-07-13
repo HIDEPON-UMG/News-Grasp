@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-13",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/ai.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"AI開発競争、主戦場は性能から価格へ－OpenAIやメタが新戦略\"",
+    "\"アンソロピックとOpenAI、中国勢の攻勢に直面－AI競争は「性能」から「普及」へ\"",
+    "\"AppleがOpenAIを企業秘密侵害で提訴\"",
+    "\"AI「Claude」を使って開発ツールの「Bun」の53万行のZigコード全てをRustへ書き換え\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAI対アンソロピック前哨戦か 中国上場AI･2社の株価明暗",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBjTjZ5d1dYSkpSTm0ta3NLbk9BRnNWMWo0Q1NnaGdRcHRpMEE3ekRxeHR6bXFoY1ZCWUtuZ0pCMkNRWWZzTkxORU44d0h3eGlGNE0tQy12cktyYXUtQlJIV1M2MEtjU0QyczFCVg?oc=5",
+      "reason": "中国勢圧力の論点はTBS/Bloomberg代表記事を採用し、株価比較記事は金融寄りで重複度が高かった。"
+    },
+    {
+      "title": "会社支給AIは現場で“無能”？ ロームが「Gemini」に乗り換えた理由と効果：1年かかる見込みのコード解析が1週間に",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9tSl9WYnM4NnczemNwOHgzUXFFcU9lUjh0MHZxemp1b3J1ZnJXZkhTS3NpLVJjTTVsQmFhQjZNSmd0LWxNODBiNHd2cDM0VGVmVF84cjVuZDNybTdBQTNfUTNLbUl2SDdOODRzQQ?oc=5",
+      "reason": "1回の targeted search では元記事URLを安全に確定できず、確認できた公式ソースは2026-06-24公開で当日窓外だった。"
+    },
+    {
+      "title": "AIの性能でMetaが半年でGoogleを超える可能性＝SemiAnalysis",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE45WThTSEVueUdZTWt2bkNvZkVSQ1FIdW1GeExTTGZOclVleS0wQnlSOXdOWGI3UUdpSVdUVm1nTHVTNURzdjFBcUVneDN2bHJOS2NVQVEwQVJhTzhrNk1iNXM0RUtsTGE4?oc=5",
+      "reason": "アーカイブ導線までは確認できたが、記事単体のcanonical URLを確定できず採用を見送った。"
+    },
+    {
+      "title": "Gemini本命でも使い分けが正解、ChatGPTとCopilotの得意技",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE95a2ozZFg0LXp2bk04ZGFWZE40bzFoV2dpOXdxa1dMbnF6MHR0bHlmY2xzc1RiWlpaUjdiTVF3eUw0SzhYcGljWFBtU0Z1S0pmQmtJaFZ4dURxYkRXWW9IUmZFTC1OSmVzN3pTdA?oc=5",
+      "reason": "比較コラム色が強く、当日性の高い競争構造・訴訟・開発移行の記事を優先した。"
+    },
+    {
+      "title": "AI動画を見続ける人に起きる「恐ろしい変化」とは？専門家「感覚そのものが失われていくんです」",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTFBSZWtlaGg4eWhjbjU1SklvRkphTFdRZzVaOGFwUEhPMzRoejZtQ3JkRGF2RmhSSG1LYUw3OWNPUHdwcW1tUnNNUk1QX07SAU9BVV95cUxNTlZjd2RmWmRrRE9QNmhDUHltWWZxYVZ0VGU5b3J0QlpEVkdheGhJRmRvcDl4bk5PR1Q5OW8xQVVJSWtGdEp6MTNST2ZGcGdr?oc=5",
+      "reason": "消費者向けの啓発色が強く、仕事・投資判断に直結するニュースを優先した。"
+    },
+    {
+      "title": "【Theo – t3.gg】OpenAIのGPT-5.6、AnthropicのFableと同等性能を38分の1のコストで実現。ただしコードを書き続けるのを止められない",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1TSWxuLVViRzhiQ25mZFQ2UzVrYWQyRG9LMWk0b0FPRmJUd3ktbmt2em9FOXktV1I2OXlxR0E4Y3ZxMEZMc2d3aEphM2E0aFlpb0VUcjJmNW9GZw?oc=5",
+      "reason": "二次要約媒体で一次情報への距離が遠く、同テーマはTBS/Bloomberg代表記事を採用した。"
+    },
+    {
+      "title": "株式会社Mavericksは、動画生成AI「NoLang」に複数人同時編集機能を正式リリース。変更は全員の画面に即時反映、ロックや順番待ちのないチーム編集へ",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5aQ2czVTVnQVZCNWpKMjBzbnBmdWl6Q3MtVjZkVURRTGZnVWFVZmVqbU5LRmZFcDNPVXpUUF8zSzU0SWdNY0taU2Mzc09WcjNMY0VaS2Ywb2Z0WGlHM282SklGaldsb0tnbWc?oc=5",
+      "reason": "PR主体で影響範囲が限定的だった。"
+    },
+    {
+      "title": "AI即戦力仕事術 ～本当は怖い生成AI～",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFBxR2x2bjBuTHQtc0tTb19RYzlEaG9LZXZ6eG5pbmlmQy1tZ3NiSzAxbW8zZC1VMHZNUFBPMTZ0TXpQMWlCenByeVJGMjZMVER6ZXgtRGNabGJjTlpz?oc=5",
+      "reason": "書籍・解説導線で新規イベント性が薄かった。"
+    }
+  ],
+  "notes": "広域収集と横断dedupは再実行していない。stage1 dedup済み候補25件を起点に、個別候補のcanonical URLと公開日だけを確認した。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

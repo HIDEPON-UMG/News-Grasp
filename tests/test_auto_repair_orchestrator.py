@@ -92,6 +92,39 @@ def test_classify_routes_search_audit_count_mismatch_to_metadata_patch(capsys) -
     ]
 
 
+def test_classify_preserves_structured_artifact_after_warning_prefix(capsys) -> None:
+    output = "WARNING: provenance annotation is missing\n" + json.dumps(
+        {
+            "ok": False,
+            "gate_id": "daily-quality",
+            "issues": [
+                {
+                    "gate_id": "daily-quality",
+                    "issue_code": "unknown",
+                    "message": "economy candidates_total=4; expected at least 5",
+                    "issue_date": "2026-07-13",
+                },
+                {
+                    "gate_id": "daily-quality",
+                    "issue_code": "search_audit_count_mismatch",
+                    "message": "fx selected_total=5 does not match digest article count 4",
+                    "issue_date": "2026-07-13",
+                    "artifact_paths": ["data/search_audit/2026-07-13/fx.json"],
+                    "category": "fx",
+                    "evidence": {"selected_total": 5, "digest_article_count": 4},
+                },
+            ],
+        }
+    )
+
+    rc = main(["classify", "--gate-id", "daily-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["issue_code"] == "search_audit_count_mismatch"
+    assert payload["artifact_paths"] == ["data/search_audit/2026-07-13/fx.json"]
+
+
 def test_classify_routes_audio_script_quality_to_targeted_rewrite(capsys) -> None:
     output = json.dumps(
         {

@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-13",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-13/manufacturing.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1: build/deduped-candidates/manufacturing.jsonl",
+    "site:chemicaldaily.com TSMC 半導体材料 選定基準 炭素削減実績",
+    "site:chemicaldaily.com JSR 木村氏 半導体前工程 デファクト",
+    "\"半導体メーカー、価格決定力の限界見え始めた－モルガン・スタンレー\"",
+    "\"韓国の半導体大手SKハイニックス、米市場に上場\"",
+    "\"壬生町の新産業団地に2社内定、チョコレート製造会社など操業へ\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "三菱自動車が人型ロボット量産・工場導入へ 東大発企業と共同開発 株価も9％急上昇",
+      "url": "https://news.tv-asahi.co.jp/news_economy/articles/000518424.html",
+      "reason": "canonical解決後の公開日が2026-07-11で、issue日2026-07-13に対する24時間窓外"
+    },
+    {
+      "title": "東芝が新サービス、プリント基板製造でＡＩエージェントが改善提案",
+      "url": "https://www.global.toshiba/jp/news/digitalsolution/2026/06/news-20260618-01.html",
+      "reason": "確認できた一次情報の公開日が2026-06-18で、freshness gateを満たさない"
+    },
+    {
+      "title": "GXリーグ会員2688社が決定/サプライチェーンのCO2削減へ/経産省",
+      "url": "https://www.meti.go.jp/press/2026/07/0710003.html",
+      "reason": "原典が2026-07-10公表で24時間窓外、かつ製造カテゴリの直接性が採用5件を下回る"
+    },
+    {
+      "title": "半導体「供給不足」長期化でSamsung・SK・Micronが「生産能力増強戦争」に突入",
+      "url": "https://finance.biggo.jp/news/81d52e1e-f9ff-4435-9691-966ba41ba957",
+      "reason": "bounded search内で高確度のcanonical一次ソースを解決できず未採用"
+    },
+    {
+      "title": "TSMCという「夢」が金を呼ぶ 九州半導体パークが聖地になる未来",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE41RWlaZHhmdVY4Q3ZVZDllU0twcjZhZ0RMc3dLSWZpZ0M3RHRFajFYQ19uVm11NFJGSzhwVVY3SDdBQXVIU2oxUTJLeV9NZlpyb2lpWGZfc01rOVJXOUd4NWRtSEJRa3AteDlvTw?oc=5",
+      "reason": "feature色が強く、当日の新規な製造意思決定としては採用5件を下回った"
+    }
+  ]
+}

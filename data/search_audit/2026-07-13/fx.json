@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-13",
+  "category_id": "fx",
+  "queries": [
+    "stage1-input: build/deduped-candidates/fx.jsonl",
+    "site:ig.com \"ドル円週間見通し：米CPI焦点、ドル安警戒、投機的円買い戻しのトリガーに\"",
+    "site:zai.diamond.jp \"7月13日(月)■『米ドル、日本円、ユーロの方向性』\"",
+    "site:gaitame.com \"来週のドル円相場はどうなる？7/13週のイベント予定 2026年7月12日\"",
+    "site:gaitame.com \"豪ドル/円 見通し 15日に中国GDP\"",
+    "site:newsdig.tbs.co.jp \"日本とアジアの不動産オーナー、日銀利上げとタカ派FRBに準備万端\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "ピクテ･バイオ医薬品ファンド(毎月決算型)為替ヘッジなしコース【4231104A】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5ickY0ZkxKaHd3VG9lSjZxTWdWZEZnYnNUTHRlcTlzVlYxWE9pLWh4dzdsOGM0MHV0TktFXzVrWlZyWjhnR1BFQVFWd0hxd2hJV3hBUg?oc=5",
+      "reason": "投信の基準価額ページで新規ニュース性がない"
+    },
+    {
+      "title": "39年半ぶり円安意識、原油は中東緊迫で上値試すか 今週の市場・予定",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1ZaG9GQU1YejJRcFplMEEwcHQ2UnZqV0dVbmxzTDBma2kzSkJCR3ZWbmtsR2ZZcTJUbnZKYWdRS0RiWUNTNFpEY2VmT1JXUWFEOUFDcjFEYUVCNmFXb3lTcEhudVRvbnB6QUo0Zg?oc=5",
+      "reason": "canonical URL を安定解決できず未採用"
+    },
+    {
+      "title": "【米ドル円】7月第3週の為替相場にインパクトを与える「重要な経済指標」【解説：東京海上アセットマネジメント】",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE5taDdyc0ZQeFNlcjJVcXlvd1haZnBqU2d6VUZrU1lJcHRSNzZKSnpoMlp5THlpdjlFNWhodGE5TG13bTd2dmgwTXp4Q0xJQVJWWUE?oc=5",
+      "reason": "同テーマの採用記事と重複度が高く一次情報性で劣後"
+    },
+    {
+      "title": "【社説】ＳＫハイニックスのＮＡＳＤＡＱデビュー、投資と為替レートに明るい兆し : 社説・コラム",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE96MjBld2ZYM0E2ekRfdEU2TW9Mclo5U2Z5UE1LanAtNnVCdnJ6anJrNW1CVk82VE9IT1NSVGppcGhqb09VeWFCM1RocVQ5blRWZDlDbnZCNmhuRHFI?oc=5",
+      "reason": "半導体・株式寄りでFX読者向けの直接性が弱い"
+    },
+    {
+      "title": "日銀「さくらレポート」全9地域の景気判断据え置き 輸出・生産への中東情勢の影響",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTFAxZ2IySm83OS0xOExkOXZTM3pjSjI2SWgzYWluNDVBeEVTZUZ6cmRvNmc0aGYxUVJjWUViai1JaXV1alhsSG01UERGYnhtTlBiZTNENGtNXzZMdWM?oc=5",
+      "reason": "当日為替材料としては波及が弱く、他のBOJ材料を優先"
+    },
+    {
+      "title": "景気後退リスク低下でもFRBは利上げ継続か",
+      "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE1DcTI1cWp6Y2Y3RTJtTWNaSVRHR2pqd21USXJhQXlHYWVoMGxNRk5Ld3hqN29wdFBUMzA4ZjdnRXhac21MNGwyVnN1RmN3YnR3UkZqMURSd0ZQOFBLYmkwMlJ1RmlvTU1na0t0dzNrN1c?oc=5",
+      "reason": "暗号資産寄りの論考で為替の実務示唆が薄い"
+    },
+    {
+      "title": "韓国銀行、7月の政策金利2.75%への引き上げが有力―市場はすでに「来年上半期の引き締めサイクル」に注目",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1rUVozQ3NOYmd5akowbG1Cc01pSFJIdkc4eW13M3JXQ3cwRC11Q2dmZE9oTkNSVFp1TDc3MkhLMW1vS05JekNsMUdCOUh4U19lZXR2SnlLaXBERUdsczlXbnRUMzRfRnRHbzZOVWkzTkFCVWJM?oc=5",
+      "reason": "配信元の一次情報性が弱く、同日材料として優先度不足"
+    },
+    {
+      "title": "「骨太方針」金融政策記述修正へ 利上げけん制の懸念拡大で",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE5fUkpBQlNfSnE0OUNVbHZZZk1oLUktTVJfYmwtb19rRjlfUC1zb2lIbFFEMDVjZlNPTGVkYTFxcldqQnd4bWNJWnMzaFpjcjhCMWc?oc=5",
+      "reason": "記事公開日が当日窓外で鮮度要件を満たさない"
+    },
+    {
+      "title": "被爆80年や円安が影響か 広島市の観光客数が去年過去最多（RCC中国放送）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9ueHF4MWlTRE8weFpybVJDT2lPOENDRG42TnIzaUxuX1ZyMlplUDA1WHB3WnFKMHZnb1N2c2ZzNVljZmlHTkx0dkdXbDV4czNwWjRRT2lzV2d5ZGNLZXZrYUZGZi04N3FRWmxmOEEwSGd2RFVjZ2QxTjNpcFZPZVU?oc=5",
+      "reason": "観光統計の一般ニュースで為替カテゴリとの結び付きが弱い"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
