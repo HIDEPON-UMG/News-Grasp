@@ -205,6 +205,30 @@ def test_category_lead_title_lines_keep_short_subject_with_topic_phrase() -> Non
     ]
 
 
+def test_category_lead_title_lines_merge_short_middle_fragment() -> None:
+    title = "AI開発競争、主戦場は性能から価格へ－OpenAIやメタが新戦略"
+
+    lines = generate_pages._category_lead_title_lines(title)
+
+    assert lines == [
+        "AI開発競争主戦場は性能から",
+        "価格へ－OpenAIやメタが新戦略",
+    ]
+    assert generate_pages._category_lead_title_quality_errors(title, lines) == []
+
+
+def test_category_lead_title_lines_rebalance_particle_before_short_tail() -> None:
+    title = "トヨタ、米国製3列EV「ハイランダー」の生産延期"
+
+    lines = generate_pages._category_lead_title_lines(title)
+
+    assert lines == [
+        "トヨタ米国製3列EV「ハイランダー」",
+        "の生産延期",
+    ]
+    assert generate_pages._category_lead_title_quality_errors(title, lines) == []
+
+
 def test_category_lead_title_lines_cover_current_category_hero_titles() -> None:
     cases = {
         "ai": (

@@ -3,6 +3,16 @@ from __future__ import annotations
 from unittest.mock import patch
 
 
+def test_default_daily_cover_is_repo_managed_asset(monkeypatch):
+    from tools.youtube_podcast import build_video
+
+    monkeypatch.delenv("NEWS_GRASP_PODCAST_COVER", raising=False)
+
+    expected = build_video.REPO_ROOT / "assets" / "podcast" / "daily-podcast-cover.png"
+    assert build_video._cover_path() == expected
+    assert expected.exists()
+
+
 def test_build_video_uses_static_cover_and_bounded_ffmpeg(tmp_path, monkeypatch):
     from tools.youtube_podcast import build_video
 
@@ -31,6 +41,7 @@ def test_build_video_uses_static_cover_and_bounded_ffmpeg(tmp_path, monkeypatch)
     assert str(audio) in [str(arg) for arg in args]
     assert "-c:v" in args
     assert args[args.index("-c:v") + 1] == "libx264"
+    assert args[args.index("-vf") + 1] == "scale=trunc(iw/2)*2:trunc(ih/2)*2"
     assert "-tune" in args
     assert args[args.index("-tune") + 1] == "stillimage"
     assert "-c:a" in args

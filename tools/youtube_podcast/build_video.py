@@ -17,7 +17,7 @@ TTS_BUILD_DIR = REPO_ROOT / "build" / "tts"
 BUILD_DIR = REPO_ROOT / "build" / "youtube-podcast"
 DEEPDIVE_BUILD_DIR = REPO_ROOT / "build" / "youtube-podcast-deepdive"
 DEEPDIVE_COVER_PATH = REPO_ROOT / "assets" / "podcast" / "deepdive-dialogue-cover.png"
-DEFAULT_COVER_PATH = Path.home() / "Downloads" / "ChatGPT Image 2026年6月18日 20_27_46.png"
+DEFAULT_COVER_PATH = REPO_ROOT / "assets" / "podcast" / "daily-podcast-cover.png"
 FFMPEG_TIMEOUT_SEC = 180
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -83,6 +83,8 @@ def build(
         audio,
         "-c:v",
         "libx264",
+        "-vf",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         "-tune",
         "stillimage",
         "-c:a",
@@ -117,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="日次 mp3 と固定カバー画像から YouTube Podcast 用 mp4 を生成します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     parser.add_argument("--kind", choices=["daily", "deepdive"], default="daily", help="daily=日次朗読 / deepdive=DeepDive解説対談")
-    parser.add_argument("--cover", type=Path, default=None, help="固定カバー画像。既定は NEWS_GRASP_PODCAST_COVER または Downloads の生成済み画像。")
+    parser.add_argument("--cover", type=Path, default=None, help="固定カバー画像。既定は NEWS_GRASP_PODCAST_COVER または repo 管理の daily cover。")
     args = parser.parse_args(argv)
     return 0 if build(args.date, kind=args.kind, cover_path=args.cover) is not None else 1
 

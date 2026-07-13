@@ -377,6 +377,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-12-daily-batch-editor-materialization-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-13",
+        "daily-quality / repair parser / pytest-static / YouTube Podcast / publish-complete",
+        "warning-prefixed validator JSON was misparsed by repair routing, then quality shortfall, optional model-eval artifacts, category hero wrapping, and a machine-local podcast cover path surfaced during recovery",
+        "repair parser and portable distribution asset boundary",
+        "repair routing must parse structured validator payloads with a JSON decoder, quality shortfalls must carry explicit reasons, and distribution video inputs must be repo-managed portable assets before publish complete can be claimed",
+        "warning-prefix JSON parser fixture, reasoned shortfall daily-quality fixture, category hero wrapping fixture, optional model-eval skip contract, podcast cover default asset contract, full runner publish-complete, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-13-daily-batch-repair-path-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

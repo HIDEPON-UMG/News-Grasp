@@ -1049,6 +1049,32 @@ def test_daily_quality_rejects_thin_search_audit(tmp_path: Path) -> None:
     assert "candidates_total=3" in joined
 
 
+def test_daily_quality_accepts_exhaustive_search_with_typed_candidate_shortfall(tmp_path: Path) -> None:
+    """十分に探索し、候補不足理由を監査へ残した場合は4件公開を許容する。"""
+    _write_summary(tmp_path)
+    _write_category(
+        tmp_path,
+        "https://example.com/2026/06/08/fresh-news",
+        count=4,
+        quality_shortfall_reason="freshness と canonical URL を両立できたのは4件のみ",
+    )
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+    _write_search_audit(tmp_path, selected_total=4, candidates_total=4, raw_results_total=29)
+    audit_path = tmp_path / "data" / "search_audit" / "2026-06-08" / "ai.json"
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    audit["quality_shortfall_reason"] = "25件を除外し、当日性と canonical URL を満たす4件を採用"
+    audit_path.write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
+
+    errs = validate_daily_quality(
+        issue_date="2026-06-08",
+        digest_root=tmp_path / "digest",
+        jsonl_path=tmp_path / "data" / "articles.jsonl",
+        audit_root=tmp_path / "data" / "search_audit",
+    )
+
+    assert not any("candidates_total=4" in err for err in errs)
+
+
 def test_daily_quality_cli_returns_nonzero_for_stale_url(tmp_path: Path, capsys) -> None:
     """runner から呼ぶ CLI は stale URL を stderr ERROR と exit 1 で返す。"""
     _write_summary(tmp_path)

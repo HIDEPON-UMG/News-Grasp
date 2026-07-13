@@ -37,6 +37,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-07-06",
         "2026-07-07",
         "2026-07-08",
+        "2026-07-13",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -70,6 +71,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "repair coverage gate drift",
         "live runner readiness completion overclaim",
         "live ops bootstrap self-repair gap",
+        "repair parser and portable distribution asset boundary",
     }
 
     for scenario in scenarios:
@@ -243,6 +245,14 @@ def test_2026_07_12_editor_materialization_incident_is_registered() -> None:
     assert "editor workspace snapshot" in scenario.stage
     assert "snapshot path contract" in scenario.cheapest_e2e_or_fixture
     assert scenario.evidence_path.endswith("2026-07-12-daily-batch-editor-materialization-report.html")
+
+
+def test_2026_07_13_daily_batch_repair_path_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-13")
+    assert "repair parser" in scenario.stage
+    assert "warning-prefix JSON parser fixture" in scenario.cheapest_e2e_or_fixture
+    assert "podcast cover default asset contract" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-13-daily-batch-repair-path-report.html")
 
 
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:

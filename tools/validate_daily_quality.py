@@ -583,12 +583,18 @@ def validate_search_audit_for_shortfall(
         raw_results_total = _as_int(audit.get("raw_results_total"))
         candidates_total = _as_int(audit.get("candidates_total"))
         selected_total = _as_int(audit.get("selected_total"))
+        candidate_shortfall_reason = str(audit.get("quality_shortfall_reason") or "").strip()
         dropped = audit.get("dropped") or []
         if raw_results_total < min_articles * 2:
             errs.append(
                 f"{audit_path}: raw_results_total={raw_results_total}; expected at least {min_articles * 2}."
             )
-        if candidates_total < min_articles:
+        exhaustive_shortfall = (
+            candidates_total > 0
+            and raw_results_total >= min_articles * 2
+            and bool(candidate_shortfall_reason)
+        )
+        if candidates_total < min_articles and not exhaustive_shortfall:
             errs.append(
                 f"{audit_path}: candidates_total={candidates_total}; expected at least {min_articles} before quality filtering."
             )

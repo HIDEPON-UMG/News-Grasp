@@ -1,8 +1,14 @@
 from pathlib import Path
 import re
 
+import pytest
+
 
 REPORT = Path("build/model-eval-5.6/model-selection-report.html")
+pytestmark = pytest.mark.skipif(
+    not REPORT.exists(),
+    reason="model selection report is generated only by the dedicated benchmark workflow",
+)
 
 
 def test_model_selection_report_has_decisions_charts_costs_and_pending_banner() -> None:

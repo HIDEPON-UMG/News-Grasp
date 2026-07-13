@@ -1094,6 +1094,37 @@ def _pack_title_lines(units: list[str]) -> list[str]:
         merged = lines[-2] + lines[-1]
         if _title_display_width(merged) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
             lines = [*lines[:-2], merged]
+
+    # 末尾だけでなく中間に生じた短い断片も隣接行へ吸収する。
+    # 「価格へ」のような4幅以下の孤立行を公開前 gate まで残さない。
+    index = 0
+    while index < len(lines):
+        if len(lines) > 1 and _title_display_width(lines[index]) <= 4:
+            if index + 1 < len(lines):
+                merged = lines[index] + lines[index + 1]
+                if _title_display_width(merged) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+                    lines[index : index + 2] = [merged]
+                    continue
+            if index > 0:
+                merged = lines[index - 1] + lines[index]
+                if _title_display_width(merged) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
+                    lines[index - 1 : index + 1] = [merged]
+                    index = max(0, index - 1)
+                    continue
+                particle = re.match(r"^(.*)([のへをがはとでに])$", lines[index - 1])
+                if particle:
+                    rebalanced_previous = particle.group(1)
+                    rebalanced_current = particle.group(2) + lines[index]
+                    if (
+                        rebalanced_previous
+                        and _title_display_width(rebalanced_previous) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+                        and _title_display_width(rebalanced_current) > 4
+                        and _title_display_width(rebalanced_current) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+                    ):
+                        lines[index - 1 : index + 1] = [rebalanced_previous, rebalanced_current]
+                        index += 1
+                        continue
+        index += 1
     return lines
 
 

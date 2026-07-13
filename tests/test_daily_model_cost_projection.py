@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from tools.project_daily_model_costs import project_records
 
 
@@ -28,6 +30,10 @@ def test_category_projection_allocates_shared_cost_and_reconciles_total() -> Non
     assert report["categories"][0]["direct_candidate_usd"] == report["categories"][0]["direct_current_usd"]
 
 
+@pytest.mark.skipif(
+    not Path("build/model-eval-5.6/daily-cost-projection.json").exists(),
+    reason="model evaluation artifact is generated only by the dedicated benchmark workflow",
+)
 def test_two_successful_day_projection_reconciles_roles_and_categories() -> None:
     payload = json.loads(Path("build/model-eval-5.6/daily-cost-projection.json").read_text(encoding="utf-8"))
     overall = payload["aggregate"]["overall"]
