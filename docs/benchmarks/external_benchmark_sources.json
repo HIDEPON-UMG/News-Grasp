@@ -1,0 +1,62 @@
+{
+  "schema_version": "external_benchmark_sources.v1",
+  "checked_at": "2026-07-14",
+  "sources": {
+    "human_eval": {
+      "name": "HumanEval",
+      "url": "https://github.com/openai/human-eval",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "code synthesis is judged by executable unit tests, not explanation quality"
+    },
+    "mbpp": {
+      "name": "MBPP",
+      "url": "https://github.com/google-research/google-research/tree/master/mbpp",
+      "license_or_access": "public Google Research repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "small Python programming tasks include task text, reference code, and automated tests"
+    },
+    "swe_bench": {
+      "name": "SWE-bench",
+      "url": "https://github.com/swe-bench/SWE-bench",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "repo repair ability is measured by applying a patch and running tests"
+    },
+    "livecodebench": {
+      "name": "LiveCodeBench",
+      "url": "https://livecodebench.github.io/",
+      "license_or_access": "public benchmark site; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "coding evaluation should avoid one undifferentiated easy case and should separate generation and repair"
+    },
+    "jglue": {
+      "name": "JGLUE",
+      "url": "https://aclanthology.org/2022.lrec-1.317/",
+      "license_or_access": "public ACL Anthology paper; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "Japanese natural language understanding should be evaluated as Japanese tasks, not translation-only proxies"
+    },
+    "llm_jp_eval": {
+      "name": "llm-jp-eval",
+      "url": "https://github.com/llm-jp/llm-jp-eval",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "Japanese LLM evaluation should use multiple dataset-style task families and mechanical scoring where possible"
+    },
+    "xlsum": {
+      "name": "XL-Sum",
+      "url": "https://arxiv.org/abs/2106.13822",
+      "license_or_access": "public arXiv paper; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "summarization should be grounded in source text and checked for concise factual preservation"
+    },
+    "open_japanese_llm_leaderboard": {
+      "name": "Open Japanese LLM Leaderboard",
+      "url": "https://huggingface.co/spaces/llm-jp/open-japanese-llm-leaderboard",
+      "license_or_access": "public Hugging Face Space; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "Japanese leaderboard practice separates tasks such as NLI, QA, summarization, and code"
+    }
+  }
+}

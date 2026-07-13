@@ -1,0 +1,87 @@
+{
+  "schema_version": "local_llm_comparison_materials.v1",
+  "source_of_truth": {
+    "id": "ai_pulse_2026_06_04_local_llm_investigation",
+    "role": "primary",
+    "report_md": "../../AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md",
+    "report_html": "../../AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.html",
+    "raw_score_json": "../../AI-Pulse/docs/eval/2026-06-04_blind_judge_raw.json",
+    "blind_judge_report": "../../AI-Pulse/docs/eval/2026-06-04_blind_judge.md",
+    "four_way_comparison": "../../AI-Pulse/docs/eval/2026-06-04_qwen3_vs_gemini.md",
+    "fabrication_followup_json": "../../AI-Pulse/docs/eval/2026-06-04_fabrication_fix_raw.json",
+    "fabrication_followup_report": "../../AI-Pulse/docs/eval/2026-06-04_fabrication_fix.md"
+  },
+  "primary_method_contract": {
+    "domain": "AI-Pulse article-body to structured JSON extraction",
+    "sample_count": 11,
+    "judged_count": 10,
+    "models_compared": [
+      "flash-lite",
+      "qwen3:14b",
+      "35B-A3B"
+    ],
+    "score_scale": {
+      "min": 1,
+      "max": 5,
+      "meaning": "axis rubric score; 5 is best"
+    },
+    "quality_axes": [
+      "factual",
+      "summary",
+      "points",
+      "rationale",
+      "overall"
+    ],
+    "required_controls": [
+      "same prompt",
+      "same schema",
+      "same temperature 0.4",
+      "emphasis disabled",
+      "maxLength 400",
+      "blind candidate labels A/B/C",
+      "model name hidden",
+      "candidate position rotation",
+      "completion rate separate from quality",
+      "latency separate from quality",
+      "judge bias note"
+    ],
+    "interpretation_rule": "Do not collapse the result to one scalar only; report strength exchange such as factual vs rationale.",
+    "known_limits": [
+      "single Gemini-family judge may bias toward Gemini-family outputs",
+      "one judged sample was missing due to judge 503",
+      "body truncation can create factual artifacts across all models"
+    ]
+  },
+  "secondary_materials": [
+    {
+      "id": "oss_model_coding_comparison_20260618_v7",
+      "role": "secondary_implementation_reference",
+      "path": "../../reports/oss_model_coding_comparison_20260618_v7_summary.json",
+      "reason": "Later coding benchmark/report pattern; not the primary local LLM comparison method."
+    },
+    {
+      "id": "ollama_prompt_bench_20260613",
+      "role": "secondary_prompt_ab_reference",
+      "path": "../../OllamaPromptBench/benchmark_results.json",
+      "reason": "Ollama system prompt A/B benchmark; not the primary local LLM model comparison report."
+    }
+  ],
+  "misuse_guards": [
+    "Do not use reports/oss_model_coding_comparison_20260618_v7_summary.json as the source of truth for the past local LLM comparison.",
+    "Do not use 0/1 pass-only scoring for model comparison.",
+    "Do not add speed, latency, credit, or VRAM into the quality score.",
+    "Do not claim blind judging when a blind judge run was not actually executed.",
+    "Do not claim News-Grasp long-running recovery closure from this extraction/coding matrix alone."
+  ],
+  "evidence_line_refs": [
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:1",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:3",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:5",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:63",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:64",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:65",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:66",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:68",
+    "AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md:126"
+  ]
+}
