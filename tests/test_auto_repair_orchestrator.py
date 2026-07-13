@@ -148,3 +148,22 @@ def test_classify_routes_audio_script_quality_to_targeted_rewrite(capsys) -> Non
     assert payload["handler"] == "targeted-repair"
     assert payload["handler_id"] == "audio-script-depth-rewrite"
     assert payload["failure_status"] == "blocked_audio_script_rewrite_failed"
+
+
+def test_classify_pytest_static_failure_is_not_retry_budget(capsys) -> None:
+    output = "\n".join(
+        [
+            "FAILED tests/test_external_benchmark_matrix.py::test_external_benchmark_matrix",
+            "AssertionError: benchmark lesson drift",
+        ]
+    )
+
+    rc = main(["classify", "--gate-id", "pytest-static", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["action"] == "fatal"
+    assert payload["handler"] == "fatal"
+    assert payload["issue_code"] == "local_contract_failure"
+    assert payload["failure_status"] == "blocked_local_contract_failure"
+    assert "retry" not in json.dumps(payload, ensure_ascii=False)

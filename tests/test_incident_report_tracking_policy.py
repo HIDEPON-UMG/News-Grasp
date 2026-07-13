@@ -29,6 +29,8 @@ LEGACY_TRACKED_REPORTS = {
 EXPLICITLY_APPROVED_REPORTS = {
     "docs/incidents/2026-07-11-daily-batch-editor-repair-routing-report.html",
     "docs/incidents/2026-07-12-daily-batch-editor-materialization-report.html",
+    "docs/incidents/2026-07-13-daily-batch-repair-path-report.html",
+    "docs/incidents/2026-07-14-daily-batch-summary-focus-podcast-report.html",
 }
 
 

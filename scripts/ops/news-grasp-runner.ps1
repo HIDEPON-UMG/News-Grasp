@@ -1365,7 +1365,7 @@ function Invoke-TargetedRepair {
         Pop-Location
     }
     if ($decisionRc -ne 0) {
-        Write-Log "repair worker denied by retry budget (gate=$GateId, rc=$decisionRc)"
+        Write-Log "gate retry limit reached before repair worker (gate=$GateId, rc=$decisionRc); inspect typed gate classification and latest gate output"
         return 1
     }
 

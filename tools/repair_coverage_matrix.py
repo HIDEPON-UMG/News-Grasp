@@ -604,6 +604,18 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "git",
     ),
     CoverageRow(
+        "pytest-static",
+        "local_contract_failure",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("tests/", "tools/", "prompts/"),
+        "pytest-static",
+        "blocked_local_contract_failure",
+        "local_contract_failure",
+        "pytest-static",
+        reason="pytest-static failures require local contract triage",
+    ),
+    CoverageRow(
         "any",
         "unknown",
         RepairClass.TYPED_FATAL,
@@ -877,6 +889,8 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "deploy_surface_regression"
     if "deploy_surface_unrelated_red" in text:
         return "deploy_surface_unrelated_red"
+    if gate_id == "pytest-static":
+        return "local_contract_failure"
     if gate_id == "git-push" or "non-fast-forward" in text or "rejected" in text:
         return "remote_divergence"
     return "unknown"

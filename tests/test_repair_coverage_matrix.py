@@ -397,3 +397,19 @@ def test_deploy_surface_unrelated_red_is_fatal_no_rollback() -> None:
 
     assert decision.repair_class == RepairClass.TYPED_FATAL
     assert decision.status_on_failure == "deploy_surface_unrelated_red"
+
+
+def test_pytest_static_failure_is_local_contract_not_retry_budget() -> None:
+    output = "\n".join(
+        [
+            "FAILED tests/test_external_benchmark_matrix.py::test_external_benchmark_matrix",
+            "AssertionError: benchmark lesson drift",
+        ]
+    )
+
+    decision = classify_gate_output("pytest-static", output)
+
+    assert decision.issue_code == "local_contract_failure"
+    assert decision.repair_class == RepairClass.TYPED_FATAL
+    assert decision.status_on_failure == "blocked_local_contract_failure"
+    assert "retry" not in decision.status_on_failure

@@ -2153,3 +2153,10 @@ def test_runner_scopes_gate_retry_budget_to_current_run_intent() -> None:
     assert "gate-attempt-archives" in runner
     assert "reset gate attempt ledger for run_id=" in runner
     assert 'news-grasp-repair-classify-$GateId-$DateStamp-$RunId-attempt$attempt.json' in runner
+
+
+def test_runner_does_not_surface_retry_budget_as_repair_cause() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "repair worker denied by retry budget" not in runner
+    assert "gate retry limit reached before repair worker" in runner

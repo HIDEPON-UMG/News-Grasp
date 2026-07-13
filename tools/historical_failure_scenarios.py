@@ -387,6 +387,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-13-daily-batch-repair-path-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-14",
+        "daily-quality / pytest-static / git-push / YouTube Podcast / publish-complete",
+        "public Summary headings used internal category keys, pytest-static collected untracked benchmark files, git push stopped on an interactive prompt, and Podcast finalize was not reached until recovery resumed the post-push sequence",
+        "summary label and local contract gate boundary",
+        "public-facing category labels must be distinct from internal keys, pytest-static failures must surface as local contract failures instead of retry budget causes, and post-push Podcast/notification/final publish gates must run before completion is claimed",
+        "summary category focus fixture, pytest-static local contract classification, incident report policy allowlist, full non-network pytest, Podcast sentinel verification, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-14-daily-batch-summary-focus-podcast-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 
