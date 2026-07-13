@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-14",
+  "category_id": "economy",
+  "queries": [
+    "stage1: build/deduped-candidates/economy.jsonl",
+    "\"イラン戦争、米に根強いインフレもたらす エコノミスト予想\"",
+    "site:finance.yahoo.co.jp/news/detail 近く利上げの可能性も インフレ予想超えなら 米FRB理事",
+    "\"ＡＩの経済影響巡り政策整備を要請、ノーベル賞受賞者ら200人超\"",
+    "\"AIブームが日本の景気に与えるインパクトは？\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 4,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "ジャパネット、ツインバードにTOBへ 販路設計・開発方針カギ",
+      "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxQVDE1WXJ4NUhRa2hiY0JWcEZOZWFTbnhneko5X200a3pYZ0FSX2NhVHQzSDRyaEtBVEdNY2FXd3gwdDVrN0FuN1hOTTdXNTJ2V1VJUGdra1Y0ODQ2NzFVYjF5MUl4ZTcxVXlDWmhsdGh1VGkzUW9POUxBQ3hlR09WQTZNNFBOaXU0OW12eG5XSEFJV19SZ3FMWUJTNVp1LU5Ucmc?oc=5",
+      "reason": "TOB初報は6月で鮮度外。Stage1 RSS再浮上のため除外"
+    },
+    {
+      "title": "★本日の【サプライズ決算】速報 (07月13日)",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE81NVVZWDg4TmhxemtlbmFGQ1BNRHBzR1ZuTmw1RTNBLXV0cnNJemFfZ1MtbnpoR05rY3U3OFFkV0ZUQm1lNk50MWpMb2I5RV9SY0oyb1FMdWJCTzVwNVVNNQ?oc=5",
+      "reason": "銘柄一覧中心でカテゴリ固有の判断材料が薄い"
+    },
+    {
+      "title": "本日の決算発表予定 … ＧＯ、ＱＰＳＨＤ、アクセルＨＤなど 98社 (7月14日)",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5lNXZQRF9CQk4yRExQQy16TzZJQk5KQzlWek41bVRpMzhZMDBwQlcxOGhhRjhmY3NhMm9pZWdaTkFIQnhXOElxczNpNVNzajBLR19RZHZxSF9LNkdld1pkbw?oc=5",
+      "reason": "スケジュール告知で独自ニュース性が低い"
+    },
+    {
+      "title": "政治経済学術院 ２０２６年９月 卒業・修了を祝う会開催のお知らせ",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1NNFVBYWpVb2lvb2hENENWSW5yZGJrY0V1R2p3QWxqYjZXSWRTNHJyMnRucmc0TC03MGpiM2gtYVZrMU5IZG15Tkc5MmdWV0EzaUhDT1U1RTNuMVRPMS1HRldaSQ?oc=5",
+      "reason": "経済ニュースではなく学内告知"
+    },
+    {
+      "title": "米銀決算、トレーディング収入390億ドルに迫る－14日に大手5行発表",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPNzQyWHNfQ3ZXVmFTbU5rZmtGeXJmS20xX3pBbUJERjV0Uktlbkx6MERXOFdhRWNDcTI0WEpRQWtVdHRPc1JuOFlNbEM2UkpEd3BIcDZfSlRKUXQwV3F4RkhQVmptNV8xWExWcnNhMDVoUE5rRHNOY3FrOFFkVXV4Q1FWTG1FNHc?oc=5",
+      "reason": "Bloomberg元記事のcanonicalをStage1範囲の狭い解決で確証できず未採用"
+    },
+    {
+      "url": "https://finance.yahoo.co.jp/news/detail/dcdeb221f1e56a9e781ab718a27fcef9ab6b4d4e",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,60 @@
+{
+  "date": "2026-07-14",
+  "category_id": "mobility",
+  "queries": [
+    "stage1-input: build/deduped-candidates/mobility.jsonl",
+    "homepage-scan: https://www.logi-today.com/",
+    "site:sbbit.jp \"セブン-イレブンにテスラの急速充電器が初導入\"",
+    "title: \"最大半額補助の地域も EV販売大幅伸長の日独、持続性はあるか\"",
+    "title: \"未来モビリティ共創開発拠点\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "ロボタクシー30都市で商用運行 日本はゼロ、自動運転の出遅れ映す",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5GenpoT0RSMFNiSUhfSGdHYkpobzBzVUFaYXZjLXU0dlpmRWgxX0dWaHpWVmtsZm53bnFsR0V0a0h4UGd3SjVrbFFpT1o5cnkweURSOW9EemVqYVJXbVFlT2l2Qk5fRS1uOHNJQw?oc=5",
+      "reason": "影響は大きいが、Nikkei本体の当日canonical URLを確認できず、URL品質契約を優先して除外した。"
+    },
+    {
+      "title": "自動運転ティアフォーの加藤社長「政府系ファンドが投資意向」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE81cmY4OWRaMkpMODZNaElJRWpJNDlST0lDVmNFMWI3ekk0QWNKNWlZb2U1RGZiR0k5bGI1ZE5WeDdGMlhYdF8wU1ZFRk80M1Y1SmhxdXIzZ01mVTRnYnJXSFJ3S3pwWU80bnltTg?oc=5",
+      "reason": "重要度は高いが、Stage1候補から元記事直リンクを確定できず、Google News URLのまま採用しない方針を守った。"
+    },
+    {
+      "title": "豊田織機、EVから電力網への給電実証 再エネ需給を調整",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9KdnZrUDJMVW05aGFWZXREMGRFbjc1bWgyUVBiamJZcHRfeWlTRUYtVVo5ZnhscFA1VTRpekIyMVRoMmpvOFJ0OENIOWVnRlRYZjZFakpXSlJmRTBlMlZmVEVkd19uRUlzUDBwajk3RzVZei12ckJZRDVnQmpTMjg?oc=5",
+      "reason": "V2Gテーマは有望だが、Nikkeiのcanonical未解決でサムネも確保できず、採用条件を満たせなかった。"
+    },
+    {
+      "title": "ウーバーとウェイモ、ワシントンD.C.のロボタクシー規制を巡り対決へ",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBpV1VOUnR2ZDFsemsyUEpoTlNDQWp6UjQ4aXFPOF9uaHpORHBwcnQzZ0hhTWJUSl9qazlpTHhDVS1wb3JYSEN5VlEtX2dDNUtsejcxSHRPSmxtSDA4RkJmc0dMUXBRLXBkdVNPc0VFTWd0RlpL?oc=5",
+      "reason": "既掲載のWaymo/Uber文脈に対する新材料が薄く、一次情報に遠い転載ソースだったため続報採用を見送った。"
+    },
+    {
+      "title": "視察（自動運転バス）|令和8年(2026年)6月|知事の部屋",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE9GMU5mMEVlT0ktS3ppbThEQ1RTX1hjSzZXWHBZS1VuWUNmaWtuT1phT0NWV0t1VHpfbEVPT0dYRmhUWnU2S1V4Uml4aUJVNi1hTEw2Q0RKc0VBVlBxNzRFSkV5Vl95X2RoTmZyblk3Ty1aLVZP?oc=5",
+      "reason": "7月13日に見つかったが、本文は6月視察の再掲色が強く、当日の新展開としては弱かった。"
+    },
+    {
+      "url": "https://www.logi-today.com/976478",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/976244",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,55 @@
+{
+  "date": "2026-07-14",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/manufacturing.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"ＴＳＭＣ、台湾南部に先端半導体パッケージング工場2棟追加 4工場体制に\"",
+    "\"インテル、アイルランド工場に9300億円投資 AI向けCPUなど能力増強\"",
+    "\"NECプラットフォームズ2工場、OT防御で受賞\"",
+    "\"AI人材がほしい、半導体産業の危機感 長崎総合科学大とNVIDIA連携\"",
+    "\"三菱自動車、人型ロボ量産でフィジカルAI銘柄へ 協業の理由は「スピード」\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "AI人材がほしい、半導体産業の危機感 長崎総合科学大とNVIDIA連携",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9UU1ZYaVVzLXVOcmt1VVViOEtrOTNMajRxZFVBRXdpWXo3ekpySWc1SjdnRVFyNjR6Z0FjMEhaSURYaHJYemFkMXIxUnJUZTczdlpINDhTb0lwVWVpd29FNXBKVUlXOXJpd282Qw?oc=5",
+      "reason": "Google News URLを安全にcanonical解決できず、日経本文の公開部分も確認できなかったため見送った。"
+    },
+    {
+      "title": "【特許】LGエナジー、電池の連鎖的発火・爆発抑える構造",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPWTVNRjAxdXduTkRHeEtoejhLRzRrNU1yOEJTanVmSFQyMFozU3U5SlF1RzJ2dC1OTi1INHFRcHJ2bmo2ay03Ym5EeWxJSXlVRGhGdmNLbzF0WXc4Q2JOSWpWX3dyeEhUVXFFSWN1NHdpSTZDYlo3aTJydGxZak42ZUlxZW5jRnc?oc=5",
+      "reason": "候補のテーマ性はあるが、元記事URLと公開日根拠を当日窓で独立確認できなかった。"
+    },
+    {
+      "title": "三菱自動車、人型ロボ量産でフィジカルAI銘柄へ 協業の理由は「スピード」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBURlN2R21EZC1Hd3BWSXNseHpiNVFLMXY3Zi0yMUdvaEtITFNCdkRDTlFwVm5lSVQxLURYNjlaUzZZRmlkRnVFQnBxN0ZlOWZmTjREQUxKMnpyRTctbUd0MWlvUzJaV3lSalBjRQ?oc=5",
+      "reason": "有料壁とGoogle News未解決が重なり、本文要旨まで確認できなかった。"
+    },
+    {
+      "title": "韓国半導体SKが13％高 米上場初日、時価総額194兆円（時事通信）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBVT2Y1X0swMklLenRhS19MRzNXSGNnUGk4T0N6R3lwQ0hpR084RlZSQ0lnbUJOU0hJemNfNHpyWjBjWFE1X0FqdXhYd1VVeFVnbkhFV3lrMGVZdzl2ZTNPX0QyN1J4V1dzVU1BdHU5U25zamlIcW4yZkZ1Zms1T1E?oc=5",
+      "reason": "関連する直接記事は確認できたが、同一論点で当日窓に収まる一次記事の確度が弱く、上位3件を優先した。"
+    },
+    {
+      "title": "半導体高騰、消費冷やす DRAM価格6倍に スマホ・PC出荷2億台減",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBKRTZFUDd0QTNPVTZibGFRY3UwQ2QybDBiZm9sMjFqOUl6cGpPbjU1V1JnZ1duVzdkbWlyTFVJSDdQOHN0MUpnaWJEM18tV0p1NDd5OExBTjg4N2k0Zl9Nem0yZzhqVXU2Qkx5Ug?oc=5",
+      "reason": "重要論点だが有料壁と未解決URLで公開部分の確認が足りず、当日の製造設備・供給網の具体ニュースを優先した。"
+    }
+  ],
+  "notes": "広域収集と横断dedupは再実行していない。stage1 dedup済み候補25件から選別のみ行い、採用候補ではcanonical URL・公開日根拠・本文要旨・サムネイルを個別確認した。",
+  "quality_shortfall_reason": "stage1候補25件を精査したが、Google News未解決URLや有料壁、二次要約媒体を除くと、当日窓で元記事URL・公開日根拠・本文要旨まで安全に確認できたのは3件にとどまった。広域収集と横断dedupは再実行していない。"
+}

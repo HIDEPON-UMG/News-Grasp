@@ -1,0 +1,51 @@
+{
+  "date": "2026-07-14",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "LINE GAMEユーザー内部識別子の外部送信に関するお知らせとお詫び site:lycorp.co.jp",
+    "site:jp.square-enix.com オクトパストラベラー Nintendo Switch 2 ダウンロード版 本日配信開始",
+    "site:gamespark.jp パルワールド 同接85万 Steam 2番目",
+    "\"1.44MBゲーム開発コンテスト\" 正式始動",
+    "\"アニメ×ゲームジャムUE2 in 京都\"",
+    "site:blog.ja.playstation.com 2026 7 13 ゲーム",
+    "site:capcom-games.com 2026 7 13 ゲーム"
+  ],
+  "raw_results_total": 33,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "LINEヤフー、ゲームの顧客情報710万件が流出 識別子を誤送信",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE16RUVlS1Y3REFCRDhrZ2JKdEZsZF9yM3RPbUpROE52alFtZ2MwYlFIelhmdk1NaGc5TEh2a3pFb2VRbThLSW44TUtkYkh2UXRPZjQ1N3VxSm4xNWJNeG81Yjh4TWRFNlR3Q1hPTA?oc=5",
+      "reason": "同一インシデントの別報。一次情報のLINEヤフー告知を採用"
+    },
+    {
+      "title": "【7月発売PC新作ゲーム】『アサシン クリード ブラック フラッグ RE:シンクロ』『プロスピ2026』『Halo: Campaign Evolved』など最新作を紹介！",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE5rQS1yTHRfTFI4SmNGbzJPYURnUXhuSkdGeVNaLUpjbnNWa1o1VDM2TTY0eWhjWEFBbDI4c0pwY25FQWJ5NUNwRUtiZEZqc01IaTV6UjN0RQ?oc=5",
+      "reason": "月次まとめ記事で新規性が薄い"
+    },
+    {
+      "title": "「マイナビオールスターゲーム2026」『Pokémon GO』との特別イベント実施",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE04aGpSVXJVYkF0SmRsbk5oa2Q4QnFkcjZXdm9FUWd3Uzh4ZXlmaEptY2JKMW4zZXhiMEFxQW41YkQ2b3BhaTZpaEVFcFB2cmlYRXRiWk9R?oc=5",
+      "reason": "スポーツ興行の周辺施策でゲーム業界の主論点から外れる"
+    },
+    {
+      "title": "レトロなビデオゲームが脳卒中後の上肢の機能を改善か｜CareNet.com",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE0xUXl1cE5hQW9lUmRHNFNQU1lSbEk4aXg3XzFpNXFQRnA0bHBfZVA5NmU2eWFNdmF1Q1FDblhyNWxvTVBxRzRKQzhuYjBqc1Y4b29UX0FyOWZIdw?oc=5",
+      "reason": "医療研究としては興味深いが、当日号のゲーム産業トピック優先度で届かず"
+    },
+    {
+      "title": "Once Human レディアンスパック を購入 | Xbox",
+      "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxQME9BMHlxWU9zMEI3Vk9zZWpWTzBBUnpBc0dIZ3ROUGZtbUZmb25yVkI4bTQzMjRsd0U4Y1hhYk5qdll3SUxXTUk4dFdJV242QnphTklwSlZfeko2TXJKbnhnNmdpZE03YjRyV2VBLVMxRGxzajJBdzludTJ3cTZxSklDNVlRX3FOQm05eEJ0c252dk5IaEdzZnE3Y3NPaXNBTW9MT3hNQ2I0X0tkZzFrWGVmYTZ0cFVSY0w3QklaRFQ4SS00T1RTbTZ2VzZIVFZWbHVnb0VB?oc=5",
+      "reason": "ストア購入ページで記事性がない"
+    }
+  ]
+}

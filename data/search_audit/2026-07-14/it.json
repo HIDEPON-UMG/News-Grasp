@@ -1,0 +1,24 @@
+{
+  "date": "2026-07-14",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:internet.watch.impress.co.jp 英国 認証制度 Cyber Essentials 更新",
+    "site:sbbit.jp デジタル庁 国産AIモデル さくらのクラウド AI主権 実証実験",
+    "site:prtimes.jp SaaSのアカウント管理を通じて企業のIT統制を支援するセキュリティーサービス提供開始",
+    "site:prtimes.jp 令和8年度医療機関向けサイバーセキュリティ対策研修を開始",
+    "\"Safie Trail Station Cloud\" セーフィー 2026 7 13"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": []
+}

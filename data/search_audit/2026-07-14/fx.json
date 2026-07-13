@@ -1,0 +1,59 @@
+{
+  "date": "2026-07-14",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/fx.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"ウォーラーＦＲＢ理事の発言でドル高の反応＝ＮＹ為替\"",
+    "\"三菱UFJの時価総額42兆円でトヨタを抜いて首位に 日銀の利上げ方針背景\"",
+    "\"３連休を前に介入の可能性 海外アナリスト＝ＮＹ為替\"",
+    "\"英中銀委員、原油急騰で今後数カ月以内の利上げを支持する可能性＝ＮＹ為替\"",
+    "\"ユーロ、一段安の可能性も指摘される＝ＮＹ為替\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "ウォラーＦＲＢ理事、「近い将来」利上げの可能性 インフレ高止まりなら",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPUEdHTjRTTl90cTlJQ3BMTnZVY2RTVzZPbE5YR0Y1MktwckpEalJ6aVlCSnAxeFVTZEdwUWo4NUtuU2lMUWlYMW5BOGIxeG5pVnFEdDhqaWNvVTNadFhTSTdmbzlVR3FQZllPS1dpVi1TbVpzWEFsajFkSlJ5RU9XTw?oc=5",
+      "reason": "同テーマで市場反応まで入ったみんかぶ記事を採用し、stage1時点でReuters原URLを安全に固定できない候補は見送った。"
+    },
+    {
+      "title": "FOMC、7月利上げの確率は五分五分－金融引き締め観測が市場で高まる",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFB0Zm5WZU0wb18wN2VuOVJPbk5WN2s1UUs5MUNpY3JOVVFzTDVXa2hwV3hHOFpUS3NkWWJKRTFUOEdqLXVmSkdhaVA2MXRhSXQzczNpRjJyWDZVUUs4VW0tNzBiSXd6TDNkWGFGdHdfNnhsUFJF?oc=5",
+      "reason": "Fed再利上げ観測という論点が採用記事と重複し、canonical確認も安定しなかった。"
+    },
+    {
+      "title": "歴史的な円安「経済に悪い影響」61％ NHK世論調査",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE5MYUtCdXNnVkNWbU5aU1dKVS1Gam9HVUY2NTNUR29qeU5zSWEzTEtxV0FIRVBwRlB0NVF3M2c1MEF6WlZSQXRlVGtac2Zocmw1cHNMbHNvUjI5bDhjcGFv?oc=5",
+      "reason": "世論動向として重要だが、当日の価格形成や政策観測に直結する4件を優先した。"
+    },
+    {
+      "title": "内田日銀副総裁、14日午前11時36分から参院財金委に出席＝関係筋",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5LeWdHNWJjd0dGdjlMRW1SeEFHLXItWjJKWHd2c044VkU3STl5c01XOWt5cEppam1sY191cGpma0JSTUdYcy05el9KQ0pkQXJfUTliakdqVi1vYXJ0WHo3TXhYZnFSWHRfOE4tOF9tQW54ajFzX0E?oc=5",
+      "reason": "委員会出席の予定告知にとどまり、新しい市場インパクトを持つ記事より優先度が下がった。"
+    },
+    {
+      "title": "ユーロ、一段安の可能性も指摘される＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE5sTE1xU0VXRE1xNUp4NXFRZWRWU0wtaC1EQjVtNTc3Zmw2OVItenIyQTdQU0d5NzVvZUZsUURzU0pOREQ4TUVRYw?oc=5",
+      "reason": "ドル高と原油高の波及という点で採用したウォーラー記事・BOE記事と重なり、独自性が一段弱かった。"
+    },
+    {
+      "title": "投機筋のドル買い越し拡大 ドル見通しは依然強気",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9XeE96bzhwZUs3TFlOeGVPMm9lUXRLMVRDZ2pPMkw5VS1hOG5BVEFfUUdjNzZFMm85bFlnOVpIT082b3hkdkItTw?oc=5",
+      "reason": "ドル高継続の補強材料ではあるが、当日トリガーを示す記事ではなく重複度も高かった。"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行していない。stage1 dedup済み候補25件から選別のみ実施し、個別記事のcanonical URL・公開日・OGPだけを確認した。",
+  "quality_shortfall_reason": "stage1候補25件を精査したが、速報反応の重複・週次見通しの焼き直し・canonical未確定記事を除くと、当日性と独自論点が両立する4件に絞られた。"
+}

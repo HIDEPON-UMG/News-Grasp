@@ -1,0 +1,71 @@
+{
+  "date": "2026-07-14",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/ai.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"「iPhoneキラー」開発に暗雲－アップル提訴、OpenAIハード戦略に打撃\"",
+    "\"Google Cloud、生成AIのコードを瞬時に隔離して安全に実行できる「Cloud Runサンドボックス」パブリックプレビュー\"",
+    "\"OpenAIのブラウザ「ChatGPT Atlas」終了へ 公開から1年足らずで\"",
+    "\"Claude Codeは指示前の初期データだけで約3万3000トークンを使用\"",
+    "\"「声」も法的保護対象 生成AI巡り法務省原案\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「声」も法的保護対象 生成ＡＩ巡り法務省原案：時事ドットコム",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBkN1d1Q0dMV1V0T3ZxbTNEV0Z3QXo3VkhqUzJlTFB0YVFQMUFfbS1walhtTVVNbmV6cjhKU2FwV0lFX3lIQ1N2bW1ZUnp4WUZSRnlldldndjNWNzlfLTdQckhDNA?oc=5",
+      "reason": "転載見出しとSNS断片までは確認できたが、一次記事のcanonical URLを安全に確定できず採用を見送った。"
+    },
+    {
+      "title": "ソフトバンク「AIガバナンス策定支援サービス」で法人の生成AI安全活用を支援",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE5NY0FjV3c5RmRHZUVCTlJlVzdLSlAtZHY4cWI0c2poWm9TVDFYSUZ5dkJSZnpsZDlaVFI3TVo0ZUgwa2NqVW9YLVd3SWtEelVSQjd2LW41MFE0UjN2Z1lDVDVpd0I?oc=5",
+      "reason": "大手の動きではあるがサービス告知色が強く、基盤・製品整理・法務波及の4件を優先した。"
+    },
+    {
+      "title": "鈴与G、経営層含む130人が生成AI実践",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE1vcHJPN1RibEV4SVhONUNuN29SOUZZdzlJeER4U2JRMTVDS1VxUHN0ZFA2TlhrSTI1T3FLR0ZkSWtneVBXUTVJVA?oc=5",
+      "reason": "実務導入事例として有用だが、影響範囲が個社寄りで当日トップ論点より一段弱かった。"
+    },
+    {
+      "title": "OpenAI、新世代音声モデル「GPT-Live」公開。全二重アーキテクチャ搭載で自然な音声対話を実現",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE1kM2RrRlZid0FXRzc4aXF2LWNDNnVfUElwOHpXQ19XeDBwSWZkV1VhQmNRcTJfLTBoRDY0ZF84SzljTWtpSWJwVE9ZSkNYdU52aGdSSEJwUEYwWEFBMDNCNXVobjVYdw?oc=5",
+      "reason": "二次解説媒体で、同日の他記事に比べて一次情報への距離が遠かった。"
+    },
+    {
+      "title": "Anthropic、最上位AI「Claude Fable 5」の無料提供を7月19日まで再延長",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBJekpoQzB4ZWRWR1E2TWUtYjVzQTZoOGxXSENSRnlkdDVKOTB1OE5rRmxIdlVqMWFRdklrcUlGZ2M3VlhwVVNyUnItcDFLZUFVbVV3bHVwQXR6bEI3clJOQ2NBT2tHX0dJMEVXRWJnbmJrbjVE?oc=5",
+      "reason": "既存機能の延長告知が中心で、新材料が利用期間と上限緩和にとどまった。"
+    },
+    {
+      "title": "高校生の生成AI活用に関する意識調査を実施。恋愛・人間関係の相談相手は生成AIが44.2%で1位",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkNWlfc0tlaWFRa0xDMVkwQjl5NjhaNUJvQ01YeTlXMWMyOUs5V2R4cXZlSXd0VDBjMUx5SGZ1cFlkWGdXSE9tdTh1NkpBRE85V3UwR0l1M09FaDZwdF9IME1FR2xIZlgzTGF0eg?oc=5",
+      "reason": "話題性はあるが、仕事・投資判断に直結する論点を優先した。"
+    },
+    {
+      "title": "サーバーワークス、「Claude Enterprise」を全社導入",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBybjFNQWJ3dFlRbUh4UFM3NmNhVGZvdkk0UnVmN2hsSnBuSHNlNXdCekYxc3NnMjZUWWJ5c0dZUzR1cC1yeHo2Y25jS1J1M0tGOUhnOE1ZVDlQY1hxbnFZLURINk5MSjl6TlE?oc=5",
+      "reason": "企業導入のPRで新規性が限定的だった。"
+    },
+    {
+      "title": "Claudeを解約する米国企業が続出…中国製AIへ乗り換え、米議会も問題視",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5odkFHM080R2ZOcFNIYUxYTjBOZzhBcWRVNGpaNnZlWVRsdkhRVE5LbUxsQndrNnBIN2Y1YUxOT0doTFctUEtXRHQtMUxHWVNBaXQ2WUZ6eUdsYms?oc=5",
+      "reason": "二次要約媒体で一次情報への距離が遠く、確認可能な代表記事を優先した。"
+    }
+  ],
+  "notes": "広域収集と横断 dedup は再実行していない。stage1 dedup済み候補25件から選別のみ実施し、個別記事のcanonical URL・公開日・OGPだけを確認した。",
+  "quality_shortfall_reason": "stage1候補25件を精査したが、直接URLを安全に確定できない規制記事、PR主体、重複論点、二次要約媒体を除外した結果、当日性と読者影響が両立する4件に絞った。"
+}
