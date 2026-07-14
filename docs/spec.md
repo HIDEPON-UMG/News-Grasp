@@ -174,6 +174,23 @@ SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実�
 
 ## Human Commitment
 
+### Artifact Lifecycle Commitment (2026-07-15)
+
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_by_user_text | 本件全体に関する恒久対策と対応をおねがいします。 / さっさと仕事してくれ。あと、勝手にVSCODEをたちあげるのやめろ。 |
+| approved_goal_statement | benchmark / editor のraw artifactをGit管理面から分離し、既存未追跡を無損失archiveしたうえで、同じ大量未追跡を再発させない。作業中にVS Codeを起動しない。 |
+| approval_evidence_ref | current chat turn, 2026-07-15 |
+| commitment_version | artifact-lifecycle-2026-07-15 |
+| commitment_scope | `tools/artifact_lifecycle.py`、benchmark runner 2種、editor attempt snapshot path、関連tests/spec、既存raw artifact archive。canonical tracked benchmark evidenceは保持する。 |
+| open_questions | None. |
+
+| Spec Item | User/Operator Outcome | Concrete Acceptance Example | Failure Signal | Green Verification | Evidence Plan |
+|---|---|---|---|---|---|
+| Local artifact lifecycle | raw benchmark/editor出力がGit statusを数千件汚さず、必要時にhash付きで復元できる | Given benchmark or editor attempt runs, When raw files are written, Then outputs stay under ignored `_ops/**`; archive is copy-verify-delete and resumable | raw default points to `build/**`; archive count/hash mismatch; active lock ignored; source deletion before copy verification | `.venv\Scripts\python.exe -m pytest tests/test_artifact_lifecycle.py tests/test_codex_recovery_benchmark.py tests/test_external_benchmark_matrix.py -q` | pytest、transaction manifest、journal、archive count/bytes、`git ls-files --others --exclude-standard` |
+
 | Field | Value |
 |---|---|
 | approval_status | Committed |

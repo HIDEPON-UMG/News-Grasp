@@ -54,13 +54,13 @@
 | H-35 | 反省をチャットだけに閉じかけた。 | 反省と改善計画をHTML内とMarkdown成果物の両方に置く。 |
 | H-36 | 完了報告で大きな未実装改善案を埋もれさせた。 | 将来改善は明示的な残タスク分類に残す。 |
 
-## 未実装のハーネス改善
+## ハーネス改善の実装状態
 
-この文書は改善計画であり、hook / root harness / memory dispatch / report_quality_gate 本体への恒久実装はまだ行っていない。実装する場合は次を別タスクとして扱う。
+root hook / memory dispatch / report_quality_gate は本件の所有境界ではないため未変更とする。benchmark raw artifact の lifecycle は product-local 境界へ実装した。
 
 1. `source_style_gate`: 参照HTMLのsection order、required classes、forbidden UI regressionを検査する。
 2. `run_origin`: 新規live実行、既存run再集計、fixture replayをHTMLとsummary JSONへ必須出力する。
-3. `untracked artifact guard`: benchmark runner/test/reportがuntrackedのまま消える状態を検出し、intent-to-addまたはtracked artifact化を促す。
+3. `untracked artifact guard`: **実装済み**。raw output は `_ops/benchmark-runs/**` に限定し、`tools/artifact_lifecycle.py` が Git の未追跡判定、排他lock、SHA-256 archive、journal resume/rollback、retention選択を担う。公開用のcanonical reportだけを従来のtracked `build/**` に残す。
 4. `report_quality_gate`拡張: generic品質ではなく、source-style contractの合否を扱う。
 5. `benchmark report canary`: 生成後にheading/class/order inventoryを再抽出し、参照資料との差分を保存する。
 6. `decision-support contract`: 調査・比較・実装報告で、意思決定者向けの採用判断、判断理由、主要リスク、次アクションが欠けていれば資料品質Redにする。

@@ -18,6 +18,11 @@ import time
 from pathlib import Path
 from typing import Any, Iterable
 
+try:
+    from tools.artifact_lifecycle import default_raw_root, validate_raw_output_path
+except ModuleNotFoundError:  # direct script execution
+    from artifact_lifecycle import default_raw_root, validate_raw_output_path
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MIN_REPETITIONS = 3
@@ -1746,7 +1751,7 @@ def load_records(path: Path) -> list[dict[str, Any]]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out-dir", type=Path, default=REPO_ROOT / "build" / "external-benchmark-matrix")
+    parser.add_argument("--out-dir", type=Path, default=default_raw_root("external-benchmark-matrix"))
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--score-file", type=Path)
@@ -1759,6 +1764,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--per-case-timeout-sec", type=int, default=240)
     args = parser.parse_args(argv)
 
+    if args.execute or args.score_file:
+        args.out_dir = validate_raw_output_path(REPO_ROOT, args.out_dir)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if args.repetitions < MIN_REPETITIONS:
         return 2

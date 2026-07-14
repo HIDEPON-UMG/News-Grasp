@@ -2886,7 +2886,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 
     function New-EditorAttemptSnapshot {
         param([int] $Attempt)
-        $snapshotDir = Join-Path $RepoDir "build\editor-attempt-snapshots\$DateStamp\attempt-$Attempt"
+        $snapshotDir = Join-Path $RepoDir "_ops\editor-attempt-snapshots\$DateStamp\attempt-$Attempt"
         if (Test-Path $snapshotDir) { Remove-Item -LiteralPath $snapshotDir -Recurse -Force }
         New-Item -ItemType Directory -Path $snapshotDir -Force | Out-Null
         $paths = @('data/articles.jsonl', "digest/Summary/$DateStamp.md", "digest/Summary/$DateStamp-audio-script.md")

@@ -16,8 +16,14 @@ import time
 from pathlib import Path
 from typing import Any, Iterable
 
+try:
+    from tools.artifact_lifecycle import default_raw_root, validate_raw_output_path
+except ModuleNotFoundError:  # direct script execution
+    from artifact_lifecycle import default_raw_root, validate_raw_output_path
+
 
 TARGET_MODELS = ("gpt-5.5", "gpt-5.6-terra", "gpt-5.4")
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 CREDIT_RATES_PER_MILLION: dict[str, dict[str, float]] = {
     "gpt-5.4": {"input": 62.5, "cached_input": 6.25, "output": 375.0},
@@ -1437,7 +1443,7 @@ def rescore_records(records_path: Path, out_dir: Path) -> list[dict[str, Any]]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out-dir", type=Path, default=Path("build/codex-recovery-benchmark"))
+    parser.add_argument("--out-dir", type=Path, default=default_raw_root("codex-recovery-benchmark"))
     parser.add_argument("--score-file", type=Path)
     parser.add_argument("--rescore-records", type=Path)
     parser.add_argument("--dry-run", action="store_true")
@@ -1454,6 +1460,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--report-out", type=Path)
     args = parser.parse_args(argv)
 
+    if args.execute or args.score_file or args.rescore_records:
+        args.out_dir = validate_raw_output_path(REPO_ROOT, args.out_dir)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if args.html_report:
         if not args.recovery_summary or not args.coding_summary or not args.report_out:
