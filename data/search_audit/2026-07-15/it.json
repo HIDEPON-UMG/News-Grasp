@@ -1,0 +1,39 @@
+{
+  "date": "2026-07-15",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "tmp/newsroom/2026-07-15/it.filtered.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"GMOサイバー攻撃ネットde診断 ASM\"",
+    "site:www.ctc-g.co.jp \"クラウドAIとローカルAI、正解は適材適所の使い分け\"",
+    "\"日立システムズと三井物産セキュアディレクション、サイバーセキュリティ領域で協業\"",
+    "\"IIJ、マルチクラウド環境のデータ流通プラットフォームを利用したデータ真正性の確保に関する実証を実施\"",
+    "\"米国GreenTek Solutionsへ出資、IT機器リユース・リサイクル事業に参入\"",
+    "\"プラスアルファ・コンサルティング\" ラクス 持分法適用関連会社化"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 6,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "NTTデータ、Nexthink活用のIT運用支援サービスを本格開始",
+      "url": "https://enterprisezine.jp/article/detail/24656",
+      "reason": "freshness gate: published 2026-07-10 via htmldate, exceeds max-source-age-days 1"
+    },
+    {
+      "url": "https://www.hitachi-systems.com/news/2026/20260714.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

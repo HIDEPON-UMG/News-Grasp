@@ -1,0 +1,59 @@
+{
+  "date": "2026-07-15",
+  "category_id": "fx",
+  "queries": [
+    "stage1: build/deduped-candidates/fx.jsonl ← 為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:finance.yahoo.co.jp \"米利上げ観測後退、6月ＣＰＩの伸び鈍化\"",
+    "site:nikkei.com \"日銀、「自主性」あれど「独立性」に不安 長期金利の上昇招く\"",
+    "site:gaitame.com \"ドル円午前の為替予想、再び40年ぶり163円が視野に 介入は困難な状況に 2026/7/14\"",
+    "site:fx.minkabu.jp \"ドル円、１６２円台に戻す ＦＲＢの早期利上げ期待は後退も年内の期待は温存＝ＮＹ為替\"",
+    "site:fx.minkabu.jp \"ユーロ、米欧の短期金利差縮小で下支えとの分析＝ＮＹ為替\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 5,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFBzbWxqc1ltSU1ndEE0VElnZldUTGdyRVJpOTdKeXBsc0RDSm40dm9kLTJqaDZlOVpoR2E5eEZIX1o0bFR1SFR2N2k4WjRiTnN5dHVBTHJn?oc=5",
+      "reason": "相場・チャート常設ページで記事ではない"
+    },
+    {
+      "title": "アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBQa1U5NTk2aS1xRjBZb0dxSzJocWtGel9GdVBUTEx4TVhJY0R1cHB1aGlFZnltb1dpQ3lYVmd2M09TUnMxXzV2cE1GR1kxbGhHWXNGUQ?oc=5",
+      "reason": "相場・チャート常設ページで記事ではない"
+    },
+    {
+      "title": "インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBDTjlOZzdQUEdTdXdtbG1meUpMcWtGZmZhdmhuYkhadW1qbURDdkpYMTB2TWF6cWYwSzdTQVlpZ0pXbzZuVl9QMnlFRlFHRC1wMTZydw?oc=5",
+      "reason": "投信の基準価額ページで当日ニュースではない"
+    },
+    {
+      "title": "アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型の基準価額・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1zckZSdHVvbExXV2xBc3Qtdk51MGlVVU9UNHZWeVRPMnRTNFJ6RTlfMjByUlZ6UEc4WGhvVURYd2RIRW5Oa0hXeXVMd0xETDdqamdPZw?oc=5",
+      "reason": "投信の基準価額ページで当日ニュースではない"
+    },
+    {
+      "title": "7月の米利上げ観測後退、CPIが予想以上に鈍化－FRBに様子見の余地",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE82UnJ2QlcybGRDbkx0LTNRakhKbF9NaVAzYjZxZ0tXWWxvVS1wcGdJWUVoYy1sUzQtb2tNbDFfTG9IQTQwRmdCbjhxa0tBVmVGREtoNi1pT3BtSVl1Wlpha0Y1djl6eVNJVWJTU3dMS2dyMUg5X3o4?oc=5",
+      "reason": "同テーマのCPI記事が採用済みで canonical も安定解決できなかった"
+    },
+    {
+      "title": "米物価上昇率3.5％ 伸び率縮小で早期利上げ観測 やや後退",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFBOdkZVNndqMEF6dFlqclRUbHNEVVAyVHkzLVR0X3lKLUFjcXVBTzhYTEFReFIzRm5RZEJNOU9TTUJ0d3FYVUM5ZW9YTzM2VjZPXzZ6WENHN1JIXzlpQWhN?oc=5",
+      "reason": "NHK 側の canonical 解決ができず article-unit URL を確定できなかった"
+    },
+    {
+      "title": "FX実践解説、相場分析＆リアルトレード、ドル円などの注目材料（2026年7月14日）",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9PRzRyUmFtbWswcFRidUJuM1lKS1BrdEFJemhMSy15c0R1X3BnZ01tOFRpQTFKNmtLYnItVWJDbXlOV0xzV3B6UEpfbmdrbm5tTEhZWTVzVHJ2YnVSeEFrZWw2Yw?oc=5",
+      "reason": "ライブ解説で独自ニュース価値が薄く、他のドル円記事と重複した"
+    }
+  ]
+}

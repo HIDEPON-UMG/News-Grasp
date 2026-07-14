@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-15",
+  "category_id": "ai",
+  "queries": [
+    "stage1_dedup_input: build/deduped-candidates/ai.jsonl",
+    "site:gigazine.net \"AnthropicがClaudeの性格調査結果を公開\"",
+    "site:k-tai.watch.impress.co.jp \"ClaudeとDropboxが連携、ファイル検索や生成物の保存に対応\"",
+    "site:softbank.jp OpenAI 脆弱性対策サービス 2026 7 14",
+    "site:wipo.int generative AI patent report SoftBank July 2026",
+    "publishers sue Google Gemini AI training July 14 2026 Guardian"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 9,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAIの音声AI“GPT-Live”が「英会話アプリの死」になるのか考えた",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxNWVo5SEl6bXhmZndTNTZMNVJJWVBGV2EzUlhIUnYzeVVqZ2pnN3NDckRGRDFESWh2VGd5bEJuNV9GWFNRT25lUWFFd1BtVXBZS3Z0WTkwRDY0VTdJTDhWOUJ4RTg5ODBvSGdxa1pUQ0ZVcW5nT2M2UGZ4cjA3UlN5MGdn?oc=5",
+      "reason": "論点が評論寄りで一次発表や新しい数値が薄く、当日性の高い実務ニュースを優先"
+    },
+    {
+      "title": "ろうきん、全職員3000人に生成AIを導入 「無理なく利用できる」ツール選定の勘所",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5pNGpoekFZcjZfVWdJbTluMDRyNERXWGxXc1N6cjFwTWwxZTEzaFZnYjNwLU4yb2xpVVZIdENlVlpOSFhZMS1famFFcW42ZXJ1dkIwaGthR3BsSWJuel9JbnpBSWNqZ3ZMWDhHaQ?oc=5",
+      "reason": "導入事例としては有用だが、カテゴリ上位5件と比べて影響範囲と新規性が一段弱い"
+    },
+    {
+      "title": "エフサステクノロジーズとプリファードネットワークス、自社保有の生成AI基盤で連携",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE5QbVhzOFROcV9pTG5hMHhnRktVUmd0Z3ROd3RxTE5rbmhfcmJIVzhXalpiemhxaWJzUFUyYkRTUFFKa2ZQdWthd08zMVVyNDRHazVhanllVDNVYVZ1T0NURXZSSVRrY19hU2hkYkNyY054OXM2?oc=5",
+      "reason": "国産LLM基盤の話題性はあるが、公式記事URLの特定が限定的で source 契約を優先して見送り"
+    },
+    {
+      "title": "ChatGPT・Claude・Gemini を1つの安全な環境で。社労士事務所向けAI業務基盤「SRAISE（スレイズ）」",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFByN2RqNG02dDNXSllLa25aSV9kXzByZ3NwaUFiNkVKT2s5dF9xdFphT1dfUzVUQmpxQ0V0STE1MUNNTEIxSG1TZGtIREJITktaTGY0ZVlRaEI0emxnSERvZGR2dElFclJNWUE?oc=5",
+      "reason": "PR色が強く、読者の行動変化に直結する一次情報や広域影響が上位候補より弱い"
+    },
+    {
+      "title": "OpenAI、ChatGPT検索にカラシのW杯賭けオッズをひっそりと統合",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1GSl9OcTRVQ3d0N3o2WFJseWVxZFU0cTh4ejI5MmY3V1JXaUp5T09XS1VsaFk0bC1qUHE1S3NnSVNMQ21TVlFmZG1NNlBSVjRnbFkzTENSbnRWdkdQMDB2WWdUT3kwblFHTEMxQnVreHNLWVlQ?oc=5",
+      "reason": "機能追加の信頼できる一次説明が薄く、実務インパクトより周辺話題としての性格が強い"
+    },
+    {
+      "title": "マスク氏、2027年の軌道上AIデータセンター稼働を目標に掲げる——ソフトバンク、OpenAIとコスト・実現性で衝突",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE02SGtGRE54S2pYYjRJbWFlQmJtdWZGZ01vWlFOOTlzUVg0NVUzSVBuTEFNLWhuRkNEQWhHdjVaUFJaQjZ5V1o3UzNtdUVJZkFqNzdXbnlJMnZibGxHNFUxRjA1aXJneGtXZ2k2TWhXdC12MDdZ?oc=5",
+      "reason": "観測記事としては面白いが、一次発表と確定数値が弱く投機色が強いため除外"
+    }
+  ]
+}

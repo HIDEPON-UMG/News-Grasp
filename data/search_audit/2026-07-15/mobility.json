@@ -1,0 +1,62 @@
+{
+  "date": "2026-07-15",
+  "category_id": "mobility",
+  "queries": [
+    "stage1-input: build/deduped-candidates/mobility.jsonl",
+    "\"米カリフォルニア州、ＥＶ初購入に3500ドルの補助金支給へ\"",
+    "\"コーナン商事とT2、「コーナン」の商品を自動運転トラックで定期輸送する商用運行を開始\"",
+    "site:businessnetwork.jp \"NTTドコモビジネス・紋別市ら、『5Gワイド』を活用した自動運転バスの実証\"",
+    "site:jidounten-lab.com \"Googleロボタクシー『1万台が中国製』に？日本は『敗戦』確定か\"",
+    "site:lnews.jp \"ドミノ・ピザほか／QSR業界で初、EVトラックを福岡の店舗配送に導入\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "国土交通省「自動運転トラック実装支援事業費補助金」における間接補助事業者の二次公募開始について",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQUzZES2xzRllKS2lCYUJackgyVTBwR0RsczlRVXRuR2xzb19TUk41cWRhNGtDWG9qbUcwS1ZlZWdnaFRVMjFjTDYtRjU3a3RNZTRVVzUwM0JqcnBTRVdFUXh6ZTl5U1QtZ002Smx5SkFHUVhLMGhxRE1Eek1MYmJBbk9mRWllcm83?oc=5",
+      "reason": "政策シグナルは強いが、記事本文の公開部分が薄く、採用5本より判断材料が少なかった。"
+    },
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5vR2owRXJLX1dwYUtHY05wNjVKVmVrTHNXdm5yRGJ0NHJzSzZTaEgxWFo0WmNBOWUxV2tXcHljUWlYaG92bll2YUNIQzJlVE0?oc=5",
+      "reason": "株価ボードであり記事単位のニュースではないため除外した。"
+    },
+    {
+      "title": "沈むな日本車（中） 自動運転、海外30都市に AI押さえねばジリ貧",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1xSFFEUWlYUnRQQ2hsY1BEMkJkUS1lNHdtS0RUQ2lIeHFyUWRvSmNJb3lJdFNvMTVfOWR6SmdlX3d6ZWJnZi1XMk9IN0htbFU4VE9VamdDQnU5Q1BoOWdRVl9RVElDcmNfRFp2aw?oc=5",
+      "reason": "日経本体の当日canonical URLを元記事単位で確認できず、URL品質契約を優先して見送った。"
+    },
+    {
+      "title": "新明和、動力取り出し装置電動化 EV特装車向け",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE4tUi1aRmZzeFQ1bGtYVElhTTNNOU5jdzluVndVYVFpYXFrNWJiMDdjVjdrck1mNXpnWUI5S2xEdTQxdkw5SXh0VHp3SHhWcFdhdm4tLVItMFF0SFk?oc=5",
+      "reason": "テーマは有望だが、採用候補5本と比べて読者インパクトが狭く、同日優先順位で落とした。"
+    },
+    {
+      "title": "【東京工科大学】八王子市と自動運転導入に向けたコンソーシアム協定を締結",
+      "url": "https://news.google.com/rss/articles/CBMiQ0FVX3lxTFBrQ0VCdWg1SmJ6RGs3WXF0dGtrRkZxSDBscDFiVElmMzNNa0NEaUJrMm1RR2I3NXZvemxvalMyakF0NzA?oc=5",
+      "reason": "地域実装テーマとしては有効だが、紋別の5G遠隔監視付き実証の方が新規性と具体性が高かった。"
+    },
+    {
+      "title": "約200億集めた「newmo」がライドシェア撤退か 自動運転一本化へ",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9jaVFCMkhoU3RvbHVKTGVXWGZZYnAwaDY4N1RTY1BVR290SnQzOWNFTVRLVE5hZG1yWFNZTWFZbXJrdXJmOFdkcw?oc=5",
+      "reason": "戦略転換としては重要だが、解説色が強く、採用5本より一次情報距離が遠かった。"
+    },
+    {
+      "title": "米新興EVルーシッド、株価一時5割安 非公開化や破産申請検討の報道",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE41VVVIeHBkV1JCUVdOSmNlamlNME5GOTVpTlZ5U2pVcXp0UVNJeldDNmlFYi1mclNCckRTZ3hKa2ZtV0dhcEFzVDQzd2NYb2J6SFVMM1c0VDdLb1c2b2dIaUdYM1hzSTlNelhsUw?oc=5",
+      "reason": "企業固有の信用不安としては大きいが、当日モビリティ全体への波及より個社ニュース色が強かった。"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

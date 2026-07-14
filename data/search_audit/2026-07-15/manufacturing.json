@@ -1,0 +1,58 @@
+{
+  "date": "2026-07-15",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/manufacturing.jsonl (stage1 dedup済み候補のみ使用)",
+    "\"経産省、イスラエル半導体大手の6000億円投資計画に助成\"",
+    "\"中国半導体戦略の切り札、CXMTがIPO価格設定－最大1.6兆円調達も\"",
+    "\"Hanmi Semiconductor Reports Record Q2 Operating Profit of 130.3 Billion Won\"",
+    "\"先端半導体、中国に出荷開始＝エヌビディア製「H200」―米高官\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "静電チャック新製造棟竣工/住友大阪セメント/半導体需要に対応",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTFBrbk5OUi1FNmRUb1FJZVVUWVVmc2tJcXFtLTRkX1ppUlpXOUIzemFRZWZlcG9WVk5kbjFRTnc0b2dMTDRSWS1QbnhrbWViMWdJQ1NtU01PMGc?oc=5",
+      "reason": "確認できた元記事は2026-07-09/10付で、issue_date=2026-07-15のfreshness gate（1日窓）を外れていた。"
+    },
+    {
+      "title": "ダイフク、売上高の3割超は半導体生産向けシステム 高効率搬送に自信",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5lemxSbElPSTFzQ0hEdnRCRlJ0eERtY0JjWHZhSjdQQndmaG96QVpMQkIyRzFvdWdGcThsTDVrN3pieDlVQ0x2bDcwLVdYWTFMTEYzZFdYRThMcGwwYk16dHVPbXBWODZOendBOQ?oc=5",
+      "reason": "xTechの公開本文確認が薄く、当日窓で本文要旨まで安全に裏取りできなかった。"
+    },
+    {
+      "title": "インテル、AI半導体受託の鍵「EMIB-T」 TSMCの供給不足突く",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1OUDEyeFIzYkxDNmJRNzRiMkZSNWIydW9WRUFPejYxajRrakJoMTk1RzdKMXQxbmd1TVZnYzdJWjdfZDY5MWlUbmdKYWRkY0cwZENRek54Vk5MREhrYlhRQVFSOFFpSHFOMzFGUg?oc=5",
+      "reason": "有料壁とcanonical未解決が重なり、見出し以上の新材料を検証できなかった。"
+    },
+    {
+      "title": "先端半導体、中国に出荷開始＝エヌビディア製「H200」―米高官(時事通信)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPTWlta3RJVHNFVFlJaTI3RmNtRWJWMnkzd3ZKRVJsSnZGQ3M5SlQ2LW9EbTFTTVdJeF9GMC1hOVNDZVJ4NUtJN1VFNHRWYmh2VjZjYV9LVElPdHBIQVRKcG1HM3lUaUxseHNfa0QxZWQwOS1obXNLTnFpMUN3T3NWR3RYNU03ZE0?oc=5",
+      "reason": "輸出規制ニュースとしては重要だが、設備投資や量産計画の具体度で上位3件を優先した。"
+    },
+    {
+      "title": "キオクシア太田社長、AI需要は「右肩上がり」 それでも慎重な追加投資",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE4tYlpaQ3o0d0c2SUhWamhTazItdUZlOWpPUk9TbGNlQ1MzRGVPeVgtQnVQN2VHY3pXTko4bWlhOHRYME9CUWhqYzlGNHNHUldoeFF6anBUQm9EVVhmTXhxVmRONFd6OVk?oc=5",
+      "reason": "確認できたのが動画断片と派生引用にとどまり、本文URLと公開日根拠を安全に固められなかった。"
+    },
+    {
+      "url": "https://m.ajupress.com/amp/20260714114870211",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "notes": "広域収集と横断dedupは再実行していない。stage1 dedup済み候補25件から選別のみ行い、採用候補ではURL 200、公開日、公開本文要旨、サムネイルを個別確認した。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
