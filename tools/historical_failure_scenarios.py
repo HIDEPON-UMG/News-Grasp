@@ -397,6 +397,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-14-daily-batch-summary-focus-podcast-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-15",
+        "generation-quality / batch-slo / RecoverOnly / publish-complete",
+        "targeted Codex repair restored a missing audio script but exhausted the one-hour batch SLO before publish",
+        "SLO budget and targeted repair boundary",
+        "pre-publish repair must account for elapsed SLO budget and completion reports must distinguish quality Green from publish-not-yet-started",
+        "batch SLO fixture with long targeted repair duration, RecoverOnly resume proof, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-15-daily-batch-slo-recovery-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 
