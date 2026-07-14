@@ -1,0 +1,798 @@
+{
+  "schema_version": "external_benchmark_matrix_summary.v1",
+  "minimum_repetitions": 3,
+  "single_run_decision_allowed": false,
+  "complete_coverage": true,
+  "coverage_matrix": {
+    "missing": [],
+    "unexpected_models": []
+  },
+  "target_models": [
+    "GPT-5.5",
+    "GPT-5.6 Terra",
+    "GPT-5.4"
+  ],
+  "score_scale": {
+    "oracle_min": 0.0,
+    "oracle_max": 10.0,
+    "quality_min": 1.0,
+    "quality_max": 5.0
+  },
+  "local_llm_materials": {
+    "sha256": "7f91c7c9904effe5254e23667a7ef6cb66d037935cc4ead21a54dc0a3f73ef9f",
+    "source_of_truth": {
+      "id": "ai_pulse_2026_06_04_local_llm_investigation",
+      "role": "primary",
+      "report_md": "../../AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md",
+      "report_html": "../../AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.html",
+      "raw_score_json": "../../AI-Pulse/docs/eval/2026-06-04_blind_judge_raw.json",
+      "blind_judge_report": "../../AI-Pulse/docs/eval/2026-06-04_blind_judge.md",
+      "four_way_comparison": "../../AI-Pulse/docs/eval/2026-06-04_qwen3_vs_gemini.md",
+      "fabrication_followup_json": "../../AI-Pulse/docs/eval/2026-06-04_fabrication_fix_raw.json",
+      "fabrication_followup_report": "../../AI-Pulse/docs/eval/2026-06-04_fabrication_fix.md"
+    },
+    "primary_method_contract": {
+      "domain": "AI-Pulse article-body to structured JSON extraction",
+      "sample_count": 11,
+      "judged_count": 10,
+      "models_compared": [
+        "flash-lite",
+        "qwen3:14b",
+        "35B-A3B"
+      ],
+      "score_scale": {
+        "min": 1,
+        "max": 5,
+        "meaning": "axis rubric score; 5 is best"
+      },
+      "quality_axes": [
+        "factual",
+        "summary",
+        "points",
+        "rationale",
+        "overall"
+      ],
+      "required_controls": [
+        "same prompt",
+        "same schema",
+        "same temperature 0.4",
+        "emphasis disabled",
+        "maxLength 400",
+        "blind candidate labels A/B/C",
+        "model name hidden",
+        "candidate position rotation",
+        "completion rate separate from quality",
+        "latency separate from quality",
+        "judge bias note"
+      ],
+      "interpretation_rule": "Do not collapse the result to one scalar only; report strength exchange such as factual vs rationale.",
+      "known_limits": [
+        "single Gemini-family judge may bias toward Gemini-family outputs",
+        "one judged sample was missing due to judge 503",
+        "body truncation can create factual artifacts across all models"
+      ]
+    },
+    "misuse_guards": [
+      "Do not use reports/oss_model_coding_comparison_20260618_v7_summary.json as the source of truth for the past local LLM comparison.",
+      "Do not use 0/1 pass-only scoring for model comparison.",
+      "Do not add speed, latency, credit, or VRAM into the quality score.",
+      "Do not claim blind judging when a blind judge run was not actually executed.",
+      "Do not claim News-Grasp long-running recovery closure from this extraction/coding matrix alone."
+    ]
+  },
+  "weights": {
+    "coding_generation": 0.25,
+    "repair_patch": 0.2,
+    "japanese_nlu": 0.2,
+    "grounded_summary": 0.2,
+    "format_control": 0.15
+  },
+  "scoring_policy": {
+    "local_llm_investigation_method": "AI-Pulse 2026-06-04 primary report",
+    "partial_credit_for_nonfatal_defects": true,
+    "fatal_gate_zeroes_oracle_score_only": true,
+    "quality_score_floor_1_to_5": 1.0,
+    "severity_tiers": [
+      "fatal",
+      "cap",
+      "minor"
+    ],
+    "speed_credits_excluded_from_quality_score": true,
+    "format_control_separate_axis": true,
+    "single_run_decision_allowed": false,
+    "minimum_repetitions": 3,
+    "local_llm_materials_sha256": "7f91c7c9904effe5254e23667a7ef6cb66d037935cc4ead21a54dc0a3f73ef9f",
+    "local_llm_quality_scale": {
+      "min": 1,
+      "max": 5
+    }
+  },
+  "strength_exchange_summary": [
+    {
+      "axis": "CODE_REPAIR",
+      "winner": "GPT-5.4",
+      "winner_score_1_to_5": 5.0,
+      "spread_1_to_5": 0.0,
+      "interpretation": "strength exchange axis; do not replace with overall score alone",
+      "scores": [
+        {
+          "model": "GPT-5.4",
+          "score_1_to_5": 5.0
+        },
+        {
+          "model": "GPT-5.5",
+          "score_1_to_5": 5.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "score_1_to_5": 5.0
+        }
+      ]
+    },
+    {
+      "axis": "CODE_SYNTH",
+      "winner": "GPT-5.4",
+      "winner_score_1_to_5": 5.0,
+      "spread_1_to_5": 1.0,
+      "interpretation": "strength exchange axis; do not replace with overall score alone",
+      "scores": [
+        {
+          "model": "GPT-5.4",
+          "score_1_to_5": 5.0
+        },
+        {
+          "model": "GPT-5.5",
+          "score_1_to_5": 4.666667
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "score_1_to_5": 4.0
+        }
+      ]
+    },
+    {
+      "axis": "JA_NLU",
+      "winner": "GPT-5.6 Terra",
+      "winner_score_1_to_5": 3.6,
+      "spread_1_to_5": 0.573333,
+      "interpretation": "strength exchange axis; do not replace with overall score alone",
+      "scores": [
+        {
+          "model": "GPT-5.4",
+          "score_1_to_5": 3.026667
+        },
+        {
+          "model": "GPT-5.5",
+          "score_1_to_5": 3.4
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "score_1_to_5": 3.6
+        }
+      ]
+    },
+    {
+      "axis": "JA_SUMMARY",
+      "winner": "GPT-5.5",
+      "winner_score_1_to_5": 4.333333,
+      "spread_1_to_5": 0.666666,
+      "interpretation": "strength exchange axis; do not replace with overall score alone",
+      "scores": [
+        {
+          "model": "GPT-5.4",
+          "score_1_to_5": 3.666667
+        },
+        {
+          "model": "GPT-5.5",
+          "score_1_to_5": 4.333333
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "score_1_to_5": 4.166667
+        }
+      ]
+    },
+    {
+      "axis": "format_control",
+      "winner": "GPT-5.4",
+      "winner_score_1_to_5": 5.0,
+      "spread_1_to_5": 0.016667,
+      "interpretation": "strength exchange axis; do not replace with overall score alone",
+      "scores": [
+        {
+          "model": "GPT-5.4",
+          "score_1_to_5": 5.0
+        },
+        {
+          "model": "GPT-5.5",
+          "score_1_to_5": 4.983333
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "score_1_to_5": 5.0
+        }
+      ]
+    }
+  ],
+  "discrimination_summary": [
+    {
+      "case_id": "code_repair_public_completion",
+      "raw_spread": 0.0,
+      "stdev": 0.0,
+      "verdict": "要差替",
+      "rank_material": false,
+      "diagnosis": "差が弱い、または補助指標に留める",
+      "recommended_revision": "境界条件や部分点を増やし、差が出るfixtureへ改訂する。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 10.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 10.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0
+        }
+      ]
+    },
+    {
+      "case_id": "code_repair_resume_stage",
+      "raw_spread": 0.0,
+      "stdev": 0.0,
+      "verdict": "要差替",
+      "rank_material": false,
+      "diagnosis": "差が弱い、または補助指標に留める",
+      "recommended_revision": "境界条件や部分点を増やし、差が出るfixtureへ改訂する。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 10.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 10.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0
+        }
+      ]
+    },
+    {
+      "case_id": "code_synth_digest_windows",
+      "raw_spread": 0.0,
+      "stdev": 0.0,
+      "verdict": "要差替",
+      "rank_material": false,
+      "diagnosis": "差が弱い、または補助指標に留める",
+      "recommended_revision": "境界条件や部分点を増やし、差が出るfixtureへ改訂する。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 10.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 10.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0
+        }
+      ]
+    },
+    {
+      "case_id": "code_synth_topic_key",
+      "raw_spread": 5.0,
+      "stdev": 2.545875,
+      "verdict": "順位材料",
+      "rank_material": true,
+      "diagnosis": "機能点でモデル差が出ている",
+      "recommended_revision": "順位材料として使用可。類似問題を増やして安定性を見る。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 8.333333
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 5.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0
+        }
+      ]
+    },
+    {
+      "case_id": "ja_nlu_negation_recovery",
+      "raw_spread": 4.133333,
+      "stdev": 2.156472,
+      "verdict": "順位材料",
+      "rank_material": true,
+      "diagnosis": "機能点でモデル差が出ている",
+      "recommended_revision": "順位材料として使用可。類似問題を増やして安定性を見る。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 5.8
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 6.8
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 2.666667
+        }
+      ]
+    },
+    {
+      "case_id": "ja_nlu_typed_blocker",
+      "raw_spread": 1.266667,
+      "stdev": 0.731311,
+      "verdict": "順位材料",
+      "rank_material": true,
+      "diagnosis": "機能点でモデル差が出ている",
+      "recommended_revision": "順位材料として使用可。類似問題を増やして安定性を見る。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 6.2
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 6.2
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 7.466667
+        }
+      ]
+    },
+    {
+      "case_id": "ja_summary_publish_gate",
+      "raw_spread": 3.333334,
+      "stdev": 1.734722,
+      "verdict": "順位材料",
+      "rank_material": true,
+      "diagnosis": "機能点でモデル差が出ている",
+      "recommended_revision": "順位材料として使用可。類似問題を増やして安定性を見る。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 9.166667
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 8.333333
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 5.833333
+        }
+      ]
+    },
+    {
+      "case_id": "ja_summary_recovery_continuity",
+      "raw_spread": 0.0,
+      "stdev": 0.0,
+      "verdict": "要差替",
+      "rank_material": false,
+      "diagnosis": "差が弱い、または補助指標に留める",
+      "recommended_revision": "境界条件や部分点を増やし、差が出るfixtureへ改訂する。",
+      "model_means": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 7.5
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 7.5
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 7.5
+        }
+      ]
+    }
+  ],
+  "case_model_comparison": [
+    {
+      "case_id": "code_repair_public_completion",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        }
+      ]
+    },
+    {
+      "case_id": "code_repair_resume_stage",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        }
+      ]
+    },
+    {
+      "case_id": "code_synth_digest_windows",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        }
+      ]
+    },
+    {
+      "case_id": "code_synth_topic_key",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 8.333333,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 5.0,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 10.0,
+          "fatal_rate": 0.0
+        }
+      ]
+    },
+    {
+      "case_id": "ja_nlu_negation_recovery",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 5.8,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 6.8,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 2.666667,
+          "fatal_rate": 0.0
+        }
+      ]
+    },
+    {
+      "case_id": "ja_nlu_typed_blocker",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 6.2,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 6.2,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 7.466667,
+          "fatal_rate": 0.0
+        }
+      ]
+    },
+    {
+      "case_id": "ja_summary_publish_gate",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 9.166667,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 8.333333,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 5.833333,
+          "fatal_rate": 0.333333
+        }
+      ]
+    },
+    {
+      "case_id": "ja_summary_recovery_continuity",
+      "scores": [
+        {
+          "model": "GPT-5.5",
+          "mean_score": 7.5,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.6 Terra",
+          "mean_score": 7.5,
+          "fatal_rate": 0.0
+        },
+        {
+          "model": "GPT-5.4",
+          "mean_score": 7.5,
+          "fatal_rate": 0.0
+        }
+      ]
+    }
+  ],
+  "models": {
+    "GPT-5.4": {
+      "runs": 24,
+      "repetitions_min": 3,
+      "macro_mean": 7.933333,
+      "avg_score": 7.933333,
+      "overall_score": 8.346667,
+      "decision_metric_scores": {
+        "coding_generation": 10.0,
+        "repair_patch": 10.0,
+        "japanese_nlu": 5.066667,
+        "grounded_summary": 6.666667,
+        "format_control": 10.0
+      },
+      "local_llm_task_projection": {
+        "CODE_REPAIR": {
+          "mean_score_1_to_5": 5.0,
+          "stdev_score_oracle": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "CODE_SYNTH": {
+          "mean_score_1_to_5": 5.0,
+          "stdev_score_oracle": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "JA_NLU": {
+          "mean_score_1_to_5": 3.026667,
+          "stdev_score_oracle": 4.167813,
+          "pass_rate": 0.166667,
+          "fatal_rate": 0.0
+        },
+        "JA_SUMMARY": {
+          "mean_score_1_to_5": 3.666667,
+          "stdev_score_oracle": 3.41565,
+          "pass_rate": 0.166667,
+          "fatal_rate": 0.166667
+        }
+      },
+      "local_llm_overall_1_to_5": 4.338667,
+      "format_violation_rate": 0.0,
+      "stdev_score": 3.332145,
+      "pass_rate": 0.583333,
+      "fatal_rate": 0.041667,
+      "credits": 1.173936,
+      "messages": 24,
+      "task_types": {
+        "CODE_REPAIR": {
+          "runs": 6,
+          "mean_score": 10.0,
+          "stdev_score": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "CODE_SYNTH": {
+          "runs": 6,
+          "mean_score": 10.0,
+          "stdev_score": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "JA_NLU": {
+          "runs": 6,
+          "mean_score": 5.066667,
+          "stdev_score": 4.167813,
+          "pass_rate": 0.166667,
+          "fatal_rate": 0.0
+        },
+        "JA_SUMMARY": {
+          "runs": 6,
+          "mean_score": 6.666667,
+          "stdev_score": 3.41565,
+          "pass_rate": 0.166667,
+          "fatal_rate": 0.166667
+        }
+      }
+    },
+    "GPT-5.5": {
+      "runs": 24,
+      "repetitions_min": 3,
+      "macro_mean": 8.375,
+      "avg_score": 8.375,
+      "overall_score": 8.652083,
+      "decision_metric_scores": {
+        "coding_generation": 9.166667,
+        "repair_patch": 10.0,
+        "japanese_nlu": 6.0,
+        "grounded_summary": 8.333333,
+        "format_control": 9.958333
+      },
+      "local_llm_task_projection": {
+        "CODE_REPAIR": {
+          "mean_score_1_to_5": 5.0,
+          "stdev_score_oracle": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "CODE_SYNTH": {
+          "mean_score_1_to_5": 4.666667,
+          "stdev_score_oracle": 2.041241,
+          "pass_rate": 0.833333,
+          "fatal_rate": 0.0
+        },
+        "JA_NLU": {
+          "mean_score_1_to_5": 3.4,
+          "stdev_score_oracle": 0.489898,
+          "pass_rate": 0.0,
+          "fatal_rate": 0.0
+        },
+        "JA_SUMMARY": {
+          "mean_score_1_to_5": 4.333333,
+          "stdev_score_oracle": 1.290994,
+          "pass_rate": 0.333333,
+          "fatal_rate": 0.0
+        }
+      },
+      "local_llm_overall_1_to_5": 4.460833,
+      "format_violation_rate": 0.0,
+      "stdev_score": 1.909074,
+      "pass_rate": 0.541667,
+      "fatal_rate": 0.0,
+      "credits": 2.492625,
+      "messages": 24,
+      "task_types": {
+        "CODE_REPAIR": {
+          "runs": 6,
+          "mean_score": 10.0,
+          "stdev_score": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "CODE_SYNTH": {
+          "runs": 6,
+          "mean_score": 9.166667,
+          "stdev_score": 2.041241,
+          "pass_rate": 0.833333,
+          "fatal_rate": 0.0
+        },
+        "JA_NLU": {
+          "runs": 6,
+          "mean_score": 6.0,
+          "stdev_score": 0.489898,
+          "pass_rate": 0.0,
+          "fatal_rate": 0.0
+        },
+        "JA_SUMMARY": {
+          "runs": 6,
+          "mean_score": 8.333333,
+          "stdev_score": 1.290994,
+          "pass_rate": 0.333333,
+          "fatal_rate": 0.0
+        }
+      }
+    },
+    "GPT-5.6 Terra": {
+      "runs": 24,
+      "repetitions_min": 3,
+      "macro_mean": 7.979167,
+      "avg_score": 7.979167,
+      "overall_score": 8.258333,
+      "decision_metric_scores": {
+        "coding_generation": 7.5,
+        "repair_patch": 10.0,
+        "japanese_nlu": 6.5,
+        "grounded_summary": 7.916667,
+        "format_control": 10.0
+      },
+      "local_llm_task_projection": {
+        "CODE_REPAIR": {
+          "mean_score_1_to_5": 5.0,
+          "stdev_score_oracle": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "CODE_SYNTH": {
+          "mean_score_1_to_5": 4.0,
+          "stdev_score_oracle": 2.738613,
+          "pass_rate": 0.5,
+          "fatal_rate": 0.0
+        },
+        "JA_NLU": {
+          "mean_score_1_to_5": 3.6,
+          "stdev_score_oracle": 1.354991,
+          "pass_rate": 0.0,
+          "fatal_rate": 0.0
+        },
+        "JA_SUMMARY": {
+          "mean_score_1_to_5": 4.166667,
+          "stdev_score_oracle": 1.020621,
+          "pass_rate": 0.166667,
+          "fatal_rate": 0.0
+        }
+      },
+      "local_llm_overall_1_to_5": 4.303333,
+      "format_violation_rate": 0.0,
+      "stdev_score": 1.988222,
+      "pass_rate": 0.416667,
+      "fatal_rate": 0.0,
+      "credits": 1.060312,
+      "messages": 24,
+      "task_types": {
+        "CODE_REPAIR": {
+          "runs": 6,
+          "mean_score": 10.0,
+          "stdev_score": 0.0,
+          "pass_rate": 1.0,
+          "fatal_rate": 0.0
+        },
+        "CODE_SYNTH": {
+          "runs": 6,
+          "mean_score": 7.5,
+          "stdev_score": 2.738613,
+          "pass_rate": 0.5,
+          "fatal_rate": 0.0
+        },
+        "JA_NLU": {
+          "runs": 6,
+          "mean_score": 6.5,
+          "stdev_score": 1.354991,
+          "pass_rate": 0.0,
+          "fatal_rate": 0.0
+        },
+        "JA_SUMMARY": {
+          "runs": 6,
+          "mean_score": 7.916667,
+          "stdev_score": 1.020621,
+          "pass_rate": 0.166667,
+          "fatal_rate": 0.0
+        }
+      }
+    }
+  }
+}

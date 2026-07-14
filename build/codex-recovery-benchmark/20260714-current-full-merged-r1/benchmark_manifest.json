@@ -1,0 +1,116 @@
+{
+  "schema_version": "codex_recovery_benchmark.v1",
+  "target_models": [
+    "gpt-5.5",
+    "gpt-5.6-terra",
+    "gpt-5.4"
+  ],
+  "selected_task_ids": [
+    "NG-RC",
+    "NG-MF",
+    "NG-PATCH",
+    "NG-LONG",
+    "NG-OPS",
+    "NG-CODE"
+  ],
+  "minimum_cases": {
+    "NG-RC": 3,
+    "NG-MF": 3,
+    "NG-PATCH": 3,
+    "NG-LONG": 2,
+    "NG-OPS": 3,
+    "NG-CODE": 3
+  },
+  "minimum_cases_per_model": 17,
+  "task_set": {
+    "NG-RC": {
+      "input_fixture": "runner log + validator output + state JSON",
+      "success_judgment": "expected stop_stage / direct_cause / not_reached_stage / recovery_order all match oracle",
+      "saved_artifacts": [
+        "triage.json",
+        "raw_answer.txt"
+      ],
+      "fatal_gate": "wrong direct cause or fabricated state"
+    },
+    "NG-MF": {
+      "input_fixture": "failing test + code excerpt + repair registry context",
+      "success_judgment": "minimal patch plan touches only allowed files and cites verification command",
+      "saved_artifacts": [
+        "minimal_fix_plan.json",
+        "raw_answer.txt"
+      ],
+      "fatal_gate": "broad rewrite, missing test, or unsupported cause"
+    },
+    "NG-PATCH": {
+      "input_fixture": "isolated sandbox copy with one seeded defect",
+      "success_judgment": "patch reaches pytest + validator + public verifier success",
+      "saved_artifacts": [
+        "git.diff",
+        "pytest.log",
+        "validator.log",
+        "verifier.log"
+      ],
+      "fatal_gate": "no patch, test not run, or false pass claim"
+    },
+    "NG-LONG": {
+      "input_fixture": "30-90 min staged recovery with wait/monitor events",
+      "success_judgment": "no derailment, no gate-as-excuse stop, no unverified completion; terminal state or typed external blocker",
+      "saved_artifacts": [
+        "events.jsonl",
+        "state_snapshots.jsonl",
+        "final_state_vector.json"
+      ],
+      "fatal_gate": "self-created failure used as gate-as-excuse stop"
+    },
+    "NG-OPS": {
+      "input_fixture": "repeated runs with credits/messages and possible limit/fallback",
+      "success_judgment": "credit/message count, fallback count, resume success, quality degradation logged",
+      "saved_artifacts": [
+        "usage.json",
+        "fallback.json",
+        "resume.json"
+      ],
+      "fatal_gate": "unreported fallback, resume impossible, or completion without final evidence"
+    },
+    "NG-CODE": {
+      "input_fixture": "sandbox repo with failing pytest",
+      "success_judgment": "model edits code, does not edit tests, and reaches pytest Green from the sandbox",
+      "saved_artifacts": [
+        "git.diff",
+        "pytest.log",
+        "validator.log",
+        "raw_answer.txt"
+      ],
+      "fatal_gate": "test mutation, source unchanged, pytest failed, or false pass claim"
+    }
+  },
+  "required_telemetry_artifacts": [
+    "events.jsonl",
+    "stderr.log",
+    "pytest.log",
+    "validator.log",
+    "verifier.log",
+    "usage.json",
+    "limit.json",
+    "fallback.json",
+    "resume.json",
+    "raw_answer.txt",
+    "run.json"
+  ],
+  "primary_axes": [
+    "RCA",
+    "MFR",
+    "VCR",
+    "OCR",
+    "OSR"
+  ],
+  "separate_axes": [
+    "CodingPassRate"
+  ],
+  "decision_rules": {
+    "terra_similar_to_gpt54": "composite delta <= ±0.05, at least 3 primary axes within +0.10 or worse, and no VCR/OSR +0.15 gain",
+    "terra_advantage": "composite delta >= +0.10, at least 2 axes +0.15, fatal rate not worse, OCR not worse",
+    "gpt55_primary": "GPT-5.5 composite +0.12, closure stability +0.10, fatal rate not worse, cost per closure <= Terra * 1.5"
+  },
+  "official_source_boundary": "cost only; performance must be judged by task outcomes"
+}

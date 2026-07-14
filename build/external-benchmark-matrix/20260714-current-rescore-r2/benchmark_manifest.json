@@ -1,0 +1,204 @@
+{
+  "schema_version": "external_benchmark_matrix.v1",
+  "target_models": [
+    "GPT-5.5",
+    "GPT-5.6 Terra",
+    "GPT-5.4"
+  ],
+  "task_types": {
+    "CODE_REPAIR": {
+      "external_basis": "SWE-bench / LiveCodeBench",
+      "oracle": "patch + pytest",
+      "measurement_limit": "small isolated repo repair, not full production News-Grasp mutation"
+    },
+    "CODE_SYNTH": {
+      "external_basis": "HumanEval / MBPP",
+      "oracle": "generated code + hidden pytest",
+      "measurement_limit": "short Python function synthesis only"
+    },
+    "JA_NLU": {
+      "external_basis": "JGLUE / llm-jp-eval",
+      "oracle": "JSON labels + allowed evidence spans",
+      "measurement_limit": "mechanical NLI-style cases only"
+    },
+    "JA_SUMMARY": {
+      "external_basis": "XL-Sum / llm-jp-eval / Open Japanese LLM Leaderboard",
+      "oracle": "grounded summary with hallucination and omission gates",
+      "measurement_limit": "source-grounded factual summary, not open-ended editorial quality"
+    }
+  },
+  "case_count_min": 2,
+  "case_count": 8,
+  "minimum_repetitions": 3,
+  "single_run_decision_allowed": false,
+  "external_sources": {
+    "human_eval": {
+      "name": "HumanEval",
+      "url": "https://github.com/openai/human-eval",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "code synthesis is judged by executable unit tests, not explanation quality"
+    },
+    "mbpp": {
+      "name": "MBPP",
+      "url": "https://github.com/google-research/google-research/tree/master/mbpp",
+      "license_or_access": "public Google Research repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "small Python programming tasks include task text, reference code, and automated tests"
+    },
+    "swe_bench": {
+      "name": "SWE-bench",
+      "url": "https://github.com/swe-bench/SWE-bench",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "repo repair ability is measured by applying a patch and running tests"
+    },
+    "livecodebench": {
+      "name": "LiveCodeBench",
+      "url": "https://livecodebench.github.io/",
+      "license_or_access": "public benchmark site; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "coding evaluation should avoid one undifferentiated easy case and should separate generation and repair"
+    },
+    "jglue": {
+      "name": "JGLUE",
+      "url": "https://aclanthology.org/2022.lrec-1.317/",
+      "license_or_access": "public ACL Anthology paper; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "Japanese natural language understanding should be evaluated as Japanese tasks, not translation-only proxies"
+    },
+    "llm_jp_eval": {
+      "name": "llm-jp-eval",
+      "url": "https://github.com/llm-jp/llm-jp-eval",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "Japanese LLM evaluation should use multiple dataset-style task families and mechanical scoring where possible"
+    },
+    "xlsum": {
+      "name": "XL-Sum",
+      "url": "https://arxiv.org/abs/2106.13822",
+      "license_or_access": "public arXiv paper; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "summarization should be grounded in source text and checked for concise factual preservation"
+    },
+    "open_japanese_llm_leaderboard": {
+      "name": "Open Japanese LLM Leaderboard",
+      "url": "https://huggingface.co/spaces/llm-jp/open-japanese-llm-leaderboard",
+      "license_or_access": "public Hugging Face Space; benchmark design reference",
+      "checked_at": "2026-07-14",
+      "benchmark_design_use": "Japanese leaderboard practice separates tasks such as NLI, QA, summarization, and code"
+    }
+  },
+  "fixture_manifest": {
+    "code_repair_public_completion": {
+      "case_id": "code_repair_public_completion",
+      "source_id": "swe_bench",
+      "source_sha256": "369caa28e86080ee1d548bfa38b8995a2b554f80a2966bf0f1396ba72dcc6bef",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "derivation_note": "CODE_REPAIR fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "code_repair_resume_stage": {
+      "case_id": "code_repair_resume_stage",
+      "source_id": "swe_bench",
+      "source_sha256": "1e8a60b5cdc515627a006f3f4752b670dce638c6025302682f6e3116a67d3308",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "derivation_note": "CODE_REPAIR fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "code_synth_digest_windows": {
+      "case_id": "code_synth_digest_windows",
+      "source_id": "human_eval",
+      "source_sha256": "1405a9cd9ca0916228f6ad64b7253913c8ff7b682b5d63e930c52170e8aada06",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "derivation_note": "CODE_SYNTH fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "code_synth_topic_key": {
+      "case_id": "code_synth_topic_key",
+      "source_id": "human_eval",
+      "source_sha256": "884836b9a467ec52f73e92a682c249c325d9fe8b0b27535ed66748288576115e",
+      "license_or_access": "public GitHub repository; benchmark design reference",
+      "derivation_note": "CODE_SYNTH fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "ja_nlu_negation_recovery": {
+      "case_id": "ja_nlu_negation_recovery",
+      "source_id": "jglue",
+      "source_sha256": "8962eeafbe1c992f201d4f7de225873b0b884a8353dc4a605c0f59eece626679",
+      "license_or_access": "public ACL Anthology paper; benchmark design reference",
+      "derivation_note": "JA_NLU fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "ja_nlu_typed_blocker": {
+      "case_id": "ja_nlu_typed_blocker",
+      "source_id": "jglue",
+      "source_sha256": "04e6ac067b670132dc5c9844111eb0d8f091cb3ac4d7d586762fd8ee02b7f4d3",
+      "license_or_access": "public ACL Anthology paper; benchmark design reference",
+      "derivation_note": "JA_NLU fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "ja_summary_publish_gate": {
+      "case_id": "ja_summary_publish_gate",
+      "source_id": "xlsum",
+      "source_sha256": "fa48e6c0e25bb562eca34636387756eaf36ddbc94df3a5d18bffbe927c457e80",
+      "license_or_access": "public arXiv paper; benchmark design reference",
+      "derivation_note": "JA_SUMMARY fixture derived from benchmark design pattern, not copied benchmark content."
+    },
+    "ja_summary_recovery_continuity": {
+      "case_id": "ja_summary_recovery_continuity",
+      "source_id": "xlsum",
+      "source_sha256": "fc1bb6fa2eaac12c7ff34a478e71bba5b701fae33324319e1983cb016ce237ac",
+      "license_or_access": "public arXiv paper; benchmark design reference",
+      "derivation_note": "JA_SUMMARY fixture derived from benchmark design pattern, not copied benchmark content."
+    }
+  },
+  "provenance_snapshot_sha256": "3e29483832bd9c907f88ee651a59b5a800335bee46f3a047231fd050ec2bb84a",
+  "local_llm_materials_sha256": "7f91c7c9904effe5254e23667a7ef6cb66d037935cc4ead21a54dc0a3f73ef9f",
+  "local_llm_source_of_truth": {
+    "id": "ai_pulse_2026_06_04_local_llm_investigation",
+    "role": "primary",
+    "report_md": "../../AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.md",
+    "report_html": "../../AI-Pulse/docs/eval/2026-06-04_local_llm_investigation.html",
+    "raw_score_json": "../../AI-Pulse/docs/eval/2026-06-04_blind_judge_raw.json",
+    "blind_judge_report": "../../AI-Pulse/docs/eval/2026-06-04_blind_judge.md",
+    "four_way_comparison": "../../AI-Pulse/docs/eval/2026-06-04_qwen3_vs_gemini.md",
+    "fabrication_followup_json": "../../AI-Pulse/docs/eval/2026-06-04_fabrication_fix_raw.json",
+    "fabrication_followup_report": "../../AI-Pulse/docs/eval/2026-06-04_fabrication_fix.md"
+  },
+  "local_llm_primary_method_contract": {
+    "domain": "AI-Pulse article-body to structured JSON extraction",
+    "sample_count": 11,
+    "judged_count": 10,
+    "models_compared": [
+      "flash-lite",
+      "qwen3:14b",
+      "35B-A3B"
+    ],
+    "score_scale": {
+      "min": 1,
+      "max": 5,
+      "meaning": "axis rubric score; 5 is best"
+    },
+    "quality_axes": [
+      "factual",
+      "summary",
+      "points",
+      "rationale",
+      "overall"
+    ],
+    "required_controls": [
+      "same prompt",
+      "same schema",
+      "same temperature 0.4",
+      "emphasis disabled",
+      "maxLength 400",
+      "blind candidate labels A/B/C",
+      "model name hidden",
+      "candidate position rotation",
+      "completion rate separate from quality",
+      "latency separate from quality",
+      "judge bias note"
+    ],
+    "interpretation_rule": "Do not collapse the result to one scalar only; report strength exchange such as factual vs rationale.",
+    "known_limits": [
+      "single Gemini-family judge may bias toward Gemini-family outputs",
+      "one judged sample was missing due to judge 503",
+      "body truncation can create factual artifacts across all models"
+    ]
+  }
+}

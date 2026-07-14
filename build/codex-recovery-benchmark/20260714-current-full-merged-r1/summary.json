@@ -1,0 +1,50 @@
+{
+  "schema_version": "codex_recovery_benchmark_summary.v1",
+  "models": {
+    "gpt-5.4": {
+      "RCA": 0.888889,
+      "MFR": 0.777778,
+      "VCR": 0.6,
+      "OCR": 0.960784,
+      "OSR": 1.0,
+      "Composite": 0.84549,
+      "CodingPassRate": 1.0,
+      "CompositeWithCoding": 0.922745,
+      "FatalRate": 0.215686,
+      "ClosureStability": 0.8,
+      "CostPerClosure": 0.078354
+    },
+    "gpt-5.5": {
+      "RCA": 0.666667,
+      "MFR": 0.666667,
+      "VCR": 0.533333,
+      "OCR": 0.941176,
+      "OSR": 1.0,
+      "Composite": 0.761569,
+      "CodingPassRate": 1.0,
+      "CompositeWithCoding": 0.880784,
+      "FatalRate": 0.27451,
+      "ClosureStability": 0.766667,
+      "CostPerClosure": 0.153447
+    },
+    "gpt-5.6-terra": {
+      "RCA": 0.888889,
+      "MFR": 0.666667,
+      "VCR": 0.466667,
+      "OCR": 0.901961,
+      "OSR": 0.866667,
+      "Composite": 0.75817,
+      "CodingPassRate": 1.0,
+      "CompositeWithCoding": 0.879085,
+      "FatalRate": 0.352941,
+      "ClosureStability": 0.666667,
+      "CostPerClosure": 0.068257
+    }
+  },
+  "measurement_limits": {
+    "coding_axis": "NG-CODE measures small sandbox repo repair, not full production News-Grasp mutation",
+    "recovery_axis": "NG-PATCH uses controlled replacement fixtures; NG-LONG is staged reasoning unless --task-filter selects live coding only"
+  },
+  "terra_vs_gpt54": "terra_worse_than_gpt54",
+  "gpt55_vs_terra": "gpt55_review_or_root_cause_candidate"
+}
