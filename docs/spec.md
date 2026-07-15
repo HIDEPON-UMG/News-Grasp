@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-06-28
+> **Last Updated**: 2026-07-16
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -174,6 +174,26 @@ SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実�
 
 ## Human Commitment
 
+### Luna-high Runtime Migration Commitment (2026-07-16)
+
+| Field | Value |
+|---|---|
+| approval_status | Committed |
+| committed_by_human | true |
+| approved_by_user_text | そもそも5.4は近日中に廃止されるため、gpt-5.6-luna-highに切り替える方針とする。gpt-5.6-terraもgpt-5.6-luna-highに切り替える。5.4系に依存する処理が残らないように対応すること。 |
+| approved_goal_statement | reporter、style editor、repair、newsroom editor を `gpt-5.6-luna` / reasoning effort `high` へ統一し、gpt-5.4系に依存する本番処理を残さない。DeepDive は既存 `gpt-5.6-sol` / high を維持する。 |
+| approval_evidence_ref | current chat turn, 2026-07-16 |
+| commitment_version | model-runtime-luna-high-2026-07-16 |
+| commitment_scope | model policy、runner、Codex timeout wrapper、ops installer、operational prompts、newsroom preflight、judge、cost projection、runtime dependency audit、関連tests、live runner/wrapper同期。過去benchmark/raw/report/content evidenceは変更しない。 |
+| open_questions | None. commit/push/public publishは今回未要求。 |
+
+| Link item | Decision |
+|---|---|
+| Affected matrix rows | `Runner / state / recovery` |
+| Gate update decision | modelとreasoning effortを同じpolicy正本からrunner/wrapperへ渡し、retired model参照はproduction/history/content/unknownへ分類する。productionまたはunknown残存はpreflight失敗とする。 |
+| Verification command | `.venv\Scripts\python.exe -m pytest tests/test_model_policy_and_eval.py tests/test_runtime_model_dependency_audit.py tests/test_codex_wrapper_reasoning_effort.py tests/test_model_judge_policy.py tests/test_product_spec_contract.py -q`; `py -3.12 tools/audit_runtime_model_dependencies.py --repo-root . --format json` |
+| Live reflection | backup付きinstallerでrepo runner/wrapperをlive binへ同期し、manifestとSHA parityを確認する。 |
+
 ### Artifact Lifecycle Commitment (2026-07-15)
 
 | Field | Value |
@@ -257,6 +277,7 @@ Codex はこの Human Commitment を自己判断で変更してはならない�
 
 | Date | Source | Exact user text |
 |---|---|---|
+| 2026-07-16 | Current chat model runtime migration | そもそも5.4は近日中に廃止されるため、gpt-5.6-luna-highに切り替える方針とする。gpt-5.6-terraもgpt-5.6-luna-highに切り替える。5.4系に依存する処理が残らないように対応すること。 |
 | 2026-06-26 | Current chat planning intent | ChatGPTレビューに通すための最低限の基準であるインプットは完全に用意してからレビューに渡す |
 | 2026-06-26 | Current chat planning intent | その上で過去レビューで指摘された内容を字面だけでなく根本的に全体最適を考えた上で修正してからレビューに渡す |
 | 2026-06-26 | Current chat implementation approval | PLEASE IMPLEMENT THIS PLAN: |

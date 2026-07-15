@@ -13,21 +13,29 @@ import subprocess
 import statistics
 import tempfile
 import time
+import sys
 from pathlib import Path
 from typing import Any, Iterable
 
 try:
     from tools.artifact_lifecycle import default_raw_root, validate_raw_output_path
+    from tools.benchmark_code_safety import benchmark_subprocess_env, run_limited_benchmark_process, validate_benchmark_python
+    from tools.benchmark_path_safety import safe_path_component
 except ModuleNotFoundError:  # direct script execution
     from artifact_lifecycle import default_raw_root, validate_raw_output_path
+    from benchmark_code_safety import benchmark_subprocess_env, run_limited_benchmark_process, validate_benchmark_python
+    from benchmark_path_safety import safe_path_component
 
 
-TARGET_MODELS = ("gpt-5.5", "gpt-5.6-terra", "gpt-5.4")
+TARGET_MODELS = ("gpt-5.5", "gpt-5.6-sol", "gpt-5.6-luna")
+EFFORT_LEVELS = ("low", "medium", "high")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 CREDIT_RATES_PER_MILLION: dict[str, dict[str, float]] = {
     "gpt-5.4": {"input": 62.5, "cached_input": 6.25, "output": 375.0},
     "gpt-5.5": {"input": 125.0, "cached_input": 12.5, "output": 750.0},
+    "gpt-5.6-sol": {"input": 125.0, "cached_input": 12.5, "output": 750.0},
+    "gpt-5.6-luna": {"input": 25.0, "cached_input": 2.5, "output": 150.0},
     "gpt-5.6-terra": {"input": 62.5, "cached_input": 6.25, "output": 375.0},
 }
 
@@ -537,6 +545,18 @@ def summarize_by_model(records: Iterable[dict[str, Any]]) -> dict[str, dict[str,
     return {model: compute_primary_metrics(rows) for model, rows in sorted(grouped.items())}
 
 
+def summarize_by_model_effort(records: Iterable[dict[str, Any]]) -> dict[str, dict[str, dict[str, float]]]:
+    grouped: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for row in records:
+        model = str(row["model"])
+        effort = str(row.get("effort") or "unspecified")
+        grouped.setdefault(model, {}).setdefault(effort, []).append(row)
+    return {
+        model: {effort: compute_primary_metrics(rows) for effort, rows in sorted(efforts.items())}
+        for model, efforts in sorted(grouped.items())
+    }
+
+
 def classify_terra_vs_gpt54(summary: dict[str, dict[str, float]]) -> str:
     terra = summary["gpt-5.6-terra"]
     baseline = summary["gpt-5.4"]
@@ -628,6 +648,7 @@ def _write_text(path: Path, text: str) -> Path:
 def _summarize_run_record(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "model": record.get("model"),
+        "effort": record.get("effort"),
         "task_id": record.get("task_id"),
         "case_id": record.get("case_id"),
         "pytest_exit_code": record.get("pytest", {}).get("exit_code"),
@@ -658,9 +679,11 @@ def build_manifest(task_filter: Iterable[str] | None = None) -> dict[str, Any]:
     return {
         "schema_version": "codex_recovery_benchmark.v1",
         "target_models": list(TARGET_MODELS),
+        "target_efforts": list(EFFORT_LEVELS),
         "selected_task_ids": selected_task_ids,
         "minimum_cases": selected_minimum_cases,
         "minimum_cases_per_model": sum(selected_minimum_cases.values()),
+        "minimum_cases_per_model_effort": sum(selected_minimum_cases.values()),
         "task_set": TASK_SET,
         "required_telemetry_artifacts": list(REQUIRED_TELEMETRY_ARTIFACTS),
         "primary_axes": list(PRIMARY_AXES),
@@ -685,9 +708,12 @@ def load_score_records(path: Path) -> list[dict[str, Any]]:
 
 def write_summary(out_dir: Path, records: list[dict[str, Any]]) -> dict[str, Any]:
     summary = summarize_by_model(records)
+    effort_summary = summarize_by_model_effort(records)
     result: dict[str, Any] = {
         "schema_version": "codex_recovery_benchmark_summary.v1",
         "models": summary,
+        "model_efforts": effort_summary,
+        "target_efforts": list(EFFORT_LEVELS),
         "measurement_limits": {
             "coding_axis": "NG-CODE measures small sandbox repo repair, not full production News-Grasp mutation",
             "recovery_axis": "NG-PATCH uses controlled replacement fixtures; NG-LONG is staged reasoning unless --task-filter selects live coding only",
@@ -721,10 +747,25 @@ def _model_rows(summary: dict[str, Any], coding: dict[str, Any]) -> list[tuple[s
     return [(model, summary.get("models", {}).get(model, {}), coding.get("models", {}).get(model, {})) for model in models + extras]
 
 
+def _effort_rows(summary: dict[str, Any], coding: dict[str, Any]) -> list[tuple[str, str, dict[str, Any], dict[str, Any]]]:
+    rows: list[tuple[str, str, dict[str, Any], dict[str, Any]]] = []
+    recovery_efforts = summary.get("model_efforts", {})
+    coding_efforts = coding.get("model_efforts", {})
+    models = [model for model in TARGET_MODELS if model in recovery_efforts or model in coding_efforts]
+    models.extend(sorted((set(recovery_efforts) | set(coding_efforts)) - set(models)))
+    for model in models:
+        effort_names = [effort for effort in EFFORT_LEVELS if effort in recovery_efforts.get(model, {}) or effort in coding_efforts.get(model, {})]
+        effort_names.extend(sorted((set(recovery_efforts.get(model, {})) | set(coding_efforts.get(model, {}))) - set(effort_names)))
+        for effort in effort_names:
+            rows.append((model, effort, recovery_efforts.get(model, {}).get(effort, {}), coding_efforts.get(model, {}).get(effort, {})))
+    return rows
+
+
 def generate_html_report(*, recovery_path: Path, coding_summary_path: Path, output_path: Path) -> Path:
     recovery = _load_json(recovery_path)
     coding = _load_json(coding_summary_path)
     rows = _model_rows(recovery, coding)
+    effort_rows = _effort_rows(recovery, coding)
     verdict_code = str(recovery.get("terra_vs_gpt54", "inconclusive"))
     verdict_text = {
         "terra_worse_than_gpt54": "Terra は GPT-5.4 を下回る",
@@ -758,6 +799,15 @@ def generate_html_report(*, recovery_path: Path, coding_summary_path: Path, outp
         )
         for model, _, metrics in rows
     )
+    effort_table_rows = "\n".join(
+        (
+            f"<tr><td>{html.escape(model)}</td><td>{html.escape(effort)}</td>"
+            f"<td>{_fmt_metric(recovery_metrics.get('Composite'))}</td>"
+            f"<td>{_fmt_metric(coding_metrics.get('CodingPassRate'))}</td>"
+            f"<td>{_fmt_metric(recovery_metrics.get('FatalRate'))}</td></tr>"
+        )
+        for model, effort, recovery_metrics, coding_metrics in effort_rows
+    ) or "<tr><td colspan=\"5\">effort 別 summary は未生成</td></tr>"
     html_text = f"""<!doctype html>
 <html lang="ja" data-label-mode="symbol">
 <head>
@@ -815,6 +865,12 @@ code {{ font-family:Consolas, monospace; }}
 <div class="kicker">02.5 — Score Method</div>
 <h2>Score Method</h2>
 <p>品質は RCA / MFR / VCR / OCR / OSR の回復能力と NG-CODE の実コード修正結果で分けて読む。安定性は ClosureStability、FatalRate、fallback/resume を見る。形式制御は JSON-only・false claim・過剰 claim の有無で減点する。速度は elapsed_sec と timeout を補助指標として扱う。VRAM はクラウド Codex 比較では採点対象外で、ローカル LLM 方式との表示互換のために境界を明示する。日本語品質は外部 benchmark matrix 側の JA_NLU / summary 軸で扱い、最終判断の重みは recovery / coding / ops を分離して意思決定者が読めるようにする。</p>
+</section>
+<section>
+<div class="kicker">02.6 — Effort Level Slice</div>
+<h2>Effort Level Slice</h2>
+<p>同じ model でも <code>model_reasoning_effort</code> の違いで recovery / coding を別集計する。model 平均へ混ぜる前の分散確認に使う。</p>
+<table><thead><tr><th>Model</th><th>Effort</th><th>Recovery Composite</th><th>NG-CODE CodingPassRate</th><th>FatalRate</th></tr></thead><tbody>{effort_table_rows}</tbody></table>
 </section>
 <section>
 <div class="kicker">03 — Usecase Winners</div>
@@ -942,6 +998,7 @@ def run_codex_case(
     *,
     codex_bin: str,
     model: str,
+    effort: str,
     case: dict[str, Any],
     run_dir: Path,
     timeout_sec: int,
@@ -962,6 +1019,8 @@ def run_codex_case(
         "exec",
         "-m",
         model,
+        "-c",
+        f'model_reasoning_effort="{effort}"',
         "--skip-git-repo-check",
         "-C",
         str(work_dir),
@@ -986,6 +1045,7 @@ def run_codex_case(
     raw_answer = output_path.read_text(encoding="utf-8", errors="replace") if output_path.exists() else ""
     record = {
         "model": model,
+        "effort": effort,
         "task_id": case["task_id"],
         "case_id": case["case_id"],
         "events": [
@@ -1102,21 +1162,14 @@ def _score_code(record: dict[str, Any], case: dict[str, Any], run_dir: Path) -> 
     source_changed = current_source != oracle["initial_source"]
     tests_changed = current_test != oracle["test_source"]
 
-    pytest_env = dict(os.environ)
-    pytest_env.pop("PYTEST_CURRENT_TEST", None)
-    pytest_env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
-    pytest_env["PYTHONIOENCODING"] = "utf-8"
-    proc = subprocess.run(
-        [os.sys.executable, "-m", "pytest", "tests", "-q"],
-        cwd=sandbox,
-        env=pytest_env,
-        text=True,
-        capture_output=True,
-        encoding="utf-8",
-        errors="replace",
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        timeout=60,
-        check=False,
+    pytest_env = benchmark_subprocess_env(sandbox)
+    safety_error = ""
+    try:
+        validate_benchmark_python(current_source)
+    except ValueError as exc:
+        safety_error = str(exc)
+    proc = subprocess.CompletedProcess([], 125, "", safety_error) if safety_error else run_limited_benchmark_process(
+        [os.sys.executable, "-m", "pytest", "tests", "-q"], cwd=sandbox, env=pytest_env
     )
     pytest_log = (proc.stdout or "") + (proc.stderr or "")
     diff_text = "".join(
@@ -1136,6 +1189,8 @@ def _score_code(record: dict[str, Any], case: dict[str, Any], run_dir: Path) -> 
         issues.append("source_not_modified")
     if proc.returncode != 0:
         issues.append("pytest_failed")
+    if safety_error:
+        issues.append("unsafe_generated_code")
     raw_answer = _norm(record.get("raw_answer"))
     claimed_pass = any(token in raw_answer for token in ("passed", "pass", "通りました", "成功", "green"))
     false_pass = claimed_pass and (not source_changed or proc.returncode != 0 or tests_changed)
@@ -1245,21 +1300,15 @@ def _score_patch(record: dict[str, Any], case: dict[str, Any], answer: dict[str,
         if find and find in text:
             target.write_text(text.replace(find, replace, 1), encoding="utf-8")
             applied = True
-    pytest_env = dict(os.environ)
-    pytest_env.pop("PYTEST_CURRENT_TEST", None)
-    pytest_env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
-    pytest_env["PYTHONIOENCODING"] = "utf-8"
-    proc = subprocess.run(
+    pytest_env = benchmark_subprocess_env(sandbox)
+    safety_error = ""
+    try:
+        validate_benchmark_python(target.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        safety_error = str(exc)
+    proc = subprocess.CompletedProcess([], 125, "", safety_error) if safety_error else run_limited_benchmark_process(
         [os.sys.executable, "-m", "pytest", "-c", str(pytest_config), "--rootdir", str(sandbox), str(tests), "-q"],
-        cwd=sandbox,
-        env=pytest_env,
-        text=True,
-        capture_output=True,
-        encoding="utf-8",
-        errors="replace",
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        timeout=60,
-        check=False,
+        cwd=sandbox, env=pytest_env,
     )
     pytest_log = (proc.stdout or "") + (proc.stderr or "")
     verified = applied and proc.returncode == 0
@@ -1270,6 +1319,8 @@ def _score_patch(record: dict[str, Any], case: dict[str, Any], answer: dict[str,
         validator_issues.append("patch_not_minimal_or_not_applied")
     if bool(answer.get("false_pass_claim")):
         validator_issues.append("false_pass_claim")
+    if safety_error:
+        validator_issues.append("unsafe_generated_code")
     record.update(
         {
             "root_cause_correct": applied,
@@ -1374,22 +1425,33 @@ def _score_ops(record: dict[str, Any], case: dict[str, Any], answer: dict[str, A
 def execute_benchmark(
     *,
     models: list[str],
+    efforts: list[str],
     out_dir: Path,
     codex_bin: str,
     timeout_sec: int,
     output_stable_sec: int,
     repetitions: int = 3,
     task_filter: Iterable[str] | None = None,
+    resume: bool = False,
 ) -> list[dict[str, Any]]:
     if repetitions < 3:
         raise ValueError("minimum 3 repetitions required")
-    plan = build_run_plan(models=models, repetitions=repetitions, task_filter=task_filter)
-    records: list[dict[str, Any]] = []
+    plan = build_run_plan(models=models, efforts=efforts, repetitions=repetitions, task_filter=task_filter)
+    records_path = out_dir / "records.json"
+    records = load_score_records(records_path) if resume and records_path.is_file() else []
+    completed = {
+        (str(record.get("model")), str(record.get("effort")), str(record.get("case_id")), int(record.get("repetition") or 0))
+        for record in records
+    }
     for item in plan:
-        run_dir = out_dir / "runs" / item["model"] / item["case_id"] / f"r{item['repetition']}"
+        key = (item["model"], item["effort"], item["case_id"], item["repetition"])
+        if key in completed:
+            continue
+        run_dir = out_dir / "runs" / item["model"] / item["effort"] / item["case_id"] / f"r{item['repetition']}"
         record = run_codex_case(
             codex_bin=codex_bin,
             model=item["model"],
+            effort=item["effort"],
             case=item["case"],
             run_dir=run_dir,
             timeout_sec=timeout_sec,
@@ -1397,7 +1459,8 @@ def execute_benchmark(
         )
         record["repetition"] = item["repetition"]
         records.append(record)
-        write_json(out_dir / "records.json", {"records": records})
+        completed.add(key)
+        write_json(records_path, {"records": records})
     write_summary(out_dir, records)
     return records
 
@@ -1406,20 +1469,24 @@ def build_run_plan(
     *,
     models: list[str],
     repetitions: int,
+    efforts: list[str] | None = None,
     task_filter: Iterable[str] | None = None,
 ) -> list[dict[str, Any]]:
     if repetitions < 3:
         raise ValueError("minimum 3 repetitions required")
+    selected_efforts = efforts or list(EFFORT_LEVELS)
     cases = _filter_cases(build_execution_cases(), task_filter)
     return [
         {
             "model": model,
+            "effort": effort,
             "task_id": case["task_id"],
             "case_id": case["case_id"],
             "repetition": repetition,
             "case": case,
         }
         for model in models
+        for effort in selected_efforts
         for case in cases
         for repetition in range(1, repetitions + 1)
     ]
@@ -1432,7 +1499,14 @@ def rescore_records(records_path: Path, out_dir: Path) -> list[dict[str, Any]]:
     rescored: list[dict[str, Any]] = []
     for record in records:
         case = cases[(record["task_id"], record["case_id"])]
-        run_dir = out_dir / "runs" / str(record["model"]) / str(record["case_id"])
+        run_dir = (
+            out_dir
+            / "runs"
+            / safe_path_component(record["model"], field="model")
+            / safe_path_component(record.get("effort") or "unspecified", field="effort")
+            / safe_path_component(record["case_id"], field="case_id")
+            / f"repetition-{safe_path_component(record.get('repetition', 1), field='repetition')}"
+        )
         score_case_record(record, case, run_dir)
         write_run_artifacts(run_dir, record)
         rescored.append(record)
@@ -1446,19 +1520,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-dir", type=Path, default=default_raw_root("codex-recovery-benchmark"))
     parser.add_argument("--score-file", type=Path)
     parser.add_argument("--rescore-records", type=Path)
+    parser.add_argument("--allow-local-code-execution", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--execute", action="store_true")
-    parser.add_argument("--models", nargs="+", default=list(TARGET_MODELS))
+    parser.add_argument("--models", nargs="+", default=list(TARGET_MODELS), choices=list(TARGET_MODELS))
+    parser.add_argument("--efforts", nargs="+", default=list(EFFORT_LEVELS), choices=list(EFFORT_LEVELS))
     parser.add_argument("--codex-bin")
     parser.add_argument("--per-case-timeout-sec", type=int, default=180)
     parser.add_argument("--output-stable-sec", type=int, default=8)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--task-filter", nargs="+")
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--html-report", action="store_true")
     parser.add_argument("--recovery-summary", type=Path)
     parser.add_argument("--coding-summary", type=Path)
     parser.add_argument("--report-out", type=Path)
     args = parser.parse_args(argv)
+
+    if args.rescore_records and not args.allow_local_code_execution:
+        print("--rescore-records requires --allow-local-code-execution", file=sys.stderr)
+        return 2
 
     if args.execute or args.score_file or args.rescore_records:
         args.out_dir = validate_raw_output_path(REPO_ROOT, args.out_dir)
@@ -1478,12 +1559,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.execute:
         execute_benchmark(
             models=[str(model) for model in args.models],
+            efforts=[str(effort) for effort in args.efforts],
             out_dir=args.out_dir,
             codex_bin=resolve_codex_bin(args.codex_bin),
             timeout_sec=args.per_case_timeout_sec,
             output_stable_sec=args.output_stable_sec,
             repetitions=args.repetitions,
             task_filter=args.task_filter,
+            resume=args.resume,
         )
         return 0
     if args.rescore_records:

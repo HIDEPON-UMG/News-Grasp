@@ -17,6 +17,7 @@ from tools.run_model_benchmark import build_case_prompt, estimate_api_cost_usd, 
 TERRA_MODEL = "gpt-5.6-terra"
 JUDGE_MODEL = "gpt-5.4"
 PAIRS = (("gpt-5.5", TERRA_MODEL), (TERRA_MODEL, "gpt-5.6-sol"))
+LIVE_EXECUTION_DISABLED = True
 DIMENSIONS = (
     "readability", "coherence", "natural_japanese", "information_density",
     "insight", "non_repetition", "reader_usefulness",
@@ -52,6 +53,8 @@ def build_bundle(*, first: str, second: str, core_dir: Path, terra_dir: Path) ->
 
 
 def run_judge(*, first: str, second: str, order: int, core_dir: Path, terra_dir: Path, out_dir: Path, codex_exe: Path, timeout_sec: int) -> dict[str, Any]:
+    if LIVE_EXECUTION_DISABLED:
+        raise RuntimeError("legacy DeepDive comparison runner is report-only after the Luna-high migration")
     a_model, b_model = (first, second) if order == 1 else (second, first)
     bundle = build_bundle(first=a_model, second=b_model, core_dir=core_dir, terra_dir=terra_dir)
     prompt = f"""あなたはNews-Grasp DeepDiveの匿名比較評価者です。モデル名と自己採点は除去済みです。
@@ -146,6 +149,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--codex-exe", type=Path, required=True)
     parser.add_argument("--timeout-sec", type=int, default=900)
     args = parser.parse_args(argv)
+    if LIVE_EXECUTION_DISABLED:
+        print("Legacy DeepDive comparison execution is disabled; use the current triad judge.")
+        return 2
     prompt, fixture_hash = build_case_prompt("deepdive", Path.cwd())
     terra_dir = args.out_dir / "benchmark"
     generation: list[dict[str, Any]] = []

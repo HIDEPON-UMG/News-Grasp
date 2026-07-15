@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from tools.prepare_model_eval_fixture import CANONICAL_GENRES, build_eval_fixture
 from tools.run_model_eval import (
     VARIANTS,
@@ -53,10 +55,10 @@ def test_model_eval_prompt_contains_variant_and_fixture() -> None:
         instruction="# Instruction\nReturn JSON.",
         fixture=fixture,
         variant="mini-reporter",
-        model="gpt-5.4-mini",
+        model="gpt-5.6-luna",
     )
     assert "mini-reporter" in prompt
-    assert "gpt-5.4-mini" in prompt
+    assert "gpt-5.6-luna" in prompt
     assert '"items"' in prompt
 
 
@@ -153,7 +155,8 @@ def test_run_codex_variant_uses_current_exec_cli_without_search(monkeypatch, tmp
         prompt_path=prompt,
         output_path=output,
         log_path=log,
-        model="gpt-5.4-mini",
+        model="gpt-5.6-luna",
+        reasoning_effort="high",
         schema_path=schema,
         repo_root=tmp_path,
         codex_exe="codex",
@@ -166,6 +169,7 @@ def test_run_codex_variant_uses_current_exec_cli_without_search(monkeypatch, tmp
     assert cmd[-1] != "-"
     assert "--output-schema" in cmd
     assert "--output-last-message" in cmd
+    assert 'model_reasoning_effort="high"' in cmd
 
 
 def test_run_codex_variant_wraps_ps1_codex_executable(monkeypatch, tmp_path: Path) -> None:
@@ -193,7 +197,8 @@ def test_run_codex_variant_wraps_ps1_codex_executable(monkeypatch, tmp_path: Pat
         prompt_path=prompt,
         output_path=output,
         log_path=log,
-        model="gpt-5.4-mini",
+        model="gpt-5.6-luna",
+        reasoning_effort="high",
         schema_path=schema,
         repo_root=tmp_path,
         codex_exe=str(codex_ps1),
@@ -204,6 +209,32 @@ def test_run_codex_variant_wraps_ps1_codex_executable(monkeypatch, tmp_path: Pat
     assert cmd[:5] == ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
     assert str(codex_ps1) in cmd
     assert "exec" in cmd
+    assert 'model_reasoning_effort="high"' in cmd
+
+
+def test_run_codex_variant_rejects_shell_script_executables(monkeypatch, tmp_path: Path) -> None:
+    prompt = tmp_path / "prompt.md"
+    output = tmp_path / "out.json"
+    log = tmp_path / "eval.log"
+    schema = tmp_path / "schema.json"
+    prompt.write_text("Return JSON.", encoding="utf-8")
+    schema.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "tools.run_model_eval.subprocess.run",
+        lambda *_args, **_kwargs: pytest.fail("shell script must be rejected before subprocess.run"),
+    )
+
+    with pytest.raises(ValueError, match="unsupported Codex executable extension"):
+        run_codex_variant(
+            prompt_path=prompt,
+            output_path=output,
+            log_path=log,
+            model="gpt-5.6-luna",
+            reasoning_effort="high",
+            schema_path=schema,
+            repo_root=tmp_path,
+            codex_exe=str(tmp_path / "codex.cmd"),
+        )
 
 
 def test_aggregate_combo_scores_selects_reporter_editor_pair_by_final_quality_and_total_cost(tmp_path: Path) -> None:
@@ -371,6 +402,5 @@ def test_newsroom_editor_prepare_only_emits_only_newsroom_prompts(tmp_path: Path
     data = json.loads(capsys.readouterr().out)
     assert set(data["prompts"]) == {
         "newsroom-editor-mini",
-        "newsroom-editor-54",
         "newsroom-editor-55",
     }

@@ -1,0 +1,171 @@
+{
+  "schema_version": "MODEL_COMPARISON_EFFORT_FIRST_V1",
+  "generated_from": [
+    "_ops/benchmark-runs/codex-recovery-benchmark/20260715-full-effort-merged/summary.json",
+    "_ops/benchmark-runs/external-benchmark-matrix/20260715-full-effort-r1/summary.json"
+  ],
+  "models": [
+    "gpt-5.5",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
+    "gpt-5.4"
+  ],
+  "efforts": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "luna_effort_judgment": {
+    "recovery_best_effort": "low",
+    "recovery_values": {
+      "low": 0.915229,
+      "medium": 0.905752,
+      "high": 0.894641
+    },
+    "external_best_effort": "high",
+    "external_values": {
+      "low": 4.066333,
+      "medium": 4.19,
+      "high": 4.370667
+    },
+    "conclusion": "Lunaは平均一発ではなく、Recoveryはlow/medium寄り、External/Japanese-summary系はhigh寄りで評価する。"
+  },
+  "model_effort_sensitivity": {
+    "gpt-5.5": {
+      "model": "gpt-5.5",
+      "recovery_low": 0.876863,
+      "recovery_medium": 0.889935,
+      "recovery_high": 0.91915,
+      "recovery_best_effort": "high",
+      "recovery_delta": 0.042287000000000075,
+      "external_low": 4.250333,
+      "external_medium": 4.3385,
+      "external_high": 4.478,
+      "external_best_effort": "high",
+      "external_delta": 0.2276669999999994,
+      "direction_note": ""
+    },
+    "gpt-5.6-terra": {
+      "model": "gpt-5.6-terra",
+      "recovery_low": 0.911046,
+      "recovery_medium": 0.875752,
+      "recovery_high": 0.884641,
+      "recovery_best_effort": "low",
+      "recovery_delta": 0.03529400000000005,
+      "external_low": 4.238,
+      "external_medium": 4.292667,
+      "external_high": 4.27,
+      "external_best_effort": "medium",
+      "external_delta": 0.054666999999999355,
+      "direction_note": ""
+    },
+    "gpt-5.6-luna": {
+      "model": "gpt-5.6-luna",
+      "recovery_low": 0.915229,
+      "recovery_medium": 0.905752,
+      "recovery_high": 0.894641,
+      "recovery_best_effort": "low",
+      "recovery_delta": 0.02058799999999994,
+      "external_low": 4.066333,
+      "external_medium": 4.19,
+      "external_high": 4.370667,
+      "external_best_effort": "high",
+      "external_delta": 0.3043339999999999,
+      "direction_note": "Externalは高effortで改善、Recoveryは低effortが最良"
+    },
+    "gpt-5.4": {
+      "model": "gpt-5.4",
+      "recovery_low": 0.902157,
+      "recovery_medium": 0.906078,
+      "recovery_high": 0.92634,
+      "recovery_best_effort": "high",
+      "recovery_delta": 0.024183000000000066,
+      "external_low": 4.2885,
+      "external_medium": 4.37,
+      "external_high": 4.312,
+      "external_best_effort": "medium",
+      "external_delta": 0.08150000000000013,
+      "direction_note": ""
+    }
+  },
+  "axis_by_effort": {
+    "low": {
+      "CODE_REPAIR": {
+        "gpt-5.5": 10.0,
+        "gpt-5.6-terra": 10.0,
+        "gpt-5.6-luna": 10.0,
+        "gpt-5.4": 8.333333
+      },
+      "CODE_SYNTH": {
+        "gpt-5.5": 7.5,
+        "gpt-5.6-terra": 7.5,
+        "gpt-5.6-luna": 5.833333,
+        "gpt-5.4": 8.333333
+      },
+      "JA_NLU": {
+        "gpt-5.5": 5.9,
+        "gpt-5.6-terra": 6.1,
+        "gpt-5.6-luna": 6.1,
+        "gpt-5.4": 6.2
+      },
+      "JA_SUMMARY": {
+        "gpt-5.5": 7.916667,
+        "gpt-5.6-terra": 7.5,
+        "gpt-5.6-luna": 7.5,
+        "gpt-5.4": 8.75
+      }
+    },
+    "medium": {
+      "CODE_REPAIR": {
+        "gpt-5.5": 10.0,
+        "gpt-5.6-terra": 10.0,
+        "gpt-5.6-luna": 10.0,
+        "gpt-5.4": 8.333333
+      },
+      "CODE_SYNTH": {
+        "gpt-5.5": 7.5,
+        "gpt-5.6-terra": 7.5,
+        "gpt-5.6-luna": 7.5,
+        "gpt-5.4": 9.166667
+      },
+      "JA_NLU": {
+        "gpt-5.5": 6.2,
+        "gpt-5.6-terra": 6.783333,
+        "gpt-5.6-luna": 5.5,
+        "gpt-5.4": 6.5
+      },
+      "JA_SUMMARY": {
+        "gpt-5.5": 8.75,
+        "gpt-5.6-terra": 7.5,
+        "gpt-5.6-luna": 7.5,
+        "gpt-5.4": 8.333333
+      }
+    },
+    "high": {
+      "CODE_REPAIR": {
+        "gpt-5.5": 10.0,
+        "gpt-5.6-terra": 10.0,
+        "gpt-5.6-luna": 10.0,
+        "gpt-5.4": 10.0
+      },
+      "CODE_SYNTH": {
+        "gpt-5.5": 9.166667,
+        "gpt-5.6-terra": 7.5,
+        "gpt-5.6-luna": 8.333333,
+        "gpt-5.4": 8.333333
+      },
+      "JA_NLU": {
+        "gpt-5.5": 6.6,
+        "gpt-5.6-terra": 6.5,
+        "gpt-5.6-luna": 6.3,
+        "gpt-5.4": 8.066667
+      },
+      "JA_SUMMARY": {
+        "gpt-5.5": 7.916667,
+        "gpt-5.6-terra": 7.5,
+        "gpt-5.6-luna": 7.916667,
+        "gpt-5.4": 5.416667
+      }
+    }
+  }
+}

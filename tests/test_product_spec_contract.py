@@ -261,6 +261,20 @@ def test_product_constitution_has_human_commitment_review_gate() -> None:
         assert phrase in text
 
 
+def test_product_constitution_commits_luna_high_runtime_migration() -> None:
+    text = _read(SPEC)
+
+    for phrase in [
+        "### Luna-high Runtime Migration Commitment (2026-07-16)",
+        "model-runtime-luna-high-2026-07-16",
+        "gpt-5.6-luna",
+        "reasoning effort `high`",
+        "gpt-5.4系に依存する本番処理を残さない",
+        "Runner / state / recovery",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_links_summary_lanes_to_quality_gates() -> None:
     """記事カード/ESSAY要約レーン改修を spec の品質 gate と人間承認へ接続する。"""
     text = _read(SPEC)

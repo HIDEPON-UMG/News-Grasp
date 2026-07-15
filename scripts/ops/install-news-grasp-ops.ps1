@@ -44,6 +44,7 @@ $ManifestPath = Join-Path $BackupDir 'install-manifest.json'
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
 $files = @(
+    'run_codex_with_timeout.ps1',
     'news-grasp-bootstrap.ps1',
     'news-grasp-runner.ps1',
     'watch-news-grasp-runner.ps1',
@@ -76,6 +77,7 @@ foreach ($file in $files) {
 }
 
 $rollbackCommands = @(
+    "Copy-Item -LiteralPath `"$BackupDir\run_codex_with_timeout.ps1`" -Destination `"$BinDir\run_codex_with_timeout.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-bootstrap.ps1`" -Destination `"$BinDir\news-grasp-bootstrap.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-runner.ps1`" -Destination `"$BinDir\news-grasp-runner.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\watch-news-grasp-runner.ps1`" -Destination `"$BinDir\watch-news-grasp-runner.ps1`" -Force",

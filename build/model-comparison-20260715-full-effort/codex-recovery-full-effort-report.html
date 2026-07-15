@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja" data-label-mode="symbol">
+<head>
+<meta charset="utf-8">
+<title>GPT Codex Recovery and Coding Benchmark Report</title>
+<style>
+body { margin:0; background:#eef0f3; color:#1a1d24; font-family:Arial, 'Noto Sans JP', sans-serif; }
+main { max-width:1200px; margin:0 auto; padding:32px; }
+section { padding:42px 0; border-bottom:1px solid #dfe3e8; }
+.kicker { font-family:Consolas, monospace; font-size:12px; color:#647084; font-weight:700; letter-spacing:0; }
+h1 { font-size:42px; margin:10px 0 18px; letter-spacing:0; }
+h2 { font-size:28px; margin:8px 0 16px; letter-spacing:0; }
+.verdict-grid, .winner-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
+.verdict, .card { background:white; border:1px solid #e4e7ec; border-radius:12px; padding:18px; }
+.verdict b { display:block; font-size:22px; margin-bottom:8px; }
+table { width:100%; border-collapse:collapse; background:white; border:1px solid #e4e7ec; }
+th, td { padding:12px 14px; border-bottom:1px solid #eef0f3; text-align:left; }
+.score-explorer { background:white; border:1px solid #e4e7ec; border-radius:12px; padding:20px; }
+.bar-row { display:grid; grid-template-columns:180px 1fr 72px; gap:12px; align-items:center; margin:12px 0; }
+.bar-track { height:22px; background:#f1f3f5; border-radius:8px; overflow:hidden; }
+.bar-track i { display:block; height:100%; background:oklch(0.60 0.13 255); }
+.bar-track.coding i { background:oklch(0.58 0.13 195); }
+.limit { background:#1a1d24; color:white; border-radius:12px; padding:20px; }
+.audit { background:#f7f8fa; border:1px solid #e4e7ec; border-radius:12px; padding:18px; }
+code { font-family:Consolas, monospace; }
+</style>
+</head>
+<body>
+<main>
+<section data-report-layer="decision">
+<div class="kicker">00 — Decision Brief</div>
+<h1>GPT Codex Recovery and Coding Benchmark</h1>
+<div class="verdict-grid">
+  <div class="verdict"><b>Terra は GPT-5.4 程度</b><span>既存 recovery benchmark の判定: <code>terra_similar_to_gpt54</code></span></div>
+  <div class="verdict"><b>Coding winner: gpt-5.5</b><span>NG-CODE は実 source edit + pytest Green を別軸で測定。</span></div>
+  <div class="verdict"><b>性能と費用は分離</b><span>credit tier は運用情報であり、能力結論には使わない。</span></div>
+</div>
+</section>
+<section>
+<div class="kicker">01 — Decision Matrix</div>
+<h2>Decision Matrix</h2>
+<table><thead><tr><th>Model</th><th>Recovery Composite</th><th>NG-CODE CodingPassRate</th><th>FatalRate</th><th>CostPerClosure</th></tr></thead><tbody><tr><th>gpt-5.5</th><td>0.791</td><td>1.000</td><td>0.268</td><td>0.159</td></tr>
+<tr><th>gpt-5.6-terra</th><td>0.781</td><td>1.000</td><td>0.333</td><td>0.067</td></tr>
+<tr><th>gpt-5.6-luna</th><td>0.810</td><td>1.000</td><td>0.275</td><td>0.023</td></tr>
+<tr><th>gpt-5.4</th><td>0.823</td><td>1.000</td><td>0.275</td><td>0.081</td></tr></tbody></table>
+</section>
+<section data-report-layer="evidence">
+<div class="kicker">02 — Score Explorer</div>
+<h2>Score Explorer</h2>
+<div class="score-explorer" data-report-primary="true">
+<p><strong>Recovery Composite</strong> / baseline = metric minimum</p>
+<div class="bar-row"><span>gpt-5.5</span><div class="bar-track"><i style="width:79.1%"></i></div><b>0.791</b></div>
+<div class="bar-row"><span>gpt-5.6-terra</span><div class="bar-track"><i style="width:78.1%"></i></div><b>0.781</b></div>
+<div class="bar-row"><span>gpt-5.6-luna</span><div class="bar-track"><i style="width:81.0%"></i></div><b>0.810</b></div>
+<div class="bar-row"><span>gpt-5.4</span><div class="bar-track"><i style="width:82.3%"></i></div><b>0.823</b></div>
+<p><strong>NG-CODE CodingPassRate</strong> / baseline = metric minimum</p>
+<div class="bar-row"><span>gpt-5.5</span><div class="bar-track coding"><i style="width:100.0%"></i></div><b>1.000</b></div>
+<div class="bar-row"><span>gpt-5.6-terra</span><div class="bar-track coding"><i style="width:100.0%"></i></div><b>1.000</b></div>
+<div class="bar-row"><span>gpt-5.6-luna</span><div class="bar-track coding"><i style="width:100.0%"></i></div><b>1.000</b></div>
+<div class="bar-row"><span>gpt-5.4</span><div class="bar-track coding"><i style="width:100.0%"></i></div><b>1.000</b></div>
+</div>
+</section>
+<section data-report-section="score-method">
+<div class="kicker">02.5 — Score Method</div>
+<h2>Score Method</h2>
+<p>品質は RCA / MFR / VCR / OCR / OSR の回復能力と NG-CODE の実コード修正結果で分けて読む。安定性は ClosureStability、FatalRate、fallback/resume を見る。形式制御は JSON-only・false claim・過剰 claim の有無で減点する。速度は elapsed_sec と timeout を補助指標として扱う。VRAM はクラウド Codex 比較では採点対象外で、ローカル LLM 方式との表示互換のために境界を明示する。日本語品質は外部 benchmark matrix 側の JA_NLU / summary 軸で扱い、最終判断の重みは recovery / coding / ops を分離して意思決定者が読めるようにする。</p>
+</section>
+<section>
+<div class="kicker">02.6 — Effort Level Slice</div>
+<h2>Effort Level Slice</h2>
+<p>同じ model でも <code>model_reasoning_effort</code> の違いで recovery / coding を別集計する。model 平均へ混ぜる前の分散確認に使う。</p>
+<table><thead><tr><th>Model</th><th>Effort</th><th>Recovery Composite</th><th>NG-CODE CodingPassRate</th><th>FatalRate</th></tr></thead><tbody><tr><td>gpt-5.5</td><td>low</td><td>0.754</td><td>1.000</td><td>0.314</td></tr>
+<tr><td>gpt-5.5</td><td>medium</td><td>0.780</td><td>1.000</td><td>0.255</td></tr>
+<tr><td>gpt-5.5</td><td>high</td><td>0.838</td><td>1.000</td><td>0.235</td></tr>
+<tr><td>gpt-5.6-terra</td><td>low</td><td>0.822</td><td>1.000</td><td>0.314</td></tr>
+<tr><td>gpt-5.6-terra</td><td>medium</td><td>0.752</td><td>1.000</td><td>0.333</td></tr>
+<tr><td>gpt-5.6-terra</td><td>high</td><td>0.769</td><td>1.000</td><td>0.353</td></tr>
+<tr><td>gpt-5.6-luna</td><td>low</td><td>0.830</td><td>1.000</td><td>0.275</td></tr>
+<tr><td>gpt-5.6-luna</td><td>medium</td><td>0.812</td><td>1.000</td><td>0.255</td></tr>
+<tr><td>gpt-5.6-luna</td><td>high</td><td>0.789</td><td>1.000</td><td>0.294</td></tr>
+<tr><td>gpt-5.4</td><td>low</td><td>0.804</td><td>1.000</td><td>0.275</td></tr>
+<tr><td>gpt-5.4</td><td>medium</td><td>0.812</td><td>1.000</td><td>0.294</td></tr>
+<tr><td>gpt-5.4</td><td>high</td><td>0.853</td><td>1.000</td><td>0.255</td></tr></tbody></table>
+</section>
+<section>
+<div class="kicker">03 — Usecase Winners</div>
+<h2>Usecase Winners</h2>
+<div class="winner-grid">
+  <div class="card"><b>復旧ログ読解</b><p>既存 recovery summary の RCA / Composite を優先。</p></div>
+  <div class="card"><b>実コード修正</b><p>NG-CODE の CodingPassRate を優先。勝者: gpt-5.5</p></div>
+  <div class="card"><b>長時間運用</b><p>ClosureStability、FatalRate、fallback/resume を分離して読む。</p></div>
+</div>
+</section>
+<section>
+<div class="kicker">04 — Operational Gate</div>
+<h2>Operational Gate</h2>
+<p>CostPerClosure と制限/fallback は品質点へ加算しない。長時間主力化は ClosureStability と CostPerClosure を同時に見る。</p>
+</section>
+<section>
+<div class="limit"><strong>Measurement Limit</strong><p>NG-CODE measures small sandbox repo repair, not full production News-Grasp mutation. 既存 recovery benchmark と coding benchmark は統合表示するが、能力軸は混ぜない。</p></div>
+</section>
+<section>
+<div class="kicker">05 — Evaluation Design</div>
+<h2>Evaluation Design</h2>
+<p>NG-CODE の fatal gates: source unchanged, test mutation, pytest failed, false_pass_claim. NG-PATCH は controlled replacement fixture のため coding 代理指標にはしない。</p>
+</section>
+<section>
+<div class="kicker">06 — Case Library</div>
+<h2>Case Library</h2>
+<p><code>NG-RC</code>, <code>NG-MF</code>, <code>NG-PATCH</code>, <code>NG-LONG</code>, <code>NG-OPS</code>, <code>NG-CODE</code></p>
+</section>
+<section data-report-layer="audit">
+<div class="kicker">07 — Audits</div>
+<h2>Audits</h2>
+<div class="audit">Coding Red tests reviewed by Codex gpt-5.5: reviewer_verdict=approve, blockers=[]。HTML report contract: decision-first order, evidence second, audit last, no external CDN.</div>
+</section>
+</main>
+</body>
+</html>

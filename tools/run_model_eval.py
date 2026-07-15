@@ -14,65 +14,70 @@ from typing import Any
 VARIANTS: dict[str, dict[str, Any]] = {
     "mini": {
         "role": "reporter",
-        "model": "gpt-5.4-mini",
+        "model": "gpt-5.6-luna",
         "prompt": Path("prompts") / "model-eval-reporter.md",
         "cost_weight": 1.0,
+        "reasoning": "high",
     },
     "full": {
         "role": "reporter",
-        "model": "gpt-5.4",
+        "model": "gpt-5.6-luna",
         "prompt": Path("prompts") / "model-eval-reporter.md",
-        "cost_weight": 3.3,
+        "cost_weight": 1.0,
+        "reasoning": "high",
     },
     "mini-editor": {
         "role": "style_editor",
-        "model": "gpt-5.4-mini",
+        "model": "gpt-5.6-luna",
         "prompt": Path("prompts") / "model-eval-editor-rewrite.md",
-        "cost_weight": 1.6,
+        "cost_weight": 1.0,
+        "reasoning": "high",
     },
     "mini-editor-54": {
         "role": "style_editor",
-        "model": "gpt-5.4",
+        "model": "gpt-5.6-luna",
         "prompt": Path("prompts") / "model-eval-editor-rewrite.md",
-        "cost_weight": 3.3,
+        "cost_weight": 1.0,
+        "reasoning": "high",
     },
     "mini-editor-55": {
         "role": "style_editor",
         "model": "gpt-5.5",
         "prompt": Path("prompts") / "model-eval-editor-rewrite.md",
         "cost_weight": 5.0,
+        "reasoning": "high",
     },
     "newsroom-editor-mini": {
         "role": "newsroom_editor",
-        "model": "gpt-5.4-mini",
+        "model": "gpt-5.6-luna",
         "prompt": Path("prompts") / "model-eval-newsroom-editor.md",
-        "cost_weight": 1.6,
+        "cost_weight": 1.0,
+        "reasoning": "high",
     },
     "newsroom-editor-54": {
         "role": "newsroom_editor",
-        "model": "gpt-5.4",
+        "model": "gpt-5.6-luna",
         "prompt": Path("prompts") / "model-eval-newsroom-editor.md",
-        "cost_weight": 3.3,
+        "cost_weight": 1.0,
+        "reasoning": "high",
     },
     "newsroom-editor-55": {
         "role": "newsroom_editor",
         "model": "gpt-5.5",
         "prompt": Path("prompts") / "model-eval-newsroom-editor.md",
         "cost_weight": 5.0,
+        "reasoning": "high",
     },
 }
 
 VARIANT_ORDER = (
     "mini",
-    "full",
     "mini-editor",
-    "mini-editor-54",
     "mini-editor-55",
 )
 
 NEWSROOM_EDITOR_VARIANT_ORDER = (
     "newsroom-editor-mini",
-    "newsroom-editor-54",
     "newsroom-editor-55",
 )
 
@@ -169,6 +174,7 @@ def run_codex_variant(
     output_path: Path,
     log_path: Path,
     model: str,
+    reasoning_effort: str = "high",
     schema_path: Path,
     repo_root: Path,
     codex_exe: str = "codex",
@@ -183,6 +189,8 @@ def run_codex_variant(
         str(repo_root),
         "-m",
         model,
+        "-c",
+        f'model_reasoning_effort="{reasoning_effort}"',
         "--output-schema",
         str(schema_path),
         "--output-last-message",
@@ -200,7 +208,7 @@ def run_codex_variant(
             *arg_list,
         ]
     elif os.name == "nt" and (exe_lower.endswith(".cmd") or exe_lower.endswith(".bat")):
-        cmd = ["cmd.exe", "/c", codex_exe, *arg_list]
+        raise ValueError("unsupported Codex executable extension: use .exe or .ps1")
     else:
         cmd = [
         codex_exe,
@@ -623,6 +631,7 @@ def main(argv: list[str] | None = None) -> int:
             output_path=out_path,
             log_path=log_dir / f"{name}.log",
             model=str(cfg["model"]),
+            reasoning_effort=str(cfg["reasoning"]),
             schema_path=args.schema,
             repo_root=repo_root,
             codex_exe=args.codex_exe,
@@ -647,6 +656,7 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=out_path,
                 log_path=log_dir / f"{combo_name}.log",
                 model=str(cfg["model"]),
+                reasoning_effort=str(cfg["reasoning"]),
                 schema_path=args.schema,
                 repo_root=repo_root,
                 codex_exe=args.codex_exe,

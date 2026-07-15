@@ -20,8 +20,12 @@ from typing import Any, Iterable
 
 try:
     from tools.artifact_lifecycle import default_raw_root, validate_raw_output_path
+    from tools.benchmark_code_safety import benchmark_subprocess_env, run_limited_benchmark_process, validate_benchmark_python
+    from tools.benchmark_path_safety import safe_path_component
 except ModuleNotFoundError:  # direct script execution
     from artifact_lifecycle import default_raw_root, validate_raw_output_path
+    from benchmark_code_safety import benchmark_subprocess_env, run_limited_benchmark_process, validate_benchmark_python
+    from benchmark_path_safety import safe_path_component
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -30,15 +34,21 @@ CASE_COUNT_MIN = 2
 SCORE_SCALE_MAX = 10.0
 QUALITY_SCORE_MIN = 1.0
 QUALITY_SCORE_MAX = 5.0
-TARGET_MODELS = ("GPT-5.5", "GPT-5.6 Terra", "GPT-5.4")
+TARGET_MODELS = ("GPT-5.5", "GPT-5.6 Sol", "GPT-5.6 Terra", "GPT-5.6 Luna", "GPT-5.4")
+LIVE_EXECUTION_DISABLED = True
+EFFORT_LEVELS = ("low", "medium", "high")
 MODEL_CLI_NAMES = {
     "GPT-5.5": "gpt-5.5",
+    "GPT-5.6 Sol": "gpt-5.6-sol",
     "GPT-5.6 Terra": "gpt-5.6-terra",
+    "GPT-5.6 Luna": "gpt-5.6-luna",
     "GPT-5.4": "gpt-5.4",
 }
 CREDIT_RATES_PER_MILLION = {
     "GPT-5.4": {"input": 62.5, "cached_input": 6.25, "output": 375.0},
     "GPT-5.5": {"input": 125.0, "cached_input": 12.5, "output": 750.0},
+    "GPT-5.6 Sol": {"input": 125.0, "cached_input": 12.5, "output": 750.0},
+    "GPT-5.6 Luna": {"input": 25.0, "cached_input": 2.5, "output": 150.0},
     "GPT-5.6 Terra": {"input": 62.5, "cached_input": 6.25, "output": 375.0},
 }
 DECISION_WEIGHTS = {
@@ -418,28 +428,14 @@ def prepare_sandbox_case(case: dict[str, Any], run_dir: Path) -> Path:
 
 def _run_pytest(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
     cwd = cwd.resolve()
-    env = dict(os.environ)
-    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
-    env["PYTHONIOENCODING"] = "utf-8"
+    env = benchmark_subprocess_env(cwd)
     env["PYTHONPATH"] = str(cwd)
-    env.pop("PYTEST_CURRENT_TEST", None)
     pytest_ini = cwd / "pytest.ini"
     command = [sys.executable, "-m", "pytest"]
     if pytest_ini.exists():
         command.extend(["-c", str(pytest_ini), "--rootdir", str(cwd)])
     command.extend(args)
-    return subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        text=True,
-        capture_output=True,
-        encoding="utf-8",
-        errors="replace",
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        timeout=60,
-        check=False,
-    )
+    return run_limited_benchmark_process(command, cwd=cwd, env=env)
 
 
 def _unique(items: Iterable[str]) -> list[str]:
@@ -523,7 +519,16 @@ def _score_code_repair(record: dict[str, Any], case: dict[str, Any], run_dir: Pa
     current_test = test_file.read_text(encoding="utf-8") if test_file.exists() else ""
     source_changed = current_source != oracle["initial_source"]
     tests_changed = current_test != oracle["test_source"]
-    proc = _run_pytest(sandbox, "tests", "-q")
+    safety_error = ""
+    try:
+        validate_benchmark_python(current_source)
+    except ValueError as exc:
+        safety_error = str(exc)
+    proc = (
+        subprocess.CompletedProcess([], 125, "", safety_error)
+        if safety_error
+        else _run_pytest(sandbox, "tests", "-q")
+    )
     pytest_log = (proc.stdout or "") + (proc.stderr or "")
     diff_text = "".join(
         difflib.unified_diff(
@@ -541,6 +546,8 @@ def _score_code_repair(record: dict[str, Any], case: dict[str, Any], run_dir: Pa
         issues.append("no_source_edit")
     if proc.returncode != 0:
         issues.append("edge_tests_failed" if current_source == oracle["edge_failure_source"] else "pytest_failed")
+    if safety_error:
+        issues.append("unsafe_generated_code")
     ok = source_changed and not tests_changed and proc.returncode == 0
     raw_score = 0.0
     raw_score += 3.0 if source_changed else 0.0
@@ -551,6 +558,8 @@ def _score_code_repair(record: dict[str, Any], case: dict[str, Any], run_dir: Pa
         findings.append({"severity": "fatal", "issue": "test_mutation_forbidden"})
     if not source_changed:
         findings.append({"severity": "fatal", "issue": "main_objective_not_attempted"})
+    if safety_error:
+        findings.append({"severity": "fatal", "issue": "unsafe_generated_code"})
     record.update(
         {
             "pass": ok,
@@ -578,17 +587,28 @@ def _score_code_synth(record: dict[str, Any], case: dict[str, Any], run_dir: Pat
     code = str(payload.get("code") or "")
     if not code:
         issues.append("missing_code")
+    safety_error = ""
+    if code:
+        try:
+            validate_benchmark_python(code)
+        except ValueError as exc:
+            safety_error = str(exc)
+            issues.append("unsafe_generated_code")
     (run_dir / "solution.py").write_text(code, encoding="utf-8")
     (run_dir / "pytest.ini").write_text("[pytest]\naddopts =\npython_files = test_*.py\n", encoding="utf-8")
     tests = run_dir / "tests" / "test_solution.py"
     tests.parent.mkdir(parents=True, exist_ok=True)
     tests.write_text(case["oracle"]["test_source"], encoding="utf-8")
-    proc = _run_pytest(run_dir, "tests", "-q")
+    proc = (
+        subprocess.CompletedProcess([], 125, "", safety_error)
+        if safety_error
+        else _run_pytest(run_dir, "tests", "-q")
+    )
     if proc.returncode != 0:
         issues.append("pytest_failed")
     ok = not issues
     compile_ok = False
-    if code:
+    if code and not safety_error:
         try:
             compile(code, "solution.py", "exec")
             compile_ok = True
@@ -602,6 +622,8 @@ def _score_code_synth(record: dict[str, Any], case: dict[str, Any], run_dir: Pat
     findings = []
     if not code:
         findings.append({"severity": "fatal", "issue": "main_objective_not_attempted"})
+    elif safety_error:
+        findings.append({"severity": "fatal", "issue": "unsafe_generated_code"})
     elif proc.returncode != 0:
         findings.append({"severity": "cap", "issue": "pytest_failed", "max_score": 6.0})
     record.update(
@@ -762,10 +784,11 @@ def _stdev(values: list[float]) -> float:
 
 
 def _validate_minimum_repetitions(records: list[dict[str, Any]]) -> None:
-    repetitions: dict[tuple[str, str, str], set[int]] = {}
+    repetitions: dict[tuple[str, str, str, str], set[int]] = {}
     for record in records:
         case_id = str(record.get("case_id") or record.get("task_type") or "")
-        key = (str(record.get("model")), str(record.get("task_type")), case_id)
+        effort = str(record.get("effort") or EFFORT_LEVELS[-1])
+        key = (str(record.get("model")), effort, str(record.get("task_type")), case_id)
         repetitions.setdefault(key, set()).add(int(record.get("repetition") or 0))
     bad = [key for key, reps in repetitions.items() if len({rep for rep in reps if rep > 0}) < MIN_REPETITIONS]
     if bad:
@@ -774,16 +797,17 @@ def _validate_minimum_repetitions(records: list[dict[str, Any]]) -> None:
 
 def _coverage_missing(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     present = {
-        (str(record.get("model")), str(record.get("case_id")), int(record.get("repetition") or 0))
+        (str(record.get("model")), str(record.get("effort") or EFFORT_LEVELS[-1]), str(record.get("case_id")), int(record.get("repetition") or 0))
         for record in records
     }
     missing: list[dict[str, Any]] = []
     for model in TARGET_MODELS:
-        for case in CASES:
-            for repetition in range(1, MIN_REPETITIONS + 1):
-                key = (model, case["case_id"], repetition)
-                if key not in present:
-                    missing.append({"model": model, "case_id": case["case_id"], "repetition": repetition})
+        for effort in EFFORT_LEVELS:
+            for case in CASES:
+                for repetition in range(1, MIN_REPETITIONS + 1):
+                    key = (model, effort, case["case_id"], repetition)
+                    if key not in present:
+                        missing.append({"model": model, "effort": effort, "case_id": case["case_id"], "repetition": repetition})
     return missing
 
 
@@ -908,7 +932,14 @@ def _rescore_loaded_records(records: list[dict[str, Any]], out_dir: Path) -> lis
         if not case:
             rescored.append(record)
             continue
-        run_dir = out_dir / "rescore" / str(record.get("model", "model")).replace("/", "_").replace(":", "_") / str(record.get("case_id")) / str(record.get("repetition") or index)
+        run_dir = (
+            out_dir
+            / "rescore"
+            / safe_path_component(record.get("model", "model"), field="model")
+            / safe_path_component(record.get("effort") or "unspecified", field="effort")
+            / safe_path_component(record.get("case_id"), field="case_id")
+            / safe_path_component(record.get("repetition") or index, field="repetition")
+        )
         if case["task_type"] == "CODE_REPAIR" and record.get("pass") is True:
             record.update(
                 {
@@ -959,6 +990,36 @@ def aggregate_records(records: list[dict[str, Any]], allow_partial: bool = False
             6,
         )
         local_llm_projection = _local_llm_task_projection(task_payload)
+        effort_payload: dict[str, Any] = {}
+        for effort in sorted({str(record.get("effort") or EFFORT_LEVELS[-1]) for record in model_records}):
+            effort_records = [record for record in model_records if str(record.get("effort") or EFFORT_LEVELS[-1]) == effort]
+            effort_task_payload: dict[str, Any] = {}
+            for task_type in sorted({str(record.get("task_type")) for record in effort_records}):
+                task_records = [record for record in effort_records if str(record.get("task_type")) == task_type]
+                task_scores = [float(record.get("score") or 0.0) for record in task_records]
+                effort_task_payload[task_type] = {
+                    "runs": len(task_records),
+                    "mean_score": round(statistics.mean(task_scores), 6),
+                    "stdev_score": _stdev(task_scores),
+                    "pass_rate": round(sum(1 for record in task_records if record.get("pass") is True) / len(task_records), 6),
+                    "fatal_rate": round(sum(1 for record in task_records if record.get("fatal") is True) / len(task_records), 6),
+                }
+            effort_scores = [float(record.get("score") or 0.0) for record in effort_records]
+            effort_decision_scores = {axis: _axis_score_for_model(effort_records, axis) for axis in DECISION_WEIGHTS}
+            effort_overall = round(sum(effort_decision_scores[axis] * weight for axis, weight in DECISION_WEIGHTS.items()), 6)
+            effort_payload[effort] = {
+                "runs": len(effort_records),
+                "overall_score": effort_overall,
+                "local_llm_overall_1_to_5": _to_local_llm_scale(effort_overall),
+                "avg_score": round(statistics.mean(effort_scores), 6),
+                "stdev_score": _stdev(effort_scores),
+                "pass_rate": round(sum(1 for record in effort_records if record.get("pass") is True) / len(effort_records), 6),
+                "fatal_rate": round(sum(1 for record in effort_records if record.get("fatal") is True) / len(effort_records), 6),
+                "credits": round(sum(float(record.get("credits") or 0.0) for record in effort_records), 6),
+                "messages": sum(int(record.get("messages") or 0) for record in effort_records),
+                "task_types": effort_task_payload,
+                "decision_metric_scores": effort_decision_scores,
+            }
         models[model] = {
             "runs": len(model_records),
             "repetitions_min": min(
@@ -981,6 +1042,7 @@ def aggregate_records(records: list[dict[str, Any]], allow_partial: bool = False
             "credits": round(sum(float(record.get("credits") or 0.0) for record in model_records), 6),
             "messages": sum(int(record.get("messages") or 0) for record in model_records),
             "task_types": task_payload,
+            "efforts": effort_payload,
         }
     missing = [] if allow_partial else _coverage_missing(records)
     unexpected = [] if allow_partial else _unexpected_models(records)
@@ -993,6 +1055,7 @@ def aggregate_records(records: list[dict[str, Any]], allow_partial: bool = False
         "complete_coverage": complete_coverage,
         "coverage_matrix": {"missing": missing, "unexpected_models": unexpected},
         "target_models": list(TARGET_MODELS),
+        "target_efforts": list(EFFORT_LEVELS),
         "score_scale": {"oracle_min": 0.0, "oracle_max": SCORE_SCALE_MAX, "quality_min": QUALITY_SCORE_MIN, "quality_max": QUALITY_SCORE_MAX},
         "local_llm_materials": {
             "sha256": LOCAL_LLM_MATERIALS_SHA256,
@@ -1040,7 +1103,9 @@ def generate_html_report(summary: dict[str, Any], output_path: Path) -> Path:
     terra_verdict = "Terra は GPT-5.4 を下回る" if terra_delta < 0 else "Terra は GPT-5.4 以上"
     model_colors = {
         "GPT-5.5": "#C9A155",
+        "GPT-5.6 Sol": "#8E2A19",
         "GPT-5.6 Terra": "#2D5BB8",
+        "GPT-5.6 Luna": "#8B5CF6",
         "GPT-5.4": "#3D7E60",
     }
     usecase_labels = {
@@ -1057,6 +1122,7 @@ def generate_html_report(summary: dict[str, Any], output_path: Path) -> Path:
     decision_rows = []
     operation_rows = []
     case_rows = []
+    effort_rows = []
     legend_items = []
     for model in TARGET_MODELS:
         color = model_colors[model]
@@ -1092,6 +1158,20 @@ def generate_html_report(summary: dict[str, Any], output_path: Path) -> Path:
                 f"<td class=\"num\">{payload['fatal_rate']:.3f}</td>"
                 "</tr>"
             )
+        for effort in EFFORT_LEVELS:
+            effort_metrics = metrics.get("efforts", {}).get(effort)
+            if not effort_metrics:
+                continue
+            effort_rows.append(
+                "<tr>"
+                f"<td><span class=\"chip\">{model_labels[model]}</span> {_html_escape(model)}</td>"
+                f"<td>{_html_escape(effort)}</td>"
+                f"<td class=\"num\">{effort_metrics['local_llm_overall_1_to_5']:.2f}</td>"
+                f"<td class=\"num\">{effort_metrics['pass_rate']:.3f}</td>"
+                f"<td class=\"num\">{effort_metrics['fatal_rate']:.3f}</td>"
+                f"<td class=\"num\">{effort_metrics['runs']}</td>"
+                "</tr>"
+            )
     decision_support_rows = []
     decision_support_contract = {
         "GPT-5.5": {
@@ -1100,11 +1180,23 @@ def generate_html_report(summary: dict[str, Any], output_path: Path) -> Path:
             "risk": "高credit tierで、長時間実装主力にすると費用と制限到達が重い。",
             "next": "ClosureStabilityとCostPerClosureを追加live runで確認し、主力化は1.5倍以内条件で判断する。",
         },
+        "GPT-5.6 Sol": {
+            "decision": "高精度レビューとDeepDiveの上限候補",
+            "why": "GPT-5.5と同じ高credit tierで、複雑な長文判断を担う候補として比較する。",
+            "risk": "長時間主力では利用制限と継続安定性の実測が必要。",
+            "next": "high固定の3反復でLuna-highとの品質差とCostPerClosureを確認する。",
+        },
         "GPT-5.6 Terra": {
             "decision": "同credit tierの主力候補だが、現時点ではGPT-5.4同等疑いを維持",
             "why": "日本語NLUで強みはあるが、総合・repair・summaryでGPT-5.4を安定して引き離していない。",
             "risk": "Terra が GPT-5.4 程度か、という仮説を棄却するには長時間復旧のVCR/OSR証拠が足りない。",
             "next": "30-90分のCodex recovery telemetryを3回以上追加し、fallback・resume・public verifier到達率を見る。",
+        },
+        "GPT-5.6 Luna": {
+            "decision": "低credit/高速候補として独立評価し、Terra/GPT-5.4の代替線に置く",
+            "why": "公式 rate card 上は Luna がさらに低credit tierで、短時間・低負荷タスクの主力候補になりうる。",
+            "risk": "低effortや低costが品質劣化を隠す可能性があるため、coding/summary/recoveryをeffort別に分けて読む必要がある。",
+            "next": "low/medium/high の3 repetition平均を揃え、品質低下とCostPerClosureの交換条件を判定する。",
         },
         "GPT-5.4": {
             "decision": "低credit baselineとして維持し、Terra比較の基準にする",
@@ -1124,6 +1216,16 @@ def generate_html_report(summary: dict[str, Any], output_path: Path) -> Path:
             f"<td>{_html_escape(payload['next'])}</td>"
             "</tr>"
         )
+    hero_cards = "".join(
+        (
+            f"<div class=\"card {'best' if model == best_model else 'caution' if model == 'GPT-5.6 Terra' else ''}\">"
+            f"<div class=\"kicker\">{model_labels[model]} {_html_escape('quality leader' if model == best_model else 'candidate')}</div>"
+            f"<h3>{_html_escape(model)}</h3>"
+            f"<p>{_html_escape(decision_support_contract[model]['decision'])}</p>"
+            "</div>"
+        )
+        for model in TARGET_MODELS
+    )
     axis_order = ["CODE_REPAIR", "CODE_SYNTH", "JA_NLU", "JA_SUMMARY", "format_control"]
     chart_groups = []
     group_width = 132
@@ -1210,6 +1312,11 @@ def generate_html_report(summary: dict[str, Any], output_path: Path) -> Path:
             f"<div class=\"bar-val\">{value:.2f}/5</div>"
             "</div>"
         )
+    total_runs = sum(int(summary["models"][model]["runs"]) for model in TARGET_MODELS)
+    model_sequence = " / ".join(TARGET_MODELS)
+    decision_header_cells = "".join(f"<th>{_html_escape(model_labels[model])} {_html_escape(model)}</th>" for model in TARGET_MODELS)
+    task_mean_header_1 = "".join(f"<th colspan=\"2\">{_html_escape(model_labels[model])} {_html_escape(model)}</th>" for model in TARGET_MODELS)
+    task_mean_header_2 = "".join("<th class=\"num\">oracle</th><th class=\"num\">1-5</th>" for _model in TARGET_MODELS)
     reflection_items = [
         ("H-00", "意思決定者の意思決定を補佐する情報提供になっていなかった", "first viewportに採用判断・理由・リスク・次アクションを必須化し、単一総合点で採否を決めない構造にする"),
         ("R-01", "参照HTMLのDOM構造を最初に抽出しなかった", "source report structural inventory を生成前Redテストにする"),
@@ -1318,13 +1425,11 @@ th {{ background:var(--navy); color:var(--paper); font-family:Inter,-apple-syste
   <button type="button" aria-pressed="false">モデル名</button>
 </div>
 <header>
-  <div class="kicker">Decision Brief · News-Grasp / Codex · 72 runs · minimum repetitions: 3</div>
+  <div class="kicker">Decision Brief · News-Grasp / Codex · {total_runs} runs · minimum repetitions: 3 · efforts: low / medium / high</div>
   <h1>GPT External Benchmark Matrix</h1>
-  <p class="lead">結論と採用方針: GPT-5.5 / GPT-5.6 Terra / GPT-5.4 を、過去ローカルLLM比較資料の読み方に合わせて評価する。新規live実行ではなく既存run再集計であり、速度・VRAM・credits は品質点に加算しない。single-run decision is forbidden。</p>
+  <p class="lead">結論と採用方針: {html.escape(model_sequence)} を、過去ローカルLLM比較資料の読み方に合わせて評価する。新規live実行ではなく既存run再集計であり、速度・VRAM・credits は品質点に加算しない。single-run decision is forbidden。</p>
   <div class="hero-grid">
-    <div class="card best"><div class="kicker">M1 品質首位</div><h3>GPT-5.5</h3><p>総合とJA_SUMMARYで優位。ただし高credit tier。</p></div>
-    <div class="card caution"><div class="kicker">M2 同tier検証</div><h3>GPT-5.6 Terra</h3><p>JA_NLUは強いが、overallでは GPT-5.4 を明確に上回らない。</p></div>
-    <div class="card"><div class="kicker">M3 baseline</div><h3>GPT-5.4</h3><p>CODE_SYNTHが安定。Terra比較の基準。</p></div>
+    {hero_cards}
     <div class="card avoid"><div class="kicker">Boundary</div><h3>測定境界</h3><p>外部benchmark本体スコアではなく、外部benchmark型に寄せたlocal fixture。</p></div>
   </div>
 </header>
@@ -1340,7 +1445,7 @@ th {{ background:var(--navy); color:var(--paper); font-family:Inter,-apple-syste
 <section>
   <div class="kicker">01 — Decision Matrix</div>
   <h2>用途別判断</h2>
-  <table><thead><tr><th>Usecase</th><th>M1 GPT-5.5</th><th>M2 Terra</th><th>M3 GPT-5.4</th></tr></thead><tbody>{''.join(decision_rows)}</tbody></table>
+  <table><thead><tr><th>Usecase</th>{decision_header_cells}</tr></thead><tbody>{''.join(decision_rows)}</tbody></table>
 </section>
 <section data-report-section="score-method">
   <div class="kicker">05 — Evaluation Design</div>
@@ -1361,7 +1466,7 @@ th {{ background:var(--navy); color:var(--paper); font-family:Inter,-apple-syste
 <section>
   <div class="kicker">02B — Score Explorer Detail</div>
   <h2>Task Type Mean Scores</h2>
-  <table><thead><tr><th>Task</th><th colspan="2">M1 GPT-5.5</th><th colspan="2">M2 Terra</th><th colspan="2">M3 GPT-5.4</th></tr><tr><th></th><th class="num">oracle</th><th class="num">1-5</th><th class="num">oracle</th><th class="num">1-5</th><th class="num">oracle</th><th class="num">1-5</th></tr></thead><tbody>{''.join(task_mean_rows)}</tbody></table>
+  <table><thead><tr><th>Task</th>{task_mean_header_1}</tr><tr><th></th>{task_mean_header_2}</tr></thead><tbody>{''.join(task_mean_rows)}</tbody></table>
 </section>
 <section>
   <div class="kicker">03 — Usecase Winners</div>
@@ -1377,6 +1482,12 @@ th {{ background:var(--navy); color:var(--paper); font-family:Inter,-apple-syste
   <h2>Operational Gate</h2>
   <p class="note">速度・VRAM・credits は品質点に加算しない。長時間Codex作業の運用適性は品質とは別に読む。</p>
   <table><thead><tr><th>Model</th><th class="num">Estimated Credits</th><th class="num">Messages</th><th class="num">Format Violation</th><th class="num">Stdev</th></tr></thead><tbody>{''.join(operation_rows)}</tbody></table>
+</section>
+<section>
+  <div class="kicker">04B — Effort Level Slice</div>
+  <h2>Effort Level Slice</h2>
+  <p class="note">同一モデル内の low / medium / high を分けて表示する。モデル平均の前に、effort変更による品質劣化・分散・FatalRateを確認する。</p>
+  <table><thead><tr><th>Model</th><th>Effort</th><th class="num">Overall 1-5</th><th class="num">PassRate</th><th class="num">FatalRate</th><th class="num">Runs</th></tr></thead><tbody>{''.join(effort_rows)}</tbody></table>
 </section>
 <section class="dark">
   <div class="kicker">– — Measurement Limit</div>
@@ -1637,13 +1748,16 @@ def _prompt_for_case(case: dict[str, Any]) -> str:
 def _run_codex_case(
     *,
     model: str,
+    effort: str,
     case: dict[str, Any],
     repetition: int,
     out_dir: Path,
     codex_bin: str,
     timeout_sec: int,
 ) -> dict[str, Any]:
-    run_dir = out_dir / "runs" / model.replace(" ", "_") / case["case_id"] / f"r{repetition}"
+    if LIVE_EXECUTION_DISABLED:
+        raise RuntimeError("historical comparison runner is report-only after the Luna-high migration")
+    run_dir = out_dir / "runs" / model.replace(" ", "_") / effort / case["case_id"] / f"r{repetition}"
     run_dir.mkdir(parents=True, exist_ok=True)
     cwd = run_dir
     if case["task_type"] == "CODE_REPAIR":
@@ -1656,6 +1770,8 @@ def _run_codex_case(
         "exec",
         "--model",
         MODEL_CLI_NAMES.get(model, model),
+        "-c",
+        f'model_reasoning_effort="{effort}"',
         "--skip-git-repo-check",
         "--cd",
         str(cwd),
@@ -1686,6 +1802,7 @@ def _run_codex_case(
     usage = _estimate_usage(prompt, raw_answer)
     record = {
         "model": model,
+        "effort": effort,
         "task_type": case["task_type"],
         "case_id": case["case_id"],
         "repetition": repetition,
@@ -1705,24 +1822,47 @@ def _run_codex_case(
     return record
 
 
-def execute_benchmark(*, out_dir: Path, models: list[str], repetitions: int, codex_bin: str, timeout_sec: int) -> list[dict[str, Any]]:
+def execute_benchmark(
+    *,
+    out_dir: Path,
+    models: list[str],
+    efforts: list[str],
+    repetitions: int,
+    codex_bin: str,
+    timeout_sec: int,
+    resume: bool = False,
+) -> list[dict[str, Any]]:
     if repetitions < MIN_REPETITIONS:
         raise ValueError("minimum 3 repetitions required")
-    records: list[dict[str, Any]] = []
+    records_path = out_dir / "records.json"
+    records = load_records(records_path) if resume and records_path.is_file() else []
+    completed = {
+        (str(record.get("model")), str(record.get("effort")), str(record.get("case_id")), int(record.get("repetition") or 0))
+        for record in records
+    }
     for model in models:
-        for case in build_matrix_cases():
-            for repetition in range(1, repetitions + 1):
-                record = _run_codex_case(
-                    model=model,
-                    case=case,
-                    repetition=repetition,
-                    out_dir=out_dir,
-                    codex_bin=codex_bin,
-                    timeout_sec=timeout_sec,
-                )
-                records.append(record)
-                _write_json(out_dir / "records.json", {"records": records})
-    write_summary(out_dir, records)
+        for effort in efforts:
+            for case in build_matrix_cases():
+                for repetition in range(1, repetitions + 1):
+                    key = (model, effort, case["case_id"], repetition)
+                    if key in completed:
+                        continue
+                    record = _run_codex_case(
+                        model=model,
+                        effort=effort,
+                        case=case,
+                        repetition=repetition,
+                        out_dir=out_dir,
+                        codex_bin=codex_bin,
+                        timeout_sec=timeout_sec,
+                    )
+                    records.append(record)
+                    completed.add(key)
+                    _write_json(records_path, {"records": records})
+    if set(models) == set(TARGET_MODELS) and set(efforts) == set(EFFORT_LEVELS):
+        write_summary(out_dir, records)
+    else:
+        _write_json(out_dir / "summary.partial.json", aggregate_records(records, allow_partial=True))
     return records
 
 
@@ -1730,6 +1870,7 @@ def build_manifest(repetitions: int) -> dict[str, Any]:
     return {
         "schema_version": "external_benchmark_matrix.v1",
         "target_models": list(TARGET_MODELS),
+        "target_efforts": list(EFFORT_LEVELS),
         "task_types": TASK_TYPES,
         "case_count_min": CASE_COUNT_MIN,
         "case_count": len(CASES),
@@ -1755,14 +1896,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--score-file", type=Path)
+    parser.add_argument("--allow-local-code-execution", action="store_true")
     parser.add_argument("--html-report", action="store_true")
     parser.add_argument("--summary-file", type=Path)
     parser.add_argument("--report-out", type=Path)
     parser.add_argument("--models", nargs="+", default=list(TARGET_MODELS))
+    parser.add_argument("--efforts", nargs="+", default=list(EFFORT_LEVELS), choices=list(EFFORT_LEVELS))
     parser.add_argument("--repetitions", type=int, default=MIN_REPETITIONS)
     parser.add_argument("--codex-bin", default=_default_codex_bin())
     parser.add_argument("--per-case-timeout-sec", type=int, default=240)
+    parser.add_argument("--resume", action="store_true")
     args = parser.parse_args(argv)
+
+    if args.score_file and not args.allow_local_code_execution:
+        print("--score-file requires --allow-local-code-execution", file=sys.stderr)
+        return 2
+
+    if args.execute and LIVE_EXECUTION_DISABLED:
+        print("This historical comparison runner is report-only; use the Luna-high recovery benchmark.", file=sys.stderr)
+        return 2
 
     if args.execute or args.score_file:
         args.out_dir = validate_raw_output_path(REPO_ROOT, args.out_dir)
@@ -1788,9 +1940,11 @@ def main(argv: list[str] | None = None) -> int:
         execute_benchmark(
             out_dir=args.out_dir,
             models=[str(model) for model in args.models],
+            efforts=[str(effort) for effort in args.efforts],
             repetitions=args.repetitions,
             codex_bin=str(args.codex_bin),
             timeout_sec=args.per_case_timeout_sec,
+            resume=args.resume,
         )
         return 0
     print(_json_dumps(build_manifest(args.repetitions)))

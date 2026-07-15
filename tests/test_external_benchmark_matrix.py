@@ -27,8 +27,11 @@ def test_external_benchmark_types_are_source_grounded_and_not_single_run() -> No
     task_types = matrix.TASK_TYPES
 
     assert matrix.MIN_REPETITIONS == 3
-    assert list(matrix.TARGET_MODELS) == ["GPT-5.5", "GPT-5.6 Terra", "GPT-5.4"]
-    assert set(matrix.TARGET_MODELS) == {"GPT-5.5", "GPT-5.6 Terra", "GPT-5.4"}
+    assert list(matrix.TARGET_MODELS) == ["GPT-5.5", "GPT-5.6 Sol", "GPT-5.6 Terra", "GPT-5.6 Luna", "GPT-5.4"]
+    assert set(matrix.TARGET_MODELS) == {"GPT-5.5", "GPT-5.6 Sol", "GPT-5.6 Terra", "GPT-5.6 Luna", "GPT-5.4"}
+    assert matrix.MODEL_CLI_NAMES["GPT-5.6 Sol"] == "gpt-5.6-sol"
+    assert matrix.CREDIT_RATES_PER_MILLION["GPT-5.6 Sol"] == matrix.CREDIT_RATES_PER_MILLION["GPT-5.5"]
+    assert matrix.EFFORT_LEVELS == ("low", "medium", "high")
     assert set(task_types) == {"CODE_REPAIR", "CODE_SYNTH", "JA_NLU", "JA_SUMMARY"}
     assert "HumanEval" in task_types["CODE_SYNTH"]["external_basis"]
     assert "MBPP" in task_types["CODE_SYNTH"]["external_basis"]
@@ -473,21 +476,23 @@ def test_final_summary_and_report_reject_incomplete_task_type_slice(tmp_path: Pa
 def make_complete_records(matrix):
     records = []
     for model in matrix.TARGET_MODELS:
-        for case in matrix.build_matrix_cases():
-            for repetition in range(1, matrix.MIN_REPETITIONS + 1):
-                records.append(
-                    {
-                        "model": model,
-                        "task_type": case["task_type"],
-                        "case_id": case["case_id"],
-                        "pass": True,
-                        "score": 1.0,
-                        "fatal": False,
-                        "credits": 1,
-                        "messages": 1,
-                        "repetition": repetition,
-                    }
-                )
+        for effort in matrix.EFFORT_LEVELS:
+            for case in matrix.build_matrix_cases():
+                for repetition in range(1, matrix.MIN_REPETITIONS + 1):
+                    records.append(
+                        {
+                            "model": model,
+                            "effort": effort,
+                            "task_type": case["task_type"],
+                            "case_id": case["case_id"],
+                            "pass": True,
+                            "score": 1.0,
+                            "fatal": False,
+                            "credits": 1,
+                            "messages": 1,
+                            "repetition": repetition,
+                        }
+                    )
     return records
 
 
@@ -499,7 +504,7 @@ def test_balanced_model_case_repetition_coverage_is_required_for_decision(tmp_pa
     with pytest.raises(ValueError, match="balanced coverage"):
         matrix.write_summary(tmp_path / "missing-model", missing_model)
 
-    wrong_model = [dict(record, model="GPT-5.6 Sol") if record["model"] == matrix.TARGET_MODELS[0] else record for record in complete_records]
+    wrong_model = [dict(record, model="GPT-0 Unknown") if record["model"] == matrix.TARGET_MODELS[0] else record for record in complete_records]
     with pytest.raises(ValueError, match="balanced coverage"):
         matrix.write_summary(tmp_path / "wrong-model", wrong_model)
 
@@ -510,19 +515,77 @@ def test_balanced_model_case_repetition_coverage_is_required_for_decision(tmp_pa
     summary = matrix.write_summary(tmp_path / "complete", complete_records)
     by_model_task = defaultdict(set)
     for record in complete_records:
-        by_model_task[(record["model"], record["task_type"])].add(record["case_id"])
+        by_model_task[(record["model"], record["effort"], record["task_type"])].add(record["case_id"])
 
     assert summary["complete_coverage"] is True
     assert set(summary["models"]) == set(matrix.TARGET_MODELS)
+    assert set(summary["target_efforts"]) == set(matrix.EFFORT_LEVELS)
+    assert set(summary["models"]["GPT-5.6 Luna"]["efforts"]) == set(matrix.EFFORT_LEVELS)
     assert all(len(case_ids) >= matrix.CASE_COUNT_MIN for case_ids in by_model_task.values())
 
     broken_summary = dict(summary)
     broken_summary["coverage_matrix"] = dict(summary["coverage_matrix"])
     broken_summary["coverage_matrix"]["missing"] = [
-        {"model": matrix.TARGET_MODELS[0], "case_id": matrix.build_matrix_cases()[0]["case_id"], "repetition": 3}
+        {"model": matrix.TARGET_MODELS[0], "effort": matrix.EFFORT_LEVELS[0], "case_id": matrix.build_matrix_cases()[0]["case_id"], "repetition": 3}
     ]
     with pytest.raises(ValueError, match="balanced coverage"):
         matrix.generate_html_report(broken_summary, tmp_path / "broken-coverage.html")
+
+
+def test_execute_benchmark_resume_skips_existing_model_effort_case_repetition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    matrix = require_matrix()
+    case = matrix.build_matrix_cases()[0]
+    existing = {
+        "model": "GPT-5.6 Sol",
+        "effort": "high",
+        "task_type": case["task_type"],
+        "case_id": case["case_id"],
+        "repetition": 1,
+        "pass": True,
+        "score": 1.0,
+        "fatal": False,
+    }
+    (tmp_path / "records.json").write_text(json.dumps({"records": [existing]}), encoding="utf-8")
+    calls: list[int] = []
+
+    def fake_run_codex_case(**kwargs):
+        calls.append(kwargs["repetition"])
+        return {
+            "model": kwargs["model"],
+            "effort": kwargs["effort"],
+            "task_type": kwargs["case"]["task_type"],
+            "case_id": kwargs["case"]["case_id"],
+            "repetition": kwargs["repetition"],
+            "pass": True,
+            "score": 1.0,
+            "fatal": False,
+        }
+
+    monkeypatch.setattr(matrix, "build_matrix_cases", lambda: [case])
+    monkeypatch.setattr(matrix, "_run_codex_case", fake_run_codex_case)
+    monkeypatch.setattr(matrix, "write_summary", lambda *_args, **_kwargs: pytest.fail("subset execution must not require full coverage"))
+    monkeypatch.setattr(
+        matrix,
+        "aggregate_records",
+        lambda records, allow_partial=False: {"record_count": len(records), "complete_coverage": not allow_partial},
+    )
+
+    records = matrix.execute_benchmark(
+        out_dir=tmp_path,
+        models=["GPT-5.6 Sol"],
+        efforts=["high"],
+        repetitions=3,
+        codex_bin="codex.exe",
+        timeout_sec=1,
+        resume=True,
+    )
+
+    assert calls == [2, 3]
+    assert {record["repetition"] for record in records} == {1, 2, 3}
+    partial = json.loads((tmp_path / "summary.partial.json").read_text(encoding="utf-8"))
+    assert partial == {"record_count": 3, "complete_coverage": False}
 
 
 def test_dry_run_and_html_report_include_external_sources_and_repetition_contract(tmp_path: Path) -> None:
@@ -532,6 +595,7 @@ def test_dry_run_and_html_report_include_external_sources_and_repetition_contrac
 
     assert rc == 0
     assert manifest["minimum_repetitions"] == 3
+    assert manifest["target_efforts"] == list(matrix.EFFORT_LEVELS)
     assert manifest["single_run_decision_allowed"] is False
     assert manifest["provenance_snapshot_sha256"] == matrix.PROVENANCE_SNAPSHOT_SHA256
     assert manifest["local_llm_materials_sha256"] == matrix.LOCAL_LLM_MATERIALS_SHA256
@@ -555,6 +619,8 @@ def test_dry_run_and_html_report_include_external_sources_and_repetition_contrac
     assert "Score Explorer" in html
     assert "Usecase Winners" in html
     assert "Operational Gate" in html
+    assert "Effort Level Slice" in html
+    assert "GPT-5.6 Luna" in html
     assert "Measurement Limit" in html
     assert "Evaluation Design" in html
     assert "Case Library" in html
@@ -607,7 +673,7 @@ def test_html_report_follows_reference_linear_structure_not_tabbed_summary(tmp_p
     assert positions == sorted(positions)
     assert html.count('class="card') >= 4
     assert html.count('class="case-card"') >= len(matrix.build_matrix_cases())
-    assert "M1" in html and "M2" in html and "M3" in html
+    assert "M1" in html and "M2" in html and "M3" in html and "M4" in html
     assert "速度・VRAM・credits は品質点に加算しない" in html
     assert "新規live実行ではなく既存run再集計" in html
 

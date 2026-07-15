@@ -17,21 +17,23 @@ def test_generated_eval_report_passes_decision_report_quality_gate(tmp_path: Pat
 
     records = []
     for model in matrix.TARGET_MODELS:
-        for case in matrix.build_matrix_cases():
-            for repetition in range(1, matrix.MIN_REPETITIONS + 1):
-                records.append(
-                    {
-                        "model": model,
-                        "task_type": case["task_type"],
-                        "case_id": case["case_id"],
-                        "pass": True,
-                        "score": 10.0,
-                        "fatal": False,
-                        "credits": 1,
-                        "messages": 1,
-                        "repetition": repetition,
-                    }
-                )
+        for effort in matrix.EFFORT_LEVELS:
+            for case in matrix.build_matrix_cases():
+                for repetition in range(1, matrix.MIN_REPETITIONS + 1):
+                    records.append(
+                        {
+                            "model": model,
+                            "effort": effort,
+                            "task_type": case["task_type"],
+                            "case_id": case["case_id"],
+                            "pass": True,
+                            "score": 10.0,
+                            "fatal": False,
+                            "credits": 1,
+                            "messages": 1,
+                            "repetition": repetition,
+                        }
+                    )
     summary = matrix.write_summary(tmp_path, records)
     report = matrix.generate_html_report(summary, tmp_path / "external-benchmark-report.html")
 

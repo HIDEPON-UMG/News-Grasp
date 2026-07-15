@@ -8,9 +8,10 @@ from tools.run_model_benchmark import (
 
 def test_role_matched_benchmark_matrix_uses_five_repetitions() -> None:
     assert set(CASES) == {"reporter", "style_editor", "newsroom_editor", "deepdive"}
-    assert CASES["reporter"]["models"] == ["gpt-5.4", "gpt-5.6-terra"]
-    assert CASES["style_editor"]["models"] == ["gpt-5.4-mini", "gpt-5.6-luna"]
-    assert CASES["newsroom_editor"]["models"] == ["gpt-5.4", "gpt-5.6-terra"]
+    assert CASES["reporter"]["models"] == ["gpt-5.6-luna"]
+    assert CASES["style_editor"]["models"] == ["gpt-5.6-luna"]
+    assert CASES["newsroom_editor"]["models"] == ["gpt-5.6-luna"]
+    assert {CASES[role]["reasoning"] for role in ("reporter", "style_editor", "newsroom_editor")} == {"high"}
     assert CASES["deepdive"]["models"] == ["gpt-5.5", "gpt-5.6-sol"]
 
 

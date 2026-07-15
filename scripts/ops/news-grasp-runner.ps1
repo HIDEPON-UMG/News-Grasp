@@ -1175,6 +1175,7 @@ function Invoke-CodexWrapper {
         [int] $TimeoutSec,
         [int] $IdleTimeoutSec,
         [string] $Model = '',
+        [string] $ReasoningEffort = '',
         [string] $OutputSchema = $CodexOutputSchema,
         [string] $OutputLastMessage = $CodexLastMessage,
         [string] $FlowName = 'unknown',
@@ -1200,6 +1201,7 @@ function Invoke-CodexWrapper {
         $codexArgs['SuccessProbeMinElapsedSec'] = $SuccessProbeMinElapsedSec
     }
     if ($Model) { $codexArgs['Model'] = $Model }
+    if ($ReasoningEffort) { $codexArgs['ReasoningEffort'] = $ReasoningEffort }
     & $CodexWrapper @codexArgs
     $wrapperOk = $?
     $wrapperRc = $LASTEXITCODE
@@ -1475,9 +1477,10 @@ $failureText
     $missingArtifactGeneration = ([string]$decision.repair_class -eq 'llm_generate_missing_artifact')
     $compoundGateFailure = ($GateId -in @('daily-quality', 'generation-quality') -and $issueCount -gt 1)
     $repairModel = Select-RepairModel -IssueCount $issueCount -PreviousClassifyFailed:$false -ScopeAmbiguous:$scopeAmbiguous -MissingArtifactGeneration:$missingArtifactGeneration -CompoundGateFailure:$compoundGateFailure
-    Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, Model=$repairModel, issue_count=$issueCount, missing_artifact_generation=$missingArtifactGeneration, TimeoutSec=900)"
+    $RepairReasoningEffort = Get-ModelPolicyValue -Role 'repair' -Key 'reasoning'
+    Write-Log "repair wrapper invoke START (agent=codex, gate=$GateId, Model=$repairModel, ReasoningEffort=$RepairReasoningEffort, issue_count=$issueCount, missing_artifact_generation=$missingArtifactGeneration, TimeoutSec=900)"
     Update-RunnerProgress -Phase 'repair' -Step "repair wrapper invoke: $GateId" -GateId $GateId -Category $Category
-    $repairRc = Invoke-CodexWrapper -PromptFile $repairPrompt -TimeoutSec 900 -IdleTimeoutSec 300 -Model $repairModel -FlowName "repair:$GateId"
+    $repairRc = Invoke-CodexWrapper -PromptFile $repairPrompt -TimeoutSec 900 -IdleTimeoutSec 300 -Model $repairModel -ReasoningEffort $RepairReasoningEffort -FlowName "repair:$GateId"
     Write-Log "repair wrapper invoke END (agent=codex, gate=$GateId, rc=$repairRc)"
     Update-RunnerProgress -Phase 'repair' -Step "repair wrapper done: $GateId rc=$repairRc" -GateId $GateId -Category $Category
     return $repairRc
@@ -2487,6 +2490,7 @@ if ($RecoverOnly) {
     New-Item -ItemType Directory -Path $ReporterPromptDir -Force | Out-Null
 
     $ReporterModel = Get-ModelPolicyValue -Role 'reporter' -Key 'default'
+    $ReporterReasoningEffort = Get-ModelPolicyValue -Role 'reporter' -Key 'reasoning'
     $ReporterArtifacts = @()
     $ReporterMaxAttempts = 3
     $ReporterFailureSignatures = @{}
@@ -2588,7 +2592,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 Start-Sleep -Seconds 1
             }
 
-            Write-Log "reporter job START (agent=codex, role=reporter, category=$waveCat, attempt=$Attempt/$ReporterMaxAttempts, Wrapper=$CodexWrapper, Model=$ReporterModel, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
+            Write-Log "reporter job START (agent=codex, role=reporter, category=$waveCat, attempt=$Attempt/$ReporterMaxAttempts, Wrapper=$CodexWrapper, Model=$ReporterModel, ReasoningEffort=$ReporterReasoningEffort, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
             $job = Start-Job -ArgumentList @(
                 $waveCat,
                 $Attempt,
@@ -2602,6 +2606,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $ReporterFanoutSchema,
                 $lastMessage,
                 $ReporterModel,
+                $ReporterReasoningEffort,
                 $usageLog
             ) -ScriptBlock {
                 param(
@@ -2617,6 +2622,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$OutputSchema,
                     [string]$OutputLastMessage,
                     [string]$Model,
+                    [string]$ReasoningEffort,
                     [string]$UsageLog
                 )
 
@@ -2631,6 +2637,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -OutputSchema $OutputSchema `
                     -OutputLastMessage $OutputLastMessage `
                     -Model $Model `
+                    -ReasoningEffort $ReasoningEffort `
                     -FlowName "reporter:$Category" `
                     -UsageLog $UsageLog
                 $wrapperOk = $?
@@ -2937,12 +2944,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $MaxAgentAttempts = 3
     $preHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
     $agentRc = $null
+    $NewsroomEditorReasoningEffort = Get-ModelPolicyValue -Role 'newsroom_editor' -Key 'reasoning'
     for ($attempt = 1; $attempt -le $MaxAgentAttempts; $attempt++) {
         $editorAttemptSnapshot = New-EditorAttemptSnapshot -Attempt $attempt
         $priorGateFailCount = [Math]::Max(0, $attempt - 1)
         $NewsroomEditorModel = Select-NewsroomEditorModel -GateFailCount $priorGateFailCount -DedupConflictCount 0 -AppendMismatch:$false -SummaryQualityScore 5 -DeepDiveThemeCount 1
-        Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, gate_fail_count=$priorGateFailCount, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
-        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor'
+        Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, ReasoningEffort=$NewsroomEditorReasoningEffort, gate_fail_count=$priorGateFailCount, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
+        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -ReasoningEffort $NewsroomEditorReasoningEffort -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor'
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"
 
         if ($agentRc -eq 0) {
@@ -3082,6 +3090,7 @@ $DeepDivePromptFile = Join-Path $RepoDir 'prompts\deepdive-runner-prompt.md'
 $DeepDiveContextPack = Join-Path $RepoDir ("build\deepdive-context\$DateStamp.json")
 $DeepDiveTimeoutSec = 1800
 $DeepDiveModel = Get-ModelPolicyValue -Role 'deepdive' -Key 'default'
+$DeepDiveReasoningEffort = Get-ModelPolicyValue -Role 'deepdive' -Key 'reasoning'
 $DeepDiveContextPackFailed = $false
 if ((-not $RecoverOnly) -and (-not $ResumeAfterDeepDive)) {
     Write-Log "deepdive context pack build start ($DeepDiveContextPack)"
@@ -3106,10 +3115,10 @@ if ($RecoverOnly) {
 } elseif ($DeepDiveContextPackFailed) {
     Write-Log 'skipping deepdive codex because context pack failed'
 } else {
-    Write-Log "deepdive wrapper invoke START (agent=codex, Model=$DeepDiveModel, TimeoutSec=$DeepDiveTimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
+    Write-Log "deepdive wrapper invoke START (agent=codex, Model=$DeepDiveModel, ReasoningEffort=$DeepDiveReasoningEffort, TimeoutSec=$DeepDiveTimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
     # 2026-06-10: IdleTimeoutSec 0 → 900 (digest 側と同じ理由。stream-json 既定化で
     # 15 分無出力 = 真のハング検知が成立。DeepDive は非致命なので誤検知しても digest は止まらない)
-    $ddRc = Invoke-CodexWrapper -PromptFile $DeepDivePromptFile -TimeoutSec $DeepDiveTimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $DeepDiveModel -FlowName 'deepdive'
+    $ddRc = Invoke-CodexWrapper -PromptFile $DeepDivePromptFile -TimeoutSec $DeepDiveTimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $DeepDiveModel -ReasoningEffort $DeepDiveReasoningEffort -FlowName 'deepdive'
     Write-Log "deepdive wrapper invoke END (agent=codex, rc=$ddRc)"
     if ($ddRc -eq 124) {
         Write-Log "WARN: deepdive codex TIMEOUT after $DeepDiveTimeoutSec sec (non-fatal, digest は続行)"

@@ -9,6 +9,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from tools.model_policy import DEFAULT_MODEL_POLICY
+
 
 def _role(flow: str) -> str | None:
     if flow.startswith("reporter:"):
@@ -45,19 +47,20 @@ def load_calibration(summary_path: Path) -> dict[str, dict[str, float | str]]:
         tokens = int(row["input_tokens_total"]) + int(row["output_tokens_total"])
         return float(row["api_cost_total_usd"]) / tokens
 
-    def multiplier(case: str, current: str, candidate: str) -> float:
-        return float(rows[(case, candidate)]["api_cost_total_usd"]) / float(rows[(case, current)]["api_cost_total_usd"])
-
-    reporter_row = rows[("reporter", "gpt-5.4")]
-    newsroom_row = rows[("newsroom_editor", "gpt-5.4")]
+    reporter_model = str(DEFAULT_MODEL_POLICY["reporter"]["default"])
+    newsroom_model = str(DEFAULT_MODEL_POLICY["newsroom_editor"]["default"])
+    editor_model = str(DEFAULT_MODEL_POLICY["editor"]["default"])
+    deepdive_model = str(DEFAULT_MODEL_POLICY["deepdive"]["default"])
+    reporter_row = rows[("reporter", reporter_model)]
+    newsroom_row = rows[("newsroom_editor", newsroom_model)]
     blended_tokens = sum(int(row["input_tokens_total"]) + int(row["output_tokens_total"]) for row in (reporter_row, newsroom_row))
     blended_cost = sum(float(row["api_cost_total_usd"]) for row in (reporter_row, newsroom_row))
     return {
-        "reporter": {"current_unit": unit("reporter", "gpt-5.4"), "candidate_multiplier": 1.0, "current_model": "gpt-5.4", "candidate_model": "gpt-5.4"},
-        "newsroom_editor": {"current_unit": unit("newsroom_editor", "gpt-5.4"), "candidate_multiplier": multiplier("newsroom_editor", "gpt-5.4", "gpt-5.6-terra"), "current_model": "gpt-5.4", "candidate_model": "gpt-5.6-terra"},
-        "deepdive": {"current_unit": unit("deepdive", "gpt-5.5"), "candidate_multiplier": multiplier("deepdive", "gpt-5.5", "gpt-5.6-sol"), "current_model": "gpt-5.5", "candidate_model": "gpt-5.6-sol"},
-        "repair": {"current_unit": blended_cost / blended_tokens, "candidate_multiplier": 1.0, "current_model": "gpt-5.4", "candidate_model": "gpt-5.4"},
-        "style_editor": {"current_unit": unit("style_editor", "gpt-5.4-mini"), "candidate_multiplier": multiplier("style_editor", "gpt-5.4-mini", "gpt-5.6-luna"), "current_model": "gpt-5.4-mini", "candidate_model": "gpt-5.6-luna"},
+        "reporter": {"current_unit": unit("reporter", reporter_model), "candidate_multiplier": 1.0, "current_model": reporter_model, "candidate_model": reporter_model},
+        "newsroom_editor": {"current_unit": unit("newsroom_editor", newsroom_model), "candidate_multiplier": 1.0, "current_model": newsroom_model, "candidate_model": newsroom_model},
+        "deepdive": {"current_unit": unit("deepdive", deepdive_model), "candidate_multiplier": 1.0, "current_model": deepdive_model, "candidate_model": deepdive_model},
+        "repair": {"current_unit": blended_cost / blended_tokens, "candidate_multiplier": 1.0, "current_model": str(DEFAULT_MODEL_POLICY["repair"]["default"]), "candidate_model": str(DEFAULT_MODEL_POLICY["repair"]["default"])},
+        "style_editor": {"current_unit": unit("style_editor", editor_model), "candidate_multiplier": 1.0, "current_model": editor_model, "candidate_model": editor_model},
     }
 
 

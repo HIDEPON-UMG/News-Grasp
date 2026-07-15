@@ -1,0 +1,23 @@
+{
+  "forbidden_terms": [
+    "英語会話能力",
+    "English conversation",
+    "総合ランキング",
+    "Codingランキング"
+  ],
+  "required_metric_terms": [
+    "品質",
+    "安定性",
+    "形式制御",
+    "速度",
+    "コスト",
+    "日本語品質",
+    "重み"
+  ],
+  "decision_terms": [
+    "結論",
+    "推奨",
+    "採用方針",
+    "最終判断"
+  ]
+}

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<title>GPT External Benchmark Matrix</title>
+<style>
+:root { --navy:#181C2A; --paper:#FAF7F0; --paper-soft:#F2EEE3; --surface:#FFFFFF; --ink:#1A1A1A; --muted:#5C5A52; --gold:#C9A155; --blue:#2D5BB8; --green:#3D7E60; --red:#B83A2D; --border:#E2DED4; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:linear-gradient(180deg,var(--paper) 0%,var(--paper-soft) 100%); font-family:Inter,"Noto Sans JP",-apple-system,"Segoe UI",sans-serif; }
+main { max-width:1180px; margin:0 auto; padding:34px 28px 64px; }
+.kicker,.chip,.bar-label,.bar-val { font-family:"JetBrains Mono",Consolas,monospace; letter-spacing:0; }
+.kicker { color:var(--gold); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { font-family:Inter,-apple-system,"Segoe UI",sans-serif; font-size:clamp(38px,6vw,76px); line-height:.98; margin:10px 0 18px; color:var(--navy); letter-spacing:0; }
+h2 { font-family:Inter,-apple-system,"Segoe UI",sans-serif; font-size:clamp(26px,4vw,42px); line-height:1.08; margin:0 0 18px; color:var(--navy); }
+h3 { margin:24px 0 12px; font-size:22px; font-family:Inter,"Noto Sans JP",-apple-system,"Segoe UI",sans-serif; }
+section { padding:48px 0; border-top:1px solid var(--border); }
+.lead { font-size:18px; line-height:1.75; color:var(--muted); max-width:920px; }
+.label-toggle { display:flex; gap:8px; justify-content:flex-end; margin:10px 0 18px; position:sticky; top:0; z-index:4; padding:8px 0; background:linear-gradient(180deg,var(--paper) 70%,rgba(250,247,240,.72)); }
+.label-toggle button { border:1px solid var(--border); background:var(--surface); padding:8px 12px; font-family:"JetBrains Mono",Consolas,monospace; font-weight:900; }
+.label-toggle button[aria-pressed="true"] { background:var(--navy); color:var(--paper); }
+.hero-grid,.winner-grid,.case-grid { display:grid; gap:14px; }
+.hero-grid { grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:26px; }
+.winner-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.case-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.decision-summary { background:var(--surface); border:1px solid var(--border); padding:20px; }
+.decision-summary .note { margin-top:12px; }
+.card,.case-card,.note { background:var(--surface); border:1px solid var(--border); padding:18px; }
+.card.best { border-top:5px solid var(--gold); }
+.card.caution { border-top:5px solid var(--red); }
+.card.avoid { opacity:.78; }
+.chip { display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--surface); color:var(--navy); padding:4px 8px; font-size:12px; font-weight:900; }
+.score-explorer { background:var(--surface); border:1px solid var(--border); padding:22px; }
+.bar-row { display:grid; grid-template-columns:180px 1fr 74px; gap:12px; align-items:center; margin:10px 0; }
+.bar-label { font-weight:900; }
+.bar-track { height:18px; background:#EAE3D3; position:relative; }
+.bar { height:18px; background:var(--blue); }
+.bar-val { text-align:right; font-weight:900; }
+table { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); margin:14px 0; }
+th,td { border-bottom:1px solid var(--border); padding:11px 12px; text-align:left; vertical-align:top; }
+th { background:var(--navy); color:var(--paper); font-family:Inter,-apple-system,"Segoe UI",sans-serif; }
+.num { text-align:right; font-variant-numeric:tabular-nums; font-family:"JetBrains Mono",Consolas,monospace; }
+.dark { background:var(--navy); color:var(--paper); padding:22px; margin-top:18px; }
+.dark h2,.dark h3,.dark p { color:var(--paper); }
+.note { color:var(--muted); line-height:1.75; }
+.reflection-row td:first-child { width:88px; }
+@media (max-width:820px) { main { padding:20px 14px 44px; } .hero-grid,.winner-grid,.case-grid { grid-template-columns:1fr; } .bar-row { grid-template-columns:1fr; } }
+</style>
+<body>
+<main data-report-primary="true" data-label-mode="symbol">
+<div class="label-toggle" aria-label="model label mode">
+  <button type="button" aria-pressed="true">M1–Mn</button>
+  <button type="button" aria-pressed="false">モデル名</button>
+</div>
+<header>
+  <div class="kicker">Decision Brief · News-Grasp / Codex · 288 runs · minimum repetitions: 3 · efforts: low / medium / high</div>
+  <h1>GPT External Benchmark Matrix</h1>
+  <p class="lead">結論と採用方針: GPT-5.5 / GPT-5.6 Terra / GPT-5.6 Luna / GPT-5.4 を、過去ローカルLLM比較資料の読み方に合わせて評価する。新規live実行ではなく既存run再集計であり、速度・VRAM・credits は品質点に加算しない。single-run decision is forbidden。</p>
+  <div class="hero-grid">
+    <div class="card best"><div class="kicker">M1 quality leader</div><h3>GPT-5.5</h3><p>品質確認・根因分析・最終レビューの第一候補</p></div><div class="card caution"><div class="kicker">M2 candidate</div><h3>GPT-5.6 Terra</h3><p>同credit tierの主力候補だが、現時点ではGPT-5.4同等疑いを維持</p></div><div class="card "><div class="kicker">M3 candidate</div><h3>GPT-5.6 Luna</h3><p>低credit/高速候補として独立評価し、Terra/GPT-5.4の代替線に置く</p></div><div class="card "><div class="kicker">M4 candidate</div><h3>GPT-5.4</h3><p>低credit baselineとして維持し、Terra比較の基準にする</p></div>
+    <div class="card avoid"><div class="kicker">Boundary</div><h3>測定境界</h3><p>外部benchmark本体スコアではなく、外部benchmark型に寄せたlocal fixture。</p></div>
+  </div>
+</header>
+<section data-report-section="decision-support" id="verdict">
+  <div class="kicker">00 — Verdict / Decision Support</div>
+  <h2>意思決定者向けサマリ</h2>
+  <div class="decision-summary">
+    <p><strong>どのモデルを、どの用途で、どの条件なら使うか</strong>を先に示す。単一の総合点で採否を決めない。品質トップでも運用主力とは限らないため、品質・費用・継続安定性・測定不能軸を分けて読む。</p>
+    <table><thead><tr><th>Model</th><th>採用判断</th><th>判断理由</th><th>主要リスク</th><th>次アクション</th></tr></thead><tbody><tr class="decision-row"><td><span class="chip">M1</span> GPT-5.5</td><td>品質確認・根因分析・最終レビューの第一候補</td><td>総合品質と要約系で最上位。複雑な判断の誤読リスクを下げる。</td><td>高credit tierで、長時間実装主力にすると費用と制限到達が重い。</td><td>ClosureStabilityとCostPerClosureを追加live runで確認し、主力化は1.5倍以内条件で判断する。</td></tr><tr class="decision-row"><td><span class="chip">M2</span> GPT-5.6 Terra</td><td>同credit tierの主力候補だが、現時点ではGPT-5.4同等疑いを維持</td><td>日本語NLUで強みはあるが、総合・repair・summaryでGPT-5.4を安定して引き離していない。</td><td>Terra が GPT-5.4 程度か、という仮説を棄却するには長時間復旧のVCR/OSR証拠が足りない。</td><td>30-90分のCodex recovery telemetryを3回以上追加し、fallback・resume・public verifier到達率を見る。</td></tr><tr class="decision-row"><td><span class="chip">M3</span> GPT-5.6 Luna</td><td>低credit/高速候補として独立評価し、Terra/GPT-5.4の代替線に置く</td><td>公式 rate card 上は Luna がさらに低credit tierで、短時間・低負荷タスクの主力候補になりうる。</td><td>低effortや低costが品質劣化を隠す可能性があるため、coding/summary/recoveryをeffort別に分けて読む必要がある。</td><td>low/medium/high の3 repetition平均を揃え、品質低下とCostPerClosureの交換条件を判定する。</td></tr><tr class="decision-row"><td><span class="chip">M4</span> GPT-5.4</td><td>低credit baselineとして維持し、Terra比較の基準にする</td><td>CODE_SYNTHで安定し、費用帯もTerraと同じ。Terra優位判定の最低比較線になる。</td><td>要約・複合復旧では上位モデルに劣る可能性があり、主力化にはclosure証拠が不足。</td><td>同一fixture・同一順序ローテーションで平均と分散を継続比較する。</td></tr></tbody></table>
+    <p class="note"><strong>追加で必要な証拠:</strong> Terra が GPT-5.4 程度かを確定するには、同一fixtureの最低3回平均に加えて、30-90分 recovery task のVCR/OSR、fallback、resume、public verifier到達率が必要。</p>
+  </div>
+</section>
+<section>
+  <div class="kicker">01 — Decision Matrix</div>
+  <h2>用途別判断</h2>
+  <table><thead><tr><th>Usecase</th><th>M1 GPT-5.5</th><th>M2 GPT-5.6 Terra</th><th>M3 GPT-5.6 Luna</th><th>M4 GPT-5.4</th></tr></thead><tbody><tr><td>小規模 repo repair</td><td>◎ 5.00/5</td><td>◎ 5.00/5</td><td>◎ 5.00/5</td><td>◎ 4.56/5</td></tr><tr><td>code synthesis</td><td>○ 4.22/5</td><td>○ 4.00/5</td><td>○ 3.89/5</td><td>◎ 4.44/5</td></tr><tr><td>日本語 NLU evidence</td><td>△ 3.49/5</td><td>△ 3.58/5</td><td>△ 3.39/5</td><td>△ 3.77/5</td></tr><tr><td>source-grounded summary</td><td>○ 4.28/5</td><td>○ 4.00/5</td><td>○ 4.06/5</td><td>○ 4.00/5</td></tr></tbody></table>
+</section>
+<section data-report-section="score-method">
+  <div class="kicker">05 — Evaluation Design</div>
+  <h2>Score Method</h2>
+  <p>正本は AI-Pulse の過去ローカルLLM調査。1-5の factual / summary / points / rationale / overall 軸、N=11、採点済み 10、completion rate と latency の分離を要求する。今回は盲検実施済みとは主張しない。</p>
+  <p>HumanEval / MBPP 型は実行テスト、SWE-bench / LiveCodeBench 型はpatch + pytest、JGLUE型は根拠span、XL-Sum型は事実反転・禁則主張検出で扱う。</p>
+  <p>品質、安定性、形式制御、速度、VRAM、日本語品質、重みは同じ総合点に混ぜない。品質はcase oracle、安定性は反復stdev、形式制御はformat violation、速度/VRAM/creditsは運用ゲート、日本語品質はJA_NLU/JA_SUMMARY、重みはDecision Matrix側で分離する。</p>
+</section>
+<section data-report-section="local-llm-projection">
+  <div class="kicker">02 — Score Explorer</div>
+  <h2>Local LLM Method Projection</h2>
+  <div class="score-explorer">
+    <h3>Overall 1-5 projection</h3>
+    <div class="bar-row"><div class="bar-label"><span class="chip">M1</span> GPT-5.5</div><div class="bar-track"><div class="bar" style="width:87.1%;background:#C9A155"></div></div><div class="bar-val">4.36/5</div></div><div class="bar-row"><div class="bar-label"><span class="chip">M2</span> GPT-5.6 Terra</div><div class="bar-track"><div class="bar" style="width:85.3%;background:#2D5BB8"></div></div><div class="bar-val">4.27/5</div></div><div class="bar-row"><div class="bar-label"><span class="chip">M3</span> GPT-5.6 Luna</div><div class="bar-track"><div class="bar" style="width:84.2%;background:#8B5CF6"></div></div><div class="bar-val">4.21/5</div></div><div class="bar-row"><div class="bar-label"><span class="chip">M4</span> GPT-5.4</div><div class="bar-track"><div class="bar" style="width:86.5%;background:#3D7E60"></div></div><div class="bar-val">4.32/5</div></div>
+  </div>
+  <p class="note">1-5 projection は過去資料の見せ方に合わせた表示であり、新規live実行ではなく既存run再集計。</p>
+</section>
+<section>
+  <div class="kicker">02B — Score Explorer Detail</div>
+  <h2>Task Type Mean Scores</h2>
+  <table><thead><tr><th>Task</th><th colspan="2">M1 GPT-5.5</th><th colspan="2">M2 GPT-5.6 Terra</th><th colspan="2">M3 GPT-5.6 Luna</th><th colspan="2">M4 GPT-5.4</th></tr><tr><th></th><th class="num">oracle</th><th class="num">1-5</th><th class="num">oracle</th><th class="num">1-5</th><th class="num">oracle</th><th class="num">1-5</th><th class="num">oracle</th><th class="num">1-5</th></tr></thead><tbody><tr><td>小規模 repo repair</td><td class="num">10.00</td><td class="num">5.00</td><td class="num">10.00</td><td class="num">5.00</td><td class="num">10.00</td><td class="num">5.00</td><td class="num">8.89</td><td class="num">4.56</td></tr><tr><td>code synthesis</td><td class="num">8.06</td><td class="num">4.22</td><td class="num">7.50</td><td class="num">4.00</td><td class="num">7.22</td><td class="num">3.89</td><td class="num">8.61</td><td class="num">4.44</td></tr><tr><td>日本語 NLU evidence</td><td class="num">6.23</td><td class="num">3.49</td><td class="num">6.46</td><td class="num">3.58</td><td class="num">5.97</td><td class="num">3.39</td><td class="num">6.92</td><td class="num">3.77</td></tr><tr><td>source-grounded summary</td><td class="num">8.19</td><td class="num">4.28</td><td class="num">7.50</td><td class="num">4.00</td><td class="num">7.64</td><td class="num">4.06</td><td class="num">7.50</td><td class="num">4.00</td></tr></tbody></table>
+</section>
+<section>
+  <div class="kicker">03 — Usecase Winners</div>
+  <h2>Usecase Winners</h2>
+  <div class="winner-grid">
+    <div class="card"><div class="kicker">CODE_REPAIR</div><h3>GPT-5.5</h3><p>score 5.00/5 / spread 0.44</p></div><div class="card"><div class="kicker">CODE_SYNTH</div><h3>GPT-5.4</h3><p>score 4.44/5 / spread 0.56</p></div><div class="card"><div class="kicker">JA_NLU</div><h3>GPT-5.4</h3><p>score 3.77/5 / spread 0.38</p></div><div class="card"><div class="kicker">JA_SUMMARY</div><h3>GPT-5.5</h3><p>score 4.28/5 / spread 0.28</p></div><div class="card"><div class="kicker">format_control</div><h3>GPT-5.6 Terra</h3><p>score 5.00/5 / spread 0.03</p></div>
+  </div>
+  <h3>強みの交換</h3>
+  <table><thead><tr><th>Axis</th><th>Winner</th><th class="num">Winner Score</th><th class="num">Spread</th><th>All Models</th></tr></thead><tbody><tr><td>CODE_REPAIR</td><td>GPT-5.5</td><td class="num">5.00</td><td class="num">0.44</td><td>M4=4.56 / M1=5.00 / M3=5.00 / M2=5.00</td></tr><tr><td>CODE_SYNTH</td><td>GPT-5.4</td><td class="num">4.44</td><td class="num">0.56</td><td>M4=4.44 / M1=4.22 / M3=3.89 / M2=4.00</td></tr><tr><td>JA_NLU</td><td>GPT-5.4</td><td class="num">3.77</td><td class="num">0.38</td><td>M4=3.77 / M1=3.49 / M3=3.39 / M2=3.58</td></tr><tr><td>JA_SUMMARY</td><td>GPT-5.5</td><td class="num">4.28</td><td class="num">0.28</td><td>M4=4.00 / M1=4.28 / M3=4.06 / M2=4.00</td></tr><tr><td>format_control</td><td>GPT-5.6 Terra</td><td class="num">5.00</td><td class="num">0.03</td><td>M4=4.98 / M1=4.97 / M3=4.99 / M2=5.00</td></tr></tbody></table>
+</section>
+<section>
+  <div class="kicker">04 — Operational Gate</div>
+  <h2>Operational Gate</h2>
+  <p class="note">速度・VRAM・credits は品質点に加算しない。長時間Codex作業の運用適性は品質とは別に読む。</p>
+  <table><thead><tr><th>Model</th><th class="num">Estimated Credits</th><th class="num">Messages</th><th class="num">Format Violation</th><th class="num">Stdev</th></tr></thead><tbody><tr><td>GPT-5.5</td><td class="num">8.877</td><td class="num">72</td><td class="num">0.000</td><td class="num">1.955</td></tr><tr><td>GPT-5.6 Terra</td><td class="num">2.947</td><td class="num">72</td><td class="num">0.000</td><td class="num">1.894</td></tr><tr><td>GPT-5.6 Luna</td><td class="num">1.375</td><td class="num">72</td><td class="num">0.000</td><td class="num">2.026</td></tr><tr><td>GPT-5.4</td><td class="num">3.794</td><td class="num">72</td><td class="num">0.000</td><td class="num">2.763</td></tr></tbody></table>
+</section>
+<section>
+  <div class="kicker">04B — Effort Level Slice</div>
+  <h2>Effort Level Slice</h2>
+  <p class="note">同一モデル内の low / medium / high を分けて表示する。モデル平均の前に、effort変更による品質劣化・分散・FatalRateを確認する。</p>
+  <table><thead><tr><th>Model</th><th>Effort</th><th class="num">Overall 1-5</th><th class="num">PassRate</th><th class="num">FatalRate</th><th class="num">Runs</th></tr></thead><tbody><tr><td><span class="chip">M1</span> GPT-5.5</td><td>low</td><td class="num">4.25</td><td class="num">0.417</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M1</span> GPT-5.5</td><td>medium</td><td class="num">4.34</td><td class="num">0.500</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M1</span> GPT-5.5</td><td>high</td><td class="num">4.48</td><td class="num">0.500</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M2</span> GPT-5.6 Terra</td><td>low</td><td class="num">4.24</td><td class="num">0.375</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M2</span> GPT-5.6 Terra</td><td>medium</td><td class="num">4.29</td><td class="num">0.375</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M2</span> GPT-5.6 Terra</td><td>high</td><td class="num">4.27</td><td class="num">0.375</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M3</span> GPT-5.6 Luna</td><td>low</td><td class="num">4.07</td><td class="num">0.292</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M3</span> GPT-5.6 Luna</td><td>medium</td><td class="num">4.19</td><td class="num">0.375</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M3</span> GPT-5.6 Luna</td><td>high</td><td class="num">4.37</td><td class="num">0.458</td><td class="num">0.000</td><td class="num">24</td></tr><tr><td><span class="chip">M4</span> GPT-5.4</td><td>low</td><td class="num">4.29</td><td class="num">0.500</td><td class="num">0.042</td><td class="num">24</td></tr><tr><td><span class="chip">M4</span> GPT-5.4</td><td>medium</td><td class="num">4.37</td><td class="num">0.500</td><td class="num">0.042</td><td class="num">24</td></tr><tr><td><span class="chip">M4</span> GPT-5.4</td><td>high</td><td class="num">4.31</td><td class="num">0.583</td><td class="num">0.125</td><td class="num">24</td></tr></tbody></table>
+</section>
+<section class="dark">
+  <div class="kicker">– — Measurement Limit</div>
+  <h2>Measurement Limit</h2>
+  <p>このレポートは external benchmark design grounding を使ったlocal matrixであり、HumanEval / MBPP / SWE-bench / JGLUE / XL-Sum 本体スコアではない。tool-callingや90分連続自走の実能力はproxyで捏造せず、別telemetryが必要。</p>
+</section>
+<section>
+  <div class="kicker">– — External Benchmark Grounding</div>
+  <h2>External Benchmark Grounding</h2>
+  <ul><li><strong>HumanEval</strong>: code synthesis is judged by executable unit tests, not explanation quality</li><li><strong>MBPP</strong>: small Python programming tasks include task text, reference code, and automated tests</li><li><strong>SWE-bench</strong>: repo repair ability is measured by applying a patch and running tests</li><li><strong>LiveCodeBench</strong>: coding evaluation should avoid one undifferentiated easy case and should separate generation and repair</li><li><strong>JGLUE</strong>: Japanese natural language understanding should be evaluated as Japanese tasks, not translation-only proxies</li><li><strong>llm-jp-eval</strong>: Japanese LLM evaluation should use multiple dataset-style task families and mechanical scoring where possible</li><li><strong>XL-Sum</strong>: summarization should be grounded in source text and checked for concise factual preservation</li><li><strong>Open Japanese LLM Leaderboard</strong>: Japanese leaderboard practice separates tasks such as NLI, QA, summarization, and code</li></ul>
+</section>
+<section>
+  <div class="kicker">06 — Case Library</div>
+  <h2>Case Library</h2>
+  <div class="case-grid"><div class="case-card"><div class="kicker">CODE_REPAIR</div><strong>code_repair_public_completion</strong><p>sandbox_edit</p></div><div class="case-card"><div class="kicker">CODE_REPAIR</div><strong>code_repair_resume_stage</strong><p>sandbox_edit</p></div><div class="case-card"><div class="kicker">CODE_SYNTH</div><strong>code_synth_digest_windows</strong><p>generated_code</p></div><div class="case-card"><div class="kicker">CODE_SYNTH</div><strong>code_synth_topic_key</strong><p>generated_code</p></div><div class="case-card"><div class="kicker">JA_NLU</div><strong>ja_nlu_negation_recovery</strong><p>json_answer</p></div><div class="case-card"><div class="kicker">JA_NLU</div><strong>ja_nlu_typed_blocker</strong><p>json_answer</p></div><div class="case-card"><div class="kicker">JA_SUMMARY</div><strong>ja_summary_publish_gate</strong><p>json_answer</p></div><div class="case-card"><div class="kicker">JA_SUMMARY</div><strong>ja_summary_recovery_continuity</strong><p>json_answer</p></div></div>
+</section>
+<section>
+  <div class="kicker">07 — Audits</div>
+  <h2>Harness Audit</h2>
+  <div class="note"><strong>今回の根本問題:</strong> 正本資料の見せ方を移植せず、採点契約だけを直して同じ比較と見なしたこと。</div>
+  <table><thead><tr><th>ID</th><th>反省点</th><th>既存ハーネスへの改善計画</th></tr></thead><tbody><tr class="reflection-row"><td><span class="chip">H-00</span></td><td>意思決定者の意思決定を補佐する情報提供になっていなかった</td><td>first viewportに採用判断・理由・リスク・次アクションを必須化し、単一総合点で採否を決めない構造にする</td></tr><tr class="reflection-row"><td><span class="chip">R-01</span></td><td>参照HTMLのDOM構造を最初に抽出しなかった</td><td>source report structural inventory を生成前Redテストにする</td></tr><tr class="reflection-row"><td><span class="chip">R-02</span></td><td>r5の線形資料をタブUIへ置き換えた</td><td>section order contract で tablist 退化を禁止する</td></tr><tr class="reflection-row"><td><span class="chip">R-03</span></td><td>見出し一致だけを見て資料の主従関係を見なかった</td><td>Hero / Decision / Evidence / Detail の階層をテストする</td></tr><tr class="reflection-row"><td><span class="chip">R-04</span></td><td>Score Explorerを大型比較図として扱わなかった</td><td>score-explorer class と大型比較領域を必須化する</td></tr><tr class="reflection-row"><td><span class="chip">R-05</span></td><td>Usecase Winnersを単なる補助表にした</td><td>winner-grid と用途別勝者の存在を必須化する</td></tr><tr class="reflection-row"><td><span class="chip">R-06</span></td><td>Decision Matrixの英語ラベルを欠落させた</td><td>Decision Matrix 文字列と用途×モデル表をsentinel化する</td></tr><tr class="reflection-row"><td><span class="chip">R-07</span></td><td>Evaluation DesignをScore Methodだけに畳んだ</td><td>採点設計セクションと測定限界を分離する</td></tr><tr class="reflection-row"><td><span class="chip">R-08</span></td><td>Case Libraryを消した</td><td>全caseをcase-cardとして出すDOM契約を追加する</td></tr><tr class="reflection-row"><td><span class="chip">R-09</span></td><td>Audits / Harness Auditを薄くした</td><td>反省行30件以上を最低条件にする</td></tr><tr class="reflection-row"><td><span class="chip">R-10</span></td><td>r5との差分を人間目視だけで済ませた</td><td>reference HTML diff summary をテスト入力にする</td></tr><tr class="reflection-row"><td><span class="chip">R-11</span></td><td>report_quality_gate passを見た目の十分条件に誤用した</td><td>quality gateとは別にsource_style_gateを設ける</td></tr><tr class="reflection-row"><td><span class="chip">R-12</span></td><td>新規live実行と既存run再集計の境界が弱かった</td><td>run_origin をfirst viewportとMeasurement Limitに出す</td></tr><tr class="reflection-row"><td><span class="chip">R-13</span></td><td>3回平均の主張をHTML上で目立たせきれなかった</td><td>minimum repetitions とbalanced coverageを複数箇所に表示する</td></tr><tr class="reflection-row"><td><span class="chip">R-14</span></td><td>coding差分の見せ方を外部benchmark型に寄せきれなかった</td><td>HumanEval/MBPP/SWE-bench型のoracle説明をEvaluation Designへ置く</td></tr><tr class="reflection-row"><td><span class="chip">R-15</span></td><td>日本語能力と要約能力を1軸で丸めかけた</td><td>JA_NLUとJA_SUMMARYを別用途行として維持する</td></tr><tr class="reflection-row"><td><span class="chip">R-16</span></td><td>運用ゲートと品質点の分離を視覚的に弱くした</td><td>Operational Gateを独立カード/表にする</td></tr><tr class="reflection-row"><td><span class="chip">R-17</span></td><td>tool-calling測定不能の注意を弱めた</td><td>Measurement Limitのダーク帯でproxy禁止を明示する</td></tr><tr class="reflection-row"><td><span class="chip">R-18</span></td><td>ユーザー提示コマンド内のHTMLパスを正本として扱うのが遅れた</td><td>提示パスをsource_status=UserConfirmed相当として扱う</td></tr><tr class="reflection-row"><td><span class="chip">R-19</span></td><td>過去ローカルLLM資料の『見せ方』を方法論だけに矮小化した</td><td>visual structure と method contract を別々に検査する</td></tr><tr class="reflection-row"><td><span class="chip">R-20</span></td><td>untracked成果物が消える状態を放置した</td><td>runner/test file_exists を検証前に確認する</td></tr><tr class="reflection-row"><td><span class="chip">R-21</span></td><td>復旧コピーから戻した後の永続化確認が弱かった</td><td>git status --untracked-files=all をevidenceに入れる</td></tr><tr class="reflection-row"><td><span class="chip">R-22</span></td><td>テストがr6の誤ったタブ構造を肯定していた</td><td>誤った期待値をRedに差し替える</td></tr><tr class="reflection-row"><td><span class="chip">R-23</span></td><td>HTML再生成後に構造抽出を再実行しなかった</td><td>生成後にheading/class/order inventoryを再チェックする</td></tr><tr class="reflection-row"><td><span class="chip">R-24</span></td><td>スクリーンショットでfirst viewportだけ見て構造不足を見逃した</td><td>visual check とDOM contractを両方必須にする</td></tr><tr class="reflection-row"><td><span class="chip">R-25</span></td><td>反省点を8件程度で済ませた</td><td>失敗分類を工程別に30件以上で列挙する</td></tr><tr class="reflection-row"><td><span class="chip">R-26</span></td><td>『改善計画』と『実装済み恒久対策』を混同しやすい報告にした</td><td>改善案は案、実装は未実施と明記する</td></tr><tr class="reflection-row"><td><span class="chip">R-27</span></td><td>preflight通過を成果物品質の代替にした</td><td>preflightは最終矛盾検査であり成果物検査ではないと分離する</td></tr><tr class="reflection-row"><td><span class="chip">R-28</span></td><td>既存dirty worktreeの副作用分類が遅かった</td><td>関係ファイル/無関係ファイルを最初に分ける</td></tr><tr class="reflection-row"><td><span class="chip">R-29</span></td><td>評価レポート用DESIGN.mdの高忠実度参照を後回しにした</td><td>review-eval-scoring-design のreport contractを先に読む</td></tr><tr class="reflection-row"><td><span class="chip">R-30</span></td><td>case libraryの原データと表示件数の対応を固定しなかった</td><td>case-card数 &gt;= build_matrix_cases数をテストする</td></tr><tr class="reflection-row"><td><span class="chip">R-31</span></td><td>モデル記号M1/M2/M3の一貫性を弱めた</td><td>legendと表の記号表示を必須化する</td></tr><tr class="reflection-row"><td><span class="chip">R-32</span></td><td>用途別判断と総合判断を混ぜた</td><td>用途別判断を先、総合は補助として配置する</td></tr><tr class="reflection-row"><td><span class="chip">R-33</span></td><td>外部benchmark本体スコアではない境界が弱かった</td><td>External Benchmark Groundingで設計利用に限定する</td></tr><tr class="reflection-row"><td><span class="chip">R-34</span></td><td>ユーザーの不満に対して成果物更新より説明が先行した</td><td>不満指摘後はRed testか成果物再生成を同一ターンで行う</td></tr><tr class="reflection-row"><td><span class="chip">R-35</span></td><td>反省をチャットだけに閉じかけた</td><td>反省と改善計画をHTML内とMarkdown成果物の両方に置く</td></tr><tr class="reflection-row"><td><span class="chip">R-36</span></td><td>完了報告で大きな未実装改善案を埋もれさせた</td><td>将来改善は明示的な残タスク分類に残す</td></tr></tbody></table>
+</section>
+</main>
+</body>
+</html>

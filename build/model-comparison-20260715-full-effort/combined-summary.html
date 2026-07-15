@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPT model comparison - effort first bar report</title>
+<style>
+:root{--navy:#181C2A;--gold:#C9A155;--paper:#FAF7F0;--paper-soft:#F2EEE3;--paper-dim:#EAE3D3;--text:#1A1A1A;--muted:#5C5A52;--border:#E2DED4;--blue:#2D5BB8;--purple:#5E3D8C;--green:#3D7E60;--danger:#B83A2D}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--text);font-family:Inter,-apple-system,'Segoe UI',sans-serif}main{max-width:1320px;margin:0 auto;padding:32px 24px 56px}header{background:var(--navy);color:var(--paper);padding:34px;border:1px solid var(--navy)}h1{font-size:clamp(30px,4vw,56px);line-height:1.04;margin:0 0 12px;font-weight:900;letter-spacing:0}h2{font-size:clamp(22px,2.4vw,34px);margin:0 0 14px;letter-spacing:0}h3{margin:0 0 10px;font-size:18px;letter-spacing:0}p{line-height:1.75}.kicker{font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;color:var(--gold);font-weight:800;letter-spacing:.08em;text-transform:uppercase}.lead{max-width:1000px;font-size:18px;color:#EAE3D3}section,.panel{background:#fff;border:1px solid var(--border);padding:24px;margin:18px 0}.wide{grid-column:1/-1}.decision{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:22px}.decision div{background:#101420;border:1px solid #30374A;padding:18px}.decision b{display:block;color:var(--gold);font-size:22px;margin-bottom:6px}.note{background:#fff9ec;border-left:6px solid var(--gold);padding:16px 18px;margin:16px 0}.effort-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.effort-panel{border:1px solid var(--border);background:#fff;padding:18px}.bar-row{display:grid;grid-template-columns:minmax(148px,230px) 1fr 78px;gap:12px;align-items:center;margin:12px 0}.bar-label strong{display:block}.bar-label span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.bar-track{height:24px;background:var(--paper-soft);border:1px solid var(--border);position:relative;overflow:hidden}.bar-track i{display:block;height:100%}.bar-track.thin{height:16px;margin:6px 0 14px}.bar-row b,.paired-row b,.split-label b{font-family:'JetBrains Mono',Consolas,monospace;text-align:right}.luna-focus{display:grid;grid-template-columns:minmax(320px,1.1fr) minmax(320px,.9fr);gap:18px;align-items:stretch}.paired-row{display:grid;grid-template-columns:72px 1fr 72px 1fr 72px;gap:10px;align-items:center;margin:12px 0}.mini{height:18px;background:var(--paper-soft);border:1px solid var(--border);overflow:hidden}.mini.external{background:#EEF3F8}.mini i{display:block;height:100%}.sensitivity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}.sensitivity-card{border:1px solid var(--border);background:#fff;padding:18px}.split-label{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px}.axis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}.axis-card{margin:0}.small{color:var(--muted);font-size:13px}.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}.legend span{display:inline-flex;align-items:center;gap:6px;font-size:13px}.sw{width:14px;height:14px;display:inline-block}@media(max-width:880px){main{padding:16px 12px 36px}header{padding:22px}.effort-columns,.luna-focus{grid-template-columns:1fr}.bar-row{grid-template-columns:1fr}.bar-row b{text-align:left}.paired-row{grid-template-columns:60px 1fr 58px;grid-template-areas:'e r rv' '. x xv'}.paired-row span{grid-area:e}.paired-row .mini:first-of-type{grid-area:r}.paired-row b:first-of-type{grid-area:rv}.paired-row .external{grid-area:x}.paired-row b:last-child{grid-area:xv}}
+</style>
+</head>
+<body><main data-report-primary="true">
+<header>
+  <div class="kicker">Effort First Bar Report / 900 records / low-medium-high</div>
+  <h1>GPT-5.5 / Terra / Luna / GPT-5.4 比較レポート</h1>
+  <p class="lead"><strong>結論:</strong> Luna は用途ごとに effort を分けて採用し、Recovery は low、外部benchmark型は high を優先する。</p>
+  <p class="lead">Luna は effort level で評価が分岐するため、平均値ではなく effort 別の棒グラフを主表示に変更。他モデルも同一の切り口で比較できるように再構成。</p>
+  <div class="decision">
+    <div><b>Luna Recovery</b>LOW が最良 / high で低下</div>
+    <div><b>Luna External</b>HIGH が最良 / high で改善</div>
+    <div><b>同tier判断</b>Terra は GPT-5.4 超えと判定しない</div>
+    <div><b>使い分け</b>総合平均ではなく effort×用途で採用判断</div>
+  </div>
+  <div class="legend"><span><i class="sw" style="background:#C9A155"></i>GPT-5.5</span><span><i class="sw" style="background:#2D5BB8"></i>Terra</span><span><i class="sw" style="background:#5E3D8C"></i>Luna</span><span><i class="sw" style="background:#3D7E60"></i>GPT-5.4</span></div>
+</header>
+
+<section class="panel wide" data-report-section="score-method">
+  <div class="kicker">Score Method / decision support</div>
+  <h2>評価指標と読み方</h2>
+  <p>Recovery は root cause、minimal fix、verified closure、overclaim、運用安定性を重み付きで合成する。External は coding・日本語品質・要約の1-5 projectionとJSON形式制御で評価する。各モデルをlow / medium / highで3反復し、平均と分散を併記する。速度・creditコストは品質と分離し、VRAMはクラウド実行モデルのため非適用とした。</p>
+</section>
+
+<section class="panel wide">
+  <div class="kicker">Luna Effort Sensitivity / required separate judgment</div>
+  <h2>Luna は effort 別に別評価</h2>
+  <div class="luna-focus">
+    <div>
+      <p>Recovery では Luna の best は <strong>LOW</strong>、External benchmark型では best が <strong>HIGH</strong>。同じ Luna でも「長時間復旧」と「外部benchmark型」で effort の効き方が逆方向に出ているため、平均だけで採否判断しない。</p>
+      <div class="note">判定: Luna は低cost候補だが、effort を固定せずに一括評価すると誤読する。Recovery は low/medium 寄り、外部benchmark型・日本語/要約含む評価は high 寄りで見る。</div>
+    </div>
+    <div>
+      <p class="small">左: Recovery Comp+Coding / 右: External 1-5 projection</p>
+      <div class="paired-row">
+  <span>LOW</span>
+  <div class="mini"><i style="width:91.5%;background:#5E3D8C"></i></div><b>0.915</b>
+  <div class="mini external"><i style="width:81.3%;background:#5E3D8C"></i></div><b>4.066</b>
+</div><div class="paired-row">
+  <span>MEDIUM</span>
+  <div class="mini"><i style="width:90.6%;background:#5E3D8C"></i></div><b>0.906</b>
+  <div class="mini external"><i style="width:83.8%;background:#5E3D8C"></i></div><b>4.190</b>
+</div><div class="paired-row">
+  <span>HIGH</span>
+  <div class="mini"><i style="width:89.5%;background:#5E3D8C"></i></div><b>0.895</b>
+  <div class="mini external"><i style="width:87.4%;background:#5E3D8C"></i></div><b>4.371</b>
+</div>
+    </div>
+  </div>
+</section>
+
+<section class="panel wide"><div class="kicker">Effort-first / Recovery Comp+Coding</div><h2>Recovery は effort 別に見る</h2><p class="small">News-Grasp復旧系では平均ではなく effort ごとの閉じ切り性能を見る。Luna は low が最良で、high では落ちる。</p><div class="effort-columns">
+<article class="effort-panel"><h3>LOW</h3><p>best: <strong style="color:#5E3D8C">Luna</strong></p>
+<div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>Recovery Comp+Coding / low</span></div>
+  <div class="bar-track" aria-label="Luna 0.915 higher is better"><i style="width:91.5%;background:#5E3D8C"></i></div>
+  <b>0.915</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>Recovery Comp+Coding / low</span></div>
+  <div class="bar-track" aria-label="Terra 0.911 higher is better"><i style="width:91.1%;background:#2D5BB8"></i></div>
+  <b>0.911</b>
+</div>
+<div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>Recovery Comp+Coding / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 0.902 higher is better"><i style="width:90.2%;background:#3D7E60"></i></div>
+  <b>0.902</b>
+</div>
+<div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>Recovery Comp+Coding / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 0.877 higher is better"><i style="width:87.7%;background:#C9A155"></i></div>
+  <b>0.877</b>
+</div>
+</article>
+<article class="effort-panel"><h3>MEDIUM</h3><p>best: <strong style="color:#3D7E60">GPT-5.4</strong></p>
+<div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>Recovery Comp+Coding / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 0.906 higher is better"><i style="width:90.6%;background:#3D7E60"></i></div>
+  <b>0.906</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>Recovery Comp+Coding / medium</span></div>
+  <div class="bar-track" aria-label="Luna 0.906 higher is better"><i style="width:90.6%;background:#5E3D8C"></i></div>
+  <b>0.906</b>
+</div>
+<div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>Recovery Comp+Coding / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 0.890 higher is better"><i style="width:89.0%;background:#C9A155"></i></div>
+  <b>0.890</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>Recovery Comp+Coding / medium</span></div>
+  <div class="bar-track" aria-label="Terra 0.876 higher is better"><i style="width:87.6%;background:#2D5BB8"></i></div>
+  <b>0.876</b>
+</div>
+</article>
+<article class="effort-panel"><h3>HIGH</h3><p>best: <strong style="color:#3D7E60">GPT-5.4</strong></p>
+<div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>Recovery Comp+Coding / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 0.926 higher is better"><i style="width:92.6%;background:#3D7E60"></i></div>
+  <b>0.926</b>
+</div>
+<div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>Recovery Comp+Coding / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 0.919 higher is better"><i style="width:91.9%;background:#C9A155"></i></div>
+  <b>0.919</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>Recovery Comp+Coding / high</span></div>
+  <div class="bar-track" aria-label="Luna 0.895 higher is better"><i style="width:89.5%;background:#5E3D8C"></i></div>
+  <b>0.895</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>Recovery Comp+Coding / high</span></div>
+  <div class="bar-track" aria-label="Terra 0.885 higher is better"><i style="width:88.5%;background:#2D5BB8"></i></div>
+  <b>0.885</b>
+</div>
+</article>
+</div></section>
+<section class="panel wide"><div class="kicker">Effort-first / External 1-5 projection</div><h2>External benchmark型も effort 別に見る</h2><p class="small">外部benchmark型では日本語・要約・codingを含む総合 1-5 projection を effort 別に比較する。Luna は high で明確に改善する。</p><div class="effort-columns">
+<article class="effort-panel"><h3>LOW</h3><p>best: <strong style="color:#3D7E60">GPT-5.4</strong></p>
+<div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>External 1-5 projection / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 4.288 higher is better"><i style="width:85.8%;background:#3D7E60"></i></div>
+  <b>4.288</b>
+</div>
+<div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>External 1-5 projection / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 4.250 higher is better"><i style="width:85.0%;background:#C9A155"></i></div>
+  <b>4.250</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>External 1-5 projection / low</span></div>
+  <div class="bar-track" aria-label="Terra 4.238 higher is better"><i style="width:84.8%;background:#2D5BB8"></i></div>
+  <b>4.238</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>External 1-5 projection / low</span></div>
+  <div class="bar-track" aria-label="Luna 4.066 higher is better"><i style="width:81.3%;background:#5E3D8C"></i></div>
+  <b>4.066</b>
+</div>
+</article>
+<article class="effort-panel"><h3>MEDIUM</h3><p>best: <strong style="color:#3D7E60">GPT-5.4</strong></p>
+<div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>External 1-5 projection / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 4.370 higher is better"><i style="width:87.4%;background:#3D7E60"></i></div>
+  <b>4.370</b>
+</div>
+<div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>External 1-5 projection / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 4.338 higher is better"><i style="width:86.8%;background:#C9A155"></i></div>
+  <b>4.338</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>External 1-5 projection / medium</span></div>
+  <div class="bar-track" aria-label="Terra 4.293 higher is better"><i style="width:85.9%;background:#2D5BB8"></i></div>
+  <b>4.293</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>External 1-5 projection / medium</span></div>
+  <div class="bar-track" aria-label="Luna 4.190 higher is better"><i style="width:83.8%;background:#5E3D8C"></i></div>
+  <b>4.190</b>
+</div>
+</article>
+<article class="effort-panel"><h3>HIGH</h3><p>best: <strong style="color:#C9A155">GPT-5.5</strong></p>
+<div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>External 1-5 projection / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 4.478 higher is better"><i style="width:89.6%;background:#C9A155"></i></div>
+  <b>4.478</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>External 1-5 projection / high</span></div>
+  <div class="bar-track" aria-label="Luna 4.371 higher is better"><i style="width:87.4%;background:#5E3D8C"></i></div>
+  <b>4.371</b>
+</div>
+<div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>External 1-5 projection / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 4.312 higher is better"><i style="width:86.2%;background:#3D7E60"></i></div>
+  <b>4.312</b>
+</div>
+<div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>External 1-5 projection / high</span></div>
+  <div class="bar-track" aria-label="Terra 4.270 higher is better"><i style="width:85.4%;background:#2D5BB8"></i></div>
+  <b>4.270</b>
+</div>
+</article>
+</div></section>
+
+<section class="panel wide">
+  <div class="kicker">Effort sensitivity / all models</div>
+  <h2>全モデルの effort 感度</h2>
+  <p class="small">差分は low / medium / high の最大値−最小値。External は 1-5 scale なので、棒幅だけ 0-1 相当に正規化して比較。</p>
+  <div class="sensitivity-grid"><article class="sensitivity-card">
+<h3>GPT-5.5</h3>
+<p>Recovery best: <strong>high</strong> / External best: <strong>high</strong></p>
+<div class="split-label"><span>Recovery差分</span><b>0.042</b></div>
+<div class="bar-track thin"><i style="width:69.5%;background:#C9A155"></i></div>
+<div class="split-label"><span>External差分</span><b>0.228</b></div>
+<div class="bar-track thin"><i style="width:74.8%;background:#C9A155"></i></div>
+</article><article class="sensitivity-card">
+<h3>Terra</h3>
+<p>Recovery best: <strong>low</strong> / External best: <strong>medium</strong></p>
+<div class="split-label"><span>Recovery差分</span><b>0.035</b></div>
+<div class="bar-track thin"><i style="width:58.0%;background:#2D5BB8"></i></div>
+<div class="split-label"><span>External差分</span><b>0.055</b></div>
+<div class="bar-track thin"><i style="width:18.0%;background:#2D5BB8"></i></div>
+</article><article class="sensitivity-card">
+<h3>Luna</h3>
+<p>Recovery best: <strong>low</strong> / External best: <strong>high</strong></p>
+<div class="split-label"><span>Recovery差分</span><b>0.021</b></div>
+<div class="bar-track thin"><i style="width:33.8%;background:#5E3D8C"></i></div>
+<div class="split-label"><span>External差分</span><b>0.304</b></div>
+<div class="bar-track thin"><i style="width:100.0%;background:#5E3D8C"></i></div>
+</article><article class="sensitivity-card">
+<h3>GPT-5.4</h3>
+<p>Recovery best: <strong>high</strong> / External best: <strong>medium</strong></p>
+<div class="split-label"><span>Recovery差分</span><b>0.024</b></div>
+<div class="bar-track thin"><i style="width:39.7%;background:#3D7E60"></i></div>
+<div class="split-label"><span>External差分</span><b>0.082</b></div>
+<div class="bar-track thin"><i style="width:26.8%;background:#3D7E60"></i></div>
+</article></div>
+</section>
+
+<section class="panel wide"><div class="kicker">Task Axis / low</div><h2>タスク軸別: LOW</h2><div class="axis-grid"><article class="axis-card"><h3>CODE_REPAIR</h3><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>CODE_REPAIR / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 10.000 higher is better"><i style="width:100.0%;background:#C9A155"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>CODE_REPAIR / low</span></div>
+  <div class="bar-track" aria-label="Terra 10.000 higher is better"><i style="width:100.0%;background:#2D5BB8"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>CODE_REPAIR / low</span></div>
+  <div class="bar-track" aria-label="Luna 10.000 higher is better"><i style="width:100.0%;background:#5E3D8C"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>CODE_REPAIR / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.333 higher is better"><i style="width:83.3%;background:#3D7E60"></i></div>
+  <b>8.333</b>
+</div></article><article class="axis-card"><h3>CODE_SYNTH</h3><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>CODE_SYNTH / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.333 higher is better"><i style="width:83.3%;background:#3D7E60"></i></div>
+  <b>8.333</b>
+</div><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>CODE_SYNTH / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 7.500 higher is better"><i style="width:75.0%;background:#C9A155"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>CODE_SYNTH / low</span></div>
+  <div class="bar-track" aria-label="Terra 7.500 higher is better"><i style="width:75.0%;background:#2D5BB8"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>CODE_SYNTH / low</span></div>
+  <div class="bar-track" aria-label="Luna 5.833 higher is better"><i style="width:58.3%;background:#5E3D8C"></i></div>
+  <b>5.833</b>
+</div></article><article class="axis-card"><h3>JA_NLU</h3><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>JA_NLU / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 6.200 higher is better"><i style="width:62.0%;background:#3D7E60"></i></div>
+  <b>6.200</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>JA_NLU / low</span></div>
+  <div class="bar-track" aria-label="Terra 6.100 higher is better"><i style="width:61.0%;background:#2D5BB8"></i></div>
+  <b>6.100</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>JA_NLU / low</span></div>
+  <div class="bar-track" aria-label="Luna 6.100 higher is better"><i style="width:61.0%;background:#5E3D8C"></i></div>
+  <b>6.100</b>
+</div><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>JA_NLU / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 5.900 higher is better"><i style="width:59.0%;background:#C9A155"></i></div>
+  <b>5.900</b>
+</div></article><article class="axis-card"><h3>JA_SUMMARY</h3><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>JA_SUMMARY / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.750 higher is better"><i style="width:87.5%;background:#3D7E60"></i></div>
+  <b>8.750</b>
+</div><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>JA_SUMMARY / low</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 7.917 higher is better"><i style="width:79.2%;background:#C9A155"></i></div>
+  <b>7.917</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>JA_SUMMARY / low</span></div>
+  <div class="bar-track" aria-label="Terra 7.500 higher is better"><i style="width:75.0%;background:#2D5BB8"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>JA_SUMMARY / low</span></div>
+  <div class="bar-track" aria-label="Luna 7.500 higher is better"><i style="width:75.0%;background:#5E3D8C"></i></div>
+  <b>7.500</b>
+</div></article></div></section><section class="panel wide"><div class="kicker">Task Axis / medium</div><h2>タスク軸別: MEDIUM</h2><div class="axis-grid"><article class="axis-card"><h3>CODE_REPAIR</h3><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>CODE_REPAIR / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 10.000 higher is better"><i style="width:100.0%;background:#C9A155"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>CODE_REPAIR / medium</span></div>
+  <div class="bar-track" aria-label="Terra 10.000 higher is better"><i style="width:100.0%;background:#2D5BB8"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>CODE_REPAIR / medium</span></div>
+  <div class="bar-track" aria-label="Luna 10.000 higher is better"><i style="width:100.0%;background:#5E3D8C"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>CODE_REPAIR / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.333 higher is better"><i style="width:83.3%;background:#3D7E60"></i></div>
+  <b>8.333</b>
+</div></article><article class="axis-card"><h3>CODE_SYNTH</h3><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>CODE_SYNTH / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 9.167 higher is better"><i style="width:91.7%;background:#3D7E60"></i></div>
+  <b>9.167</b>
+</div><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>CODE_SYNTH / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 7.500 higher is better"><i style="width:75.0%;background:#C9A155"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>CODE_SYNTH / medium</span></div>
+  <div class="bar-track" aria-label="Terra 7.500 higher is better"><i style="width:75.0%;background:#2D5BB8"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>CODE_SYNTH / medium</span></div>
+  <div class="bar-track" aria-label="Luna 7.500 higher is better"><i style="width:75.0%;background:#5E3D8C"></i></div>
+  <b>7.500</b>
+</div></article><article class="axis-card"><h3>JA_NLU</h3><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>JA_NLU / medium</span></div>
+  <div class="bar-track" aria-label="Terra 6.783 higher is better"><i style="width:67.8%;background:#2D5BB8"></i></div>
+  <b>6.783</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>JA_NLU / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 6.500 higher is better"><i style="width:65.0%;background:#3D7E60"></i></div>
+  <b>6.500</b>
+</div><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>JA_NLU / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 6.200 higher is better"><i style="width:62.0%;background:#C9A155"></i></div>
+  <b>6.200</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>JA_NLU / medium</span></div>
+  <div class="bar-track" aria-label="Luna 5.500 higher is better"><i style="width:55.0%;background:#5E3D8C"></i></div>
+  <b>5.500</b>
+</div></article><article class="axis-card"><h3>JA_SUMMARY</h3><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>JA_SUMMARY / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 8.750 higher is better"><i style="width:87.5%;background:#C9A155"></i></div>
+  <b>8.750</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>JA_SUMMARY / medium</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.333 higher is better"><i style="width:83.3%;background:#3D7E60"></i></div>
+  <b>8.333</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>JA_SUMMARY / medium</span></div>
+  <div class="bar-track" aria-label="Terra 7.500 higher is better"><i style="width:75.0%;background:#2D5BB8"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>JA_SUMMARY / medium</span></div>
+  <div class="bar-track" aria-label="Luna 7.500 higher is better"><i style="width:75.0%;background:#5E3D8C"></i></div>
+  <b>7.500</b>
+</div></article></div></section><section class="panel wide"><div class="kicker">Task Axis / high</div><h2>タスク軸別: HIGH</h2><div class="axis-grid"><article class="axis-card"><h3>CODE_REPAIR</h3><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>CODE_REPAIR / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 10.000 higher is better"><i style="width:100.0%;background:#C9A155"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>CODE_REPAIR / high</span></div>
+  <div class="bar-track" aria-label="Terra 10.000 higher is better"><i style="width:100.0%;background:#2D5BB8"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>CODE_REPAIR / high</span></div>
+  <div class="bar-track" aria-label="Luna 10.000 higher is better"><i style="width:100.0%;background:#5E3D8C"></i></div>
+  <b>10.000</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>CODE_REPAIR / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 10.000 higher is better"><i style="width:100.0%;background:#3D7E60"></i></div>
+  <b>10.000</b>
+</div></article><article class="axis-card"><h3>CODE_SYNTH</h3><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>CODE_SYNTH / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 9.167 higher is better"><i style="width:91.7%;background:#C9A155"></i></div>
+  <b>9.167</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>CODE_SYNTH / high</span></div>
+  <div class="bar-track" aria-label="Luna 8.333 higher is better"><i style="width:83.3%;background:#5E3D8C"></i></div>
+  <b>8.333</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>CODE_SYNTH / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.333 higher is better"><i style="width:83.3%;background:#3D7E60"></i></div>
+  <b>8.333</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>CODE_SYNTH / high</span></div>
+  <div class="bar-track" aria-label="Terra 7.500 higher is better"><i style="width:75.0%;background:#2D5BB8"></i></div>
+  <b>7.500</b>
+</div></article><article class="axis-card"><h3>JA_NLU</h3><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>JA_NLU / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 8.067 higher is better"><i style="width:80.7%;background:#3D7E60"></i></div>
+  <b>8.067</b>
+</div><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>JA_NLU / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 6.600 higher is better"><i style="width:66.0%;background:#C9A155"></i></div>
+  <b>6.600</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>JA_NLU / high</span></div>
+  <div class="bar-track" aria-label="Terra 6.500 higher is better"><i style="width:65.0%;background:#2D5BB8"></i></div>
+  <b>6.500</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>JA_NLU / high</span></div>
+  <div class="bar-track" aria-label="Luna 6.300 higher is better"><i style="width:63.0%;background:#5E3D8C"></i></div>
+  <b>6.300</b>
+</div></article><article class="axis-card"><h3>JA_SUMMARY</h3><div class="bar-row" data-model="gpt-5.5">
+  <div class="bar-label"><strong>GPT-5.5</strong><span>JA_SUMMARY / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.5 7.917 higher is better"><i style="width:79.2%;background:#C9A155"></i></div>
+  <b>7.917</b>
+</div><div class="bar-row" data-model="gpt-5.6-luna">
+  <div class="bar-label"><strong>Luna</strong><span>JA_SUMMARY / high</span></div>
+  <div class="bar-track" aria-label="Luna 7.917 higher is better"><i style="width:79.2%;background:#5E3D8C"></i></div>
+  <b>7.917</b>
+</div><div class="bar-row" data-model="gpt-5.6-terra">
+  <div class="bar-label"><strong>Terra</strong><span>JA_SUMMARY / high</span></div>
+  <div class="bar-track" aria-label="Terra 7.500 higher is better"><i style="width:75.0%;background:#2D5BB8"></i></div>
+  <b>7.500</b>
+</div><div class="bar-row" data-model="gpt-5.4">
+  <div class="bar-label"><strong>GPT-5.4</strong><span>JA_SUMMARY / high</span></div>
+  <div class="bar-track" aria-label="GPT-5.4 5.417 higher is better"><i style="width:54.2%;background:#3D7E60"></i></div>
+  <b>5.417</b>
+</div></article></div></section>
+
+<section class="panel wide">
+  <div class="kicker">Reading Guide</div>
+  <h2>読み方</h2>
+  <p>この版では、総合平均は「全体感の補助」に下げた。採用判断は、まず effort 別の Recovery と External を見て、次にタスク軸の CODE_REPAIR / CODE_SYNTH / JA_NLU / JA_SUMMARY を確認する。特に Luna は平均値で丸めず、effort level 別に別モデルのように扱う。</p>
+</section>
+</main></body></html>

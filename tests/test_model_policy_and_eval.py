@@ -31,11 +31,10 @@ def _record(cat: str, idx: int) -> dict:
 
 
 def test_default_model_policy_uses_evaluated_reporter_selection() -> None:
-    assert DEFAULT_MODEL_POLICY["reporter"]["default"] == "gpt-5.4"
-    assert DEFAULT_MODEL_POLICY["reporter"]["escalate"] == "gpt-5.4"
-    assert DEFAULT_MODEL_POLICY["reporter"]["selection_variant"] == "full"
-    assert DEFAULT_MODEL_POLICY["reporter"]["selection_summary"] == "build/model-eval-selection/combo_summary.json"
-    assert DEFAULT_MODEL_POLICY["reporter"]["selection_combo"] == "full__mini-editor"
+    assert DEFAULT_MODEL_POLICY["reporter"]["default"] == "gpt-5.6-luna"
+    assert DEFAULT_MODEL_POLICY["reporter"]["escalate"] == "gpt-5.6-luna"
+    assert DEFAULT_MODEL_POLICY["reporter"]["reasoning"] == "high"
+    assert DEFAULT_MODEL_POLICY["reporter"]["escalate_reasoning"] == "high"
     assert "fx" not in DEFAULT_MODEL_POLICY["reporter"].get("always_escalate_categories", [])
 
 
@@ -50,9 +49,11 @@ def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default()
     editor = DEFAULT_MODEL_POLICY["editor"]
     assert editor["default"] == "gpt-5.6-luna"
     assert editor["escalate"] == "gpt-5.6-luna"
-    assert editor["selection_variant"] == "style-editor-56-luna"
-    assert editor["selection_summary"] == "build/model-eval-5.6/benchmark/summary.json"
-    assert editor["selection_source"] == "role_matched_five_run_benchmark_2026_07_10"
+    assert editor["reasoning"] == "high"
+    assert editor["escalate_reasoning"] == "high"
+    assert editor["selection_variant"] == "style-editor-56-luna-high"
+    assert editor["selection_summary"] == "build/model-comparison-20260715-luna-high-replacement/summary.json"
+    assert editor["selection_source"] == "luna_high_replacement_benchmark_2026_07_15"
     assert editor["scope"] == "style_rewrite_only"
     assert editor["mode"] == "selective_rewrite"
     assert editor["rewrite_all"] is False
@@ -61,12 +62,14 @@ def test_editor_policy_adopts_evaluated_editor_without_full_rewrite_by_default()
     assert should_rewrite_with_editor(naturalness_score=5, style_score=5, validator_failed=True) is True
 
 
-def test_repair_policy_is_separate_from_style_editor_and_not_mini() -> None:
+def test_repair_policy_uses_luna_high_for_llm_repair_worker() -> None:
     """repair は文体 editor ではなく、修復判断用 role のモデルを使う。"""
     repair = DEFAULT_MODEL_POLICY["repair"]
-    assert repair["default"] == "gpt-5.4"
+    assert repair["default"] == "gpt-5.6-luna"
+    assert repair["escalate"] == "gpt-5.6-luna"
+    assert repair["reasoning"] == "high"
+    assert repair["escalate_reasoning"] == "high"
     assert repair["scope"] == "llm_repair_worker"
-    assert repair["default"] != DEFAULT_MODEL_POLICY["editor"]["default"]
     assert "mini" not in str(repair["default"])
     assert select_repair_model(
         issue_count=1,
@@ -74,11 +77,11 @@ def test_repair_policy_is_separate_from_style_editor_and_not_mini() -> None:
         scope_ambiguous=False,
         missing_artifact_generation=True,
         compound_gate_failure=False,
-    ) == "gpt-5.4"
+    ) == "gpt-5.6-luna"
 
 
-def test_repair_model_escalates_complex_patterns_to_gpt54() -> None:
-    """複雑な repair pattern は mini に落とさず gpt-5.4 を選ぶ。"""
+def test_repair_model_escalates_complex_patterns_to_luna_high() -> None:
+    """複雑な repair pattern も Luna の high effort へ統一する。"""
     cases = [
         (
             "compound issue ledger",
@@ -134,20 +137,21 @@ def test_repair_model_escalates_complex_patterns_to_gpt54() -> None:
 
     for label, signals in cases:
         assert should_escalate_repair(**signals) is True, label
-        assert select_repair_model(**signals) == "gpt-5.4", label
+        assert select_repair_model(**signals) == "gpt-5.6-luna", label
 
 
-def test_newsroom_editor_policy_uses_terra_after_safety_benchmark() -> None:
-    """編集長生成は品質とappend安全性を確認済みの Terra を使う。"""
+def test_newsroom_editor_policy_uses_luna_high() -> None:
+    """編集長生成は Luna の high effort へ統一する。"""
     newsroom_editor = DEFAULT_MODEL_POLICY["newsroom_editor"]
-    assert newsroom_editor["selection_summary"] == "build/model-eval-5.6/benchmark/summary.json"
+    assert newsroom_editor["selection_summary"] == "build/model-comparison-20260715-luna-high-replacement/summary.json"
     assert newsroom_editor["safety_summary"] == "build/model-eval-5.6/newsroom-append-safety/summary.json"
     assert newsroom_editor["selection_status"] == "selected"
-    assert newsroom_editor["default"] == "gpt-5.6-terra"
-    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-terra"
-    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-terra"
-    assert newsroom_editor["escalate"] == "gpt-5.6-terra"
-    assert newsroom_editor["selection_source"] == "role_matched_five_run_plus_append_safety_2026_07_10"
+    assert newsroom_editor["default"] == "gpt-5.6-luna"
+    assert newsroom_editor["selection_variant"] == "newsroom-editor-56-luna-high"
+    assert newsroom_editor["quality_leader_variant"] == "newsroom-editor-56-luna-high"
+    assert newsroom_editor["escalate"] == "gpt-5.6-luna"
+    assert newsroom_editor["reasoning"] == "high"
+    assert newsroom_editor["escalate_reasoning"] == "high"
     assert DEFAULT_MODEL_POLICY["deepdive"]["default"] == "gpt-5.6-sol"
     assert DEFAULT_MODEL_POLICY["deepdive"]["selection_source"] == "weighted_triad_benchmark_2026_07_10"
 
@@ -198,14 +202,14 @@ def test_select_newsroom_editor_model_returns_default_or_quality_leader() -> Non
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.6-terra"
+    ) == "gpt-5.6-luna"
     assert select_newsroom_editor_model(
         gate_fail_count=1,
         dedup_conflict_count=0,
         append_mismatch=False,
         summary_quality_score=5,
         deepdive_theme_count=1,
-    ) == "gpt-5.6-terra"
+    ) == "gpt-5.6-luna"
 
 
 def test_operational_prompts_match_selected_model_policy() -> None:
@@ -214,10 +218,15 @@ def test_operational_prompts_match_selected_model_policy() -> None:
     deepdive_prompt = Path("prompts/deepdive-research-system.md").read_text(encoding="utf-8-sig")
 
     assert "gpt-5.6-luna" in runner_prompt
-    assert "gpt-5.6-terra" in runner_prompt
+    assert "gpt-5.6-luna" in runner_prompt
+    assert "high" in runner_prompt.casefold()
     assert "gpt-5.6-sol" in newsroom_prompt
     assert "gpt-5.6-sol" in deepdive_prompt
     assert "gpt-5.4-mini" not in runner_prompt
+    assert "gpt-5.4" not in runner_prompt
+    assert "gpt-5.6-terra" not in runner_prompt
+    assert "gpt-5.4" not in newsroom_prompt
+    assert "gpt-5.6-terra" not in newsroom_prompt
     assert "gpt-5.5" not in deepdive_prompt
 
 

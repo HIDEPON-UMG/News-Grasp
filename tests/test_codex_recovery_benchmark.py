@@ -29,7 +29,8 @@ def test_recovery_benchmark_task_set_matches_news_grasp_repair_work() -> None:
     assert "unreported fallback" in bench.TASK_SET["NG-OPS"]["fatal_gate"]
     assert "sandbox repo with failing pytest" in bench.TASK_SET["NG-CODE"]["input_fixture"]
     assert "model edits code" in bench.TASK_SET["NG-CODE"]["success_judgment"]
-    assert bench.TARGET_MODELS == ("gpt-5.5", "gpt-5.6-terra", "gpt-5.4")
+    assert bench.TARGET_MODELS == ("gpt-5.5", "gpt-5.6-sol", "gpt-5.6-luna")
+    assert bench.EFFORT_LEVELS == ("low", "medium", "high")
 
 
 def test_minimum_case_plan_adds_three_coding_cases_per_model() -> None:
@@ -40,12 +41,13 @@ def test_minimum_case_plan_adds_three_coding_cases_per_model() -> None:
     assert {case["task_id"] for case in cases} == set(bench.MINIMUM_CASES)
 
 
-def test_execution_plan_expands_to_three_repetitions_per_model_case() -> None:
-    plan = bench.build_run_plan(models=list(bench.TARGET_MODELS), repetitions=3)
+def test_execution_plan_expands_to_three_repetitions_per_model_effort_case() -> None:
+    plan = bench.build_run_plan(models=list(bench.TARGET_MODELS), efforts=list(bench.EFFORT_LEVELS), repetitions=3)
 
-    assert len(plan) == 17 * len(bench.TARGET_MODELS) * 3
+    assert len(plan) == 17 * len(bench.TARGET_MODELS) * len(bench.EFFORT_LEVELS) * 3
+    assert {row["effort"] for row in plan} == set(bench.EFFORT_LEVELS)
     assert {row["repetition"] for row in plan} == {1, 2, 3}
-    assert len({(row["model"], row["case_id"], row["repetition"]) for row in plan}) == len(plan)
+    assert len({(row["model"], row["effort"], row["case_id"], row["repetition"]) for row in plan}) == len(plan)
 
 
 def test_codex_bin_resolution_prefers_direct_exe_over_local_wrapper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -109,6 +111,7 @@ def test_run_codex_case_stops_after_stable_raw_answer(tmp_path: Path, monkeypatc
     record = bench.run_codex_case(
         codex_bin="codex.exe",
         model="gpt-5.5",
+        effort="medium",
         case=case,
         run_dir=tmp_path,
         timeout_sec=60,
@@ -116,6 +119,7 @@ def test_run_codex_case_stops_after_stable_raw_answer(tmp_path: Path, monkeypatc
     )
 
     assert killed == [12345]
+    assert record["effort"] == "medium"
     assert record["events"][0]["killed_after_output"] is True
     assert record["events"][0]["timed_out"] is False
     assert record["events"][0]["exit_code"] == 0
@@ -124,7 +128,9 @@ def test_run_codex_case_stops_after_stable_raw_answer(tmp_path: Path, monkeypatc
 
 def test_credit_rate_card_keeps_cost_separate_from_performance() -> None:
     assert bench.CREDIT_RATES_PER_MILLION["gpt-5.6-terra"] == bench.CREDIT_RATES_PER_MILLION["gpt-5.4"]
+    assert bench.CREDIT_RATES_PER_MILLION["gpt-5.6-sol"] == bench.CREDIT_RATES_PER_MILLION["gpt-5.5"]
     assert bench.CREDIT_RATES_PER_MILLION["gpt-5.5"]["output"] == 750.0
+    assert bench.CREDIT_RATES_PER_MILLION["gpt-5.6-luna"] == {"input": 25.0, "cached_input": 2.5, "output": 150.0}
     assert bench.estimate_codex_credits(
         "gpt-5.6-terra",
         {"input_tokens": 1_000_000, "cached_input_tokens": 0, "output_tokens": 0},
@@ -133,6 +139,57 @@ def test_credit_rate_card_keeps_cost_separate_from_performance() -> None:
         "gpt-5.5",
         {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 1_000_000},
     ) == 750.0
+
+
+def test_execute_benchmark_resume_skips_existing_model_effort_case_repetition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    case = next(case for case in bench.build_execution_cases() if case["case_id"] == "rc-state-stale-proof")
+    plan = [
+        {"model": "gpt-5.6-sol", "effort": "high", "case_id": case["case_id"], "repetition": repetition, "case": case}
+        for repetition in (1, 2)
+    ]
+    existing = {
+        "model": "gpt-5.6-sol",
+        "effort": "high",
+        "case_id": case["case_id"],
+        "task_id": case["task_id"],
+        "repetition": 1,
+        "score": 1.0,
+        "fatal": False,
+    }
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "records.json").write_text(json.dumps({"records": [existing]}), encoding="utf-8")
+    calls: list[int] = []
+
+    def fake_run_codex_case(**kwargs):
+        calls.append(2)
+        return {
+            "model": kwargs["model"],
+            "effort": kwargs["effort"],
+            "case_id": kwargs["case"]["case_id"],
+            "task_id": kwargs["case"]["task_id"],
+            "score": 1.0,
+            "fatal": False,
+        }
+
+    monkeypatch.setattr(bench, "build_run_plan", lambda **_kwargs: plan)
+    monkeypatch.setattr(bench, "run_codex_case", fake_run_codex_case)
+    monkeypatch.setattr(bench, "write_summary", lambda _out_dir, records: {"record_count": len(records)})
+
+    records = bench.execute_benchmark(
+        models=["gpt-5.6-sol"],
+        efforts=["high"],
+        out_dir=tmp_path,
+        codex_bin="codex.exe",
+        timeout_sec=1,
+        output_stable_sec=0,
+        repetitions=3,
+        resume=True,
+    )
+
+    assert calls == [2]
+    assert {(record["case_id"], record["repetition"]) for record in records} == {(case["case_id"], 1), (case["case_id"], 2)}
 
 
 def test_write_run_artifacts_records_required_operational_telemetry(tmp_path: Path) -> None:
@@ -282,7 +339,9 @@ def test_dry_run_writes_manifest_without_running_codex(tmp_path: Path) -> None:
     manifest = json.loads((tmp_path / "benchmark_manifest.json").read_text(encoding="utf-8"))
     assert manifest["schema_version"] == "codex_recovery_benchmark.v1"
     assert manifest["minimum_cases_per_model"] == 17
+    assert manifest["minimum_cases_per_model_effort"] == 17
     assert manifest["target_models"] == list(bench.TARGET_MODELS)
+    assert manifest["target_efforts"] == list(bench.EFFORT_LEVELS)
     assert "cost only; performance must be judged by task outcomes" in manifest["official_source_boundary"]
 
 
@@ -293,6 +352,7 @@ def test_task_filter_can_run_only_coding_axis(tmp_path: Path) -> None:
     manifest = json.loads((tmp_path / "benchmark_manifest.json").read_text(encoding="utf-8"))
     assert manifest["selected_task_ids"] == ["NG-CODE"]
     assert manifest["minimum_cases_per_model"] == 3
+    assert manifest["minimum_cases_per_model_effort"] == 3
 
 
 def test_code_case_scoring_requires_model_owned_code_edit_and_pytest_green(tmp_path: Path) -> None:
@@ -463,14 +523,18 @@ def test_patch_false_pass_claim_is_fatal_even_when_replacement_is_plausible(tmp_
 
 def test_summary_reports_coding_pass_rate_separately_from_recovery_axes(tmp_path: Path) -> None:
     records = [
-        {"model": "gpt-5.4", "task_id": "NG-CODE", "coding_pass": True, "root_cause_correct": True, "minimal_fix": True, "verified_closure": True, "false_or_overclaim": False, "ops_stable": True, "fatal": False, "credits": 1},
-        {"model": "gpt-5.4", "task_id": "NG-CODE", "coding_pass": False, "root_cause_correct": False, "minimal_fix": False, "verified_closure": False, "false_or_overclaim": True, "ops_stable": False, "fatal": True, "credits": 1},
-        {"model": "gpt-5.6-terra", "task_id": "NG-CODE", "coding_pass": True, "root_cause_correct": True, "minimal_fix": True, "verified_closure": True, "false_or_overclaim": False, "ops_stable": True, "fatal": False, "credits": 1},
+        {"model": "gpt-5.4", "effort": "low", "task_id": "NG-CODE", "coding_pass": True, "root_cause_correct": True, "minimal_fix": True, "verified_closure": True, "false_or_overclaim": False, "ops_stable": True, "fatal": False, "credits": 1},
+        {"model": "gpt-5.4", "effort": "high", "task_id": "NG-CODE", "coding_pass": False, "root_cause_correct": False, "minimal_fix": False, "verified_closure": False, "false_or_overclaim": True, "ops_stable": False, "fatal": True, "credits": 1},
+        {"model": "gpt-5.6-luna", "effort": "medium", "task_id": "NG-CODE", "coding_pass": True, "root_cause_correct": True, "minimal_fix": True, "verified_closure": True, "false_or_overclaim": False, "ops_stable": True, "fatal": False, "credits": 1},
+        {"model": "gpt-5.6-terra", "effort": "medium", "task_id": "NG-CODE", "coding_pass": True, "root_cause_correct": True, "minimal_fix": True, "verified_closure": True, "false_or_overclaim": False, "ops_stable": True, "fatal": False, "credits": 1},
     ]
 
     summary = bench.write_summary(tmp_path, records)
 
     assert summary["models"]["gpt-5.4"]["CodingPassRate"] == 0.5
+    assert summary["model_efforts"]["gpt-5.4"]["low"]["CodingPassRate"] == 1.0
+    assert summary["model_efforts"]["gpt-5.4"]["high"]["CodingPassRate"] == 0.0
+    assert summary["model_efforts"]["gpt-5.6-luna"]["medium"]["CodingPassRate"] == 1.0
     assert summary["models"]["gpt-5.6-terra"]["CodingPassRate"] == 1.0
     assert summary["measurement_limits"]["coding_axis"] == "NG-CODE measures small sandbox repo repair, not full production News-Grasp mutation"
 
@@ -481,7 +545,12 @@ def test_html_report_combines_recovery_and_coding_results_with_eval_report_contr
         "models": {
             "gpt-5.4": {"Composite": 0.872381, "CodingPassRate": 0.0, "FatalRate": 0.357143, "CostPerClosure": 0.104396},
             "gpt-5.5": {"Composite": 0.74381, "CodingPassRate": 0.0, "FatalRate": 0.357143, "CostPerClosure": 0.168667},
+            "gpt-5.6-luna": {"Composite": 0.52, "CodingPassRate": 0.0, "FatalRate": 0.5, "CostPerClosure": 0.04},
             "gpt-5.6-terra": {"Composite": 0.791429, "CodingPassRate": 0.0, "FatalRate": 0.357143, "CostPerClosure": 0.087521},
+        },
+        "model_efforts": {
+            "gpt-5.6-luna": {"low": {"Composite": 0.4, "CodingPassRate": 0.0}, "medium": {"Composite": 0.52, "CodingPassRate": 0.0}, "high": {"Composite": 0.6, "CodingPassRate": 0.0}},
+            "gpt-5.6-terra": {"low": {"Composite": 0.7, "CodingPassRate": 0.0}, "medium": {"Composite": 0.79, "CodingPassRate": 0.0}, "high": {"Composite": 0.82, "CodingPassRate": 0.0}},
         },
         "terra_vs_gpt54": "terra_worse_than_gpt54",
     }
@@ -490,7 +559,11 @@ def test_html_report_combines_recovery_and_coding_results_with_eval_report_contr
         "models": {
             "gpt-5.4": {"Composite": 0.6, "CodingPassRate": 0.666667, "FatalRate": 0.333333, "CostPerClosure": 0.1},
             "gpt-5.5": {"Composite": 0.3, "CodingPassRate": 0.333333, "FatalRate": 0.666667, "CostPerClosure": 0.2},
+            "gpt-5.6-luna": {"Composite": 0.4, "CodingPassRate": 0.333333, "FatalRate": 0.666667, "CostPerClosure": 0.05},
             "gpt-5.6-terra": {"Composite": 0.5, "CodingPassRate": 0.333333, "FatalRate": 0.666667, "CostPerClosure": 0.08},
+        },
+        "model_efforts": {
+            "gpt-5.6-luna": {"low": {"Composite": 0.35, "CodingPassRate": 0.333333}, "medium": {"Composite": 0.4, "CodingPassRate": 0.333333}, "high": {"Composite": 0.45, "CodingPassRate": 0.333333}},
         },
     }
     recovery_path = tmp_path / "recovery-summary.json"
@@ -519,6 +592,8 @@ def test_html_report_combines_recovery_and_coding_results_with_eval_report_contr
         "class=\"score-explorer\"",
         "baseline = metric minimum",
         "NG-CODE",
+        "Effort Level Slice",
+        "gpt-5.6-luna",
         "Terra は GPT-5.4 を下回る",
         "品質",
         "安定性",

@@ -3,15 +3,15 @@ from pathlib import Path
 
 import pytest
 
-from tools.project_daily_model_costs import project_records
+from tools.project_daily_model_costs import load_calibration, project_records
 
 
 def test_category_projection_allocates_shared_cost_and_reconciles_total() -> None:
     records = [
-        {"flow": "reporter:a", "model": "gpt-5.4", "tokens_used": 100, "exit_code": 0},
-        {"flow": "reporter:b", "model": "gpt-5.4", "tokens_used": 300, "exit_code": 0},
-        {"flow": "newsroom_editor", "model": "gpt-5.4", "tokens_used": 50, "exit_code": 0},
-        {"flow": "deepdive", "model": "gpt-5.5", "tokens_used": 20, "exit_code": 0},
+        {"flow": "reporter:a", "model": "gpt-5.6-luna", "tokens_used": 100, "exit_code": 0},
+        {"flow": "reporter:b", "model": "gpt-5.6-luna", "tokens_used": 300, "exit_code": 0},
+        {"flow": "newsroom_editor", "model": "gpt-5.6-luna", "tokens_used": 50, "exit_code": 0},
+        {"flow": "deepdive", "model": "gpt-5.6-sol", "tokens_used": 20, "exit_code": 0},
     ]
     calibration = {
         "reporter": {"current_unit": 1.0, "candidate_multiplier": 1.0},
@@ -28,6 +28,27 @@ def test_category_projection_allocates_shared_cost_and_reconciles_total() -> Non
     assert sum(row["current_usd"] for row in report["categories"]) == report["overall"]["current_usd"]
     assert sum(row["candidate_usd"] for row in report["categories"]) == report["overall"]["candidate_usd"]
     assert report["categories"][0]["direct_candidate_usd"] == report["categories"][0]["direct_current_usd"]
+
+
+def test_calibration_uses_current_model_policy_without_retired_fallback(tmp_path: Path) -> None:
+    rows = []
+    for case, model in (
+        ("reporter", "gpt-5.6-luna"),
+        ("newsroom_editor", "gpt-5.6-luna"),
+        ("style_editor", "gpt-5.6-luna"),
+        ("deepdive", "gpt-5.6-sol"),
+    ):
+        rows.append({"case": case, "model": model, "input_tokens_total": 80, "output_tokens_total": 20, "api_cost_total_usd": 1.0})
+    summary = tmp_path / "summary.json"
+    summary.write_text(json.dumps({"rows": rows}), encoding="utf-8")
+
+    calibration = load_calibration(summary)
+
+    assert calibration["reporter"]["current_model"] == "gpt-5.6-luna"
+    assert calibration["newsroom_editor"]["current_model"] == "gpt-5.6-luna"
+    assert calibration["repair"]["current_model"] == "gpt-5.6-luna"
+    assert calibration["style_editor"]["current_model"] == "gpt-5.6-luna"
+    assert calibration["deepdive"]["current_model"] == "gpt-5.6-sol"
 
 
 @pytest.mark.skipif(

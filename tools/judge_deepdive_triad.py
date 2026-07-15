@@ -15,13 +15,13 @@ from tools.run_deepdive_terra_benchmark import output_path, strip_scores
 from tools.run_model_benchmark import estimate_api_cost_usd, parse_usage_jsonl
 
 
-MODELS = ("gpt-5.5", "gpt-5.6-terra", "gpt-5.6-sol")
+MODELS = ("gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol")
 ORDERS = (
-    ("gpt-5.5", "gpt-5.6-terra", "gpt-5.6-sol"),
-    ("gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5"),
-    ("gpt-5.6-sol", "gpt-5.5", "gpt-5.6-terra"),
+    ("gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol"),
+    ("gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.5"),
+    ("gpt-5.6-sol", "gpt-5.5", "gpt-5.6-luna"),
 )
-JUDGE_MODEL = "gpt-5.4"
+JUDGE_MODEL = "gpt-5.6-luna"
 DIMENSIONS = ("readability", "coherence", "natural_japanese", "information_density", "insight", "non_repetition", "reader_usefulness")
 QUALITY_WEIGHTS = {
     "readability": 0.10,
@@ -70,7 +70,7 @@ information_density, insight, non_repetition, reader_usefulnessの7軸で1-5点�
     output = run_dir / "judge.json"
     sandbox = out_dir / "sandbox"
     sandbox.mkdir(parents=True, exist_ok=True)
-    command = [str(codex_exe), "exec", "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "-C", str(sandbox.resolve()), "-m", JUDGE_MODEL, "-c", 'model_reasoning_effort="medium"', "--output-schema", str(Path("schemas/deepdive_triad_judge.schema.json").resolve()), "-o", str(output.resolve()), "-"]
+    command = [str(codex_exe), "exec", "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "-C", str(sandbox.resolve()), "-m", JUDGE_MODEL, "-c", 'model_reasoning_effort="high"', "--output-schema", str(Path("schemas/deepdive_triad_judge.schema.json").resolve()), "-o", str(output.resolve()), "-"]
     started = time.perf_counter()
     completed = subprocess.run(command, input=prompt, text=True, capture_output=True, encoding="utf-8", errors="replace", timeout=timeout_sec, check=False)
     duration = time.perf_counter() - started

@@ -1,0 +1,674 @@
+{
+  "schema_version": "luna_high_replacement_report.v1",
+  "generated_at": "2026-07-16T01:42:31+09:00",
+  "complete": true,
+  "model_labels": {
+    "gpt-5.4 / low": "M1",
+    "gpt-5.4 / medium": "M2",
+    "gpt-5.4 / high": "M3",
+    "gpt-5.5 / low": "M4",
+    "gpt-5.5 / medium": "M5",
+    "gpt-5.5 / high": "M6",
+    "gpt-5.6-sol / high": "M7",
+    "gpt-5.6-terra / low": "M8",
+    "gpt-5.6-terra / medium": "M9",
+    "gpt-5.6-terra / high": "M10",
+    "gpt-5.6-luna / low": "M11",
+    "gpt-5.6-luna / medium": "M12",
+    "gpt-5.6-luna / high": "M13"
+  },
+  "roles": [
+    {
+      "role": "reporter",
+      "role_label": "記事生成 reporter",
+      "current_model": "gpt-5.6-luna",
+      "current_effort": "high",
+      "current": "gpt-5.6-luna / high",
+      "candidate": "gpt-5.6-luna / high",
+      "verdict": "replace_ok",
+      "reason": "品質・pass・closureが非劣後で、fatal増加なし",
+      "deltas": {
+        "quality": 0.0,
+        "pass_rate": 0.0,
+        "closure_rate": 0.0,
+        "fatal_rate": 0.0
+      },
+      "current_metrics": {
+        "quality": 0.874133,
+        "quality_stdev": 0.208571,
+        "pass_rate": 0.6,
+        "fatal_rate": 0.033333,
+        "closure_rate": 0.944444,
+        "sample_count": 30,
+        "credits": 0.364275,
+        "messages": 30
+      },
+      "candidate_metrics": {
+        "quality": 0.874133,
+        "quality_stdev": 0.208571,
+        "pass_rate": 0.6,
+        "fatal_rate": 0.033333,
+        "closure_rate": 0.944444,
+        "sample_count": 30,
+        "credits": 0.364275,
+        "messages": 30
+      },
+      "metrics": {
+        "current": 0.874133,
+        "candidate": 0.874133
+      },
+      "axes": {
+        "external": [
+          "JA_NLU",
+          "JA_SUMMARY"
+        ],
+        "recovery": [
+          "NG-RC",
+          "NG-OPS"
+        ]
+      }
+    },
+    {
+      "role": "editor",
+      "role_label": "文体 editor",
+      "current_model": "gpt-5.6-luna",
+      "current_effort": "high",
+      "current": "gpt-5.6-luna / high",
+      "candidate": "gpt-5.6-luna / high",
+      "verdict": "replace_ok",
+      "reason": "品質・pass・closureが非劣後で、fatal増加なし",
+      "deltas": {
+        "quality": 0.0,
+        "pass_rate": 0.0,
+        "closure_rate": 0.0,
+        "fatal_rate": 0.0
+      },
+      "current_metrics": {
+        "quality": 0.768667,
+        "quality_stdev": 0.092761,
+        "pass_rate": 0.083333,
+        "fatal_rate": 0.0,
+        "closure_rate": 0.083333,
+        "sample_count": 12,
+        "credits": 0.13665,
+        "messages": 12
+      },
+      "candidate_metrics": {
+        "quality": 0.768667,
+        "quality_stdev": 0.092761,
+        "pass_rate": 0.083333,
+        "fatal_rate": 0.0,
+        "closure_rate": 0.083333,
+        "sample_count": 12,
+        "credits": 0.13665,
+        "messages": 12
+      },
+      "metrics": {
+        "current": 0.768667,
+        "candidate": 0.768667
+      },
+      "axes": {
+        "external": [
+          "JA_NLU",
+          "JA_SUMMARY"
+        ],
+        "recovery": []
+      }
+    },
+    {
+      "role": "repair",
+      "role_label": "復旧 repair worker",
+      "current_model": "gpt-5.6-luna",
+      "current_effort": "high",
+      "current": "gpt-5.6-luna / high",
+      "candidate": "gpt-5.6-luna / high",
+      "verdict": "replace_ok",
+      "reason": "品質・pass・closureが非劣後で、fatal増加なし",
+      "deltas": {
+        "quality": 0.0,
+        "pass_rate": 0.0,
+        "closure_rate": 0.0,
+        "fatal_rate": 0.0
+      },
+      "current_metrics": {
+        "quality": 0.774359,
+        "quality_stdev": 0.408281,
+        "pass_rate": 0.74359,
+        "fatal_rate": 0.307692,
+        "closure_rate": 0.703704,
+        "sample_count": 39,
+        "credits": 0.6264,
+        "messages": 39
+      },
+      "candidate_metrics": {
+        "quality": 0.774359,
+        "quality_stdev": 0.408281,
+        "pass_rate": 0.74359,
+        "fatal_rate": 0.307692,
+        "closure_rate": 0.703704,
+        "sample_count": 39,
+        "credits": 0.6264,
+        "messages": 39
+      },
+      "metrics": {
+        "current": 0.774359,
+        "candidate": 0.774359
+      },
+      "axes": {
+        "external": [
+          "CODE_REPAIR",
+          "CODE_SYNTH"
+        ],
+        "recovery": [
+          "NG-MF",
+          "NG-PATCH",
+          "NG-CODE"
+        ]
+      }
+    },
+    {
+      "role": "newsroom_editor",
+      "role_label": "Newsroom editor",
+      "current_model": "gpt-5.6-luna",
+      "current_effort": "high",
+      "current": "gpt-5.6-luna / high",
+      "candidate": "gpt-5.6-luna / high",
+      "verdict": "replace_ok",
+      "reason": "品質・pass・closureが非劣後で、fatal増加なし",
+      "deltas": {
+        "quality": 0.0,
+        "pass_rate": 0.0,
+        "closure_rate": 0.0,
+        "fatal_rate": 0.0
+      },
+      "current_metrics": {
+        "quality": 0.753733,
+        "quality_stdev": 0.392687,
+        "pass_rate": 0.616667,
+        "fatal_rate": 0.25,
+        "closure_rate": 0.714286,
+        "sample_count": 60,
+        "credits": 0.7461,
+        "messages": 60
+      },
+      "candidate_metrics": {
+        "quality": 0.753733,
+        "quality_stdev": 0.392687,
+        "pass_rate": 0.616667,
+        "fatal_rate": 0.25,
+        "closure_rate": 0.714286,
+        "sample_count": 60,
+        "credits": 0.7461,
+        "messages": 60
+      },
+      "metrics": {
+        "current": 0.753733,
+        "candidate": 0.753733
+      },
+      "axes": {
+        "external": [
+          "CODE_REPAIR",
+          "JA_NLU",
+          "JA_SUMMARY"
+        ],
+        "recovery": [
+          "NG-RC",
+          "NG-MF",
+          "NG-PATCH",
+          "NG-LONG",
+          "NG-OPS"
+        ]
+      }
+    },
+    {
+      "role": "deepdive",
+      "role_label": "DeepDive",
+      "current_model": "gpt-5.6-sol",
+      "current_effort": "high",
+      "current": "gpt-5.6-sol / high",
+      "candidate": "gpt-5.6-luna / high",
+      "verdict": "conditional",
+      "reason": "共通軸では非劣後だが、DeepDive専用の長文構成・洞察品質fixtureが未測定",
+      "deltas": {
+        "quality": 0.014518,
+        "pass_rate": 0.037037,
+        "closure_rate": 0.0,
+        "fatal_rate": -0.037037
+      },
+      "current_metrics": {
+        "quality": 0.771556,
+        "quality_stdev": 0.309984,
+        "pass_rate": 0.444444,
+        "fatal_rate": 0.111111,
+        "closure_rate": 0.8,
+        "sample_count": 27,
+        "credits": 1.591875,
+        "messages": 27
+      },
+      "candidate_metrics": {
+        "quality": 0.786074,
+        "quality_stdev": 0.310161,
+        "pass_rate": 0.481481,
+        "fatal_rate": 0.074074,
+        "closure_rate": 0.8,
+        "sample_count": 27,
+        "credits": 0.301875,
+        "messages": 27
+      },
+      "metrics": {
+        "current": 0.771556,
+        "candidate": 0.786074
+      },
+      "axes": {
+        "external": [
+          "JA_NLU",
+          "JA_SUMMARY"
+        ],
+        "recovery": [
+          "NG-LONG",
+          "NG-OPS"
+        ]
+      }
+    }
+  ],
+  "score_rows": [
+    {
+      "axis": "CODE_REPAIR",
+      "group": "外部ベンチマーク型",
+      "values": {
+        "gpt-5.4 / low": 0.833333,
+        "gpt-5.4 / medium": 0.833333,
+        "gpt-5.4 / high": 1.0,
+        "gpt-5.5 / low": 1.0,
+        "gpt-5.5 / medium": 1.0,
+        "gpt-5.5 / high": 1.0,
+        "gpt-5.6-sol / high": 1.0,
+        "gpt-5.6-terra / low": 1.0,
+        "gpt-5.6-terra / medium": 1.0,
+        "gpt-5.6-terra / high": 1.0,
+        "gpt-5.6-luna / low": 1.0,
+        "gpt-5.6-luna / medium": 1.0,
+        "gpt-5.6-luna / high": 1.0
+      }
+    },
+    {
+      "axis": "CODE_SYNTH",
+      "group": "外部ベンチマーク型",
+      "values": {
+        "gpt-5.4 / low": 0.866667,
+        "gpt-5.4 / medium": 0.933333,
+        "gpt-5.4 / high": 0.833333,
+        "gpt-5.5 / low": 0.8,
+        "gpt-5.5 / medium": 0.8,
+        "gpt-5.5 / high": 0.933333,
+        "gpt-5.6-sol / high": 0.933333,
+        "gpt-5.6-terra / low": 0.8,
+        "gpt-5.6-terra / medium": 0.8,
+        "gpt-5.6-terra / high": 0.8,
+        "gpt-5.6-luna / low": 0.666667,
+        "gpt-5.6-luna / medium": 0.8,
+        "gpt-5.6-luna / high": 0.866667
+      }
+    },
+    {
+      "axis": "JA_NLU",
+      "group": "外部ベンチマーク型",
+      "values": {
+        "gpt-5.4 / low": 0.696,
+        "gpt-5.4 / medium": 0.72,
+        "gpt-5.4 / high": 0.845333,
+        "gpt-5.5 / low": 0.672,
+        "gpt-5.5 / medium": 0.696,
+        "gpt-5.5 / high": 0.728,
+        "gpt-5.6-sol / high": 0.672,
+        "gpt-5.6-terra / low": 0.688,
+        "gpt-5.6-terra / medium": 0.742667,
+        "gpt-5.6-terra / high": 0.72,
+        "gpt-5.6-luna / low": 0.688,
+        "gpt-5.6-luna / medium": 0.64,
+        "gpt-5.6-luna / high": 0.704
+      }
+    },
+    {
+      "axis": "JA_SUMMARY",
+      "group": "外部ベンチマーク型",
+      "values": {
+        "gpt-5.4 / low": 0.9,
+        "gpt-5.4 / medium": 0.866667,
+        "gpt-5.4 / high": 0.633333,
+        "gpt-5.5 / low": 0.833333,
+        "gpt-5.5 / medium": 0.9,
+        "gpt-5.5 / high": 0.833333,
+        "gpt-5.6-sol / high": 0.8,
+        "gpt-5.6-terra / low": 0.8,
+        "gpt-5.6-terra / medium": 0.8,
+        "gpt-5.6-terra / high": 0.8,
+        "gpt-5.6-luna / low": 0.8,
+        "gpt-5.6-luna / medium": 0.8,
+        "gpt-5.6-luna / high": 0.833333
+      }
+    },
+    {
+      "axis": "NG-RC",
+      "group": "News-Grasp復旧",
+      "values": {
+        "gpt-5.4 / low": 0.888889,
+        "gpt-5.4 / medium": 0.777778,
+        "gpt-5.4 / high": 0.888889,
+        "gpt-5.5 / low": 0.777778,
+        "gpt-5.5 / medium": 0.777778,
+        "gpt-5.5 / high": 0.888889,
+        "gpt-5.6-sol / high": 0.888889,
+        "gpt-5.6-terra / low": 1.0,
+        "gpt-5.6-terra / medium": 0.777778,
+        "gpt-5.6-terra / high": 0.888889,
+        "gpt-5.6-luna / low": 0.888889,
+        "gpt-5.6-luna / medium": 0.888889,
+        "gpt-5.6-luna / high": 0.888889
+      }
+    },
+    {
+      "axis": "NG-MF",
+      "group": "News-Grasp復旧",
+      "values": {
+        "gpt-5.4 / low": 0.555556,
+        "gpt-5.4 / medium": 0.777778,
+        "gpt-5.4 / high": 1.0,
+        "gpt-5.5 / low": 0.444444,
+        "gpt-5.5 / medium": 0.666667,
+        "gpt-5.5 / high": 0.777778,
+        "gpt-5.6-sol / high": 1.0,
+        "gpt-5.6-terra / low": 0.777778,
+        "gpt-5.6-terra / medium": 0.555556,
+        "gpt-5.6-terra / high": 0.777778,
+        "gpt-5.6-luna / low": 0.777778,
+        "gpt-5.6-luna / medium": 0.666667,
+        "gpt-5.6-luna / high": 0.444444
+      }
+    },
+    {
+      "axis": "NG-PATCH",
+      "group": "News-Grasp復旧",
+      "values": {
+        "gpt-5.4 / low": 0.666667,
+        "gpt-5.4 / medium": 0.666667,
+        "gpt-5.4 / high": 0.666667,
+        "gpt-5.5 / low": 0.666667,
+        "gpt-5.5 / medium": 0.666667,
+        "gpt-5.5 / high": 0.666667,
+        "gpt-5.6-sol / high": 0.666667,
+        "gpt-5.6-terra / low": 0.666667,
+        "gpt-5.6-terra / medium": 0.666667,
+        "gpt-5.6-terra / high": 0.666667,
+        "gpt-5.6-luna / low": 0.666667,
+        "gpt-5.6-luna / medium": 0.666667,
+        "gpt-5.6-luna / high": 0.666667
+      }
+    },
+    {
+      "axis": "NG-LONG",
+      "group": "News-Grasp復旧",
+      "values": {
+        "gpt-5.4 / low": 0.5,
+        "gpt-5.4 / medium": 0.5,
+        "gpt-5.4 / high": 0.5,
+        "gpt-5.5 / low": 0.5,
+        "gpt-5.5 / medium": 0.5,
+        "gpt-5.5 / high": 0.5,
+        "gpt-5.6-sol / high": 0.5,
+        "gpt-5.6-terra / low": 0.333333,
+        "gpt-5.6-terra / medium": 0.333333,
+        "gpt-5.6-terra / high": 0.166667,
+        "gpt-5.6-luna / low": 0.5,
+        "gpt-5.6-luna / medium": 0.5,
+        "gpt-5.6-luna / high": 0.5
+      }
+    },
+    {
+      "axis": "NG-OPS",
+      "group": "News-Grasp復旧",
+      "values": {
+        "gpt-5.4 / low": 1.0,
+        "gpt-5.4 / medium": 1.0,
+        "gpt-5.4 / high": 1.0,
+        "gpt-5.5 / low": 0.888889,
+        "gpt-5.5 / medium": 0.888889,
+        "gpt-5.5 / high": 1.0,
+        "gpt-5.6-sol / high": 1.0,
+        "gpt-5.6-terra / low": 1.0,
+        "gpt-5.6-terra / medium": 1.0,
+        "gpt-5.6-terra / high": 1.0,
+        "gpt-5.6-luna / low": 1.0,
+        "gpt-5.6-luna / medium": 1.0,
+        "gpt-5.6-luna / high": 1.0
+      }
+    },
+    {
+      "axis": "NG-CODE",
+      "group": "News-Grasp復旧",
+      "values": {
+        "gpt-5.4 / low": 1.0,
+        "gpt-5.4 / medium": 1.0,
+        "gpt-5.4 / high": 1.0,
+        "gpt-5.5 / low": 1.0,
+        "gpt-5.5 / medium": 1.0,
+        "gpt-5.5 / high": 1.0,
+        "gpt-5.6-sol / high": 1.0,
+        "gpt-5.6-terra / low": 1.0,
+        "gpt-5.6-terra / medium": 1.0,
+        "gpt-5.6-terra / high": 1.0,
+        "gpt-5.6-luna / low": 1.0,
+        "gpt-5.6-luna / medium": 1.0,
+        "gpt-5.6-luna / high": 1.0
+      }
+    }
+  ],
+  "case_rows": [
+    {
+      "case_id": "code_repair_public_completion",
+      "purpose": "CODE_REPAIR: easy_bypass_guard, edge_test_count>=4",
+      "source": "swe_bench, livecodebench"
+    },
+    {
+      "case_id": "code_repair_resume_stage",
+      "purpose": "CODE_REPAIR: easy_bypass_guard, edge_test_count>=4",
+      "source": "swe_bench, livecodebench"
+    },
+    {
+      "case_id": "code_synth_digest_windows",
+      "purpose": "CODE_SYNTH: easy_bypass_guard, hidden_test_count>=4",
+      "source": "human_eval, mbpp"
+    },
+    {
+      "case_id": "code_synth_topic_key",
+      "purpose": "CODE_SYNTH: easy_bypass_guard, hidden_test_count>=4",
+      "source": "human_eval, mbpp"
+    },
+    {
+      "case_id": "ja_nlu_negation_recovery",
+      "purpose": "JA_NLU: easy_bypass_guard, negation",
+      "source": "jglue, llm_jp_eval"
+    },
+    {
+      "case_id": "ja_nlu_typed_blocker",
+      "purpose": "JA_NLU: easy_bypass_guard, negation",
+      "source": "jglue, llm_jp_eval"
+    },
+    {
+      "case_id": "ja_summary_publish_gate",
+      "purpose": "JA_SUMMARY: easy_bypass_guard, fact_preservation",
+      "source": "xlsum, llm_jp_eval, open_japanese_llm_leaderboard"
+    },
+    {
+      "case_id": "ja_summary_recovery_continuity",
+      "purpose": "JA_SUMMARY: easy_bypass_guard, fact_preservation",
+      "source": "xlsum, llm_jp_eval, open_japanese_llm_leaderboard"
+    },
+    {
+      "case_id": "rc-state-stale-proof",
+      "purpose": "NG-RC: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "rc-unknown-repair-class",
+      "purpose": "NG-RC: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "rc-podcast-auth-yellow",
+      "purpose": "NG-RC: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "mf-review-output-path",
+      "purpose": "NG-MF: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "mf-completion-order",
+      "purpose": "NG-MF: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "mf-capability-drift",
+      "purpose": "NG-MF: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "patch-public-sentinel",
+      "purpose": "NG-PATCH: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "patch-resume-stage",
+      "purpose": "NG-PATCH: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "patch-token-gate",
+      "purpose": "NG-PATCH: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "code-publish-status-contract",
+      "purpose": "NG-CODE: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "code-repair-ledger-order",
+      "purpose": "NG-CODE: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "code-category-schedule",
+      "purpose": "NG-CODE: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "long-gate-excuse",
+      "purpose": "NG-LONG: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "long-typed-external",
+      "purpose": "NG-LONG: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "ops-clean",
+      "purpose": "NG-OPS: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "ops-fallback-reported",
+      "purpose": "NG-OPS: ",
+      "source": "News-Grasp historical / seeded fixture"
+    },
+    {
+      "case_id": "ops-resume-failure",
+      "purpose": "NG-OPS: ",
+      "source": "News-Grasp historical / seeded fixture"
+    }
+  ],
+  "audits": [
+    {
+      "name": "3反復 coverage",
+      "status": "pass",
+      "detail": "全 975 records の複合キーを検証"
+    },
+    {
+      "name": "baseline hash lock",
+      "status": "pass",
+      "detail": "既存900 recordsをSHA-256で固定して再利用"
+    },
+    {
+      "name": "fatal gate分離",
+      "status": "pass",
+      "detail": "品質平均でfatalを相殺せず、代替判定の独立条件に使用"
+    },
+    {
+      "name": "effort分離",
+      "status": "pass",
+      "detail": "Luna low/medium/highを別系列として表示"
+    }
+  ],
+  "measurement_limits": [
+    "News-Grasp固有DeepDive品質はproxy評価。DeepDive専用の長文構成・洞察品質fixtureではない。",
+    "Terraのnewsroom_editor設定はreasoning未指定。mediumを可視化proxyに使うが、代替可否はconditionalとする。",
+    "Codex CLIのusage eventが無いrunは文字数推計tokenを含むため、creditは品質結論ではなく運用参考値。",
+    "外部benchmark名は問題設計の根拠であり、公式leaderboard scoreの再現値ではない。"
+  ],
+  "reuse_manifest": {
+    "schema_version": "luna_high_reuse_manifest.v1",
+    "recovery_base": {
+      "path": "_ops/benchmark-runs/codex-recovery-benchmark/20260715-full-effort-merged/records.json",
+      "sha256": "e783334ed76b4cef5c716c5c162beda57381edd9f4cb344123cc8ecdb534c528",
+      "validation": {
+        "complete": true,
+        "record_count": 612,
+        "missing": [],
+        "duplicates": [],
+        "unexpected": [],
+        "rejected_rows": []
+      }
+    },
+    "external_base": {
+      "path": "_ops/benchmark-runs/external-benchmark-matrix/20260715-full-effort-r1/records.json",
+      "sha256": "0e97f7869e94f99c1d9e7355dab7962de2cbbd79b6962590a58c906d3b8ab3bd",
+      "validation": {
+        "complete": true,
+        "record_count": 288,
+        "missing": [],
+        "duplicates": [],
+        "unexpected": [],
+        "rejected_rows": []
+      }
+    },
+    "recovery_sol": {
+      "path": "_ops/benchmark-runs/codex-recovery-benchmark/20260715-current-policy-sol-high-r1/records.json",
+      "sha256": "6fe699f9a9ac2751663e34d69e894f6edcf64e894ef0a4cb82983a6f870be28a",
+      "validation": {
+        "complete": true,
+        "record_count": 51,
+        "missing": [],
+        "duplicates": [],
+        "unexpected": [],
+        "rejected_rows": []
+      }
+    },
+    "external_sol": {
+      "path": "_ops/benchmark-runs/external-benchmark-matrix/20260715-current-policy-sol-high-r1/records.json",
+      "sha256": "b1ac7aed8760dc7c1bdc4cc461c65d8043fab3812a3eddaf66b091e792bf2720",
+      "validation": {
+        "complete": true,
+        "record_count": 24,
+        "missing": [],
+        "duplicates": [],
+        "unexpected": [],
+        "rejected_rows": []
+      }
+    },
+    "complete": true
+  },
+  "official_rate_card": "https://help.openai.com/en/articles/20001106-codex-rate-card"
+}

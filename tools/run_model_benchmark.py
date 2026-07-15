@@ -25,18 +25,18 @@ API_PRICES_PER_MILLION: dict[str, dict[str, float]] = {
 
 CASES: dict[str, dict[str, Any]] = {
     "reporter": {
-        "models": ["gpt-5.4", "gpt-5.6-terra"],
-        "reasoning": "medium",
+        "models": ["gpt-5.6-luna"],
+        "reasoning": "high",
         "schema": "schemas/model_eval_output.schema.json",
     },
     "style_editor": {
-        "models": ["gpt-5.4-mini", "gpt-5.6-luna"],
-        "reasoning": "medium",
+        "models": ["gpt-5.6-luna"],
+        "reasoning": "high",
         "schema": "schemas/model_eval_output.schema.json",
     },
     "newsroom_editor": {
-        "models": ["gpt-5.4", "gpt-5.6-terra"],
-        "reasoning": "medium",
+        "models": ["gpt-5.6-luna"],
+        "reasoning": "high",
         "schema": "schemas/newsroom_editor_eval_output.schema.json",
     },
     "deepdive": {

@@ -15,10 +15,10 @@ from tools.run_model_benchmark import CASES, estimate_api_cost_usd, parse_usage_
 
 
 JUDGE_MODEL = {
-    "reporter": "gpt-5.5",
-    "style_editor": "gpt-5.5",
-    "newsroom_editor": "gpt-5.5",
-    "deepdive": "gpt-5.4",
+    "reporter": "gpt-5.6-luna",
+    "style_editor": "gpt-5.6-luna",
+    "newsroom_editor": "gpt-5.6-luna",
+    "deepdive": "gpt-5.6-luna",
 }
 DIMENSIONS = (
     "readability", "coherence", "natural_japanese", "information_density",
@@ -80,7 +80,7 @@ natural_japanese, information_density, insight, non_repetition, reader_usefulnes
     cmd = [
         str(codex_exe), "exec", "--json", "--ephemeral", "--ignore-user-config",
         "--ignore-rules", "--skip-git-repo-check", "-C", str(sandbox),
-        "-m", judge_model, "-c", 'model_reasoning_effort="medium"',
+        "-m", judge_model, "-c", 'model_reasoning_effort="high"',
         "--output-schema", str(schema), "-o", str(output.resolve()), "-",
     ]
     started = time.perf_counter()

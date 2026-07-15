@@ -29,9 +29,15 @@ REQUIRED_FILES = [
 
 REQUIRED_MODEL_POLICY_KEYS = (
     ("reporter", "default"),
+    ("reporter", "reasoning"),
     ("editor", "default"),
+    ("editor", "reasoning"),
+    ("repair", "default"),
+    ("repair", "reasoning"),
     ("newsroom_editor", "default"),
+    ("newsroom_editor", "reasoning"),
     ("deepdive", "default"),
+    ("deepdive", "reasoning"),
 )
 
 ALLOWED_PUBLISH_RESULTS = {"published_ok"}
@@ -94,6 +100,12 @@ def _audit_model_policy() -> list[str]:
         value = policy.get(key)
         if value in (None, ""):
             errors.append(f"model policy missing required key: {role}.{key}")
+    for role in ("reporter", "editor", "repair", "newsroom_editor"):
+        policy = DEFAULT_MODEL_POLICY.get(role, {})
+        if policy.get("default") != "gpt-5.6-luna":
+            errors.append(f"model policy retired/default drift: {role}.default={policy.get('default')!r}")
+        if policy.get("reasoning") != "high":
+            errors.append(f"model policy effort drift: {role}.reasoning={policy.get('reasoning')!r}")
     return errors
 
 

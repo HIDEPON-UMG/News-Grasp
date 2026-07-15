@@ -14,7 +14,8 @@ from typing import Any
 from tools.run_model_benchmark import estimate_api_cost_usd, parse_usage_jsonl
 
 
-MODELS = ("gpt-5.4", "gpt-5.6-terra")
+MODELS = ("gpt-5.6-luna",)
+REASONING_EFFORT = "high"
 SCENARIOS: list[dict[str, Any]] = [
     {
         "scenario_id": "dedup_quarantine",
@@ -112,7 +113,7 @@ def run_one(*, model: str, repeat: int, repo_root: Path, out_dir: Path, codex_ex
     command = [
         str(codex_exe), "exec", "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules",
         "--skip-git-repo-check", "-C", str(sandbox.resolve()), "-m", model,
-        "-c", 'model_reasoning_effort="medium"', "--output-schema",
+        "-c", f'model_reasoning_effort="{REASONING_EFFORT}"', "--output-schema",
         str((repo_root / "schemas/newsroom_append_safety_benchmark.schema.json").resolve()),
         "-o", str(output_path.resolve()), "-",
     ]

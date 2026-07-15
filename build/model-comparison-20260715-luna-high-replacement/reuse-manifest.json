@@ -1,0 +1,52 @@
+{
+  "schema_version": "luna_high_reuse_manifest.v1",
+  "recovery_base": {
+    "path": "_ops/benchmark-runs/codex-recovery-benchmark/20260715-full-effort-merged/records.json",
+    "sha256": "e783334ed76b4cef5c716c5c162beda57381edd9f4cb344123cc8ecdb534c528",
+    "validation": {
+      "complete": true,
+      "record_count": 612,
+      "missing": [],
+      "duplicates": [],
+      "unexpected": [],
+      "rejected_rows": []
+    }
+  },
+  "external_base": {
+    "path": "_ops/benchmark-runs/external-benchmark-matrix/20260715-full-effort-r1/records.json",
+    "sha256": "0e97f7869e94f99c1d9e7355dab7962de2cbbd79b6962590a58c906d3b8ab3bd",
+    "validation": {
+      "complete": true,
+      "record_count": 288,
+      "missing": [],
+      "duplicates": [],
+      "unexpected": [],
+      "rejected_rows": []
+    }
+  },
+  "recovery_sol": {
+    "path": "_ops/benchmark-runs/codex-recovery-benchmark/20260715-current-policy-sol-high-r1/records.json",
+    "sha256": "6fe699f9a9ac2751663e34d69e894f6edcf64e894ef0a4cb82983a6f870be28a",
+    "validation": {
+      "complete": true,
+      "record_count": 51,
+      "missing": [],
+      "duplicates": [],
+      "unexpected": [],
+      "rejected_rows": []
+    }
+  },
+  "external_sol": {
+    "path": "_ops/benchmark-runs/external-benchmark-matrix/20260715-current-policy-sol-high-r1/records.json",
+    "sha256": "b1ac7aed8760dc7c1bdc4cc461c65d8043fab3812a3eddaf66b091e792bf2720",
+    "validation": {
+      "complete": true,
+      "record_count": 24,
+      "missing": [],
+      "duplicates": [],
+      "unexpected": [],
+      "rejected_rows": []
+    }
+  },
+  "complete": true
+}

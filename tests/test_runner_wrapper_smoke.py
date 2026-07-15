@@ -20,36 +20,33 @@ pytestmark = pytest.mark.skipif(not WRAPPER.exists(), reason=f"wrapper not found
 
 
 def _fake_codex(tmp_path: Path) -> Path:
-    fake = tmp_path / "fake_codex.cmd"
+    fake = tmp_path / "fake_codex.ps1"
     fake.write_text(
-        "@echo off\r\n"
-        "echo ARGV:%*\r\n"
-        "echo {\"type\":\"result\",\"is_error\":false}\r\n",
-        encoding="cp932",
+        "Write-Output ('ARGV:' + ($args -join ' '))\n"
+        "Write-Output '{\"type\":\"result\",\"is_error\":false}'\n",
+        encoding="utf-8-sig",
     )
     return fake
 
 
 def _fake_codex_with_usage(tmp_path: Path) -> Path:
-    fake = tmp_path / "fake_codex_usage.cmd"
+    fake = tmp_path / "fake_codex_usage.ps1"
     fake.write_text(
-        "@echo off\r\n"
-        "echo ARGV:%*\r\n"
-        "echo tokens used\r\n"
-        "echo 12,345\r\n",
-        encoding="cp932",
+        "Write-Output ('ARGV:' + ($args -join ' '))\n"
+        "Write-Output 'tokens used'\n"
+        "Write-Output '12,345'\n",
+        encoding="utf-8-sig",
     )
     return fake
 
 
 def _fake_codex_usage_limit(tmp_path: Path) -> Path:
-    fake = tmp_path / "fake_codex_usage_limit.cmd"
+    fake = tmp_path / "fake_codex_usage_limit.ps1"
     fake.write_text(
-        "@echo off\r\n"
-        "echo ERROR: You've hit your usage limit.\r\n"
-        "echo Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 5:36 AM.\r\n"
-        "exit /b 1\r\n",
-        encoding="cp932",
+        "Write-Output \"ERROR: You've hit your usage limit.\"\n"
+        "Write-Output 'Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 5:36 AM.'\n"
+        "exit 1\n",
+        encoding="utf-8-sig",
     )
     return fake
 
@@ -59,8 +56,10 @@ def _fake_codex_with_delayed_exit(tmp_path: Path, sentinel: Path) -> Path:
     fake.write_text(
         "$sentinel = [Environment]::GetEnvironmentVariable('CODEX_FAKE_SUCCESS_SENTINEL', 'Process')\n"
         "if (-not $sentinel) { Write-Error 'CODEX_FAKE_SUCCESS_SENTINEL missing'; exit 99 }\n"
+        "$childCode = \"Start-Sleep -Seconds 2; [System.IO.File]::WriteAllText(''${sentinel}'', ''mutated'', [System.Text.UTF8Encoding]::new(`$false))\"\n"
+        "Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-Command', $childCode) -WindowStyle Hidden | Out-Null\n"
         "Write-Output '{\"type\":\"result\",\"is_error\":false}'\n"
-        "[System.IO.File]::WriteAllText($sentinel, 'ok', [System.Text.UTF8Encoding]::new($false))\n"
+        "[System.IO.File]::WriteAllText($sentinel, 'green', [System.Text.UTF8Encoding]::new($false))\n"
         "Start-Sleep -Seconds 20\n"
         "exit 0\n",
         encoding="utf-8",
@@ -140,6 +139,8 @@ def test_codex_wrapper_uses_prompt_file_working_directory_and_schema(tmp_path: P
     assert "-C" in log
     assert "--search" not in log
     assert "test-model" in log
+    assert str(tmp_path) not in log
+    assert str(ROOT) not in log
 
 
 def test_codex_wrapper_sets_noninteractive_artifact_gate_env_and_stdin_prompt(tmp_path: Path) -> None:
@@ -228,6 +229,8 @@ def test_codex_wrapper_writes_flow_usage_jsonl(tmp_path: Path) -> None:
     text = usage_log.read_text(encoding="utf-8")
     assert '"flow":"reporter:ai"' in text
     assert '"tokens_used":12345' in text
+    assert str(tmp_path) not in text
+    assert str(ROOT) not in text
 
 
 def test_codex_wrapper_maps_usage_limit_to_typed_external_rc(tmp_path: Path) -> None:
@@ -302,5 +305,10 @@ def test_codex_wrapper_success_probe_returns_after_artifact_gate_green(tmp_path:
     log = log_file.read_text(encoding="utf-8", errors="replace")
     assert result.returncode == 0, result.stderr + log
     assert "success probe passed" in log
+    assert "process tree confirmed stopped" in log
     assert '"flow":"newsroom_editor"' in usage_log.read_text(encoding="utf-8", errors="replace")
     assert '"exit_code":0' in usage_log.read_text(encoding="utf-8", errors="replace")
+    import time
+
+    time.sleep(3)
+    assert sentinel.read_text(encoding="utf-8") == "green"

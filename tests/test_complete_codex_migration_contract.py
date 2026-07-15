@@ -216,11 +216,12 @@ def test_active_prompts_use_codex_terms_and_style_guide() -> None:
             assert not re.search(pattern, text), f"{path}: {pattern}"
 
 
-def test_model_eval_includes_gpt55_editor_variant_before_policy_finalization() -> None:
+def test_model_eval_retains_aliases_without_retired_model_execution() -> None:
     assert "mini-editor-55" in VARIANTS
     assert VARIANTS["mini-editor-55"]["model"] == "gpt-5.5"
     assert "mini-editor-54" in VARIANTS
-    assert VARIANTS["mini-editor-54"]["model"] == "gpt-5.4"
+    assert VARIANTS["mini-editor-54"]["model"] == "gpt-5.6-luna"
+    assert VARIANTS["mini-editor-54"]["reasoning"] == "high"
 
 
 def test_style_guide_exists_and_is_shared_by_prompts() -> None:
