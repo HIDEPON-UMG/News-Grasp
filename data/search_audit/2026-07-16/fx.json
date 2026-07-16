@@ -1,0 +1,37 @@
+{
+  "date": "2026-07-16",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Google News RSS: 為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "canonical resolution: site:gaitame.com FX/為替 ドル/円今日の見通し 米CPI下振れ",
+    "canonical resolution: site:minkabu.jp ストラテジスト 日銀 年内さらに2回 利上げ"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "dropped": [
+    {"title":"米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示","url":"https://news.google.com/rss/articles/CBMiVkFVX3lxTFBzbWxqc1ltSU1ndEE0VElnZldUTGdyRVJpOTdKeXBsc0RDSm40dm9kLTJqaDZlOVpoR2E5eEZIX1o0bFR1SFR2N2k4WjRiTnN5dHVBTHJn?oc=5","reason":"レート表示ページでニュース性が低く、canonical解決不能"},
+    {"title":"（けいざい＋）検証マイナス金利、日銀議事録から：上 国会で否定、８日後に一転","url":"https://news.google.com/rss/articles/CBMiXEFVX3lxTE80dWVsZExiQUNvVlJYYTAtZDIxb181M3g3dVhhZzdFOFJwdjg4WWx5dHhtVEh4V3hvS1dRZkRtSDROTzNEVGEzWmlwNjdIYldpaGxuR2ljQi1xUmd4?oc=5","reason":"過去の政策検証記事で当日性が弱くcanonical解決不能"},
+    {"title":"円安・金利上昇・巨額債務は本当に危機か、「日本悲観論」を覆す6つの“プラス思考”の勝ち筋","url":"https://news.google.com/rss/articles/CBMiTEFVX3lxTE9GTlZyVHFYckgyRnhTVVlXRmUxMk5JT0JnQjltdmxZUTNVd3pvemx2b2had01XN2kxQ1ZjSUQ2dnlQeVFlV2gwc2xObm3SAU9BVV95cUxPYzRWUzBZU3JWNmswcnhTWnBwM3FuWGFULVhSTGFIWlVqZHFJRnNHTHdWaUFoWFdERndzYnBXZ3Eyc0Y3b044Ym1QVDJpb1lN?oc=5","reason":"論点が広くFX一次情報性が相対的に低い"},
+    {"title":"NYダウ、続伸し150ドル高 PPI低下で利上げ観測が一段と後退","url":"https://news.google.com/rss/articles/CBMibEFVX3lxTE9neVlPejZpSzVObk9xZ2VzNGR5Y1REdWRUdFNmNTJ0cjBxOWRxMEdjMER2Z0ZTWldwZWJqUE9jaTFaVWU3VDh3YXNuaG4zNXZ2bTVkX2ZQQ01Oc0djeHNJeXdlbUVrUThBV0VudQ?oc=5","reason":"株式市場概況でFX専属性が弱くcanonical解決不能"},
+    {"title":"「骨太ショック」で約40年ぶりの円安、片山財務大臣の“火消し”で一服も…「円高」に転じる可能性は？","url":"https://news.google.com/rss/articles/CBMiWkFVX3lxTE83VXpBWENOMUlRdzEzbW9IbWR0dTNzbi03TUdaOXZIcTFtZVA1Mkhva0xncTItNV81V24yemZzTzJrQXBSRWhsa3BvQ2IwV3FHMHNuaEFXc3V1dw?oc=5","reason":"前週テーマの続報で新材料が薄い"},
+    {"title":"円、２７年末までには持ち直すはずだとの見方＝ＮＹ為替","url":"https://news.google.com/rss/articles/CBMiSEFVX3lxTE9tSktfczBxV1RSS3BTY1BXUTUtN2dqaXVvSVh1dnJkMXZMbE51X1pGTG9GdHFfQVJDeGJwTHN6NFRPS2NfMFptRw?oc=5","reason":"市場予想中心で一次情報性が低い"},
+    {"title":"中長期の円安構造 -サービス赤字と投資フローの歪み-","url":"https://news.google.com/rss/articles/CBMi-wJBVV95cUxONjRsWHFWU0t0anJSalpQbThWWlVnZmQtY2hyOTR5N3dLZUY1b0xCemNIdUIxTE1GSVktdUtGT05HNnBTTGxTaUlmZUFqTU5sc0FkT0UyLTFVMG5lR3ZJcFdjYjY3NnZNakNmN05DallRc2N4YUduNUx3Qk5DQ3VNdHRYcXhPd3hxZmZ1ZkgzSHM3UExCd0NHOG1wRndrMWRZM2ZOMnZZdVZ0ei1XeG1Ta1Q0QVZoUWludXZLNk51V09BcHhycjZSaENzYTlFdlJNQVR2NFhWMFg3Z1FIWGNBQWVFWXpPMXEyS2tHdjI1dDNac2tMUUdWbXU2b1BmYzNRYU9SX1laMTJPYjJYb185Vlc5U3JsTE13RGJtQXplRjN4bXRuNzFZRHk5b0FsTDNhbjlNaTVnNXN6cndVSHJndS1icngtcXBkVG9zNGZPLUwzT3daUzdHbXFZVHQteWlEV3J2XzZpWWNZYUNFMEI3TDE4cHVha09fdk1j?oc=5","reason":"調査レポートで即時ニュース性が相対的に低い"},
+    {"title":"アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型の基準価額・投資信託情報","url":"https://news.google.com/rss/articles/CBMiVEFVX3lxTE1zckZSdHVvbExXV2xBc3Qtdk51MGlVVU9UNHZWeVRPMnRTNFJ6RTlfMjByUlZ6UEc4WGhvVURYd2RIRW5Oa0hXeXVMd0xETDdqamdPZw?oc=5","reason":"投信基準価額ページでニュース性が低い"},
+    {"title":"会合紛糾、薄氷だったマイナス金利 副作用に懸念相次ぐ 黒田日銀２０１６年議事録","url":"https://news.google.com/rss/articles/CBMiXEFVX3lxTFB2YktBSU1KbjdGVlB0SVJlZnQ2dGdrQ3hPUHZKUUQ1eTk2ZGZBYzVkN3lPbUNBdU5RYUdFdkxMNkRZTnJBZUpUTkw1d0g5a1Via2hyVndKaEJJZlFP?oc=5","reason":"過去の政策議事録で当日性が弱くcanonical解決不能"},
+    {"title":"アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場","url":"https://news.google.com/rss/articles/CBMiVEFVX3lxTFBQa1U5NTk2aS1xRjBZb0dxSzJocWtGel9GdVBUTEx4TVhJY0R1cHB1aGlFZnltb1dpQ3lYVmd2M09TUnMxXzV2cE1GR1kxbGhHWXNGUQ?oc=5","reason":"レート表示ページでニュース性が低い"},
+    {"title":"長期金利がマイナスに 思わぬ副作用、黒田日銀はさらなる「奇策」へ","url":"https://news.google.com/rss/articles/CBMiZ0FVX3lxTE8zdWh2WGwzU1M1WVhRN21NWXhQVm1TNm56UGhYaFlSMFRjNFdOam5IcTNRQXdzYXhZMjlYT0tPamlYMFhseDZTXy0zdTM4Y3pKdGp6d2hIWk41RV8tNkw3OVJENWVkcU0?oc=5","reason":"過去の政策解説で当日性が弱くcanonical解決不能"},
+    {"title":"NYダウ続伸、早期の米利上げ観測一段と後退","url":"https://news.google.com/rss/articles/CBMibEFVX3lxTE84bjkxNVpQMVhmXzNHTWxYSjVPdTZxZTQ0UVc5cGVaSnE5UzBrYTdudi1Sbkk5Wjlvd0lvd085NTFhcm9aZHV2OUMtQl9oajhpRTJDSEFaclBNWkpKTXNPZ3Bycnhhb3JKaWcwcw?oc=5","reason":"株式市場概況でFX専属性が弱い"},
+    {"title":"【FX】ライブトレード 欧州タイムを攻略だ！ドル円、162円台定着…米6月PPIでどうなる！？","url":"https://news.google.com/rss/articles/CBMiY0FVX3lxTE9XMHJrR2NDd1hORHpoVV82anR5M1RCSEM2Z0RlaVgwQ0wyRDFiOWtkbU4wei14ODRFbHplV19QVjEwOGl2UU00UWRBelZZLUlyVktib25KN1ZZS01pYl9Jbnk4NA?oc=5","reason":"ライブ配信の案内でニュース本文の情報密度が相対的に低い"},
+    {"title":"FX/為替「人民元高進む、対ドル基準値の元高設定などを受けて＝中国人民元」","url":"https://news.google.com/rss/articles/CBMiY0FVX3lxTE1Kb2RGY0tHdndyUUd6UUVrXzVPQVB3QVpmLVVxSDNNZlNJcVYtU1RLTlpWSVJNREJWRE5LWU91SVl6T3FNMnRKbWd0WTlENnhLVC1IRHZoeV9mb3F5b3Z6aDQxWQ?oc=5","reason":"マイナー通貨の短期材料で相対的な影響範囲が狭い"},
+    {"title":"【FX】7/15 弱い米CPIも反応は限定的 今日の注目は？","url":"https://news.google.com/rss/articles/CBMiY0FVX3lxTFBLTFhVNUc5R3h3ek93NnNIRTNXRXBjNzAxNmJmaVhRTG56QW9nSzB4YURJRU80YnRiME5lSmR1SnVkZDVwcVYxLTlfSlYtRFRTUkttbkY2WFItOTFhSXh0bEZfaw?oc=5","reason":"同一CPI材料の補足動画で重複性が高い"},
+    {"title":"長期金利の上昇に神経とがらせる高市政権、日銀の独立性を骨太方針に明記へ","url":"https://news.google.com/rss/articles/CBMif0FVX3lxTE01VHBfaUZfd01EeFd1WmdUdHZGb3U0Q0d3dnBlQUhPV1Q1OTMtT0xvY3p5TG0xRzB4LWpWWkJuSHpzVmdJRGRJamtYY0sxcFEyWWdyeDB6dnFKcmtQOUNTZndpU05Ia1ctNmhndTAteDNxNVFvSWF3TTgwZmRCM1U?oc=5","reason":"政策論点の続報で新材料が薄くcanonical解決不能"},
+    {"title":"外貨建て資産の為替差益事件と最高裁判決","url":"https://news.google.com/rss/articles/CBMiTEFVX3lxTE9yRjJOOFFqSW9KX01zU0cxVnB6MTdPSXpDQ3NjUFIydFhua3NwS2VhaDc0YVgyUEhiYWZIZjYycy1KM0NmNFVDS1FYakLSAU9BVV95cUxQUDMyNlJOLXRLRDhEcUd2SF9Y2V2RjJ1VTRlVVelhoMUkxRnVMWDc5b0tGRXBuMThZMllSekQ1NmFmdTFNYjJ4SXJUTFIxeVRHSVkw?oc=5","reason":"税務判決の解説でFX市場ニュースとしての即時性が低い"},
+    {"title":"ニューヨーク外国為替市場概況･2時 ポンド、急騰","url":"https://news.google.com/rss/articles/CBMihwFBVV95cUxPT3F6aTRRdGtNVXBVc3V4NjBNbG1tenRfTFNENFoybTlYdW1xRWNSVDQ5SE16Y2lkOWRXNUZWUWxpV3E5TkI1RlRHbXhyekF0dTMxVFpDbzdvZVpwODgtWTJSdkxKRHQ5a053NFA5ekM3MFpSeEZWYmVldEdMQUw5RnVIeHhNY3M?oc=5","reason":"単一通貨の短時間概況で影響範囲が狭い"},
+    {"title":"【今日のドル円】昨日の振り返りと今日のドル円相場見通し","url":"https://news.google.com/rss/articles/CBMiY0FVX3lxTE52M25LU293cTdsLXlGSktPM1JwcjlvOFpseTdwUl9vVTFtUDdqLXFKZjlucGxRMHZ3MWhJSVZxbmNIZk9RMEFYNVhMcDRWbWRJRk1jY3hqSEhUNjRkaGdackgwdw?oc=5","reason":"同一ドル円材料の類似見通しで重複性が高い"}
+  ]
+}

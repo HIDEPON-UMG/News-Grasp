@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-16",
+  "category_id": "mobility",
+  "queries": [
+    "stage1-input: build/deduped-candidates/mobility.jsonl",
+    "site:electrive.com US electric car market stagnates in Q2",
+    "site:s.kabutan.jp ルーシッド 事業再建アドバイザー 破産 非公開化",
+    "site:finance.yahoo.co.jp シャオミ スマホ 家電 EV エコシステム",
+    "site:oita-press.co.jp トヨタ車体 コムス リコール 2026",
+    "site:online.logi-biz.com 三菱地所 自動運転トラック 物流施設内誘導"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "自動運転 社会実装へ協定 東京工科大学と八王子市",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTFA4akRGRW9rd3lXX1ZLNjF0bEdkWllYVFMyOUNUVC1RS3JBZm1mcDBDWS1yRFpfUWdWSjkwN3lDaUlxczVwR0JoUk1ueTBZZzUzQk45dUFOa184OEgyTTJ5ck5Jbnk?oc=5",
+      "reason": "一次情報は確認できたが、公開日が7月13日で当日性が採用5本より低かった。"
+    },
+    {
+      "title": "ホンダ新型スポーツEV「スーパーワン」 注文多数で長納期に 最新の動向は？",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5FVU5KUFF1QnlZSnIwR2w1TkpncHM3QjZTanRPNjJtTnlZMjgzU2U5dWFra09MQlExbzFEYkwtR2tNb3k4NTdST09EMGtpU3dvUHVXb0daaEpFWG11Q21PTnVEWFdQVktjUzVWdHVVZU5JaENwSGJkcEY3REMzM1U?oc=5",
+      "reason": "公開日と元記事canonicalの対応を確定できず、URL品質契約を優先して見送った。"
+    },
+    {
+      "title": "EVバイク整備環境推進委員会 設立",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE5xTWJmYmRBMHZfTE0taEJ1YWhfQ3RXX2tVbUFRRHY2LUk5ZllXRWNJbXY2M2wycHFNS3VtdGw2UDlOZHgzdEtqQV9OQzg2UQ?oc=5",
+      "reason": "公開日が7月5日で、当日号の鮮度基準を満たさないため除外した。"
+    },
+    {
+      "title": "大成建設、トンネル掘進にAI自動運転 手動操作を上回る精度",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBPamVyejVQRXlSRFdtV21ZWjBjMy14bGNGZjFpYmQ5MTBsQ1JxWExDQ21MZ3Y4emZvNVRWQnlJMmZpYTFnVVNkUGFiaTBHc203MUg1NDJQLUVBSGtaNWh3cTB2T3lqZlY3YlNtMg?oc=5",
+      "reason": "建設機械の作り手視点が強く、MobilityよりManufacturing寄りと判断した。"
+    },
+    {
+      "title": "都内で台湾エキスポ、154社出展 鴻海はEV車両展示",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTF1GQXY4b2dVbG16MVV6djhidFg0SlNOZGNPdC1XcW1kRUdvQm9SVllEN3hpYUVWaDJDS29oTkZzZTBfalJCM3dNRkdraFg0UkdudnVhd2dmSENJam5YQWpXb1lVOXRlRkFVLVllZw?oc=5",
+      "reason": "展示会の紹介で、採用5本より読者の意思決定への直結度が低かった。"
+    },
+    {
+      "title": "欧州商用車「EV充電不足でストレス」 整備出遅れに懸念",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9fZDJqb1ZBd0dTazVkX2NfamJTYU5DZ1V3d2d5TUhsNGZSYWVVM2N0cWFycW5NYUg4QVBMbElRX1p6cy1lTmU2TFpqU00tV2ZmTHFhRnhPb0pObGl6VXd6NlBSNG5UQ3U4akYwbHVhX3pqTm5hbVY1elJHcDRXMFU?oc=5",
+      "reason": "記事本文のcanonical URLを確定できず、元記事単位のURL契約を優先して見送った。"
+    },
+    {
+      "title": "いすゞ、ゴミ収集車でEV電池「交換式」探る 充電時間不要に",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE4zaDdJc1RwbEZpN0NxSDlnUHZXREJUSXAtZHJDNWFTYkdxeGU2Ty0zVG5lcTVjMmo5T0VuWjQ3b3dfeE1hWlRxUnh2R0k1a0Itam5HTWlzdVdPZzRrOXlTRlpsMVMtelRHdG56aQ?oc=5",
+      "reason": "日経の元記事canonicalを確定できず、URL品質契約を優先して見送った。"
+    },
+    {
+      "title": "トヨタ次世代EV「開発中止」に潜む自動車産業の危機",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9GLXktbTVJLXUtcUFqSGtQVklsZl9rR29DWFI3d09xeWdDaDhxdXVzR3EzSEtKcGtxdlQyaFNESU9OTWtKdHZWa3ZfakZuR1d5VE9qdE1vUnd1QTVHZVUxS29BaUJTTWlEVkVjTENUNG1sWFhtLU9RQzFpaTdNOHc?oc=5",
+      "reason": "公開日が候補取得日より前で、当日ニュースとしての鮮度を満たさないため除外した。"
+    },
+    {
+      "title": "フォルクスワーゲン ジャパンとモビリティパートナー契約を締結",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFBMbERhaXRIdERNdl9KckxWY1JpM0RKRXE4ZDdRY21JZW85elNmRGl1Y0JlX1hCUXJLV2lPbDhESlZsWVFOcWRCc1V4bGhnMm8?oc=5",
+      "reason": "地域ディーラーの契約発表で、採用5本より影響範囲が狭かった。"
+    },
+    {
+      "title": "EV・電気自動車1台で300人分のごはん用意 自動車販売店と地域住民が震災想定し合同防災訓練",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE9abzhLTUNZTGI1cGNobEx5S3E1eGE3RUxGbVFTUVM0RzAxOTF6ZFpzMWZvaVlnZmJmWEFBY01obTR3RUM4Q201QVhkdy11TzNnMUZycXdSc21reXA2bnJreUlHcjZSSTI1YnVNMjVac1VSd2s?oc=5",
+      "reason": "地域防災の実証で、当日号のモビリティ中心5本より優先度が低かった。"
+    },
+    {
+      "title": "自動運転が進む国・止まる国・遅い国",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFBGSUQzckp3cXdmTmNNS0FEQmlQbnAtUlJ1YV94Q25OeHhhZEFKOVAzZV9VVFNQVnhQRmNVU3ZrZXk2cUszMXhEMw?oc=5",
+      "reason": "解説記事で一次情報距離があり、実証・販売の一次ニュースを優先した。"
+    },
+    {
+      "title": "国交省 自動運転トラック実装支援の2次公募開始",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE55LXNEMEtvV2ZGbkdkTEZIdkttZ0doazcxam1jekF4RVlBV2kyYzNoWVo4bUpiRjc5aXA4dThSZWpvbEV3NnE5MXVRYkJaVFI5eVBTeFBoQnZnNVNxM3lN?oc=5",
+      "reason": "政策シグナルは強いが、施設実証を含む三菱地所の記事と論点が重なった。"
+    },
+    {
+      "title": "テスラを抜いたBYDは利益55%減、新興EV破綻で修理難民に",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE51MkxDS2NfdTVYeUN6elZ2cEtvU0haYk40Rko0aklaN0l2WTdGYUpsRFE2MF9hdXk5amc2VE1KaVYtME94RkxoMVFxRU9EOUh4cnZPdWs5YVo?oc=5",
+      "reason": "長文解説で、当日一次ニュース5本より一次情報度が低かった。"
+    },
+    {
+      "title": "ホンダ新型スポーツEVスーパーワン 注文多数で長納期に",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5FVU5KUFF1QnlZSnIwR2w1TkpncHM3QjZTanRPNjJtTnlZMjgzU2U5dWFra09MQlExbzFEYkwtR2tNb3k4NTdST09EMGtpU3dvUHVXb0daaEpFWG11Q21PTnVEWFdQVktjUzVWdHVVZU5JaENwSGJkcEY3REMzM1U?oc=5",
+      "reason": "元記事canonical URLの解決ができず、推測URLを採用しなかった。"
+    },
+    {
+      "title": "編集者の視点 EUの中国製EV関税、打撃は欧州勢に",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFA0M1E1eW1uTXBBcE9ocHktN192OGZWUkZmVWlCSFdfd3d6MEVyUWNhVzMyelhjZlUwZ21sUld5SWplVEJ3VnVGdE9IcVp4RTBIdHZPbTVaLXZPdlY1UHlKeG4xeTZuQTZnMjJtdWx6a1BmMVcyTHZINFNEWXJfbDA?oc=5",
+      "reason": "オピニオン記事で、販売・安全・実証のニュースより判断材料が限定的だった。"
+    },
+    {
+      "title": "エンジン車よりもEVに乗っているほうが災害時の備えになる",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPVVVMVVdKd0ZpREZHQWFvWkN3TGQ4NlJlUFZPT1R0QjNVYzB6ZTRHOWprcElDZE5Sbm0xOUdrZ2ZvQVlraGUxU05wTmoweUNiT243R1ZmN054S3RnZ0VFNURQM0dXYU1ZWW0yWXBMMDB4Yy1oOWd3ZG9Ec0NtYnhpZUcyOWM5M0tD?oc=5",
+      "reason": "利用解説で、当日性と影響範囲を採用5本より低く評価した。"
+    },
+    {
+      "title": "大成建設、トンネル掘進にAI自動運転 手動操作を上回る精度",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBPamVyejVQRXlSRFdtV21ZWjBjMy14bGNGZjFpYmQ5MTBsQ1JxWExDQ21MZ3Y4emZvNVRWQnlJMmZpYTFnVVNkUGFiaTBHc203MUg1NDJQLUVBSGtaNWh3cTB2T3lqZlY3YlNtMg?oc=5",
+      "reason": "製造・建設技術の作り手視点が強く、Mobilityの採用枠から外した。"
+    },
+    {
+      "title": "都内で台湾エキスポ、154社出展 鴻海はEV車両展示",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTF1GQXY4b2dVbG16MVV6djhidFg0SlNOZGNPdC1XcW1kRUdvQm9SVllEN3hpYUVWaDJDS29oTkZzZTBfalJCM3dNRkdraFg0UkdudnVhd2dmSENJam5YQWpXb1lVOXRlRkFVLVllZw?oc=5",
+      "reason": "イベント紹介で、販売・安全・実証の直接的なニュース性に劣った。"
+    },
+    {
+      "title": "トヨタ車体1万台以上のリコール 小型EVのブレーキに不備（共同通信）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE5RUHhxSTRaRk83ZTZ2S2VWLU5Ec3plMWt3MmtuYy04Ym5FTkJXcWNVVEVxdkpVMGhjdVhIeVhHcWh2TXRXS2tjSFBtUTZJUXduV0ZOZ0RDbHNRZlk2Y3h4bW1MT0lhU2lIc0VxMnhyMm9ZUjJQWmNEYW4wd3h2ekE?oc=5",
+      "reason": "canonical解決済みのため採用に移した。"
+    },
+    {
+      "title": "エントリーグレード約70万円、三輪EVトゥクトゥクが急成長",
+      "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQaDhyTXJDNkVVNFI3Zk5KNXhONVJaRVVfZnBPMG5NX19ONnl3VWYyVVpGMXNPQ3NLTmRvbk1WdGRaampKbVBFeWFkbU1tTW1uLXNsaVhPZUVtcU1GS2ZrMEZJSkhMa2t5QndGaUoxTi1LUFJONkVldlZ3N3FZM3NqWDV4ZUcwYW9ZTkowMld3?oc=5",
+      "reason": "市場規模と一次情報度が採用5本より低く、選別で見送った。"
+    }
+  ]
+}

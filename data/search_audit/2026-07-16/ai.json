@@ -1,0 +1,140 @@
+{
+  "date": "2026-07-16",
+  "category_id": "ai",
+  "queries": [
+    "stage1_dedup_input: build/deduped-candidates/ai.jsonl",
+    "OpenAI ChatGPT search across chats projects files official July 14 2026",
+    "Anthropic official Canada 10 million Canadian AI research eight institutions July 14 2026",
+    "Google Gemini copyright lawsuit publishers authors July 2026",
+    "AnthropicがIPOに向けた投資家との面談を開始",
+    "Ubie 九州大学病院 肥満症診療 生成AI 連携 2026 7 15"
+  ],
+  "raw_results_total": 55,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Anthropic",
+    "OpenAI",
+    "Google",
+    "AIエージェント",
+    "AI安全性",
+    "医療AI",
+    "AI投資",
+    "Apple",
+    "Meta",
+    "Microsoft",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "元OpenAIの研究者が提言「人類滅亡回避のため2040年までASI開発延期を」",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1yUk1nOXprMndjTjNNbENJTFB0X2NheEF5czNJRmtWclk4S0hyS1FQOTlVM1lwYVVVUzFFOUwtNHlsUVk1TXJ0aGhmVllmWEhQWjFieThlejVieWdxR0NuM0NaWVFhUl8xd29YZm91dXBZeFhBM2o1YldBNkFUR1U?oc=5",
+      "reason": "提言・評論寄りで、一次発表や実務上の新展開が上位候補より薄い"
+    },
+    {
+      "title": "ライナロジクス、配車改善を生成AIで支援",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFBiYXczWFFfRTZaUG0tOWg3c3N5MVhmWktYeTRqVEFqOE5zMG5NWWhEZUdfQ0M5dUtMVnRxbEhCSlFPZWlIUC1pMw?oc=5",
+      "reason": "実務性はあるが、全国的な影響範囲と話題性で上位5件に及ばない"
+    },
+    {
+      "title": "「AIに任せ過ぎ」を防げるか？ Claude「Reflection」を情シス目線で解説",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE4zTVZpZXltQ3c2a0YyNnlBekFJMDJ1cTR6Q0RvcEwwQy1Jem1EengxV29fa1dwVkY4cGlLbDhVN0NMUmY0bGpERmJlOTl1amwxMjgtY2JRV2lsX1g4Wkw5ZXpHN0x0LXQ1QmI2Ug?oc=5",
+      "reason": "解説記事であり、新しい一次情報の直接性が弱い"
+    },
+    {
+      "title": "YouTube動画も一瞬で要約 Chrome「Geminiサイドパネル」徹底活用",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE4zTVZpZXltQ3c2a0YyNnlBekFJMDJ1cTR6Q0RvcEwwQy1Jem1EengxV29fa1dwVkY4cGlLbDhVN0NMUmY0bGpERmJlOTl1amwxMjgtY2JRV2lsX1g4Wkw5ZXpHN0x0LXQ1QmI2Ug?oc=5",
+      "reason": "機能紹介・活用記事で、公式発表に基づく新規性が相対的に低い"
+    },
+    {
+      "title": "Anthropic、自律AIエージェントが全PRの65%を自動生成",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFB1c2t2eHk1aWJrV0l0R2h3S0Z1MkFvQ3pUeDROcXl2N1BzQzR5U3A3T1g3M3d5Q3hQd0d0?oc=5",
+      "reason": "調査主体と数値の一次根拠を確認できず、転載色が強いため除外"
+    },
+    {
+      "title": "東電協がIT事例発表会/生成AIの知見深める",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "地域・業界内イベントの報告で、読者への波及が限定的"
+    },
+    {
+      "title": "無料ウェビナー開催 生成AI活用の新常識",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBnWTFnTGo0Nm55VFk4dXJleF81VzZRUTRkZGg2QnpFSDg0UGI3dTFGWkxWb1ZzMi1WZ095M2xNdFJYSkoxa0dQRzhhSTlNUlMxN0ZuVWNacWQ4c0pWMkMzMW4ycFNMT2RYdEE?oc=5",
+      "reason": "告知目的で、ニュースとしての新情報が薄い"
+    },
+    {
+      "title": "画像生成AIで広告デザインに挑戦する参加型ワークショップ",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFLaFl1N0luMUZpcUduX2QzYjJuWkE0RlN0S1BpNm1fYUxzUTd3cllZZlYxbTN5bGp3X0lXNDlpWnFjakdyRnVUTE9IZGFSRjA5OFJweVRMR1NQUlZEY1p6Y1pLbWE1blpxVlE?oc=5",
+      "reason": "イベント告知で、当日の社会的影響が小さい"
+    },
+    {
+      "title": "OpenAI初のAIハードウェアは画面なしスマートスピーカーか",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBDZm0zOTlwUlJvNVhoVHFHMmpNZVZGZHVZNjdQMWtxVDRXR2YzbGp1SGZXQkt0QlVPcm0tSFZhcTAxMEdqSkRaOE1SMDQzRVdVU2FHSEFSVldSQ0ZxN014dV9TaUFzRnpjVDZyNDZFaWU5SHZ6?oc=5",
+      "reason": "観測・推測段階で、公式確認された事実がない"
+    },
+    {
+      "title": "6.5年かかるコード解析を20時間で完了",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFB1c2t2eHk1aWJrV0l0R2h3S0Z1MkFvQ3pUeDROcXl2N1BzQzR5U3A3T1g3M3d5Q3hQd0d0?oc=5",
+      "reason": "導入事例として有用だが、当日の新規性と一次情報性で上位候補を優先"
+    },
+    {
+      "title": "ゼロから分かるClaudeの教科書",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "入門・解説記事で、新しい出来事ではない"
+    },
+    {
+      "title": "九州大学病院とUbie、肥満症診療における生成AI活用に向けた連携を開始",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFByN2RqNG02dDNXSllLa25aSV9kXzByZ3NwaWFiNkVKT2s5dF9xdFphT1dfUzVUQmpxQ0V0STE1MUNNTEIxSG1TZGtIREJITktaTGY0ZVlRaEI0emxnSERvZGR2dElFclJNWUE?oc=5",
+      "reason": "採用済みのため重複記録"
+    },
+    {
+      "title": "JR東日本とJR西日本、金融・生成AI施策続々",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "企業戦略の観測として重要だが、記事本文の一次確認範囲が限定的"
+    },
+    {
+      "title": "GPT-5.6の好きな部分をXに投稿するとクレジット",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "販促キャンペーンで、AI市場の構造変化との関係が薄い"
+    },
+    {
+      "title": "独自調査で見えた、日本の生成AI活用の実態",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "調査の詳細と一次データを当日候補内で十分確認できない"
+    },
+    {
+      "title": "Gemini nanoを使ったオンデバイスAIな食材認識アプリ",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "個別アプリの体験記事で、影響範囲が限定的"
+    },
+    {
+      "title": "Claudeに人格はあるのか？Anthropicが30万件の対話から解明",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "研究紹介として興味深いが、速報性と実務影響で上位候補を優先"
+    },
+    {
+      "title": "AnthropicがIPOに向けた投資家との面談を開始",
+      "url": "https://jp.investing.com/news/stock-market-news/article-1604311",
+      "reason": "採用候補の別配信元で、同一IPOテーマの重複を避けた"
+    },
+    {
+      "title": "スマホもチップも作らない：AnthropicがAIハードウェア戦争で傍観",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "論評・見解が中心で、確定した企業発表ではない"
+    },
+    {
+      "title": "生成AIはどんな質問のとき検索するのか",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFB4cVQ3Z0lJdW5hQmFhT1NQdF9xT1pWQ1ZqZk9lQ0JQd2l4?oc=5",
+      "reason": "調査結果の新規性はあるが、当日ニュースとしての影響範囲が限定的"
+    },
+    {
+      "title": "グーグルにまた訴訟、Geminiの著作権侵害で大手出版社らが提訴",
+      "url": "https://www.hachettebookgroup.com/hachette-book-group-news/publishers-and-authors-file-class-action-lawsuit-against-google-for-willful-copyright-infringement-to-develop-gemini-ai-models/",
+      "reason": "採用済みのため候補側の重複記録"
+    },
+    {
+      "url": "https://jp.investing.com/news/stock-market-news/article-1604311",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

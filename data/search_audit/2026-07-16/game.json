@@ -1,0 +1,101 @@
+{
+  "date": "2026-07-16",
+  "category_id": "game",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "queries": [
+    "Stage1 deduped candidates: build/deduped-candidates/game.jsonl",
+    "site:itmedia.co.jp セガ NVIDIA RTX Spark 協業30周年",
+    "site:gamespark.jp 成人向けゲーム 見えない規制 プラットフォームリスク",
+    "site:ascii.jp 亰都ザナドゥ 2026年7月16日",
+    "カルドセプト ビギンズ 2026年7月16日 公式サイト",
+    "site:famitsu.com/article/202607 わびさび寿司ダービー 7月16日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "ウマ娘",
+    "任天堂",
+    "SQUARE ENIX",
+    "SIE",
+    "Cygames",
+    "カプコン",
+    "コナミ",
+    "テンセント",
+    "ネットイース",
+    "miHoYo",
+    "ソーシャルゲーム 売上",
+    "新作 発表",
+    "アップデート",
+    "esports",
+    "ゲーム業界 M&A",
+    "Capcom",
+    "Nintendo",
+    "Sony",
+    "Square Enix",
+    "Switch 2"
+  ],
+  "selected": [
+    {
+      "title": "NVIDIAとセガ、RTX Spark向けゲーム提供で協業30周年を次の世代へ",
+      "score": 91,
+      "canonical_url": "https://www.itmedia.co.jp/pcuser/amp/2607/15/news125.html"
+    },
+    {
+      "title": "成人向けゲームは「削除されなくても見つからない」――Steam・itch.ioの可視性リスク",
+      "score": 82,
+      "canonical_url": "https://www.gamespark.jp/article/2026/07/15/169294.html"
+    },
+    {
+      "title": "『亰都ザナドゥ -桜花幻舞-』発売、亰都を舞台にした新作ARPGが4機種へ",
+      "score": 79,
+      "canonical_url": "https://ascii.jp/elem/000/004/416/4416332/?series=1"
+    },
+    {
+      "title": "『カルドセプト ビギンズ』発売、10年ぶりの完全新作がカード400種超で再始動",
+      "score": 76,
+      "canonical_url": "https://game.neoscorp.jp/culdcept_begins/"
+    },
+    {
+      "title": "『わびさび寿司ダービー』発売、育てた寿司が食べられたら失格の異色レース",
+      "score": 72,
+      "canonical_url": "https://www.famitsu.com/article/202607/81493?page=1"
+    }
+  ],
+  "dropped": [
+    {
+      "title": "エヌビディアCEOが来日 日本の大手ゲーム会社と交流",
+      "reason": "同一テーマのセガ協業記事を採用"
+    },
+    {
+      "title": "PlayStation Plus 7月のゲームカタログ追加",
+      "reason": "canonical解決結果が当日一次記事として確定できず未採用"
+    },
+    {
+      "title": "『Hope of Elements』Steamデモ版配信",
+      "reason": "単独タイトルの告知で影響範囲が相対的に小さい"
+    },
+    {
+      "title": "Machine Party 7月30日リリース",
+      "reason": "発売前告知で当日性・影響範囲が相対的に小さい"
+    },
+    {
+      "title": "『みんなでポイっと！プリニーすごろく』紹介",
+      "reason": "先出し紹介で発売・事業上の新材料が薄い"
+    },
+    {
+      "title": "『わびさび寿司ダービー』Steamストア公開",
+      "reason": "同タイトルの発売記事に統合"
+    },
+    {
+      "title": "So-net 光 PlayStation 5オプション",
+      "reason": "ゲーム産業ニュースとしての影響範囲が小さい"
+    },
+    {
+      "title": "ゲームレポート・スポーツ関連・地域企画等",
+      "reason": "ゲーム業界の主要ニュースではない"
+    }
+  ]
+}

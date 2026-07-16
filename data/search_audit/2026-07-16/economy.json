@@ -1,0 +1,139 @@
+{
+  "date": "2026-07-16",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR economy OR interest rate when:1d",
+    "site:jp.reuters.com FRB インフレ対応 政策調整 必要か見極め 議長 議会証言",
+    "中国GDP 減速鮮明 4-6月期 4.3% 不動産不況 原油高 個人消費",
+    "ASML 2026 4-6月期 純利益 27%増 通期売上高見通し 上方修正",
+    "Reuters July 15 2026 U.S. stocks rose softer inflation corporate earnings",
+    "米大手銀行 スペースX 利益 特需 2026 7 15",
+    "site:live.euronext.com stocks rise after soft US inflation reading Middle East focus",
+    "site:apnews.com banks rake in big profits Wall Street consumer July 2026"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "インフレ鈍化なければ「行動の用意」、なお見極め必要＝クックＦＲＢ理事",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNR0JIelVCdXRqcEx0ZHJIUWU5TlRhVEl2X1BTb1BYNDVCUTU4SjI3ekh5OVQ2dHVpTTI5bFBYVUNMS3Z0cVJYM2ROLW1ZaHR2RFFSNlZYRFZFSUtFV3diYWNrV003NTZhVm43N2JvUGxDYUFKSmdIWV9sZmpvTTU5Rg?oc=5",
+      "reason": "Fed議会証言と論点が重複し、代表記事を選択"
+    },
+    {
+      "title": "FRB議長、米物価下振れも「統計として不完全」 インフレ警戒緩めず",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5GdzI0STF2bUlQdUNmWVlQLUxYNlFWRnJqRWVNWUFtdHN1WElwSlY5WkNoeHZ3dFRYVzZfZ2ZwTTR4dFFvODk2RVFFeF9XZXd5S2duTVNZTFB5MEp4SWloaW5WNXdseHNlQk1MTA?oc=5",
+      "reason": "Fed議会証言と論点が重複し、代表記事を選択"
+    },
+    {
+      "title": "26年4～6月期GDP、年率0.80％へ上方修正 ―「国際関係の緊張や軍事衝突」リスクが首位に浮上",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE9ReEVKVUE4M1RxZzJOMWMzZHpfbTJSTlFYVXh0MGYzMEM5cWo1RTV6d285S3psUTE0NnZVLWJxeVB4ODRyVGZtUWhVMVBLTm1JSVE?oc=5",
+      "reason": "調査見通しで、当日実績ニュースを優先"
+    },
+    {
+      "title": "★本日の【サプライズ決算】速報 (07月15日)",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5lYmktbUswdURDc3RvVmtDY3dLR3VtZy00cHczMjZaVmxFVzA3bkJKU09oM3dUb3pBbFN1MWt4a0RWZFlXdkdnR2wwRUlZeGg1X1N4c2FueWE4T0FkU3Ridg?oc=5",
+      "reason": "個別銘柄の速報集で、マクロ影響が限定的"
+    },
+    {
+      "title": "【内部資料入手】産経デジタルの決算報告書から見えてきた新聞社デジタル事業マネタイズの「厳しい現実」と「変化の兆し」",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE5YRHRjRzhuR2hZcDF3WmxucmpDOGtmSHFmNmRiUXlEN1V3enZNMUhkejh2MmM4dDlYNnF3ZUtLLUxucGZKSG01TmpMMmjSAU9BVV95cUxQaEI2emdMYndlWENBWS01T3Y0c0ZhMnVVLU5BU0JSMnhFTHpYSUFDUDNsZWlsV0RfY0I5NUdnTHBNX2xIX0JaT0VIZzU4eWc4?oc=5",
+      "reason": "業界個別テーマでカテゴリ代表性が低い"
+    },
+    {
+      "title": "経済プラス：働き方改革は「働かせない改革」？ 地方経済に吹く逆風",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE4zUV8wYWU2M0NBM0lnd0JxVFVOZ292cUtDN3dVc3Y3eXQ5eXFacXQxZ1R1cGg1NGxRN0l1NEQ0N3FPUElkNDlSTlZKa3JRUW8zRWVSTktTeXl3VDRueDJMSjNzaDRIbVla?oc=5",
+      "reason": "背景解説色が強く、当日マクロ指標を優先"
+    },
+    {
+      "title": "令和7年度決算・令和8年度予算報告 | 情報公開",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5QMHBzYnZFS0xJWDR2cExYVjRsLXNFN1JiSEt6WTIwaF9NMVpyVVdPWjlRc0xEcFpMNHBINDYyc3pwX1A5N3M5UGZfN0dIWDdjX0JuOGN4WFhjeS1XNzVwRQ?oc=5",
+      "reason": "大学の個別予算報告で一般経済への影響が限定的"
+    },
+    {
+      "title": "首相「強い経済づくり、今ならできる」 国会ドキュメント",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9Hb1FyMXF1elBIV1pxWDRMaEVtNUpfa09peEdRR1AxSlVORjV4RVZpUUU4X2EwUlAyMjBKN0pybmNGdHE3WkVNUERxODYxNlVnTjRSaTY5R2tBZ0RB?oc=5",
+      "reason": "発言記録で政策の新規材料が薄い"
+    },
+    {
+      "title": "米大手銀行が未曽有の好決算、利益4割増 スペースX・株乱高下で「特需」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5DR211WEd1RG9ITERTNXJQbWs0czdKWWxjanRBellFZFNjNTNYal94OW5ENm55VlE2X050Z3czM1JyS0RMdzJEYkdvU2JsRzRNMzJGcEg1V3RTQ3pVdURqRVZMXzloWlVTMXl1OA?oc=5",
+      "reason": "Google News URLを元記事URLへ解決し、AP記事を代表採用"
+    },
+    {
+      "title": "米インフレはピーク過ぎた可能性、金融政策は適切＝ＮＹ連銀総裁",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPbVNjSU95SUlxWlgtTGVPa1N5MVktTUViU3RzTzByMzloMFhoZFNXNmR6NlZ1Y1I1M05jOTdEcUcwQ3dmMWt6YTBVbWVkZEpJRnpBc3I2Nk1YRDVTZ1NTT1poLXR2VkZ5X3ZqRW9aVnRIbVFEeWRfWWZMQ1U5clhCTw?oc=5",
+      "reason": "Fed議会証言と論点が重複"
+    },
+    {
+      "title": "決算:ASML「経験ないほどの需要シグナル」 AI向け投資の先行きに自信",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5GVHF5XzIzbUxBMVZZT21nVzJoR1haWjhmRUhjcGNtaThZSTRFX3FRWHRuSGpzU0NuQmV6TklZSVI1UktQRzdtcC14dWFVbl9IZkpVV3NTYVpLaGIycTUyVy10SkRrV0FTeQ?oc=5",
+      "reason": "ASML決算と同一テーマの重複"
+    },
+    {
+      "title": "京セラ山田取締役「経済安保で各国にデータセンター、部品需要拡大」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE85ZW05YlpCRWhYRU42aVE4VVg3ZmdKbzdrY3h4dHFPbGUwaVJoYUwyaWYwYVU3a2NudFV3N2ZwVHNhTk0zZFR1QzVhR0VlOWtMS18zSUlyNHlYNDNTcWtsa2hxbklEQnNsbGowLQ?oc=5",
+      "reason": "企業見解でマクロの当日性が相対的に低い"
+    },
+    {
+      "title": "ダウ平均は続伸 米ＰＰＩもインフレ鈍化を示す内容＝米国株概況",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE50MEJrSDFOUUl1d1d3Ql9DX1NlVTJaNzdDVEpIMFdIbUV6UGNSUFJUT2Z3TDVvaU5WZWRDZzJEZGc5TjdBVHVaenBpeXV3emJnOUE?oc=5",
+      "reason": "米国株続伸記事と内容が重複"
+    },
+    {
+      "title": "「マエストロ」ならどう見るか",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9CV1lqd3VlVzRmd2p6SjdVRUlKQ1VnN2pXNUVZaW5mVmVEbVN6UzRtSVp1MWNpejRWRmN2bTNEYllpMG83MFR4ZGR2N3VTUnlnUTY3ejM1OEItLU1QcHRnSVl5elBvMXVhSzM0Zw?oc=5",
+      "reason": "論評記事で一次情報性が相対的に低い"
+    },
+    {
+      "title": "グローバルインバランスの帰結 岩田一政氏",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1ET1VxNklwdEhKb0pfM2REbmp4cHo5ZXJTU0NqX1FZdEIwcnZqdjdjbjdHeGpDbDEzT0JnazZNZWlVbWRrejljSjd3bS1ud2ZBdEhlbUVmZnVrMURfOUVWa0dsZFpEUzZEZzdnQQ?oc=5",
+      "reason": "論説で当日ニュースとしての即時性が低い"
+    },
+    {
+      "title": "FＲＢ、インフレ対応に政策調整必要か見極めへ 議長が議会証言",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOekJEekl2ZjB1UGN5NWJPTmlyRnRubWJmY1JoQVRJaTZvTjNsT2JYcl9vR29WTHdqdGpXNjB0bjVGU0stTlJlUFhCbjRqd3R2NTNteWhNS2xvT2VteGhrb2wyaHROSVQ3UDhRRU80ZC1iYUcwWlFaU09MQl9Gb3BySw?oc=5",
+      "reason": "採用記事として元記事URLを解決済みの同一候補を使用"
+    },
+    {
+      "title": "現場ファースト運動（Frontline First Initiative）を開始します",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBnUFdkQTJQSHlYQlBmeERMOUxxbXh6SXpfd3ZLclVaUF9XYjNtcV90N0NJaWg5T20zVjNlZ0VPSk1vMm1iak9OdlpOUTNaRDl1aXFwMW9zRDQ4U3hBVGJYRXBOaw?oc=5",
+      "reason": "行政機関の個別施策で一般経済への波及が未確定"
+    },
+    {
+      "title": "英経済は財政規律必要、ＯＥＣＤ報告書 次期首相に課題",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQeHplci00V285TFQwUENXUE1sTXhEMENuSGhxOGdkYjhkQUFGWF90anc3OGgtMHBpdmhEMHNoaUFnTzNEeXJJZ1c2WFFhbDhRUnZaTFNKdXRXS2ZCMXdnQ2VKN2R5c2VqQWwwWnhEYVpySllsUHhTdXRFV0N3cUZkNA?oc=5",
+      "reason": "英国財政の個別論点で当日カテゴリ優先度が相対的に低い"
+    },
+    {
+      "title": "【ベージュブック】経済活動は「わずか」から「緩やか」なペースで拡大",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQREVkclNDRzQ4R2dBX1ByOVVCeTRwT05hb19vTDRSbkVBNlBmNGRUR052QzZ0dkd1UV85SW9nS0VlQU9DTU9XUjhQWUJOQjhQTjVqOGJfTG1zREU2dVRXVzZJX2w0Nl9TaWdxZGRqN29wT0l0S1pVQXFyaFFSMjF0S1NqZUxPZjA?oc=5",
+      "reason": "地区連銀報告は重要だが、選定枠を主要5件に集中"
+    },
+    {
+      "title": "グローバル･ロボティクス株式ファンド(年2回決算型) 基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE9QSlVJdGEwd0VEZzJsZFlxS3FVdzlhVC16TGZRWEozaGllVFR4c2NQdVEwaUp0cVRFZy1OZmVKRDNKSmoxcnQ3cURfNGV4d08yczNaOA?oc=5",
+      "reason": "投資信託の基準価額情報でニュース性が低い"
+    },
+    {
+      "url": "https://live.euronext.com/en/products/equities/company-news/2026-07-15-asml-reports-eu93-billion-total-net-sales-and-eu29",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://live.euronext.com/en/financial-news/stocks-rise-after-soft-us-inflation-reading-middle-east-focus",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,110 @@
+{
+  "date": "2026-07-16",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR enterprise software OR cybersecurity when:1d",
+    "site:serverworks.co.jp サーバーワークス タイ 現地法人 設立",
+    "site:vishay.com site:tobila.com site:prtimes.jp CMMC クラウドPBX SHIRO SCORE"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "富士通は「FDE＋C」、デロイトは「MDM」 AI時代に多様化するコンサル像",
+      "reason": "当日記事のcanonical URLを確認できず、一次情報へ寄せられないため未採用"
+    },
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "reason": "ITカテゴリ外の寄付募集"
+    },
+    {
+      "title": "【緊急SOS】300万の国産うずら卵を救ってください。プロも認めた逸品を食卓へ！",
+      "reason": "ITカテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "市商連 50代の会長に若返り 「IT活用し、若い世代を」",
+      "reason": "地域団体の人事・局所的話題で読者影響が限定的"
+    },
+    {
+      "title": "さくらのクラウド検定 アドバンスド 2026年第1回試験の結果を発表しました",
+      "reason": "資格結果の影響範囲が限定的"
+    },
+    {
+      "title": "株式新聞プレミアム＝ＡＩ台頭、ＳａａＳにむしろ好影響？",
+      "reason": "有料記事で公開情報が限定的"
+    },
+    {
+      "title": "月3万ドルのSaaSのためにMetaを辞めるべきか？｜Starter Story",
+      "reason": "個人事例で企業ITの意思決定影響が限定的"
+    },
+    {
+      "title": "SBI新生銀は「AWSファースト」、約3年で障害半減 鍵は共通基盤の整備",
+      "reason": "canonical URLの公開本文を確認できず、事実の裏取りが不足"
+    },
+    {
+      "title": "米国の物価高で痛感、日本のITは「価値」で稼げるか",
+      "reason": "論考寄りで当日の具体的な事業変化が薄い"
+    },
+    {
+      "title": "変わり身早いザッカーバーグ氏、｢メタ・クラウド｣で過剰投資論かわす",
+      "reason": "Metaの過去報道との重複が大きく、当日一次材料を確認できず"
+    },
+    {
+      "title": "Ｂｉｒｄｍａｎ[7063]：株式会社グローバルクラウドエステートとの個別契約締結による資金調達に関するお知らせ",
+      "reason": "個別企業の資金調達でカテゴリ全体への影響が限定的"
+    },
+    {
+      "title": "プラスアルファ・コンサルティング[4071]：（訂正）ラクスとの資本業務提携に関する覚書の締結",
+      "reason": "訂正文書で新規材料が薄い"
+    },
+    {
+      "title": "エフアンドエム[4771]：中堅・中小企業のバックオフィスコンサルティングサービス",
+      "reason": "個別提携で読者影響が限定的"
+    },
+    {
+      "title": "【対談前編】Oracle Databaseの経験を、クラウドとAIの武器に変える",
+      "reason": "対談・販促色が強く、当日の新規性が限定的"
+    },
+    {
+      "title": "【7/30開催】ISO9001・ISO14001規格改訂セミナー",
+      "reason": "イベント告知でニュース性が低い"
+    },
+    {
+      "title": "ＩＴ人材育成で成果 鳥取県事業 求職者に無償指導",
+      "reason": "地域施策で影響範囲が限定的"
+    },
+    {
+      "title": "プレスリリース：比較サイト「ITトレンド」の940万アクセスログを解析",
+      "reason": "原発表の公開日が候補の再掲日より古く、当日性を優先して除外"
+    },
+    {
+      "title": "クラウドデータセキュリティ市場：2026年から2032年までの世界市場予測",
+      "reason": "市場調査リリースで一次情報度と具体性が低い"
+    },
+    {
+      "title": "クラウドAIチップの世界市場（2026年～2032年）",
+      "reason": "市場調査リリースで一次情報度と具体性が低い"
+    },
+    {
+      "title": "タナベコンサルティンググループ[9644]：譲渡制限付株式報酬としての自己株式の処分",
+      "reason": "個別適時開示で読者影響が限定的"
+    },
+    {
+      "url": "https://www.vishay.com/ja/company/press/releases/2026/CMMC/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
