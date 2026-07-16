@@ -110,8 +110,12 @@ if (-not $SkipTaskRegistration) {
     $runnerRegistered = $false
     $runnerRegisterError = ''
     try {
-        Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings -Description 'News-Grasp daily runner bootstrap. Repairs live ops from repo before starting runner.' -Force -ErrorAction Stop | Out-Null
-        if (-not $runnerWasEnabled) { Disable-ScheduledTask -TaskName $RunnerTaskName | Out-Null }
+        if ($existingRunner) {
+            Set-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -ErrorAction Stop | Out-Null
+        } else {
+            Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings -Description 'News-Grasp daily runner bootstrap. Repairs live ops from repo before starting runner.' -Force -ErrorAction Stop | Out-Null
+        }
+        if (-not $runnerWasEnabled) { Disable-ScheduledTask -TaskName $RunnerTaskName -ErrorAction Stop | Out-Null }
         $runnerRegistered = $true
         $scheduledTasks += [ordered]@{
             task_name = $RunnerTaskName
@@ -196,3 +200,6 @@ if (-not $SkipTaskRegistration) {
 
 Write-Host "News-Grasp ops scripts installed to $BinDir"
 Write-Host "Backup manifest: $ManifestPath"
+if (-not $runnerRegistered) {
+    throw "failed to converge $RunnerTaskName action: $runnerRegisterError"
+}

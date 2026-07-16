@@ -1473,6 +1473,9 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert 'news-grasp-task-launcher.pyw`" -Destination' in installer_text
     assert "execute = $pythonw" in installer_text
     assert "[Console]::OutputEncoding" in installer_text
+    assert "Set-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction" in installer_text
+    assert "if (-not $runnerRegistered) {" in installer_text
+    assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
 
 def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite() -> None:
