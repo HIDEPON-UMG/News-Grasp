@@ -407,6 +407,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-15-daily-batch-slo-recovery-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-16",
+        "pytest-static / runtime model dependency audit / RecoverOnly / publish-complete",
+        "runtime model dependency audit missed retired-model fixtures when pytest basetemp placed tmp roots inside the git worktree",
+        "nested basetemp and git worktree root boundary",
+        "audit tools must resolve git-listed paths from the worktree top and then filter to the requested repo_root before classifying production/runtime dependencies",
+        "nested repo-local basetemp fixture, runtime model dependency audit contract, runner-equivalent pytest-static, RecoverOnly resume proof, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-16-pytest-basetemp-recovery-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

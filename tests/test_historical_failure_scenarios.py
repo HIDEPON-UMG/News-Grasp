@@ -255,6 +255,15 @@ def test_2026_07_13_daily_batch_repair_path_incident_is_registered() -> None:
     assert scenario.evidence_path.endswith("2026-07-13-daily-batch-repair-path-report.html")
 
 
+def test_2026_07_16_pytest_basetemp_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-16")
+    assert "runtime model dependency audit" in scenario.stage
+    assert "nested basetemp" in scenario.root_pattern
+    assert "worktree top" in scenario.missing_invariant
+    assert "runtime model dependency audit contract" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-16-pytest-basetemp-recovery-report.html")
+
+
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:
     scenarios = compound_failure_scenarios()
 

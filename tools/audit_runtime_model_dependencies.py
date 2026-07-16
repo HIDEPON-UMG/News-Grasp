@@ -63,17 +63,36 @@ TEXT_SUFFIXES = {
 
 
 def _candidate_paths(root: Path) -> Iterable[Path]:
+    top_completed = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    git_top: Path | None = None
+    if top_completed.returncode == 0:
+        raw_top = top_completed.stdout.decode("utf-8", errors="replace").strip()
+        if raw_top:
+            git_top = Path(raw_top).resolve()
     completed = subprocess.run(
         ["git", "ls-files", "-co", "--exclude-standard", "-z"],
         cwd=root,
         capture_output=True,
         check=False,
     )
-    if completed.returncode == 0:
+    if completed.returncode == 0 and git_top is not None:
+        yielded = False
         for raw in completed.stdout.split(b"\0"):
             if raw:
-                yield root / raw.decode("utf-8", errors="replace")
-        return
+                path = (git_top / raw.decode("utf-8", errors="replace")).resolve()
+                try:
+                    path.relative_to(root)
+                except ValueError:
+                    continue
+                yielded = True
+                yield path
+        if yielded:
+            return
     for path in root.rglob("*"):
         if path.is_file() and not any(part in {".git", ".venv", "__pycache__"} for part in path.parts):
             yield path
