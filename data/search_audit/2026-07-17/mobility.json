@@ -1,0 +1,122 @@
+{
+  "date": "2026-07-17",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:sbbit.jp NVIDIA トヨタ フィジカルAI 次世代モビリティ",
+    "site:online.logi-biz.com ダイナミックマッププラットフォーム XGMF",
+    "site:hachioji.keizai.biz 八王子市 東京工科大学 自動運転バス",
+    "site:webcg.net レンジローバー スポーツ EVモデル",
+    "site:news.livedoor.com 大阪メトロ EVバス 150台"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "全台使用中止の万博EVバス、購入の経緯は 大阪メトロがきょう説明 [大阪府]",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5WSFAtZFhkdDY1Y2h5Z3ZRS1ZzekNDN3QxQTBfOFFMSmdRZ0V4WDRuUFhMeVhiajFJY0habVJRNkwtc09henFERGFnTktlRmUtNGpwTTU5SVBWVVVXZnI2ZUQwaFN1OWs?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "大阪メトロ、会長ら3人が引責辞任・降任 万博EVバス問題で（毎日新聞）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1Uc1h5YUE2S3o2cU5wY2drT1FyaENlcy16V2VySGVLODdwQU5od0dDSjJnSklGd0ZUcXU2c2VMSC1YMDQ1RERmTmhsLU15RUpHWTNubmNqMkQ2ZW8wcDUwVXRkNUVsLVVQbmd0VnpGWFNWMkVnR0RvTkptdzhsbzQ?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "EV時代の自動車メーカー究極の選択、電池は「内製」か「外部調達」か？",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE8wSUo0UUt3M2FoVWh3dXVBQ2UyZTZYVkNMQ2FjV2l1SFVNV3lzbmlEY3F4SjM1cHZlV2w3TnFsY0otbVFGc1BfTjlkbEHSAU9BVV95cUxQODRLZS0wV1NkNWptNUJ0aG1rY3ZWand3OF9OcXRUaHRzTnFmZ2hIb21NYW9iSnZyVE9UY0VaUHlqN19nWlM4eHlEM2VZbUVJ?oc=5",
+      "reason": "解説・分析色が強く当日速報性を優先"
+    },
+    {
+      "title": "2026 TDK Tokyo E-prixで体感する、 モビリティの進化と未来。",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOOVE0dHFUYTBLNEx0ZHk0UkdzbmlIWm84UlJvVXY3MV8xbTVwTWlCVUdCdWJRWWRXMWhnU2NwcmN5RkVkVEdKdFhvN3Q4cERURjRnd05wUzBfSlVZNU5SMkRqZ1YzVkpkSzd6dzZIYlpSc1VTSTBsamRrUzBSNnVFVHRR?oc=5",
+      "reason": "イベント紹介でニュース性を優先して除外"
+    },
+    {
+      "title": "万博EVバス「安全リスクの検証不十分」 指摘された組織風土",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5rRml0V1l6UzFvNUNFYTdFNXhxazhvbl93ODlMTUlZN2tqdU9XU05UbW9RVjEtQU5wUml2a19YWWtjclVtMDhaYnhfejY2ejZ6TnZhR3hUVFA3QU4yaFdEQ2I3ZEVsY3JN?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "パッカー車・配送車などにEV導入…JFEエンジ・住友三井オート、バッテリー交換式で提携",
+      "url": "https://news.google.com/rss/articles/CBMiR0FVX3lxTE54U2IxTXd4UUVGd3pYWG5TZnlZSWhneks1WEVvblJUNWpsUW02V0NRWU5McmdzcDh0bnl0bU1aZ0pmWTZOajNR?oc=5",
+      "reason": "提携内容は有力だが候補日時と一次資料の公開日が不一致"
+    },
+    {
+      "title": "自動運転の社会実装へ新プロジェクト始動",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE5iZWh2bDRmaE41NlRMVG5yRmJ3TGR0WUxyUUVQSkR2ZEw1U3I5MllQWUZySjAxak5qVDlnRnI3X01adTJ1NG9NUg?oc=5",
+      "reason": "ダイナミックマップ/XGMF記事と同一論点。代表1件に集約"
+    },
+    {
+      "title": "万博EVバス購入、責任取り会長辞任 安全リスクの認識「不十分」 [大阪府]",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5HSjMySDg3b3o2SWtZTFl6SGFnUTc5YllOZXh6VGRNbW1IRHpkQ1pZajF3VUpDVEpUc1FQNTBHbGtrbGIxaVhsS3ZFXzRIWG5GcE5YVXozOW0wV2g3VWpZQU1DbDQ2YU0?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "大阪メトロ河井会長が辞任 万博EVバス問題で引責",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBfUHkwX2szeW9Ca04tX3hYdFRLWUlYT0pGWElnaG85YzBtVDRGaTlxTkhNWU1YWlQ3TnJlLU56WDhOWFlqQ2VsanI0OWY4NTFqZjlER24ya2FqcTlxNm85ajhoaFFfckRLNUtOaFZRMEs4U2hISUFjN01sTzlGcTg?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "（取材考記）次世代ＥＶ中止 後継車へ技術、トヨタを注視 近藤郷平",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE5HRzY2ZFl6Uk5vaWI4aERqdXZMZU1GYW5UeVZZbmp1cnBfXzNmNlJrTmtmcmQzRFNDNGwxRWFnR2oxOFhxaklCUDhsMHFIY3kzMVNyOV9LV0VjQ3ow?oc=5",
+      "reason": "製品計画の意思決定でManufacturing寄り。カテゴリ境界で除外"
+    },
+    {
+      "title": "エムケイ、国内初の電力貯蔵システム導入 ＥＶタクシー充電で実証運用",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE9UMUMybU45dmZaelh6R09udlZmLWh0ZGRIWWUtNy02NEg5ZnQ4ekt6WS02QkE5OTZVcUQwa0szYUZDMnlsZ2p4bUlzMHFiWXoteXdwU0hFR3JBOEk?oc=5",
+      "reason": "候補のcanonical元記事URLを当日中に確定できず除外"
+    },
+    {
+      "title": "大阪メトロ河井会長が辞任 万博EVバス問題で引責 中国製、不具合多発",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE84d21yUThCRnNGZ2xJQlI4WlZBYk9JZlhXcjJqZHpSVGpqYjJ3OE9tWWhPVUpJSXNPZFlyR2hpc1lWZ09WTUZ0aG9uYVIyWUZlTjVVNXF1cU43ak9LV0tPVWw3M3dESWM?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "ヒロセ電機、EVやHEVのパワートレーン向けコネクター",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE8wSUo0UUt3M2FoVWh3dXVBQ2UyZTZYVkNMQ2FjV2l1SFVNV3lzbmlEY3F4SjM1cHZlV2w3TnFsY0otbVFGc1BfTjlkbEHSAU9BVV95cUxQODRLZS0wV1NkNWptNUJ0aG1rY3ZWand3OF9OcXRUaHRzTnFmZ2hIb21NYW9iSnZyVE9UY0VaUHlqN19nWlM4eHlEM2VZbUVJ?oc=5",
+      "reason": "部品製品情報でモビリティ全体のニュース性を優先して除外"
+    },
+    {
+      "title": "自動運転の最後の人手は、充電だった。DOBOTと星星充電が挑むロボタクシー無人化の本質",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE5yYUhCNGhVM3F6bEtvc1pvOWdqc2VTdjhEWjRLLXViQjZFVVVGSkMtcDBsZHBDQjhQRHJ0d1JpSzVUNTVweVEzU2hVRGRlb2tjSmRGTA?oc=5",
+      "reason": "論考・解説色が強く一次情報性を優先して除外"
+    },
+    {
+      "title": "自動運転の普及・実用化「国として取り組んでほしい」",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFB0N2hoTF8wM2FyeGpHYUdCcEdHZ0lHZld0Vlo5Tm8tSHoxdTdwWlpub0Jnby02N2pWT3hwajNPSU84dUxFTnFuOVBUSTRkcXZvX3JLRUJ3U3oxeEdtcGpfMENGZzdMUEFDbnBYUEx1U1pOM2o1UmVyZlJGUFNuc0k?oc=5",
+      "reason": "政策要望中心で、実装主体の具体的な新展開を優先"
+    },
+    {
+      "title": "【まとめてわかる】全台使用中止の万博EVバス、何が問題なのか?",
+      "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE1Ddm5GUW9SSzJnVy1yVFByM2gySk41ODZDdnpOaGtJMGtQbWs2eU1XZ3dkeVEySFJTdWdWTDc5NWpDUXh3N2JiLU03bEw4LWtEUGxsVUd4R2x5OW40bmhKbW91LTJXMDNaVUtHTU9R?oc=5",
+      "reason": "大阪EVバスの同一論点重複。代表1件に集約"
+    },
+    {
+      "title": "EV充電モジュールの世界市場（2026年～2032年）",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE5CQVpPMDhraGRCSGtIX1JUc0twbWllSTlzZzZ4SjFrMmE0QnQ0MzFUM1pkVzFDeXVkNWtYTE5hR0pnRTFqemZZaldpcndWMHM?oc=5",
+      "reason": "市場調査PRでニュース性と一次情報性が低い"
+    },
+    {
+      "title": "中国新興EVウィンドローズ、車両紛失と給与未払い",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE81STJiMXJxT25WVjVmZHFTZ19iZEFPT3pyYy00R3ZRVDFwa2FqMHJ1S0QyajU3NUdTSDRudVBaclJWbWhIOW40SlN2VHQ3S2R1RFpLbkQxN0tfS21nMVdRNHgxOUJnUUdzaDRFQmdSemtWaFdkQy1JTURGRDlGX0U?oc=5",
+      "reason": "一次記事URLを確定できず除外"
+    },
+    {
+      "title": "ロート製薬など、自動運転トラックの製品輸送実証",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE1LaThaZHRoOW4xN3Q4NHVYMHdHMEVlZzF3cEdrVUVnX2g2a0tuU0dTcEV5bTNpOWFHd0UyMW1OZjRhTjd4NTNhbUxBOU94U1FQdXc4?oc=5",
+      "reason": "候補タイトルに対する当日公開のcanonical元記事を確定できず除外"
+    }
+  ]
+}

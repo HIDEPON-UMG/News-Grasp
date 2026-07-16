@@ -1,0 +1,119 @@
+{
+  "date": "2026-07-17",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "TSMC Arizona 100 billion additional investment July 16 2026 2nm plants",
+    "\"ノエトラ、エヌビディアからAI半導体「ルービン」を約2万7500基調達\"",
+    "\"ドイツ半導体、ラピダスに期待\" トルンプ"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "日本の半導体株、高値から2割安 TSMC好決算でも晴れぬ需給不安",
+      "reason": "市場解説であり製造能力の新規変化が主題でない"
+    },
+    {
+      "title": "AI・半導体で沸く「韓国市場」の死角、KOSPI乱高下で深まる“K字型経済”の明暗",
+      "reason": "市場解説であり製造業の一次材料が薄い"
+    },
+    {
+      "title": "米国株式市場＝反落、半導体株安が重し 好調な指標・決算効果を相殺",
+      "reason": "市場概況であり製造業の構造変化が主題でない"
+    },
+    {
+      "title": "TSMC、米アリゾナで1千億ドル追加投資 先端半導体工場など新設",
+      "reason": "採用候補と同一案件の重複候補"
+    },
+    {
+      "title": "ノエトラが本格始動、エヌビディアからＡＩ半導体調達 国も支援",
+      "reason": "採用候補と同一Noetra案件の重複"
+    },
+    {
+      "title": "ウレタン加工工場で火災 国道が3時間ほど通行止め 静岡・三島市",
+      "reason": "個別事故でカテゴリの構造的論点から外れる"
+    },
+    {
+      "title": "編集者の視点「パワー半導体、SiCやGaNで特許紛争」",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "【特許】Kyulux、高効率の有機発光素子 ディスプレーに",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "日立ハイテクCTO「医療と半導体は近い」、ハードとソフトで計測の精度究める",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "「自律的な工場」を目指すマイクロソフト、フィジカルAI実現へデータを集約",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "1兆円企業目指すダイフク、6年間でマザー工場に520億円 製造・試験機能拡充",
+      "reason": "当日記事のcanonical URLを確認できず、公式発表は古い"
+    },
+    {
+      "title": "車載Ethernet、10Mと数G提案、半導体メーカーの勢力図に変化",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "半導体供給網と特許出願動向をデータ解析 EUVを諦めない中国の野望",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "ラピダス専務執行役員の折井靖光さん 半導体「後工程の時代」率いる",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "先端半導体製造へ秘策 TSMCに挑む野望と焦り 「タウの法則」の成否",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "NYダウ、反落105ドル安 半導体・AI銘柄に売りでナスダック1.4%安",
+      "reason": "市場概況であり製造業の構造変化が主題でない"
+    },
+    {
+      "title": "フィジカルAI進化で人型ロボットは導入段階、製造現場で「エージェンティックAI」",
+      "reason": "canonical URLを確認できず採用保留"
+    },
+    {
+      "title": "半導体株に陰り？ 識者どう見る キオクシア株はピークの半値近くに",
+      "reason": "市場解説であり製造能力の新規変化が主題でない"
+    },
+    {
+      "title": "NYダウ、一進一退で始まる 企業決算好感も半導体関連で売り続く",
+      "reason": "市場概況であり製造業の構造変化が主題でない"
+    },
+    {
+      "title": "ADEKAの半導体開発拠点が始動 「後工程」に託すAI銘柄への転身",
+      "reason": "公開日がfreshness gateの当日・前日窓を超えるため除外"
+    },
+    {
+      "title": "BMWが車3万台の製造に人型ロボット、シェフラーは基幹部品の設計に知見応用",
+      "reason": "canonical URLの公開日が当日・前日窓で確認できず採用保留"
+    },
+    {
+      "title": "中国半導体メーカーCXMT、大型IPOに個人投資家殺到－212倍の応募",
+      "reason": "canonical URLの公開日が当日・前日窓で確認できず採用保留"
+    },
+    {
+      "title": "シーメンス、AIで製造現場を自律制御 未知の状況にも柔軟に対応",
+      "reason": "canonical URLを確認できず採用保留"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

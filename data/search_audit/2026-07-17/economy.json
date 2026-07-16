@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-17",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:finance.yahoo.co.jp \"TSMCの純利益77％増\" 2026 7月16日",
+    "site:diamond.jp \"米大手銀行決算\" \"リスクにも要注意\"",
+    "site:www.softbank.jp \"2040年「ASI Economy」への道筋\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "米インフレ「懸念すべき」水準、足元の政策の焦点＝カンザスシティー連銀総裁",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPcmh3di02ejNJZ2lidWg3dVBCTEgtbkdhQ2dYZjRWYXdHZGVycC1XU1I1SmxueFg1UHl3dWRyR2wxMXJndXQ3S3VzLWNzSUpkUE9oYjdqZDg3NnNITnlZVE5ka3hDNU1SV3VxRG9sQnFxZ01kZnBGa1NPM1hXYnN4Yg?oc=5",
+      "reason": "canonical URLを確認できず、Google News URLのままのため不採用"
+    },
+    {
+      "title": "景気のソフトランディングとは インフレをゆるやかに抑制、景気安定を実現",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9YeS1XRjlXV3cwTzlhbXc2MFRCWGNPY09leVQ3SGY1YmhlWTdfd2Nkb1pJdldMZ2dKeE5hLWZsRkFrVUtHLVlJOUM5S3ZRdC1LWW9PUmVUWnYzaDVQLWRfZGZJSDhXNlkyWnFZd2xzNmI5YU1kUE1JMXI0OXdhdw?oc=5",
+      "reason": "媒体側のcanonical URLを記事単位で確認できず不採用"
+    },
+    {
+      "title": "決算:TSMCの4〜6月期純利益77％増 最高益を更新",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5kOFlLN0tNaGVsbThPS2tnTnZYQnJNQURPXzhnU2tSRmdUZjZnNGtaMnhpV1lGWGdiS0J2MGVodExpNlpxRm5qUHc5ZUUwSlRwQm11dTBuU1ZLVllsdXRsRDRQNVJhNV9WY1NIcg?oc=5",
+      "reason": "同一TSMC決算の重複候補として、canonical解決済みレコードに統合"
+    },
+    {
+      "title": "トレーニングマッチ vs. 徳島ヴォルティス・宮崎産業経済大学 試合結果",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE5heDl1enM1bk1iMGtVYVgzallLOFhRaEN2X3RyZFlpUXhyb2dJLVk2NEh5RnZFc3VjWGEwVUdkSmVOTFZoUjFmbDBwcHNXeFQzSzI4NjlWcw?oc=5",
+      "reason": "economyカテゴリと無関係のスポーツ記事"
+    },
+    {
+      "title": "AI経済社会検討会 (2026年7月16日 No.3737)",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE9VaExxQURSNEU5SmlRY2JUTnRPZzlxQ1Q4dVJJaVJuMDFVMWI4M21IRVk3bnhnd3p0MUN2Z19JQThfUzcxcWpJQnZyTTJIT1NjNExnajlaWjRWaG1EQTR3SGhoSkFLa1lMR2Q4?oc=5",
+      "reason": "canonical URLを確認できず、記事本文の要点を確定できないため不採用"
+    },
+    {
+      "title": "米ダラス連銀総裁、政策金利の小幅な引き上げ支持－インフレ抑制へ",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9nUkJmVE5pWDdmTkJKeDZtU0EyYkNKTk5leExtR3ZXV3M0c09vc2lHM3hUNEU2RHlScDJtbzdfWXVuNWJIOGlGTHJrcEJ3R25pNXd2eGdLeEhiWGtvY0JLSzNhM1EzR0U?oc=5",
+      "reason": "canonical URLを確認できず、同テーマの一次確認可能な記事を確保できないため不採用"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

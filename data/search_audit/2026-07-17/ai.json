@@ -1,0 +1,135 @@
+{
+  "date": "2026-07-17",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:itmedia.co.jp/aiplus/article/2607/16 GPT-Red",
+    "site:itmedia.co.jp/aiplus/article/2607/16 Claude 利用制限 Codex ChatGPT Work",
+    "site:techno-edge.net OpenAI Codex Micro 230ドル",
+    "site:logi-today.com 双日テックイノベーション 貿易書類 生成AI",
+    "site:bleepingcomputer.com Gemini CLI abused hacking agent"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "【締切7/31】AI・生成AIで加速する事業変革と産業DXの総合展EdgeTech+ 2026「IDEC横浜パビリオン」出展企業募集",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE8xZTRxY1ZsQWpEZFI0eTFaRE5GTFFmZi1sVFE3SlRYQlJyMEgwa1BnbGdKQUE0amtzV05ad0doNWluenI2bHZaRTF2SWFhcUJGSXJMU3ZQbnl3TC12RGNINlNPNFlCRGM?oc=5",
+      "reason": "イベント募集でニュース性・読者影響が相対的に低い"
+    },
+    {
+      "title": "グーグルの最新「Gemini」AIモデル投入に遅れ、性能改善で目標届かず",
+      "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNR1FIUXFmV1BSR3AxWTAteVhvcjJPeEwzc21IQWlmczlxLUFKdGczS1VkQnB6TWpXdmxrcUpGbTZWU0l6ei03SkVuU2lLWGNDd0NrTE5EM0pDYkUzblJLWlMwc1BMbnJjQ0lQRkt6bFJmSm9WWEd3aTN0RDB6ZzJOQWU5ZUNRZGUwd25MRlp3?oc=5",
+      "reason": "Bloomberg本文のcanonical解決がrobots制約で未確認"
+    },
+    {
+      "title": "【米国株】グーグルの「Gemini 3.5 Pro」、コーディング性能不足で数カ月遅延、株価下落",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE5faXpwU3NmNHlCeXUzV0lKaGVoMU5nc1pXY180QnVEamdBVHVQaUd1VDJWSmktV1JNT0N1QndUSExQcF9JZVY0MEtYOEltRVkyWWpMc1pfa0x0SVdGOHBvdFE5N3NrN2t3X3pvbzFUOGljTWFm?oc=5",
+      "reason": "同一Gemini遅延テーマの再掲・canonical未確認"
+    },
+    {
+      "title": "AIが自ら攻撃し、自ら学ぶ ― OpenAIの新セキュリティAI「GPT-Red」 - AI新聞",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5UbGNBMzdmcTRkd2hSQkZhWG1CSWhQVkZnc051UjhBSHJuQ2tsZTJGTHI3U21FSXlkaHprU3c3SmdLeHQtZ2ZOTG5OcWh4cHRZam01LU4zQUp3YlZ6X2ZyMmdIVGR1U0p1?oc=5",
+      "reason": "GPT-Redの同一テーマをITmediaのcanonical記事へ統合"
+    },
+    {
+      "title": "Gemini Spark、日本でスタート グーグルのパーソナルAIエージェント",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE1uZXA3LVNxV1lZMFVSOWlKZWZTZ0gtLVZpSG81Wlc5SElqdl9xQ2diTHVsS1dhR0lmYUZ6NFRCc0lOY2d0RFN1OGk3NmlENjY5ZXhKenhYTlhEcHhuMUZiSDRPWnY?oc=5",
+      "reason": "Gemini Sparkのfollow-upで新材料と一次URLの確認が弱い"
+    },
+    {
+      "title": "今どきの就活生、面接も試験もAI頼み 「不正」の線引き難しく",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFA5ZDJyd0d0U0h2OWxyUHNJN2ZhaF84Nkdpcko0SnBacnlpTnI0QTFfUnB0bkV4U0JsZnFOX0lRMEo4b3hVYzlyMV9WQV9DZXlUbnMwcUJEbGNNcjgwY2R0ZnYzNTY5R2M?oc=5",
+      "reason": "日経本文のcanonical解決がrobots制約で未確認"
+    },
+    {
+      "title": "生成AI活用事例「AI時代の授業づくりアップデートセミナー」8/25",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE9wZWhrdmZwSkN3WUpZR09lR0lrZWhXREllMVRNV2N1bS1tWmVQSlUzMS0yVW11cW9JMU9XQVc2MDh3bXdqUnA2RndENnVRUW9ybnJWYkdMeV9rOEhHdndJVlhrdDBuUQ?oc=5",
+      "reason": "セミナー告知でニュース性・読者影響が相対的に低い"
+    },
+    {
+      "title": "Google Vids「Gemini Omni」導入",
+      "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTE1ud195UHdaSV9lRDNpRVN2SktqOVh3LUkzZnpqSzh6Z2s1Wm5Va01uTTZUSzd0VURPWnFOTDRocEhRdFFmeDNDMGQtS1ZsMl9CR0F0bTVHOGxCNXE1ZUtRRndLTlBodnB6R2pxRGJ2OHVtM1A2YXlMaFlB?oc=5",
+      "reason": "Googleサービスの小規模機能追加で相対スコア不足"
+    },
+    {
+      "title": "Google「NotebookLM」を「Gemini Notebook」に改称 Gemini 3.5強化をAI Proへ拡大",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFB5WlRlRzBiOUVZV1hsVDFCYWR6dHQ3eGtNejQ4enU0US1adkhvVmNmMURJM2p0QXFHYThGcVY0bnNDRm9ySXBfQXM5UEtUdTg4anZ3Y3VlZEFCZTJE?oc=5",
+      "reason": "follow-upで既存記事との新材料差分が薄くcanonical未確認"
+    },
+    {
+      "title": "OpenAI、GPT-5.6の最上位モデルSOLが下位モデルLunaを自律的に教育したことが判明（ビジネス＋IT）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9vbE1xOXlIeTZzVktvRDI5UUR2a2FrUjVHZWhxZ1d5bUEydS1pTXI1b2UtU29nRXBPTjlZbzNTaU5aZ0V3bmFSN1ZxVW9MNXNMYXdGSVhNUFI5RHE5RmlEeHUwX0pmTEZnbkt3LVRhNmtMMVBjeGZtSXpVWW5tOHM?oc=5",
+      "reason": "follow-upのcanonical解決と新材料確認が不足"
+    },
+    {
+      "title": "Googleの24時間稼働AI「Gemini Spark」が日本上陸、月額1万4500円から",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBsWXJad0tnUkN5SFVybWFQYXJCV2VrRVZxX0pPdkxRalFiNU9lRUR0aG05b0tpZlB2dGExLS1OblRzTFN6cm1VQzA4bzRCZmlDNmtEYmdQMFlLT0FHcTcta2oxSzZyWXFDZzR6bXhpZ0xVMXZl?oc=5",
+      "reason": "同一Gemini Sparkテーマの重複候補"
+    },
+    {
+      "title": "倫理観のある優等生だから嘘をつく＝Anthropicが公開したAI監視の落とし穴",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE4yVkZZdzNGSTBjRWxIQzNuRng0dlZzUWtPMGhHdDhaM3F1RkVIUmU5RndPNmVBZ3BiTGUxUFZtZVFweGVlazRNOEVTZkNJUFY1UEhVQ1A0NDNPam5ydnFuRFo2ZHd4QQ?oc=5",
+      "reason": "解説色が強く一次情報との距離がある"
+    },
+    {
+      "title": "【AI独角獣】估値逼近1兆ドル、AnthropicがIPO投資家向け会合を開始か 早ければ10月に上場",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFA0WmFYNTlnX2hQVG83NmF6Tl9hVGVZSE5mMlh1UnduRms3eDY4RHgxa25ubVRqc2pOeEFrTkdVaVIxam01UW5Dc3hvOWN0ZEEtZXNEQlNpY2ozT1JBcGR0aUJoQWJiYjQxcDdnbTdaZjFxbk5Y?oc=5",
+      "reason": "IPO観測で一次情報の確度が低い"
+    },
+    {
+      "title": "【メタ監視委員会】OpenAIとAnthropicのチャットボット、抑圧的政権への批判を検閲する傾向が顕著に",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1RU1NmSUF4RW5JWC1FYzJfUVRNMEp2a29KajQ0X0x0NjdFUE0xSDFuNWRQcFJNNEZSN252M1NsTEVldjdzanY3RkFtZFN1U3pvV3FlMFlVSjBwYkJ5QkxWeGlQX0s4enJjSmV5SnZhQ3diVFNS?oc=5",
+      "reason": "調査主体と方法の確認が不足"
+    },
+    {
+      "title": "ゲーム販売の分断を防ぐ カプコンが生成AI導入の前にデータ基盤を刷新した理由：情シスが注目したい6つの改革",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE12WU95Q2ZSNXZQWjVQNXFwY0syNzY1SFhmc3FKMWotUGx2QUJ0TkxXM2F2YUFJZTRiX2xEOWgzb3BYX28xczVlYTlDWGE5Vl8zMUx6bE1lUjUyM01QZmlpV2FVa19XaThic2FLTw?oc=5",
+      "reason": "ゲーム業界寄りでAIカテゴリの相対優先度が低い"
+    },
+    {
+      "title": "スマホを閉じても稼働するAI「Gemini Spark」が日本語に対応 Gemini有料プランで順次展開（ITmedia Mobile）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9nWkJKODZNbXJ3dFFVd2pWRjlHNVJHRms3anZubUljWWlCbkJINXRaWDFnVmhDcFFpNkQ4MDVzNW5XWjlkc3JWN0Z3cG9jY1VDZjJ1aEFVSVA0TmhWX1JXSFgzTUoxMkpsbnBfRm1lTWxuVDdpLURoUjBMcjFnbW8?oc=5",
+      "reason": "同一Gemini Sparkテーマの重複候補"
+    },
+    {
+      "title": "欧州のGoogle TVにAI「Gemini」が順次提供開始、TCL製が先行するも中国へのデータ転送リスクは残存か",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE1RN1A3dDdzWk5XcFFGMDkwa0t2MmxFTWRKeDltcE43ZkFSV0VvRmwyWDRVRllTelU4Y1dkemhIeW9oNlpaNTQ4dnU2ektkdWlLSzh6SDlSYmFtWHFVSER6cmZzd052cnJh0gFoQVVfeXFMTVE3UDd0N3NaTldwUUYwOTBrS3YybEVNZEp4OW1wTjdmQVJXRW9GbDJYNFVGWVN6VThjV2R6aEh5b2g2Wlo1NDh2dTZ6S2R1aUtLOHpIOVJiYW1YcVVIRHpyZnN3TnZycmE?oc=5",
+      "reason": "Google TV機能追加で相対スコア不足"
+    },
+    {
+      "title": "AlphabetがGemini AIモデルの遅延報道を受け株価下落 執筆",
+      "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE5YdjQzWXdqaTdDUzRfUUZxZHNBT0dRSzRscEloNmJaYUpHWlI5dTVaeXZPcFMxMEhWUTNMNy1nNlJ0RERfX1dzWnFoOWs3R0NOdGgtR2tXcDFUTlNNN3BJcHZ4QU8yR2FkdkxjLThYUjQ?oc=5",
+      "reason": "同一Gemini遅延テーマの再掲・canonical未確認"
+    },
+    {
+      "title": "「最強のClaude集団」が創るAIの未来 AnthropicとNECが協業: NEC Stories",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9qMm1ZaUZkRnQzV0lIWURzZmVPZ0pJMmlqT3VlYkZEOGM4VW1uaEVBREh1QjhnVUU2UTZzVDJ4WEczOWFTeGZ2VTdiTXExdWVZVHhMRk4wQlNNZ1Fr?oc=5",
+      "reason": "企業協業の紹介記事で当日主要ニュースとしての影響が相対的に低い"
+    },
+    {
+      "title": "インテル、Google Cloudとの提携を拡大しGemini AIを全社導入 執筆",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE9yR3RIR0JadUxUNVV1b1RNQmpIVVJnTmFzeFpXNjk4SlZJeEI3al8xdWk2czFKVkJySjNYeXc2VzhHem9rRGFlaklIa1NGck53Y1NGOW9TWnJFdGtRREVGVF9LNGhUeGFtelE?oc=5",
+      "reason": "既存テーマとの重複とcanonical未確認"
+    },
+    {
+      "url": "https://www.techno-edge.net/article/2026/07/16/5299.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/978365",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

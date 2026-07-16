@@ -1,0 +1,128 @@
+{
+  "date": "2026-07-17",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:jp.reuters.com \"米ダラス連銀総裁、物価リスクを警告\"",
+    "site:jp.reuters.com \"スイス中銀、必要なら為替介入の用意\"",
+    "site:jp.reuters.com \"英経済は軟調、利上げの必要性低い\"",
+    "Bloomberg 韓国中銀 3年半ぶり 利上げ AIブーム 2026"
+  ],
+  "raw_results_total": 32,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "【ドル/円、今夜の見通し】ドル/円、161円台は買い場？米6月小売売上高は5カ月連続で増加？＿2026/7/16",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBUNzRadW5QbzJCSFEyVkMxUUhNY3VvV3JqdDBJUEo1RjRWRDh1d0drSjVrLWVpaWtsRDktOHNLUDhWOXdqU19KUFd1aU4yZE53bVNBb1FiMjdTNzY3V1BfaDQxbw?oc=5",
+      "reason": "外為どっとコムの見通し記事で、選定した市場概況と論点が重複"
+    },
+    {
+      "title": "はびこる無登録FX業者、金融庁との「いたちごっこ」続く",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1MSGYxWGlBNnpwQWpiM1BLWjRBWG5UVU5ZR3lZTHcwcnFHN3E3RTNBSFBaN09GNXJ0M1VVanRWZEhpUDNoQU1Zcm1GeTdxVnFveUtpemNqYXpHU0kyaGtiZFRmUzFXcmpSUUlqMQ?oc=5",
+      "reason": "一次記事のcanonical解決と公開本文の確認ができず採用見送り"
+    },
+    {
+      "title": "（けいざい＋）検証マイナス金利、日銀議事録から：中 想定超えた副作用、長期金利も物価もマイナス圏",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFA5MDZTRlJsOUxFbGhLdVZPYTNnTmlISDdWQW1uRTZCMUE3ZDMzSERUSGI0Znd5VDlsRkp5THkyN0Z6ZnFwX3V3ek1tcS00cFVJWVQwMEtoWXlkbnpk?oc=5",
+      "reason": "一次記事のcanonical解決ができず、当日FXの直接的な価格材料としては限定的"
+    },
+    {
+      "title": "FOMCを前に利上げ予想が急変、金利オプション勢は持ち高手じまい急ぐ",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFBaa2ZDdS1kaFY1NTZONUhXYUliakFfemxkUTBfQjduWlVXaF9UclBJVWJqREV1djdDd1V4a094aDVJQU10ZF9hZnNQb1IyR1FuUEZLcHNlcXZTZllkYjhrbWw5MmFKQ05CUWtfeENaejdnc2NzVHFF?oc=5",
+      "reason": "canonical解決不能。FRBの利上げ観測は採用したローガン発言とみんかぶ市場概況で確認"
+    },
+    {
+      "title": "韓国利上げ 2・75％に 物価抑制へ 3年ぶり",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE9laFhzU3dYVUx4T0l0clhIUXJJN1U2VnQ5a3JCNmdZX0g3M1pEaWdyNHBfUXczTG9UUjd1LWhhaGlxTDVWdjZYRkhQME9ZY2hkbGl3NGlkTXc2NTR6Rmc?oc=5",
+      "reason": "韓国利上げの重複候補。Bloomberg転載の公開本文を優先"
+    },
+    {
+      "title": "インタビュー：長期金利3％超えなら、政府が日銀に国債買入増額を要請の可能性＝安達元日銀委員",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5pb1B3bTUtSWJ2ZDRVTTNrSHlfaEpWcDR4S0ViSG5WNzNpdlRacENSUFJJbThKUmNGcnVIUUtmTGdGbVVIT0ZKS3drZ2RTMkJDcTI4NHp1Z2dIX0t3TUw0cnJnS2JybF94Vm5wYXFZYVpwU1NKZ1NCWQ?oc=5",
+      "reason": "シナリオ発言で、当日確認できた政策決定・市場価格材料より優先度が低い"
+    },
+    {
+      "title": "7月ロイター企業調査：日銀の利上げ影響、49％がマイナス 26％が追加引き上げ望まず",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPTWNDdmhCYUotQ2hmRmZyUi1HOTNMN20wc3o1MndhekN6NWRoNzVTci01eVhnTmFvQ1ZVQWFfUEphLVE0aGs2N0JtSEY5WXJXY2JTWGwxYVl3SjM0TWNKeTFRdnRQWDNDZEdZWE9qTTR0NTJkQjIxazFUbTJhR295eHJCcXJ3RGNjci1F?oc=5",
+      "reason": "企業景況調査で、為替の直近材料としての優先度が低い"
+    },
+    {
+      "title": "FX個人投資家動向｜ポンド急伸がドルの重し、英政局や財政運営への期待が広がる 2026年7月16日",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE0xVnItME05Sk1UVW02VG9RTW5PZkU0ZDZudHVVSVFYSmpCRFBWY3p6ck1NY2VNRy1kbHZaQkxkWFNJNE9pemZPTkhrdkhwVW4wRDE4dVNKTm9Pald3NXpCOG5fbw?oc=5",
+      "reason": "個人投資家動向の解説で、英中銀副総裁の直接発言と重複"
+    },
+    {
+      "title": "豪ドル/円【AUDJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE05OFVuTURyMlFlNEM3WUpGTUFMWE92YU5yYjBSNm9Pc3NkeHplX0diaU9mVm5IRFIteUN6dzJOU1lFRXByX1BfVFhUdVh0YUdlbExySm5B?oc=5",
+      "reason": "リアルタイムレート画面で、ニュース記事ではない"
+    },
+    {
+      "title": "ドル円、１６２．４０円近辺での推移 イラン情勢が不透明な中でドル高優勢＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFBaa2ZDdS1kaFY1NTZONUhXYUliakFfemxkUTBfQjduWlVXaF9UclBJVWJqREV1djdDd1V4a094aDVJQU10ZF9hZnNQb1IyR1FuUEZLcHNlcXZTZllkYjhrbWw5MmFKQ05CUWtfeENaejdnc2NzVHFF?oc=5",
+      "reason": "同一市場テーマの近接記事。最終時点の162.55円を報じる候補を採用"
+    },
+    {
+      "title": "ニューヨーク外国為替市場概況･4時 ドル円、買い一服(トレーダーズ・ウェブ)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNRzgweHBCaHBrTkVxdnUzelVjaWtWSGdudHhYajd4a09NZVZ3cEVkWEd0dGNkZzFiaW5yMnVwUk5kWFNzV1dtdGtoUzY0TmJnc050RUJiVzNNZk9Wclp2Y0ZXdmJmekdUc3o4YUkwNUNoZXUtdjVGZ1J6bUZwOGRNa3hlRHE5MkU?oc=5",
+      "reason": "同時刻帯の市場概況で、採用記事と重複"
+    },
+    {
+      "title": "【FX】ライブトレード 欧州タイムを攻略だ！「ドル/円、162円で高止まり…米6月小売売上高でどうなる！？」ドル円分析＆取引 2026/7/16 17:00",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE5mUUFGNnFXa2pjT1o2QXk3UWNrVWRfVTJOcmZ1QzFBVEZxcW9vWWlQdFphX0I4WXV5dGo5RUNKNER5aUI0M2taQW45azFwUFl4RlZxeVVKeFpDSER0OHE0Ni1VYw?oc=5",
+      "reason": "ライブ配信・取引解説で一次ニュース性が低い"
+    },
+    {
+      "title": "FX実践解説、トルコ信頼向上中「いま投資したい通貨！？」（2026年7月16日）",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBiX3E3Mnlqa2RhSXExYmxCWXBCSU00WW16QV9jck1MVmx2NnNsQVB0UU5rRWRZTXM4SHdYSjhvQVU0Y0dNd0pPSmEweUFIQWU4bjZkZUhmb19XSWZTakRfSnpmWQ?oc=5",
+      "reason": "投資解説で、主要通貨の政策材料より優先度が低い"
+    },
+    {
+      "title": "【FX】7/16 米6月小売売上高に下振れの余地あり ドル円は？ ｜為替市場ニュースの振り返り、今日の見通し",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1YcVZvSzhfZFl2a1Rhc1R5ZXFIZjNHRXNtNDhKWTFzaUlqbzl2endDenBHdVRiZ0Fua0R2UVEwb0VTZmgyUUx6eHJWdV9BREY1b2NRQXRpdXhwYlhMZVR5dFFoWQ?oc=5",
+      "reason": "同一媒体の市況解説で、採用市場概況と重複"
+    },
+    {
+      "title": "FX/為替「ドルクローネも一時下げ優勢、原油高も重石＝ノルウェークローネ」：マイナー通貨 2026年7月16日",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE50Y2VVVmFsMGRNd3QtRlEwMGZlSU9DbVBvS3dPZU80X1Z3ZnVTc0o0SUg2QWNvSTNBZ1g2YzVuVmJyZUZJbldYM1BvWnJBaGMyaUpDT1UyTWw2VW9zSkFXN1NHNA?oc=5",
+      "reason": "マイナー通貨の解説で、主要政策材料より優先度が低い"
+    },
+    {
+      "title": "FX/為替「ドルペソは昨日の安値から反発＝メキシコペソ」：マイナー通貨 2026年7月16日",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE51NngtS3ZWaFpXU2lUOER0NDlfeE14cXJNVW1NM1VhZWs4YTYxbmNiM09nRDJKUUJuQ00tUVltMVZpcFhRMk5wTUJyRmhSR01TbFdaaEUzem5VT1UzXzZBbkpSVQ?oc=5",
+      "reason": "マイナー通貨の解説で、主要政策材料より優先度が低い"
+    },
+    {
+      "title": "ポンド、財政リスクが残るため上昇は長続きしない＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE5NWGVsc2pQY1NIclYwYUhsMXl3aEhYenlMNU1uT3Z1TXYyRW1wYlVHal9DMFpoempsLXM2VWpURWlQeTRfcnhjUA?oc=5",
+      "reason": "英中銀副総裁の発言を採用し、近接する市況解説を重複除外"
+    },
+    {
+      "title": "ユーロドル、一段高となる余地は限定的＝ＮＹ為替",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE85b2NZTVFWRHdRdHdtNERNOE85cVZGYnF1ak9mazllNVB0MHQ2U0VvbUNLTkVNeGk0c29ZYnliVEEzZEM4czNEMA?oc=5",
+      "reason": "ユーロドルの近接市況で、全体の主要論点より優先度が低い"
+    },
+    {
+      "title": "ドル円、１６２円台での推移が続く＝ＮＹ為替序盤",
+      "url": "https://fx.minkabu.jp/news/373411",
+      "reason": "採用した最終時点の記事と同一テーマの前段記事"
+    },
+    {
+      "title": "為替相場 １７日（日本時間 ４時）",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE4tMWZjbHptb2pmSEgxYVFCS3lpM1U2VnQ5a3JCNmdZX0g3M1pEaWdyNHBfUXczTG9UUjd1LWhhaGlxTDVWdjZYRkhQME9ZY2hkbGl3NGlkTXc2NTR6Rmc?oc=5",
+      "reason": "共同通信の定時レート速報で、採用した市況記事の文脈に包含"
+    },
+    {
+      "url": "https://in.marketscreener.com/news/fed-s-logan-says-rates-should-rise-to-fight-inflation-ce7f5ed3da80f523",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

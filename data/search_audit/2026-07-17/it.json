@@ -1,0 +1,128 @@
+{
+  "date": "2026-07-17",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "canonical_resolution_only": true,
+  "queries": [
+    "site:itmedia.co.jp AWS CloudFront 2026年7月16日",
+    "site:sbbit.jp AI基本計画 サイバー対処能力 フィジカルAI",
+    "site:fsi.co.jp Gen.2 AI 事業戦略",
+    "site:prtimes.jp X Mile ロジポケ パスキー 認証",
+    "site:amano.co.jp RAPiiTT AI クラウド 清掃"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "うるる、SaaS×在宅ワーカーに強み 入札情報関係に注力",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9mX0JrQmtYZVg3cy00Vi1WTTB3ank2ZzJROG13LVNIcjZmdU1od3dkZXU5Z0FDd21OdGZ4Y0ZUZlEwaVdBWTVsU040RFZRTnZXaEdMUlVYcGZBXy1TN0Z2WmRXMDVHSGxjMXhYaDhFWVhpay1BWWhJaG5EQnpEUQ?oc=5",
+      "reason": "企業紹介色が強く、当日のIT読者への影響範囲が上位候補に劣る"
+    },
+    {
+      "title": "低炭素農法でバングラ耕す 両備システムズ、ITで新風",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE1DNTRkVzdqZGIxTU1uY1hiTW1VUUZRZU0tVFlFdGxzcDhJNjdLcnlrREs5Q2VUX3RFR1ZLNW9DbGtHWS1aRnRxWjJtSTl5MmpBVDZtM2Jqam9XSUE?oc=5",
+      "reason": "農業・地域事例が主題で、ITカテゴリの中心論点から外れる"
+    },
+    {
+      "title": "【鹿鳴館再始動に向けて】日本のロックを生み続けてきた場所を、もう一度。",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9aVVRfTFFYVUNFdXBVSVdQVFU5WHdDMHJYZ0xlTzZHd2M3Qm5ORkdkWFlkYXZ3TlB2Mnh2djUzRnhoOFZPSm5GOEJjWlFvbzI2OW9N?oc=5",
+      "reason": "文化施設の支援募集であり、ITニュースとしての適合度が低い"
+    },
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1LamFweU1fQTFzZVBHZGVpNHEyWkZtZGQtR254Nm5jNVJRcmFQeHZ3S3RybEFKQmJKbDlNUGM0SGxIMjFnck1Ya2Nfcnc5Zw?oc=5",
+      "reason": "アーカイブ支援募集であり、ITカテゴリの中心論点から外れる"
+    },
+    {
+      "title": "SBI新生銀がIT人事戦略を大転換 大量退職から復調、職位「飛び級」道筋も",
+      "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNZC1aY01paEcxUlhKOHBtVWZHLUlLQ0NMWU5VYk9kOEhfV3VMRnNsWWFTeXlhQWdhZVJVVkJEVlZFnZG09ORWM4U200WVdOUE04cHhDX3l5ZGVwVXNzOVNRb1NSX09WUkczSE5PdHViamN5N3FpOFBZWDBOV2paeDRhTHRCU3h0NVQyTUlJMjdmWURPT0E?oc=5",
+      "reason": "人事制度の個別事例で、技術・産業への波及が上位候補に劣る"
+    },
+    {
+      "title": "ロシア軍によるキーウ攻撃で2人死亡 IT改革進めたフェドロフ国防相解任で抗議デモも 市民の反発強まる",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE9MTWdacG5va3dBS2drS01ZNzBMeklRYXhDbDBFc0M5aG9PRDlfeGNhMFoxcVNDdzNHNDh1UFRTTmZxRDRacTdRQVdoVGZmZm1YcXFtVG83UQ?oc=5",
+      "reason": "国際政治・軍事情勢が主題で、IT要素は副次的"
+    },
+    {
+      "title": "ソフォス、包括的なAIネイティブのサイバーセキュリティ防御システムを提供",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE0zemlvLS1uZWY0TG1rVnhMTXlsd2lJTEduS2dfMmhPNEFnbk9sUHgtcW94UHkxOHFrY0JsRUt6NUZVUzQ4b1hOdGtRX3dVN2hNUDhJ?oc=5",
+      "reason": "セキュリティ製品のPR色が強く、政策・基盤障害など上位候補を優先"
+    },
+    {
+      "title": "【第2回 栃木国際映画祭】 舞台は北関東最大都市 県都・宇都宮へ！さらなる進化を遂げる映画祭を応援したい",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBnekZHNHpOX3djVFprcUFZY3drSWxYMjdHNXhlRVNKcjBPalZJYUYtMWQ2ODlhaTdHUGVjMzB4UUpzZUQ3V2Vacm1EeXBnczIwczFZd2g0S3ZqeHo3UDRPdjNJbUE5WDdsYngteQ?oc=5",
+      "reason": "映画祭の支援募集であり、ITニュースとしての適合度が低い"
+    },
+    {
+      "title": "ペイペイ、一時決済できず＝クラウド障害で(時事通信)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOaGZlZTNVbk5XcDNxU0x6bkxwd0k5dmFhbGFONW8tcmhKWTJkWDB1Sk80ZUV4N09zejJfRTdoelRNaExORXVVTjBETU16eFhsOVVHSV9xMjB5R1FpNDJpWXY3SkxTSTlxblB0SnEyQU5FVmlyR0VzT0FhM2d0R0NqTlNUSzdaR0E?oc=5",
+      "reason": "AWS/CloudFront障害の同一事象で、ITmediaの一次報道に統合"
+    },
+    {
+      "title": "AIで変える鉄道保全と、「クローズド」を読み解くクラウド設計 — AWS Summit Japan 2026 展示ブース開催報告",
+      "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPVVhocWNuTmtSV0J2WnFfRl9hRF9DNDB4UTV1c3I4amx5OEVINUVIc19VdnA5aXJYWndUTHdNeUhMdEthWU5xYnJwbEh0a1VCbFh1YzBFNXVfWE95NEhvNHdveW8xdkFTRjJVeXFOQVRFak01Z1l3aHo1VUl2c1NidE1PWEUtUVp6MnN4WVNzaTBwZnBBMFNIU0MyWFVEeHBpaHd6Zg?oc=5",
+      "reason": "イベント報告・展示紹介で、当日性と影響範囲が上位候補に劣る"
+    },
+    {
+      "title": "戸田建設株式会社の新本社ビルで不動産管理クラウド「＠property」と維持管理BIMとの連携を実現",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5SLTR6b19WTjhfOGlLMHFZZUw2TGdfQXZPaUJKS0tOTHlvLWs2dmVXMVh4bS1tekZ4X1dOZ2tJTDJDbllWdTgwTVZfSjFJTTlfMTlyLTdvTGVFcTNMUlBZSHMwRVM1MkNVTUE?oc=5",
+      "reason": "個別導入事例で、読者への波及範囲が上位候補に劣る"
+    },
+    {
+      "title": "高度専門人材を育成 滋賀大、大阪のIT企業と協定 ／滋賀",
+      "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE94UTNRNzVsbWw1OUMyc3ZPZVduYjNoX0pnLWZOa0lrVmRqZmszTlJaUXF6QllBT1ptamZ2amJraGx3OTNjeG9sbjR3Z0J6SEt4OE5DZTdKSVB5Z0h1WWI5QVlIRVVZWWpFMmhEenVQaw?oc=5",
+      "reason": "地域の教育協定で、IT産業全体への影響が限定的"
+    },
+    {
+      "title": "サイバーセキュリティおよびインシデント対応演習2026",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPc3hTaWw5blpuakt1LUpWYlRMV2xCOHp4MElCbVJpUGw2MmRRRHNRQ05mdVVyTjFLRTRMNDdxM0U3NVpOQkxQS2JXbTJQUHhCUVRqVksxVFF3V2J1MktSck5vbTZQYWNLbV9YcEZSRlBGa1NzYWhXdUgwN0lWRDV1R3BDdllWNFRVWDZLLQ?oc=5",
+      "reason": "演習の告知であり、具体的な新規インシデントや制度変更を伴わない"
+    },
+    {
+      "title": "【国内7月24日発売予定】アディダス アディゼロ エヴォ SL クラウドホワイト/ビームグリーン/コアホワイト(KJ2522)",
+      "url": "https://news.google.com/rss/articles/CBMiUEFVX3lxTE51S2lmS3RxeGNUNVlsU01ITGRpbm94R3QwRjRUSlBtZDdwSTQxaDc1QkVEMExocFVVRzlnQkpQcHpWazBDVWN3Q0daMld4dnRK?oc=5",
+      "reason": "製品発売情報であり、ITカテゴリの対象外"
+    },
+    {
+      "title": "アクセンチュアを取り込め、顧客は変革に向け自走 「コンサル不要」目指す",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9DT2kxd29WRUNoRWdfS1NsN3A3RXVJU1otVWsyR0xjUVpHeVdRdlZUR2lkazZJbi10WTZEOWNFZVJ5VGFHWDNOQ0xGYlNRTEV0ZzA4MlhPeXV4UEhmVnVRemRNN0JqdHBOcTlQSQ?oc=5",
+      "reason": "論点は重要だが、当日の一次報道・具体的な動きが上位候補に劣る"
+    },
+    {
+      "title": "カントー市：サイバーセキュリティ法および個人データ保護に関する規制の実施。",
+      "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQWnFDbmVTRDQ4aUN0bjlKemJpQkVBcURPT1M0Q1FyanE2dGNrNVZYdzRQUGF4YzJnVGNueUpHVHFfWDBPQnp0S2hlMUprQThXU0E4bEJFSnpVNkZaT045aXZmcDE2c3BuWnBYckZJZXN5NGlVM2xHODBzc1NlNkR0TlpFa29YaXB0cXR2UExhZ2NTUVhYUDBEWlpqUlE4YXFQRUFrTjlWYw?oc=5",
+      "reason": "海外地方規制の翻訳記事で、日本語読者への直接的な影響が限定的"
+    },
+    {
+      "title": "【国際経営学部】新科目「特別演習Ａ（ビジネスデザインⅠ：協創的議論）」でJTBとのコンサルティングプロジェクト最終報告会を実施しました",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOSmpSbHNLWDZNVHZwbWtPQVZQS1pXb2UwU0FBWnd1ZXRlTTkwRjdJSkN5SkdFcF9qLTlGVTE0TFlOY1dBbGZUMDRoaGtnMjl2VEpqQnhvMlVEQXVPZWNqNUlGNmxZa0J3NElDcXhDVXd fT1I3RGxsRFdFVi1qdlk3akZtaUo5Tzhy?oc=5",
+      "reason": "大学内プロジェクトの報告で、IT産業全体への波及が限定的"
+    },
+    {
+      "title": "日本サイバーセキュリティ産業振興コミュニティ、セキュリティー新指標「日本度」 国内自律性や統制権を評価",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE5JYVdlOU5oQTNWSFgwd1ozVWxDcDdkTmd2Vkk1c0k0NXJOek11Q0Z0cnZMOHBoaEg1c3E1dEVLeGh4WEZoMTh0LWRiOUNGVGUza3ozZjZoQXdvVEdLV2FF?oc=5",
+      "reason": "基準公開の実質発表日は6月下旬で、当日ニュースとしては鮮度が不足"
+    },
+    {
+      "title": "「マイナポータル」ログインできず クラウドサービスに障害",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE91X1lzZWtWcTdSS3BnaHZzT3V2aDR4eVI4VHFUWXRUUnE4WFhNdmUwYWFwTUs2SmJjTkcwbDBoRUtsOTZPSHo0NzVYU1ZUUjRVRTQ3cHdBVzJpUQ?oc=5",
+      "reason": "AWS/CloudFront障害と同時間帯の関連事象で、より情報量の多い報道に統合"
+    },
+    {
+      "title": "サイバーセキュリティ関連の提携交渉を受け、シスコ（CSCO）の株価はプレミアムで取引される可能性がある",
+      "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxPRk00S3Vzb0hSU1RoOVVnVUNGRUxzZ29BeWYzNXZ5bGx2a3RBOE9KOEQ2dzRXVFc0SFdKaFVLY1g0blF5QmZBRU92ZV9teUdaa3MxT2t3Vk9EclNmZTF6NG82aWozQTkzaHVUNzV3U0ZkSHhoNVBzNk1kcGhzUXlpWm9BandlZHZBSmJ6TThIVWVrNWZhS3fSAZYBQVVfeXFMT0ZNNEt1c29IUlNUaDlVZ1VDRkVMc2dvQXlmMzV2eWxsdmt0QThPSjhENnc0V1RXNEhXSmhVS2NYNG5ReUJmQUVPdmVfbXlHWmtzMU9rd1ZPRHJTZmUxejRvNmlqM0E5M2h1VDc1d1NGZEh4NVBzNk1kcGhzUXlpWm9BandlZHZBSmJ6TThIVWVrNWZhS3fSAZYBQVVfeXFMT0ZNNEt1c29IUlNUaDlVZ1VDRkVMc2dvQXlmMzV2eWxsdmt0QThPSjhENnc0V1RXNEhXSmhVS2NYNG5ReUJmQUVPdmVfbXlHWmtzMU9rd1ZPRHJTZmUxejRvNmlqM0E5M2h1VDc1d1NGZEh4aDVQczZNZHBoc1F1?oc=5",
+      "reason": "株価見通し中心の二次的な投機記事で、一次情報性が低い"
+    }
+  ]
+}
