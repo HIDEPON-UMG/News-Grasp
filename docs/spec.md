@@ -27,6 +27,8 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 
 ## Definition of Done
 
+Scheduled Task / runner / bootstrap / deadman はTask Actionから最深childまでno-consoleで動作する。Taskは`pythonw.exe`とversioned launcherを使い、launcher childは`CREATE_NO_WINDOW`を強制する。このサブ端末では既存Disabled状態を維持し、no-console移行を理由に自動enableしない。
+
 通常日次バッチの OK marker は、次の成果物と公開面がすべて verified になった後にだけ書く。
 
 | Area | Requirement |

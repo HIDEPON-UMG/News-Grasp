@@ -49,7 +49,8 @@ $files = @(
     'news-grasp-runner.ps1',
     'watch-news-grasp-runner.ps1',
     'news-grasp-deadman.ps1',
-    'news-grasp-deadman-launcher.pyw'
+    'news-grasp-deadman-launcher.pyw',
+    'news-grasp-task-launcher.pyw'
 )
 
 $manifestFiles = @()
@@ -82,7 +83,8 @@ $rollbackCommands = @(
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-runner.ps1`" -Destination `"$BinDir\news-grasp-runner.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\watch-news-grasp-runner.ps1`" -Destination `"$BinDir\watch-news-grasp-runner.ps1`" -Force",
     "Copy-Item -LiteralPath `"$BackupDir\news-grasp-deadman.ps1`" -Destination `"$BinDir\news-grasp-deadman.ps1`" -Force",
-    "Copy-Item -LiteralPath `"$BackupDir\news-grasp-deadman-launcher.pyw`" -Destination `"$BinDir\news-grasp-deadman-launcher.pyw`" -Force"
+    "Copy-Item -LiteralPath `"$BackupDir\news-grasp-deadman-launcher.pyw`" -Destination `"$BinDir\news-grasp-deadman-launcher.pyw`" -Force",
+    "Copy-Item -LiteralPath `"$BackupDir\news-grasp-task-launcher.pyw`" -Destination `"$BinDir\news-grasp-task-launcher.pyw`" -Force"
 )
 
 $scheduledTasks = @()
@@ -90,19 +92,27 @@ if (-not $SkipTaskRegistration) {
     $watcherPath = Join-Path $BinDir 'watch-news-grasp-runner.ps1'
     $bootstrapPath = Join-Path $BinDir 'news-grasp-bootstrap.ps1'
     $deadmanLauncherPath = Join-Path $BinDir 'news-grasp-deadman-launcher.pyw'
+    $taskLauncherPath = Join-Path $BinDir 'news-grasp-task-launcher.pyw'
+    $pythonw = Join-Path $RepoDir '.venv\Scripts\pythonw.exe'
+    if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
+    $existingRunner = Get-ScheduledTask -TaskName $RunnerTaskName -ErrorAction SilentlyContinue
+    $runnerWasEnabled = $existingRunner -and $existingRunner.Settings.Enabled
+    $existingBootstrap = Get-ScheduledTask -TaskName $BootstrapTaskName -ErrorAction SilentlyContinue
+    $bootstrapWasEnabled = $existingBootstrap -and $existingBootstrap.Settings.Enabled
 
-    $runnerArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$bootstrapPath`" -Start"
-    $runnerAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $runnerArgs
+    $runnerArgs = "`"$taskLauncherPath`" runner"
+    $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
     $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
     $runnerRegistered = $false
     $runnerRegisterError = ''
     try {
         Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings -Description 'News-Grasp daily runner bootstrap. Repairs live ops from repo before starting runner.' -Force -ErrorAction Stop | Out-Null
+        if (-not $runnerWasEnabled) { Disable-ScheduledTask -TaskName $RunnerTaskName | Out-Null }
         $runnerRegistered = $true
         $scheduledTasks += [ordered]@{
             task_name = $RunnerTaskName
-            execute = 'powershell.exe'
+            execute = $pythonw
             arguments = $runnerArgs
             trigger = 'daily 06:00'
             status = 'registered_watcher_entrypoint'
@@ -111,7 +121,7 @@ if (-not $SkipTaskRegistration) {
         $runnerRegisterError = $_.Exception.Message
         $scheduledTasks += [ordered]@{
             task_name = $RunnerTaskName
-            execute = 'powershell.exe'
+            execute = $pythonw
             arguments = $runnerArgs
             trigger = 'daily 06:00'
             status = 'register_failed_bootstrap_required'
@@ -119,33 +129,34 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $bootstrapArgs = "-NoP -NonI -W Hidden -ExecutionPolicy Bypass -File `"$bootstrapPath`" -Start -SmokeTest -PollSeconds 1 -TimeoutMinutes 2 -StateFile ng-smoke-state.json -LogDir ng-smoke-logs"
-    & schtasks.exe /Create /TN $BootstrapTaskName /SC DAILY /ST 05:55 /TR "powershell.exe $bootstrapArgs" /F | Out-Null
-    if ($LASTEXITCODE -ne 0) {
+    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap"
+    $bootstrapAction = New-ScheduledTaskAction -Execute $pythonw -Argument $bootstrapArgs -WorkingDirectory $BinDir
+    $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
+    $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
+    try {
+        Register-ScheduledTask -TaskName $BootstrapTaskName -Action $bootstrapAction -Trigger $bootstrapTrigger -Settings $bootstrapSettings -Description 'News-Grasp pre-run self repair bootstrap.' -Force -ErrorAction Stop | Out-Null
+        if (-not $bootstrapWasEnabled) { Disable-ScheduledTask -TaskName $BootstrapTaskName | Out-Null }
+        $scheduledTasks += [ordered]@{
+            task_name = $BootstrapTaskName
+            execute = $pythonw
+            arguments = $bootstrapArgs
+            trigger = 'daily 05:55'
+            status = 'registered_pre_run_self_repair'
+        }
+    } catch {
         if (-not $runnerRegistered) {
             throw "failed to register $RunnerTaskName and failed to create $BootstrapTaskName"
         }
         $scheduledTasks += [ordered]@{
             task_name = $BootstrapTaskName
-            execute = 'powershell.exe'
+            execute = $pythonw
             arguments = $bootstrapArgs
             trigger = 'daily 05:55'
             status = 'create_failed'
-        }
-    } else {
-        $scheduledTasks += [ordered]@{
-            task_name = $BootstrapTaskName
-            execute = 'powershell.exe'
-            arguments = $bootstrapArgs
-            trigger = 'daily 05:55'
-            status = 'registered_pre_run_self_repair'
+            error = $_.Exception.Message
         }
     }
 
-    $pythonw = Join-Path $RepoDir '.venv\Scripts\pythonw.exe'
-    if (-not (Test-Path -LiteralPath $pythonw)) {
-        $pythonw = 'pythonw.exe'
-    }
     & schtasks.exe /Query /TN $DeadmanTaskName | Out-Null
     if ($LASTEXITCODE -eq 0) {
         $scheduledTasks += [ordered]@{

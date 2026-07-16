@@ -1458,10 +1458,27 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "news-grasp-deadman-launcher.pyw" in installer_text
 
 
+def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
+    launcher = OPS_DIR / "news-grasp-task-launcher.pyw"
+    installer = OPS_DIR / "install-news-grasp-ops.ps1"
+    assert launcher.exists()
+    launcher_text = launcher.read_text(encoding="utf-8")
+    installer_text = installer.read_text(encoding="utf-8-sig")
+    assert "subprocess.CREATE_NO_WINDOW" in launcher_text
+    assert "stdin=subprocess.DEVNULL" in launcher_text
+    assert "news-grasp-task-launcher.pyw" in installer_text
+    assert "New-ScheduledTaskAction -Execute 'powershell.exe'" not in installer_text
+    assert '/TR "powershell.exe ' not in installer_text
+    assert "schtasks.exe /Create /TN $BootstrapTaskName" not in installer_text
+    assert 'news-grasp-task-launcher.pyw`" -Destination' in installer_text
+    assert "execute = $pythonw" in installer_text
+
+
 def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite() -> None:
     """live runner 同期は上書き前に backup / manifest / rollback 証跡を残す。"""
     installer = OPS_DIR / "install-news-grasp-ops.ps1"
     text = installer.read_text(encoding="utf-8-sig")
+    launcher_text = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(encoding="utf-8")
 
     assert "backup + explicit approval + rollback" in text
     assert "$BackupDir" in text
@@ -1473,8 +1490,8 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "news-grasp-bootstrap.ps1" in text
     assert "News-Grasp Bootstrap" in text
     assert "register_failed_bootstrap_required" in text
-    assert "-SmokeTest -PollSeconds 1 -TimeoutMinutes 2" in text
-    assert "-StateFile ng-smoke-state.json -LogDir ng-smoke-logs" in text
+    assert '"-SmokeTest", "-PollSeconds", "1", "-TimeoutMinutes", "2"' in launcher_text
+    assert '"-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs"' in launcher_text
     assert text.index("$BackupDir") < text.index("$files = @(")
     assert text.index("$BackupDir") < text.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
     assert "Register-ScheduledTask" in text
