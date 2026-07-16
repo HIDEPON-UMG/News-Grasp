@@ -417,6 +417,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-16-pytest-basetemp-recovery-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-17",
+        "pytest-static / category hero lead title quality / RecoverOnly / publish-complete",
+        "short ASCII subject was isolated as a one-token first line before a quoted topic phrase",
+        "category hero title split contract gap",
+        "short ASCII subject before Japanese quoted topic must merge with the pre-quote phrase without regressing existing Japanese-brand splits",
+        "category hero Turn 4 contract fixture for OpenAI quoted-topic title, existing Toyota regression case, RecoverOnly resume proof, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-17-pytest-static-hero-line-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

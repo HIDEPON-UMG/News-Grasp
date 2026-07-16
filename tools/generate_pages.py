@@ -1163,6 +1163,19 @@ def _category_lead_title_lines(title: str) -> list[str]:
         first_pair = f"{units[0]}、{units[1]}"
         if _title_display_width(first_pair) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
             units = [first_pair, *units[2:]]
+        elif re.search(r"[A-Za-z0-9]", units[0]):
+            quote_match = re.match(r"^(.+?)(「.+)$", units[1])
+            if quote_match:
+                before_quote = quote_match.group(1)
+                quoted_tail = quote_match.group(2)
+                first_line = f"{units[0]}、{before_quote}"
+                if (
+                    before_quote
+                    and _title_display_width(first_line) > 4
+                    and _title_display_width(first_line) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+                    and _title_display_width(quoted_tail) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+                ):
+                    units = [first_line, quoted_tail, *units[2:]]
 
     lines = _pack_title_lines(units)
     return lines or [text]

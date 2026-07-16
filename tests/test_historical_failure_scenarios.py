@@ -72,6 +72,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "live runner readiness completion overclaim",
         "live ops bootstrap self-repair gap",
         "repair parser and portable distribution asset boundary",
+        "category hero title split contract gap",
     }
 
     for scenario in scenarios:

@@ -205,6 +205,19 @@ def test_category_lead_title_lines_keep_short_subject_with_topic_phrase() -> Non
     ]
 
 
+def test_category_lead_title_lines_merge_short_subject_before_quoted_topic() -> None:
+    title = "OpenAI、自動レッドチームAI「GPT-Red」発表　攻撃成功率は人間の6倍超"
+
+    lines = generate_pages._category_lead_title_lines(title)
+
+    assert lines == [
+        "OpenAI、自動レッドチームAI",
+        "「GPT-Red」発表",
+        "攻撃成功率は人間の6倍超",
+    ]
+    assert generate_pages._category_lead_title_quality_errors(title, lines) == []
+
+
 def test_category_lead_title_lines_merge_short_middle_fragment() -> None:
     title = "AI開発競争、主戦場は性能から価格へ－OpenAIやメタが新戦略"
 

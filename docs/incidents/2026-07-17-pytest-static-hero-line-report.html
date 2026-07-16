@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0}body{font-family:"Noto Sans JP",system-ui,sans-serif;background:#E6E1D5;color:#3A382F;-webkit-font-smoothing:antialiased}code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em;background:#F1EBDC;color:#43412f;padding:.08em .36em;border-radius:3px;word-break:break-all;overflow-wrap:anywhere}
+@media(max-width:760px){body>div:first-child>div{padding:13px 22px!important}body>div:nth-of-type(2){margin:0!important;border-radius:0!important}body>div:nth-of-type(2)>div{padding:32px 22px 44px!important}header{margin:-32px -22px 0!important;padding:32px 22px 32px!important}h1{font-size:30px!important;overflow-wrap:anywhere!important;word-break:normal!important}dl>div{grid-template-columns:1fr!important;gap:8px!important}div[style*="repeat(4,1fr)"]{grid-template-columns:1fr 1fr!important}div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}table{display:block!important;max-width:100%!important;overflow:auto!important;font-size:12px!important}th,td{padding:10px!important}p,dd,div{overflow-wrap:anywhere}}
+</style>
+</head>
+<body>
+<div style="background:#181C2A;border-bottom:3px solid #C9A155">
+  <div style="max-width:1040px;margin:0 auto;padding:13px 56px;display:flex;justify-content:space-between;gap:16px;align-items:center;font:700 11px/1.4 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#C9A155;flex-wrap:wrap">
+    <span>News-Grasp · Incident Report</span><span style="color:#8D96AB">2026-07-17 / Daily Batch</span>
+  </div>
+</div>
+<div style="max-width:1040px;margin:32px auto;background:#fff;border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+<div style="padding:56px 56px 64px">
+<header style="margin:-56px -56px 0;padding:56px 56px 40px;background:#F4EEE1;border-bottom:1px solid #E2DCCC">
+  <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#9A7B34">Root Cause Report</div>
+  <h1 style="margin:16px 0 0;font-family:'Noto Serif JP',serif;font-size:40px;line-height:1.42;font-weight:900;color:#181C2A;word-break:keep-all;line-break:strict">pytest-static が<wbr>カテゴリーヒーロー見出しの<wbr>短い先頭行で停止</h1>
+  <div style="display:flex;gap:16px;margin:26px 0 0;padding:20px 22px;background:#fff;border:1px solid #EBD9B6;border-left:3px solid #C9A155;border-radius:0 6px 6px 0">
+    <div style="font:700 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.1em;color:#9A7B34;text-transform:uppercase;white-space:nowrap">結論</div>
+    <p style="margin:0;font-family:'Noto Serif JP',serif;font-size:15px;line-height:2;color:#3A382F">2026-07-17 の日次バッチは 06:41 に <code>pytest-static</code> で停止したが、<span style="font-weight:700;background:#F6E7C6;border-radius:3px;padding:.04em .3em">News-Grasp</span> の既存 repair path と最小コード修正で 07:01 に <strong style="font-weight:900;color:#181C2A">publish_complete まで復旧</strong>し、公開面・Podcast・DeepDive・distribution は Green になった。</p>
+  </div>
+</header>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);margin-top:32px;border:1px solid #E8E3D7;border-radius:8px;overflow:hidden">
+  <div style="padding:18px 20px;border-right:1px solid #E8E3D7"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6B6862">Started</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#181C2A">06:00</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">Scheduled Task 起動</div></div>
+  <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#FCF2F0"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#B83A2D">Stopped</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#B83A2D">06:41</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">pytest-static rc=1</div></div>
+  <div style="padding:18px 20px;border-right:1px solid #E8E3D7;background:#F4F9F5"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#3D7E60">Recovered</div><div style="margin-top:10px;font-size:24px;font-weight:900;color:#3D7E60">07:01</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">RecoverOnly 完走</div></div>
+  <div style="padding:18px 20px"><div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#9A7B34">Published</div><div style="margin-top:10px;font-size:20px;font-weight:900;color:#181C2A;font-family:'JetBrains Mono',monospace">4e15fb2</div><div style="margin-top:5px;font-size:12px;line-height:1.5;color:#6B6862">public surface Green</div></div>
+</div>
+
+<section style="margin-top:52px">
+  <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">01</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">どの工程で問題が起きたか</h2></div>
+  <div style="margin-top:24px;border:1px solid #E1DCCF;border-radius:12px;background:#FBFAF6;padding:24px 26px 26px">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#9A7B34">Workflow Map</div><div style="display:flex;gap:16px;font-size:11px;color:#6B6862"><span>✓ 完了</span><span>✕ 停止</span><span>○ 未到達</span></div></div>
+    <div style="margin-top:18px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#B83A2D">① Daily pipeline</div>
+    <div style="margin-top:12px;display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;max-width:100%">
+      <div style="flex:1 1 120px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px"><b style="color:#3D7E60">✓</b><div style="font-size:12.5px;font-weight:700;color:#181C2A">06:00 起動</div><div style="font-size:10.5px;color:#6B6862">Runner</div></div><div style="align-self:center;color:#C9A155">→</div>
+      <div style="flex:1 1 120px;border:1px solid #E1DCCF;border-radius:9px;background:#fff;padding:13px"><b style="color:#3D7E60">✓</b><div style="font-size:12.5px;font-weight:700;color:#181C2A">Digest / Summary</div><div style="font-size:10.5px;color:#6B6862">6カテゴリ + DeepDive</div></div><div style="align-self:center;color:#C9A155">→</div>
+      <div style="flex:1 1 120px;border:2px solid #B83A2D;border-radius:9px;background:#FCF2F0;padding:13px;box-shadow:0 0 0 4px rgba(184,58,45,.1)"><b style="color:#B83A2D">✕ STOP</b><div style="font-size:12.5px;font-weight:700;color:#B83A2D">pytest-static</div><div style="font-size:10.5px;color:#8A5049">hero line quality</div></div><div style="align-self:center;color:#CFC8BA">→</div>
+      <div style="flex:1 1 120px;border:1.5px dashed #CFC8BA;border-radius:9px;padding:13px;opacity:.62"><b>○</b><div style="font-size:12.5px;font-weight:700;color:#8D897F">publish</div><div style="font-size:10.5px;color:#B0AAA0">未到達</div></div>
+    </div>
+    <div style="margin:22px 0 0;border-top:1px dashed #E1DCCF"></div>
+    <div style="margin-top:18px;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#3D7E60">② Recovery pipeline</div>
+    <div style="margin-top:12px;display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;max-width:100%">
+      <div style="flex:1 1 130px;border:1px solid #CDE0D3;border-radius:9px;background:#F4F9F5;padding:13px"><b style="color:#3D7E60">✓</b><div style="font-size:12.5px;font-weight:700">コード修正</div><div style="font-size:10.5px;color:#6B6862">短い ASCII 先頭行を結合</div></div><div style="align-self:center;color:#3D7E60">→</div>
+      <div style="flex:1 1 130px;border:1px solid #CDE0D3;border-radius:9px;background:#F4F9F5;padding:13px"><b style="color:#3D7E60">✓</b><div style="font-size:12.5px;font-weight:700">RecoverOnly</div><div style="font-size:10.5px;color:#6B6862">06:49-07:01</div></div><div style="align-self:center;color:#3D7E60">→</div>
+      <div style="flex:1 1 130px;border:1.5px solid #3D7E60;border-radius:9px;background:#3D7E60;padding:13px;color:#fff"><b>✓</b><div style="font-size:12.5px;font-weight:700">publish_complete</div><div style="font-size:10.5px;color:#CDE9D6">public Green</div></div>
+    </div>
+  </div>
+  <div style="margin-top:18px;background:#181C2A;border-radius:10px;padding:22px 24px">
+    <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#C9A155">Fault boundary</div>
+    <p style="margin:12px 0 0;font-size:13.5px;line-height:1.85;color:#D8D2C2">停止点は <code style="background:rgba(201,161,85,.18);color:#EBD9B6">tools.generate_pages._category_lead_title_lines</code> の出力を検査する <code style="background:rgba(201,161,85,.18);color:#EBD9B6">pytest-static</code>。<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">公開前 gate が正しく停止</span>したため、未検証の docs / publish は進まなかった。</p>
+  </div>
+</section>
+
+<section style="margin-top:52px">
+  <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">02</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の詳細と、なぜ起きたか</h2></div>
+  <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#B83A2D">直接原因</dt><dd style="margin:0;font-size:14px;line-height:1.9">`OpenAI、自動レッドチームAI「GPT-Red」発表...` の split が <code>OpenAI</code> を 1 行に孤立させ、quality gate が <strong style="font-weight:900;color:#181C2A">line 1 too short and isolated</strong> と判定した。</dd></div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">なぜ起きたか</dt><dd style="margin:0;font-size:14px;line-height:1.9">短い日本語ブランド名を次語へ吸収する契約はあったが、<span style="font-weight:700;text-decoration:underline;text-decoration-color:#C9A155;text-decoration-thickness:2px;text-underline-offset:3px">短い ASCII 固有名詞 + 長い引用付き語句</span> のケースが契約テストに無かった。</dd></div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">公開停止になった理由</dt><dd style="margin:0;font-size:14px;line-height:1.9"><span style="font-weight:700;background:#F6E7C6;border-radius:3px;padding:.04em .3em">News-Grasp</span> は docs 生成前に repo-wide static gate を通す。ここで止まることは、<strong style="font-weight:900;color:#181C2A">見出し崩れを公開しないための fail-closed</strong> として正しい。</dd></div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">確認した非原因</dt><dd style="margin:0;font-size:14px;line-height:1.9">Scheduler 未起動、GitHub remote divergence、YouTube OAuth、URL liveness、DeepDive URL、TTS は直接原因ではない。復旧 run ではすべて Green を確認した。</dd></div>
+  </dl>
+  <div style="margin-top:18px;display:flex;gap:14px;padding:18px 20px;background:#FCF6EC;border:1px solid #EBD9B6;border-radius:8px"><div style="font:700 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#fff;background:#B07A39;padding:6px 9px;border-radius:5px;height:fit-content">二次</div><p style="margin:0;font-size:13px;line-height:1.8"><strong style="font-weight:900;color:#181C2A">二次的に見つかった問題</strong>: 手動の <code>generate_pages.py --full</code> は過去日 <code>2026-06-03-DeepDive.md</code> の CBS URL 406 で停止した。今日分の復旧原因ではないが、full rebuild と日次増分 recovery の境界を混ぜない注意点として記録する。</p></div>
+  <div style="margin-top:18px;border:1px solid #E8E3D7;border-radius:10px;background:#FBFAF6;padding:20px 22px">
+    <div style="font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#9A7B34">Why the gate was correct</div>
+    <p style="margin:10px 0 0;font-size:13.5px;line-height:1.9">この停止は、公開前にユーザー可視の見出し崩れを止めるという News-Grasp の fail-closed 設計に沿っている。問題は gate の存在ではなく、generator が許容すべきタイトル型を表現できていなかった点にある。したがって対応は gate の弱体化ではなく、入力タイトルを読みやすい行へ分解する契約の追加に限定した。</p>
+    <p style="margin:10px 0 0;font-size:13.5px;line-height:1.9">復旧判断では、runner state、当日ログ、publish manifest、public surface proof を分けて確認した。06:40 時点でプロセスは残っておらず、同一 stage の異常滞留や無限ループではなく、<code>pytest-static</code> の明示的な rc=1 停止だったため、バッチ中断操作は不要だった。</p>
+  </div>
+</section>
+
+<section style="margin-top:52px">
+  <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">03</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">問題の暫定対応内容</h2></div>
+  <div style="margin-top:22px;position:relative;padding-left:30px">
+    <div style="position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:#E1DCCF"></div>
+    <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B83A2D;border:2px solid #fff;box-shadow:0 0 0 2px #B83A2D"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B83A2D">06:41</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8">runner state が <code>ERROR: internal quality gate failed (gate=pytest-static)</code> で停止。</p></div>
+    <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#B07A39;border:2px solid #fff;box-shadow:0 0 0 2px #B07A39"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#B07A39">06:46</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8">Red test を追加し、短い ASCII 先頭語を引用開始前の語句へ結合する最小修正を実装。</p></div>
+    <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#3D7E60;border:2px solid #fff;box-shadow:0 0 0 2px #3D7E60"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">06:49</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8"><code>-RecoverOnly</code> を開始。summary, daily, generation, url, record, reconcile, ja-callout, pytest-static を再通過。</p></div>
+    <div style="position:relative"><div style="position:absolute;left:-30px;top:3px;width:11px;height:11px;border-radius:50%;background:#3D7E60;border:2px solid #fff;box-shadow:0 0 0 2px #3D7E60"></div><div style="font:700 12px/1 'JetBrains Mono',monospace;color:#3D7E60">07:01</div><p style="margin:7px 0 0;font-size:13.5px;line-height:1.8">publish verification, Podcast verification, playlist audit, publish-complete manifest verification が完了。</p></div>
+  </div>
+  <div style="margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><b>最小修正</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75">`OpenAI` 型の短い ASCII 固有名詞だけを対象にし、日本語ブランドの既存 split は維持。</p></div>
+    <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><b>契約テスト</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75"><code>test_category_lead_title_lines_merge_short_subject_before_quoted_topic</code> を追加。</p></div>
+    <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><b>公開復旧</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75">RecoverOnly が digest/data/docs/distribution を commit/push し、public surface を Green 化。</p></div>
+    <div style="border:1px solid #CDE0D3;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><b>キャッシュ同期</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75">incident report 公開に合わせて <code>docs/sw.js</code> の <code>SW_VERSION</code> を bump。</p></div>
+  </div>
+</section>
+
+<section style="margin-top:52px">
+  <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">04</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">直近改修・過去障害との関係</h2></div>
+  <dl style="margin:22px 0 0;border-top:1px solid #E8E3D7">
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">関連する直近改修</dt><dd style="margin:0;font-size:14px;line-height:1.9">Category Hero Turn 4 の見出し折返し品質 gate。公開前に崩れを止める目的自体は正しい。</dd></div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">過去障害との違い</dt><dd style="margin:0;font-size:14px;line-height:1.9">publish convergence や OAuth ではなく、repo-local generator の contract gap。外部 Yellow ではなく local Red として扱う。</dd></div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;padding:18px 0;border-bottom:1px solid #E8E3D7"><dt style="font:700 12.5px/1.6 'JetBrains Mono',monospace;color:#181C2A">類似候補</dt><dd style="margin:0;font-size:14px;line-height:1.9">短い固有名詞を先頭に持つ企業名、AIサービス名、ゲーム機名。今回のテストは引用付き語句へ絞り、過剰な改行変更を防いだ。</dd></div>
+  </dl>
+  <div style="margin-top:18px;border:1px solid #E8E3D7;border-left:4px solid #C9A155;border-radius:0 8px 8px 0;padding:18px 20px;background:#FFFCF6">
+    <p style="margin:0;font-size:13.5px;line-height:1.9">過去の publish convergence 系障害では、成果物生成後の remote reflection や GitHub Pages 反映が主な観測点だった。今回は生成前の contract gap であり、publish retry や URL 監視を増やしても根本原因は消えない。そのため、repair method の優先順位どおり、validator/generator の契約を修正してから production repair path で再実行した。</p>
+    <p style="margin:10px 0 0;font-size:13.5px;line-height:1.9">また、今回の復旧では fallback publish を成功扱いにしていない。daily runner の通常 publish-complete manifest、公開 URL の同日 sentinel、DeepDive HTML、distribution manifest、Podcast verification を同じ issue date でそろえてから完了判定した。これにより、ローカル修正だけ完了して公開面が旧日付のまま残る事故を避けている。</p>
+    <p style="margin:10px 0 0;font-size:13.5px;line-height:1.9">未到達 stage は復旧 run で再実行し、手編集の HTML 差し込みで代替しなかった。次回同型タイトルが来ても、同じ contract test と runner gate が検知・通過条件を持つ。</p>
+  </div>
+</section>
+
+<section style="margin-top:52px">
+  <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">05</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応方針の網羅性と完璧性の担保</h2></div>
+  <div style="margin-top:22px;padding:18px 20px;background:#F1F6F2;border-left:3px solid #3D7E60;border-radius:0 8px 8px 0"><p style="margin:0;font-size:13.5px;line-height:1.85">完璧性は、同じタイトル型が <code>pytest-static</code> で再停止せず、既存の日本語ブランド split も退行せず、RecoverOnly が同じ completion gate で publish_complete まで到達することと定義する。</p></div>
+  <div style="margin-top:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+    <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">LAYER 1</div><b>構造</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75">短い ASCII 先頭行を引用前語句へ吸収。</p></div>
+    <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">LAYER 2</div><b>契約</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75">新規テスト + 既存 Turn 4 tests で退行を防止。</p></div>
+    <div style="border:1px solid #E8E3D7;border-top:3px solid #3D7E60;border-radius:8px;padding:16px"><div style="font:700 10px/1 'JetBrains Mono',monospace;color:#3D7E60">LAYER 3</div><b>運用</b><p style="margin:8px 0 0;font-size:13px;line-height:1.75">runner の static gate と public verifier で公開前後を確認。</p></div>
+  </div>
+</section>
+
+<section style="margin-top:52px">
+  <div style="display:flex;align-items:center;gap:16px;background:#181C2A;border-radius:8px;padding:15px 22px"><span style="font:900 16px/1 'JetBrains Mono',monospace;color:#C9A155">06</span><h2 style="margin:0;font-family:'Noto Serif JP',serif;font-size:22px;font-weight:900;color:#F0EBE0">恒久対応の実行計画</h2></div>
+  <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:12.5px;line-height:1.75">
+    <thead><tr style="background:#181C2A;color:#F0EBE0"><th style="text-align:left;padding:12px">区分</th><th style="text-align:left;padding:12px">対応</th><th style="text-align:left;padding:12px">完了条件</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:12px;border-bottom:1px solid #E8E3D7"><span style="background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px">完了</span></td><td style="padding:12px;border-bottom:1px solid #E8E3D7">`tools/generate_pages.py` の lead title split を修正</td><td style="padding:12px;border-bottom:1px solid #E8E3D7">Turn 4 contract Green</td></tr>
+      <tr><td style="padding:12px;border-bottom:1px solid #E8E3D7"><span style="background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px">完了</span></td><td style="padding:12px;border-bottom:1px solid #E8E3D7">`tests/test_category_hero_turn4_contract.py` に Red case 追加</td><td style="padding:12px;border-bottom:1px solid #E8E3D7">repo-wide pytest-static Green</td></tr>
+      <tr><td style="padding:12px;border-bottom:1px solid #E8E3D7"><span style="background:#3D7E60;color:#fff;border-radius:4px;padding:3px 7px">完了</span></td><td style="padding:12px;border-bottom:1px solid #E8E3D7">RecoverOnly で当日公開を再開</td><td style="padding:12px;border-bottom:1px solid #E8E3D7">runner state `publish_complete` / public surface Green</td></tr>
+      <tr><td style="padding:12px;border-bottom:1px solid #E8E3D7"><span style="background:#FCF6EC;color:#9A7B34;border:1px solid #EBD9B6;border-radius:4px;padding:3px 7px">監視</span></td><td style="padding:12px;border-bottom:1px solid #E8E3D7">次回 06:00 batch で同型タイトルが出ても停止しないことを確認</td><td style="padding:12px;border-bottom:1px solid #E8E3D7">次回 automation で `pytest-static` no regression</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+    <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px;background:#FBFAF6"><b style="color:#181C2A">検証の分離</b><p style="margin:8px 0 0;font-size:13px;line-height:1.8">ローカル contract、runner recovery、public surface、publish-complete manifest を別々に確認した。これにより、ローカル生成だけで公開 Green と誤判定する経路を避けた。</p></div>
+    <div style="border:1px solid #E8E3D7;border-radius:8px;padding:16px 18px;background:#FBFAF6"><b style="color:#181C2A">次回監査の観点</b><p style="margin:8px 0 0;font-size:13px;line-height:1.8">次回 6:40 監査では、<code>pytest-static</code> の通過、hero title contract の退行なし、distribution manifest と public pages の同日一致を重点確認する。</p></div>
+  </div>
+  <div style="margin-top:18px;padding:16px 18px;background:#F1F6F2;border:1px solid #CDE0D3;border-radius:8px"><b style="color:#3D7E60">OK</b><p style="margin:8px 0 0;font-size:13px;line-height:1.8">証跡: local runner log <code>news-grasp-logs\2026-07-17.log</code>, <code>build\publish-complete\2026-07-17.json</code>, <code>build\recovery\proofs\2026-07-17-public-surface-post-recovery.json</code>。publish commit は <code>4e15fb2e1f3a9e2a9db887afa75aa51df3dabc3d</code>。</p></div>
+</section>
+<footer style="margin-top:52px;border-top:1px solid #E8E3D7;padding-top:18px;font:700 10px/1.5 'JetBrains Mono',monospace;color:#6B6862;letter-spacing:.08em;text-transform:uppercase">News-Grasp Incident Report · 2026-07-17 · pytest-static hero line quality</footer>
+</div>
+</div>
+</body>
+</html>
