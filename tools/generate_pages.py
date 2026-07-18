@@ -147,7 +147,7 @@ _CATEGORY_SIGNALS: dict[str, str] = {
 
 # CRLF / LF 両対応の frontmatter 抽出 (Windows + git autocrlf 環境向け)。
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
-_THUMB_RE = re.compile(r"!\[thumb\]\((https?://[^)]+)\)")
+_THUMB_RE = re.compile(r"!\[[^\]\r\n]*\]\((https?://[^)]+)\)")
 _SUMMARY_RE = re.compile(r"> \[!summary\]\r?\n((?:>.*\r?\n)+)")
 
 # 各記事ヘッダ: `### [88] タイトル ...`

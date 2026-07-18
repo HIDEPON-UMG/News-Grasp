@@ -471,8 +471,7 @@ def _stale_top_article_errors(*, issue: date, label: str, article: dict[str, Any
         return []
     age = (issue - meta_date).days
     return [
-        f"{label}: top article date {meta_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()}: {article.get('title') or ''}",
-        "  TOP STORY must be today's or yesterday's article. Move the item down, replace it with a fresh article, or mark the digest as intentionally short.",
+        f"{label}: top article date {meta_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()}: {article.get('title') or ''}; TOP STORY must be today's or yesterday's article. Move the item down, replace it with a fresh article, or mark the digest as intentionally short.",
     ]
 
 
@@ -944,7 +943,7 @@ SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
     r"does not match digest article count (?P<count>\d+)\."
 )
 DIGEST_ERROR_ARTIFACT_RE = re.compile(
-    r"(?P<artifact>.*?digest[\\/]+(?P<folder>[^\\/:]+)[\\/]+[^:\r\n]+\.md):"
+    r"(?P<artifact>.*?digest[\\/]+(?P<folder>[^\\/:]+)[\\/]+[^:\r\n]+\.md)(?:\s+\[[^\]]+\])?:"
 )
 
 
@@ -990,6 +989,8 @@ def daily_quality_issue_code(message: str) -> str:
         return "summary_hero_missing"
     if "card #" in text and "lacks required emphasis" in text:
         return "category_card_emphasis_missing"
+    if "top article date" in text and "top story" in text:
+        return "top_article_stale"
     if "lacks required emphasis" in text:
         return "summary_reflection_emphasis_missing"
     if "category hero focus" in text or "reflection category section missing" in text:

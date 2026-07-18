@@ -21,6 +21,7 @@ REQUIRED_ROWS = {
     ("daily-quality", "category_card_emphasis_missing"),
     ("daily-quality", "search_audit_metadata_missing"),
     ("daily-quality", "search_audit_count_mismatch"),
+    ("daily-quality", "top_article_stale"),
     ("deepdive-required", "search_audit_count_mismatch"),
     ("generation-quality", "audio_script_quality_invalid"),
     ("generation-quality", "summary_hero_missing"),
@@ -280,6 +281,21 @@ def test_daily_quality_selected_total_mismatch_routes_to_search_audit_metadata_p
         "selected_total": 5,
         "digest_article_count": 3,
     }
+
+
+def test_daily_quality_stale_top_article_routes_to_url_quarantine_refill() -> None:
+    output = (
+        "ERROR: digest\\FX\\2026-07-19-FX.md [fx TOP]: "
+        "top article date 2026-07-17 is 2 day(s) older than issue 2026-07-19: stale title; "
+        "TOP STORY must be today's or yesterday's article."
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "top_article_stale"
+    assert decisions[0].handler_id == "url-quarantine-refill"
+    assert decisions[0].artifact_paths == ("digest/FX/2026-07-19-FX.md",)
+    assert decisions[0].category == "fx"
 
 
 def test_daily_quality_shortfall_query_metadata_routes_to_metadata_patch() -> None:

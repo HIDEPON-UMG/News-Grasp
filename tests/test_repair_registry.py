@@ -9,6 +9,7 @@ from tools.repair_registry import (
     find_handler,
     repair_with_registry,
 )
+from tools.generate_pages import parse_articles
 from tools.validate_daily_quality import validate_summary_emphasis
 
 
@@ -404,6 +405,83 @@ def test_search_audit_metadata_patch_syncs_selected_total_from_digest_cards(tmp_
     assert result.status == "repaired"
     assert result.changed
     assert repaired["selected_total"] == 4
+
+
+def test_url_quarantine_refill_reorders_stale_top_article(tmp_path: Path) -> None:
+    issue = "2026-07-19"
+    digest = tmp_path / "digest" / "FX" / f"{issue}-FX.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "---\n"
+        "title: FX\n"
+        f"date: {issue}\n"
+        "categoryId: fx\n"
+        "---\n\n"
+        "### [01] stale top\n\n"
+        "📅 2026-07-17 06:00 · 📰 Example · 🔗 [元記事](https://example.com/old)\n\n"
+        "![thumb](https://example.com/old.jpg)\n\n"
+        "- [[FX]] **old** __signal__\n\n"
+        "---\n\n"
+        "### [02] fresh candidate\n\n"
+        "📅 2026-07-18 06:00 · 📰 Example · 🔗 [元記事](https://example.com/fresh)\n\n"
+        "![thumb](https://example.com/fresh.jpg)\n\n"
+        "- [[FX]] **fresh** __signal__\n\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    articles = tmp_path / "data" / "articles.jsonl"
+    articles.parent.mkdir(parents=True)
+    articles.write_text("", encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/FX/{issue}-FX.md"],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "stale_top_reordered" in result.message
+    assert repaired.index("fresh candidate") < repaired.index("stale top")
+    assert "\n---\n\n### [01] stale top" in repaired
+    assert len(parse_articles(repaired)) == 2
+
+
+def test_category_card_emphasis_patch_repairs_structured_lane_bullets(tmp_path: Path) -> None:
+    issue = "2026-07-19"
+    digest = tmp_path / "digest" / "FX" / f"{issue}-FX.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "---\n"
+        "title: FX\n"
+        f"date: {issue}\n"
+        "categoryId: fx\n"
+        "---\n\n"
+        "### [01] structured lanes\n\n"
+        "📅 2026-07-18 06:00 · 📰 Example · 🔗 [元記事](https://example.com/fresh)\n\n"
+        "![thumb](https://example.com/fresh.jpg)\n\n"
+        "- 【事実・概要】：骨太方針の最終案が判明し、金融政策の具体的手法は[[日銀に委ねる]]と明記。\n"
+        "- 【背景・要点】：政府が財政運営と金融政策の距離を示す一文で、利上げ判断の自主性を確認する内容。\n"
+        "- 【影響・展望】：市場が政府の関与後退と受け止めれば円金利の上昇圧力は和らぐ可能性がある。骨太方針の __最終文言と円相場の反応__ を追う。\n\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="category-card-emphasis-patch",
+            artifacts=[f"digest/FX/{issue}-FX.md"],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "**骨太方針" in repaired
 
 
 def test_url_quarantine_refill_handler_repairs_stale_followup_from_registry(tmp_path: Path) -> None:

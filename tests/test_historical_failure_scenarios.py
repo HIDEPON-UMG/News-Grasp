@@ -38,6 +38,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-07-07",
         "2026-07-08",
         "2026-07-13",
+        "2026-07-19",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -73,6 +74,7 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "live ops bootstrap self-repair gap",
         "repair parser and portable distribution asset boundary",
         "category hero title split contract gap",
+        "repair routing, structured digest mutation, and thumbnail parser boundary",
     }
 
     for scenario in scenarios:
@@ -272,6 +274,14 @@ def test_2026_07_18_hero_policy_incident_is_registered() -> None:
     assert "IPA symposium title" in scenario.cheapest_e2e_or_fixture
     assert "allowlist fixture" in scenario.cheapest_e2e_or_fixture
     assert scenario.evidence_path.endswith("2026-07-18-pytest-static-hero-policy-report.html")
+
+
+def test_2026_07_19_daily_quality_repair_routing_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-19")
+    assert "daily-quality" in scenario.stage
+    assert "post-daily-quality runner resume" in scenario.cheapest_e2e_or_fixture
+    assert "non-thumb image parser fixture" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-19-daily-quality-repair-routing-report.html")
 
 
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:

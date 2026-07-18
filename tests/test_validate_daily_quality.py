@@ -755,6 +755,19 @@ def test_daily_quality_rejects_stale_top_article_meta_date(tmp_path: Path) -> No
     assert "TOP STORY" in joined
 
 
+def test_daily_quality_json_classifies_stale_top_article_without_unknown() -> None:
+    errs = [
+        "digest\\FX\\2026-07-19-FX.md [fx TOP]: top article date 2026-07-17 is 2 day(s) older than issue 2026-07-19: stale title; TOP STORY must be today's or yesterday's article.",
+    ]
+
+    payload = daily_quality_json_payload("2026-07-19", errs)
+
+    assert payload["issues"][0]["issue_code"] == "top_article_stale"
+    assert payload["issues"][0]["artifact_paths"] == ["digest/FX/2026-07-19-FX.md"]
+    assert payload["issues"][0]["category"] == "fx"
+    assert all(issue["issue_code"] != "unknown" for issue in payload["issues"])
+
+
 def test_daily_quality_accepts_issue_day_previous_day_or_unknown_url_date(tmp_path: Path) -> None:
     """当日・前日 URL と日付が取れない URL は通す。"""
     _write_summary(tmp_path)

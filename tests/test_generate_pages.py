@@ -188,6 +188,49 @@ def test_og_image_fallback_for_category_when_no_thumb(tmp_path):
     )
 
 
+def test_article_thumb_accepts_non_thumb_markdown_alt(tmp_path):
+    """記事画像の alt が thumb 固定でなくても、外部 thumbnail として採用する。
+
+    2026-07-19 回帰防止:
+      digest 本文は日本語/記事タイトル alt の画像を含むことがある。
+      parser が ![thumb](...) だけを見ると、公開カードの thumb が欠落扱いになる。
+    """
+    digest = tmp_path / "2026-07-19-Game.md"
+    digest.write_text(
+        """---
+title: "News Grasp #20260719 — Game"
+date: 2026-07-19
+issue: 20260719
+weekday: 日
+category: Game
+categoryId: game
+accent: "#E84B4B"
+glyph: "♜"
+---
+
+# ♜ Game
+
+> [!summary]
+> テスト用サマリ本文。
+
+---
+
+### [1] テスト記事
+
+📅 2026-07-19 · 📰 Test · 🔗 [元記事](https://example.com)
+
+![A3!第五部が開幕](https://example.com/game.jpg)
+
+- a
+- b
+- c
+""",
+        encoding="utf-8",
+    )
+    ctx = build_context(digest)
+    assert ctx["articles"][0]["thumb"] == "https://example.com/game.jpg"
+
+
 def test_og_image_fallback_for_each_category(tmp_path):
     """全カテゴリで category-id に対応した fallback URL が出る。"""
     for cat_id in ("fx", "ai", "it", "economy", "game", "summary"):

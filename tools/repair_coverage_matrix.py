@@ -141,6 +141,20 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
+        "top_article_stale",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "url-quarantine-refill",
+        (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
+        "daily-quality",
+        "blocked_refill_unresolved",
+    ),
+    CoverageRow(
+        "daily-quality",
         "followup_review_required",
         RepairClass.DETERMINISTIC_HANDLER,
         "followup-review-note-patch",
@@ -736,7 +750,7 @@ SEARCH_AUDIT_METADATA_RE = re.compile(
     r"(?:coverage_terms_checked missing required terms|dropped reasons are required|queries must contain at least 3 search queries)"
 )
 DIGEST_ARTIFACT_RE = re.compile(
-    r"(?P<artifact>digest[\\/]+(?P<folder>[^\\/:\s]+)[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-[^\\/:\s]+\.md):"
+    r"(?P<artifact>digest[\\/]+(?P<folder>[^\\/:\s]+)[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-[^\\/:\s]+\.md)(?:\s+\[[^\]]+\])?:"
 )
 SUMMARY_DIGEST_MISSING_RE = re.compile(
     r"Summary digest が存在しません:\s*(?P<artifact>digest[\\/]+Summary[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})\.md)"
@@ -853,6 +867,8 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "missing_artifact"
     if "card #" in text and "lacks required emphasis" in text:
         return "category_card_emphasis_missing"
+    if "top article date" in text and "top story" in text:
+        return "top_article_stale"
     if "lacks required emphasis" in text:
         return "summary_reflection_emphasis_missing"
     if "号日不整合" in text or "issue-date" in text and "date" in text:

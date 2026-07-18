@@ -437,6 +437,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-18-pytest-static-hero-policy-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-19",
+        "daily-quality / repair routing / markdown image parser / post-daily-quality resume / publish-complete",
+        "daily-quality exposed stale TOP article, search audit count drift, structured-lane emphasis gaps, and non-thumb Markdown alt images parsed as missing thumbnails",
+        "repair routing, structured digest mutation, and thumbnail parser boundary",
+        "daily-quality issues must retain structured issue codes, deterministic repair must preserve card/lane structure, and page generation must accept non-thumb Markdown image alt text before publish",
+        "daily-quality stale TOP JSON fixture, repair coverage matrix fixture, registry lane/separator repair fixtures, non-thumb image parser fixture, post-daily-quality runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-19-daily-quality-repair-routing-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

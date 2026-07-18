@@ -140,16 +140,16 @@ def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
         if not stripped or stripped.startswith(("#", "---", "|", "![", "[![", "📅")):
             repaired_lines.append(line)
             continue
-        if re.match(r"^[-*]\s*【(?:事実・概要|背景・要点|影響・展望)】：", stripped):
-            repaired_lines.append(line)
-            continue
-
         prefix_match = re.match(r"^(\s*(?:>\s*)?(?:[-*]\s*)?)(.+)$", line_body)
         if not prefix_match:
             repaired_lines.append(line)
             continue
         prefix, content = prefix_match.groups()
+        lane_match = re.match(r"^(【(?:事実・概要|背景・要点|影響・展望)】：)(.+)$", content)
+        lane_label = ""
         repaired_content = content
+        if lane_match:
+            lane_label, repaired_content = lane_match.groups()
         if "**" not in repaired_content:
             emphasis_end = repaired_content.find("を")
             if emphasis_end <= 1:
@@ -174,11 +174,11 @@ def _add_first_sentence_emphasis(text: str) -> tuple[str, bool]:
                     changed = True
 
         if "__" in repaired_content:
-            repaired_lines.append(prefix + repaired_content + newline)
+            repaired_lines.append(prefix + lane_label + repaired_content + newline)
             continue
 
         repaired_content = f"__{repaired_content}__"
-        repaired_lines.append(prefix + repaired_content + newline)
+        repaired_lines.append(prefix + lane_label + repaired_content + newline)
         changed = True
     return "".join(repaired_lines), changed
 
@@ -576,6 +576,45 @@ def _split_digest_blocks(text: str) -> tuple[list[str], list[list[str]], list[st
     return prefix, blocks, footer
 
 
+def _write_digest_blocks(path: Path, prefix: list[str], blocks: list[list[str]], footer: list[str]) -> None:
+    out_lines = prefix[:]
+    for block_index, block in enumerate(blocks):
+        if out_lines and out_lines[-1] != "":
+            out_lines.append("")
+        if block_index > 0 and (not out_lines or out_lines[-1] != "---"):
+            out_lines.append("---")
+            out_lines.append("")
+        out_lines.extend(block)
+    if footer:
+        if out_lines and out_lines[-1] != "":
+            out_lines.append("")
+        out_lines.extend(footer)
+    path.write_text("\n".join(out_lines).rstrip() + "\n", encoding="utf-8", newline="\n")
+
+
+def _normalize_digest_card_separators(ctx: RepairContext) -> tuple[list[str], list[str]]:
+    changed: list[str] = []
+    messages: list[str] = []
+    for artifact in ctx.artifacts:
+        rel = _normalize_rel(artifact)
+        if not rel.startswith("digest/"):
+            continue
+        path = ctx.repo_root / rel
+        if not path.exists() or path.is_dir():
+            continue
+        raw = path.read_text(encoding="utf-8-sig", errors="replace")
+        normalized = raw.replace("\r\n", "\n")
+        if "\n---\n\n### " in normalized:
+            continue
+        prefix, blocks, footer = _split_digest_blocks(raw)
+        if len(blocks) < 2:
+            continue
+        _write_digest_blocks(path, prefix, blocks, footer)
+        changed.append(rel)
+        messages.append(f"{rel}: card_separators_normalized")
+    return changed, messages
+
+
 def _digest_block_date(block: list[str]) -> date | None:
     for line in block:
         match = re.search(r"📅\s+(\d{4}-\d{2}-\d{2})", line)
@@ -617,16 +656,7 @@ def _repair_stale_top_digest_cards(ctx: RepairContext) -> tuple[list[str], list[
         if fresh_index is None:
             return changed, messages, f"blocked_refill_unresolved: no fresh top candidate for {cat_id}"
         blocks.insert(0, blocks.pop(fresh_index))
-        out_lines = prefix[:]
-        for block in blocks:
-            if out_lines and out_lines[-1] != "":
-                out_lines.append("")
-            out_lines.extend(block)
-        if footer:
-            if out_lines and out_lines[-1] != "":
-                out_lines.append("")
-            out_lines.extend(footer)
-        path.write_text("\n".join(out_lines).rstrip() + "\n", encoding="utf-8", newline="\n")
+        _write_digest_blocks(path, prefix, blocks, footer)
         changed.append(rel)
         messages.append(f"{cat_id}: stale_top_reordered from_index={fresh_index + 1}")
     return changed, messages, None
@@ -677,8 +707,11 @@ def _repair_url_quarantine_refill(ctx: RepairContext) -> RepairResult:
         )
     changed_artifacts.update(stale_top_artifacts)
     messages.extend(stale_top_messages)
+    separator_artifacts, separator_messages = _normalize_digest_card_separators(ctx)
+    changed_artifacts.update(separator_artifacts)
+    messages.extend(separator_messages)
 
-    if not bad_by_category and not stale_top_artifacts:
+    if not bad_by_category and not stale_top_artifacts and not separator_artifacts:
         return RepairResult(ctx.handler_id, NOOP_STATUS, False, ("data/articles.jsonl",))
 
     return RepairResult(
