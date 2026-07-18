@@ -1,0 +1,34 @@
+{
+  "date": "2026-07-18",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:finance.yahoo.co.jp/news 為替円安 必要とあれば 果断な措置 片山財務相",
+    "site:nippon.com/ja/news 日銀 政策金利1.0％維持 景気 家計 2026年7月17日",
+    "site:fx.minkabu.jp/news ECB 来週は据え置き 原油価格の変動を注視",
+    "site:fx.minkabu.jp/news ドル円 162円台半ば ドル安基調へ回帰",
+    "site:fx.minkabu.jp/news ユーロドル 今後数カ月徐々に下落"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 5,
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "canonical_resolution": [
+    {"title":"為替円安、必要とあれば「果断な措置とる」＝片山財務相","url":"https://finance.yahoo.co.jp/news/detail/e81e1a802a271f8a43d36c33dcf8e33c8a9a1ed9","published_date":"2026-07-17","date_evidence_source":"htmldate"},
+    {"title":"日銀、政策金利1.0％維持へ 景気や家計の影響見極め（共同通信）","url":"https://www.nippon.com/ja/news/kd1450774205197812515/","published_date":"2026-07-17","date_evidence_source":"htmldate"},
+    {"title":"ＥＣＢ、来週は据え置きの公算 原油価格の変動を注視＝ＮＹ為替","url":"https://fx.minkabu.jp/news/373566","published_date":"2026-07-18","date_evidence_source":"htmldate"},
+    {"title":"ドル円、１６２円台半ば そろそろドル安基調へ回帰との見方も＝ＮＹ為替","url":"https://fx.minkabu.jp/news/373570","published_date":"2026-07-18","date_evidence_source":"htmldate"},
+    {"title":"ユーロドル、今後数カ月徐々に下落との見方＝ＮＹ為替","url":"https://fx.minkabu.jp/news/373560","published_date":"2026-07-18","date_evidence_source":"htmldate"}
+  ],
+  "dropped": [
+    {"title":"米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示","reason":"リアルタイムレートページでニュース性が低い"},
+    {"title":"FXサービスにおける5通貨ペア追加のお知らせ","reason":"サービス告知で市場影響が相対的に限定的"},
+    {"title":"日銀 政策金利1.0%維持する方針","reason":"共同通信の同一材料と重複"},
+    {"title":"米クリーブランド連銀総裁「高インフレを懸念」、ＦＲＢ内で利上げ論徐々に拡大","reason":"候補の公開日根拠と検索結果の整合が弱く採用見送り"},
+    {"title":"ドル円、１６２円台での推移が続く 状況に変化はない＝ＮＹ為替序盤","reason":"採用記事とテーマが重複し、相対的重要度で見送り"},
+    {"title":"その他14件","reason":"主要通貨・中銀材料への適合度、即時性、一次情報性を相対評価して見送り"}
+  ]
+}

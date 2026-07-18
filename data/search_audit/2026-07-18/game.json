@@ -1,0 +1,44 @@
+{
+  "date": "2026-07-18",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR video game OR game release when:1d",
+    "site:gamespark.jp OR site:gematsu.com Assassin's Creed Black Flag Resynced sales three million New Game Plus",
+    "site:blog.ja.playstation.com MARVEL Tōkon Fighting Souls open beta July 24",
+    "site:falcom.co.jp 7月23日 電撃ゲームライブ夏スペシャル 空の軌跡 the 2nd",
+    "site:nintendo.com Heave Ho 2 Nintendo Switch 2 online co-op",
+    "site:news.denfaminicogamer.jp 色で仕分けるな Steam"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "FBI、偽Steamゲームで暗号資産2200万円超を盗んだ疑いでフロリダ州の学生を逮捕",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE8xQVcwMjB0MjZ0Z3JwbDJMV0ZxdWtkY1B4ZnlVUUVCYkdoS2ZLLVlQeC01Q3hkcVlUZmlwZUxUV3VWM1d0UzNManpfT1JkUkFEV3lmYVF5cUg3R0E4R01LdUh4Y1h1Vm9iSXVGT3MyT0lsOTl6?oc=5",
+      "reason": "候補の再掲元は当日性が高いが、一次記事URLのcanonical解決と公開日根拠を固定できず未採用"
+    },
+    {
+      "title": "ゲーム業界の崩壊が、業界の「リセット」につながらない理由",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE4xVnNkSGZKOEF3akhRM3BxNTNyUFZubmh0OUZ5UXgxZ3U4TFZtN0FsVkMzdXhOSWk4ZEVHdTBaUldqQ0c0UWhqQ3p3X2FCR0dNZXdOU0hScGhqd01aRUw5SWRHYUs1QQ?oc=5",
+      "reason": "分析記事の一次URLと当日公開日を確定できず未採用"
+    },
+    {
+      "title": "Disgaea Mayhem Is Another Example Of Valve's Steam Deck Verified System Failing",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxNSFExLVNOb0ZOYnNxOXVlZWNDSTVYSHBNSERFWDF5amNHcUk3TXQzWWpWc3B3LU82QWpYa2RMRnJKTjR2MUhDeTkzNGlWWFhBdGlMTE1rS2pzNEVRd0pWcUp2UVFWRnZMRXRMaklGeFpVczB4d29sQ3hMdmdxZGlGcWozYlBVVGpaMTBj?oc=5",
+      "reason": "英語記事のcanonical URLを確定できず、日本語digestの一次性を担保できないため未採用"
+    },
+    {
+      "title": "「Hello! インディー」深夜のコンビニで起こる恐怖体験『夜勤事件』",
+      "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxOQ1EzRExkVERrWkFCa2k4aEFmeFpMcGdaMFN4VXoxYmJZMkhVS0h4TVVUWkc1dTVYbzBCZEFNd0Z3X3hHY3Z2STRzem1rYW1JellUOU9MTzN0Xzc3OVBoWUpQSzlHaksxQndJdGhlaVFrRWpIamdiNjh3TkdLNnZjRl9ndUNXQQ?oc=5",
+      "reason": "Nintendoのtopic記事canonical URLを確定できず未採用"
+    }
+  ]
+}

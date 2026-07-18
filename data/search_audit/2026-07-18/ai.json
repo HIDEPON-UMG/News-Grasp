@@ -1,0 +1,38 @@
+{
+  "date": "2026-07-18",
+  "category_id": "ai",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "queries": [
+    "Stage1 input: 生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR artificial intelligence OR AI model when:1d",
+    "site:itmedia.co.jp 1Password Claude パスワードを見せず 生体認証 2026",
+    "site:forbesjapan.com Anthropic LLM 頭の中 Jレンズ 2026",
+    "site:itmedia.co.jp NotebookLM Gemini Notebook 名称変更 2026",
+    "site:newsdig.tbs.co.jp 最終的には絶対にAIに判断させてはいけない 2026",
+    "site:zaikei.co.jp Gemini 3.5 Pro 3度目 延期 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {"title":"Gurobi、生成AIで数理最適化を支援","url":"https://news.google.com/rss/articles/","reason":"候補の発表自体は確認できたが、Stage1候補の公開日から24時間以内の元記事canonical URLを確定できず、鮮度 gate を優先して未採用"},
+    {"title":"JR東日本、みどりの窓口を生成AIで代替 NECなどと実証実験","url":"https://news.google.com/rss/articles/","reason":"公式実証資料は確認できたが、候補の新着記事canonical URLを確定できず、カテゴリ境界と鮮度を優先して未採用"},
+    {"title":"アップル、OpenAIに転職した元社員40人に法的警告書、IPO時期に影","url":"https://news.google.com/rss/articles/","reason":"元記事canonical URLを確定できず、検索結果の二次転載だけでは採用しない"},
+    {"title":"OpenAI元幹部率いる新興企業、初のAIモデル「インクリング」公開","url":"https://news.google.com/rss/articles/","reason":"Bloombergの元記事が検索で当日canonicalとして確認できず、未確認情報を採用しない"},
+    {"title":"AI終末予言：OpenAIが「次のリーマン・ブラザーズ」に？","url":"https://news.google.com/rss/articles/","reason":"投機的な論評で一次情報性が低く、重要度を下げて未採用"},
+    {"title":"Eightcoが4.06億ドルの謎のポートフォリオを開示","url":"https://news.google.com/rss/articles/","reason":"金融系二次情報で一次資料と元記事canonicalを確認できず未採用"},
+    {"title":"中国の最新AIモデル「Kimi K3」、部分的にClaude Fable 5を上回る","url":"https://news.google.com/rss/articles/","reason":"数値の一次情報と元記事canonicalを確認できず未採用"},
+    {"title":"マイクロソフトのナデラCEO、AnthropicのFableを批判","url":"https://news.google.com/rss/articles/","reason":"同一論点の二次転載で、独立した一次情報を確認できず未採用"},
+    {"title":"AIエージェント導入の壁はモデル性能ではない","url":"https://news.google.com/rss/articles/","reason":"続報候補だが、当日新材料を一次情報まで確認できず未採用"}
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "date": "2026-07-18",
+  "category_id": "it",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "queries": [
+    "site:sbbit.jp NVIDIAファンCEO 日本企業 提携 メイド・イン・ジャパン",
+    "東北サイバーセキュリティシンポジウム2026 IPA",
+    "site:hacobu.jp 配送先カルテ機能 MOVO Fleet",
+    "site:prtimes.jp NEC CyIOC MM総研大賞2026",
+    "site:prtimes.jp FXクラウドシリーズ JCBデビットカード API連携",
+    "site:prtimes.jp トビラフォン Cloud FAX送受信",
+    "苫東 フィンランド AIクラウド",
+    "site:productzine.jp SaaS ID課金 PeopleX AIエージェント"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "canonical_resolution_passed": 5,
+  "canonical_resolution_dropped": 20,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "メドレー・フリー、AI×専門性で生き残り 「SaaSの死」を超えて②",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE5HTkZ1NUYwRTNTNmZ2Z01pd1NkOFpmdE93Ykd1R1JzaE4zRG9ab1B5RnJWZHdaM3Bwd3gyS2pfTHdQMEk2YnlGSDd1SjE2NkNSSWZBLVFVTUNrZF9TdWIza2huMkRCSnZlQkdKaGxBRDF5dTZjQ3pkc1VlQTBxZw?oc=5",
+      "reason": "canonical URLを記事単位で確認できず、採用対象外"
+    },
+    {
+      "title": "サイバーセキュリティ広報啓発イベント ～ねぇ待って！そのまま進めて大丈夫？～",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFAxOW8xNG9ScUJ2SXlVSDNDaEY2MHE4TERteXB4dV2anh3OTRMejI5dERiaXZSREcyTGlTRTZwUlF0OFlVR2xtdVNvU0dtT2E5emVMa0syckhvaU9Hd3FkMmp1OE9vQjFFRWc?oc=5",
+      "reason": "一般向け啓発イベントでITコンサル読者価値が相対的に低い"
+    },
+    {
+      "title": "【Nikoん】先日発表した飛び出すMVの「未完成版」を公開。色んな意味でもっと飛び出してきて、コワい!?",
+      "url": "https://news.google.com/rss/articles/CBMiRkFVX3lxTE1GRW8tbGhLRldoQkJJeGRjZzJGUldjRmZTWjR2RHBWNDVRejFEeUZTTjlpdE9ENEw5UGRGUC1LRUNfeWt2bXc?oc=5",
+      "reason": "ITカテゴリとの関連性が低い"
+    },
+    {
+      "title": "SaaSのID課金からどう変わるか、マネーフォワードとPeopleXがAIエージェントの課金設計を語る|ProductZine",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE1FV1dLcnpxcmNyeDU5d2hyTXp2UFRBbmdSMmh3NTNZUjZxbmdINHVreFNvTmVmS0xVRGZxZG5vb0FJNDRXSVdqZGVoT1BVX01zZzViOThqUy1BZGxNOFRTdw?oc=5",
+      "reason": "公開日が2026-05-18でfreshness gate外"
+    },
+    {
+      "title": "使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を",
+      "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1LamFweU1fQTFzZVBHZGVpNHEyWkZtZGQtR254Nm5jNVJRcmFQeHZ3S3RybEFKQmJKbDlNUGM0SGxIMjFnck1Ya2Nfcnc5Zw?oc=5",
+      "reason": "ITカテゴリとの関連性が低い"
+    },
+    {
+      "title": "波乱相場の中で株価好調の逆行高銘柄！ IT・エンタメなど/日経平均続落【今日の注目株＆日本株市場見通し】",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9GZXdBSno4aU9JU1czZUJKYjByc0tlNk5TX1VjdmhqX1VrUDlBa1RkOXJiMTJsdVUtZVVtYll3UzNSWDYyLUV1ZEdGUTkzTnJwY0hRTldDN2FTakVYcGdXVk04Z3Z5eFA3NkdzQ0FXMU9PSHZzei1xTUJjU3VLSHc?oc=5",
+      "reason": "市場解説でIT一次情報度が低い"
+    },
+    {
+      "title": "クラウドとハードウェアがシーソーゲーム？1倍ロング/ショートETFでポジション構築を！",
+      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNdmNXTGRQT2toN2FJdGQtbjIzLUc0V3Zzb2RDYWZ0Z2FiaEdFZFlhRy10ay1CZHJsejBzV1N3ZldVQ0hjMU82THNvRE42Ui1YdHlXQk80M01oWVZWekZ2aEpqS2UwbkQ4Y2lndG5jcnVxM2hHVTlGYWYxZGZHRlVCNmNLYlVpR1NmdHJyUU5LX0hLZXpPRDJWSVlJeGRJUnktUFIxejA2TjlEU3VuYzdoMkRnMnY?oc=5",
+      "reason": "投資商品解説でIT一次情報度が低い"
+    },
+    {
+      "title": "オラクル 日本向け最高機密クラウドでリードか【FTトゥデイ】",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE44UmlkUDRYTmNMUXhsZ1hCWE9pV0c4LXZuN3VsN09lTkwxT0VIVUw1dE1IQXpWSFQwMmJIakthT3lTOXFsMzZmTW1QVVhsSzVMendPUUxNTnU2eVlGbkl3?oc=5",
+      "reason": "検索で記事単位canonicalを確認できず、採用対象外"
+    },
+    {
+      "title": "【再配信決定】AIエージェントで激変のIT・SaaSビジネス",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE1nVk5VeV9jMm5rMkg4Q1pnNzlzVkwxRTZoemJrU0dVZzRqc0JvUUE0dlFsQ2xlRzlpaTUzdFYxTEJOQmROcERtVFQtMHVUUC00YWRWbFh3?oc=5",
+      "reason": "再配信で新材料が薄い"
+    },
+    {
+      "title": "死なない成長株、AI取り込み進化中 「SaaSの死」を超えて①",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1YOVFha3NSMmVKdVFNMXFQOGgwN0NvcVRURTR2QkFGeVhRT1loZEZfeXoybGs4UXBPbU1Odi1xYlpIazZCOGU3REhibWdjemF4ejJTMU5NVmxkaVZqX3cwbW1OUGhKNG1sbEtjOGJZOXYzSFl4ZkMzakJaMkRkUQ?oc=5",
+      "reason": "記事単位canonicalを確認できず、採用対象外"
+    },
+    {
+      "title": "【BE:FIRST】「ミュージックステーション」に出演！話題沸騰中の新曲「Missing」を生パフォーマンス！",
+      "url": "https://news.google.com/rss/articles/CBMiRkFVX3lxTFBZMkNMc1FHQjdWQkdKY3lmdFEyZmc3ZVh3R3lXWGJJejJrRlQxS3dRQ0xKNEQybEZVSXZnMS1ZY29BZmRqbnc?oc=5",
+      "reason": "ITカテゴリとの関連性が低い"
+    },
+    {
+      "title": "「翻訳・議事録、AI代替されやすく」 「SaaSの死」を超えて④",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE05WHhES1U3UTVpMDRCT25SbjBQb2hWVFQ0eWkxTmFVSXcyM0IzaDZTXzlzTzRmRHBVZ1dBenBQcDZVY1VUcXdjaTNWUGpIRXpjVmxiajZuRW1TOFdnODZyUWNvdjB0U1pvU2RSMXRhY2xKY1d5OGRTY2g4S0Utdw?oc=5",
+      "reason": "記事単位canonicalを確認できず、採用対象外"
+    },
+    {
+      "title": "Nikoん、新曲「as it is /（not）as」飛び出すMVの未完成版公開",
+      "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE1KUVdiN2VXeVVfRS16cWdkZnFrXzFCeHNEX2pQT3E5MVkwRUxsZDFXcjJ2X2tldE5lWkVGS2NfWDBnRDN1UGpoQVhYMTBGdmttUkJWaU9iTVpiejFTNDhwY1B2ODhjdTRmS0VTX0JMOA?oc=5",
+      "reason": "ITカテゴリとの関連性が低い"
+    },
+    {
+      "title": "トビラシステムズ、クラウド電話でFAX送受信を提供開始",
+      "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQOGVid0hzNnQwNzRlZDdnaGQ5SkRsZTdpNzF6UlBkT2ZUQXlPQzlEdVJNWXVzNE44WkxleW9kWEptLVlSQ3liTjFrak96bnZMUGhsYmxOanl6YVhWWXVwMm54TDBoVjduWXE4UmU4WnlLZ1hVV09hSmVfRzlhazRpanUzUlRlZFk2WGhPRE1HUlpTSTRkRVB1SXFXcTVJVmJzRE52amthUEZOZlpBQUx2bVVUTy1NUENjb2dKM0pHWXBvd1JtLTJ4MEVpU0g?oc=5",
+      "reason": "IT関連だが上位5件に比べ影響範囲が狭く、採用枠外"
+    },
+    {
+      "title": "デジタル時代のデータドリブン経営",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE5qQ0lMRzhobGI2eWg1UHlwckI5UEVIV0VVcG15N2FDVmY1RVE5c2lEYjJTVVBGcjBmRENGbHhrdGNGeU9CSnN2OXd4dEFTQ1A0Mm5LMkw1YjhGZw?oc=5",
+      "reason": "当日性と記事単位canonicalを確認できず、採用対象外"
+    },
+    {
+      "title": "苫東の大規模DC、フィンランドのAIクラウド企業と利用契約へ",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1JcE44b1MzQzhGd0JtRWJaUFNNbktNTWZURVprbU9oVjlXcWd5UTFoMHRLRVhVTjh3azR3ZE5wYXNMQU9qYUJCVEFUdTg4TF8wTGNSSmFvcVh6dw?oc=5",
+      "reason": "検索先が媒体トップまたは別件で、記事単位canonicalを確認できず"
+    },
+    {
+      "title": "サイバーセキュリティ需要の拡大を背景に、世界のPQC市場は2035年までに192億8,000万米ドルへ",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE81S2VndW54bFBkT2UzU3ljeUxOa1JxcVBYQ3RVYlo3S3hMY2pucUNQc1FfNjlFNUJ3QzhxVWhRdF9XclJkYmpxNXRMbmhnSWc?oc=5",
+      "reason": "市場調査転載で一次情報度が低い"
+    },
+    {
+      "title": "In full: Dominik Szoboszlai on new LFC contract, responsibility and ambitions",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNVWZhc25udUZUZUQtbktIMS1tbi1mQzEtVnZlemNIUGVJMmJQTG8tTFpyTVQtcE95OE9GLVV5QWJlVW5zRUVDcmcxU2RWZzJwSTZtOTBRODhzeDBvLTduajBNY0Itc25PQi05SUVVYzFfWXUxR1ZJZmRWUXlFZHY5YXR5MC1mZTdMZm1iYTBUaElGVjItYmRaT0cxRGpfNHFtRXp6aUpYOS3SAawBQVVfeXFMTXZHaUp0NmhQdHNuR3F4LUs5WS1ZbHB0SjlFVU9KZnpHOTJMSnlibDlqRVhoSGVxUkpSRUJldkpORkpkU1JITTU0bkJWbmhKNE42SGJjTEc0NmpjMHZ5RDRnUXcxWktaWXgzOVk3MjhlX0ZZTkRJQWRmcmFsN2FqZUxaN3NRb2p5c2VJQi1KRTVQMWE0MGszRURlZVZLTVpfaHNlUXZaS3U5V3JBMQ?oc=5",
+      "reason": "ITカテゴリとの関連性が低い"
+    },
+    {
+      "title": "マネーフォワードの「クラウド個別原価」、製造原価と販管費の振替を自動化する新機能",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBwcjZXejh5NTF1WkU4VGNuMXl4c2xqOC1oTzdGeFVyU2k5NHVOVnZnZWJSMnkwZkNyb3J3T2ZfNENBbldxalpxOTRxdEpwNVlSdE9id0RKV05OcHhyWEhyTmhMdFZ1SF9ETnluaDE0M05PRldTR1hfMUp2UW02bm8?oc=5",
+      "reason": "当日性と記事単位canonicalを確認できず、採用対象外"
+    },
+    {
+      "title": "Get It Studio 個展をPOCKO GALLERY TOKYOにて開催",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE1PUlAwMV96SWVoNk9FQk1rZXdWanhrdlpqMW96R2plODhybkNxU1hWSmxOVTdzSVROYWF2dF9HZTk4UXh0Z1pfTmRRdEJzZ3NlQklGbzdJS3d1TU53XzJjdXJldnpSaGdVSkE?oc=5",
+      "reason": "ITカテゴリとの関連性が低い"
+    }
+  ]
+}
