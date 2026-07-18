@@ -1,0 +1,38 @@
+{
+  "date": "2026-07-19",
+  "category_id": "mobility",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jidounten-lab.com ウェイモ 新たに4都市 無人化",
+    "site:gizmodo.com Zoox recall heavy smoke robotaxi July 2026",
+    "site:prtimes.jp TOCKLE 7日間 1980円 福岡市"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dropped": [
+    {"title":"【速報】万博で利用もトラブル相次ぎ利用停止・転用断念の「EVバス」","url":"https://news.google.com/rss/articles/CBMiVEFVX3lxTE9BSmQ3YmJEMmNfR19GR2xuMFZ2SGZSeGdFdTI2bVZwcmxqOHpVT2VBeVlFcUxVNnViWGdvdVpRX1gxdXlhX21XT0J5RTRJUkZOdzNDNg?oc=5","reason":"selected EVバス報告と同一テーマで、canonical解決後の新規性を確保できず除外"},
+    {"title":"ロボタクシーは本格的にスケールし始めたのか？｜Road to Autonomy","url":"https://news.google.com/rss/articles/CBMiXkFVX3lxTFBsTEZ5aElfOThEd0pEYngydkNxUDBOUDB5UlB2QzQ3Q3FBU3BlN2VHM195YkFZc0JMeXZXSXlneXFMbEhTS0c3N25KYm9FSDVCZFlqOUxZMldYTk9KZVE?oc=5","reason":"分析記事で一次情報性が低く、canonical URLを記事単位で確定できず除外"},
+    {"title":"Tesla Record Deliveries Are Priced In. Here’s Where the Stock Could Go in 2026","url":"https://news.google.com/rss/articles/CBMiqgFBVV95cUxOc01LMW84bV9td1ZKSllyUWZnSEtjVE5XMWZJX3R3aTlILVpxdXJVSXZHZU8tSnVDX21hekFUZWxXOVZZUVhKQ0RIdHRsVWhYX05jVnZLUHFCVnNrV0VUamtSUVhpaWw3ei0wdUVQdjdwdzBsSmhxQnZpYmxtNy1ibGhQb2paNndrSjg3YzdaZS1pUnNZTGtNMWE0QkZfYVJ5cExEaktRMXF6UQ?oc=5","reason":"株価分析で当日モビリティニュースとしての一次イベント性が低く、canonical未確認"},
+    {"title":"欧州EVシフト加速、BEVシェア20％に 中国勢の販売台数増加","url":"https://news.google.com/rss/articles/CBMiO0FVX3lxTE53Ty01RWtxMUl4S0pJWEl0TDlsTGZYMUJxZ3FMUG9LTW1SU1c4ajBnRG1GWllndzJwb3pF?oc=5","reason":"検索結果のcanonical記事が当日窓を外れ、鮮度根拠を確定できず除外"},
+    {"title":"テラチャージ、初回利用キャンペーンの延長が決定！","url":"https://news.google.com/rss/articles/CBMiakFVX3lxTE44SXF6S2Q0eFJmRl9jdjdNemNpelNjUTVDUnVscktFZl9LU0M4REM1bUJ3aGhhS1N3TVZGb2lTeFF3b19JbUFBektIOEVZWDQ5Q1Z0VXYxWW0zLXlybDFITVFEU19ZdHdVVVE?oc=5","reason":"単一企業のキャンペーン延長で影響範囲が狭く、PR転載のため除外"},
+    {"title":"PV5 passenger, cargo Line up","url":"https://news.google.com/rss/articles/CBMic0FVX3lxTE5LMHpHY3p0ZzVPLTVGWUdmSFEzbmhtTmJYOTJhd1VHVzhaRFl5MmhWY1FkcVRZdWhocVNWS0NkV2JfR0JPMUhFRS1OLWJVLW5VTGpZTW1UQjFvQ1BFYmdUbjdIaEhVM19yYTRzOWpLZWpiRXc?oc=5","reason":"見出しだけでは発生事実と影響を確認できず、記事単位の品質不足で除外"},
+    {"title":"フォード（F）は、EVブームから高利益率のSUVや半導体の安定確保へと、ひっそりと事業構成の見直しを進めているのだろうか？","url":"https://news.google.com/rss/articles/CBMilAFBVV95cUxOWEllTFUza0RRSlRSSEQxZFZITWlJeHhzcmgwUzVpeWw0ZnJRaFBlTE81VzJFaEVGLUhvUkZ4aXBSdUJHVmZXXzRsaXF2ZWI1ZG5icEVvejg4cTd2eU0zRUw2N0FqeUcwaDlvbjI2S3JnRExZNTA3LVhzdUtvVnMtNzkyUkxDZ2E2aFBwcnpDS3JjTG9u0gGUAUFVX3lxTE5YSWVMVTNrRFFKVFJIRDFkVkhNaUl4eHNyaDBTNWl5bDRmclFoUGVMTzVXMkVoRUYtSG9SRnhpcFJ1QkdWZldfNGxpcXZlYjVkbmJwRW96ODhxN3Z5TTNFTDY3QWp5RzBoOW9uMjZLcmdETFk1MDctWHN1S29Wcy03OTJSTENnYTZoUHByekNLcmNMb24?oc=5","reason":"推測調の分析記事で一次発表を確認できず除外"},
+    {"title":"お正月は「劇場型花火」で決まり！モビリティリゾートもてぎ","url":"https://news.google.com/rss/articles/CBMiVkFVX3lxTE5RRUxiLWg2YjZpdEZBNE4zakdLaVJydUtPVjRyUHNWa2xIbmxtdlp4WExyTnRKM29JM2MyY3QtWEJnX3NlNVVzNzVyOUJzUnBiRkFCTXRn0gFbQVVfeXFMTjctMzFjNXpSREhNS1E0SW94T2JkT0EtRkFpVFBxbzVYSjJNVVVaemVWanU4dGx0cF9LZFZtM0czaVM4UWhxUzNzb1NQQ2NISGh6UXBxTXlmaGxzWQ?oc=5","reason":"イベント告知でモビリティの構造変化に該当せず除外"},
+    {"title":"ホンダ・クラリティシリーズのFC、EVに続く第3弾","url":"https://news.google.com/rss/articles/CBMif0FVX3lxTE9SOWVENEVRZGdrbVNCVUZBSWZwblV6TjJJR3dDc2RuY3NMZnp3NUZWXzIyRk1kbThkX2FoSVVUY3BmVTJZa2JXMVl1OUNBd25US3ljN2pmZGFJNU9jVWNjWG8yM0s0azR2N3BjRWZhaGdreW9QdFRXd3pTWjZyVmM?oc=5","reason":"過去モデルの回顧記事で当日性がなく除外"},
+    {"title":"フォルクスワーゲンの新型EV「ID.クロス」","url":"https://news.google.com/rss/articles/CBMiiAFBVV95cUxNdjN6Q0JTOUtQdTRVTVJVXzhfX2xlcG9jREQtLXlKMnBaYTNfZTVCR3JSM2lKaXgwWDBkSWJaZXdnYzFMQXRWNnFiNkpWb0xNelNVLTgzMXB0SnFrVDFLMEx6NTdsUTh4U0diR2daX0JEVFpEemdaUDR0OG5icXgwUDctQjVUTGVn?oc=5","reason":"製品紹介としては有用だが、政策・サービス・安全ニュースより優先度が低く除外"},
+    {"title":"【中国ＧＤＰ】補助金ばらまき、内需枯渇 ＥＶ輸出依存に","url":"https://news.google.com/rss/articles/CBMiUkFVX3lxTFBKZ0tsZFRHTGtEeFlkRklYV1dZWHZWR0k1bGZaYkZjdVA0N0tFQUJtblNyMFpDMVc5TExpYTJLVlcxR1prWF9zYmVTWlZoNGFfd1E?oc=5","reason":"経済カテゴリとの境界が強く、モビリティ固有の当日イベントとしては優先度が低く除外"},
+    {"title":"中国EV「Xpeng」、ロボタクシー参入表明から8カ月で実現","url":"https://news.google.com/rss/articles/CBMif0FVX3lxTE1TVXdBaEVKSlNrR3Y0cVdGZlJEWFpLWG1pekJoclBNSDJPVldBRnB4N0NmaExHaTgzQlVuOHJGdWxkbGRLNHBQTHVQUmRvYm5CRkxpSVNOUkZKcHEyWXFRUVhqWTZTaVZxTzc4WG5GbEJYUUN6Z01vUjB4VXVTOEE?oc=5","reason":"canonical候補は確認できたが元候補の公開日と記事内容の差分を当日窓で確定できず除外"},
+    {"title":"いよいよ始まる、自動運転のある暮らし","url":"https://news.google.com/rss/articles/CBMiUkFVX3lxTFBVTFp0dzh0cTFHUjJoRGxveG83Z2prRFVJOHFzSUJscVpESy1SRkkycXFJdjRVc1R4cUdwUGhlUU1KRWZGX2FQRHNGUk1FSmVfT0E?oc=5","reason":"番組・解説コンテンツで一次イベント性が低く除外"},
+    {"title":"コーナン商事、T2と自動運転トラックによる定期輸送の商用運行を開始","url":"https://news.google.com/rss/articles/CBMiU0FVX3lxTE9rSVMtMklOd2VRVHdQczJuZWZybFppMWRqWEdkcGxQRGJnU2FOMVpoZFNGaHZ1N0paX1VQVHpOMy1wQWdDSEJYSlhaOU9Va3dSbmNV?oc=5","reason":"過去号で同一商用運行を掲載済みのため、追加材料なしとして除外"},
+    {"title":"EVバス、万博中832件不具合 懸念を消した「導入ありき」の風土","url":"https://news.google.com/rss/articles/CBMiaEFVX3lxTE1sS0NwVmc1WjhwTTFOQzBETjRCUzltcU5wXzl3T0tMVzVIbVNxcnhEQ0MwSTlsbzRBcUwteHFJMFhsSHpLWjhVbVZlQTY0Qzg3WjUzWEhscGZVWGxrTDkyc2VkUm4xdlQ0?oc=5","reason":"選択した読売報道と同一調査報告の重複で除外"},
+    {"title":"バッテリー組み立て_12","url":"https://news.google.com/rss/articles/CBMivwFBVV95cUxNT2RkRFhiaTlQQUpoNHRjS3dkRV9qMW1vQmxkU29fbXZXV0s2V21tQkFFanRPTzFYQmo2RW1kczh2YnpoSG1BQlpRTVZrRXZzUmE0YnlkV3h5d0JRc3lqeVpxdTBya3dmTk9DWVc3VGlkaHlSRmVjUVlQdWdJN0JodlBWaFl3MEZ2NnlpTTN0RU9sZENsT1JPeWgtMll1QXVLci04aVphR2xlTU9KMjkxTVRFUWp6NEsyZ2NScXNCSQ?oc=5","reason":"タイトルが破損しており記事内容とURLを確定できず除外"},
+    {"title":"火おこし不要で超手軽！ ホンダ最新EV「Super-ONE」","url":"https://news.google.com/rss/articles/CBMif0FVX3lxTE5aM1JFX3JpZzU2NVI0R0RPRjhTOHdTWlRrM09wLVM5V29pQUQ1M1ZPYmN6cl9jOEE5Qlowb1RmZnVvQ3hsUDMtZUNSaHZ2SVJNY1dWdXhnLTdSbnZ1QkFCU1pzUDF0cGxPLW94anVTOGVyLTNyQkdWdHZ2Y2RSVUE?oc=5","reason":"製品利用記事で新規イベント性と影響範囲が低く除外"},
+    {"title":"新型レクサスESのBEVモデルの競争力を分析","url":"https://news.google.com/rss/articles/CBMiUkFVX3lxTFBiakl5eDd0ekNGcTVpQ3NoclBodUZxcHJseXhWQ05EME5RTW44VTduQjh5d2xfNG43cGNYaTV3WWpfZmVLbnIxZHJlRDNEYUVYX0E?oc=5","reason":"比較・論評中心で一次発表がなく除外"},
+    {"title":"電気のパワーでCO2削減！排気量50cc以下のEVスクーター8選","url":"https://news.google.com/rss/articles/CBMiSkFVX3lxTE5nYXJXZmh5bVZ6V0NkWnA1dUs4Mmx6cm5sbnYzY2phTGxKNzlWUXUwcENSTDJpWXFMb3N1WGZqbmxrazRoQzU2d1Nn?oc=5","reason":"製品選定記事で当日イベント性が低く除外"}
+  ]
+}

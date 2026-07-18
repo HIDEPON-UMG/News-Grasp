@@ -1,0 +1,51 @@
+{
+  "date": "2026-07-19",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR enterprise software OR cybersecurity when:1d",
+    "site:sbbit.jp AIの進化の脅威に今すぐ行動を ノーベル賞受賞者ら200名",
+    "SpaceX Pentagon AI computing capacity July 2026",
+    "脱中国化 コンサルティング会社 サプライチェーン コスト"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "経営支援クラウド「bixid（ビサイド）」のITreview受賞",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTFBFODVGa09zRlU5TmJLWVRZbFdVS0JjNU93Q2JIcDhSa1dlWjJlVHp1b0ZpdDZ2WE4wVGRvQXdQN0FNMHQ0OHRvOHFMY1lTM3VGS0E?oc=5",
+      "reason": "canonical確認先はPR転載で、Stage1時点の当日性と一次情報の扱いを確定できず保留"
+    },
+    {
+      "title": "阿里雲（アリババクラウド）フォーラムがAI転換のシグナル",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBvVXllaFJwUjNFRnZjcjNXZWkyRzRtNnp4Nk9HQUdnekZnY2wtTW4xdnRjTmR3UTI5TkFuajgwcUY1LVItWGlsWXVibWlNY05BekotS25wZ2YwLUFVajhRRUZtRTIyVDNqYl9INkJaLTk2SEww?oc=5",
+      "reason": "canonical記事を確認できず、内容の一次情報性も確定できないため除外"
+    },
+    {
+      "title": "米国サイバーセキュリティ株で注目したいPalo Alto Networksなど3銘柄",
+      "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxQWjJLVGw1T1F6cFdQVFFTTGR1MFQzZ0VZTUtwemZnRk1rblRnMmJCOEZ3TjhyNGJleVpMSlpRNTZySnR0VEtmT05VV0I5VkpicWNaRFY3Vl80WldWTVpfWmtmV29nTVJyOVA1LWRQZHZhU3gycjRsekU0Z2ZJS0hSam1BLVVNMnZmeGhSWmJxTy1UVmthOGxqZlpwTWhXZFkyQlHSAaIBQVVfeXFMUFoyS1RsNU9RenBXUFRRU0xkdTBUM2dFWU1LcHpmZ0ZNa25UZzJiQjhGd044cjRiZXlaTEpaUTU2ckp0dFRLZk9OVVdCOVZKYnFjWkRWN1ZfNFpXVk1aX1prZldvZ01ScjlQNS1kUGR2YVN4MnI0bHpFNGdmSUtIUmptQS1VTTJ2ZnhoUlpicU8tVFZrYThsamZacE1oV2RZMkJR?oc=5",
+      "reason": "canonical記事は確認できたが公開日が7月10日で、当日号のfreshness条件外のため除外"
+    },
+    {
+      "title": "BE:FIRST／乃木坂／スポーツ／寄付募集などの候補",
+      "url": "build/deduped-candidates/it.jsonl",
+      "reason": "IT・コンサルティングの主題から外れるため除外"
+    },
+    {
+      "url": "https://www.investing.com/news/stock-market-news/musks-spacex-in-talks-to-provide-computing-power-to-the-pentagon-wsj-reports-4799007",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

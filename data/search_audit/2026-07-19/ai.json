@@ -1,0 +1,27 @@
+{
+  "date": "2026-07-19",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "\"Claude Fable 5\" サブスク Max Team Premium 2026年7月18日",
+    "\"Kimi K3\" Moonshot AI AP News July 18 2026",
+    "\"生成AI時代でも、スタートアップが動画制作を人間のクリエイターに託す理由\"",
+    "\"生成AIを効果的に活用しアプリを開発するプロセスを競い合うイベント\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title":"Gemini 3.5 Pro関連の遅延・未確認情報","url":"stage1://candidate-2,6","reason":"公式発表でなく、同一テーマの続報・未確認情報のため採用見送り"},
+    {"title":"Claude Fable 5関連の重複候補","url":"stage1://candidate-1,7,8,9,14,23","reason":"同一料金変更の重複候補。代表1件に集約"},
+    {"title":"OpenAIの動くAIスピーカー開発か","url":"stage1://candidate-21","reason":"報道ベースの未発表計画で、canonical公開日が号日前日窓を外れるため採用見送り"},
+    {"title":"東京工芸大学の生成AI活用講座","url":"stage1://candidate-22","reason":"canonicalの初出が5月で、Stage1の再掲時刻と当日性が不一致"},
+    {"title":"その他の候補","url":"stage1://candidate-3,5,10,11,12,13,15,16,17,19,20,24,25","reason":"一次情報性、当日性、テーマ重複、またはAIカテゴリの読者価値を比較して採用見送り"}
+  ],
+  "dropped_count": 21,
+  "shortfall_reason": "Stage1 dedup 済み25候補から、canonical URL・当日性・一次情報性を確認できた4件を採用。5件目は当日性または元記事URLを確認できず、追加の広域収集・横断dedupは実施していない。"
+}

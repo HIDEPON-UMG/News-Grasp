@@ -1,0 +1,73 @@
+{
+  "date": "2026-07-19",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:wired.jp PlayStation ゲームソフト ディスク版 生産 終了 デジタル 移行",
+    "site:nintendo.com/jp/topics/article ニンテンドーeショップ新作ソフト情報 7/17",
+    "site:prtimes.jp A3! 第五部 PV 特設サイト 2026年7月18日",
+    "site:prtimes.jp 青鬼2 青鬼 臨海学校 Switch Steam 8月6日",
+    "site:gamersky.com Mandate Order 8月12日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "source_policy": "stage1_deduped_candidates_only; canonical_url_resolution_without_reharvest",
+  "selected": [
+    {
+      "title": "PlayStation、ゲームソフトのディスク版生産を終了へ──デジタル移行でゲームはどう「残る」のか",
+      "url": "https://wired.jp/article/sony-playstation-puts-a-nail-in-physical-medias-coffin/",
+      "reason": "一次情報に近い大手メディアで、ゲーム流通の転換を示す重要度が高い。"
+    },
+    {
+      "title": "ニンテンドーeショップ新作ソフト情報 7/17（金）号。",
+      "url": "https://www.nintendo.com/jp/topics/article/212681aa-7d80-4553-850a-04b56bf1c0de",
+      "reason": "任天堂公式の新作・セール週報。前号と対象週が更新されているため follow-up として採用。"
+    },
+    {
+      "title": "イケメン役者育成ゲーム『A3!（エースリー）』メインストーリー第五部PVと特設サイトを公開！",
+      "url": "https://prtimes.jp/main/html/rd/p/000000218.000045129.html",
+      "reason": "長期運営IPの大規模ストーリー更新で、配信予定とテーマ曲の情報が明確。"
+    },
+    {
+      "title": "青鬼2と新作『青鬼 臨海学校』がSwitch・Steamで8月6日発売",
+      "url": "https://prtimes.jp/main/html/rd/p/000000048.000070730.html",
+      "reason": "発売日、価格、配信方針が具体的な新作発表。"
+    },
+    {
+      "title": "春秋戦国時代を舞台にしたシミュレーションゲーム「マンデート オーダー」の早期アクセス開始日が8月12日に決定！",
+      "url": "https://www.gamersky.com/news/202607/2172626.shtml",
+      "reason": "Steam/Epic同時展開の早期アクセス日とゲーム構造が確認できる。"
+    }
+  ],
+  "dropped": [
+    {
+      "reason": "canonical freshness not confirmed",
+      "note": "ポケモンGO関連候補は確認できた一次記事が7月10日で、24時間新鮮度条件を満たさないため除外。"
+    },
+    {
+      "reason": "canonical freshness not confirmed",
+      "note": "Unicorn Overlord関連候補は4Gamerで7月16日掲載を確認したが、当日枠の新鮮度と重複回避を優先して除外。"
+    },
+    {
+      "reason": "canonical freshness not confirmed",
+      "note": "インディー作品・福井イベント関連候補は検索で確認できた記事が古く、候補URLの新規性を裏付けられなかったため除外。"
+    },
+    {
+      "reason": "category fit or reader impact",
+      "note": "スポーツ、教育、グッズ、一般PR中心の候補は game の主要ニュースとしての適合度・影響度が低いため除外。"
+    },
+    {
+      "url": "https://wired.jp/article/sony-playstation-puts-a-nail-in-physical-medias-coffin/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

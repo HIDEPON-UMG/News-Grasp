@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "gates": {
+    "generation-quality": {
+      "signatures": {
+        "eda285f5a080b43a": {
+          "failures": 1,
+          "artifact_hashes": [
+            "89a704635a31effa"
+          ],
+          "category": "generated"
+        },
+        "f8c2193a3f3ef671": {
+          "failures": 1,
+          "artifact_hashes": [
+            "89c2875decae1508"
+          ],
+          "category": "generated"
+        }
+      },
+      "categories": {
+        "generated": 1
+      }
+    },
+    "record-schema": {
+      "signatures": {
+        "31de8558432512c8": {
+          "failures": 1,
+          "artifact_hashes": [
+            "80bf7e534fe368e2"
+          ],
+          "category": "records"
+        }
+      },
+      "categories": {
+        "records": 1
+      }
+    }
+  },
+  "retry_budget_policy_version": 7
+}
