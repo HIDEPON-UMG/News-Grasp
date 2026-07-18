@@ -427,6 +427,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-17-pytest-static-hero-line-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-18",
+        "pytest-static / category hero lead title quality plus incident tracking policy / RecoverOnly / publish-complete",
+        "long Japanese event phrase exceeded the category hero line width and the previous approved incident report was not registered in the tracking policy allowlist",
+        "category hero long event title and explicit incident report approval tracking gap",
+        "long event nouns such as symposium must split at stable phrase markers and every explicitly approved public incident report must be registered before the next pytest-static run",
+        "category hero Turn 4 contract fixture for the IPA symposium title, incident report tracking policy allowlist fixture, full pytest-static, RecoverOnly resume proof, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-18-pytest-static-hero-policy-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

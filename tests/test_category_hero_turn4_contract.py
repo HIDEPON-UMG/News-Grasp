@@ -242,6 +242,19 @@ def test_category_lead_title_lines_rebalance_particle_before_short_tail() -> Non
     assert generate_pages._category_lead_title_quality_errors(title, lines) == []
 
 
+def test_category_lead_title_lines_split_long_symposium_phrase() -> None:
+    title = "IPA、仙台で東北サイバーセキュリティシンポジウムを11月開催"
+
+    lines = generate_pages._category_lead_title_lines(title)
+
+    assert lines == [
+        "IPA、仙台で",
+        "東北サイバーセキュリティ",
+        "シンポジウムを11月開催",
+    ]
+    assert generate_pages._category_lead_title_quality_errors(title, lines) == []
+
+
 def test_category_lead_title_lines_cover_current_category_hero_titles() -> None:
     cases = {
         "ai": (

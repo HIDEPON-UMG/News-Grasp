@@ -58,6 +58,7 @@ _CATEGORY_LEAD_TITLE_MAX_LINES = 4
 _CATEGORY_LEAD_TITLE_EVENT_MARKERS = (
     "外販構想",
     "ダウンロード専売",
+    "シンポジウム",
     "主力EV",
     "AI協業",
 )
