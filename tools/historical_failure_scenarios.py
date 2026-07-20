@@ -444,7 +444,7 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "repair routing, structured digest mutation, and thumbnail parser boundary",
         "daily-quality issues must retain structured issue codes, deterministic repair must preserve card/lane structure, and page generation must accept non-thumb Markdown image alt text before publish",
         "daily-quality stale TOP JSON fixture, repair coverage matrix fixture, registry lane/separator repair fixtures, non-thumb image parser fixture, post-daily-quality runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
-        "docs/incidents/2026-07-19-daily-quality-repair-routing-report.html",
+        "build/incidents/2026-07-19-daily-quality-repair-routing-report.html",
         "runtime_e2e_required",
     ),
 )

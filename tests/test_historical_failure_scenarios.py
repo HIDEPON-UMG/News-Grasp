@@ -281,7 +281,7 @@ def test_2026_07_19_daily_quality_repair_routing_incident_is_registered() -> Non
     assert "daily-quality" in scenario.stage
     assert "post-daily-quality runner resume" in scenario.cheapest_e2e_or_fixture
     assert "non-thumb image parser fixture" in scenario.cheapest_e2e_or_fixture
-    assert scenario.evidence_path.endswith("2026-07-19-daily-quality-repair-routing-report.html")
+    assert scenario.evidence_path == "build/incidents/2026-07-19-daily-quality-repair-routing-report.html"
 
 
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:
