@@ -1,0 +1,69 @@
+{
+  "date": "2026-07-20",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:newsdig.tbs.co.jp ウォーシュ議長 物価安定 手段 2026",
+    "site:nippon.com 対米投融資 5500億ドル 経済安保 関税合意1年",
+    "site:investing.com Alphabet Intel results AI trade July 2026",
+    "site:saitama-np.co.jp AI 経済 リスク ノーベル賞学者 声明",
+    "site:finance.yahoo.co.jp 中国 インバウンド 2108万人 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "試合経過",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE50U19QNXRsOC1MRXlNbERJbUJLbTl1Rm4zWUhYQVRweDdEaWRaYU5wZUxlYU1VX1hWWkNNTkZOZExPRURWN3Jsbzd2R1N4bGtBVVo3R0dWdHBCa3RkSDdtMk1YQ3ZKdGFGWVZyeg?oc=5",
+      "reason": "economyカテゴリと無関係のスポーツ記事"
+    },
+    {
+      "title": "【快挙】国際経済オリンピック（IEO）2026にて日本代表5名全員がメダル獲得！初の金メダルも",
+      "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE9PX1p6M21QamVnQmdIZW9ObWhEVE9ScHhqY2dVdGVIRmZiN1F2YV9EMTg2Rkl4aGFKdTBoQjIzZGx4Q2dVRW9BcDROUDc5ZDBqZVRQVGZ1VzJ5WjBfOGdRQ2tRMzQxMzR0VW9rM2V5RlJxRk9wS0Fn?oc=5",
+      "reason": "教育イベントの成果で、一般経済への影響が限定的"
+    },
+    {
+      "title": "本日の経済スケジュール ─ ★国内市場休場(海の日)",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9MeThlR3k4TVpOeXNXV2MybE5DcjFqX0FqU3BwdVVwT1hoOWFQOGQ5TnI2a3hMNjkyR3dQbmJ6d1cwQTl4VGc5d2JpNmlSdUprX3cwS0dXb0d4?oc=5",
+      "reason": "予定一覧で新規の経済材料が薄い"
+    },
+    {
+      "title": "中国、紙おむつ「有害物質」報道 国営系経済紙が調査、メーカー側全面否定",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9MMExSVThuWjk0ZTdQc21FMVhTY3Y4WXUzOXk2cXBjZnlTaVV5X2E3OUNENm9HSEQ4WjdTcTR3aVJDNnBJQ3ZfbzFqYTI4dzhOMUpFeFE1QS1UdFd1?oc=5",
+      "reason": "消費者安全の論点はあるが、経済カテゴリの代表性と一次情報性を比較して見送り"
+    },
+    {
+      "title": "［経済フォーカス 地域拓く］城下町ステイ にぎわい倍増 古民家再生 稼いで守る…愛媛県大洲市",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOSE1MNGV0RnpEWFZGU2w2MGVwRHJXWFQyZVg1Q2dEelBfRzFfV1JfSWN4Vm5WeUd0QW5LWE9vck1VQ1VLa0NnWjVxV0VwZ1h5UjFhMXVnZ1B4UjZ6OWlRU2VjN2ZiY3l3eWZVY0hYcWJ0Z1E?oc=5",
+      "reason": "地域事例として有益だが、当日号のマクロ・市場影響を優先"
+    },
+    {
+      "title": "睡眠市場から見る景気 高齢化のアジア、開拓余地",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5JZlNoczFrVzduXzNiWndBUTdsMkJtMTBOMFlYaklXdW5oSl9hNzhMUHRxUFpuWmZHSzA3UWNDV2poTnFQbndPZmw2RWRiY0wzVnY2azdCSlVXdGlaNVgzOUdlR3VCT1JVemxQVw?oc=5",
+      "reason": "背景解説色が強く、金融政策・企業決算を優先"
+    },
+    {
+      "title": "サイバー被害、復旧が肝心 高山勇喜氏",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1oMWVkdzloa3pzLUNSSkpybGF3M1hBdUlTQ1dlX2RKODdRTWZWSUFBd25Jc2Fsck1vNHdubi0zYzJ2ZWtMV0VKY3JzcHcxdnNCTHg4bkNTZ0lwdTdYRXJSdnlGTzkyN1FzMlI1cg?oc=5",
+      "reason": "経済への直接的な新規材料が薄い"
+    },
+    {
+      "url": "https://www.investing.com/news/stock-market-news/alphabet-intel-results-in-focus-for-ai-trade-as-us-earnings-rev-up-4797849",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "selection_note": "Stage1 dedup済み25候補だけを母集団とし、広域収集・横断dedupは再実行していない。Google News URLは記事単位のcanonicalへ限定解決し、媒体トップ・カテゴリトップ・代理サムネは採用していない。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

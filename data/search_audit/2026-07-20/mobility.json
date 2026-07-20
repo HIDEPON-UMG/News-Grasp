@@ -1,0 +1,23 @@
+{
+  "date": "2026-07-20",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ when:1d",
+    "site:jidounten-lab.com/u_ Google Amazon 有料化 ロボタクシー",
+    "site:motor-fan.jp/article FOXCONN EV 台湾EXPO 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dropped": [
+    {"title":"大阪メトロ、トラブル多発EVバス中止で報告書 リスク検証の確認できず","url":"https://news.google.com/rss/articles/CBMiW0FVX3lxTE01N1ZxbzFMb1pFeTRCYzVqeFhac0RXX25xekNWNEpuV0ZOVHlZSGRYOHZLZENfM19zajk1ZEtXZ1JkM0tXZVlObHlCNHp2Y3BQejNRcEpCalA3Y0U?oc=5","reason":"前号掲載済みの同一報告書で新材料が薄い"},
+    {"title":"トヨタ・モビリティ基金 長野県で交通安全会議 より早い危険認知へ ＡＩで予測し注意喚起 「スマートポール」を議論","url":"https://news.google.com/rss/articles/CBMic0FVX3lxTFA3YVNIamh6RjhoSUZjUDhmaEUyaUlFV0pwSjRGdzItNVZqMlNLSnBLX2VIbm5TZk9VOXR6MGR3STA5VHN0T3lvcVBRVnh1RDZhMmNqODZrcWk3eGdDMWxmUnFJVmtPMVVfMzQ4RThtVURtMlE?oc=5","reason":"記事単位のcanonical URLを解決できず未採用"},
+    {"title":"BYD Auto Japan、軽EV「RACCO」の展示キャラバンをスタート","url":"https://news.google.com/rss/articles/CBMiUkFVX3lxTE5NUkZCNk03NEotbEllSVNxdlBKLUlPNFlGWEY1Tzd0cUJVYVhabktjTC1tWnB2STFVbFNVeWxENkxOcWEtMTVELW5DZXF6Tm9ia2c?oc=5","reason":"5月発表のPR転載で当日ニュース性が低い"},
+    {"title":"スバル車もトヨタ車もEVもガソリンエンジン車も同じラインで作れちゃう!? スバルの「究極の混流」生産は超効率的","url":"https://motor-fan.jp/article/1568114/","reason":"公開日が7月15日で当日性の基準外"},
+    {"title":"えぇぇ、JR東日本が自動運転バス!? 気仙沼線BRTで「レベル4」の無人化試験がついに開始！","url":"https://bestcarweb.jp/feature/column/1576912","reason":"過去の実証内容を再掲した解説記事で新材料が薄い"}
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl"
+}

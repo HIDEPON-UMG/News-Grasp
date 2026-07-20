@@ -1,0 +1,32 @@
+{
+  "date": "2026-07-20",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:gigazine.net Claude Fable 5 一部 サブスクプラン 2026年7月20日",
+    "site:simplywall.st Meta Anthropic 100億ドル AI 計算力 リース 2026",
+    "site:finance.biggo.jp Anthropic Claude Fable 5 課金方針 上位プラン 2026",
+    "site:www.digitaltoday.co.kr オープンウェイトLLM台頭 米新興 閉鎖型モデル 対抗",
+    "\"Claude Fable 5、ついに「標準搭載」へ\"",
+    "\"オープンウェイトLLM台頭\" 米新興",
+    "\"Meta\" \"Anthropic\" \"10 billion\" July 18 2026 lease"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped_count": 23,
+  "dropped": [
+    {"title":"Claude Fable 5の重複候補","reason":"同一料金変更の重複・代表記事へ集約"},
+    {"title":"MetaとAnthropicの計算資源協議の重複候補","reason":"同一協議の転載・解説を代表記事へ集約"},
+    {"title":"AppleとOpenAIの訴訟","reason":"canonical記事の公開日が7月10日で、号日の前日窓を外れる"},
+    {"title":"東大松尾研・Anthropic・PKSHAのJapan AI Index","reason":"canonical記事が6月公開で鮮度ゲート外"},
+    {"title":"Google DeepMindのフロンティアAI標準化機関提案","reason":"canonical記事が7月15日公開で鮮度ゲート外"},
+    {"title":"LIFULL HOME'Sの生成AI要約機能","reason":"公式発表が7月10日公開で鮮度ゲート外"},
+    {"title":"その他の候補","reason":"canonical URL未解決、古い再掲、PR/広告色、テーマ重複、またはAIカテゴリの読者価値不足"}
+  ],
+  "shortfall_reason": "Stage1 dedup済み25候補をcanonical解決・公開日確認した結果、当日性、一次情報性、重複除外後に採用可能な2件を選定。追加の広域収集・横断dedupは行わず、低品質な記事で5件に水増ししていない。"
+}

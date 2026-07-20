@@ -1,0 +1,49 @@
+{
+  "date": "2026-07-20",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:sbbit.jp Alibaba Qwen3.8 2.4兆",
+    "\"Alibabaが2.4兆パラメータのQwen3.8プレビュー版を公開\"",
+    "site:panewslab.com Qwen3.8 2.4T 2026年7月19日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "quality_shortfall_reason": "Stage1 dedup済み25候補だけを起点にcanonical URL・公開日を確認し、当日/前日窓で採用可能なITニュースは1件。広域収集と横断dedupは再実行していない。",
+  "canonical_resolution": {
+    "resolved": 1,
+    "unresolved_or_rejected": 24,
+    "policy": "Stage1 dedup済み候補ファイルを起点に、canonical URL・公開日・記事単位だけを限定確認。広域収集と横断dedupは再実行していない。"
+  },
+  "dropped": [
+    {"title":"SaaSのID課金からどう変わるか、マネーフォワードとPeopleXがAIエージェントの課金設計を語る|ProductZine","reason":"canonical記事の公開日が2026-05-18で、freshness gateを満たさない"},
+    {"title":"第14回 クラウドって何？「雲」の中に保存しているわけではありません｜佐々木康仁","reason":"入門解説で当日ITニュースとしての重要度が低い"},
+    {"title":"京都の救急・災害医療を守りたい！病院救急車 更新のご支援を！","reason":"医療支援募集でITカテゴリのニュース性がない"},
+    {"title":"＜次回予告＞「乃木坂工事中」","reason":"番組予告でITカテゴリのニュース性がない"},
+    {"title":"ITコンサルやSEと何が違う？ 急浮上「FDE」にAWSが10億ドル投じる理由：AIエージェントの本番導入を支援","reason":"候補のcanonical URLを記事単位で確定できず、別媒体の古い同一テーマ記事で代替しなかった"},
+    {"title":"IT値上げの連鎖、企業を襲う調達異常","reason":"canonical記事の公開日が号日のfreshness gateを満たさない"},
+    {"title":"第21回出雲神話まつり","reason":"地域イベント告知でITカテゴリのニュース性がない"},
+    {"title":"一緒に観に行きませんか","reason":"エンターテインメント告知でITカテゴリのニュース性がない"},
+    {"title":"命の色","reason":"作品告知でITカテゴリのニュース性がない"},
+    {"title":"「乃木坂工事中」の最新話「42ndシングルヒット祈願」をYouTubeにて公開！【乃木坂配信中】","reason":"動画公開告知でITカテゴリのニュース性がない"},
+    {"title":"42ndシングル「是非に及ばず」ヒット祈願が「一発勝負！書道パフォーマンス」に決定！7月20日(月)18:30よりYouTube生配信でお届け！","reason":"音楽番組告知でITカテゴリのニュース性がない"},
+    {"title":"転職後のITエンジニアが「年収」以上に求めているもの：動機は「年収アップ」でも……","reason":"候補のcanonical URLと記事単位の公開日を確定できない"},
+    {"title":"瀬戸内海の研究と人材育成の拠点「豊潮丸」の航海継続にご支援を","reason":"研究船支援募集でITカテゴリのニュース性がない"},
+    {"title":"ガザ｜子どもたちに青い空を取りもどす。心のケア支援プロジェクト","reason":"支援募集でITカテゴリのニュース性がない"},
+    {"title":"使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を","reason":"文化活動の支援募集でITカテゴリのニュース性がない"},
+    {"title":"「バレエ＝金持ち」という常識を覆す。家族の力で挑む世界大会","reason":"支援募集でITカテゴリのニュース性がない"},
+    {"title":"【STARGLOW】ミニマルで爽快なサウンドのサマーチューン『Drivin’ My Life』のティザー映像第2弾公開！明日、MVプレミア公開決定 | ニュース | エイベックス・ポータル","reason":"音楽プロモーションでITカテゴリのニュース性がない"},
+    {"title":"佐野市民病院｜受診を諦めない未来へ。移動支援車導入にご支援を","reason":"医療支援募集でITカテゴリのニュース性がない"},
+    {"title":"【緊急SOS】300万の国産うずら卵を救ってください。プロも認めた逸品を食卓へ！","reason":"食品クラウドファンディングでITカテゴリのニュース性がない"},
+    {"title":"「多彩な引き出しを生かす」 北日本銀行 都南エリア 個人コンサルティングチーム 齋藤晴夏さん","reason":"人物紹介でIT・コンサルティングのニュース材料がない"},
+    {"title":"【マイスタンダード】街履きの新たな選択肢、「オン」のクラウドティルト リミックス","reason":"シューズ製品記事でIT・クラウドサービスの話題ではない"},
+    {"title":"復活のSBI新生、ITで目指す「唯一無二」","reason":"canonical特集の公開日が2026-05-18で、freshness gateを満たさない"},
+    {"title":"アイスホッケー界の未来を共に｜大進スケートセンター復活プロジェクト","reason":"スポーツ施設支援募集でITカテゴリのニュース性がない"},
+    {"title":"プレイバック2014 朝版 308日目 愛知県稲沢市","reason":"過去映像の再配信でITカテゴリのニュース性がない"}
+  ]
+}
