@@ -447,6 +447,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "build/incidents/2026-07-19-daily-quality-repair-routing-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-21",
+        "daily-quality / digest-record sync / category hero title quality / post-deepdive resume / publish-complete",
+        "record truth for title_ja and thumb did not flow back into digest markdown, leaving an untranslated Game title and empty category thumbnails before a later SEO title hit category hero line quality",
+        "digest record sync and fallback thumbnail boundary",
+        "daily-quality repair must sync title_ja and thumbnail from record truth before quarantine/refill, and fallback thumbnails must be explicit repo-managed URLs when OGP is unavailable",
+        "repair coverage matrix fixture, digest-record-sync registry fixtures for title_ja and fallback thumb, category hero current-title fixture, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-21-daily-quality-digest-record-sync-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

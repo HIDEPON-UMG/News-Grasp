@@ -123,6 +123,19 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
+        "digest_title_ja_untranslated",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "digest-record-sync-patch",
+        (
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "data/articles.jsonl",
+        ),
+        "daily-quality",
+        "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
         "search_audit_metadata_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "search-audit-metadata-patch",
@@ -873,6 +886,8 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "summary_reflection_emphasis_missing"
     if "号日不整合" in text or "issue-date" in text and "date" in text:
         return "issue_date_mismatch"
+    if "title_ja appears untranslated" in text:
+        return "digest_title_ja_untranslated"
     if "title_ja" in text:
         return "title_ja_missing"
     if "thumb" in text or "thumbnail" in text:

@@ -592,6 +592,177 @@ def _write_digest_blocks(path: Path, prefix: list[str], blocks: list[list[str]],
     path.write_text("\n".join(out_lines).rstrip() + "\n", encoding="utf-8", newline="\n")
 
 
+def _url_keys(url: str) -> set[str]:
+    value = url.strip()
+    if not value:
+        return set()
+    return {value, value.rstrip("/")}
+
+
+def _record_index_for_issue(ctx: RepairContext) -> dict[str, dict[str, object]]:
+    records: dict[str, dict[str, object]] = {}
+    paths = [ctx.repo_root / "data" / "articles.jsonl"]
+    records_dir = ctx.repo_root / "tmp" / "newsroom" / ctx.issue
+    if records_dir.exists():
+        paths.extend(sorted(records_dir.glob("*.records.jsonl")))
+    for path in paths:
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(row, dict) or str(row.get("date") or "") != ctx.issue:
+                continue
+            for key in _url_keys(str(row.get("url") or "")):
+                records.setdefault(key, row)
+    return records
+
+
+def _category_id_from_artifact(rel: str) -> str | None:
+    normalized = _normalize_rel(rel)
+    for cat_id, info in CATEGORY_PATHS.items():
+        folder = str(info.get("digest_folder") or "")
+        if normalized.startswith(f"digest/{folder}/"):
+            return cat_id
+    return None
+
+
+def _default_category_thumb(cat_id: str) -> str:
+    return f"https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-{cat_id}.jpg"
+
+
+def _sync_record_thumb_files(ctx: RepairContext, urls: set[str], thumb: str) -> list[str]:
+    if not urls:
+        return []
+    changed: list[str] = []
+    paths = [ctx.repo_root / "data" / "articles.jsonl"]
+    records_dir = ctx.repo_root / "tmp" / "newsroom" / ctx.issue
+    if records_dir.exists():
+        paths.extend(sorted(records_dir.glob("*.records.jsonl")))
+    for path in paths:
+        if not path.exists():
+            continue
+        rows: list[dict[str, object]] = []
+        file_changed = False
+        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if (
+                isinstance(row, dict)
+                and str(row.get("date") or "") == ctx.issue
+                and _url_keys(str(row.get("url") or "")) & urls
+                and not str(row.get("thumb") or "").strip()
+            ):
+                row["thumb"] = thumb
+                file_changed = True
+            rows.append(row)
+        if file_changed:
+            path.write_text(
+                "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+                encoding="utf-8",
+                newline="\n",
+            )
+            changed.append(path.relative_to(ctx.repo_root).as_posix())
+    return changed
+
+
+def _has_japanese(text: str) -> bool:
+    return any("ぁ" <= c <= "ヿ" or "一" <= c <= "鿿" for c in text)
+
+
+def _sync_digest_block_from_record(
+    block: list[str], record: dict[str, object], *, fallback_thumb: str = ""
+) -> tuple[list[str], bool, str]:
+    title_ja = str(record.get("title_ja") or "").strip()
+    thumb = str(record.get("thumb") or "").strip() or fallback_thumb
+    if thumb.casefold() == "null":
+        thumb = fallback_thumb
+    changed = False
+    out = block[:]
+    if title_ja and _has_japanese(title_ja):
+        for idx, line in enumerate(out):
+            match = re.match(r"^(###\s*(?:\[\d+\]\s*)?)(.+?)\s*$", line)
+            if not match:
+                continue
+            current_title = match.group(2).strip()
+            if current_title != title_ja:
+                out[idx] = f"{match.group(1)}{title_ja}"
+                changed = True
+            break
+    if thumb:
+        thumb_idx = next((idx for idx, line in enumerate(out) if line.strip().startswith("![thumb](")), None)
+        thumb_line = f"![thumb]({thumb})"
+        if thumb_idx is not None:
+            if out[thumb_idx].strip() != thumb_line:
+                out[thumb_idx] = thumb_line
+                changed = True
+        else:
+            insert_at = next((idx + 1 for idx, line in enumerate(out) if line.startswith("#cat/")), None)
+            if insert_at is None:
+                insert_at = next((idx + 1 for idx, line in enumerate(out) if "🔗 [元記事]" in line), len(out))
+            addition = ["", thumb_line]
+            if insert_at < len(out) and out[insert_at].strip():
+                addition.append("")
+            out[insert_at:insert_at] = addition
+            changed = True
+    return out, changed, thumb
+
+
+def _repair_digest_record_sync(ctx: RepairContext) -> RepairResult:
+    record_by_url = _record_index_for_issue(ctx)
+    if not record_by_url:
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message="missing issue records")
+    changed_artifacts: list[str] = []
+    messages: list[str] = []
+    record_thumb_updates: dict[str, set[str]] = {}
+    for artifact in ctx.artifacts:
+        rel = _normalize_rel(artifact)
+        if not rel.startswith("digest/"):
+            continue
+        path = ctx.repo_root / rel
+        if not path.exists() or path.is_dir():
+            continue
+        prefix, blocks, footer = _split_digest_blocks(path.read_text(encoding="utf-8-sig", errors="replace"))
+        if not blocks:
+            continue
+        new_blocks: list[list[str]] = []
+        file_changed = False
+        for block in blocks:
+            url = ""
+            for line in block:
+                match = re.search(r"🔗\s*\[元記事\]\(([^)]+)\)", line)
+                if match:
+                    url = match.group(1)
+                    break
+            record = next((record_by_url[key] for key in _url_keys(url) if key in record_by_url), None)
+            if record is None:
+                new_blocks.append(block)
+                continue
+            cat_id = _category_id_from_artifact(rel)
+            fallback_thumb = _default_category_thumb(cat_id) if cat_id else ""
+            new_block, block_changed, applied_thumb = _sync_digest_block_from_record(
+                block, record, fallback_thumb=fallback_thumb
+            )
+            if applied_thumb and not str(record.get("thumb") or "").strip():
+                record_thumb_updates.setdefault(applied_thumb, set()).update(_url_keys(url))
+            file_changed = file_changed or block_changed
+            new_blocks.append(new_block)
+        if file_changed:
+            _write_digest_blocks(path, prefix, new_blocks, footer)
+            changed_artifacts.append(rel)
+            messages.append(f"{rel}: synced title_ja/thumb from records")
+    for thumb, urls in record_thumb_updates.items():
+        changed_artifacts.extend(_sync_record_thumb_files(ctx, urls, thumb))
+    if not changed_artifacts:
+        return RepairResult(ctx.handler_id, NOOP_STATUS, False, tuple(ctx.artifacts), "digest records already synced")
+    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, tuple(changed_artifacts), "; ".join(messages))
+
+
 def _normalize_digest_card_separators(ctx: RepairContext) -> tuple[list[str], list[str]]:
     changed: list[str] = []
     messages: list[str] = []
@@ -925,6 +1096,17 @@ REGISTRY: dict[str, RepairHandler] = {
         ),
         verify_gate="digest-articles-reconcile",
         repair=_repair_digest_articles_reconcile,
+    ),
+    "digest-record-sync-patch": RepairHandler(
+        handler_id="digest-record-sync-patch",
+        kind="deterministic",
+        allowed_artifacts=(
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "data/articles.jsonl",
+        ),
+        verify_gate="daily-quality",
+        repair=_repair_digest_record_sync,
     ),
     "record-title-ja-patch": RepairHandler(
         handler_id="record-title-ja-patch",

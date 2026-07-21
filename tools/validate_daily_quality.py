@@ -995,6 +995,8 @@ def daily_quality_issue_code(message: str) -> str:
         return "summary_reflection_emphasis_missing"
     if "category hero focus" in text or "reflection category section missing" in text:
         return "summary_category_focus_invalid"
+    if "title_ja appears untranslated" in text:
+        return "digest_title_ja_untranslated"
     if "thumbnail" in text or "thumb" in text:
         return "thumb_invalid_or_missing"
     if "published docs" in text or "published doc" in text or "docs/" in text:

@@ -266,6 +266,20 @@ def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -
     assert decisions[2].evidence["category"] == "it"
 
 
+def test_daily_quality_untranslated_digest_title_routes_to_record_sync_patch() -> None:
+    output = (
+        "ERROR: digest\\Game\\2026-07-21-Game.md: card #04 title_ja appears untranslated: "
+        "[74] GRIZZY AND THE LEMMINGS - CRAZY PARTY LAUNCHES AUGUST 7"
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "digest_title_ja_untranslated"
+    assert decisions[0].handler_id == "digest-record-sync-patch"
+    assert decisions[0].artifact_paths == ("digest/Game/2026-07-21-Game.md",)
+    assert decisions[0].category == "game"
+
+
 def test_daily_quality_selected_total_mismatch_routes_to_search_audit_metadata_patch() -> None:
     output = (
         "ERROR: data\\search_audit\\2026-07-06\\fx.json: "

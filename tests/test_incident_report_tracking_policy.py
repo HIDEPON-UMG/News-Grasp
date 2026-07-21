@@ -35,6 +35,7 @@ EXPLICITLY_APPROVED_REPORTS = {
     "docs/incidents/2026-07-16-pytest-basetemp-recovery-report.html",
     "docs/incidents/2026-07-17-pytest-static-hero-line-report.html",
     "docs/incidents/2026-07-18-pytest-static-hero-policy-report.html",
+    "docs/incidents/2026-07-21-daily-quality-digest-record-sync-report.html",
 }
 
 

@@ -37,6 +37,144 @@ def test_missing_handler_returns_typed_unimplemented_status(tmp_path: Path) -> N
     assert result.status == "blocked_repair_handler_unimplemented"
 
 
+def test_digest_record_sync_patch_repairs_title_ja_and_thumb_from_records(tmp_path: Path) -> None:
+    issue = "2026-07-21"
+    digest = tmp_path / "digest" / "Game" / f"{issue}-Game.md"
+    records = tmp_path / "tmp" / "newsroom" / issue / "game.records.jsonl"
+    articles = tmp_path / "data" / "articles.jsonl"
+    for path in (digest, records, articles):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    row = {
+        "date": issue,
+        "genre": "Game",
+        "title": "GRIZZY AND THE LEMMINGS - CRAZY PARTY LAUNCHES AUGUST 7",
+        "title_ja": "『グリジーとレミングス』、8月7日に発売",
+        "url": "https://www.nintendo.com/us/store/products/grizzy-and-the-lemmings-crazy-party-switch/",
+        "thumb": "https://example.com/grizzy.jpg",
+    }
+    payload = json.dumps(row, ensure_ascii=False) + "\n"
+    records.write_text(payload, encoding="utf-8")
+    articles.write_text(payload, encoding="utf-8")
+    digest.write_text(
+        "---\n"
+        f"date: {issue}\n"
+        "---\n\n"
+        "### [74] GRIZZY AND THE LEMMINGS - CRAZY PARTY LAUNCHES AUGUST 7\n\n"
+        f"📅 {issue} 03:47 · 📰 Nintendo Official Site · 🔗 [元記事]({row['url']})\n\n"
+        "#cat/game #score/中\n\n"
+        "- 【事実・概要】：[[Balio Studio]]のパーティーゲームが**8月7日にSwitch向けで発売**される。\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-record-sync-patch",
+            artifacts=[f"digest/Game/{issue}-Game.md"],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert result.changed
+    assert "### [74] 『グリジーとレミングス』、8月7日に発売" in repaired
+    assert "![thumb](https://example.com/grizzy.jpg)" in repaired
+
+
+def test_digest_record_sync_patch_uses_category_default_thumb_when_record_thumb_is_null(tmp_path: Path) -> None:
+    issue = "2026-07-21"
+    digest = tmp_path / "digest" / "Economy" / f"{issue}-Economy.md"
+    records = tmp_path / "tmp" / "newsroom" / issue / "economy.records.jsonl"
+    articles = tmp_path / "data" / "articles.jsonl"
+    for path in (digest, records, articles):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    row = {
+        "date": issue,
+        "genre": "Economy",
+        "title": "S&P 500 market story",
+        "title_ja": "米国株、半導体株の反発で上昇",
+        "url": "https://example.com/economy",
+        "thumb": None,
+    }
+    payload = json.dumps(row, ensure_ascii=False) + "\n"
+    records.write_text(payload, encoding="utf-8")
+    articles.write_text(payload, encoding="utf-8")
+    digest.write_text(
+        "---\n"
+        f"date: {issue}\n"
+        "---\n\n"
+        "### [95] 米国株、半導体株の反発で上昇\n\n"
+        f"📅 {issue} 05:25 · 📰 Example · 🔗 [元記事]({row['url']})\n\n"
+        "#cat/economy #score/高\n\n"
+        "- 【事実・概要】：[[S&P 500]]は上昇した。\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-record-sync-patch",
+            artifacts=[f"digest/Economy/{issue}-Economy.md"],
+        )
+    )
+
+    fallback = "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-economy.jpg"
+    assert result.status == "repaired"
+    assert fallback in digest.read_text(encoding="utf-8")
+    assert f'"thumb": "{fallback}"' in articles.read_text(encoding="utf-8")
+    assert f'"thumb": "{fallback}"' in records.read_text(encoding="utf-8")
+
+
+def test_digest_record_sync_patch_prefers_short_title_ja_over_japanese_seo_title(tmp_path: Path) -> None:
+    issue = "2026-07-21"
+    digest = tmp_path / "digest" / "Game" / f"{issue}-Game.md"
+    records = tmp_path / "tmp" / "newsroom" / issue / "game.records.jsonl"
+    articles = tmp_path / "data" / "articles.jsonl"
+    for path in (digest, records, articles):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    row = {
+        "date": issue,
+        "genre": "Game",
+        "title": "【怪獣8号ゲーム】スーテッド(高まる水着力)の評価とおすすめ編成・スキル【怪獣8G】",
+        "title_ja": "『怪獣8号 THE GAME』新キャラ、スーテッドの性能と編成を公開",
+        "url": "https://gamewith.jp/kj8-thegame/568919",
+        "thumb": "https://example.com/kj8.jpg",
+    }
+    payload = json.dumps(row, ensure_ascii=False) + "\n"
+    records.write_text(payload, encoding="utf-8")
+    articles.write_text(payload, encoding="utf-8")
+    digest.write_text(
+        "---\n"
+        f"date: {issue}\n"
+        "---\n\n"
+        f"### [72] {row['title']}\n\n"
+        f"📅 {issue} 01:53 · 📰 GameWith · 🔗 [元記事]({row['url']})\n\n"
+        "#cat/game #score/中\n\n"
+        "![thumb](https://example.com/kj8.jpg)\n\n"
+        "- 【事実・概要】：[[怪獣8号 THE GAME]]に新キャラクターが登場した。\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-record-sync-patch",
+            artifacts=[f"digest/Game/{issue}-Game.md"],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert f"### [72] {row['title_ja']}" in repaired
+    assert str(row["title"]) not in repaired
+
+
 def test_summary_emphasis_patch_updates_existing_summary_only(tmp_path: Path) -> None:
     summary = tmp_path / "digest" / "Summary" / "2026-06-25.md"
     other = tmp_path / "digest" / "AI" / "2026-06-25-AI.md"
