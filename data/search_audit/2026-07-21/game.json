@@ -1,0 +1,69 @@
+{
+  "date": "2026-07-21",
+  "category_id": "game",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "\"任天堂、1200億円投じゲーム開発拠点建設 本社隣に29年3月竣工へ\"",
+    "\"【怪獣8号ゲーム】スーテッド(高まる水着力)の評価とおすすめ編成・スキル\"",
+    "\"お刺身派ねこも，日向ぼっこ派ねこも大満足。\"",
+    "\"GRIZZY AND THE LEMMINGS – CRAZY PARTY LAUNCHES AUGUST 7\"",
+    "\"『Nintendo Switch 2 スプラトゥーン レイダース セット』は今週7月23日から発売開始！\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "カードゲームが本音引き出す、「これから私たちは、」の支持拡大",
+      "url": "https://news.google.com/",
+      "reason": "ゲーム産業ニュースではなく、canonical URLも解決できないため不採用"
+    },
+    {
+      "title": "「インディー」高まる人気 ゲーム開発、異業種後押し",
+      "url": "https://news.google.com/",
+      "reason": "重要テーマだが、Stage1のcanonical URLを元記事単位で確定できず不採用"
+    },
+    {
+      "title": "韓国発ゲーム大手ネクソン、株価5割安 悲願の欧米開拓へ生みの苦しみ",
+      "url": "https://news.google.com/",
+      "reason": "重要度は高いが、候補のcanonical URLを元記事単位で確定できず不採用"
+    },
+    {
+      "title": "『ホロライブドリームス（ホロドリ）』Steam版の配信日は7月23日。スマホ版と同時配信【hololive Dreams】",
+      "url": "https://news.google.com/",
+      "reason": "2026-07-04号で同じ新材料を掲載済みのfollow-upで、追加材料が薄いため不採用"
+    },
+    {
+      "title": "藤原竜也の新たな敵は亀梨和也、『カイジ 人生リベンジゲーム』ゲーム名明らかになる映像公開",
+      "url": "https://news.google.com/",
+      "reason": "映画ニュースであり、gameカテゴリの主要読者価値が低いため不採用"
+    },
+    {
+      "url": "https://www.nikkei.com/article/DGXZQOUF2578F0V20C26A6000000/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://ninten-switch.com/switch-2-splatoon-raiders-set-rb",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.4gamer.net/games/018/G101872/20260619038/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.nintendo.com/us/store/products/grizzy-and-the-lemmings-crazy-party-switch/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,140 @@
+{
+  "date": "2026-07-21",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d (Stage1 input; not rerun)",
+    "site:fx.minkabu.jp/news/ ドル円 162円台 2026年7月20日",
+    "site:fx.minkabu.jp/news/ 中東情勢 ECB 原油 2026年7月21日",
+    "site:sbisec.co.jp SBI FX 5通貨ペア 追加 2026年7月"
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "canonical_resolution": [
+    {
+      "candidate_title": "中東情勢は依然混迷 ＥＣＢにとっては懸念材料＝ＮＹ為替",
+      "canonical_url": "https://fx.minkabu.jp/news/373645",
+      "status": "http_200_and_article_page"
+    },
+    {
+      "candidate_title": "ドル円、１６２円台での推移が続く＝ＮＹ為替序盤",
+      "canonical_url": "https://fx.minkabu.jp/news/373642",
+      "status": "http_200_and_article_page"
+    },
+    {
+      "candidate_title": "７月の原油高にもかかわらず、ドルはその恩恵を受けられていない＝ＮＹ為替",
+      "canonical_url": "https://fx.minkabu.jp/news/373653",
+      "status": "http_200_and_article_page"
+    },
+    {
+      "candidate_title": "ポンド、バーナム氏の英首相就任を好感＝ＮＹ為替",
+      "canonical_url": "https://fx.minkabu.jp/news/373644",
+      "status": "http_200_and_article_page"
+    },
+    {
+      "candidate_title": "FXサービスにおける5通貨ペア追加のお知らせ",
+      "canonical_url": "https://www.sbisec.co.jp/ETGate/?OutSide=on&_ActionID=DefaultAID&_ControlID=WPLETmgR001Control&_DataStoreID=DSWPLETmgR001Control&_PageID=WPLETmgR001Mdtl30&burl=search_home&cat1=home&cat2=corporate&dir=corporate&file=irpress%2Fhome_prestory260717_011530.html&getFlg=on",
+      "status": "http_200_and_press_release"
+    }
+  ],
+  "ogp_resolution": {
+    "fetch_ogp_stage1_run": true,
+    "thumb_null_candidates": [
+      "SBI FXにおける5通貨ペア追加のお知らせ"
+    ],
+    "proxy_thumb_rejected": true
+  },
+  "dropped": [
+    {
+      "title": "【テクニカル】乖離2＝豪ドル円、20日線かい離 プラス幅拡大し1σ\"近づく",
+      "reason": "短期テクニカル情報で影響範囲が限定的"
+    },
+    {
+      "title": "エヌビディア【NVDA】：株価・株式情報",
+      "reason": "記事ではなく銘柄ページ"
+    },
+    {
+      "title": "【LIVE】『モーサテプレミアムセミナー プロの“為替脳”をインストール 円安時代の資産防衛術』のライブ配信について",
+      "reason": "イベント告知でニュース性が低い"
+    },
+    {
+      "title": "ゴールドマンCOO、日本経済「最大のリスクは円安」 日銀の対応注視",
+      "reason": "候補URLのcanonicalを記事単位で確認できず採用保留"
+    },
+    {
+      "title": "ECB、7月は利上げ見送りへ インフレ減速で追加対応急がず",
+      "reason": "候補URLのcanonicalを記事単位で確認できず、確認済みのECB関連記事を優先"
+    },
+    {
+      "title": "為替相場 21日（日本時間 2時）",
+      "reason": "定時市況の再掲で独自材料が薄い"
+    },
+    {
+      "title": "7月20日のNY為替・原油概況｜FX・為替ニュース",
+      "reason": "複数材料の概況記事で個別ニュースとの差分が薄い"
+    },
+    {
+      "title": "【テクニカル】週足テクニカル・NZドル円 サポート＆レジスタンス",
+      "reason": "短期テクニカル情報で影響範囲が限定的"
+    },
+    {
+      "title": "ニューヨーク外国為替市場概況・4時 ドル円、下げ渋り(トレーダーズ・ウェブ)",
+      "reason": "定時市況で独自材料が薄い"
+    },
+    {
+      "title": "英財務相にヒーリー氏を起用 ポンドは反応薄＝ＮＹ為替",
+      "reason": "英国政権移行の続報で、首相就任記事と論点が重複"
+    },
+    {
+      "title": "NY市場でドル円162円台半ば、中東緊迫で「有事のドル買い」意識も円安基調は限定的",
+      "reason": "canonical解決を確認できず、確認済みの同テーマ記事を優先"
+    },
+    {
+      "title": "【テクニカル】一目チェック2＝豪ドル円、三役陽転が解消",
+      "reason": "短期テクニカル情報で影響範囲が限定的"
+    },
+    {
+      "title": "7月20日のNY為替概況(フィスコ)",
+      "reason": "定時概況で独自材料が薄い"
+    },
+    {
+      "title": "中東情勢をめぐる原油相場振幅、為替は先週末水準での揉み合い ドル円162円台前半＝ロンドン為替概況",
+      "reason": "同日のドル円・中東テーマと重複"
+    },
+    {
+      "title": "ドル円のピボットは162.40円付近＝NY為替",
+      "reason": "テクニカル水準の短報で影響範囲が限定的"
+    },
+    {
+      "title": "【速報】ドル・円162.48円、ドル買い続く、米6月景気先行指数は予想下振れ(フィスコ)",
+      "reason": "同日のドル円市況と重複し、短報のため除外"
+    },
+    {
+      "title": "[通貨オプション]まちまち、調整｜FX・為替ニュース",
+      "reason": "オプション概況の短報で独自性が低い"
+    },
+    {
+      "title": "ドル指数は先週末水準を離れず揉み合い＝ロンドン為替",
+      "reason": "ドル円・原油テーマと重複"
+    },
+    {
+      "title": "ドル円、上昇一服 1日高値162.84円がレジスタンス(トレーダーズ・ウェブ)",
+      "reason": "テクニカル短報で独自材料が薄い"
+    },
+    {
+      "title": "NY時間に伝わった発言・ニュース",
+      "reason": "複数項目の再掲で、個別記事を優先"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

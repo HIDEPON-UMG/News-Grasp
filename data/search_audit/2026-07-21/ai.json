@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-21",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "site:publickey1.jp Claude Code 組織一括 シングルサインオン 費用上限 Claude apps gateway 2026",
+    "先端AI開発9社の安全性指数 Anthropic C+",
+    "site:zdnet.co.kr 242억원 국방 LLM",
+    "Kimi K3 2.8兆モデル 2026年7月"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "AIブラックアウト：Anthropic（アンソロピック）のFable禁止措置がビジネスに意味するもの",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFA3M1NQdzZ4MUwtUEpZMlFYSnVzZDFEcm93VWdkNjFXckloNk5CQlRlWlZMSjV6OENTNmZIdHlQR2hQYU9LZkJ0SXJiQ2theWFibW1hX01TbHdfQQ?oc=5",
+      "reason": "canonicalは2026-06-14公開でfreshness gate外。"
+    },
+    {
+      "title": "グーグル、Gemini向けに独自の半導体を開発－インフォメーション",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE5lMzFKZTZabVBlalY4QTVWMjFZOWRKS2I1WmxEYnU5VzVrVDZDbkpjcjJ0NlU1WE9PcXpHeGtnWUY4WXpyMTlVRFJ6dTFIUERMZnJHNlU3MjVUcE9qaXBST2JnZlZ4NHRQRDVHa01fTDdGWXZPZEhn?oc=5",
+      "reason": "canonical確認結果が2026-04-20記事でfreshness gate外。"
+    },
+    {
+      "title": "【米国】アップルがOpenAIを提訴、元社員による組織的営業秘密窃取を主張",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE42ZTlUbmJPRTJwOXRRWWpXMjZyeTQ3RGoxU1VyQ25JWEdkN0ZuV1VVZ0E0ajcxOEZ6LW5pcGxQU0FoQmlkYXZMR2hVX3TdjBydjQtUFQ3V0hIN2lkNzUzVUtrZm9KcXNsWVlyVjVDX0xFal9N?oc=5",
+      "reason": "確認できたcanonicalは2026-07-10〜13公開で当日窓外。"
+    },
+    {
+      "title": "Googleが6年ぶり新作スマートスピーカー、Gemini搭載で会話可能に",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE01ZFo5UW9SMHhDNi1zc1BkZmNFdzlZaGRoS3NPQWVrMUY1NmZtekZUV0dmMzdla0l3ZTRFaHdfaU1tZldzTGlDUDMtSUJwb2p3RE1jR2tUNEN6R3MxSm8tTldZdTVudHEzUXd5NzVkS3d5VFRa?oc=5",
+      "reason": "候補はレビュー・転載が中心で、selected 4件を上回る一次情報性を確認できず除外。"
+    },
+    {
+      "title": "GPT-5.6 Solのデータ削除事故、OpenAI文書は破壊的動作率6.3倍を事前に示していた",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE4yYXVOU1VBRmFuWkNLc0xzQk9jb1pJcXNjWEpXVklmZGRxN3ZqRWhNV0VpMEFMaG1pcW40RmVQcjZLMUxFLW5wdWlaM2h1WnRERFVGcTVLbkZaa2o4MVNLUWVzVdIBaEFVX3lxTFAtLXcyWU9yWnl5R1hqMGxnci0zaVVJOUJnUldxcmRUeXdHVHdrWFA4M1U2SmJvTzZPMU1QRllyX0hhVkNFSE1TOXZhQTZzWGVkQWIza0VOWTFqYTA3TjhNZEc4cHljWWR4?oc=5",
+      "reason": "follow-upのcanonical本文を当日公開記事として一意に確定できず、同一媒体の転載・続報混在を避けて除外。"
+    },
+    {
+      "url": "https://www.publickey1.jp/blog/26/claude_codeclaude_apps_gateway_for_awsgoogle_cloud.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

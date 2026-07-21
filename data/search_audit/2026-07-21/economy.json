@@ -1,0 +1,128 @@
+{
+  "date": "2026-07-21",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:au.marketscreener.com S&P 500 Iran earnings July 20 2026 Reuters",
+    "site:diamond.jp/articles 積極財政 長期金利 2.9% 中国経済 GDP 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「危機管理・成長投資」の財源は“つなぎ国債”に!?骨太原案で見えた高市積極財政の期待とリスク",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "候補URLがGoogle News中継のままで、検索で同一記事のcanonicalを確定できず"
+    },
+    {
+      "title": "［政懇21］地政学リスクと日本経済の展望",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "講演告知で、当日経済ニュースとしての一次情報性が低い"
+    },
+    {
+      "title": "日本の排他的経済水域でのロシア・中国合同演習、東京に不安広がる",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "経済カテゴリの中心論点から外れる"
+    },
+    {
+      "title": "インドの最新動向解説 ジェトロ名古屋が経済セミナー",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "セミナー告知で、当日経済ニュースとしての一次情報性が低い"
+    },
+    {
+      "title": "余録：バブル経済崩壊後の1990年代…",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "論説・背景記事で当日性とニュース性が弱い"
+    },
+    {
+      "title": "欧米市場の主な経済指標・20日",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "媒体トップ以外のcanonicalを確定できず"
+    },
+    {
+      "title": "巨大企業偏重の経済に警戒を（The Economist）",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "論説で、当日経済ニュースとしての一次情報性が低い"
+    },
+    {
+      "title": "ダイナブック、国内でパソコン生産 経済安保に対応",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "検索で同一記事のcanonicalを確定できず"
+    },
+    {
+      "title": "航空オイルショック（1）「破綻か買収されるか」",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "連載記事で当日性と即時ニュース性が弱い"
+    },
+    {
+      "title": "格安スマホ、ポイント経済圏で集客競う",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "検索で同一記事のcanonicalを確定できず"
+    },
+    {
+      "title": "「インフレ日本の安い賃金」を生き延びる",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "書籍紹介・論説で当日ニュース性が弱い"
+    },
+    {
+      "title": "ファイントゥデイ小森CEO「ブランド買収、ベイン傘下で加速」",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "検索で同一記事のcanonicalを確定できず"
+    },
+    {
+      "title": "Mercator Acquisition Corp【MRCOU】：業績・決算",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "個別銘柄データで影響範囲が狭い"
+    },
+    {
+      "title": "英バーナム新首相、初演説で新たな経済モデル公約",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "検索で同一記事のcanonicalを確定できず"
+    },
+    {
+      "title": "豪州、ミサイル国産化急ぐ 米供給不安で",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "防衛政策寄りで経済カテゴリの中心論点から外れる"
+    },
+    {
+      "title": "【決算速報】スチール・ダイナミクス、売上高は予想を上回り、利益は予想を下回る",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "個別企業決算で日本語読者への影響範囲が限定的"
+    },
+    {
+      "title": "キャッシュレス化の残る課題 石塚昭浩氏",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "検索で同一記事のcanonicalを確定できず"
+    },
+    {
+      "title": "米景気先行指数、6月は0.2％低下 市場予想に届かず、AI投資が下支え",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "同一指標のcanonicalと公開本文を確定できず"
+    },
+    {
+      "title": "日本サッカー、歴史を積み上げていくだけ（小野伸二）",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "経済カテゴリ外"
+    },
+    {
+      "title": "橋本マナミ、金融番組で発言",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "人物発言の紹介で経済ニュースとしての重要度が低い"
+    },
+    {
+      "title": "納得できる経済・財政運営を。",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "個人ブログで一次情報性が低い"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

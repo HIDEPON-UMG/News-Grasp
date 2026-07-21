@@ -1,0 +1,92 @@
+{
+  "date": "2026-07-21",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "Intelが高NA EUV露光装置を用いたロジック半導体の量産出荷を開始 ビジネス+IT",
+    "半導体企業に最大1600億円支援 データセンター向け光半導体の拠点整備",
+    "トヨタ 近社長 現場が稼ぐ場 愛知新工場 AI ロボ 効率化",
+    "NVIDIA 日本 製造業 フィジカルAI 富士通 ファナック 安川電機 川崎重工"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "［新連載］アステラス、9000億円規模「特許の崖」目前 創薬苦戦からの脱却",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "製造業の主題から外れる"
+    },
+    {
+      "title": "S&P500反発、半導体株に買い戻し－米イラン和平期待で原油が値を消す",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "市場概況で製造現場への直接性が低い"
+    },
+    {
+      "title": "【特許権利化】データ連携基盤の次なる関門「高信頼」を解決",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "PR転載で製造業への構造的影響が薄い"
+    },
+    {
+      "title": "サプライチェーンの「変態」マテリアル編（36）欧州発環境規範 日本への波及",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "半導体材料特集 中国、装置も「内製化」が焦点に",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "熊本県立大の黒田忠広理事長「半導体の経済安保、九州で守れ」",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "AI半導体、推論シフトで一変 NVIDIA1強から群雄割拠へ",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "【特許】CATL、電池の集電構造改良 生産性や耐久性向上",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "VW縛る2つの法 人員削減や工場閉鎖、労使合意形成に壁",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "三友製作所、新工場稼働 医療用分析装置部品の組み立て前工程集約",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "canonical URLを解決できず"
+    },
+    {
+      "title": "半導体大手が巨額投資で供給過剰リスク、2028年が需給逆転の節目に",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "市場解説で一次情報度が低い"
+    },
+    {
+      "title": "半導体株が反発、アルファベット・テスラ・インテル決算を控えAI投資の真価問われる局面へ",
+      "url": "https://news.google.com/rss/articles/CBM...",
+      "reason": "市場概況で製造現場への直接性が低い"
+    },
+    {
+      "url": "https://www.itmedia.co.jp/news/articles/2607/16/news073.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

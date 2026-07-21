@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-21",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "stage1 candidate harvest: 自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "canonical resolution: \"ロボタクシー、総合1位は「中国企業」！日本勢ランク外\"",
+    "canonical resolution: \"中国の自動運転車、異次元のスピード8ヶ月で量産体制へ\"",
+    "canonical resolution: \"フォルクスワーゲン、ドイツで初の旅客サービスを開始しロボタクシー競争に参入\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "UNECE WP.29における自動運転規制の最新動向―ADSに関する国連グローバル技術規則（ADS GTR）の採択",
+      "url": "https://www.pwc.com/jp/ja/knowledge/column/automotive-research-and-development/unece-wp29-ads-gtr.html",
+      "reason": "canonical記事の公開日が2026-07-15で、当日号のfreshness窓外"
+    },
+    {
+      "title": "マクニカ、ニセコで自動運転ＥＶバス初実証へ",
+      "url": "https://motorcars.jp/author/carguytimes",
+      "reason": "canonical解決先の公開日が2026-07-17でfreshness窓外"
+    },
+    {
+      "title": "EVバスをめぐる大阪メトロの調査報告",
+      "url": "https://subway.osakametro.co.jp/news/news_release/20260717_cyousahoukoku.php",
+      "reason": "一次情報は確認できたが公開日が2026-07-17でfreshness窓外"
+    },
+    {
+      "title": "トヨタ自動車新社長・近健太氏が目指す「モビリティカンパニー」とは 国内生産、供給網は〈一問一答〉",
+      "url": "https://news.google.com/",
+      "reason": "記事単位のcanonical URLを確認できず未採用"
+    },
+    {
+      "title": "自動運転のT2、50億円調達 商船三井など出資で海運連携の物流網",
+      "url": "https://news.google.com/",
+      "reason": "記事単位のcanonical URLを確認できず未採用"
+    },
+    {
+      "title": "デンソーとAstemo､メモリー確保 マイクロンと長期契約",
+      "url": "https://news.google.com/",
+      "reason": "記事単位のcanonical URLを確認できず未採用"
+    }
+  ],
+  "shortfall_reason": "Stage1候補25件からcanonical URL・当日性・記事単位URLを同時に確認できた3件のみ採用。追加の広域収集・横断dedupは行わなかった。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

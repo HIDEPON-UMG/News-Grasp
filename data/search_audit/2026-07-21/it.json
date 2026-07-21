@@ -1,0 +1,58 @@
+{
+  "date": "2026-07-21",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:iren.gcs-web.com \"IREN Signs $2.8bn\"",
+    "site:prnewswire.com \"Aon expands Data Center Lifecycle Insurance Program to $5 billion\"",
+    "site:accuriodx.konicaminolta.com \"パーソナライズDM\" \"20%\"",
+    "site:gminsights.com/industry-analysis/personal-cloud-market \"Personal Cloud Market Size & Share 2026-2035\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "公取委、巨大ＩＴ企業や中小企業の取引への対応強化…来夏にも３０年ぶりに局新設し大幅組織改編",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE54UkhCMWM3TmhBTXFlbkcyTkRVQzk1ZzdiMkhfYWZpbFVrNlpIb0drME9XRGY1T3FBejViTC0zZTY3YjZTcXJEQi1DZ2JnM2Jmc01jMmRrOW9Wdkc3LUduNVpyV2k?oc=5",
+      "reason": "Yomiuriのcanonical URLを確認できず、Google News URLのままでは採用不可"
+    },
+    {
+      "title": "クラウドERPへの移行は正解か？ 2800万件のデータ移行失敗から学ぶ教訓",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9PWUlSVjZJUGtjSzVsTXlCX0tPcGEtSTBqWnowQ2VuRlVldWljQzhyRXlfWDZIbHNjeWJEY1pnV0pJUlVqOF9TMl9heHB1R04zbUxVYWRTdXU3Rml1cS1iNHJ4bXlIV3pPRVBDbQ?oc=5",
+      "reason": "検索で当日記事のcanonical URLと2800万件の一次情報を確認できず、古い記事候補のみ"
+    },
+    {
+      "title": "ヘッジファンド、米ＩＴ・ハイテク株を過去最大ペースで売却",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE9wNzZodWpyWm5RalA0ZGwyczB3RUlwZE5aSVozR2NHclJILVc0dEtoMHdiS2w4TVdzVlRhNmMyX29BaTY3Y3JoSmNuT2NQNW1nVHU3Slh0d0twUUlLY0s0bGVR?oc=5",
+      "reason": "当日記事のcanonical URLを確認できず、検索結果は過去記事だったため"
+    },
+    {
+      "title": "マルコメが社内規定をクラウドで一元管理 属人化を脱却、グループの基盤に",
+      "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPLS1QaWNMWlViNlNVWm5oWWhOc1RkZTVQNFY1YWpoQzczUGdEcDNMQXQ5ekFHX0Q2WUZEZkN1MU5VdUgxbTl4djRMMGxJbmN1dVVpcXoyR0M1aXJvMVFDWW42NElYY01ULUlyczBtTmJfS1BsNk9DMExWaGlpWl96cGFsTjJUNDlwcTI0UU1Qa1lrQ0k?oc=5",
+      "reason": "一致する公式一次情報は2026年1月の発表で、当日性を確認できず"
+    },
+    {
+      "title": "readyfor.jp / motion-gallery.net等の非IT候補",
+      "url": "https://news.google.com/",
+      "reason": "カテゴリ適合性が低い、またはクラウド・ITのニュースとしての一次情報性が不足"
+    },
+    {
+      "url": "https://accuriodx.konicaminolta.com/case/RE02",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.gminsights.com/industry-analysis/personal-cloud-market",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
