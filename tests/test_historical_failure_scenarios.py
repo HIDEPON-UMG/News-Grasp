@@ -286,6 +286,14 @@ def test_2026_07_19_daily_quality_repair_routing_incident_is_registered() -> Non
     assert scenario.evidence_path == "build/incidents/2026-07-19-daily-quality-repair-routing-report.html"
 
 
+def test_2026_07_22_structured_daily_quality_repair_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-22")
+    assert "structured issue routing" in scenario.stage
+    assert "issue_code=unknown" in scenario.direct_cause
+    assert "dropped_reason_summary registry fixture" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-22-daily-quality-structured-repair-report.html")
+
+
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:
     scenarios = compound_failure_scenarios()
 

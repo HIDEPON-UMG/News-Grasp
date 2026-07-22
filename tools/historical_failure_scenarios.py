@@ -457,6 +457,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-21-daily-quality-digest-record-sync-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-22",
+        "daily-quality / structured issue routing / search-audit metadata / post-deepdive resume / publish-complete",
+        "validator JSON issues kept issue_code=unknown even though their messages contained known search audit metadata and follow-up review failures",
+        "structured JSON issue fallback and dropped reason summary repair boundary",
+        "structured validator issues must recover known issue codes and artifact metadata from message text, and search audit metadata repair must preserve dropped reason summaries when examples are absent",
+        "structured unknown JSON repair coverage fixtures, dropped_reason_summary registry fixture, daily-quality and generation-quality gates, DeepDive URL proof, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-22-daily-quality-structured-repair-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

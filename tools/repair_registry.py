@@ -270,6 +270,17 @@ def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
         if candidates_total > selected_total and not dropped and isinstance(dropped_examples, list) and dropped_examples:
             audit["dropped"] = dropped_examples
             did_change = True
+        elif candidates_total > selected_total and not dropped:
+            dropped_reason_summary = str(audit.get("dropped_reason_summary") or "").strip()
+            dropped_count = int(audit.get("dropped_count") or (candidates_total - selected_total))
+            if dropped_reason_summary and dropped_count > 0:
+                audit["dropped"] = [
+                    {
+                        "count": dropped_count,
+                        "reason": dropped_reason_summary,
+                    }
+                ]
+                did_change = True
 
         category_id = str(audit.get("category_id") or path.stem).casefold()
         queries = [str(v).strip() for v in (audit.get("queries") or []) if str(v).strip()]

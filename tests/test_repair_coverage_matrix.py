@@ -366,6 +366,59 @@ def test_daily_quality_search_audit_coverage_terms_routes_with_audit_artifact() 
     assert decisions[0].category == "mobility"
 
 
+def test_structured_unknown_search_audit_message_routes_to_metadata_patch() -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "daily-quality",
+            "date": "2026-07-22",
+            "issues": [
+                {
+                    "gate_id": "daily-quality",
+                    "issue_code": "unknown",
+                    "message": "data\\search_audit\\2026-07-22\\ai.json: dropped reasons are required when candidates were excluded.",
+                    "issue_date": "2026-07-22",
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "search_audit_metadata_missing"
+    assert decisions[0].handler_id == "search-audit-metadata-patch"
+    assert decisions[0].artifact_paths == ("data/search_audit/2026-07-22/ai.json",)
+    assert decisions[0].issue_date == "2026-07-22"
+    assert decisions[0].category == "ai"
+
+
+def test_structured_unknown_followup_message_routes_to_followup_patch() -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "daily-quality",
+            "date": "2026-07-22",
+            "issues": [
+                {
+                    "gate_id": "daily-quality",
+                    "issue_code": "unknown",
+                    "message": "data\\articles.jsonl:1961 [AI]: follow-up matched_with URL date 2026-05-20 is 63 day(s) older than issue 2026-07-22: Google、AIモデル「Gemini 3.6 Flash」や「3.5 Flash-Lite」を発表",
+                    "issue_date": "2026-07-22",
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    decisions = classify_gate_issues("daily-quality", output)
+
+    assert decisions[0].issue_code == "followup_review_required"
+    assert decisions[0].handler_id == "followup-review-note-patch"
+    assert decisions[0].artifact_paths == ("data/articles.jsonl",)
+    assert decisions[0].issue_date == "2026-07-22"
+
+
 def test_unknown_daily_quality_line_does_not_mask_known_deterministic_issue() -> None:
     output = "\n".join(
         [

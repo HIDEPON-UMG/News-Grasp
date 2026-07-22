@@ -952,23 +952,41 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                 issues: list[RepairIssue] = []
                 for raw in raw_issues:
                     if isinstance(raw, dict):
+                        gate_for_issue = str(raw.get("gate_id") or gate_id)
+                        message = str(raw.get("message") or raw.get("error") or "")
                         issue_code = str(raw.get("issue_code") or raw.get("code") or "unknown")
+                        if issue_code == "unknown" and message:
+                            issue_code = _issue_code_from_text(gate_for_issue, message)
+                        metadata = (
+                            _followup_review_metadata(message)
+                            or _search_audit_count_mismatch_metadata(message)
+                            or _search_audit_metadata_missing_metadata(message)
+                            or _summary_digest_missing_metadata(message)
+                            or _digest_artifact_metadata(message)
+                        )
                         artifacts = raw.get("artifact_paths") or raw.get("artifacts") or raw.get("artifact") or []
                         if isinstance(artifacts, str):
                             artifacts = [artifacts]
                         evidence = raw.get("evidence")
                         if not isinstance(evidence, dict):
                             evidence = {}
+                        evidence = {**dict(metadata.get("evidence", {})), **evidence}
                         if issue_code == "missing_artifact" and not evidence.get("typed_reason"):
                             evidence = {**evidence, "typed_reason": "missing_artifact"}
+                        issue_date = str(
+                            raw.get("issue_date")
+                            or raw.get("date")
+                            or metadata.get("issue_date", "")
+                        )
+                        category = str(raw.get("category") or metadata.get("category", ""))
                         issues.append(
                             RepairIssue(
-                                gate_id=str(raw.get("gate_id") or gate_id),
+                                gate_id=gate_for_issue,
                                 issue_code=issue_code,
-                                message=str(raw.get("message") or raw.get("error") or ""),
-                                artifact_paths=tuple(str(path) for path in artifacts),
-                                issue_date=str(raw.get("issue_date") or raw.get("date") or ""),
-                                category=str(raw.get("category") or ""),
+                                message=message,
+                                artifact_paths=tuple(str(path) for path in (artifacts or metadata.get("artifact_paths", ()))),
+                                issue_date=issue_date,
+                                category=category,
                                 raw_output=output,
                                 existing_artifacts=tuple(str(path) for path in raw.get("existing_artifacts", []) or []),
                                 evidence=evidence,

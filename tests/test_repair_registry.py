@@ -483,6 +483,56 @@ def test_search_audit_metadata_patch_promotes_dropped_examples_and_terms(tmp_pat
     assert {"BYD", "Tesla", "Toyota", "Uber", "Waymo"}.issubset(set(repaired["coverage_terms_checked"]))
 
 
+def test_search_audit_metadata_patch_promotes_dropped_reason_summary(tmp_path: Path) -> None:
+    issue = "2026-07-22"
+    audit = tmp_path / "data" / "search_audit" / issue / "ai.json"
+    audit.parent.mkdir(parents=True)
+    audit.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "category_id": "ai",
+                "queries": ["q1", "q2", "q3"],
+                "raw_results_total": 25,
+                "candidates_total": 25,
+                "selected_total": 4,
+                "dropped_count": 20,
+                "dropped_reason_summary": "Google News代理URL、読者価値が低い候補、同一テーマ転載を除外した。",
+                "coverage_terms_checked": [
+                    "OpenAI",
+                    "Anthropic",
+                    "Google",
+                    "Apple",
+                    "Microsoft",
+                    "Meta",
+                    "NVIDIA",
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="search-audit-metadata-patch",
+            artifacts=[f"data/search_audit/{issue}/ai.json"],
+        )
+    )
+
+    repaired = json.loads(audit.read_text(encoding="utf-8"))
+    assert result.status == "repaired"
+    assert repaired["dropped"] == [
+        {
+            "count": 20,
+            "reason": "Google News代理URL、読者価値が低い候補、同一テーマ転載を除外した。",
+        }
+    ]
+
+
 def test_search_audit_metadata_patch_syncs_selected_total_from_digest_cards(tmp_path: Path) -> None:
     """final digest で落ちた記事数を search_audit selected_total へ同じ述語で戻す。"""
     issue = "2026-07-04"
