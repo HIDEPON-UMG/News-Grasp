@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-22",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "site:prtimes.jp 半導体 電子デバイス工場 排水処理 資源回収 2026年7月21日",
+    "site:prtimes.jp Kineco SkyDrive SD-05 2026年7月21日",
+    "site:bloomberg.com TSMC 2027 chipmaking prices 10% July 21 2026",
+    "TSMC 2027 半導体製造サービス 価格 最大10% 引き上げ 日経 2026年7月22日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "ファーウェイ、深圳に先端半導体の「秘密拠点」 TSMC対抗で1.4ナノ製品化",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9iTUF0UFRmU2t0bFE3dUY4UEJnTDNuNlNXb1VLSFVIbldsZlpON3hDUGpaUG8yUmF4b3V0TGI1QU5EUFluNmtCZXR3cmlIaHRxcFZEb0c0VFVtRWY3ODZGLXAtNmt6UmF4b3V0TGI1QU5EUFluNmtCZXR3cmlIaHRxcFZEb0c0VFVtRWY3ODZGLXAtNmt6UmE?oc=5",
+      "reason": "一次情報・canonical URLを当日中に確定できず"
+    },
+    {
+      "title": "ＴＯＴＯ、稼ぎ頭は半導体関連 衛生陶器の技活用、世界シェア２位",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE1lbTg1UkRyaC0yNFg4OExRVlVTaUZNUUp1ZHRycC1BekJWLW04UnlPYk1UOFBSWUdoaGVhNWhWUEVjSlBqZWRiYXlqMXpPdzVXV0JDakNJZDVBTjE0?oc=5",
+      "reason": "媒体robots制限で元記事canonical URLを確定できず"
+    },
+    {
+      "title": "MAN、ポーランド工場に12億ユーロ投資",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9ZaE9lQXlKcV83VUtTQmZkUFJjdUw2blNqS1lBX2NsMDZGVk9oaXZvQnVMU0JWQ0ItVWVHWlo3SE5fQ294WUt0dw?oc=5",
+      "reason": "検索で確認できた一次発表は2026-07-16で、当日性ゲートを満たさないため"
+    },
+    {
+      "title": "グラディアント、ドレスデンにおける半導体生産能力の大規模拡大を支援",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBib2loR1AyVGRNbmxzRzgwQ2thSVc5Y0JOSkRyWThoUV9NSkVldGhHcDZ0V19iSEt6SVYybElLTmhlRDBwWXdlSFpocFBQWkx2cS12RzY0X0hlNmE1RTBSYUFKWGI4blU?oc=5",
+      "reason": "一次情報の本文とcanonical URLを当日中に確定できず"
+    },
+    {
+      "title": "自動車も｢半導体インフレ｣の波 GMやフォード、値上げや確保走る",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBfQ2wxeEQ0NDBNZHc3QncwQXlzUlVmZ2ZrMzQ1RXN5SzE4TnFiSUZCQ29uRkZxREE3VnRQZnlxSUZ2dkFfTnBZZVBXSGFaQ1lOd1NWeHE1NlN3bkl2S0hKVVpfV24xNU0?oc=5",
+      "reason": "canonical URLの解決と一次情報の追加確認が不足"
+    },
+    {
+      "url": "https://jp.investing.com/news/company-news/article-1609549",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

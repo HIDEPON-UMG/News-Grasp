@@ -1,0 +1,59 @@
+{
+  "date": "2026-07-22",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:nri.com SaaSは死するのか 2026年7月21日",
+    "site:prtimes.jp TDCソフト Styleflow AIエージェント連携 企業間連携",
+    "site:prtimes.jp AI Agent Day 2026 Summer 全登壇者",
+    "site:shadan-kun.com 攻撃遮断くん ITreview Grid Award 2026 Summer",
+    "site:prtimes.jp ネクスト・モビリティ 西鉄 交通コンサルティング"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "個人向けおすすめクラウドストレージ 8選｜コスパと機能で徹底比較",
+      "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPU1hyaGdybjBXUmw5WTlQRE1ZY2psTGpfSXRrWDdqa01iQkxRbEpVeDNYYzZYZEJnb1Zrdll5Zk5IQmxoSE5tS1lFMU1rYzFaSXBCWXRhS19iZ3lfdDRaVkRYdWZzU09jU3d5VGVnbG54X05iRmlXX1Y2aWRKQWdqUlpXUGpBdHllZHFPVHhaUkpjMGhTSEVxaWFPQ2djZw?oc=5",
+      "reason": "消費者向け比較記事で、ITコンサル読者への意思決定影響が限定的"
+    },
+    {
+      "title": "AI理由に転職意識、ITエンジニアの半数 「今後も人間必要」は9割",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1aNXE0c293amhBbGg1ZzBWbS1RV054MTJMNUdnVGxzeFpnVDlDSDBkelo4QXR5VHhZNXAxbEo2YlJuSG9Wa3AwSkFGeEtpLWhYMmJvTE9nVFF5M1BCandhb1BGV3ZwSVlpV0ZFVQ?oc=5",
+      "reason": "Google News URLのcanonicalを当日記事として確定できず、同一調査の一次情報を確認できなかった"
+    },
+    {
+      "title": "二極化するAI相場 出遅れたクラウド事業者 AIインフラ関連、設備投資の恩恵享受",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9pT2pvQXVzdElHMm42Uk5LXzJiWUdfYWYtY211ZUk3aXBvUWY1VmdFRmJydnJWY3I1eWpBVjBKd3h0NUpMZEJIZFhSVkE0ZklLdWZJUkZOYmZTWFRUQXBFbFZ6aHU4VjBwRVJMbg?oc=5",
+      "reason": "Google News URLのcanonicalを確認できず、株価文脈の一次情報も未確認"
+    },
+    {
+      "title": "BernsteinがAI需要によるサイバーセキュリティ支出の拡大を予測 執筆",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBHSl9jYWF3dlllUTVySEJpamxzTlVYUF84SFdkNTdxQU9uVHJKcVI1Qmx3dnRWY2V5UXBTOGlZUUFOd3RsOW9oQkxfTzVWWkdjcFBPX0lJdV8yWjN4SnZneUtNSlczbzdOWjk1LVBSeUFpQl9i?oc=5",
+      "reason": "再配信記事でcanonicalと内容の一次情報性を確定できず"
+    },
+    {
+      "title": "のサイバーセキュリティ強化版「Fugu-Cyber」",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFUcEtRMVVoZzZxQ1ZTcnJpdnJEOURCZ1F6S2pwdGdGSHdKVmZNVUQ2MEFyOVhPNC1UYkFZellzemlBdWdUN2wxTkxveUdTX2paUldhZzZB?oc=5",
+      "reason": "タイトルが欠損しており、記事の発表主体と内容を確定できず"
+    },
+    {
+      "title": "会社指定の夏休みに不満、有給休暇を自由に使いたいITエンジニア",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE4tMGNBenVsdDY2cVpRLVQ5R0VhNWRZZzlJbG45Uk52bmR6VDk2OV9GSDVaZHBwNlltaEdZUnN5WVhlWVE4SnRVZ19EZ0VJdnptYnB0eXloLXQzcmFVd2J3aWVXZXBqYk0?oc=5",
+      "reason": "就業慣行の話題で、当日号のIT事業・技術動向としての優先度が低い"
+    }
+  ],
+  "drop_summary": "Stage1候補25件から、canonical未解決・タイトル欠損・カテゴリ適合性の低い候補を除外し、当日性と一次情報を確認できた5件を採用。広域収集と横断dedupは再実行していない。"
+}

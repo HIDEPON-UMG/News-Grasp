@@ -1,0 +1,43 @@
+{
+  "date": "2026-07-22",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "site:blog.google Gemini 3.6 Flash 3.5 Flash-Lite",
+    "site:openai.com Safety and alignment in an era of long-horizon models",
+    "site:qwen.ai Qwen-Image-3.0",
+    "OpenAI 10 million AI agent users Bloomberg",
+    "site:dragonquest.jp ジェミニクエスト Gemini 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped_count": 20,
+  "dropped_reason_summary": "Stage1 dedup済み25候補を起点に、canonical URL・公開日・一次情報性・重複を確認。Google News代理URLのままの候補、イベント告知や講座など読者価値が低い候補、同一テーマの転載候補を除外した。広域収集と横断dedupは再実行していない。",
+  "dropped": [
+    {
+      "count": 20,
+      "reason": "Stage1 dedup済み25候補を起点に、canonical URL・公開日・一次情報性・重複を確認。Google News代理URLのままの候補、イベント告知や講座など読者価値が低い候補、同一テーマの転載候補を除外した。広域収集と横断dedupは再実行していない。"
+    },
+    {
+      "url": "https://qwen.ai/blog?id=qwen-image-3.0",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.dragonquest.jp/geminiquest/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

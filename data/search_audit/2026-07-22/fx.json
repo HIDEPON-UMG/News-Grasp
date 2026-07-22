@@ -1,0 +1,124 @@
+{
+  "date": "2026-07-22",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:jp.reuters.com 骨太・成長戦略を閣議決定 日銀の独立性加筆",
+    "site:jp.reuters.com ＮＹ外為市場＝ドル上昇 一時163円台",
+    "site:www.pictet.co.jp 公的年金で金利上昇・円安を止められるか",
+    "site:media.monex.co.jp NHK調査 円安160円阻止",
+    "site:minkabu.jp/news ユーロドル エネルギー価格の高止まり"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "円下落、一時1ドル163円台 39年ぶり円安水準 中東情勢の悪化懸念",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE9Mb2h1c0xjQ3d3T0Fj",
+      "reason": "採用5件と同一のドル円163円台ニュースで重複するため"
+    },
+    {
+      "title": "市場に広がる円安諦観 160円超が新常態、「GPIF介入」は効果に疑問",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9XTmVlQm1sZG9yZFY1LUZaaURXNjdneWpuMzNRTGpxZlRzclpkb0V0VGlHMkllQ0U5cW9HeWxMOUJQRlkyUklqSDh1QW5kVkZ3dlB2a0JXZHpiQWI3dGQ4UF94dGxvLUotRVpJZg?oc=5",
+      "reason": "GPIF論点は一次情報に近い解説記事を優先"
+    },
+    {
+      "title": "【ドル/円、今夜の見通し】ドル/円、162円台の上値を窺う展開",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBXWS1wZFRoTDhjVU",
+      "reason": "市況見通しで、採用した当日実績記事より情報価値が低い"
+    },
+    {
+      "title": "金利上昇と円安の「骨太ショック」で迫られた修正、日銀の独立性明記",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5DTXMwUUc5QWtZRF",
+      "reason": "骨太方針の採用記事と同一テーマの解説重複"
+    },
+    {
+      "title": "ドル円、１６３円ちょうど付近 日本の当局が取り得る有効な対応は極めて限られるとの指摘",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9pektDbFk1NUVqVkh",
+      "reason": "ドル円163円台の速報重複"
+    },
+    {
+      "title": "片山財務相のGPIF“国内回帰”発言、それでも円安が止まらない「6つの理由」",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE1YQmt5RTk0d2dvaDBWdDJ6LXpBM0RKRC0xR3B6OTNxN09GRmNkcnZod3BwdkxheGRyMVFaZ2dsNVBIcDdvVGVabGtscUfSAU9BVV95cUxNdy1IZmtBSmpfYjZIaThGdzRVQmVrWm5jdlI4Yk1UZ3hnTGNHeDZMMDhTOTVIcFV3Zzd3YkFvMnZOVk5YeFV5T0twdXFPV0g4?oc=5",
+      "reason": "GPIF論点の重複と一次情報度の差"
+    },
+    {
+      "title": "中東情勢をめぐる不安から円安とまらず1ドル＝163円台",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFB1cnRpY3psMmVLMG9NM0RSdFB3VDlicjFjOVNpeEIyYnliY1hZMG5rOUJPZEZBMV9RMm1uX2RBemxRazM3eExCTzhkcHZ2QU9hNlczN045SQ?oc=5",
+      "reason": "同一の中東・163円台材料を採用記事で代表"
+    },
+    {
+      "title": "為替相場 22日（日本時間 4時）（共同通信）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1Lb09PNVd5VG9yd1lmRG1jalZwN1dHaXVOVk5MSjRuWmI0VnpfcmV4b21kVkxQeWg0eTU2OEtaRVdvNTdiUXpJd251bmhseVpHUjJXWGpDQ3RJX0tDb3lyQzhuRmtOaGVaRVRqT25UZF9TNDEtczRzZmJqNkx5d28?oc=5",
+      "reason": "速報の再掲で分析差分が薄い"
+    },
+    {
+      "title": "円相場 一時1ドル＝163円台に値下がり 約39年半ぶりの円安水準",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1MbjdFdkRYVExHSmgydUh6WUo0bzY2VEhDZldqY1pyZmtxQTJxT3FxWnViMlF2ekJIWXB4T0ZMbFdMV0xLNGhOaU5qblBvVGpYclJEN3kwWGF4VFFPMkdR?oc=5",
+      "reason": "163円台ニュースの重複"
+    },
+    {
+      "title": "「骨太ショック」火消し 政府、長期金利上昇と円安に神経とがらせ",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5DTXMwUUc5QWtZRF",
+      "reason": "骨太方針の採用記事と重複"
+    },
+    {
+      "title": "（金利１％）日銀の独立性、金融政策決定の経験者どうみる",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9pektDbFk1NUVqVkh",
+      "reason": "日銀独立性の論点が採用記事と重複"
+    },
+    {
+      "title": "民間試算のインフレ率、4~6月に初の2% 日銀早期利上げのサイン",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE42Nnh2V3hxakFvZm44UVNQd3BzajVLUlR1MTdkZnJoT2FQdURnVlU5X082NUluVFQ2Mkw4Z2llNS1wcm5GdUZCZFlVRTRkOWIyQjhvamJTMjF5Yy1Yb1d6alRRVGl2YWxhWFJUcw?oc=5",
+      "reason": "canonical解決に至らず、公開元URLを確定できないため"
+    },
+    {
+      "title": "【FX】ライブトレード 欧州タイムを攻略だ！",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBXWS1wZFRoTDhjVU",
+      "reason": "個人向け取引解説で一次情報性が低い"
+    },
+    {
+      "title": "ヒーリー氏の新財務相就任、英製造業にとって前向きな材料",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE9uOUtYOGJDWXU5",
+      "reason": "FXへの波及が限定的"
+    },
+    {
+      "title": "（時時刻刻）財政、分岐点の「骨太」",
+      "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE5jT1kyQzlwSGZUNjd",
+      "reason": "骨太方針の採用記事と重複"
+    },
+    {
+      "title": "FX/為替「ドル/円今日の見通し」外為どっとコム トゥデイ",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9yd05VZWgwbEpL",
+      "reason": "市況見通しで、当日実績記事より情報価値が低い"
+    },
+    {
+      "title": "ドル円、１６３円台に上昇 １９８６年以来の高値＝ＮＹ為替速報",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE91RnVhUTNHcmxfejhnU0hOdkh5cFBqS3B4bFNNaHdsVVl6aWh5RGkyWXBPN2V5S1d2VlpiV05vUUZXREF4U19zQQ?oc=5",
+      "reason": "採用したReuters市況記事と同一材料の速報"
+    },
+    {
+      "title": "米国でガソリン１カ月ぶり高値 インフレ警戒、年内利上げも",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9teGRNVFNCZk51SkxTWFJiblVoNzVwSVVPQUppbGZET0F2YmFzVW9YOFZtdFlmR255QVR1Q1FYTTlaRW5QakRSQ01adDBqRl9FdXBObEwzczh5enZ4OHpWTXJfZw?oc=5",
+      "reason": "原油・米利上げ材料は採用したReuters記事で包含"
+    },
+    {
+      "title": "円、一時１６３円台",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE9nT194NFY3bVNXTlhsQmRLSVNpOV9seE8wYWNCZXRXd2p6ZHJBODNSNjg3THRGU0EzZDdSMDJBckV6ZkdXbWFpUUhDejdENHZHbi11ZkVYTHgzVmlfRlVZZDJHTlduZWhTWlF2RXRSdVFHZEZMWEE?oc=5",
+      "reason": "163円台ニュースの速報重複"
+    },
+    {
+      "title": "ニューヨーク外国為替市場概況・4時 ドル円、上げ幅拡大",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQMlhlUlVhbnd0",
+      "reason": "市況速報の重複"
+    }
+  ]
+}

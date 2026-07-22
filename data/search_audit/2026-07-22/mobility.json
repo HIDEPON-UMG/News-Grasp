@@ -1,0 +1,68 @@
+{
+  "date": "2026-07-22",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jp.investing.com テスラ ロボタクシー オーランド タンパ",
+    "site:logi-today.com T2 物流 不動産 電力 50億円 調達",
+    "site:logi-today.com WeRide UAE 自動運転 中国AI",
+    "site:sakai-times.com 堺市 自動運転 実証 65.9"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "Google自動運転タクシーの「ウェイモ」 独自の安全新基準モデルを発表へ",
+      "url": "https://jidounten-lab.com/u_65170",
+      "reason": "既掲載記事の続報で、canonical本文の公開日が7月18日。号日の24時間鮮度窓と新材料条件を満たさないため除外"
+    },
+    {
+      "title": "T2、物流・不動産・電力11社から50億円調達（旧canonical候補）",
+      "url": "https://www.logi-today.com/830320",
+      "reason": "同題材の2025年記事。2026年7月21日公開のcanonical https://www.logi-today.com/979065 に解決して採用"
+    },
+    {
+      "title": "〔海外決算〕米GM、4～6月期は増収減益＝EV損失が重荷、通期予想引き上げ(時事通信)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNa2IzQVp6OTBXUGJGR3NQdVpjYVhPU3R0UTFZU29lM1FhcF9ZVy15azQ2V2t2YVowMXZjNHFIcmdaeW1mbDhtdjdCVzdhY3BfdzhTTW4tbHRBRENMNUpxUU4xZ3hPWFo5NVRORUVjZE1yVmJlbUpMWHNLRGZqTHBCYmpwMVItSnc?oc=5",
+      "reason": "検索見出しと公式IRの記述に差があるため、2026年7月21日公開のGM公式IRへcanonicalを解決して採用"
+    },
+    {
+      "title": "鴻海EV事業の関氏、自動運転レベル4｢40年に8割で搭載｣",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE14blk2Y2Q1MG5ITTdBLWoxbG9NcHJ2RUpnWVBoeFpHNWVYQkpQZ2hlcUk0aS1NNDNNdkpEZDVDSGE2OFhXNUhIak9rUjYwd3VCUmVsYnpYUEdHaDdQM0J1WGFEWFM0MWdodzZjc3pKVXFlUC1MYWJCbGVOUHBOOVE?oc=5",
+      "reason": "一次ソースの当日canonicalを確認できず、推測URLを採用しないため除外"
+    },
+    {
+      "title": "レアアース価格、欧州のEVモーター素材8倍に 中国の内外で差が拡大",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5xclhQQjF3bUN3TVdoYXFfUzlXUy1Ob2ZRaVh3V1BydUx1ZTF3VkdiRUVUM1hHYzNPQWJxTEJwbDZveExWQ1doWUlYMmJLSXZocFNVb3JsaXhQVWRVRWFSaFBHemdFbkhHNjVwdg?oc=5",
+      "reason": "製造・資源サプライチェーンが主題で、mobilityよりmanufacturing境界に近いため除外"
+    },
+    {
+      "url": "https://jp.investing.com/news/stock-market-news/article-93CH-1610299",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/979065",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.logi-today.com/979145",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://investor.gm.com/news-releases/news-release-details/gm-releases-2026-second-quarter-results",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

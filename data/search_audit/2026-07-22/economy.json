@@ -1,0 +1,50 @@
+{
+  "date": "2026-07-22",
+  "category_id": "economy",
+  "queries": [
+    "stage1 dedup candidate file: build/deduped-candidates/economy.jsonl",
+    "site:newsdig.tbs.co.jp/articles/withbloomberg 強い景気は米株にとって諸刃の剣 S&P500種強気派に試練",
+    "独ZEW 景気期待指数 7月 予想上回る Reuters 2026 7月21日",
+    "Alphabet second quarter 2026 earnings July 22 2026 official investor relations"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "骨太方針の複数報道",
+      "url": "https://news.google.com/",
+      "reason": "同一政策テーマの重複を避け、一次情報の首相官邸ページを採用"
+    },
+    {
+      "title": "青汁・ぬいぐるみ型ロボ・老後の生活経済",
+      "url": "https://news.google.com/",
+      "reason": "economy の主要読者価値と当日重要度が相対的に低い"
+    },
+    {
+      "title": "ハリバートン決算",
+      "url": "https://news.google.com/",
+      "reason": "個別企業決算としての影響範囲が相対的に狭い"
+    },
+    {
+      "url": "https://ae.marketscreener.com/news/german-investor-morale-rises-more-than-expected-in-july-zew-finds-ce7f51dbd089f227",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.rbnz.govt.nz/news-and-events/news/2026/07/ocr-increased-to-2-50-to-return-inflation-to-2-percent",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
