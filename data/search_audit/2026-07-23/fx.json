@@ -1,0 +1,154 @@
+{
+  "date": "2026-07-23",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d",
+    "FRB OR Fed OR ECB OR 金利 OR forex when:1d",
+    "site:jp.reuters.com 日銀 物価上振れ 利上げペースに影響も 関係筋 2026",
+    "site:newsdig.tbs.co.jp 片山さつき 為替介入 163円台 2026",
+    "FX個人投資家動向 円高方向に妙味抱く 2026年7月22日",
+    "日本の政策優先順位 円安から利回り抑制へ転換 2026",
+    "【為替】7/21～7/24の米ドル／円を予想する 2026"
+  ],
+  "raw_results_total": 325,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_dedup_repeated": false,
+  "cross_category_dedup_repeated": false,
+  "canonical_resolution": {
+    "resolved_total": 5,
+    "method": "targeted_search_only",
+    "resolved_urls": [
+      "https://www.newsweekjapan.jp/articles/-/329103?display=b",
+      "https://newsdig.tbs.co.jp/articles/-/2820113",
+      "https://www.gaitame.com/media/entry/2026/07/22/151751",
+      "https://fx.minkabu.jp/news/373902",
+      "https://news.livedoor.com/article/detail/31875522/?from_page=internal"
+    ]
+  },
+  "coverage_terms_checked": [
+    "USD/JPY",
+    "日銀の利上げと物価",
+    "為替介入",
+    "中東情勢と原油高",
+    "財政規律と長期金利",
+    "個人投資家ポジション",
+    "BOJ",
+    "ECB",
+    "EURUSD",
+    "Fed",
+    "USDJPY"
+  ],
+  "dropped": [
+    {
+      "title": "【ドル/円、今夜の見通し】ドル/円、163円突破！次の上値ターゲットは？為替介入はあるのか？＿2026/7/21",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE5VMWRoMmZhU1JkMU9wajdnczYzSHJ4SENidW9icHBtT3Q5eHhQMlRrZ015OE5aY0Z3VHVOb1dicXVCMTJaMFFOQkhpTVJYcFktMlFtYXRHeFlkdXZwbXlrMlFpdw?oc=5",
+      "reason": "同一テーマの短期見通しで、7/21付のため選定順位を下げた"
+    },
+    {
+      "title": "英スタンチャートのロバートソン氏「円安抑止、同時に複数政策を」",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5keWhkUmptTXRzTFU5emJadHdydUpaT0NuOGpWMllQZERsdjVuZHpzdWwtYTBlTjBfd1JtM3l2ZWZENDN4U3FCMnpibW8tMTlYb1lrSDhQQUxTMld4ZWhmMEUwcXUwVGRwY1JnLQ?oc=5",
+      "reason": "canonical URLを特定できず、採用5件の政策論で主要論点をカバー"
+    },
+    {
+      "title": "アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型【39312149】",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1zckZSdHVvbExXV2xBc3Qtdk51MGlVVU9UNHZWeVRPMnRTNFJ6RTlfMjByUlZ6UEc4WGhvVURYd2RIRW5Oa0hXeXVMd0xETDdqamdPZw?oc=5",
+      "reason": "投資信託の定型情報で、FXカテゴリのニュース価値が低い"
+    },
+    {
+      "title": "日銀は利上げペース加速に柔軟姿勢､円安も物価上振れリスク増-関係者",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFU5Q0dvRldGd01pOE1wWlBuazJHTGdRRnhaeHYtX0RnNTlkSTdfcnRTQ3hXRVRRYUxPNVJDSDVDMVo5MjdTSUpXM0RWMTZJYXAwT2paRnp3VVV6RzBVV3MwQ19nd0ZNbnFFVG8xSU11M2h5UjJlNExZ?oc=5",
+      "reason": "Reuters報道と同一テーマの重複候補"
+    },
+    {
+      "title": "【為替】7/21～7/24の米ドル／円を予想する",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1JRXR6LS1aODNETTdwQklFOFB4NGRTTU9rY2hNdGwwVUszbjdEY251ZkY3TWhSbEstYzlyUlowb0RsbENTLVpQSC16c3BheWR1dHVoU9IBV0FVX3lxTE5rQkUzVmN1ek93aUNiU1c2M1ZZZnpOVXRWemdfeGlJaGRwaFBRVmlhSWJMcjJ2MXM1YnBoNmNLbXRvR1pneDJQblc0WGlVOFA5NnlncVVKQQ?oc=5",
+      "reason": "採用済みのcanonical URLへ解決"
+    },
+    {
+      "title": "原油高と米利上げ期待で米ドル円163円台 夏場に160-165円レンジでピークを付ける局面に",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE8yQTRlX0JxR2EtWG9YT2RVS2lNMEZnb3VUN3RFNlU1RTV5RlBtTHFWaXRYeVlPTzBUQk10WjRMTF9PaV9EeGJxU29zSDRZNG8tSTBzOVk0b05tOHhZ?oc=5",
+      "reason": "相場見通しで、政策・ポジション情報を優先"
+    },
+    {
+      "title": "円安 39年ぶり163円台 中東混乱 有事のドル買い",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBzNWhKWUgteTYwZmprSHhXa0szZ3B5Szh5M0NwWUdjNnF4eGg5cVFPYTVrYlRFbE42bFpQZEhoVzdRaFdtdnJRZXVFV3NxV2tnMVUtNGNYUUY2SlVwaHc?oc=5",
+      "reason": "TBSの介入示唆記事と事実関係が重複"
+    },
+    {
+      "title": "円安39年ぶり１６３円台",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFU1WZ292QWJFeDI5RkRMOGFVMHpCSzdQUHVISlhCUFJSYWtJa2xZRW41X09fcU41X2dMbkZhRGVQZXNuTU1oTUNYLUVQSkZGc1I4QUNpWnBZVGZSa0wtUTg5akRHTjlvMkZnYkRSUWNfUGpDSWc?oc=5",
+      "reason": "相場速報で、介入と政策の解説を優先"
+    },
+    {
+      "title": "円安 39年ぶり163円台 中東混乱 有事のドル買い",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFB4dndSMFd3UDg3d3NYUjZXNXlGRU9sZFhmcEJyZWVRWHZHNHktV25PQ2JvR2ZYUFN3UlQzelBPZlNUUnFnYTdxc0I1Y0tLSWdzTmkzdjZqWHdlYjJaZkE?oc=5",
+      "reason": "相場概況で、TBS記事と重複"
+    },
+    {
+      "title": "日本の政策優先順位、円安から利回り抑制へと転換せざるを得なくなるとの見方＝ＮＹ為替 -",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTE82NDFncVJMNnVNVHdYek5UR0Vvb0w1RDE4NlBPM0YzTGQyVFhjODFQMG0xNTBqWkNhU2Zrd3pjaHNDYm96eENScA?oc=5",
+      "reason": "採用済みのcanonical URLへ解決"
+    },
+    {
+      "title": "【テクニカル】乖離ランク＝順位は変わらず、NZドル円が首位",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBfTnE5U05CaGFvRDBRR2lhWHZqaS04N3k3ZjEzQTFqTVBzTEZ4RXZpX3lUYVpOdjNBd1JEVGNtRURTRUw3cTZKUE1TMEtrWkMzSG1TTE1NZ2pPdlhnQVZ1R2RJOA?oc=5",
+      "reason": "テクニカル速報で、マクロ政策ニュースを優先"
+    },
+    {
+      "title": "中東情勢再び混迷、次の利上げはいつ？ 元理事と先読み・深読み",
+      "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE5NcTZKd2VYTzJJQ3JTQzY2T2NsQTBNd3U5bGt1RFRkdHAyaU5oam5hQUhLWjlnZmZnYUtUM01UQmZJcW1vNHE0SDNmT1FSSTczbUJRdkppN2FYdw?oc=5",
+      "reason": "解説番組型で、一次報道を優先"
+    },
+    {
+      "title": "ＮＹ外為市場＝ドルやや軟調、なお163円台前半 介入警戒続く",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5oZ1Z4Q0t0TC1zcWx2UVdidjJsTkNaYkJKS1V1TGFiRk1LY1VyazZpNEJBZFQtSkdsQ0FWWDhCbEd2UC1DdEV4QWtPTy1xbXBOYWJFSE00a2N5aUpQQkhMV1U3dXVoeVJ2ZFIxNlhWdW9mV09tb1ktZQ?oc=5",
+      "reason": "市場速報で、介入示唆と個人ポジションを優先"
+    },
+    {
+      "title": "FX実践解説、１ドル１６３円台「もう、円安を楽しもう！」",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1fX2dRSU1jRXVGdGVDRlBBTjAzd0ZYcVhzS2hSbXVjTDFvUmJJcWl2LXhTWmJrWFRCVnlWd1AybVBSRnNHV0xvb0ZDalozUEZMSU53U3UxUE9xcDd0VlFoa2hHRQ?oc=5",
+      "reason": "動画・実践解説で、ニュース性の高い記事を優先"
+    },
+    {
+      "title": "「日銀は利上げペースに柔軟な姿勢」との報道で、ドル円は162円半ばへ下落",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9rYkk3dXRsR3ZJbjJzRHFRcndXVFF1emJYeURpbXZTbkxJM1VOXzA1Sno3al83MUdLblZ0ajQ3eGRhNTVNeGh1Y3Q0MzljS3lsd08wQl9WOElpc1Z3ZWN5MjZHRQ?oc=5",
+      "reason": "Reuters報道と同一テーマの市場反応"
+    },
+    {
+      "title": "「今日のドル円」昨日の振り返りと今日のドル円相場見通し 2026年7月22日",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE0tRU9ZYUdZd2tPS1I4N2dZUFdyWmRCUVFlUVVid3g5QW1HS2FYSE1JQ0NxQnNTc0F6eUNfMlNqbGF6eGJhSjE3TWdvN1pnWVRpUXpCSTlZbmFCMEpLTFlTNkd1SQ?oc=5",
+      "reason": "日次見通しで、より独自性のある個人ポジションを採用"
+    },
+    {
+      "title": "「適切に断固たる対応を」片山さつき財務大臣が為替介入を示唆",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFBTNnR3ODgwOTBFeG1lOVE1b2ZhN2xkSTFBLUxaWkVRQTRoNU4ySFRCNDBtd3JJbHY5VDJpTFp4OFhpbUlsOUxFeGg5NlNyTlQxa0hOT0ZsSQ?oc=5",
+      "reason": "採用済みのcanonical URLへ解決"
+    },
+    {
+      "title": "必要あればいつでも適切に断固たる対応とる＝為替で片山財務相",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5XcXF3ekFZcXBwRVRhTktfQW82U1hCMndOUFhsaGM4V191b21aT3o5OFBsTFhabWJOOWltVVNDRkl4cmJidG1UdzZqblB0TldwUmcydlppSjlnaUlmek0yOXBDdHFUelU1MFVOMlFtR18ya2JSMGl0SA?oc=5",
+      "reason": "TBS記事と同一の政府発言を扱うため重複"
+    },
+    {
+      "title": "為替相場 ２３日（日本時間 ３時）",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFB4dndSMFd3UDg3d3NYUjZXNXlGRU9sZFhmcEJyZWVRWHZHNHktV25PQ2JvR2ZYUFN3UlQzelBPZlNUUnFnYTdxc0I1Y0tLSWdzTmkzdjZqWHdlYjJaZkE?oc=5",
+      "reason": "定時市況速報で、解説性のある5件を優先"
+    },
+    {
+      "title": "海外渡航も円安で“食料持参” 円安進行40年ぶり163円台 “年内165円”も？",
+      "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFB0VmdOT1hta0tkREhyalhqMXdFSEtvekc5WUVVcGRaQmFqMkhfbUpyTnkzM0JSdWhzVjltLWVFOUhWNmpROWtMMk1odnlxNVdndmpQZm5Dc1lvbktDdDJsRzlnWGZpTDQybGh6QlBjOWNUQQ?oc=5",
+      "reason": "生活影響の報道で、FX専門情報を優先"
+    },
+    {
+      "title": "コラム：対症療法では止まらない円安・債券安＝佐々木融氏",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPS2szenJIdEZvc0ZDbXl3QlRYZkhNYW51Tm9sRjVObUJ0Y19GeUZMeWFQRUZOb0t5MGNSWV9NXzUzRkl6b2RKM040Zi15X0hsaEpidUJBUmlMSXJCMGVSMXhJNmR0anFTV2EzQjVZaFl2allMMkNiMzZEWXF0WDFSUHQ2M29lcXUw?oc=5",
+      "reason": "論考だが、当日観測の政策・市場データを優先"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

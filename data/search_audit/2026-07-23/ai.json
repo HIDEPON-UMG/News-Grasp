@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-23",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "site:blog.google Gemini 3.5 Flash Cyber announcement",
+    "site:openai.com Hugging Face model evaluation security incident",
+    "AMD Anthropic 5 billion AI chips investment",
+    "OpenAI Presence enterprise platform announcement",
+    "site:openai.com Georgia data center 3.2 gigawatts"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "OpenAIモデルのHugging Face侵入を扱う重複記事群",
+      "url": "https://news.google.com/",
+      "reason": "同一事案の二次報道を公式一次情報1件へ統合"
+    },
+    {
+      "title": "NotebookLMがGemini Notebookへ",
+      "url": "https://news.google.com/",
+      "reason": "Stage1候補の公開時刻が当日24時間窓外で、今回号の鮮度条件を満たさない"
+    },
+    {
+      "title": "OpenAIのデータセンター計画とPresenceを一括報道する記事",
+      "url": "https://news.google.com/",
+      "reason": "2テーマを分離し、公式発表2件を採用"
+    },
+    {
+      "title": "生成AI活用調査・比較・啓発系の記事群",
+      "url": "https://news.google.com/",
+      "reason": "一次情報度または当日性が低く、上位5件に届かないため未採用"
+    },
+    {
+      "url": "https://www.streetinsider.com/Reuters/AMD%2Bto%2Binvest%2Bup%2Bto%2B%245%2Bbillion%2Bin%2BAnthropic%3B%2BAI%2Bstartup%2Bto%2Bbuy%2Bup%2Bto%2B2%2BGW%2Bof%2Bchips/26798888.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://openai.com/index/building-ai-infrastructure-with-the-effingham-county-community/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

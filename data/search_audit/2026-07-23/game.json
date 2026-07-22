@@ -1,0 +1,129 @@
+{
+  "date": "2026-07-23",
+  "category_id": "game",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "site:news.xbox.com \"XBOX on PC\" \"後方互換\"",
+    "site:game.watch.impress.co.jp \"Nintendo Switch 2 スプラトゥーン レイダース セット\"",
+    "site:game.watch.impress.co.jp \"FINAL FANTASY X/X-2 HD Remaster\" \"ゲームブースト\"",
+    "site:famitsu.com \"古銭プッシャー外伝\" \"8月13日\"",
+    "site:gamespark.jp \"Steam Machine\" \"Portal\" \"キューブ\" 3Dプリント",
+    "\"Maestro Launches on Nintendo Switch 1 & 2 on September 17\"",
+    "site:news.fate-go.jp \"ゲームアップデートのお知らせ\" \"7/22\"",
+    "\"Feedy Diner & Arcade\" \"イオンモール新潟亀田インター\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "猛暑 2軍戦で異例のノーゲーム",
+      "url": "https://news.google.com/",
+      "reason": "スポーツ事故であり、gameカテゴリのゲーム産業ニュースではない"
+    },
+    {
+      "title": "配信者ハイパーゲーム大会 FINAL【2026年11月28日、29日】",
+      "url": "https://news.google.com/",
+      "reason": "数カ月先のイベント告知で、当日性と読者価値が低い"
+    },
+    {
+      "title": "「マイナビオールスターゲーム2026 新型日産キックス ホームランダービー」出場選手決定",
+      "url": "https://news.google.com/",
+      "reason": "野球イベントであり、ゲーム産業ニュースではない"
+    },
+    {
+      "title": "「Nintendo Switch 2 スプラトゥーン レイダース セット」が本日発売 Switch2本体とソフトのセット商品",
+      "url": "https://game.watch.impress.co.jp/docs/news/2116229.html",
+      "reason": "canonical記事は2026年6月11日公開で、発売日当日でもfreshness gateの範囲外"
+    },
+    {
+      "title": "リアル脱出ゲーム 池袋店の10日間天気 週末の天気・紫外線情報【お出かけスポット天気】",
+      "url": "https://news.google.com/",
+      "reason": "施設向け天気情報で、ゲーム産業ニュースではない"
+    },
+    {
+      "title": "古銭であやかし退治！Steam版「古銭プッシャー外伝」先行発売プロジェクト",
+      "url": "https://news.google.com/",
+      "reason": "採用したファミ通記事と同一案件の重複候補"
+    },
+    {
+      "title": "マイナビオールスターゲーム2026全出場選手決定！　プラスワン投票は柳田悠岐",
+      "url": "https://news.google.com/",
+      "reason": "野球イベントであり、ゲーム産業ニュースではない"
+    },
+    {
+      "title": "住重、愛知でSTEAM教育 10月に開催",
+      "url": "https://news.google.com/",
+      "reason": "教育イベントであり、デジタルゲームのニュースではない"
+    },
+    {
+      "title": "フードもゲームもプリも“ぜんぶ映える”アミューズメント空間「Feedy Diner & Arcade」がイオンモール新潟亀田インターに出店 本日7/23「Feedy Arcade」が先行オープン！",
+      "url": "https://www.fantasy.co.jp/shoplist/shop1133/",
+      "reason": "当日オープンは確認できるが、地域施設のPR色が強く、他のゲームニュースを優先"
+    },
+    {
+      "title": "追放された転生重騎士はゲーム知識で無双する #1〜4",
+      "url": "https://news.google.com/",
+      "reason": "漫画配信情報であり、ゲーム産業ニュースではない"
+    },
+    {
+      "title": "プロ野球異常事態！ロッテ 浦和での2軍戦が猛暑ノーゲーム 和田が緊急搬送（スポニチアネックス）",
+      "url": "https://news.google.com/",
+      "reason": "スポーツ事故であり、gameカテゴリのゲーム産業ニュースではない"
+    },
+    {
+      "title": "ロッテ2軍戦が猛暑ノーゲームに 和田が体調不良か…30分以上中断「安全を考慮」、気温39度（Full-Count）",
+      "url": "https://news.google.com/",
+      "reason": "スポーツ事故であり、gameカテゴリのゲーム産業ニュースではない"
+    },
+    {
+      "title": "Steam Machineを『Portal』“キューブ”風にできる非公式ケースの3Dプリントデータが公開（Game Spark）",
+      "url": "https://news.google.com/",
+      "reason": "採用したGame*Spark記事と同一案件の重複候補"
+    },
+    {
+      "title": "２軍戦で異例のノーゲーム セパ両リーグで「記録なし」",
+      "url": "https://news.google.com/",
+      "reason": "スポーツ事故であり、gameカテゴリのゲーム産業ニュースではない"
+    },
+    {
+      "title": "Switch2「FINAL FANTASY X/X-2 HD Remaster」ダウンロード版が本日発売。「ゲームブースト機能」を搭載",
+      "url": "https://game.watch.impress.co.jp/docs/news/2115659.html",
+      "reason": "canonical記事は2026年6月9日公開で、発売日当日でもfreshness gateの範囲外"
+    },
+    {
+      "title": "ホームゲーム開催時「駐輪場」位置変更（7月〜10月末）のお知らせ",
+      "url": "https://news.google.com/",
+      "reason": "スポーツ会場の運用告知であり、ゲーム産業ニュースではない"
+    },
+    {
+      "title": "ゲームボーイにそっくりなAndroidゲーム機が発売",
+      "url": "https://news.google.com/",
+      "reason": "canonical候補は2026年1月公開で、当日ニュースとして古い"
+    },
+    {
+      "title": "ゲーム業界と製薬業界の共通点 おとにち木曜 「見えない仕事が命を支える」（15）",
+      "url": "https://news.google.com/",
+      "reason": "評論・コラムで、当日発生したゲーム業界の主要ニュースではない"
+    },
+    {
+      "title": "ねとらぼ・新規無料会員登録で、Nintendo Switch 2と『スプラトゥーン レイダース』ソフトのセットが当たる！",
+      "url": "https://news.google.com/",
+      "reason": "販促キャンペーンで、ニュース性と一次情報価値が低い"
+    },
+    {
+      "title": "2026/27シーズン ホームゲーム開催時の入場運用について",
+      "url": "https://news.google.com/",
+      "reason": "スポーツ会場の運用告知であり、ゲーム産業ニュースではない"
+    }
+  ]
+}

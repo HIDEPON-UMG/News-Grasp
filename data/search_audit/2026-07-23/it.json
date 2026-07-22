@@ -1,0 +1,70 @@
+{
+  "date": "2026-07-23",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR enterprise software OR cybersecurity when:1d",
+    "site:diamond.jp オープンAI クラウド予算 122兆円 計算能力",
+    "site:apnews.com Alphabet Q2 cloud revenue 82% AI July 22 2026",
+    "site:newsroom.intel.com Intel Fortinet SP6 cybersecurity July 21 2026",
+    "site:infoworld.com Oracle Base Database Cloud@Customer July 22 2026",
+    "site:cloud.watch.impress.co.jp フォーティエンス IT戦略 計画 方法論 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_status": "provided_deduped_candidates_reused",
+  "cross_category_collection_repeated": false,
+  "cross_category_dedup_repeated": false,
+  "canonical_resolution": {
+    "resolved_total": 5,
+    "ogp_stage1_attempted_total": 5,
+    "proxy_thumbnails_rejected_total": 0,
+    "selected_urls": [
+      "https://diamond.jp/articles/-/395361",
+      "https://apnews.com/article/google-results-revenue-profit-ai-alphabet-f914606d842d4c6848019083d667fc3a",
+      "https://newsroom.intel.com/manufacturing/intel-and-fortinet-collaborate-to-advance-cybersecurity-innovation-and-strengthen-global-supply-chain-resilience",
+      "https://www.infoworld.com/article/4200177/oracle-expands-cloudcustomer-with-new-database-service-for-mid-sized-workloads-2.html",
+      "https://cloud.watch.impress.co.jp/docs/news/2126573.html"
+    ]
+  },
+  "dropped_or_not_selected": [
+    {
+      "title": "公取委、巨大ＩＴ対応で組織再編 ３０年ぶりに新たな局を設置",
+      "reason": "同一論点の正規記事URLを限定検索で確定できず、未解決URLを採用しなかった"
+    },
+    {
+      "title": "複雑な決裁ルートでクラウド移行が難しく、東レ子会社が国内4工場のDB刷新",
+      "reason": "確認できた同題材の公開記事が2026-05-26で鮮度ゲート外のため採用しなかった"
+    },
+    {
+      "title": "サイバーセキュリティ相談窓口の相談状況［2026年第2四半期（4月～6月）］",
+      "reason": "公式一覧では2026年第2四半期ページを当日確認できず、公開日根拠を確定できなかった"
+    }
+  ],
+  "coverage_terms_checked": [
+    "Accenture",
+    "BCG",
+    "Deloitte",
+    "McKinsey",
+    "NTT",
+    "PwC"
+  ],
+  "dropped": [
+    {
+      "reason": "同一論点の正規記事URLを限定検索で確定できず、未解決URLを採用しなかった",
+      "title": "公取委、巨大ＩＴ対応で組織再編 ３０年ぶりに新たな局を設置"
+    },
+    {
+      "reason": "確認できた同題材の公開記事が2026-05-26で鮮度ゲート外のため採用しなかった",
+      "title": "複雑な決裁ルートでクラウド移行が難しく、東レ子会社が国内4工場のDB刷新"
+    },
+    {
+      "reason": "公式一覧では2026年第2四半期ページを当日確認できず、公開日根拠を確定できなかった",
+      "title": "サイバーセキュリティ相談窓口の相談状況［2026年第2四半期（4月～6月）］"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

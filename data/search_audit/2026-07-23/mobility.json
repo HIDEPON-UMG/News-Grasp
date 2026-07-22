@@ -1,0 +1,57 @@
+{
+  "date": "2026-07-23",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:newsdig.tbs.co.jp ティアフォー 上場 自動運転 ソフト 2026年7月22日",
+    "site:car.watch.impress.co.jp BMW 新型 バッテリEV iX3 発売 982万円 2026年7月22日",
+    "紋別市 自動運転バス 実証 2028年度 2026年7月22日",
+    "site:logi-today.com 米テキサス 自動運転車 料理配送開始 2026年7月22日",
+    "日産 リーフ NISMO スポーツ仕様 2026年7月22日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "dropped": [
+    {
+      "title": "テスラ、第2四半期はＦＣＦが2年超ぶりマイナス ＡＩ・ロボタクシー投資が加速",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFB5VVltTDh0U09STXQwT2Jvdl9NQkh6UWtrV3NaYnpLSG5VLThvc2FHYlBLeU1Td1dSY2dOYTZsbjM1T1hKTm5sbzc3ZkpZdHV4cFpsZm9qa2owR3V1a3U5ZjZPZnk5UlBZaGFoNzhEVm5vVFZhYktOaQ?oc=5",
+      "reason": "Reutersのcanonical URLを記事単位で解決できず未採用"
+    },
+    {
+      "title": "自動運転技術、初の上場 ティアフォー、開発加速",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9aSGZjaTJoemZUb1QzeUw2YThBOUV5TkxJd2JXWVg4a0FSQnpnOTBxVmdrMFpKemFiWlhJQjNWeC0yQ3NOQ0RIWUp0OUY1QWtMMUVhX1BuTGF0YVhDMzdhQlk1d1E1dEFtUC1pXzk5VmMzVXR6d1BubmgxNkdyd0U?oc=5",
+      "reason": "ティアフォー上場の重複候補"
+    },
+    {
+      "title": "BMW、新型EV「iX3」国内発売 航続距離906キロで国内最長",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5NV0ozWkR1WlpVV1pkN04wZU5BVTJkd3VqaFdGN19nMjlIeFFQcVpvR2FzTUlFd1hHSEZ1UFVZVkdrWm1iOXBDRXdMQU5DQXBFUksxYWF1OUNHNVgxMWFFQk9KRTlvdjJ6WWpvag?oc=5",
+      "reason": "BMW iX3の重複候補"
+    },
+    {
+      "title": "中国の自動運転支えるモーター ミネベアミツミが高評価",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFA1eTRzZEJ5dkxLdFBfd2otMkJnN0ptdGEtX2FFcVJ6RXM3ZnJKblZyOHFuRjZGZEFvcDFIRGU1c2ctd3puU0dzUjE3elM5UVhKcWNaS3RYYmFHTXp5NzFRRm9LZVhseWFkWFk2SDVkX3FPaE9rbWJvLVA5dXJhRlE?oc=5",
+      "reason": "canonical URLの確証不足"
+    },
+    {
+      "title": "レアアース高騰、欧州でEVモーター素材8倍 中国輸出規制で価格差広がる",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE85ZjJYc2lzTUZCd2pBd2p0TExNMlVFWHEwZGlqTEw3aFMxZTJocmQ0OGpRMHdyRHFGRVRrQmRYckdUcGF3WHlMbkd0RENWcENxX3JCQUFRY0M0dTBKd2x0NHh4VUpXajBsWWxZXw?oc=5",
+      "reason": "Nikkeiのcanonical URLを記事単位で確認できず未採用"
+    },
+    {
+      "url": "https://www.logi-today.com/979647",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

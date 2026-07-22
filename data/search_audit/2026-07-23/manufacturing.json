@@ -1,0 +1,124 @@
+{
+  "date": "2026-07-23",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "site:news.nsttv.com イスラエル 半導体 妙高市 6000億円 2026",
+    "AMD Anthropic 2GW MI450 5 billion July 22 2026",
+    "site:logi-today.com 半導体 自動車 上半期輸出 過去最高 2026",
+    "site:prtimes.jp ノボ ノルディスク 郡山工場 CO2 実質ゼロ 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "半導体",
+    "工場投資",
+    "光電融合",
+    "AI半導体・供給網",
+    "輸出",
+    "資源循環・脱炭素",
+    "工作機械",
+    "量産",
+    "Foxconn",
+    "Intel",
+    "NVIDIA",
+    "Samsung",
+    "TSMC",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "ブラザー工業 ＡＩや半導体市場開拓へ ５軸加工機の提案強化",
+      "reason": "限定検索で当日記事のcanonical URLを200確認できず"
+    },
+    {
+      "title": "「九州の半導体、成長のジャンプ台に」経産省の野原局長 供給網分厚く",
+      "reason": "日経記事の本文・canonicalを当日利用可能な形で確認できず"
+    },
+    {
+      "title": "AI革命でメモリー半導体は極端な供給不足、大幅なコスト増を背景に企業倒産も",
+      "reason": "解説記事で一次情報性が低く、canonical確認も不足"
+    },
+    {
+      "title": "激化するAI覇権戦争、急騰する半導体関連株価…日本の「勝ち筋」はこれだ（Wedge（ウェッジ））",
+      "reason": "株価・論考中心で製造業の一次事実を優先して除外"
+    },
+    {
+      "title": "SkyDrive、印キネコと空飛ぶクルマ量産へ提携",
+      "reason": "canonical記事の公開日が2026-07-21で当日24時間窓を外れるため"
+    },
+    {
+      "title": "工場で火災 爆発音も 住宅街に迫る激しい黒煙 千葉・野田市（テレビ朝日系（ANN））",
+      "reason": "事故速報で、製造業の構造変化を扱う当日選定軸に合わない"
+    },
+    {
+      "title": "半導体、信号遅延を最小化 ファーウェイが新設計思想",
+      "reason": "日経記事のcanonical URLを確認できず、別候補とテーマ重複"
+    },
+    {
+      "title": "半導体株乱高下とアジア投資家増で高まる日本株の変動率、「ハイボラ相場」で注目すべき企業業績と企業価値",
+      "reason": "市場解説で、製造現場の事実より金融論点が中心"
+    },
+    {
+      "title": "一関第4工場 完成 精密加工品製造 アロン社 生産性向上へ拠点集約【岩手】（岩手日日新聞社）",
+      "reason": "地域企業の設備完成で影響範囲が限定的、canonical確認も不足"
+    },
+    {
+      "title": "キオクシア、今もちらつく「広島工場の幻」",
+      "reason": "日経BPの特集記事で当日性・canonical確認が不足"
+    },
+    {
+      "title": "レゾナック阿部秀則氏、AI半導体の後工程けん引 「共創」へ世界を駆ける",
+      "reason": "人物インタビューで、当日確定できる一次発表ではない"
+    },
+    {
+      "title": "任天堂の不可思議な意見書：なぜ特許の話に「著作権侵害」を持ち出したのか（栗原潔） - エキスパート",
+      "reason": "ゲーム・知財論点でmanufacturingの主題から外れる"
+    },
+    {
+      "title": "日の丸パワー半導体、再編で中国対抗へ ボトルネックは製造／光電融合の次世代材料「TFLN」に参入ラッシュ",
+      "reason": "特集記事のcanonical確認ができず、採用4件との重複論点を整理"
+    },
+    {
+      "title": "【特許】国交省、SAR画像で河川水位実測 越水リスク診断",
+      "reason": "公共特許の話題で製造業への直接影響が薄い"
+    },
+    {
+      "title": "日工、循環資源工場の自動化支援",
+      "reason": "限定検索で元記事canonical URLを200確認できず"
+    },
+    {
+      "title": "政府が1600億円「なぜ」 イスラエル光電融合企業に助成",
+      "reason": "候補12のタワーセミコンダクター投資計画と同一テーマの再掲"
+    },
+    {
+      "title": "学習から推論への移行はAI半導体市場の勢力図をどのように塗り替えるのか：『ビジネス2.0』の視点",
+      "reason": "ブログ解説で一次情報性が低い"
+    },
+    {
+      "title": "特許庁「非常識な誤解」──任天堂のゲーム特許を拒絶、著作権巡り応酬（1/2 ページ）",
+      "reason": "ゲーム・知財論点でmanufacturingの主題から外れる"
+    },
+    {
+      "title": "GX 半導体関連-日本株式【2644】：株価・株式情報（夜間PTS含む）",
+      "reason": "株価ページでニュース記事ではない"
+    },
+    {
+      "title": "ファーウェイの真意 中国半導体供給網と特許データ分析で見えた「二段構え戦略」",
+      "reason": "分析記事で候補8とテーマ重複、canonical確認も不足"
+    },
+    {
+      "title": "AIサプライチェーンにゴールドラッシュ、海外メディアが今夏注目の半導体株5銘柄を指名",
+      "reason": "投資・銘柄紹介で製造業の一次事実が薄い"
+    },
+    {
+      "url": "https://www.logi-today.com/979714",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
