@@ -218,6 +218,18 @@ def test_category_lead_title_lines_merge_short_subject_before_quoted_topic() -> 
     assert generate_pages._category_lead_title_quality_errors(title, lines) == []
 
 
+def test_category_lead_title_lines_merge_short_subject_with_long_budget_phrase() -> None:
+    title = "OpenAI、2030年までの計算資源予算を122兆円に引き上げ"
+
+    lines = generate_pages._category_lead_title_lines(title)
+
+    assert lines == [
+        "OpenAI、2030年までの",
+        "計算資源予算を122兆円に引き上げ",
+    ]
+    assert generate_pages._category_lead_title_quality_errors(title, lines) == []
+
+
 def test_category_lead_title_lines_merge_short_middle_fragment() -> None:
     title = "AI開発競争、主戦場は性能から価格へ－OpenAIやメタが新戦略"
 

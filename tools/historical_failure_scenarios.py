@@ -467,6 +467,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-22-daily-quality-structured-repair-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-23",
+        "daily-quality / search-audit metadata repair / category hero lead title quality / post-deepdive resume / publish-complete",
+        "search audit artifacts stored dropped reasons in dropped_or_not_selected while the deterministic handler only promoted dropped_examples or dropped_reason_summary, then pytest-static exposed an OpenAI short-subject hero title split",
+        "search audit dropped reason source mismatch and category hero short English subject boundary",
+        "search-audit metadata repair must promote dropped_or_not_selected reasons, and category hero splitting must merge short English subjects with a stable phrase head before publish",
+        "dropped_or_not_selected registry fixture, OpenAI budget title hero split fixture, daily-quality gate repair, full pytest-static, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-23-daily-quality-search-audit-hero-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

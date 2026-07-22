@@ -294,6 +294,15 @@ def test_2026_07_22_structured_daily_quality_repair_incident_is_registered() -> 
     assert scenario.evidence_path.endswith("2026-07-22-daily-quality-structured-repair-report.html")
 
 
+def test_2026_07_23_search_audit_hero_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-23")
+    assert "search-audit metadata repair" in scenario.stage
+    assert "category hero lead title quality" in scenario.stage
+    assert "dropped_or_not_selected" in scenario.direct_cause
+    assert "OpenAI budget title hero split fixture" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-23-daily-quality-search-audit-hero-report.html")
+
+
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:
     scenarios = compound_failure_scenarios()
 

@@ -533,6 +533,67 @@ def test_search_audit_metadata_patch_promotes_dropped_reason_summary(tmp_path: P
     ]
 
 
+def test_search_audit_metadata_patch_promotes_dropped_or_not_selected_reasons(tmp_path: Path) -> None:
+    issue = "2026-07-23"
+    audit = tmp_path / "data" / "search_audit" / issue / "it.json"
+    audit.parent.mkdir(parents=True)
+    audit.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "category_id": "it",
+                "queries": ["q1", "q2", "q3"],
+                "raw_results_total": 25,
+                "candidates_total": 25,
+                "selected_total": 5,
+                "dropped_or_not_selected": [
+                    {
+                        "title": "公取委、巨大IT対応で組織再編",
+                        "reason": "同一論点の正規記事URLを限定検索で確定できず、未解決URLを採用しなかった",
+                    },
+                    {
+                        "title": "東レ子会社が国内4工場のDB刷新",
+                        "reason": "確認できた同題材の公開記事が鮮度ゲート外のため採用しなかった",
+                    },
+                ],
+                "coverage_terms_checked": [
+                    "Accenture",
+                    "BCG",
+                    "Deloitte",
+                    "McKinsey",
+                    "NTT",
+                    "PwC",
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="search-audit-metadata-patch",
+            artifacts=[f"data/search_audit/{issue}/it.json"],
+        )
+    )
+
+    repaired = json.loads(audit.read_text(encoding="utf-8"))
+    assert result.status == "repaired"
+    assert repaired["dropped"] == [
+        {
+            "title": "公取委、巨大IT対応で組織再編",
+            "reason": "同一論点の正規記事URLを限定検索で確定できず、未解決URLを採用しなかった",
+        },
+        {
+            "title": "東レ子会社が国内4工場のDB刷新",
+            "reason": "確認できた同題材の公開記事が鮮度ゲート外のため採用しなかった",
+        },
+    ]
+
+
 def test_search_audit_metadata_patch_syncs_selected_total_from_digest_cards(tmp_path: Path) -> None:
     """final digest で落ちた記事数を search_audit selected_total へ同じ述語で戻す。"""
     issue = "2026-07-04"

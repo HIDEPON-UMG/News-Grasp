@@ -12,7 +12,7 @@
  *  activate 時に古いキャッシュをまとめて削除できる。
  */
 
-const SW_VERSION = '2026-07-02-category-hero-r6-2026-07-04-daily-recovery-r1-2026-07-11-incident-r1-2026-07-12-editor-recovery-r1-2026-07-13-daily-recovery-r1-2026-07-15-slo-report-r1-2026-07-16-pytest-basetemp-r1-2026-07-17-hero-line-report-r1-2026-07-18-hero-policy-report-r1-2026-07-19-daily-quality-repair-r1-2026-07-20-retry-r1-2026-07-21-digest-sync-r1-2026-07-22-structured-repair-r1';
+const SW_VERSION = '2026-07-02-category-hero-r6-2026-07-04-daily-recovery-r1-2026-07-11-incident-r1-2026-07-12-editor-recovery-r1-2026-07-13-daily-recovery-r1-2026-07-15-slo-report-r1-2026-07-16-pytest-basetemp-r1-2026-07-17-hero-line-report-r1-2026-07-18-hero-policy-report-r1-2026-07-19-daily-quality-repair-r1-2026-07-20-retry-r1-2026-07-21-digest-sync-r1-2026-07-22-structured-repair-r1-2026-07-23-search-audit-hero-r1';
 const SCOPE_PREFIX = '/News-Grasp/';
 const HTML_CACHE = `news-grasp-html-${SW_VERSION}`;
 const ASSET_CACHE = `news-grasp-assets-${SW_VERSION}`;

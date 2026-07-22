@@ -1165,6 +1165,21 @@ def _category_lead_title_lines(title: str) -> list[str]:
         if _title_display_width(first_pair) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH:
             units = [first_pair, *units[2:]]
         elif re.search(r"[A-Za-z0-9]", units[0]):
+            long_phrase_match = re.match(
+                r"^(.+?(?:までの|への|から|まで|より|には|では|の|に|へ|で|が|は|を|や|と))(.+)$",
+                units[1],
+            )
+            if long_phrase_match:
+                phrase_head = long_phrase_match.group(1)
+                phrase_tail = long_phrase_match.group(2)
+                first_line = f"{units[0]}、{phrase_head}"
+                if (
+                    phrase_tail
+                    and _title_display_width(first_line) > 4
+                    and _title_display_width(first_line) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+                    and _title_display_width(phrase_tail) <= _CATEGORY_LEAD_TITLE_HARD_WIDTH
+                ):
+                    units = [first_line, phrase_tail, *units[2:]]
             quote_match = re.match(r"^(.+?)(「.+)$", units[1])
             if quote_match:
                 before_quote = quote_match.group(1)

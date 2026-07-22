@@ -271,16 +271,35 @@ def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
             audit["dropped"] = dropped_examples
             did_change = True
         elif candidates_total > selected_total and not dropped:
-            dropped_reason_summary = str(audit.get("dropped_reason_summary") or "").strip()
-            dropped_count = int(audit.get("dropped_count") or (candidates_total - selected_total))
-            if dropped_reason_summary and dropped_count > 0:
-                audit["dropped"] = [
-                    {
-                        "count": dropped_count,
-                        "reason": dropped_reason_summary,
-                    }
-                ]
-                did_change = True
+            dropped_or_not_selected = audit.get("dropped_or_not_selected")
+            if isinstance(dropped_or_not_selected, list) and dropped_or_not_selected:
+                entries = []
+                for item in dropped_or_not_selected:
+                    if not isinstance(item, dict):
+                        continue
+                    reason = str(item.get("reason") or "").strip()
+                    if not reason:
+                        continue
+                    entry = {"reason": reason}
+                    title = str(item.get("title") or "").strip()
+                    if title:
+                        entry["title"] = title
+                    entries.append(entry)
+                if entries:
+                    audit["dropped"] = entries
+                    did_change = True
+                    dropped = entries
+            if not dropped:
+                dropped_reason_summary = str(audit.get("dropped_reason_summary") or "").strip()
+                dropped_count = int(audit.get("dropped_count") or (candidates_total - selected_total))
+                if dropped_reason_summary and dropped_count > 0:
+                    audit["dropped"] = [
+                        {
+                            "count": dropped_count,
+                            "reason": dropped_reason_summary,
+                        }
+                    ]
+                    did_change = True
 
         category_id = str(audit.get("category_id") or path.stem).casefold()
         queries = [str(v).strip() for v in (audit.get("queries") or []) if str(v).strip()]
