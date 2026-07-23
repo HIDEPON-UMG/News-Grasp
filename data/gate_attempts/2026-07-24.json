@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "gates": {
+    "generation-quality": {
+      "signatures": {
+        "1a0fea2ecaad62d5": {
+          "failures": 1,
+          "artifact_hashes": [
+            "43b140764b1d2a8a"
+          ],
+          "category": "generated"
+        }
+      },
+      "categories": {
+        "generated": 1
+      }
+    }
+  },
+  "retry_budget_policy_version": 7
+}

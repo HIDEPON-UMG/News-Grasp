@@ -1,0 +1,60 @@
+{
+  "date": "2026-07-24",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR economy OR interest rate when:1d",
+    "site:jp.investing.com インテル 第2四半期決算 2026年7月24日",
+    "セブン PayPay 顧客ID 統合 2026年7月24日",
+    "景気動向指数 新指数 内閣府 2027年4月",
+    "ディスコ 9月中間期 営業益33%増 2026年7月23日",
+    "6月 熱波 英国 経済損失 労働時間 2026年7月24日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "インテル、決算受け時間外で８％高＝米国株個別速報",
+      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE0tdi1JajZ0LU5maEQ5eUJROUFlc0hMVzNtYWtRYkg5c2Q2X01nTWV1T2l2WFVDYl9HOTVoZUtYUElRMzduY2JCRU9vWFoxVndtTXc?oc=5",
+      "reason": "インテル採用記事と同一テーマの別媒体速報。代表記事に集約。"
+    },
+    {
+      "title": "財政目標「達成できない」70% 骨太巡り経済学者、高成長頼みに警鐘",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE8ySjNqc2FqbFNSQjJBdFR5azNPSU5LRGlhQllmYlhSV2xJQUtmQldyMkNpWnZjUWdldEtGc2thcXdkek96MFRPY1dCR3ZCeFRUdFdUaFhFeVh6RmZTWlVjbm1ZWWIxS05Sd1otRA?oc=5",
+      "reason": "有料媒体の公開部分だけでは数値と論点の独立確認が不足。"
+    },
+    {
+      "title": "ASEANデジタル経済枠組み協定（DEFA）の意義 - アジア経済研究所",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE0tb3NWZ1dGYk5QSmc1djl3bWhYZGVnUkY2M0hJQmVKZ1hZM3I3dngyei1zUXFsWDNiUklnWDg2b3J0VkRWMUpJVzEyei1FTGpEdlR1N3ZQSmZOTUk2LWxCbS12U1FlNkxsSlR5eUlMb3F1V3JwbDdGalN2ZkRxQQ?oc=5",
+      "reason": "検索で確認できた公開日は2026年6月で、当日性を確認できない。"
+    },
+    {
+      "title": "2040年には、世界GDPの20%を生む「ASI Economy」に。企業はどう備えるべきか",
+      "url": "https://www.softbank.jp/sbnews/entry/20260723_01",
+      "reason": "企業イベントの見通し・提言が中心で、当日の経済実績ニュースより優先度を下げた。"
+    },
+    {
+      "title": "景気動向指数、物価変動考慮で精緻に 27年4月分から公表",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBsOGdJWURmUGpVNS1NSjA2UzQ5b2lWQlY4R1FVamEtMWhIVVhMMkZSZmpoRm4waVZfQ25oeVp2MngwWmRLQmJFLUd2eVhVUWJrMGZ4cFVjYjJwTGM0TlIxcVpZWG9vRUpyeGVrQQ?oc=5",
+      "reason": "同じ内閣府新指数を扱うReuters配信記事を採用。"
+    },
+    {
+      "title": "【決算速報】ディスコ、非開示だった上期経常は32％増で3期連続最高益",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPSlNBM2J2NlBiT2w0R1B2d0NIeGtHeWhvUnk2Vk9kbFBNTFY5ZHJUNGVEeHIyTXBteGFYc2hNcjZ4dWtpQnIxTFhRMDl6Z1N2V2ZHRnNXZUpNOWlmQ2xzOVUyYUw3THFBc2d1bnBLaUdQblRpcjFnQU9sTkpRTW56NWhmUGZ2bFk?oc=5",
+      "reason": "採用した株探の同決算記事と重複。"
+    },
+    {
+      "url": "https://jp.investing.com/news/stock-market-news/article-432SI-1614614",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

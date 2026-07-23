@@ -1,0 +1,116 @@
+{
+  "date": "2026-07-24",
+  "category_id": "ai",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "broad_collection_rerun": false,
+  "cross_category_dedup_rerun": false,
+  "queries": [
+    "site:exawizards.com \"AIが「封じ込め」を破った日\" OpenAI",
+    "site:sbbit.jp/article/cont1/ \"Gemini利用者\" \"9.5億人\"",
+    "site:itmedia.co.jp \"Kimi K3\" Anthropic Fable 蒸留",
+    "site:gihyo.jp \"Claude Securityプラグイン\" ベータ",
+    "site:sbbit.jp/article/cont1/ \"Claude Fable5\" ヤコビアン予想"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "canonical_resolution_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Claudeの「振り返り」機能でプロンプトを採点してもらったら、まだまだ成長できそうだった（ライフハッカー・ジャパン）",
+      "reason": "解説・利用体験で、当日ニュースとしての影響度が相対的に低い"
+    },
+    {
+      "title": "LLM比較：ChatGPT vs. Gemini vs. Claude vs. Llama | アドビ",
+      "reason": "比較記事で新規発表ではない"
+    },
+    {
+      "title": "AIが正しく振る舞うには「善良さ必要」 Anthropicの哲学者アスケル氏",
+      "reason": "一次情報と本文確認を短時間で確定できず、選定枠を使用しなかった"
+    },
+    {
+      "title": "Claude Mythosで高速化するサイバー攻撃からクラウド資産をどう守るのか？",
+      "reason": "既報のサイバー論点と重なり、OpenAIインシデントを優先"
+    },
+    {
+      "title": "次期行財政Ｐ案を了承 県、生成ＡＩの活用本格化",
+      "reason": "地域行政の個別案件で、カテゴリ全体への波及が限定的"
+    },
+    {
+      "title": "中国の格安AIモデルがAnthropicとOpenAIの成長を阻めば、時価総額1兆ドルが消失する可能性",
+      "reason": "予測・二次解説で、Kimi K3の一次的な政策論点を優先"
+    },
+    {
+      "title": "「Claude Code」って最近よく聞くけど、何ができるの？ セミナーアーカイブ",
+      "reason": "PR・イベント告知のため除外"
+    },
+    {
+      "title": "【Claude Fable 5】【GPT-5.6】Kimi K3開発者はAI研究で世界一",
+      "reason": "動画解説で、Kimi K3の政策批判記事と論点が重複"
+    },
+    {
+      "title": "アンソロピック「Claude Opus 5」明日にも発表か",
+      "reason": "未発表モデルの観測記事で、事実確度が低い"
+    },
+    {
+      "title": "OpenAIの「暴走」サイバー攻撃 防御側助けた中国AI",
+      "reason": "OpenAI・Hugging Faceインシデントと同一論点の別報道"
+    },
+    {
+      "title": "OpenAI最新モデルがベンチマークスコア向上のため暴走",
+      "reason": "同一インシデントの二次報道で重複"
+    },
+    {
+      "title": "未経験の記者でもできた！ Geminiで欲しいアプリを作るコツ",
+      "reason": "ハウツー記事でニュース性が低い"
+    },
+    {
+      "title": "Gemini利用者「月間9.5億人」に…グーグル検索はAI利用拡大でむしろ強くなった？",
+      "reason": "選定済みのため候補一覧上の重複行を除外"
+    },
+    {
+      "title": "Anthropicの「Claude Opus 5」、24日公開間近",
+      "reason": "未発表モデルの観測記事で、事実確度が低い"
+    },
+    {
+      "title": "Claudeに仕事させて実力差が拡大",
+      "reason": "見出しだけでは事実と影響を十分に確認できない"
+    },
+    {
+      "title": "AIアシスタントの無料版を使い倒して判明したClaudeとGeminiの違い",
+      "reason": "利用体験記事でニュース性が低い"
+    },
+    {
+      "title": "「Gemini」1年で月間アクティブユーザー数が3倍に増加",
+      "reason": "選定済みの決算報道と数字が重なる"
+    },
+    {
+      "title": "OpenAI、サイバー攻撃能力テスト中のAIモデルがHugging Faceに不正アクセスしたと発表",
+      "reason": "選定済みのインシデント解説と同一事件"
+    },
+    {
+      "title": "国民民主・玉木代表が日向市役所を訪問 市専用の生成AIモデルを視察",
+      "reason": "地域活用の個別案件で、影響範囲が限定的"
+    },
+    {
+      "title": "【生成AIを行政でどう生かすか】",
+      "reason": "政策提言・解説で、当日発生ニュースではない"
+    },
+    {
+      "title": "TCSとGoogle Cloud、インド・コルカタにGemini Experience Centerを開設",
+      "reason": "canonical本文の発表日が7月16日でfreshness gate外"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

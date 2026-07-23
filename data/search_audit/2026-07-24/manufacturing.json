@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-24",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "site:riken.jp 圧力で鍛える 次世代 iPS 人工心筋 製造法",
+    "site:jx-nmm.com 韓国 半導体用スパッタリングターゲット 加工能力 増強",
+    "半導体好調で韓国の4-6月期成長率0.6% 半導体輸出 設備投資"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota",
+    "半導体",
+    "工場投資",
+    "量産",
+    "設備投資",
+    "供給能力"
+  ],
+  "dropped": [
+    {
+      "title": "AI推論で進む「脱TSMC」 テスラ自社製造、インテルとサムスンに商機",
+      "reason": "記事単位のcanonical URLを当日利用可能な形で確認できず"
+    },
+    {
+      "title": "インテル前進、ガラスコア基板量産へ 材料で日本勢追随",
+      "reason": "日経記事のcanonical URLを確認できず、一次ソースで代替できなかった"
+    },
+    {
+      "title": "アナログ半導体を自動設計 ジーダットがAIツール開発",
+      "reason": "日刊工業新聞記事のcanonical URLを確認できず、製品ページのみだった"
+    },
+    {
+      "title": "eve auto、空港・工場の搬送自動化事例を公開",
+      "reason": "候補タイトルに一致する記事単位canonical URLを確認できず、公式ニュース一覧は採用しなかった"
+    },
+    {
+      "title": "中国、AI･半導体の輸出規制強化を検討 欧米企業による買収も阻止",
+      "reason": "検討報道で製造現場への一次情報性が低く、当日記事単位canonicalを確認できなかった"
+    },
+    {
+      "url": "https://japanese.joins.com/JArticle/352462",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,61 @@
+{
+  "date": "2026-07-24",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ when:1d",
+    "バイクや自転車を自動回避へ 平塚市 自動運転バス",
+    "中国吉利 スペイン EV生産 フォード工場",
+    "T2 プリファードネットワークス 自動運転トラック 安全性",
+    "米政府機関 ウェイモ 救急車 妨害 自動運転"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "ソニーホンダモビリティで退職パッケージ提示",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE1JTmdnVW5vMmtxcXhza3JhVTdKYnlBOUdRVnJJalE4UDJQU1BUaThrd2tKenZCWC1oUWJiZHZjcUhWMm1UTjB6bHNzb1nSAU9BVV95cUxPRk9pTm1Nc3hVTU5c3hVT2RBU2NJR1pwUFJMZ08zUHNtZnlzVzBfaW4yMk9EYkFER2ItdmNpUlQtcWhicFZiSFZsNGJHLXNEamtrOXNR?oc=5",
+      "reason": "事業再編の詳細確認が必要で、当日モビリティの利用・運行動向より優先度が低い"
+    },
+    {
+      "title": "自動運転（前編）",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1zUjNPZ0ZPUU92OURHTEpLa2swc3o5bnZmeHM4TzcxM25kZktiUXRtaU4yem5LZ2Y4UC00dmtSN29jT3J0SkVzSGlwbFdrUGpfM3ozUEJRVGVMMmZNQ2ZTRmYtTWNnRnc?oc=5",
+      "reason": "解説再掲で当日発生ニュースとしての新規性が弱い"
+    },
+    {
+      "title": "自動運転ソフト開発のティアフォー、上場もこれからが正念場",
+      "url": "https://news.google.com/rss/articles/CBMiR0FVX3lxTE1fbzFoclNnMUVmMG92T2VuR0lhbVotV0JjcS1GUWphWkJXa1NlWmx4eGVSdTdyTzZmUFpLa2hoZ2F3b0FFT3lV?oc=5",
+      "reason": "ティアフォー関連候補と重複し、一次情報に近い別記事を優先"
+    },
+    {
+      "title": "上場のティアフォー、テスラ式自動運転も開発",
+      "url": "https://news.google.com/rss/articles/CBMiSEFVX3lxTFA2ajAwVENBd0lpSHphSVlfWU04SFBSVnkyT3RSUUVGNEh6dDJRT1U3UXpZeEQ2NFBpbjZCQkdlODhRUlVFY1RaeQ?oc=5",
+      "reason": "ティアフォー関連候補と重複"
+    },
+    {
+      "title": "テスラ株が13％急落、ロボタクシー展開の遅れを経営陣が説明",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE4tUGFZLS03R1EydUdOSW5Qci02eTFUNmUzZmNaWHRJWWFITjRSdHlmcENTYi15YUJmWjZ6S1EyOW1fU0RjckkzX0xIckxEOWN0a2VrSVFnN2hBNkdUV1MxWg?oc=5",
+      "reason": "テスラ関連記事と内容が近く、EV市場全体の統計を優先"
+    },
+    {
+      "title": "7月23日のTesla株値動きは12.68%下落",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOQ3hrUGRYRFZvRnIyR1hYblBoNkhhcnl4dFl0NkhVaEF3akFuM25PUjJkQ21fWFdqS3J2TGhER25QLTFfZ1M0eDFVQmRNaDFWU195NE14eDVfM0QwOUNmUDBzVnRNdldUVVFfWVJJOVNxemZ5bTY5YTN0RERvcjFmRG91dDh1SEFuNWVVTU1YQQ?oc=5",
+      "reason": "株価解説で、同日のテスラ決算・市場統計より優先度が低い"
+    },
+    {
+      "url": "https://jidounten-lab.com/u_65292",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

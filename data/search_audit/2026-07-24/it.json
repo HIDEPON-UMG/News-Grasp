@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-24",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:gmo-cybersecurity.com \"DEF CON 34\" CTF",
+    "\"PwCコンサルティング、フィジカルAI人材の育成プログラムを開始\"",
+    "\"無床診療所様向けクラウド型電子カルテシステム\" 生成AI音声入力",
+    "\"マネーフォワード クラウド個別原価\" \"工数自動入力エージェント\"",
+    "\"クラウドサイン、キントーン・コラボフローとの3社間システム連携開始\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "東日本大震災を経験したラジオ局Date fmが能登に元気を届けたい",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE50Y3FmYUFyOERLSGk0VFdRbk4wYUliNXVJb1oxVlNxYXlIR3o1Yy1iTkxWMFNtV1FzRjhzZFU5YUhkRm12ZGh3cXpwaw?oc=5",
+      "reason": "IT業界ニュースとしての関連性が低い"
+    },
+    {
+      "title": "44歳・IT企業管理職がコンテストで2冠",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9PWDlZM2hCelNMX3o4eXFFYkc2bFFod0ktYWRrNDBPeXpxRXZBcnNVeE14SGtKemFLaV9ldHRSZDBwRDdYeFBlWGlUZ3NiamE4QnRIYW1KR3AzX2xlTnNJa2JKdUZ2Wk9ERWxFcUJ5NW5ZSGhlYTcxOHlqVnc3RFk?oc=5",
+      "reason": "ITサービスのニュースではなく人物記事"
+    },
+    {
+      "title": "Breakingviews - コラム：クラウド快走・検索減速、グーグルのＡＩ戦略成否なお見えず",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPUklmcmNrMW9SZ3ptdk5KVG41RjNZUzVscHhYS0gybUp3UWVRbEVqNThEWmJWcy1HblRSbHNwb3BJX01kS3RmRFZ5ZzhsOFB6Yjg2MTBySUtfTk5FQjFIYnhjLXdtdnhtbWpjMTllYVplMjg5S3NfRkZYdXMxZmwxU1RMZF9DVmljWDdj?oc=5",
+      "reason": "canonical URLを確認できず、採用候補から除外"
+    },
+    {
+      "title": "政府機関のITインフラがサイバー攻撃を受けてルーマニア全土の不動産の登記や取引が停止",
+      "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFA2WHJKYy1hYXFhNHFnR2xlY0RWY2VsbDlLWkNIY0tONF8za3dxN2pYZ0Z1SGloTDZKbTdOYy0xMGdfeGV4Q2owcHVKODRneDNHeE1sYlZNRDJ1cllwR1BQTy05WUhLeTBxdUJDeVF6Q1h0U0ZTaUduOFVn?oc=5",
+      "reason": "canonical URLを確認できず、採用候補から除外"
+    },
+    {
+      "title": "米IBM、AI需要の逆風 企業はサーバー投資優先 ITインフラ減収に",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5sZGxJSDFyR2MyeE0yN3hCR2dOX2tJQnBMdkdPQmFhSDUwRmdtT1AtVnN1Ykd5SG9YX0swMkdoaWEyUlh2TkxMcWI2dm1wMjdGb1pYQlVBTGtMOUs4X3FqTThEcHNmaENoZTJPcA?oc=5",
+      "reason": "canonical URLを確認できず、採用候補から除外"
+    },
+    {
+      "title": "その他Stage1候補20件",
+      "url": "build/deduped-candidates/it.jsonl",
+      "reason": "選定5件より優先度が低い、または当日性・一次情報性・カテゴリ適合性を満たさないため非採用"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
