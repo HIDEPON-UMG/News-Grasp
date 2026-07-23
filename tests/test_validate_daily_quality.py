@@ -427,6 +427,31 @@ def test_digest_article_thumbnail_coverage_rejects_empty_card_thumb(tmp_path: Pa
     assert "カテゴリ fallback サムネになります" in joined
 
 
+def test_digest_article_thumbnail_coverage_ignores_editorial_sections(tmp_path: Path) -> None:
+    """カテゴリ考察の `### §NN` 見出しを記事カードの thumb 欠落として扱わない。"""
+    cat_dir = tmp_path / "digest" / "FX"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "2026-06-08-FX.md").write_text(
+        "---\n"
+        "title: FX\n"
+        "date: 2026-06-08\n"
+        "categoryId: fx\n"
+        "---\n\n"
+        "### [90] Real article\n\n"
+        "📅 2026-06-08 06:00 · 📰 Example · 🔗 [元記事](https://example.com/2026/06/08/fresh-news)\n\n"
+        "![thumb](https://example.com/thumb.jpg)\n\n"
+        "- [[test]] **test** __test__\n\n"
+        "## § 本日のテーマ考察\n\n"
+        "### §01 総論 — 円安の材料が重なる\n\n"
+        "__[[ドル高]]は**政策判断**と生活への波及を同時に映す。__\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_digest_article_thumbnail_coverage(tmp_path / "digest", date(2026, 6, 8))
+
+    assert errs == []
+
+
 def test_daily_quality_rejects_google_news_rss_urls_for_issue(tmp_path: Path) -> None:
     """当日 record の url が Google News RSS のままなら、元記事 OGP 取得漏れとして落とす。"""
     _write_summary(tmp_path)

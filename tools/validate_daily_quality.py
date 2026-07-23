@@ -166,6 +166,8 @@ def validate_digest_article_thumbnail_coverage(digest_root: Path, issue: date) -
         _fm, body = parse_frontmatter(md.read_text(encoding="utf-8-sig", errors="replace"))
         articles = parse_articles(body)
         for idx, article in enumerate(articles, 1):
+            if not str(article.get("source_url") or article.get("url") or "").strip():
+                continue
             title = str(article.get("title") or "").strip()
             thumb = str(article.get("thumb") or "").strip()
             label = f"{md}: card #{idx:02d} {title}"
