@@ -39,6 +39,7 @@ REQUIRED_ROWS = {
     ("deepdive-required", "published_docs_missing"),
     ("youtube-podcast", "oauth_invalid_grant"),
     ("youtube-podcast", "youtube_quota_or_permission"),
+    ("github-release-upload", "github_release_upload_transient"),
     ("github-pages", "deploy_workflow_not_success"),
     ("google-api", "google_api_external"),
     ("deploy", "deploy_surface_regression"),
@@ -124,6 +125,21 @@ def test_typed_external_and_fatal_rows_have_evidence_contract() -> None:
     assert external.external_kind == "quota"
     assert fatal.repair_class == RepairClass.TYPED_FATAL
     assert fatal.status_on_failure == "repository_safety_stop"
+
+
+def test_repair_matrix_rejects_issue_artifact_outside_handler_scope() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="daily-quality",
+            issue_code="summary_hero_missing",
+            artifact_paths=("data/articles.jsonl",),
+            issue_date="2026-07-24",
+        )
+    )
+
+    assert decision.repair_class == RepairClass.TYPED_FATAL
+    assert decision.status_on_failure == "repair_context_scope_mismatch"
+    assert "data/articles.jsonl" in decision.reason
 
 
 def test_repair_coverage_inventory_has_no_missing_known_validator_issue() -> None:
@@ -366,7 +382,7 @@ def test_daily_quality_search_audit_coverage_terms_routes_with_audit_artifact() 
     assert decisions[0].category == "mobility"
 
 
-def test_structured_unknown_search_audit_message_routes_to_metadata_patch() -> None:
+def test_structured_unknown_search_audit_message_is_not_reclassified_by_matrix() -> None:
     output = json.dumps(
         {
             "ok": False,
@@ -386,14 +402,12 @@ def test_structured_unknown_search_audit_message_routes_to_metadata_patch() -> N
 
     decisions = classify_gate_issues("daily-quality", output)
 
-    assert decisions[0].issue_code == "search_audit_metadata_missing"
-    assert decisions[0].handler_id == "search-audit-metadata-patch"
-    assert decisions[0].artifact_paths == ("data/search_audit/2026-07-22/ai.json",)
-    assert decisions[0].issue_date == "2026-07-22"
-    assert decisions[0].category == "ai"
+    assert decisions[0].issue_code == "unknown"
+    assert decisions[0].repair_class == RepairClass.TYPED_FATAL
+    assert decisions[0].status_on_failure == "blocked_unknown_repair_class"
 
 
-def test_structured_unknown_followup_message_routes_to_followup_patch() -> None:
+def test_structured_unknown_followup_message_is_not_reclassified_by_matrix() -> None:
     output = json.dumps(
         {
             "ok": False,
@@ -413,10 +427,9 @@ def test_structured_unknown_followup_message_routes_to_followup_patch() -> None:
 
     decisions = classify_gate_issues("daily-quality", output)
 
-    assert decisions[0].issue_code == "followup_review_required"
-    assert decisions[0].handler_id == "followup-review-note-patch"
-    assert decisions[0].artifact_paths == ("data/articles.jsonl",)
-    assert decisions[0].issue_date == "2026-07-22"
+    assert decisions[0].issue_code == "unknown"
+    assert decisions[0].repair_class == RepairClass.TYPED_FATAL
+    assert decisions[0].status_on_failure == "blocked_unknown_repair_class"
 
 
 def test_unknown_daily_quality_line_does_not_mask_known_deterministic_issue() -> None:
@@ -467,6 +480,27 @@ def test_google_api_external_is_typed_external_not_green() -> None:
 
     assert decision.repair_class == RepairClass.TYPED_EXTERNAL
     assert decision.status_on_failure == "blocked_external_readiness"
+
+
+def test_github_release_upload_transient_is_typed_external() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="github-release-upload",
+            issue_code="github_release_upload_transient",
+            evidence={
+                "external_system": "github-release",
+                "external_kind": "service_unavailable",
+                "observed_error_code": "502",
+                "source_command": "gh release upload audio-daily",
+                "detail": "HTTP 502 Error creating policy",
+                "observed_at": "2026-07-20T09:31:00+09:00",
+            },
+        )
+    )
+
+    assert decision.repair_class == RepairClass.TYPED_EXTERNAL
+    assert decision.status_on_failure == "blocked_external_readiness"
+    assert decision.external_system == "github-release"
 
 
 def test_deploy_surface_unrelated_red_is_fatal_no_rollback() -> None:

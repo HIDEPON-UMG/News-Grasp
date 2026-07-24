@@ -261,6 +261,7 @@ function Get-RunnerStateMutexName {
 
 function Test-TerminalRunnerStatus {
     param([string] $Status)
+    if ([string]$Status -like 'blocked_*') { return $true }
     return @(
         'publish_complete',
         'smoke_ok',
@@ -282,6 +283,13 @@ function Test-TerminalRunnerStatus {
         'blocked_runner_state_corrupt',
         'distribution_failed',
         'publish_failed',
+        'repair_context_scope_mismatch',
+        'repair_handler_output_scope_violation',
+        'repository_safety_stop',
+        'public_surface_red',
+        'distribution_manifest_invalid',
+        'deploy_surface_regression',
+        'deploy_surface_unrelated_red',
         'failed',
         'error'
     ) -contains [string]$Status
@@ -317,14 +325,19 @@ function Write-RunnerStateAtomic {
 function Read-RunnerStateOrNull {
     param([string] $Path)
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
-    try {
-        return Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
-    } catch {
-        $stamp = Get-Date -Format 'yyyyMMddHHmmss'
-        $corrupt = "$Path.corrupt.$stamp.json"
-        try { Copy-Item -LiteralPath $Path -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
-        return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            return Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+        } catch {
+            if ($attempt -lt 3) {
+                Start-Sleep -Milliseconds 100
+            }
+        }
     }
+    $stamp = Get-Date -Format 'yyyyMMddHHmmss'
+    $corrupt = "$Path.corrupt.$stamp.json"
+    try { Copy-Item -LiteralPath $Path -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
+    return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
 }
 
 function Invoke-WithRunnerStateLock {
@@ -1327,6 +1340,40 @@ function Read-RepairDecision {
     }
 }
 
+function Set-TypedRepairTerminalState {
+    param(
+        [string] $GateId,
+        [string] $Category,
+        [object] $Decision,
+        [string] $Message
+    )
+    $terminalStatus = if ($null -eq $Decision) { 'blocked_unknown_repair_class' } else { [string]$Decision.failure_status }
+    if ([string]::IsNullOrWhiteSpace($terminalStatus)) {
+        $terminalStatus = 'blocked_unknown_repair_class'
+    }
+    $externalKind = ''
+    $externalSystem = ''
+    $externalDetail = ''
+    if ($null -ne $Decision) {
+        $externalKind = [string]$Decision.external_kind
+        $externalSystem = [string]$Decision.external_system
+        $externalDetail = [string]$Decision.reason
+    }
+    Set-RunnerState `
+        -Status $terminalStatus `
+        -Message $Message `
+        -ExitCode 1 `
+        -Phase 'repair' `
+        -Step $Message `
+        -GateId $GateId `
+        -Category $Category `
+        -ExternalKind $externalKind `
+        -ExternalSystem $externalSystem `
+        -ExternalStatus $terminalStatus `
+        -ExternalDetail $externalDetail
+    Write-Log "typed repair terminal state: gate=$GateId status=$terminalStatus message=$Message"
+}
+
 function Invoke-TargetedRepair {
     param(
         [string] $GateId,
@@ -1337,6 +1384,15 @@ function Invoke-TargetedRepair {
         [string] $ClassifyPath = ''
     )
     Update-RunnerProgress -Phase 'repair' -Step "repair budget check: $GateId" -GateId $GateId -Category $Category
+    $decision = Read-RepairDecision -GateId $GateId -CapturePath $CapturePath -ClassifyPath $ClassifyPath
+    if ($null -eq $decision) {
+        Set-TypedRepairTerminalState -GateId $GateId -Category $Category -Decision $null -Message "repair decision unavailable"
+        return 1
+    }
+    if ([string]$decision.repair_class -in @('typed_external', 'typed_fatal', 'handler_unimplemented_red')) {
+        Set-TypedRepairTerminalState -GateId $GateId -Category $Category -Decision $decision -Message "repair decision is terminal: $($decision.issue_code)"
+        return 1
+    }
     $attemptState = Join-Path $RepoDir ("data\gate_attempts\$DateStamp.json")
     # 2026-06-10: 変数名を $args から $gateAttemptArgs に変更 (致命バグ修正)。
     #   $args は PowerShell 自動変数。`Invoke-Logged { & $PyExe @args }` の
@@ -1367,15 +1423,11 @@ function Invoke-TargetedRepair {
         Pop-Location
     }
     if ($decisionRc -ne 0) {
-        Write-Log "gate retry limit reached before repair worker (gate=$GateId, rc=$decisionRc); inspect typed gate classification and latest gate output"
+        Write-Log "gate retry ledger denied repair worker (gate=$GateId, rc=$decisionRc); preserving typed gate classification"
+        Set-TypedRepairTerminalState -GateId $GateId -Category $Category -Decision $decision -Message "gate retry ledger denied repair worker"
         return 1
     }
 
-    $decision = Read-RepairDecision -GateId $GateId -CapturePath $CapturePath -ClassifyPath $ClassifyPath
-    if ($null -eq $decision) {
-        Write-Log "repair worker denied: repair decision unavailable (gate=$GateId)"
-        return 1
-    }
     $repairSignature = "${GateId}:$($decision.issue_code):$($decision.handler_id)"
     Update-RunnerProgress -Phase 'repair' -Step "repair decision: $GateId $($decision.issue_code)" -GateId $GateId -Category $Category -RepairSignature $repairSignature -ArtifactProgress $false
 
@@ -1931,8 +1983,7 @@ function Invoke-PythonGateWithRepair {
         [datetime] $DeadlineAt = [datetime]::MaxValue,
         [switch] $NoRepair
     )
-    $maxGateAttempts = 5
-    for ($attempt = 1; $attempt -le $maxGateAttempts; $attempt++) {
+    for ($attempt = 1; ; $attempt++) {
         if ((Get-Date) -ge $DeadlineAt) {
             Write-Log "$GateId gate deadline exceeded before attempt $attempt"
             return 124
@@ -1956,10 +2007,6 @@ function Invoke-PythonGateWithRepair {
         Update-RunnerProgress -Phase 'gate' -Step "$GateId attempt $attempt failed rc=$gateRc" -GateId $GateId -Category $Category -Attempt $attempt -DeadlineAt $DeadlineAt.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
         if ($NoRepair) {
             Write-Log "$GateId repair disabled for this gate; returning rc=$gateRc"
-            return $gateRc
-        }
-        if ($attempt -ge $maxGateAttempts) {
-            Write-Log "$GateId gate final attempt failed; skipping repair"
             return $gateRc
         }
         $classifyPath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-classify-$GateId-$DateStamp-$RunId-attempt$attempt.json")
@@ -2010,7 +2057,7 @@ function Invoke-AutonomousGate {
     )
     $statePath = Join-Path $RepoDir "data\gate_attempts\$DateStamp-$GateId.json"
     $deadline = (Get-Date).AddSeconds($GateDeadlineSec)
-    Write-Log "$GateId autonomous gate start (budget=max_gate_attempts=5, signature_repair=1, state=$statePath)"
+    Write-Log "$GateId autonomous gate start (budget=deadline+typed_repair_ledger, signature_repair=1, state=$statePath)"
     Update-RunnerProgress -Phase 'gate' -Step "$GateId autonomous gate start" -GateId $GateId -Category $Category -DeadlineAt $deadline.ToString('yyyy-MM-ddTHH:mm:ss.fffK')
     $gateRc = Invoke-PythonGateWithRepair -GateId $GateId -Category $Category -PythonArgs $PythonArgs -Artifacts $Artifacts -DeadlineAt $deadline -NoRepair:$NoRepair
     if ($gateRc -eq 0) {
@@ -3360,8 +3407,8 @@ Write-Log 'batch SLO gate OK'
 # 2026-06-16: 編集長が生成した digest/Summary/{date}-audio-script.md を AivisSpeech で
 # mp3 化し、GitHub Releases audio-daily へ公開する。2026-06-17 以降は通常公開必須
 # 成果物なので、失敗時は公開・fallback・通知へ進ませない。
-$dailyTtsPublishArgs = @('-m', 'tools.tts.publish_audio', $DateStamp)
-if ($NoPublish) { $dailyTtsPublishArgs = @('-m', 'tools.tts.publish_audio', $DateStamp, '--dry-run') }
+$dailyTtsPublishArgs = @('-m', 'tools.tts.publish_audio', $DateStamp, '--json')
+if ($NoPublish) { $dailyTtsPublishArgs = @('-m', 'tools.tts.publish_audio', $DateStamp, '--dry-run', '--json') }
 foreach ($ttsStep in @(
     @{ Name = 'tts build_script'; Args = @('-m', 'tools.tts.build_script', $DateStamp) },
     @{ Name = 'tts synthesize_daily'; Args = @('-m', 'tools.tts.synthesize_daily', $DateStamp) },
@@ -3377,6 +3424,15 @@ foreach ($ttsStep in @(
             Pop-Location
         }
         if ($ttsRc -ne 0) {
+            if ($ttsRc -eq 71 -and $ttsStep.Name -eq 'tts publish_audio') {
+                Stop-ExternalReadiness `
+                    -Reason 'GitHub Release audio upload service unavailable' `
+                    -ExitCode 71 `
+                    -Kind 'github_release_upload_transient' `
+                    -System 'github-release' `
+                    -ExternalStatus 'service_unavailable' `
+                    -ExternalDetail 'tools.tts.publish_audio --json; typed evidence is recorded in the runner log'
+            }
             Write-Log "ERROR: $($ttsStep.Name) exited with $ttsRc. TTS is required for normal publish."
             Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'daily-tts' -Reason "$($ttsStep.Name) failed" -ExitCode $ttsRc
         }
@@ -3393,8 +3449,8 @@ foreach ($ttsStep in @(
 # LP/DeepDive 記事へ埋め込むため、docs 生成前に完了させる。
 $DeepDiveMarkdown = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive.md")
 $DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive-dialogue.md")
-$deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp)
-if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run') }
+$deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--json')
+if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run', '--json') }
 foreach ($deepDiveTtsStep in @(
     @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript, '--context-pack', $DeepDiveContextPack) },
     @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
@@ -3411,6 +3467,15 @@ foreach ($deepDiveTtsStep in @(
         }
         if ($deepDiveTtsRc -ne 0) {
             Write-Log "ERROR: $($deepDiveTtsStep.Name) exited with $deepDiveTtsRc. DeepDive dialogue audio is required for normal publish."
+            if ($deepDiveTtsRc -eq 71 -and $deepDiveTtsStep.Name -eq 'deepdive dialogue publish') {
+                Stop-ExternalReadiness `
+                    -Reason 'GitHub Release DeepDive audio upload service unavailable' `
+                    -GateId 'deepdive-tts' `
+                    -Kind 'github_release_upload_transient' `
+                    -System 'github-release' `
+                    -ExternalStatus 'service_unavailable' `
+                    -ExternalDetail 'tools.tts.deepdive_audio --json; typed evidence is recorded in the runner log'
+            }
             Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason "$($deepDiveTtsStep.Name) failed" -ExitCode $deepDiveTtsRc
         }
         Write-Log "$($deepDiveTtsStep.Name) done"

@@ -6,7 +6,9 @@ from tools.historical_failure_scenarios import (
     compound_failure_scenarios,
     historical_failure_horizontal_audits,
     historical_failure_scenarios,
+    weekly_failure_regression_cases,
 )
+from tools.repair_coverage_matrix import RepairClass, RepairIssue, classify_repair_issue
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,8 +40,14 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         "2026-07-07",
         "2026-07-08",
         "2026-07-13",
+        "2026-07-17",
+        "2026-07-18",
         "2026-07-19",
+        "2026-07-20",
         "2026-07-21",
+        "2026-07-22",
+        "2026-07-23",
+        "2026-07-24",
     }
     incident_files = {
         f"docs/incidents/{path.name}"
@@ -301,6 +309,69 @@ def test_2026_07_23_search_audit_hero_incident_is_registered() -> None:
     assert "dropped_or_not_selected" in scenario.direct_cause
     assert "OpenAI budget title hero split fixture" in scenario.cheapest_e2e_or_fixture
     assert scenario.evidence_path.endswith("2026-07-23-daily-quality-search-audit-hero-report.html")
+
+
+def test_2026_07_20_daily_batch_external_upload_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-20")
+    assert "daily-quality" in scenario.stage
+    assert "GitHub Release upload" in scenario.stage
+    assert "HTTP 502/503" in scenario.direct_cause
+    assert "typed external" in scenario.missing_invariant
+    assert "GitHub Release upload external fixture" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path == "build/incidents/2026-07-20-daily-batch-github-audio-upload-report.html"
+
+
+def test_2026_07_24_editorial_section_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-24")
+    assert "editorial section" in scenario.stage
+    assert "### §01" in scenario.direct_cause
+    assert "article card eligibility" in scenario.missing_invariant
+    assert "editorial section exclusion fixture" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith("2026-07-24-daily-quality-editorial-section-report.html")
+
+
+def test_weekly_failure_regression_corpus_covers_every_day_without_unknown_outcome() -> None:
+    cases = weekly_failure_regression_cases()
+
+    assert {case.issue_date for case in cases} == {
+        "2026-07-17",
+        "2026-07-18",
+        "2026-07-19",
+        "2026-07-20",
+        "2026-07-21",
+        "2026-07-22",
+        "2026-07-23",
+        "2026-07-24",
+    }
+    assert all(case.issue_code != "unknown" for case in cases)
+    assert all(
+        case.expected_status not in {
+            "blocked_unknown_repair_class",
+            "blocked_repair_handler_unimplemented",
+            "final_attempt_exhausted",
+        }
+        for case in cases
+    )
+
+
+def test_weekly_failure_regression_corpus_reaches_typed_status_or_handler() -> None:
+    for case in weekly_failure_regression_cases():
+        if case.expected_repair_class == "validator_exclusion":
+            assert case.expected_status == "not_applicable"
+            continue
+        decision = classify_repair_issue(
+            RepairIssue(
+                gate_id=case.gate_id,
+                issue_code=case.issue_code,
+                artifact_paths=case.artifact_paths,
+                issue_date=case.issue_date,
+                category=case.category,
+                evidence=dict(case.evidence),
+            )
+        )
+        assert decision.repair_class == RepairClass(case.expected_repair_class), case
+        assert decision.status_on_failure == case.expected_status, case
+        assert decision.handler_id == case.expected_handler_id, case
 
 
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:

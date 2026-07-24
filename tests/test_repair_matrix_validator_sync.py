@@ -38,6 +38,14 @@ DAILY_QUALITY_MESSAGES = {
         "published docs missing": "published_docs_missing",
         "audio script failed": "audio_script_quality_invalid",
         "search audit stale URL": "url_dead_or_stale",
+        (
+            r"data\search_audit\2026-07-22\ai.json: "
+            "coverage_terms_checked missing required terms"
+        ): "search_audit_metadata_missing",
+        (
+            r"data\articles.jsonl:1961 [AI]: follow-up matched_with URL date "
+            "2026-05-20 is 63 day(s) older than issue 2026-07-22"
+        ): "followup_review_required",
         "digest missing for category": "missing_artifact",
     }
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 from tools.tts import deepdive_audio
 
@@ -90,3 +91,43 @@ def test_deepdive_audio_dry_run_writes_latest_audio_without_gh_upload(tmp_path, 
     payload = latest_json.read_text(encoding="utf-8")
     assert "2026-06-21" in payload
     assert "audio-deepdive/2026-06-21.mp3" in payload
+
+
+def test_deepdive_audio_classifies_github_503_as_typed_external():
+    payload = deepdive_audio.classify_publish_failure(
+        RuntimeError("HTTP 503: Service Unavailable"),
+        observed_at="2026-07-24T06:12:00+09:00",
+    )
+
+    assert payload == {
+        "ok": False,
+        "status": "blocked_external_readiness",
+        "gate_id": "github-release-upload",
+        "issue_code": "github_release_upload_transient",
+        "external_kind": "service_unavailable",
+        "external_system": "github-release",
+        "observed_error_code": "503",
+        "source_command": "gh release upload audio-deepdive",
+        "detail": "HTTP 503: Service Unavailable",
+        "observed_at": "2026-07-24T06:12:00+09:00",
+    }
+
+
+def test_deepdive_audio_main_returns_external_exit_code_and_json(tmp_path, monkeypatch, capsys):
+    mp3 = tmp_path / "2026-07-24.mp3"
+    mp3.write_bytes(b"deepdive-audio")
+
+    def fail_upload(args, **kwargs):
+        if args[:4] == ["gh", "release", "view", "audio-deepdive"]:
+            return type("Result", (), {"returncode": 0})()
+        raise RuntimeError("HTTP 502: Bad Gateway")
+
+    monkeypatch.setattr(deepdive_audio.proc, "quiet_run", fail_upload)
+
+    rc = deepdive_audio.main(["2026-07-24", "--mp3", str(mp3), "--json"])
+
+    assert rc == 71
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "blocked_external_readiness"
+    assert payload["issue_code"] == "github_release_upload_transient"
+    assert payload["external_system"] == "github-release"

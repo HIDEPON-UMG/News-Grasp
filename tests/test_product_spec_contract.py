@@ -235,6 +235,21 @@ def test_product_constitution_defines_repair_decision_debt_covenant() -> None:
         assert phrase in text
 
 
+def test_weekly_failure_source_of_truth_and_runner_terminal_semantics_are_documented() -> None:
+    text = _read(SPEC)
+
+    for phrase in [
+        "validator が生成した structured issue_code を唯一の分類正本",
+        "structured unknown を message prose から再分類してはならない",
+        "matrix は issue artifact と handler scope を実行前に照合",
+        "固定 attempt 回数を terminal predicate にしてはならない",
+        "deadline と typed repair ledger",
+        "GitHub Release upload の HTTP 502 / 503",
+        "blocked_external_readiness",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_has_human_commitment_review_gate() -> None:
     """Codex が spec 上の Human Commitment を自己判断で変更しない。"""
     text = _read(SPEC)

@@ -189,14 +189,19 @@ function Read-State {
     if (-not (Test-Path $StateFile)) {
         return $null
     }
-    try {
-        return Get-Content -LiteralPath $StateFile -Raw -Encoding UTF8 | ConvertFrom-Json
-    } catch {
-        $stamp = Get-Date -Format 'yyyyMMddHHmmss'
-        $corrupt = "$StateFile.corrupt.$stamp.json"
-        try { Copy-Item -LiteralPath $StateFile -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
-        return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            return Get-Content -LiteralPath $StateFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        } catch {
+            if ($attempt -lt 3) {
+                Start-Sleep -Milliseconds 100
+            }
+        }
     }
+    $stamp = Get-Date -Format 'yyyyMMddHHmmss'
+    $corrupt = "$StateFile.corrupt.$stamp.json"
+    try { Copy-Item -LiteralPath $StateFile -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
+    return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
 }
 
 function Write-StateAtomic {

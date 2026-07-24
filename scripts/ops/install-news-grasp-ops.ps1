@@ -200,6 +200,6 @@ if (-not $SkipTaskRegistration) {
 
 Write-Host "News-Grasp ops scripts installed to $BinDir"
 Write-Host "Backup manifest: $ManifestPath"
-if (-not $runnerRegistered) {
+if ((-not $SkipTaskRegistration) -and (-not $runnerRegistered)) {
     throw "failed to converge $RunnerTaskName action: $runnerRegisterError"
 }

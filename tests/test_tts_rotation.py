@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import date, timedelta
 
 from tools.tts import publish_audio
@@ -113,6 +114,36 @@ def test_publish_audio_main_returns_nonzero_when_publish_fails(monkeypatch):
     monkeypatch.setattr(publish_audio, "publish", lambda _date: None)
 
     assert publish_audio.main(["2026-06-17"]) == 1
+
+
+def test_github_release_502_is_classified_as_typed_external() -> None:
+    failure = publish_audio.classify_publish_failure(
+        RuntimeError("HTTP 502 Bad Gateway: Error creating policy"),
+        observed_at="2026-07-20T09:31:00+09:00",
+    )
+
+    assert failure["status"] == "blocked_external_readiness"
+    assert failure["issue_code"] == "github_release_upload_transient"
+    assert failure["external_system"] == "github-release"
+    assert failure["external_kind"] == "service_unavailable"
+    assert failure["observed_error_code"] == "502"
+    assert failure["source_command"] == "gh release upload audio-daily"
+
+
+def test_publish_audio_main_returns_external_readiness_code(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        publish_audio,
+        "publish",
+        lambda _date: publish_audio._record_publish_failure(
+            RuntimeError("HTTP 503 Service Unavailable"),
+            observed_at="2026-07-20T09:31:00+09:00",
+        ),
+    )
+
+    assert publish_audio.main(["2026-07-20", "--json"]) == 71
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "blocked_external_readiness"
+    assert payload["observed_error_code"] == "503"
 
 
 def test_publish_audio_main_returns_zero_when_publish_succeeds(monkeypatch):

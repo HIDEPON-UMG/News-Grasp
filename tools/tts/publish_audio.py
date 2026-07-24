@@ -23,10 +23,69 @@ REPO = "News-Grasp"
 GH_TIMEOUT_SEC = 120
 _ASSET_DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.mp3$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_HTTP_ERROR_RE = re.compile(r"\bHTTP\s+(?P<code>502|503)\b", re.IGNORECASE)
+_LAST_PUBLISH_FAILURE: dict[str, Any] | None = None
 
 
 def _warn(message: str) -> None:
     print(f"[tts][WARN] {message}", file=sys.stderr)
+
+
+def classify_publish_failure(
+    exc: Exception,
+    *,
+    observed_at: str | None = None,
+) -> dict[str, Any]:
+    """GitHub Release publish failureをrunnerが消費できるtyped payloadへ変換する。"""
+    detail = str(exc)
+    text = detail.casefold()
+    http_match = _HTTP_ERROR_RE.search(detail)
+    external = (
+        http_match is not None
+        or "bad gateway" in text
+        or "error creating policy" in text
+        or "service unavailable" in text
+        or "timed out" in text
+        or "audio url verification failed" in text
+    )
+    if external:
+        observed_error_code = http_match.group("code") if http_match else (
+            "timeout" if "timed out" in text else "unavailable"
+        )
+        return {
+            "ok": False,
+            "status": "blocked_external_readiness",
+            "gate_id": "github-release-upload",
+            "issue_code": "github_release_upload_transient",
+            "external_kind": "service_unavailable",
+            "external_system": "github-release",
+            "observed_error_code": observed_error_code,
+            "source_command": "gh release upload audio-daily",
+            "detail": detail,
+            "observed_at": observed_at or datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+    return {
+        "ok": False,
+        "status": "publish_failed",
+        "gate_id": "github-release-upload",
+        "issue_code": "audio_publish_local_failure",
+        "external_kind": "",
+        "external_system": "",
+        "observed_error_code": "",
+        "source_command": "python -m tools.tts.publish_audio",
+        "detail": detail,
+        "observed_at": observed_at or datetime.now().astimezone().isoformat(timespec="seconds"),
+    }
+
+
+def _record_publish_failure(
+    exc: Exception,
+    *,
+    observed_at: str | None = None,
+) -> None:
+    global _LAST_PUBLISH_FAILURE
+    _LAST_PUBLISH_FAILURE = classify_publish_failure(exc, observed_at=observed_at)
+    _warn(f"audio publish failed: {exc}")
 
 
 def _parse_day(day: str) -> date_type:
@@ -66,7 +125,7 @@ def ensure_release() -> bool:
         ], timeout=GH_TIMEOUT_SEC)
         return True
     except Exception as exc:
-        _warn(f"gh release prepare failed: {exc}")
+        _record_publish_failure(exc)
         return False
 
 
@@ -136,10 +195,12 @@ def latest_audio_for_pages(day: str | None = None) -> dict[str, str]:
 
 
 def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) -> dict[str, str] | None:
+    global _LAST_PUBLISH_FAILURE
+    _LAST_PUBLISH_FAILURE = None
     parsed_day = _parse_day(day)
     target = mp3_path or (BUILD_DIR / f"{day}.mp3")
     if not target.exists():
-        _warn(f"mp3 not found: {target}")
+        _record_publish_failure(FileNotFoundError(f"mp3 not found: {target}"))
         return None
     try:
         if dry_run:
@@ -152,23 +213,40 @@ def publish(day: str, mp3_path: Path | None = None, *, dry_run: bool = False) ->
         proc.quiet_run(["gh", "release", "upload", RELEASE_TAG, str(target), "--clobber"], timeout=GH_TIMEOUT_SEC)
         url = versioned_audio_url(day, target)
         if not _url_returns_200(url):
+            _record_publish_failure(RuntimeError(f"audio URL verification failed: {url}"))
             return None
         rotate(today=parsed_day)
         write_latest_audio(day, url)
         print(f"[tts] audio published: {url}")
         return {"latest_audio_date": day, "latest_audio_url": url}
     except Exception as exc:
-        _warn(f"audio publish failed: {exc}")
+        _record_publish_failure(exc)
         return None
 
 
 def main(argv: list[str] | None = None) -> int:
+    global _LAST_PUBLISH_FAILURE
     parser = argparse.ArgumentParser(description="日次朗読 mp3 を GitHub Releases に公開します。")
     parser.add_argument("date", help="YYYY-MM-DD")
     parser.add_argument("--dry-run", action="store_true", help="GitHub Releases へ upload せず latest_audio.json だけ検証用に更新する。")
+    parser.add_argument("--json", action="store_true", help="publish結果またはtyped failureをJSONで出力する。")
     args = parser.parse_args(argv)
+    _LAST_PUBLISH_FAILURE = None
     result = publish(args.date, dry_run=True) if args.dry_run else publish(args.date)
-    return 0 if result is not None else 1
+    if result is not None:
+        if args.json:
+            print(json.dumps({"ok": True, "status": "published_ok", **result}, ensure_ascii=False))
+        return 0
+    failure = _LAST_PUBLISH_FAILURE or {
+        "ok": False,
+        "status": "publish_failed",
+        "gate_id": "github-release-upload",
+        "issue_code": "audio_publish_local_failure",
+        "detail": "publish returned no result without typed failure evidence",
+    }
+    if args.json:
+        print(json.dumps(failure, ensure_ascii=False))
+    return 71 if failure.get("status") == "blocked_external_readiness" else 1
 
 
 if __name__ == "__main__":

@@ -641,15 +641,30 @@ def test_generation_quality_gate_uses_autonomous_gate() -> None:
     assert "tools.validate_generation_quality" in block
 
 
-def test_python_gate_skips_repair_after_final_attempt_failure() -> None:
-    """検証されない最終 attempt 後 repair は token と時間の無駄なので禁止する。"""
+def test_gate_convergence_is_deadline_and_repair_ledger_bound_not_fixed_attempt_bound() -> None:
+    """異なる typed issue の収束を固定5回で打ち切らず、deadline と repair ledger で止める。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     gate_body = runner.split("function Invoke-PythonGateWithRepair", 1)[1].split("function Invoke-AutonomousGate", 1)[0]
 
-    assert "$maxGateAttempts = 5" in gate_body
-    assert "if ($attempt -ge $maxGateAttempts)" in gate_body
-    assert "final attempt failed; skipping repair" in gate_body
-    assert gate_body.index("final attempt failed; skipping repair") < gate_body.index("tools.auto_repair_orchestrator")
+    assert "$maxGateAttempts = 5" not in gate_body
+    assert "for ($attempt = 1; ; $attempt++)" in gate_body
+    assert "final attempt failed; skipping repair" not in gate_body
+    assert "tools.auto_repair_orchestrator" in gate_body
+    assert "tools.gate_attempts" in runner
+
+
+def test_typed_repair_decision_is_written_before_retry_ledger_denial_returns() -> None:
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split(
+        "function Invoke-PythonGateWithRepair", 1
+    )[0]
+
+    decision_marker = "$decision = Read-RepairDecision"
+    retry_denied_marker = "gate retry ledger denied repair worker"
+    assert decision_marker in repair_body
+    assert retry_denied_marker in repair_body
+    assert repair_body.index(decision_marker) < repair_body.index(retry_denied_marker)
+    assert "Set-TypedRepairTerminalState" in repair_body
 
 
 def test_generation_quality_repair_failure_sets_typed_repair_status() -> None:
@@ -1666,6 +1681,20 @@ def test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state() ->
     assert "stale_seconds" in watcher
 
 
+def test_runner_and_watcher_retry_transient_state_reads_before_declaring_corrupt() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
+    runner_read = runner.split("function Read-RunnerStateOrNull", 1)[1].split(
+        "function Invoke-WithRunnerStateLock", 1
+    )[0]
+    watcher_read = watcher.split("function Read-State", 1)[1].split("function Write-StateAtomic", 1)[0]
+
+    for body in (runner_read, watcher_read):
+        assert "for ($attempt = 1; $attempt -le 3; $attempt++)" in body
+        assert "Start-Sleep -Milliseconds 100" in body
+        assert body.index("for ($attempt = 1; $attempt -le 3; $attempt++)") < body.index("corrupt_backup")
+
+
 def test_watcher_status_reports_stale_when_running_pid_is_dead(tmp_path: Path) -> None:
     """Status 表示は stale running を「まだ実行中」と誤表示しない。"""
     state_file = tmp_path / "state.json"
@@ -1997,6 +2026,36 @@ def test_runner_tts_is_required_before_pages_generation() -> None:
     assert "Stop-ContentGateWithoutFallback" not in block
 
 
+def test_runner_tts_publish_external_failure_preserves_typed_boundary() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("Daily TTS audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
+
+    assert "'tools.tts.publish_audio', $DateStamp, '--json'" in block
+    assert "if ($ttsRc -eq 71 -and $ttsStep.Name -eq 'tts publish_audio')" in block
+    assert "Stop-ExternalReadiness" in block
+    assert "-Kind 'github_release_upload_transient'" in block
+    assert "-System 'github-release'" in block
+    assert "-ExternalStatus 'service_unavailable'" in block
+
+
+def test_runner_deepdive_tts_publish_external_failure_preserves_typed_boundary() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    block = runner.split("DeepDive dialogue audio (fatal", 1)[1].split("2.9 digest/data commit", 1)[0]
+
+    assert "'tools.tts.deepdive_audio', $DateStamp, '--json'" in block
+    assert "if ($deepDiveTtsRc -eq 71 -and $deepDiveTtsStep.Name -eq 'deepdive dialogue publish')" in block
+    assert "Stop-ExternalReadiness" in block
+    assert "-Kind 'github_release_upload_transient'" in block
+    assert "-System 'github-release'" in block
+    assert "-ExternalStatus 'service_unavailable'" in block
+
+
+def test_installer_skip_task_registration_does_not_require_scheduler_convergence() -> None:
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+
+    assert "if ((-not $SkipTaskRegistration) -and (-not $runnerRegistered))" in installer
+
+
 def test_runner_tts_does_not_send_normal_notification() -> None:
     """TTS 失敗・成功だけで通常通知を送らず、通知は通常 publish verified 後に限定する。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
@@ -2180,4 +2239,6 @@ def test_runner_does_not_surface_retry_budget_as_repair_cause() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
     assert "repair worker denied by retry budget" not in runner
-    assert "gate retry limit reached before repair worker" in runner
+    assert "gate retry limit reached before repair worker" not in runner
+    assert "gate retry ledger denied repair worker" in runner
+    assert "preserving typed gate classification" in runner

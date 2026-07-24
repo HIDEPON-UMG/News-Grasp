@@ -983,10 +983,18 @@ def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
 
 def daily_quality_issue_code(message: str) -> str:
     text = message.casefold()
+    if "add followup_review_note" in text or "follow-up matched_with url date" in text:
+        return "followup_review_required"
     if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(message) or (
         "selected_total=" in text and "does not match digest article count" in text
     ):
         return "search_audit_count_mismatch"
+    if (
+        "coverage_terms_checked missing required terms" in text
+        or "dropped reasons are required" in text
+        or "queries must contain at least 3 search queries" in text
+    ):
+        return "search_audit_metadata_missing"
     if "hero_left" in text or "hero_right" in text:
         return "summary_hero_missing"
     if "card #" in text and "lacks required emphasis" in text:

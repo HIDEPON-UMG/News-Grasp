@@ -14,6 +14,7 @@ from tools.repair_coverage_matrix import (
     RepairDecision,
     classify_gate_issues,
     classify_gate_output,
+    structured_gate_payload,
 )
 from tools.repair_registry import UNIMPLEMENTED_STATUS, metadata as repair_metadata
 
@@ -167,7 +168,12 @@ def classify(gate_id: str, output: str) -> dict[str, Any]:
     if decision.status_on_failure != "blocked_unknown_repair_class":
         return _payload_from_decision(decision, decisions=decisions)
 
-    # 既存互換: URL 404/410 等の明示 quarantine だけは旧 gate policy へ委譲する。
+    # Structured output の issue_code は validator/matrix が唯一の正本。
+    # message prose から別 class へ救済すると unknown の発生源が隠れるため禁止する。
+    if structured_gate_payload(output) is not None:
+        return _payload_from_decision(decision, decisions=decisions)
+
+    # 既存 unstructured output 互換: URL 404/410 等の明示 quarantine だけは旧 gate policy へ委譲する。
     # 未知 failure を repairable へ倒す用途には使わない。
     action = classify_gate_failure(gate_id, output)
     if action == GateAction.QUARANTINE:

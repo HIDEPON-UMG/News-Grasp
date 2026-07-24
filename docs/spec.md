@@ -1,7 +1,7 @@
 # Product Spec: News-Grasp
 
 > **Status**: Constitution
-> **Last Updated**: 2026-07-16
+> **Last Updated**: 2026-07-24
 > **Owner**: News-Grasp Operator
 
 ## Product Constitution
@@ -323,6 +323,14 @@ repair の根本対策は、repair の回数を増やすことではなく、val
 | `blocked_deterministic_repair_not_applicable` | handler は存在するが現 artifact を修復できず、別 issue へ継続できない。 |
 | `repair_handler_output_scope_violation` | handler が許可 scope 外 artifact を返す、または変更しようとした。hard block。 |
 | `blocked_unknown_repair_class` | coverage matrix 未掲載または未知 issue。推測 repair しない。 |
+
+### Weekly failure source-of-truth and terminal semantics
+
+2026-07-17〜2026-07-24 の incident corpus は、validator が生成した structured issue_code を唯一の分類正本として回帰化する。structured unknown を message prose から再分類してはならない。issue_code が `unknown` の場合は上流 validator / schema gap として保持し、coverage matrix や orchestrator が `404`、`thumb` 等の語から別 class へ救済しない。
+
+matrix は issue artifact と handler scope を実行前に照合し、scope 外 artifact しかない場合は `repair_context_scope_mismatch` を返す。registry は登録済み handler の実行と出力 scope を所有し、orchestrator は matrix decision の順序付き ledger を消費する。runner は固定 attempt 回数を terminal predicate にしてはならない。収束限界は deadline と typed repair ledger が所有し、typed fatal / typed external / unimplemented / scope mismatch を generic final-attempt exhaustion へ丸めない。
+
+GitHub Release upload の HTTP 502 / 503、GitHub Pages、YouTube、OAuth、quota は local content defect と分離する。GitHub Release の日次音声・DeepDive 音声 upload が 502 / 503 または service unavailable の場合、runner は `blocked_external_readiness` と external system / observed status / evidence を残し、local repair を起動しない。
 
 ## Repair Decision Debt Commitment
 

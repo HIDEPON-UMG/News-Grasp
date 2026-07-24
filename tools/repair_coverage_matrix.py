@@ -576,6 +576,17 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "youtube",
     ),
     CoverageRow(
+        "github-release-upload",
+        "github_release_upload_transient",
+        RepairClass.TYPED_EXTERNAL,
+        "",
+        ("build/tts/{date}.mp3",),
+        "github-release-upload",
+        "blocked_external_readiness",
+        "service_unavailable",
+        "github-release",
+    ),
+    CoverageRow(
         "github-pages",
         "deploy_workflow_not_success",
         RepairClass.TYPED_EXTERNAL,
@@ -683,6 +694,24 @@ def missing_coverage(required: Iterable[tuple[str, str]] | None = None) -> list[
     return sorted(required_set - covered)
 
 
+def _artifact_allowed_by_row(artifact: str, allowed_patterns: tuple[str, ...]) -> bool:
+    normalized = artifact.replace("\\", "/").lstrip("./")
+    path_patterns = tuple(pattern for pattern in allowed_patterns if "/" in pattern.replace("\\", "/"))
+    if not path_patterns:
+        return True
+    for pattern in path_patterns:
+        allowed = pattern.replace("\\", "/").lstrip("./")
+        marker_positions = [pos for pos in (allowed.find("{"), allowed.find("*")) if pos >= 0]
+        if not marker_positions:
+            if normalized == allowed or normalized.startswith(allowed.rstrip("/") + "/"):
+                return True
+            continue
+        prefix = allowed[: min(marker_positions)]
+        if prefix and normalized.startswith(prefix):
+            return True
+    return False
+
+
 def classify_repair_issue(issue: RepairIssue) -> RepairDecision:
     row = find_row(issue.gate_id, issue.issue_code)
     if row is None or (row.gate_id, row.issue_code) == ("any", "unknown"):
@@ -701,6 +730,40 @@ def classify_repair_issue(issue: RepairIssue) -> RepairDecision:
             unknown_issue,
             status_override="blocked_unknown_repair_class",
         )
+
+    if (
+        row.repair_class
+        in {
+            RepairClass.DETERMINISTIC_HANDLER,
+            RepairClass.LLM_GENERATE_MISSING_ARTIFACT,
+            RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        }
+        and issue.artifact_paths
+        and row.allowed_artifacts
+    ):
+        outside_scope = [
+            artifact
+            for artifact in issue.artifact_paths
+            if not _artifact_allowed_by_row(artifact, row.allowed_artifacts)
+        ]
+        if outside_scope:
+            return RepairDecision(
+                gate_id=issue.gate_id,
+                issue_code=issue.issue_code,
+                repair_class=RepairClass.TYPED_FATAL,
+                verify_gate=row.verify_gate,
+                status_on_failure="repair_context_scope_mismatch",
+                artifact_paths=issue.artifact_paths,
+                issue_date=issue.issue_date,
+                category=issue.category,
+                evidence=dict(issue.evidence),
+                reason=(
+                    "issue artifact outside handler scope: "
+                    + ", ".join(outside_scope)
+                    + "; allowed="
+                    + ", ".join(row.allowed_artifacts)
+                ),
+            )
 
     if row.repair_class == RepairClass.LLM_GENERATE_MISSING_ARTIFACT:
         typed_reason = str(issue.evidence.get("typed_reason", ""))
@@ -927,26 +990,34 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
     return "unknown"
 
 
-def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
+def structured_gate_payload(output: str) -> dict[str, object] | None:
+    """Validator output に含まれる先頭の structured JSON object を返す。"""
     output = output or ""
     stripped = output.strip().lstrip("\ufeff")
-    if stripped:
-        try:
-            payload = json.loads(stripped)
-        except json.JSONDecodeError:
-            payload = None
-            # Validator は structured JSON の前に WARNING を出すことがある。
-            # 行 regex へ落とすと JSON の message 行を artifact path と誤認するため、
-            # 先頭の JSON object を構造のまま回収する。
-            json_start = stripped.find("{")
-            if json_start >= 0:
-                try:
-                    candidate, _ = json.JSONDecoder().raw_decode(stripped, json_start)
-                    if isinstance(candidate, dict):
-                        payload = candidate
-                except json.JSONDecodeError:
-                    payload = None
-        if isinstance(payload, dict):
+    if not stripped:
+        return None
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        payload = None
+        # Validator は structured JSON の前に WARNING を出すことがある。
+        # 行 regex へ落とすと JSON の message 行を artifact path と誤認するため、
+        # 先頭の JSON object を構造のまま回収する。
+        json_start = stripped.find("{")
+        if json_start >= 0:
+            try:
+                candidate, _ = json.JSONDecoder().raw_decode(stripped, json_start)
+                if isinstance(candidate, dict):
+                    payload = candidate
+            except json.JSONDecodeError:
+                payload = None
+    return payload if isinstance(payload, dict) else None
+
+
+def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
+    output = output or ""
+    payload = structured_gate_payload(output)
+    if payload is not None:
             raw_issues = payload.get("issues") or payload.get("errors") or []
             if isinstance(raw_issues, list) and raw_issues:
                 issues: list[RepairIssue] = []
@@ -955,8 +1026,6 @@ def issues_from_gate_output(gate_id: str, output: str) -> list[RepairIssue]:
                         gate_for_issue = str(raw.get("gate_id") or gate_id)
                         message = str(raw.get("message") or raw.get("error") or "")
                         issue_code = str(raw.get("issue_code") or raw.get("code") or "unknown")
-                        if issue_code == "unknown" and message:
-                            issue_code = _issue_code_from_text(gate_for_issue, message)
                         metadata = (
                             _followup_review_metadata(message)
                             or _search_audit_count_mismatch_metadata(message)

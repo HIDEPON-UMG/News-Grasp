@@ -125,6 +125,31 @@ def test_classify_preserves_structured_artifact_after_warning_prefix(capsys) -> 
     assert payload["artifact_paths"] == ["data/search_audit/2026-07-13/fx.json"]
 
 
+def test_classify_does_not_rescue_structured_unknown_from_message_prose(capsys) -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "daily-quality",
+            "issues": [
+                {
+                    "gate_id": "daily-quality",
+                    "issue_code": "unknown",
+                    "message": "https://example.invalid/article returned 404",
+                    "issue_date": "2026-07-22",
+                }
+            ],
+        }
+    )
+
+    rc = main(["classify", "--gate-id", "daily-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["issue_code"] == "unknown"
+    assert payload["failure_status"] == "blocked_unknown_repair_class"
+    assert payload.get("handler_id") is None
+
+
 def test_classify_routes_audio_script_quality_to_targeted_rewrite(capsys) -> None:
     output = json.dumps(
         {

@@ -56,6 +56,19 @@ class HistoricalFailureHorizontalAudit:
     required_followup: str
 
 
+@dataclass(frozen=True)
+class WeeklyFailureRegressionCase:
+    issue_date: str
+    gate_id: str
+    issue_code: str
+    expected_repair_class: str
+    expected_status: str
+    expected_handler_id: str = ""
+    artifact_paths: tuple[str, ...] = ()
+    category: str = ""
+    evidence: tuple[tuple[str, str], ...] = ()
+
+
 SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
     HistoricalFailureScenario(
         "2026-06-12",
@@ -448,6 +461,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "runtime_e2e_required",
     ),
     HistoricalFailureScenario(
+        "2026-07-20",
+        "daily-quality / generation-quality / GitHub Release upload / post-deepdive resume / publish-complete",
+        "local digest and record drift exposed sequential gate defects before GitHub Release upload returned HTTP 502/503 Error creating policy",
+        "compound local repair convergence and GitHub Release external boundary",
+        "local deterministic repair must converge before publish, while GitHub Release HTTP 502/503 must retain complete typed external evidence instead of becoming a local-tool defect",
+        "daily-quality and generation-quality compound fixtures, GitHub Release upload external fixture, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "build/incidents/2026-07-20-daily-batch-github-audio-upload-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
         "2026-07-21",
         "daily-quality / digest-record sync / category hero title quality / post-deepdive resume / publish-complete",
         "record truth for title_ja and thumb did not flow back into digest markdown, leaving an untranslated Game title and empty category thumbnails before a later SEO title hit category hero line quality",
@@ -476,6 +499,139 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "dropped_or_not_selected registry fixture, OpenAI budget title hero split fixture, daily-quality gate repair, full pytest-static, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
         "docs/incidents/2026-07-23-daily-quality-search-audit-hero-report.html",
         "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-07-24",
+        "daily-quality / editorial section eligibility / post-daily-quality resume / publish-complete",
+        "category digest editorial heading ### §01 inherited article metadata inside a parser block and was treated as a card with a missing thumbnail",
+        "validator article card eligibility boundary",
+        "thumbnail validation must use article card eligibility as its source of truth and exclude editorial sections without weakening real-card thumbnail checks",
+        "daily-quality editorial section exclusion fixture, real article empty-thumb negative fixture, same-gate rerun, post-daily-quality runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-24-daily-quality-editorial-section-report.html",
+        "runtime_e2e_required",
+    ),
+)
+
+
+WEEKLY_FAILURE_REGRESSION_CASES: tuple[WeeklyFailureRegressionCase, ...] = (
+    WeeklyFailureRegressionCase(
+        "2026-07-17",
+        "pytest-static",
+        "local_contract_failure",
+        "typed_fatal",
+        "blocked_local_contract_failure",
+        artifact_paths=("tests/", "tools/"),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-18",
+        "pytest-static",
+        "local_contract_failure",
+        "typed_fatal",
+        "blocked_local_contract_failure",
+        artifact_paths=("tests/", "tools/"),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-19",
+        "daily-quality",
+        "top_article_stale",
+        "deterministic_handler",
+        "blocked_refill_unresolved",
+        "url-quarantine-refill",
+        ("digest/AI/2026-07-19-AI.md",),
+        "ai",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-19",
+        "daily-quality",
+        "search_audit_count_mismatch",
+        "deterministic_handler",
+        "blocked_deterministic_repair_failed",
+        "search-audit-metadata-patch",
+        ("data/search_audit/2026-07-19/ai.json",),
+        "ai",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-20",
+        "github-release-upload",
+        "github_release_upload_transient",
+        "typed_external",
+        "blocked_external_readiness",
+        artifact_paths=("build/tts/2026-07-20.mp3",),
+        evidence=(
+            ("external_system", "github-release"),
+            ("external_kind", "service_unavailable"),
+            ("observed_error_code", "502"),
+            ("source_command", "gh release upload audio-daily"),
+            ("detail", "HTTP 502 Error creating policy"),
+            ("observed_at", "2026-07-20T09:31:00+09:00"),
+        ),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-21",
+        "daily-quality",
+        "digest_title_ja_untranslated",
+        "deterministic_handler",
+        "blocked_deterministic_repair_failed",
+        "digest-record-sync-patch",
+        ("digest/Game/2026-07-21-Game.md",),
+        "game",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-21",
+        "daily-quality",
+        "thumb_invalid_or_missing",
+        "deterministic_handler",
+        "blocked_refill_unresolved",
+        "url-quarantine-refill",
+        ("data/articles.jsonl", "digest/Game/2026-07-21-Game.md"),
+        "game",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-22",
+        "daily-quality",
+        "search_audit_metadata_missing",
+        "deterministic_handler",
+        "blocked_deterministic_repair_failed",
+        "search-audit-metadata-patch",
+        ("data/search_audit/2026-07-22/ai.json",),
+        "ai",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-22",
+        "daily-quality",
+        "followup_review_required",
+        "deterministic_handler",
+        "blocked_followup_review_rewrite_failed",
+        "followup-review-note-patch",
+        ("data/articles.jsonl",),
+        "ai",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-23",
+        "daily-quality",
+        "search_audit_metadata_missing",
+        "deterministic_handler",
+        "blocked_deterministic_repair_failed",
+        "search-audit-metadata-patch",
+        ("data/search_audit/2026-07-23/ai.json",),
+        "ai",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-23",
+        "pytest-static",
+        "local_contract_failure",
+        "typed_fatal",
+        "blocked_local_contract_failure",
+        artifact_paths=("tests/", "tools/"),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-24",
+        "daily-quality",
+        "editorial_section_not_article",
+        "validator_exclusion",
+        "not_applicable",
+        artifact_paths=("digest/FX/2026-07-24-FX.md",),
+        category="fx",
     ),
 )
 
@@ -607,6 +763,10 @@ COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
 
 def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
     return SCENARIOS
+
+
+def weekly_failure_regression_cases() -> tuple[WeeklyFailureRegressionCase, ...]:
+    return WEEKLY_FAILURE_REGRESSION_CASES
 
 
 def historical_failure_horizontal_audits() -> tuple[HistoricalFailureHorizontalAudit, ...]:
