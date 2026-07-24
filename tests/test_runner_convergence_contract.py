@@ -557,6 +557,32 @@ def test_codex_auth_preflight_runs_before_llm_repair() -> None:
     assert repair_body.index("Test-CodexAuthReadiness") < repair_body.index("Invoke-CodexWrapper")
 
 
+def test_codex_doctor_mcp_failure_does_not_block_auth_ready_repair() -> None:
+    """codex doctor の MCP 設定警告を ChatGPT auth 失効と誤分類しない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    auth_body = runner.split("function Test-CodexAuthReadiness", 1)[1].split(
+        "function Test-YouTubePodcastAuthReadiness", 1
+    )[0]
+
+    assert "codex doctor non-auth failure ignored" in auth_body
+    assert "mcp" in auth_body.lower()
+    assert "auth is configured" in auth_body
+    assert "stored ChatGPT tokens" in auth_body
+    assert "codex auth readiness failed: codex doctor rc=$doctorRc" not in auth_body
+
+
+def test_git_add_retries_transient_index_lock_before_publish_commits() -> None:
+    """公開前 git add は transient index.lock で即 fatal にせず bounded retry する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+
+    assert "function Invoke-GitAddWithIndexLockRetry" in runner
+    assert "git add $Label retry after rc=128" in runner
+    assert "Invoke-GitAddWithIndexLockRetry -Label 'digest/data' -Pathspecs @('digest/', 'data/')" in runner
+    assert "Invoke-GitAddWithIndexLockRetry -Label 'docs' -Pathspecs @('docs/')" in runner
+    assert "& $GitExe -C $RepoDir add 'digest/' 'data/'" not in runner
+    assert "& $GitExe -C $RepoDir add 'docs/'" not in runner
+
+
 def test_llm_repair_uses_repair_model_policy_not_style_editor() -> None:
     """LLM repair は文体 editor の mini default を流用せず repair role を使う。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")

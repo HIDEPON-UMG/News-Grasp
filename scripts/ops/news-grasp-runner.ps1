@@ -1010,6 +1010,40 @@ function Invoke-LoggedCapture {
     }
 }
 
+function Invoke-GitAddWithIndexLockRetry {
+    param(
+        [string] $Label,
+        [string[]] $Pathspecs,
+        [int] $MaxAttempts = 5
+    )
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        Invoke-Logged { & $GitExe -C $RepoDir add @Pathspecs }
+        $addRc = $LASTEXITCODE
+        if ($addRc -eq 0) {
+            return $true
+        }
+        if ($addRc -eq 128 -and $attempt -lt $MaxAttempts) {
+            $lockPath = Join-Path $RepoDir '.git\index.lock'
+            $lockState = 'absent'
+            if (Test-Path -LiteralPath $lockPath) {
+                try {
+                    $lock = Get-Item -LiteralPath $lockPath -ErrorAction Stop
+                    $lockState = "present last_write=$($lock.LastWriteTime.ToString('yyyy-MM-ddTHH:mm:ssK')) length=$($lock.Length)"
+                } catch {
+                    $lockState = "present unreadable=$($_.Exception.Message)"
+                }
+            }
+            Write-Log "git add $Label retry after rc=128 attempt=$attempt/$MaxAttempts index_lock=$lockState"
+            Start-Sleep -Seconds 3
+            continue
+        }
+        Write-Log "git add $Label failed after attempt=$attempt rc=$addRc"
+        return $false
+    }
+    Write-Log "git add $Label failed after $MaxAttempts attempts"
+    return $false
+}
+
 function Invoke-PythonStdoutFileUtf8 {
     param(
         [string[]] $PythonArgs,
@@ -1148,14 +1182,32 @@ function Test-CodexAuthReadiness {
         return $false
     }
     Push-Location $RepoDir
+    $doctorCapture = Join-Path $env:TEMP ("news-grasp-codex-doctor-$DateStamp-$PID.log")
     try {
-        Invoke-Logged { & $CodexExe 'doctor' }
+        Invoke-LoggedCapture -CapturePath $doctorCapture -Block { & $CodexExe 'doctor' }
         $doctorRc = $LASTEXITCODE
     } finally {
         Pop-Location
     }
     if ($doctorRc -ne 0) {
-        Write-Log "codex auth readiness failed: codex doctor rc=$doctorRc"
+        $doctorText = ''
+        if (Test-Path -LiteralPath $doctorCapture) {
+            $doctorText = Get-Content -LiteralPath $doctorCapture -Raw -Encoding UTF8
+        }
+        $authConfigured = ($doctorText -match 'auth is configured' -or $doctorText -match 'stored auth mode\s+chatgpt')
+        $chatGptTokens = ($doctorText -match 'stored ChatGPT tokens\s+true' -or $doctorText -match 'ChatGPT tokens\s+true')
+        $mcpFailure = ($doctorText -match '(?im)^\s*[✗x]\s+mcp\b' -or $doctorText -match 'MCP configuration')
+        $authFailure = (
+            $doctorText -match 'auth is not configured' -or
+            $doctorText -match 'stored ChatGPT tokens\s+false' -or
+            $doctorText -match 'stored auth mode\s+(none|api-key)' -or
+            $doctorText -match 'auth file.*missing'
+        )
+        if ($authConfigured -and $chatGptTokens -and $mcpFailure -and -not $authFailure) {
+            Write-Log "codex doctor non-auth failure ignored: rc=$doctorRc reason=mcp auth is configured stored ChatGPT tokens true"
+            return $true
+        }
+        Write-Log "codex auth readiness failed: codex doctor auth rc=$doctorRc"
         return $false
     }
     return $true
@@ -3496,8 +3548,10 @@ foreach ($deepDiveTtsStep in @(
 if ($NoPublish) {
     Write-Log 'NoPublish mode: skipping digest/data git add + commit'
 } else {
-    Invoke-Logged { & $GitExe -C $RepoDir add 'digest/' 'data/' }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add digest/data failed (rc=$LASTEXITCODE)"; exit 1 }
+    if (-not (Invoke-GitAddWithIndexLockRetry -Label 'digest/data' -Pathspecs @('digest/', 'data/'))) {
+        Write-Log "ERROR: git add digest/data failed"
+        exit 1
+    }
     Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet }
     $digestDiffRc = $LASTEXITCODE
     if ($digestDiffRc -eq 1) {
@@ -3609,8 +3663,10 @@ if ($markOkRc -ne 0) { Write-Log "WARN: publish_fallback mark-ok exited $markOkR
 if ($NoPublish) {
     Write-Log 'NoPublish mode: skipping docs git add + commit'
 } else {
-    Invoke-Logged { & $GitExe -C $RepoDir add 'docs/' }
-    if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add docs/ failed (rc=$LASTEXITCODE)"; exit 1 }
+    if (-not (Invoke-GitAddWithIndexLockRetry -Label 'docs' -Pathspecs @('docs/'))) {
+        Write-Log "ERROR: git add docs/ failed"
+        exit 1
+    }
 
     # git diff --cached --quiet docs/ は差分があると exit 1、無いと exit 0。
     Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- 'docs/' }

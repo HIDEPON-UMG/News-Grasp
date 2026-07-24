@@ -92,7 +92,11 @@ def test_runner_commits_digest_sources_before_push():
     消えたら FAIL する。
     """
     src = _read_runner()
-    assert re.search(r"add\s+'digest/'\s+'data/'", src), (
+    stages_digest_data = (
+        re.search(r"add\s+'digest/'\s+'data/'", src)
+        or "Invoke-GitAddWithIndexLockRetry -Label 'digest/data' -Pathspecs @('digest/', 'data/')" in src
+    )
+    assert stages_digest_data, (
         "news-grasp-runner.ps1 に digest/ + data/ を stage する step がありません。\n"
         "claude は commit しない設計 (routine-system.md ステップ 6) のため、runner が\n"
         "gate 通過後に digest/data を commit しないと本日号ソースが remote に出ない。"
