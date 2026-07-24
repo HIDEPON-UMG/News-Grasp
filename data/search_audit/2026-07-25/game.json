@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-25",
+  "category_id": "game",
+  "queries": [
+    "stage1 candidate file: build/deduped-candidates/game.jsonl",
+    "site:famitsu.com 初代 メタルギアソリッド Steam Xbox 期間限定 無料プレイ 2026",
+    "site:gundam-gcg.com Freedom Ascension GD05 2026",
+    "Minecraft Dungeons いっせいトライアル 7月27日 2026",
+    "Universal Atari 10 game properties film rights July 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": ["Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix"],
+  "dropped": [
+    {"title": "プロ野球オールスターゲーム2026丨日程・放送予定・ライブ配信・選手一覧・見どころ", "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE5jT294MkdTUjJOa05LZ1U5dUFCSWFRTlZncThRaXowMEd1dElWOFZoU0YwbUhLWGtjeUYyckxyZFpYVHA3cXZqakFxUk9wUTNCVFZ2MER0Rmc3QlZVR3RPQnBRVVFJOFV0TTNoN3JTclRXdw?oc=5", "reason": "スポーツニュースで対象外"},
+    {"title": "【ご確認ください】２０２６／２７明治安田J1リーグの ホームゲーム運営方法について", "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE42UTZEc2xGSGdfUmF0N3pQd1lYNWVMMFZLLTUzYnI1TVQ1MzU4Y0xVX2xYc1I4UTd1QUlieThfVDBsUVh3LWtqTno4NnpmMVh2c0E?oc=5", "reason": "スポーツ運営情報で対象外"},
+    {"title": "『カービィのエアライダー』のオンライン体験会「おためしライド」を明日から開催。", "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQdkhkc3RFdXdGYThSdld3YUpadHVuR0xrLWV6WlpHck5fWEhkVVRfY01TZWFTd2tRbGI4cEJYMjlzV0RvdnIxZ1NOTlhwd2NaZUxGYmZxVDYzZGJsczRDTjJpdktKMEJLTjZBcGEyQmZ5YXdCRzdhYTJjelU0YUN6bFhQN3F1QQ?oc=5", "reason": "canonical記事の当日公開日を確認できず、検索結果が2025年記事へ遡ったため除外"},
+    {"title": "「三國志14 with パワーアップキット Complete Edition」，Steamでプレオーダーを開始。", "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE5fWFJDQklMZEdxdTBLUmVYRm1tX0c1aWxDWm9JLVhVZmd2YUlBeTNjOW16VHN1TkFOR1lPY19MSFMyaDJNVVIzR2ZFSEFXeGhvX0pEZ1FJS2pwQUxfWDkyUQ?oc=5", "reason": "当日記事のcanonicalと公開日を一次確認できず、既確認の6月記事へ遡ったため除外"},
+    {"title": "ASUS、プロゲームチーム「T1」とコラボしたグラフィックカードを発売", "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTFBUY09NM3FJaGg0RkxRazl6a3FvNURhSVFJSFZVZkFBMFM0QXVkcU5xRUNRZWtzQW9ZMHlmNGdIU0lBYkl5QlVySEMtUnJTNlB2VnVuS3R5VEZzczZyRE9IUkpYVXNsNUVPS2c?oc=5", "reason": "ゲーム周辺機器ニュースで本体カテゴリの優先度が低い"}
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "dedup_note": "Stage1 dedup済み候補を使用。広域収集・横断dedup・tools/dedup.py再実行は行っていない。"
+}

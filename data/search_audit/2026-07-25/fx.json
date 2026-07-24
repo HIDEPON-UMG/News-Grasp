@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-25",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "日銀、7月会合で政策金利据え置きへ 物価上振れリスクの警戒継続",
+    "ＮＹ外為市場＝ドル対円で高止まり、163円台後半 来週の日米中銀会合に注目",
+    "アングル：利上げに距離置くウォーシュＦＲＢ議長、7月ＦＯＭＣで試練に直面",
+    "ECB、7月は予想通り据え置き、追加利上げを準備",
+    "片山財務相、断固たる措置「果断にやる」 163円台後半の為替けん制"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_dedup_repeated": false,
+  "cross_category_dedup_repeated": false,
+  "canonical_resolution": {
+    "resolved_total": 3,
+    "method": "targeted_search_only",
+    "resolved_urls": [
+      "https://www.newsweekjapan.jp/articles/-/329363",
+      "https://www.newsweekjapan.jp/articles/-/329329",
+      "https://www.newsweekjapan.jp/articles/-/329293"
+    ]
+  },
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "dropped": [
+    {"title": "米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示", "reason": "レート表示ページでニュース性がなく、canonical記事を確認できない"},
+    {"title": "日銀、7月会合で政策金利据え置きの公算大 利上げ路線維持の見込み", "reason": "採用したReutersの日銀会合見通しと同一テーマで、一次情報性と内容の重なりを考慮して除外"},
+    {"title": "日銀7月会合、政策金利据え置きへ 26年度成長率は上方修正を検討", "reason": "採用したReutersの日銀会合見通しと同一テーマの重複"},
+    {"title": "【ドル/円、来週の見通し】ドル円、170円へのカウントダウン…FOMC・日銀会合でドル高・円安が加速するのか＿2026/7/24", "reason": "短期見通しで、当日実績を伝えるReuters記事を優先"},
+    {"title": "ＥＣＢ、7月は予想通り据え置き、追加利上げを準備", "reason": "検索結果で内容は確認できたが、候補のPictet canonicalを当日記事として確定できず、採用記事内のECB記述に統合"},
+    {"title": "片山財務相、断固たる措置「果断にやる」 163円台後半の為替けん制", "reason": "採用したNY外為市場Reuters記事に同じ発言と介入警戒が含まれるため重複"},
+    {"title": "原油高再燃、東京市場「トリプル安」円安進み1ドル=163円台後半", "reason": "asahi.comがrobots.txtで取得不能のためcanonical本文とURL生存を検証できず、採用見送り"},
+    {"title": "ドル円、円安急進の可能性 164円目前 日米協調為替介入への警戒も", "reason": "採用したNY外為市場Reuters記事と同じ相場局面・介入テーマの見通し記事"},
+    {"title": "ドル円は１６３.８０円台で動き落ち着く＝ＮＹ為替", "reason": "採用したNY外為市場Reuters記事と同一局面の市況速報"},
+    {"title": "FX個人投資家動向｜米ドルや南アランドに動意、ドル円売り越しが拡大 2026年7月24日", "reason": "公開日根拠を候補内で確認できず、canonicalを確定できないため除外"},
+    {"title": "ドル円高値圏でもみ合い、163円台の買いオーダーは限定的 今日の外為注文情報 2026/7/24 17:00", "reason": "注文情報の短期速報で、採用した市場概況に包含されるため除外"},
+    {"title": "来週の豪ドル・NZドル為替予想： 「RBAの追加利上げが早まる！？ 注目の豪4-6月期CPI」2026/07/24", "reason": "canonicalと公開日根拠を確定できず、FX全体への影響が相対的に小さいため除外"},
+    {"title": "株価動揺、それでも日銀利上げ観測高まる 10月を意識", "reason": "日銀会合見通しと円安テーマが重複し、canonical本文を確定できないため除外"},
+    {"title": "日銀のタカ派姿勢に備えよ、歴史的な円安でヘッジ推奨広がる", "reason": "Bloomberg候補のcanonicalと公開日根拠を確定できず、日銀・円安テーマに包含"},
+    {"title": "アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型の基準価額・投資信託情報", "reason": "投資信託の定型情報でニュース性が低い"},
+    {"title": "【テクニカル】乖離ランク＝オセアニア通貨が上位", "reason": "テクニカル速報で当日記事のcanonicalを確定できない"},
+    {"title": "FX実践解説、トルコリラ「新興国通貨スター誕生の兆し」（2026年7月24日）", "reason": "実践解説で一次情報性が低く、主要市場の政策・相場記事を優先"},
+    {"title": "ドル／円は方向感模索、中東情勢や日米金融政策会合など材料多数＝来週の外為市場", "reason": "採用したNY外為市場Reuters記事に同じ来週の会合・中東情勢の論点が含まれるため除外"},
+    {"title": "日銀の７月決定会合、政策金利据え置き公算大…利上げ影響を見極める必要性指摘する意見", "reason": "採用したReutersの日銀会合見通しと同一テーマの重複"},
+    {"title": "ドル円、円安急進の可能性 164円目前 日米協調為替介入への警戒も", "reason": "NY外為市場Reuters記事と同じ円安・介入テーマの見通し記事"}
+  ],
+  "quality_shortfall_reason": "Stage1候補25件からcanonical解決できた3件を選定。重複、短期見通し、レート表示、取得不能または当日記事として裏付け不能な候補を除外し、品質を優先した。"
+}

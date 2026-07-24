@@ -1,0 +1,85 @@
+{
+  "date": "2026-07-25",
+  "category_id": "it",
+  "category": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:keidanren.or.jp サイバーセキュリティ対策の強化 No.3738",
+    "site:sbbit.jp Sakana AI サイバー防御特化 マルチエージェントAI Fugu-Cyber 提供開始",
+    "site:prtimes.jp 脆弱性管理クラウド yamory Google Cloud Next Tokyo",
+    "AIは脅威 Google DeepMind AI反乱対策マニュアル",
+    "site:prtimes.jp 日本DX大賞2026 受賞24プロジェクト"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "selected": [
+    {
+      "title": "サイバーセキュリティ対策の強化 (2026年7月23日 No.3738)",
+      "url": "https://www.keidanren.or.jp/journal/times/2026/0723_05.html",
+      "reason": "官民のAI安全・サイバー対策を一次情報で確認"
+    },
+    {
+      "title": "〖AIは脅威〗Google DeepMindが「AI反乱対策マニュアル」を公開 AIによる人間の意図しない行動を、システムレベルで防衛",
+      "url": "https://www.sbbit.jp/article/cont1/186253",
+      "reason": "自律型AIの統制フレームワークを当日記事で確認"
+    },
+    {
+      "title": "Sakana AI、サイバー防御特化のマルチエージェントAI「Fugu-Cyber」を提供開始",
+      "url": "https://www.sbbit.jp/article/cont1/186251",
+      "reason": "防御AIの提供開始と申請制を当日記事で確認"
+    },
+    {
+      "title": "脆弱性管理クラウド「yamory」、「Google Cloud Next Tokyo」出展および登壇お知らせ",
+      "url": "https://prtimes.jp/main/html/rd/p/000000826.000034075.html",
+      "reason": "サプライチェーン脆弱性管理のイベント発表を確認"
+    },
+    {
+      "title": "〖過去最多186件のエントリー〗「日本DX大賞2026」全6部門の受賞24プロジェクトが決定！7/22・23に表彰式を開催",
+      "url": "https://prtimes.jp/main/html/rd/p/000000166.000115435.html",
+      "reason": "現場実装型DXの受賞結果を確認"
+    }
+  ],
+  "dropped": [
+    {
+      "title": "米アルファベット決算 クラウド好調で増収増益",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBYVHlBalVPUnFCNGljY05XVW41bFVEaDVSZHpDeEJWRkRnSGxvQjFYdjk3c3JEbXUtUW5WWEF5eEtQQWtzRUdJejZxN0RUcmlkVkJxY0hmOWFKYnVjOEkwVG9YSQ?oc=5",
+      "reason": "候補元がGoogle News中継URLのままでcanonical本文を確定できず"
+    },
+    {
+      "title": "EU欧州委、TikTokが子ども保護不十分で巨大IT規制違反との暫定見解",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE1ERnJGU1N0N25kNnBZZHBrNFZCMTVaWmVXY3plVVdVYkNKdkw2bGxHVmp0VUU5WlF0SVRKM3dvbVhBemcta2tfM25Ick9SZU50MGJ5QnloajRQZEJyOUhrb3VZbEw0bVRRdXQweWVrV0tlSTZDNHfSAYoBQVVfeXFMT2xxRXBBdW9wcDFWeVNVSEc4SGlmcjJ2SVNZTTN1eVI5ZUlRY3BsWlhSWE5uNDhUZ0U5WnRuYWRya0lJRmNsX1FudzlJNUk1bm9TeGNwUXFYQUdwYzVDNmZ1Qm8wbzN5MTFRRnJWazNTcWptcGFuMGdDV3FUeWhFM2RVWWd1c2FXYVZB?oc=5",
+      "reason": "候補元がGoogle News中継URLのままで一次本文を確定できず"
+    },
+    {
+      "title": "クラウドストレージを7項目で徹底比較！おすすめのサービスが分かる",
+      "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOUmdXbHdWQUdOUFg1NjJGRExGZWs0VWJfTlMzbU9OeXd6ZEU2bmR3SnNTWTNqVmhXWTNXaEZvRmxMekh1VlkxZmh6SEI5MTgtaEg3eVJBWEtmVEFaNkRCTGN3YzQ1TnF1V2dHTlVYLS1GLWZueC16eTVkSnhnNGo3M3Jzc1VFekFMWUZYTlR5WHBsYm1velhtcEIwaw?oc=5",
+      "reason": "比較記事で当日性・ニュース性が相対的に低く、canonical確認も不足"
+    },
+    {
+      "title": "クラウドサーカスの『BowNow』、ITreview Grid Award 2026 Summerで2部門受賞",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE0yaU51aXZFd0Y2a2c5LVJyVGdyOWp6bnZNRXZ2TzA5b094TEFmSXZGRWxxVGJmQXU3WllZMGs1aVQwMlNfUE5aT1dZRzBWTW14Q3oyQUJzTk1zY1VPejB4dkNGRnYxVG5v?oc=5",
+      "reason": "follow-upかつ既存話題との重複があり、追加材料の差分を採用根拠にできず"
+    }
+  ],
+  "dropped_count": 20,
+  "negative_filter_dropped": {
+    "unresolved_google_news_canonical": 8,
+    "low_news_value_or_pr": 7,
+    "followup_without_distinct_new_material": 2,
+    "off_topic_or_insufficient_primary_evidence": 3
+  },
+  "scrapling_sources_used": [],
+  "broken_sources": []
+}

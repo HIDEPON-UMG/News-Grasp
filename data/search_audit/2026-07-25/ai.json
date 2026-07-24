@@ -1,0 +1,41 @@
+{
+  "date": "2026-07-25",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:anthropic.com/news/claude-opus-5 Introducing Claude Opus 5",
+    "site:itmedia.co.jp ChatGPT Claude 音声機能 Codex 声だけで指示",
+    "site:prtimes.jp BIZ ModAI 生成AI 老朽化 ブラックボックス解析",
+    "site:prtimes.jp NoLang 読み方を修正する ダイアログ",
+    "site:prtimes.jp 生成AI 24時間電話 AI電話応答 豊中市"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title":"生成AIの利用率 58.8%と2倍以上に増加 「生成AI」＝「友人」は1割以上 総務省「情報通信白書」","url":"https://news.google.com/rss/articles/","reason":"総務省調査の重複候補。canonical URLを特定できず、同テーマを採用しなかった。"},
+    {"title":"AnthropicがClaude Opus 5 AIモデルを半額で発表 執筆","url":"https://news.google.com/rss/articles/","reason":"Claude Opus 5の同一ニュース。公式一次情報を採用し重複除外。"},
+    {"title":"ChatGPTの助言で命の危機に、米男性がOpenAIを提訴","url":"https://news.google.com/rss/articles/","reason":"canonical URLを一次記事単位で確定できず、未確認の訴訟情報を除外。"},
+    {"title":"生成AI利用経験者 24年度から倍増","url":"https://news.google.com/rss/articles/","reason":"生成AI利用率調査の重複候補。代表記事に集約。"},
+    {"title":"生成ＡＩ利用率 倍増５８．８％…情報通信白書 米中には及ばず","url":"https://news.google.com/rss/articles/","reason":"生成AI利用率調査の重複候補。代表記事に集約。"},
+    {"title":"全国5都市「教育と生成AI」大研修会、実践発表やトークセッション","url":"https://news.google.com/rss/articles/","reason":"イベント告知で読者影響が限定的。canonical URLも確定できず除外。"},
+    {"title":"■生成ＡＩ対応の薄型冷蔵庫","url":"https://news.google.com/rss/articles/","reason":"AIカテゴリの主要論点から外れ、製品情報としての一次確認も不足。"},
+    {"title":"Anthropic、「Claude Opus 5」公開　最高峰Fable 5に迫る性能を半額で","url":"https://news.google.com/rss/articles/","reason":"Claude Opus 5の同一ニュース。公式一次情報を採用し重複除外。"},
+    {"title":"近畿大学情報学部が総合型選抜での生成AI利用方針を明示","url":"https://news.google.com/rss/articles/","reason":"教育方針の告知で影響範囲が限定的。"},
+    {"title":"Claude Opus 5が正式発表前にリーク、実測動画が拡散","url":"https://news.google.com/rss/articles/","reason":"正式発表後の同一ニュース。リーク報道より公式発表を採用。"},
+    {"title":"Googleの新機能「Gemini Omni」でリアルすぎるアバター動画をつくってみた","url":"https://news.google.com/rss/articles/","reason":"同一内容の転載・重複候補で、canonical URLを確定できず除外。"},
+    {"title":"日本の生成AI利用率58.8％に急増、それでも中国93.6％と大差","url":"https://news.google.com/rss/articles/","reason":"生成AI利用率調査の重複候補。代表記事に集約。"},
+    {"title":"【OpenAI Codex ジェイソン・リウ氏】AIの次の生産性革命は音声メモ","url":"https://news.google.com/rss/articles/","reason":"論評・インタビュー色が強く、当日の機能発表を優先。"},
+    {"title":"スーパーに並んだ「ごちゃごちゃ生成AIポップ」が物議","url":"https://news.google.com/rss/articles/","reason":"生活・話題記事で、AI技術の主要動向としての優先度が低い。"},
+    {"title":"「Claude」音声モードが大幅進化、OpusとSonnetを利用可能に","url":"https://news.google.com/rss/articles/","reason":"ChatGPTとClaudeの音声機能強化記事と重複。比較可能なITmedia記事を採用。"},
+    {"title":"Googleの新機能「Gemini Omni」でリアルすぎるアバター動画をつくってみた","url":"https://news.google.com/rss/articles/","reason":"同一内容の転載・重複候補で除外。"},
+    {"title":"BIZ ModAI、生成AIで老朽化したブラックボックス解析を自動化するモダナイゼーションプラットフォームを提供開始","url":"https://news.google.com/rss/articles/","reason":"採用記事と同一候補のため除外。"},
+    {"title":"AI関連株はいつまで上がる？専門家「OpenAI上場は最重要ポイント」","url":"https://news.google.com/rss/articles/","reason":"市場コメントで一次情報性が低く、製品・実証の具体ニュースを優先。"},
+    {"title":"AIで確定申告はできるのか？Gemini・ChatGPT・Claudeを比較","url":"https://news.google.com/rss/articles/","reason":"解説・比較記事で、当日の新規発表ではないため除外。"},
+    {"title":"基盤教育部 安井政樹准教授がTBS「THE TIME」に出演しました","url":"https://news.google.com/rss/articles/","reason":"出演告知でAIニュースとしての新規性・影響が限定的。"}
+  ]
+}
