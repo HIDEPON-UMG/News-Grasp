@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>ロボタクシー、顧客接点の争奪へ — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="WaymoとUberの提携見直し報道、Teslaの慎重化は、ロボタクシー競争を顧客基盤と運行網の争奪へ移すか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-25/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="ロボタクシー、顧客接点の争奪へ">
+<meta property="og:description" content="WaymoとUberの提携見直し報道、Teslaの慎重化は、ロボタクシー競争を顧客基盤と運行網の争奪へ移すか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-25/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ロボタクシー、顧客接点の争奪へ">
+<meta name="twitter:description" content="WaymoとUberの提携見直し報道、Teslaの慎重化は、ロボタクシー競争を顧客基盤と運行網の争奪へ移すか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #3A7B8C;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(58,123,140,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(58,123,140,0.22);
+  --accent-underline: rgba(58,123,140,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+.dd-audio { max-width: 760px; margin: 26px 0 0; padding: 16px 18px; border: 1px solid var(--border);
+            background: rgba(255,255,255,.42); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.dd-audio__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 10px; }
+.dd-audio__kicker,
+.dd-audio__date { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--soft); }
+.dd-audio__kicker { color: var(--accent); }
+.dd-audio__title { font-family: var(--serif); font-size: 18px; font-weight: 800; color: var(--ink); }
+.dd-audio audio { display: block; width: 100%; min-width: 0; }
+.dd-audio__rates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dd-audio__rate { min-width: 52px; border: 1px solid var(--border); background: var(--paper);
+                  color: var(--ink); padding: 4px 10px; font-family: var(--mono); font-size: 11px;
+                  font-weight: 700; letter-spacing: .08em; }
+.dd-audio__rate.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.dd-audio__rate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-audio { padding: 14px; }
+  .dd-audio__rates { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .dd-audio__rate { min-width: 0; width: 100%; padding: 4px 4px; font-size: 10px; letter-spacing: .04em; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260725</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">◎</span>MOBILITY · モビリティ</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.07.25</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260725</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">8 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">ロボタクシー、顧客接点の争奪へ</h1>
+
+      <section class="dd-audio" aria-label="DeepDive解説対談">
+        <div class="dd-audio__meta">
+          <span class="dd-audio__kicker">LISTEN</span>
+          <span class="dd-audio__title">DeepDive 解説対談</span>
+          <span class="dd-audio__date">2026-07-25</span>
+        </div>
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-07-25.mp3?v=f7973811db5f" type="audio/mpeg">
+        </audio>
+        <div class="dd-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="dd-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </section>
+
+      <p class="dd-hero__theme">WaymoとUberの提携見直し報道、Teslaの慎重化は、ロボタクシー競争を顧客基盤と運行網の争奪へ移すか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#weekly</span><span>#news-grasp</span><span>#issue-20260725</span><span>#Waymo</span><span>#Uber</span><span>#Tesla</span><span>#robotaxi</span><span>#ride-hailing</span></div>
+    </header>
+
+
+    <!-- 関連レポート / RELATED — 過去に扱ったテーマの続報。関連の種類と根拠を冒頭で提示する -->
+    <aside class="dd-related" aria-label="関連する過去の DeepDive レポート">
+      <div class="dd-related__label"><span class="g">❖</span><span class="t">関連レポート · RELATED</span></div>
+      <ul class="dd-related__list">
+
+        <li class="dd-related__item" style="border-left-color: #3A7B8C">
+
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #181C2A">続報</span>
+            <span class="dd-related__chip">Waymo・商用拡大</span>
+          </div>
+
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-19/" style="border-bottom-color: #3A7B8C">ロボタクシー、緊急現場対応が拡大条件へ</a>
+            <span class="dd-related__date">2026.07.19</span>
+          </div>
+          <p class="dd-related__change">前回は緊急現場への対応能力を商用拡大の条件として扱った。今回の変化点は、運行規模が拡大した先で、配車と顧客接点を自社で持つか外部プラットフォームに委ねるかが競争軸に浮上したことだ。</p>
+        </li>
+
+        <li class="dd-related__item" style="border-left-color: #3A7B8C">
+
+          <div class="dd-related__top">
+            <span class="dd-related__kind" style="background: #8E2A19">対比</span>
+            <span class="dd-related__chip">公共交通統合 vs 顧客接点統合</span>
+          </div>
+
+          <div class="dd-related__head">
+            <a class="dd-related__rlink" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-21/" style="border-bottom-color: #3A7B8C">MOIA試乗開始、運行統合が勝敗を分ける</a>
+            <span class="dd-related__date">2026.07.21</span>
+          </div>
+          <p class="dd-related__change">前回はMOIAが公共交通と運行管理を束ねる都市導入モデルを扱った。今回の変化点は、米国の商用市場でWaymo、Uber、Teslaが需要獲得と運行責任の分担を再設計し始めたことだ。</p>
+        </li>
+
+      </ul>
+    </aside>
+
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p>前回は<strong class="emph-bold">Waymo</strong>の<strong>緊急現場対応</strong>を商用拡大の条件として扱い、<strong class="emph-bold">MOIA</strong>では<strong>公共交通との運行統合</strong>を見た。今回の変化点は、WaymoがUberとの提携解消を検討しているとの報道と、Teslaが拡大に慎重になったとの報道が重なり、<span class="emph-und">安全に走れるかの次に、誰が顧客接点を握るか</span>が問われ始めたことだ。両報道は当事者の公式確認を取得できていないため、<strong>検討段階の未確認情報</strong>として扱う。</p><p><strong class="emph-bold">Waymo</strong>は2024年10月の<strong>週10万回</strong>から2026年2月の<strong>週40万回超</strong>へ伸び、直近の公式ブログでは<strong>週50万回超</strong>の規模を示す。運転技術が実証段階を越えたことで、成長の制約は車両性能だけでなく、<span class="emph-und">配車需要、車両清掃、遠隔支援、都市ごとの導入を誰が束ねるか</span>へ移った。ここでUberは単なる販売チャネルではなく、運行を面で広げるための基盤になる。</p><p>ただし<strong class="emph-bold">Waymo</strong>と<strong class="emph-bold">Uber</strong>の関係は、<strong>協力すれば展開を速められる</strong>一方、利用履歴、価格設定、会員制度をどちらが持つかでは競合する。Waymoが月額会員や自社アプリを強めれば、Uberへの依存度は下がる。逆にUberが複数事業者を束ねれば、一社の技術優位を需要側から相対化できるため、<span class="emph-und">両社の提携は補完と主導権争いが同居する協調的競合</span>になる。</p></div>
+      <div class="dd-exhibits">
+
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">10.17</div><div class="y">2024</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Waymoの週次有料乗車が10万回を突破</p>
+                  <a href="https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/"><span class="src">Waymo</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">02.02</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Waymoが160億ドルを調達、週40万回・6都市圏へ</p>
+                  <a href="https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/"><span class="src">Waymo</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">04.22</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Tesla、有料Robotaxi走行距離が前四半期比ほぼ倍増</p>
+                  <a href="https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf"><span class="src">Tesla</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">05.13</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Waymo、11都市・1,400平方マイルへ拡大</p>
+                  <a href="https://waymo.com/blog/?p=t"><span class="src">Waymo</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+            </div>
+          </figure>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+
+            <div class="dd-player">
+              <div class="dd-player__name">Waymo</div>
+              <div class="dd-player__role">自動運転技術・運行事業者</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">週50万回超の規模と自社アプリの利用圏を拡大</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">配車基盤との提携を使いながら顧客接点の自前化も進める</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">Uber</div>
+              <div class="dd-player__role">配車・需要集約プラットフォーム</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">複数の自動運転事業者を束ねるハイブリッド市場を形成</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">単一事業者への依存を避け、需要と運行管理を握る</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">Tesla</div>
+              <div class="dd-player__role">車両・自動運転・配車の垂直統合事業者</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">9都市圏で展開準備を進め、有料走行距離を拡大</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">安全と許認可を優先しつつ自社網の拡大速度を調整</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">都市・利用者</div>
+              <div class="dd-player__role">導入条件と需要を決める主体</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">安全、待ち時間、運賃、運行責任を比較</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">技術単体よりサービス全体の信頼性を選別する</p>
+            </div>
+
+          </div>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">ロボタクシーの顧客接点を巡る関係図</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 695" width="1080" height="695" style="display:block;background:#FAF7F0" role="img" aria-label="ロボタクシーの顧客接点を巡る関係図"><line x1="358.0" y1="153.9" x2="483.2" y2="283.5" stroke="#2E6B52" stroke-width="2.4" opacity="0.9"/><polygon points="483.2,283.5 473.7,280.1 480.2,273.9" fill="#2E6B52"/><polygon points="358.0,153.9 367.5,157.2 361.0,163.5" fill="#2E6B52"/><line x1="337.9" y1="173.4" x2="463.1" y2="302.9" stroke="#8E2A19" stroke-width="2.4" opacity="0.9"/><polygon points="463.1,302.9 453.6,299.6 460.0,293.3" fill="#8E2A19"/><polygon points="337.9,173.4 347.4,176.7 340.9,182.9" fill="#8E2A19"/><line x1="369.0" y1="114.0" x2="717.0" y2="114.0" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="717.0,114.0 708.0,118.5 708.0,109.5" fill="#8E2A19"/><polygon points="369.0,114.0 378.0,109.5 378.0,118.5" fill="#8E2A19"/><line x1="513.8" y1="401.4" x2="509.1" y2="494.1" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="509.1,494.1 505.1,484.9 514.1,485.3" fill="#2D5BB8"/><line x1="328.7" y1="176.7" x2="477.0" y2="500.3" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="477.0,500.3 469.1,494.0 477.3,490.2" fill="#2D5BB8"/><line x1="747.2" y1="167.8" x2="541.7" y2="504.1" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="541.7,504.1 542.5,494.1 550.2,498.8" fill="#2D5BB8"/><line x1="352.8" y1="119.2" x2="352.8" y2="196.0" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(333.1,214.2)"><rect width="156.5" height="44.0" fill="#fff" stroke="#1A1A1A" stroke-width="1" rx="2"/><circle cx="13" cy="13" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 配車・運行連携</text><circle cx="13" cy="31" r="3.5" fill="#8E2A19"/><text x="24" y="35" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 顧客接点</text></g><g transform="translate(464.8,101.0)"><rect width="156.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 都市展開で競合</text></g><g transform="translate(445.7,434.8)"><rect width="131.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 需要を集約</text></g><g transform="translate(274.5,183.0)"><rect width="156.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 自社アプリ直販</text></g><g transform="translate(631.3,326.2)"><rect width="156.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 車両・配車一体</text></g><circle cx="300.0" cy="114.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="300.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">Waymo</text><text x="300.0" y="132.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">自動運転事業者</text><circle cx="780.0" cy="114.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="780.0" y="110.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">Tesla</text><text x="780.0" y="132.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">自動運転事業者</text><circle cx="516.9" cy="338.5" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="516.9" y="334.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">Uber</text><text x="516.9" y="357.4" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">配車基盤</text><circle cx="505.7" cy="563.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="505.7" y="559.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="18.0" fill="#1A1A1A" letter-spacing="-0.5">都市・利用者</text><text x="505.7" y="578.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">需要・導入主体</text></svg></div>
+
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+
+            </div>
+
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/">*1 Waymo</a> <a class="cite" href="https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/">*2 Waymo</a> <a class="cite" href="https://waymo.com/blog/?p=t">*3 Waymo</a> <a class="cite" href="https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf">*4 Tesla</a></span></div>
+          </figure>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p><strong class="emph-bold">Waymo</strong>の週次有料乗車は約1年半で<strong>10万回から50万回超へ5倍以上</strong>となり、提供地域も<strong>3から11</strong>へ広がった。これは自動運転の性能改善だけでは説明できない。車両を現地に配置し、需要を予測し、清掃・充電・顧客対応を回す運行基盤が同時に拡張した結果であり、<span class="emph-und">スケールの価値はアルゴリズムとオペレーションの積にある</span>。</p><p>一方、<strong class="emph-bold">Tesla</strong>はQ1資料で<strong>有料Robotaxi走行距離が前四半期比ほぼ倍増</strong>したと示したが、絶対値は本文で明瞭に開示されていないため比較表では採用しない。9都市圏の計画を掲げても、安全確認と許認可が展開速度を決める。<strong class="emph-bold">Waymo</strong>の50万回とTeslaの走行距離を同じ尺度に換算できない以上、<span class="emph-und">規模の優劣を単一の数字で断定しないこと</span>が重要だ。</p></div>
+
+      <div class="dd-charts">
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Waymoの週次有料乗車回数</span></figcaption>
+          <div class="dd-chart__note">10万回突破</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Waymoの週次有料乗車回数"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">万回／週</text><polyline points="104.0,184.5 280.0,96.0 456.0,66.5" fill="none" stroke="#3A7B8C" stroke-width="2.5"/><circle cx="104.0" cy="184.5" r="4" fill="#3A7B8C"/><text x="104.0" y="176.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">10</text><circle cx="280.0" cy="96.0" r="4" fill="#3A7B8C"/><text x="280.0" y="88.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">40</text><circle cx="456.0" cy="66.5" r="4" fill="#3A7B8C"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">50</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2024-10</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026-02</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026-03以降</text><text x="104.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 10万回突破</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 160億ドル調達</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 50万回超</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/">*1 Waymo</a> <a class="cite" href="https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/">*2 Waymo</a> <a class="cite" href="https://waymo.com/blog/?p=t">*3 Waymo</a></span></div>
+        </figure>
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">Waymoの商用提供地域の拡大</span></figcaption>
+          <div class="dd-chart__note">SF・Phoenix・LA</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="Waymoの商用提供地域の拡大"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">都市圏・都市</text><rect x="49.4" y="173.8" width="109.1" height="40.2" fill="#3A7B8C"/><text x="104.0" y="165.8" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3</text><rect x="225.4" y="133.6" width="109.1" height="80.4" fill="#3A7B8C"/><text x="280.0" y="125.6" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">6</text><rect x="401.4" y="66.5" width="109.1" height="147.5" fill="#3A7B8C"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">11</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2024-10</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026-02</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026-05</text><text x="104.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ SF・Phoenix・LA</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 6都市圏</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 11都市・1,400平方マイル</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/">*1 Waymo</a> <a class="cite" href="https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/">*2 Waymo</a> <a class="cite" href="https://waymo.com/blog/?p=t">*3 Waymo</a></span></div>
+        </figure>
+
+      </div>
+
+
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">顧客接点と運行網を巡る現状</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>主体</th><th>確認できた規模・進捗</th><th>顧客接点</th><th>次の制約</th></tr></thead>
+              <tbody>
+
+                <tr>
+
+                  <td class="head">Waymo</td>
+
+                  <td class="val">週50万回超、11都市・1,400平方マイル</td>
+
+                  <td class="val">Waymoアプリと提携配車</td>
+
+                  <td class="src">自社直販と提携網の配分</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">Uber</td>
+
+                  <td class="val">Waymoを含む複数AV事業者を需要網へ接続</td>
+
+                  <td class="val">Uberアプリ</td>
+
+                  <td class="src">提携先分散と運行責任</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">Tesla</td>
+
+                  <td class="val">9都市圏を掲示、有料走行距離はQ1に前四半期比ほぼ倍増</td>
+
+                  <td class="val">車両・配車を自社統合</td>
+
+                  <td class="src">安全確認、許認可、拡大速度</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">Waymo・Uberの提携見直し</td>
+
+                  <td class="val">検討報道のみ</td>
+
+                  <td class="val unconf">変更内容は未確認<span class="dd-badge">未確認</span></td>
+
+                  <td class="src">両社の公式発表待ち</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/">*1 Waymo</a> <a class="cite" href="https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/">*2 Waymo</a> <a class="cite" href="https://waymo.com/blog/?p=t">*3 Waymo</a> <a class="cite" href="https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf">*4 Tesla</a></span></div>
+        </figure>
+      </div>
+
+      <div class="dd-prose"><p>この非対称性が<strong class="emph-bold">Uber</strong>の交渉力を生む。Uberは<strong>特定の自動運転方式に賭けず</strong>、複数社の車両を既存需要へ流せる。Waymoは技術・車両・会員を深く統合でき、Teslaは車両から配車までを一体化できるが、都市ごとの需要立ち上げには時間がかかる。したがって次の競争は、<span class="emph-und">垂直統合の収益性とプラットフォーム分散の展開速度をどこで釣り合わせるか</span>に移る。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>ロボタクシー事業者は、顧客接点と運行管理を自社で垂直統合するか、配車プラットフォームとの提携で展開速度を優先するか</p>
+          </div>
+          <div class="dd-decision__opts">
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">自社アプリ・会員・運行網を一体化し、顧客データと単価決定を握る</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">Uberなどと地域別に提携し、需要獲得と車両運用を分担する</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">直販を中核にしつつ、新規都市だけ提携を使うハイブリッド型にする</p>
+            </div>
+
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>Waymoの2026年20都市超展開とTeslaの追加都市一般開放が進む2026年末</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+
+              <ul class="dd-decision__deciders"><li>Waymo経営陣</li><li>Uber経営陣</li><li>Tesla経営陣</li><li>導入都市の交通・規制当局</li></ul>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dd-prose"><p><strong class="emph-bold">Waymo</strong>にとって自社化は<strong>顧客データと粗利を守る</strong>一方、都市ごとの立ち上げ費用を抱える。Uberとの提携は<strong>需要を短期間で獲得</strong>できるが、価格・会員・サポートの主導権を分け合う。Teslaの垂直統合は車両供給まで一体化できる反面、展開が遅れれば既存の需要網に追いつけない。<span class="emph-und">最も現実的なのは、成熟都市で直販、新規都市で提携を使う段階的ハイブリッド</span>だ。</p><p>読者が次に見るべきは、<strong class="emph-bold">Waymo</strong>と<strong class="emph-bold">Uber</strong>が提携見直し報道を公式に認めるかではなく、<strong>どの都市で配車アプリ、車両管理、顧客サポートの担当が変わるか</strong>である。契約範囲が変わらなければ報道の影響は限定的だが、複数都市で直販へ切り替われば、<span class="emph-und">ロボタクシーの競争軸が走行性能から顧客基盤の所有へ移った証拠</span>になる。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">Waymo</strong>は週次有料乗車を<strong>10万回から50万回超へ伸ばし</strong>、提供地域も<strong>3から11へ拡大</strong>した。規模が実証段階を越えたいま、Uberとの提携見直し報道とTeslaの慎重化が示すのは、<span class="emph-und">次の勝敗を決めるのが車両技術だけでなく、配車需要・運行責任・顧客データを誰が握るか</span>という点だ。</p>
+        <div class="watermark">❖</div>
+      </div>
+
+
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+
+
+          <a class="dd-source" href="https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Waymo</span>「Clean rides, clear benefits」(2024-10-17) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Waymo</span>「Accelerating our global growth」(2026-02-02) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://waymo.com/blog/?p=t">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Waymo</span>「Waypoint - The official Waymo blog」(2026-05〜07) <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Tesla</span>「Q1 2026 Update」(2026-04-22) <span class="ext">↗</span></span>
+          </a>
+
+
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.dd-audio').forEach(function (block) {
+  var audio = block.querySelector('audio');
+  var buttons = block.querySelectorAll('[data-rate]');
+  if (!audio || !buttons.length) return;
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var rate = parseFloat(button.getAttribute('data-rate') || '1');
+      audio.playbackRate = rate;
+      buttons.forEach(function (b) { b.classList.toggle('is-active', b === button); });
+    });
+  });
+});
+</script>
+</body>
+</html>
