@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>オープンウェイト、調達責任の分岐点へ — ❖ TODAY'S THEME · News Grasp</title>
+<meta name="description" content="オープンウェイト支持連合の拡大は、企業のAIモデル調達と安全責任をどう変えるか">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-27/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="オープンウェイト、調達責任の分岐点へ">
+<meta property="og:description" content="オープンウェイト支持連合の拡大は、企業のAIモデル調達と安全責任をどう変えるか">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/deepdive/2026-07-27/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="オープンウェイト、調達責任の分岐点へ">
+<meta name="twitter:description" content="オープンウェイト支持連合の拡大は、企業のAIモデル調達と安全責任をどう変えるか">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/deepdive.jpg?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark (標準テンプレと統一) -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<style>
+/* ── DeepDive design tokens (deepdive-shared.jsx と同期) ───────────────── */
+.dd {
+  --ink: #1A1A1A;
+  --gold: #C9A155;
+  --cream: #F0EBE0;
+  --paper: #FAF7F0;
+  --paper-soft: #F2EEE3;
+  --paper-warm: #F5F1E7;
+  --border: #E2DED4;
+  --border-soft: #EDEAE3;
+  --dim: #5C5A52;
+  --soft: #8B8B85;
+  --accent: #2D5BB8;                 /* DeepDive アクセント = テーマのカテゴリ色 */
+  --accent-chip-bg: rgba(45,91,184,0.12); /* [[固有名詞]] チップ背景 (アクセント淡色) */
+  --accent-chip-line: rgba(45,91,184,0.22);
+  --accent-underline: rgba(45,91,184,0.55);
+  --serif: "Noto Serif JP","Yu Mincho","游明朝",serif;
+  --mono: "JetBrains Mono","Menlo",monospace;
+  --sans: "Inter",-apple-system,"Segoe UI",sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+.dd { background: var(--paper); color: var(--ink); font-family: var(--serif);
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.dd a { color: inherit; }
+.dd img { display: block; max-width: 100%; }
+
+/* ===== ページ遷移エフェクト「パン」(View Transitions / MPA) =====
+   日次ページ (site.css) と同じ横パン (旧ページが左へ抜け・新ページが右から入る) に揃える。
+   DeepDive は自己完結 CSS のため site.css の @view-transition オプトインが届かず、ここで
+   個別に宣言しないと TODAY → DEEP DIVE 遷移だけパンにならない (遷移元・遷移先の双方が
+   オプトインして初めてクロスドキュメント View Transition が発火する仕様のため)。
+   未対応ブラウザ (Firefox 等) は通常の瞬時遷移へフォールバック (無害)。パンで下地が露出
+   する際の白ちらつきは html / overlay に paper を敷いて防ぐ (site.css と同思想)。 */
+html { background: #FAF7F0; }
+@view-transition { navigation: auto; }
+::view-transition { background: #FAF7F0; }
+::view-transition-group(root),
+::view-transition-image-pair(root) { background: #FAF7F0; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: ng-pan-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  ::view-transition-new(root) { animation: ng-pan-in 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
+}
+@keyframes ng-pan-out { to { transform: translateX(-6%); opacity: 0; } }
+@keyframes ng-pan-in { from { transform: translateX(8%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* brand bar (near-black — 日次 navy ヘッダとは別意匠) */
+.dd-brand { background: var(--ink); color: var(--cream); padding: 18px 40px; position: relative; }
+.dd-brand__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dd-brand__left { display: flex; align-items: center; gap: 18px; }
+.dd-brand__eyebrow { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 3px; margin-bottom: 3px; }
+.dd-brand__name { font-family: var(--sans); font-size: 32px; font-weight: 900; line-height: .85; letter-spacing: -1.4px; color: var(--cream); }
+.dd-brand__divider { border-left: 1px solid rgba(240,235,224,.22); padding-left: 18px; margin-left: 8px; }
+.dd-brand__kicker { font-family: var(--mono); font-size: 9.5px; color: var(--gold); letter-spacing: 2.5px; }
+.dd-brand__theme { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.dd-brand__theme span.g { font-size: 15px; color: var(--gold); }
+.dd-brand__theme span.t { font-family: var(--serif); font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.dd-brand__nav { display: flex; gap: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px;
+                 font-weight: 700; color: rgba(240,235,224,.55); align-items: center; }
+.dd-brand__nav .on { color: var(--cream); border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.dd-brand__rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--gold); opacity: .7; }
+
+/* breadcrumb / mode strip */
+.dd-crumb { background: var(--paper-soft); border-bottom: 1px solid var(--border); padding: 9px 40px;
+            display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 10.5px;
+            letter-spacing: 1px; color: var(--dim); flex-wrap: wrap; }
+.dd-crumb .sep { color: var(--soft); }
+.dd-crumb .cur { color: var(--accent); font-weight: 700; }
+.dd-crumb .tail { margin-left: auto; color: var(--soft); }
+
+.dd-wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+/* hero */
+.dd-hero { padding: 54px 0 40px; border-bottom: 2px solid var(--ink); }
+.dd-label { display: inline-flex; align-items: center; gap: 12px; }
+.dd-label .g { font-size: 20px; color: var(--accent); line-height: 1; }
+.dd-label .t { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 4.5px; color: var(--accent); }
+.dd-hero__meta { display: flex; align-items: center; gap: 14px; margin: 20px 0 18px; flex-wrap: wrap; }
+.dd-meta { display: inline-flex; align-items: baseline; gap: 6px; }
+.dd-meta .k { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-meta .v { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-lens { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px;
+           font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--accent); padding: 4px 10px; }
+.dd-lens .g { font-size: 13px; }
+.dd-hero__title { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--ink);
+                  font-size: 62px; letter-spacing: -2.5px; line-height: 1.12;
+                  /* 日本語を文節境界で折り返し (単語途中で割らない) つつ行幅を均衡させる。
+                     auto-phrase は Chrome 119+/対応ブラウザで効き、未対応環境は normal に
+                     フォールバック。balance で 2 行をバランスし孤立行を防ぐ。 */
+                  word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+.dd-hero__theme { max-width: 760px; margin: 26px 0 0; font-family: var(--serif); font-size: 19px;
+                  font-style: italic; line-height: 1.8; color: var(--dim);
+                  word-break: auto-phrase; line-break: strict; }
+.dd-hero__tags { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.dd-hero__tags span { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .5px; }
+.dd-audio { max-width: 760px; margin: 26px 0 0; padding: 16px 18px; border: 1px solid var(--border);
+            background: rgba(255,255,255,.42); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.dd-audio__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 10px; }
+.dd-audio__kicker,
+.dd-audio__date { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--soft); }
+.dd-audio__kicker { color: var(--accent); }
+.dd-audio__title { font-family: var(--serif); font-size: 18px; font-weight: 800; color: var(--ink); }
+.dd-audio audio { display: block; width: 100%; min-width: 0; }
+.dd-audio__rates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dd-audio__rate { min-width: 52px; border: 1px solid var(--border); background: var(--paper);
+                  color: var(--ink); padding: 4px 10px; font-family: var(--mono); font-size: 11px;
+                  font-weight: 700; letter-spacing: .08em; }
+.dd-audio__rate.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.dd-audio__rate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* section */
+.dd-sec { padding: 52px 0; }
+.dd-sec + .dd-sec { border-top: 1px solid var(--border); }
+.dd-sechead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.dd-sechead .rule { width: 40px; height: 2px; background: var(--accent); display: inline-block; }
+.dd-sechead .en { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); }
+.dd-sechead .jp { margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+                  font-size: 34px; letter-spacing: -.5px; line-height: 1; }
+.dd-sechead .no { font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--border);
+                  margin-left: auto; letter-spacing: 1px; }
+
+/* prose + 3-tier emphasis */
+.dd-prose { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.dd-prose p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 2.0;
+              color: #2A2822; letter-spacing: .1px; text-wrap: pretty; }
+.dd .emph-bold { font-weight: 600; background: var(--accent-chip-bg); box-shadow: inset 0 0 0 1px var(--accent-chip-line);
+                 color: var(--accent); padding: .5px 5px; border-radius: 2px; }
+.dd .emph-und { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent-underline);
+                text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.dd-prose strong { font-weight: 700; color: var(--ink); }
+
+.dd-exhibits { margin-top: 36px; display: flex; flex-direction: column; gap: 30px; }
+.dd-cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          color: var(--soft); margin-bottom: 12px; }
+
+/* block frame */
+.dd-fig { margin: 0; border: 1px solid var(--border); background: #fff; }
+.dd-fig__cap { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+               border-bottom: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-fig__tag { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+               color: #fff; background: var(--accent); padding: 2px 6px; }
+.dd-fig__title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dd-fig__src { border-top: 1px solid var(--border-soft); padding: 8px 16px; font-family: var(--mono);
+               font-size: 10px; color: var(--soft); letter-spacing: .3px; display: flex; gap: 7px;
+               align-items: baseline; flex-wrap: wrap; }
+.dd-fig__src .lbl { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+/* val は flex 子。min-width:0 + overflow-wrap:anywhere で長文 citation も折り返す
+   (2026-06-04 2026-06-01 ページの "*6 [PONY AI Inc. ...]" が nowrap で 190px 突き出した恒久対策)。 */
+.dd-fig__src .val { min-width: 0; flex: 1 1 auto; text-wrap: pretty; word-break: break-word;
+                    overflow-wrap: anywhere; }
+.dd-fig__src a { color: inherit; text-decoration: none; }
+.dd-fig__src a:hover { text-decoration: underline; }
+/* cite はかつて nowrap で短い citation キーを 1 行保持する意図だったが、長文タイトルを
+   入れると横突き出しが発生するため通常改行に戻し、英数連続トークンは anywhere で折る。 */
+.dd-fig__src .cite { white-space: normal; overflow-wrap: anywhere; }
+
+/* timeline */
+.dd-tl { position: relative; padding: 20px 22px; }
+.dd-tl__line { position: absolute; left: 126px; top: 30px; bottom: 30px; width: 2px; background: var(--border); }
+.dd-tl__row { display: grid; grid-template-columns: 96px 28px 1fr; align-items: start; }
+.dd-tl__row + .dd-tl__row { margin-top: 22px; }
+.dd-tl__date { text-align: right; padding-right: 6px; padding-top: 1px; }
+.dd-tl__date .d { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: .5px; }
+.dd-tl__date .y { font-family: var(--mono); font-size: 9px; color: var(--soft); }
+.dd-tl__dot { display: flex; justify-content: center; padding-top: 3px; }
+.dd-tl__dot span { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--accent);
+                   border-radius: 50%; display: block; position: relative; z-index: 1; }
+/* min-width:0 で grid 1fr 子の min-content 暴走を抑え、overflow-wrap:anywhere で
+   英字連続 ("BCG/McKinsey/Accenture/Capgemini" 等) を折り返す
+   (2026-06-04 スマホ overflow 恒久対策)。 */
+.dd-tl__body { min-width: 0; }
+.dd-tl__body p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: #2A2822;
+                 font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.dd-tl__body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+                 font-family: var(--mono); font-size: 10px; letter-spacing: .5px; color: var(--accent);
+                 text-decoration: none; }
+.dd-tl__body a .src { font-weight: 700; }
+.dd-tl__body a .ext { color: var(--soft); }
+
+/* players */
+.dd-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              border: 1px solid var(--border); }
+.dd-player { background: #fff; padding: 22px; border-left: 1px solid var(--border); }
+.dd-player:first-child { border-left: none; }
+.dd-player__name { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.6px; }
+.dd-player__role { font-family: var(--serif); font-size: 12.5px; font-style: italic; color: var(--dim);
+                   margin: 4px 0 14px; min-height: 34px; }
+.dd-player__lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; }
+.dd-player__lbl.move { color: var(--accent); }
+.dd-player__lbl.pos { color: var(--soft); }
+.dd-player__txt { margin: 0 0 12px; font-family: var(--serif); font-size: 13.5px; line-height: 1.7; color: #2A2822; }
+.dd-player__txt.dim { color: var(--dim); margin-bottom: 0; }
+
+/* relations */
+.dd-rel-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px;
+                 border-top: 1px solid var(--border-soft); background: var(--paper-warm); }
+.dd-rel-legend .hd { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--soft); }
+.dd-rel-legend .it { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                     font-size: 10px; color: var(--ink); font-weight: 600; }
+.dd-rel-legend .sw { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+
+/* charts */
+.dd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 36px 0; }
+.dd-chart__note { font-family: var(--serif); font-size: 12.5px; color: var(--dim); margin-bottom: 4px; padding: 10px 14px 0; }
+.dd-chart__svg { padding: 0 14px 6px; }
+.dd-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 6px 16px 12px; }
+.dd-chart-legend__item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+                         font-size: 10px; color: var(--ink); }
+.dd-chart-legend__sw { width: 12px; height: 12px; display: inline-block; }
+
+/* relations 図ラップ: SVG は viewBox 自然幅 (1080×870 等) を維持し、狭い画面で
+   はみ出した分は横スクロールで見せる (TABLE と同思想)。「全入り化」で SVG を viewport
+   に潰すとノードラベルが極小化して不可読になるため、サイズ保持 + 横スクロールが恒久
+   方針 (2026-06-04 PM ユーザー再指示で確定、memory feedback_intent_over_wording)。
+   relations_svg() 側で width 属性を吐かないため SVG は viewBox 幅で描画され、ここでは
+   親に overflow-x:auto を付けるだけで足りる。 */
+.dd-relwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* table */
+/* min-width で各列の実寸を確保し、狭い画面では関係図と同様に横スクロールで見せる。
+   これが無いと width:100% で列が潰れ、CJK が 1 文字ずつ折り返されて縦書き化する。 */
+.dd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dd-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.dd-table thead tr { background: var(--paper-warm); border-bottom: 2px solid var(--ink); }
+.dd-table th { text-align: left; padding: 11px 16px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 700; letter-spacing: 1.2px; color: var(--ink); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.dd-table tbody tr:nth-child(even) { background: var(--paper); }
+.dd-table td { padding: 12px 16px; vertical-align: middle; }
+.dd-table td.head { font-family: var(--serif); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dd-table td.src { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: .2px;
+                   line-height: 1.5; word-break: break-word; }
+.dd-table td.val { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--ink); }
+.dd-table td.unconf { background: rgba(201,161,85,.06); color: #9A8F70; }
+.dd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; font-family: var(--mono);
+            font-size: 8.5px; font-weight: 700; letter-spacing: .8px; color: #9A8F70;
+            background: rgba(201,161,85,.10); border: 1px dashed rgba(201,161,85,.5); padding: 1px 5px; }
+
+/* decision */
+.dd-decision { border: 1.5px solid var(--ink); background: #fff; }
+.dd-decision__issue { padding: 26px 30px; border-bottom: 2px solid var(--accent); background: var(--paper-warm); }
+.dd-decision__issue .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+                           color: var(--accent); margin-bottom: 11px; }
+/* 論点 (THE ISSUE) は記事の中心命題。視認性を最優先に大きく強調する。 */
+.dd-decision__issue p { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 800;
+                        line-height: 1.45; letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.dd-decision__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.dd-opt { padding: 20px 22px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+.dd-opt__head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+.dd-opt__no { font-family: var(--sans); font-size: 22px; font-weight: 900; color: var(--accent); line-height: 1; }
+/* 選択肢の中身は論点の実質。重要なので大きめ＋濃色で読ませる。 */
+.dd-opt__txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.75; font-weight: 500;
+               color: var(--ink); margin: 0; }
+.dd-decision__foot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.dd-decision__foot > div { padding: 18px 24px; border-right: 1px solid var(--border); }
+.dd-decision__foot .lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                          color: var(--soft); margin-bottom: 7px; }
+.dd-decision__foot p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.75;
+                       font-weight: 500; color: var(--ink); }
+/* 決定者が複数のときは箇条書きで一人ずつ読ませる (2026-05-31)。 */
+.dd-decision__deciders { margin: 0; padding-left: 1.2em; font-family: var(--serif); font-size: 15.5px;
+                         line-height: 1.7; font-weight: 500; color: var(--ink); }
+.dd-decision__deciders li { margin: 0 0 5px; padding-left: 2px; }
+.dd-decision__deciders li:last-child { margin-bottom: 0; }
+
+/* summary box (dark) */
+.dd-tail { padding: 48px 0 70px; border-top: 2px solid var(--ink); }
+.dd-summary { background: var(--ink); color: var(--cream); padding: 34px 38px; position: relative; overflow: hidden; }
+.dd-summary .lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 3px;
+                   color: var(--gold); margin-bottom: 16px; }
+.dd-summary p { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.95; color: var(--cream); text-wrap: pretty; }
+.dd-summary .watermark { position: absolute; right: 30px; top: 22px; font-family: var(--serif);
+                         font-size: 90px; color: rgba(201,161,85,.16); line-height: 1; }
+.dd-summary .emph-bold { background: rgba(201,161,85,.22); box-shadow: inset 0 0 0 1px rgba(201,161,85,.42);
+                         color: #F2ECDD; }
+.dd-summary .emph-und { text-decoration-color: rgba(201,161,85,.7); }
+.dd-summary strong { color: var(--cream); }
+
+/* related (過去テーマの続報。種類バッジ + 根拠チップ + 過去レポートのカテゴリ色) */
+.dd-related { border: 1px solid var(--border); background: #fff; padding: 18px 22px; margin: 28px 0 0; }
+.dd-related__label { display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+                     font-size: 10px; letter-spacing: 1.5px; color: var(--soft); margin-bottom: 14px; }
+.dd-related__label .g { color: var(--accent); }
+.dd-related__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+/* border-left-color は item ごとに過去レポートのカテゴリ色をインライン上書きする (①) */
+.dd-related__item { border-left: 3px solid var(--accent); padding-left: 14px; }
+.dd-related__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dd-related__kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                    color: #fff; padding: 3px 9px; }       /* background は種類色をインライン上書き */
+.dd-related__chip { font-family: var(--mono); font-size: 10px; color: var(--dim);
+                    border: 1px solid var(--border); padding: 2px 9px; overflow-wrap: anywhere; }
+.dd-related__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.dd-related__rlink { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--ink);
+                     text-decoration: none; border-bottom: 1.5px solid var(--accent);
+                     min-width: 0; overflow-wrap: anywhere; }  /* 下線色は inline。長いタイトルは折り返す */
+.dd-related__date { font-family: var(--mono); font-size: 10px; color: var(--soft); letter-spacing: 1px; }
+.dd-related__change { margin: 7px 0 0; font-family: var(--serif); font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* sources */
+.dd-sources { display: flex; flex-direction: column; border: 1px solid var(--border); background: #fff; margin-top: 26px; }
+.dd-source { display: grid; grid-template-columns: 34px 1fr; gap: 18px; align-items: start;
+             padding: 17px 22px; text-decoration: none; color: inherit; }
+.dd-source + .dd-source { border-top: 1px solid var(--border-soft); }
+.dd-source__no { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--border); padding-top: 2px; }
+.dd-source__txt { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--ink);
+                  line-height: 1.5; text-wrap: pretty; }
+.dd-source__pub { color: var(--accent); font-weight: 700; }
+.dd-source__txt .ext { color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ── スマホ overflow 恒久ガード (2026-06-04 ユーザー指摘の構造的対策) ──
+   .dd 内のテキスト要素は全て overflow-wrap:anywhere を当てて、英字連続トークン
+   (社名/URL/型名 等) でも画面右にはみ出さない。grid item の min-content 暴走は
+   各 grid 子コンテナの min-width:0 で個別抑制する。境界 1 箇所集約
+   ([[feedback_check_design_principles]] 2 段) で再発を構造的に封じる。 */
+.dd p, .dd li, .dd dd, .dd dt, .dd td { overflow-wrap: anywhere; }
+.dd-player, .dd-opt, .dd-decision__issue, .dd-decision__foot > div { min-width: 0; }
+
+/* footer */
+.dd-foot { background: var(--paper-soft); padding: 22px 40px; display: flex; justify-content: space-between;
+           font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 1.5px;
+           border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.dd-foot strong { color: var(--ink); letter-spacing: 3px; }
+.dd-foot .links { display: flex; gap: 16px; }
+
+/* responsive (mobile 実幅) */
+@media (max-width: 720px) {
+  .dd-brand { padding: 14px 18px; }
+  .dd-brand__name { font-size: 24px; }
+  .dd-brand__divider, .dd-brand__nav { display: none; }
+  .dd-crumb { padding: 8px 18px; }
+  .dd-crumb .tail { display: none; }
+  .dd-wrap { padding: 0 18px; }
+  .dd-hero { padding: 30px 0 26px; }
+  .dd-hero__title { font-size: 38px; letter-spacing: -1.6px; }
+  .dd-audio { padding: 14px; }
+  .dd-audio__rates { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .dd-audio__rate { min-width: 0; width: 100%; padding: 4px 4px; font-size: 10px; letter-spacing: .04em; }
+  /* related: モバイルは flex をやめ block 積みにする。flex column+wrap+stretch では
+     <a> がコンテナ幅まで伸びず内容幅のまま 1 行で右端が切れたため、block で確実に全幅
+     折り返しさせる。タイトル → 日付の順に縦積み。 */
+  .dd-related { padding: 16px 16px; }
+  .dd-related__head { display: block; }
+  .dd-related__rlink { display: block; }
+  .dd-related__date { display: block; margin-top: 4px; }
+  .dd-sec { padding: 30px 0; }
+  .dd-sechead { flex-wrap: wrap; gap: 10px; }
+  .dd-sechead .jp { font-size: 26px; }
+  .dd-prose p { font-size: 15px; line-height: 1.9; }
+  .dd-charts { grid-template-columns: 1fr; }
+  .dd-players { grid-template-columns: 1fr; }
+  .dd-player { border-left: none; border-top: 1px solid var(--border); }
+  .dd-player:first-child { border-top: none; }
+  /* timeline は日付列を圧縮して本文に幅を回す (390px で日付 96px は過大) */
+  .dd-tl__row { grid-template-columns: 64px 20px 1fr; }
+  .dd-tl__line { left: 84px; }
+  .dd-tl__date .d { font-size: 11px; }
+  /* 2026-06-04 (15:30) ユーザー再指示でロールバック: SVG/TABLE は「サイズ保持・横スクロール」
+     に戻す。直前の「375px 全入り」設計 (min-width:0 で潰す) は CJK が 1 文字ずつ折り返されて
+     読解不能になり、関係図 SVG も縮みすぎてノードラベルが読めない実害が出た。元の
+     .dd-table-wrap (overflow-x:auto + min-width:720) と .dd-relwrap (自然幅 SVG + overflow-x:auto)
+     を保持し、モバイルではユーザーが横スワイプして閲覧する形に統一する
+     (memory feedback_real_environment_first_verification 2026-06-04 PM 撤回)。
+     .dd-relwrap の overflow-x:auto は元 CSS (L509 周辺) で既に有効。子 svg/table の
+     min-width:0 や white-space:normal は明示しないことで自然幅 (SVG viewBox / TABLE 720px)
+     が維持される。 */
+  .dd-decision__issue { padding: 20px 18px; }
+  .dd-decision__issue p { font-size: 22px; line-height: 1.5; }
+  .dd-decision__opts { grid-template-columns: 1fr; }
+  .dd-decision__foot { grid-template-columns: 1fr; }
+  .dd-summary { padding: 24px 20px; }
+  .dd-summary p { font-size: 15.5px; }
+  .dd-foot { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="dd">
+
+  <!-- brand bar -->
+  <div class="dd-brand">
+    <div class="dd-brand__row">
+      <div class="dd-brand__left">
+        <div>
+          <div class="dd-brand__eyebrow">━━ THE</div>
+          <div class="dd-brand__name"><a href="https://hidepon-umg.github.io/News-Grasp/" style="text-decoration:none">News Grasp</a></div>
+        </div>
+        <div class="dd-brand__divider">
+          <div class="dd-brand__kicker">WEEKLY DEEP READ</div>
+          <div class="dd-brand__theme"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+        </div>
+      </div>
+      <nav class="dd-brand__nav">
+        <a href="https://hidepon-umg.github.io/News-Grasp/">DIGEST</a>
+        <span class="on">❖ THEME</span>
+        <a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">書架</a>
+      </nav>
+    </div>
+    <div class="dd-brand__rule"></div>
+  </div>
+
+  <!-- breadcrumb -->
+  <div class="dd-crumb">
+    <span>DIGEST</span><span class="sep">/</span>
+    <span class="cur">❖ TODAY'S THEME</span><span class="sep">/</span>
+    <span>20260727</span>
+    <span class="tail">毎日 1 テーマ · 一次ソースまで遡る深掘りレポート</span>
+  </div>
+
+  <div class="dd-wrap">
+    <!-- hero -->
+    <header class="dd-hero">
+      <div class="dd-label"><span class="g">❖</span><span class="t">TODAY'S THEME</span></div>
+      <div class="dd-hero__meta">
+        <span class="dd-lens"><span class="g">◆</span>ARTIFICIAL INTELLIGENCE · AI</span>
+        <span class="dd-meta"><span class="k">DATE</span><span class="v">2026.07.27</span></span>
+        <span class="dd-meta"><span class="k">ISSUE</span><span class="v">20260727</span></span>
+        <span class="dd-meta"><span class="k">READ</span><span class="v">10 MIN</span></span>
+        <span class="dd-meta"><span class="k">KIND</span><span class="v">DEEPDIVE</span></span>
+      </div>
+      <h1 class="dd-hero__title">オープンウェイト、調達責任の分岐点へ</h1>
+
+      <section class="dd-audio" aria-label="DeepDive解説対談">
+        <div class="dd-audio__meta">
+          <span class="dd-audio__kicker">LISTEN</span>
+          <span class="dd-audio__title">DeepDive 解説対談</span>
+          <span class="dd-audio__date">2026-07-27</span>
+        </div>
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-deepdive/2026-07-27.mp3?v=bf692b258995" type="audio/mpeg">
+        </audio>
+        <div class="dd-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="dd-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="dd-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </section>
+
+      <p class="dd-hero__theme">オープンウェイト支持連合の拡大は、企業のAIモデル調達と安全責任をどう変えるか</p>
+      <div class="dd-hero__tags"><span>#deepdive</span><span>#daily</span><span>#news-grasp</span><span>#issue-20260727</span><span>#Microsoft</span><span>#NVIDIA</span><span>#Mistral</span><span>#Anthropic</span><span>#open-weight</span><span>#AIガバナンス</span></div>
+    </header>
+
+
+
+    <!-- 背景 / BACKGROUND -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">BACKGROUND</span>
+        <h2 class="jp">背景</h2><span class="no">01 / 03</span>
+      </div>
+      <div class="dd-prose"><p><strong class="emph-bold">MicrosoftとNVIDIA</strong>など25社・団体は7月24日、ダウンロード可能なAIモデルへの<strong>時期尚早な規制を避ける</strong>よう米政策当局に求めた。署名主体は半導体、クラウド、企業ソフト、モデル開発、セキュリティ、投資まで広がる。これは公開か非公開かという思想論ではなく、<span class="emph-und">モデルを誰が保有し、障害時に誰が復旧できるか</span>を調達条件へ引き上げる動きだ。</p><p>一方、<strong class="emph-bold">Anthropic</strong>は7月24日版の署名一覧に見当たらないが、その理由を説明する一次資料は今回確認できなかった。同社はMicrosoft、NVIDIAと資本・計算基盤で深く結び付き、<strong>Azure計算資源300億ドル分の購入</strong>と最大1GWの追加容量を約束している。協力関係が強くても公開性の政策判断は一致するとは限らず、<span class="emph-und">資本提携とモデル統治を分けて読む必要がある</span>。</p><p><strong class="emph-bold">MicrosoftとMistral</strong>は書簡の3日前、Mistral Medium 3.5をクラウド、接続型、完全切断型の<strong>3環境で運用可能</strong>にする提携拡大を発表した。オープンウェイトを管理基盤に載せ、データ所在、継続性、接続条件を企業側が選ぶ設計である。<span class="emph-und">公開性の価値は重みを入手できることより、運用責任を移管・回収できることにある</span>。</p><p>この構図では、<strong class="emph-bold">MicrosoftとNVIDIA</strong>がMistralとAnthropicの両方を<strong>資本・計算・配備基盤で支える</strong>一方、両モデル陣営は企業の標準モデル枠を争う。欧州委員会は利用者への表示や生成物の機械可読標識を求め、導入企業も規制の受け手になる。<span class="emph-und">公開性を選んでも統治責任は消えず、むしろ自社へ戻ってくる</span>。</p></div>
+      <div class="dd-exhibits">
+
+        <div>
+          <div class="dd-cap">EXHIBIT A — 時系列 / TIMELINE</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TIMELINE</span><span class="dd-fig__title">主要イベントの推移</span></figcaption>
+            <div class="dd-tl">
+              <div class="dd-tl__line"></div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">11.18</div><div class="y">2025</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>Microsoft・NVIDIA・Anthropicが資本・計算基盤提携を発表</p>
+                  <a href="https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7"><span class="src">Anthropic</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">03.25</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>NVIDIAがオープンと専有モデルの併存方針を提示</p>
+                  <a href="https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/"><span class="src">NVIDIA</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">07.21</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>MicrosoftとMistralが完全切断型まで含む配備提携を拡大</p>
+                  <a href="https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/"><span class="src">Microsoft</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">07.24</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>25社・団体がオープンウェイトへの時期尚早な規制回避を要請</p>
+                  <a href="https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/"><span class="src">Microsoft / NVIDIA</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+              <div class="dd-tl__row">
+                <div class="dd-tl__date"><div class="d">08.02</div><div class="y">2026</div></div>
+                <div class="dd-tl__dot"><span></span></div>
+                <div class="dd-tl__body">
+                  <p>EU AI Actの透明性義務が適用開始予定</p>
+                  <a href="https://digital-strategy.ec.europa.eu/en/news/commission-publishes-guidelines-transparency-obligations-providers-and-deployers-certain-ai-systems"><span class="src">European Commission</span><span class="ext">↗ 一次ソース</span></a>
+                </div>
+              </div>
+
+            </div>
+          </figure>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT B — 当事者 / PLAYERS</div>
+          <div class="dd-players">
+
+            <div class="dd-player">
+              <div class="dd-player__name">Microsoft</div>
+              <div class="dd-player__role">クラウド・企業AI基盤</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">オープンウェイト支持とMistral配備拡大を同時推進</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">複数モデルを共通統治面に載せる</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">NVIDIA</div>
+              <div class="dd-player__role">AI半導体・モデル基盤</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">25社書簡を主導しNemotron公開を拡大</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">公開・専有モデルの双方へ計算基盤を供給</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">Mistral</div>
+              <div class="dd-player__role">オープンウェイト開発</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Medium 3.5をクラウドから完全切断まで展開</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">主権・制御性を企業価値に転換</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">Anthropic</div>
+              <div class="dd-player__role">専有フロンティアモデル開発</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">Azure・NVIDIA基盤を拡大</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">署名不参加の理由は未確認</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">European Commission</div>
+              <div class="dd-player__role">AI規制当局</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">透明性義務の指針を公表</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">提供者と導入者の双方へ表示・標識責任を課す</p>
+            </div>
+
+            <div class="dd-player">
+              <div class="dd-player__name">導入企業</div>
+              <div class="dd-player__role">モデル調達・運用主体</div>
+              <div class="dd-player__lbl move">MOVE ─ 動き</div>
+              <p class="dd-player__txt">クラウド・接続型・切断型を選択</p>
+              <div class="dd-player__lbl pos">POSITION ─ 立場</div>
+              <p class="dd-player__txt dim">性能だけでなく復旧性と責任分界を比較</p>
+            </div>
+
+          </div>
+        </div>
+
+
+        <div>
+          <div class="dd-cap">EXHIBIT C — 関係図 / RELATIONS</div>
+          <figure class="dd-fig">
+            <figcaption class="dd-fig__cap"><span class="dd-fig__tag">RELATIONS</span><span class="dd-fig__title">公開性と企業配備を巡る関係図</span></figcaption>
+            <div class="dd-relwrap"><svg viewBox="0 0 1080 755" width="1080" height="755" style="display:block;background:#FAF7F0" role="img" aria-label="公開性と企業配備を巡る関係図"><line x1="354.6" y1="370.5" x2="719.4" y2="370.5" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="719.4,370.5 710.4,375.0 710.4,366.0" fill="#2E6B52"/><line x1="347.8" y1="146.5" x2="726.9" y2="339.2" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="726.9,339.2 716.8,339.2 720.9,331.1" fill="#2D5BB8"/><line x1="347.8" y1="342.0" x2="726.9" y2="149.3" stroke="#2E6B52" stroke-width="2" opacity="0.85"/><polygon points="726.9,149.3 720.9,157.4 716.8,149.3" fill="#2E6B52"/><line x1="354.6" y1="118.0" x2="719.4" y2="118.0" stroke="#B8860B" stroke-width="2" opacity="0.85"/><polygon points="719.4,118.0 710.4,122.5 710.4,113.5" fill="#B8860B"/><line x1="788.4" y1="301.5" x2="788.4" y2="187.0" stroke="#8E2A19" stroke-width="2" opacity="0.85"/><polygon points="788.4,187.0 792.9,196.0 783.9,196.0" fill="#8E2A19"/><polygon points="788.4,301.5 783.9,292.5 792.9,292.5" fill="#8E2A19"/><line x1="753.4" y1="430.0" x2="675.0" y2="563.5" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="675.0,563.5 675.6,553.5 683.4,558.0" fill="#2D5BB8"/><line x1="768.9" y1="184.2" x2="659.5" y2="556.8" stroke="#2D5BB8" stroke-width="2" opacity="0.85"/><polygon points="659.5,556.8 657.7,546.9 666.3,549.4" fill="#2D5BB8"/><line x1="495.0" y1="623.0" x2="571.0" y2="623.0" stroke="#181C2A" stroke-width="2" opacity="0.85"/><polygon points="571.0,623.0 562.0,627.5 562.0,618.5" fill="#181C2A"/><line x1="788.4" y1="341.8" x2="788.4" y2="288.5" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><line x1="533.0" y1="623.0" x2="527.6" y2="686.9" stroke="#B8B2A4" stroke-width="1" opacity="0.7"/><g transform="translate(467.5,357.5)"><rect width="139.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> 3環境で配備</text></g><g transform="translate(463.0,135.0)"><rect width="154.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> GPU基盤を供給</text></g><g transform="translate(468.0,198.8)"><rect width="144.0" height="26.0" fill="#fff" stroke="#2E6B52" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2E6B52"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2E6B52">提携</tspan> Azure・出資</text></g><g transform="translate(458.8,103.8)"><rect width="156.5" height="26.0" fill="#fff" stroke="#B8860B" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#B8860B"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#B8860B">出資</tspan> 出資・設計協力</text></g><g transform="translate(710.1,275.5)"><rect width="156.5" height="26.0" fill="#fff" stroke="#8E2A19" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#8E2A19"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#8E2A19">競合</tspan> 企業モデル選定</text></g><g transform="translate(636.0,483.8)"><rect width="156.5" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 重み・運用制御</text></g><g transform="translate(674.3,244.0)"><rect width="154.0" height="26.0" fill="#fff" stroke="#2D5BB8" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#2D5BB8"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#2D5BB8">供給</tspan> 管理APIを供給</text></g><g transform="translate(461.9,673.9)"><rect width="131.5" height="26.0" fill="#fff" stroke="#181C2A" stroke-width="1" rx="2"/><circle cx="13" cy="13.0" r="3.5" fill="#181C2A"/><text x="24" y="17" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#1A1A1A"><tspan font-weight="700" fill="#181C2A">規制</tspan> 透明性義務</text></g><circle cx="291.6" cy="370.5" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="291.6" y="366.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17.2" fill="#1A1A1A" letter-spacing="-0.5">Microsoft</text><text x="291.6" y="385.2" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">基盤</text><circle cx="291.6" cy="118.0" r="56.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="291.6" y="114.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">NVIDIA</text><text x="291.6" y="136.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">基盤</text><circle cx="788.4" cy="370.5" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="788.4" y="366.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">Mistral</text><text x="788.4" y="389.4" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">モデル</text><circle cx="788.4" cy="118.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="788.4" y="114.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="19.4" fill="#1A1A1A" letter-spacing="-0.5">Anthropic</text><text x="788.4" y="134.0" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">モデル</text><circle cx="440.0" cy="623.0" r="48.0" fill="#fff" stroke="#1A1A1A" stroke-width="1.5" stroke-dasharray="5 4"/><text x="440.0" y="619.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="16.0" fill="#1A1A1A" letter-spacing="-0.5">欧州委員会</text><text x="440.0" y="636.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">規制</text><circle cx="640.0" cy="623.0" r="62.0" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/><text x="640.0" y="619.0" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="24.0" fill="#1A1A1A" letter-spacing="-0.5">導入企業</text><text x="640.0" y="641.9" text-anchor="middle" font-family="'Noto Serif JP',serif" font-size="10.5" fill="#5C5A52">利用者</text></svg></div>
+
+            <div class="dd-rel-legend">
+              <span class="hd">EDGE KIND</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2E6B52"></span>提携</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#2D5BB8"></span>供給</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#B8860B"></span>出資</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#8E2A19"></span>競合</span>
+
+              <span class="it"><span class="sw" style="border-top-color:#181C2A"></span>規制</span>
+
+            </div>
+
+            <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/">*1 Microsoft</a> <a class="cite" href="https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/">*4 Microsoft</a> <a class="cite" href="https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7">*5 Anthropic</a> <a class="cite" href="https://digital-strategy.ec.europa.eu/en/news/commission-publishes-guidelines-transparency-obligations-providers-and-deployers-certain-ai-systems">*6 European Commission</a></span></div>
+          </figure>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 深掘り / DEEP DIVE -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">DEEP DIVE</span>
+        <h2 class="jp">深掘り</h2><span class="no">02 / 03</span>
+      </div>
+      <div class="dd-prose"><p>時系列チャートは、市場規模ではなく各発表に参加した主体数を比較したもので、イベントの性格は同一ではない。それでも<strong class="emph-bold">3社から25主体</strong>への拡大は、モデル公開性が<strong>個社の製品方針から政策連合の争点へ移った</strong>ことを示す。単一ベンダーの性能表だけで選ぶ調達は、<span class="emph-und">規制変更とエコシステム分断を見落とす</span>。</p><p>資金面では、<strong class="emph-bold">Anthropic関連の450億ドル</strong>が示すように、専有モデルも<strong>大規模なクラウド購入と戦略出資</strong>で供給力を確保している。オープンウェイト支持が専有モデルの衰退を意味するわけではない。むしろNVIDIAとMicrosoftは両陣営を支え、<span class="emph-und">顧客が用途ごとにモデルを振り分ける市場から収益を得る</span>。</p></div>
+
+      <div class="dd-charts">
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">単独提携から25主体の政策連合へ広がった</span></figcaption>
+          <div class="dd-chart__note">3社の資本・計算提携</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="単独提携から25主体の政策連合へ広がった"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">主体</text><polyline points="104.0,196.3 280.0,149.1 456.0,66.5" fill="none" stroke="#2D5BB8" stroke-width="2.5"/><circle cx="104.0" cy="196.3" r="4" fill="#2D5BB8"/><text x="104.0" y="188.3" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">3</text><circle cx="280.0" cy="149.1" r="4" fill="#2D5BB8"/><text x="280.0" y="141.1" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">11</text><circle cx="456.0" cy="66.5" r="4" fill="#2D5BB8"/><text x="456.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">25</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2025-11</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026-03</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">2026-07</text><text x="104.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 3社の資本・計算提携</text><text x="280.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ GTC公開モデル討議</text><text x="456.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ 政策書簡</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf">*2 NVIDIA</a> <a class="cite" href="https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/">*3 NVIDIA</a> <a class="cite" href="https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7">*5 Anthropic</a></span></div>
+        </figure>
+
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">CHART</span><span class="dd-fig__title">専有モデル陣営にも450億ドル規模の資本・購入契約がある</span></figcaption>
+          <div class="dd-chart__note">Anthropic関連の2025年11月発表</div>
+          <div class="dd-chart__svg"><svg viewBox="0 0 560 270" width="100%" style="display:block;background:#fff" role="img" aria-label="専有モデル陣営にも450億ドル規模の資本・購入契約がある"><line x1="16" y1="214" x2="544" y2="214" stroke="#E2DED4" stroke-width="1.5"/><text x="16" y="22" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" letter-spacing="1" fill="#8B8B85">十億ドル</text><rect x="49.4" y="66.5" width="109.1" height="147.5" fill="#2D5BB8"/><text x="104.0" y="58.5" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">30</text><rect x="225.4" y="164.8" width="109.1" height="49.2" fill="#2D5BB8"/><text x="280.0" y="156.8" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">10</text><rect x="401.4" y="189.4" width="109.1" height="24.6" fill="#2D5BB8"/><text x="456.0" y="181.4" text-anchor="middle" font-family="'Inter',sans-serif" font-weight="900" font-size="17" fill="#1A1A1A">5</text><text x="104.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Azure計算資源購入</text><text x="280.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">NVIDIA出資上限</text><text x="456.0" y="234" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="600" fill="#5C5A52">Microsoft出資上限</text><text x="104.0" y="250" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#9A8F70">▲ Anthropic関連の2025年11月発表</text></svg></div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7">*5 Anthropic</a></span></div>
+        </figure>
+
+      </div>
+
+
+      <div style="margin:34px 0">
+        <div class="dd-cap">EXHIBIT D — データ表 / TABLE</div>
+        <figure class="dd-fig">
+          <figcaption class="dd-fig__cap"><span class="dd-fig__tag">TABLE</span><span class="dd-fig__title">企業調達で比較すべき公開性・配備・規模</span></figcaption>
+          <div class="dd-table-wrap">
+            <table class="dd-table">
+              <thead><tr><th>経路</th><th>重みの扱い</th><th>配備・接続</th><th>確認できた規模</th><th>調達上の意味</th></tr></thead>
+              <tbody>
+
+                <tr>
+
+                  <td class="head">Mistral Medium 3.5</td>
+
+                  <td class="val">オープンウェイト</td>
+
+                  <td class="val">クラウド／接続型／完全切断型</td>
+
+                  <td class="val">3形態・数千基のVera Rubin GPU計画</td>
+
+                  <td class="src">自社運用へ責任を戻せる</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">Anthropic Claude</td>
+
+                  <td class="val">重み配布は発表資料で確認できず</td>
+
+                  <td class="val">Azureを含む主要3クラウド</td>
+
+                  <td class="val">Azure購入300億ドル・最大1GW</td>
+
+                  <td class="src">管理サービスと供給継続性を契約で担保</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">NVIDIA Nemotron</td>
+
+                  <td class="val">オープンモデル</td>
+
+                  <td class="val">Hugging Face等</td>
+
+                  <td class="val">累計4,500万超ダウンロード</td>
+
+                  <td class="src">改変性と供給網の広さを得る</td>
+
+                </tr>
+
+                <tr>
+
+                  <td class="head">25社・団体の政策書簡</td>
+
+                  <td class="val">ダウンロード可能モデルを支持</td>
+
+                  <td class="val">政策提言</td>
+
+                  <td class="val">2026-07-24時点25主体</td>
+
+                  <td class="src">規制変更リスクを調達条件へ織り込む</td>
+
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+          <div class="dd-fig__src"><span class="lbl">SOURCE</span><span class="val"><a class="cite" href="https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/">*1 Microsoft</a> <a class="cite" href="https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf">*2 NVIDIA</a> <a class="cite" href="https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/">*3 NVIDIA</a> <a class="cite" href="https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/">*4 Microsoft</a> <a class="cite" href="https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7">*5 Anthropic</a></span></div>
+        </figure>
+      </div>
+
+      <div class="dd-prose"><p>導入企業にとって差が出るのは、障害、規制、価格改定が起きた後だ。<strong class="emph-bold">Mistralの3配備形態</strong>は完全切断まで選べる一方、自社側に<strong>パッチ、評価、監視、インシデント対応</strong>の負担が残る。管理APIはその負担をサービス側へ寄せられるが、重み、変更時期、供給停止を自社だけでは制御できない。<span class="emph-und">公開性はコスト削減策ではなく、責任の置き場所を選ぶ設計変数である</span>。</p><p>EUの透明性義務は8月2日に適用が始まり、AIとの対話表示や生成・改変コンテンツの機械可読標識が求められる。<strong class="emph-bold">欧州委員会</strong>は提供者だけでなく導入者にも<strong>説明・表示責任を割り当てた</strong>。重みを保有していても表示義務は免れず、管理APIを使っていても顧客接点の説明は導入企業に残るため、<span class="emph-und">公開・専有の二択より責任分界表の有無が実務を左右する</span>。</p></div>
+    </section>
+
+    <!-- 注目点 / WHAT TO WATCH -->
+    <section class="dd-sec">
+      <div class="dd-sechead">
+        <span class="rule"></span><span class="en">WHAT TO WATCH</span>
+        <h2 class="jp">注目点</h2><span class="no">03 / 03</span>
+      </div>
+
+      <div style="margin-bottom:34px">
+        <div class="dd-cap">EXHIBIT E — 意思決定フレーム / DECISION</div>
+        <div class="dd-decision">
+          <div class="dd-decision__issue">
+            <div class="lbl">◇ 論点 — THE ISSUE</div>
+            <p>企業は基幹AIの標準を専有API、オープンウェイト自社運用、用途別ポートフォリオのどれに置くか</p>
+          </div>
+          <div class="dd-decision__opts">
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">01</span></div>
+              <p class="dd-opt__txt">専有APIを標準にし、供給停止時だけ代替モデルへ切り替える</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">02</span></div>
+              <p class="dd-opt__txt">オープンウェイトを自社管理し、評価・更新・事故対応まで内製する</p>
+            </div>
+
+            <div class="dd-opt">
+              <div class="dd-opt__head"><span class="dd-opt__no">03</span></div>
+              <p class="dd-opt__txt">機密度と復旧要件で専有APIとオープンウェイトを振り分ける</p>
+            </div>
+
+          </div>
+          <div class="dd-decision__foot">
+            <div><div class="lbl">期限 — DEADLINE</div><p>2026-08-02 EU AI Act透明性義務の適用開始までに責任分界と表示実装を確定</p></div>
+            <div><div class="lbl">決定権者 — DECIDER</div>
+
+              <ul class="dd-decision__deciders"><li>CIO・エンタープライズアーキテクチャ責任者</li><li>CISO・AIリスク管理責任者</li><li>法務・調達責任者</li></ul>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dd-prose"><p><strong class="emph-bold">専有API標準</strong>は更新と安全対策をベンダーへ寄せやすいが、価格改定や提供停止への<strong>退出経路が必要</strong>になる。オープンウェイト自社運用は制御性を得る代わりに、評価基盤と緊急更新を自社で持たなければならない。<span class="emph-und">最も現実的なのは機密度・遅延・復旧時間で二つを振り分けることだ</span>。</p><p>判断前に確認すべきは、ベンチマーク順位ではなく、重みの持ち出し権、ログ保管、更新拒否、代替モデルへの切替時間、事故時の連絡責任である。<strong class="emph-bold">CIO・CISO・法務</strong>が共同で<strong>責任分界表と退出テストを承認</strong>し、8月2日までに表示・標識要件を実装できるかが節目になる。<span class="emph-und">モデル調達をAPI単価の比較から運用主権の設計へ移せる企業が先行する</span>。</p></div>
+    </section>
+
+    <!-- 要約 + 参考リンク -->
+    <section class="dd-tail">
+
+      <div class="dd-summary">
+        <div class="lbl">❖ 要約 — IN ONE READ</div>
+        <p><strong class="emph-bold">MicrosoftとNVIDIA</strong>など25主体の書簡は、オープンウェイトを<strong>米国の競争力と企業の制御性を巡る政策争点</strong>へ押し上げた。一方で専有モデルにも450億ドル規模の契約が集まり、両方式は併存する。企業は性能だけでなく、重み、更新、復旧、透明性義務の責任分界を比較し、<span class="emph-und">用途別ポートフォリオと退出経路を8月2日までに固める必要がある</span>。</p>
+        <div class="watermark">❖</div>
+      </div>
+
+
+      <div style="margin-top:40px">
+        <div class="dd-sechead">
+          <span class="rule"></span><span class="en">PRIMARY SOURCES</span>
+          <h2 class="jp" style="font-size:26px">参考リンク</h2>
+        </div>
+        <div class="dd-sources">
+
+
+          <a class="dd-source" href="https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/">
+            <span class="dd-source__no">01</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Microsoft</span>「Open Weights and American AI Leadership」（2026-07-24） <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf">
+            <span class="dd-source__no">02</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">NVIDIA</span>「Open Weights and American AI Leadership」PDF（2026-07-24） <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/">
+            <span class="dd-source__no">03</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">NVIDIA</span>「The Future of AI Is Open and Proprietary」（2026-03-25） <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/">
+            <span class="dd-source__no">04</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Microsoft</span>「Microsoft and Mistral expand strategic partnership」（2026-07-21） <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7">
+            <span class="dd-source__no">05</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">Anthropic</span>「Microsoft, NVIDIA, and Anthropic announce strategic partnerships」（2025-11-18） <span class="ext">↗</span></span>
+          </a>
+
+
+
+          <a class="dd-source" href="https://digital-strategy.ec.europa.eu/en/news/commission-publishes-guidelines-transparency-obligations-providers-and-deployers-certain-ai-systems">
+            <span class="dd-source__no">06</span>
+            <span class="dd-source__txt"><span class="dd-source__pub">European Commission</span>「Commission publishes guidelines on transparency obligations」（2026-07-20） <span class="ext">↗</span></span>
+          </a>
+
+
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- footer -->
+  <div class="dd-foot">
+    <div><strong>NEWS GRASP</strong> · ❖ TODAY'S THEME · EST. 2026</div>
+    <div class="links"><a href="https://hidepon-umg.github.io/News-Grasp/">← DIGEST</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/?view=deepdive">テーマ書架</a><a href="https://hidepon-umg.github.io/News-Grasp/archive/">日付アーカイブ</a></div>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.dd-audio').forEach(function (block) {
+  var audio = block.querySelector('audio');
+  var buttons = block.querySelectorAll('[data-rate]');
+  if (!audio || !buttons.length) return;
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var rate = parseFloat(button.getAttribute('data-rate') || '1');
+      audio.playbackRate = rate;
+      buttons.forEach(function (b) { b.classList.toggle('is-active', b === button); });
+    });
+  });
+});
+</script>
+</body>
+</html>
