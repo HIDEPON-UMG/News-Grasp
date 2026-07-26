@@ -1029,6 +1029,11 @@ function Invoke-GitAddWithIndexLockRetry {
                 try {
                     $lock = Get-Item -LiteralPath $lockPath -ErrorAction Stop
                     $lockState = "present last_write=$($lock.LastWriteTime.ToString('yyyy-MM-ddTHH:mm:ssK')) length=$($lock.Length)"
+                    $lockAge = (Get-Date) - $lock.LastWriteTime
+                    if ($lock.Length -eq 0 -and $lockAge.TotalSeconds -ge 60) {
+                        Remove-Item -LiteralPath $lockPath -Force -ErrorAction Stop
+                        Write-Log "git add $Label stale empty index.lock removed before retry age_seconds=$([int]$lockAge.TotalSeconds)"
+                    }
                 } catch {
                     $lockState = "present unreadable=$($_.Exception.Message)"
                 }

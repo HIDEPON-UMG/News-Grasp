@@ -510,6 +510,26 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-24-daily-quality-editorial-section-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-25",
+        "generation-quality / codex readiness / pytest-static / git add / post-deepdive resume",
+        "Codex doctor MCP configuration failure was misclassified as auth failure before repair, then stale/transient git index.lock blocked publish commits",
+        "external readiness classification and git index lock boundary",
+        "Codex auth evidence must be separated from MCP configuration diagnostics, and git add must use bounded retry only for verified index.lock transients",
+        "runner readiness fixture for MCP-only doctor failure, git index.lock retry fixture, full pytest-static, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-25-codex-doctor-git-lock-recovery-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-07-26",
+        "daily-quality / post-deepdive resume / git add / podcast playlist audit / publish-complete",
+        "Mobility stale candidates and digest/search-audit drift stopped daily-quality, then recovery exposed stale empty git index.lock and same-date podcast playlist duplicates",
+        "content freshness, git state, and podcast distribution convergence boundary",
+        "daily recovery must synchronize search audit, digest cards, record state, git add lock handling, playlist uniqueness, and publish-complete proof before claiming Green",
+        "daily-quality same-date fixture, Japanese digest reconcile routing fixture, stale empty index.lock retry fixture, playlist audit proof, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-26-daily-quality-stale-lock-playlist-recovery-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 

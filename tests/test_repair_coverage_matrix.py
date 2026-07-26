@@ -168,6 +168,21 @@ def test_generation_quality_multi_issue_prioritizes_state_consistency_before_aud
     assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
 
 
+def test_digest_reconcile_japanese_output_routes_to_reconcile_patch() -> None:
+    output = (
+        "FAIL: digest md と articles.jsonl の当日 URL が一致しません "
+        "(号日 2026-07-26, digest-only=0, articles-only=5):\n"
+        "  articles-only (articles.jsonl だけに存在。カード生成漏れの疑い):\n"
+        "    - Mobility: https://example.com/story\n"
+    )
+
+    decision = classify_gate_output("digest-articles-reconcile", output)
+
+    assert decision.issue_code == "digest_article_url_mismatch"
+    assert decision.handler_id == "digest-articles-reconcile-patch"
+    assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
+
+
 def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> None:
     output = json.dumps(
         {

@@ -927,6 +927,8 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "search_audit_count_mismatch"
     if "digest_article_url_mismatch" in text or "digest url" in text:
         return "digest_article_url_mismatch"
+    if "digest md と articles.jsonl" in text or "articles-only" in text or "digest-only" in text:
+        return "digest_article_url_mismatch"
     if "audio_script_quality_invalid" in text:
         return "audio_script_quality_invalid"
     if "summary_hero_missing" in text or "hero_left" in text or "hero_right" in text:

@@ -49,6 +49,7 @@ def _normalize_markdown(path: Path, issue: str) -> bool:
     text = raw.decode("utf-8-sig")
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = "\n".join(line.rstrip() for line in text.split("\n"))
+    text = text.replace("[記事を読む](", "[元記事](")
     if not text.endswith("\n"):
         text += "\n"
 

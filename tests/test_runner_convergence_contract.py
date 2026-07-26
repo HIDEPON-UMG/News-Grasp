@@ -577,6 +577,9 @@ def test_git_add_retries_transient_index_lock_before_publish_commits() -> None:
 
     assert "function Invoke-GitAddWithIndexLockRetry" in runner
     assert "git add $Label retry after rc=128" in runner
+    assert "stale empty index.lock removed before retry" in runner
+    assert "$lock.Length -eq 0" in runner
+    assert "$lockAge.TotalSeconds -ge 60" in runner
     assert "Invoke-GitAddWithIndexLockRetry -Label 'digest/data' -Pathspecs @('digest/', 'data/')" in runner
     assert "Invoke-GitAddWithIndexLockRetry -Label 'docs' -Pathspecs @('docs/')" in runner
     assert "& $GitExe -C $RepoDir add 'digest/' 'data/'" not in runner
