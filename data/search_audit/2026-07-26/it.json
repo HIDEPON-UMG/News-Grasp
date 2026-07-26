@@ -1,0 +1,31 @@
+{
+  "date": "2026-07-26",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:jp.investing.com \"バンク・オブ・アメリカ\" \"サイバーセキュリティ株\"",
+    "\"物流先進モデル企業 視察セミナー 2026 in 愛知\"",
+    "site:enterprisezine.jp \"フォーティエンス\" \"IT戦略・計画策定\"",
+    "site:quantumbusinessmagazine.com \"Terra Quantum\" \"Apex.AI\"",
+    "\"事業承継IT診断Projimo\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "selected_titles": [
+    "バンク・オブ・アメリカ、サイバーセキュリティ株の目標株価を引き上げ 執筆",
+    "荷主企業の経営層・物流責任者必見「物流先進モデル企業 視察セミナー 2026 in 愛知」開催します｜株式会社船井総研サプライチェーンコンサルティング"
+  ],
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "dropped": [
+    {"title":"IT社員は家にこもっている？ データで見えた「業界別ビジネスパーソン」の意外な素顔（ITmedia ビジネスオンライン）","url":"https://news.google.com/rss/articles/CBMif0FVX3lxTE1pOXlocUxnOUlrRFEwM1JkME5hRlg5b2hXekVaMnh1Nk1jUHFRMTZFY1pJQmVfYms0VE82TjlMR3ZkMVBpNVNOTHVJYUNmdWtNSFQ1VVJFNGczV3lVTzNKUmJkMURVcFJ4cTVDTHBWbTlXQTN1X3ZILXQydlFaN3M?oc=5","reason":"canonical URLを確定できず、Google News URLは採用禁止"},
+    {"title":"フォーティエンス、IT戦略・計画策定を学べる2日間の研修プログラム提供開始","url":"https://news.google.com/rss/articles/CBMiVkFVX3lxTE5DRXpDdkZPYXBoVkJNREtDZDQxRWFhcVRIbjNCdjBXX0Zxa2tCS3k3NGVKMHlnOFFlU3A2V21sblQ2RjRiM1AzNlM4eHpteERBV0N1RHRn?oc=5","reason":"canonical記事の公開日が2026-07-22で前日窓外"},
+    {"title":"「社長が明日いなくなったら、この会社は動きますか」Projimo、事業承継のITと業務の引き継ぎに特化した診断サービスを提供開始","url":"https://news.google.com/rss/articles/CBMiakFVX3lxTE9aVTR0QjBuMGZBWDg3NGtJOUFSSDFmRS1SQmpaRlZKZGxCVE5KcVdSaW1aTDZGTzRQYTBGVnpPQk5TblUxVVRGQ0ZYOHF6Sm1qaHhBVUhTSC1nVnQ4NjV3cWNrVWdXei1XTVE?oc=5","reason":"限定canonical検索で元記事URLを確定できず、Google News URLは採用禁止"},
+    {"title":"テラ・クオンタムとApex.AI、エッジからクラウドまでインテリジェントシステム向けに量子コンピューター耐性セキュリティを実証","url":"https://news.google.com/rss/articles/CBMi4gJBVV95cUxOTk1Bc09HTkJ2WENKa2VBTVpCV0xGWFdMQmxoV3NLZ3dqMjRVd1I5dDBDNzluY21IVUxoYkFwWTk3VTlCZTAyZ1dEWmNvWE42dS11U0d5OHFLZFA1NTFUX3hULVZjMmxSQ3Y4aGRuNUFVNVNWTVROTVZFQ0hWNV9yMTE2cU1MYkhDa1M4ZXZVdG5ndkluOUpDSldfOHNUNUJHT1pRdXRGYm4tdkZNNHJ1NVN3NXJHMEpJSW9JVFlrdS1ialY2SkEtX0tmdUhQSG5XOGxEV3EzeElEUVcyZk8zVTdrc1ZFNDcxdTc0aFBJT2lQN0JRS0RmMGI0V3ZsTm84TXVMcVJKWEx6dGRRcDh5eE5RTmxkN0hjZXhMLTBsc2U5SnRubERFLXRFR2NnSnNJMmNqRVNGTVBTUdicHFPMTUtbWRLWktidlE4UVE?oc=5","reason":"canonical記事の公開日が2026-07-23で前日窓外"},
+    {"title":"20 認知クラウド市場規模、シェア、成長企業","url":"https://news.google.com/rss/articles/CBMiV0FVX3lxTE5DRXpDdkZPYXBoVkJNREtDZDQxRWFhcVRIbjNCdjBXX0Zxa2tCS3k3NGVKMHlnOFFlU3A2V21sblQ2RjRiM1AzNlM4eHpteERBV0N1RHRn?oc=5","reason":"市場調査レポートの販売ページで、当日ニュースとしての一次性が不足"}
+  ],
+  "quality_shortfall_reason": "Stage1候補25件を起点にcanonical URL、前日窓の公開日、IT主題性を確認した結果、採用可能な記事は2件に限定。未解決URL、前日窓外、IT外・PR色の強い候補を除外し、広域収集と横断dedupは再実行していない。"
+}

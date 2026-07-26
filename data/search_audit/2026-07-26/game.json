@@ -1,0 +1,46 @@
+{
+  "date": "2026-07-26",
+  "category_id": "game",
+  "queries": [
+    "Stage1 dedup input: build/deduped-candidates/game.jsonl",
+    "site:automaton-media.com MARVEL Tōkon 2026-07-25",
+    "site:mudauchi.info PSN障害 PS5 オフライン ゲーム",
+    "site:gamewith.jp アノマリス クライムライト Six One Demo Days",
+    "site:gamebiz.jp Roman Sands RE:Build 2026年9月17日",
+    "site:gamebiz.jp Instant Sports 2 PS5 Switch 2026年7月25日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix"],
+  "dropped": [
+    {"title":"プロ野球オールスターゲーム2026丨日程・放送予定・ライブ配信・選手一覧・見どころ","reason":"ゲーム業界ニュースではなくスポーツ中継情報"},
+    {"title":"スマホゲームアプリ「#コンパス【戦闘摂理解析システム】」とのコラボレーション第6弾が決定！","reason":"企業告知単体で当日性以外の読者影響が限定的"},
+    {"title":"阪神・村上 前半戦ラストゲーム 巨人との首位攻防戦３連敗阻止へ","reason":"プロ野球記事でゲームカテゴリ外"},
+    {"title":"有吉ぃぃeeeee！～そうだ！今からお前んチでゲームしない？","reason":"テレビ番組告知でゲーム業界ニュースではない"},
+    {"title":"『カービィのエアライダー』のオンライン体験会「おためしライド」を明日から開催。","reason":"公式ページの開催日が2025年11月で、当日記事として再利用不可"},
+    {"title":"［アルビ試合後リポート］「非常に幼稚なゲーム」開幕まで２週間","reason":"サッカー記事でゲームカテゴリ外"},
+    {"title":"エメラルド×オレンジカラーのSwitch2用ゲームアクセサリー 好評発売中！","reason":"商品PRでニュース性・一次報道性が低い"},
+    {"title":"『ソニック・ザ・ヘッジホッグ』日本発売35周年。","reason":"記念日振り返りで新規動きが薄い"},
+    {"title":"「ファイナルファンタジーXIV」Nintendo Switch 2版は8月4日発売、1カ月間無料","reason":"候補元の正規記事を当日公開日まで確定できず、公式一次情報は発売月のみ"},
+    {"title":"『めっちゃカメレオン』Modマップにマルウェア混入報告","reason":"候補元の当日記事を正規URLで確定できず、既確認の類似注意喚起は6月記事"},
+    {"title":"新プロジェクトX＞現実の世界がゲームの舞台","reason":"テレビ番組紹介でゲーム業界ニュースではない"},
+    {"title":"〝超・有名音楽家〟も爆笑「ゲームを全力で妨害する鳥」","reason":"動画話題の紹介で業界・製品動向への影響が限定的"},
+    {"title":"新鮮な卵から人気キャラのフィギュアまで！クレーンゲーム専門店","reason":"店舗開業のローカル記事で影響範囲が限定的"},
+    {"title":"アニメやゲーム プログラミング","reason":"記事内容とゲームニュースの論点を確定できず"},
+    {"title":"PSNの障害でPS5のゲームがオフラインでも起動不能に","reason":"候補元の海外記事は避け、同一事象を国内記事の正規URLへ解決して採用"},
+    {"title":"チラズアート新作『Snowed Under | 雪葬』Steam向けに発表！","reason":"単一タイトルの発表で、選定した当日ニュースより影響範囲が狭い"},
+    {"title":"ゲームフォト - 07月25日 対巨人戦 甲子園","reason":"プロ野球写真でゲームカテゴリ外"},
+    {"title":"クレーンゲームを楽しんで頂きました！！","reason":"店舗スタッフ投稿でニュース性・一次報道性が低い"},
+    {"title":"Outersloth、レトロな3Dソウルライクアクションゲーム『Memoirium』","reason":"同日発表の新作だが、選定したプラットフォーム障害・大型ベータ・発売情報を優先"},
+    {"title":"Valveは、一連のシステムアップデートを経て、Steam Frameという仮想現実ヘッドセットの発売に向けて準備","reason":"転載調で一次情報を確認できず、候補の信頼度が低い"}
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "notes": [
+    "Stage1 dedup済み候補を入力とし、広域収集と横断dedupは再実行していない。",
+    "候補のGoogle News URLはrecordsへ残さず、WebSearchで200確認した元記事canonical URLへ解決した。",
+    "thumbはfetch_ogp.pyの段階1結果を使用した。"
+  ]
+}

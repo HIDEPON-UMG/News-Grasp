@@ -1,0 +1,83 @@
+{
+  "date": "2026-07-26",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "\"テスラのロボタクシー\" \"Starlink V5\"",
+    "\"WaymoがUberとの提携解消を検討\"",
+    "\"テスラに乗れなくなる日が来る？\" ニュージャージー 自動運転 法律バトル",
+    "\"こ、これがEV!?\" \"スーパーワン\" 2026",
+    "\"フィアット初の小型三輪EV\" \"トリス\" 2026"
+  ],
+  "canonical_resolution_queries": [
+    "候補タイトルと媒体ドメインを限定した記事単位のURL解決のみ。広域収集・横断dedupは未実施。"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "日産「リーフNISMO」発表",
+      "reason": "二次転載・販売店系で、選定上限内の一次性と波及度が相対的に低い"
+    },
+    {
+      "title": "Tesla、自動運転車の生産を大幅拡大へ",
+      "reason": "Tesla関連の選定記事と論点が重複し、同日枠の代表性で落とした"
+    },
+    {
+      "title": "ワイヤレスEV充電、航続距離を延ばす新方式",
+      "reason": "記事本文の実質掲載日が対象期間外"
+    },
+    {
+      "title": "ニセコ町、自動運転バスの実証運行",
+      "reason": "実証開始が対象期間より古く、速報性が不足"
+    },
+    {
+      "title": "自動運転、27年に国内商用化が本格化",
+      "reason": "候補URLの正規記事と対象日を十分に確定できず保留"
+    },
+    {
+      "title": "IRD T2、自動運転シャトルを発表",
+      "reason": "候補表示日と一次発表日の乖離が大きい"
+    },
+    {
+      "title": "Zoox、ラスベガスでの展開を拡大",
+      "reason": "新規の決定・数値が薄く、選定5件の比較で優先度が下がった"
+    },
+    {
+      "title": "茂木町、花火大会で自動運転バス",
+      "reason": "地域イベント告知でニュース波及度が低い"
+    },
+    {
+      "title": "Cybercab、25万マイル走行の分析",
+      "reason": "Tesla自動運転関連記事との重複が大きい二次分析"
+    },
+    {
+      "title": "大阪・関西万博でEVバス運行",
+      "reason": "本文の実施日が対象期間外"
+    },
+    {
+      "title": "ToyotaとNVIDIAの協業史",
+      "reason": "現在の新規動向ではなく、一般的な振り返り記事"
+    },
+    {
+      "title": "Volvo ES90、日本導入へ",
+      "reason": "候補表示日と本文の発売情報の整合が取れず保留"
+    },
+    {
+      "url": "https://techcrunch.com/2026/07/24/waymo-reportedly-mulling-a-breakup-with-uber/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,56 @@
+{
+  "date": "2026-07-26",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:gaitame.com/media/entry/2026/07/26 来週のドル円相場はどうなる 7/27週 イベント予定",
+    "site:gaitame.com/media/entry/2026/07/26 豪ドル/円 29日に4-6月期CPI 追加利上げ",
+    "site:ig.com アメリカ株 見通しに急落リスク山積 SP500週次続落 FOMC",
+    "外為 1ドル163円84銭前後 大幅なドル高 円安 株探ニュース",
+    "site:newsdig.tbs.co.jp/articles/-/2826093 トリプル安 60の国 地域 追加関税",
+    "米金利 5会合連続据え置きへ 28 29日にFOMC",
+    "site:moneypost.jp ドル円週間見通し 底堅い展開か 為替介入"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "stage1_dedup_repeated": false,
+  "cross_category_dedup_repeated": false,
+  "canonical_resolution": {
+    "resolved_total": 5,
+    "method": "targeted_search_only",
+    "resolved_urls": [
+      "https://www.gaitame.com/media/entry/2026/07/26/060400",
+      "https://newsdig.tbs.co.jp/articles/-/2826093?display=1",
+      "https://www.ig.com/jp/news-and-trade-ideas/SP500-drops-as-optimism-for-AI-boom-continuity-shrinks-260725",
+      "https://www.gaitame.com/media/entry/2026/07/26/060200",
+      "https://minkabu.jp/news/4575253"
+    ]
+  },
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "dropped": [
+    {"title":"米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示","reason":"レート表示ページでニュース性がない"},
+    {"title":"日経平均に二重の急落リスク 週次反発 相次ぐ決算やFOMCで波乱も","reason":"株式市場中心でFXの独立材料が少ない"},
+    {"title":"日本よ、もっと円安を恐れよ 船橋洋一氏と振り返る経済「戦後敗戦」","reason":"論考で当日の市場材料を直接伝える記事を優先"},
+    {"title":"HFM KATANA（刀）口座詳細：無制限レバレッジ&極狭スプレッドで今すぐ取引！","reason":"広告・口座案内でニュース性がない"},
+    {"title":"アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場","reason":"レート表示ページでニュース性がない"},
+    {"title":"ゴールドマン・サックス、円安見通しを背景にTOPIX12カ月目標を4,500に引き上げ 執筆","reason":"株価見通し中心でFXへの直接性が低い"},
+    {"title":"最新FX・為替ニュース生解説 2026年7月27日～7月31日 YouTubeライブ配信スケジュール","reason":"動画配信案内で独立した市場材料が少ない"},
+    {"title":"インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報","reason":"投資信託の定型情報でニュース性が低い"},
+    {"title":"(NEXT FUNDS)NASDAQ-100(H無)連動型上場投信【1545】：株価・株式情報（夜間PTS含む）","reason":"金融商品の価格表示でニュース性がない"},
+    {"title":"アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型(為替ヘッジなし)予想分配金提示型の基準価額・投資信託情報","reason":"投資信託の定型情報でニュース性が低い"},
+    {"title":"米金利、5会合連続据え置きへ インフレ警戒で利上げ論も 28、29日にFOMC（時事通信）","reason":"当日canonicalの公開日を確定できず、採用したFOMC関連記事へ集約"},
+    {"title":"欧米為替見通し:ドル・円は伸び悩みか、円安進行で為替介入に警戒(フィスコ)","reason":"検索結果で当日記事としてcanonicalと公開日を確認できない"},
+    {"title":"日本銀行【8301】：株価・株式情報","reason":"株価表示ページでニュース性がない"},
+    {"title":"ｎｅｗｓ２３ [字] トランプ新関税そして円安止まらず▽国会大荒れ副首都法案可決・成立","reason":"採用したTBS NEWS DIG記事と内容が重複"},
+    {"title":"来週の相場で注目すべき3つのポイント：日米韓テック大手決算、日銀金融政策決定会合、米FOMC","reason":"株式市場寄りで採用記事と論点が重複"},
+    {"title":"「誰の前でも緊張しない」元日銀理事 仕事を超えた人間関係に助けられた","reason":"人物インタビューで市場材料の直接性が低い"},
+    {"title":"J-REIT2カ月ぶり高値！日銀利上げでも5％利回り強し？「地域特化型REIT」を解説","reason":"REIT中心でFXへの直接性が低い"},
+    {"title":"外為：1ドル163円84銭前後と大幅なドル高・円安で推移(株探ニュース)","reason":"採用"},
+    {"title":"［株式週間展望］日米金融政策や中東情勢に注目 平均株価6万4千円台か","reason":"株式市場中心でFXの直接材料としての優先度が低い"},
+    {"title":"〔米国金融証券週報・展望〕FOMC控え米金利が急上昇＝インフレと財政赤字に懸念(時事通信)","reason":"当日canonicalの公開日を確定できず、採用したFOMC関連記事へ集約"}
+  ]
+}

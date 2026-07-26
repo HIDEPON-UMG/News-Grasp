@@ -1,0 +1,41 @@
+{
+  "date": "2026-07-26",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:zaikei.co.jp Claude Opus 5 英政府 模擬ネットワーク 10回中8回",
+    "site:news.yahoo.co.jp Microsoft NVIDIA オープンウェイト 規制 書簡 Anthropic",
+    "site:finance.biggo.jp 李在明 アルトマン HBM ファウンドリー OpenAI",
+    "site:innovatopia.jp MAI-Image-2.5-Pro Microsoft OpenAI",
+    "site:finance.biggo.jp Anthropic SK hynix チップ 原材料 供給"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title":"「Claude」Anthropicが開発したAIモデル／AIチャットボット","url":"https://forest.watch.impress.co.jp/library/software/claude/","reason":"一般解説・ソフトウェア紹介で当日ニュース性が弱い"},
+    {"title":"NVIDIAが次世代AI超解像技術「DLSS 5」の今秋投入を明らかに／MicrosoftとMistralが欧州におけるAI演算能力の拡大で戦略的提携を発表","url":"https://www.itmedia.co.jp/pcuser/amp/2607/26/news007_2.html","reason":"週末のまとめ記事で既報の再整理が中心。AIカテゴリの新材料を優先"},
+    {"title":"Claude Opus 5提供開始、Fable 5に迫る性能で半額","url":"https://www.gamebusiness.jp/article/2026/07/26/27550.html","reason":"Opus 5発表の重複報道。安全性試験の新材料を含む財経新聞版を採用"},
+    {"title":"リングセントラル、OpenAIとのAIネイティブ提携と好調な第2四半期決算で急騰","url":"https://finance.biggo.jp/news/bbdb902a-01e1-4095-9e67-4c15e23425e2","reason":"企業決算・株価反応が主題で、AIカテゴリの中核テーマから外れる"},
+    {"title":"無料版Claudeもこれで快適。強力な設定「インストラクション」","url":"https://www.gizmodo.jp/article/how_to_write_claude_instruction/","reason":"利用方法の解説でニュース性が弱い"},
+    {"title":"Rubrik、Anthropic「Claude Code」向けにAIエージェントのセキュリティ基盤を発表","url":"https://thinkit.co.jp/article/39306","reason":"企業製品発表だが、候補内のAI安全・基盤ニュースより影響範囲が狭い"},
+    {"title":"アンスロピックIPO：Claudeの開発元について知っておくべき重要な情報","url":"https://www.tradingkey.com/jp/analysis/stocks/us-stocks/261951084-anthropic-ipo-claude-ai-tradingkey","reason":"企業解説・投資紹介で当日ニュース性が弱い"},
+    {"title":"近畿大学情報学部が総合型選抜での生成AI利用方針を明示","url":"https://www.u-presscenter.jp/article/129548","reason":"教育制度として有意義だが、AI産業への当日波及が相対的に小さい"},
+    {"title":"ChatGPT・Gemini・Claudeが商材を引用、成果保証型AIO/LLMO対策サービスを開始","url":"https://www.jiji.com/jc/article?k=000000001.000187441&g=prt","reason":"企業PR色が強く、独立した裏取りが不足"},
+    {"title":"Claude Opus 5：AnthropicがFable 5の廉価版を投入","url":"https://korben.info/ja/claude-opus-5-anthropic-modele-moins-cher.html","reason":"Opus 5の重複報道。安全性試験の新材料を含む財経新聞版を採用"},
+    {"title":"前例のないAIの「裏切り」に続く、憂慮すべき現象。","url":"https://www.vietnam.vn/ja/hien-tuong-bao-dong-sau-vu-ai-phan-chu-chua-tung-co","reason":"論点と一次情報の対応が不明確で、記事カード化を見送った"},
+    {"title":"評価額160兆円のOpenAI、IPO目前で露呈する巨額赤字と非営利のジレンマ","url":"https://finance.biggo.jp/news/0a9244a8-9a39-4725-993f-55a3a1ca7593","reason":"解説・論評寄りで、当日一次情報の確認が不足"},
+    {"title":"日本俳優連合、実演家に向け生成AIの使用を注意喚起","url":"https://news.yahoo.co.jp/articles/0c93d541490af50c4e19d8546f2cf8f41c5154ad","reason":"AIとの接点はあるが、当日枠では波及が相対的に小さい"},
+    {"title":"OpenAI、オープンウエイトAI推進で35社の連合に参加、Anthropicが孤立","url":"https://finance.biggo.jp/news/3ebfc206-786e-4acd-8a25-bbf34fa8ab10","reason":"オープンウェイト書簡と重複。一次情報を確認できるITmedia掲載版を採用"},
+    {"title":"Anthropic、新AIモデル「Claude Opus 5」発表","url":"https://finance.biggo.jp/news/deea98ad-6486-49aa-96c7-a4f9317955b1","reason":"Opus 5の重複報道。今回は安全性試験の続報を採用"},
+    {"title":"Anthropic「Claude Opus 5」発表、API料金は半額に","url":"https://realsound.jp/tech/2026/07/post-2471278.html/amp","reason":"Opus 5の重複報道。今回は安全性試験の続報を採用"},
+    {"title":"Anthropicが新モデル「Claude Opus 5」を発表、Fable5に迫る性能を半額で提供","url":"https://www.sbbit.jp/article/cont1/186258","reason":"Opus 5の重複報道。今回は安全性試験の続報を採用"},
+    {"title":"Anthropicが新モデル「Claude Opus 5」を発表、Fable5に迫る性能を半額で提供","url":"https://news.yahoo.co.jp/articles/51f7ce8df3eeab035eb29eff18bd4d52273682ba/images/000","reason":"Opus 5の重複報道。画像URLは記事単位の代表URLとして不適切"},
+    {"title":"マスク氏、AIは5年以内に人類の知能を超えると発言","url":"https://finance.biggo.jp/news/17f81c82-bc67-4eeb-a7ed-24878b3ae3a4","reason":"個人発言中心で、検証可能な新しい実装・政策材料が薄い"},
+    {"title":"Anthropic、自社開発チップへ前進 SKハイニックスに供給要請","url":"https://finance.biggo.jp/news/230ca9c4-b7a2-444a-b813-02cada773bcc","reason":"採用済み"}
+  ]
+}
