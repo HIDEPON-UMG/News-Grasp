@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-27",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d (Stage1候補の収集クエリ)",
+    "site:itmedia.co.jp/news Claude Opus 5 Fable 5 2026年7月",
+    "site:techno-edge.net Hugging Face OpenAI エージェント 2026年7月26日",
+    "site:itmedia.co.jp/news オープンウェイト 規制 Microsoft NVIDIA Anthropic",
+    "site:k-tai.watch.impress.co.jp Gemini Garmin Edge 840 2026年7月27日"
+  ],
+  "raw_results_total": 29,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Netflix、2026年に生成AIを約300作品で活用",
+      "url": "https://www.itmedia.co.jp/news/spv/2607/17/news065.html",
+      "reason": "元記事の公開日が2026-07-17でfreshness gateの対象外"
+    },
+    {
+      "title": "独自LLMでプロテインAIに挑むMOLCURE、「捨てていたデータも実は重要」",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/00000/",
+      "reason": "候補の再掲日と元記事の公開日をcanonical URLで確定できず採用不可"
+    },
+    {
+      "title": "Anthropicと組んだNEC それでも森田社長が「4つの主権」にこだわる真意",
+      "url": "https://www.itmedia.co.jp/business/articles/2607/16/news025.html",
+      "reason": "元記事の公開日が2026-07-16でfreshness gateの対象外"
+    },
+    {
+      "title": "学術論文の過半数に生成AIの影響か",
+      "url": "https://news.livedoor.com/article/detail/31917375/",
+      "reason": "元研究の公開日が2026-05-29で、7月26日の再掲としては新規性不足"
+    },
+    {
+      "title": "OpenAI、17日間の安定性危機",
+      "url": "https://finance.biggo.jp/",
+      "reason": "元記事単位のcanonical URLと一次情報を確認できず採用不可"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

@@ -1,0 +1,132 @@
+{
+  "date": "2026-07-27",
+  "category_id": "fx",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:newsdig.tbs.co.jp/articles/withbloomberg/2827294 FRBと日銀 英中銀 原油100ドル",
+    "site:minkabu.jp/news/4576360 FOMC 日銀金融政策決定会合 米4-6月期GDP",
+    "FOMC会合プレビュー 原油高 シティ 2026-07-27",
+    "site:newsdig.tbs.co.jp/articles/withbloomberg/2823539 片山財務相 為替対応"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "selection_note": "Stage1 dedup済み候補を入力とし、追加の広域収集・横断dedupは実施していない。選択候補のみcanonical URL、公開日時、OGPを確認した。",
+  "dropped": [
+    {
+      "candidate_line": 1,
+      "title": "米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "reason": "リアルタイム市況ページで、ニュース記事としての新規材料が薄い"
+    },
+    {
+      "candidate_line": 3,
+      "title": "来週のドル円相場はどうなる？7/27週のイベント予定 2026年7月26日",
+      "reason": "前号2026-07-26に同一URLを掲載済みのfollow-up。横断dedup前の重複を回避"
+    },
+    {
+      "candidate_line": 4,
+      "title": "プロの“為替脳”をインストール 円安時代の資産防衛術：モーサテプレミアムセミナー：テレビ東京",
+      "reason": "セミナー告知・販促色が強く、投資判断に直結する一次ニュース性が低い"
+    },
+    {
+      "candidate_line": 5,
+      "title": "FRB政策会合、近年まれに見る「予測不能」な展開に",
+      "reason": "有料記事でcanonical URLと公開本文の確認が不足"
+    },
+    {
+      "candidate_line": 7,
+      "title": "エミン・ユルマズ　経済望遠鏡＝４０年ぶり円安水準　１ドル＝２００円の可能性も｜四国新聞WEB朝刊",
+      "reason": "元記事ドメインのアクセス制約でcanonical URLと本文を確認できず"
+    },
+    {
+      "candidate_line": 8,
+      "title": "ウォーシュ流でFRB利上げの予測が困難に、FOMC直前でも見方割れる フォトギャラリー | TBS CROSS DIG with Bloomberg",
+      "reason": "follow-upのフォトギャラリーで、元記事としての新規材料が薄い"
+    },
+    {
+      "candidate_line": 9,
+      "title": "AI分析レポート",
+      "reason": "見出しだけでは内容と一次情報性を確認できない"
+    },
+    {
+      "candidate_line": 10,
+      "title": "サイバーセキュリティ株式オープン(為替ヘッジなし)予想分配金提示型【03319211】：基準価格・投資信託情報",
+      "reason": "投資信託の商品市況ページで、FXニュースの新規材料ではない"
+    },
+    {
+      "candidate_line": 12,
+      "title": "欧州 ユーロ / アメリカ ドル【EURUSD=X】：為替レート・相場",
+      "reason": "リアルタイム市況ページで、ニュース記事としての新規材料が薄い"
+    },
+    {
+      "candidate_line": 13,
+      "title": "iシェアーズ 米国債20年超(H有)【2621】：株価・株式情報（夜間PTS含む）",
+      "reason": "債券ETFの商品市況ページで、FXニュースの新規材料ではない"
+    },
+    {
+      "candidate_line": 14,
+      "title": "オーストラリア ドル / 日本 円【AUDJPY=X】：為替レート・相場",
+      "reason": "リアルタイム市況ページで、ニュース記事としての新規材料が薄い"
+    },
+    {
+      "candidate_line": 15,
+      "title": "欧米為替見通し:ドル・円は伸び悩みか、円安進行で為替介入に警戒(フィスコ)",
+      "reason": "候補24と類似するシンジケート見通しで、独立した新規材料が少ない"
+    },
+    {
+      "candidate_line": 16,
+      "title": "【最新FX・為替ニュース生解説】2026年7月27日～7月31日 YouTubeライブ配信スケジュール｜リアルマーケット分析",
+      "reason": "動画配信スケジュールで、記事本文としてのニュース材料が薄い"
+    },
+    {
+      "candidate_line": 17,
+      "title": "日経平均1811円安 米韓ハイテク株下落に連動、AI・半導体株中心に売り【日経CNBC／きょうのポイント、明日のヒント】",
+      "reason": "株式市場の話題が主で、FXへの直接的な新規材料が薄い"
+    },
+    {
+      "candidate_line": 18,
+      "title": "為替トレーダー、ボラティリティー復活見込む－トランプ氏復帰で フォトギャラリー | TBS CROSS DIG with Bloomberg",
+      "reason": "follow-upのフォトギャラリーで、前回記事との差分が限定的"
+    },
+    {
+      "candidate_line": 20,
+      "title": "FX・為替相場の注目指標や予想を解説 - 【7月27日～の週】為替相場の注目材料スケジュールと焦点",
+      "reason": "follow-upで同じ週次イベント整理が重複し、新材料が薄い"
+    },
+    {
+      "candidate_line": 21,
+      "title": "【ポイントインタビュー】岡山経済研究所 吉田一成主任研究員 ４０年ぶり円安水準、対応は 価格転嫁進め収益力向上",
+      "reason": "canonical URLと公開本文の確認が不足し、他候補と主題も重なる"
+    },
+    {
+      "candidate_line": 22,
+      "title": "GX 米国優先証券【2866】：株価・株式情報（夜間PTS含む）",
+      "reason": "株式商品の市況ページで、FXニュースの新規材料ではない"
+    },
+    {
+      "candidate_line": 23,
+      "title": "東京円、一時１６３円４２銭 ３９年８カ月ぶりの円安水準",
+      "reason": "canonicalで確認できた公開日が2026-07-23で、当日性の基準外"
+    },
+    {
+      "candidate_line": 24,
+      "title": "欧米為替見通し: ドル・円は底堅い値動きか、米経済指標にらみもドル買い継続(フィスコ)",
+      "reason": "canonical URLと公開日時を確定できず、候補15とシンジケート重複"
+    },
+    {
+      "candidate_line": 25,
+      "title": "今週の見通し（ハイテク大手決算、FRB利上げ決定、コアPCE）",
+      "reason": "候補6と今週のイベント整理が重複し、FX固有の新規材料が少ない"
+    }
+  ]
+}

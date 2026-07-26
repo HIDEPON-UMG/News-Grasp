@@ -1,0 +1,25 @@
+{
+  "date": "2026-07-27",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1候補 canonical URL 解決: 自動運転 EV ロボタクシー Waymo Tesla mobility",
+    "\"タイ政府がEV促進策を再検討\" 2026-07-27",
+    "\"独VWの低価格EVファミリー\" 受注7万台 2026",
+    "\"EVに逆風!? 日本のEVバスメーカー民事再生\" ベストカーWeb"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dropped": [
+    {"title":"自動運転新興チューリングの山本一成CEO「ロボタクシー実現へ自信」","url":"https://news.google.com/","reason":"記事単位のcanonical URLを確定できず、検索結果は過去記事中心だったため除外"},
+    {"title":"自動運転は前進したか WP.29新規則が示す現実とその先","url":"https://news.google.com/","reason":"記事単位のcanonical URLを確定できず除外"},
+    {"title":"韓国EV充電プラットフォーム「Chaevi」がハッキング被害、個人情報約30万件流出","url":"https://news.google.com/","reason":"記事単位のcanonical URLと一次情報を確定できず除外"},
+    {"title":"万博で利用もトラブル相次ぎ利用停止・転用断念の「EVバス」","url":"https://news.google.com/","reason":"canonical記事は2026-07-17公開で前日窓外のため除外"},
+    {"title":"日産、EVレース「進化の場に」 国内勢で唯一参戦","url":"https://news.google.com/","reason":"canonical記事は2026-07-23公開で前日窓外のため除外"},
+    {"title":"編集者の視点 ｢BMW、パリモーターショーに出展せず｣","url":"https://news.google.com/","reason":"記事単位のcanonical URLを確定できず除外"}
+  ]
+}

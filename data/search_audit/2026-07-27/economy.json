@@ -1,0 +1,41 @@
+{
+  "date": "2026-07-27",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "米FRB会合 イラン情勢 インフレ 再加速 2026-07-27",
+    "米テック決算、現金流出に厳しい目線",
+    "［経済フォーカス 識者の眼］インフレ指標 米改革の本丸",
+    "インフレが引き起こす 株高不況",
+    "投資用不動産 売却益求め短期売買増加"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"],
+  "dropped": [
+    {"title":"モープラＦＴ【酷暑がもらたすインフレに警戒／中国の海洋進出加速でアジア安保は】","url":"https://www.bs-tvtokyo.co.jp/mplusft/backnumber/202607/23593_202607270705.html","reason":"番組情報ページで個別ニュース本文ではなく、選定済み記事と論点が重複するため"},
+    {"title":"学者が斬る・視点争点：経済連携協定の現状と今後の課題 早川和伸","url":"https://weekly-economist.mainichi.jp/articles/20260804/se1/00m/020/007000c","reason":"公開日が2026-08-04で号日より未来のため"},
+    {"title":"26年7月日本経済の展望 景気回復続く見通しも･･･「中東情勢」＆「金利上昇」で下振れリスク大","url":"https://newsdig.tbs.co.jp/articles/gallery/2810197","reason":"canonicalがgallery URLに解決され、本文公開日は2026-07-17で24時間窓外のため"},
+    {"title":"三井住友信託銀行が「BlackLine」導入、決算プロセスの可視化とナレッジ共有を推進","url":"https://enterprisezine.jp/news/detail/24742","reason":"公開日が2026-07-23で24時間窓外のため"},
+    {"title":"ＩＧアリーナ開業１年 来場100万人、経済効果も","url":"https://www.chukei-news.co.jp/news/2026/07/27/OK0002607270301_03/","reason":"地域経済ニュースとして重要度が相対的に低く、5件の上位候補を優先したため"},
+    {"title":"教養学部学生自治会、決算作成されず 「異常事態」是正を目指す","url":"https://www.todaishimbun.org/komabaunion_20260726/","reason":"経済全体への影響範囲が限定的なため"},
+    {"title":"農業生産額、４７年ぶり最高 ２５年県内","url":"https://www.sannichi.co.jp/article/2026/07/27/00893188","reason":"地域限定かつ有料本文で、全国の読者への影響範囲が相対的に小さいため"},
+    {"title":"目覚めた日本経済（上） 1%の金利がもたらす構造転換","url":"https://www.nikkei.com/prime/ft/article/DGXZQOCB242520U6A720C2000000","reason":"有料連載で、FRB会合・インフレ・株価の採用記事と金融テーマが重なるため"},
+    {"title":"今週の決算発表予定 キオクシア、アドテスト、東エレクなど (7月27日～31日)","url":"https://kabutan.jp/news/marketnews/?b=n202607260058","reason":"決算予定一覧であり、個別の新規ニュースより影響度が相対的に低いため"},
+    {"title":"成年後見の大改革「家裁業務がパンクする？」インフラの課題","url":"https://mainichi.jp/premier/business/articles/20260717/biz/00m/020/003000c","reason":"公開日が2026-07-17で24時間窓外のため"},
+    {"title":"英国のユニバ、経済効果10兆円見込む テーマパーク不毛の地に挑戦","url":"https://www.nikkei.com/article/DGXZQOGR298TJ0Z20C26A6000000/","reason":"記事URLの公開日が2026-06で24時間窓外のため"},
+    {"title":"日経平均は下値探る展開か、日米決算が本格化 今週の市場・予定","url":"https://www.nikkei.com/article/DGXZQODL2604D0W6A720C2000000/","reason":"週次市場見通しで、採用した米テック決算・インフレ論点と重複するため"},
+    {"title":"トヨタ経済圏を越えろ 愛知・三河、車から宇宙へ・ちくわは海外に","url":"https://www.nikkei.com/article/DGXZQOFD071J70X00C26A7000000/","reason":"地域産業連載で、経済全体への影響範囲が相対的に限定的なため"},
+    {"title":"AI就職氷河期がやってくる？ スプツニ子!氏","url":"https://www.nikkei.com/article/DGXZQOUD10BTY0Q6A710C2000000/","reason":"労働・AIテーマだが、economyの当日主要論点への直接性が低いため"},
+    {"title":"ヤルデニ調査：ウォーシュ議長はどのインフレ指標をターゲットにしているのか 執筆","url":"https://jp.investing.com/news/economy-news/article-1616265","reason":"本文取得とOGP取得が成立せず、一次記事としての検証証跡が不足するため"},
+    {"title":"明日の経済スケジュール ─ 景気動向指数[改定値]など","url":"https://s.kabutan.jp/news/n202607260077/","reason":"前日の予定一覧で、当日主要ニュースとしての新規性が低いため"},
+    {"title":"首相の予算委出席減「適切」47%","url":"https://www.nikkei.com/article/DGKKZO97779840W6A720C2PE8000/","reason":"政治世論調査でeconomyへの直接性が低いため"},
+    {"title":"［社説］成田空港の土地収用はやむをえぬ","url":"https://www.nikkei.com/article/DGXZQODK2520Z0V20C26A7000000/","reason":"社説で、当日経済指標・市場への直接性が低いため"},
+    {"title":"文化軽視の政治いつまで 特別編集委員 坂本英二","url":"https://www.nikkei.com/article/DGKKZO97747790U6A720C2TCT000/","reason":"政治論説でeconomyへの直接性が低いため"},
+    {"title":"茶飲料が２００億元「香り経済」をけん引 中国四川省犍為県","url":"https://jp.news.cn/20260726/0a1ebcf6317445a1bfbe4be91ffc394d/c.html","reason":"中国の地方経済記事で、一般読者への影響範囲が相対的に限定的なため"}
+  ]
+}

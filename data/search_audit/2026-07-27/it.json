@@ -1,0 +1,23 @@
+{
+  "date": "2026-07-27",
+  "category_id": "it",
+  "queries": [
+    "Stage1 input: build/deduped-candidates/it.jsonl; harvest query=IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR enterprise software OR cybersecurity when:1d",
+    "site:fool.com investing 2026/07/26 Palantir ServiceNow AI software stock",
+    "site:tikr.com Cloudflare Is Growing 28% Trading at 200x Earnings",
+    "site:simplywall.st Ciena cloud AI optical communications demand",
+    "site:finance.biggo.jp Palantir ServiceNow SaaS"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "dropped": [
+    {"title":"PwCコンサルティング、フィジカルAI人材1000人を育成","url":"https://www.pwc.com/jp/ja/press-room/2026/physical-ai-program.html","reason":"元記事は2026-07-22公開でfreshness窓外"},
+    {"title":"クラウドとAIによる光通信需要の急増を受け、Ciena（CIEN）の強気論が変化する可能性――その理由とは","url":"https://simplywall.st/ja/stocks/us/tech/nyse-cien/ciena/news/6e8bc292fc93f87b/amp","reason":"元記事は2026-07-25公開でfreshness窓外"},
+    {"title":"パランティア対サービスナウ：「SaaSアポカリプス」を乗り切るAIソフトウェア株はどちらか","url":"https://www.fool.com/investing/2026/07/26/better-ai-software-stock-palantir-vs-servicenow/","reason":"採用: canonical URL・200・当日窓・IT主題性を確認"},
+    {"title":"Cloudflare Is Growing 28% and Trading at 200x Earnings. Is It Worth It?","url":"https://www.tikr.com/blog/cloudflare-is-growing-28-and-trading-at-200x-earnings-is-it-worth-it","reason":"採用: canonical URL・200・当日窓・IT主題性を確認"},
+    {"title":"その他のStage1候補21件","url":"","reason":"IT外の文化・スポーツ・ゲーム・音楽・クラウドファンディング、または媒体トップのみで元記事canonicalを確定できないため除外"}
+  ],
+  "quality_shortfall_reason": "Stage1候補25件を起点に、canonical URL・当日窓・IT主題性を確認した結果、採用可能な2件に限定。広域収集と横断dedupは再実行していない。"
+}
