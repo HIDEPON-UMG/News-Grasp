@@ -3,9 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from tools.historical_failure_scenarios import (
+    LOCAL_ONLY_EVIDENCE_SHA256,
+    HistoricalFailureScenario,
     compound_failure_scenarios,
     historical_failure_horizontal_audits,
     historical_failure_scenarios,
+    validate_historical_evidence,
     weekly_failure_regression_cases,
 )
 from tools.repair_coverage_matrix import RepairClass, RepairIssue, classify_repair_issue
@@ -93,7 +96,8 @@ def test_historical_failure_matrix_covers_lifecycle_incident_corpus() -> None:
         assert scenario.missing_invariant
         assert scenario.cheapest_e2e_or_fixture
         assert scenario.expected_status in {"runtime_e2e_required", "fixture_required"}
-        assert (ROOT / scenario.evidence_path).exists(), scenario.evidence_path
+        validation = validate_historical_evidence(ROOT, scenario)
+        assert validation.valid, validation
 
 
 def test_every_historical_failure_has_runner_repair_state_report_horizontal_scan() -> None:
@@ -161,8 +165,76 @@ def test_historical_failure_horizontal_audit_report_covers_entire_corpus() -> No
     for scenario in historical_failure_scenarios():
         if not scenario.evidence_path.startswith("docs/incidents/"):
             continue
+        if scenario.evidence_path in LOCAL_ONLY_EVIDENCE_SHA256:
+            continue
         assert scenario.issue_date in html
         assert Path(scenario.evidence_path).name in html
+
+
+def test_registered_local_only_historical_evidence_may_be_absent_in_clean_clone(tmp_path: Path) -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-27")
+
+    validation = validate_historical_evidence(tmp_path, scenario)
+
+    assert validation.valid is True
+    assert validation.mode == "registered_local_only_absent"
+    assert validation.expected_sha256 == LOCAL_ONLY_EVIDENCE_SHA256[scenario.evidence_path]
+    assert validation.actual_sha256 == ""
+
+
+def test_present_local_only_historical_evidence_with_wrong_hash_is_rejected(tmp_path: Path) -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-27")
+    evidence_path = tmp_path / scenario.evidence_path
+    evidence_path.parent.mkdir(parents=True)
+    evidence_path.write_text("tampered local-only incident evidence", encoding="utf-8")
+
+    validation = validate_historical_evidence(tmp_path, scenario)
+
+    assert validation.valid is False
+    assert validation.mode == "registered_local_only_hash_mismatch"
+    assert validation.expected_sha256 == LOCAL_ONLY_EVIDENCE_SHA256[scenario.evidence_path]
+    assert validation.actual_sha256
+
+
+def test_absent_unregistered_historical_evidence_is_rejected(tmp_path: Path) -> None:
+    scenario = HistoricalFailureScenario(
+        issue_date="2099-01-01",
+        stage="fixture",
+        direct_cause="fixture",
+        root_pattern="fixture",
+        missing_invariant="fixture",
+        cheapest_e2e_or_fixture="fixture",
+        evidence_path="docs/incidents/2099-01-01-unregistered.md",
+        expected_status="fixture_required",
+    )
+
+    validation = validate_historical_evidence(tmp_path, scenario)
+
+    assert validation.valid is False
+    assert validation.mode == "required_evidence_missing"
+    assert validation.expected_sha256 == ""
+    assert validation.actual_sha256 == ""
+
+
+def test_local_only_historical_evidence_registry_is_closed_and_digest_shaped() -> None:
+    scenario_paths = {scenario.evidence_path for scenario in historical_failure_scenarios()}
+
+    assert set(LOCAL_ONLY_EVIDENCE_SHA256) <= scenario_paths
+    assert all(len(digest) == 64 for digest in LOCAL_ONLY_EVIDENCE_SHA256.values())
+    assert all(set(digest) <= set("0123456789abcdef") for digest in LOCAL_ONLY_EVIDENCE_SHA256.values())
+
+
+def test_2026_07_27_local_only_incident_is_covered_by_structured_audit() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-27")
+    audits = historical_failure_horizontal_audits()
+
+    assert scenario.evidence_path in LOCAL_ONLY_EVIDENCE_SHA256
+    assert any(
+        audit.issue_date == scenario.issue_date
+        and audit.stage == scenario.stage
+        and audit.evidence_path == scenario.evidence_path
+        for audit in audits
+    )
 
 
 def test_historical_failure_matrix_marks_runtime_e2e_rows() -> None:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
+from pathlib import Path
 
 
 REQUIRED_HORIZONTAL_LANES: tuple[str, ...] = ("runner", "repair", "state", "report")
@@ -31,6 +33,16 @@ class HistoricalFailureScenario:
             f"state missing_invariant={self.missing_invariant}; "
             f"report evidence_path={self.evidence_path}"
         )
+
+
+@dataclass(frozen=True)
+class HistoricalEvidenceValidation:
+    valid: bool
+    mode: str
+    evidence_path: str
+    expected_sha256: str = ""
+    actual_sha256: str = ""
+    reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,6 +79,43 @@ class WeeklyFailureRegressionCase:
     artifact_paths: tuple[str, ...] = ()
     category: str = ""
     evidence: tuple[tuple[str, str], ...] = ()
+
+
+LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
+    "docs/incidents/2026-06-18-daily-batch-failure-report.html": (
+        "c0356fa3004f2af8bb52cd225dfc75eb054a737bbc181fcb4cf52bee57258688"
+    ),
+    "docs/incidents/2026-06-19-batch-recovery-report.html": (
+        "1456554157b39e58ec1df8f5e3592a74a9f786254b7d4e51392aeb7137a1f3c6"
+    ),
+    "docs/incidents/2026-06-19-thumbnail-missing-report.html": (
+        "dee740f36eb82807c2fdda81e02a5442141e667a4d1d8e7cb51457899edc31a5"
+    ),
+    "docs/incidents/2026-06-21-daily-batch-recovery-report.html": (
+        "a91ace1d31276a6a50a9951c88407590bd4331bdb9e87e0f2416b57e5e956e18"
+    ),
+    "build/recovery/proofs/2026-06-26-post-gate-verify-publish-complete.json": (
+        "359dc7006baee6b9d829aea636d747d462665587c346b447f8c6c29ee330e21a"
+    ),
+    "build/incidents/2026-07-19-daily-quality-repair-routing-report.html": (
+        "c3992a3f0c55f6d5748cac9735c08efbffd074ca79bc1ddf7cbd0afca15e26a0"
+    ),
+    "build/incidents/2026-07-20-daily-batch-github-audio-upload-report.html": (
+        "7e625ec30ad83d494edea00372d439774f1e3f6a619d98453ec384f2475b85a6"
+    ),
+    "docs/incidents/2026-07-24-daily-quality-editorial-section-report.html": (
+        "d896a6ea1e4f6064e7bf6767a786b96daff83618ecd1b0f3409478ee968ce4b4"
+    ),
+    "docs/incidents/2026-07-25-codex-doctor-git-lock-recovery-report.html": (
+        "a64571f3179fbe7a0ee45b31e2a3d6bdfadb0f97b49d0462716119c2dc405112"
+    ),
+    "docs/incidents/2026-07-26-daily-quality-stale-lock-playlist-recovery-report.html": (
+        "c576ef56b5dfd60d777bae4ddf83351dac4020a52574405631e2d2fa5faa6b9b"
+    ),
+    "docs/incidents/2026-07-27-digest-articles-reconcile-report.html": (
+        "f771f22d3d5c4038dd39f3055c2dc79ce6784272a617f35d1b3c8b8e889f9cdb"
+    ),
+}
 
 
 SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
@@ -803,6 +852,71 @@ COMPOUND_SCENARIOS: tuple[CompoundFailureScenario, ...] = (
 
 def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
     return SCENARIOS
+
+
+def validate_historical_evidence(
+    repo_root: Path,
+    scenario: HistoricalFailureScenario,
+) -> HistoricalEvidenceValidation:
+    """tracked 証拠の実体と local-only 証拠の登録済み digest を fail-closed で検証する。"""
+    root = repo_root.resolve()
+    evidence_path = scenario.evidence_path
+    candidate = (root / evidence_path).resolve()
+    expected_sha256 = LOCAL_ONLY_EVIDENCE_SHA256.get(evidence_path, "")
+
+    if not candidate.is_relative_to(root):
+        return HistoricalEvidenceValidation(
+            valid=False,
+            mode="evidence_path_outside_repo",
+            evidence_path=evidence_path,
+            expected_sha256=expected_sha256,
+            reason="historical evidence path escaped the repository root",
+        )
+
+    if not candidate.exists():
+        if expected_sha256:
+            return HistoricalEvidenceValidation(
+                valid=True,
+                mode="registered_local_only_absent",
+                evidence_path=evidence_path,
+                expected_sha256=expected_sha256,
+                reason="local-only evidence is represented by its registered SHA-256 in a clean clone",
+            )
+        return HistoricalEvidenceValidation(
+            valid=False,
+            mode="required_evidence_missing",
+            evidence_path=evidence_path,
+            reason="tracked or otherwise required historical evidence is missing",
+        )
+
+    if not candidate.is_file():
+        return HistoricalEvidenceValidation(
+            valid=False,
+            mode="evidence_not_regular_file",
+            evidence_path=evidence_path,
+            expected_sha256=expected_sha256,
+            reason="historical evidence path is not a regular file",
+        )
+
+    actual_sha256 = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    if expected_sha256 and actual_sha256 != expected_sha256:
+        return HistoricalEvidenceValidation(
+            valid=False,
+            mode="registered_local_only_hash_mismatch",
+            evidence_path=evidence_path,
+            expected_sha256=expected_sha256,
+            actual_sha256=actual_sha256,
+            reason="local-only historical evidence bytes do not match the registered SHA-256",
+        )
+
+    return HistoricalEvidenceValidation(
+        valid=True,
+        mode="registered_local_only_present" if expected_sha256 else "tracked_present",
+        evidence_path=evidence_path,
+        expected_sha256=expected_sha256,
+        actual_sha256=actual_sha256,
+        reason="historical evidence contract is satisfied",
+    )
 
 
 def weekly_failure_regression_cases() -> tuple[WeeklyFailureRegressionCase, ...]:
