@@ -1,0 +1,40 @@
+{
+  "date": "2026-07-28",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:nikkei.com インドIT大手インフォシス 次期CEO 生え抜き AI変革 2026年7月27日",
+    "site:nikkei.com 巨大IT スマホ競争阻害 改善を 2度目の報告書 公取委 2026年7月27日",
+    "site:active.nikkeibp.co.jp AIエージェント 最新動向 今後の課題 ITリーダー 1050人調査 2026年7月27日",
+    "site:xtech.nikkei.com 分子量子ビット 単一光子による量子制御を実現 2026年7月27日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "dropped": [
+    {"title":"中国は「政府とIT企業が一体」? 米テックの対抗論への違和感とは","url":"https://www.asahi.com/articles/ASV7S1HZ3V7SUPQJ00LM.html","reason":"背景分析・インタビューで当日イベント性が低く、今回は優先度外"},
+    {"title":"AIホワイトハッカー byGMOとは？サイバーセキュリティに特化したAI基盤","url":"https://gmo-cybersecurity.com/news/2026072303-2/","reason":"企業サービス紹介で、採用5件より一次ニュース性が低い"},
+    {"title":"使命は人類の記憶を繋ぐこと。国立映画アーカイブの活動にご支援を","url":"https://readyfor.jp/projects/nfaj","reason":"ITカテゴリとの関連が薄いクラウドファンディング"},
+    {"title":"サイバーセキュリティ広報啓発キャンペーン","url":"https://www.tokyoapp.metro.tokyo.lg.jp/","reason":"啓発告知で、IT業界の意思決定に直結する情報量が少ない"},
+    {"title":"政府クラウド市場レポート 2026-2035 | 規模と予測","url":"https://www.sphericalinsights.com/","reason":"市場調査レポートの販促色が強い"},
+    {"title":"ITmedia Enterprise IT Summit 2026 夏 開催","url":"https://prtimes.jp/","reason":"イベント告知で記事性・独自情報が薄い"},
+    {"title":"下水道展'26東京が開催","url":"https://www.mlit.go.jp/","reason":"展示会告知で、ITカテゴリの主要ニュースではない"},
+    {"title":"EUはサイバーセキュリティに関する義務的な要件の導入に向けて準備を進めている。","url":"https://www.vietnam.vn/","reason":"二次転載で一次資料への距離が遠い"},
+    {"title":"AWS Summit Japan 2026：完全自律型AI Agentが変えるSaaSの世界","url":"https://aws.amazon.com/","reason":"イベント・製品訴求の色が強く、採用5件より優先度が低い"},
+    {"title":"アプリ業者販促 容認 米IT大手 スマホ新法で報告","url":"https://www.okinawatimes.co.jp/","reason":"同テーマの公取委一次情報を扱う日本経済新聞記事を優先"},
+    {"title":"おわら風の盆を、次の100年へつなぐ","url":"https://readyfor.jp/","reason":"ITカテゴリとの関連が薄いクラウドファンディング"},
+    {"title":"GMOサイバーセキュリティ byイエラエ、AI基盤を構築","url":"https://gmo-cybersecurity.com/news/2026072303-2/","reason":"同社のサービス紹介で、独立報道ではない"},
+    {"title":"サイバーセキュリティクラウド 自己株式の取得状況","url":"https://www.nikkei.com/","reason":"個別開示で、カテゴリ全体への波及が限定的"},
+    {"title":"AIエージェントの最新動向と今後の課題、ITリーダー1050人調査","url":"https://active.nikkeibp.co.jp/atcl/wp/b/26/07/21/06369/","reason":"企業提供の資料紹介で広告・ホワイトペーパー色が強い"},
+    {"title":"PC遠隔操作 機密性高く バロン（富山）IT事業強化","url":"https://webun.jp/","reason":"地域企業の個別事例で、読者への波及範囲が限定的"},
+    {"title":"Lamborghini Marks Miura's 60th Anniversary","url":"https://www.lamborghini.com/","reason":"モビリティ寄りでITカテゴリ外"},
+    {"title":"Vol.11 額装写真の発送準備です","url":"https://motion-gallery.net/","reason":"ITカテゴリとの関連が薄いクラウドファンディング"},
+    {"title":"マクニカHD 1Q営業益2倍","url":"https://finance.yahoo.co.jp/","reason":"個別株の転載情報で、IT構造変化の優先度が低い"},
+    {"title":"ポケモンワールドチャンピオンシップス2023横浜 記念デッキ","url":"https://www.trambologna.it/","reason":"カテゴリ誤混入かつゲーム寄り"},
+    {"title":"クラウドサーカスのDAP FullstarをS.RIDE Bizへ導入","url":"https://www.startiaholdings.com/","reason":"企業導入のPRで、影響範囲が限定的"}
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "date": "2026-07-28",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d (Stage1候補ファイルの収集クエリ)",
+    "site:times.abema.tv 生成AI 声 法的保護 法務省 2026年7月28日",
+    "site:businessinsider.jp ハギング・フェイス OpenAI 暴走 エージェント 2026年7月27日",
+    "Claude Opus 5 2026年7月27日",
+    "令和8年版情報通信白書 AI 2026年7月27日",
+    "DNAマーケティング 電通 生成AI 2026年7月27日"
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "NVIDIA、OpenAIのデータセンター利用に41兆円資金保証 WSJ報道",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "当日性は高いが、canonicalな元記事URLを確認できず採用不可"
+    },
+    {
+      "title": "Claude Enterpriseとは？料金・機能・他プランとの違いと導入前の確認点【2026年版】",
+      "url": "https://exawizards.com/",
+      "reason": "媒体トップ以外の元記事URLを解決できず採用不可"
+    },
+    {
+      "title": "声の権利関連の複数報道",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "同一の法務省検討会を扱う重複候補は、本文確認できたABEMA TIMESに集約"
+    },
+    {
+      "title": "OpenAI、「ChatGPT」のウェアラブル搭載に意欲",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "canonicalな元記事URLを確認できず採用不可"
+    },
+    {
+      "title": "相棒はAI、弁護士つけずに「本人訴訟」 識者が語る「落とし穴」",
+      "url": "https://www.asahi.com/",
+      "reason": "記事本文と元記事URLを確認できず採用不可"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

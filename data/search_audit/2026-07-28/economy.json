@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-28",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "高市首相 市場へのメッセージ インフレ 2026-07-28",
+    "ソロモン諸島 円借款 2026 JICA 2026-07-27",
+    "インド モンスーン マクロ経済 JETRO 2026-07-27",
+    "景気動向指数 5月 改定 117.9 内閣府 2026-07-27",
+    "レアアース GDP 2.3% IMF 日本 2026",
+    "原発更新 1基2兆円 電力会社 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "日本のGDP、レアアース止まれば2.3%減 主要国で最大とIMF試算",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "記事単位のcanonical URLを確認できず、公式一次資料との内容一致も確認できないため保留"
+    },
+    {
+      "title": "経済プラス：費用は「1基2兆円」 国の原発更新目標に電力会社が喜べないワケ",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "記事単位のcanonical URLを確認できず、追加検索でも採用可能な一次ソースを確認できず"
+    },
+    {
+      "title": "中国経済の成長がコロナ以来の低水準に…内需低迷と二極化で懸念される日本企業の明暗",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "媒体記事のcanonical URLを確認できず、内容を裏付ける当日一次資料を確定できず"
+    },
+    {
+      "title": "★本日の【サプライズ決算】速報 (07月27日)",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "個別企業決算の寄せ集めで、経済カテゴリの上位テーマに対する一次情報密度が相対的に低い"
+    },
+    {
+      "url": "https://www.esri.cao.go.jp/jp/stat/di/202605rsummary.pdf",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

@@ -1,0 +1,149 @@
+{
+  "date": "2026-07-28",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:newsdig.tbs.co.jp 日銀 政策金利 据え置き 30日 決定会合",
+    "site:newsweekjapan.jp 今週の米FOMC 主要証券 利上げ 原油高",
+    "site:www.gaitame.com ドル円見通し 161 165 FOMC 日銀会合 介入",
+    "site:finance.yahoo.co.jp キヤノン 通期予想 円安 米関税還付",
+    "site:investing.com Reuters 米国株 FOMC 大型決算 中東情勢"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "【テクニカル】乖離ランク＝NZドル円 上昇幅を縮小してランク1位から2位へ後退",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE5hbVVXVlc4NkJ2TmNaQnFZc3FxQnIxeEQ1S0VNbm9UZ3AxWE13QmFhdDNydFJsbDdlV0QybmVkei1fWkt5bi1ERF9pX1Z4X3NCQncxN0NON2gyWGNtMnMzNzYyMA?oc=5",
+      "reason": "主要通貨ペアと中銀政策を優先し、NZドル円のテクニカル単発記事を除外。canonical未解決。"
+    },
+    {
+      "title": "日銀 政策金利を据え置く方向で検討か 物価の安定のために利上げ路線は維持する方針 30日から決定会合",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE1tUUtXM0Z1MGJtSzlJaDR5M1lQa1NZTzRpNGRTVWJhNjFhNV9YdGxIcnM5TnpDVzdwVHU4ZXZMLVVqU1VpYUpyM0NDanFtTUxJU2VPWGNQaw?oc=5",
+      "reason": "同一の日銀据え置き観測で採用記事と重複。"
+    },
+    {
+      "title": "長短金利差縮まらず 政府財政と日銀の後手を懸念、利上げ加速の思惑",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFB5cjFNd1c4ZnZua3J0QkgzeWdwMGR5UVl0NkNlZUY5T1hGOTY1QTE0bVY1OHduS2J1bzRQT1dHU2JENnRfRG1SZzltby1XWW9WSndyTFl5NklKM3VNeGdxeHBZdWRtTm9nTHVQRA?oc=5",
+      "reason": "Nikkeiのcanonical取得がrobots制限で完了せず、未採用。"
+    },
+    {
+      "title": "高市政権の円安許容度は変化するか 円相場と債券市場安定には日銀の利上げ姿勢が重要 野村證券・後藤祐二朗",
+      "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE5tczA0NzAwVDVDMWJ4UzhyQ0hZQzVCeXFWOThrVkc3U0ZTOGFrZ2dOdy0ycGpIZlR6Rm8tX01yWFdjVGhNRWlDVVVSSkF4Q1QyRElBYzNGejBINHdOR21V?oc=5",
+      "reason": "中銀イベント直前の一次報道を優先し、背景解説を除外。canonical未解決。"
+    },
+    {
+      "title": "日米金融政策 日銀と「骨太ショック」",
+      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTFBnVU43Mk04a2tueHRnYkJTajlGQl9Ud2hmeG9Tam1Ga3BoUjMxaW9kNlB1UTN0NjVWTjNHQVZZUHFqS3QtSGVOM2ljbkMxUnUyVEpMLUROLVRPSHM?oc=5",
+      "reason": "日銀・米金融政策の解説で、採用した当日報道と重複。canonical未解決。"
+    },
+    {
+      "title": "ニューヨーク外国為替市場概況･2時 ドル円、下押し",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOVzF1QURraWQtVjZsNlRkX1NJdTV3TWlYTGY1Ti1EMzJUQzF5UkxFam5EM01qM0g1ZmVCWHp1dWFZdDlmQXZLa0hYVE9GbWZ0V0lmWFhvOEtnWWtsNGN5WWF0MW1tQlZVbmJHb2ppM1VUVEx4aXlwYXRwbkYxX0RsSTdYOXNiZEU?oc=5",
+      "reason": "市況速報で、政策イベントを扱う記事より判断材料が少ない。canonical未解決。"
+    },
+    {
+      "title": "円安で海外産牛タンが高騰 仙台市の牛タン店が工夫を凝らす",
+      "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE1mMjNPZEVneGNJYThLbGNtV0YyMU10aEtXQ1BFQklnLU9jVlppa2ZWTFJEYjBiOXVZcUNFSFlSYkkyM1Y3X2x0cVpDaEdldEE?oc=5",
+      "reason": "円安の生活影響だが、FXの政策・市場動向を優先。canonical未解決。"
+    },
+    {
+      "title": "追加利上げを意識させるシグナルを発することで、利回り一段と上昇の可能性",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5jeTVvRlFDMzA1MGhsUEF4SGpVSjA0QVlXc05Pc0NEa19JblQxZXpZQlNaSEU1UVRkcHlyVHhnMXR0Yy1NcXhBbmYzVUlKX203dTJvQ3NudEdZcjd5cmdXaQ?oc=5",
+      "reason": "見出しだけでは主体・対象が不明確で、canonical未解決。"
+    },
+    {
+      "title": "7月FOMC直前｜FRBは政策金利据え置きへ、利上げリスクは残る",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBMaGhtZkpqLTE5Mi1JamYweXBaTV9zcHg2UXI1SmU5V2JNVXpXeFdKeGNWSzl6WTI5T2lHYkVLUmw4M0dBbmw4UVRxMEgzTTF3UG12UXBTVVV2QU1VempTak9xRQ?oc=5",
+      "reason": "follow-upだが新数値がなく、採用したReuters報道と論点が重複。"
+    },
+    {
+      "title": "利上げすると暮らし・経済はどう変わる？ ニュースがもっと分かる「金利」のキホン",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTFBJWmp0QXdjMGNXbDQwT0c4ZS12WUZQdnBuc2lyWnN5dU9yUHcyVS1MZE43cjBJRXUyb0NwZGIxenZvVEgzOXVsb1NoaTlhV1I0Z190aE00UWJrOGpJc1dSeG1zTXNIOWdWTFYyOU1CMVJjb243VVU0Zk1VaUNXdw?oc=5",
+      "reason": "金利の基礎解説で当日イベント性が低い。canonical未解決。"
+    },
+    {
+      "title": "今週の米ＦＯＭＣ、主要証券で利上げ予想も 原油高でインフレ懸念",
+      "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOX183Y3M3RlNQS25uNHk3SkV5UWU5b2RudHpsWlNoNW1pYzBZSVRuY1U1d05pV010YzF6b3dOLUU1Nk5VU1VmR0s0TmJLemlUZmpKQWg2V0Zaak0zQU1ZOTFndmZVdzBoalJoQndMWEJTQlFqZHVmMGVKVmRLTmFURA?oc=5",
+      "reason": "採用したcanonical解決済みReuters転載と同一記事。"
+    },
+    {
+      "title": "【ドル円見通し】161〜165円、強さ継続の分岐点は何か",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE8zY0owNXdVN3RsZUJwdjc5Z3prbmZiQ0pUVVNNaUo5U2pnSk9vbHBsdmxHQjA2QWRYV3M1TS1TNHZMSXNQcDNzZ3gwdzdkV3l6cFRzcDNrX3FSRkpsd1hndHZWMA?oc=5",
+      "reason": "採用したcanonical解決済み外為どっとコム記事と同一記事。"
+    },
+    {
+      "title": "日銀政策金利「到達点」予想が上昇、再び2%超える",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1tMnN3OTVLcnNjeXZrVHlBQXg5NlJUaVdDdUg4NjFfNUVmX19jdGF0RFRpYXA5NUN1YzduTm9vaXJMeXQ1QUJOTTdkazhNVmpQVFpZNWdDRHE5R3Y1SjNoWnY0M0ZIZGVsNUs3Ug?oc=5",
+      "reason": "日銀利上げ観測の論点が採用記事と重複し、canonical未解決。"
+    },
+    {
+      "title": "日銀、今週決定会合 政策金利を据え置く方向で検討か",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE05b2M0SlY0d09MdGEwbHdGdjlpSG9CYmtvX3hib0Q4VTRlTXpHSzBtRk5LcGVieklQcUVhQ3E3MlhEYTF6RnBIY2ltZE52UEtfOTRDaE01NA?oc=5",
+      "reason": "採用したTBS canonical記事と同一報道。"
+    },
+    {
+      "title": "【テクニカル】週足テクニカル・ドル円 サポート＆レジスタンス",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9BSWYxdVpybzVhMjVZblk3QURLV29neWFqWjNzcUxrVTB0VUlidjhyS1E5SU9MTnc4V2txdGVXdjMxaHpLRU0yMllzTmhSZ3VfcUtGUkZiWGxabm43X3RGNjJPUQ?oc=5",
+      "reason": "テクニカル単発で、政策イベントを扱う採用記事より影響範囲が狭い。canonical未解決。"
+    },
+    {
+      "title": "【ドル/円、今夜の見通し】ドル/円、163円高止まり",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9URXNqbm5EeTRJU0VEZ0d3andYa2hVdGJhb1pWZUQ1bVQzZXlXcmxJOTFSbEhPbXpuTmIxam4ybFR1d0tjODI0bkZfdlp1ZXFreG56TmYzRk1xUklPTkxYNkk5cw?oc=5",
+      "reason": "採用した外為どっとコム見通しと同じ週次論点で重複。canonical未解決。"
+    },
+    {
+      "title": "【今日のドル円】昨日の振り返りと今日のドル円相場見通し",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBBTTVuYTBuUXROemZQT2ZYdjVrUVh4ZWNHc1dzSkgwVHVJdU4yaEhVMTNGdHBtMU9uZFljcVQ5Y1drTExkX1FaZXZCX3p6YUdRZHB2RmMzWlBodUpaTUFwVHVWMA?oc=5",
+      "reason": "前日振り返り中心で、公開日根拠も取得できず除外。"
+    },
+    {
+      "title": "スイス中銀、2027年末までゼロ金利維持へ－その後利上げの公算",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE55RS1idXY2SE5kUGdHQmRvMUg3UEtRWlVyTi1Ga3lwNUhmVVlMaGw0a1NTZ19yZWljNm93Tmd4djBISmhKa2ZiRERtSzE4Z01zQ181TWxFMUxlMG95QmtWZldEdWVFMFE?oc=5",
+      "reason": "重要テーマだが、当日号で確実なcanonicalと公開日根拠を確定できず除外。"
+    },
+    {
+      "title": "日銀 今週決定会合 政策金利は据え置きの公算大 利上げ影響見極め",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE5fbzZ1dF85QlB0Z2FKZFg3SlFwVEJJVVEY4Y0w2VUxOVTZ6aTU5UUg5MWxSZGpkSE94dGNVcFhrTDYxTVF5OF8zYWctUTViampxbWttVEVxcw?oc=5",
+      "reason": "日銀据え置き観測の重複記事。canonical未解決。"
+    },
+    {
+      "title": "読む政治：進む円安、金利上昇も… 高市首相、「野放図な積極財政」に反論",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE94TzhDLVcyajFOYUZKUm54N1RVeUJHWDJOQzVtNV9kUGRYQlQ3QUhXMFdUNTBrWm9Ga2FCdTNyWEJxb0RnVUhoelZOMXdDUkowV2dQUDZ0dmNkaUplT1o0cnVMQTVVWjUt?oc=5",
+      "reason": "政治背景の比重が高く、金融政策の当日報道を優先。canonical未解決。"
+    },
+    {
+      "title": "27日外国為替市況（日銀公表分）",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOR2hYajc1d1BMazBia3FyX0VpVUxfQVVQSU4zSFFMTHE5QnJzNWhuNmh3a0RmWFFVMEZMUWF5MnhBUWM0M1VwNGFrYzVZREp1RHhrSWhOT01zeGFhMGFnOE0ycXF2ZVp5VEpzTjNVZVRUcjNHM2tYakg2X0syeUJjQ2hZSXpZTjQ?oc=5",
+      "reason": "市況速報で、採用した政策イベント記事より読者判断への寄与が小さい。canonical未解決。"
+    },
+    {
+      "title": "月初来G10通貨騰落（対ドル）＝円とスイスフラン、下落幅を広げて下位が続く",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOSlRiamlybE9HVHJqUmdEeE12c2ZtaEtCeVFfMzdCUzhJS0JEblotOUgzdzVBVDhSaWdEV2hkeUlUQldyNE9TRF9tNzhCdmJlWDJEdWZEdXk2Zm5YMmpsOXB0OENnbG1hS0ZVb2hCdGV0c2pOYmI4Znp2NGk3VWdTVUdhM2dZMk0?oc=5",
+      "reason": "7月24日付の古い市況で、当日性の高い政策イベントを優先。canonical未解決。"
+    },
+    {
+      "title": "キヤノン、通期予想を上方修正 米関税還付・円安が寄与",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE9FQ2JtRVREUnFzcGZqMlJWcUlrY3M3dGE0VE0wX0tNZ0MtSHh4X3VTRjIxVlVyZXJXVDBfd1FhTWwxZ3liWi1MMXpmLTlJSmxSZ1UwTC1sRjVSWTJyWFc4Q0ZrRkFUMGszN21JOXpmZ0pucjg0NlVfMA?oc=5",
+      "reason": "採用したcanonical解決済みReuters転載と同一記事。"
+    },
+    {
+      "title": "日銀「利上げ前倒し」警戒 日経平均6万円割れリスクも ヴェリタスEYE",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9BVzVtbFpabFRIMmdGYm00b2VKTmRQNFlqenZoSHN1SUp1cVdJNHVZLVVmQk90cW8td190VVotUzg1VmJKYkJrNWFnd2dzX29Nc3NuTnhQZWpvRURoQnhQbGg2VHBqbi1kU0ExWE1XQkNCRnQyOUszcTRRODU3UQ?oc=5",
+      "reason": "Nikkeiのcanonical取得がrobots制限で完了せず、未採用。"
+    },
+    {
+      "url": "https://au.investing.com/news/economy-news/wall-st-futures-rise-as-us-iran-pause-hostilities-4553224",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

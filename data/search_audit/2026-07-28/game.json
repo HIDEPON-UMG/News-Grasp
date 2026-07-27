@@ -1,0 +1,27 @@
+{
+  "date": "2026-07-28",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:gamespark.jp/article/2026/07/27/ \"45番電車\"",
+    "site:gamewith.jp/gamedb/14408/articles/61079 \"スイカゲーム ぷらねっと\"",
+    "site:gamespark.jp/article/2026/07/27/ \"ゲームの“所有”とは何か\"",
+    "site:inside-games.jp/article/2026/07/27/ \"ガンダムカードゲーム\"",
+    "Nintendo 新作 発表 2026年7月27日 ゲーム",
+    "Cygames ウマ娘 ゲーム ニュース 2026年7月27日"
+  ],
+  "raw_results_total": 43,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": ["Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix"],
+  "dropped": [
+    {"title":"来週のサービス終了情報まとめ（スマホゲーム・ソシャゲ）【2026年7月27日～8月2日】","url":"https://dengekionline.com/article/202607/82329","reason":"canonical公開日が2026-07-26で24時間freshness gate外"},
+    {"title":"アタリの名作ゲーム10本、ユニバーサルが映画化へ（映画.com）","url":"https://news.google.com/rss/articles/CBMif0FVX3lxTE4yZE9KQmJlaVU1LUN3aUVHZEtiSldTVzZheHYyYW1kUUNseUwxUDJLVXNSeElMM1hJbmdVTVE1MHZmeFdwSnFVVXBYOS1tdlRFVURVbFI2bnc4cUVDRzNLUEMyZlh0UmJrUlZJSlRnc0RqcEJyN2wtYWJjTXUyc1E?oc=5","reason":"前号で同テーマを掲載済みで新しい一次材料を確認できず"},
+    {"title":"プロ野球 猛暑でノーゲームが物議（AERA DIGITAL）","url":"https://news.google.com/rss/articles/CBMiiwFBVV95cUxQN1NnY2FxZjVKXzZxdlVYUmJXeTRDQ19acDRqak9JcTZGUHpManBJYUQ1NjllcVE4dXBPV2RwQlN1cVoxVUt6Q0J1TXk4c0p4bGJWVmxYTnI3UXN6NzNrckg5VFA3S09TdG5zeHY0S2h4dWhzWkpxTEdMMGVKNUJYU0NjWHB1Qk1rWDBN?oc=5","reason":"スポーツ競技の話題でゲームカテゴリの対象外"},
+    {"title":"Steam Deckを自動スタンガンで武装！？やり過ぎセキュリティ実装ケースが制作","url":"https://news.google.com/rss/articles/CBMiZkFVX3lxTE5NN01ZZWhiMmh6Y3ZzV3NLcldrYkdzUVl4elRrRi15NFJhQUlGX0tReDFwMWhNWTdJVE1faTNMSzNLVmp1V2JRX1RxTHg1Sm5yY2ZYU1FtRHdXa3lSMGZCSzhTdk8wZw?oc=5","reason":"単発の工作記事で読者へのゲーム業界インパクトが低い"},
+    {"title":"LINEミニアプリ「Mini Swan」スタート！ ホームゲームでチェックインして、おトクなクーポンをGET！","url":"https://news.google.com/rss/articles/CBMiTkFVX3lxTFAySG1TX1JyZUZ5TGhzaG9EZUpmUk1BNnliRzRhoaVFETXFGOWd3Y2M2LTZmM0JaMXAxZk10eVU4a1NyNEw3MTZJYkt5dDY3dw?oc=5","reason":"スポーツクラブの来場施策でゲームニュースとしての対象外"},
+    {"title":"ベルキン、Nintendo Switch 2対応の「Gaming Switch 2 モバイルバッテリー付充電グリップ」","url":"https://news.google.com/rss/articles/CBMibkFVX3lxTE9yX3VTZVFhbGxtd0piNUo0SFVRUnlpSWZ0Vkc4V2hEeXJSQzNjTTZyMFl5T1JBVVp4c241enZUcTN4N1FRNXBQLUVzaUdMbVd3cG1oRHNMMFFrZExoUUJrWGlaLVVQajVtb1hMU1Fn?oc=5","reason":"周辺アクセサリーの製品紹介で相対的な重要度が低い"},
+    {"title":"ファンクラブ〈後援会〉会員限定企画「ホームゲームイベント」8月分参加者募集のお知らせ","url":"https://news.google.com/rss/articles/CBMiXEFVX3lxTE9VVElXOUl1Tl9xbmwtRlhaNGN2ZVZaS2ZHTWZicFYteWd0X1QwLUEteDZrNF8xcDB2SldGUjQ0YlhNbF8zXzMtc3NydFM1LVcyT3l5cHZHTUNTOURI?oc=5","reason":"スポーツクラブの告知で対象外"},
+    {"title":"PC版「スイカゲーム」「スイカゲーム ぷらねっと」，Steamで配信開始。Switchで流行ったフルーツ合体ゲームがPCでも遊べる","url":"https://news.google.com/rss/articles/CBMiY0FVX3lxTE5PN2hhV0t5Q0NPN3FyUl8zZG93b0NUOVhoZzNzQzBfY0FjeEpMZEpGLWVsbTR6UWxFb0R0cXg2RHpPZERtX1RoSXNXTGkyTlpzUUFGSFpzcnMtMlNsVlhudkFnWQ?oc=5","reason":"Google News URLをcanonical解決できず、同一テーマの直接記事へ解決して採用"}
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-28",
+  "category_id": "mobility",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "queries": [
+    "Stage1 candidate file: mobility.jsonl (Google News RSS when:1d)",
+    "\"焦点：中国BYD、軽で挑む日本攻略 200万円切るか注目\"",
+    "\"三井不動産、自動運転トラックのT2へ出資\"",
+    "\"王子物流、自動運転で東西幹線の輸送力確保へ\"",
+    "\"テスラのロボタク、運行距離36%減少\"",
+    "\"道路の復旧を遠隔・自動運転の重機で\""
+  ],
+  "raw_results_total": 30,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "王子物流、自動運転で東西幹線の輸送力確保へ",
+      "url": "https://news.google.com/",
+      "reason": "Stage1候補の見出しを一次発表URLへ正規化し採用"
+    },
+    {
+      "title": "テスラのカーリースならどこ？モデルXは未対応？料金と補助金対象を解説",
+      "url": "https://news.google.com/",
+      "reason": "解説記事で一次情報性・影響範囲が低い"
+    },
+    {
+      "title": "EV“まちの整備工場”支援、独マーレがあの手・この手",
+      "url": "https://news.google.com/",
+      "reason": "サプライヤー支援の話題で、当日号の上位5件から除外"
+    },
+    {
+      "title": "安心・安全で快適なエアモビリティ社会の実現に向けて",
+      "url": "https://news.google.com/",
+      "reason": "調査紹介で、当日ニュースとしての変化が小さい"
+    },
+    {
+      "title": "BYD初の軽EV「RACCO」の価格判明",
+      "url": "https://news.google.com/",
+      "reason": "BYD軽EVのReuters記事と同一テーマの重複"
+    },
+    {
+      "title": "深層断面／輸入車、EV・新車で巻き返し",
+      "url": "https://news.google.com/",
+      "reason": "業界総論で、個別の新規決定を優先"
+    },
+    {
+      "title": "三河港でテスラ社製EV陸揚げ開始",
+      "url": "https://news.google.com/",
+      "reason": "7月6日の出来事で当日性が低い"
+    },
+    {
+      "title": "三菱eKクロスEVがフロントマスクを刷新",
+      "url": "https://news.google.com/",
+      "reason": "小規模な商品改良で影響範囲が限定的"
+    },
+    {
+      "title": "テスラのロボタクシー、「宇宙経由」でネット通信",
+      "url": "https://news.google.com/",
+      "reason": "周辺技術の解説で、運行実績記事を優先"
+    },
+    {
+      "title": "トヨタ×NVIDIA自動運転の提携拡大",
+      "url": "https://news.google.com/",
+      "reason": "候補URLの一次記事を確認できず採用見送り"
+    },
+    {
+      "title": "自動運転ロードマップ、「レベル3」の記載忘れる？",
+      "url": "https://news.google.com/",
+      "reason": "政策解説で一次決定の確認が不足"
+    },
+    {
+      "title": "中国BYD、軽EV発売へ＝初の日本専用設計車で攻勢",
+      "url": "https://news.google.com/",
+      "reason": "Reuters記事と同一テーマの重複"
+    },
+    {
+      "title": "紋別バスターミナルと空港結ぶ自動運転バス",
+      "url": "https://news.google.com/",
+      "reason": "地域実証だが、当日上位5件の影響範囲を優先"
+    },
+    {
+      "title": "EV補助額、全国自治体で拡充を",
+      "url": "https://news.google.com/",
+      "reason": "提言・意見で具体的決定がない"
+    },
+    {
+      "title": "来月3日から運行再開 岐阜市の自動運転バス",
+      "url": "https://news.google.com/",
+      "reason": "地域運行の再開予定で影響範囲が限定的"
+    },
+    {
+      "title": "Honda eはなぜ売れなかったのか？",
+      "url": "https://news.google.com/",
+      "reason": "過去モデルの分析記事で当日性が低い"
+    },
+    {
+      "title": "アルファロメオのコンパクトEVの遊び方",
+      "url": "https://news.google.com/",
+      "reason": "商品紹介でニュース性が低い"
+    },
+    {
+      "title": "いすゞ、路線バス「エルガ」シリーズ一部改良",
+      "url": "https://news.google.com/",
+      "reason": "商品改良で影響範囲が限定的"
+    },
+    {
+      "title": "三井不動産、自動運転トラックのT2へ出資",
+      "url": "https://news.google.com/",
+      "reason": "CNET転載を公式発表URLへ正規化し採用"
+    },
+    {
+      "title": "グランフロント大阪 北館にテスラ ストアがオープン",
+      "url": "https://news.google.com/",
+      "reason": "店舗開業で影響範囲が限定的"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "date": "2026-07-28",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:jp.reuters.com 半導体CXMTが上場初日に466％高 時価総額中国首位 バブル懸念も",
+    "site:newsdig.tbs.co.jp 中国政府系企業 DUV 露光装置 製造開始 2026年7月27日",
+    "site:mitsuifudosan.co.jp 熊本県 フィジカルAI 半導体 開発拠点 合志市 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": ["TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"],
+  "selected": [
+    {"title":"中国メモリー大手CXMT、上場初日に466%高　時価総額は中国首位","url":"https://www.newsweekjapan.jp/articles/-/329480","source":"Reuters（ニューズウィーク日本版転載）"},
+    {"title":"中国政府系企業が液浸型DUV露光装置を製造開始、ASML株が急落","url":"https://newsdig.tbs.co.jp/articles/withbloomberg/2830287?display=1","source":"TBS CROSS DIG with Bloomberg"},
+    {"title":"熊本に半導体エコシステム拠点、三井不動産と県が運営法人","url":"https://www.mitsuifudosan.co.jp/corporate/news/2026/0727/","source":"三井不動産"}
+  ],
+  "dropped": [
+    {"title":"特許庁におけるAI活用の基本方針「JPO AIビジョン」を策定しました","reason":"製造業の構造変化ではなく特許行政のAI方針"},
+    {"title":"ASMLと米半導体株、中国のDUV技術突破報道で急落","reason":"選択したDUV報道と同一案件の二次報道"},
+    {"title":"三井不動産、熊本で半導体エコシステム構築","reason":"選択した三井不動産公式発表と同一案件の二次報道"},
+    {"title":"製造業向けのDX人材育成講座を開催します","reason":"地域講座の告知で産業構造への影響が限定的"},
+    {"title":"日経平均1日で2%超変動、韓国株が半導体に影響 個人の短期売買活発","reason":"製造業の一次情報ではなく市場概況"},
+    {"title":"ダウ平均はプラスもナスダックは下落 決算ラッシュ控え半導体に売り＝米国株概況","reason":"製造業の一次情報ではなく市場概況"},
+    {"title":"令和8年度 東区工場夜景バスツアー（全4回）","reason":"観光告知で製造業の構造変化ではない"},
+    {"title":"テラドローン、ドローン向け国産電池事業に参入 迎撃用から量産","reason":"候補本文のcanonical公開日を限定確認できず、当日性を確定できない"},
+    {"title":"三井不動産と熊本県、フィジカルAI向け半導体開発拠点を合志市に新設（ビジネス＋IT）","reason":"選択した三井不動産公式発表と同一案件の二次報道"},
+    {"title":"世界半導体売上高、26年5月は前年同月比2倍 異例の増加率続く","reason":"候補のcanonical本文を限定解決できず、一次統計の当日性を確定できない"},
+    {"title":"半導体製造装置銘柄に売り、中国が液浸型DUV露光装置を製造との報道（TBS CROSS DIG with Bloomberg）","reason":"選択したTBS CROSS DIG記事と同一案件の重複"},
+    {"title":"関西企業の夏ボーナス、SCREENHD235万円 半導体関連で伸び","reason":"候補のcanonical本文を限定解決できず、製造能力への直接性が弱い"},
+    {"title":"〔NY株式のポイント〕ソフトウエア株、買い加速＝半導体メモリー安い（27日）(時事通信)","reason":"市場概況で一次製造情報ではない"},
+    {"title":"ソニーG、熊本で「地下水増やす」 TSMCも追随する半導体と水戦略","reason":"候補のcanonical本文を限定解決できず、当日性を確定できない"},
+    {"title":"【特許】浜松ホトニクス、磁気センサーの感度低下を抑制","reason":"候補のcanonical本文を限定解決できず、一次特許の内容を確認できない"},
+    {"title":"中国政府系企業、DUV露光装置の製造開始－ジ・インフォメーション（Bloomberg）","reason":"選択したDUV報道と同一案件の二次報道"},
+    {"title":"半導体は決算前で調整、関連株に警戒感【今日の市場はどう動いた？】","reason":"市場概況で一次製造情報ではない"},
+    {"title":"メキシコの輸出額、1〜6月25%増 米製造業「中国離れ」の受け皿に","reason":"候補のcanonical本文を限定解決できず、当日性を確定できない"},
+    {"title":"三井不動産と熊本県が一般社団法人「くまもとサイエンスパークコミュニティ＆マネジメント」を共同設立","reason":"選択した同一公式案件の重複候補"},
+    {"title":"高専卒は倍率30倍の争奪戦 半導体活況が拍車、広告で電柱ジャックも","reason":"候補のcanonical本文を限定解決できず、人材需給の構造影響を確定できない"},
+    {"title":"中国半導体メモリー大手CXMTが上場、中国本土市場で時価総額最大","reason":"選択したCXMT Reuters報道と同一案件の別媒体報道"},
+    {"title":"変わるトヨタの英工場 GRカローラ、北米輸出の拠点に","reason":"候補内容の元記事は2026年5月発表でfreshness gate外"},
+    {"title":"【市場反応】米7月ダラス連銀製造業活動は昨年1月来で最高、ドル買いに転じる(フィスコ)","reason":"製造業の一次情報ではなく為替・経済指標の市場反応"}
+  ]
+}
