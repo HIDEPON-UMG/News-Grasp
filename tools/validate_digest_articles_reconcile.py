@@ -29,7 +29,8 @@ import argparse
 import json
 import re
 import sys
-from pathlib import Path
+from typing import Any
+from pathlib import Path, PurePosixPath
 
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
 
@@ -43,6 +44,35 @@ _GENMOTO_RE = re.compile(r"\[元記事\]\((https?://[^)\s]+)\)")
 _EXCLUDE_DIRS: frozenset[str] = frozenset({"DeepDive", "Summary"})
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def resolve_reporter_artifact_path(
+    repo_root: Path,
+    issue_date: str,
+    artifact: str,
+) -> tuple[str, Path]:
+    """manifest の reporter record を current run の repo 内 scope へ制約する。"""
+    raw = artifact.strip().replace("\\", "/")
+    relative = PurePosixPath(raw)
+    parts = relative.parts
+    if (
+        not raw
+        or relative.is_absolute()
+        or Path(raw).is_absolute()
+        or ".." in parts
+        or len(parts) != 4
+        or parts[:3] != ("tmp", "newsroom", issue_date)
+        or not parts[3].endswith(".records.jsonl")
+    ):
+        raise ValueError(f"outside allowed reporter scope: {artifact}")
+
+    root = repo_root.resolve()
+    path = (root / Path(*parts)).resolve(strict=False)
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"outside repo root: {artifact}") from exc
+    return relative.as_posix(), path
 
 
 def _normalize_url(url: str) -> str:
@@ -70,9 +100,36 @@ def digest_card_urls(digest_dir: Path, issue_date: str) -> dict[str, list[str]]:
     return out
 
 
-def articles_urls_for_issue(articles_path: Path, issue_date: str) -> dict[str, str]:
-    """当日号 (date == issue_date) の articles.jsonl URL -> genre (正規化済)。"""
-    urls: dict[str, str] = {}
+def digest_card_evidence(digest_dir: Path, issue_date: str) -> dict[str, dict[str, str]]:
+    """digest URL ごとの category / artifact 証拠を返す。"""
+    out: dict[str, dict[str, str]] = {}
+    scheduled_folders = {
+        CATEGORY_PATHS[cat_id]["digest_folder"]
+        for cat_id in scheduled_category_ids(issue_date)
+    }
+    for md in sorted(digest_dir.glob(f"*/{issue_date}-*.md")):
+        genre = md.parent.name
+        if genre in _EXCLUDE_DIRS or genre not in scheduled_folders:
+            continue
+        text = md.read_text(encoding="utf-8-sig", errors="replace")
+        target = f"digest/{genre}/{md.name}"
+        for url in _GENMOTO_RE.findall(text):
+            normalized = _normalize_url(url)
+            out[normalized] = {
+                "category": genre,
+                "target_digest_path": target,
+            }
+    return out
+
+
+def articles_records_for_issue(
+    articles_path: Path,
+    issue_date: str,
+) -> dict[str, dict[str, Any]]:
+    """当日 articles.jsonl の URL -> record を返す。"""
+    records: dict[str, dict[str, Any]] = {}
+    if not articles_path.exists():
+        return records
     scheduled_folders = {
         CATEGORY_PATHS[cat_id]["digest_folder"]
         for cat_id in scheduled_category_ids(issue_date)
@@ -86,25 +143,29 @@ def articles_urls_for_issue(articles_path: Path, issue_date: str) -> dict[str, s
                 rec = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if rec.get("date") != issue_date:
+            if not isinstance(rec, dict) or rec.get("date") != issue_date:
                 continue
             genre = str(rec.get("genre") or "unknown")
-            if genre not in scheduled_folders:
+            url = rec.get("url")
+            if genre not in scheduled_folders or not isinstance(url, str) or not url.strip():
                 continue
-            u = rec.get("url")
-            if isinstance(u, str) and u.strip():
-                urls[_normalize_url(u)] = genre
-    return urls
+            records[_normalize_url(url)] = dict(rec)
+    return records
 
 
-def current_reporter_urls_for_issue(repo_root: Path, issue_date: str) -> dict[str, str] | None:
-    """現在 run の reporter artifact URL -> genre を返す。
+def articles_urls_for_issue(articles_path: Path, issue_date: str) -> dict[str, str]:
+    """当日号 (date == issue_date) の articles.jsonl URL -> genre (正規化済)。"""
+    return {
+        url: str(record.get("genre") or "unknown")
+        for url, record in articles_records_for_issue(articles_path, issue_date).items()
+    }
 
-    `data/articles.jsonl` は append-only で、同一号日の再実行前 record も残り得る。
-    editor-input-manifest がある場合は、その manifest が指す reporter records を
-    「今回 publish 直前に digest と一致すべき集合」として使う。manifest が無い古い
-    fixture / 手動実行では None を返し、従来の articles.jsonl 当日全件突合に戻す。
-    """
+
+def current_reporter_records_for_issue(
+    repo_root: Path,
+    issue_date: str,
+) -> dict[str, tuple[dict[str, Any], str]] | None:
+    """current reporter URL -> (record, repo-relative artifact) を返す。"""
     manifest = repo_root / "build" / "reporter-artifacts" / issue_date / "editor-input-manifest.json"
     if not manifest.exists():
         return None
@@ -125,11 +186,18 @@ def current_reporter_urls_for_issue(repo_root: Path, issue_date: str) -> dict[st
     if not isinstance(artifacts, list):
         return None
 
-    urls: dict[str, str] = {}
+    records: dict[str, tuple[dict[str, Any], str]] = {}
     for rel in artifacts:
         if not isinstance(rel, str) or not rel.strip():
             continue
-        path = repo_root / rel
+        try:
+            normalized_rel, path = resolve_reporter_artifact_path(
+                repo_root,
+                issue_date,
+                rel,
+            )
+        except ValueError:
+            return None
         if not path.exists():
             continue
         with path.open(encoding="utf-8-sig") as f:
@@ -141,47 +209,131 @@ def current_reporter_urls_for_issue(repo_root: Path, issue_date: str) -> dict[st
                     rec = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if rec.get("date") != issue_date:
+                if not isinstance(rec, dict) or rec.get("date") != issue_date:
                     continue
                 genre = str(rec.get("genre") or "unknown")
-                if genre not in scheduled_folders:
+                url = rec.get("url")
+                if genre not in scheduled_folders or not isinstance(url, str) or not url.strip():
                     continue
-                u = rec.get("url")
-                if isinstance(u, str) and u.strip():
-                    urls[_normalize_url(u)] = genre
-    return urls
+                records[_normalize_url(url)] = (dict(rec), normalized_rel)
+    return records
 
 
-def reconcile(digest_dir: Path, articles_path: Path, issue_date: str) -> dict[str, list[str]]:
+def current_reporter_urls_for_issue(repo_root: Path, issue_date: str) -> dict[str, str] | None:
+    """現在 run の reporter artifact URL -> genre を返す。
+
+    `data/articles.jsonl` は append-only で、同一号日の再実行前 record も残り得る。
+    editor-input-manifest がある場合は、その manifest が指す reporter records を
+    「今回 publish 直前に digest と一致すべき集合」として使う。manifest が無い古い
+    fixture / 手動実行では None を返し、従来の articles.jsonl 当日全件突合に戻す。
+    """
+    records = current_reporter_records_for_issue(repo_root, issue_date)
+    if records is None:
+        return None
+    return {
+        url: str(record.get("genre") or "unknown")
+        for url, (record, _) in records.items()
+    }
+
+
+def reconcile(
+    digest_dir: Path,
+    articles_path: Path,
+    issue_date: str,
+) -> dict[str, list[dict[str, Any]]]:
     """digest md カード URL と articles.jsonl URL の完全一致を検査。
 
     Returns:
         {
-          "digest_only": md にあり jsonl に無い URL,
-          "articles_only": jsonl にあり md に無い URL,
+          "digest_only": md にあり current reporter/current articles に無い structured issue,
+          "articles_only": current reporter/current articles にあり md に無い structured issue,
         }
         両方空なら公開 md と freshness 済み articles.jsonl が一致 = 突合 OK。
     """
-    card_urls = digest_card_urls(digest_dir, issue_date)
-    digest_index: dict[str, str] = {}
-    for genre, urls in card_urls.items():
-        for u in urls:
-            digest_index[u] = genre
-
-    jsonl_urls = articles_urls_for_issue(articles_path, issue_date)
+    digest_index = digest_card_evidence(digest_dir, issue_date)
+    articles_records = articles_records_for_issue(articles_path, issue_date)
+    jsonl_urls = {
+        url: str(record.get("genre") or "unknown")
+        for url, record in articles_records.items()
+    }
     repo_root = digest_dir.parent if digest_dir.name == "digest" else _PKG_ROOT
-    current_run_urls = current_reporter_urls_for_issue(repo_root, issue_date)
-    compare_urls = current_run_urls if current_run_urls is not None else jsonl_urls
-    digest_only = [
-        f"{genre}: {u}"
-        for u, genre in sorted(digest_index.items(), key=lambda item: (item[1], item[0]))
-        if u not in compare_urls or u not in jsonl_urls
-    ]
-    articles_only = [
-        f"{genre}: {u}"
-        for u, genre in sorted(compare_urls.items(), key=lambda item: (item[1], item[0]))
-        if u not in digest_index
-    ]
+    current_records = current_reporter_records_for_issue(repo_root, issue_date)
+    compare_records: dict[str, tuple[dict[str, Any], str]] = (
+        current_records
+        if current_records is not None
+        else {url: (record, "data/articles.jsonl") for url, record in articles_records.items()}
+    )
+
+    digest_only: list[dict[str, Any]] = []
+    for url, card in sorted(
+        digest_index.items(),
+        key=lambda item: (item[1]["category"], item[0]),
+    ):
+        if url in compare_records and url in jsonl_urls:
+            continue
+        category = card["category"]
+        target = card["target_digest_path"]
+        reporter_entry = compare_records.get(url)
+        digest_only.append(
+            {
+                "gate_id": "digest-articles-reconcile",
+                "issue_code": "digest_articles_digest_only",
+                "direction": "digest_only",
+                "message": f"{category}: {url}",
+                "issue_date": issue_date,
+                "category": category,
+                "url": url,
+                "artifact_paths": [
+                    target,
+                    "data/articles.jsonl",
+                    *([reporter_entry[1]] if reporter_entry else []),
+                ],
+                "evidence": {
+                    "direction": "digest_only",
+                    "url": url,
+                    "target_digest_path": target,
+                    "current_reporter_manifest_present": current_records is not None,
+                    "in_current_reporter": current_records is not None and url in current_records,
+                    "in_current_articles": url in articles_records,
+                    "record_source": reporter_entry[1] if reporter_entry else "",
+                    "record": reporter_entry[0] if reporter_entry else articles_records.get(url),
+                },
+            }
+        )
+
+    articles_only: list[dict[str, Any]] = []
+    for url, (record, record_source) in sorted(
+        compare_records.items(),
+        key=lambda item: (str(item[1][0].get("genre") or "unknown"), item[0]),
+    ):
+        if url in digest_index:
+            continue
+        category = str(record.get("genre") or "unknown")
+        target = f"digest/{category}/{issue_date}-{category}.md"
+        articles_only.append(
+            {
+                "gate_id": "digest-articles-reconcile",
+                "issue_code": "digest_articles_articles_only",
+                "direction": "articles_only",
+                "message": f"{category}: {url}",
+                "issue_date": issue_date,
+                "category": category,
+                "url": url,
+                "artifact_paths": [target, record_source],
+                "evidence": {
+                    "direction": "articles_only",
+                    "url": url,
+                    "record_source": (
+                        "current_reporter"
+                        if current_records is not None
+                        else "current_articles"
+                    ),
+                    "record_artifact": record_source,
+                    "record": record,
+                    "target_digest_path": target,
+                },
+            }
+        )
     return {"digest_only": digest_only, "articles_only": articles_only}
 
 
@@ -212,22 +364,22 @@ def main(argv: list[str] | None = None) -> int:
     articles_only = result["articles_only"]
     if digest_only or articles_only:
         print(
-            f"FAIL: digest md と articles.jsonl の当日 URL が一致しません "
-            f"(号日 {args.issue_date}, digest-only={len(digest_only)}, articles-only={len(articles_only)}):",
+            json.dumps(
+                {
+                    "ok": False,
+                    "gate_id": "digest-articles-reconcile",
+                    "issue_date": args.issue_date,
+                    "counts": {
+                        "digest_only": len(digest_only),
+                        "articles_only": len(articles_only),
+                    },
+                    "issues": [*digest_only, *articles_only],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
             file=sys.stderr,
         )
-        if digest_only:
-            print("  digest-only (md だけに存在。古記事残存または append 漏れの疑い):", file=sys.stderr)
-            for m in digest_only[:40]:
-                print(f"    - {m}", file=sys.stderr)
-            if len(digest_only) > 40:
-                print(f"    ... and {len(digest_only) - 40} more", file=sys.stderr)
-        if articles_only:
-            print("  articles-only (articles.jsonl だけに存在。カード生成漏れの疑い):", file=sys.stderr)
-            for m in articles_only[:40]:
-                print(f"    - {m}", file=sys.stderr)
-            if len(articles_only) > 40:
-                print(f"    ... and {len(articles_only) - 40} more", file=sys.stderr)
         return 1
 
     print(f"PASS: digest md カード URL と articles.jsonl 当日 URL は一致 (号日 {args.issue_date})")

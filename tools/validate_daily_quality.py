@@ -18,12 +18,13 @@ from tools.generate_pages import (
     parse_frontmatter,
     parse_reflection,
 )
-from tools.publish_inventory import required_published_docs_artifacts
+from tools.publish_inventory import CATEGORY_PATHS, required_published_docs_artifacts
 from tools.publish_inventory import scheduled_category_ids
 from tools.validate_summary_reflection import validate_summary_category_focus
 from tools.url_quality import (
     is_google_news_proxy_thumb,
     is_google_news_rss_url,
+    is_news_grasp_self_thumb,
     looks_homepage_or_section_landing,
 )
 
@@ -45,12 +46,6 @@ REQUIRED_COVERAGE_TERMS: dict[str, set[str]] = {
     "manufacturing": {"TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"},
     "economy": {"Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"},
 }
-_NEWS_GRASP_THUMB_RE = re.compile(
-    r"^https?://hidepon-umg\.github\.io/News-Grasp/(?:assets/og/|assets/news-grasp)",
-    re.IGNORECASE,
-)
-
-
 def _scheduled_digest_file(md: Path, issue: date) -> bool:
     if md.parent.name in {"Summary", "DeepDive"}:
         return False
@@ -62,11 +57,6 @@ def _scheduled_digest_file(md: Path, issue: date) -> bool:
     return bool(cat_id and cat_id in set(scheduled_category_ids(issue)))
 _INTENTIONAL_PAUSE_RE = re.compile(r"(休載|正当な休載理由|正当な欠落理由|intentionally short)", re.IGNORECASE)
 _FRONTMATTER_BLOCK_RE = re.compile(r"\A---\r?\n(?P<frontmatter>.*?)\r?\n---", re.DOTALL)
-
-
-def _is_news_grasp_self_thumb(value: object) -> bool:
-    return isinstance(value, str) and bool(_NEWS_GRASP_THUMB_RE.search(value))
-
 
 def _parse_issue_date(value: str) -> date:
     if not _DATE_RE.match(value):
@@ -84,7 +74,7 @@ def validate_summary_hero(summary_path: Path) -> list[str]:
     if left and right:
         return []
     return [
-        f"{summary_path}: frontmatter hero_left / hero_right が不足しています。",
+        f"{summary_path}: frontmatter hero_left / hero_right が不足しています。"
         "このままでは LP TODAY'S THEME 見出しが「時勢を掴み、日々に新たに。」へ fallback します。",
     ]
 
@@ -120,21 +110,21 @@ def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str
     ]
     errs: list[str] = []
     if google_news_urls:
-        errs.extend([
-            f"{jsonl_path}: {issue.isoformat()} に Google News RSS URL のままです: {len(google_news_urls)} 件",
-            "元記事 URL へ解決してから公開してください。Google News URL のままだと元記事 OGP を取り逃し、fallback サムネ化します。",
-        ])
+        errs.append(
+            f"{jsonl_path}: {issue.isoformat()} に Google News RSS URL のままです: {len(google_news_urls)} 件"
+            " 元記事 URL へ解決してから公開してください。Google News URL のままだと元記事 OGP を取り逃し、fallback サムネ化します。",
+        )
     if rounded_urls:
         sample = ", ".join(str(url) for url in rounded_urls[:5])
-        errs.extend([
-            f"{jsonl_path}: {issue.isoformat()} に媒体トップまたはカテゴリトップに丸まった URL があります: {len(rounded_urls)} 件",
-            f"元記事単位の URL へ解決してから公開してください。例: {sample}",
-        ])
+        errs.append(
+            f"{jsonl_path}: {issue.isoformat()} に媒体トップまたはカテゴリトップに丸まった URL があります: {len(rounded_urls)} 件"
+            f" 元記事単位の URL へ解決してから公開してください。例: {sample}",
+        )
     if all("thumb" in rec for rec in records) and all(rec.get("thumb") is None for rec in records):
-        errs.extend([
-            f"{jsonl_path}: {issue.isoformat()} の thumb が全件 null です。",
-            "このままでは公開ページが全件 fallback サムネになります。fetch_ogp / WebSearch thumbnail の取得結果を反映してください。",
-        ])
+        errs.append(
+            f"{jsonl_path}: {issue.isoformat()} の thumb が全件 null です。"
+            " このままでは公開ページが全件 fallback サムネになります。fetch_ogp / WebSearch thumbnail の取得結果を反映してください。",
+        )
     proxy_thumbs = [
         (rec.get("genre") or "", rec.get("title_ja") or rec.get("title") or "", rec.get("thumb") or "")
         for rec in records
@@ -148,7 +138,7 @@ def validate_issue_thumbnail_coverage(jsonl_path: Path, issue: date) -> list[str
     self_thumbs = [
         (rec.get("genre") or "", rec.get("title_ja") or rec.get("title") or "", rec.get("thumb") or "")
         for rec in records
-        if _is_news_grasp_self_thumb(rec.get("thumb"))
+        if is_news_grasp_self_thumb(rec.get("thumb"))
     ]
     for genre, title, thumb in self_thumbs:
         errs.append(
@@ -178,7 +168,7 @@ def validate_digest_article_thumbnail_coverage(digest_root: Path, issue: date) -
                 continue
             if is_google_news_proxy_thumb(thumb):
                 errs.append(f"{label}: Google News 代理サムネです: thumb={thumb}")
-            if _is_news_grasp_self_thumb(thumb):
+            if is_news_grasp_self_thumb(thumb):
                 errs.append(f"{label}: News-Grasp 自己参照 thumb です: thumb={thumb}")
     return errs
 
@@ -442,8 +432,8 @@ def _stale_source_url_errors(*, issue: date, label: str, title: str, url: str) -
         return []
     age = (issue - src_date).days
     return [
-        f"{label}: source URL date {src_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()} and outside the 1-day edition window: {title}",
-        f"  url={url}",
+        f"{label}: source URL date {src_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()} "
+        f"and outside the 1-day edition window: {title}; url={url}",
     ]
 
 
@@ -490,9 +480,9 @@ def _stale_followup_errors(*, issue: date, label: str, title: str, record: dict[
         return []
     age = (issue - matched_date).days
     return [
-        f"{label}: follow-up matched_with URL date {matched_date.isoformat()} is {age} day(s) older than issue {issue.isoformat()}: {title}",
-        f"  matched_with={matched_with}",
-        "  add followup_review_note for a verified new-material follow-up, or remove the record as stale.",
+        f"{label}: follow-up matched_with URL date {matched_date.isoformat()} is {age} day(s) older than issue "
+        f"{issue.isoformat()}: {title}; matched_with={matched_with}; add followup_review_note for a verified "
+        "new-material follow-up, or remove the record as stale.",
     ]
 
 
@@ -579,7 +569,19 @@ def validate_search_audit_for_shortfall(
 
         queries = audit.get("queries") or []
         if not isinstance(queries, list) or len(queries) < 3:
-            errs.append(f"{audit_path}: queries must contain at least 3 search queries for shortfall review.")
+            recoverable = False
+            harvest_path = audit_path.with_name(f"harvest-{cat_id}.json")
+            if harvest_path.exists():
+                try:
+                    harvest = json.loads(harvest_path.read_text(encoding="utf-8-sig"))
+                    harvest_queries = harvest.get("queries") or []
+                    recoverable = isinstance(harvest_queries, list) and len(harvest_queries) >= 3
+                except json.JSONDecodeError:
+                    recoverable = False
+            suffix = " recoverable_source=harvest" if recoverable else ""
+            errs.append(
+                f"{audit_path}: queries must contain at least 3 search queries for shortfall review.{suffix}"
+            )
 
         raw_results_total = _as_int(audit.get("raw_results_total"))
         candidates_total = _as_int(audit.get("candidates_total"))
@@ -604,7 +606,19 @@ def validate_search_audit_for_shortfall(
                 f"{audit_path}: selected_total={selected_total} does not match digest article count {articles_count}."
             )
         if candidates_total > selected_total and not dropped:
-            errs.append(f"{audit_path}: dropped reasons are required when candidates were excluded.")
+            recoverable_sources = [
+                key
+                for key in ("dropped_examples", "dropped_or_not_selected", "dropped_reason_summary")
+                if audit.get(key)
+            ]
+            suffix = (
+                " recoverable_sources=" + ",".join(recoverable_sources)
+                if recoverable_sources
+                else ""
+            )
+            errs.append(
+                f"{audit_path}: dropped reasons are required when candidates were excluded.{suffix}"
+            )
 
         checked = {str(v).strip() for v in (audit.get("coverage_terms_checked") or []) if str(v).strip()}
         required = REQUIRED_COVERAGE_TERMS.get(cat_id.casefold())
@@ -947,6 +961,21 @@ SEARCH_AUDIT_COUNT_MISMATCH_RE = re.compile(
 DIGEST_ERROR_ARTIFACT_RE = re.compile(
     r"(?P<artifact>.*?digest[\\/]+(?P<folder>[^\\/:]+)[\\/]+[^:\r\n]+\.md)(?:\s+\[[^\]]+\])?:"
 )
+SEARCH_AUDIT_ARTIFACT_RE = re.compile(
+    r"(?P<artifact>.*?data[\\/]+search_audit[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})"
+    r"[\\/]+(?P<category>[^\\/:\s]+)\.json)"
+)
+AUDIO_SCRIPT_ARTIFACT_RE = re.compile(
+    r"(?P<artifact>.*?digest[\\/]+Summary[\\/]+(?P<issue>\d{4}-\d{2}-\d{2})-audio-script\.md)"
+)
+ANY_DIGEST_ARTIFACT_RE = re.compile(
+    r"(?P<artifact>[^:\r\n。]*?digest[\\/]+[^:\r\n。]+?\.md)"
+)
+SCHEDULED_DIGEST_MISSING_RE = re.compile(
+    r"scheduled category digest missing:\s*(?P<category>[a-z0-9_-]+).*?"
+    r"(?P<issue>\d{4}-\d{2}-\d{2})",
+    re.IGNORECASE,
+)
 
 
 def _repo_relative_artifact(path_text: str) -> str:
@@ -958,6 +987,7 @@ def _repo_relative_artifact(path_text: str) -> str:
 
 
 def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
+    issue_code = daily_quality_issue_code(message)
     match = SEARCH_AUDIT_COUNT_MISMATCH_RE.search(message)
     if match:
         return {
@@ -968,6 +998,59 @@ def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
                 "digest_article_count": int(match.group("count")),
             },
         }
+    audit_match = SEARCH_AUDIT_ARTIFACT_RE.search(message)
+    if audit_match:
+        return {
+            "artifact_paths": [_repo_relative_artifact(audit_match.group("artifact"))],
+            "category": audit_match.group("category"),
+            "evidence": {
+                "failure_mode": issue_code,
+                "category": audit_match.group("category"),
+            },
+        }
+    audio_match = AUDIO_SCRIPT_ARTIFACT_RE.search(message)
+    if issue_code == "audio_script_missing":
+        artifact = (
+            audio_match.group("artifact").replace("\\", "/")
+            if audio_match
+            else ""
+        )
+        if "digest/" in artifact:
+            artifact = "digest/" + artifact.split("digest/", 1)[1]
+        result: dict[str, Any] = {
+            "evidence": {
+                "failure_mode": issue_code,
+                "typed_reason": "missing_artifact",
+            }
+        }
+        if artifact:
+            result["artifact_paths"] = [artifact]
+        return result
+    if issue_code == "missing_artifact":
+        generic_digest = ANY_DIGEST_ARTIFACT_RE.search(message)
+        scheduled = SCHEDULED_DIGEST_MISSING_RE.search(message)
+        artifact = ""
+        category = ""
+        if generic_digest:
+            artifact = generic_digest.group("artifact").replace("\\", "/")
+            if "digest/" in artifact:
+                artifact = "digest/" + artifact.split("digest/", 1)[1]
+        elif scheduled:
+            category = scheduled.group("category").casefold()
+            folder = str(CATEGORY_PATHS.get(category, {}).get("digest_folder") or "")
+            if folder:
+                artifact = f"digest/{folder}/{scheduled.group('issue')}-{folder}.md"
+        result = {
+            "evidence": {
+                "failure_mode": issue_code,
+                "typed_reason": "missing_artifact",
+            }
+        }
+        if artifact:
+            result["artifact_paths"] = [artifact]
+        if category:
+            result["category"] = category
+        return result
     digest_match = DIGEST_ERROR_ARTIFACT_RE.search(message)
     if digest_match:
         artifact = digest_match.group("artifact").replace("\\", "/")
@@ -977,24 +1060,56 @@ def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
         return {
             "artifact_paths": [artifact],
             "category": TAG_TO_CID.get(folder, folder.casefold()),
+            "evidence": {"failure_mode": issue_code},
         }
-    return {}
+    return {"evidence": {"failure_mode": issue_code}}
 
 
 def daily_quality_issue_code(message: str) -> str:
     text = message.casefold()
     if "add followup_review_note" in text or "follow-up matched_with url date" in text:
         return "followup_review_required"
+    if "source url date" in text and "outside the 1-day edition window" in text:
+        return "url_dead_or_stale"
+    if "google news rss url" in text or "媒体トップまたはカテゴリトップ" in text or "元記事 url へ解決" in text:
+        return "source_url_unresolved"
+    if "json decode error" in text and "search_audit" not in text and "search audit" not in text:
+        return "articles_json_invalid"
+    if "google news 代理サムネ" in text or "news-grasp 自己参照 thumb" in text:
+        return "thumb_invalid"
+    if "thumb が全件 null" in text or "thumb が空" in text or "thumbnail is missing" in text:
+        return "thumb_missing"
+    if "tts 音声原稿が存在しません" in text:
+        return "audio_script_missing"
+    if "tts latest_audio.json" in text:
+        return "audio_publish_state_invalid"
+    if "tts audio url" in text or "音声検査対象 html" in text:
+        return "audio_public_reflection_missing"
+    if "search audit missing" in text:
+        return "search_audit_missing"
+    if "json decode error" in text and ("search_audit" in text or "search audit" in text):
+        return "search_audit_invalid"
+    if (
+        "raw_results_total=" in text
+        or "candidates_total=" in text and "expected at least" in text
+    ):
+        return "search_audit_collection_shortfall"
     if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(message) or (
         "selected_total=" in text and "does not match digest article count" in text
     ):
         return "search_audit_count_mismatch"
     if (
         "coverage_terms_checked missing required terms" in text
-        or "dropped reasons are required" in text
-        or "queries must contain at least 3 search queries" in text
     ):
-        return "search_audit_metadata_missing"
+        return "search_audit_coverage_terms_missing"
+    if "queries must contain at least 3 search queries" in text and "recoverable_source=harvest" in text:
+        return "search_audit_queries_recoverable"
+    if "queries must contain at least 3 search queries" in text:
+        return "search_audit_queries_insufficient"
+    if "dropped reasons are required" in text and "recoverable_sources=" in text:
+        return "search_audit_dropped_evidence_recoverable"
+    if "dropped reasons are required" in text:
+        return "search_audit_dropped_evidence_missing"
     if "hero_left" in text or "hero_right" in text:
         return "summary_hero_missing"
     if "card #" in text and "lacks required emphasis" in text:
@@ -1005,20 +1120,45 @@ def daily_quality_issue_code(message: str) -> str:
         return "summary_reflection_emphasis_missing"
     if "category hero focus" in text or "reflection category section missing" in text:
         return "summary_category_focus_invalid"
+    if "weekday=" in text and "does not match date" in text:
+        return "summary_weekday_mismatch"
+    if "unscheduled category" in text or "unscheduled summary category" in text or "非配信カテゴリ" in text:
+        return "summary_unscheduled_category_reference"
+    if (
+        "repetitive sentence endings" in text
+        or "redundant connectors" in text
+        or "translationese wording" in text
+    ):
+        return "digest_style_invalid"
     if "title_ja appears untranslated" in text:
         return "digest_title_ja_untranslated"
-    if "thumbnail" in text or "thumb" in text:
-        return "thumb_invalid_or_missing"
+    if "category digest is not an article page" in text:
+        return "category_digest_empty"
+    if (
+        "関係図" in message
+        or "rowgroups" in text
+        or "エッジ線" in message
+        or "ノード円" in message
+        or "ラベル矩形" in message
+    ):
+        return "deepdive_layout_invalid"
     if "published docs" in text or "published doc" in text or "docs/" in text:
         return "published_docs_missing"
     if "deepdive" in text and "missing" in text:
         return "published_docs_missing"
-    if "audio" in text or "tts" in text:
+    if "audio script" in text:
         return "audio_script_quality_invalid"
     if "search audit" in text:
         return "url_dead_or_stale"
-    if "digest missing" in text or "category digest" in text:
+    if (
+        "digest missing" in text
+        or "category digest" in text
+        or "summary digest が存在しません" in text
+        or "scheduled category digest missing" in text
+    ):
         return "missing_artifact"
+    if "articles jsonl が存在しません" in text:
+        return "articles_data_missing"
     return "unknown"
 
 

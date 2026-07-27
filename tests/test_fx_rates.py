@@ -75,3 +75,23 @@ def test_get_fx_panel_uses_static_fallback_when_snapshot_missing(tmp_path: Path,
     assert panel["source"] == "fallback"
     assert "USD/JPY 162.24" in panel["ticker_text"]
     assert panel["has_provider_data"] is False
+
+
+def test_static_test_mode_reads_snapshot_without_network_or_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot = tmp_path / "fx.json"
+    original = json.dumps(SAMPLE, ensure_ascii=False, indent=2) + "\n"
+    snapshot.write_text(original, encoding="utf-8")
+    monkeypatch.setenv("NEWS_GRASP_SKIP_URL_CHECK", "1")
+
+    def _unexpected_fetch(*_args: object, **_kwargs: object) -> dict[str, object]:
+        raise AssertionError("static test mode must not fetch FX rates")
+
+    monkeypatch.setattr(fx_rates, "fetch_fx_rates", _unexpected_fetch)
+
+    panel = fx_rates.get_fx_panel(snapshot_path=snapshot)
+
+    assert panel["source"] == "snapshot"
+    assert snapshot.read_text(encoding="utf-8") == original

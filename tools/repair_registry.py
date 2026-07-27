@@ -4,18 +4,30 @@ import argparse
 from dataclasses import dataclass
 from datetime import date, timedelta
 import json
+import os
 from pathlib import Path
+from pathlib import PurePosixPath
 import re
+import tempfile
 from typing import Callable
 
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
 from tools.refill_category_after_quarantine import refill_category
-from tools.repair_audio_script_length import repair_file as repair_audio_script_file
+from tools.validate_digest_articles_reconcile import (
+    reconcile,
+    resolve_reporter_artifact_path,
+)
 from tools.validate_daily_quality import (
     REQUIRED_COVERAGE_TERMS,
     extract_source_date_from_url,
     parse_articles,
     parse_frontmatter,
+)
+from tools.url_quality import (
+    is_google_news_proxy_thumb,
+    is_google_news_rss_url,
+    is_news_grasp_self_thumb,
+    looks_homepage_or_section_landing,
 )
 
 
@@ -29,6 +41,13 @@ DETERMINISTIC_NOT_APPLICABLE_STATUS = "blocked_deterministic_repair_not_applicab
 OUTPUT_SCOPE_VIOLATION_STATUS = "repair_handler_output_scope_violation"
 SCOPE_VIOLATION_STATUS = OUTPUT_SCOPE_VIOLATION_STATUS
 AMBIGUOUS_STATUS = "blocked_ambiguous_repair"
+ARTICLES_ONLY_INCOMPLETE_STATUS = "blocked_articles_only_record_incomplete"
+DIGEST_ONLY_AMBIGUOUS_STATUS = "blocked_digest_only_ambiguous"
+REPAIR_SYSTEM_INCOMPLETE_STATUS = "blocked_repair_system_incomplete"
+
+
+class ReporterArtifactScopeError(ValueError):
+    """current reporter manifest が許可 scope 外を参照した。"""
 
 
 @dataclass(frozen=True)
@@ -38,6 +57,7 @@ class RepairHandler:
     allowed_artifacts: tuple[str, ...]
     verify_gate: str
     repair: Callable[["RepairContext"], "RepairResult"]
+    supported_verify_gates: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -63,6 +83,26 @@ def _summary_path(ctx: RepairContext) -> Path:
 
 def _normalize_rel(path: str) -> str:
     return path.strip().replace("\\", "/").lstrip("./")
+
+
+def _resolve_repo_artifact(repo_root: Path, artifact: str) -> tuple[str, Path]:
+    """artifact を repo-relative path として解決し、escape を拒否する。"""
+    raw = artifact.strip().replace("\\", "/")
+    relative = PurePosixPath(raw)
+    if (
+        not raw
+        or relative.is_absolute()
+        or Path(raw).is_absolute()
+        or ".." in relative.parts
+    ):
+        raise ValueError(f"artifact outside repo root: {artifact}")
+    root = repo_root.resolve()
+    path = (root / Path(*relative.parts)).resolve(strict=False)
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"artifact outside repo root: {artifact}") from exc
+    return relative.as_posix(), path
 
 
 def _pattern_to_regex(pattern: str, issue: str) -> re.Pattern[str]:
@@ -214,12 +254,6 @@ def _repair_category_card_emphasis(ctx: RepairContext) -> RepairResult:
     if not changed:
         return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
     return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, tuple(changed))
-
-
-def _repair_audio_script_length(ctx: RepairContext) -> RepairResult:
-    if repair_audio_script_file(ctx.repo_root, ctx.issue):
-        return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (f"digest/Summary/{ctx.issue}-audio-script.md",))
-    return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
 
 
 def _repair_search_audit_metadata(ctx: RepairContext) -> RepairResult:
@@ -375,14 +409,18 @@ def _repair_summary_reflection(ctx: RepairContext) -> RepairResult:
     if not path.exists():
         return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"missing artifact: {rel}")
     raw = path.read_text(encoding="utf-8-sig")
-    if "## Reflection" in raw or "## ふりかえり" in raw:
+    if "本日のテーマ考察" in raw:
         return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
-    repaired = raw.rstrip() + "\n\n## Reflection\n\n- **今日の変化**: 主要カテゴリの論点を公開前品質ゲートで整理した。\n"
+    repaired = (
+        raw.rstrip()
+        + "\n\n## 本日のテーマ考察\n\n"
+        + "- **今日の変化**: 主要カテゴリの論点を公開前品質ゲートで整理した。\n"
+    )
     path.write_text(repaired + "\n", encoding="utf-8", newline="\n")
     return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,))
 
 
-def _repair_jsonl_field(ctx: RepairContext, *, field: str, fallback: str) -> RepairResult:
+def _repair_date_evidence(ctx: RepairContext) -> RepairResult:
     rel = "data/articles.jsonl"
     path = ctx.repo_root / rel
     if not path.exists():
@@ -393,18 +431,29 @@ def _repair_jsonl_field(ctx: RepairContext, *, field: str, fallback: str) -> Rep
         if not line.strip():
             continue
         row = json.loads(line)
-        if not str(row.get(field) or "").strip():
-            row[field] = fallback
+        if (
+            isinstance(row, dict)
+            and str(row.get("date") or "") == ctx.issue
+            and not str(row.get("date_evidence_source") or "").strip()
+            and str(row.get("published_date") or row.get("published") or "").strip()
+        ):
+            row["date_evidence_source"] = "published_date"
             changed = True
         rows.append(row)
     if not changed:
-        return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
-    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8", newline="\n")
-    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, (rel,), f"autonomous_recovery: {field}")
-
-
-def _repair_date_evidence(ctx: RepairContext) -> RepairResult:
-    return _repair_jsonl_field(ctx, field="date_evidence_source", fallback="published_date")
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
+    path.write_text(
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+        encoding="utf-8",
+        newline="\n",
+    )
+    return RepairResult(
+        ctx.handler_id,
+        REPAIRED_STATUS,
+        True,
+        (rel,),
+        "autonomous_recovery: date_evidence_source_from_published",
+    )
 
 
 def _repair_record_title_ja(ctx: RepairContext) -> RepairResult:
@@ -466,6 +515,13 @@ def _digest_thumb_index(ctx: RepairContext) -> dict[str, str]:
     return thumbs
 
 
+def _default_category_thumb(cat_id: str) -> str:
+    return (
+        "https://raw.githubusercontent.com/HIDEPON-UMG/"
+        f"news-grasp-assets/main/ng-thumb-common-{cat_id}.jpg"
+    )
+
+
 def _repair_record_thumb(ctx: RepairContext) -> RepairResult:
     rel = "data/articles.jsonl"
     path = ctx.repo_root / rel
@@ -480,10 +536,16 @@ def _repair_record_thumb(ctx: RepairContext) -> RepairResult:
         row = json.loads(line)
         if isinstance(row, dict) and str(row.get("date") or "") == ctx.issue:
             thumb = row.get("thumb")
-            if "thumb" not in row or thumb is None or not str(thumb).strip():
+            thumb_valid = isinstance(thumb, str) and bool(re.match(r"^https?://", thumb.strip()))
+            if "thumb" not in row or not thumb_valid:
                 url = str(row.get("url") or "").strip()
-                row["thumb"] = thumb_by_url.get(url)
-                changed = True
+                cat_id = _record_category_id(row)
+                replacement = thumb_by_url.get(url)
+                if not replacement and cat_id:
+                    replacement = _default_category_thumb(cat_id)
+                if replacement:
+                    row["thumb"] = replacement
+                    changed = True
         rows.append(row)
     if not changed:
         return RepairResult(ctx.handler_id, NOOP_STATUS, False, (rel,))
@@ -531,6 +593,7 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
                 scoped_categories.add(cat_id)
 
     by_category: dict[str, list[str]] = {}
+    category_by_url: dict[str, str] = {}
     seen: set[tuple[str, str]] = set()
     for artifact in ctx.artifacts:
         rel = _normalize_rel(artifact)
@@ -545,7 +608,18 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
             for article in parse_articles(body):
                 url = str(article.get("url") or article.get("source_url") or "").strip()
                 thumb = str(article.get("thumb") or "").strip()
-                if not url or (thumb and thumb.casefold() != "null"):
+                if url:
+                    category_by_url[url] = cat_id
+                invalid_url = bool(url) and (
+                    is_google_news_rss_url(url) or looks_homepage_or_section_landing(url)
+                )
+                invalid_thumb = (
+                    not thumb
+                    or thumb.casefold() == "null"
+                    or is_google_news_proxy_thumb(thumb)
+                    or is_news_grasp_self_thumb(thumb)
+                )
+                if not url or not (invalid_url or invalid_thumb):
                     continue
                 key = (cat_id, url)
                 if key in seen:
@@ -568,15 +642,21 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
         url = str(row.get("url") or "").strip()
         if not url:
             continue
+        cat_id = _record_category_id(row)
+        if cat_id is not None:
+            category_by_url[url] = cat_id
         thumb = row.get("thumb")
         thumb_missing = "thumb" in row and (thumb is None or not str(thumb).strip() or str(thumb).strip().casefold() == "null")
         if not (
             _is_stale_current_source_url(issue_day=issue_day, url=url)
             or _is_unreviewed_stale_followup(issue_day=issue_day, row=row)
             or thumb_missing
+            or is_google_news_proxy_thumb(thumb)
+            or is_news_grasp_self_thumb(thumb)
+            or is_google_news_rss_url(url)
+            or looks_homepage_or_section_landing(url)
         ):
             continue
-        cat_id = _record_category_id(row)
         if cat_id is None:
             continue
         if scoped_categories and cat_id not in scoped_categories:
@@ -586,6 +666,24 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
             continue
         seen.add(key)
         by_category.setdefault(cat_id, []).append(url)
+
+    ledger_path = ctx.repo_root / "build" / "quarantine" / ctx.issue / "bad-urls.json"
+    if ledger_path.exists():
+        try:
+            ledger_urls = json.loads(ledger_path.read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError:
+            ledger_urls = []
+        if isinstance(ledger_urls, list):
+            for value in ledger_urls:
+                url = str(value or "").strip()
+                cat_id = category_by_url.get(url)
+                if not url or cat_id is None:
+                    continue
+                key = (cat_id, url)
+                if key in seen:
+                    continue
+                seen.add(key)
+                by_category.setdefault(cat_id, []).append(url)
     return by_category
 
 
@@ -607,6 +705,16 @@ def _split_digest_blocks(text: str) -> tuple[list[str], list[list[str]], list[st
 
 
 def _write_digest_blocks(path: Path, prefix: list[str], blocks: list[list[str]], footer: list[str]) -> None:
+    _apply_atomic_text_writes(
+        {path: _render_digest_blocks(prefix, blocks, footer)}
+    )
+
+
+def _render_digest_blocks(
+    prefix: list[str],
+    blocks: list[list[str]],
+    footer: list[str],
+) -> str:
     out_lines = prefix[:]
     for block_index, block in enumerate(blocks):
         if out_lines and out_lines[-1] != "":
@@ -619,7 +727,66 @@ def _write_digest_blocks(path: Path, prefix: list[str], blocks: list[list[str]],
         if out_lines and out_lines[-1] != "":
             out_lines.append("")
         out_lines.extend(footer)
-    path.write_text("\n".join(out_lines).rstrip() + "\n", encoding="utf-8", newline="\n")
+    return "\n".join(out_lines).rstrip() + "\n"
+
+
+def _apply_atomic_text_writes(writes: dict[Path, str]) -> None:
+    """全内容を一時 file へ準備してから置換し、途中失敗時は rollback する。"""
+    prepared: dict[Path, Path] = {}
+    originals: dict[Path, bytes | None] = {}
+    replaced: list[Path] = []
+    try:
+        for path, content in writes.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            originals[path] = path.read_bytes() if path.exists() else None
+            fd, temp_name = tempfile.mkstemp(
+                prefix=f".{path.name}.",
+                suffix=".repair-tmp",
+                dir=path.parent,
+            )
+            temp_path = Path(temp_name)
+            try:
+                with os.fdopen(
+                    fd,
+                    "w",
+                    encoding="utf-8",
+                    newline="\n",
+                ) as handle:
+                    handle.write(content)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+            except BaseException:
+                temp_path.unlink(missing_ok=True)
+                raise
+            prepared[path] = temp_path
+
+        for path, temp_path in prepared.items():
+            os.replace(temp_path, path)
+            replaced.append(path)
+    except BaseException:
+        for path in reversed(replaced):
+            original = originals[path]
+            if original is None:
+                path.unlink(missing_ok=True)
+                continue
+            fd, rollback_name = tempfile.mkstemp(
+                prefix=f".{path.name}.",
+                suffix=".rollback-tmp",
+                dir=path.parent,
+            )
+            rollback_path = Path(rollback_name)
+            try:
+                with os.fdopen(fd, "wb") as handle:
+                    handle.write(original)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.replace(rollback_path, path)
+            finally:
+                rollback_path.unlink(missing_ok=True)
+        raise
+    finally:
+        for temp_path in prepared.values():
+            temp_path.unlink(missing_ok=True)
 
 
 def _url_keys(url: str) -> set[str]:
@@ -627,170 +794,6 @@ def _url_keys(url: str) -> set[str]:
     if not value:
         return set()
     return {value, value.rstrip("/")}
-
-
-def _record_index_for_issue(ctx: RepairContext) -> dict[str, dict[str, object]]:
-    records: dict[str, dict[str, object]] = {}
-    paths = [ctx.repo_root / "data" / "articles.jsonl"]
-    records_dir = ctx.repo_root / "tmp" / "newsroom" / ctx.issue
-    if records_dir.exists():
-        paths.extend(sorted(records_dir.glob("*.records.jsonl")))
-    for path in paths:
-        if not path.exists():
-            continue
-        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
-            if not line.strip():
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(row, dict) or str(row.get("date") or "") != ctx.issue:
-                continue
-            for key in _url_keys(str(row.get("url") or "")):
-                records.setdefault(key, row)
-    return records
-
-
-def _category_id_from_artifact(rel: str) -> str | None:
-    normalized = _normalize_rel(rel)
-    for cat_id, info in CATEGORY_PATHS.items():
-        folder = str(info.get("digest_folder") or "")
-        if normalized.startswith(f"digest/{folder}/"):
-            return cat_id
-    return None
-
-
-def _default_category_thumb(cat_id: str) -> str:
-    return f"https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-{cat_id}.jpg"
-
-
-def _sync_record_thumb_files(ctx: RepairContext, urls: set[str], thumb: str) -> list[str]:
-    if not urls:
-        return []
-    changed: list[str] = []
-    paths = [ctx.repo_root / "data" / "articles.jsonl"]
-    records_dir = ctx.repo_root / "tmp" / "newsroom" / ctx.issue
-    if records_dir.exists():
-        paths.extend(sorted(records_dir.glob("*.records.jsonl")))
-    for path in paths:
-        if not path.exists():
-            continue
-        rows: list[dict[str, object]] = []
-        file_changed = False
-        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            if (
-                isinstance(row, dict)
-                and str(row.get("date") or "") == ctx.issue
-                and _url_keys(str(row.get("url") or "")) & urls
-                and not str(row.get("thumb") or "").strip()
-            ):
-                row["thumb"] = thumb
-                file_changed = True
-            rows.append(row)
-        if file_changed:
-            path.write_text(
-                "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
-                encoding="utf-8",
-                newline="\n",
-            )
-            changed.append(path.relative_to(ctx.repo_root).as_posix())
-    return changed
-
-
-def _has_japanese(text: str) -> bool:
-    return any("ぁ" <= c <= "ヿ" or "一" <= c <= "鿿" for c in text)
-
-
-def _sync_digest_block_from_record(
-    block: list[str], record: dict[str, object], *, fallback_thumb: str = ""
-) -> tuple[list[str], bool, str]:
-    title_ja = str(record.get("title_ja") or "").strip()
-    thumb = str(record.get("thumb") or "").strip() or fallback_thumb
-    if thumb.casefold() == "null":
-        thumb = fallback_thumb
-    changed = False
-    out = block[:]
-    if title_ja and _has_japanese(title_ja):
-        for idx, line in enumerate(out):
-            match = re.match(r"^(###\s*(?:\[\d+\]\s*)?)(.+?)\s*$", line)
-            if not match:
-                continue
-            current_title = match.group(2).strip()
-            if current_title != title_ja:
-                out[idx] = f"{match.group(1)}{title_ja}"
-                changed = True
-            break
-    if thumb:
-        thumb_idx = next((idx for idx, line in enumerate(out) if line.strip().startswith("![thumb](")), None)
-        thumb_line = f"![thumb]({thumb})"
-        if thumb_idx is not None:
-            if out[thumb_idx].strip() != thumb_line:
-                out[thumb_idx] = thumb_line
-                changed = True
-        else:
-            insert_at = next((idx + 1 for idx, line in enumerate(out) if line.startswith("#cat/")), None)
-            if insert_at is None:
-                insert_at = next((idx + 1 for idx, line in enumerate(out) if "🔗 [元記事]" in line), len(out))
-            addition = ["", thumb_line]
-            if insert_at < len(out) and out[insert_at].strip():
-                addition.append("")
-            out[insert_at:insert_at] = addition
-            changed = True
-    return out, changed, thumb
-
-
-def _repair_digest_record_sync(ctx: RepairContext) -> RepairResult:
-    record_by_url = _record_index_for_issue(ctx)
-    if not record_by_url:
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message="missing issue records")
-    changed_artifacts: list[str] = []
-    messages: list[str] = []
-    record_thumb_updates: dict[str, set[str]] = {}
-    for artifact in ctx.artifacts:
-        rel = _normalize_rel(artifact)
-        if not rel.startswith("digest/"):
-            continue
-        path = ctx.repo_root / rel
-        if not path.exists() or path.is_dir():
-            continue
-        prefix, blocks, footer = _split_digest_blocks(path.read_text(encoding="utf-8-sig", errors="replace"))
-        if not blocks:
-            continue
-        new_blocks: list[list[str]] = []
-        file_changed = False
-        for block in blocks:
-            url = ""
-            for line in block:
-                match = re.search(r"🔗\s*\[元記事\]\(([^)]+)\)", line)
-                if match:
-                    url = match.group(1)
-                    break
-            record = next((record_by_url[key] for key in _url_keys(url) if key in record_by_url), None)
-            if record is None:
-                new_blocks.append(block)
-                continue
-            cat_id = _category_id_from_artifact(rel)
-            fallback_thumb = _default_category_thumb(cat_id) if cat_id else ""
-            new_block, block_changed, applied_thumb = _sync_digest_block_from_record(
-                block, record, fallback_thumb=fallback_thumb
-            )
-            if applied_thumb and not str(record.get("thumb") or "").strip():
-                record_thumb_updates.setdefault(applied_thumb, set()).update(_url_keys(url))
-            file_changed = file_changed or block_changed
-            new_blocks.append(new_block)
-        if file_changed:
-            _write_digest_blocks(path, prefix, new_blocks, footer)
-            changed_artifacts.append(rel)
-            messages.append(f"{rel}: synced title_ja/thumb from records")
-    for thumb, urls in record_thumb_updates.items():
-        changed_artifacts.extend(_sync_record_thumb_files(ctx, urls, thumb))
-    if not changed_artifacts:
-        return RepairResult(ctx.handler_id, NOOP_STATUS, False, tuple(ctx.artifacts), "digest records already synced")
-    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, tuple(changed_artifacts), "; ".join(messages))
 
 
 def _normalize_digest_card_separators(ctx: RepairContext) -> tuple[list[str], list[str]]:
@@ -941,97 +944,436 @@ def _read_jsonl_records(path: Path) -> list[dict[str, object]]:
     return rows
 
 
-def _repair_digest_articles_reconcile(ctx: RepairContext) -> RepairResult:
-    """現在 run の reporter records を articles.jsonl へ同期する。
-
-    digest md は reporter artifact から生成済みなので、append 漏れだけなら
-    current manifest が指す records を正本として data/articles.jsonl に補う。
-    """
-    manifest = ctx.repo_root / "build" / "reporter-artifacts" / ctx.issue / "editor-input-manifest.json"
+def _current_reporter_records(
+    ctx: RepairContext,
+) -> tuple[dict[str, tuple[dict[str, object], str]], tuple[str, ...]] | None:
+    """current reporter URL -> (record, artifact) と利用 artifact を返す。"""
+    manifest_rel = f"build/reporter-artifacts/{ctx.issue}/editor-input-manifest.json"
+    manifest = ctx.repo_root / manifest_rel
     if not manifest.exists():
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"missing artifact: {manifest}")
+        return None
     try:
         data = json.loads(manifest.read_text(encoding="utf-8-sig"))
-    except json.JSONDecodeError as exc:
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"manifest JSON invalid: {exc.msg}")
-
+    except json.JSONDecodeError:
+        return None
     artifact_paths = data.get("reporter_artifacts")
     if not isinstance(artifact_paths, list) or not artifact_paths:
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message="manifest reporter_artifacts missing")
+        return None
 
-    current_records: list[dict[str, object]] = []
-    used_artifacts: list[str] = []
+    records: dict[str, tuple[dict[str, object], str]] = {}
+    used_artifacts: list[str] = [manifest_rel]
     for rel in artifact_paths:
         if not isinstance(rel, str) or not rel.strip():
             continue
-        normalized = _normalize_rel(rel)
-        path = ctx.repo_root / normalized
+        try:
+            normalized, path = resolve_reporter_artifact_path(
+                ctx.repo_root,
+                ctx.issue,
+                rel,
+            )
+        except ValueError as exc:
+            raise ReporterArtifactScopeError(str(exc)) from exc
         if not path.exists():
             continue
         used_artifacts.append(normalized)
         for row in _read_jsonl_records(path):
-            if str(row.get("date") or "") == ctx.issue and _record_url(row):
-                current_records.append(row)
+            if str(row.get("date") or "") != ctx.issue:
+                continue
+            url = _record_url(row)
+            if url:
+                records[url] = (row, normalized)
+    return records, tuple(dict.fromkeys(used_artifacts))
+
+
+def _article_records(ctx: RepairContext) -> dict[str, dict[str, object]]:
+    return {
+        _record_url(row): row
+        for row in _read_jsonl_records(ctx.repo_root / "data" / "articles.jsonl")
+        if str(row.get("date") or "") == ctx.issue and _record_url(row)
+    }
+
+
+def _digest_card_block(row: dict[str, object]) -> list[str]:
+    """reporter/current articles record を既存 digest card 形式へ変換する。"""
+    raw_score = row.get("score", 70)
+    try:
+        score = str(int(raw_score))
+    except (TypeError, ValueError):
+        score = "70"
+    title = str(row.get("title_ja") or row.get("title") or "").strip()
+    source = str(row.get("source") or "").strip()
+    published = str(
+        row.get("published_date")
+        or row.get("published")
+        or row.get("date")
+        or ""
+    ).strip()
+    published_time = str(row.get("time") or "").strip()
+    if published_time and published_time not in published:
+        published = f"{published} {published_time}".strip()
+    url = _record_url(row)
+    thumb = str(row.get("thumb") or row.get("thumbnail") or "").strip()
+    summary = str(row.get("summary") or "").strip()
+    tags = row.get("tags")
+    tag_values = [
+        str(tag).strip().lstrip("#")
+        for tag in tags
+        if str(tag).strip()
+    ] if isinstance(tags, list) else []
+    bullets = row.get("bullets")
+    bullet_values = [
+        str(bullet).strip()
+        for bullet in bullets
+        if str(bullet).strip()
+    ] if isinstance(bullets, list) else []
+
+    lines = [
+        f"### [{score}] {title}",
+        "",
+        f"📅 {published} · 📰 {source} · 🔗 [元記事]({url})",
+        "",
+        " ".join(f"#{tag}" for tag in tag_values),
+        "",
+        f"![thumb]({thumb})",
+        "",
+    ]
+    if bullet_values:
+        lines.extend(f"- {bullet}" for bullet in bullet_values)
+    else:
+        lines.append(f"- 【事実・概要】：{summary}")
+    return lines
+
+
+def _digest_card_record_missing_fields(row: dict[str, object]) -> list[str]:
+    required: dict[str, bool] = {
+        "title/title_ja": bool(str(row.get("title_ja") or row.get("title") or "").strip()),
+        "source": bool(str(row.get("source") or "").strip()),
+        "published": bool(
+            str(
+                row.get("published_date")
+                or row.get("published")
+                or row.get("date")
+                or ""
+            ).strip()
+        ),
+        "thumb": bool(str(row.get("thumb") or row.get("thumbnail") or "").strip()),
+        "summary": bool(str(row.get("summary") or "").strip()),
+        "url": bool(_record_url(row)),
+        "score": row.get("score") is not None,
+        "tag": isinstance(row.get("tags"), list) and bool(row.get("tags")),
+    }
+    return [name for name, present in required.items() if not present]
+
+
+def _block_score(block: list[str]) -> int:
+    if not block:
+        return -1
+    match = re.match(r"^\s*###\s+\[(\d+)\]", block[0])
+    return int(match.group(1)) if match else -1
+
+
+def _repair_digest_card_insert(ctx: RepairContext) -> RepairResult:
+    """articles_only record から category digest card を生成し score 順へ挿入する。"""
+    result = reconcile(
+        ctx.repo_root / "digest",
+        ctx.repo_root / "data" / "articles.jsonl",
+        ctx.issue,
+    )
+    issues = result["articles_only"]
+    if not issues:
+        return RepairResult(
+            ctx.handler_id,
+            NOT_APPLICABLE_STATUS,
+            False,
+            message="same-gate has no articles_only issue",
+        )
+
+    try:
+        current = _current_reporter_records(ctx)
+    except ReporterArtifactScopeError as exc:
+        return RepairResult(
+            ctx.handler_id,
+            ARTICLES_ONLY_INCOMPLETE_STATUS,
+            False,
+            message=str(exc),
+        )
+    if current is None:
+        records = {
+            url: (row, "data/articles.jsonl")
+            for url, row in _article_records(ctx).items()
+        }
+        used_artifacts: tuple[str, ...] = ("data/articles.jsonl",)
+    else:
+        records, used_artifacts = current
+
+    pending: dict[str, list[dict[str, object]]] = {}
+    for issue in issues:
+        url = str(issue.get("url") or "").strip().rstrip("/")
+        entry = records.get(url)
+        if entry is None:
+            return RepairResult(
+                ctx.handler_id,
+                ARTICLES_ONLY_INCOMPLETE_STATUS,
+                False,
+                tuple(used_artifacts),
+                f"articles_only record evidence missing: {url}",
+            )
+        row, _ = entry
+        missing = _digest_card_record_missing_fields(row)
+        if missing:
+            return RepairResult(
+                ctx.handler_id,
+                ARTICLES_ONLY_INCOMPLETE_STATUS,
+                False,
+                tuple(used_artifacts),
+                f"articles_only record incomplete url={url}: {', '.join(missing)}",
+            )
+        target = str(
+            (issue.get("evidence") or {}).get("target_digest_path")
+            or issue.get("artifact_paths", [""])[0]
+        )
+        try:
+            target_rel, _ = _resolve_repo_artifact(ctx.repo_root, target)
+        except ValueError as exc:
+            return RepairResult(
+                ctx.handler_id,
+                ARTICLES_ONLY_INCOMPLETE_STATUS,
+                False,
+                tuple(used_artifacts),
+                str(exc),
+            )
+        if not target_rel.startswith("digest/"):
+            return RepairResult(
+                ctx.handler_id,
+                ARTICLES_ONLY_INCOMPLETE_STATUS,
+                False,
+                tuple(used_artifacts),
+                f"target digest outside digest scope: {target_rel}",
+            )
+        pending.setdefault(target_rel, []).append(row)
+
+    changed_artifacts: list[str] = []
+    planned_writes: dict[Path, str] = {}
+    for rel, rows in pending.items():
+        _, path = _resolve_repo_artifact(ctx.repo_root, rel)
+        if not path.exists():
+            return RepairResult(
+                ctx.handler_id,
+                ARTICLES_ONLY_INCOMPLETE_STATUS,
+                False,
+                tuple(used_artifacts),
+                f"target digest missing: {rel}",
+            )
+        prefix, blocks, footer = _split_digest_blocks(
+            path.read_text(encoding="utf-8-sig", errors="replace")
+        )
+        existing_urls = {
+            match.group(1).strip().rstrip("/")
+            for block in blocks
+            for match in [re.search(r"\[元記事\]\((https?://[^)\s]+)\)", "\n".join(block))]
+            if match
+        }
+        new_blocks = [
+            _digest_card_block(row)
+            for row in rows
+            if _record_url(row) not in existing_urls
+        ]
+        if not new_blocks:
+            continue
+        combined = [*blocks, *new_blocks]
+        combined.sort(key=_block_score, reverse=True)
+        planned_writes[path] = _render_digest_blocks(
+            prefix,
+            combined,
+            footer,
+        )
+        changed_artifacts.append(rel)
+
+    if not changed_artifacts:
+        return RepairResult(
+            ctx.handler_id,
+            NOT_APPLICABLE_STATUS,
+            False,
+            tuple(used_artifacts),
+            "articles_only issue remained but no card was inserted",
+        )
+    _apply_atomic_text_writes(planned_writes)
+    return RepairResult(
+        ctx.handler_id,
+        REPAIRED_STATUS,
+        True,
+        tuple(dict.fromkeys([*changed_artifacts, *used_artifacts])),
+        f"autonomous_recovery: inserted_digest_cards={len(issues)}",
+    )
+
+
+def _repair_digest_articles_digest_only(ctx: RepairContext) -> RepairResult:
+    """現在 run の reporter records を articles.jsonl へ同期する。
+
+    current reporter に存在する card は append 漏れとして articles.jsonl へ戻す。
+    current reporter に存在しない card は current manifest が完全な場合だけ旧 run
+    残存と判定して digest から除去する。manifest が無い場合は typed Red にする。
+    """
+    gate_result = reconcile(
+        ctx.repo_root / "digest",
+        ctx.repo_root / "data" / "articles.jsonl",
+        ctx.issue,
+    )
+    issues = gate_result["digest_only"]
+    if not issues:
+        return RepairResult(
+            ctx.handler_id,
+            NOT_APPLICABLE_STATUS,
+            False,
+            message="same-gate has no digest_only issue",
+        )
+    try:
+        current = _current_reporter_records(ctx)
+    except ReporterArtifactScopeError as exc:
+        return RepairResult(
+            ctx.handler_id,
+            DIGEST_ONLY_AMBIGUOUS_STATUS,
+            False,
+            message=str(exc),
+        )
+    if current is None:
+        return RepairResult(
+            ctx.handler_id,
+            DIGEST_ONLY_AMBIGUOUS_STATUS,
+            False,
+            message="current reporter manifest is required to distinguish append omission from stale digest",
+        )
+    current_records, used_artifacts = current
     if not current_records:
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, tuple(used_artifacts), "no current reporter records")
+        return RepairResult(
+            ctx.handler_id,
+            DIGEST_ONLY_AMBIGUOUS_STATUS,
+            False,
+            tuple(used_artifacts),
+            "current reporter manifest has no usable records",
+        )
 
     articles_path = ctx.repo_root / "data" / "articles.jsonl"
-    articles_path.parent.mkdir(parents=True, exist_ok=True)
     existing_rows = _read_jsonl_records(articles_path)
     existing_keys = {
         (str(row.get("date") or ""), _record_url(row))
         for row in existing_rows
         if _record_url(row)
     }
+    issue_urls = {
+        str(issue.get("url") or "").strip().rstrip("/")
+        for issue in issues
+    }
     missing_rows = [
         row
-        for row in current_records
-        if (str(row.get("date") or ""), _record_url(row)) not in existing_keys
+        for url, (row, _) in current_records.items()
+        if url in issue_urls
+        and (str(row.get("date") or ""), url) not in existing_keys
     ]
-    if not missing_rows:
-        return RepairResult(ctx.handler_id, NOOP_STATUS, False, ("data/articles.jsonl", *tuple(used_artifacts)))
+    for row in missing_rows:
+        missing = _digest_card_record_missing_fields(row)
+        if missing:
+            return RepairResult(
+                ctx.handler_id,
+                DIGEST_ONLY_AMBIGUOUS_STATUS,
+                False,
+                tuple(used_artifacts),
+                (
+                    "current reporter record incomplete "
+                    f"url={_record_url(row)}: {', '.join(missing)}"
+                ),
+            )
 
-    with articles_path.open("a", encoding="utf-8", newline="\n") as f:
-        for row in missing_rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    changed_artifacts: list[str] = []
+    planned_writes: dict[Path, str] = {}
+    if missing_rows:
+        existing_text = (
+            articles_path.read_text(encoding="utf-8-sig")
+            if articles_path.exists()
+            else ""
+        )
+        if existing_text and not existing_text.endswith("\n"):
+            existing_text += "\n"
+        appended = "".join(
+            json.dumps(row, ensure_ascii=False) + "\n"
+            for row in missing_rows
+        )
+        planned_writes[articles_path] = existing_text + appended
+        changed_artifacts.append("data/articles.jsonl")
+
+    stale_by_target: dict[str, set[str]] = {}
+    for issue in issues:
+        url = str(issue.get("url") or "").strip().rstrip("/")
+        if url in current_records:
+            continue
+        evidence = issue.get("evidence") or {}
+        target = _normalize_rel(str(evidence.get("target_digest_path") or ""))
+        stale_by_target.setdefault(target, set()).add(url)
+
+    removed_count = 0
+    for rel, stale_urls in stale_by_target.items():
+        try:
+            resolved_rel, path = _resolve_repo_artifact(
+                ctx.repo_root,
+                rel,
+            )
+        except ValueError as exc:
+            return RepairResult(
+                ctx.handler_id,
+                DIGEST_ONLY_AMBIGUOUS_STATUS,
+                False,
+                tuple(used_artifacts),
+                str(exc),
+            )
+        if (
+            not resolved_rel.startswith("digest/")
+            or not path.exists()
+        ):
+            return RepairResult(
+                ctx.handler_id,
+                DIGEST_ONLY_AMBIGUOUS_STATUS,
+                False,
+                tuple(used_artifacts),
+                f"stale digest target missing: {rel or '<empty>'}",
+            )
+        prefix, blocks, footer = _split_digest_blocks(
+            path.read_text(encoding="utf-8-sig", errors="replace")
+        )
+        kept: list[list[str]] = []
+        for block in blocks:
+            body = "\n".join(block)
+            if any(f"[元記事]({url})" in body for url in stale_urls):
+                removed_count += 1
+                continue
+            kept.append(block)
+        if len(kept) != len(blocks):
+            planned_writes[path] = _render_digest_blocks(
+                prefix,
+                kept,
+                footer,
+            )
+            changed_artifacts.append(resolved_rel)
+
+    if not changed_artifacts:
+        return RepairResult(
+            ctx.handler_id,
+            DIGEST_ONLY_AMBIGUOUS_STATUS,
+            False,
+            tuple(used_artifacts),
+            "digest_only classification produced no evidence-backed mutation",
+        )
+    _apply_atomic_text_writes(planned_writes)
     return RepairResult(
         ctx.handler_id,
         REPAIRED_STATUS,
         True,
-        ("data/articles.jsonl", *tuple(used_artifacts)),
-        f"autonomous_recovery: appended_current_reporter_records={len(missing_rows)}",
+        tuple(dict.fromkeys([*changed_artifacts, *used_artifacts])),
+        (
+            "autonomous_recovery: "
+            f"appended_current_reporter_records={len(missing_rows)}; "
+            f"removed_stale_digest_cards={removed_count}"
+        ),
     )
-
-
-def _blocked_ambiguous(ctx: RepairContext) -> RepairResult:
-    return RepairResult(
-        ctx.handler_id,
-        NOT_APPLICABLE_STATUS,
-        False,
-        message="deterministic handler has no applicable local patch for this fixture; broad regeneration is forbidden",
-    )
-
-
-def _repair_followup_review_note(ctx: RepairContext) -> RepairResult:
-    path = ctx.repo_root / "data" / "articles.jsonl"
-    if not path.exists():
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
-    rows: list[dict] = []
-    changed = False
-    for raw in path.read_text(encoding="utf-8-sig").splitlines():
-        if not raw.strip():
-            continue
-        row = json.loads(raw)
-        if str(row.get("date") or "") == ctx.issue and row.get("matched_with") and not str(row.get("followup_review_note") or "").strip():
-            summary = str(row.get("summary") or "").strip()
-            if summary:
-                row["followup_review_note"] = f"旧報との差分として確認した新材料: {summary}"
-                changed = True
-        rows.append(row)
-    if not changed:
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
-    path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8", newline="\n")
-    return RepairResult(ctx.handler_id, REPAIRED_STATUS, True, ("data/articles.jsonl",))
 
 
 REGISTRY: dict[str, RepairHandler] = {
@@ -1048,6 +1390,7 @@ REGISTRY: dict[str, RepairHandler] = {
         allowed_artifacts=("digest/Summary/{date}.md",),
         verify_gate="generation-quality",
         repair=_repair_summary_hero,
+        supported_verify_gates=("generation-quality", "daily-quality"),
     ),
     "summary-reflection-patch": RepairHandler(
         handler_id="summary-reflection-patch",
@@ -1062,13 +1405,7 @@ REGISTRY: dict[str, RepairHandler] = {
         allowed_artifacts=("digest/{category}/{date}-{category}.md",),
         verify_gate="generation-quality",
         repair=_repair_category_card_emphasis,
-    ),
-    "audio-script-length-patch": RepairHandler(
-        handler_id="audio-script-length-patch",
-        kind="deterministic",
-        allowed_artifacts=("digest/Summary/{date}-audio-script.md",),
-        verify_gate="generation-quality",
-        repair=_repair_audio_script_length,
+        supported_verify_gates=("generation-quality", "daily-quality"),
     ),
     "search-audit-metadata-patch": RepairHandler(
         handler_id="search-audit-metadata-patch",
@@ -1076,13 +1413,7 @@ REGISTRY: dict[str, RepairHandler] = {
         allowed_artifacts=("data/search_audit/{date}",),
         verify_gate="daily-quality",
         repair=_repair_search_audit_metadata,
-    ),
-    "followup-review-note-patch": RepairHandler(
-        handler_id="followup-review-note-patch",
-        kind="deterministic",
-        allowed_artifacts=("data/articles.jsonl",),
-        verify_gate="daily-quality",
-        repair=_repair_followup_review_note,
+        supported_verify_gates=("daily-quality", "deepdive-required"),
     ),
     "url-quarantine-refill": RepairHandler(
         handler_id="url-quarantine-refill",
@@ -1093,9 +1424,11 @@ REGISTRY: dict[str, RepairHandler] = {
             "digest/Summary/{date}.md",
             "digest/{category}/{date}-{category}.md",
             "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/quarantine/{date}/bad-urls.json",
         ),
         verify_gate="url-liveness",
         repair=_repair_url_quarantine_refill,
+        supported_verify_gates=("url-liveness", "daily-quality"),
     ),
     "date-evidence-source-patch": RepairHandler(
         handler_id="date-evidence-source-patch",
@@ -1104,15 +1437,8 @@ REGISTRY: dict[str, RepairHandler] = {
         verify_gate="generation-quality",
         repair=_repair_date_evidence,
     ),
-    "deepdive-structure-patch": RepairHandler(
-        handler_id="deepdive-structure-patch",
-        kind="deterministic",
-        allowed_artifacts=("digest/DeepDive/{date}.md",),
-        verify_gate="generation-quality",
-        repair=_blocked_ambiguous,
-    ),
-    "digest-articles-reconcile-patch": RepairHandler(
-        handler_id="digest-articles-reconcile-patch",
+    "digest-articles-digest-only-patch": RepairHandler(
+        handler_id="digest-articles-digest-only-patch",
         kind="deterministic",
         allowed_artifacts=(
             "digest",
@@ -1125,18 +1451,20 @@ REGISTRY: dict[str, RepairHandler] = {
             "build/reporter-artifacts/{date}/editor-input-manifest.json",
         ),
         verify_gate="digest-articles-reconcile",
-        repair=_repair_digest_articles_reconcile,
+        repair=_repair_digest_articles_digest_only,
     ),
-    "digest-record-sync-patch": RepairHandler(
-        handler_id="digest-record-sync-patch",
+    "digest-card-insert-patch": RepairHandler(
+        handler_id="digest-card-insert-patch",
         kind="deterministic",
         allowed_artifacts=(
+            "digest",
             "digest/{category}/{date}-{category}.md",
-            "tmp/newsroom/{date}/{category}.records.jsonl",
             "data/articles.jsonl",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
         ),
-        verify_gate="daily-quality",
-        repair=_repair_digest_record_sync,
+        verify_gate="digest-articles-reconcile",
+        repair=_repair_digest_card_insert,
     ),
     "record-title-ja-patch": RepairHandler(
         handler_id="record-title-ja-patch",
@@ -1159,20 +1487,6 @@ REGISTRY: dict[str, RepairHandler] = {
         verify_gate="record-schema",
         repair=_repair_record_thumb,
     ),
-    "public-home-regenerate": RepairHandler(
-        handler_id="public-home-regenerate",
-        kind="deterministic",
-        allowed_artifacts=("docs/index.html", "digest/Summary/{date}.md"),
-        verify_gate="public-html",
-        repair=_blocked_ambiguous,
-    ),
-    "published-docs-regenerate": RepairHandler(
-        handler_id="published-docs-regenerate",
-        kind="deterministic",
-        allowed_artifacts=("docs/{date}/index.html", "docs/deepdive/{date}/index.html"),
-        verify_gate="public-html",
-        repair=_blocked_ambiguous,
-    ),
 }
 
 
@@ -1189,10 +1503,35 @@ def metadata(handler_id: str) -> dict[str, object] | None:
         "handler_kind": handler.kind,
         "allowed_artifacts": list(handler.allowed_artifacts),
         "verify_gate": handler.verify_gate,
+        "supported_verify_gates": list(
+            handler.supported_verify_gates or (handler.verify_gate,)
+        ),
     }
 
 
+def _audit_current_repair_system():
+    from tools.repair_system_completeness import audit_repair_system
+
+    return audit_repair_system()
+
+
 def repair_with_registry(ctx: RepairContext) -> RepairResult:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", ctx.issue):
+        return RepairResult(
+            ctx.handler_id,
+            SCOPE_VIOLATION_STATUS,
+            False,
+            message=f"invalid issue date: {ctx.issue}",
+        )
+    try:
+        date.fromisoformat(ctx.issue)
+    except ValueError:
+        return RepairResult(
+            ctx.handler_id,
+            SCOPE_VIOLATION_STATUS,
+            False,
+            message=f"invalid issue date: {ctx.issue}",
+        )
     handler = find_handler(ctx.handler_id)
     if handler is None:
         return RepairResult(ctx.handler_id, UNIMPLEMENTED_STATUS, False)
@@ -1268,6 +1607,26 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "repair":
+        completeness = _audit_current_repair_system()
+        if not completeness.ok:
+            print(
+                json.dumps(
+                    {
+                        "handler_id": args.handler_id,
+                        "status": REPAIR_SYSTEM_INCOMPLETE_STATUS,
+                        "changed": False,
+                        "artifacts": [],
+                        "message": "repair completeness audit failed",
+                        "findings": [
+                            {"code": finding.code, "detail": finding.detail}
+                            for finding in completeness.findings
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 1
         result = repair_with_registry(
             RepairContext(
                 repo_root=args.repo_root,
@@ -1277,7 +1636,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         print(json.dumps(_result_payload(result), ensure_ascii=False, indent=2))
-        return 0 if result.status in {REPAIRED_STATUS, NOOP_STATUS} else 1
+        return 0 if result.status == REPAIRED_STATUS else 1
     raise AssertionError(args.cmd)
 
 

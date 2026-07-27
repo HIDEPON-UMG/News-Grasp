@@ -412,6 +412,54 @@ def test_product_constitution_keeps_markdown_structure_and_links_minimal() -> No
     assert text.count("docs/spec.md") >= 1
 
 
+def test_product_constitution_binds_directional_digest_repair_to_quality_matrix() -> None:
+    """reconcile の検出方向・handler 能力・runner 成功条件を spec に固定する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "digest_articles_digest_only",
+        "digest_articles_articles_only",
+        "digest-articles-digest-only-patch",
+        "digest-card-insert-patch",
+        "blocked_digest_only_ambiguous",
+        "blocked_articles_only_record_incomplete",
+        "deterministic handler として宣言する row は `_blocked_ambiguous`",
+        "`noop` / `not_applicable` を repair 成功として扱わない",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_binds_horizontal_failure_modes_and_matrix_ownership() -> None:
+    """digest 以外の片方向潰しと matrix/registry drift も spec 契約に固定する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "`thumb_missing` / `thumb_invalid`",
+        "`search_audit_coverage_terms_missing` / `search_audit_queries_recoverable`",
+        "`audio_script_missing` / `audio_script_quality_invalid`",
+        "matrix が所有する `verify_gate` / `allowed_artifacts`",
+        "registry metadata で上書きせず",
+        "legacy の方向不明 code は explicit typed Red",
+    ]:
+        assert phrase in text
+
+
+def test_product_constitution_binds_repair_closed_world_completeness_gate() -> None:
+    """完全性 claim を ad hoc 棚卸しでなく source hash 付き単一 gate に束縛する。"""
+    text = _read(SPEC)
+
+    for phrase in [
+        "tools.repair_system_completeness",
+        "supported_verify_gates",
+        "orphan_repair_implementation",
+        "source_hashes",
+        "validator issue code",
+        "registry handler",
+        "historical failure corpus",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_is_referenced_from_repo_entrypoints() -> None:
     readme = _read(README)
     agents = _read(AGENTS)

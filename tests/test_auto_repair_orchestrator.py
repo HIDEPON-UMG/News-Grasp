@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
+import tools.auto_repair_orchestrator as orchestrator_module
 from tools.auto_repair_orchestrator import main
 
 
@@ -17,6 +19,42 @@ def test_classify_reads_gate_output_file(tmp_path, capsys) -> None:
     assert payload["handler"] == "deterministic-repair"
     assert payload["handler_id"] == "url-quarantine-refill"
     assert payload["failure_status"] == "blocked_refill_unresolved"
+
+
+def test_classify_fails_closed_when_repair_completeness_audit_is_not_green(
+    monkeypatch,
+    capsys,
+) -> None:
+    monkeypatch.setattr(
+        orchestrator_module,
+        "_audit_current_repair_system",
+        lambda: SimpleNamespace(
+            ok=False,
+            findings=(
+                SimpleNamespace(
+                    code="handler_verify_gate_mismatch",
+                    detail="daily-quality:thumb_invalid",
+                ),
+            ),
+        ),
+    )
+
+    rc = main(
+        [
+            "classify",
+            "--gate-id",
+            "daily-quality",
+            "--output",
+            "thumbnail is missing",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["action"] == "fatal"
+    assert payload["issue_code"] == "repair_system_incomplete"
+    assert payload["failure_status"] == "blocked_repair_system_incomplete"
+    assert payload["findings"][0]["code"] == "handler_verify_gate_mismatch"
 
 
 def test_classify_routes_summary_emphasis_to_deterministic_handler(capsys) -> None:
@@ -67,6 +105,46 @@ def test_classify_emits_ordered_issue_ledger_and_selected_artifacts(capsys) -> N
         "articles_issue_empty",
         "audio_script_quality_invalid",
     ]
+
+
+def test_digest_reconcile_ledger_preserves_direction_and_selected_artifacts(capsys) -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "digest-articles-reconcile",
+            "issues": [
+                {
+                    "issue_code": "digest_articles_articles_only",
+                    "direction": "articles_only",
+                    "issue_date": "2026-07-27",
+                    "category": "AI",
+                    "artifact_paths": [
+                        "digest/AI/2026-07-27-AI.md",
+                        "tmp/newsroom/2026-07-27/ai.records.jsonl",
+                    ],
+                    "evidence": {
+                        "direction": "articles_only",
+                        "url": "https://example.com/missing",
+                        "target_digest_path": "digest/AI/2026-07-27-AI.md",
+                    },
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    rc = main(["classify", "--gate-id", "digest-articles-reconcile", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["issue_code"] == "digest_articles_articles_only"
+    assert payload["evidence"]["direction"] == "articles_only"
+    assert payload["selected_artifacts"] == [
+        "digest/AI/2026-07-27-AI.md",
+        "tmp/newsroom/2026-07-27/ai.records.jsonl",
+    ]
+    assert payload["issues"][0]["direction"] == "articles_only"
+    assert payload["issues"][0]["evidence"]["target_digest_path"].endswith("2026-07-27-AI.md")
 
 
 def test_classify_routes_search_audit_count_mismatch_to_metadata_patch(capsys) -> None:
@@ -173,6 +251,40 @@ def test_classify_routes_audio_script_quality_to_targeted_rewrite(capsys) -> Non
     assert payload["handler"] == "targeted-repair"
     assert payload["handler_id"] == "audio-script-depth-rewrite"
     assert payload["failure_status"] == "blocked_audio_script_rewrite_failed"
+
+
+def test_matrix_scope_and_verify_gate_are_not_overwritten_by_shared_registry_handler() -> None:
+    """matrix が所有する gate/scope を共有 handler metadata で広げない。"""
+    from tools.auto_repair_orchestrator import classify
+
+    daily_payload = classify(
+        "daily-quality",
+        json.dumps(
+            {
+                "ok": False,
+                "issues": [
+                    {
+                        "issue_code": "category_card_emphasis_missing",
+                        "issue_date": "2026-07-22",
+                        "artifact_paths": ["digest/AI/2026-07-22-AI.md"],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+    )
+    record_payload = classify(
+        "record-schema",
+        "line 10: 必須キー欠落: 'thumb' (title='missing')",
+    )
+
+    assert daily_payload["verify_gate"] == "daily-quality"
+    assert daily_payload["allowed_artifacts"] == ["digest/{category}/{date}-{category}.md"]
+    assert record_payload["verify_gate"] == "record-schema"
+    assert record_payload["allowed_artifacts"] == [
+        "data/articles.jsonl",
+        "data/search_audit/{date}",
+    ]
 
 
 def test_classify_pytest_static_failure_is_not_retry_budget(capsys) -> None:

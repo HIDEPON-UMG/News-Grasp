@@ -428,7 +428,7 @@ def test_generation_quality_rejects_zero_issue_articles(tmp_path: Path) -> None:
     assert any(err.code == "articles_issue_empty" for err in result.errors)
 
 
-def test_generation_quality_rejects_missing_date_evidence_source(tmp_path: Path) -> None:
+def test_generation_quality_marks_date_evidence_source_recoverable_from_published_date(tmp_path: Path) -> None:
     _write_complete_fixture(tmp_path)
     records = []
     for line in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8").splitlines():
@@ -441,11 +441,27 @@ def test_generation_quality_rejects_missing_date_evidence_source(tmp_path: Path)
 
     assert result.exit_code == 1
     assert any(
-        err.code == "date_evidence_source_missing"
+        err.code == "date_evidence_source_recoverable"
         and err.artifact == "data/articles.jsonl"
         and err.retryable is True
         for err in result.errors
     )
+
+
+def test_generation_quality_blocks_date_evidence_source_without_source_evidence(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    records = []
+    for line in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8").splitlines():
+        rec = json.loads(line)
+        rec.pop("date_evidence_source", None)
+        rec.pop("published", None)
+        rec.pop("published_date", None)
+        records.append(json.dumps(rec, ensure_ascii=False))
+    (tmp_path / "data" / "articles.jsonl").write_text("\n".join(records) + "\n", encoding="utf-8")
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert any(err.code == "date_evidence_source_missing" for err in result.errors)
 
 
 def test_generation_quality_rejects_category_article_without_body(tmp_path: Path) -> None:

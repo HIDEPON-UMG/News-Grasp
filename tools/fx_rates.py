@@ -6,6 +6,7 @@ ExchangeRate-API Open endpoint は no-key だが attribution required のため�
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -77,6 +78,12 @@ def write_snapshot(payload: dict[str, Any], path: Path = DEFAULT_SNAPSHOT) -> No
 
 def get_fx_panel(*, snapshot_path: Path = DEFAULT_SNAPSHOT, timeout: float = 4.0) -> dict[str, Any]:
     """API、snapshot、静的 fallback の順に FX hero panel context を返す。"""
+    if os.environ.get("NEWS_GRASP_SKIP_URL_CHECK") == "1":
+        try:
+            return build_fx_panel(read_snapshot(snapshot_path), source="snapshot", has_provider_data=True)
+        except FxRateError:
+            return build_fx_panel(STATIC_FALLBACK, source="fallback", has_provider_data=False)
+
     try:
         payload = fetch_fx_rates(timeout=timeout)
         write_snapshot(payload, snapshot_path)

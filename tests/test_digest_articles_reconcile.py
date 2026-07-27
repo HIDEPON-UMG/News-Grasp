@@ -13,7 +13,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.validate_digest_articles_reconcile import main, reconcile
+import pytest
+
+from tools.validate_digest_articles_reconcile import (
+    current_reporter_records_for_issue,
+    main,
+    reconcile,
+    resolve_reporter_artifact_path,
+)
+
+
+def _urls(result: dict, direction: str) -> list[str]:
+    return [row["url"] for row in result[direction]]
 
 
 def _write_digest(digest_dir: Path, genre: str, issue_date: str, urls: list[str]) -> None:
@@ -29,6 +40,121 @@ def _write_digest(digest_dir: Path, genre: str, issue_date: str, urls: list[str]
     d = digest_dir / genre
     d.mkdir(parents=True, exist_ok=True)
     (d / f"{issue_date}-{genre}.md").write_text(body, encoding="utf-8")
+
+
+def test_current_reporter_records_rejects_manifest_path_outside_repo(
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-27"
+    manifest = (
+        tmp_path
+        / "build"
+        / "reporter-artifacts"
+        / issue
+        / "editor-input-manifest.json"
+    )
+    outside = tmp_path.parent / f"{tmp_path.name}-outside.records.jsonl"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    outside.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "genre": "AI",
+                "url": "https://example.com/outside",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [outside.as_posix()],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert current_reporter_records_for_issue(tmp_path, issue) is None
+
+
+def test_current_reporter_records_rejects_symlink_escape(
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-27"
+    records = (
+        tmp_path
+        / "tmp"
+        / "newsroom"
+        / issue
+        / "ai.records.jsonl"
+    )
+    manifest = (
+        tmp_path
+        / "build"
+        / "reporter-artifacts"
+        / issue
+        / "editor-input-manifest.json"
+    )
+    outside = tmp_path.parent / f"{tmp_path.name}-symlink-target.jsonl"
+    records.parent.mkdir(parents=True, exist_ok=True)
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    outside.write_text(
+        '{"date":"2026-07-27","genre":"AI","url":"https://example.com/outside"}\n',
+        encoding="utf-8",
+    )
+    try:
+        records.symlink_to(outside)
+    except OSError as exc:
+        pytest.skip(f"symlink creation is unavailable: {exc}")
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [
+                    f"tmp/newsroom/{issue}/ai.records.jsonl"
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert current_reporter_records_for_issue(tmp_path, issue) is None
+
+
+def test_reporter_artifact_resolver_rejects_resolved_symlink_escape(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """symlink 作成権限がない Windows でも resolved escape を契約固定する。"""
+    issue = "2026-07-27"
+    root = tmp_path.resolve()
+    candidate = (
+        root
+        / "tmp"
+        / "newsroom"
+        / issue
+        / "ai.records.jsonl"
+    )
+    outside = root.parent / "outside.records.jsonl"
+    original_resolve = Path.resolve
+
+    def _resolve(path: Path, strict: bool = False) -> Path:
+        if path == candidate:
+            return outside
+        return original_resolve(path, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", _resolve)
+
+    with pytest.raises(ValueError, match="outside repo root"):
+        resolve_reporter_artifact_path(
+            root,
+            issue,
+            f"tmp/newsroom/{issue}/ai.records.jsonl",
+        )
 
 
 def _write_articles(articles_path: Path, issue_date: str, urls: list[str]) -> None:
@@ -90,10 +216,13 @@ def test_reconcile_detects_digest_only_url(tmp_path: Path) -> None:
     _write_articles(articles, issue, ["https://a.example.com/1", "https://a.example.com/3"])
 
     result = reconcile(digest, articles, issue)
-    assert result == {
-        "digest_only": ["AI: https://a.example.com/2"],
-        "articles_only": [],
-    }
+    assert _urls(result, "digest_only") == ["https://a.example.com/2"]
+    assert result["digest_only"][0]["issue_code"] == "digest_articles_digest_only"
+    assert result["digest_only"][0]["category"] == "AI"
+    assert result["digest_only"][0]["evidence"]["target_digest_path"].endswith(
+        "2026-06-12-AI.md"
+    )
+    assert result["articles_only"] == []
 
     rc = main(["--issue-date", issue, "--digest-dir", str(digest), "--articles", str(articles)])
     assert rc == 1, "append 漏れがあれば exit 1 のはず"
@@ -108,10 +237,10 @@ def test_reconcile_detects_articles_only_url(tmp_path: Path) -> None:
     _write_articles(articles, issue, ["https://a.example.com/1", "https://a.example.com/2"])
 
     result = reconcile(digest, articles, issue)
-    assert result == {
-        "digest_only": [],
-        "articles_only": ["AI: https://a.example.com/2"],
-    }
+    assert result["digest_only"] == []
+    assert _urls(result, "articles_only") == ["https://a.example.com/2"]
+    assert result["articles_only"][0]["issue_code"] == "digest_articles_articles_only"
+    assert result["articles_only"][0]["evidence"]["record"]["title"] == "t1"
 
     rc = main(["--issue-date", issue, "--digest-dir", str(digest), "--articles", str(articles)])
     assert rc == 1, "カード生成漏れがあれば exit 1 のはず"
@@ -201,7 +330,7 @@ def test_reconcile_detects_current_reporter_record_missing_from_digest(tmp_path:
         ["https://a.example.com/current-1", "https://a.example.com/current-2"],
     )
 
-    assert reconcile(digest, articles, issue) == {
-        "digest_only": [],
-        "articles_only": ["AI: https://a.example.com/current-2"],
-    }
+    result = reconcile(digest, articles, issue)
+    assert result["digest_only"] == []
+    assert _urls(result, "articles_only") == ["https://a.example.com/current-2"]
+    assert result["articles_only"][0]["evidence"]["record_source"] == "current_reporter"

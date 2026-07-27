@@ -1494,6 +1494,11 @@ function Invoke-TargetedRepair {
         Update-RunnerProgress -Phase 'repair' -Step "deterministic registry repair OK: $GateId" -GateId $GateId -Category $Category -RepairSignature $repairSignature -ArtifactProgress $true
         return 0
     }
+    if ($registryRepairRc -eq 4) {
+        Write-Log "deterministic registry repair produced no mutation; same-gate reverify required (gate=$GateId)"
+        Update-RunnerProgress -Phase 'repair' -Step "same-gate reverify after registry noop: $GateId" -GateId $GateId -Category $Category -RepairSignature $repairSignature -ArtifactProgress $false
+        return 0
+    }
     if ($registryRepairRc -notin @(2, 3)) {
         Write-Log "deterministic registry repair failed (gate=$GateId, rc=$registryRepairRc)"
         return $registryRepairRc
@@ -1618,7 +1623,7 @@ function Get-RepairDecisionArtifacts {
 }
 
 function Invoke-DeterministicRegistryRepair {
-    # registry handler traceability: summary-emphasis-patch / category-card-emphasis-patch / audio-script-length-patch
+    # registry handler traceability: matrix が選んだ deterministic handler だけを実行する。
     param(
         [string] $GateId,
         [string] $CapturePath,
@@ -1640,6 +1645,8 @@ function Invoke-DeterministicRegistryRepair {
         'repair_context_scope_mismatch',
         'repair_handler_output_scope_violation',
         'blocked_deterministic_repair_not_applicable',
+        'blocked_articles_only_record_incomplete',
+        'blocked_digest_only_ambiguous',
         'blocked_repair_handler_unimplemented'
     )
     $repairArtifacts = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts $Artifacts)
@@ -1674,6 +1681,10 @@ function Invoke-DeterministicRegistryRepair {
             $registryStatus = ''
             $registryMessage = ''
         }
+    }
+    if ($registryStatus -eq 'noop') {
+        Write-Log "registry noop; same-gate reverify required (gate=$GateId, handler=$($decision.handler_id), message=$registryMessage)"
+        return 4
     }
     if ($registryRc -eq 0) {
         Write-Log "deterministic registry repair OK (gate=$GateId, handler=$($decision.handler_id))"

@@ -330,6 +330,15 @@ def test_2026_07_24_editorial_section_incident_is_registered() -> None:
     assert scenario.evidence_path.endswith("2026-07-24-daily-quality-editorial-section-report.html")
 
 
+def test_2026_07_27_directional_digest_repair_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-27")
+    assert "digest-articles-reconcile" in scenario.stage
+    assert "articles_only" in scenario.direct_cause
+    assert "handler capability drift" in scenario.root_pattern
+    assert "direction-specific matrix routing" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path == "docs/incidents/2026-07-27-digest-articles-reconcile-report.html"
+
+
 def test_weekly_failure_regression_corpus_covers_every_day_without_unknown_outcome() -> None:
     cases = weekly_failure_regression_cases()
 
@@ -342,6 +351,7 @@ def test_weekly_failure_regression_corpus_covers_every_day_without_unknown_outco
         "2026-07-22",
         "2026-07-23",
         "2026-07-24",
+        "2026-07-27",
     }
     assert all(case.issue_code != "unknown" for case in cases)
     assert all(

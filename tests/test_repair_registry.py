@@ -3,14 +3,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import json
+from types import SimpleNamespace
 
+import tools.repair_registry as registry_module
 from tools.repair_registry import (
     RepairContext,
+    RepairResult,
     find_handler,
     repair_with_registry,
 )
 from tools.generate_pages import parse_articles
+from tools.validate_digest_articles_reconcile import reconcile
 from tools.validate_daily_quality import validate_summary_emphasis
+from tools.validate_generation_quality import _validate_summary
 
 
 def test_registry_exposes_summary_emphasis_patch_metadata() -> None:
@@ -37,142 +42,114 @@ def test_missing_handler_returns_typed_unimplemented_status(tmp_path: Path) -> N
     assert result.status == "blocked_repair_handler_unimplemented"
 
 
-def test_digest_record_sync_patch_repairs_title_ja_and_thumb_from_records(tmp_path: Path) -> None:
-    issue = "2026-07-21"
-    digest = tmp_path / "digest" / "Game" / f"{issue}-Game.md"
-    records = tmp_path / "tmp" / "newsroom" / issue / "game.records.jsonl"
-    articles = tmp_path / "data" / "articles.jsonl"
-    for path in (digest, records, articles):
-        path.parent.mkdir(parents=True, exist_ok=True)
+def test_registry_rejects_invalid_issue_date_before_handler(tmp_path: Path) -> None:
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue="../../outside",
+            handler_id="summary-emphasis-patch",
+            artifacts=[],
+        )
+    )
 
-    row = {
-        "date": issue,
-        "genre": "Game",
-        "title": "GRIZZY AND THE LEMMINGS - CRAZY PARTY LAUNCHES AUGUST 7",
-        "title_ja": "『グリジーとレミングス』、8月7日に発売",
-        "url": "https://www.nintendo.com/us/store/products/grizzy-and-the-lemmings-crazy-party-switch/",
-        "thumb": "https://example.com/grizzy.jpg",
-    }
-    payload = json.dumps(row, ensure_ascii=False) + "\n"
-    records.write_text(payload, encoding="utf-8")
-    articles.write_text(payload, encoding="utf-8")
-    digest.write_text(
+    assert result.status == "repair_handler_output_scope_violation"
+    assert not result.changed
+    assert "invalid issue date" in result.message
+
+
+def test_registry_cli_returns_nonzero_for_noop(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        registry_module,
+        "repair_with_registry",
+        lambda _ctx: RepairResult(
+            "summary-emphasis-patch",
+            "noop",
+            False,
+            (),
+            "no mutation",
+        ),
+    )
+
+    rc = registry_module.main(
+        [
+            "repair",
+            "--handler-id",
+            "summary-emphasis-patch",
+            "--repo-root",
+            str(tmp_path),
+            "--date",
+            "2026-07-27",
+        ]
+    )
+
+    assert rc == 1
+
+
+def test_registry_cli_refuses_repair_when_completeness_audit_is_not_green(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    monkeypatch.setattr(
+        registry_module,
+        "_audit_current_repair_system",
+        lambda: SimpleNamespace(
+            ok=False,
+            findings=(
+                SimpleNamespace(
+                    code="registry_handler_unreachable",
+                    detail="dead-handler",
+                ),
+            ),
+        ),
+    )
+
+    rc = registry_module.main(
+        [
+            "repair",
+            "--handler-id",
+            "summary-emphasis-patch",
+            "--repo-root",
+            str(tmp_path),
+            "--date",
+            "2026-07-27",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["status"] == "blocked_repair_system_incomplete"
+    assert payload["findings"][0]["code"] == "registry_handler_unreachable"
+
+
+def test_summary_reflection_patch_passes_same_generation_validator(tmp_path: Path) -> None:
+    issue = "2026-07-22"
+    rel = f"digest/Summary/{issue}.md"
+    summary = tmp_path / rel
+    summary.parent.mkdir(parents=True)
+    summary.write_text(
         "---\n"
         f"date: {issue}\n"
+        'hero_left: "今日の論点"\n'
+        'hero_right: "意思決定への示唆"\n'
         "---\n\n"
-        "### [74] GRIZZY AND THE LEMMINGS - CRAZY PARTY LAUNCHES AUGUST 7\n\n"
-        f"📅 {issue} 03:47 · 📰 Nintendo Official Site · 🔗 [元記事]({row['url']})\n\n"
-        "#cat/game #score/中\n\n"
-        "- 【事実・概要】：[[Balio Studio]]のパーティーゲームが**8月7日にSwitch向けで発売**される。\n",
+        "# Summary\n\n"
+        "当日のニュースを整理する。\n",
         encoding="utf-8",
     )
+    assert any(error.code == "summary_reflection_missing" for error in _validate_summary(tmp_path, rel, issue))
 
     result = repair_with_registry(
         RepairContext(
             repo_root=tmp_path,
             issue=issue,
-            handler_id="digest-record-sync-patch",
-            artifacts=[f"digest/Game/{issue}-Game.md"],
+            handler_id="summary-reflection-patch",
+            artifacts=[rel],
         )
     )
 
-    repaired = digest.read_text(encoding="utf-8")
     assert result.status == "repaired"
-    assert result.changed
-    assert "### [74] 『グリジーとレミングス』、8月7日に発売" in repaired
-    assert "![thumb](https://example.com/grizzy.jpg)" in repaired
-
-
-def test_digest_record_sync_patch_uses_category_default_thumb_when_record_thumb_is_null(tmp_path: Path) -> None:
-    issue = "2026-07-21"
-    digest = tmp_path / "digest" / "Economy" / f"{issue}-Economy.md"
-    records = tmp_path / "tmp" / "newsroom" / issue / "economy.records.jsonl"
-    articles = tmp_path / "data" / "articles.jsonl"
-    for path in (digest, records, articles):
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-    row = {
-        "date": issue,
-        "genre": "Economy",
-        "title": "S&P 500 market story",
-        "title_ja": "米国株、半導体株の反発で上昇",
-        "url": "https://example.com/economy",
-        "thumb": None,
-    }
-    payload = json.dumps(row, ensure_ascii=False) + "\n"
-    records.write_text(payload, encoding="utf-8")
-    articles.write_text(payload, encoding="utf-8")
-    digest.write_text(
-        "---\n"
-        f"date: {issue}\n"
-        "---\n\n"
-        "### [95] 米国株、半導体株の反発で上昇\n\n"
-        f"📅 {issue} 05:25 · 📰 Example · 🔗 [元記事]({row['url']})\n\n"
-        "#cat/economy #score/高\n\n"
-        "- 【事実・概要】：[[S&P 500]]は上昇した。\n",
-        encoding="utf-8",
-    )
-
-    result = repair_with_registry(
-        RepairContext(
-            repo_root=tmp_path,
-            issue=issue,
-            handler_id="digest-record-sync-patch",
-            artifacts=[f"digest/Economy/{issue}-Economy.md"],
-        )
-    )
-
-    fallback = "https://raw.githubusercontent.com/HIDEPON-UMG/news-grasp-assets/main/ng-thumb-common-economy.jpg"
-    assert result.status == "repaired"
-    assert fallback in digest.read_text(encoding="utf-8")
-    assert f'"thumb": "{fallback}"' in articles.read_text(encoding="utf-8")
-    assert f'"thumb": "{fallback}"' in records.read_text(encoding="utf-8")
-
-
-def test_digest_record_sync_patch_prefers_short_title_ja_over_japanese_seo_title(tmp_path: Path) -> None:
-    issue = "2026-07-21"
-    digest = tmp_path / "digest" / "Game" / f"{issue}-Game.md"
-    records = tmp_path / "tmp" / "newsroom" / issue / "game.records.jsonl"
-    articles = tmp_path / "data" / "articles.jsonl"
-    for path in (digest, records, articles):
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-    row = {
-        "date": issue,
-        "genre": "Game",
-        "title": "【怪獣8号ゲーム】スーテッド(高まる水着力)の評価とおすすめ編成・スキル【怪獣8G】",
-        "title_ja": "『怪獣8号 THE GAME』新キャラ、スーテッドの性能と編成を公開",
-        "url": "https://gamewith.jp/kj8-thegame/568919",
-        "thumb": "https://example.com/kj8.jpg",
-    }
-    payload = json.dumps(row, ensure_ascii=False) + "\n"
-    records.write_text(payload, encoding="utf-8")
-    articles.write_text(payload, encoding="utf-8")
-    digest.write_text(
-        "---\n"
-        f"date: {issue}\n"
-        "---\n\n"
-        f"### [72] {row['title']}\n\n"
-        f"📅 {issue} 01:53 · 📰 GameWith · 🔗 [元記事]({row['url']})\n\n"
-        "#cat/game #score/中\n\n"
-        "![thumb](https://example.com/kj8.jpg)\n\n"
-        "- 【事実・概要】：[[怪獣8号 THE GAME]]に新キャラクターが登場した。\n",
-        encoding="utf-8",
-    )
-
-    result = repair_with_registry(
-        RepairContext(
-            repo_root=tmp_path,
-            issue=issue,
-            handler_id="digest-record-sync-patch",
-            artifacts=[f"digest/Game/{issue}-Game.md"],
-        )
-    )
-
-    repaired = digest.read_text(encoding="utf-8")
-    assert result.status == "repaired"
-    assert f"### [72] {row['title_ja']}" in repaired
-    assert str(row["title"]) not in repaired
+    assert not _validate_summary(tmp_path, rel, issue)
 
 
 def test_summary_emphasis_patch_updates_existing_summary_only(tmp_path: Path) -> None:
@@ -944,6 +921,128 @@ def test_url_quarantine_refill_handler_uses_digest_source_url_for_missing_thumb(
     assert captured["bad_urls"] == [bad_url]
 
 
+def test_url_quarantine_refill_handler_detects_invalid_thumb_direction(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """thumb 欠落だけでなく proxy/self-reference 不正値も quarantine 対象にする。"""
+    issue = "2026-07-22"
+    bad_url = "https://example.com/story-with-proxy-thumb"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "# IT\n\n"
+        "### [90] invalid thumb\n\n"
+        f"📅 {issue} 09:00 · 📰 Example · 🔗 [元記事]({bad_url})\n\n"
+        "![thumb](https://lh3.googleusercontent.com/proxy-image)\n\n"
+        "- [[AI]] **policy** __market signal__\n",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_refill_category(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "mode": "refilled", "removed": 1, "refilled": 1}
+
+    monkeypatch.setattr(registry_module, "refill_category", fake_refill_category)
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/IT-Consulting/{issue}-IT-Consulting.md"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert captured["bad_urls"] == [bad_url]
+
+
+def test_url_quarantine_refill_handler_detects_unresolved_source_url_direction(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Google News RSS / landing URL を thumb 問題とは別方向で quarantine する。"""
+    issue = "2026-07-22"
+    bad_url = "https://news.google.com/rss/articles/example-id"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "# IT\n\n"
+        "### [90] unresolved source\n\n"
+        f"📅 {issue} 09:00 · 📰 Example · 🔗 [元記事]({bad_url})\n\n"
+        "![thumb](https://example.com/article.jpg)\n\n"
+        "- [[AI]] **policy** __market signal__\n",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_refill_category(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "mode": "refilled", "removed": 1, "refilled": 1}
+
+    monkeypatch.setattr(registry_module, "refill_category", fake_refill_category)
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/IT-Consulting/{issue}-IT-Consulting.md"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert captured["bad_urls"] == [bad_url]
+
+
+def test_url_quarantine_refill_handler_consumes_liveness_bad_url_ledger(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """HTTP 404/410 は URL 文字列から再検出せず validator ledger を受け取る。"""
+    issue = "2026-07-22"
+    bad_url = "https://example.com/live-looking-but-404"
+    articles = tmp_path / "data" / "articles.jsonl"
+    ledger = tmp_path / "build" / "quarantine" / issue / "bad-urls.json"
+    articles.parent.mkdir(parents=True)
+    ledger.parent.mkdir(parents=True)
+    articles.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "genre": "IT-Consulting",
+                "title": "dead",
+                "title_ja": "リンク切れ",
+                "summary": "404",
+                "url": bad_url,
+                "thumb": "https://example.com/thumb.jpg",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    ledger.write_text(json.dumps([bad_url], ensure_ascii=False), encoding="utf-8")
+    captured: dict[str, object] = {}
+
+    def fake_refill_category(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "mode": "refilled", "removed": 1, "refilled": 1}
+
+    monkeypatch.setattr(registry_module, "refill_category", fake_refill_category)
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[
+                "data/articles.jsonl",
+                f"build/quarantine/{issue}/bad-urls.json",
+            ],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert captured["bad_urls"] == [bad_url]
+
+
 def test_record_thumb_patch_syncs_missing_thumb_from_digest(tmp_path: Path) -> None:
     issue = "2026-06-30"
     url = "https://example.com/story"
@@ -987,6 +1086,45 @@ def test_record_thumb_patch_syncs_missing_thumb_from_digest(tmp_path: Path) -> N
     repaired = json.loads(articles.read_text(encoding="utf-8").strip())
     assert result.status == "repaired"
     assert repaired["thumb"] == thumb
+
+
+def test_record_thumb_patch_repairs_invalid_thumb_without_broad_refill(tmp_path: Path) -> None:
+    """schema 不正 thumb は record scope 内でカテゴリ既定 URL へ正規化する。"""
+    from tools.validate_record import validate_jsonl
+
+    issue = "2026-07-22"
+    articles = tmp_path / "data" / "articles.jsonl"
+    articles.parent.mkdir(parents=True)
+    articles.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "genre": "IT-Consulting",
+                "title": "story",
+                "title_ja": "記事",
+                "url": "https://example.com/story",
+                "thumb": "broken-thumb",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    assert validate_jsonl(articles, issue_date=issue)
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="record-thumb-quarantine-patch",
+            artifacts=["data/articles.jsonl"],
+        )
+    )
+
+    repaired = json.loads(articles.read_text(encoding="utf-8").strip())
+    assert result.status == "repaired"
+    assert repaired["thumb"].startswith("https://")
+    assert not validate_jsonl(articles, issue_date=issue)
 
 
 def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path) -> None:
@@ -1054,9 +1192,10 @@ def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path
 def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_path: Path) -> None:
     issue = "2026-06-28"
     articles = tmp_path / "data" / "articles.jsonl"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
     records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
     manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
-    for path in (articles, records, manifest):
+    for path in (articles, digest, records, manifest):
         path.parent.mkdir(parents=True, exist_ok=True)
 
     old = {
@@ -1080,8 +1219,34 @@ def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_
         "source": "Example",
         "published": issue,
         "date_evidence_source": "rss_pubDate",
+        "thumb": "https://example.com/current.jpg",
+        "score": 90,
+        "tags": ["cat/ai", "score/高"],
     }
     articles.write_text(json.dumps(old, ensure_ascii=False) + "\n", encoding="utf-8")
+    digest.write_text(
+        "\n".join(
+            [
+                "---",
+                f"date: {issue}",
+                "category: AI",
+                "---",
+                "# AI",
+                "",
+                "### [90] current",
+                "",
+                f"📅 {issue} · 📰 Example · 🔗 [元記事]({current['url']})",
+                "",
+                "#cat/ai #score/高",
+                "",
+                "![thumb](https://example.com/current.jpg)",
+                "",
+                "- 【事実・概要】：current",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
     records.write_text(json.dumps(current, ensure_ascii=False) + "\n", encoding="utf-8")
     manifest.write_text(
         json.dumps(
@@ -1099,8 +1264,12 @@ def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_
         RepairContext(
             repo_root=tmp_path,
             issue=issue,
-            handler_id="digest-articles-reconcile-patch",
-            artifacts=["digest", "data/articles.jsonl", "data/_status.md"],
+            handler_id="digest-articles-digest-only-patch",
+            artifacts=[
+                f"digest/AI/{issue}-AI.md",
+                "data/articles.jsonl",
+                f"tmp/newsroom/{issue}/ai.records.jsonl",
+            ],
         )
     )
 
@@ -1112,63 +1281,459 @@ def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_
     assert "https://example.com/current" in repaired
 
 
-def test_audio_script_length_patch_blocks_outline_missing_repeated_closing(tmp_path: Path) -> None:
-    issue = "2026-06-28"
-    summary_dir = tmp_path / "digest" / "Summary"
-    summary_dir.mkdir(parents=True)
-    history_tail = "ありがとうございました。\nニュースグラスプでした。\n今日はここまでです。\n"
-    (summary_dir / "2026-06-27-audio-script.md").write_text(history_tail, encoding="utf-8")
-    body = (
-        "6月28日の朝のニュースです。\n"
-        "AI、FX、Game、IT、Mobilityを順に見ます。\n"
-        + "\n".join(
-            f"今日の論点{i}は、認証と運用と説明責任を同じ順番で確認することです。"
-            for i in range(70)
-        )
-        + "\n今日の観点・考察として、広げる前に守る条件をそろえることが重要です。\n"
-        + history_tail
+def test_articles_only_handler_generates_digest_card_and_reconcile_turns_green(tmp_path: Path) -> None:
+    """current reporter record から欠落 card を再生成し、同じ gate を Green に戻す。"""
+    issue = "2026-07-27"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    for path in (digest, articles, records, manifest):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    existing = {
+        "date": issue,
+        "genre": "AI",
+        "title": "既存記事",
+        "title_ja": "既存記事",
+        "summary": "既存要約",
+        "url": "https://example.com/existing",
+        "source": "既存媒体",
+        "published_date": issue,
+        "thumb": "https://example.com/existing.jpg",
+        "score": 80,
+        "tags": ["cat/ai", "score/中"],
+        "bullets": ["【事実・概要】：既存記事。"],
+    }
+    missing = {
+        "date": issue,
+        "genre": "AI",
+        "title": "Original missing title",
+        "title_ja": "欠落していた日本語タイトル",
+        "summary": "fixture から自動生成する要約。",
+        "url": "https://example.com/missing",
+        "source": "Fixture News",
+        "published_date": "2026-07-26",
+        "time": "09:30",
+        "thumb": "https://example.com/missing.jpg",
+        "score": 95,
+        "tags": ["cat/ai", "topic/repair", "score/高"],
+        "bullets": [
+            "【事実・概要】：欠落 card を自動生成する。",
+            "【背景・要点】：reporter record を正本にする。",
+            "【影響・展望】：同じ gate を再検証する。",
+        ],
+    }
+    digest.write_text(
+        "\n".join(
+            [
+                "---",
+                f"date: {issue}",
+                "category: AI",
+                "---",
+                "# AI",
+                "",
+                "### [80] 既存記事",
+                "",
+                f"📅 {issue} · 📰 既存媒体 · 🔗 [元記事]({existing['url']})",
+                "",
+                "#cat/ai #score/中",
+                "",
+                "![thumb](https://example.com/existing.jpg)",
+                "",
+                "- 【事実・概要】：既存記事。",
+                "",
+            ]
+        ),
+        encoding="utf-8",
     )
-    (summary_dir / f"{issue}-audio-script.md").write_text(body, encoding="utf-8")
+    articles.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in (existing, missing)) + "\n",
+        encoding="utf-8",
+    )
+    records.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in (existing, missing)) + "\n",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    before = reconcile(tmp_path / "digest", articles, issue)
+    assert [row["url"] for row in before["articles_only"]] == [missing["url"]]
 
     result = repair_with_registry(
         RepairContext(
             repo_root=tmp_path,
             issue=issue,
-            handler_id="audio-script-length-patch",
-            artifacts=[f"digest/Summary/{issue}-audio-script.md"],
+            handler_id="digest-card-insert-patch",
+            artifacts=[
+                f"digest/AI/{issue}-AI.md",
+                "data/articles.jsonl",
+                f"tmp/newsroom/{issue}/ai.records.jsonl",
+            ],
         )
     )
 
-    assert result.status == "blocked_deterministic_repair_not_applicable"
-    assert not result.changed
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert result.changed
+    assert repaired.index("### [95] 欠落していた日本語タイトル") < repaired.index("### [80] 既存記事")
+    assert "Original missing title" not in repaired
+    assert "📅 2026-07-26 09:30 · 📰 Fixture News" in repaired
+    assert "#cat/ai #topic/repair #score/高" in repaired
+    assert "![thumb](https://example.com/missing.jpg)" in repaired
+    assert "fixture から自動生成する要約。" in repaired or "欠落 card を自動生成する。" in repaired
+    assert reconcile(tmp_path / "digest", articles, issue) == {
+        "digest_only": [],
+        "articles_only": [],
+    }
 
 
-def test_audio_script_length_patch_blocks_outline_missing_short_script(tmp_path: Path) -> None:
-    issue = "2026-07-02"
-    summary_dir = tmp_path / "digest" / "Summary"
-    summary_dir.mkdir(parents=True)
-    body = (
-        "7月2日の朝のニュースをお伝えします。ニュース グラスプ、7月2日号です。\n"
-        "FX、AI、IT、Mobility、Manufacturing、Economy、Gameを順に見ます。\n"
-        "FXでは円安と政策発言の受け止めを確認します。\n"
-        "AIでは投資と配布面の競争を確認します。\n"
-        "ITでは導入前後の審査と監視を確認します。\n"
-        "Mobilityでは安全標準と運行条件を確認します。\n"
-        "Manufacturingでは量産拠点と供給網を確認します。\n"
-        "Economyでは物価と金利の重さを確認します。\n"
-        "Gameでは販路と安全設計を確認します。\n"
-        "今日の観点・考察として、条件を先にそろえることが重要です。\n"
+def test_articles_only_handler_rejects_manifest_path_outside_repo_before_mutation(
+    tmp_path: Path,
+) -> None:
+    """改ざん manifest は repo 外 record を読み込まず、digest を変更しない。"""
+    issue = "2026-07-27"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    manifest = (
+        tmp_path
+        / "build"
+        / "reporter-artifacts"
+        / issue
+        / "editor-input-manifest.json"
     )
-    (summary_dir / f"{issue}-audio-script.md").write_text(body, encoding="utf-8")
+    outside = tmp_path.parent / f"{tmp_path.name}-outside.records.jsonl"
+    for path in (digest, articles, manifest, outside):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    record = {
+        "date": issue,
+        "genre": "AI",
+        "title": "Outside record",
+        "title_ja": "repo 外 record",
+        "summary": "manifest traversal を拒否する。",
+        "url": "https://example.com/outside-record",
+        "source": "Fixture News",
+        "published_date": issue,
+        "thumb": "https://example.com/outside-record.jpg",
+        "score": 95,
+        "tags": ["cat/ai", "topic/security"],
+    }
+    digest.write_text(
+        f"---\ndate: {issue}\ncategory: AI\n---\n# AI\n",
+        encoding="utf-8",
+    )
+    articles.write_text(
+        json.dumps(record, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    outside.write_text(
+        json.dumps(record, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [outside.as_posix()],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    before = digest.read_bytes()
 
     result = repair_with_registry(
         RepairContext(
             repo_root=tmp_path,
             issue=issue,
-            handler_id="audio-script-length-patch",
-            artifacts=[f"digest/Summary/{issue}-audio-script.md"],
+            handler_id="digest-card-insert-patch",
+            artifacts=[
+                f"digest/AI/{issue}-AI.md",
+                "data/articles.jsonl",
+                f"build/reporter-artifacts/{issue}/editor-input-manifest.json",
+            ],
         )
     )
 
-    assert result.status == "blocked_deterministic_repair_not_applicable"
+    assert result.status == "blocked_articles_only_record_incomplete"
     assert not result.changed
+    assert "outside allowed reporter scope" in result.message
+    assert digest.read_bytes() == before
+
+
+def test_articles_only_handler_uses_current_articles_when_manifest_is_absent(
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-27"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    digest.parent.mkdir(parents=True, exist_ok=True)
+    articles.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "date": issue,
+        "genre": "AI",
+        "title": "Articles fallback",
+        "title_ja": "current articles から復元",
+        "summary": "manifest が無い経路では current articles record を使う。",
+        "url": "https://example.com/articles-fallback",
+        "source": "Fixture News",
+        "published_date": issue,
+        "thumb": "https://example.com/articles-fallback.jpg",
+        "score": 91,
+        "tags": ["cat/ai", "topic/fallback"],
+    }
+    digest.write_text(
+        f"---\ndate: {issue}\ncategory: AI\n---\n# AI\n",
+        encoding="utf-8",
+    )
+    articles.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-card-insert-patch",
+            artifacts=[f"digest/AI/{issue}-AI.md", "data/articles.jsonl"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert "### [91] current articles から復元" in digest.read_text(encoding="utf-8")
+    assert reconcile(tmp_path / "digest", articles, issue) == {
+        "digest_only": [],
+        "articles_only": [],
+    }
+
+
+def test_digest_only_handler_removes_stale_card_with_authoritative_manifest(tmp_path: Path) -> None:
+    """current manifest 外の同日旧 run card は stale と確定して除去する。"""
+    issue = "2026-07-27"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    for path in (digest, articles, records, manifest):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    current = {
+        "date": issue,
+        "genre": "AI",
+        "title": "current",
+        "url": "https://example.com/current",
+    }
+    stale = {
+        "date": issue,
+        "genre": "AI",
+        "title": "stale",
+        "url": "https://example.com/stale",
+    }
+    digest.write_text(
+        "\n".join(
+            [
+                "---",
+                f"date: {issue}",
+                "category: AI",
+                "---",
+                "# AI",
+                "",
+                "### [90] current",
+                "",
+                f"📅 {issue} · 📰 Example · 🔗 [元記事]({current['url']})",
+                "",
+                "- current",
+                "",
+                "---",
+                "",
+                "### [70] stale",
+                "",
+                f"📅 {issue} · 📰 Example · 🔗 [元記事]({stale['url']})",
+                "",
+                "- stale",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    articles.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in (current, stale)) + "\n",
+        encoding="utf-8",
+    )
+    records.write_text(json.dumps(current, ensure_ascii=False) + "\n", encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-articles-digest-only-patch",
+            artifacts=[
+                f"digest/AI/{issue}-AI.md",
+                "data/articles.jsonl",
+                f"tmp/newsroom/{issue}/ai.records.jsonl",
+            ],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "removed_stale_digest_cards=1" in result.message
+    assert current["url"] in repaired
+    assert stale["url"] not in repaired
+    assert reconcile(tmp_path / "digest", articles, issue) == {
+        "digest_only": [],
+        "articles_only": [],
+    }
+
+
+def test_digest_only_handler_returns_typed_red_without_current_manifest(tmp_path: Path) -> None:
+    """append 漏れと旧 card を判別できない場合は成功扱いしない。"""
+    issue = "2026-07-27"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    digest.parent.mkdir(parents=True, exist_ok=True)
+    articles.parent.mkdir(parents=True, exist_ok=True)
+    digest.write_text(
+        "\n".join(
+            [
+                "---",
+                f"date: {issue}",
+                "category: AI",
+                "---",
+                "# AI",
+                "",
+                "### [70] ambiguous",
+                "",
+                f"📅 {issue} · 📰 Example · 🔗 [元記事](https://example.com/ambiguous)",
+                "",
+                "- ambiguous",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    articles.write_text("", encoding="utf-8")
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-articles-digest-only-patch",
+            artifacts=[f"digest/AI/{issue}-AI.md", "data/articles.jsonl"],
+        )
+    )
+
+    assert result.status == "blocked_digest_only_ambiguous"
+    assert not result.changed
+    assert "current reporter manifest" in result.message
+
+
+def test_digest_only_handler_validates_all_targets_before_articles_append(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """後続 target が不正なら、先行 articles append も行わない。"""
+    issue = "2026-07-27"
+    articles = tmp_path / "data" / "articles.jsonl"
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    manifest = (
+        tmp_path
+        / "build"
+        / "reporter-artifacts"
+        / issue
+        / "editor-input-manifest.json"
+    )
+    for path in (articles, records, manifest):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    articles.write_text("", encoding="utf-8")
+    current = {
+        "date": issue,
+        "genre": "AI",
+        "title": "Current",
+        "title_ja": "Current",
+        "summary": "Current",
+        "url": "https://example.com/current",
+        "source": "Example",
+        "published": issue,
+    }
+    records.write_text(
+        json.dumps(current, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [
+                    f"tmp/newsroom/{issue}/ai.records.jsonl"
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        registry_module,
+        "reconcile",
+        lambda *_args, **_kwargs: {
+            "articles_only": [],
+            "digest_only": [
+                {
+                    "url": current["url"],
+                    "evidence": {
+                        "target_digest_path": f"digest/AI/{issue}-AI.md"
+                    },
+                },
+                {
+                    "url": "https://example.com/stale",
+                    "evidence": {
+                        "target_digest_path": f"digest/AI/{issue}-missing.md"
+                    },
+                },
+            ],
+        },
+    )
+    before = articles.read_bytes()
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-articles-digest-only-patch",
+            artifacts=[
+                "data/articles.jsonl",
+                f"tmp/newsroom/{issue}/ai.records.jsonl",
+                f"build/reporter-artifacts/{issue}/editor-input-manifest.json",
+            ],
+        )
+    )
+
+    assert result.status == "blocked_digest_only_ambiguous"
+    assert not result.changed
+    assert articles.read_bytes() == before
+
+
+def test_unrouted_legacy_handlers_are_not_registered() -> None:
+    assert find_handler("audio-script-length-patch") is None
+    assert find_handler("digest-record-sync-patch") is None

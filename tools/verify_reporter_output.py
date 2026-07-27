@@ -48,6 +48,7 @@ from tools.validate_record import (  # noqa: E402
 from tools.url_quality import (
     is_google_news_proxy_thumb,
     is_google_news_rss_url,
+    is_news_grasp_self_thumb,
     looks_homepage_or_section_landing,
 )
 
@@ -81,16 +82,6 @@ _CARD_HEAD_RE = re.compile(r"^###\s+\[", re.MULTILINE)
 
 # 共通サムネ fallback の直書き禁止対象トークン。
 _THUMB_FALLBACK_TOKEN = "ng-thumb-common-"
-_NEWS_GRASP_THUMB_RE = re.compile(
-    r"^https?://hidepon-umg\.github\.io/News-Grasp/(?:assets/og/|assets/news-grasp)",
-    re.IGNORECASE,
-)
-
-
-def _is_news_grasp_self_thumb(value: object) -> bool:
-    return isinstance(value, str) and bool(_NEWS_GRASP_THUMB_RE.search(value))
-
-
 def _read_records(records_path: Path) -> tuple[list[dict], list[str]]:
     """records.jsonl を 1 行ずつ読み (records, errs) を返す。
 
@@ -139,7 +130,7 @@ def _check_records(
             errs.append(
                 f"record #{i}: 媒体トップまたはカテゴリトップに丸まった URL です: {url}"
             )
-        if _is_news_grasp_self_thumb(rec.get("thumb")):
+        if is_news_grasp_self_thumb(rec.get("thumb")):
             errs.append(
                 f"record #{i}: News-Grasp 自己参照 thumb です: {rec.get('thumb')}"
             )
@@ -226,7 +217,7 @@ def _check_digest(
             f"(記者出力では個別記事サムネを使うこと)"
         )
     for thumb in re.findall(r"!\[thumb\]\((https?://[^)]+)\)", text):
-        if _is_news_grasp_self_thumb(thumb):
+        if is_news_grasp_self_thumb(thumb):
             errs.append(
                 f"{digest_path}: News-Grasp 自己参照 thumb が直書きされている: {thumb}"
             )

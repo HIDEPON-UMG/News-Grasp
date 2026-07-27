@@ -24,6 +24,28 @@ MAX_GATE_ATTEMPTS = 3
 MAX_LLM_REPAIR_PER_SIGNATURE = 1
 MAX_REFILL_TRANSACTIONS = 2
 
+
+def _audit_current_repair_system():
+    from tools.repair_system_completeness import audit_repair_system
+
+    return audit_repair_system()
+
+
+def _repair_completeness_failure_payload(report) -> dict[str, Any]:
+    return {
+        "gate_id": "repair-system-completeness",
+        "issue_code": "repair_system_incomplete",
+        "repair_class": str(RepairClass.TYPED_FATAL),
+        "action": str(GateAction.FATAL),
+        "handler": "fatal",
+        "failure_status": "blocked_repair_system_incomplete",
+        "audit_failed": True,
+        "findings": [
+            {"code": finding.code, "detail": finding.detail}
+            for finding in report.findings
+        ],
+    }
+
 HANDLER_BY_GATE: dict[str, dict[str, str]] = {
     "daily-quality": {
         GateAction.REPAIRABLE: "targeted-repair",
@@ -103,6 +125,8 @@ def _decision_ledger_entry(decision: RepairDecision) -> dict[str, Any]:
         "verify_gate": decision.verify_gate,
         "failure_status": decision.status_on_failure,
         "reason": decision.reason,
+        "direction": str(decision.evidence.get("direction") or ""),
+        "evidence": dict(decision.evidence),
     }
 
 
@@ -154,7 +178,14 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
     }
     if decision.handler_id:
         payload["handler_id"] = decision.handler_id
-        payload.update(repair_metadata(decision.handler_id) or {})
+        registry_meta = repair_metadata(decision.handler_id) or {}
+        payload["handler_kind"] = registry_meta.get("handler_kind", "")
+        payload["allowed_artifacts"] = list(decision.allowed_artifacts)
+        payload["registry_allowed_artifacts"] = list(registry_meta.get("allowed_artifacts") or [])
+        payload["registry_verify_gate"] = str(registry_meta.get("verify_gate") or "")
+        payload["registry_supported_verify_gates"] = list(
+            registry_meta.get("supported_verify_gates") or []
+        )
     elif decision.allowed_artifacts:
         payload["allowed_artifacts"] = list(decision.allowed_artifacts)
     if decisions is not None:
@@ -163,6 +194,10 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
 
 
 def classify(gate_id: str, output: str) -> dict[str, Any]:
+    completeness = _audit_current_repair_system()
+    if not completeness.ok:
+        return _repair_completeness_failure_payload(completeness)
+
     decisions = classify_gate_issues(gate_id, output)
     decision = decisions[0] if decisions else classify_gate_output(gate_id, output)
     if decision.status_on_failure != "blocked_unknown_repair_class":
@@ -255,7 +290,10 @@ def main(argv: list[str] | None = None) -> int:
         output = args.output
         if args.output_file is not None:
             output = args.output_file.read_text(encoding="utf-8", errors="replace")
-        print(json.dumps(classify(args.gate_id, output), ensure_ascii=False, indent=2))
+        payload = classify(args.gate_id, output)
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        # classify の成功は「typed decision を返せた」ことを意味する。
+        # audit failure 自体は typed_fatal payload として runner が terminal state に保存する。
         return 0
     if args.cmd == "run-gate":
         command = list(args.command)

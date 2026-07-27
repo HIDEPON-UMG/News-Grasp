@@ -245,7 +245,7 @@ def _validate_category_digest(
     if missing_in_articles:
         errors.append(
             _error(
-                "digest_article_url_mismatch",
+                "digest_articles_digest_only",
                 rel,
                 category=cat_id,
                 reason="digest URL is absent from issue articles.jsonl",
@@ -462,13 +462,22 @@ def validate_generation_quality(repo_root: Path, issue: str) -> GenerationQualit
             )
         )
     if issue_records and not any(rec.get("date_evidence_source") for rec in issue_records):
+        recoverable = any(
+            str(rec.get("published_date") or rec.get("published") or "").strip()
+            for rec in issue_records
+        )
         errors.append(
             _error(
-                "date_evidence_source_missing",
+                "date_evidence_source_recoverable" if recoverable else "date_evidence_source_missing",
                 "data/articles.jsonl",
-                reason="issue records have no date_evidence_source",
+                reason=(
+                    "issue records have no date_evidence_source but published evidence is present"
+                    if recoverable
+                    else "issue records have no date_evidence_source or recoverable published evidence"
+                ),
                 expected="at least one freshness annotation",
                 actual="none",
+                retryable=recoverable,
             )
         )
 

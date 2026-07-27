@@ -3,13 +3,16 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
+import tools.repair_runtime_e2e as runtime_module
 from tools.repair_runtime_e2e import (
     CompoundRepairStep,
     python_gate_command,
     run_compound_repair_plan,
     run_registry_repair_cycle,
 )
+from tools.repair_registry import RepairResult
 
 
 def _write_daily_quality_repair_fixture(root: Path, issue: str) -> None:
@@ -147,6 +150,63 @@ def _write_article_without_title_ja(path: Path, issue: str) -> None:
     path.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _write_articles_only_reconcile_fixture(root: Path, issue: str) -> tuple[Path, Path, Path]:
+    digest = root / "digest" / "AI" / f"{issue}-AI.md"
+    articles = root / "data" / "articles.jsonl"
+    records = root / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    manifest = root / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    for path in (digest, articles, records, manifest):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    record = {
+        "date": issue,
+        "genre": "AI",
+        "title": "Missing digest card",
+        "title_ja": "digest 未反映記事",
+        "summary": "runtime cycle で card を再生成する。",
+        "url": "https://example.com/runtime-articles-only",
+        "source": "Fixture News",
+        "published_date": issue,
+        "time": "06:30",
+        "thumb": "https://example.com/runtime-articles-only.jpg",
+        "score": 93,
+        "tags": ["cat/ai", "topic/repair", "score/高"],
+        "bullets": [
+            "【事実・概要】：articles_only を再現する。",
+            "【背景・要点】：reporter record を正本にする。",
+            "【影響・展望】：同じ gate を再検証する。",
+        ],
+    }
+    digest.write_text(
+        "\n".join(
+            [
+                "---",
+                f"date: {issue}",
+                "category: AI",
+                "---",
+                "# AI",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    record_line = json.dumps(record, ensure_ascii=False) + "\n"
+    articles.write_text(record_line, encoding="utf-8")
+    records.write_text(record_line, encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return digest, articles, records
+
+
 def test_record_schema_runtime_repair_cycle_reruns_same_gate(tmp_path: Path) -> None:
     issue = "2026-06-25"
     articles = tmp_path / "data" / "articles.jsonl"
@@ -181,6 +241,87 @@ def test_record_schema_runtime_repair_cycle_reruns_same_gate(tmp_path: Path) -> 
 
 def test_python_gate_command_uses_current_interpreter() -> None:
     assert python_gate_command("tools.validate_record", "--all")[0] == sys.executable
+
+
+def test_digest_articles_runtime_cycle_repairs_articles_only_and_reruns_same_gate(tmp_path: Path) -> None:
+    issue = "2026-07-27"
+    digest, articles, records = _write_articles_only_reconcile_fixture(tmp_path, issue)
+
+    result = run_registry_repair_cycle(
+        repo_root=tmp_path,
+        issue=issue,
+        gate_id="digest-articles-reconcile",
+        command=python_gate_command(
+            "tools.validate_digest_articles_reconcile",
+            "--issue-date",
+            issue,
+            "--digest-dir",
+            str(tmp_path / "digest"),
+            "--articles",
+            str(articles),
+        ),
+        artifacts=[
+            str(digest.relative_to(tmp_path)),
+            str(articles.relative_to(tmp_path)),
+            str(records.relative_to(tmp_path)),
+        ],
+    )
+
+    assert result.initial_exit_code == 1
+    assert result.handler_id == "digest-card-insert-patch"
+    assert result.repair_status == "repaired"
+    assert result.repair_changed is True
+    assert result.post_repair_exit_code == 0
+    assert result.final_status == "green_after_repair"
+    assert "### [93] digest 未反映記事" in digest.read_text(encoding="utf-8")
+
+
+def test_runtime_noop_is_not_reported_as_green_after_repair(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    gate_runs = iter(
+        [
+            SimpleNamespace(returncode=1, stdout="", stderr="structured red"),
+            SimpleNamespace(returncode=0, stdout="already converged", stderr=""),
+        ]
+    )
+    monkeypatch.setattr(runtime_module, "_run_gate", lambda *_args, **_kwargs: next(gate_runs))
+    monkeypatch.setattr(
+        runtime_module,
+        "classify_gate_output",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            repair_class=runtime_module.RepairClass.DETERMINISTIC_HANDLER,
+            handler_id="summary-emphasis-patch",
+            gate_id="daily-quality",
+            issue_code="summary_emphasis_missing",
+            status_on_failure="blocked_deterministic_repair_failed",
+        ),
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "repair_with_registry",
+        lambda _ctx: RepairResult(
+            "summary-emphasis-patch",
+            "noop",
+            False,
+            (),
+            "no mutation",
+        ),
+    )
+
+    result = runtime_module.run_registry_repair_cycle(
+        repo_root=tmp_path,
+        issue="2026-07-27",
+        gate_id="daily-quality",
+        command=["validator"],
+        artifacts=[],
+    )
+
+    assert result.post_repair_exit_code == 0
+    assert result.repair_status == "noop"
+    assert result.repair_changed is False
+    assert result.final_status == "already_green_after_noop"
 
 
 def test_daily_quality_runtime_repair_cycle_reruns_same_gate(tmp_path: Path) -> None:
@@ -333,7 +474,7 @@ def test_daily_quality_runtime_repairs_sequential_known_failures(tmp_path: Path)
         "    print(f'ERROR: digest/Summary/{issue}.md: reflection section §01 lacks required emphasis: ** ** bold, __ __ underline', file=sys.stderr)\n"
         "    raise SystemExit(1)\n"
         "if 'dropped' not in audit or 'coverage_terms_checked' not in audit:\n"
-        "    print(f'ERROR: data/search_audit/{issue}/mobility.json: dropped reasons are required when candidates were excluded.', file=sys.stderr)\n"
+        "    print(f'ERROR: data/search_audit/{issue}/mobility.json: dropped reasons are required when candidates were excluded. recoverable_sources=dropped_examples', file=sys.stderr)\n"
         "    print(f'ERROR: data/search_audit/{issue}/mobility.json: coverage_terms_checked missing required terms: BYD, Tesla, Toyota, Uber, Waymo', file=sys.stderr)\n"
         "    raise SystemExit(1)\n"
     )

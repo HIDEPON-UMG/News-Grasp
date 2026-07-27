@@ -33,6 +33,34 @@ def test_daily_quality_json_emphasis_issue_owns_digest_artifact_and_category() -
     assert issue["category"] == "it"
 
 
+def test_daily_quality_json_missing_summary_has_typed_target_artifact() -> None:
+    payload = daily_quality_json_payload(
+        "2026-07-22",
+        ["Summary digest が存在しません: digest/Summary/2026-07-22.md"],
+    )
+
+    issue = payload["issues"][0]
+    assert issue["issue_code"] == "missing_artifact"
+    assert issue["artifact_paths"] == ["digest/Summary/2026-07-22.md"]
+    assert issue["evidence"]["typed_reason"] == "missing_artifact"
+
+
+def test_daily_quality_json_missing_category_has_typed_target_artifact() -> None:
+    payload = daily_quality_json_payload(
+        "2026-07-22",
+        [
+            "scheduled category digest missing: ai (AI) for 2026-07-22. "
+            "配信対象カテゴリの digest が存在しないため公開前に停止します。"
+        ],
+    )
+
+    issue = payload["issues"][0]
+    assert issue["issue_code"] == "missing_artifact"
+    assert issue["artifact_paths"] == ["digest/AI/2026-07-22-AI.md"]
+    assert issue["category"] == "ai"
+    assert issue["evidence"]["typed_reason"] == "missing_artifact"
+
+
 def test_thumbnail_validator_does_not_crash_on_malformed_markdown_url(tmp_path: Path) -> None:
     digest = tmp_path / "digest" / "AI" / "2026-06-08-AI.md"
     digest.parent.mkdir(parents=True)

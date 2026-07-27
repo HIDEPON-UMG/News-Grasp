@@ -1,10 +1,15 @@
 """記事 URL とサムネ品質に関する共通判定。"""
 from __future__ import annotations
 
+import re
 from urllib.parse import urlparse
 
 GOOGLE_NEWS_RSS_MARKER = "news.google.com/rss/articles/"
 GOOGLE_NEWS_PROXY_THUMB_HOST = "lh3.googleusercontent.com"
+_NEWS_GRASP_THUMB_RE = re.compile(
+    r"^https?://hidepon-umg\.github\.io/News-Grasp/(?:assets/og/|assets/news-grasp)",
+    re.IGNORECASE,
+)
 
 _LANDING_PATH_SEGMENTS = {
     "article",
@@ -38,6 +43,11 @@ def is_google_news_proxy_thumb(url: object) -> bool:
     except ValueError:
         return False
     return parsed.scheme in {"http", "https"} and parsed.netloc.lower() == GOOGLE_NEWS_PROXY_THUMB_HOST
+
+
+def is_news_grasp_self_thumb(url: object) -> bool:
+    """News-Grasp 自身の公開画像を記事固有サムネとして参照していれば True。"""
+    return isinstance(url, str) and bool(_NEWS_GRASP_THUMB_RE.search(url))
 
 
 def looks_homepage_or_section_landing(url: str) -> bool:

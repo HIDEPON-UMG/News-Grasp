@@ -731,15 +731,15 @@ def test_generation_quality_repair_prompt_guides_audio_script_length_convergence
     assert "2600〜2800" in repair_body
 
 
-def test_generation_quality_audio_length_uses_deterministic_repair_before_codex() -> None:
-    """音声台本の字数不足は runner 個別分岐ではなく registry 経由で決定論的補修する。"""
+def test_generation_quality_audio_length_uses_typed_llm_rewrite_not_legacy_handler() -> None:
+    """音声台本の品質不足を到達不能な旧 deterministic handler へ戻さない。"""
     runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     repair_body = runner.split("function Invoke-TargetedRepair", 1)[1].split("function Snapshot-RepairWorkspace", 1)[0]
 
-    assert "Invoke-DeterministicRegistryRepair" in repair_body
-    assert "audio-script-length-patch" in runner
+    assert "audio_script_quality_invalid" in repair_body
+    assert "audio-script-length-patch" not in runner
     assert "Invoke-DeterministicGenerationRepair" not in runner
-    assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("codex auth readiness gate start")
+    assert "Invoke-CodexWrapper" in repair_body
 
 
 def test_runner_has_single_registry_repair_path_without_legacy_deterministic_duplicate() -> None:
@@ -768,6 +768,14 @@ def test_runner_invokes_repair_registry_before_llm_worker() -> None:
     assert "foreach ($artifact in $repairArtifacts)" in runner
     assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Test-RepairWorkerPreflight")
     assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Invoke-CodexWrapper")
+
+
+def test_runner_does_not_report_registry_noop_as_repair_success() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "$registryStatus -eq 'noop'" in runner
+    assert "registry noop; same-gate reverify required" in runner
+    assert "deterministic registry repair produced no mutation" in runner
 
 
 def test_runner_blocks_llm_worker_unless_matrix_allows_missing_artifact_generation() -> None:

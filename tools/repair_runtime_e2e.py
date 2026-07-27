@@ -162,6 +162,11 @@ def run_registry_repair_cycle(
         current_output = (second.stdout or "") + (second.stderr or "")
         post_outputs.append(current_output)
         if second.returncode == 0:
+            final_status = (
+                "already_green_after_noop"
+                if repair.status == "noop"
+                else "green_after_repair"
+            )
             return RepairRuntimeResult(
                 gate_id=gate_id,
                 initial_exit_code=first.returncode,
@@ -170,7 +175,7 @@ def run_registry_repair_cycle(
                 repair_status=repair.status,
                 repair_changed=repair_changed,
                 repaired_artifacts=tuple(dict.fromkeys(repaired_artifacts)),
-                final_status="green_after_repair",
+                final_status=final_status,
                 initial_output=initial_output,
                 post_repair_output="\n".join(post_outputs),
             )
@@ -231,7 +236,13 @@ def _recover_residual_known_failure(
         repair_status=repair.status,
         repair_changed=result.repair_changed or repair.changed,
         repaired_artifacts=tuple(dict.fromkeys((*result.repaired_artifacts, *repair.artifacts))),
-        final_status="green_after_recovery" if second.returncode == 0 else "still_red",
+        final_status=(
+            "already_green_after_noop"
+            if second.returncode == 0 and repair.status == "noop"
+            else "green_after_recovery"
+            if second.returncode == 0
+            else "still_red"
+        ),
         initial_output=result.initial_output,
         post_repair_output=recovery_output,
     )
@@ -263,7 +274,12 @@ def run_compound_repair_plan(
                 artifacts=step.artifacts,
             )
         results.append(result)
-        if result.final_status in {"already_green", "green_after_repair", "green_after_recovery"}:
+        if result.final_status in {
+            "already_green",
+            "already_green_after_noop",
+            "green_after_repair",
+            "green_after_recovery",
+        }:
             continue
         return CompoundRepairPlanResult(
             final_status="failed_internal_block",

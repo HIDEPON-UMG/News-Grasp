@@ -6,6 +6,8 @@ import json
 import re
 from typing import Any, Iterable
 
+from tools.validate_daily_quality import daily_quality_issue_code
+
 
 class RepairClass(StrEnum):
     DETERMINISTIC_HANDLER = "deterministic_handler"
@@ -109,7 +111,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
-        "thumb_invalid_or_missing",
+        "thumb_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "url-quarantine-refill",
         (
@@ -123,25 +125,122 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
-        "digest_title_ja_untranslated",
+        "thumb_invalid",
         RepairClass.DETERMINISTIC_HANDLER,
-        "digest-record-sync-patch",
+        "url-quarantine-refill",
         (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
             "digest/{category}/{date}-{category}.md",
             "tmp/newsroom/{date}/{category}.records.jsonl",
-            "data/articles.jsonl",
         ),
-        "daily-quality",
-        "blocked_deterministic_repair_failed",
+        "url-liveness",
+        "blocked_refill_unresolved",
     ),
     CoverageRow(
         "daily-quality",
-        "search_audit_metadata_missing",
+        "source_url_unresolved",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "url-quarantine-refill",
+        (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
+        "url-liveness",
+        "blocked_refill_unresolved",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "articles_json_invalid",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/articles.jsonl",),
+        "daily-quality",
+        "blocked_generation_input_invalid",
+        "invalid_input",
+        "local_artifact_inventory",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "articles_data_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/articles.jsonl",),
+        "daily-quality",
+        "blocked_articles_data_missing",
+        "missing_input",
+        "local_artifact_inventory",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "digest_title_ja_untranslated",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "digest-title-ja-rewrite",
+        ("digest/{category}/{date}-{category}.md",),
+        "daily-quality",
+        "blocked_digest_title_ja_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_coverage_terms_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "search-audit-metadata-patch",
         ("data/search_audit/{date}",),
         "daily-quality",
         "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_queries_recoverable",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "search-audit-metadata-patch",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_queries_insufficient",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_search_audit_queries_insufficient",
+        "missing_search_query_evidence",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_dropped_evidence_recoverable",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "search-audit-metadata-patch",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_dropped_evidence_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_search_audit_dropped_evidence_missing",
+        "missing_collection_evidence",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_metadata_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_search_audit_metadata_direction_unspecified",
+        "legacy_direction_unspecified",
+        "news-grasp",
     ),
     CoverageRow(
         "daily-quality",
@@ -170,19 +269,152 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "daily-quality",
         "followup_review_required",
         RepairClass.DETERMINISTIC_HANDLER,
-        "followup-review-note-patch",
-        ("data/articles.jsonl",),
-        "daily-quality",
-        "blocked_followup_review_rewrite_failed",
+        "url-quarantine-refill",
+        (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
+        "url-liveness",
+        "blocked_refill_unresolved",
     ),
     CoverageRow(
         "daily-quality",
         "published_docs_missing",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "published-docs-regenerate",
+        RepairClass.TYPED_FATAL,
+        "",
         ("docs/{date}/index.html", "docs/deepdive/{date}/index.html"),
         "deepdive-required",
-        "blocked_deterministic_repair_failed",
+        "blocked_published_docs_regeneration_unsupported",
+        "unsafe_broad_regeneration",
+        "news-grasp",
+        "published docs の入力正本と再生成範囲を一意に確定できない",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_search_audit_missing",
+        "missing_collection_evidence",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_invalid",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_search_audit_invalid",
+        "invalid_collection_evidence",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "search_audit_collection_shortfall",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/search_audit/{date}",),
+        "daily-quality",
+        "blocked_search_collection_shortfall",
+        "insufficient_collection_evidence",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "audio_script_missing",
+        RepairClass.LLM_GENERATE_MISSING_ARTIFACT,
+        "llm-missing-generated-artifact",
+        ("digest/Summary/{date}-audio-script.md",),
+        "generation-quality",
+        "blocked_audio_script_generation_failed",
+        reason="missing_artifact",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "audio_publish_state_invalid",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("build/tts/latest_audio.json",),
+        "daily-quality",
+        "blocked_audio_publish_state_invalid",
+        "publish_state_invalid",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "audio_public_reflection_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("docs/index.html", "docs/{date}/summary/index.html"),
+        "daily-quality",
+        "blocked_audio_public_reflection_invalid",
+        "public_reflection_invalid",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "summary_category_focus_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "summary-category-focus-rewrite",
+        ("digest/Summary/{date}.md",),
+        "daily-quality",
+        "blocked_summary_category_focus_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "summary_weekday_mismatch",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("digest/Summary/{date}.md",),
+        "daily-quality",
+        "blocked_summary_schedule_identity_invalid",
+        "invalid_artifact_identity",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "summary_unscheduled_category_reference",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "summary-schedule-rewrite",
+        ("digest/Summary/{date}.md",),
+        "daily-quality",
+        "blocked_summary_schedule_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "digest_style_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "digest-style-rewrite",
+        ("digest/{category}/{date}-{category}.md",),
+        "daily-quality",
+        "blocked_digest_style_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "category_digest_empty",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("digest/{category}/{date}-{category}.md",),
+        "daily-quality",
+        "blocked_existing_artifact_llm_recreate",
+        "unsafe_existing_artifact_repair",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "deepdive_layout_invalid",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("digest/DeepDive/{date}.md",),
+        "daily-quality",
+        "blocked_deepdive_structure_repair_unsupported",
+        "unsafe_existing_artifact_repair",
+        "news-grasp",
     ),
     CoverageRow(
         "daily-quality",
@@ -268,19 +500,13 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "generation-quality",
         "articles_issue_empty",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "digest-articles-reconcile-patch",
-        (
-            "data/articles.jsonl",
-            "data/_status.md",
-            "data/gate_attempts/{date}.json",
-            "data/search_audit/{date}",
-            "digest",
-            "tmp/newsroom/{date}/{category}.records.jsonl",
-            "build/reporter-artifacts/{date}/editor-input-manifest.json",
-        ),
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/articles.jsonl",),
         "generation-quality",
-        "blocked_deterministic_repair_failed",
+        "blocked_articles_issue_empty_direction_unresolved",
+        "missing_direction_evidence",
+        "news-grasp",
     ),
     CoverageRow(
         "generation-quality",
@@ -339,9 +565,9 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "generation-quality",
-        "digest_article_url_mismatch",
+        "digest_articles_digest_only",
         RepairClass.DETERMINISTIC_HANDLER,
-        "digest-articles-reconcile-patch",
+        "digest-articles-digest-only-patch",
         (
             "digest",
             "digest/{category}/{date}-{category}.md",
@@ -434,7 +660,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "generation-quality",
-        "date_evidence_source_missing",
+        "date_evidence_source_recoverable",
         RepairClass.DETERMINISTIC_HANDLER,
         "date-evidence-source-patch",
         ("data/articles.jsonl",),
@@ -443,18 +669,32 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "generation-quality",
+        "date_evidence_source_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/articles.jsonl",),
+        "generation-quality",
+        "blocked_date_evidence_source_missing",
+        "missing_freshness_evidence",
+        "news-grasp",
+    ),
+    CoverageRow(
+        "generation-quality",
         "deepdive_structure_invalid",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "deepdive-structure-patch",
+        RepairClass.TYPED_FATAL,
+        "",
         ("digest/DeepDive/{date}.md",),
         "generation-quality",
-        "blocked_deterministic_repair_failed",
+        "blocked_deepdive_structure_repair_unsupported",
+        "unsafe_existing_artifact_repair",
+        "news-grasp",
+        "構造破損した既存 DeepDive を決定的な局所 patch で直せない",
     ),
     CoverageRow(
         "digest-articles-reconcile",
-        "digest_article_url_mismatch",
+        "digest_articles_digest_only",
         RepairClass.DETERMINISTIC_HANDLER,
-        "digest-articles-reconcile-patch",
+        "digest-articles-digest-only-patch",
         (
             "digest",
             "digest/{category}/{date}-{category}.md",
@@ -466,7 +706,22 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
             "build/reporter-artifacts/{date}/editor-input-manifest.json",
         ),
         "digest-articles-reconcile",
-        "blocked_deterministic_repair_failed",
+        "blocked_digest_only_ambiguous",
+    ),
+    CoverageRow(
+        "digest-articles-reconcile",
+        "digest_articles_articles_only",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "digest-card-insert-patch",
+        (
+            "digest",
+            "digest/{category}/{date}-{category}.md",
+            "data/articles.jsonl",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+        ),
+        "digest-articles-reconcile",
+        "blocked_articles_only_card_insert_failed",
     ),
     CoverageRow(
         "record-schema",
@@ -488,7 +743,7 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "record-schema",
-        "thumb_invalid_or_missing",
+        "thumb_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "record-thumb-quarantine-patch",
         ("data/articles.jsonl", "data/search_audit/{date}"),
@@ -496,22 +751,51 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
+        "record-schema",
+        "thumb_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "record-thumb-quarantine-patch",
+        ("data/articles.jsonl", "data/search_audit/{date}"),
+        "record-schema",
+        "blocked_deterministic_repair_failed",
+    ),
+    CoverageRow(
+        "record-schema",
+        "thumb_invalid_or_missing",
+        RepairClass.TYPED_FATAL,
+        "",
+        ("data/articles.jsonl",),
+        "record-schema",
+        "blocked_thumb_direction_unspecified",
+        "legacy_direction_unspecified",
+        "news-grasp",
+    ),
+    CoverageRow(
         "url-liveness",
         "url_dead_or_stale",
         RepairClass.DETERMINISTIC_HANDLER,
         "url-quarantine-refill",
-        ("data/articles.jsonl", "data/search_audit/{date}"),
+        (
+            "data/articles.jsonl",
+            "data/search_audit/{date}",
+            "digest/{category}/{date}-{category}.md",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/quarantine/{date}/bad-urls.json",
+        ),
         "url-liveness",
         "blocked_refill_unresolved",
     ),
     CoverageRow(
         "public-html",
         "public_home_fallback",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "public-home-regenerate",
+        RepairClass.TYPED_FATAL,
+        "",
         ("docs/index.html", "digest/Summary/{date}.md"),
         "public-html",
-        "blocked_deterministic_repair_failed",
+        "blocked_public_home_regeneration_unsupported",
+        "unsafe_broad_regeneration",
+        "news-grasp",
+        "fallback 原因を一意に特定せず public home を再生成できない",
     ),
     CoverageRow(
         "public-surface",
@@ -538,11 +822,14 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     CoverageRow(
         "deepdive-required",
         "published_docs_missing",
-        RepairClass.DETERMINISTIC_HANDLER,
-        "published-docs-regenerate",
+        RepairClass.TYPED_FATAL,
+        "",
         ("docs/{date}/index.html", "docs/deepdive/{date}/index.html"),
         "deepdive-required",
-        "blocked_deterministic_repair_failed",
+        "blocked_published_docs_regeneration_unsupported",
+        "unsafe_broad_regeneration",
+        "news-grasp",
+        "published docs の入力正本と再生成範囲を一意に確定できない",
     ),
     CoverageRow(
         "deepdive-required",
@@ -919,16 +1206,24 @@ def _followup_review_metadata(output: str) -> dict[str, Any]:
 
 def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
+    if gate_id == "daily-quality":
+        daily_code = daily_quality_issue_code(output)
+        if daily_code != "unknown":
+            return daily_code
     if "add followup_review_note" in text or "follow-up matched_with url date" in text:
         return "followup_review_required"
     if SEARCH_AUDIT_COUNT_MISMATCH_RE.search(output) or (
         "selected_total=" in text and "does not match digest article count" in text
     ):
         return "search_audit_count_mismatch"
-    if "digest_article_url_mismatch" in text or "digest url" in text:
-        return "digest_article_url_mismatch"
-    if "digest md と articles.jsonl" in text or "articles-only" in text or "digest-only" in text:
-        return "digest_article_url_mismatch"
+    if "digest_articles_articles_only" in text:
+        return "digest_articles_articles_only"
+    if "digest_articles_digest_only" in text or "digest url" in text:
+        return "digest_articles_digest_only"
+    if "articles-only" in text and "digest-only" not in text:
+        return "digest_articles_articles_only"
+    if "digest-only" in text:
+        return "digest_articles_digest_only"
     if "audio_script_quality_invalid" in text:
         return "audio_script_quality_invalid"
     if "summary_hero_missing" in text or "hero_left" in text or "hero_right" in text:
@@ -955,6 +1250,10 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "digest_title_ja_untranslated"
     if "title_ja" in text:
         return "title_ja_missing"
+    if "必須キー欠落: 'thumb'" in text or '必須キー欠落: "thumb"' in text:
+        return "thumb_missing"
+    if "thumb は" in text:
+        return "thumb_invalid"
     if "thumb" in text or "thumbnail" in text:
         return "thumb_invalid_or_missing"
     if (
@@ -1113,7 +1412,8 @@ def _issue_priority(issue_code: str) -> int:
     priority = {
         "articles_json_invalid": 0,
         "articles_issue_empty": 1,
-        "digest_article_url_mismatch": 2,
+        "digest_articles_digest_only": 2,
+        "digest_articles_articles_only": 2,
         "date_evidence_source_missing": 3,
         "missing_artifact": 10,
         "summary_hero_missing": 20,

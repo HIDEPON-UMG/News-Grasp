@@ -29,8 +29,11 @@ REQUIRED_ROWS = {
     ("generation-quality", "missing_artifact"),
     ("generation-quality", "date_evidence_source_missing"),
     ("generation-quality", "deepdive_structure_invalid"),
-    ("digest-articles-reconcile", "digest_article_url_mismatch"),
+    ("digest-articles-reconcile", "digest_articles_digest_only"),
+    ("digest-articles-reconcile", "digest_articles_articles_only"),
     ("record-schema", "title_ja_missing"),
+    ("record-schema", "thumb_missing"),
+    ("record-schema", "thumb_invalid"),
     ("record-schema", "thumb_invalid_or_missing"),
     ("url-liveness", "url_dead_or_stale"),
     ("public-html", "public_home_fallback"),
@@ -155,7 +158,7 @@ def test_generation_quality_multi_issue_prioritizes_state_consistency_before_aud
             "errors": [
                 {"code": "audio_script_quality_invalid", "artifact": "digest/Summary/2026-06-28-audio-script.md"},
                 {"code": "articles_issue_empty", "artifact": "data/articles.jsonl"},
-                {"code": "digest_article_url_mismatch", "artifact": "digest/AI/2026-06-28-AI.md"},
+                {"code": "digest_articles_digest_only", "artifact": "digest/AI/2026-06-28-AI.md"},
             ],
         },
         ensure_ascii=False,
@@ -164,23 +167,92 @@ def test_generation_quality_multi_issue_prioritizes_state_consistency_before_aud
     decision = classify_gate_output("generation-quality", output)
 
     assert decision.issue_code == "articles_issue_empty"
-    assert decision.handler_id == "digest-articles-reconcile-patch"
-    assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
+    assert decision.handler_id == ""
+    assert decision.repair_class == RepairClass.TYPED_FATAL
+    assert decision.status_on_failure == "blocked_articles_issue_empty_direction_unresolved"
 
 
 def test_digest_reconcile_japanese_output_routes_to_reconcile_patch() -> None:
-    output = (
-        "FAIL: digest md と articles.jsonl の当日 URL が一致しません "
-        "(号日 2026-07-26, digest-only=0, articles-only=5):\n"
-        "  articles-only (articles.jsonl だけに存在。カード生成漏れの疑い):\n"
-        "    - Mobility: https://example.com/story\n"
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "digest-articles-reconcile",
+            "issues": [
+                {
+                    "issue_code": "digest_articles_articles_only",
+                    "direction": "articles_only",
+                    "issue_date": "2026-07-26",
+                    "category": "Mobility",
+                    "url": "https://example.com/story",
+                    "artifact_paths": [
+                        "digest/Mobility/2026-07-26-Mobility.md",
+                        "tmp/newsroom/2026-07-26/mobility.records.jsonl",
+                    ],
+                    "evidence": {
+                        "direction": "articles_only",
+                        "record_source": "current_reporter",
+                        "target_digest_path": "digest/Mobility/2026-07-26-Mobility.md",
+                    },
+                }
+            ],
+        },
+        ensure_ascii=False,
     )
 
     decision = classify_gate_output("digest-articles-reconcile", output)
 
-    assert decision.issue_code == "digest_article_url_mismatch"
-    assert decision.handler_id == "digest-articles-reconcile-patch"
+    assert decision.issue_code == "digest_articles_articles_only"
+    assert decision.handler_id == "digest-card-insert-patch"
     assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
+    assert decision.status_on_failure == "blocked_articles_only_card_insert_failed"
+    assert decision.category == "Mobility"
+    assert decision.evidence["direction"] == "articles_only"
+
+
+def test_digest_reconcile_directions_route_to_distinct_handlers_and_statuses() -> None:
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "digest-articles-reconcile",
+            "issues": [
+                {
+                    "issue_code": "digest_articles_digest_only",
+                    "direction": "digest_only",
+                    "issue_date": "2026-07-27",
+                    "category": "AI",
+                    "url": "https://example.com/digest-only",
+                    "artifact_paths": [
+                        "digest/AI/2026-07-27-AI.md",
+                        "data/articles.jsonl",
+                    ],
+                    "evidence": {"direction": "digest_only"},
+                },
+                {
+                    "issue_code": "digest_articles_articles_only",
+                    "direction": "articles_only",
+                    "issue_date": "2026-07-27",
+                    "category": "AI",
+                    "url": "https://example.com/articles-only",
+                    "artifact_paths": [
+                        "digest/AI/2026-07-27-AI.md",
+                        "tmp/newsroom/2026-07-27/ai.records.jsonl",
+                    ],
+                    "evidence": {"direction": "articles_only"},
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    decisions = classify_gate_issues("digest-articles-reconcile", output)
+    by_code = {decision.issue_code: decision for decision in decisions}
+
+    digest_only = by_code["digest_articles_digest_only"]
+    articles_only = by_code["digest_articles_articles_only"]
+    assert digest_only.handler_id == "digest-articles-digest-only-patch"
+    assert digest_only.status_on_failure == "blocked_digest_only_ambiguous"
+    assert articles_only.handler_id == "digest-card-insert-patch"
+    assert articles_only.status_on_failure == "blocked_articles_only_card_insert_failed"
 
 
 def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> None:
@@ -197,7 +269,7 @@ def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> Non
                     "artifact": "data/articles.jsonl",
                 },
                 {
-                    "code": "digest_article_url_mismatch",
+                    "code": "digest_articles_digest_only",
                     "artifact": "digest/AI/2026-06-28-AI.md",
                 },
             ],
@@ -209,7 +281,7 @@ def test_generation_quality_multi_issue_returns_ordered_decision_ledger() -> Non
 
     assert [decision.issue_code for decision in decisions] == [
         "articles_issue_empty",
-        "digest_article_url_mismatch",
+        "digest_articles_digest_only",
         "audio_script_quality_invalid",
     ]
     assert decisions[0].artifact_paths == ("data/articles.jsonl",)
@@ -289,7 +361,7 @@ def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -
     assert [decision.issue_code for decision in decisions] == [
         "summary_reflection_emphasis_missing",
         "summary_reflection_emphasis_missing",
-        "thumb_invalid_or_missing",
+        "thumb_missing",
     ]
     assert decisions[0].handler_id == "summary-emphasis-patch"
     assert decisions[2].handler_id == "url-quarantine-refill"
@@ -297,7 +369,7 @@ def test_daily_quality_text_fallback_splits_summary_emphasis_and_thumb_lines() -
     assert decisions[2].evidence["category"] == "it"
 
 
-def test_daily_quality_untranslated_digest_title_routes_to_record_sync_patch() -> None:
+def test_daily_quality_untranslated_digest_title_routes_to_bounded_rewrite() -> None:
     output = (
         "ERROR: digest\\Game\\2026-07-21-Game.md: card #04 title_ja appears untranslated: "
         "[74] GRIZZY AND THE LEMMINGS - CRAZY PARTY LAUNCHES AUGUST 7"
@@ -306,7 +378,8 @@ def test_daily_quality_untranslated_digest_title_routes_to_record_sync_patch() -
     decisions = classify_gate_issues("daily-quality", output)
 
     assert decisions[0].issue_code == "digest_title_ja_untranslated"
-    assert decisions[0].handler_id == "digest-record-sync-patch"
+    assert decisions[0].repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+    assert decisions[0].handler_id == "digest-title-ja-rewrite"
     assert decisions[0].artifact_paths == ("digest/Game/2026-07-21-Game.md",)
     assert decisions[0].category == "game"
 
@@ -348,8 +421,9 @@ def test_daily_quality_shortfall_query_metadata_routes_to_metadata_patch() -> No
         "daily-quality",
         "ERROR: data\\search_audit\\2026-07-12\\it.json: queries must contain at least 3 search queries for shortfall review.",
     )
-    assert decisions[0].issue_code == "search_audit_metadata_missing"
-    assert decisions[0].handler_id == "search-audit-metadata-patch"
+    assert decisions[0].issue_code == "search_audit_queries_insufficient"
+    assert decisions[0].repair_class == RepairClass.TYPED_FATAL
+    assert decisions[0].handler_id == ""
 
 
 def test_daily_quality_followup_review_routes_to_llm_rewrite() -> None:
@@ -359,7 +433,7 @@ def test_daily_quality_followup_review_routes_to_llm_rewrite() -> None:
     )
     assert decisions[0].issue_code == "followup_review_required"
     assert decisions[0].repair_class.value == "deterministic_handler"
-    assert decisions[0].handler_id == "followup-review-note-patch"
+    assert decisions[0].handler_id == "url-quarantine-refill"
     assert decisions[0].artifact_paths == ("data/articles.jsonl",)
     assert decisions[0].issue_date == "2026-07-12"
 
@@ -390,7 +464,7 @@ def test_daily_quality_search_audit_coverage_terms_routes_with_audit_artifact() 
 
     decisions = classify_gate_issues("daily-quality", output)
 
-    assert decisions[0].issue_code == "search_audit_metadata_missing"
+    assert decisions[0].issue_code == "search_audit_coverage_terms_missing"
     assert decisions[0].handler_id == "search-audit-metadata-patch"
     assert decisions[0].artifact_paths == ("data/search_audit/2026-07-08/mobility.json",)
     assert decisions[0].issue_date == "2026-07-08"
@@ -467,14 +541,14 @@ def test_generation_quality_text_fallback_prioritizes_digest_mismatch_before_aud
     output = "\n".join(
         [
             "ERROR: audio_script_quality_invalid: 字数不足",
-            "ERROR: digest_article_url_mismatch: digest URL is absent from issue articles.jsonl",
+            "ERROR: digest_articles_digest_only: digest URL is absent from issue articles.jsonl",
         ]
     )
 
     decision = classify_gate_output("generation-quality", output)
 
-    assert decision.issue_code == "digest_article_url_mismatch"
-    assert decision.handler_id == "digest-articles-reconcile-patch"
+    assert decision.issue_code == "digest_articles_digest_only"
+    assert decision.handler_id == "digest-articles-digest-only-patch"
 
 
 def test_google_api_external_is_typed_external_not_green() -> None:
