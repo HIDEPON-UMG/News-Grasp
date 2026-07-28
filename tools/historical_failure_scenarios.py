@@ -589,6 +589,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-27-digest-articles-reconcile-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-28",
+        "generation-quality / date-evidence-source-patch / record-schema / post-deepdive resume / publish-complete",
+        "reporter records retained freshness evidence, but data/articles.jsonl lost published_date and date_evidence_source for the same issue URLs, so generation-quality classified the loss as terminal instead of recoverable",
+        "reporter freshness evidence recovery boundary",
+        "generation-quality must classify missing article freshness evidence as recoverable when current reporter records contain matching URL freshness evidence, and the date-evidence handler must patch existing article rows from reporter records without manual edits",
+        "generation-quality reporter-record fixture, registry date-evidence patch fixture, repair coverage/matrix sync fixtures, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
+        "docs/incidents/2026-07-28-generation-quality-date-evidence-recovery-report.html",
+        "runtime_e2e_required",
+    ),
 )
 
 
@@ -721,6 +731,15 @@ WEEKLY_FAILURE_REGRESSION_CASES: tuple[WeeklyFailureRegressionCase, ...] = (
         "digest-card-insert-patch",
         ("digest/AI/2026-07-27-AI.md", "tmp/newsroom/2026-07-27/ai.records.jsonl"),
         "AI",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-28",
+        "generation-quality",
+        "date_evidence_source_recoverable",
+        "deterministic_handler",
+        "blocked_deterministic_repair_failed",
+        "date-evidence-source-patch",
+        ("data/articles.jsonl", "tmp/newsroom/2026-07-28/*.records.jsonl"),
     ),
 )
 

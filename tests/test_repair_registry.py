@@ -1281,6 +1281,56 @@ def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_
     assert "https://example.com/current" in repaired
 
 
+def test_date_evidence_patch_restores_existing_article_from_reporter_records(tmp_path: Path) -> None:
+    issue = "2026-06-28"
+    articles = tmp_path / "data" / "articles.jsonl"
+    records = tmp_path / "tmp" / "newsroom" / issue / "ai.records.jsonl"
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    for path in (articles, records, manifest):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    incomplete = {
+        "date": issue,
+        "genre": "AI",
+        "title": "current",
+        "url": "https://example.com/current",
+        "source": "Example",
+    }
+    reporter = {
+        **incomplete,
+        "published_date": issue,
+        "date_evidence_source": "htmldate",
+        "seen_at": f"{issue}T06:00:00+09:00",
+    }
+    articles.write_text(json.dumps(incomplete, ensure_ascii=False) + "\n", encoding="utf-8")
+    records.write_text(json.dumps(reporter, ensure_ascii=False) + "\n", encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["ai"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/ai.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="date-evidence-source-patch",
+            artifacts=["data/articles.jsonl"],
+        )
+    )
+
+    repaired = json.loads(articles.read_text(encoding="utf-8").strip())
+    assert result.status == "repaired"
+    assert repaired["published_date"] == issue
+    assert repaired["date_evidence_source"] == "htmldate"
+    assert repaired["seen_at"] == f"{issue}T06:00:00+09:00"
+
+
 def test_articles_only_handler_generates_digest_card_and_reconcile_turns_green(tmp_path: Path) -> None:
     """current reporter record から欠落 card を再生成し、同じ gate を Green に戻す。"""
     issue = "2026-07-27"
@@ -1515,6 +1565,87 @@ def test_articles_only_handler_uses_current_articles_when_manifest_is_absent(
         "digest_only": [],
         "articles_only": [],
     }
+
+
+def test_digest_card_insert_repairs_empty_category_digest_from_current_reporter_record(
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-29"
+    digest = tmp_path / "digest" / "IT-Consulting" / f"{issue}-IT-Consulting.md"
+    records = tmp_path / "tmp" / "newsroom" / issue / "it.records.jsonl"
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    articles = tmp_path / "data" / "articles.jsonl"
+    for path in (digest, records, manifest, articles):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    record = {
+        "date": issue,
+        "genre": "IT-Consulting",
+        "title": "GMO Cybersecurity launches AI defense base",
+        "title_ja": "GMO、AI防御基盤を構築",
+        "summary": "record には採用記事があるが、digest card だけが欠落している。",
+        "url": "https://example.com/gmo-ai-defense",
+        "source": "GMOサイバーセキュリティ",
+        "published_date": "2026-07-27",
+        "time": "00:00",
+        "thumb": "https://example.com/gmo-ai-defense.jpg",
+        "score": 92,
+        "tags": ["cat/it", "topic/AIセキュリティ", "score/高"],
+        "bullets": [
+            "【事実・概要】：GMO が AI 防御基盤を構築した。",
+            "【背景・要点】：record を正本にして空 digest を決定的に修復する。",
+        ],
+    }
+    digest.write_text(
+        "\n".join(
+            [
+                "---",
+                f"date: {issue}",
+                "category: IT-Consulting",
+                "categoryId: it",
+                "---",
+                "# IT",
+                "",
+                "> summary",
+                "",
+                f"__**← [[2026-07-28|前号]] | [[2026-07-30|翌号]] →**__",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    records.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+    articles.write_text("", encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": issue,
+                "scheduled_categories": ["it"],
+                "reporter_artifacts": [f"tmp/newsroom/{issue}/it.records.jsonl"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="digest-card-insert-patch",
+            artifacts=[
+                f"digest/IT-Consulting/{issue}-IT-Consulting.md",
+                f"tmp/newsroom/{issue}/it.records.jsonl",
+                f"build/reporter-artifacts/{issue}/editor-input-manifest.json",
+            ],
+        )
+    )
+
+    repaired = digest.read_text(encoding="utf-8")
+    assert result.status == "repaired"
+    assert "### [92] GMO、AI防御基盤を構築" in repaired
+    assert "https://example.com/gmo-ai-defense" in repaired
+    assert f"[[2026-07-30|翌号]]" in repaired
 
 
 def test_digest_only_handler_removes_stale_card_with_authoritative_manifest(tmp_path: Path) -> None:

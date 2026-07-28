@@ -21,6 +21,7 @@ REQUIRED_ROWS = {
     ("daily-quality", "category_card_emphasis_missing"),
     ("daily-quality", "search_audit_metadata_missing"),
     ("daily-quality", "search_audit_count_mismatch"),
+    ("daily-quality", "category_digest_empty"),
     ("daily-quality", "top_article_stale"),
     ("deepdive-required", "search_audit_count_mismatch"),
     ("generation-quality", "audio_script_quality_invalid"),
@@ -143,6 +144,27 @@ def test_repair_matrix_rejects_issue_artifact_outside_handler_scope() -> None:
     assert decision.repair_class == RepairClass.TYPED_FATAL
     assert decision.status_on_failure == "repair_context_scope_mismatch"
     assert "data/articles.jsonl" in decision.reason
+
+
+def test_daily_quality_category_digest_empty_routes_to_digest_card_insert() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="daily-quality",
+            issue_code="category_digest_empty",
+            artifact_paths=(
+                "digest/IT-Consulting/2026-07-29-IT-Consulting.md",
+                "tmp/newsroom/2026-07-29/it.records.jsonl",
+                "build/reporter-artifacts/2026-07-29/editor-input-manifest.json",
+            ),
+            issue_date="2026-07-29",
+            category="it",
+        )
+    )
+
+    assert decision.repair_class == RepairClass.DETERMINISTIC_HANDLER
+    assert decision.handler_id == "digest-card-insert-patch"
+    assert decision.verify_gate == "daily-quality"
+    assert decision.status_on_failure == "blocked_articles_only_card_insert_failed"
 
 
 def test_repair_coverage_inventory_has_no_missing_known_validator_issue() -> None:

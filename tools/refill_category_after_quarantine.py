@@ -83,7 +83,12 @@ def _format_digest_card(row: dict[str, Any]) -> str:
         lines.extend([meta, ""])
     if thumb:
         lines.extend([f"![thumb]({thumb})", ""])
+    tags = [str(tag).strip() for tag in (row.get("tags") or []) if str(tag).strip()]
+    if tags:
+        lines.extend([" ".join(f"#{tag.lstrip('#')}" for tag in tags), ""])
     if summary:
+        if "[[" not in summary or "__" not in summary:
+            summary = f"[[補充候補]]として採用。__{summary}__"
         lines.append(f"- **補充採用**: {summary}")
     return "\n".join(lines).rstrip()
 

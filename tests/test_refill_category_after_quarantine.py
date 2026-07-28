@@ -84,6 +84,7 @@ def test_refill_category_replaces_quarantined_url_from_reserve(tmp_path: Path) -
         "title": "reserve title",
         "url": "https://example.com/reserve",
         "thumb": "https://example.com/reserve-thumb.jpg",
+        "tags": ["cat/ai", "topic/reserve-signal", "event/refill"],
     }
     (candidate_dir / "ai_candidates.jsonl").write_text(json.dumps(candidate, ensure_ascii=False) + "\n", encoding="utf-8")
     articles_path = tmp_path / "data" / "articles.jsonl"
@@ -117,6 +118,11 @@ def test_refill_category_replaces_quarantined_url_from_reserve(tmp_path: Path) -
     assert "https://example.com/reserve" in records_text
     assert "https://example.com/reserve" in articles_text
     assert "https://example.com/reserve" in digest_text
+    reserve_block = digest_text[digest_text.index("### [70] reserve title") :]
+    assert "**" in reserve_block
+    assert "__" in reserve_block
+    assert "[[" in reserve_block and "]]" in reserve_block
+    assert "#topic/reserve-signal" in reserve_block
     refill_records = [
         json.loads(line)
         for line in (tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl").read_text(encoding="utf-8").splitlines()

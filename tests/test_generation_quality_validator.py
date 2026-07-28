@@ -448,6 +448,36 @@ def test_generation_quality_marks_date_evidence_source_recoverable_from_publishe
     )
 
 
+def test_generation_quality_marks_date_evidence_source_recoverable_from_reporter_records(tmp_path: Path) -> None:
+    _write_complete_fixture(tmp_path)
+    records = []
+    first_record = None
+    for line in (tmp_path / "data" / "articles.jsonl").read_text(encoding="utf-8").splitlines():
+        rec = json.loads(line)
+        rec.pop("date_evidence_source", None)
+        rec.pop("published", None)
+        rec.pop("published_date", None)
+        first_record = first_record or rec.copy()
+        records.append(json.dumps(rec, ensure_ascii=False))
+    (tmp_path / "data" / "articles.jsonl").write_text("\n".join(records) + "\n", encoding="utf-8")
+    assert first_record is not None
+    first_record["published_date"] = ISSUE
+    first_record["date_evidence_source"] = "htmldate"
+    reporter = tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl"
+    reporter.parent.mkdir(parents=True, exist_ok=True)
+    reporter.write_text(json.dumps(first_record, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = validate_generation_quality(tmp_path, ISSUE)
+
+    assert result.exit_code == 1
+    assert any(
+        err.code == "date_evidence_source_recoverable"
+        and err.reason == "issue records have no date_evidence_source but reporter freshness evidence is present"
+        and err.retryable is True
+        for err in result.errors
+    )
+
+
 def test_generation_quality_blocks_date_evidence_source_without_source_evidence(tmp_path: Path) -> None:
     _write_complete_fixture(tmp_path)
     records = []

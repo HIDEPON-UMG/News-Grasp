@@ -127,6 +127,35 @@ def _article_records(path: Path, issue: str) -> tuple[list[dict[str, Any]], list
     return records, errors
 
 
+def _has_reporter_freshness_evidence(repo_root: Path, issue: str, issue_records: list[dict[str, Any]]) -> bool:
+    article_urls = {
+        str(rec.get("url") or "").strip().rstrip("/")
+        for rec in issue_records
+        if str(rec.get("url") or "").strip()
+    }
+    if not article_urls:
+        return False
+    records_dir = repo_root / "tmp" / "newsroom" / issue
+    if not records_dir.exists():
+        return False
+    for path in records_dir.glob("*.records.jsonl"):
+        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            url = str(rec.get("url") or "").strip().rstrip("/")
+            if url not in article_urls:
+                continue
+            if str(rec.get("date_evidence_source") or "").strip() and str(
+                rec.get("published_date") or rec.get("published") or ""
+            ).strip():
+                return True
+    return False
+
+
 def _validate_markdown_artifact(repo_root: Path, rel: str, issue: str) -> list[GenerationQualityError]:
     path = repo_root / rel
     category = path.parent.name
@@ -462,19 +491,23 @@ def validate_generation_quality(repo_root: Path, issue: str) -> GenerationQualit
             )
         )
     if issue_records and not any(rec.get("date_evidence_source") for rec in issue_records):
-        recoverable = any(
+        recoverable_from_articles = any(
             str(rec.get("published_date") or rec.get("published") or "").strip()
             for rec in issue_records
         )
+        recoverable_from_reporter = _has_reporter_freshness_evidence(repo_root, issue, issue_records)
+        recoverable = recoverable_from_articles or recoverable_from_reporter
+        if recoverable_from_articles:
+            reason = "issue records have no date_evidence_source but published evidence is present"
+        elif recoverable_from_reporter:
+            reason = "issue records have no date_evidence_source but reporter freshness evidence is present"
+        else:
+            reason = "issue records have no date_evidence_source or recoverable published evidence"
         errors.append(
             _error(
                 "date_evidence_source_recoverable" if recoverable else "date_evidence_source_missing",
                 "data/articles.jsonl",
-                reason=(
-                    "issue records have no date_evidence_source but published evidence is present"
-                    if recoverable
-                    else "issue records have no date_evidence_source or recoverable published evidence"
-                ),
+                reason=reason,
                 expected="at least one freshness annotation",
                 actual="none",
                 retryable=recoverable,

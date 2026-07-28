@@ -425,6 +425,15 @@ def _repair_date_evidence(ctx: RepairContext) -> RepairResult:
     path = ctx.repo_root / rel
     if not path.exists():
         return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message=f"missing artifact: {rel}")
+    current_records: dict[str, tuple[dict[str, object], str]] = {}
+    used_artifacts: tuple[str, ...] = (rel,)
+    try:
+        current = _current_reporter_records(ctx)
+    except ReporterArtifactScopeError as exc:
+        return RepairResult(ctx.handler_id, DATE_EVIDENCE_SOURCE_STATUS, False, (rel,), str(exc))
+    if current is not None:
+        current_records, current_artifacts = current
+        used_artifacts = tuple(dict.fromkeys((rel, *current_artifacts)))
     changed = False
     rows: list[dict[str, object]] = []
     for line in path.read_text(encoding="utf-8-sig").splitlines():
@@ -435,13 +444,32 @@ def _repair_date_evidence(ctx: RepairContext) -> RepairResult:
             isinstance(row, dict)
             and str(row.get("date") or "") == ctx.issue
             and not str(row.get("date_evidence_source") or "").strip()
-            and str(row.get("published_date") or row.get("published") or "").strip()
         ):
-            row["date_evidence_source"] = "published_date"
-            changed = True
+            if str(row.get("published_date") or row.get("published") or "").strip():
+                row["date_evidence_source"] = "published_date"
+                changed = True
+            else:
+                reporter = current_records.get(_record_url(row))
+                if reporter:
+                    reporter_row = reporter[0]
+                    reporter_source = str(reporter_row.get("date_evidence_source") or "").strip()
+                    reporter_published = str(
+                        reporter_row.get("published_date")
+                        or reporter_row.get("published")
+                        or ""
+                    ).strip()
+                    if reporter_source and reporter_published:
+                        row["date_evidence_source"] = reporter_source
+                        if not str(row.get("published_date") or "").strip():
+                            row["published_date"] = reporter_published
+                        if not str(row.get("published") or "").strip() and reporter_row.get("published"):
+                            row["published"] = reporter_row["published"]
+                        if not str(row.get("seen_at") or "").strip() and reporter_row.get("seen_at"):
+                            row["seen_at"] = reporter_row["seen_at"]
+                        changed = True
         rows.append(row)
     if not changed:
-        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False)
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, used_artifacts)
     path.write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
         encoding="utf-8",
@@ -451,8 +479,8 @@ def _repair_date_evidence(ctx: RepairContext) -> RepairResult:
         ctx.handler_id,
         REPAIRED_STATUS,
         True,
-        (rel,),
-        "autonomous_recovery: date_evidence_source_from_published",
+        used_artifacts,
+        "autonomous_recovery: date_evidence_source_from_articles_or_reporter",
     )
 
 
@@ -1433,7 +1461,11 @@ REGISTRY: dict[str, RepairHandler] = {
     "date-evidence-source-patch": RepairHandler(
         handler_id="date-evidence-source-patch",
         kind="deterministic",
-        allowed_artifacts=("data/articles.jsonl",),
+        allowed_artifacts=(
+            "data/articles.jsonl",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+        ),
         verify_gate="generation-quality",
         repair=_repair_date_evidence,
     ),
@@ -1465,6 +1497,7 @@ REGISTRY: dict[str, RepairHandler] = {
         ),
         verify_gate="digest-articles-reconcile",
         repair=_repair_digest_card_insert,
+        supported_verify_gates=("digest-articles-reconcile", "daily-quality"),
     ),
     "record-title-ja-patch": RepairHandler(
         handler_id="record-title-ja-patch",
