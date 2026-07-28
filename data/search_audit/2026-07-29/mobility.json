@@ -1,0 +1,61 @@
+{
+  "date": "2026-07-29",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "BYD RACCO 軽EV 日本 発売 2026年7月29日",
+    "site:osakagas.co.jp EVバッテリー 劣化診断 可搬式充電器 2026年7月28日",
+    "トヨタ・モビリティ基金 サステナブル・シティズ・チャレンジ 3都市 2026",
+    "豊田通商 配送 営業向け 3輪EV 展開 2026年7月29日",
+    "\"トヨタ・モビリティ基金\" \"3都市\" \"イノベーター\" 2026年7月28日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "selection_policy": "Stage1候補のみを起点に、独立テーマ・当日性・一次情報距離・読者の意思決定影響で選別。広域収集と横断dedupは再実施しない。",
+  "dropped": [
+    {
+      "title": "BYD軽EVの重複報道群",
+      "url": "https://news.google.com/",
+      "reason": "同一発売日の重複。一次URLを代表1件に集約"
+    },
+    {
+      "title": "ロボタクシーから置き去りの日本 制度と業界の壁、政治が打破を",
+      "url": "https://news.google.com/",
+      "reason": "canonical URLを限定検索で確定できず採用見送り"
+    },
+    {
+      "title": "EV部品の溶接回数2分の1以下に オティックス、金属貫通で新手法",
+      "url": "https://news.google.com/",
+      "reason": "元記事のcanonical URLを確定できず採用見送り"
+    },
+    {
+      "title": "自動運転で物流網再編、スマートドライブ報告",
+      "url": "https://news.google.com/",
+      "reason": "一次URLと新規性を確定できず採用見送り"
+    },
+    {
+      "title": "自動運転技術、初の上場 ティアフォー、ＡＩ開発加速",
+      "url": "https://news.google.com/",
+      "reason": "上場日が号日前で、当日新材料の確認が取れず採用見送り"
+    },
+    {
+      "url": "https://www.osakagas.co.jp/company/press/pr2026/1824487_60967.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reasons": [
+    "BYD関連候補が多数重複し、追加候補は一次URLを確定できる記事が少なく、限定再検索後も独立した4件に絞った。"
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

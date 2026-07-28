@@ -1,0 +1,51 @@
+{
+  "date": "2026-07-29",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:tech.yahoo.com Claude shared chats indexed Google July 2026",
+    "site:sbbit.jp ソフトバンクG OpenAI 6.5兆円 21金融機関",
+    "site:gmogshd.com Anthropic 戦略的パートナーシップ 2026-07-28",
+    "site:prtimes.jp estie 不動産AI Lab IEEE MIPR 2026",
+    "site:newsweekjapan.jp さくらインターネット 260億円 GPU 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「Claude」の共有チャットがGoogle検索で一時丸見えに",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE4tSVNucFlnbmNsV09uVENtYWVnVUFpZzFZbzliZF9pMmRyVjRwU29aUXJpa3d6QXVnMXNPX0ZhUDFLZ2pNZXhVbmlZM0JTY3NJTWVB?oc=5",
+      "reason": "同一テーマのZDNET/Claude共有チャット記事を優先"
+    },
+    {
+      "title": "生成AIを「制作ツール」から「企業の基盤」へ。アドビ「Firefly」のエンタープライズ戦略",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFAtT2loMzNRMUpZVkFPQ1pram5PakxrUkc1bXFGUjNXcDVPRzZlLXI1Y05NV1JBbFBFbkJYeWhlb3VKT0xCeWg1dEtxYlFLTDF5Q2VWMXlTZmJCRnk1cUZUWg?oc=5",
+      "reason": "canonical本文の公開日が2026-07-06でfreshness条件外"
+    },
+    {
+      "title": "AI開発にスピード制限を、OpenAIとアンソロピックの社員が請願書（TBS CROSS DIG with Bloomberg）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE4TBRzdNVVp5Z1JVZmdGQ0VOWGV2dlozbWtKcUVOcFJPSFA2bm0wa2dsdlB3aTZ5SmpRQ2JSSkg5WlhsckxuRzRMcEQ1akFidlk1RVdtbVgyYmpUSGZrNXEyMm9TLXUtdkZJR1l2bWxIczR5NEZXeVhQQXNocmkzUzQ?oc=5",
+      "reason": "Stage1候補のcanonical解決で該当記事を確認できず採用見送り"
+    },
+    {
+      "title": "「Geminiって誰？」…ライバル各社がグーグルの次世代AIモデルのリリース遅延を嘲笑（海外）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBCODVzMWg2djg1aHZCYV9GREU3QXhEcVAyUFNVNkl5OEkzREtycWgtRDR4QUFpNHhNb1Y5QnJnN1BNVm1LbW13UVhKSEpVdmtzMkk3bWl6bDhhS2QzQjR0c2J4TEMyLWZhRzYwVThDWTVpU3c?oc=5",
+      "reason": "論評・翻訳記事で一次情報度と影響範囲が相対的に低い"
+    },
+    {
+      "title": "Anthropicの「Claude」、共有会話がGoogle検索に露出——新たなプライバシー懸念が浮上",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE55U2RuczIxNEVSZ3hGNzE1T1VWbktxeXlDNnQ4WmFoczF3M2F5QVpVbUphN3RlLS11aEdvV1F2c19xUlFaYkhsUlpJMjRtdHJIalUwblhhb28zSVA2Z3doRVM1YWpUSjZlT2RaR2V0azhRT0g2?oc=5",
+      "reason": "同一テーマのClaude共有チャット記事と重複"
+    }
+  ]
+}

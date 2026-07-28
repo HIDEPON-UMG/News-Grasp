@@ -1,0 +1,65 @@
+{
+  "date": "2026-07-29",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR economy OR interest rate when:1d",
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "GDP OR インフレ OR 金融政策 OR 決算 OR 日経平均 when:1d",
+    "景気 OR 雇用統計 OR 消費者物価 OR interest rate when:1d",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://www.federalreserve.gov/feeds/press_all.xml",
+    "https://www.boj.or.jp/rss/whatsnew.xml",
+    "https://www.mof.go.jp/english/news.rss",
+    "https://www.fsa.go.jp/fsaEnNewsList_rss2.xml",
+    "https://www.cnbc.com/id/10001147/device/rss/rss.html"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "中国の景気は良いのか悪いのか 「殺到する経済」を読む",
+      "reason": "記事単位のcanonical URLを確認できず保留"
+    },
+    {
+      "title": "高市“骨太方針”の前提「設備投資は圧倒的に不足」の危うさ",
+      "reason": "記事単位のcanonical URLを確認できず保留"
+    },
+    {
+      "title": "NYダウ続伸537ドル高、決算発表の主力銘柄が上昇",
+      "reason": "市場概況の重複度が高く、個別の経済論点を優先"
+    },
+    {
+      "title": "JERA、3年ぶり「有事」の石炭火力電力",
+      "reason": "対象媒体のcanonical URLを確認できず保留"
+    },
+    {
+      "title": "その他Stage1候補",
+      "reason": "媒体トップ止まり、教育・人事などカテゴリ優先度が相対的に低い、または重複報道"
+    },
+    {
+      "url": "https://ae.marketscreener.com/news/us-goods-trade-deficit-contracts-still-expected-to-subtract-from-q2-gdp-growth-ce7f51ddde8df424",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.investing.com/news/economy-news/german-economy-likely-grew-modestly-in-second-quarter-93CH-4816010",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.investing.com/news/economy-news/us-bond-market-avoids-big-rate-bets-as-inflation-dims-fed-outlook-4815994",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

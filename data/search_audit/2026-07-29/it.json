@@ -1,0 +1,148 @@
+{
+  "date": "2026-07-29",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:gmo-cybersecurity.com GMOサイバーセキュリティ フロンティアAI ホワイトハッカー 2026年7月",
+    "site:jp.reuters.com クラウド増強競争 エヌビディアを巻き込む危険なゲーム 2026年7月28日",
+    "site:techtarget.itmedia.co.jp コードは書けても案件が取れない ITフリーランスを左右する"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "流行語・新語の変換でMS-IMEが苦戦、クラウド辞書に差",
+      "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxQOXMzalN2T1NST05PbW9DeGh5ZlZWNFlPTHRvb3JRRS1CbXBWRVQ0am9LV3QwdS1tcXZsWVpBOGFzaEstWUNOQ3owMjc5T1pkUnJqSWZGU2I0dVhFTU1jX0FJLWRRTllDek9wcWphb1QyUWZ3eENHLXVkazB2dHpuSGFDTnBmeVpJMjREZnFhM2k2SktBVXo4STRR?oc=5",
+      "reason": "canonical URL未解決"
+    },
+    {
+      "title": "コードは書けても案件が取れない ITフリーランスを左右する「対面コミュ力」：AI・DX関連案件が3.1倍に増加",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBYclpMdUNEbGsyb3ZMdWNZcjVQMXdlWnJfeUlWRUdXWTdWMUN6TFNvUkpsaThSS0VCQ0hjSGNNRU9wY2ladjRoVl9BUF9qaXRpVDVMZTYzbTUwOUZGenpjVG92T1JVaDJnV2VOMw?oc=5",
+      "reason": "canonical URL未解決"
+    },
+    {
+      "title": "おわら風の盆を、次の100年へつなぐ",
+      "url": "https://news.google.com/rss/articles/CBMiUEFVX3lxTE9VUXY4QmVtQTU5WHRhTzlSZzRfZnFQSmMyRTVTVGdFY0RsNmh2Rnk2ZlZKT2l3WGloeEhsenh4bWluZzhJSzliRXhRM1NGTE9F?oc=5",
+      "reason": "ITカテゴリ適合度不足"
+    },
+    {
+      "title": "中国、半導体製造装置の国産開始か＝米ITメディア報道、市場は動揺(時事通信)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNZjZoQzVlRmRXOWxUS2ZkQUpiYm1UbWZseDR3Ri1zemkxSHNPalI4d0R1TWtBSC1FUmprSklleXVvYlJlZXZ6TUMyQ1JzbDBkLVBYam1HeWxmc3hWV2dmTlhwU19qYkFzdHJCc2RPYUh2dU5OT0pOSjc0OEc1WUpnWTRhQmpjQWM?oc=5",
+      "reason": "製造カテゴリ寄りでcanonical URL未解決"
+    },
+    {
+      "title": "5周年の挑戦！物価高の壁を越え、1万人にお誕生日ケーキを届けたい #シェアケーキ",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9PbjZvanlBWDhRMEJoZUtjdTFYM0VuRHR5UHFfUGhRVGhZX3ItRUtfLVRSYzhBVzBTb05tNlgtOHlCYUl6aTdQT3d1YWFRemZoVndz?oc=5",
+      "reason": "ITカテゴリ適合度不足"
+    },
+    {
+      "title": "登別市地域おこし協力隊「ＩＴ化促進マネージャー」を募集します！",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFB5VW4ySzByRm1iellaNzcwLVhiRTFVdF8tdFFFS3BTbjVjR0ZrMHQ4WlpJdVFOUHpqVkZ5cWI5UEVtS0Z4UnAzYTVPNUZjdmxHZVd1SE1nUlkxdzFraGRYWGR0YkdsZG5w?oc=5",
+      "reason": "求人告知でニュース性が薄い"
+    },
+    {
+      "title": "『守る』だけで終わらせない、クラウド運用の考え方",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQTEVQVC1GTjVTbFRpSENlbWd0VGRnaDUwMUg4Tlh2QUVjRUpKZ2RxOWJfQmkzdmN4cEF4XzAtMkQ2Z2llTFplOVlKaXVBb1p5dHcwdHZxZXBjbHlxZENma1BHdlZ4Sy1RcjV0RGIzRDRVNFF2c0tKdWptbm9hTGhScGln?oc=5",
+      "reason": "セミナー告知でニュース性が薄い"
+    },
+    {
+      "title": "ベトナムでDPO設置義務が拡大、2026年の個人データ保護法とサイバーセキュリティ法を解説",
+      "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOTVdSOEdkcFJKYlpaR2k4bU9abUttMVBkaHZ0YVZZOFJqVXJCYUM0WDZwb3VqdUVlTmNsd1o2MVkwRXljWmpFUHRHTC1SbkhkanpVM2F4dkY2d3pvd0VRaHRxUVVSZUhDQXE5dmhmVEZxWHpIZXBWaFpKQ3ZLaXhwazJuYWRmV3RYV2hHbm5NRUdzZUlkTkFhWksyVQ?oc=5",
+      "reason": "解説記事で一次情報のcanonical URL未解決"
+    },
+    {
+      "title": "Breakingviews - コラム：クラウド増強競争、エヌビディアを巻き込む危険なゲーム",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQeTR5LTRWY3B5SUhOQ2l5S3NIM3BtOXpYdDlJTjVIUGlzSFd4ZmxxVmJtOHU1WWEtR09fc1JBc0lTMWVuSmUzZEE4RmRWQ2tCMmlxbzlDT0ozYUhBcHNJS2k1bHV1ZVRVR1VvYjhqQ3VfRU84MmsyZks4Wi1EYm1PSEY0SjBfUWVvRWFJ?oc=5",
+      "reason": "canonical URL未解決"
+    },
+    {
+      "title": "バングラデシュは、IT人材の宝庫【なるほど・ザ・新興国】",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTFBPWXoxdE5iVDk2di03bFlxRmczdS1yY3VGejZLYi1hY0lTWkl5Tml1TFZCNmdBN1JqRWFSbDN2aHRPRlFsSjV2S1JZVEtBQjl6U0JTX1ZzQ04yRFNodjAybDFB?oc=5",
+      "reason": "解説記事でIT実務への直接性が低い"
+    },
+    {
+      "title": "ペイクラウドHLD（4015）【資料】2026年6月 月次業績報告",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTFB6bVJLWjZoT01xUm52TkJKT1BYRENWWWpack5kc0VHcVg5V252VlNaZGdPLTF4bE1oVXdER245ZHpzM1FyYmEyVWlETHZfMjZoWXgybm9WZw?oc=5",
+      "reason": "個別企業の月次開示でカテゴリの構造変化が薄い"
+    },
+    {
+      "title": "創業70年のマーケティング企業が脱「紙とExcel」 クラウドERPを選んだポイントは",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9DM1ducGxDYmo0dFNPRG42NWpjTVFZdEk4TWNWeGJqSFNOWlcxYnRPT0FfNjZ1Z3RYRWFsdHdvd1h0cENnNzZHR29vdzNUNzNwaDNsMHRLd2xVM2wyYk9CTjZHYjlpQVNWUjB5Zg?oc=5",
+      "reason": "導入事例でニュース性が薄い"
+    },
+    {
+      "title": "信濃國一之宮 諏訪大社秋宮｜新たな夏の伝統「光の奉納」実施へ",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTFB0Y1o5X3VjNVUwQW1wRUs5aC1SMVFpdkZRX0RYcEMzdHF3NjNqNXZadXJybFE4aUdoaWZzbkxNTUg5WmVKZkVrZDdIMU5MVEU1Z3lnV3RIaHg?oc=5",
+      "reason": "ITカテゴリ適合度不足"
+    },
+    {
+      "title": "忘れ物はチャットで問い合わせ 岡山一番街・さんすて「落とし物クラウドfind」導入",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBMaDhtenhfQnh3QVpMMnZ5QVVPSUpGUlZqLWpudFRTSy1GdkRPaWg2MHBXaVR5R0FTcUQ4Q3lzeENMbmNFQklFM19ybWJaclN4ajNNS2ZDbVV2dkVIUnVPV21FY1huUVBvZndVY293TkRtb1ZKZUNaZWFxSk9kNUU?oc=5",
+      "reason": "導入事例でニュース性が薄い"
+    },
+    {
+      "title": "GMOサイバーセキュリティ byイエラエ、フロンティアAIとホワイトハッカーの知見を掛け合わせたセキュリティ特化AI基盤を構築",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1BTE1ZcURLR0o3NU9mdEZkbkRiMVFieEo1alFmdzMxakMyQXQ0Y0Vpd1Y5Rk81UWgwNXZXTm9EZC13c0Zxd0RGY2oxVWx1U19FS0dkTU9aclZPbDJjbnVBMUxkV2hZaXFlbHlIWnZXOFpPZzc0RUdQNG9oZzZvcTg?oc=5",
+      "reason": "採用記事と同一話題の転載で重複"
+    },
+    {
+      "title": "シンプレＨＤ、コンサルティングサービス「Ｓｉｍｐｌｅｘ・ＡＩ・Ａｃｃｅｌｅｒａｔｏｒ」の提供を開始",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxObmRtVFJHWXZYNWhqbldxR1NZUUhGLXRyZG95cUxPVHRsOUNtX3RpbjVGeWdORFdtMUd6RkQ1cERqeXVsSVphSld6ODJRY3c0TzhaQkFwR2xKbGxEdUx0Wmd6dktmUHZvV0VsNlIzbTZIaVJFZWwyVDFUcXFfOG80akozODBSd0k?oc=5",
+      "reason": "企業サービス告知で一次情報のcanonical URL未解決"
+    },
+    {
+      "title": "VaronisのSaaS移行が利益率を圧迫、決算発表が試金石に",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE9WOHhaRTRqNXdMOEV2aFVEdURoSE1ObUJqcVlKZ1plN3hZWkpYOG02VW1JYUhwZW85aDEtcTJsM1VqVmRpekhESkpyRS1lWF9mSm4zcWJxSjhiSFdsYWFDYThfXzYybWRZOUhN?oc=5",
+      "reason": "執筆記事でcanonical URL未解決"
+    },
+    {
+      "title": "ペイクラウドホールディングス[4015]：2026年6月 月次業績報告 2026年7月28日(適時開示)",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5LU0xiNU1LemtkVnBaMlNReEtOa0h5U2F0X0NOcWxlYW92RlNVSTJHV1dKQkxKVkZweC1odDBhcVpfRDUxQ3F3bVJ5SkQwdmxIM2xDSElUUGtKeW5mNUFuSk9LTm4xeVlSbnc?oc=5",
+      "reason": "候補11と同一開示で重複"
+    },
+    {
+      "title": "ヒューロン・コンサルティング、第2四半期決算発表：受注勢いが成長を後押しするか",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1YY2FSeE92R1J3cnNUamt5bFIxY0ZfekhfbDZzWnNsZklReXlPT0Zlc3VkR2RZbTVmRDgxSnNORzEta05CRmFYZGZwLUszVUJLLThZR2ZhNXowWWZKQmdWZEM3SnJEVU54aXFz?oc=5",
+      "reason": "執筆記事でcanonical URL未解決"
+    },
+    {
+      "title": "【Meta決算】トレーダー予想：クラウド事業とスマートグラスに言及、政策論争は回避へ",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTF9UaERmU2tUYmNicjhybFQ1b3FEWTVJbmdKX1NsVUIta2tQanFvVVlRT3F1YkhzWXdNT2w0Y0VSaE1ISzRDSDZ3UXlhbHEyNzhVeGtQcGVNWmlGVlF0cjlqbzQwOWc2aUkyMjZac01yeTlqc2VK?oc=5",
+      "reason": "決算予想で一次情報性が低くcanonical URL未解決"
+    },
+    {
+      "title": "Google Play版『サガ エメラルド ビヨンド』のクラウドセーブに関するご注意",
+      "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1DbFlJbk5zNi1zVnFBYVNtMHdKZFh1WERsR2xaejBac2dmVWd6ZHJoV3NUSGVzYktFb3lQX0VtWkZ3TEdnb3V5YjdBV1FJNjdrV09rcFZyaWtkbGV2elprdGFWb2tjcTFaSHU1dmtOdWs4UkI5?oc=5",
+      "reason": "ゲームカテゴリ寄り"
+    },
+    {
+      "title": "アウンコンサルティング[2459]：AI時代の検索行動に対応した成功事例",
+      "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOVkR1YUlmd01LY3VpSUhxYVk0VjJ0ZW1SMzlpS0hSNFNibFQwZVlxNkVhNVZzUHJYMjUtbUo0YmNJRF91N3RLTHRCS0VSajhLVFNtLWo0Tlc4T2lwN3o1RGxEYTBFdzF6cGQxTi1ueFRnR3BnSjBQVmtLYjNyUXhIbnJPSFNmS0h1Ylktbnp6b05hdi1UVjExdEpzZHRyUk9qbV9WbkZ0MmRTR2pRNDZMWnp6cEU0NURoVlk4UmNRRGZxbnItY2NMMWMybmw?oc=5",
+      "reason": "成功事例の適時開示でニュース性が薄い"
+    },
+    {
+      "title": "フォーティエンス、グローバルでのITインフラ標準を策定しガバナンス強化とリードタイム短縮を実現する新サービス",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9MSTE1RWdfRVhuUWExdXBGaGExdG04Qzl6VE1YTjhiUzlQb0ZKNEI0VXFTc2hSczJvVWx0dWNsVU1BaWlZYmFZMjhqd0FLV0QtcmxqS0tzb2ZxenBCVEdCUGxMU2RGYk13ZGpBZFFRVjRVcG1uZHhsSFRHVy1oYUU?oc=5",
+      "reason": "新サービス告知で一次情報のcanonical URL未解決"
+    },
+    {
+      "title": "NTTレゾナントテクノロジー、次世代IT人材育成を支援全国4都市の学生ハッカソン「Tornado2026」に公式パートナーとして技術協力",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1Ya2ZaWVpIYVA3YUE5Y3ZNVjkyNDJKelh2b1ZQQ0NnMWQ4b0NLUHdoRjJoZkRLb29HM1Rzc0tTYS1TQUlXWnFvSlkyRlhxTVNYVDRULThmZ2tXTG5NeV9aekRfNjlWQmprNUxR?oc=5",
+      "reason": "イベント協力告知でニュース性が薄くcanonical URL未解決"
+    },
+    {
+      "url": "https://gmo-cybersecurity.com/news/20260727/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

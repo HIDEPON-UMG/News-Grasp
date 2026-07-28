@@ -1,0 +1,72 @@
+{
+  "date": "2026-07-29",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Google News RSS when:1d manufacturing TSMC Samsung Intel NVIDIA Foxconn Toyota",
+    "site:newsdig.tbs.co.jp 日本製紙 八代工場 煙突 熊本 震度7",
+    "site:oricon.co.jp トヨタ 福岡 3工場 稼働停止 熊本地震",
+    "中国 国産 DUV 露光装置 製造開始 ASML ロイター"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "熊本地震関連のTSMC・トヨタ・日本製紙候補",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "同一地震の重複・続報を統合し、代表記事へ集約"
+    },
+    {
+      "title": "ゼレンスキー氏、トランプ氏と会談 パトリオット製造ライセンスなど協議",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "防衛外交が主題で製造業の読者価値が相対的に低い"
+    },
+    {
+      "title": "半導体の日米連携、次の課題はレガシー分野 国内再編の担い手は誰か",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "有料媒体で本文の一次確認ができず、当日カード化の根拠不足"
+    },
+    {
+      "title": "日経平均、半導体関連が大幅安、個人投資家はどう向き合うべきか",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "投資解説が主題で製造現場の一次情報ではない"
+    },
+    {
+      "title": "米国株式市場＝Ｓ＆Ｐ５００続伸、半導体株安をボーイングなどが相殺",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "市場概況が主題で製造業の構造変化ではない"
+    },
+    {
+      "title": "中国が米AI半導体を猛追 「総力戦」の内幕",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "背景解説で当日の新しい製造事実を確認できない"
+    },
+    {
+      "title": "台湾TSMC熊本工場の避難・安全確認に関する複数候補",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "同一事象の重複で、工場被害を伝える代表記事に集約"
+    },
+    {
+      "title": "ASML株急落の重複候補",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "同一DUV報道の重複で、ロイター配信を代表採用"
+    },
+    {
+      "title": "フルヤ金属、北海道千歳市の石英加工工場を移転 ラピダス追い風",
+      "url": "build/deduped-candidates/manufacturing.jsonl",
+      "reason": "記事本文の一次確認と canonical URL 解決ができず未採用"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

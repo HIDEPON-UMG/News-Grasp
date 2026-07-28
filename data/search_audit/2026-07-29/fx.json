@@ -1,0 +1,48 @@
+{
+  "date": "2026-07-29",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:gaitame.com/media/entry/2026/07/28 \"ドル円165円到達は近い？FOMC・日銀会合で円安加速の可能性\"",
+    "site:gaitame.com/media/entry/2026/07/28 \"ドル円はなぜ底堅い？ 円高にならない理由\"",
+    "site:gaitame.com/media/entry/2026/07/28 \"FX個人投資家動向｜取引は一進一退、トルコリラ円が取引シェア上位に急浮上\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "ＮＹ外為市場＝ドル下落も1カ月ぶり高値付近、ＦＯＭＣ結果発表待ち",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFBwdzdOZFAtemF2eHo0Z2g2ZGhWTGF3ZC1UZmM4YWRpSlNTSldiTE5EaGNPTUxHak1keUJMOWsxT1VZcHlsX0tTM01GSjhRcXdxNzdRUEJoeFFFZ1hIbkhERkd4bVEwaGJuemV5eWQxS2p6Mm9UM0c3Ng?oc=5",
+      "reason": "canonical URLを当日出力用に確定できず未採用"
+    },
+    {
+      "title": "米利上げリスクを市場は過大評価、FOMC据え置きならドル下落へ－TD",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE5qS0Q4Zm5tWUxyM0NNbWJlRWlEaVp2aXdabElLTDhCRmszS1laNWJlaWtoTVNHRnJ2WTFBOGQ0cHgtN3JheEtHV2Q4V3g0eEZMM3lWTjd2YTBOenM0dTRyZEhlQnBVOU5HUUtRZDQ1VW5TRzlMcHRJ?oc=5",
+      "reason": "媒体側のcanonical本文確認ができず未採用"
+    },
+    {
+      "title": "28〜29日のFOMC、基本シナリオは据え置き 市場に残る利上げ警戒",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE16S1RIZlB3U3RXcUFZMGhEWmVQa181SVd5ZUtkWDJ3bkVSQUNIVUk3djg0bzJFU3dMdDJESzlhaGNSRW4yLXk1SThPZzdjLU5JTlAwNmJhRDVGTUlob0VaRzdFSHh4T2RIQlBKNw?oc=5",
+      "reason": "canonical URLを当日出力用に確定できず未採用"
+    },
+    {
+      "title": "GPIF買い支えや個人向け国債の新NISA対象示唆、高市政権の「口先介入」で円安・債券安を止められるか",
+      "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTE9GQ0l3aGxJQkk1VVl0N0N0N0RQSGlLb3pZS0ZZcEhYNE0tYU1MZjF1U0czTnBNN3hCeGkxLUxZVU0tcVZXbHFtVV9sa3TSAU9BVV95cUxPaWY0OUVrbEYwaVliQ3ZWM2pHZmtGUjZjcC1YWXJJWlZzTTBkVFdmUjJudEVuaVdMcTItWHd2OXVLMDBfSkVxS05YbTFxR2ZF?oc=5",
+      "reason": "同一論点の背景記事と重なり、canonical本文確認も未完了のため未採用"
+    },
+    {
+      "title": "その他Stage1候補21件",
+      "url": "build/deduped-candidates/fx.jsonl",
+      "reason": "同一論点の再掲、速報値のみ、またはcanonical URL確認不足のため未採用"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
