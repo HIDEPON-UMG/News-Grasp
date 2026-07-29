@@ -115,6 +115,12 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "docs/incidents/2026-07-27-digest-articles-reconcile-report.html": (
         "f771f22d3d5c4038dd39f3055c2dc79ce6784272a617f35d1b3c8b8e889f9cdb"
     ),
+    "docs/incidents/2026-07-29-daily-quality-recovery-report.html": (
+        "9ac2b0220082727502a671731195ac3aaa1c88684f3d7d13efcdc03bece5e5e6"
+    ),
+    "docs/incidents/2026-07-30-pytest-static-historical-corpus-report.html": (
+        "0f1d866bd1846378e7b63dae0112ddfe05bd8e5f86733ef5729133afc75692c6"
+    ),
 }
 
 
@@ -597,6 +603,26 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "generation-quality must classify missing article freshness evidence as recoverable when current reporter records contain matching URL freshness evidence, and the date-evidence handler must patch existing article rows from reporter records without manual edits",
         "generation-quality reporter-record fixture, registry date-evidence patch fixture, repair coverage/matrix sync fixtures, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator/render proof",
         "docs/incidents/2026-07-28-generation-quality-date-evidence-recovery-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-07-29",
+        "daily-quality / digest-card-insert-patch / search audit / post-deepdive resume / publish-complete",
+        "IT category digest became empty while current reporter records still contained recoverable article evidence, and recovery also exposed search audit metadata, follow-up review note, refill formatting, and historical report corpus drift",
+        "structured repair routing and historical evidence corpus sync boundary",
+        "daily-quality recoverable digest gaps must route to deterministic card insertion from current records, and any local-only incident report left under docs/incidents must be registered with a stable evidence digest",
+        "category_digest_empty repair fixture, search-audit metadata patch fixture, refill formatter emphasis/tag fixture, historical failure corpus fixture, post-deepdive runner resume, publish-complete proof, public surface proof, and incident report validator proof",
+        "docs/incidents/2026-07-29-daily-quality-recovery-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-07-30",
+        "pytest-static / historical failure corpus / post-deepdive resume / publish-complete",
+        "the prior day's local-only incident report remained under docs/incidents without a matching historical failure scenario and SHA256 registry entry, so pytest-static stopped before public generation",
+        "local-only incident evidence registry boundary",
+        "every local-only incident report visible to the lifecycle corpus must be bound to a stable scenario and digest before the next daily runner reaches pytest-static",
+        "historical corpus fixture, local-only digest registry fixture, incident report validator/render proof, post-deepdive runner resume, verify-live-runner-readiness proof, verify-publish-complete proof, and public surface proof",
+        "docs/incidents/2026-07-30-pytest-static-historical-corpus-report.html",
         "runtime_e2e_required",
     ),
 )
