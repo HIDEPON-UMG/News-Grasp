@@ -1,0 +1,123 @@
+{
+  "date": "2026-07-30",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "site:kantei.go.jp \"月例経済報告等に関する関係閣僚会議\" 2026 7月",
+    "site:kantei.go.jp/jp/105/actions/202607 月例経済報告 7月30日",
+    "site:meti.go.jp/press/2026/07 赤澤 マリック"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine",
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "赤澤経済産業大臣がマリック駐日インド大使による表敬を受けました",
+      "reason": "Google News URL未解決。記事単位のcanonicalを確認できず"
+    },
+    {
+      "title": "マイクロソフト、決算受け時間外で上昇＝米国株個別速報(株探ニュース)",
+      "reason": "検索結果が過去記事に寄り、当日記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "メタ、決算受け時間外で６％安＝米国株個別速報",
+      "reason": "検索結果が過去記事に寄り、当日記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "焼き肉行ける? 経済効果は期待値低めか 首相が消費税1%指示へ",
+      "reason": "Google News URL未解決。記事単位のcanonicalを確認できず"
+    },
+    {
+      "title": "2027年3月期 第1四半期決算短信 [米国基準](連結)",
+      "reason": "当日資料のcanonicalを確認できず、検索結果は別年度資料"
+    },
+    {
+      "title": "食品の消費税１％、経済状況次第で継続する「景気条項」盛り込まず",
+      "reason": "Google News URL未解決。記事単位のcanonicalを確認できず"
+    },
+    {
+      "title": "東洋経済ACADEMIC/INNOVATIVE 「次代の教育・研究・ビジネスモデル特集」に本学部の記事が掲載されました",
+      "reason": "経済ニュースとしての一次情報性が低く、記事本文を確認できず"
+    },
+    {
+      "title": "【在学生紹介】経済学部産業経済学科 中田 ゆら さん",
+      "reason": "経済ニュースとしての一次情報性が低く、記事本文を確認できず"
+    },
+    {
+      "title": "赤澤経済産業大臣がロングボトム駐日英国大使と会談を行いました",
+      "reason": "Google News URL未解決。記事単位のcanonicalを確認できず"
+    },
+    {
+      "title": "明日の決算発表予定 東エレク、みずほＦＧなど135社",
+      "reason": "予定一覧であり、当日の発生事実を確認できず"
+    },
+    {
+      "title": "景気拡大が最長を更新？ 月例経済報告では「緩やかに回復」続く",
+      "reason": "Google News URL未解決。類似テーマのため官邸一次情報を優先"
+    },
+    {
+      "title": "景気判断「緩やかに回復」維持、中東情勢引き続き注視＝7月月例報告",
+      "reason": "Google News URL未解決。官邸一次情報を優先"
+    },
+    {
+      "title": "決算:日立の純利益12%増に上振れ 27年3月期、データセンター需要増",
+      "reason": "日経記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "アドバンテスト[6857]：2027年3月期 第1四半期決算短信",
+      "reason": "日経記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "経済プラス：米FRB、政策金利据え置き 中東情勢の混迷長期化で様子見",
+      "reason": "検索結果が当日記事に一致せず、canonicalを確認できず"
+    },
+    {
+      "title": "ＦＲＢ議長、インフレ２％目標達成へ決意",
+      "reason": "検索結果が当日記事に一致せず、canonicalを確認できず"
+    },
+    {
+      "title": "東京23区、港区3年連続首位",
+      "reason": "日経記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "韓国株が再び急落、ＳＫハイニックス決算が予想に届かず",
+      "reason": "Reuters記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "アドテスト、今期最終を42％上方修正・最高益予想を上乗せ",
+      "reason": "検索結果が過去記事に寄り、当日記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "NYダウ1153ドル安 強いインフレ懸念、米30年債利回り19年ぶり高水準",
+      "reason": "日経記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "〔海外決算〕米P＆G、4～6月期は増収減益＝売上高は市場予想下回る",
+      "reason": "配信記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "決算:メタの4〜6月純利益14％減、研究開発や訴訟費用増加 株価一時8％安",
+      "reason": "日経記事のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "キリンビバが「おまけ」付き自販機",
+      "reason": "経済インパクトの一次情報を確認できず"
+    },
+    {
+      "title": "金融庁「地域金融力強化」、地銀は低迷する地域経済を救済できるのか",
+      "reason": "転載元記事のcanonicalと本文を確認できず"
+    }
+  ]
+}

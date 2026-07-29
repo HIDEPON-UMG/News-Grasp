@@ -1,0 +1,80 @@
+{
+  "date": "2026-07-30",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR video game OR game release when:1d",
+    "site:dragon-ball-official.com Sparking ZERO NEO DLC 発売 2026",
+    "site:finance.yahoo.co.jp カプコン 1Q 2026 7月28日 ゲーム株",
+    "site:moguravr.com 君色パトラIF 11月26日 周防パトラ",
+    "site:famitsu.com カルドセプト ザ ファースト 7月30日 ドラえもん 7月30日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "ゲームリポート（第2戦） | マイナビオールスターゲーム2026",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTFBRcUU4al95UkM1N1VtZmJRbmFNQllIUnF0TDNHSEt5NmJGSmlGa21WLXNRVVl3UmFYbFhLSDZYTXFoUWUzZG03R3hvYlpnSWhfVDBwY0dpTzI?oc=5",
+      "reason": "プロ野球の試合記事で、ビデオゲームカテゴリ外"
+    },
+    {
+      "title": "9/19(土)大分戦：《まとめ》ホームゲームチケット販売について",
+      "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE9INldsQ0NJejg0dDFEX2pnb2hkRy0yb08wNWRraGpLMUp0c2tpMGkwNkxkc1lsZi0zT1RmcUJhMDBwMHFOeU5EUEFmNnBYWUJrUEs5U3I1OE1HSW94VTdqWnJB?oc=5",
+      "reason": "スポーツクラブの試合チケット告知で、ビデオゲームカテゴリ外"
+    },
+    {
+      "title": "塩尻の将来像、ゲームで考えよう 市民有志が８月に体験会を計画",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9wYmdyNl9yOGhnRk9RQTBhbjNNQUVJcktuNUtjUUhjMnN0OGRURW82VkFhd1lZRVJtU1BzWFJPUVloTU42Y0hEczU2S3dMWWRXb1F4RTg4UnFELVc4bGtxUDJVT04?oc=5",
+      "reason": "地域イベント告知で、ゲーム業界ニュースとしての影響範囲が限定的"
+    },
+    {
+      "title": "初開催！図書館ボードゲームDAY",
+      "url": "https://news.google.com/rss/articles/CBMi_wFBVV95cUxQYW9KU1pRbzVmVllqSC1WRDJNRlRabFZlQVhfMUQwSU9aLU9yb0hQMHdUcEVPcGtTM2xNUTRmc0xlV1MwYUpRV01ETThMMHRjZThRa1lYQWEyZEhsYVhTUlhzdXZ0RzRXX2d0dXhDMjZ4N3ZCRk1jWTFhd1RMSk5qVUJJd1dzX0IxV0xkcS1hckU1U1FhUnlFN3NpUmpLNDIwTWhwSVVhazVldjdzUnlpN0JkWkdIWlI3MVBwUWRaUGZxcUxTZlZ5TzJxd3BLaWJhYVhRdGJzamJhaVRsRk8tYTJZdmZNbDNtQ3pCWGxnenlJd01tUVJvUGczVXNhN0E?oc=5",
+      "reason": "地域のボードゲーム催事で、ビデオゲームカテゴリ外"
+    },
+    {
+      "title": "『脱獄ごっこ Nintendo Switch Edition』7月30日（木）にアップデートを実施！",
+      "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE5ibVlQTG00RFpJaHpCZ2hzamZNU1M1OXY5ZXgtMFo3QWFqeG9hVmVQMWxUWXpaWWVFWnVHNDBPRy1jUHNQMDB0TXA5OTdsU1QzQ0hoc215aUFQQ0E4TkJ3Q1lxNUtpY0I2QWc?oc=5",
+      "reason": "canonical本文で確認できたのは3月の発売告知で、7月30日更新の新事実を裏取りできず保留"
+    },
+    {
+      "title": "アニメ調オープンワールド買い切りARPG『ドラゴンソード:アウェイクニング』Steam正式リリースから1週間で累計販売本数20万本突破。コンテンツのさらなる拡張も予定",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE5NU29rSWtwNDBueV9iX3c5VnNMVlNGRlQ2TEtQOW5TVm5BelNqWWc3dU9ReC0xdnlKaWhIM1BsUmR6c0p2WHV5LXhuTXlMa0VQMGRWakVOeGtRc1cyUkJ1RHdhMnlhQQ?oc=5",
+      "reason": "当該見出しのcanonical URLと販売本数の一次根拠を確認できず保留"
+    },
+    {
+      "title": "カセットビジョン45周年。LSIゲーム全盛の時代に登場し、驚異の低価格を実現したマシン。ハード＆ソフトが日本開発なのも珍しい時代だった【今日は何の日？】",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE9wbzZxcVFoN2Y5Njk0OTJQUEZ0WEdoaHpzdWRNdmJfdmx0bjZfMUlndHhPZDBUS1M3Q2FDTUo1dGlaYlNMam1ya2lpRkFNTE14WDduNVd6SQ?oc=5",
+      "reason": "検索で確認できた同題材の記事が2021年で、当日更新の根拠を確認できず保留"
+    },
+    {
+      "title": "コナミＧ－大幅高 カプコンが1Q好決算で急騰 ゲーム関連に期待買い(トレーダーズ・ウェブ)",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNVEZ4YURKSC1YSTJpeEp6N1FnY01FTXk1ZHJoVVl1aWZuN2M5bzNQM1ZyRTBfLUNnOW80MkxMRWY5VThybUxfYlhsckFqQVJ2TERYbTdjUGdDRWVnM0RuWHc2OFp3bklXbklDa1N6UXZYeF9McGlwLXYweHktUnRwamc?oc=5",
+      "reason": "候補見出しの元記事表現を整理し、同日決算のcanonical記事へ統合"
+    },
+    {
+      "url": "https://dragon-ball-official.com/news/01_4325.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.moguravr.com/patra-kimiiro-if-release-date-announced/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.famitsu.com/article/202602/65297",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.famitsu.com/article/202602/65341?page=1",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

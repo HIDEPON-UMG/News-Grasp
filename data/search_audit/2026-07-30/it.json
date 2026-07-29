@@ -1,0 +1,133 @@
+{
+  "date": "2026-07-30",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR enterprise software when:1d",
+    "site:axios.com Microsoft earnings Azure 2026 July 29",
+    "site:group.nec/global 2026年7月29日 第1四半期 決算",
+    "site:hitachi.com 2026年7月29日 第1四半期 決算",
+    "site:cncf.io Japan cloud native community 2026",
+    "site:s.kabutan.jp 公共SaaS 空き家データベース 2026"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "クラウド・インフラストラクチャーでSaaSデリバリーを加速",
+      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE81RXl0R3UtZVYwZU5TSThZbGE3cGI4cHE0Qk9saXJ0ZWVTSjdqazVjUm5UOFBWalY5eGpLaDZualNIcTk5MzZ0dWswcG5HTFctYTd0Y21MaExpUlhLS0w1eA?oc=5",
+      "reason": "Google News 中継 URL から当日記事の canonical URL を確認できず、検索結果も当日記事と一致しなかった"
+    },
+    {
+      "title": "オープンAIの「暴走エージェント」、別のクラウド企業の顧客環境にも侵入",
+      "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxOZnBNUF9SZjZ4YzNOWl81elViSWNiN0tyLTVGV280YlF1REJtRi1GYmczcFBSTFpzdnVtcGoxT2ltRFRDVHBGMmlZbjhOQ3paM3VneWNuU1NYYmpobGpld2Focmpmd2hmaFAtSFZNUTdyOHlvZEQ2clJTDhmdkpWcTlNRm8?oc=5",
+      "reason": "当日記事の canonical URL と本文を確認できず、検索結果は別件だった"
+    },
+    {
+      "title": "Business Role (Project Manager), Cybersecurity, Finance",
+      "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxOZnBNUF9SZjZ4YzNOWl81elViSWNiN0tyLTVGV280YlF1REJtRi1GYmczcFBSTFpzdnVtcGoxT2ltRFRDVHBGMmlZbjhOQ3paM3VneWNuU1NYYmpobGpld2Focmpmd2hmaFAtSFZNUTdyOHlvZEQ2clJTDhmdkpWcTlNRm8?oc=5",
+      "reason": "ITニュースとしての本文確認ができず、求人情報のため除外"
+    },
+    {
+      "title": "東日本大震災を経験したラジオ局Date fmが能登に元気を届けたい",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "ラッパー・It-Works、新曲“loose”リリース 来月には1stアルバム『Still loading』も",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "ビーチ・ボーイズ「Do It Again」解説：アメリカよりもイギリスで評価された全英No.1ヒット",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "IT大手15社の「1億円プレーヤー」79人に増加、最高報酬は61億円",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "人物報酬の話題で、当日のIT事業・技術の意思決定への直接性が低い"
+    },
+    {
+      "title": "【オンライン】監視せよ。AI攻撃が残す、すべてのログを。 ALog Summit 2026",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "イベント告知で、一次的なニュース変化より情報量が低い"
+    },
+    {
+      "title": "「Hype Like it!」【対象者限定】FC追加先行＆オフィシャル先行受付開始！",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "【無料・オンライン80％+通学20％】ITパス・AI活用Webマーケ基礎の受講生を募集",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "募集告知で、IT事業の構造変化を示すニュースではない"
+    },
+    {
+      "title": "荘子it、ソロアルバム『人生劇場』詳細発表",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "【電気電子情報工学科】IT業界とシステム開発に関する講演会を開催しました",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "イベント実施報告で、当日の重要論点が薄い"
+    },
+    {
+      "title": "マイクロソフト、クラウド事業好調－Azure増収率は市場予想上回る",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "Microsoft決算の重複候補。一次情報を確認できる1件に統合"
+    },
+    {
+      "title": "決算:Microsoft、4〜6月3割増益 AIクラウド4年ぶりの増収率",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "Microsoft決算の重複候補。一次情報を確認できる1件に統合"
+    },
+    {
+      "title": "ＮＥＣ、通期予想を上方修正 防衛・ＩＴサービス堅調",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "NEC決算の重複候補。公式IRの1件に統合"
+    },
+    {
+      "title": "決算:NECの4〜6月純利益2.6倍、国内IT好調 通期見通し上振れ",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "NEC決算の重複候補。公式IRの1件に統合"
+    },
+    {
+      "title": "シーゲイト、決算受け上昇 クラウド向け大容量ハードディスク需要を取り込む",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "株価反応中心で、選定5件に比べて読者の業務判断への直接性が低い"
+    },
+    {
+      "title": "ＩＴ・ハイテク企業の債務不履行に備えたコストが大幅に上昇",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "本文の当日 canonical URL と一次情報を確認できず、採用判断を保留"
+    },
+    {
+      "title": "システムサポート、公共SaaSの空き家データベース 情報一元管理",
+      "url": "https://news.google.com/rss/articles/CBMi...",
+      "reason": "同一テーマの候補を canonical URL の確認済み記事へ統合"
+    },
+    {
+      "url": "https://www.axios.com/2026/07/29/microsoft-earnings-azure-2026",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://group.nec/assets/global/en/about/ir/library/pdf/202607/2907-01-01.pdf",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.hitachi.com/content/dam/hitachi/global/en/press/files/2026/07/260729/2026_1Q.pdf",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

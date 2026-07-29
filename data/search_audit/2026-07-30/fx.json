@@ -1,0 +1,30 @@
+{
+  "date": "2026-07-30",
+  "category_id": "fx",
+  "queries": [
+    "Stage1 dedup candidate file: build/deduped-candidates/fx.jsonl",
+    "site:fx.minkabu.jp/news ＦＯＭＣの結果受けてドル安の反応 ドル円は１６３円台半ば",
+    "canonical URL validation: https://fx.minkabu.jp/news/374640"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "Stage1候補24件",
+      "url": "build/deduped-candidates/fx.jsonl",
+      "reason": "Google News中継URLのcanonical解決、記事単位の当日性、または重複回避を満たせず未採用"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

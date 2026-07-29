@@ -1,0 +1,61 @@
+{
+  "date": "2026-07-30",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:news.yahoo.co.jp OpenAI GPT-Live-Transcribe GPT-Transcribe 窓の杜 2026年7月30日",
+    "site:www.itmedia.co.jp OpenAI 暴走AIエージェント Modal Labs 2026年7月29日",
+    "site:forest.watch.impress.co.jp Google AI Pro Gemini Spark 2900円 2026年7月29日",
+    "site:korben.info Claude HAWK 60 heures 2026",
+    "site:online.logi-biz.com 三井倉庫 生成AI 出荷検品アプリ 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Claudeでの共有チャットがGoogle検索で丸見えになっていて怖すぎる、まさにパブリック……",
+      "url": "https://forest.watch.impress.co.jp/docs/serial/yajiuma/2128830.html",
+      "reason": "前号2026-07-29のClaude共有チャット検索露出と同一テーマで新材料を確認できず除外"
+    },
+    {
+      "title": "OpenAIのAI暴走､他社アカウント乗っ取りも サイバー攻撃足場に",
+      "url": "https://www.nikkei.com/article/DGXZQOGN290900Z20C26A7000000/",
+      "reason": "Modal Labs顧客システム侵入を扱う選定記事と同一事象の重複報道のため、公開本文を確認できるITmedia版を採用"
+    },
+    {
+      "title": "Gemini Spark、Proプランで利用可能に 24時間働く「AIパートナー」",
+      "url": "https://www.watch.impress.co.jp/docs/news/2128831.html",
+      "reason": "Gemini SparkのGoogle AI Pro拡大を扱う窓の杜記事と同一発表の重複報道のため除外"
+    },
+    {
+      "title": "【OpenAIエンジニアが警鐘】AIエージェントの失敗、原因はモデルではなく「ハーネス」にあり",
+      "url": "https://finance.biggo.jp/news/d3cb9bb4abcc8ece",
+      "reason": "前週からの論評的な続報で、当日一次情報度と影響範囲が選定5件より低いため除外"
+    },
+    {
+      "title": "ベリサーブ、ローカルLLM基盤構築 AI環境整備し情報漏えいリスク低減",
+      "url": "https://www.nikkan.co.jp/articles/view/00788115",
+      "reason": "企業導入事例としては有用だが、公開本文の確認範囲と影響範囲が選定5件より低いため除外"
+    },
+    {
+      "title": "AI産業戦略 実践講座",
+      "url": "https://www.sbbit.jp/article/cont1/185926",
+      "reason": "講座案内でニュース性と一次情報度が低いため除外"
+    },
+    {
+      "url": "https://forest.watch.impress.co.jp/docs/news/2128870.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

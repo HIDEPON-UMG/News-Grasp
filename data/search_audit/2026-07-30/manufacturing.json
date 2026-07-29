@@ -1,0 +1,34 @@
+{
+  "date": "2026-07-30",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "TSMC 熊本工場 生産設備 点検 調整 2026 7 29",
+    "2026年7月29日 トヨタ九州 工場再停止 熊本 震度7",
+    "\"トヨタ九州、工場再停止\" 半導体関連各社 被害確認"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "Stage1候補の同一熊本地震・半導体停止報道群",
+      "url": "",
+      "reason": "同一事象の重複報道、canonical URL未解決、または24時間freshnessを満たさない候補を採用しなかった"
+    },
+    {
+      "title": "Stage1候補のその他候補",
+      "url": "",
+      "reason": "製造業専用軸での一次情報度または構造的な新規性を確認できず採用しなかった"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
