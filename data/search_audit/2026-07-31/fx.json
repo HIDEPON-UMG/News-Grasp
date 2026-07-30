@@ -1,0 +1,52 @@
+{
+  "date": "2026-07-31",
+  "category_id": "fx",
+  "queries": [
+    "Stage1 dedup candidate file: build/deduped-candidates/fx.jsonl",
+    "canonical URL resolution: Stage1 candidate 1 Reuters yen surge intervention",
+    "canonical URL resolution: Stage1 candidate 13 Asahi FRB policy rate",
+    "canonical URL resolution: Stage1 candidate 19 Nikkei BOJ policy meeting",
+    "canonical URL resolution: Stage1 candidate 22 Nikkei Ukraine central bank rate",
+    "canonical URL resolution: Stage1 candidate 10 Diamond fiscal policy interview"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "円急騰・為替介入観測の同一材料群",
+      "url": "build/deduped-candidates/fx.jsonl",
+      "reason": "Stage1候補内で同一イベントの速報・転載が集中したため代表1件に集約"
+    },
+    {
+      "title": "FOMC据え置きの解説・振り返り",
+      "url": "build/deduped-candidates/fx.jsonl",
+      "reason": "同一会合の速報と重複するため代表1件に集約"
+    },
+    {
+      "title": "古い公開日または公開日根拠を確認できない候補",
+      "url": "build/deduped-candidates/fx.jsonl",
+      "reason": "当日号の公開日・date evidenceを確定できないため未採用"
+    },
+    {
+      "title": "投資信託基準価額の個別情報",
+      "url": "build/deduped-candidates/fx.jsonl",
+      "reason": "カテゴリの主要な為替テーマに対する読者影響が限定的なため未採用"
+    },
+    {
+      "url": "https://jp.reuters.com/opinion/PVCTPMGHXVKCVM4A3GZFSHF47E-2026-07-30/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

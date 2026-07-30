@@ -1,0 +1,64 @@
+{
+  "date": "2026-07-31",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "半導体 OR TSMC OR Samsung OR Intel OR 量産 when:1d",
+    "工場 OR サプライチェーン OR 製造業 OR 特許 when:1d",
+    "https://semiengineering.com/feed/",
+    "https://www.manufacturingdive.com/feeds/news/",
+    "https://www.supplychainbrain.com/rss/articles",
+    "https://www.supplychainbrain.com/rss/topic/1148-technology",
+    "https://semiwiki.com/feed/"
+  ],
+  "raw_results_total": 337,
+  "candidates_total": 336,
+  "selected_total": 0,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage1_dedup_fixed",
+  "canonical_resolution": [
+    {
+      "title": "TSMC熊本工場、地震後に段階的な操業再開",
+      "url": "https://ca.marketscreener.com/news/tsmc-says-japan-plant-gradually-resuming-operations-after-earthquake-ce7f51ddde8ef62c",
+      "status": "resolved_search"
+    },
+    {
+      "title": "東京エレクトロン九州、熊本2拠点で大きな損害確認されず",
+      "url": "https://www.tel.co.jp/news/disaster/2026/20260728_001.html",
+      "status": "resolved_200"
+    },
+    {
+      "title": "日立、インテル18Aでシリコン量子コンピューター研究を開始",
+      "url": "https://www.hitachi.com/en/press/articles/2026/07/0722a/",
+      "status": "resolved_200"
+    }
+  ],
+  "dropped": [
+    {
+      "title": "Google News URLのままcanonical未解決の候補群",
+      "reason": "元記事単位のURLと公開日を一意に確認できないため不採用"
+    },
+    {
+      "title": "熊本地震の半導体工場・自動車工場の重複報道群",
+      "reason": "同一の供給網影響を扱う補助報道で、採用3件との重複を避けた"
+    },
+    {
+      "title": "Stage1残候補の古い記事・解説・イベント記事",
+      "reason": "号日のfreshnessまたは製造業ニュースとしての当日重要度を満たさないため不採用"
+    },
+    {
+      "url": "https://ca.marketscreener.com/news/tsmc-says-japan-plant-gradually-resuming-operations-after-earthquake-ce7f51ddde8ef62c",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "正当な欠落理由: reserve candidates exhausted after quarantine; Manufacturing intentionally short for 2026-07-31"
+}

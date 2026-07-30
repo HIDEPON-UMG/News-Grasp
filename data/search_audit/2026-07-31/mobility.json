@@ -1,0 +1,31 @@
+{
+  "date": "2026-07-31",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "オモビオ 単眼カメラ E2E 自動運転 2026 7月",
+    "ロボトラック シリーズA 52億円 2026 7月30日",
+    "BYD 軽EV 199.5万円 値上げ依存 2026",
+    "国内EV販売 トヨタ 2位 BYD 9位 2026 上半期",
+    "フェラーリ 4-6月期 9%増益 初EV 注文 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "canonical_resolution": [
+    {"title":"単眼カメラでE2E自動運転実験、オモビオ「大幅な低コスト化」","url":"https://xtech.nikkei.com/atcl/nxt/column/18/03367/072800032/","status":"resolved_200"},
+    {"title":"トラックの完全自動運転システムを開発するロボトラック、シリーズAラウンド ファーストクローズでエクイティ52億円を調達","url":"https://prtimes.jp/main/html/rd/p/000000018.000159893.html","status":"resolved_200"},
+    {"title":"BYD軽EV「199.5万円」の衝撃！ホンダ・日産・三菱自が陥った「値上げ依存」の構造と日本市場の新たな競争","url":"https://diamond.jp/articles/-/396008","status":"resolved_200"},
+    {"title":"1〜6月国内EV販売､トヨタが2位浮上 BYDは5位→9位に","url":"https://www.nikkei.com/prime/mobility/article/DGXZQOUC17A1Y0X10C26A7000000","status":"resolved_200"},
+    {"title":"フェラーリ、4〜6月期9%増益 賛否の初EV「計画通りの注文」","url":"https://www.nikkei.com/article/DGXZQOGR30C4R0Q6A730C2000000/","status":"resolved_200"}
+  ],
+  "dropped": [
+    {"title":"同一ロボトラック案件の260km実証記事","reason":"52億円調達の一次発表と同一案件の重複を避けた"},
+    {"title":"Google News URLのままcanonical未解決の候補群","reason":"元記事単位のURLと公開日を確認できないため不採用"},
+    {"title":"自動運転の一般解説・自治体資料候補群","reason":"当日号の主要ニュースとしての新規性・影響範囲が相対的に低いため不採用"}
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "date": "2026-07-31",
+  "category_id": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "GDP (Advance Estimate), 2nd Quarter 2026 BEA",
+    "Personal Income and Outlays, June 2026 BEA PCE",
+    "Germany July 2026 inflation 2.8% Destatis",
+    "Amazon Q2 2026 earnings AWS July 30 2026 AP"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine",
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "米ＧＤＰ第2四半期1.5％増に減速、貿易赤字が重し 消費は堅調（重複候補）",
+      "reason": "BEA一次情報に統合。米GDPの重複報道は1件に集約"
+    },
+    {
+      "title": "米GDP、4～6月期は年率1.5%増 市場予想下回り前期から減速",
+      "reason": "BEA一次情報に統合。米GDPの重複報道は1件に集約"
+    },
+    {
+      "title": "アメリカ4－6月GDP速報値 ＋1.5％ 前期からは減速も経済の堅調さ示す",
+      "reason": "BEA一次情報に統合。米GDPの重複報道は1件に集約"
+    },
+    {
+      "title": "米消費、インフレはねのけ成長けん引 4〜6月GDP減速も景気は堅調",
+      "reason": "BEA一次情報に統合。米GDPの重複報道は1件に集約"
+    },
+    {
+      "title": "FRB重視の米消費支出物価指数、6月3.7%上昇 インフレ圧力強く",
+      "reason": "BEA一次情報に統合。PCE関連の重複報道は1件に集約"
+    },
+    {
+      "title": "〔米GDP反響〕内容良好、国内需要は底堅い＝BMOのアンダーソン氏(時事通信)",
+      "reason": "米GDPの重複・反響記事。一次情報を優先"
+    },
+    {
+      "title": "〔米GDP反響〕堅調な民間需要の持続に疑念＝PMのアレン氏(時事通信)",
+      "reason": "米GDPの重複・反響記事。一次情報を優先"
+    },
+    {
+      "title": "独ＧＤＰ、第2四半期速報は前期比＋0.2％ 輸出増加で予想上回る",
+      "reason": "当日性と読者価値を比較し、ドイツ物価記事を優先"
+    },
+    {
+      "title": "米中の経済閣僚が協議 中国副首相、米貿易制限に懸念を表明",
+      "reason": "canonical URLと当日本文を確認できず"
+    },
+    {
+      "title": "決算:みずほFG、27年3月期の純利益1.4兆円 業績見通しを上方修正",
+      "reason": "日経記事のcanonical URLと本文を確認できず"
+    },
+    {
+      "title": "キオクシア決算、7〜9月の「純利益33倍」超えるか 長期契約に関心",
+      "reason": "日経記事のcanonical URLと本文を確認できず"
+    },
+    {
+      "title": "東京エレクトロン[8035]：2027年3月期第1四半期決算短信〔日本基準〕（連結）",
+      "reason": "当日資料の本文を確認できず、公式ページは発表予定表示"
+    },
+    {
+      "title": "経済財政諮問会議",
+      "reason": "タイトルが総称で、当日記事単位のcanonicalと本文を確認できず"
+    },
+    {
+      "title": "【債務残高対GDP比】高市政権の成長戦略が実れば2040年度に170％台前半、不発なら200％弱に",
+      "reason": "長期試算の解説記事で当日一次情報を確認できず"
+    },
+    {
+      "title": "デジタルアシスタントと分散型インフラで地方を変える | 日本経済新聞 電子版特集（PR）",
+      "reason": "PR記事のため除外"
+    },
+    {
+      "title": "「不動産×エネルギー」で描く 系統用蓄電池の未来図｜日本経済新聞 電子版特集（PR）",
+      "reason": "PR記事のため除外"
+    },
+    {
+      "title": "明日の決算発表予定 キオクシア、村田製など281社 (7月30日)",
+      "reason": "決算予定一覧であり、発生事実ではない"
+    },
+    {
+      "title": "決算:ＪＴ、今期最終を13％上方修正・最高益予想を上乗せ",
+      "reason": "follow-upの新材料はあるが、当日4件の相対重要度で採用せず"
+    },
+    {
+      "title": "決算:オリエンタルランド最高益 4〜6月、客単価上昇し純利益50%増",
+      "reason": "canonical URLと本文を確認できず"
+    },
+    {
+      "title": "〔海外決算〕英ロイズ、6月中間決算は増収増益＝個人向け融資拡大(時事通信)",
+      "reason": "配信記事のcanonical URLと本文を確認できず"
+    },
+    {
+      "title": "FRBのインフレ抑制力に疑念、一部運用会社は米国債から他市場を視野に（TBS CROSS DIG with Bloomberg）",
+      "reason": "follow-upの本文は確認できたが、当日一次情報を優先"
+    },
+    {
+      "title": "独眼経眼：上昇する長期金利と金融政策の重要性 愛宕伸康",
+      "reason": "解説記事で、当日発表の一次情報を優先"
+    },
+    {
+      "title": "アマゾン、決算受け時間外で８％高 ＡＷＳが堅調＝米国株個別(株探ニュース)",
+      "reason": "AP通信の同一決算記事に統合"
+    },
+    {
+      "url": "https://www.bea.gov/news/2026/gdp-advance-estimate-2nd-quarter-2026",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.bea.gov/news/2026/personal-income-and-outlays-june-2026",
+      "reason": "quarantined by gate"
+    }
+  ]
+}

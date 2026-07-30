@@ -1,0 +1,69 @@
+{
+  "date": "2026-07-31",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "\"OpenAI、研究者10万人にChatGPTを無償提供 日本も対象\"",
+    "\"オラクル株が6%超急騰\" Gemini AI クラウドアプリ",
+    "Google Lyria 3.5 official blog July 29 2026"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "打倒LLMで盛り上がる「世界モデル」、画像AI研究者の逆襲に注目",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1JNHp0ejZNV0dXOGJDZWdvM3JXc0pnU2lteWpKOUJHSTRXSWdDbWJwWmd2N3pkYTRSRjBPb0dKeWhRSGQyNFltMFk3V1hnQ1IwZXlITlV0M1lmR0UxTGFNd0dpWW4yZXVOOXhDUg?oc=5",
+      "reason": "canonical URLと当日公開本文を確認できず不採用"
+    },
+    {
+      "title": "Claudeの「振り返り」機能でプロンプトを採点してもらったら、まだまだ成長できそうだった",
+      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBTNG1jRFBVWlRVS3FBeE1CUVN4MlBKXy1vVF9VUk43M2M1Q29MZkRTdk9yMjRDV2VabnlaZmRFNEZfdjJQZWxfdUVSdEsyaUFVclNLOERLczAweTBGMDZMTm1sYVhLNTA?oc=5",
+      "reason": "個人利用の体験記事で、カテゴリの当日重要度が低いため不採用"
+    },
+    {
+      "title": "生成ＡＩ利用経験５８％ 通信白書 若年中心に倍増 「ほぼ毎日」３割 日常生活浸透",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5OTjNGOVpMblJ0bV81cGZDeHRqT2RseFFwNHR2UlBfZU9nMFR6bG1GSWFKdFRKQjlMYmNlellzV1IwOUV2T04xeHBBZ0wwTHBCUzFQejRKVG5lNldlakE?oc=5",
+      "reason": "元報道の公開日が号日前半で、24時間freshnessを満たさないため不採用"
+    },
+    {
+      "title": "OpenAI出身者のファンド、資産半減－100億ドル分をシタデル買い取り",
+      "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE12RU9ncVBJX3dYbTI1MV9lQTdwOGc3cFFra2NtYzBKOHdSWW5JYTZQaE1vSGhxR2tHemp0OXMyeHpoWUNkejZQbUYzTlBsc3NSQTM1TktmeGRCQ3VCMUotb1ZrT2dTRFM4OXdFSmQteDFKS3F6U1ZB?oc=5",
+      "reason": "同一テーマのfollow-up重複で、追加の一次材料を確認できず不採用"
+    },
+    {
+      "title": "GeminiでToDoアプリを生成、イベント駆動の流れを追う",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPTUlqTVVDQWpiSFpjYWhobWRGc2tSLWE4cjhMMDQtNjVpZ1lIVkJfQ1AxZlR5NXA4WTFodjZHbnlPbVIwcWNRYXlEaEhRZ0FXaDFHeS1EXy0tUE1aYUxDcnFEb25CVW5RX1FZS3ZlSGZGUVZJNXFSdlBJNS10aXlOMDRjOVZneThXTjRreQ?oc=5",
+      "reason": "解説・追試記事で、当日一次情報性が低いため不採用"
+    },
+    {
+      "title": "Google、音楽生成AIモデル「Lyria 3.5」を発表 ～楽曲性や歌詞、ボーカル品質が向上（窓の杜）",
+      "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1SUzdLMmk3X0o2ME1wLUF0a1Rqc2xGQVZCMWZqa1NIbHFtU0QyVUlYMk9yMWVXUFdwckY2ZnIwN1V4SV9LMDNTY3c2UlpobXoxMG0xWTRQMFQ0a05wanhIY0JqRnFuTl94M3AtcEg0bm9mVzQ5OENrNXlPRjlyY1k?oc=5",
+      "reason": "同一Lyria 3.5テーマの補助報道で、canonical解決後は採用記事と重複するため不採用"
+    },
+    {
+      "title": "OpenAI、Codex SecurityのCLIをオープンソースとして公開",
+      "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE85dG83U1ZwZzdLSG9FU1FMU2twU1BUelFqRnRBMFZpSE0xc0RuZmpjNWpuemxudFFlaUFpTF9ZX09vRTBzOUhNenNBaGhKbTBxWm1yUERUME1ieFJKNExrbEdzYV9HZFJpRXF4NlR2TnY?oc=5",
+      "reason": "候補の見出しは確認できたが、同日公開の元記事canonicalと日付証拠を一意に確認できず不採用"
+    },
+    {
+      "title": "日本のSNSクリエーターの64％が生成AIを活用--それでも「最終判断は人間」",
+      "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE83UHNXNnF4LTNkU2VkVUZiemtJc1NwTFQyNUlJUUhTNkpKWHlqNFRUSzAyanZUZXV3c3hwTVFQMXpzTldkbV9PVzQ2Qy1ORDMyR3kw?oc=5",
+      "reason": "canonical URLを一意に解決できず不採用"
+    },
+    {
+      "title": "残るStage1候補（イベント記事、解説、PR転載、媒体横断重複）",
+      "url": "build/deduped-candidates/ai.jsonl",
+      "reason": "canonical未解決、当日性不足、またはselected記事との重複・補助記事に分類し、低品質な水増しを避けて不採用"
+    }
+  ]
+}

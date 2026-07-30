@@ -1,0 +1,43 @@
+{
+  "date": "2026-07-31",
+  "category_id": "it",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d",
+    "https://www.infoq.com/feed/",
+    "https://www.ciodive.com/feeds/news/",
+    "https://www.cybersecuritydive.com/feeds/news/",
+    "https://www.theregister.com/software/headlines.atom"
+  ],
+  "raw_results_total": 253,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "stage1_note": "Stage1 dedup済み候補を起点に、選定記事のみ正規URL・公開日・OGPを検証。広域収集と横断dedupは再実行していない。",
+  "dropped": [
+    {"title": "弁護士ドットコムがマイナ署名関連の一部機能停止、デジタル庁が仕様に疑義", "reason": "Google News RSS URLから元記事を確定できず、canonical URL検証未完了"},
+    {"title": "統合型IT運用管理「AssetView」、8年連続でITreview Grid Awardを受賞", "reason": "followup・受賞告知で新規性と実務インパクトが相対的に低い"},
+    {"title": "【9月2日】ヘルプデスクとサービスデスクの違いを理解", "reason": "開催前イベント告知のためニュース記事として除外"},
+    {"title": "米国MITRE社とサイバーセキュリティ分野で提携", "reason": "正規記事は確認できたが、選定5件との重複を避けて除外"},
+    {"title": "Adobe（ADBE）がOpen Source AI Cybersecurity Allianceに参加した理由", "reason": "二次転載で一次情報への到達性が低く、EY調査を優先"},
+    {"title": "AIを「難しいITツール」から「明日から使える道具」へ", "reason": "解説・啓発寄りで当日ニュース性が相対的に低い"},
+    {"title": "AI理由に転職意識 半数 ITエンジニア、キャリア模索", "reason": "有料媒体の転載候補で本文検証範囲が限定的"},
+    {"title": "先行き不安がもたらした成長性重視、コンサル企業が27年卒就活生に人気", "reason": "就職ランキング・調査紹介寄りでIT実装ニュースを優先"},
+    {"title": "ライフネット生命 IT戦略部長 竹山真人がJDXアンバサダー認定", "reason": "人事・認定告知でカテゴリ中心テーマとの関連が弱い"},
+    {"title": "GMOサイバーセキュリティ byイエラエ AIホワイトハッカー提供開始", "reason": "PR告知で独立検証可能な情報量が少ない"},
+    {"title": "日立、今期業績予想を上方修正", "reason": "Stage1候補URLのcanonicalが過去記事に戻り、号日外記事だったため除外"},
+    {"title": "TISI/Atstream AI consulting work -70%", "reason": "正規URLの本文・日付検証が十分でなく、選定5件を優先"},
+    {"title": "KPMG survey AI usage", "reason": "二次転載の正規URL確認が完了せず、EYの一次調査報道を優先"},
+    {"title": "Sakana AI Fugu-Cyber", "reason": "製品・サービス紹介で選定上限内の優先度が低い"},
+    {"title": "Google Cloud Next Tokyo 26 keynote", "reason": "イベント基調講演告知で当日発生の業績・障害・脅威情報を優先"},
+    {"title": "おわら風の盆を、次の100年へつなぐ", "reason": "IT-Consultingとの関連がなく除外"},
+    {"title": "病院クラウドファンディング候補", "reason": "ITカテゴリとの関連がなく除外"},
+    {"title": "Konica variable printing cloud", "reason": "PR告知で独立したニュース性が相対的に低い"},
+    {"title": "H2O Assured cloud security eval", "reason": "PR告知で選定上限内の優先度が低い"},
+    {"title": "ダウ先物は反発 IT・ハイテク大手の決算消化", "reason": "採用した米国株概況記事と内容が重複するため除外"}
+  ]
+}
