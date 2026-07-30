@@ -707,6 +707,33 @@ def test_daily_quality_rejects_scheduled_category_gap(tmp_path: Path) -> None:
     assert "unscheduled category digest present" not in joined
 
 
+def test_daily_quality_allows_scheduled_category_gap_with_intentional_pause_marker(tmp_path: Path) -> None:
+    """Summary にカテゴリ名つきの正当な休載理由がある場合だけ digest 欠落を許す。"""
+    _write_summary(tmp_path, weekday="月曜日")
+    summary_path = tmp_path / "digest" / "Summary" / "2026-06-08.md"
+    summary_path.write_text(
+        summary_path.read_text(encoding="utf-8")
+        + "\n### §05 Manufacturing — 正当な休載理由\n\nManufacturing は intentionally short として休載します。\n",
+        encoding="utf-8",
+    )
+    for cat_id, folder in [
+        ("fx", "FX"),
+        ("ai", "AI"),
+        ("it", "IT-Consulting"),
+        ("mobility", "Mobility"),
+        ("economy", "Economy"),
+        ("game", "Game"),
+    ]:
+        _write_category_digest(tmp_path, cat_id, folder)
+    _write_jsonl(tmp_path, "https://example.com/2026/06/08/fresh-news")
+
+    errs = validate_issue_schedule(tmp_path / "digest", date(2026, 6, 8))
+
+    joined = "\n".join(errs)
+    assert "scheduled category digest missing" not in joined
+    assert "manufacturing" not in joined
+
+
 def test_issue_schedule_rejects_unscheduled_summary_category_on_wednesday(tmp_path: Path) -> None:
     """水曜 Summary が Game を参照したら、記者 fan-out が正しくても公開前に落とす。"""
     for cat_id, folder in [

@@ -48,3 +48,44 @@ def test_accepts_semantically_valid_editor_payload(tmp_path: Path) -> None:
     _write_preview(preview, summary=f"## § 本日のテーマ考察\n\n> {lead}\n")
 
     assert validate_editor_output_preview(preview, issue_date="2026-07-11") == []
+
+
+def test_rejects_preview_that_drops_nonempty_reporter_category(tmp_path: Path) -> None:
+    repo = tmp_path
+    preview = repo / "build" / "reporter-artifacts" / "2026-07-11" / "editor-output.preview.json"
+    manifest = preview.parent / "editor-input-manifest.json"
+    records = repo / "tmp" / "newsroom" / "2026-07-11" / "manufacturing.records.jsonl"
+    records.parent.mkdir(parents=True)
+    records.write_text(
+        json.dumps(
+            {
+                "date": "2026-07-11",
+                "genre": "Manufacturing",
+                "title": "TSMC plant resumes",
+                "url": "https://example.com/manufacturing",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        json.dumps(
+            {
+                "date": "2026-07-11",
+                "scheduled_categories": ["ai", "manufacturing"],
+                "reporter_artifacts": [
+                    "tmp/newsroom/2026-07-11/manufacturing.records.jsonl"
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    lead = "本日は主要カテゴリを横断し、企業戦略と技術投資の接点を整理する。" * 8
+    _write_preview(preview, summary=f"## § 本日のテーマ考察\n\n> {lead}\n")
+
+    errors = validate_editor_output_preview(preview, issue_date="2026-07-11")
+
+    assert any("dropped nonempty reporter category: manufacturing" in error for error in errors)
