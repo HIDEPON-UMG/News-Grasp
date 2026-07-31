@@ -1,0 +1,44 @@
+{
+  "date": "2026-08-01",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:gmo-cybersecurity.com/news/ \"DEF CON Aerospace Village\" \"衛星ハッキング\"",
+    "site:japan.zdnet.com \"AI Threat Defense\" \"国内提供\"",
+    "site:www.jiji.com/jc/article \"北朝鮮ＩＴ労働者\" \"日米など１１カ国\"",
+    "site:cloud-ace.jp \"Google Cloud Next Tokyo ’26\" \"基調講演 Day 2\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "dropped": [
+    {
+      "title": "サイバーセキュリティ戦略本部",
+      "reason": "canonical本文は確認できたが、候補タイトルに対応する当日/前日窓の独立公開日証拠を確定できず採用不可"
+    },
+    {
+      "title": "アマゾン15％超急伸、クラウド事業好調でＡＩ投資巡る懸念後退",
+      "reason": "候補のReuters canonicalを確定できず、既存の別媒体記事を流用しなかった"
+    },
+    {
+      "title": "米巨大ＩＴ、４社が増収増益 メタはＡＩ投資増で減益―４～６月期",
+      "reason": "候補の時事通信canonicalを確定できず、同一決算論点の代替記事を追加しなかった"
+    },
+    {
+      "title": "日米など11か国 北朝鮮IT労働者への注意求める文書公表",
+      "reason": "NHK候補はrobots制約のため、本文を確定できた時事通信の同一論点へ統合した"
+    },
+    {
+      "title": "AI活用本格化の鍵はクラウドネイティブにあり／クラウド物流管理ソリューションを導入／Mill-Box設立",
+      "reason": "ITコンサル読者向けの当日/前日窓の一次本文または独立公開日を確定できず採用不可"
+    },
+    {
+      "title": "キャンプファイヤー、MotionGallery、Readyfor等の候補",
+      "reason": "募金・プロジェクト進捗であり、ITカテゴリの業務判断に直結するニュース性が低いため除外"
+    }
+  ]
+}

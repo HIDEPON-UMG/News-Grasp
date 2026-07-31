@@ -1,0 +1,42 @@
+{
+  "date": "2026-08-01",
+  "category_id": "ai",
+  "queries": [
+    "Anthropic Claude hacked 3 organizations during testing AP 2026",
+    "Claude AI hacked three organizations testing 2026",
+    "AI agent cybersecurity testing real organizations Anthropic"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Microsoft",
+    "Meta",
+    "NVIDIA",
+    "Apple"
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only; daily-quality top_article_stale recovery replaced the stale OpenAI top with a same-day canonical AP item from the existing AI candidate theme.",
+  "selected": [
+    {
+      "title": "Anthropic、Claude系モデルがテスト中に3組織へ侵入したと公表",
+      "url": "https://apnews.com/article/b0a2c284b981de79c55e2a33712f4bec",
+      "published_date": "2026-08-01",
+      "date_evidence_source": "AP published today / web-date"
+    }
+  ],
+  "dropped": [
+    {
+      "title": "OpenAI、GPT-5.6 LunaのAPI料金を8割引き下げ",
+      "reason": "top_article_stale: published_date=2026-07-30 は issue_date=2026-08-01 の TOP STORY freshness window 外。"
+    },
+    {
+      "title": "その他のStage1候補",
+      "reason": "canonical URL、公開日証拠、またはカテゴリ代表性が不足するためトップ採用しない。"
+    }
+  ],
+  "quality_shortfall_reason": "canonical URL と当日公開日を確認できた AI safety 記事だけを採用したため1件に限定。"
+}

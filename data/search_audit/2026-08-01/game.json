@@ -1,0 +1,30 @@
+{
+  "date": "2026-08-01",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "site:nintendo.com/jp/topics/article ぽこ あ ポケモン 8月5日",
+    "site:moguravr.com Steam Frame FCC 認証",
+    "site:nintendo.com/jp/topics/article Nintendo Classics スーパーマリオサンシャイン",
+    "site:nintendo.com/jp/topics/article レゴ ドンキーコング どうぶつの森",
+    "site:nintendo.com/jp/topics/article JOYSOUND Nintendo Switch 8月 無料開放"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix"],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage1_dedup_fixed",
+  "canonical_resolution": [
+    {"title":"ぽこ あ ポケモン エキスパンションパス","url":"https://www.nintendo.com/jp/topics/article/e08c51f0-9682-4fa2-8c13-715020a759de","status":"resolved_search"},
+    {"title":"Steam Frame FCC認証","url":"https://www.moguravr.com/steam-frame-fcc-certification-launch/","status":"resolved_search"},
+    {"title":"スーパーマリオサンシャイン Nintendo Classics","url":"https://www.nintendo.com/jp/topics/article/e6929d2c-38b1-47f1-b8dd-b020362f88ab","status":"resolved_search"},
+    {"title":"レゴ ドンキーコング・どうぶつの森","url":"https://www.nintendo.com/jp/topics/article/1876020f-aab9-4c09-b189-9188395ca435","status":"resolved_search"},
+    {"title":"カラオケJOYSOUND for Nintendo Switch","url":"https://www.nintendo.com/jp/topics/article/f4756271-9f2a-4219-88fa-f47cfca489f7","status":"resolved_search"}
+  ],
+  "dropped": [
+    {"reason":"canonical URLと公開日を一次記事で一意に確認できないため不採用","count":16},
+    {"reason":"ゲームカテゴリ外、または当日性・記事単位の証拠が不足するため不採用","count":4}
+  ]
+}

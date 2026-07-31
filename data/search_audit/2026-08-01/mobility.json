@@ -1,0 +1,30 @@
+{
+  "date": "2026-08-01",
+  "category_id": "mobility",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "queries": [
+    "Zoox commercial operation approval federal first 2026 robotaxi",
+    "連邦レベルで初の商業運行認可 ズークス",
+    "Amazon's Zoox robotaxis approved to operate without steering wheels",
+    "BYD 軽EV 受注 3日で100件 都内 新店舗"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 1,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dedup_reused": true,
+  "wide_harvest_rerun": false,
+  "cross_category_dedup_rerun": false,
+  "dropped": [
+    {"title":"中国BYDの軽EV「ラッコ」元日産の技術者どうかかわった？","reason":"canonical URLと記事公開日の独立確認ができず不採用。"},
+    {"title":"軽自動車ＥＶ「ラッコ」発表 ＢＹＤ ＡＵＴＯ山梨【経済／山梨】","reason":"canonical URLと記事公開日の独立確認ができず不採用。"},
+    {"title":"BYD日本法人社長「軽EV受注、3日で100件」 都内に新店舗","reason":"受注数を含む候補記事のcanonical URLを確認できず不採用。"},
+    {"title":"ロボトラック、自動運転で東名260キロ無介入走行","reason":"前号掲載済みの同一材料で、新材料を独立確認できず不採用。"},
+    {"title":"自動運転トラックが料金所「クリア」","reason":"候補に対応する記事の公開日がfreshness gate外で不採用。"},
+    {"title":"EV開発中止のソニー・ホンダ、従業員の再配置にめど","reason":"確認できた記事の公開日がfreshness gate外で不採用。"},
+    {"title":"韓国電池3社が営業黒字に","reason":"確認できた記事の公開日がfreshness gate外で不採用。"},
+    {"title":"その他のStage1候補","reason":"PR転載、株価ページ、講座告知、またはcanonical URL未解決のため不採用。"}
+  ]
+}

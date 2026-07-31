@@ -1,0 +1,29 @@
+{
+  "date": "2026-08-01",
+  "category_id": "fx",
+  "queries": [
+    "Stage1 dedup candidate file: build/deduped-candidates/fx.jsonl",
+    "site:yomiuri.co.jp 政府 日銀 為替介入 6兆 7兆円 2026-07-31",
+    "site:www.nikkei.com 米財務省 日本 円買い介入 足並み 2026-08-01",
+    "site:www.nikkei.com 日銀 政策金利 1.0% 据え置き 2026-07-31",
+    "site:www.gaitame.com ドル円 来週 見通し 2発目 為替介入 2026-07-31",
+    "site:www.nikkei.com 日経平均 為替介入 円売り圧力 2026-08-01"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "canonical_resolution": "Google News中継URLはgooglenewsdecoderで元記事URLへ解決し、fetch_article_body/fetch_ogpで記事単位の取得を確認。広域収集・横断dedupは再実施していない。",
+  "dropped": [
+    {"title": "円急騰・為替介入の速報／転載群", "url": "build/deduped-candidates/fx.jsonl", "reason": "同一介入イベントの速報・続報が集中したため代表記事へ集約"},
+    {"title": "日銀会合の識者コメント・解説群", "url": "build/deduped-candidates/fx.jsonl", "reason": "政策金利据え置きと同一会合の周辺解説で、代表記事と重複"},
+    {"title": "基調物価と9月利上げ観測", "url": "build/deduped-candidates/fx.jsonl", "reason": "日銀政策会合の代表記事と論点が重複"},
+    {"title": "ドル円の別媒体による来週見通し", "url": "build/deduped-candidates/fx.jsonl", "reason": "採用した市場見通し記事と同一の追加介入・雇用統計テーマ"},
+    {"title": "ウォーシュFRB議長・ミネアポリス連銀総裁の記事", "url": "build/deduped-candidates/fx.jsonl", "reason": "canonical URLの200応答と本文を現行取得経路で独立確認できず採用見送り"},
+    {"title": "為替介入を扱う社説", "url": "build/deduped-candidates/fx.jsonl", "reason": "新規の市場事実ではなく、採用記事の論点と重複"},
+    {"title": "個別投資信託基準価額の記事", "url": "build/deduped-candidates/fx.jsonl", "reason": "FXカテゴリの主要テーマに対する読者影響が限定的"}
+  ]
+}
