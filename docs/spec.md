@@ -74,6 +74,12 @@ runner、watcher、repair、publish verification、podcast verification、distri
 
 runner は固定 attempt 回数を terminal predicate にしてはならない。終了判定は deadline と typed repair ledger に基づき、同一 issue の ordered ledger、選択 artifact、handler status、same-gate reverify を残す。GitHub Release upload の HTTP 502 / 503 や Codex quota、OAuth readiness などの外部境界は blocked_external_readiness として content defect から分離する。
 
+`verify-live-runner-readiness` は「次回 06:00 に起動できるか」を `next_run_readiness`、「直近 06:00 が成功したか」を `last_scheduled_attempt` として別々に返す。`verify-publish-complete` と `verify_public_surface` は `public_status`、`scheduled_attempt_status`、`recovery_attempt_status` を別フィールドで保持し、recovery 後の public Green で scheduled failure を成功へ書き換えない。週次分類では scheduled failure 後の公開完了を `recovered_after_failed_schedule` とし、`complete` と呼ばない。
+
+distribution manifest は publish 前に作るため `publish_commit` が空でもよいが、その場合は `publish_commit_resolution=post_push_verify` と `same_publish_contract=pre_publish_commit_must_equal_verified_publish_commit` を必須とする。post-push verifier は `pre_publish_commit` が verified local/remote HEAD の ancestor であることを確認し、同じ `same_publish` proof に resolution と contract を保存する。空欄だけの manifest は `distribution_manifest_publish_commit_resolution_missing` で拒否する。
+
+runner の start marker は `run_id` を同一行に含める。旧ログの run_id 欠落は `legacy_missing` と明示し、行範囲による代替 identity を使う。visible な `docs/incidents/2026-*-report.html` が historical corpus 未登録なら、監査は該当パスと suggested scenario stub を列挙し、pytest-static より後へ進めない。新規 incident report の既定置場が `build/incidents/` である契約は変更しない。
+
 ## Fatal Boundaries
 
 完全自立型は、外部依存や危険状態を無理に突破する意味ではない。次の状態は自動修復対象外とし、typed fatal で止める。
