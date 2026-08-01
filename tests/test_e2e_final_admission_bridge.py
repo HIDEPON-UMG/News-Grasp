@@ -9,7 +9,7 @@ import pytest
 
 from tools.e2e_final_admission_bridge import (
     E2EFinalAdmissionError,
-    consume_admission,
+    consume_admission as _consume_admission,
     issue_admission,
 )
 
@@ -30,6 +30,16 @@ def _write_json(path: Path, value: dict[str, object]) -> Path:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def consume_admission(*, admission_path: Path, ledger_path: Path) -> dict[str, object]:
+    """既存テストも実起動引数との照合を必ず通す。"""
+    value = json.loads(admission_path.read_text(encoding="utf-8"))
+    return _consume_admission(
+        admission_path=admission_path,
+        ledger_path=ledger_path,
+        runner_arguments=list(value["runnerArguments"]),
+    )
 
 
 def _green_evidence(tmp_path: Path) -> list[dict[str, str]]:
@@ -215,6 +225,16 @@ def test_consumed_admission_is_typed_replay(tmp_path: Path) -> None:
         consume_admission(admission_path=admission, ledger_path=ledger)
 
 
+def test_consumer_rejects_actual_runner_argument_drift(tmp_path: Path) -> None:
+    admission, ledger = _issue(tmp_path)
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_COMMAND_DRIFT"):
+        _consume_admission(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-02"],
+        )
+
+
 def test_parallel_consume_has_exactly_one_winner(tmp_path: Path) -> None:
     admission, ledger = _issue(tmp_path)
 
@@ -235,7 +255,9 @@ def test_cli_does_not_accept_caller_selected_ledger() -> None:
     bridge_source = BRIDGE.read_text(encoding="utf-8-sig")
     wrapper_source = WRAPPER.read_text(encoding="utf-8-sig")
     assert 'add_argument("--ledger"' not in bridge_source
+    assert 'add_argument("--runner-arguments-file", type=Path, required=True)' in bridge_source
     assert "'--ledger'" not in wrapper_source
+    assert "'--runner-arguments-file'" in wrapper_source
     assert "news-grasp-e2e-final-attempts.json" in bridge_source
 
 
@@ -262,5 +284,7 @@ def test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume() -> None:
     launch = source.index("& $PowerShellExe @runnerArguments")
     assert consume < launch
     assert "E2EAdmissionPath" in source
+    assert "$runnerArguments | ConvertTo-Json" in source
+    assert source.index("$runnerArguments = @(") < source.index("'consume'") < launch
     assert "-ResumeFromStage" not in source
     assert "resume_model" not in source

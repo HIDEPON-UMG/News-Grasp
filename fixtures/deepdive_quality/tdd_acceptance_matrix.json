@@ -15,6 +15,7 @@
     {"id":"E2E-10","family":"e2e_admission","polarity":"negative","requirement":"caller指定ledgerでreset不能","failureMode":"new ledger path resets attempt","fixture":"tests/test_e2e_final_admission_bridge.py::test_cli_does_not_accept_caller_selected_ledger"},
     {"id":"E2E-11","family":"e2e_admission","polarity":"negative","requirement":"canonical product ID固定","failureMode":"product alias resets attempt","fixture":"tests/test_e2e_final_admission_bridge.py::test_product_identity_cannot_be_aliased"},
     {"id":"E2E-12","family":"e2e_admission","polarity":"positive","requirement":"wrapper順序はbudget→consume→runner","failureMode":"runner starts before consume","fixture":"tests/test_e2e_final_admission_bridge.py::test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume"},
+    {"id":"E2E-13","family":"e2e_admission","polarity":"negative","requirement":"admission引数と実起動引数を完全一致","failureMode":"self-consistent admission launches different command","fixture":"tests/test_e2e_final_admission_bridge.py::test_consumer_rejects_actual_runner_argument_drift"},
 
     {"id":"URL-01","family":"url_provenance","polarity":"negative","requirement":"未観測URLを拒否","failureMode":"live-looking URL without fetch","fixture":"tests/test_deepdive_quality_engine.py::test_live_but_unobserved_url_cannot_become_provenance"},
     {"id":"URL-02","family":"url_provenance","polarity":"positive","requirement":"記事hash・位置・公開hrefを束縛","failureMode":"valid provenance rejected","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_binds_article_hash_location_and_public_href"},

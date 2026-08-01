@@ -68,18 +68,6 @@ foreach ($evidencePath in @($BudgetPath, $EfficiencyDesignPath, $AdversarialRevi
         throw "HIGH_COST_TRUSTED_EVIDENCE_REQUIRED missing=$([IO.Path]::GetFileName($evidencePath))"
     }
 }
-$operationKind = 'full_e2e'
-$attemptId = "nopublish:$DateStamp"
-& $PythonExe $highCostBudgetToolPath 'admit' '--operation-kind' $operationKind '--attempt-id' $attemptId
-if ($LASTEXITCODE -ne 0) {
-    throw "HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
-}
-& $PythonExe $e2eAdmissionBridgePath 'consume' '--admission' $E2EAdmissionPath
-if ($LASTEXITCODE -ne 0) {
-    throw "E2E_FINAL_ADMISSION_REJECTED exit=$LASTEXITCODE"
-}
-
-$startedAt = Get-Date
 $runnerArguments = @(
     '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
     '-File', $runnerPath,
@@ -93,6 +81,22 @@ $runnerArguments = @(
     '-HighCostWorkspaceRoot', $workspacePath,
     '-HighCostBudgetToolPath', $highCostBudgetToolPath
 )
+$runnerArgumentsPath = "$receiptFullPath.runner-arguments.json"
+$runnerArgumentsJson = $runnerArguments | ConvertTo-Json
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($runnerArgumentsPath, ($runnerArgumentsJson + [Environment]::NewLine), $utf8NoBom)
+$operationKind = 'full_e2e'
+$attemptId = "nopublish:$DateStamp"
+& $PythonExe $highCostBudgetToolPath 'admit' '--operation-kind' $operationKind '--attempt-id' $attemptId
+if ($LASTEXITCODE -ne 0) {
+    throw "HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
+}
+& $PythonExe $e2eAdmissionBridgePath 'consume' '--admission' $E2EAdmissionPath '--runner-arguments-file' $runnerArgumentsPath
+if ($LASTEXITCODE -ne 0) {
+    throw "E2E_FINAL_ADMISSION_REJECTED exit=$LASTEXITCODE"
+}
+
+$startedAt = Get-Date
 & $PowerShellExe @runnerArguments
 $runnerExitCode = $LASTEXITCODE
 
@@ -132,7 +136,6 @@ $receipt = [ordered]@{
     ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }
 $json = $receipt | ConvertTo-Json -Depth 6
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($receiptFullPath, ($json + [Environment]::NewLine), $utf8NoBom)
 
 if (-not $receipt.ok) {

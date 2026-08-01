@@ -190,7 +190,7 @@ SLO gate 実装を SLO 達成実測と混同してはならない。E2E 未実�
 
 News-GraspのE2Eは `final_confirmation_only` であり、未知欠陥の発見・デバッグ・readiness判定に使ってはならない。要求と運用を先に `static → contract → simulation → component → integration → live reconcile` の低コスト層で閉じ、各層の正負fixture、source hash、実consumer、live runtime freshnessがGreenになった後だけ `NEWS_GRASP_E2E_FINAL_ADMISSION_V1` を発行する。
 
-admissionはrunner hash、引数、issue date、scheduled-equivalent intent、必須上流証跡のpath/hash/statusへ束縛する。同一issue date・同一scheduled-equivalent intentで一回だけ消費でき、別worktree、別receipt、別run_idで試行回数をresetしない。公式wrapperはbudget admission、final admission消費、runner起動の順を固定し、NoPublishを必須、ResumeFromStageを禁止する。存在するだけの証跡、文字列Green、caller指定ledger、product alias、並行consume、stale sourceはfail-closedにする。
+admissionはrunner hash、引数、issue date、scheduled-equivalent intent、必須上流証跡のpath/hash/statusへ束縛する。consumerはadmission内の自己整合だけでなく、wrapperが実際に起動する引数配列を別JSONから再読込し、順序・値・絶対pathまで完全一致しなければ `E2E_COMMAND_DRIFT` で拒否する。同一issue date・同一scheduled-equivalent intentで一回だけ消費でき、別worktree、別receipt、別run_idで試行回数をresetしない。公式wrapperはbudget admission、final admission消費、runner起動の順を固定し、NoPublishを必須、ResumeFromStageを禁止する。存在するだけの証跡、文字列Green、caller指定ledger、product alias、並行consume、stale sourceはfail-closedにする。
 
 E2Eで初見の内部欠陥が出た場合は `UPSTREAM_DESIGN_ESCAPE` として該当する最上流の要件・影響調査・Red fixtureへ戻る。同一E2E runをpatch後にresumeせず、そのissue dateのE2E試行は消費済みとして保持する。外部認証などE2E外の境界が未達なら、そのoperationだけをdeferし、E2Eを繰り返して解決しようとしない。
 

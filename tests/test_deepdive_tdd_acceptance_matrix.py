@@ -44,7 +44,7 @@ def test_every_acceptance_has_a_unique_executable_fixture() -> None:
 def test_matrix_covers_each_failure_family_and_both_polarities() -> None:
     rows = json.loads(MATRIX.read_text(encoding="utf-8"))["rows"]
     counts = Counter(row["family"] for row in rows)
-    assert counts["e2e_admission"] >= 12
+    assert counts["e2e_admission"] >= 13
     assert counts["url_provenance"] >= 10
     assert counts["podcast_value"] >= 9
     assert counts["route_parity"] >= 5

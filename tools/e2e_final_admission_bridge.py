@@ -256,6 +256,7 @@ def consume_admission(
     *,
     admission_path: Path,
     ledger_path: Path,
+    runner_arguments: list[str],
 ) -> dict[str, Any]:
     """証拠鮮度を再検証し、日付単位のattemptを原子的に消費する。"""
 
@@ -268,6 +269,13 @@ def consume_admission(
         _validate_consumed_admission(value)
         raise E2EFinalAdmissionError("E2E_ADMISSION_REPLAY")
     _validate_admission(value)
+    if (
+        not isinstance(runner_arguments, list)
+        or not runner_arguments
+        or not all(isinstance(item, str) and item for item in runner_arguments)
+        or runner_arguments != value["runnerArguments"]
+    ):
+        raise E2EFinalAdmissionError("E2E_COMMAND_DRIFT")
     normalized = _normalize_evidence(value["evidenceBindings"])
     if normalized != value["evidenceBindings"]:
         raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_DRIFT")
@@ -299,6 +307,7 @@ def consume_admission(
         ledger_value["attempts"][attempt_key] = {
             "admissionId": value["admissionId"],
             "runnerSha256": value["runnerSha256"],
+            "commandSha256": value["commandSha256"],
             "evidenceSetSha256": value["evidenceSetSha256"],
         }
         _replace_json(ledger, ledger_value)
@@ -340,6 +349,20 @@ def default_attempt_ledger_path() -> Path:
     )
 
 
+def _read_runner_arguments(path: Path) -> list[str]:
+    try:
+        value = json.loads(Path(path).resolve(strict=True).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise E2EFinalAdmissionError("E2E_RUNNER_ARGUMENTS_INVALID") from error
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(item, str) and item for item in value)
+    ):
+        raise E2EFinalAdmissionError("E2E_RUNNER_ARGUMENTS_INVALID")
+    return value
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -348,6 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     issue_parser.add_argument("--output", type=Path, required=True)
     consume_parser = subparsers.add_parser("consume")
     consume_parser.add_argument("--admission", type=Path, required=True)
+    consume_parser.add_argument("--runner-arguments-file", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "issue":
@@ -356,6 +380,7 @@ def main(argv: list[str] | None = None) -> int:
             result = consume_admission(
                 admission_path=args.admission,
                 ledger_path=default_attempt_ledger_path(),
+                runner_arguments=_read_runner_arguments(args.runner_arguments_file),
             )
     except E2EFinalAdmissionError as error:
         print(str(error), file=sys.stderr)
