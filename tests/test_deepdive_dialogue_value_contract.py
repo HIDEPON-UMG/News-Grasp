@@ -45,6 +45,26 @@ def _document(
     return "\n\n".join(blocks)
 
 
+def test_valid_reader_value_document_passes_contract() -> None:
+    issues = deepdive_dialogue.validate_dialogue_document(
+        _document(),
+        source_markdown=_source(),
+    )
+    assert issues == []
+
+
+def test_generator_builds_a_valid_grounded_document_from_sufficient_source() -> None:
+    source = _source()
+    text = build_deepdive_dialogue_script.build_dialogue_markdown(
+        source,
+        source_name="digest/DeepDive/2026-08-01-DeepDive.md",
+    )
+    assert deepdive_dialogue.validate_dialogue_document(
+        text,
+        source_markdown=source,
+    ) == []
+
+
 def test_value_contract_requires_exact_ordered_value_ids() -> None:
     turns = deepdive_dialogue.parse_dialogue(_document(omit="causal_chain"))
     issues = deepdive_dialogue.validate_value_contract(turns)

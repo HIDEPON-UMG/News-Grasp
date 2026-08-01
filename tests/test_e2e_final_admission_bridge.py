@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from tools.deepdive_red_suite_coverage import validate_red_suite_coverage
 from tools.e2e_final_admission_bridge import (
     E2EFinalAdmissionError,
     consume_admission as _consume_admission,
@@ -17,6 +18,18 @@ from tools.e2e_final_admission_bridge import (
 ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = ROOT / "scripts" / "ops" / "invoke-scheduled-equivalent-nopublish.ps1"
 BRIDGE = ROOT / "tools" / "e2e_final_admission_bridge.py"
+RED_VIEWPOINTS = (
+    "normal",
+    "failure",
+    "boundary",
+    "substitution",
+    "drift",
+    "replay",
+    "missing",
+    "cross_lineage",
+    "recovery",
+    "human_impact",
+)
 
 
 def _write_json(path: Path, value: dict[str, object]) -> Path:
@@ -42,22 +55,107 @@ def consume_admission(*, admission_path: Path, ledger_path: Path) -> dict[str, o
     )
 
 
-def _green_evidence(tmp_path: Path) -> list[dict[str, str]]:
+def _install_red_suite_source(repo_root: Path) -> dict[str, object]:
+    repo_root.mkdir(parents=True, exist_ok=True)
+    test_path = repo_root / "tests" / "red_suite_fixture.py"
+    test_path.parent.mkdir(parents=True, exist_ok=True)
+    function_names = [f"test_contract_{index}" for index in range(35)]
+    test_path.write_text(
+        "\n\n".join(f"def {name}():\n    pass" for name in function_names) + "\n",
+        encoding="utf-8",
+    )
+    shared_routes = [
+        "production_generation",
+        "repair_publish",
+        "daily_quality",
+        "codex_daily_audit",
+    ]
+    route_ids = [*shared_routes, "final_e2e_wrapper"]
+    routes = {
+        "schemaVersion": "DEEPDIVE_SHARED_QUALITY_ROUTES_V1",
+        "declaredRoutes": shared_routes,
+    }
+    _write_json(repo_root / "config" / "deepdive_quality_routes.json", routes)
+    route_rows = [
+        {
+            "id": route_id,
+            "scope": "final_e2e" if route_id == "final_e2e_wrapper" else "shared_quality",
+            "fixture": f"tests/red_suite_fixture.py::{function_names[index]}",
+            "productionConsumer": f"consumer:{route_id}",
+        }
+        for index, route_id in enumerate(route_ids)
+    ]
+    requirement_specs = [
+        ("final_e2e_discipline", ["final_e2e_wrapper"]),
+        ("deepdive_url_provenance", shared_routes),
+        ("podcast_reader_value", shared_routes),
+    ]
+    requirements: list[dict[str, object]] = []
+    function_index = len(route_rows)
+    for requirement_id, requirement_routes in requirement_specs:
+        perspectives: list[dict[str, str]] = []
+        for viewpoint in RED_VIEWPOINTS:
+            perspectives.append(
+                {
+                    "viewpoint": viewpoint,
+                    "acceptanceId": f"{requirement_id}:{viewpoint}",
+                    "fixture": (
+                        "tests/red_suite_fixture.py::"
+                        f"{function_names[function_index]}"
+                    ),
+                    "productionConsumer": f"consumer:{requirement_id}",
+                    "expectedRed": f"red:{requirement_id}:{viewpoint}",
+                    "counterevidence": f"counter:{requirement_id}:{viewpoint}",
+                }
+            )
+            function_index += 1
+        requirements.append(
+            {
+                "id": requirement_id,
+                "routeIds": list(requirement_routes),
+                "perspectives": perspectives,
+            }
+        )
+    matrix = {
+        "schemaVersion": "NEWS_GRASP_DEEPDIVE_TDD_ACCEPTANCE_MATRIX_V2",
+        "coverageRule": "requirement_viewpoint_route_composite_proof",
+        "redSuiteCoverage": {
+            "schemaVersion": "RED_SUITE_COVERAGE_V1",
+            "requiredViewpoints": list(RED_VIEWPOINTS),
+            "routes": route_rows,
+            "requirements": requirements,
+        },
+        "rows": [],
+    }
+    _write_json(
+        repo_root / "fixtures" / "deepdive_quality" / "tdd_acceptance_matrix.json",
+        matrix,
+    )
+    report = validate_red_suite_coverage(matrix, root=repo_root, route_registry=routes)
+    assert report["status"] == "Green", report
+    return report
+
+
+def _green_evidence(tmp_path: Path, *, repo_root: Path) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for name in (
         "efficiency_design",
         "adversarial_review",
         "route_manifest",
+        "red_suite_coverage",
         "static",
         "simulation",
         "isolation",
     ):
+        payload: dict[str, object] = {
+            "schemaVersion": f"{name.upper()}_V1",
+            "status": "Green",
+        }
+        if name == "red_suite_coverage":
+            payload = _install_red_suite_source(repo_root)
         path = _write_json(
             tmp_path / f"{name}.json",
-            {
-                "schemaVersion": f"{name.upper()}_V1",
-                "status": "Green",
-            },
+            payload,
         )
         rows.append({"kind": name, "path": str(path), "sha256": _sha256(path)})
     return rows
@@ -82,14 +180,105 @@ def _issue(
         repo_root=repo,
         runner_path=runner,
         runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
-        evidence_bindings=_green_evidence(tmp_path / admission.stem),
+        evidence_bindings=_green_evidence(tmp_path / admission.stem, repo_root=repo),
         output_path=admission,
     )
     return admission, ledger
 
 
+def test_red_suite_coverage_is_mandatory_upstream_evidence(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_UPSTREAM_EVIDENCE_INCOMPLETE",
+    ):
+        issue_admission(
+            issue_date="2026-08-01",
+            canonical_product_id="News-Grasp",
+            repo_root=repo,
+            runner_path=runner,
+            runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+            evidence_bindings=[
+                row
+                for row in _green_evidence(
+                    tmp_path / "missing-red-suite", repo_root=repo
+                )
+                if row["kind"] != "red_suite_coverage"
+            ],
+            output_path=tmp_path / "missing-red-suite-admission.json",
+        )
+
+
+def test_status_only_red_suite_receipt_cannot_authorize_e2e(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    evidence = _green_evidence(tmp_path / "status-only", repo_root=repo)
+    row = next(item for item in evidence if item["kind"] == "red_suite_coverage")
+    path = Path(row["path"])
+    _write_json(path, {"schemaVersion": "FAKE_V1", "status": "Green"})
+    row["sha256"] = _sha256(path)
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_RED_SUITE_COVERAGE_INVALID",
+    ):
+        issue_admission(
+            issue_date="2026-08-01",
+            canonical_product_id="News-Grasp",
+            repo_root=repo,
+            runner_path=runner,
+            runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+            evidence_bindings=evidence,
+            output_path=tmp_path / "status-only-admission.json",
+        )
+
+
+def test_well_shaped_forged_red_suite_receipt_cannot_authorize_e2e(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    evidence = _green_evidence(tmp_path / "forged", repo_root=repo)
+    row = next(item for item in evidence if item["kind"] == "red_suite_coverage")
+    path = Path(row["path"])
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["coverageSha256"] = "b" * 64
+    _write_json(path, payload)
+    row["sha256"] = _sha256(path)
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_RED_SUITE_COVERAGE_SOURCE_MISMATCH",
+    ):
+        issue_admission(
+            issue_date="2026-08-01",
+            canonical_product_id="News-Grasp",
+            repo_root=repo,
+            runner_path=runner,
+            runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+            evidence_bindings=evidence,
+            output_path=tmp_path / "forged-admission.json",
+        )
+
+
+def test_evidence_hash_and_json_are_derived_from_one_byte_read() -> None:
+    source = BRIDGE.read_text(encoding="utf-8-sig")
+    normalize_start = source.index("def _normalize_evidence")
+    normalize_end = source.index("\ndef ", normalize_start + 5)
+    normalize_source = source[normalize_start:normalize_end]
+    assert "_read_bound_json" in normalize_source
+    assert "_file_sha256" not in normalize_source
+    assert "_read_json" not in normalize_source
+
+
 def test_file_existence_is_not_e2e_admission(tmp_path: Path) -> None:
-    evidence = _green_evidence(tmp_path)
+    repo = tmp_path / "repo"
+    evidence = _green_evidence(tmp_path, repo_root=repo)
     evidence[0]["path"] = str(
         _write_json(
             tmp_path / "false-green.json",
@@ -97,8 +286,7 @@ def test_file_existence_is_not_e2e_admission(tmp_path: Path) -> None:
         )
     )
     evidence[0]["sha256"] = _sha256(Path(evidence[0]["path"]))
-    repo = tmp_path / "repo"
-    repo.mkdir()
+    repo.mkdir(exist_ok=True)
     runner = _write_json(repo / "runner.ps1", {"runner": True})
 
     with pytest.raises(
@@ -121,7 +309,7 @@ def test_admission_requires_isolation_evidence(tmp_path: Path) -> None:
     repo.mkdir()
     runner = repo / "runner.ps1"
     runner.write_text("runner\n", encoding="utf-8")
-    evidence = _green_evidence(tmp_path / "evidence")
+    evidence = _green_evidence(tmp_path / "evidence", repo_root=repo)
     evidence = [row for row in evidence if row["kind"] != "isolation"]
     with pytest.raises(E2EFinalAdmissionError, match="E2E_UPSTREAM_EVIDENCE_INCOMPLETE"):
         issue_admission(
@@ -223,7 +411,7 @@ def test_admission_rejects_resume_and_publish_arguments(tmp_path: Path) -> None:
     repo.mkdir()
     runner = repo / "runner.ps1"
     runner.write_text("runner\n", encoding="utf-8")
-    evidence = _green_evidence(tmp_path / "evidence")
+    evidence = _green_evidence(tmp_path / "evidence", repo_root=repo)
     for arguments in (
         ["-NoPublish", "-ResumeFromStage", "deepdive"],
         ["-DateStampOverride", "2026-08-01"],
@@ -304,7 +492,9 @@ def test_product_identity_cannot_be_aliased(tmp_path: Path) -> None:
             repo_root=repo,
             runner_path=runner,
             runner_arguments=["-NoPublish"],
-            evidence_bindings=_green_evidence(tmp_path / "evidence"),
+            evidence_bindings=_green_evidence(
+                tmp_path / "evidence", repo_root=repo
+            ),
             output_path=tmp_path / "admission.json",
         )
 

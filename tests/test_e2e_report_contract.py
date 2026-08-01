@@ -251,6 +251,24 @@ def test_news_grasp_e2e_skill_forbids_single_issue_compound_red_and_partial_thum
         assert fragment in skill, fragment
 
 
+def test_news_grasp_e2e_skill_requires_machine_checked_red_suite_coverage() -> None:
+    """単一RED禁止を自由記述で終わらせず、網羅matrixの実consumerへ接続する。"""
+    skill = (
+        Path.home() / ".codex" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    for fragment in [
+        "RED_SUITE_COVERAGE_V1",
+        "normal/failure/boundary/substitution/drift/replay/missing/cross_lineage/recovery/human_impact",
+        "fixtures/deepdive_quality/tdd_acceptance_matrix.json",
+        "tools.deepdive_red_suite_coverage",
+        "Requirement × viewpoint × route",
+        "90 coverage cells",
+        "単一fixtureへの集約",
+    ]:
+        assert fragment in skill, fragment
+
+
 def test_20260628_e2e_artifact_collision_has_separate_incident_report() -> None:
     """E2E成果物衝突をフルrunner障害へ混ぜて矮小化しない。"""
     text = E2E_ARTIFACT_INCIDENT_HTML.read_text(encoding="utf-8")

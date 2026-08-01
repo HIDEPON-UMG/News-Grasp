@@ -12,12 +12,20 @@ from pathlib import Path
 from typing import Any
 
 
+MODULE_ROOT = Path(__file__).resolve().parents[1]
+if str(MODULE_ROOT) not in sys.path:
+    sys.path.insert(0, str(MODULE_ROOT))
+
+from tools.deepdive_red_suite_coverage import validate_red_suite_coverage
+
+
 SCHEMA = "NEWS_GRASP_E2E_FINAL_ADMISSION_V1"
 LEDGER_SCHEMA = "NEWS_GRASP_E2E_FINAL_ATTEMPT_LEDGER_V1"
 REQUIRED_EVIDENCE_KINDS = (
     "efficiency_design",
     "adversarial_review",
     "route_manifest",
+    "red_suite_coverage",
     "static",
     "simulation",
     "isolation",
@@ -55,6 +63,41 @@ def _read_json(path: Path, code: str) -> dict[str, Any]:
     return value
 
 
+def _read_bound_json(
+    path: Path,
+    expected_hash: str,
+    code: str,
+) -> dict[str, Any]:
+    """同一bytesからhash検証とJSON parseを行い、TOCTOU差を作らない。"""
+    try:
+        payload = path.read_bytes()
+        if hashlib.sha256(payload).hexdigest() != expected_hash:
+            raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_DRIFT")
+        value = json.loads(payload.decode("utf-8-sig"))
+    except E2EFinalAdmissionError:
+        raise
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise E2EFinalAdmissionError(code) from error
+    if not isinstance(value, dict):
+        raise E2EFinalAdmissionError(code)
+    return value
+
+
+def _recompute_red_suite_coverage(repo_root: Path) -> dict[str, Any]:
+    matrix_path = repo_root / "fixtures" / "deepdive_quality" / "tdd_acceptance_matrix.json"
+    routes_path = repo_root / "config" / "deepdive_quality_routes.json"
+    matrix = _read_json(matrix_path, "E2E_RED_SUITE_COVERAGE_SOURCE_INVALID")
+    routes = _read_json(routes_path, "E2E_RED_SUITE_COVERAGE_SOURCE_INVALID")
+    report = validate_red_suite_coverage(
+        matrix,
+        root=repo_root,
+        route_registry=routes,
+    )
+    if report.get("status") != "Green" or report.get("findings") != []:
+        raise E2EFinalAdmissionError("E2E_RED_SUITE_COVERAGE_SOURCE_INVALID")
+    return report
+
+
 def _write_exclusive(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -83,6 +126,8 @@ def _replace_json(path: Path, value: dict[str, Any]) -> None:
 
 def _normalize_evidence(
     rows: list[dict[str, str]],
+    *,
+    repo_root: Path,
 ) -> list[dict[str, str]]:
     if not isinstance(rows, list):
         raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_INVALID")
@@ -96,13 +141,30 @@ def _normalize_evidence(
         except OSError as error:
             raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_INVALID") from error
         expected_hash = str(row["sha256"]).casefold()
-        if (
-            not path.is_file()
-            or HEX_64_RE.fullmatch(expected_hash) is None
-            or _file_sha256(path) != expected_hash
-        ):
+        if not path.is_file() or HEX_64_RE.fullmatch(expected_hash) is None:
             raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_DRIFT")
-        value = _read_json(path, "E2E_UPSTREAM_EVIDENCE_INVALID")
+        value = _read_bound_json(
+            path,
+            expected_hash,
+            "E2E_UPSTREAM_EVIDENCE_INVALID",
+        )
+        if kind == "red_suite_coverage" and not (
+            value.get("schemaVersion") == "RED_SUITE_COVERAGE_REPORT_V1"
+            and value.get("status") == "Green"
+            and value.get("findings") == []
+            and value.get("requirementCount") == 3
+            and value.get("viewpointCount") == 10
+            and value.get("routeCount") == 5
+            and value.get("coverageCellCount") == 90
+            and HEX_64_RE.fullmatch(str(value.get("coverageSha256") or ""))
+        ):
+            raise E2EFinalAdmissionError("E2E_RED_SUITE_COVERAGE_INVALID")
+        if kind == "red_suite_coverage":
+            recomputed = _recompute_red_suite_coverage(repo_root)
+            if value != recomputed:
+                raise E2EFinalAdmissionError(
+                    "E2E_RED_SUITE_COVERAGE_SOURCE_MISMATCH"
+                )
         if value.get("status") != "Green":
             raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
         normalized.append(
@@ -227,7 +289,7 @@ def issue_admission(
         or "-NoPublish" not in runner_arguments
     ):
         raise E2EFinalAdmissionError("E2E_COMMAND_FORBIDDEN")
-    evidence = _normalize_evidence(evidence_bindings)
+    evidence = _normalize_evidence(evidence_bindings, repo_root=repo)
     value: dict[str, Any] = {
         "schemaVersion": SCHEMA,
         "state": "issued",
@@ -277,7 +339,14 @@ def consume_admission(
         or runner_arguments != value["runnerArguments"]
     ):
         raise E2EFinalAdmissionError("E2E_COMMAND_DRIFT")
-    normalized = _normalize_evidence(value["evidenceBindings"])
+    try:
+        repo_root = Path(value["repoRoot"]).resolve(strict=True)
+    except OSError as error:
+        raise E2EFinalAdmissionError("E2E_ADMISSION_INVALID") from error
+    normalized = _normalize_evidence(
+        value["evidenceBindings"],
+        repo_root=repo_root,
+    )
     if normalized != value["evidenceBindings"]:
         raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_DRIFT")
     runner = Path(value["runnerPath"])
