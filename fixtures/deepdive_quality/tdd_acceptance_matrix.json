@@ -3,7 +3,7 @@
   "taskIdentity": "news-grasp-e2e-deepdive-quality-2026-08-01",
   "coverageRule": "requirement_viewpoint_route_composite_proof",
   "redSuiteCoverage": {
-    "schemaVersion": "RED_SUITE_COVERAGE_V1",
+    "schemaVersion": "RED_SUITE_COVERAGE_V2",
     "requiredViewpoints": [
       "normal",
       "failure",
@@ -16,6 +16,72 @@
       "recovery",
       "human_impact"
     ],
+    "viewpoints": [
+      {"id":"normal"},
+      {"id":"failure"},
+      {"id":"boundary"},
+      {"id":"substitution"},
+      {"id":"drift"},
+      {"id":"replay"},
+      {"id":"missing"},
+      {"id":"cross_lineage"},
+      {"id":"recovery"},
+      {"id":"human_impact"}
+    ],
+    "viewpointScopes": [
+      {"id":"final_e2e","bindings":[
+        {"viewpoint":"normal","acceptanceId":"E2E-VIEW-NORMAL","fixture":"tests/test_e2e_final_admission_bridge.py::test_valid_admission_is_consumed_once","expectedRed":"正規のGreen経路が成立しない","counterevidence":"全bindingを満たすadmissionが一回だけ消費される"},
+        {"viewpoint":"failure","acceptanceId":"E2E-VIEW-FAILURE","fixture":"tests/test_e2e_final_admission_bridge.py::test_file_existence_is_not_e2e_admission","expectedRed":"未検証証拠が成功へ読み替えられる","counterevidence":"存在するだけの証拠をtyped拒否する"},
+        {"viewpoint":"boundary","acceptanceId":"E2E-VIEW-BOUNDARY","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_rejects_resume_and_publish_arguments","expectedRed":"publishまたはresumeがfinal境界を越える","counterevidence":"NoPublishかつfresh startだけを許可する"},
+        {"viewpoint":"substitution","acceptanceId":"E2E-VIEW-SUBSTITUTION","fixture":"tests/test_e2e_final_admission_bridge.py::test_consumer_rejects_actual_runner_argument_drift","expectedRed":"別引数がadmissionを代用する","counterevidence":"実起動commandが完全一致する"},
+        {"viewpoint":"drift","acceptanceId":"E2E-VIEW-DRIFT","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_rejects_evidence_drift","expectedRed":"発行後driftがfresh扱いされる","counterevidence":"source hash driftを拒否する"},
+        {"viewpoint":"replay","acceptanceId":"E2E-VIEW-REPLAY","fixture":"tests/test_e2e_final_admission_bridge.py::test_consumed_admission_is_typed_replay","expectedRed":"消費済み試行が再実行される","counterevidence":"durable ledgerがreplayを拒否する"},
+        {"viewpoint":"missing","acceptanceId":"E2E-VIEW-MISSING","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_requires_isolation_evidence","expectedRed":"必須証拠欠落で進む","counterevidence":"欠落証拠をfail-closedにする"},
+        {"viewpoint":"cross_lineage","acceptanceId":"E2E-VIEW-CROSS-LINEAGE","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_is_consumed_once_across_worktree_and_receipt_paths","expectedRed":"lineage変更で試行がresetされる","counterevidence":"canonical identityを共有する"},
+        {"viewpoint":"recovery","acceptanceId":"E2E-VIEW-RECOVERY","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_rejects_runner_drift","expectedRed":"復旧後にstale runnerを再利用する","counterevidence":"runner freshnessを再検証する"},
+        {"viewpoint":"human_impact","acceptanceId":"E2E-VIEW-HUMAN-IMPACT","fixture":"tests/test_e2e_final_admission_bridge.py::test_parallel_consume_has_exactly_one_winner","expectedRed":"並行起動が重複費用を生む","counterevidence":"起動勝者を一件に限定する"}
+      ]},
+      {"id":"deepdive_url_provenance","bindings":[
+        {"viewpoint":"normal","acceptanceId":"URL-NORMAL","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_binds_article_hash_location_and_public_href","expectedRed":"valid provenanceを構築できない","counterevidence":"article hash・位置・public hrefを束縛する"},
+        {"viewpoint":"failure","acceptanceId":"URL-FAILURE","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_record_requires_success_and_content_hash","expectedRed":"失敗または空本文がprovenanceになる","counterevidence":"success statusとcontent hashを必須にする"},
+        {"viewpoint":"boundary","acceptanceId":"URL-BOUNDARY","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_rejects_soft_404_body","expectedRed":"HTTP 200 soft-404を受理する","counterevidence":"本文境界でnot-foundを拒否する"},
+        {"viewpoint":"substitution","acceptanceId":"URL-SUBSTITUTION","fixture":"tests/test_deepdive_quality_engine.py::test_system_transport_fallback_cannot_bypass_soft_404","expectedRed":"fallbackが本文検証を代用する","counterevidence":"全transportへ同じsoft-404述語を適用する"},
+        {"viewpoint":"drift","acceptanceId":"URL-DRIFT","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_fails_closed_after_article_or_fetch_drift","expectedRed":"articleまたはfetch drift後もstale manifestが通る","counterevidence":"いずれのhash driftも拒否する"},
+        {"viewpoint":"replay","acceptanceId":"URL-REPLAY","fixture":"tests/test_deepdive_quality_engine.py::test_period_capture_reuses_observation_cache","expectedRed":"成功URLを無制限に再取得する","counterevidence":"fresh成功観測を一回だけ再利用する"},
+        {"viewpoint":"missing","acceptanceId":"URL-MISSING","fixture":"tests/test_deepdive_quality_engine.py::test_live_but_unobserved_url_cannot_become_provenance","expectedRed":"未観測URLを実在扱いする","counterevidence":"観測欠落をfatalにする"},
+        {"viewpoint":"cross_lineage","acceptanceId":"URL-CROSS-LINEAGE","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_rejects_missing_extra_and_duplicate_sources","expectedRed":"別記事のsource集合を再利用する","counterevidence":"missing・extra・duplicateを拒否する"},
+        {"viewpoint":"recovery","acceptanceId":"URL-RECOVERY","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_uses_single_system_transport_fallback_for_403","expectedRed":"403 recovery不能または無制限retryになる","counterevidence":"対象transport失敗だけ一回fallbackする"},
+        {"viewpoint":"human_impact","acceptanceId":"URL-HUMAN-IMPACT","fixture":"tests/test_deepdive_quality_engine.py::test_period_capture_collects_all_url_failures_without_retry","expectedRed":"最初の失敗が全影響を隠す","counterevidence":"一回の走査で全失敗を収集する"}
+      ]},
+      {"id":"podcast_reader_value","bindings":[
+        {"viewpoint":"normal","acceptanceId":"POD-NORMAL","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_valid_reader_value_document_passes_contract","expectedRed":"正当な7価値対談が拒否される","counterevidence":"全価値と根拠を持つ文書が通る"},
+        {"viewpoint":"failure","acceptanceId":"POD-FAILURE","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_duplicate_value_segment","expectedRed":"価値区間重複が通る","counterevidence":"重複・順序違反をfatalにする"},
+        {"viewpoint":"boundary","acceptanceId":"POD-BOUNDARY","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_generator_rejects_source_with_fewer_than_fourteen_facts","expectedRed":"13根拠を14へ水増しする","counterevidence":"不足を生成前に拒否する"},
+        {"viewpoint":"substitution","acceptanceId":"POD-SUBSTITUTION","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_grounding_rejects_marker_only_without_source_text","expectedRed":"markerが本文根拠を代用する","counterevidence":"marker-only groundingを拒否する"},
+        {"viewpoint":"drift","acceptanceId":"POD-DRIFT","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_semantic_paraphrase_loop","expectedRed":"意味言換えloopがliteral dedupを逃れる","counterevidence":"semantic repetitionをfatalにする"},
+        {"viewpoint":"replay","acceptanceId":"POD-REPLAY","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_reused_source_bindings","expectedRed":"同じ根拠を価値間で再利用する","counterevidence":"cross-value evidence reuseを拒否する"},
+        {"viewpoint":"missing","acceptanceId":"POD-MISSING","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_requires_exact_ordered_value_ids","expectedRed":"価値区間欠落が通る","counterevidence":"7 ordered value IDを必須にする"},
+        {"viewpoint":"cross_lineage","acceptanceId":"POD-CROSS-LINEAGE","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_past_month_dialogue_corpus_has_no_cross_day_template_loop","expectedRed":"日付を越えてtemplateを再生する","counterevidence":"31日corpusの反復率を拘束する"},
+        {"viewpoint":"recovery","acceptanceId":"POD-RECOVERY","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_generator_builds_a_valid_grounded_document_from_sufficient_source","expectedRed":"十分なsourceから再生成できない","counterevidence":"canonical generatorでvalid文書を作る"},
+        {"viewpoint":"human_impact","acceptanceId":"POD-HUMAN-IMPACT","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_current_fixed_value_scaffold_is_fatal","expectedRed":"読者価値のないfillerが長さで通る","counterevidence":"固定scaffoldを長さに関係なくfatalにする"}
+      ]}
+    ],
+    "requirementViewpointScopes": {
+      "e2e_purpose": "final_e2e",
+      "e2e_non_purpose": "final_e2e",
+      "e2e_layer_model": "final_e2e",
+      "e2e_readiness_admission": "final_e2e",
+      "e2e_attempt_identity": "final_e2e",
+      "e2e_checkpoint_boundary": "final_e2e",
+      "e2e_exploration_separation": "final_e2e",
+      "e2e_resource_budget": "final_e2e",
+      "e2e_side_effect_boundary": "final_e2e",
+      "e2e_stop_and_failure": "final_e2e",
+      "e2e_evidence_contract": "final_e2e",
+      "e2e_completion_boundary": "final_e2e",
+      "deepdive_url_provenance": "deepdive_url_provenance",
+      "podcast_reader_value": "podcast_reader_value"
+    },
     "routes": [
       {"id":"production_generation","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_runner_uses_shared_quality_engine_before_completion","productionConsumer":"runner production generation -> tools.deepdive_quality"},
       {"id":"repair_publish","scope":"shared_quality","fixture":"tests/test_deepdive_quality_route_contract.py::test_repair_matrix_owns_shared_quality_issue_codes","productionConsumer":"repair matrix and registry -> tools.deepdive_quality issue codes"},
@@ -24,57 +90,47 @@
       {"id":"final_e2e_wrapper","scope":"final_e2e","fixture":"tests/test_e2e_final_admission_bridge.py::test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume","productionConsumer":"scripts/ops/invoke-news-grasp-final-e2e.ps1 -> final admission -> runner"}
     ],
     "requirements": [
+      {"id":"e2e_purpose","acceptanceId":"E2E-PURPOSE","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_purpose_is_one_final_production_equivalent_confirmation","productionConsumer":"news-grasp-e2e-discipline purpose and final wrapper","expectedRed":"E2Eが最終確認以外の用途へ拡張される","counterevidence":"本番相当入口の一回だけの最終確認として定義される","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_non_purpose","acceptanceId":"E2E-NON-PURPOSE","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_non_purpose_forbids_discovery_debug_and_readiness_probing","productionConsumer":"news-grasp-e2e-discipline forbidden-use contract","expectedRed":"探索・切分け・readiness確認にE2Eを使える","counterevidence":"全非目的を低コスト層へ割り当てる","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_layer_model","acceptanceId":"E2E-LAYER-MODEL","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_layer_model_keeps_l0_through_l7_out_of_final_attempt_count","productionConsumer":"L0-L8 classification contract","expectedRed":"部分試験がE2Eと数えられるかfull runnerが試行外になる","counterevidence":"実行内容でL0-L8を分類する","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_readiness_admission","acceptanceId":"E2E-READINESS","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_readiness_admission_requires_all_low_cost_layers_first","productionConsumer":"tools.e2e_final_admission_bridge issue/consume","expectedRed":"missingまたは未検証の上流証拠でL8を開始できる","counterevidence":"L0-L7と予算反証Green後だけadmissionを発行する","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_attempt_identity","acceptanceId":"E2E-IDENTITY","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_attempt_identity_cannot_reset_through_aliases_or_resume","productionConsumer":"durable final-attempt ledger","expectedRed":"path・run・session・resume別名で試行回数をresetできる","counterevidence":"product/date/intentのcanonical keyを全lineageで共有する","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_checkpoint_boundary","acceptanceId":"E2E-CHECKPOINT","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_checkpoint_boundary_allows_recovery_but_never_final_resume","productionConsumer":"final wrapper argument boundary and recovery integration","expectedRed":"production checkpoint復旧とfinal E2E resumeが混同される","counterevidence":"復旧integrationだけresume可能でfinal wrapperは禁止する","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_exploration_separation","acceptanceId":"E2E-EXPLORATION","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_exploration_is_owned_by_the_cheapest_pre_e2e_layer","productionConsumer":"L0-L7 debug routing contract","expectedRed":"未知欠陥探索をfull runnerへ委譲する","counterevidence":"欠陥種別ごとに最安の上流層を所有者とする","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_resource_budget","acceptanceId":"E2E-RESOURCE","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_resource_budget_is_single_use_and_non_resettable","productionConsumer":"high-cost admission and durable attempt consumer","expectedRed":"E2E・model・wall-clock予算をlineage変更でresetできる","counterevidence":"全高コスト上限を一回かつ非resetで固定する","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_side_effect_boundary","acceptanceId":"E2E-SIDE-EFFECT","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_side_effect_boundary_requires_nopublish_and_no_push_evidence","productionConsumer":"scripts/ops/invoke-scheduled-equivalent-nopublish.ps1","expectedRed":"final確認がpublish・push・focus theftを起こす","counterevidence":"NoPublish/no-push/no-focus-theftをreceiptへ束縛する","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_stop_and_failure","acceptanceId":"E2E-FAILURE-STOP","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_stop_and_failure_consumes_attempt_and_returns_upstream","productionConsumer":"UPSTREAM_DESIGN_ESCAPE and attempt ledger","expectedRed":"L8内patch・resume・第二試行でfailureを隠す","counterevidence":"attemptを消費済みに保ち最上流設計へ戻る","routeIds":["final_e2e_wrapper"]},
+      {"id":"e2e_evidence_contract","acceptanceId":"E2E-EVIDENCE","fixture":"tests/test_e2e_first_principles_contract.py::test_e2e_evidence_contract_binds_identity_freshness_and_actual_command","productionConsumer":"tools.e2e_final_admission_bridge evidence verifier","expectedRed":"文字列Green・stale hash・自己整合commandで起動できる","counterevidence":"actual commandとfresh sourceを独立再計算する","routeIds":["final_e2e_wrapper"]},
       {
-        "id": "final_e2e_discipline",
-        "routeIds": ["final_e2e_wrapper"],
-        "perspectives": [
-          {"viewpoint":"normal","acceptanceId":"E2E-NORMAL","fixture":"tests/test_e2e_final_admission_bridge.py::test_valid_admission_is_consumed_once","productionConsumer":"tools.e2e_final_admission_bridge.consume","expectedRed":"valid admission cannot be consumed exactly once","counterevidence":"valid bound receipt reaches one runner launch"},
-          {"viewpoint":"failure","acceptanceId":"E2E-FAILURE","fixture":"tests/test_e2e_final_admission_bridge.py::test_file_existence_is_not_e2e_admission","productionConsumer":"tools.e2e_final_admission_bridge.issue","expectedRed":"mere file existence authorizes final E2E","counterevidence":"unvalidated evidence file is rejected"},
-          {"viewpoint":"boundary","acceptanceId":"E2E-BOUNDARY","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_rejects_resume_and_publish_arguments","productionConsumer":"final E2E CLI argument boundary","expectedRed":"ResumeFromStage or publish mode enters final NoPublish E2E","counterevidence":"only fresh NoPublish invocation is accepted"},
-          {"viewpoint":"substitution","acceptanceId":"E2E-SUBSTITUTION","fixture":"tests/test_e2e_final_admission_bridge.py::test_consumer_rejects_actual_runner_argument_drift","productionConsumer":"wrapper actual command verifier","expectedRed":"self-consistent receipt substitutes a different runner command","counterevidence":"actual command array equals admitted command byte-for-byte"},
-          {"viewpoint":"drift","acceptanceId":"E2E-DRIFT","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_rejects_evidence_drift","productionConsumer":"admission evidence hash verifier","expectedRed":"changed upstream evidence remains admissible","counterevidence":"post-issue hash drift is rejected"},
-          {"viewpoint":"replay","acceptanceId":"E2E-REPLAY","fixture":"tests/test_e2e_final_admission_bridge.py::test_consumed_admission_is_typed_replay","productionConsumer":"durable final-attempt ledger","expectedRed":"consumed receipt launches again","counterevidence":"replay is typed and cannot launch"},
-          {"viewpoint":"missing","acceptanceId":"E2E-MISSING","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_requires_isolation_evidence","productionConsumer":"final admission required evidence registry","expectedRed":"admission without isolation evidence succeeds","counterevidence":"missing isolation is fail-closed"},
-          {"viewpoint":"cross_lineage","acceptanceId":"E2E-CROSS-LINEAGE","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_is_consumed_once_across_worktree_and_receipt_paths","productionConsumer":"canonical product/date/intent attempt identity","expectedRed":"new worktree or receipt path resets attempt","counterevidence":"all lineages share the same consumed identity"},
-          {"viewpoint":"recovery","acceptanceId":"E2E-RECOVERY","fixture":"tests/test_e2e_final_admission_bridge.py::test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume","productionConsumer":"official final E2E wrapper","expectedRed":"wrapper starts runner before admission or resumes failed run","counterevidence":"budget and admission are consumed before a fresh runner only"},
-          {"viewpoint":"human_impact","acceptanceId":"E2E-HUMAN-IMPACT","fixture":"tests/test_e2e_final_admission_bridge.py::test_parallel_consume_has_exactly_one_winner","productionConsumer":"atomic final-attempt consumer","expectedRed":"parallel callers duplicate model cost and wall time","counterevidence":"one winner and all other callers stop before launch"}
-        ]
+        "id": "e2e_completion_boundary",
+        "acceptanceId": "E2E-COMPLETION",
+        "fixture": "tests/test_e2e_first_principles_contract.py::test_e2e_completion_boundary_cannot_substitute_nopublish_for_public_green",
+        "productionConsumer": "News-Grasp product completion gates",
+        "expectedRed": "NoPublishまたはURL 200だけでproduct完了を宣言する",
+        "counterevidence": "terminal/publish/distribution/public/content/runtime/HEADを別gateで確認する",
+        "routeIds": ["final_e2e_wrapper"]
       },
       {
         "id": "deepdive_url_provenance",
-        "routeIds": ["production_generation","repair_publish","daily_quality","codex_daily_audit"],
-        "perspectives": [
-          {"viewpoint":"normal","acceptanceId":"URL-NORMAL","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_binds_article_hash_location_and_public_href","productionConsumer":"tools.deepdive_quality provenance validator","expectedRed":"valid provenance cannot bind article and public href","counterevidence":"article hash, location and public href are bound"},
-          {"viewpoint":"failure","acceptanceId":"URL-FAILURE","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_record_requires_success_and_content_hash","productionConsumer":"tools.deepdive_quality fetch observation","expectedRed":"non-success or empty body becomes provenance","counterevidence":"success status and content hash are mandatory"},
-          {"viewpoint":"boundary","acceptanceId":"URL-BOUNDARY","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_rejects_soft_404_body","productionConsumer":"tools.deepdive_quality content boundary","expectedRed":"HTTP 200 soft-404 is accepted","counterevidence":"not-found body is rejected independently of status"},
-          {"viewpoint":"substitution","acceptanceId":"URL-SUBSTITUTION","fixture":"tests/test_deepdive_quality_engine.py::test_system_transport_fallback_cannot_bypass_soft_404","productionConsumer":"system transport fallback validator","expectedRed":"fallback transport substitutes weaker content validation","counterevidence":"fallback body uses the same soft-404 predicate"},
-          {"viewpoint":"drift","acceptanceId":"URL-DRIFT","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_fails_closed_after_article_or_fetch_drift","productionConsumer":"provenance freshness verifier","expectedRed":"article or fetch drift keeps stale manifest valid","counterevidence":"either hash drift invalidates provenance"},
-          {"viewpoint":"replay","acceptanceId":"URL-REPLAY","fixture":"tests/test_deepdive_quality_engine.py::test_period_capture_reuses_observation_cache","productionConsumer":"period observation cache","expectedRed":"successful URLs are fetched repeatedly","counterevidence":"fresh successful observation is reused once"},
-          {"viewpoint":"missing","acceptanceId":"URL-MISSING","fixture":"tests/test_deepdive_quality_engine.py::test_live_but_unobserved_url_cannot_become_provenance","productionConsumer":"provenance observation registry","expectedRed":"live-looking but unobserved URL is accepted","counterevidence":"missing observation is fatal"},
-          {"viewpoint":"cross_lineage","acceptanceId":"URL-CROSS-LINEAGE","fixture":"tests/test_deepdive_quality_engine.py::test_provenance_rejects_missing_extra_and_duplicate_sources","productionConsumer":"article-to-manifest source set verifier","expectedRed":"source set from another article or lineage is reused","counterevidence":"missing, extra and duplicate URLs all invalidate the binding"},
-          {"viewpoint":"recovery","acceptanceId":"URL-RECOVERY","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_uses_single_system_transport_fallback_for_403","productionConsumer":"bounded system transport recovery","expectedRed":"transport-only 403 cannot recover or retries without bound","counterevidence":"one bounded fallback recovers only the eligible transport failure"},
-          {"viewpoint":"human_impact","acceptanceId":"URL-HUMAN-IMPACT","fixture":"tests/test_deepdive_quality_engine.py::test_period_capture_collects_all_url_failures_without_retry","productionConsumer":"period provenance capture","expectedRed":"first failure hides remaining impact or retries every URL","counterevidence":"all failures are collected in one pass without retry fan-out"}
-        ]
+        "acceptanceId": "DEEPDIVE-URL-PROVENANCE",
+        "fixture": "tests/test_deepdive_quality_engine.py::test_fetch_never_falls_back_after_404_or_410",
+        "productionConsumer": "tools.deepdive_quality shared provenance validator",
+        "expectedRed": "未観測・soft-404・stale・別記事URLが公開provenanceへ入る",
+        "counterevidence": "article/fetch/public hrefをfresh hashで一対一に束縛する",
+        "routeIds": ["production_generation","repair_publish","daily_quality","codex_daily_audit"]
       },
       {
         "id": "podcast_reader_value",
-        "routeIds": ["production_generation","repair_publish","daily_quality","codex_daily_audit"],
-        "perspectives": [
-          {"viewpoint":"normal","acceptanceId":"POD-NORMAL","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_valid_reader_value_document_passes_contract","productionConsumer":"tools.tts.deepdive_dialogue validator","expectedRed":"valid grounded seven-value dialogue is rejected","counterevidence":"valid document passes without issues"},
-          {"viewpoint":"failure","acceptanceId":"POD-FAILURE","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_duplicate_value_segment","productionConsumer":"dialogue value sequence validator","expectedRed":"duplicated value segment passes","counterevidence":"duplicate or order violation is fatal"},
-          {"viewpoint":"boundary","acceptanceId":"POD-BOUNDARY","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_generator_rejects_source_with_fewer_than_fourteen_facts","productionConsumer":"dialogue generator admission","expectedRed":"thirteen facts are padded to fourteen bindings","counterevidence":"insufficient source facts are rejected before generation"},
-          {"viewpoint":"substitution","acceptanceId":"POD-SUBSTITUTION","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_grounding_rejects_marker_only_without_source_text","productionConsumer":"dialogue grounding validator","expectedRed":"source marker substitutes actual source text","counterevidence":"marker-only grounding is rejected"},
-          {"viewpoint":"drift","acceptanceId":"POD-DRIFT","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_semantic_paraphrase_loop","productionConsumer":"semantic repetition validator","expectedRed":"paraphrased loop evades literal dedup","counterevidence":"semantic repetition is fatal"},
-          {"viewpoint":"replay","acceptanceId":"POD-REPLAY","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_reused_source_bindings","productionConsumer":"source evidence allocation validator","expectedRed":"same evidence is replayed across value segments","counterevidence":"cross-value evidence reuse is rejected"},
-          {"viewpoint":"missing","acceptanceId":"POD-MISSING","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_requires_exact_ordered_value_ids","productionConsumer":"required value ID validator","expectedRed":"missing reader-value segment passes","counterevidence":"all seven ordered value IDs are mandatory"},
-          {"viewpoint":"cross_lineage","acceptanceId":"POD-CROSS-LINEAGE","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_past_month_dialogue_corpus_has_no_cross_day_template_loop","productionConsumer":"31-day dialogue corpus audit","expectedRed":"template is replayed across issue dates","counterevidence":"cross-day repetition rate and similarity remain bounded"},
-          {"viewpoint":"recovery","acceptanceId":"POD-RECOVERY","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_generator_builds_a_valid_grounded_document_from_sufficient_source","productionConsumer":"tools.tts.build_deepdive_dialogue_script","expectedRed":"sufficient source cannot regenerate a valid grounded dialogue","counterevidence":"canonical generator produces a valid document from sufficient evidence"},
-          {"viewpoint":"human_impact","acceptanceId":"POD-HUMAN-IMPACT","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_current_fixed_value_scaffold_is_fatal","productionConsumer":"reader-value quality validator","expectedRed":"fixed filler passes while providing no new reader value","counterevidence":"known fixed scaffold is fatal regardless of length"}
-        ]
+        "acceptanceId": "PODCAST-READER-VALUE",
+        "fixture": "tests/test_deepdive_dialogue_value_contract.py::test_value_segments_require_two_unique_source_evidence_bindings",
+        "productionConsumer": "tools.tts.deepdive_dialogue shared reader-value validator",
+        "expectedRed": "固定scaffold・意味loop・根拠再利用が長さだけで通る",
+        "counterevidence": "7価値と14独立根拠を順序・意味・corpus境界で検証する",
+        "routeIds": ["production_generation","repair_publish","daily_quality","codex_daily_audit"]
       }
     ]
   },
-  "rows": [
+  "historicalFailureCorpus": [
     {"id":"E2E-01","family":"e2e_admission","polarity":"negative","requirement":"存在するだけの証拠を拒否","failureMode":"Red evidence file exists","fixture":"tests/test_e2e_final_admission_bridge.py::test_file_existence_is_not_e2e_admission"},
     {"id":"E2E-02","family":"e2e_admission","polarity":"positive","requirement":"全上流Greenで一回だけ消費","failureMode":"valid admission cannot launch","fixture":"tests/test_e2e_final_admission_bridge.py::test_valid_admission_is_consumed_once"},
     {"id":"E2E-03","family":"e2e_admission","polarity":"negative","requirement":"別worktreeでも同日第二試行を拒否","failureMode":"worktree resets attempt","fixture":"tests/test_e2e_final_admission_bridge.py::test_admission_is_consumed_once_across_worktree_and_receipt_paths"},

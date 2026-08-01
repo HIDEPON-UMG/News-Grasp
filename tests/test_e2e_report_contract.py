@@ -258,12 +258,19 @@ def test_news_grasp_e2e_skill_requires_machine_checked_red_suite_coverage() -> N
     ).read_text(encoding="utf-8")
 
     for fragment in [
-        "RED_SUITE_COVERAGE_V1",
+        "RED_SUITE_COVERAGE_V2",
         "normal/failure/boundary/substitution/drift/replay/missing/cross_lineage/recovery/human_impact",
         "fixtures/deepdive_quality/tdd_acceptance_matrix.json",
         "tools.deepdive_red_suite_coverage",
-        "Requirement × viewpoint × route",
-        "90 coverage cells",
+        "Requirement fixture × same-domain viewpoint fixture × route fixture",
+        "200 traceability cells",
+        "14 Requirement",
+        "49 fixture",
+        "140 pair",
+        "RED_SUITE_EXECUTION_RECEIPT_V1",
+        "collection error",
+        "cross-domain substitution",
+        "本文SHA-256集合",
         "単一fixtureへの集約",
     ]:
         assert fragment in skill, fragment

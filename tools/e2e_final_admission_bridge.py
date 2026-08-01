@@ -5,9 +5,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import msvcrt
 import os
 import re
 import sys
+import tempfile
+from contextlib import contextmanager
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +20,17 @@ MODULE_ROOT = Path(__file__).resolve().parents[1]
 if str(MODULE_ROOT) not in sys.path:
     sys.path.insert(0, str(MODULE_ROOT))
 
-from tools.deepdive_red_suite_coverage import validate_red_suite_coverage
+from tools.deepdive_red_suite_coverage import (
+    build_requirement_viewpoint_pair_cases,
+    validate_red_suite_coverage,
+)
+from tools.red_suite_execution import (
+    PAIR_TEST_SELECTOR,
+    SCHEMA as RED_SUITE_EXECUTION_SCHEMA,
+    _fixture_selectors,
+    _production_dependency_manifest,
+    execute_red_suite,
+)
 
 
 SCHEMA = "NEWS_GRASP_E2E_FINAL_ADMISSION_V1"
@@ -26,9 +40,13 @@ REQUIRED_EVIDENCE_KINDS = (
     "adversarial_review",
     "route_manifest",
     "red_suite_coverage",
+    "red_suite_execution",
     "static",
     "simulation",
     "isolation",
+)
+CALLER_EVIDENCE_KINDS = tuple(
+    kind for kind in REQUIRED_EVIDENCE_KINDS if kind != "red_suite_execution"
 )
 DATE_RE = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 HEX_64_RE = re.compile(r"^[a-f0-9]{64}$")
@@ -98,6 +116,147 @@ def _recompute_red_suite_coverage(repo_root: Path) -> dict[str, Any]:
     return report
 
 
+def _selector_owns_node(selector: str, node_id: str) -> bool:
+    return node_id == selector or node_id.startswith(f"{selector}[")
+
+
+def _validate_red_suite_execution_receipt(
+    value: dict[str, Any], *, repo_root: Path
+) -> None:
+    required_keys = {
+        "schemaVersion",
+        "status",
+        "createdAt",
+        "matrixPath",
+        "matrixSha256",
+        "coverageSha256",
+        "fixtureSetSha256",
+        "fixtureImplementationSetSha256",
+        "pairCaseSetSha256",
+        "historicalCorpusSha256",
+        "pairCaseMode",
+        "producerSha256",
+        "pairTestSha256",
+        "productionDependencyCount",
+        "productionDependencySetSha256",
+        "selectorCount",
+        "selectorSetSha256",
+        "selectors",
+        "pairCaseCount",
+        "pairNodeIds",
+        "collectedNodeCount",
+        "collectedNodeSetSha256",
+        "collectedNodeIds",
+        "passedNodeCount",
+        "nodeOutcomes",
+        "collectionErrors",
+        "executionFailures",
+        "missingOutcomes",
+        "missingSelectors",
+        "unexpectedNodes",
+        "pytestExitCode",
+    }
+    if set(value) != required_keys:
+        raise E2EFinalAdmissionError("E2E_RED_SUITE_EXECUTION_INVALID")
+    matrix_path = (
+        repo_root
+        / "fixtures"
+        / "deepdive_quality"
+        / "tdd_acceptance_matrix.json"
+    ).resolve()
+    producer_path = (repo_root / "tools" / "red_suite_execution.py").resolve()
+    pair_test_path = (
+        repo_root / PAIR_TEST_SELECTOR.split("::", 1)[0]
+    ).resolve()
+    try:
+        matrix = _read_json(
+            matrix_path, "E2E_RED_SUITE_EXECUTION_SOURCE_INVALID"
+        )
+        coverage_report = _recompute_red_suite_coverage(repo_root)
+        selectors = _fixture_selectors(matrix["redSuiteCoverage"])
+        pair_cases = build_requirement_viewpoint_pair_cases(matrix)
+        expected_pair_nodes = sorted(
+            f"{PAIR_TEST_SELECTOR}[{case['caseId']}]" for case in pair_cases
+        )
+        collected = value["collectedNodeIds"]
+        pair_nodes = value["pairNodeIds"]
+        production_dependencies = _production_dependency_manifest(repo_root)
+        if not all(
+            isinstance(item, str) and item for item in [*collected, *pair_nodes]
+        ):
+            raise TypeError("node ID invalid")
+    except (KeyError, OSError, TypeError, ValueError) as error:
+        raise E2EFinalAdmissionError(
+            "E2E_RED_SUITE_EXECUTION_SOURCE_INVALID"
+        ) from error
+    if not isinstance(value["nodeOutcomes"], dict):
+        raise E2EFinalAdmissionError("E2E_RED_SUITE_EXECUTION_INVALID")
+    non_pair_nodes = [node for node in collected if node not in set(pair_nodes)]
+    source_bindings_match = all(
+        (
+            value["matrixPath"] == str(matrix_path),
+            value["matrixSha256"] == _file_sha256(matrix_path),
+            value["coverageSha256"] == coverage_report["coverageSha256"],
+            value["fixtureSetSha256"] == coverage_report["fixtureSetSha256"],
+            value["fixtureImplementationSetSha256"]
+            == coverage_report["fixtureImplementationSetSha256"],
+            value["pairCaseSetSha256"] == coverage_report["pairCaseSetSha256"],
+            value["historicalCorpusSha256"]
+            == coverage_report["historicalCorpusSha256"],
+            value["producerSha256"] == _file_sha256(producer_path),
+            value["pairTestSha256"] == _file_sha256(pair_test_path),
+            value["productionDependencyCount"]
+            == len(production_dependencies),
+            value["productionDependencySetSha256"]
+            == _canonical_sha256(production_dependencies),
+        )
+    )
+    execution_shape_green = all(
+        (
+            value["schemaVersion"] == RED_SUITE_EXECUTION_SCHEMA,
+            value["status"] == "Green",
+            value["pairCaseMode"] == "traceability_only",
+            isinstance(value["createdAt"], str) and bool(value["createdAt"]),
+            value["selectorCount"] == 49,
+            value["selectors"] == selectors,
+            value["selectorSetSha256"] == _canonical_sha256(selectors),
+            value["pairCaseCount"] == 140,
+            pair_nodes == expected_pair_nodes,
+            len(pair_nodes) == len(set(pair_nodes)) == 140,
+            collected == sorted(set(collected)),
+            value["collectedNodeCount"] == len(collected) == 190,
+            value["collectedNodeSetSha256"]
+            == _canonical_sha256(collected),
+            value["passedNodeCount"] == len(collected) == 190,
+            set(value["nodeOutcomes"]) == set(collected),
+            all(
+                outcome == "passed"
+                for outcome in value["nodeOutcomes"].values()
+            ),
+            value["collectionErrors"] == [],
+            value["executionFailures"] == [],
+            value["missingOutcomes"] == [],
+            value["missingSelectors"] == [],
+            value["unexpectedNodes"] == [],
+            value["pytestExitCode"] == 0,
+            all(
+                any(_selector_owns_node(selector, node) for node in collected)
+                for selector in selectors
+            ),
+            all(
+                any(_selector_owns_node(selector, node) for selector in selectors)
+                for node in non_pair_nodes
+            ),
+        )
+    )
+    if not source_bindings_match:
+        raise E2EFinalAdmissionError(
+            "E2E_RED_SUITE_EXECUTION_SOURCE_MISMATCH"
+        )
+    if not execution_shape_green:
+        raise E2EFinalAdmissionError("E2E_RED_SUITE_EXECUTION_INVALID")
+
+
 def _write_exclusive(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -108,6 +267,30 @@ def _write_exclusive(path: Path, value: dict[str, Any]) -> None:
             os.fsync(stream.fileno())
     except FileExistsError as error:
         raise E2EFinalAdmissionError("E2E_ADMISSION_ALREADY_EXISTS") from error
+
+
+@contextmanager
+def _issue_execution_lock(output_path: Path) -> Iterator[None]:
+    lock_root = Path(tempfile.gettempdir()) / "news-grasp-e2e-final-admission-locks"
+    lock_root.mkdir(parents=True, exist_ok=True)
+    lock_name = f"{_canonical_sha256(str(output_path.resolve()))}.lock"
+    lock_path = lock_root / lock_name
+    with lock_path.open("a+b") as stream:
+        stream.seek(0, os.SEEK_END)
+        if stream.tell() == 0:
+            stream.write(b"0")
+            stream.flush()
+            os.fsync(stream.fileno())
+        stream.seek(0)
+        try:
+            msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError as error:
+            raise E2EFinalAdmissionError("E2E_ADMISSION_ISSUE_BUSY") from error
+        try:
+            yield
+        finally:
+            stream.seek(0)
+            msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 def _replace_json(path: Path, value: dict[str, Any]) -> None:
@@ -128,6 +311,7 @@ def _normalize_evidence(
     rows: list[dict[str, str]],
     *,
     repo_root: Path,
+    expected_kinds: tuple[str, ...] = REQUIRED_EVIDENCE_KINDS,
 ) -> list[dict[str, str]]:
     if not isinstance(rows, list):
         raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_INVALID")
@@ -152,10 +336,23 @@ def _normalize_evidence(
             value.get("schemaVersion") == "RED_SUITE_COVERAGE_REPORT_V1"
             and value.get("status") == "Green"
             and value.get("findings") == []
-            and value.get("requirementCount") == 3
+            and value.get("requirementCount") == 14
             and value.get("viewpointCount") == 10
             and value.get("routeCount") == 5
-            and value.get("coverageCellCount") == 90
+            and value.get("coverageCellCount") == 200
+            and value.get("fixtureCount") == 49
+            and HEX_64_RE.fullmatch(str(value.get("fixtureSetSha256") or ""))
+            and HEX_64_RE.fullmatch(
+                str(value.get("fixtureImplementationSetSha256") or "")
+            )
+            and HEX_64_RE.fullmatch(
+                str(value.get("historicalCorpusSha256") or "")
+            )
+            and value.get("pairCaseCount") == 140
+            and value.get("pairCaseMode") == "traceability_only"
+            and HEX_64_RE.fullmatch(
+                str(value.get("pairCaseSetSha256") or "")
+            )
             and HEX_64_RE.fullmatch(str(value.get("coverageSha256") or ""))
         ):
             raise E2EFinalAdmissionError("E2E_RED_SUITE_COVERAGE_INVALID")
@@ -165,12 +362,14 @@ def _normalize_evidence(
                 raise E2EFinalAdmissionError(
                     "E2E_RED_SUITE_COVERAGE_SOURCE_MISMATCH"
                 )
+        if kind == "red_suite_execution":
+            _validate_red_suite_execution_receipt(value, repo_root=repo_root)
         if value.get("status") != "Green":
             raise E2EFinalAdmissionError("E2E_UPSTREAM_NOT_GREEN")
         normalized.append(
             {"kind": kind, "path": str(path), "sha256": expected_hash}
         )
-    if tuple(row["kind"] for row in normalized) != REQUIRED_EVIDENCE_KINDS:
+    if tuple(row["kind"] for row in normalized) != expected_kinds:
         raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_INCOMPLETE")
     return normalized
 
@@ -289,30 +488,75 @@ def issue_admission(
         or "-NoPublish" not in runner_arguments
     ):
         raise E2EFinalAdmissionError("E2E_COMMAND_FORBIDDEN")
-    evidence = _normalize_evidence(evidence_bindings, repo_root=repo)
-    value: dict[str, Any] = {
-        "schemaVersion": SCHEMA,
-        "state": "issued",
-        "purpose": "final_confirmation_only",
-        "singleUse": True,
-        "resumePolicy": "forbidden",
-        "issueDate": issue_date,
-        "canonicalProductId": canonical_product_id,
-        "attemptKey": (
-            f"{canonical_product_id}:{issue_date}:"
-            "scheduled-equivalent-nopublish"
-        ),
-        "repoRoot": str(repo),
-        "runnerPath": str(runner),
-        "runnerSha256": _file_sha256(runner),
-        "runnerArguments": runner_arguments,
-        "commandSha256": _canonical_sha256(runner_arguments),
-        "evidenceBindings": evidence,
-        "evidenceSetSha256": _canonical_sha256(evidence),
-    }
-    value["admissionId"] = _canonical_sha256(value)
-    _write_exclusive(Path(output_path).resolve(), value)
-    return value
+    if isinstance(evidence_bindings, list) and any(
+        isinstance(row, dict) and row.get("kind") == "red_suite_execution"
+        for row in evidence_bindings
+    ):
+        raise E2EFinalAdmissionError(
+            "E2E_RED_SUITE_EXECUTION_CALLER_FORBIDDEN"
+        )
+    caller_evidence = _normalize_evidence(
+        evidence_bindings,
+        repo_root=repo,
+        expected_kinds=CALLER_EVIDENCE_KINDS,
+    )
+    resolved_output = Path(output_path).resolve()
+    execution_path = resolved_output.with_name(
+        f"{resolved_output.stem}.red-suite-execution.json"
+    )
+    with _issue_execution_lock(resolved_output):
+        if resolved_output.exists() or execution_path.exists():
+            raise E2EFinalAdmissionError("E2E_ADMISSION_ALREADY_EXISTS")
+        try:
+            execution_receipt = execute_red_suite(
+                matrix_path=(
+                    repo
+                    / "fixtures"
+                    / "deepdive_quality"
+                    / "tdd_acceptance_matrix.json"
+                ),
+                root=repo,
+            )
+        except (KeyError, OSError, TypeError, ValueError) as error:
+            raise E2EFinalAdmissionError(
+                "E2E_RED_SUITE_EXECUTION_INVALID"
+            ) from error
+        _validate_red_suite_execution_receipt(execution_receipt, repo_root=repo)
+        _write_exclusive(execution_path, execution_receipt)
+        execution_binding = {
+            "kind": "red_suite_execution",
+            "path": str(execution_path),
+            "sha256": _file_sha256(execution_path),
+        }
+        combined_evidence: list[dict[str, str]] = []
+        for row in caller_evidence:
+            combined_evidence.append(row)
+            if row["kind"] == "red_suite_coverage":
+                combined_evidence.append(execution_binding)
+        evidence = _normalize_evidence(combined_evidence, repo_root=repo)
+        value: dict[str, Any] = {
+            "schemaVersion": SCHEMA,
+            "state": "issued",
+            "purpose": "final_confirmation_only",
+            "singleUse": True,
+            "resumePolicy": "forbidden",
+            "issueDate": issue_date,
+            "canonicalProductId": canonical_product_id,
+            "attemptKey": (
+                f"{canonical_product_id}:{issue_date}:"
+                "scheduled-equivalent-nopublish"
+            ),
+            "repoRoot": str(repo),
+            "runnerPath": str(runner),
+            "runnerSha256": _file_sha256(runner),
+            "runnerArguments": runner_arguments,
+            "commandSha256": _canonical_sha256(runner_arguments),
+            "evidenceBindings": evidence,
+            "evidenceSetSha256": _canonical_sha256(evidence),
+        }
+        value["admissionId"] = _canonical_sha256(value)
+        _write_exclusive(resolved_output, value)
+        return value
 
 
 def consume_admission(
@@ -343,16 +587,15 @@ def consume_admission(
         repo_root = Path(value["repoRoot"]).resolve(strict=True)
     except OSError as error:
         raise E2EFinalAdmissionError("E2E_ADMISSION_INVALID") from error
+    runner = Path(value["runnerPath"])
+    if not runner.is_file() or _file_sha256(runner) != value["runnerSha256"]:
+        raise E2EFinalAdmissionError("E2E_RUNNER_DRIFT")
     normalized = _normalize_evidence(
         value["evidenceBindings"],
         repo_root=repo_root,
     )
     if normalized != value["evidenceBindings"]:
         raise E2EFinalAdmissionError("E2E_UPSTREAM_EVIDENCE_DRIFT")
-    runner = Path(value["runnerPath"])
-    if not runner.is_file() or _file_sha256(runner) != value["runnerSha256"]:
-        raise E2EFinalAdmissionError("E2E_RUNNER_DRIFT")
-
     ledger = Path(ledger_path).resolve()
     lock = ledger.with_suffix(ledger.suffix + ".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
