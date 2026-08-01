@@ -50,6 +50,7 @@ def _green_evidence(tmp_path: Path) -> list[dict[str, str]]:
         "route_manifest",
         "static",
         "simulation",
+        "isolation",
     ):
         path = _write_json(
             tmp_path / f"{name}.json",
@@ -113,6 +114,36 @@ def test_file_existence_is_not_e2e_admission(tmp_path: Path) -> None:
             evidence_bindings=evidence,
             output_path=tmp_path / "admission.json",
         )
+
+
+def test_admission_requires_isolation_evidence(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    runner = repo / "runner.ps1"
+    runner.write_text("runner\n", encoding="utf-8")
+    evidence = _green_evidence(tmp_path / "evidence")
+    evidence = [row for row in evidence if row["kind"] != "isolation"]
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_UPSTREAM_EVIDENCE_INCOMPLETE"):
+        issue_admission(
+            issue_date="2026-08-01",
+            canonical_product_id="News-Grasp",
+            repo_root=repo,
+            runner_path=runner,
+            runner_arguments=["-NoPublish"],
+            evidence_bindings=evidence,
+            output_path=tmp_path / "admission.json",
+        )
+
+
+def test_consumer_rejects_isolation_receipt_drift(tmp_path: Path) -> None:
+    admission, ledger = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    isolation = next(
+        row for row in value["evidenceBindings"] if row["kind"] == "isolation"
+    )
+    Path(isolation["path"]).write_text('{"status":"Red"}\n', encoding="utf-8")
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_UPSTREAM_EVIDENCE_DRIFT"):
+        consume_admission(admission_path=admission, ledger_path=ledger)
 
 
 def test_valid_admission_is_consumed_once(tmp_path: Path) -> None:

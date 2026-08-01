@@ -190,6 +190,7 @@ if (-not $HighCostBudgetToolPath) {
         $HighCostBudgetToolPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
     }
 }
+$env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT = $HighCostWorkspaceRoot
 if (-not $PyExeOverride) { $PyExe = Join-Path $RepoDir '.venv\Scripts\python.exe' }
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
 $CodexOutputSchema = Join-Path $RepoDir 'schemas\model_eval_output.schema.json'
@@ -2394,6 +2395,23 @@ function Assert-HighCostOperationAdmission {
     $operationKind = 'full_e2e'
     if ($RecoverOnly -or $ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeFromStage) {
         $operationKind = 'resume_model'
+    }
+    if ($HighCostAdmissionPath) {
+        $admissionReceipt = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
+        $admissionValidator = Join-Path $RepoDir 'tools\high_cost_admission_receipt.py'
+        $expectedAttemptId = if ($NoPublish) { "nopublish:$DateStamp" } else { $RunId }
+        if ((-not (Test-Path -LiteralPath $admissionReceipt -PathType Leaf)) -or (-not (Test-Path -LiteralPath $admissionValidator -PathType Leaf))) {
+            Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
+            exit 76
+        }
+        & $PyExe $admissionValidator 'validate' '--path' $admissionReceipt '--expected-operation-kind' $operationKind '--expected-attempt-id' $expectedAttemptId
+        if ($LASTEXITCODE -ne 0) {
+            Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID exit=$LASTEXITCODE" -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID' -ExitCode 76
+            exit 76
+        }
+        return
     }
     & $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $RunId
     if ($LASTEXITCODE -ne 0) {

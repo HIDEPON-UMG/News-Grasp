@@ -20,6 +20,7 @@ REQUIRED_EVIDENCE_KINDS = (
     "route_manifest",
     "static",
     "simulation",
+    "isolation",
 )
 DATE_RE = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 HEX_64_RE = re.compile(r"^[a-f0-9]{64}$")

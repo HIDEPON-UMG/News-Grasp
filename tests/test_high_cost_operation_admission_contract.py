@@ -23,6 +23,16 @@ def test_nopublish_wrapper_authorizes_before_runner_launch() -> None:
     assert "$attemptId = \"nopublish:$DateStamp\"" in text
 
 
+def test_nopublish_wrapper_persists_and_propagates_single_reservation_receipt() -> None:
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+    assert "-HighCostAdmissionPath" in text
+    assert "high_cost_admission_receipt.py" in text
+    assert "WriteAllText($highCostAdmissionFullPath" in text
+    assert text.index("WriteAllText($highCostAdmissionFullPath") < text.index(
+        "& $PythonExe $e2eAdmissionBridgePath 'consume'"
+    )
+
+
 def test_runner_consumes_shared_admission_before_any_reporter_fanout() -> None:
     text = RUNNER.read_text(encoding="utf-8-sig")
     consume = text.index("& $PyExe $modelSpawnBroker 'admit'")
@@ -34,6 +44,24 @@ def test_runner_consumes_shared_admission_before_any_reporter_fanout() -> None:
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split("# ===== sentinel", 1)[0]
     assert "'admit'" in gate or '"admit"' in gate
     assert "blocked_high_cost" not in gate
+    assert "if ($HighCostAdmissionPath)" in gate
+    assert "high_cost_admission_receipt.py" in gate
+    assert '$expectedAttemptId = if ($NoPublish) { "nopublish:$DateStamp" }' in gate
+    assert "'--expected-attempt-id' $expectedAttemptId" in gate
+
+
+def test_wrapper_and_runner_do_not_reserve_two_full_e2e_attempts() -> None:
+    wrapper = WRAPPER.read_text(encoding="utf-8-sig")
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    wrapper_gate = wrapper.split("$startedAt = Get-Date", 1)[0]
+    runner_gate = runner.split("function Assert-HighCostOperationAdmission", 1)[1].split(
+        "# ===== sentinel", 1
+    )[0]
+    assert wrapper_gate.count("'admit'") == 1
+    assert runner_gate.index("if ($HighCostAdmissionPath)") < runner_gate.index("'admit'")
+    assert "return" in runner_gate.split("if ($HighCostAdmissionPath)", 1)[1].split(
+        "'admit'", 1
+    )[0]
 
 
 def test_every_model_process_reserves_call_budget_immediately_before_start() -> None:

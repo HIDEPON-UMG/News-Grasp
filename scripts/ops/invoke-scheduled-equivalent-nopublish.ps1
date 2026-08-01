@@ -31,7 +31,7 @@ if (-not $HighCostAdmissionPath) {
 }
 $highCostAdmissionFullPath = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
 $repoPrefix = $repoPath.TrimEnd('\') + '\'
-foreach ($candidate in @($statePath, $logPath, $receiptFullPath)) {
+foreach ($candidate in @($statePath, $logPath, $receiptFullPath, $highCostAdmissionFullPath)) {
     if (-not $candidate.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "隔離 state/log/receipt は RepoRoot 配下でなければなりません: $candidate"
     }
@@ -40,6 +40,7 @@ foreach ($candidate in @($statePath, $logPath, $receiptFullPath)) {
 $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
 $codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
 $e2eAdmissionBridgePath = Join-Path $repoPath 'tools\e2e_final_admission_bridge.py'
+$highCostAdmissionValidatorPath = Join-Path $repoPath 'tools\high_cost_admission_receipt.py'
 if (-not (Test-Path -LiteralPath $runnerPath -PathType Leaf)) {
     throw "runner が見つかりません: $runnerPath"
 }
@@ -48,6 +49,9 @@ if (-not (Test-Path -LiteralPath $codexWrapperPath -PathType Leaf)) {
 }
 if (-not (Test-Path -LiteralPath $e2eAdmissionBridgePath -PathType Leaf)) {
     throw "E2E final admission consumer が見つかりません: $e2eAdmissionBridgePath"
+}
+if (-not (Test-Path -LiteralPath $highCostAdmissionValidatorPath -PathType Leaf)) {
+    throw "high-cost admission validator が見つかりません: $highCostAdmissionValidatorPath"
 }
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) {
     throw "Python 実行体が見つかりません: $PythonExe"
@@ -79,7 +83,8 @@ $runnerArguments = @(
     '-LogDirOverride', $logPath,
     '-PyExeOverride', $PythonExe,
     '-HighCostWorkspaceRoot', $workspacePath,
-    '-HighCostBudgetToolPath', $highCostBudgetToolPath
+    '-HighCostBudgetToolPath', $highCostBudgetToolPath,
+    '-HighCostAdmissionPath', $highCostAdmissionFullPath
 )
 $runnerArgumentsPath = "$receiptFullPath.runner-arguments.json"
 $runnerArgumentsJson = $runnerArguments | ConvertTo-Json
@@ -87,9 +92,15 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($runnerArgumentsPath, ($runnerArgumentsJson + [Environment]::NewLine), $utf8NoBom)
 $operationKind = 'full_e2e'
 $attemptId = "nopublish:$DateStamp"
-& $PythonExe $highCostBudgetToolPath 'admit' '--operation-kind' $operationKind '--attempt-id' $attemptId
+$highCostAdmissionJson = & $PythonExe $highCostBudgetToolPath 'admit' '--operation-kind' $operationKind '--attempt-id' $attemptId
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
+}
+$highCostAdmissionText = ($highCostAdmissionJson -join [Environment]::NewLine).Trim()
+[System.IO.File]::WriteAllText($highCostAdmissionFullPath, ($highCostAdmissionText + [Environment]::NewLine), $utf8NoBom)
+& $PythonExe $highCostAdmissionValidatorPath 'validate' '--path' $highCostAdmissionFullPath '--expected-operation-kind' $operationKind '--expected-attempt-id' $attemptId
+if ($LASTEXITCODE -ne 0) {
+    throw "HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID exit=$LASTEXITCODE"
 }
 & $PythonExe $e2eAdmissionBridgePath 'consume' '--admission' $E2EAdmissionPath '--runner-arguments-file' $runnerArgumentsPath
 if ($LASTEXITCODE -ne 0) {
