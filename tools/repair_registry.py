@@ -11,7 +11,9 @@ import re
 import tempfile
 from typing import Callable
 
+from tools import deepdive_quality
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
+from tools.tts import build_deepdive_dialogue_script
 from tools.refill_category_after_quarantine import refill_category
 from tools.validate_digest_articles_reconcile import (
     reconcile,
@@ -1404,7 +1406,97 @@ def _repair_digest_articles_digest_only(ctx: RepairContext) -> RepairResult:
     )
 
 
+def _repair_deepdive_provenance(ctx: RepairContext) -> RepairResult:
+    article = (
+        ctx.repo_root
+        / "digest"
+        / "DeepDive"
+        / f"{ctx.issue}-DeepDive.md"
+    )
+    manifest = (
+        ctx.repo_root
+        / "data"
+        / "deepdive-provenance"
+        / f"{ctx.issue}.json"
+    )
+    before = manifest.read_bytes() if manifest.is_file() else b""
+    try:
+        deepdive_quality.capture_provenance(
+            article_path=article,
+            output_path=manifest,
+        )
+    except (deepdive_quality.DeepDiveQualityError, OSError) as error:
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_provenance_fetch_failed",
+            changed=False,
+            message=str(error),
+        )
+    after = manifest.read_bytes()
+    return RepairResult(
+        handler_id=ctx.handler_id,
+        status=REPAIRED_STATUS,
+        changed=before != after,
+        artifacts=(f"data/deepdive-provenance/{ctx.issue}.json",),
+        message="DeepDive URL provenanceを全URLの実取得記録から再構築しました",
+    )
+
+
+def _repair_deepdive_dialogue(ctx: RepairContext) -> RepairResult:
+    article = (
+        ctx.repo_root
+        / "digest"
+        / "DeepDive"
+        / f"{ctx.issue}-DeepDive.md"
+    )
+    dialogue = article.with_name(f"{ctx.issue}-DeepDive-dialogue.md")
+    before = dialogue.read_bytes() if dialogue.is_file() else b""
+    try:
+        build_deepdive_dialogue_script.build_dialogue_script(
+            article,
+            output=dialogue,
+            force=True,
+        )
+    except (ValueError, OSError) as error:
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_dialogue_rebuild_failed",
+            changed=False,
+            message=str(error),
+        )
+    after = dialogue.read_bytes()
+    return RepairResult(
+        handler_id=ctx.handler_id,
+        status=REPAIRED_STATUS,
+        changed=before != after,
+        artifacts=(f"digest/DeepDive/{ctx.issue}-DeepDive-dialogue.md",),
+        message="DeepDive対談を14個の独立本文根拠から再構築しました",
+    )
+
+
 REGISTRY: dict[str, RepairHandler] = {
+    "deepdive-provenance-recapture": RepairHandler(
+        handler_id="deepdive-provenance-recapture",
+        kind="deterministic",
+        allowed_artifacts=(
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+        ),
+        verify_gate="deepdive-shared-quality",
+        repair=_repair_deepdive_provenance,
+        supported_verify_gates=("deepdive-shared-quality", "daily-quality"),
+    ),
+    "deepdive-dialogue-rebuild": RepairHandler(
+        handler_id="deepdive-dialogue-rebuild",
+        kind="deterministic",
+        allowed_artifacts=(
+            "digest/DeepDive/{date}-DeepDive.md",
+            "digest/DeepDive/{date}-DeepDive-dialogue.md",
+        ),
+        verify_gate="deepdive-shared-quality",
+        repair=_repair_deepdive_dialogue,
+        supported_verify_gates=("deepdive-shared-quality", "daily-quality"),
+    ),
     "summary-emphasis-patch": RepairHandler(
         handler_id="summary-emphasis-patch",
         kind="deterministic",

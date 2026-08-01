@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+from tools.model_spawn_client import popen_model_process
 import statistics
 import tempfile
 import time
@@ -949,8 +950,9 @@ def _run_codex_exec_with_output_gate(
     with stdout_path.open("w", encoding="utf-8", errors="replace") as stdout_file, stderr_path.open(
         "w", encoding="utf-8", errors="replace"
     ) as stderr_file:
-        proc = subprocess.Popen(
+        proc = popen_model_process(
             args,
+            route="codex_recovery_benchmark",
             stdin=subprocess.PIPE,
             stdout=stdout_file,
             stderr=stderr_file,

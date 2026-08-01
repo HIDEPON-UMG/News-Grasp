@@ -1,0 +1,77 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-11-DeepDive.md",
+  "articleSha256": "164b5c734676a38690cf5e6c4a26162010df24469dbe35dde2529712d9dc5781",
+  "issueDate": "2026-07-11",
+  "manifestSha256": "f171223774ddbb22311e1f71b0442b476087a2ae3b187980572da4bd049ab053",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "1b8ee31213a26278d0dda2f369ae6f7d5f38ff8c82766ca9b58e89bdfc455011",
+  "sources": [
+    {
+      "contentSha256": "c34c533a028ae6e55960891374efedca81c5e6c2eaadc4edfbbe8495482b4059",
+      "fetchedAt": "2026-08-01T10:35:07.716776+00:00",
+      "finalUrl": "https://public-inspection.federalregister.gov/2026-12981.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://public-inspection.federalregister.gov/2026-12981.pdf",
+      "url": "https://public-inspection.federalregister.gov/2026-12981.pdf"
+    },
+    {
+      "contentSha256": "5b78126235fdd2261166179b5c1a03323f21de8f39a860d9dbaf51182fa5eda7",
+      "fetchedAt": "2026-08-01T10:29:17.228223+00:00",
+      "finalUrl": "https://waymo.com/blog/2026/05/welcoming-riders-in-the-ojai/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2026/05/welcoming-riders-in-the-ojai/",
+      "url": "https://waymo.com/blog/2026/05/welcoming-riders-in-the-ojai/"
+    },
+    {
+      "contentSha256": "e7e2493ab9f7c0691966f5754a3d955630fa5dfc07d5e2498fdb795697fd65c2",
+      "fetchedAt": "2026-08-01T10:29:17.213975+00:00",
+      "finalUrl": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/",
+      "url": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/"
+    },
+    {
+      "contentSha256": "a4f8745d70de1858feeb5d733925775662c6e4751c03a1bc55b1e485fbe40afc",
+      "fetchedAt": "2026-08-01T10:29:17.859502+00:00",
+      "finalUrl": "https://waymo.com/safety/impact/?itid=lk_inline_enhanced-template",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/safety/impact/?itid=lk_inline_enhanced-template",
+      "url": "https://waymo.com/safety/impact/?itid=lk_inline_enhanced-template"
+    },
+    {
+      "contentSha256": "5240dfd78f041a1e3e480268d3494a84a2b4a6294255c3bcf1357d9be5441bee",
+      "fetchedAt": "2026-08-01T10:29:19.113848+00:00",
+      "finalUrl": "https://www.mckinsey.com/~/media/mckinsey/industries/automotive%20and%20assembly/our%20insights/the%20road%20to%20affordable%20autonomous%20mobility/the-road-to-affordable-autonomous-mobility.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.mckinsey.com/~/media/mckinsey/industries/automotive%20and%20assembly/our%20insights/the%20road%20to%20affordable%20autonomous%20mobility/the-road-to-affordable-autonomous-mobility.pdf",
+      "url": "https://www.mckinsey.com/~/media/mckinsey/industries/automotive%20and%20assembly/our%20insights/the%20road%20to%20affordable%20autonomous%20mobility/the-road-to-affordable-autonomous-mobility.pdf"
+    }
+  ],
+  "status": "Green"
+}

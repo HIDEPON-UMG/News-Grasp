@@ -121,6 +121,9 @@ def verify_public_surface(
     return {
         "ok": status == "green",
         "overall_status": status,
+        "public_status": str(manifest.get("public_status") or status),
+        "scheduled_attempt_status": str(manifest.get("scheduled_attempt_status") or "unknown"),
+        "recovery_attempt_status": str(manifest.get("recovery_attempt_status") or "not_verified"),
         "exit_code": exit_code,
         "reason": reason,
         "required_surfaces": required_surfaces,

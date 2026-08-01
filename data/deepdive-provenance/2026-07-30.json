@@ -1,0 +1,77 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-30-DeepDive.md",
+  "articleSha256": "231492818e529af41341b370ddaa0726567f216d0535bba330be42bdd998988d",
+  "issueDate": "2026-07-30",
+  "manifestSha256": "d7017d61fa8ce45fd158617d1d9fa70f828d609c653f08ecd1213a8c9b22672d",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "c79c27c16ee6cca5011699bbe9e189f8b1a47053f5811a71b8fd1c7ff9aef3f4",
+  "sources": [
+    {
+      "contentSha256": "65d4aab1aab34c30eab1c7b7a1bc7b19d8e9945b1c4f1b4ab61b7f2770fd5c3a",
+      "fetchedAt": "2026-08-01T10:29:15.369095+00:00",
+      "finalUrl": "https://arxiv.org/abs/2605.11086",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://arxiv.org/abs/2605.11086",
+      "url": "https://arxiv.org/abs/2605.11086"
+    },
+    {
+      "contentSha256": "2fc6955c8a42f08a89c306288084ef7e90a265c009097c2ae0fe5337e4ba46ab",
+      "fetchedAt": "2026-08-01T10:29:16.639582+00:00",
+      "finalUrl": "https://huggingface.co/blog/agent-intrusion-technical-timeline",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://huggingface.co/blog/agent-intrusion-technical-timeline",
+      "url": "https://huggingface.co/blog/agent-intrusion-technical-timeline"
+    },
+    {
+      "contentSha256": "f208bf1a8eb233ec142d8d95dffd3947c10d9af52103bbca15ac6d0c4d9f9e95",
+      "fetchedAt": "2026-08-01T10:29:15.668493+00:00",
+      "finalUrl": "https://jfrog.com/blog/jfrog-and-openai-collaboration-on-zero-day-security-findings/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://jfrog.com/blog/jfrog-and-openai-collaboration-on-zero-day-security-findings/",
+      "url": "https://jfrog.com/blog/jfrog-and-openai-collaboration-on-zero-day-security-findings/"
+    },
+    {
+      "contentSha256": "10cb6da9ccf82ca782766d63c74891ebbc6e5047f22fbfe3d515ea3155ffca44",
+      "fetchedAt": "2026-08-01T10:33:10.532733+00:00",
+      "finalUrl": "https://openai.com/index/hugging-face-model-evaluation-security-incident/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/hugging-face-model-evaluation-security-incident/",
+      "url": "https://openai.com/index/hugging-face-model-evaluation-security-incident/"
+    },
+    {
+      "contentSha256": "e1f873b7171880bd80c1d3034e38608c41aa6e2e5a190951a3e104390d359f8d",
+      "fetchedAt": "2026-08-01T10:33:09.984804+00:00",
+      "finalUrl": "https://openai.com/index/updating-our-preparedness-framework/",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://openai.com/index/updating-our-preparedness-framework/",
+      "url": "https://openai.com/index/updating-our-preparedness-framework/"
+    }
+  ],
+  "status": "Green"
+}

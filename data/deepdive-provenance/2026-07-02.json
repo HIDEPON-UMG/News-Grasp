@@ -1,0 +1,64 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-02-DeepDive.md",
+  "articleSha256": "97a48cb9b25b1f440a2e410732bad96854f68853223554c1699348f6fadb9ab5",
+  "issueDate": "2026-07-02",
+  "manifestSha256": "924bb3c2666aef2465aa3f66ebeab3eb2923d246cb5b2d06b218c5b3c9c0651f",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "ea39bb0cfb9f3ebaa33ae3fd8232bf83b99f1af7188e790e76af4dcbe83453e7",
+  "sources": [
+    {
+      "contentSha256": "e53b98c4190363ad268a10812591155b411451f78b36e08f5744ae7a51958fe6",
+      "fetchedAt": "2026-08-01T10:09:12.225680+00:00",
+      "finalUrl": "https://techcrunch.com/2026/07/01/sony-to-end-physical-playstation-game-discs-in-2028/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://techcrunch.com/2026/07/01/sony-to-end-physical-playstation-game-discs-in-2028/",
+      "url": "https://techcrunch.com/2026/07/01/sony-to-end-physical-playstation-game-discs-in-2028/"
+    },
+    {
+      "contentSha256": "7d6ca04b0483213bf85007f6e126597504dc75d613c4f5e2ed3fc593a8391400",
+      "fetchedAt": "2026-08-01T10:09:19.499969+00:00",
+      "finalUrl": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/24q4_supplement.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/24q4_supplement.pdf",
+      "url": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/24q4_supplement.pdf"
+    },
+    {
+      "contentSha256": "79ef41d33bd0033ab5945eb212fe972eed3d5118c653e54868e2b1a4409ecd26",
+      "fetchedAt": "2026-08-01T10:09:19.834317+00:00",
+      "finalUrl": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/25q1_supplement.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/25q1_supplement.pdf",
+      "url": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/25q1_supplement.pdf"
+    },
+    {
+      "contentSha256": "6ddf4d7b0d6c1aff2064571661f07baf6a7a852bb5c7974699b6210e0d3ac648",
+      "fetchedAt": "2026-08-01T10:09:19.908527+00:00",
+      "finalUrl": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/25q4_supplement.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/25q4_supplement.pdf",
+      "url": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/pdf/25q4_supplement.pdf"
+    }
+  ],
+  "status": "Green"
+}

@@ -1,0 +1,92 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-27-DeepDive.md",
+  "articleSha256": "ca29a4828311216ee3cfff90804fe046f18c3011b5fb7d59d65d725b8200e10d",
+  "issueDate": "2026-07-27",
+  "manifestSha256": "ad58114d94551d8b0995e5ab3d493774f497cb9b54e9ea406dd072fec0810e22",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "d65545087fa0f9a446af9f3272ab7d978baf72183be585778b6b648427980819",
+  "sources": [
+    {
+      "contentSha256": "2921a553bbd39414e79525846f182f658a9dc471f3c0b4292db0c7cbb0b36bee",
+      "fetchedAt": "2026-08-01T10:09:08.284401+00:00",
+      "finalUrl": "https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/",
+      "url": "https://blogs.nvidia.com/blog/ai-future-open-and-proprietary/"
+    },
+    {
+      "contentSha256": "6b7e39a162e6d2381615c6e0aa06d8594dad12d187f732fd2198d657f4db3f1e",
+      "fetchedAt": "2026-08-01T10:09:09.669477+00:00",
+      "finalUrl": "https://digital-strategy.ec.europa.eu/en/news/commission-publishes-guidelines-transparency-obligations-providers-and-deployers-certain-ai-systems",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://digital-strategy.ec.europa.eu/en/news/commission-publishes-guidelines-transparency-obligations-providers-and-deployers-certain-ai-systems",
+      "url": "https://digital-strategy.ec.europa.eu/en/news/commission-publishes-guidelines-transparency-obligations-providers-and-deployers-certain-ai-systems"
+    },
+    {
+      "contentSha256": "12a888ac312e6c48840b404636d4d74ea6ea69376aef3eb0769989d02ddaf9c4",
+      "fetchedAt": "2026-08-01T10:09:09.594925+00:00",
+      "finalUrl": "https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf",
+      "url": "https://images.nvidia.com/pdf/Open-Weights-and-American-AI-Leadership.pdf"
+    },
+    {
+      "contentSha256": "b66567d4670a434feae0792f7265a8cd12fb4bc278aafcf0e6b9006192a1d034",
+      "fetchedAt": "2026-08-01T10:09:10.317972+00:00",
+      "finalUrl": "https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/",
+      "url": "https://news.microsoft.com/source/2026/07/21/microsoft-and-mistral-expand-strategic-partnership-to-give-enterprises-and-regulated-industries-frontier-ai-they-can-control/"
+    },
+    {
+      "contentSha256": "a907e41ca074bf203103b1db5c77b9a93da5eb8a3cf44e166e2f1966eabb6d42",
+      "fetchedAt": "2026-08-01T10:09:13.784491+00:00",
+      "finalUrl": "https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7",
+      "url": "https://www.anthropic.com/news/microsoft-nvidia-anthropic-announce-strategic-partnerships?_rsc=304t7"
+    },
+    {
+      "contentSha256": "c9e3942945d63b47ad631634a15d6c341ac50e6cbadad413261bde3d2a370e17",
+      "fetchedAt": "2026-08-01T10:09:19.001979+00:00",
+      "finalUrl": "https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/",
+      "url": "https://www.microsoft.com/en-us/corporate-responsibility/topics/open-weight/"
+    }
+  ],
+  "status": "Green"
+}

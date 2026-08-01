@@ -1,0 +1,79 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-19-DeepDive.md",
+  "articleSha256": "d57633d07efcef5d82d0e024269c30717f753adeb9fd85e683c492d1d55776fa",
+  "issueDate": "2026-07-19",
+  "manifestSha256": "4ab4992f8ad6ed72b73817db246207388bc2207982cc57e99c25aef7bf31512f",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "30206b4ef56b1e3f4d6e0cb72797328528a3c574284572dc6ff47c7070182be2",
+  "sources": [
+    {
+      "contentSha256": "e8315ed4be97f117d2cb910844368dfb679dbcc76545fc9e26495b118a803c12",
+      "fetchedAt": "2026-08-01T10:09:12.557089+00:00",
+      "finalUrl": "https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/",
+      "url": "https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/"
+    },
+    {
+      "contentSha256": "52de1920d082f5defc7f803cb318a6335f26255f599c4cd7e951e77c7574e8c6",
+      "fetchedAt": "2026-08-01T10:29:17.203852+00:00",
+      "finalUrl": "https://waymo.com/blog/2025/05/scaling-our-fleet-through-us-manufacturing/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2025/05/scaling-our-fleet-through-us-manufacturing/",
+      "url": "https://waymo.com/blog/2025/05/scaling-our-fleet-through-us-manufacturing/"
+    },
+    {
+      "contentSha256": "c44e99b5d759e3f35df6db2c92f36c039eec5084ce431e97f2acf479235b9560",
+      "fetchedAt": "2026-08-01T10:09:12.677186+00:00",
+      "finalUrl": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/",
+      "url": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/"
+    },
+    {
+      "contentSha256": "e7e2493ab9f7c0691966f5754a3d955630fa5dfc07d5e2498fdb795697fd65c2",
+      "fetchedAt": "2026-08-01T10:29:17.213975+00:00",
+      "finalUrl": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/",
+      "url": "https://waymo.com/blog/shorts/ro-den-lv-sd-tmpa/"
+    },
+    {
+      "contentSha256": "753ec65bf683a51ed8a9d1a361466824a160f8cb77a83a81c4e25ec3abc1ef6f",
+      "fetchedAt": "2026-08-01T10:33:11.566477+00:00",
+      "finalUrl": "https://www.investing.com/news/stock-market-news/zoox-recalls-selfdriving-cars-because-they-may-not-detect-smoke-4798495",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.investing.com/news/stock-market-news/zoox-recalls-selfdriving-cars-because-they-may-not-detect-smoke-4798495",
+      "url": "https://www.investing.com/news/stock-market-news/zoox-recalls-selfdriving-cars-because-they-may-not-detect-smoke-4798495"
+    }
+  ],
+  "status": "Green"
+}

@@ -8,6 +8,7 @@ import hashlib
 import json
 import statistics
 import subprocess
+from tools.model_spawn_client import run_model_process
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -187,8 +188,9 @@ def run_one(
     started = time.perf_counter()
     timed_out = False
     try:
-        completed = subprocess.run(
+        completed = run_model_process(
             command,
+            route="model_benchmark",
             input=prompt,
             text=True,
             capture_output=True,

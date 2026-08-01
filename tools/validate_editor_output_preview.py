@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
 
+from tools.generate_pages import _SUMMARY_ROLE_TO_KEY
 from tools.validate_summary_reflection import validate_summary_reflection
 
 _BLOCK_MARKERS = ("⛔", "処理中断", "生成前に中断", "編集規約違反")
@@ -20,6 +22,40 @@ _CATEGORY_GENRES = {
     "economy": "Economy",
     "game": "Game",
 }
+_CANONICAL_LANE_LABELS = (
+    ("fact", "事実・概要"),
+    ("context", "背景・要点"),
+    ("outlook", "影響・展望"),
+)
+
+
+def editor_preview_producer_contract() -> str:
+    """実parserが読むlane記法を、editor向けの短い生成契約として返す。"""
+    lines = [
+        "EDITOR_PREVIEW_PRODUCER_CONTRACT_V1",
+        "summary_markdown のテーマ直下と各 scheduled category section には、"
+        "次の3行を行頭1文字目から正確に出力すること。",
+    ]
+    for key, label in _CANONICAL_LANE_LABELS:
+        if _SUMMARY_ROLE_TO_KEY.get(label) != key:
+            raise RuntimeError(f"summary lane parser contract drift: {label} -> {key}")
+        lines.append(f"- 【{label}】：1文で記述する。")
+    lines.extend([
+        "各行の前に `+`、空白、引用記号を付けない。",
+        "特に `+- 【事実・概要】：` は禁止。diff記法ではなく完成Markdownだけを返すこと。",
+    ])
+    return "\n".join(lines)
+
+
+def _validate_lane_line_syntax(summary: str) -> list[str]:
+    labels = "|".join(label for _key, label in _CANONICAL_LANE_LABELS)
+    if not re.search(rf"(?m)^\+\-\s*【(?:{labels})】[:：]", summary):
+        return []
+    return [
+        "editor summary lane line has invalid diff prefix '+-'. "
+        "行頭を正確に `- 【事実・概要】：` / `- 【背景・要点】：` / "
+        "`- 【影響・展望】：` とし、先頭の `+` を削除してください。"
+    ]
 
 
 def _resolve_from_preview(preview_path: Path, rel_or_abs: str) -> Path:
@@ -102,6 +138,7 @@ def validate_editor_output_preview(path: Path, *, issue_date: str) -> list[str]:
     summary = str(payload.get("summary_markdown") or "")
     if any(marker in summary for marker in _BLOCK_MARKERS):
         errors.append("editor summary contains abort/block marker")
+    errors.extend(_validate_lane_line_syntax(summary))
     with tempfile.TemporaryDirectory(prefix="news-grasp-editor-preview-") as tmp:
         summary_path = Path(tmp) / f"{issue_date}.md"
         summary_path.write_text(summary, encoding="utf-8", newline="\n")
@@ -126,9 +163,15 @@ def validate_editor_output_preview(path: Path, *, issue_date: str) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("preview", type=Path)
-    parser.add_argument("--date", required=True)
+    parser.add_argument("preview", type=Path, nargs="?")
+    parser.add_argument("--date")
+    parser.add_argument("--print-producer-contract", action="store_true")
     args = parser.parse_args(argv)
+    if args.print_producer_contract:
+        print(editor_preview_producer_contract())
+        return 0
+    if args.preview is None or not args.date:
+        parser.error("preview と --date は semantic validation で必須です")
     errors = validate_editor_output_preview(args.preview, issue_date=args.date)
     if errors:
         for error in errors:

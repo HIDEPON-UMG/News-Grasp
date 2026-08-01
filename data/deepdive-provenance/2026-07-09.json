@@ -1,0 +1,91 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-09-DeepDive.md",
+  "articleSha256": "fe8b99a732043cc0096355fadb44337c13f528264c1858ac5be9208fcb923629",
+  "issueDate": "2026-07-09",
+  "manifestSha256": "d5ef003d686587750cc099a23ddedb51b0dd0f2e70488d91108b2ec718adffc1",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "fb72bd13929a869701319b98f2fa5e238b70bf8cfaadbf935d36914a4c1729db",
+  "sources": [
+    {
+      "contentSha256": "5aac849ad9924d21ef9ccb824962e657cf4ab9975195afdd4133f19cb144a107",
+      "fetchedAt": "2026-08-01T10:29:16.537856+00:00",
+      "finalUrl": "https://pressroom.toyota.com/toyota-announces-3-6b-expansion-2000-new-jobs-at-its-san-antonio-plant/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://pressroom.toyota.com/toyota-announces-3-6b-expansion-2000-new-jobs-at-its-san-antonio-plant/",
+      "url": "https://pressroom.toyota.com/toyota-announces-3-6b-expansion-2000-new-jobs-at-its-san-antonio-plant/"
+    },
+    {
+      "contentSha256": "934b32c5e6ae49308ea6910eb5beb3acbbac1e09377e33e708738bfb347fd51d",
+      "fetchedAt": "2026-08-01T10:29:16.522255+00:00",
+      "finalUrl": "https://pressroom.toyota.com/toyota-motor-north-america-reports-2024-u-s-sales-results/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs"
+      ],
+      "publicHref": "https://pressroom.toyota.com/toyota-motor-north-america-reports-2024-u-s-sales-results/",
+      "url": "https://pressroom.toyota.com/toyota-motor-north-america-reports-2024-u-s-sales-results/"
+    },
+    {
+      "contentSha256": "e3b1249af9a80d77ccae3ca07c26ac34275caa82d71125a8e2aef54037d3ac79",
+      "fetchedAt": "2026-08-01T10:29:16.575759+00:00",
+      "finalUrl": "https://pressroom.toyota.com/toyota-motor-north-america-reports-2025-u-s-sales-results/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://pressroom.toyota.com/toyota-motor-north-america-reports-2025-u-s-sales-results/",
+      "url": "https://pressroom.toyota.com/toyota-motor-north-america-reports-2025-u-s-sales-results/"
+    },
+    {
+      "contentSha256": "96deedd50f9d663a8533926f84f42430e997a94165f9895225eae03c3d2ef88a",
+      "fetchedAt": "2026-08-01T10:29:17.384334+00:00",
+      "finalUrl": "https://ustr.gov/about/policy-offices/press-office/press-releases/2026/july/ambassador-greer-issues-statement-usmca-joint-review",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://ustr.gov/about/policy-offices/press-office/press-releases/2026/july/ambassador-greer-issues-statement-usmca-joint-review",
+      "url": "https://ustr.gov/about/policy-offices/press-office/press-releases/2026/july/ambassador-greer-issues-statement-usmca-joint-review"
+    },
+    {
+      "contentSha256": "cf73ac5161c581de01f5da3068643ce8ccf343cd34a727d61642a0b1f3913dc7",
+      "fetchedAt": "2026-08-01T10:33:10.823752+00:00",
+      "finalUrl": "https://www.axios.com/2026/07/06/toyota-pickups-texas-mexico",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.axios.com/2026/07/06/toyota-pickups-texas-mexico",
+      "url": "https://www.axios.com/2026/07/06/toyota-pickups-texas-mexico"
+    },
+    {
+      "contentSha256": "5fdb4ee0522c552662c4dd62acf4742d917427fb18dfd0873d709d2d08173dfc",
+      "fetchedAt": "2026-08-01T10:29:18.730165+00:00",
+      "finalUrl": "https://www.federalregister.gov/documents/2025/12/05/2025-22105/request-for-comments-concerning-the-operation-of-the-united-states-mexico-canada-agreement-with",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.federalregister.gov/documents/2025/12/05/2025-22105/request-for-comments-concerning-the-operation-of-the-united-states-mexico-canada-agreement-with",
+      "url": "https://www.federalregister.gov/documents/2025/12/05/2025-22105/request-for-comments-concerning-the-operation-of-the-united-states-mexico-canada-agreement-with"
+    }
+  ],
+  "status": "Green"
+}

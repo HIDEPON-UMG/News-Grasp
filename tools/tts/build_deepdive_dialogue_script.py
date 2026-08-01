@@ -71,21 +71,8 @@ def _frontmatter_tags(markdown: str) -> list[str]:
     return []
 
 
-def _body_sentences(markdown: str, *, limit: int = 12) -> list[str]:
-    body = _FRONTMATTER_RE.sub("", markdown)
-    body = _CODE_FENCE_RE.sub("", body)
-    body = _HEADING_RE.sub("", body)
-    body = re.sub(r"\[\[([^\]]+)\]\]", r"\1", body)
-    body = body.replace("__", "").replace("**", "")
-    candidates = re.split(r"(?<=[。！？])\s*", body)
-    sentences: list[str] = []
-    for sentence in candidates:
-        cleaned = re.sub(r"\s+", "", sentence).strip()
-        if len(cleaned) >= 24:
-            sentences.append(cleaned)
-        if len(sentences) >= limit:
-            break
-    return sentences
+def _body_sentences(markdown: str, *, limit: int = 20) -> list[str]:
+    return deepdive_dialogue.source_evidence_sentences(markdown, limit=limit)
 
 
 def _clip(text: str, limit: int = 160) -> str:
@@ -278,60 +265,98 @@ def _context_source_dates(markdown: str) -> list[str]:
     return re.findall(r"^\s*-\s+date:\s*[\"']?(\d{4}-\d{2}-\d{2})", match.group(1), flags=re.MULTILINE)
 
 
-def _existing_script_is_valid(markdown: str) -> bool:
-    if len(_context_source_dates(markdown)) < MIN_CONTEXT_SOURCES:
+def _existing_script_is_valid(markdown: str, source_markdown: str, source_name: str) -> bool:
+    if _frontmatter_value(markdown, "source", "") != source_name:
         return False
-    return not deepdive_dialogue.validate_dialogue(deepdive_dialogue.parse_dialogue(markdown))
+    return not deepdive_dialogue.validate_dialogue_document(
+        markdown,
+        source_markdown=source_markdown,
+    )
 
 
-def _turns(title: str, sentences: list[str], contexts: list[ContextSource]) -> list[tuple[str, str]]:
-    s = sentences + [
-        "今回の論点は、単発のニュースではなく過去のDeepDiveで積み上げた流れの次の段階として読む必要があります。",
-        "企業には業務設計、検収責任、権限管理、再利用可能な手順づくりとして波及します。",
-        "次に見るべき点は、モデル性能そのものではなく、誰がどの業務を委任し、どこで止めるかです。",
+def _turns(
+    title: str,
+    sentences: list[str],
+    contexts: list[ContextSource],
+) -> list[tuple[str, str, str, str, str]]:
+    """記事固有の7価値を各1区間へ割り当てる決定的な対談を作る。"""
+    if not sentences:
+        raise ValueError("DeepDive本文に台本根拠として使える文がありません")
+    if len(sentences) < 14:
+        raise ValueError(
+            f"DeepDive本文の独立根拠が不足しています: {len(sentences)}件 (必要14件以上)"
+        )
+    evidence = sentences[:14]
+    evidence_id = lambda index: f"source:{index}"
+    historical = (
+        " ".join(
+            f"{context.date}の「{context.title}」では、{_clip(context.summary, 90)} "
+            f"今回との差分は、{_clip(context.change, 110)}"
+            for context in contexts
+        )
+        if contexts
+        else ""
+    )
+    if contexts:
+        historical += " "
+    return [
+        (
+            "current_signal", evidence_id(0), evidence_id(1), "若手",
+            f"「{_clip(evidence[0], 96)}」という記述で、以前と違う対象はどこですか。",
+        ),
+        (
+            "current_signal", evidence_id(0), evidence_id(1), "先輩",
+            f"{_clip(evidence[0], 175)} 対照になる材料は、{_clip(evidence[1], 175)} 両者の対象と時点の差が、今回更新された認識です。",
+        ),
+        (
+            "evidence", evidence_id(2), evidence_id(3), "若手",
+            f"「{_clip(evidence[2], 96)}」を、別の確認済み材料で照合できますか。",
+        ),
+        (
+            "evidence", evidence_id(2), evidence_id(3), "先輩",
+            f"{_clip(evidence[2], 175)} 独立して照合する材料は、{_clip(evidence[3], 175)} この二件は主体・数値・日付を分けて記録できます。",
+        ),
+        (
+            "causal_chain", evidence_id(4), evidence_id(5), "若手",
+            f"「{_clip(evidence[4], 96)}」の後に観測された結果は何ですか。",
+        ),
+        (
+            "causal_chain", evidence_id(4), evidence_id(5), "先輩",
+            f"前提として、{_clip(evidence[4], 175)} 観測された結果は、{_clip(evidence[5], 175)} 前者から後者までを記事が示す範囲の因果として扱います。",
+        ),
+        (
+            "counterevidence_or_limit", evidence_id(6), evidence_id(7), "若手",
+            f"「{_clip(evidence[6], 96)}」を確定事項にしすぎない境界はどこですか。",
+        ),
+        (
+            "counterevidence_or_limit", evidence_id(6), evidence_id(7), "先輩",
+            f"確認済みの範囲は、{_clip(evidence[6], 175)} ただし、{_clip(evidence[7], 175)} この二件に書かれていない将来結果は未確定として残します。",
+        ),
+        (
+            "change_over_time", evidence_id(8), evidence_id(9), "若手",
+            f"「{_clip(evidence[8], 96)}」から、次の段階へ何が移りましたか。",
+        ),
+        (
+            "change_over_time", evidence_id(8), evidence_id(9), "先輩",
+            f"当日の基準点は、{_clip(evidence[8], 170)} 移動先を示す材料は、{_clip(evidence[9], 170)} {historical}対象・時点・判断基準の移動として比較します。",
+        ),
+        (
+            "decision_implication", evidence_id(10), evidence_id(11), "若手",
+            f"「{_clip(evidence[10], 96)}」を顧客判断へ持ち込む際、分けるべき選択条件は何ですか。",
+        ),
+        (
+            "decision_implication", evidence_id(10), evidence_id(11), "先輩",
+            f"選択肢を作る根拠は、{_clip(evidence[10], 170)} 条件を具体化する材料は、{_clip(evidence[11], 170)} 対象、前提、撤回条件を別々に置いて比較します。",
+        ),
+        (
+            "next_action", evidence_id(12), evidence_id(13), "若手",
+            f"「{_clip(evidence[12], 96)}」を受け、次の会議までに誰が何を確認しますか。",
+        ),
+        (
+            "next_action", evidence_id(12), evidence_id(13), "先輩",
+            f"確認対象は、{_clip(evidence[12], 170)} 照合先は、{_clip(evidence[13], 170)} 両方に担当者と期限を置き、差分が出た時点で判断条件を更新します。",
+        ),
     ]
-    first = contexts[0]
-    second = contexts[1]
-    extra = contexts[2:]
-    turns = [
-        ("若手", f"今日のDeepDiveは「{title}」でした。今回は単体の解説ではなく、過去回とのつながりから読むべきですか。"),
-        ("先輩", f"その読み方がいいね。当日記事では、{_clip(s[0], 150)} 過去のDeepDiveで扱った論点が、業務設計の話へ一段進んだと見る。"),
-        ("若手", f"まず {first.date} の「{first.title}」とは、どうつながりますか。"),
-        ("先輩", f"{first.date}回では、{_clip(first.summary, 150)} {_clip(first.change, 180)}"),
-        ("若手", f"関係の種類でいうと、これは「{first.relation}」ですね。単なる再説明ではなく、論点の位置が変わっている。"),
-        ("先輩", f"そう。接点は{first.link}だ。過去回を踏まえると、今回のニュースは新機能紹介ではなく、運用責任の置き場を問う材料になる。"),
-        ("若手", f"各過去回を、今回の実務判断に変換すると、{first.date}回からは何を持ち込むべきでしょうか。"),
-        ("先輩", f"{first.title}から持ち込むべきなのは、{_clip(first.change, 160)}という見方だね。今回の現場では、導入前提、責任分界、レビュー手順を先に言語化できているかを確認する問いに変わる。"),
-        ("若手", "つまり、過去回は背景知識ではなく、今回の判断項目を作る材料になるんですね。"),
-        ("先輩", f"そう。{first.relation}として読むなら、前回の論点を一段具体化し、誰が何を承認し、どこで止めるかまで確認する必要がある。"),
-        ("若手", f"もう一つ、{second.date} の「{second.title}」も関係しますか。"),
-        ("先輩", f"関係する。{second.date}回では、{_clip(second.summary, 150)} {_clip(second.change, 180)}"),
-        ("若手", f"{second.title}のほうは、今回の読みをどう深めますか。"),
-        ("先輩", f"こちらは{second.link}が接点になる。{_clip(second.change, 160)} だから、今回は単に技術の普及を見るのではなく、顧客説明、費用対効果、運用後の責任まで一続きで見るべきだ。"),
-        ("若手", "二つの過去回を並べると、今回の記事で見るべき粒度が上がりますね。"),
-        ("先輩", "その通り。過去回で見た構造を、今回の導入判断、現場統制、顧客への説明責任へ落とし込むことで、音声としても単なる要約から一段深い解説になる。"),
-        ("若手", "つまり、AIを使うかどうかではなく、AIで変わった業務を誰が説明できるかが焦点になるんですね。"),
-        ("先輩", f"その通り。{_clip(s[1], 150)} ここを外すと、導入率や利用率の数字だけを追ってしまう。"),
-        ("若手", "ITコンサルタントの実務示唆としては、どこを顧客に確認すべきでしょうか。"),
-        ("先輩", "まず、どの業務を委任するのか、成果物を誰が検収するのか、失敗時にどこで止めるのかを確認する。さらに、その手順を再利用できる形に残せるかを見る。"),
-        ("若手", "DeepDive記事を読むだけなら理解で終わりますが、過去回と並べると提案論点になりますね。"),
-        ("先輩", f"そうだね。{_clip(s[2], 150)} 過去回は文脈、今回の記事は実装段階の確認表として使える。"),
-        ("若手", "過去30日の流れで見ると、単発の話題ではなく、同じ問題が少しずつ現場実装へ近づいているように見えます。"),
-        ("先輩", "そこが大事だね。DeepDiveのストックは、今日の記事を薄めるためではなく、論点の重心がどこからどこへ移ったかを説明するために使う。音声でもその連続性を前面に出す。"),
-        ("若手", "すると、音声で伝えるべきなのは記事の要約だけではなく、前の論点が今回どの判断材料に変わったかですね。"),
-        ("先輩", "うん。聞き手が次に動けるように、過去回の背景、今回の変化、顧客に確認する問いを一本の線にする必要がある。"),
-        ("若手", "ここまでをつなぐと、若手側からも一つ指摘できそうです。"),
-        ("先輩", "言ってみよう。数字の大小ではなく、業務OSとして定着する条件を見抜けるかが今回の肝だ。"),
-        ("若手", f"過去回では「{first.title}」で統制の必要性を見ました。今回の「{title}」では、その統制を前提に、どの仕事をAIへ渡すかまで問われています。"),
-        ("先輩", "それが鋭い指摘だね。ニュースを行動に翻訳するなら、導入ツール名ではなく、委任、検収、再利用の設計を確認するところまでが今回の読みどころだ。"),
-    ]
-    for context in extra:
-        context_turns = [
-            ("若手", f"補助線として {context.date} の「{context.title}」も見ておくとよさそうです。"),
-            ("先輩", f"うん。これは「{context.relation}」の関係で、{_clip(context.change, 160)}"),
-        ]
-        turns = turns[:-4] + context_turns + turns[-4:]
-    return turns
 
 
 def build_dialogue_markdown(
@@ -350,9 +375,20 @@ def build_dialogue_markdown(
         archive_dir=archive_dir,
         context_pack_path=context_pack_path,
         context_days=context_days,
+        min_sources=0,
     )
     turns = _turns(title, _body_sentences(source_markdown), contexts)
-    body = "\n\n".join(f"{speaker}: {text}" for speaker, text in turns)
+    body_parts: list[str] = []
+    current_marker: tuple[str, str, str] | None = None
+    for value_id, evidence_id, support_id, speaker, text in turns:
+        marker = (value_id, evidence_id, support_id)
+        if marker != current_marker:
+            body_parts.append(
+                f"<!-- value:{value_id} evidence:{evidence_id} support:{support_id} -->"
+            )
+            current_marker = marker
+        body_parts.append(f"{speaker}: {text}")
+    body = "\n\n".join(body_parts)
     audio_target_minutes = 6 if len(contexts) >= MIN_CONTEXT_SOURCES else 5
     markdown = f"""---
 title: "DeepDive解説対談: {title}"
@@ -373,7 +409,7 @@ roles:
 {body}
 """
     parsed_turns = deepdive_dialogue.parse_dialogue(markdown)
-    issues = deepdive_dialogue.validate_dialogue(parsed_turns)
+    issues = deepdive_dialogue.validate_dialogue_document(markdown, source_markdown=source_markdown)
     if issues:
         raise ValueError("; ".join(issues))
     return markdown
@@ -387,13 +423,21 @@ def build_dialogue_script(
     context_pack_path: Path | None = None,
 ) -> Path:
     output = output or source.with_name(source.name.replace("-DeepDive.md", "-DeepDive-dialogue.md"))
+    source_markdown = source.read_text(encoding="utf-8-sig")
+    try:
+        source_name = source.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        parts = source.resolve().parts
+        if "digest" not in parts:
+            raise ValueError("DeepDive sourceはrepo内のdigest/DeepDiveに置く必要があります")
+        source_name = Path(*parts[parts.index("digest"):]).as_posix()
     if output.exists() and not force:
         existing = output.read_text(encoding="utf-8-sig")
-        if _existing_script_is_valid(existing):
+        if _existing_script_is_valid(existing, source_markdown, source_name):
             return output
     markdown = build_dialogue_markdown(
-        source.read_text(encoding="utf-8"),
-        source_name=source.as_posix(),
+        source_markdown,
+        source_name=source_name,
         archive_dir=source.parent,
         context_pack_path=context_pack_path,
     )

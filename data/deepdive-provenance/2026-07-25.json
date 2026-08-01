@@ -1,0 +1,66 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-25-DeepDive.md",
+  "articleSha256": "26debc4f92998142aa33aacabfd57f3bcbd8149ba2b46a40c015ef3423506355",
+  "issueDate": "2026-07-25",
+  "manifestSha256": "eb3c0f23077f1b9491d5722c715db4e709e81ef7ab1d86f1c28ba2416fe15df7",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "d59f16eac935474edbc3f44a6a8fd99999849b5c51392efa839500df7d406de8",
+  "sources": [
+    {
+      "contentSha256": "6ac9c99afeea8e233eb0179af83e836d162da73098a09f098d90f26b9979da0f",
+      "fetchedAt": "2026-08-01T10:09:10.451470+00:00",
+      "finalUrl": "https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf",
+      "url": "https://ir.tesla.com/_flysystem/s3/sec/000162828026026551/tsla-20260422-gen.pdf"
+    },
+    {
+      "contentSha256": "e8315ed4be97f117d2cb910844368dfb679dbcc76545fc9e26495b118a803c12",
+      "fetchedAt": "2026-08-01T10:09:12.557089+00:00",
+      "finalUrl": "https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/",
+      "url": "https://waymo.com/blog/2024/10/clean-rides-clear-benefits-waymo-launches-new-public-transit-credit-program/"
+    },
+    {
+      "contentSha256": "c44e99b5d759e3f35df6db2c92f36c039eec5084ce431e97f2acf479235b9560",
+      "fetchedAt": "2026-08-01T10:09:12.677186+00:00",
+      "finalUrl": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/",
+      "url": "https://waymo.com/blog/2026/02/waymo-raises-usd16-billion-investment-round/"
+    },
+    {
+      "contentSha256": "f87160ce6f1634a85cb6c31fdea2f035282dd200f951af61ea12b6af30f6ba2b",
+      "fetchedAt": "2026-08-01T10:09:12.901262+00:00",
+      "finalUrl": "https://waymo.com/blog/?p=t",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/?p=t",
+      "url": "https://waymo.com/blog/?p=t"
+    }
+  ],
+  "status": "Green"
+}

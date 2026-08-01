@@ -1,0 +1,51 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-22-DeepDive.md",
+  "articleSha256": "fe0aa6fb436bb463af7be8098375235787a9760e20c5730f5858ab0ed7c7987d",
+  "issueDate": "2026-07-22",
+  "manifestSha256": "52bc6363b0b6b3289ac621e363f24c045abd6e63e1c3c49642f3aa991ed6ec07",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "9da4fe7ed4a80ce966e53bc26f3e31b6e092f27d01874929529fc9af473315a5",
+  "sources": [
+    {
+      "contentSha256": "a97e67686888e16fe7f1360a3557f3ed448cb6cec1838b607ed0e16d201771b2",
+      "fetchedAt": "2026-08-01T10:29:16.098811+00:00",
+      "finalUrl": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-6-flash-3-5-flash-lite-3-5-flash-cyber/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-6-flash-3-5-flash-lite-3-5-flash-cyber/",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-6-flash-3-5-flash-lite-3-5-flash-cyber/"
+    },
+    {
+      "contentSha256": "509ffadb19191f4748b698da6c33b2c1eeda7f26433fad56fc892702d864ccaf",
+      "fetchedAt": "2026-08-01T10:29:19.368714+00:00",
+      "finalUrl": "https://cloud.google.com/blog/products/ai-machine-learning/announcing-anthropics-claude-3-models-in-google-cloud-vertex-ai?hl=en",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://cloud.google.com/blog/products/ai-machine-learning/announcing-anthropics-claude-3-models-in-google-cloud-vertex-ai",
+      "url": "https://cloud.google.com/blog/products/ai-machine-learning/announcing-anthropics-claude-3-models-in-google-cloud-vertex-ai"
+    },
+    {
+      "contentSha256": "831479f1f1e2cfa4b2cb133160ef67feea070f166b605f649ca1c7acba8b849b",
+      "fetchedAt": "2026-08-01T10:29:16.863765+00:00",
+      "finalUrl": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/release-notes",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/release-notes",
+      "url": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/release-notes"
+    }
+  ],
+  "status": "Green"
+}

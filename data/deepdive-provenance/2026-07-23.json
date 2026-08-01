@@ -1,0 +1,77 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-23-DeepDive.md",
+  "articleSha256": "5b4faf9e6390ece71ec654f13ce0493e227896f27536bf9d0afcd546115f931c",
+  "issueDate": "2026-07-23",
+  "manifestSha256": "8b204d5615d8c238d97f880d4454448cfd97bdaffd3c2e8f4e53b274bb967a84",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "24763bc831c876a75c9ae4bf14eafc71887c36787f48e8e72de9591fcd922976",
+  "sources": [
+    {
+      "contentSha256": "4149da973b31f98350dab5fd17a2501722800cef8f0754c2599d814bb881d942",
+      "fetchedAt": "2026-08-01T10:09:15.434113+00:00",
+      "finalUrl": "https://www.boj.or.jp/mopo/mpmdeci/state_2026/index.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.boj.or.jp/mopo/mpmdeci/state_2026/index.htm",
+      "url": "https://www.boj.or.jp/mopo/mpmdeci/state_2026/index.htm"
+    },
+    {
+      "contentSha256": "fbf559a3bb48882c249ee6057482a1d67161a343725535cf7f7ab0cf88a7df90",
+      "fetchedAt": "2026-08-01T10:09:15.400815+00:00",
+      "finalUrl": "https://www.boj.or.jp/mopo/outlook/highlight/ten202604.htm",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.boj.or.jp/mopo/outlook/highlight/ten202604.htm",
+      "url": "https://www.boj.or.jp/mopo/outlook/highlight/ten202604.htm"
+    },
+    {
+      "contentSha256": "2340b0e04a7d3042f8cc2618997a23605d596e47301936b6d1df93832b7209ea",
+      "fetchedAt": "2026-08-01T10:09:16.483230+00:00",
+      "finalUrl": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260617a.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260617a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260617a.htm"
+    },
+    {
+      "contentSha256": "d77978ee84c414ae69871fcefa9a002c38f966226d6ed82a6a7f0a9aea51b9a4",
+      "fetchedAt": "2026-08-01T10:09:17.822084+00:00",
+      "finalUrl": "https://www.mof.go.jp/policy/international_policy/reference/feio/data/quarter/index.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.mof.go.jp/policy/international_policy/reference/feio/data/quarter/index.html",
+      "url": "https://www.mof.go.jp/policy/international_policy/reference/feio/data/quarter/index.html"
+    },
+    {
+      "contentSha256": "5c66ce203f6f31142d3c9b925a5ecbf35b69ea2907bae6bb4d446d43979f3a31",
+      "fetchedAt": "2026-08-01T10:09:17.868057+00:00",
+      "finalUrl": "https://www.mof.go.jp/public_relations/conference/my20260602.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.mof.go.jp/public_relations/conference/my20260602.html",
+      "url": "https://www.mof.go.jp/public_relations/conference/my20260602.html"
+    }
+  ],
+  "status": "Green"
+}

@@ -197,6 +197,35 @@ def test_product_constitution_distinguishes_necessary_checks_from_sufficient_e2e
         assert phrase in text
 
 
+def test_product_constitution_defines_final_only_e2e_and_shared_deepdive_quality() -> None:
+    """E2E連発とURL/対談の個別修正へ戻れない上位契約を固定する。"""
+    text = _read(SPEC)
+    headings = _headings(text)
+
+    assert "E2E Final Admission Covenant" in headings
+    assert "DeepDive Source and Podcast Value Covenant" in headings
+    for phrase in [
+        "final_confirmation_only",
+        "発見・デバッグ・readiness判定に使ってはならない",
+        "static → contract → simulation → component → integration → live reconcile",
+        "NEWS_GRASP_E2E_FINAL_ADMISSION_V1",
+        "同一issue date・同一scheduled-equivalent intentで一回だけ",
+        "別worktree、別receipt、別run_idで試行回数をresetしない",
+        "NoPublishを必須",
+        "ResumeFromStageを禁止",
+        "UPSTREAM_DESIGN_ESCAPE",
+        "data/deepdive-provenance/<date>.json",
+        "URLの全出現位置",
+        "primaryとsupportの14根拠",
+        "全価値区間で再利用しない",
+        "production generation、repair/publish、daily quality、Codex日次監査",
+        "tools.deepdive_quality",
+        "deepdive_url_provenance_invalid",
+        "deepdive_dialogue_value_invalid",
+    ]:
+        assert phrase in text
+
+
 def test_product_constitution_defines_sustainable_complete_repair_invariants() -> None:
     """内部欠陥を fallback で正常扱いせず、局所 repair と live runner guard を正本化する。"""
     text = _read(SPEC)

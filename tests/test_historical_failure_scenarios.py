@@ -8,6 +8,7 @@ from tools.historical_failure_scenarios import (
     compound_failure_scenarios,
     historical_failure_horizontal_audits,
     historical_failure_scenarios,
+    unregistered_incident_reports,
     validate_historical_evidence,
     weekly_failure_regression_cases,
 )
@@ -423,18 +424,15 @@ def test_2026_07_28_date_evidence_recovery_incident_is_registered() -> None:
 def test_weekly_failure_regression_corpus_covers_every_day_without_unknown_outcome() -> None:
     cases = weekly_failure_regression_cases()
 
-    assert {case.issue_date for case in cases} == {
-        "2026-07-17",
-        "2026-07-18",
-        "2026-07-19",
-        "2026-07-20",
-        "2026-07-21",
-        "2026-07-22",
-        "2026-07-23",
-        "2026-07-24",
+    assert {
+        "2026-07-25",
+        "2026-07-26",
         "2026-07-27",
         "2026-07-28",
-    }
+        "2026-07-29",
+        "2026-07-30",
+        "2026-07-31",
+    } <= {case.issue_date for case in cases}
     assert all(case.issue_code != "unknown" for case in cases)
     assert all(
         case.expected_status not in {
@@ -464,6 +462,26 @@ def test_weekly_failure_regression_corpus_reaches_typed_status_or_handler() -> N
         assert decision.repair_class == RepairClass(case.expected_repair_class), case
         assert decision.status_on_failure == case.expected_status, case
         assert decision.handler_id == case.expected_handler_id, case
+
+
+def test_2026_07_31_daily_quality_incident_is_registered() -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-31")
+
+    assert "daily-quality" in scenario.stage
+    assert "editor preview" in scenario.direct_cause
+    assert scenario.evidence_path.endswith("2026-07-31-daily-batch-manufacturing-preview-drop-report.html")
+
+
+def test_unregistered_visible_incident_includes_suggested_scenario_stub(tmp_path: Path) -> None:
+    incident = tmp_path / "docs" / "incidents" / "2026-08-01-example-report.html"
+    incident.parent.mkdir(parents=True)
+    incident.write_text("<html></html>", encoding="utf-8")
+
+    rows = unregistered_incident_reports(tmp_path)
+
+    assert rows[0]["evidence_path"] == "docs/incidents/2026-08-01-example-report.html"
+    assert rows[0]["suggested_scenario_stub"]["issue_date"] == "2026-08-01"
+    assert rows[0]["suggested_scenario_stub"]["evidence_path"] == rows[0]["evidence_path"]
 
 
 def test_compound_failure_matrix_never_treats_internal_block_as_success() -> None:

@@ -1,0 +1,77 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-08-01-DeepDive.md",
+  "articleSha256": "c0c376d45294fb2fac4ef7986f14943fe462872b7454f11cb9b45f9c94d9380a",
+  "issueDate": "2026-08-01",
+  "manifestSha256": "dcae9f95f9041dd3910755d6f0442ee131fa3172b680125651738989f1f1b627",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "b71a9a35600b226a70dda794fc29fd6343488adb650482e4cd05988896b00909",
+  "sources": [
+    {
+      "contentSha256": "fc0ddea81f239de57d5b1b7e44773fabf4c4fa98bf2f2f5e74da6c5ed1ae5eef",
+      "fetchedAt": "2026-08-01T10:09:08.350688+00:00",
+      "finalUrl": "https://byd-pr.jp/260728_racco/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://byd-pr.jp/260728_racco/",
+      "url": "https://byd-pr.jp/260728_racco/"
+    },
+    {
+      "contentSha256": "9e7f44c2889b5282697a5605e2d674e4b3a48fa333d4d6a9ef36eb3cdd158a30",
+      "fetchedAt": "2026-08-01T10:09:08.709073+00:00",
+      "finalUrl": "https://byd-pr.jp/press/byd%E3%80%812025%E5%B9%B4%E3%81%AE%E5%B9%B4%E9%96%93%E5%9B%BD%E5%86%85%E6%96%B0%E8%BB%8A%E8%B2%A9%E5%A3%B2%E5%AE%9F%E7%B8%BE%E3%81%A8%E4%BB%8A%E5%BE%8C%E3%81%AE%E5%B1%95%E9%96%8B%E3%82%92%E7%99%BA/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://byd-pr.jp/press/byd%E3%80%812025%E5%B9%B4%E3%81%AE%E5%B9%B4%E9%96%93%E5%9B%BD%E5%86%85%E6%96%B0%E8%BB%8A%E8%B2%A9%E5%A3%B2%E5%AE%9F%E7%B8%BE%E3%81%A8%E4%BB%8A%E5%BE%8C%E3%81%AE%E5%B1%95%E9%96%8B%E3%82%92%E7%99%BA/",
+      "url": "https://byd-pr.jp/press/byd%E3%80%812025%E5%B9%B4%E3%81%AE%E5%B9%B4%E9%96%93%E5%9B%BD%E5%86%85%E6%96%B0%E8%BB%8A%E8%B2%A9%E5%A3%B2%E5%AE%9F%E7%B8%BE%E3%81%A8%E4%BB%8A%E5%BE%8C%E3%81%AE%E5%B1%95%E9%96%8B%E3%82%92%E7%99%BA/"
+    },
+    {
+      "contentSha256": "20cd12b1140073cea383a0a6bd11945c9006c700c7e29c1158ee09cf62ba276c",
+      "fetchedAt": "2026-08-01T10:09:17.090999+00:00",
+      "finalUrl": "https://www.jaia-jp.org/cms/wp-content/uploads/202512NewCarNews.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.jaia-jp.org/cms/wp-content/uploads/202512NewCarNews.pdf",
+      "url": "https://www.jaia-jp.org/cms/wp-content/uploads/202512NewCarNews.pdf"
+    },
+    {
+      "contentSha256": "2e962b537df8916d1de7d12a6316a6868a68280ff9f0e11e240029b24ec28908",
+      "fetchedAt": "2026-08-01T10:09:17.082998+00:00",
+      "finalUrl": "https://www.jaia-jp.org/cms/wp-content/uploads/202601NewCarNews.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.jaia-jp.org/cms/wp-content/uploads/202601NewCarNews.pdf",
+      "url": "https://www.jaia-jp.org/cms/wp-content/uploads/202601NewCarNews.pdf"
+    },
+    {
+      "contentSha256": "6ec602687f948d42c7d8b6fbaf09800cef0367e450c1ee9729ca552cd1bfc6bd",
+      "fetchedAt": "2026-08-01T10:09:18.117620+00:00",
+      "finalUrl": "https://www.nissan-global.com/JP/IR/STOCK/SHAREHOLDER/124/ASSETS/PDF/shousyu2023.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.nissan-global.com/JP/IR/STOCK/SHAREHOLDER/124/ASSETS/PDF/shousyu2023.pdf",
+      "url": "https://www.nissan-global.com/JP/IR/STOCK/SHAREHOLDER/124/ASSETS/PDF/shousyu2023.pdf"
+    }
+  ],
+  "status": "Green"
+}

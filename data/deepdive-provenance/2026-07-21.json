@@ -1,0 +1,78 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-21-DeepDive.md",
+  "articleSha256": "2c53d92183f0d09efa148c9364bf8466baa1e363912d1d49ee5078157718bb3e",
+  "issueDate": "2026-07-21",
+  "manifestSha256": "456518387a2878fe2ae0473d8a49fcb3eeef162d5123fb9aa192f190af16b429",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "6d9d23eb56e0783dd78f4c67be94bf5fa94008c20eec947569461d53e6a1a2fc",
+  "sources": [
+    {
+      "contentSha256": "3a5ddd4cb5d44be4b52f695543fa5ad36d88b589014d80e812e2b4395ebaebd3",
+      "fetchedAt": "2026-08-01T10:09:10.137931+00:00",
+      "finalUrl": "https://ir.baidu.com/news-releases/news-release-details/baidu-announces-first-quarter-2026-results/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://ir.baidu.com/news-releases/news-release-details/baidu-announces-first-quarter-2026-results/",
+      "url": "https://ir.baidu.com/news-releases/news-release-details/baidu-announces-first-quarter-2026-results/"
+    },
+    {
+      "contentSha256": "25ef7ed065d03ec285a2321c42ec0bdbf6f7962f878bb77d2e4cea78535967ef",
+      "fetchedAt": "2026-08-01T10:09:10.103361+00:00",
+      "finalUrl": "https://ir.baidu.com/node/14021/pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://ir.baidu.com/node/14021/pdf",
+      "url": "https://ir.baidu.com/node/14021/pdf"
+    },
+    {
+      "contentSha256": "615af0be61838e282fd2c99a044edded73ebded1c57f3a378f548acfb37e08d3",
+      "fetchedAt": "2026-08-01T10:09:10.118439+00:00",
+      "finalUrl": "https://ir.baidu.com/static-files/414846bb-26ae-4434-9279-c26ade3673a4",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://ir.baidu.com/static-files/414846bb-26ae-4434-9279-c26ade3673a4",
+      "url": "https://ir.baidu.com/static-files/414846bb-26ae-4434-9279-c26ade3673a4"
+    },
+    {
+      "contentSha256": "ef536fadcb1d3ba5614b86fcae8e2d6c93ad4360f5dee4a4c8e4fabec4a0f60c",
+      "fetchedAt": "2026-08-01T10:09:19.737758+00:00",
+      "finalUrl": "https://www.moia.io/de-DE/news/moia-startet-testbetrieb-mit-fahrgaesten-in-hamburg",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.moia.io/de-DE/news/moia-startet-testbetrieb-mit-fahrgaesten-in-hamburg",
+      "url": "https://www.moia.io/de-DE/news/moia-startet-testbetrieb-mit-fahrgaesten-in-hamburg"
+    },
+    {
+      "contentSha256": "b2fae4cc7058ff8ed4474b5b9eb6ffa47f772713e98c9fb9f55810e90a5de9de",
+      "fetchedAt": "2026-08-01T10:09:19.844666+00:00",
+      "finalUrl": "https://www.moia.io/en/why-moia",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://www.moia.io/en/why-moia",
+      "url": "https://www.moia.io/en/why-moia"
+    }
+  ],
+  "status": "Green"
+}

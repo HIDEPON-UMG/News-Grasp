@@ -143,10 +143,16 @@ def _check_records(
                 f"record #{i}: date={rec.get('date')!r} != 号日 {issue_date!r} "
                 f"(records.jsonl の date は号日に揃えること)"
             )
-        if not rec.get("date_evidence_source"):
+        date_evidence_source = str(rec.get("date_evidence_source") or "").strip()
+        if not date_evidence_source:
             errs.append(
                 f"record #{i}: date_evidence_source が無い "
                 f"(published_date の根拠種別を記者出力に含めること)"
+            )
+        elif "rss" in date_evidence_source.casefold():
+            errs.append(
+                f"record #{i}: date_evidence_source={date_evidence_source!r} は RSS 掲載時刻です。"
+                "元記事の公開日を独立確認した根拠へ置き換えること。"
             )
 
     count = len(records)

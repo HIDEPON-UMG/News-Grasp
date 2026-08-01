@@ -1,4 +1,4 @@
-# Wrap codex exec with hard and idle timeouts for News-Grasp daily runs.
+﻿# Wrap codex exec with hard and idle timeouts for News-Grasp daily runs.
 #
 # Args:
 #   -CodexExe       path to codex executable
@@ -17,12 +17,14 @@
 #   -SuccessProbeIntervalSec probe interval in seconds
 #   -SuccessProbeMinElapsedSec minimum elapsed seconds before the first success probe
 #   -ExtraArgs      additional codex exec args
+#   -HighCost*      workspace-global admission。model process起動直前にcall予算を原子的に消費する
 #
 # Exit codes:
 #   0..255 forwarded from codex
 #   123    codex quota / usage limit detected from output
 #   124    timeout hit, process killed
 #   125    wrapper/startup failure
+#   126    high-cost admission / model-call budget rejected before process launch
 
 [CmdletBinding()]
 param(
@@ -43,6 +45,12 @@ param(
     [int] $SuccessProbeIntervalSec = 30,
     [int] $SuccessProbeMinElapsedSec = 0,
     [int64] $MaxCapturedOutputBytes = 52428800,
+    [Parameter(Mandatory=$true)] [string] $HighCostWorkspaceRoot,
+    [string] $HighCostAdmissionPath = '',
+    [string] $HighCostBudgetToolPath = '',
+    [Parameter(Mandatory=$true)] [string] $HighCostPythonExe,
+    [Parameter(Mandatory=$true)] [string] $HighCostCallId,
+    [string] $HighCostCallReceiptPath = '',
     [string[]] $ExtraArgs = @()
 )
 
@@ -67,6 +75,26 @@ function Add-WrapperLog {
     } catch {
         Write-Host "[run_codex_with_timeout] FATAL: cannot write wrapper log: $($_.Exception.GetType().Name)"
         exit 125
+    }
+}
+
+function Assert-CanonicalModelBroker {
+    foreach ($requiredPath in @($HighCostWorkspaceRoot, $HighCostPythonExe)) {
+        if (-not (Test-Path -LiteralPath $requiredPath)) {
+            Add-WrapperLog "HIGH_COST_MODEL_CALL_ADMISSION_REQUIRED missing=$([IO.Path]::GetFileName($requiredPath))"
+            exit 126
+        }
+    }
+    $expectedInstalledBroker = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'))
+    $modelSpawnBroker = if ($HighCostBudgetToolPath) { [System.IO.Path]::GetFullPath($HighCostBudgetToolPath) } else { $expectedInstalledBroker }
+    $routeRegistry = Join-Path $HighCostWorkspaceRoot 'docs\harness\high_cost_model_routes_v1.json'
+    if ((-not $modelSpawnBroker.Equals($expectedInstalledBroker, [System.StringComparison]::OrdinalIgnoreCase)) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf)) -or (-not (Test-Path -LiteralPath $routeRegistry -PathType Leaf))) {
+        Add-WrapperLog 'MODEL_SPAWN_BROKER_UNAVAILABLE'
+        exit 126
+    }
+    if ([string]::IsNullOrWhiteSpace($HighCostCallId) -or [string]::IsNullOrWhiteSpace($FlowName)) {
+        Add-WrapperLog 'HIGH_COST_MODEL_CALL_ID_INVALID'
+        exit 126
     }
 }
 
@@ -196,12 +224,15 @@ function Normalize-CodexExitCode {
         [string] $StdoutPath,
         [string] $StderrPath
     )
+    # 成功したcodex出力には、prompt・memory・調査説明としてquota文言が現れ得る。
+    # OS exit 0を文字列scanだけで外部障害へ上書きしてはならない。
+    if ($ExitCode -eq 0) { return 0 }
     if ($ExitCode -eq 123) { return 123 }
     $stdoutText = ''
     $stderrText = ''
     try { if (Test-Path -LiteralPath $StdoutPath) { $stdoutText = Get-Content -LiteralPath $StdoutPath -Raw -Encoding UTF8 } } catch { }
     try { if (Test-Path -LiteralPath $StderrPath) { $stderrText = Get-Content -LiteralPath $StderrPath -Raw -Encoding UTF8 } } catch { }
-    if (Test-CodexQuotaText -Text ($stdoutText + "`n" + $stderrText)) {
+    if ($ExitCode -ne 0 -and (Test-CodexQuotaText -Text ($stdoutText + "`n" + $stderrText))) {
         Add-WrapperLog "codex quota detected; normalizing rc=$ExitCode to rc=123"
         return 123
     }
@@ -312,6 +343,8 @@ if ($ExtraArgs) {
     $argList += $ExtraArgs
 }
 
+Assert-CanonicalModelBroker
+
 try {
     $oldPythonIoEncoding = [Environment]::GetEnvironmentVariable("PYTHONIOENCODING", "Process")
     $oldPythonUtf8 = [Environment]::GetEnvironmentVariable("PYTHONUTF8", "Process")
@@ -322,12 +355,19 @@ try {
     [Environment]::SetEnvironmentVariable("CODEX_NONINTERACTIVE_SESSION", "1", "Process")
     [Environment]::SetEnvironmentVariable("CODEX_OUTPUT_CONTRACT", "artifact-gate", "Process")
     try {
-        $filePath = $CodexExe
-        $effectiveArgs = $argList
+        # MODEL_SPAWN_BROKER_V2: model processはcanonical brokerだけが生成する。
+        $modelExecutable = $CodexExe
+        $modelArgs = $argList
         if ($CodexExe.ToLowerInvariant().EndsWith(".ps1")) {
-            $filePath = "powershell.exe"
-            $effectiveArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $CodexExe) + $argList
+            $modelExecutable = "powershell.exe"
+            $modelArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $CodexExe) + $argList
         }
+        $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
+        if (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf)) {
+            throw 'MODEL_SPAWN_BROKER_UNAVAILABLE'
+        }
+        $filePath = $HighCostPythonExe
+        $effectiveArgs = @($modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--executable', $modelExecutable, '--') + $modelArgs
         $effectiveArgString = ConvertTo-ProcessArgumentString -Arguments $effectiveArgs
         $proc = Start-Process -FilePath $filePath -ArgumentList $effectiveArgString -WorkingDirectory $WorkingDirectory -RedirectStandardInput $stdinFile -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile -WindowStyle Hidden -PassThru
     } finally {

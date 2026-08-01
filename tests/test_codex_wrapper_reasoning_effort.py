@@ -11,7 +11,10 @@ RUNNER = Path("scripts/ops/news-grasp-runner.ps1")
 INSTALLER = Path("scripts/ops/install-news-grasp-ops.ps1")
 
 
-def test_repo_managed_wrapper_passes_model_and_high_effort(tmp_path: Path) -> None:
+def test_repo_managed_wrapper_passes_model_and_high_effort(
+    tmp_path: Path,
+    canonical_model_broker: tuple[list[str], dict[str, str]],
+) -> None:
     assert WRAPPER.exists()
     capture = tmp_path / "args.txt"
     fake = tmp_path / "fake-codex.ps1"
@@ -23,7 +26,7 @@ def test_repo_managed_wrapper_passes_model_and_high_effort(tmp_path: Path) -> No
     prompt.write_text("test", encoding="utf-8")
     log = tmp_path / "wrapper.log"
     usage = tmp_path / "usage.jsonl"
-    env = os.environ.copy()
+    high_cost_args, env = canonical_model_broker
     env["CAPTURE"] = str(capture)
 
     completed = subprocess.run(
@@ -33,6 +36,7 @@ def test_repo_managed_wrapper_passes_model_and_high_effort(tmp_path: Path) -> No
             "-TimeoutSec", "10", "-IdleTimeoutSec", "0", "-HeartbeatSec", "0",
             "-WorkingDirectory", str(tmp_path), "-Model", "gpt-5.6-luna",
             "-ReasoningEffort", "high", "-FlowName", "test", "-UsageLog", str(usage),
+            *high_cost_args,
         ],
         text=True,
         capture_output=True,

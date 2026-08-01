@@ -44,6 +44,7 @@ from tools.validate_deepdive_urls import (  # noqa: E402
     require_live_urls,
     verify_urls,
 )
+import tools.validate_deepdive_urls as deepdive_urls  # noqa: E402
 
 
 # ── オフラインで動く単体テスト (抽出器の網羅性) ────────────────────────────────
@@ -105,6 +106,95 @@ def test_extract_strips_trailing_punctuation():
     # 末尾の `.` と `。` が剥がされている (URL の正規化)。
     assert "https://example.com/a" in urls or "https://example.com/a)" in urls
     assert "https://example.com/b" in urls
+
+
+def test_extract_markdown_link_excludes_closing_parenthesis_and_date_note():
+    """Markdownリンクの後続注記をURLへ混入させない。"""
+    md = """## 参考リンク
+- [公式資料](https://example.com/report.pdf)（2026-08-01）
+"""
+    assert extract_urls(md) == [
+        UrlRef(url="https://example.com/report.pdf", location="refs")
+    ]
+
+
+def test_request_construction_failure_is_fatal(monkeypatch: pytest.MonkeyPatch):
+    """URLをHTTP要求へ変換できない状態を通信不能として成功扱いしない。"""
+    monkeypatch.setattr(
+        deepdive_urls,
+        "_probe",
+        lambda *args, **kwargs: (None, "UnicodeEncodeError: invalid URL"),
+    )
+    verdict = deepdive_urls._verify_one(
+        UrlRef(url="https://example.com/a)（2026）", location="refs"),
+        timeout=0.1,
+    )
+    assert verdict.ok is False
+    assert "検証不能" in verdict.detail
+
+
+def test_verify_urls_probes_duplicate_url_once(monkeypatch: pytest.MonkeyPatch):
+    """同一記事内の重複URLは1回だけ実打鍵し、全出現位置へ結果を戻す。"""
+    calls: list[str] = []
+
+    def fake_verify(ref: UrlRef, *, timeout: float):
+        calls.append(ref.url)
+        return deepdive_urls.UrlVerdict(ref, 200, True, "HEAD 200")
+
+    monkeypatch.setattr(deepdive_urls, "_verify_one", fake_verify)
+    refs = [
+        UrlRef(url="https://example.com/a", location="refs"),
+        UrlRef(url="https://example.com/a", location="chart.source"),
+    ]
+    verdicts = verify_urls(refs)
+    assert calls == ["https://example.com/a"]
+    assert [v.ref.location for v in verdicts] == ["refs", "chart.source"]
+
+
+def test_system_tls_fallback_recovers_python_certificate_chain_failure(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Python CAで検証不能でもWindows TLS境界で200なら生存扱いする。"""
+    monkeypatch.setattr(
+        deepdive_urls,
+        "_probe",
+        lambda *args, **kwargs: (
+            None,
+            "URLError: [SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer certificate",
+        ),
+    )
+    calls: list[str] = []
+
+    def fake_system_tls(url: str, *, timeout: float):
+        calls.append(url)
+        return 200, "curl[WindowsTLS] 200"
+
+    monkeypatch.setattr(deepdive_urls, "_probe_system_tls", fake_system_tls, raising=False)
+    verdict = deepdive_urls._verify_one(
+        UrlRef(url="https://example.com/report.pdf", location="refs"),
+        timeout=0.1,
+    )
+    assert calls == ["https://example.com/report.pdf"]
+    assert verdict.ok is True
+    assert verdict.status == 200
+
+
+def test_network_unreachable_is_fatal_without_explicit_skip(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """本番URL gateは通信不能を生存確認へ読み替えない。"""
+    monkeypatch.delenv("NEWS_GRASP_SKIP_URL_CHECK", raising=False)
+    monkeypatch.setattr(
+        deepdive_urls,
+        "_probe",
+        lambda *args, **kwargs: (None, "URLError: timed out"),
+    )
+    verdict = deepdive_urls._verify_one(
+        UrlRef(url="https://example.com/a", location="refs"),
+        timeout=0.1,
+    )
+    assert verdict.ok is False
+    assert "検証不能" in verdict.detail
 
 
 # ── ネットワーク必要テスト (本番検証) ────────────────────────────────────────

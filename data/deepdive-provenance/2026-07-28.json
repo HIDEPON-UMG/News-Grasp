@@ -1,0 +1,65 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-28-DeepDive.md",
+  "articleSha256": "11b0315205d5c28059a3dd52ca761a3fa55c14b373e917ab2f8048419797672f",
+  "issueDate": "2026-07-28",
+  "manifestSha256": "d5848abdefe5f63488db24f2a6100a1a11729f6b0317c76efa0a68ee6f81b17a",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "7337ce4a5eeb647747dc44c27dc54565a9cd77644bd79939d0b4c67ac0636b77",
+  "sources": [
+    {
+      "contentSha256": "b5a7d4e0610cd32d86ef3796a6b36dc9f76ef5520950cd5493f3ebfc9cdc8900",
+      "fetchedAt": "2026-08-01T10:09:11.347771+00:00",
+      "finalUrl": "https://news.samsung.com/global/samsung-and-amd-expand-strategic-collaboration-on-next-generation-ai-memory-solutions",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.samsung.com/global/samsung-and-amd-expand-strategic-collaboration-on-next-generation-ai-memory-solutions",
+      "url": "https://news.samsung.com/global/samsung-and-amd-expand-strategic-collaboration-on-next-generation-ai-memory-solutions"
+    },
+    {
+      "contentSha256": "b831b33fbdda068dc20329b52656b4c93114f4b6142bcaedf2ee7d59b9e0e31e",
+      "fetchedAt": "2026-08-01T10:09:10.606686+00:00",
+      "finalUrl": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "url": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies"
+    },
+    {
+      "contentSha256": "917c33f1ac7d45f6e9f9d60deb1f643e820e5df717b343f0a0763ec342ad5e6d",
+      "fetchedAt": "2026-08-01T10:09:11.288506+00:00",
+      "finalUrl": "https://news.samsung.com/kr/%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90%C2%B7%EB%B8%8C%EB%A1%9C%EB%93%9C%EC%BB%B4-2000%EC%96%B5-%EB%8B%AC%EB%9F%AC-%EA%B7%9C%EB%AA%A8-%EC%A0%84%EB%9E%B5%EC%A0%81-%ED%98%91%EB%A0%A5",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://news.samsung.com/kr/%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90%C2%B7%EB%B8%8C%EB%A1%9C%EB%93%9C%EC%BB%B4-2000%EC%96%B5-%EB%8B%AC%EB%9F%AC-%EA%B7%9C%EB%AA%A8-%EC%A0%84%EB%9E%B5%EC%A0%81-%ED%98%91%EB%A0%A5",
+      "url": "https://news.samsung.com/kr/%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90%C2%B7%EB%B8%8C%EB%A1%9C%EB%93%9C%EC%BB%B4-2000%EC%96%B5-%EB%8B%AC%EB%9F%AC-%EA%B7%9C%EB%AA%A8-%EC%A0%84%EB%9E%B5%EC%A0%81-%ED%98%91%EB%A0%A5"
+    },
+    {
+      "contentSha256": "e6470d2156c7b8e14ace0d8caab1065af38fe25c3a013e7abd5a59017ba292ec",
+      "fetchedAt": "2026-08-01T10:09:11.701265+00:00",
+      "finalUrl": "https://news.samsungsemiconductor.com/global/samsung-ships-industry-first-commercial-hbm4-with-ultimate-performance-for-ai-computing/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.samsungsemiconductor.com/global/samsung-ships-industry-first-commercial-hbm4-with-ultimate-performance-for-ai-computing/",
+      "url": "https://news.samsungsemiconductor.com/global/samsung-ships-industry-first-commercial-hbm4-with-ultimate-performance-for-ai-computing/"
+    }
+  ],
+  "status": "Green"
+}

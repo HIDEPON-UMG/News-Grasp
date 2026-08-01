@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.validate_editor_output_preview import validate_editor_output_preview
+from tools.validate_editor_output_preview import (
+    editor_preview_producer_contract,
+    validate_editor_output_preview,
+)
 
 
 def _write_preview(path: Path, *, summary: str, url: str = "https://example.com/news") -> None:
@@ -48,6 +51,35 @@ def test_accepts_semantically_valid_editor_payload(tmp_path: Path) -> None:
     _write_preview(preview, summary=f"## § 本日のテーマ考察\n\n> {lead}\n")
 
     assert validate_editor_output_preview(preview, issue_date="2026-07-11") == []
+
+
+def test_producer_contract_pins_exact_markdown_lane_prefixes() -> None:
+    contract = editor_preview_producer_contract()
+
+    assert "EDITOR_PREVIEW_PRODUCER_CONTRACT_V1" in contract
+    assert "- 【事実・概要】：" in contract
+    assert "- 【背景・要点】：" in contract
+    assert "- 【影響・展望】：" in contract
+    assert "`+- 【事実・概要】：` は禁止" in contract
+
+
+def test_rejects_diff_prefixed_lane_lines_with_actionable_error(tmp_path: Path) -> None:
+    preview = tmp_path / "editor-output.preview.json"
+    lead = "本日は主要カテゴリを横断し、企業戦略と技術投資の接点を整理する。" * 8
+    summary = (
+        f"## § 本日のテーマ考察\n\n> {lead}\n\n"
+        "### §01 AI — 自律実行の境界を検証する\n\n"
+        "[[AI運用]]の条件を**実証**し、__次の観測点__を整理する。\n"
+        "+- 【事実・概要】：自律実行の事実を整理する。\n"
+        "+- 【背景・要点】：権限境界の背景を整理する。\n"
+        "+- 【影響・展望】：次の検証条件を整理する。\n"
+    )
+    _write_preview(preview, summary=summary)
+
+    errors = validate_editor_output_preview(preview, issue_date="2026-07-11")
+
+    assert any("invalid diff prefix '+-'" in error for error in errors)
+    assert any("行頭を正確に `- 【事実・概要】：`" in error for error in errors)
 
 
 def test_rejects_preview_that_drops_nonempty_reporter_category(tmp_path: Path) -> None:

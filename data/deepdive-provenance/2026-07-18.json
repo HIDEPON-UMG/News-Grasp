@@ -1,0 +1,88 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-18-DeepDive.md",
+  "articleSha256": "2cbc9a5c769639a0d4aefeb76879051b63c7fc27da8713084df52f90eb9ebb07",
+  "issueDate": "2026-07-18",
+  "manifestSha256": "50eebaa49436fd520fadda1c7800dae6b168275e097c4cf709c522b868c46e75",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "e8d175368be74a98ddbe14359e9e78e999b338b2491d0346546c16f72457ce82",
+  "sources": [
+    {
+      "contentSha256": "3350f367517cb43e76745abee0ba13bb4e0904d23c61913e6a55acfbeff5b037",
+      "fetchedAt": "2026-08-01T10:09:10.651231+00:00",
+      "finalUrl": "https://news.tv-asahi.co.jp/news_society/articles/900189664.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.tv-asahi.co.jp/news_society/articles/900189664.html",
+      "url": "https://news.tv-asahi.co.jp/news_society/articles/900189664.html"
+    },
+    {
+      "contentSha256": "0c48ff6ecd3e3797c728bf8b5a7bd40d2e8f7382f7a025948bff53ac9e130724",
+      "fetchedAt": "2026-08-01T10:09:11.816406+00:00",
+      "finalUrl": "https://subway.osakametro.co.jp/news/news_release/20260331_newsreleaseevmj.php",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://subway.osakametro.co.jp/news/news_release/20260331_newsreleaseevmj.php",
+      "url": "https://subway.osakametro.co.jp/news/news_release/20260331_newsreleaseevmj.php"
+    },
+    {
+      "contentSha256": "3e4e882ce7c775d450b843b7d96b9c453d05f5ae0d6ed5babb12c35a849f6dd8",
+      "fetchedAt": "2026-08-01T10:09:12.186121+00:00",
+      "finalUrl": "https://subway.osakametro.co.jp/news/news_release/20260717_cyousahoukoku.php?_ga=2.65551278.1096601682.1784189184-1260262083.1774504269&_gl=1*675ko2*_gcl_au*MTM2OTM3MTA1My4xNzg0MTg5MTgz*_ga*MTI2MDI2MjA4My4xNzc0NTA0MjY5*_ga_LT5TV95QB9*czE3ODQyNzc1OTMkbzQxJGcwJHQxNzg0Mjc3NTkzJGo2MCRsMCRoMA",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://t.co/Uuco3yrk8J",
+      "url": "https://t.co/Uuco3yrk8J"
+    },
+    {
+      "contentSha256": "fe0d0666e90188f0af232be069b7693232f8dbc8659495bf19b84dd1b5c2f972",
+      "fetchedAt": "2026-08-01T10:09:15.555967+00:00",
+      "finalUrl": "https://www.city.osaka.lg.jp/kankyo/page/0000610773.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.city.osaka.lg.jp/kankyo/page/0000610773.html",
+      "url": "https://www.city.osaka.lg.jp/kankyo/page/0000610773.html"
+    },
+    {
+      "contentSha256": "c56a6eefd1a22878a18e1ef249ba2e26bd7f95564a77ac67a475a0ce80cd82e8",
+      "fetchedAt": "2026-08-01T10:09:16.201906+00:00",
+      "finalUrl": "https://www.expo2025.or.jp/en/wp-content/uploads/sites/2/2026/01/f41f76fde7af43a4808817bf8ee5abad.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.expo2025.or.jp/en/wp-content/uploads/sites/2/2026/01/f41f76fde7af43a4808817bf8ee5abad.pdf",
+      "url": "https://www.expo2025.or.jp/en/wp-content/uploads/sites/2/2026/01/f41f76fde7af43a4808817bf8ee5abad.pdf"
+    },
+    {
+      "contentSha256": "b00c61c118496796813629ea6d8c1b6dc7cae959656a8ecf122237d204bc0190",
+      "fetchedAt": "2026-08-01T10:09:18.400011+00:00",
+      "finalUrl": "https://www.osakametro.co.jp/company/library/20250529_osakametrogroup_2025_jigyoukeikaku/20250529_osakametrogroup_2025_jigyoukeikaku.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.osakametro.co.jp/company/library/20250529_osakametrogroup_2025_jigyoukeikaku/20250529_osakametrogroup_2025_jigyoukeikaku.pdf",
+      "url": "https://www.osakametro.co.jp/company/library/20250529_osakametrogroup_2025_jigyoukeikaku/20250529_osakametrogroup_2025_jigyoukeikaku.pdf"
+    }
+  ],
+  "status": "Green"
+}

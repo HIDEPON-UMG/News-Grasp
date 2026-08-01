@@ -44,7 +44,7 @@ def _copy_minimal_repo(dst: Path) -> None:
     # this isolated runner fixture only proves the pre-materialization call boundary.
     (dst / "tools" / "validate_editor_output_preview.py").write_text(
         "import argparse\nfrom pathlib import Path\n"
-        "p=argparse.ArgumentParser(); p.add_argument('preview', type=Path); p.add_argument('--date', required=True); a=p.parse_args(); raise SystemExit(0 if a.preview.exists() else 1)\n",
+        "p=argparse.ArgumentParser(); p.add_argument('preview', type=Path, nargs='?'); p.add_argument('--date'); p.add_argument('--print-producer-contract', action='store_true'); a=p.parse_args(); print('EDITOR_PREVIEW_PRODUCER_CONTRACT_V1') if a.print_producer_contract else None; raise SystemExit(0 if a.print_producer_contract or (a.preview and a.preview.exists()) else 1)\n",
         encoding="utf-8",
     )
     (dst / "data").mkdir()
@@ -73,7 +73,12 @@ param(
     [string] $OutputLastMessage = '',
     [string] $Model = '',
     [string] $FlowName = 'unknown',
-    [string] $UsageLog = ''
+    [string] $UsageLog = '',
+    [string] $HighCostWorkspaceRoot = '',
+    [string] $HighCostAdmissionPath = '',
+    [string] $HighCostBudgetToolPath = '',
+    [string] $HighCostPythonExe = '',
+    [string] $HighCostCallId = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -239,7 +244,10 @@ throw "unexpected FlowName: $FlowName"
     )
 
 
-def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_path: Path) -> None:
+def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
+    tmp_path: Path,
+    canonical_model_broker: tuple[list[str], dict[str, str]],
+) -> None:
     """当日必須 reporter 完走後、editor が schedule 由来 manifest を読める。"""
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -250,6 +258,8 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
     log_dir = tmp_path / "runner-logs"
     state_file = tmp_path / "runner-state.json"
     _fake_codex_wrapper(wrapper)
+    high_cost_args, _broker_env = canonical_model_broker
+    high_cost = dict(zip(high_cost_args[::2], high_cost_args[1::2]))
 
     env = os.environ.copy()
     env["NEWS_GRASP_E2E_DATE"] = ISSUE
@@ -289,6 +299,10 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(tmp_pat
                 str(state_file),
                 "-IdleTimeoutSec",
                 "30",
+                "-HighCostWorkspaceRoot",
+                high_cost["-HighCostWorkspaceRoot"],
+                "-HighCostBudgetToolPath",
+                high_cost["-HighCostBudgetToolPath"],
             ],
             cwd=repo,
             env=env,
@@ -341,6 +355,17 @@ def test_runner_validates_editor_preview_before_materialization() -> None:
     assert "editor preview semantic validation failed" in success_block
 
 
+def test_editor_producer_contract_export_runs_from_repo_root() -> None:
+    """Scheduled Task の cwd が repo 外でも producer contract export が tools module を解決できる。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    contract_block = runner.split("$EditorProducerContractFile =", 1)[1].split("$EditorProducerContract =", 1)[0]
+
+    assert "Push-Location $RepoDir" in contract_block
+    assert "tools.validate_editor_output_preview" in contract_block
+    assert contract_block.index("Push-Location $RepoDir") < contract_block.index("tools.validate_editor_output_preview")
+    assert "Pop-Location" in contract_block
+
+
 def test_runner_restores_editor_workspace_after_preview_validation_failure() -> None:
     """失敗した editor attempt の直接ファイル変更を次 attempt へ持ち越さない。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
@@ -350,6 +375,20 @@ def test_runner_restores_editor_workspace_after_preview_validation_failure() -> 
     restore = runner.index("Restore-EditorAttemptSnapshot", failure)
     retry = runner.index("continue", restore)
     assert failure < restore < retry
+
+
+def test_runner_injects_preview_contract_and_feeds_validation_errors_to_next_attempt() -> None:
+    """初回は正本契約を渡し、失敗時は同じ prompt の盲目的再試行をしない。"""
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+
+    contract = runner.index("--print-producer-contract")
+    prompt_write = runner.index("Set-Content -Path $EditorPromptFile", contract)
+    attempt_prompt = runner.index("$EditorAttemptPromptFile", prompt_write)
+    invocation = runner.index("Invoke-CodexWrapper -PromptFile $EditorAttemptPromptFile", attempt_prompt)
+    capture = runner.index("Invoke-LoggedCapture -CapturePath $EditorPreviewValidationCapture", invocation)
+    feedback = runner.index("$EditorRetryFeedback = Get-Content", capture)
+
+    assert contract < prompt_write < attempt_prompt < invocation < capture < feedback
 
 
 def test_editor_attempt_snapshot_flattens_reporter_artifact_paths() -> None:
@@ -363,7 +402,7 @@ def test_editor_attempt_snapshot_flattens_reporter_artifact_paths() -> None:
 def test_newsroom_editor_does_not_use_stale_artifact_success_probe() -> None:
     """既存の当日成果物だけで今回 editor attempt を早期成功させない。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
-    start = runner.index("Invoke-CodexWrapper -PromptFile $EditorPromptFile")
+    start = runner.index("Invoke-CodexWrapper -PromptFile $EditorAttemptPromptFile")
     end = runner.index("Write-Log \"wrapper invoke END", start)
     invocation = runner[start:end]
 
@@ -373,5 +412,5 @@ def test_newsroom_editor_does_not_use_stale_artifact_success_probe() -> None:
 def test_runner_prepares_issue_date_workspace_before_newsroom_editor() -> None:
     runner = RUNNER.read_text(encoding="utf-8-sig")
     prepare = runner.index("tools.prepare_editor_workspace")
-    editor = runner.index("Invoke-CodexWrapper -PromptFile $EditorPromptFile")
+    editor = runner.index("Invoke-CodexWrapper -PromptFile $EditorAttemptPromptFile")
     assert prepare < editor

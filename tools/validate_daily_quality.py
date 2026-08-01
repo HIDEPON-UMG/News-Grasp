@@ -10,6 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from tools import deepdive_quality
 from tools.dedup import extract_source_date_from_url
 from tools.generate_pages import (
     CATEGORIES,
@@ -775,6 +776,27 @@ def validate_tts_audio_presence(
         errs.append(f"TTS latest_audio.json を読めません: {latest_path}: {exc}")
         return errs
 
+    latest_date_raw = str(latest.get("latest_audio_date") or "")
+    try:
+        latest_date = date.fromisoformat(latest_date_raw)
+    except ValueError:
+        latest_date = None
+    if latest_date is not None and latest_date > issue:
+        summary_path = docs_root / issue_str / "summary" / "index.html"
+        if not summary_path.exists():
+            errs.append(f"TTS audio URL 検査対象 HTML が存在しません (summary): {summary_path}")
+            return errs
+        summary_html = summary_path.read_text(encoding="utf-8-sig", errors="replace")
+        historical_urls = re.findall(
+            rf'https://[^"\'<>\s]+/{re.escape(issue_str)}\.mp3[^"\'<>\s]*',
+            summary_html,
+        )
+        if "<audio" not in summary_html or not historical_urls:
+            errs.append(
+                f"TTS historical audio URL が summary HTML に反映されていません: {summary_path}"
+            )
+        return errs
+
     if latest.get("latest_audio_date") != issue_str:
         errs.append(
             f"TTS latest_audio.json の日付が対象日ではありません: "
@@ -950,6 +972,19 @@ def validate_daily_quality(
             docs_root=docs_root,
             issue=issue,
         ))
+        repo_root = digest_root.resolve().parent
+        shared_quality = deepdive_quality.audit_issue(
+            repo_root=repo_root,
+            issue_date=issue.isoformat(),
+        )
+        for issue_code in shared_quality["issueCodes"]:
+            matching = [
+                detail
+                for detail in shared_quality["issues"]
+                if issue_code.split("_invalid", 1)[0].upper() in detail.upper()
+            ]
+            detail = matching[0] if matching else "shared quality gate Red"
+            errs.append(f"{issue_code}: {detail}")
     return errs
 
 
@@ -1067,6 +1102,10 @@ def daily_quality_issue_metadata(message: str) -> dict[str, Any]:
 
 def daily_quality_issue_code(message: str) -> str:
     text = message.casefold()
+    if "deepdive_url_provenance_invalid" in text:
+        return "deepdive_url_provenance_invalid"
+    if "deepdive_dialogue_value_invalid" in text:
+        return "deepdive_dialogue_value_invalid"
     if "add followup_review_note" in text or "follow-up matched_with url date" in text:
         return "followup_review_required"
     if "source url date" in text and "outside the 1-day edition window" in text:

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "DEEPDIVE_SHARED_QUALITY_ROUTES_V1",
+  "engine": "tools.deepdive_quality",
+  "issueCodes": [
+    "deepdive_url_provenance_invalid",
+    "deepdive_dialogue_value_invalid"
+  ],
+  "declaredRoutes": [
+    "production_generation",
+    "repair_publish",
+    "daily_quality",
+    "codex_daily_audit"
+  ],
+  "consumerRoutes": [
+    "production_generation",
+    "repair_publish",
+    "daily_quality",
+    "codex_daily_audit"
+  ],
+  "positiveFixtureRoutes": [
+    "production_generation",
+    "repair_publish",
+    "daily_quality",
+    "codex_daily_audit"
+  ],
+  "negativeFixtureRoutes": [
+    "production_generation",
+    "repair_publish",
+    "daily_quality",
+    "codex_daily_audit"
+  ],
+  "unknownRoutePolicy": "fail_closed"
+}

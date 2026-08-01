@@ -15,12 +15,12 @@ LLM の記憶で URL を「それっぽく」生成しており、`WebFetch` で
   `render_deepdive.py` の hard-fail パスから必ず通す。本モジュールを経由しない URL
   混入経路をコード上に作らない。
 - **契約テスト**: `tests/test_deepdive_urls_live.py` がこのモジュールを呼び全 md を走査。
-- **エスケープ**: 無人環境 (DNS 無し等) で誤発火しないよう `NEWS_GRASP_SKIP_URL_CHECK=1`
-  で全スキップ可能。本番 runner (news-grasp-runner.ps1) は常時 ON のままにする。
+- **検証分離**: 静的pytestだけは `NEWS_GRASP_SKIP_URL_CHECK=1` で外部通信を分離できる。
+  本番 runner は現在日付のURL gate前に親環境の値を消去し、skip証跡を公開証明へ流用しない。
 
 # 検証ロジック
 
-URL → HEAD (10s) → 200-399 = OK / 4xx/5xx = FATAL / network err = ambiguous → GET 1 回再試行。
+URL → HEAD (10s) → 200-399 = OK / 4xx/5xx = FATAL / network err = GET再試行後も検証不能ならFATAL。
 403/405 は anti-bot で HEAD 拒否されるサイト (investing.com 等) があるため、GET 4 KB range
 取得で再判定する。これで「無条件 404 = 捏造」だけを残し、bot 拒否の正規 URL を誤検出しない。
 
@@ -49,13 +49,18 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import sys
 import urllib.error
 import urllib.request
+
+from tools.tts import proc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+import certifi
 
 _PKG_ROOT = Path(__file__).resolve().parent.parent
 if str(_PKG_ROOT) not in sys.path:
@@ -77,6 +82,7 @@ _UA = _UAS[0]  # 1 段目 (旧コードとの互換用)
 
 # 参考リンク bullet 末尾 URL 抽出。`- 説明: https://...` の末尾 URL を拾う。
 _REF_BULLET_URL_RE = re.compile(r"(https?://\S+?)[\s\)\]\"　]*$")
+_MARKDOWN_LINK_URL_RE = re.compile(r"\]\((https?://[^\s\)]+)\)")
 
 # 任意の文字列内の URL 抽出 (relations/chart/table の source 用)。
 _INLINE_URL_RE = re.compile(r"https?://[^\s\)\]\"　]+")
@@ -136,8 +142,9 @@ def _extract_refs_urls(md_text: str) -> list[UrlRef]:
         line = line.strip()
         if not line.startswith("- "):
             continue
-        # 1 bullet 内に複数 URL が紛れることは想定しないが、末尾優先で 1 件拾う。
-        um = _REF_BULLET_URL_RE.search(line)
+        # Markdown link は閉じ括弧より内側だけを URL とする。後続の日付注記を
+        # URL に混入させると HTTP request 自体が作れず、旧判定が ambiguous OK にした。
+        um = _MARKDOWN_LINK_URL_RE.search(line) or _REF_BULLET_URL_RE.search(line)
         if not um:
             continue
         url = _strip_url_tail(um.group(1))
@@ -211,7 +218,8 @@ def _probe(
         headers["Range"] = "bytes=0-4095"
     try:
         req = urllib.request.Request(url, method=method, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        context = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
             return int(resp.status), f"{method}[{ua_tag}] {resp.status}"
     except urllib.error.HTTPError as e:
         return int(e.code), f"{method}[{ua_tag}] {e.code}"
@@ -221,6 +229,24 @@ def _probe(
         return None, f"{method}[{ua_tag}] {type(e).__name__}: {e}"
     except Exception as e:  # noqa: BLE001
         return None, f"{method}[{ua_tag}] {type(e).__name__}: {e}"
+
+
+def _probe_system_tls(url: str, *, timeout: float) -> tuple[int | None, str]:
+    """Python CAで失敗したURLだけをOSのTLS境界で再検証する。"""
+    result = proc.quiet_run(
+        ["curl.exe", "-I", "-L", "--max-time", str(max(1, int(timeout))),
+         "--silent", "--show-error", "--output", os.devnull,
+         "--write-out", "%{http_code}", url],
+        timeout=timeout + 2,
+        check=False,
+    )
+    raw = (result.stdout or "").strip()
+    match = re.search(r"(\d{3})$", raw)
+    if match:
+        status = int(match.group(1))
+        return status, f"curl[SystemTLS] {status}"
+    detail = (result.stderr or raw or f"exit={result.returncode}").strip()
+    return None, f"curl[SystemTLS] {detail}"
 
 
 def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
@@ -234,7 +260,7 @@ def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
     - 全プローブで 403/405/501 のみ (一度も 200 にも 404 にもなれない) → anti-bot 継続として
       ambiguous OK (Bloomberg / theinformation 等)
     - DNS 解決失敗だけは 1 段目で FATAL に格上げ (捏造ホスト疑い)
-    - その他のネットワークエラーが続いた場合は ambiguous OK (オフライン環境で誤発火させない)
+    - その他のネットワークエラーが続いた場合は検証不能として FATAL
     """
     statuses: list[int | None] = []
     details: list[str] = []
@@ -267,6 +293,16 @@ def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
     if s3 in (404, 410):
         return UrlVerdict(ref, s3, False, f"{d1} → {d2} → {d3}")
 
+    if any("CERTIFICATE_VERIFY_FAILED" in detail for detail in details):
+        system_status, system_detail = _probe_system_tls(ref.url, timeout=timeout)
+        details.append(system_detail)
+        if system_status is not None and 200 <= system_status < 400:
+            return UrlVerdict(ref, system_status, True, " → ".join(details))
+        if system_status in (403, 405, 429, 501):
+            return UrlVerdict(ref, system_status, True, f"{' → '.join(details)} (anti-bot・生存応答)")
+        if system_status is not None:
+            return UrlVerdict(ref, system_status, False, " → ".join(details))
+
     # ここまで来たら 3 プローブとも非 2xx 非 404。
     valid_codes = [s for s in statuses if s is not None]
     if valid_codes:
@@ -281,9 +317,19 @@ def _verify_one(ref: UrlRef, *, timeout: float) -> UrlVerdict:
         # それ以外 (4xx の別 / 5xx) は fatal 寄せ
         return UrlVerdict(ref, valid_codes[-1], False, " → ".join(details))
 
-    # 全プローブでネットワークエラー (オフライン/全段タイムアウト) → ambiguous OK
-    return UrlVerdict(ref, None, True,
-                      f"{' / '.join(details)} (network unreachable・ambiguous)")
+    # URL構文やHTTP要求生成そのものの失敗は、通信障害ではなく入力欠陥なので fatal。
+    request_errors = ("UnicodeEncodeError", "InvalidURL", "ValueError")
+    if any(marker in detail for detail in details for marker in request_errors):
+        return UrlVerdict(
+            ref,
+            None,
+            False,
+            f"{' / '.join(details)} (URLをHTTP要求へ変換できず検証不能)",
+        )
+
+    # オフライン許可は呼出し境界の明示skipだけ。検証不能を生存へ読み替えない。
+    return UrlVerdict(ref, None, False,
+                      f"{' / '.join(details)} (通信不能のためURL生存を検証不能)")
 
 
 def verify_urls(
@@ -296,13 +342,26 @@ def verify_urls(
     refs_list = list(refs)
     if not refs_list:
         return []
+
+    unique_refs: list[UrlRef] = []
+    seen_urls: set[str] = set()
+    for ref in refs_list:
+        if ref.url in seen_urls:
+            continue
+        seen_urls.add(ref.url)
+        unique_refs.append(ref)
+
     results: dict[int, UrlVerdict] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        fut_to_idx = {ex.submit(_verify_one, r, timeout=timeout): i for i, r in enumerate(refs_list)}
+        fut_to_idx = {ex.submit(_verify_one, r, timeout=timeout): i for i, r in enumerate(unique_refs)}
         for fut in as_completed(fut_to_idx):
             idx = fut_to_idx[fut]
             results[idx] = fut.result()
-    return [results[i] for i in range(len(refs_list))]
+    by_url = {results[i].ref.url: results[i] for i in range(len(unique_refs))}
+    return [
+        UrlVerdict(ref, by_url[ref.url].status, by_url[ref.url].ok, by_url[ref.url].detail)
+        for ref in refs_list
+    ]
 
 
 def require_live_urls(md_path: Path, md_text: str) -> list[UrlVerdict]:

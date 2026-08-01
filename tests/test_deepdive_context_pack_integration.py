@@ -34,6 +34,27 @@ def _write_deepdive(path: Path, *, title: str, tags: list[str], body: str) -> No
     )
 
 
+def _grounded_body() -> str:
+    return "\n".join(
+        [
+            "最新発表は対象業務と導入時期を明示した。",
+            "公開統計は部門ごとの採用速度の差を示した。",
+            "制度変更は実行権限と検収責任の分離を求めた。",
+            "企業事例は定型作業から委任を広げている。",
+            "費用分析は継続監査の負担を重要視した。",
+            "障害記録は曖昧な権限境界が復旧を遅らせた。",
+            "反対事例では高い自動化率でも品質が改善しなかった。",
+            "比較資料は限定導入の方が検証可能性を保った。",
+            "時系列では試行から全社運用へ論点が移った。",
+            "現場調査は再利用手順が定着率を左右すると示した。",
+            "監査結果は成果物の根拠追跡を必須とした。",
+            "経営判断は便益と停止条件の両方を求めた。",
+            "次の確認点は責任者と再検証時期の固定である。",
+            "実務対応は小規模な証拠収集から範囲を広げる。",
+        ]
+    )
+
+
 def _current_deepdive() -> str:
     return """---
 title: "Codex浸透、全社業務OSへ"
@@ -100,7 +121,7 @@ Codexの全社展開は、AIツール導入ではなく業務設計の論点と�
 ## 参考リンク
 
 - OpenAI Codex overview: https://example.com/codex
-"""
+""" + _grounded_body()
 
 
 def test_context_pack_to_downstream_gates_and_tts(tmp_path: Path) -> None:

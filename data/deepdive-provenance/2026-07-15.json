@@ -1,0 +1,74 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-15-DeepDive.md",
+  "articleSha256": "f3a0ea300a0885763ee97cce5fe367a0fbd54b6ce84d27132fd35b15d85d59f7",
+  "issueDate": "2026-07-15",
+  "manifestSha256": "bff92a9f64b70146cf29610b7c754809e6d1cc54302ed92997440b314fea38a8",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "429d47c39a9ce9de2e1f896a97afff9578473ab467f6e1abf7fc51d0e070e3db",
+  "sources": [
+    {
+      "contentSha256": "82f99de02aa3b7d768e9f16858eedfef87148c34bc8e7a465859dbc52252a8d9",
+      "fetchedAt": "2026-08-01T10:09:19.549465+00:00",
+      "finalUrl": "https://www.softbank.jp/corp/news/press/sbkk/2026/20260616_02/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.softbank.jp/corp/news/press/sbkk/2026/20260616_02/",
+      "url": "https://www.softbank.jp/corp/news/press/sbkk/2026/20260616_02/"
+    },
+    {
+      "contentSha256": "f735bc98f4a40b704999da1d61cdd6ac7487ed4c666a00c421aa0f46ceed60df",
+      "fetchedAt": "2026-08-01T10:09:19.535465+00:00",
+      "finalUrl": "https://www.softbank.jp/corp/news/press/sbkk/2026/20260714_02/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.softbank.jp/corp/news/press/sbkk/2026/20260714_02/",
+      "url": "https://www.softbank.jp/corp/news/press/sbkk/2026/20260714_02/"
+    },
+    {
+      "contentSha256": "c45249941d31610d4467f710099c9a192e1ba1146794ac6d37c502a2a946af7c",
+      "fetchedAt": "2026-08-01T10:09:22.552294+00:00",
+      "finalUrl": "https://www.wipo.int/edocs/pubdocs/en/wipo-pub-2007-en-generative-ai.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.wipo.int/edocs/pubdocs/en/wipo-pub-2007-en-generative-ai.pdf",
+      "url": "https://www.wipo.int/edocs/pubdocs/en/wipo-pub-2007-en-generative-ai.pdf"
+    },
+    {
+      "contentSha256": "e31e28546935ba5ff93ae9684a4eeceadfa7087706d0851111434cd01ac57f13",
+      "fetchedAt": "2026-08-01T10:09:20.620768+00:00",
+      "finalUrl": "https://www.wipo.int/en/web/patent-analytics/generative-ai/2025",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.wipo.int/en/web/patent-analytics/generative-ai/2025",
+      "url": "https://www.wipo.int/en/web/patent-analytics/generative-ai/2025"
+    },
+    {
+      "contentSha256": "8070e4dff0cd61adf05200107e8d245615f48d077931bc1f56f13ca6b5798aac",
+      "fetchedAt": "2026-08-01T10:09:20.749869+00:00",
+      "finalUrl": "https://www.wipo.int/pressroom/en/articles/2026/article_0012.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.wipo.int/pressroom/en/articles/2026/article_0012.html",
+      "url": "https://www.wipo.int/pressroom/en/articles/2026/article_0012.html"
+    }
+  ],
+  "status": "Green"
+}

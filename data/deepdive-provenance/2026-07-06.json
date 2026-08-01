@@ -1,0 +1,94 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-06-DeepDive.md",
+  "articleSha256": "7886207c40b9054f4e46bc0ccabce4ed6e207076d95e8fa6f9d94d6d889f03dc",
+  "issueDate": "2026-07-06",
+  "manifestSha256": "0fd8585cd2b11b90f1276583b52a4344f61def17c4b193f2b51dcb88f2d4cbb2",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "1bfbd8f9bcad6a11d85d1facd4d61224757e3510e7b0a40072c76c2b0630bea7",
+  "sources": [
+    {
+      "contentSha256": "a8ae2dd3edf816f2d09571ba192d1ec47a771b482a2c48846039768ca5317678",
+      "fetchedAt": "2026-08-01T10:29:15.365331+00:00",
+      "finalUrl": "https://eetimes.itmedia.co.jp/ee/articles/2607/06/news047.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://eetimes.itmedia.co.jp/ee/articles/2607/06/news047.html",
+      "url": "https://eetimes.itmedia.co.jp/ee/articles/2607/06/news047.html"
+    },
+    {
+      "contentSha256": "85d0099272ce2d41100571599d92c1b1dabab0ac998cbbddef1f2dec7ec444bb",
+      "fetchedAt": "2026-08-01T10:29:18.713583+00:00",
+      "finalUrl": "https://www.infineon.com/press-release/2025/INFXX202505-100",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.infineon.com/press-release/2025/INFXX202505-100",
+      "url": "https://www.infineon.com/press-release/2025/INFXX202505-100"
+    },
+    {
+      "contentSha256": "99c76b70a763a2b64e5b421bafd3399509997fa18eaf81b704b9fb5fb6559486",
+      "fetchedAt": "2026-08-01T10:09:17.018651+00:00",
+      "finalUrl": "https://www.infineon.com/regional/dresden/smart-power-fab",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.infineon.com/regional/dresden/smart-power-fab",
+      "url": "https://www.infineon.com/regional/dresden/smart-power-fab"
+    },
+    {
+      "contentSha256": "76f269d3e07256ee9f1fbbb9c89759e53e4c0e1f71198a96ae2bd2b5f2b4b219",
+      "fetchedAt": "2026-08-01T10:29:19.147494+00:00",
+      "finalUrl": "https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html",
+      "url": "https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html"
+    },
+    {
+      "contentSha256": "94bb38eb79c343f43e3da0330397b40abc4e4ddbdc1fc5722381e26d04d84635",
+      "fetchedAt": "2026-08-01T10:29:20.475523+00:00",
+      "finalUrl": "https://www.semiconductors.org/global-semiconductor-sales-increase-11-month-to-month-in-april/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.semiconductors.org/global-semiconductor-sales-increase-11-month-to-month-in-april/",
+      "url": "https://www.semiconductors.org/global-semiconductor-sales-increase-11-month-to-month-in-april/"
+    },
+    {
+      "contentSha256": "a623addfbcb051eaa5f73ab5f7b89ab7cba3d0809c711598e87e44e00ac239f6",
+      "fetchedAt": "2026-08-01T10:29:21.156495+00:00",
+      "finalUrl": "https://www.wsts.org/76/Recent-News-Release",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.wsts.org/76/Recent-News-Release",
+      "url": "https://www.wsts.org/76/Recent-News-Release"
+    }
+  ],
+  "status": "Green"
+}

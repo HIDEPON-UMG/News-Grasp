@@ -1,0 +1,52 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-24-DeepDive.md",
+  "articleSha256": "27de9e8da55ad8a5624c4b4da40f1995c126b834550d20234e492bfd8bd37845",
+  "issueDate": "2026-07-24",
+  "manifestSha256": "471cb99c91eedc8cefabd0d4d1918810ffc10c6016ae193bcce89b2784da84da",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "69535a1692a46cd7ea9b8b9f8d58901c88be3c5bb52a8b617cfc924ee5ac7fc3",
+  "sources": [
+    {
+      "contentSha256": "1c6fc6f3b92cae024117a9ee47ffa08165f89364c49934dfb418c7e3943335ea",
+      "fetchedAt": "2026-08-01T10:09:14.284483+00:00",
+      "finalUrl": "https://www.acea.auto/pc-registrations/new-car-registrations-3-9-in-january-2026-battery-electric-19-3-market-share/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.acea.auto/pc-registrations/new-car-registrations-3-9-in-january-2026-battery-electric-19-3-market-share/",
+      "url": "https://www.acea.auto/pc-registrations/new-car-registrations-3-9-in-january-2026-battery-electric-19-3-market-share/"
+    },
+    {
+      "contentSha256": "7d19a95961e09bab7e77f2808baa7915e92109f286bc6fc342456a617aac5202",
+      "fetchedAt": "2026-08-01T10:09:14.317894+00:00",
+      "finalUrl": "https://www.acea.auto/pc-registrations/new-car-registrations-5-7-in-h1-2026-battery-electric-20-7-market-share/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.acea.auto/pc-registrations/new-car-registrations-5-7-in-h1-2026-battery-electric-20-7-market-share/",
+      "url": "https://www.acea.auto/pc-registrations/new-car-registrations-5-7-in-h1-2026-battery-electric-20-7-market-share/"
+    },
+    {
+      "contentSha256": "01898aaee2e083456e564765c26195a023ba328c901c8a7e3cc7b7b8f592b141",
+      "fetchedAt": "2026-08-01T10:09:17.663454+00:00",
+      "finalUrl": "https://www.geelyautoukmedia.com/en/news-articles/geely-auto-and-ford-establish-joint-venture-in-spain-for-localized-production-in-ford%E2%80%99s-valencia-plant.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.geelyautoukmedia.com/en/news-articles/geely-auto-and-ford-establish-joint-venture-in-spain-for-localized-production-in-ford%E2%80%99s-valencia-plant.html",
+      "url": "https://www.geelyautoukmedia.com/en/news-articles/geely-auto-and-ford-establish-joint-venture-in-spain-for-localized-production-in-ford%E2%80%99s-valencia-plant.html"
+    }
+  ],
+  "status": "Green"
+}

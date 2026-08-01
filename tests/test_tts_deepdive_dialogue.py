@@ -114,9 +114,10 @@ def test_synthesize_dialogue_uses_role_specific_style_ids(tmp_path, monkeypatch)
     synthesized: list[tuple[str, int]] = []
 
     monkeypatch.setattr(deepdive_dialogue, "BUILD_DIR", build_dir)
+    monkeypatch.setattr(deepdive_dialogue, "_source_path_for_script", lambda *_args: (script_path, None))
     monkeypatch.setattr(deepdive_dialogue.aivis_client, "ensure_engine", lambda: True)
     monkeypatch.setattr(deepdive_dialogue.aivis_client, "engine_started_by_this_process", lambda: False)
-    monkeypatch.setattr(deepdive_dialogue, "validate_dialogue", lambda _turns: [])
+    monkeypatch.setattr(deepdive_dialogue, "validate_dialogue_document", lambda _markdown, **_kwargs: [])
     monkeypatch.setattr(deepdive_dialogue.synthesize_daily, "combine_wavs", lambda _wavs, out, silence_seconds=0.18: out.write_bytes(b"RIFF"))
     monkeypatch.setattr(deepdive_dialogue, "convert_voice_wav_to_delivery_mp3", lambda _wav, mp3: mp3.write_bytes(b"ID3") or 1.0)
     monkeypatch.setattr(deepdive_dialogue.synthesize_daily, "probe_duration_seconds", lambda _mp3: 305.0)

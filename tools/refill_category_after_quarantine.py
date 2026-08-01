@@ -206,6 +206,74 @@ def _reserve_candidates(candidate_dir: Path, category: str) -> list[dict[str, An
     return []
 
 
+def _default_category_thumb(category: str) -> str:
+    return (
+        "https://raw.githubusercontent.com/HIDEPON-UMG/"
+        f"news-grasp-assets/main/ng-thumb-common-{category}.jpg"
+    )
+
+
+def _durable_editor_reserve_candidates(
+    repo_root: Path,
+    date: str,
+    category: str,
+) -> list[dict[str, Any]]:
+    """永続化したeditor previewから同一runの採用候補を復元する。"""
+    preview_path = (
+        repo_root
+        / "build"
+        / "reporter-artifacts"
+        / date
+        / "editor-output.preview.json"
+    )
+    if not preview_path.exists():
+        return []
+    try:
+        payload = json.loads(preview_path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    records = payload.get("append_records") if isinstance(payload, dict) else None
+    if not isinstance(records, list):
+        return []
+    expected_genre = _category_folder(category).casefold()
+    rows: list[dict[str, Any]] = []
+    for value in records:
+        if not isinstance(value, dict):
+            continue
+        row = dict(value)
+        if str(row.get("genre") or "").strip().casefold() != expected_genre:
+            continue
+        thumb = row.get("thumb")
+        if not isinstance(thumb, str) or not thumb.startswith("http"):
+            row["thumb"] = _default_category_thumb(category)
+        rows.append(row)
+    return rows
+
+
+def _editor_reserve_candidates(repo_root: Path, date: str, category: str) -> list[dict[str, Any]]:
+    """同一runでeditor入力まで到達した検証済み候補を復旧用に返す。"""
+    merged_path = repo_root / "tmp" / "newsroom" / date / "_merged_filtered.jsonl"
+    expected_genre = _category_folder(category).casefold()
+    return [
+        row
+        for row in _jsonl(merged_path)
+        if str(row.get("genre") or "").strip().casefold() == expected_genre
+    ]
+
+
+def _all_reserve_candidates(
+    repo_root: Path,
+    date: str,
+    candidate_dir: Path,
+    category: str,
+) -> list[dict[str, Any]]:
+    """永続editor候補を優先し、一時候補とStage1候補をfallbackにする。"""
+    rows = _durable_editor_reserve_candidates(repo_root, date, category)
+    rows.extend(_editor_reserve_candidates(repo_root, date, category))
+    rows.extend(_reserve_candidates(candidate_dir, category))
+    return rows
+
+
 def _sync_digest(path: Path, bad_urls: set[str], selected: list[dict[str, Any]]) -> None:
     if not path.exists():
         return
@@ -275,8 +343,11 @@ def _audit_dropped_urls(audit: dict[str, Any]) -> set[str]:
         return set()
     urls: set[str] = set()
     for row in dropped:
-        if isinstance(row, dict) and row.get("url"):
-            urls.add(str(row["url"]))
+        if not isinstance(row, dict) or not row.get("url"):
+            continue
+        # bad-url file は各attemptで上書きされるため、監査台帳に残った隔離履歴も
+        # 累積negative evidenceとして扱い、次attemptでの再投入循環を防ぐ。
+        urls.add(str(row["url"]))
     return urls
 
 
@@ -304,7 +375,7 @@ def refill_category(
 
     selected: list[dict[str, Any]] = []
     skipped_unpublishable: set[str] = set()
-    for candidate in _reserve_candidates(candidate_dir, category):
+    for candidate in _all_reserve_candidates(repo_root, date, candidate_dir, category):
         url = str(candidate.get("url") or "")
         if not url or url in bad or url in rejected or url in current_urls:
             continue

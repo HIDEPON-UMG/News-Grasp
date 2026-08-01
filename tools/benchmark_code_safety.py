@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import ctypes
+import importlib.util
 import os
 import subprocess
 import tempfile
@@ -98,6 +99,11 @@ def benchmark_subprocess_env(sandbox: Path) -> dict[str, str]:
         "TEMP": str(temp_dir),
         "TMP": str(temp_dir),
     }
+    pytest_spec = importlib.util.find_spec("pytest")
+    if pytest_spec is not None and pytest_spec.origin:
+        # user-site全体を暗黙継承せず、現在Greenなpytest実装の所在だけを
+        # 明示配送する。生成コード側はimport禁止のAST境界で別途封鎖する。
+        env["PYTHONPATH"] = str(Path(pytest_spec.origin).resolve().parent.parent)
     for name in ("SystemRoot", "WINDIR"):
         value = os.environ.get(name)
         if value:
@@ -253,6 +259,10 @@ def run_limited_benchmark_process(
                 reason = "output limit exceeded"
                 return_code = 125
                 _terminate_process_tree(proc)
+                break
+            # 短命processは出力確認直後に終了し得る。終了済みPIDをworking-set
+            # 照会へ渡すと、PID再利用時に無関係processのmemoryを誤計上する。
+            if proc.poll() is not None:
                 break
             working_set = _process_tree_working_set_bytes(proc.pid)
             if max_working_set_bytes > 0 and working_set is not None and working_set > max_working_set_bytes:

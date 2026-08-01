@@ -6,6 +6,7 @@ import argparse
 import json
 import statistics
 import subprocess
+from tools.model_spawn_client import run_model_process
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -72,7 +73,7 @@ information_density, insight, non_repetition, reader_usefulnessの7軸で1-5点�
     sandbox.mkdir(parents=True, exist_ok=True)
     command = [str(codex_exe), "exec", "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "-C", str(sandbox.resolve()), "-m", JUDGE_MODEL, "-c", 'model_reasoning_effort="high"', "--output-schema", str(Path("schemas/deepdive_triad_judge.schema.json").resolve()), "-o", str(output.resolve()), "-"]
     started = time.perf_counter()
-    completed = subprocess.run(command, input=prompt, text=True, capture_output=True, encoding="utf-8", errors="replace", timeout=timeout_sec, check=False)
+    completed = run_model_process(command, route="judge_deepdive_triad", input=prompt, text=True, capture_output=True, encoding="utf-8", errors="replace", timeout=timeout_sec, check=False)
     duration = time.perf_counter() - started
     (run_dir / "events.jsonl").write_text(completed.stdout, encoding="utf-8")
     (run_dir / "stderr.log").write_text(completed.stderr, encoding="utf-8")

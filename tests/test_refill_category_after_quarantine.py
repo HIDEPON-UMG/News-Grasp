@@ -166,6 +166,127 @@ def test_refill_category_blocks_empty_result_after_quarantine(tmp_path: Path) ->
     assert result["reason"] == "blocked_refill_unresolved"
 
 
+def test_refill_category_recovers_from_editor_merged_reserve_when_selected_records_are_all_bad(
+    tmp_path: Path,
+) -> None:
+    """editor選択分が全滅しても、同runの検証済み候補正本から復旧する。"""
+    _write_fixture(tmp_path)
+    records_path = tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl"
+    bad = _record("https://bad.example.com/dead", 2)
+    records_path.write_text(json.dumps(bad, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    merged_reserve = _record("https://example.com/editor-reserve", 6)
+    merged_reserve["score"] = 96
+    merged_path = records_path.parent / "_merged_filtered.jsonl"
+    merged_path.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in [bad, merged_reserve]) + "\n",
+        encoding="utf-8",
+    )
+    result = refill_category(
+        repo_root=tmp_path,
+        date=ISSUE,
+        category="ai",
+        bad_urls=["https://bad.example.com/dead"],
+        candidate_dir=tmp_path / "build" / "deduped-candidates",
+        txid="tx-editor-reserve",
+    )
+
+    assert result["ok"] is True
+    assert result["mode"] == "refilled"
+    assert result["refilled"] == 1
+    records = [json.loads(line) for line in records_path.read_text(encoding="utf-8").splitlines()]
+    assert [row["url"] for row in records] == ["https://example.com/editor-reserve"]
+
+
+def test_refill_category_recovers_from_durable_editor_preview_when_merged_file_is_missing(
+    tmp_path: Path,
+) -> None:
+    """一時mergedが消えても、永続previewとrepo管理thumbから復旧する。"""
+    _write_fixture(tmp_path)
+    records_path = tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl"
+    bad = _record("https://bad.example.com/dead", 2)
+    records_path.write_text(json.dumps(bad, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    preview_reserve = _record("https://example.com/preview-reserve", 7)
+    preview_reserve["thumb"] = None
+    preview_path = (
+        tmp_path
+        / "build"
+        / "reporter-artifacts"
+        / ISSUE
+        / "editor-output.preview.json"
+    )
+    preview_path.parent.mkdir(parents=True)
+    preview_path.write_text(
+        json.dumps(
+            {"issue_date": ISSUE, "append_records": [bad, preview_reserve]},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = refill_category(
+        repo_root=tmp_path,
+        date=ISSUE,
+        category="ai",
+        bad_urls=["https://bad.example.com/dead"],
+        candidate_dir=tmp_path / "build" / "deduped-candidates",
+        txid="tx-preview-reserve",
+    )
+
+    assert result["ok"] is True
+    records = [json.loads(line) for line in records_path.read_text(encoding="utf-8").splitlines()]
+    assert [row["url"] for row in records] == ["https://example.com/preview-reserve"]
+    assert records[0]["thumb"].endswith("/ng-thumb-common-ai.jpg")
+
+
+def test_refill_category_never_reintroduces_url_quarantined_by_prior_attempt(
+    tmp_path: Path,
+) -> None:
+    """bad-url単発ledgerが更新されても、監査済み隔離URLは再投入しない。"""
+    _write_fixture(tmp_path)
+    records_path = tmp_path / "tmp" / "newsroom" / ISSUE / "ai.records.jsonl"
+    current_bad = _record("https://bad.example.com/current", 2)
+    records_path.write_text(json.dumps(current_bad, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    prior_bad = _record("https://bad.example.com/prior", 8)
+    valid = _record("https://example.com/valid-after-prior", 9)
+    preview_path = (
+        tmp_path
+        / "build"
+        / "reporter-artifacts"
+        / ISSUE
+        / "editor-output.preview.json"
+    )
+    preview_path.parent.mkdir(parents=True)
+    preview_path.write_text(
+        json.dumps(
+            {"issue_date": ISSUE, "append_records": [prior_bad, valid]},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    audit_path = tmp_path / "data" / "search_audit" / ISSUE / "ai.json"
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    audit["dropped"].append(
+        {"url": "https://bad.example.com/prior", "reason": "quarantined by gate"}
+    )
+    audit_path.write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
+
+    result = refill_category(
+        repo_root=tmp_path,
+        date=ISSUE,
+        category="ai",
+        bad_urls=["https://bad.example.com/current"],
+        candidate_dir=tmp_path / "build" / "deduped-candidates",
+        txid="tx-prior-quarantine",
+    )
+
+    assert result["ok"] is True
+    records = [json.loads(line) for line in records_path.read_text(encoding="utf-8").splitlines()]
+    assert [row["url"] for row in records] == ["https://example.com/valid-after-prior"]
+
+
 def test_refill_category_allows_single_survivor_with_shortfall_reason(tmp_path: Path) -> None:
     _write_fixture(tmp_path)
     bad_urls = [

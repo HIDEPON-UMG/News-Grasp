@@ -40,6 +40,12 @@ EXPLICITLY_APPROVED_REPORTS = {
     "docs/incidents/2026-07-23-daily-quality-search-audit-hero-report.html",
 }
 
+# repair prompt が参照した既存 tracked report。公開承認とはみなさず、
+# historical failure corpus への登録を必須にして新規 report の local-only 契約と分離する。
+REPAIR_PROMPT_REFERENCED_REPORTS = {
+    "docs/incidents/2026-07-31-daily-batch-manufacturing-preview-drop-report.html",
+}
+
 
 def _git_lines(*args: str) -> list[str]:
     result = subprocess.run(
@@ -66,10 +72,17 @@ def test_incident_report_html_is_gitignored() -> None:
 
 
 def test_no_new_incident_report_html_is_tracked() -> None:
-    approved = LEGACY_TRACKED_REPORTS | EXPLICITLY_APPROVED_REPORTS
+    approved = LEGACY_TRACKED_REPORTS | EXPLICITLY_APPROVED_REPORTS | REPAIR_PROMPT_REFERENCED_REPORTS
     unexpected = sorted(_tracked_reports() - approved)
 
     assert not unexpected, f"{REPORT_GLOB} must not be tracked: {unexpected}"
+
+
+def test_repair_prompt_referenced_reports_are_registered_in_failure_corpus() -> None:
+    from tools.historical_failure_scenarios import historical_failure_scenarios
+
+    registered = {item.evidence_path for item in historical_failure_scenarios()}
+    assert REPAIR_PROMPT_REFERENCED_REPORTS <= registered
 
 
 def test_2026_06_30_public_report_is_not_tracked() -> None:

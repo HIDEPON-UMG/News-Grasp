@@ -1,0 +1,79 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-31-DeepDive.md",
+  "articleSha256": "05fa63a9da555a0cd97345fd6447d0775c5626776fe36258d505bec424b73be0",
+  "issueDate": "2026-07-31",
+  "manifestSha256": "81d8dcae02efd378753fcfa549f88386f94e30c350a688afd79fc3612eac82e9",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "b79b6548813cfb62e31e1cf428296668173f7068a3d9b6e310dcf689793cdcb2",
+  "sources": [
+    {
+      "contentSha256": "e30b10a5e008608b4f20da6e378773995cdaf26ae0ff667141b35ebb619e7c27",
+      "fetchedAt": "2026-08-01T10:09:17.639380+00:00",
+      "finalUrl": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q2/press-release-webcast",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q2/press-release-webcast",
+      "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q2/press-release-webcast"
+    },
+    {
+      "contentSha256": "422ab2a3b94c6208a175756cdbdd62460a61bab98a77b576dff89154a3dc964e",
+      "fetchedAt": "2026-08-01T10:09:17.992340+00:00",
+      "finalUrl": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast",
+      "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast"
+    },
+    {
+      "contentSha256": "65891cfb72839a35a3052b18cbaebf2886f332a0dd0d34694f0f4c0038914d85",
+      "fetchedAt": "2026-08-01T10:09:17.885056+00:00",
+      "finalUrl": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q3",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q3",
+      "url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q3"
+    },
+    {
+      "contentSha256": "6465c129a37c3c7bf95e0de7cd3614afa40d4f73b952329711be355e6cf93416",
+      "fetchedAt": "2026-08-01T10:09:18.434784+00:00",
+      "finalUrl": "https://www.oracle.com/news/announcement/oracle-to-offer-google-gemini-models-to-customers-2025-08-14/?SC=%3Aso%3Afb%3Aor%3Aawr%3Aocorp%3A%3A%3A&pcode=&source=%3Aso%3Afb%3Aor%3Aawr%3Aocorp%3A%3A%3A",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.oracle.com/news/announcement/oracle-to-offer-google-gemini-models-to-customers-2025-08-14/?SC=%3Aso%3Afb%3Aor%3Aawr%3Aocorp%3A%3A%3A&pcode=&source=%3Aso%3Afb%3Aor%3Aawr%3Aocorp%3A%3A%3A",
+      "url": "https://www.oracle.com/news/announcement/oracle-to-offer-google-gemini-models-to-customers-2025-08-14/?SC=%3Aso%3Afb%3Aor%3Aawr%3Aocorp%3A%3A%3A&pcode=&source=%3Aso%3Afb%3Aor%3Aawr%3Aocorp%3A%3A%3A"
+    },
+    {
+      "contentSha256": "231de38d5e6090f6d66eff52332a482e7dd08f34b5427519c28c17c4c2bf2a3b",
+      "fetchedAt": "2026-08-01T10:09:18.400011+00:00",
+      "finalUrl": "https://www.oracle.com/news/announcement/q4fy26-earnings-release-2026-06-10/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.oracle.com/news/announcement/q4fy26-earnings-release-2026-06-10/",
+      "url": "https://www.oracle.com/news/announcement/q4fy26-earnings-release-2026-06-10/"
+    }
+  ],
+  "status": "Green"
+}

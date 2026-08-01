@@ -176,6 +176,21 @@ def test_fail_record_without_date_evidence_source(tmp_path: Path):
     )
 
 
+@pytest.mark.parametrize("source", ["rss-pubDate", "rss_pubDate", "google-news-rss"])
+def test_fail_record_using_rss_timestamp_as_publication_evidence(
+    tmp_path: Path,
+    source: str,
+):
+    """RSS掲載時刻を元記事の公開日根拠へ読み替えた record は FAIL。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0]["date_evidence_source"] = source
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+    assert any("RSS" in e and "date_evidence_source" in e for e in errs), (
+        f"RSS時刻の誤採用を検出するはず: {errs}"
+    )
+
+
 def test_fail_google_news_rss_url_in_records(tmp_path: Path):
     """Google News RSS URL のままなら元記事 URL 未解決として FAIL。"""
     recs = [_record(i) for i in range(1, 6)]

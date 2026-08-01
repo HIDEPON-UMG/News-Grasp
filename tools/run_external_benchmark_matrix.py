@@ -13,6 +13,7 @@ import re
 import shutil
 import statistics
 import subprocess
+from tools.model_spawn_client import run_model_process
 import sys
 import time
 from pathlib import Path
@@ -1781,8 +1782,9 @@ def _run_codex_case(
     ]
     started = time.time()
     try:
-        proc = subprocess.run(
+        proc = run_model_process(
             args,
+            route="external_benchmark_matrix",
             input=prompt,
             text=True,
             capture_output=True,

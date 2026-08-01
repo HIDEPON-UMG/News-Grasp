@@ -1,0 +1,95 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-03-DeepDive.md",
+  "articleSha256": "a5dd519f27327c65a3689faad302f3225a7f70042721da8813bf7be2546503a4",
+  "issueDate": "2026-07-03",
+  "manifestSha256": "e3a1332bfd64b624c70987be169b4978b76f27d52262a2f76b80a5704e623457",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "54ecf8a7f88056fc27503918aab8d63d9d8104a6966a798503ce93cef2912743",
+  "sources": [
+    {
+      "contentSha256": "682b7e0a381f02946b4c86a23ccd80af80eda5c6a72409e9b7f748206a472071",
+      "fetchedAt": "2026-08-01T10:09:13.051779+00:00",
+      "finalUrl": "https://sumitomoelectric.com/jp/id/project/v27/01",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://sumitomoelectric.com/jp/id/project/v27/01",
+      "url": "https://sumitomoelectric.com/jp/id/project/v27/01"
+    },
+    {
+      "contentSha256": "ed92b495436a3b1e98b65dcd380700a3272b205d925dc029c5f7e889c940494c",
+      "fetchedAt": "2026-08-01T10:09:14.349799+00:00",
+      "finalUrl": "https://whbl.com/2026/07/01/sk-hynix-to-build-51-billion-nand-memory-chip-factory-by-2029/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://whbl.com/2026/07/01/sk-hynix-to-build-51-billion-nand-memory-chip-factory-by-2029/",
+      "url": "https://whbl.com/2026/07/01/sk-hynix-to-build-51-billion-nand-memory-chip-factory-by-2029/"
+    },
+    {
+      "contentSha256": "99c76b70a763a2b64e5b421bafd3399509997fa18eaf81b704b9fb5fb6559486",
+      "fetchedAt": "2026-08-01T10:09:17.018651+00:00",
+      "finalUrl": "https://www.infineon.com/regional/dresden/smart-power-fab",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.infineon.com/regional/dresden/smart-power-fab",
+      "url": "https://www.infineon.com/regional/dresden/smart-power-fab"
+    },
+    {
+      "contentSha256": "c098c983e4ef5e76c40eb874965f9e7b9e303841a64f9e1ad06c77648c77cd8b",
+      "fetchedAt": "2026-08-01T10:09:19.153931+00:00",
+      "finalUrl": "https://www.samsungsem.com/global/newsroom/news/view.do?id=9850",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.samsungsem.com/global/newsroom/news/view.do?id=9850",
+      "url": "https://www.samsungsem.com/global/newsroom/news/view.do?id=9850"
+    },
+    {
+      "contentSha256": "0b6a3f82d324a6a9ba634abd26cfe4b45c20bcb0559524a10e0c373af7c6d059",
+      "fetchedAt": "2026-08-01T10:09:19.129757+00:00",
+      "finalUrl": "https://www.seaj.or.jp/file/jan2026seajforecastforpress_j.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.seaj.or.jp/file/jan2026seajforecastforpress_j.pdf",
+      "url": "https://www.seaj.or.jp/file/jan2026seajforecastforpress_j.pdf"
+    },
+    {
+      "contentSha256": "9cb05efb943da3595b916ff173f2f259954fa02756669f2a921b656c1586aa50",
+      "fetchedAt": "2026-08-01T10:09:19.483852+00:00",
+      "finalUrl": "https://www.semi.org/en/semi-press-release/global-semiconductor-equipment-sales-projected-to-reach-a-record-of-156-billion-dollars-in-2027-semi-reports",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://www.semi.org/en/semi-press-release/global-semiconductor-equipment-sales-projected-to-reach-a-record-of-156-billion-dollars-in-2027-semi-reports",
+      "url": "https://www.semi.org/en/semi-press-release/global-semiconductor-equipment-sales-projected-to-reach-a-record-of-156-billion-dollars-in-2027-semi-reports"
+    }
+  ],
+  "status": "Green"
+}

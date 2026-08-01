@@ -149,7 +149,7 @@ def test_run_codex_variant_uses_current_exec_cli_without_search(monkeypatch, tmp
         seen["kwargs"] = kwargs
         return _Result()
 
-    monkeypatch.setattr("tools.run_model_eval.subprocess.run", fake_run)
+    monkeypatch.setattr("tools.run_model_eval.run_model_process", fake_run)
 
     rc = run_codex_variant(
         prompt_path=prompt,
@@ -164,6 +164,7 @@ def test_run_codex_variant_uses_current_exec_cli_without_search(monkeypatch, tmp
 
     cmd = seen["cmd"]
     assert rc == 0
+    assert seen["kwargs"]["route"] == "model_eval"
     assert cmd[:2] == ["codex", "exec"]
     assert "--search" not in cmd
     assert cmd[-1] != "-"
@@ -191,7 +192,7 @@ def test_run_codex_variant_wraps_ps1_codex_executable(monkeypatch, tmp_path: Pat
         seen["cmd"] = cmd
         return _Result()
 
-    monkeypatch.setattr("tools.run_model_eval.subprocess.run", fake_run)
+    monkeypatch.setattr("tools.run_model_eval.run_model_process", fake_run)
 
     rc = run_codex_variant(
         prompt_path=prompt,
@@ -220,8 +221,8 @@ def test_run_codex_variant_rejects_shell_script_executables(monkeypatch, tmp_pat
     prompt.write_text("Return JSON.", encoding="utf-8")
     schema.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(
-        "tools.run_model_eval.subprocess.run",
-        lambda *_args, **_kwargs: pytest.fail("shell script must be rejected before subprocess.run"),
+        "tools.run_model_eval.run_model_process",
+        lambda *_args, **_kwargs: pytest.fail("shell script must be rejected before model spawn broker"),
     )
 
     with pytest.raises(ValueError, match="unsupported Codex executable extension"):

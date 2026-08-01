@@ -92,6 +92,52 @@ def test_context_pack_ignores_ai_only_overlap(tmp_path: Path) -> None:
     assert pack["candidates"] == []
 
 
+def test_context_pack_does_not_split_generic_news_grasp_tag_into_signal(tmp_path: Path) -> None:
+    repo = tmp_path
+    _write_article(
+        repo,
+        {
+            "date": "2026-08-01",
+            "title": "軽EVの価格競争",
+            "summary": "BYDと国内軽EVの価格、航続距離、販売網を扱う。",
+            "tags": ["news-grasp", "issue-20260801", "BYD", "軽EV"],
+        },
+    )
+    _write_deepdive(
+        repo / "digest" / "DeepDive" / "2026-07-31-DeepDive.md",
+        title="AIクラウドの調達戦略",
+        tags=["news-grasp", "issue-20260731", "AI", "cloud"],
+        body="## 背景\nAIクラウドと調達戦略を扱った。\n",
+    )
+
+    pack = build_context_pack("2026-08-01", repo_root=repo)
+
+    assert pack["candidates"] == []
+
+
+def test_context_pack_rejects_single_concept_overlap_without_explicit_related(tmp_path: Path) -> None:
+    repo = tmp_path
+    _write_article(
+        repo,
+        {
+            "date": "2026-08-01",
+            "title": "軽EVの価格競争",
+            "summary": "BYDと国内軽EVの価格を扱う。",
+            "tags": ["BYD", "軽EV", "価格競争"],
+        },
+    )
+    _write_deepdive(
+        repo / "digest" / "DeepDive" / "2026-07-31-DeepDive.md",
+        title="AI価格競争と配布設計",
+        tags=["OpenAI", "生成AI", "価格競争"],
+        body="## 背景\nAIサービスの単価と配布設計を扱った。\n",
+    )
+
+    pack = build_context_pack("2026-08-01", repo_root=repo)
+
+    assert pack["candidates"] == []
+
+
 def test_context_pack_cli_writes_small_json(tmp_path: Path) -> None:
     repo = tmp_path
     output = repo / "build" / "deepdive-context" / "2026-06-28.json"

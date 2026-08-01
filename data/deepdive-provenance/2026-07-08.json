@@ -1,0 +1,79 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-08-DeepDive.md",
+  "articleSha256": "58694f205bdb58af814acc23179c8eed41636fe63c737a8bc377d527e8923de8",
+  "issueDate": "2026-07-08",
+  "manifestSha256": "9193f24abb9dd5e9f9d9794766c60e8a2a6a164e5d0265f14335154bd7e7761b",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "eacb14e56286d8af509abd40e19368d2395fa4c83ea3018d8fda0645fe566629",
+  "sources": [
+    {
+      "contentSha256": "4039bba02497f15f08a3419c16612aadf021e1632007a0309c87b8f9239cead1",
+      "fetchedAt": "2026-08-01T10:09:08.252666+00:00",
+      "finalUrl": "https://arxiv.org/html/2506.04301v1",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://arxiv.org/html/2506.04301v1",
+      "url": "https://arxiv.org/html/2506.04301v1"
+    },
+    {
+      "contentSha256": "5d0243dd263cf599c7193ec714b368b7237c292fbfda2f35d508e3444d3fcfcf",
+      "fetchedAt": "2026-08-01T10:09:10.835041+00:00",
+      "finalUrl": "https://news.kaist.ac.kr/newsen/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://news.kaist.ac.kr/newsen/",
+      "url": "https://news.kaist.ac.kr/newsen/"
+    },
+    {
+      "contentSha256": "930dc993817f0dc37eebf11b4c8435bed648a079a1e5154e2e12e0195efb038d",
+      "fetchedAt": "2026-08-01T10:09:12.645105+00:00",
+      "finalUrl": "https://squareup.com/us/en/press/claude-chatgpt-integrations",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://squareup.com/us/en/press/claude-chatgpt-integrations",
+      "url": "https://squareup.com/us/en/press/claude-chatgpt-integrations"
+    },
+    {
+      "contentSha256": "d619a662a6b1a17e928793cfea40a31f53509e211722d5eec096f406bee091dd",
+      "fetchedAt": "2026-08-01T10:09:16.565212+00:00",
+      "finalUrl": "https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source"
+      ],
+      "publicHref": "https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai",
+      "url": "https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai"
+    },
+    {
+      "contentSha256": "7bb8788f0310157d5609c075a51d0fd5ddabde34076ee8e57c917d9c1daee281",
+      "fetchedAt": "2026-08-01T10:09:16.618863+00:00",
+      "finalUrl": "https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary",
+      "url": "https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary"
+    }
+  ],
+  "status": "Green"
+}

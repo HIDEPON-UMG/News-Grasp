@@ -1,0 +1,80 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-26-DeepDive.md",
+  "articleSha256": "9e1c40fdbe95908c1695d98517bf23e91923cee2f8f68e6039c6dd7a1ad77ae3",
+  "issueDate": "2026-07-26",
+  "manifestSha256": "df1e2847e348ee5450fa61a704370a01d4bd2f97fcd8706eb07ad9acfddcdcde",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "dd96a54c9659d5f0a1a8039c6929d890df727382ea881a003c5232fa88dc515b",
+  "sources": [
+    {
+      "contentSha256": "b1d2353efc29b458bc2b355aa84c2bee3eaff5863a4ee9c496e530985649b251",
+      "fetchedAt": "2026-08-01T10:09:09.204120+00:00",
+      "finalUrl": "https://fred.stlouisfed.org/series/DEXJPUS",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs"
+      ],
+      "publicHref": "https://fred.stlouisfed.org/series/DEXJPUS",
+      "url": "https://fred.stlouisfed.org/series/DEXJPUS"
+    },
+    {
+      "contentSha256": "adb8536c8c032c548e2c105e271cc07913f51430d31dc97025e080c54151db98",
+      "fetchedAt": "2026-08-01T10:09:15.036834+00:00",
+      "finalUrl": "https://www.boj.or.jp/about/calendar/index.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.boj.or.jp/about/calendar/index.htm",
+      "url": "https://www.boj.or.jp/about/calendar/index.htm"
+    },
+    {
+      "contentSha256": "b78e59f186ecf72c9ec5a24f2c5e0042b485f2c744770a621faf9dd9d4eafec7",
+      "fetchedAt": "2026-08-01T10:09:16.386309+00:00",
+      "finalUrl": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260617.htm",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260617.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260617.htm"
+    },
+    {
+      "contentSha256": "6db626a834856899538b4f1a9550726d83a0ea5062007b3b956056317e8b9af1",
+      "fetchedAt": "2026-08-01T10:09:16.607009+00:00",
+      "finalUrl": "https://www.gaitame.com/media/entry/2026/07/25/060400",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.gaitame.com/media/entry/2026/07/25/060400",
+      "url": "https://www.gaitame.com/media/entry/2026/07/25/060400"
+    },
+    {
+      "contentSha256": "9e886419fba93d041066f32c89be595313062664f01ebc6c21ab82ec2bb4bd85",
+      "fetchedAt": "2026-08-01T10:09:17.824085+00:00",
+      "finalUrl": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/monthly/20260529e.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/monthly/20260529e.html",
+      "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/monthly/20260529e.html"
+    }
+  ],
+  "status": "Green"
+}

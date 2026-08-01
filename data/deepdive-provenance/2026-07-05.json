@@ -1,0 +1,89 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-05-DeepDive.md",
+  "articleSha256": "adeb78a7918599535ab090277d0ca72d65116da2cbe0fa0b367c8c7dee3c75d2",
+  "issueDate": "2026-07-05",
+  "manifestSha256": "9c6c796acbcfa96ad97b35754bff4815ad86cf9ef63cc6e189964fcf7890275c",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "d0cb141e27690f811e66f5af7cde935789fc8e0538b2b6327e48d5d131982b9a",
+  "sources": [
+    {
+      "contentSha256": "851bb7afe516c38e166715ec0323d8c9a922c1e888448c2ba496a105258150e7",
+      "fetchedAt": "2026-08-01T10:09:12.684187+00:00",
+      "finalUrl": "https://tims.berkeley.edu/tools/avsafety.php",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://tims.berkeley.edu/tools/avsafety.php",
+      "url": "https://tims.berkeley.edu/tools/avsafety.php"
+    },
+    {
+      "contentSha256": "231e0827b17f825d196b18ca915232f8250db01dd43240fb4fca690346143d3b",
+      "fetchedAt": "2026-08-01T10:09:15.183141+00:00",
+      "finalUrl": "https://waymo.com/safety/impact/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/safety/impact/",
+      "url": "https://waymo.com/safety/impact/"
+    },
+    {
+      "contentSha256": "9885eccfd5fda097189a170d1a0e75b4250a8a65352deaed4d7bdb27ded6b541",
+      "fetchedAt": "2026-08-01T10:09:17.283984+00:00",
+      "finalUrl": "https://www.cpuc.ca.gov/regulatory-services/licensing/transportation-licensing-and-analysis-branch/autonomous-vehicle-programs/quarterly-reporting",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://www.cpuc.ca.gov/regulatory-services/licensing/transportation-licensing-and-analysis-branch/autonomous-vehicle-programs/quarterly-reporting",
+      "url": "https://www.cpuc.ca.gov/regulatory-services/licensing/transportation-licensing-and-analysis-branch/autonomous-vehicle-programs/quarterly-reporting"
+    },
+    {
+      "contentSha256": "ca3b54064c6fa105abdc2d38ed5dd8de20bd182ed91b8e8bb1e60c4e35311815",
+      "fetchedAt": "2026-08-01T10:09:16.400686+00:00",
+      "finalUrl": "https://www.dmv.ca.gov/portal/news-and-media/autonomous-vehicle-permit-holders-in-california-logged-more-than-9-million-test-miles-between-december-1-2024-and-november-30-2025/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.dmv.ca.gov/portal/news-and-media/autonomous-vehicle-permit-holders-in-california-logged-more-than-9-million-test-miles-between-december-1-2024-and-november-30-2025/",
+      "url": "https://www.dmv.ca.gov/portal/news-and-media/autonomous-vehicle-permit-holders-in-california-logged-more-than-9-million-test-miles-between-december-1-2024-and-november-30-2025/"
+    },
+    {
+      "contentSha256": "76e60dc7f8e31ca4e13592fde02df49e87c598ac92d49a27d70f4362dff1a230",
+      "fetchedAt": "2026-08-01T10:09:16.454426+00:00",
+      "finalUrl": "https://www.dmv.ca.gov/portal/news-and-media/dmv-highlights-new-laws-in-2025/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.dmv.ca.gov/portal/news-and-media/dmv-highlights-new-laws-in-2025/",
+      "url": "https://www.dmv.ca.gov/portal/news-and-media/dmv-highlights-new-laws-in-2025/"
+    },
+    {
+      "contentSha256": "529509358a70a2da72f9e66226697f3c8b72f50023056bef1cbef5433d1e97fc",
+      "fetchedAt": "2026-08-01T10:09:17.601931+00:00",
+      "finalUrl": "https://www.latimes.com/california/story/2026-05-01/california-can-ticket-robotaxis-that-violate-traffic-laws-heres-how",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.latimes.com/california/story/2026-05-01/california-can-ticket-robotaxis-that-violate-traffic-laws-heres-how",
+      "url": "https://www.latimes.com/california/story/2026-05-01/california-can-ticket-robotaxis-that-violate-traffic-laws-heres-how"
+    }
+  ],
+  "status": "Green"
+}

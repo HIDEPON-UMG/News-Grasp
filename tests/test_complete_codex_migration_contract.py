@@ -93,7 +93,8 @@ def test_runner_editor_uses_reporter_artifacts_as_explicit_input() -> None:
     assert "reporter_artifacts" in stage
     assert "dedup_file" in stage
     assert "source_policy = 'no_recollection'" in stage
-    assert "Invoke-CodexWrapper -PromptFile $EditorPromptFile" in stage
+    assert "$EditorAttemptPromptFile" in stage
+    assert "Invoke-CodexWrapper -PromptFile $EditorAttemptPromptFile" in stage
 
 
 def test_runner_has_no_codex_preflight_before_full_e2e() -> None:

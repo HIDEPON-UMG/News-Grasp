@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import subprocess
+from tools.model_spawn_client import run_model_process
 import sys
 from pathlib import Path
 from typing import Any
@@ -215,8 +216,9 @@ def run_codex_variant(
             *arg_list,
         ]
     with prompt_path.open("r", encoding="utf-8-sig") as stdin, log_path.open("w", encoding="utf-8") as log:
-        proc = subprocess.run(
+        proc = run_model_process(
             cmd,
+            route="model_eval",
             stdin=stdin,
             stdout=log,
             stderr=subprocess.STDOUT,

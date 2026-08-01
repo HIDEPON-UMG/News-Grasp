@@ -6,6 +6,7 @@ import argparse
 import json
 import statistics
 import subprocess
+from tools.model_spawn_client import run_model_process
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -84,8 +85,8 @@ natural_japanese, information_density, insight, non_repetition, reader_usefulnes
         "--output-schema", str(schema), "-o", str(output.resolve()), "-",
     ]
     started = time.perf_counter()
-    completed = subprocess.run(
-        cmd, input=prompt, text=True, capture_output=True, encoding="utf-8",
+    completed = run_model_process(
+        cmd, route="judge_model_benchmark", input=prompt, text=True, capture_output=True, encoding="utf-8",
         errors="replace", timeout=timeout_sec, check=False,
     )
     duration = time.perf_counter() - started

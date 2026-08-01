@@ -1,0 +1,49 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-16-DeepDive.md",
+  "articleSha256": "0bc7d205144fceea36d1781ea6863b6c75951ba6d500bdbb5c7e2c7bdc4dbede",
+  "issueDate": "2026-07-16",
+  "manifestSha256": "94239da0f45c77780ac8de5df5dd404f76a8cc303e90bf24dab3400beb8b7b89",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "7a889e679c703485e083a3bc1d15fc665b1bed75182b4eac9c525829db78c759",
+  "sources": [
+    {
+      "contentSha256": "4a4cffa2fabcb21479624a9cba798c6ba06fa248078dcdf3e93c6125f2ae5344",
+      "fetchedAt": "2026-08-01T10:09:14.549194+00:00",
+      "finalUrl": "https://www.asml.com/en/investors/financial-results/q2-2026",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.asml.com/en/investors/financial-results/q2-2026",
+      "url": "https://www.asml.com/en/investors/financial-results/q2-2026"
+    },
+    {
+      "contentSha256": "4f7e65b05237cd0ac43c79e277ecd27b86716d6f841a896d191c5e2546904623",
+      "fetchedAt": "2026-08-01T10:09:14.718199+00:00",
+      "finalUrl": "https://www.asml.com/en/investors/financial-results?icmp=navigation-homepage-link-financial-results",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs"
+      ],
+      "publicHref": "https://www.asml.com/en/investors/financial-results?icmp=navigation-homepage-link-financial-results",
+      "url": "https://www.asml.com/en/investors/financial-results?icmp=navigation-homepage-link-financial-results"
+    },
+    {
+      "contentSha256": "008c2f039ef90280930d273c87094f896d3748fcc5f31774b76da60b611a046f",
+      "fetchedAt": "2026-08-01T10:09:14.751171+00:00",
+      "finalUrl": "https://www.asml.com/en/news/press-releases/2026/q2-2026-financial-results",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.asml.com/en/news/press-releases/2026/q2-2026-financial-results",
+      "url": "https://www.asml.com/en/news/press-releases/2026/q2-2026-financial-results"
+    }
+  ],
+  "status": "Green"
+}

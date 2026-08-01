@@ -56,6 +56,9 @@ param(
     [string] $DateStampOverride = '',
     [string] $LogDirOverride = '',
     [string] $StateFileOverride = '',
+    [string] $HighCostAdmissionPath = '',
+    [string] $HighCostBudgetToolPath = '',
+    [string] $HighCostWorkspaceRoot = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
     [switch] $ForceFullRerun
@@ -161,6 +164,32 @@ if ($CodexWrapperOverride) { $CodexWrapper = $CodexWrapperOverride }
 if ($PyExeOverride) { $PyExe = $PyExeOverride }
 if ($LogDirOverride) { $LogDir = $LogDirOverride }
 if ($StateFileOverride) { $StateFile = $StateFileOverride }
+if (-not $HighCostAdmissionPath -and $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH) {
+    $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH
+}
+if (-not $HighCostBudgetToolPath -and $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH) {
+    $HighCostBudgetToolPath = $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH
+}
+if (-not $HighCostWorkspaceRoot -and $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT) {
+    $HighCostWorkspaceRoot = $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT
+}
+if (-not $HighCostWorkspaceRoot) {
+    $candidateRoot = $RepoDir
+    while ($candidateRoot) {
+        if (Test-Path -LiteralPath (Join-Path $candidateRoot 'tools\harness\model_spawn_broker.py') -PathType Leaf) {
+            $HighCostWorkspaceRoot = $candidateRoot
+            break
+        }
+        $parentRoot = Split-Path -Parent $candidateRoot
+        if (-not $parentRoot -or $parentRoot -eq $candidateRoot) { break }
+        $candidateRoot = $parentRoot
+    }
+}
+if (-not $HighCostBudgetToolPath) {
+    if ($HighCostWorkspaceRoot) {
+        $HighCostBudgetToolPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+    }
+}
 if (-not $PyExeOverride) { $PyExe = Join-Path $RepoDir '.venv\Scripts\python.exe' }
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
 $CodexOutputSchema = Join-Path $RepoDir 'schemas\model_eval_output.schema.json'
@@ -177,6 +206,8 @@ $CodexUsageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.jsonl"
 $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.jsonl"
 $script:CodexUsageEndSnapshotWritten = $false
 $RunId = [guid]::NewGuid().ToString('N')
+$script:HighCostCallSequence = 0
+$HighCostCallReceiptDir = Join-Path $RepoDir "build\high-cost-call-receipts\$DateStamp\$RunId"
 $script:RunnerCommandLine = ''
 $script:RunnerCommandLineFingerprint = ''
 $script:RunnerProcessCreationTime = ''
@@ -1253,6 +1284,10 @@ function Invoke-CodexWrapper {
         [int] $SuccessProbeIntervalSec = 30,
         [int] $SuccessProbeMinElapsedSec = 0
     )
+    $script:HighCostCallSequence += 1
+    $safeFlowName = $FlowName -replace '[^A-Za-z0-9._-]', '_'
+    $highCostCallId = "$RunId`:$FlowName`:$($script:HighCostCallSequence)"
+    $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("{0:D3}-{1}.json" -f $script:HighCostCallSequence, $safeFlowName)
     $codexArgs = @{
         'CodexExe' = $CodexExe
         'PromptFile' = $PromptFile
@@ -1264,6 +1299,12 @@ function Invoke-CodexWrapper {
         'OutputLastMessage' = $OutputLastMessage
         'FlowName' = $FlowName
         'UsageLog' = $CodexUsageLog
+        'HighCostWorkspaceRoot' = $HighCostWorkspaceRoot
+        'HighCostAdmissionPath' = $HighCostAdmissionPath
+        'HighCostBudgetToolPath' = $HighCostBudgetToolPath
+        'HighCostPythonExe' = $PyExe
+        'HighCostCallId' = $highCostCallId
+        'HighCostCallReceiptPath' = $highCostCallReceipt
     }
     if ($SuccessProbeCommand) {
         $codexArgs['SuccessProbeCommand'] = $SuccessProbeCommand
@@ -1607,12 +1648,19 @@ function Get-RepairDecisionArtifacts {
     )
     $selected = New-Object System.Collections.Generic.List[string]
     if ($null -ne $RepairDecision) {
-        foreach ($propName in @('artifact_paths', 'selected_artifacts')) {
-            if ($RepairDecision.PSObject.Properties.Name -contains $propName) {
-                foreach ($artifact in @($RepairDecision.$propName)) {
-                    $text = ([string] $artifact).Trim()
-                    if ($text) { $selected.Add($text) }
-                }
+        if ($RepairDecision.PSObject.Properties.Name -contains 'artifact_paths') {
+            foreach ($artifact in @($RepairDecision.artifact_paths)) {
+                $text = ([string] $artifact).Trim()
+                if ($text) { $selected.Add($text) }
+            }
+        }
+        if ($selected.Count -gt 0) {
+            return $selected.ToArray()
+        }
+        if ($RepairDecision.PSObject.Properties.Name -contains 'selected_artifacts') {
+            foreach ($artifact in @($RepairDecision.selected_artifacts)) {
+                $text = ([string] $artifact).Trim()
+                if ($text) { $selected.Add($text) }
             }
         }
     }
@@ -2307,6 +2355,8 @@ function Write-DistributionManifest {
         date = $DateStamp
         pre_publish_commit = $prePublishCommit
         publish_commit = ''
+        publish_commit_resolution = 'post_push_verify'
+        same_publish_contract = 'pre_publish_commit_must_equal_verified_publish_commit'
         primary_podcast_state = 'build/youtube-podcast/uploads.json'
         deepdive_podcast_state = 'build/youtube-podcast-deepdive/uploads.json'
         latest_audio_state = 'build/tts/latest_audio.json'
@@ -2333,14 +2383,35 @@ function Test-DailyArtifactsExist {
     return $false
 }
 
+function Assert-HighCostOperationAdmission {
+    if ($SmokeTest -or $PreflightOnly) { return }
+    $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
+    if ((-not $HighCostWorkspaceRoot) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf))) {
+        Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_REQUIRED' -Encoding UTF8
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_REQUIRED; local critical path remains available' -ExitCode 76
+        exit 76
+    }
+    $operationKind = 'full_e2e'
+    if ($RecoverOnly -or $ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeFromStage) {
+        $operationKind = 'resume_model'
+    }
+    & $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $RunId
+    if ($LASTEXITCODE -ne 0) {
+        Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE" -Encoding UTF8
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
+        exit 76
+    }
+}
+
 # ===== sentinel: 起動できた事実 =====
+Assert-HighCostOperationAdmission
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
 Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
 
 Add-Content -Path $LogPath -Value '' -Encoding UTF8
 Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
-Write-Log "news-grasp-runner.ps1 start (smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
+Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
 
 $gateAttemptDir = Join-Path $RepoDir 'data\gate_attempts'
 $gateAttemptArchive = Join-Path $RepoDir "build\recovery\gate-attempt-archives\$DateStamp\$RunId"
@@ -2701,6 +2772,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $lastMessage = Join-Path $ReporterArtifactDir "$waveCat.codex-last-message.json"
             $wrapperLog = Join-Path $ReporterArtifactDir "$waveCat.wrapper-attempt$Attempt.log"
             $usageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.reporter-$waveCat-attempt$Attempt.jsonl"
+            $highCostCallId = "$RunId`:reporter`:$waveCat`:$Attempt"
+            $highCostCallReceipt = Join-Path $HighCostCallReceiptDir ("reporter-{0}-attempt-{1}.json" -f $waveCat, $Attempt)
             New-ReporterPrompt -Category $waveCat -PromptFile $promptFile
 
             while (@($jobs | Where-Object { $_.State -eq 'Running' }).Count -ge $MaxParallelReporterJobs) {
@@ -2722,7 +2795,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $lastMessage,
                 $ReporterModel,
                 $ReporterReasoningEffort,
-                $usageLog
+                $usageLog,
+                $HighCostWorkspaceRoot,
+                $HighCostAdmissionPath,
+                $HighCostBudgetToolPath,
+                $PyExe,
+                $highCostCallId,
+                $highCostCallReceipt
             ) -ScriptBlock {
                 param(
                     [string]$Category,
@@ -2738,7 +2817,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$OutputLastMessage,
                     [string]$Model,
                     [string]$ReasoningEffort,
-                    [string]$UsageLog
+                    [string]$UsageLog,
+                    [string]$HighCostWorkspaceRoot,
+                    [string]$HighCostAdmissionPath,
+                    [string]$HighCostBudgetToolPath,
+                    [string]$HighCostPythonExe,
+                    [string]$HighCostCallId,
+                    [string]$HighCostCallReceiptPath
                 )
 
                 $started = Get-Date
@@ -2754,7 +2839,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -Model $Model `
                     -ReasoningEffort $ReasoningEffort `
                     -FlowName "reporter:$Category" `
-                    -UsageLog $UsageLog
+                    -UsageLog $UsageLog `
+                    -HighCostWorkspaceRoot $HighCostWorkspaceRoot `
+                    -HighCostAdmissionPath $HighCostAdmissionPath `
+                    -HighCostBudgetToolPath $HighCostBudgetToolPath `
+                    -HighCostPythonExe $HighCostPythonExe `
+                    -HighCostCallId $HighCostCallId `
+                    -HighCostCallReceiptPath $HighCostCallReceiptPath
                 $wrapperOk = $?
                 $rc = $LASTEXITCODE
                 if ($null -eq $rc) {
@@ -3000,10 +3091,22 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $editorManifest | ConvertTo-Json -Depth 8 | Set-Content -Path $EditorInputManifest -Encoding UTF8
 
     $EditorPromptFile = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-prompt-$DateStamp.md")
+    $EditorProducerContractFile = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-contract-$DateStamp-$PID.md")
     $ScheduledCategoryList = ($Categories -join ', ')
     $DateHeader = "今日の日付は $DateStamp (JST) である。Stage2 reporter artifact manifest は $EditorInputManifest にある。manifest の scheduled_categories は [$ScheduledCategoryList] で、Summary frontmatter categories/tags/sections は scheduled_categories のみ。非対象カテゴリの section を作らない。Stage1 dedup は build/deduped-candidates にある。音声原稿を作る場合は manifest の audio_script_history にある過去 2 日の path を確認し、構成・感想・締めの反復禁止と例文コピー禁止を守る。編集長は再収集せず、検証済み reporter 成果物の統合・横断 dedup 判断・Summary planning・append だけを行う。"
     $PromptBody = Get-Content -Path $PromptFile -Raw -Encoding UTF8
-    Set-Content -Path $EditorPromptFile -Value ($DateHeader + "`n`n" + $PromptBody) -Encoding UTF8
+    Push-Location $RepoDir
+    try {
+        Invoke-LoggedCapture -CapturePath $EditorProducerContractFile -Block { & $PyExe '-m' 'tools.validate_editor_output_preview' '--print-producer-contract' }
+        $editorProducerContractRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($editorProducerContractRc -ne 0) {
+        Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-contract' -Reason 'editor preview producer contract export failed' -ExitCode $editorProducerContractRc
+    }
+    $EditorProducerContract = Get-Content -Path $EditorProducerContractFile -Raw -Encoding UTF8
+    Set-Content -Path $EditorPromptFile -Value ($DateHeader + "`n`n" + $EditorProducerContract + "`n`n" + $PromptBody) -Encoding UTF8
     Write-Log "editor prompt date injected: header='$DateHeader' -> $EditorPromptFile"
 
     function New-EditorAttemptSnapshot {
@@ -3059,21 +3162,29 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $MaxAgentAttempts = 3
     $preHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
     $agentRc = $null
+    $EditorRetryFeedback = ''
     $NewsroomEditorReasoningEffort = Get-ModelPolicyValue -Role 'newsroom_editor' -Key 'reasoning'
     for ($attempt = 1; $attempt -le $MaxAgentAttempts; $attempt++) {
         $editorAttemptSnapshot = New-EditorAttemptSnapshot -Attempt $attempt
+        $EditorAttemptPromptFile = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-prompt-$DateStamp-$PID-attempt-$attempt.md")
+        $EditorAttemptPromptBody = Get-Content -Path $EditorPromptFile -Raw -Encoding UTF8
+        if ($EditorRetryFeedback) {
+            $EditorAttemptPromptBody += "`n`nEDITOR_PREVIEW_RETRY_FEEDBACK_V1`n前回出力は以下のsemantic validator理由で不採用。完成artifactを再生成し、指摘箇所を全件修正すること。`n" + $EditorRetryFeedback
+        }
+        Set-Content -Path $EditorAttemptPromptFile -Value $EditorAttemptPromptBody -Encoding UTF8
         $priorGateFailCount = [Math]::Max(0, $attempt - 1)
         $NewsroomEditorModel = Select-NewsroomEditorModel -GateFailCount $priorGateFailCount -DedupConflictCount 0 -AppendMismatch:$false -SummaryQualityScore 5 -DeepDiveThemeCount 1
         Write-Log "wrapper invoke START (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, Wrapper=$CodexWrapper, Model=$NewsroomEditorModel, ReasoningEffort=$NewsroomEditorReasoningEffort, gate_fail_count=$priorGateFailCount, TimeoutSec=$TimeoutSec, IdleTimeoutSec=$IdleTimeoutSec)"
-        $agentRc = Invoke-CodexWrapper -PromptFile $EditorPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -ReasoningEffort $NewsroomEditorReasoningEffort -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor'
+        $agentRc = Invoke-CodexWrapper -PromptFile $EditorAttemptPromptFile -TimeoutSec $TimeoutSec -IdleTimeoutSec $IdleTimeoutSec -Model $NewsroomEditorModel -ReasoningEffort $NewsroomEditorReasoningEffort -OutputSchema $EditorSummarySchema -FlowName 'newsroom_editor'
         Write-Log "wrapper invoke END (agent=codex, role=newsroom_editor, attempt=$attempt/$MaxAgentAttempts, rc=$agentRc)"
 
         if ($agentRc -eq 0) {
             $editorOutputPreview = Join-Path $ReporterArtifactDir 'editor-output.preview.json'
             Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage -ValidateOnly
+            $EditorPreviewValidationCapture = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-preview-validation-$DateStamp-$PID-attempt-$attempt.log")
             Push-Location $RepoDir
             try {
-                Invoke-Logged { & $PyExe '-m' 'tools.validate_editor_output_preview' $editorOutputPreview '--date' $DateStamp }
+                Invoke-LoggedCapture -CapturePath $EditorPreviewValidationCapture -Block { & $PyExe '-m' 'tools.validate_editor_output_preview' $editorOutputPreview '--date' $DateStamp }
                 $editorPreviewRc = $LASTEXITCODE
             } finally {
                 Pop-Location
@@ -3083,6 +3194,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 break
             }
             Write-Log "WARN: editor preview semantic validation failed attempt=$attempt rc=$editorPreviewRc; output was not materialized"
+            $EditorRetryFeedback = Get-Content -Path $EditorPreviewValidationCapture -Raw -Encoding UTF8
             Restore-EditorAttemptSnapshot -ManifestPath $editorAttemptSnapshot
             if ($attempt -ge $MaxAgentAttempts) {
                 Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-preview' -Reason 'editor preview semantic validation failed' -ExitCode $editorPreviewRc
@@ -3517,10 +3629,26 @@ foreach ($ttsStep in @(
 # LP/DeepDive 記事へ埋め込むため、docs 生成前に完了させる。
 $DeepDiveMarkdown = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive.md")
 $DeepDiveDialogueScript = Join-Path $RepoDir ("digest\DeepDive\$DateStamp-DeepDive-dialogue.md")
+$DeepDiveProvenanceManifest = Join-Path $RepoDir ("data\deepdive-provenance\$DateStamp.json")
+Write-Log "current DeepDive provenance capture start ($DateStamp)"
+Push-Location $RepoDir
+try {
+    Invoke-Logged { & $PyExe '-m' 'tools.deepdive_quality' 'capture' '--article' $DeepDiveMarkdown '--output' $DeepDiveProvenanceManifest }
+    $currentDeepDiveProvenanceRc = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+if ($currentDeepDiveProvenanceRc -ne 0) {
+    Write-Log "current DeepDive provenance capture failed (rc=$currentDeepDiveProvenanceRc). dialogue synthesis and normal publish are blocked."
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'deepdive-shared-quality' -Reason 'deepdive_url_provenance_invalid' -ExitCode $currentDeepDiveProvenanceRc
+}
+Write-Log 'current DeepDive provenance capture OK'
+
 $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--json')
 if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run', '--json') }
 foreach ($deepDiveTtsStep in @(
     @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript, '--context-pack', $DeepDiveContextPack) },
+    @{ Name = 'deepdive shared quality gate'; Args = @('-m', 'tools.deepdive_quality', '--repo-root', $RepoDir, 'audit-issue', '--date', $DateStamp) },
     @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
     @{ Name = 'deepdive dialogue publish'; Args = $deepDiveTtsPublishArgs }
 )) {
@@ -3587,20 +3715,6 @@ if ($NoPublish) {
 # generate_pages.py 失敗時に digest md のみ origin 公開 + docs HTML 古いままという
 # illegal state を表現可能だった。新構造は build 失敗で exit 1 → push 自体が走らない
 # = サイレント公開停止が構造的に消える。
-Write-Log "current DeepDive URL gate start (validate_deepdive_urls $DateStamp)"
-Push-Location $RepoDir
-try {
-    Invoke-Logged { & $PyExe '-m' 'tools.validate_deepdive_urls' "digest\DeepDive\$DateStamp-DeepDive.md" }
-    $currentDeepDiveUrlRc = $LASTEXITCODE
-} finally {
-    Pop-Location
-}
-if ($currentDeepDiveUrlRc -ne 0) {
-    Write-Log "current DeepDive URL gate failed (rc=$currentDeepDiveUrlRc). normal publish is blocked."
-    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'current-deepdive-url' -Reason 'current DeepDive URL validation failed' -ExitCode $currentDeepDiveUrlRc
-}
-Write-Log 'current DeepDive URL gate OK'
-
 Write-Log 'generate_pages.py start'
 $previousGeneratePagesSkipUrlCheck = $env:NEWS_GRASP_SKIP_URL_CHECK
 Push-Location $RepoDir

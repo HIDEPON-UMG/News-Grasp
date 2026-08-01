@@ -136,6 +136,7 @@ cat → Genre（digest フォルダ名）の対応：
 - `dedup.py` は `articles.jsonl` の **全エントリ**（過去何日でも）と照合する。判定ロジック（URL 正規化一致は経過時間に関係なく常に除外 / タイトル類似 0.42 / cross-language トークン一致 / 鮮度ゲート）は **`tools/dedup.py` が唯一の正本**。自前のワンライナーや目視で代替しないこと。
 - **古記事の「背景文脈」採用の禁止**：発行日が古い記事を「文脈補強」「重要だから」等の裁量で記事カードに採用してはならない（背景は本文の言及に留める。過去号への `[[関連過去号]]` リンクは可）。
 - **注釈の確認**：通過候補には公開日が解決できた場合 `published_date` と `date_evidence_source`（`url-path` / `url-path-month` / `htmldate`）が付く。`date_evidence_source` が無い候補は、採用前に元記事を開いて公開日を確認し、根拠種別を記録できない限り採用しない。`published_date` だけを書いて source を省略した record は `verify_reporter_output` と generation-quality gate が FAIL にする。
+- **RSS 時刻の禁止**：Google News / RSS の `pubDate` はフィードへ載った時刻であり、元記事の公開日証拠ではない。`rss-pubDate` / `rss_pubDate` / `google-news-rss` を `date_evidence_source` に書いてはならない。元記事本文・メタデータ・URL 日付を独立確認できない候補は、当日性を自己申告で補わず drop する。
 
 ### R2-E. 続報の新材料確認（dedup.py 通過後・小プールカテゴリ向け）
 

@@ -19,7 +19,10 @@ param(
     [string] $LogDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-logs'),
     [string] $DateStamp = (Get-Date -Format 'yyyy-MM-dd'),
     [string] $RepoDir = '',
-    [string] $BinDir = ''
+    [string] $BinDir = '',
+    [string] $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH,
+    [string] $HighCostBudgetToolPath = $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH,
+    [string] $HighCostWorkspaceRoot = $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT
 )
 
 $ErrorActionPreference = 'Stop'
@@ -409,6 +412,15 @@ function Start-RunnerProcess {
     $args += @('-DateStampOverride', $DateStamp)
     $args += @('-LogDirOverride', $LogDir)
     $args += @('-StateFileOverride', $StateFile)
+    if ($HighCostAdmissionPath) {
+        $args += @('-HighCostAdmissionPath', $HighCostAdmissionPath)
+    }
+    if ($HighCostBudgetToolPath) {
+        $args += @('-HighCostBudgetToolPath', $HighCostBudgetToolPath)
+    }
+    if ($HighCostWorkspaceRoot) {
+        $args += @('-HighCostWorkspaceRoot', $HighCostWorkspaceRoot)
+    }
     return Start-Process -FilePath 'powershell' -ArgumentList $args -WindowStyle Hidden -PassThru
 }
 

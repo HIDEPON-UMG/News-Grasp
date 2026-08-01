@@ -105,7 +105,7 @@ def test_run_codex_case_stops_after_stable_raw_answer(tmp_path: Path, monkeypatc
         killed.append(proc.pid)
         proc.returncode = -9
 
-    monkeypatch.setattr(bench.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr(bench, "popen_model_process", FakePopen)
     monkeypatch.setattr(bench, "_kill_process_tree", fake_kill)
 
     record = bench.run_codex_case(

@@ -106,6 +106,12 @@ def _live_runner_readiness_ok() -> dict:
         "repo_runner": {"exists": True, "sha256": "runner-sha"},
         "live_runner": {"exists": True, "sha256": "runner-sha"},
         "scheduled_task": {"ok": True, "task_name": "News-Grasp Runner", "targets_live_runner": True},
+        "next_run_readiness": {"ok": True, "status": "ready"},
+        "last_scheduled_attempt": {
+            "status": "failed",
+            "last_task_result": 72,
+            "last_run_time": "2026-06-20T06:00:00",
+        },
         "canary": {"ok": True, "status": "smoke_ok", "returncode": 0},
     }
 
@@ -1567,6 +1573,8 @@ def _write_publish_complete_inventory(
             "date": date,
             "pre_publish_commit": PUBLISH_COMMIT,
             "publish_commit": "",
+            "publish_commit_resolution": "post_push_verify",
+            "same_publish_contract": "pre_publish_commit_must_equal_verified_publish_commit",
             "primary_podcast_state": "build/youtube-podcast/uploads.json",
             "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
             "latest_audio_state": "build/tts/latest_audio.json",
@@ -2035,6 +2043,10 @@ def test_verify_live_runner_readiness_accepts_bootstrap_before_direct_runner(mon
     assert result["scheduled_task"]["direct_runner_pre_run_interlock"] is True
     assert result["scheduled_task"]["direct_runner_pre_run_reexec"] is True
     assert result["scheduled_task"]["bootstrap_repairs_before_run"] is True
+    assert result["status"] == "ready_with_failed_last_schedule"
+    assert result["next_run_readiness"]["ok"] is True
+    assert result["last_scheduled_attempt"]["status"] == "failed"
+    assert result["last_scheduled_attempt"]["last_task_result"] == 72
 
 
 def test_verify_live_runner_readiness_rejects_bootstrap_last_result_failure(monkeypatch, tmp_path: Path) -> None:
@@ -2475,6 +2487,36 @@ def test_verify_publish_complete_requires_distribution_commit_anchor(monkeypatch
     assert result["reason"] == "distribution_manifest_commit_missing"
 
 
+def test_verify_publish_complete_rejects_empty_publish_commit_without_resolution(monkeypatch, tmp_path: Path) -> None:
+    """pre-push manifest の空 publish_commit は post-push same-publish 契約なしでは受理しない。"""
+    _write_publish_complete_inventory(
+        tmp_path,
+        distribution_manifest={
+            "date": "2026-06-20",
+            "pre_publish_commit": PUBLISH_COMMIT,
+            "publish_commit": "",
+            "primary_podcast_state": "build/youtube-podcast/uploads.json",
+            "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
+            "latest_audio_state": "build/tts/latest_audio.json",
+            "deepdive_audio_state": "build/tts/deepdive/latest_audio.json",
+            "generated_at": "2026-06-20T00:00:00+09:00",
+        },
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "distribution_manifest_publish_commit_resolution_missing"
+
+
 def test_verify_publish_complete_rejects_distribution_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
     """distribution manifest の commit anchor が公開検証 commit と違えば完了にしない。"""
     _write_publish_complete_inventory(
@@ -2482,6 +2524,9 @@ def test_verify_publish_complete_rejects_distribution_commit_mismatch(monkeypatc
         distribution_manifest={
             "date": "2026-06-20",
             "pre_publish_commit": "b" * 40,
+            "publish_commit": "",
+            "publish_commit_resolution": "post_push_verify",
+            "same_publish_contract": "pre_publish_commit_must_equal_verified_publish_commit",
             "primary_podcast_state": "build/youtube-podcast/uploads.json",
             "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
             "latest_audio_state": "build/tts/latest_audio.json",
@@ -2525,6 +2570,8 @@ def test_verify_publish_complete_rejects_manifest_missing_from_head_tree(monkeyp
             "date": "2026-06-20",
             "pre_publish_commit": head,
             "publish_commit": "",
+            "publish_commit_resolution": "post_push_verify",
+            "same_publish_contract": "pre_publish_commit_must_equal_verified_publish_commit",
             "primary_podcast_state": "build/youtube-podcast/uploads.json",
             "deepdive_podcast_state": "build/youtube-podcast-deepdive/uploads.json",
             "latest_audio_state": "build/tts/latest_audio.json",
@@ -2710,6 +2757,9 @@ def test_verify_publish_complete_records_notification_state(monkeypatch, tmp_pat
     assert result["ok"] is True
     assert result["notification"]["status"] == "no_subscribers"
     assert result["live_runner_readiness"]["ok"] is True
+    assert result["public_status"] == "green"
+    assert result["scheduled_attempt_status"] == "failed_then_recovered"
+    assert result["recovery_attempt_status"] == "succeeded"
 
 
 def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Path, capsys) -> None:

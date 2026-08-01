@@ -131,3 +131,39 @@ def test_verify_public_surface_returns_to_full_publish_complete_for_google_api(m
     assert result["overall_status"] == "yellow"
     assert result["exit_code"] == 10
     assert result["proof"]["external_block_code"] == "google_api_external"
+
+
+def test_verify_public_surface_keeps_public_and_scheduled_attempt_status_separate(monkeypatch, tmp_path: Path) -> None:
+    """公開 Green が recovery 後でも、06:00 scheduled failure を上書きしない。"""
+    monkeypatch.setattr(verify_public_surface, "_local_head", lambda _repo: HEAD)
+    monkeypatch.setattr(verify_public_surface, "_remote_head", lambda *_args: HEAD)
+    monkeypatch.setattr(
+        verify_public_surface.publish_inventory,
+        "required_published_repair_artifacts",
+        lambda _date: ["docs/index.html", "docs/publish-status.json"],
+    )
+    monkeypatch.setattr(
+        verify_public_surface.daily_self_heal,
+        "verify_publish_complete",
+        lambda **_kwargs: {
+            "ok": True,
+            "public_status": "green",
+            "scheduled_attempt_status": "failed_then_recovered",
+            "recovery_attempt_status": "succeeded",
+        },
+    )
+
+    result = verify_public_surface.verify_public_surface(
+        date="2026-06-26",
+        repo_root=tmp_path,
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.test/News-Grasp/",
+        wait_sec=0,
+        poll_sec=30,
+    )
+
+    assert result["overall_status"] == "green"
+    assert result["public_status"] == "green"
+    assert result["scheduled_attempt_status"] == "failed_then_recovered"
+    assert result["recovery_attempt_status"] == "succeeded"

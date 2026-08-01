@@ -1,0 +1,68 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-10-DeepDive.md",
+  "articleSha256": "4120a6cd3068e5f37d9944c00ff50813013aba6d661bfaead6dd95e10c658bf4",
+  "issueDate": "2026-07-10",
+  "manifestSha256": "8d48c70538882c2642a3a2ddff6e917cf8670c3ea85efca41b03587c2d2ad8cc",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "69d05f2c905e0814470c913b1842b3b906b2f07ffae2eec0954f30143a50ea2b",
+  "sources": [
+    {
+      "contentSha256": "6fe6114ea4e116572c7ee8d98e14bc572c3da09117f2ad4eb7451da30aeda9fd",
+      "fetchedAt": "2026-08-01T10:29:17.876302+00:00",
+      "finalUrl": "https://www.boj.or.jp/en/statistics/market/forex/fxdaily/fxlist/fx260707.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.boj.or.jp/en/statistics/market/forex/fxdaily/fxlist/fx260707.pdf",
+      "url": "https://www.boj.or.jp/en/statistics/market/forex/fxdaily/fxlist/fx260707.pdf"
+    },
+    {
+      "contentSha256": "152c8307d2a6f8d6ce703f0945dfc76a29dbb183a4526b579bd28a8e084ee7ea",
+      "fetchedAt": "2026-08-01T10:29:19.625498+00:00",
+      "finalUrl": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260611~4d41bd5e83.en.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260611~4d41bd5e83.en.html",
+      "url": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260611~4d41bd5e83.en.html"
+    },
+    {
+      "contentSha256": "7283fa900f37bbd92fdd10ef85c626e9078e503c82347d72570378d8d9d17d53",
+      "fetchedAt": "2026-08-01T10:29:18.304676+00:00",
+      "finalUrl": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "contentSha256": "f4c31442a2e82f37271158d86088cf293eb0214ac9f36f60c7212fec794aaa05",
+      "fetchedAt": "2026-08-01T10:29:19.709065+00:00",
+      "finalUrl": "https://www.mof.go.jp/english/policy/jgbs/auction/calendar/eresul/eresul20260709a.htm",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.mof.go.jp/english/policy/jgbs/auction/calendar/eresul/eresul20260709a.htm",
+      "url": "https://www.mof.go.jp/english/policy/jgbs/auction/calendar/eresul/eresul20260709a.htm"
+    }
+  ],
+  "status": "Green"
+}

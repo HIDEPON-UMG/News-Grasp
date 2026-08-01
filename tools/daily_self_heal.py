@@ -595,6 +595,7 @@ def verify_live_runner_readiness(
     result = {
         "ok": False,
         "reason": "",
+        "status": "not_ready",
         "date": date,
         "repo_runner": {
             "path": str(repo_runner),
@@ -627,6 +628,8 @@ def verify_live_runner_readiness(
             "sha256": bootstrap_checksum["live_sha256"],
         },
         "scheduled_task": {},
+        "next_run_readiness": {"ok": False, "status": "not_ready"},
+        "last_scheduled_attempt": {"status": "unknown", "last_task_result": None, "last_run_time": ""},
         "canary": {},
     }
     if not runner_checksum["repo_exists"]:
@@ -649,6 +652,18 @@ def verify_live_runner_readiness(
         return {**result, "reason": "live_bootstrap_hash_mismatch"}
 
     task_details = _scheduled_task_details(task_name=task_name, powershell_exe=powershell_exe)
+    last_task_result = task_details.get("last_task_result")
+    if last_task_result == 0:
+        last_scheduled_status = "succeeded"
+    elif last_task_result is None:
+        last_scheduled_status = "unknown"
+    else:
+        last_scheduled_status = "failed"
+    result["last_scheduled_attempt"] = {
+        "status": last_scheduled_status,
+        "last_task_result": last_task_result,
+        "last_run_time": task_details.get("last_run_time") or "",
+    }
     action_summary = str(task_details.get("action_summary") or "")
     action_text = _command_path_text(action_summary)
     watcher_text = _command_path_text(live_watcher_path)
@@ -734,6 +749,7 @@ def verify_live_runner_readiness(
         "action_summary": action_summary,
         "state": task_details.get("state"),
         "next_run_time": task_details.get("next_run_time"),
+        "last_run_time": task_details.get("last_run_time"),
         "last_task_result": task_details.get("last_task_result"),
         "number_of_missed_runs": task_details.get("number_of_missed_runs"),
         "trigger_start_minutes": runner_start,
@@ -827,7 +843,15 @@ def verify_live_runner_readiness(
             return {**result, "reason": str(canary.get("reason") or "canary_failed")}
     else:
         result["canary"] = {"ok": True, "skipped": True}
-    return {**result, "ok": True, "reason": ""}
+    ready_status = "ready" if last_scheduled_status == "succeeded" else f"ready_with_{last_scheduled_status}_last_schedule"
+    result["next_run_readiness"] = {
+        "ok": True,
+        "status": "ready",
+        "next_run_time": task_details.get("next_run_time"),
+        "number_of_missed_runs": task_details.get("number_of_missed_runs"),
+        "canary_status": result["canary"].get("status", "skipped"),
+    }
+    return {**result, "ok": True, "reason": "", "status": ready_status}
 
 
 def normalize_failure_signature(
@@ -1785,6 +1809,15 @@ def _distribution_artifact_manifest(repo_root: Path, date: str) -> dict:
             pre_publish_commit = str(manifest.get("pre_publish_commit") or "").strip()
             if not re.fullmatch(r"[0-9a-fA-F]{7,40}", pre_publish_commit):
                 manifest_reason = "distribution_manifest_commit_missing"
+            else:
+                publish_commit = str(manifest.get("publish_commit") or "").strip()
+                resolution = str(manifest.get("publish_commit_resolution") or "").strip()
+                same_publish_contract = str(manifest.get("same_publish_contract") or "").strip()
+                if not publish_commit and (
+                    resolution != "post_push_verify"
+                    or same_publish_contract != "pre_publish_commit_must_equal_verified_publish_commit"
+                ):
+                    manifest_reason = "distribution_manifest_publish_commit_resolution_missing"
     return {
         "required": required,
         "missing": missing,
@@ -1813,6 +1846,9 @@ def verify_publish_complete(
     base = {
         "ok": False,
         "reason": "",
+        "public_status": "red",
+        "scheduled_attempt_status": "unknown",
+        "recovery_attempt_status": "not_verified",
         "date": date,
         "distribution_artifacts": distribution,
     }
@@ -1890,10 +1926,25 @@ def verify_publish_complete(
     if not live_readiness.get("ok"):
         return {**manifest, "reason": str(live_readiness.get("reason") or "live_runner_readiness_failed")}
 
+    last_scheduled = dict(live_readiness.get("last_scheduled_attempt") or {})
+    last_scheduled_status = str(last_scheduled.get("status") or "unknown")
+    if last_scheduled_status == "succeeded":
+        scheduled_attempt_status = "succeeded"
+        recovery_attempt_status = "not_required"
+    elif last_scheduled_status == "failed":
+        scheduled_attempt_status = "failed_then_recovered"
+        recovery_attempt_status = "succeeded"
+    else:
+        scheduled_attempt_status = "unknown_then_recovered"
+        recovery_attempt_status = "succeeded"
+
     return {
         **manifest,
         "ok": True,
         "reason": "",
+        "public_status": "green",
+        "scheduled_attempt_status": scheduled_attempt_status,
+        "recovery_attempt_status": recovery_attempt_status,
         "publish_commit": local_head,
         "same_publish": {
             "date": date,
@@ -1902,6 +1953,12 @@ def verify_publish_complete(
             "publish_commit": local_head,
             "distribution_date": str(distribution_manifest.get("date") or ""),
             "distribution_pre_publish_commit": pre_publish_commit,
+            "distribution_publish_commit_resolution": str(
+                distribution_manifest.get("publish_commit_resolution") or ""
+            ),
+            "distribution_same_publish_contract": str(
+                distribution_manifest.get("same_publish_contract") or ""
+            ),
         },
     }
 

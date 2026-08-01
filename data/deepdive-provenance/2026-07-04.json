@@ -1,0 +1,99 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-04-DeepDive.md",
+  "articleSha256": "ca5b40fcee613a91a70f37b06e8d7c0491352183e4d24e7bfb05a23f85d056be",
+  "issueDate": "2026-07-04",
+  "manifestSha256": "40a03188d5770e88b779a9735480951e866873eb03cfc9bd82b60d1bfe8b4fe0",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "9dbf60609f4b3864354c148f0b877156e8c6b298306c0a4407cae2ac357e147b",
+  "sources": [
+    {
+      "contentSha256": "1b4f8ec78876fc348ce4e029e38c6dd8ca5901755466a7042f52ba1d9f532e95",
+      "fetchedAt": "2026-08-01T10:09:09.533615+00:00",
+      "finalUrl": "https://group.softbank/en/news/press/20250401",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://group.softbank/en/news/press/20250401",
+      "url": "https://group.softbank/en/news/press/20250401"
+    },
+    {
+      "contentSha256": "9c73279d0fcde4d77b337ffd3c4afc304048577c7caa48f090409cb4d6003428",
+      "fetchedAt": "2026-08-01T10:09:10.521559+00:00",
+      "finalUrl": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Reports-Fourth-Quarter-and-Full-Year-2024-Results/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Reports-Fourth-Quarter-and-Full-Year-2024-Results/",
+      "url": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Reports-Fourth-Quarter-and-Full-Year-2024-Results/"
+    },
+    {
+      "contentSha256": "4ec3ae2e879ff31fb8a839ec7f05fcaa3ec440b16dade3ade48e91ac33bb0d7e",
+      "fetchedAt": "2026-08-01T10:09:12.418162+00:00",
+      "finalUrl": "https://techblog.comsoc.org/2026/07/01/bloomberg-meta-to-sell-ai-compute-in-a-new-cloud-services-offering/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://techblog.comsoc.org/2026/07/01/bloomberg-meta-to-sell-ai-compute-in-a-new-cloud-services-offering/",
+      "url": "https://techblog.comsoc.org/2026/07/01/bloomberg-meta-to-sell-ai-compute-in-a-new-cloud-services-offering/"
+    },
+    {
+      "contentSha256": "096e62e38c225001daea0faec06f66134412251642317de5a47476f9bbda98d9",
+      "fetchedAt": "2026-08-01T10:09:12.200609+00:00",
+      "finalUrl": "https://techcrunch.com/2026/07/02/anthropic-is-discussing-a-new-custom-chip-with-samsung/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://techcrunch.com/2026/07/02/anthropic-is-discussing-a-new-custom-chip-with-samsung/",
+      "url": "https://techcrunch.com/2026/07/02/anthropic-is-discussing-a-new-custom-chip-with-samsung/"
+    },
+    {
+      "contentSha256": "7da5bdc06c3256f778a7be2d6ce0cd7f79fac5dd1c82afbe9d8774c0ec8d2a33",
+      "fetchedAt": "2026-08-01T10:09:13.451176+00:00",
+      "finalUrl": "https://www.aboutamazon.com/news/aws/amazon-invests-additional-4-billion-anthropic-ai",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.aboutamazon.com/news/aws/amazon-invests-additional-4-billion-anthropic-ai",
+      "url": "https://www.aboutamazon.com/news/aws/amazon-invests-additional-4-billion-anthropic-ai"
+    },
+    {
+      "contentSha256": "882e39d1a1798212845c287c762da23d42024037de09165628dec6986e89e274",
+      "fetchedAt": "2026-08-01T10:09:20.071628+00:00",
+      "finalUrl": "https://www.theguardian.com/technology/2026/jul/02/openai-stake-us-government-ai-sam-altman",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.theguardian.com/technology/2026/jul/02/openai-stake-us-government-ai-sam-altman",
+      "url": "https://www.theguardian.com/technology/2026/jul/02/openai-stake-us-government-ai-sam-altman"
+    }
+  ],
+  "status": "Green"
+}

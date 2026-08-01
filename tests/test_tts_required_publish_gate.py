@@ -80,3 +80,24 @@ def test_tts_audio_presence_allows_complete_fixture(tmp_path: Path) -> None:
         docs_root=tmp_path / "docs",
         issue=ISSUE,
     ) == []
+
+
+def test_tts_audio_presence_uses_date_summary_for_historical_audit(tmp_path: Path) -> None:
+    """過去日監査は現在日のlatest/homeを過去成果物へ誤適用しない。"""
+    _write_complete_fixture(tmp_path)
+    current_url = AUDIO_URL.replace("2026-06-17", "2026-06-18")
+    (tmp_path / "build" / "tts" / "latest_audio.json").write_text(
+        json.dumps({"latest_audio_date": "2026-06-18", "latest_audio_url": current_url}),
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "index.html").write_text(
+        f'<audio controls src="{current_url}"></audio>',
+        encoding="utf-8",
+    )
+
+    assert validate_tts_audio_presence(
+        repo_root=tmp_path,
+        digest_root=tmp_path / "digest",
+        docs_root=tmp_path / "docs",
+        issue=ISSUE,
+    ) == []

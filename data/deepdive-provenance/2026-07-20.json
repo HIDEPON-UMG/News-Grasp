@@ -1,0 +1,90 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-20-DeepDive.md",
+  "articleSha256": "815c70ecbf31cd1da2d534c227c960c4644c0a95ebd2e16f264e4944517c9772",
+  "issueDate": "2026-07-20",
+  "manifestSha256": "d3ae6fbd36079785bd80adce5c3ff852949a63a012c3dba80c863ffbd587390a",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "5926fcc810907e28baff978c2d914b4654f76970e2f42d195c4260929303d821",
+  "sources": [
+    {
+      "contentSha256": "43e06749efc7aa685416074a8cef1fc3d53cf90626e58895c54d0df2c49052fa",
+      "fetchedAt": "2026-08-01T10:29:17.919991+00:00",
+      "finalUrl": "https://www.digital.go.jp/policies/genai",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.digital.go.jp/policies/genai",
+      "url": "https://www.digital.go.jp/policies/genai"
+    },
+    {
+      "contentSha256": "e03c8e7511988f453fd2f9f62241d4d4cffc8ba6698f64d5d170c4f410463b54",
+      "fetchedAt": "2026-08-01T10:29:18.764740+00:00",
+      "finalUrl": "https://www.ipa.go.jp/pressrelease/2026/press20260716.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.ipa.go.jp/pressrelease/2026/press20260716.html",
+      "url": "https://www.ipa.go.jp/pressrelease/2026/press20260716.html"
+    },
+    {
+      "contentSha256": "3bb8f71610e311f71d5576915b854720f1a6fa9bbcb2b9cb6aacdedaa80c2e81",
+      "fetchedAt": "2026-08-01T10:29:19.132852+00:00",
+      "finalUrl": "https://www.meti.go.jp/press/2026/06/20260630005/20260630005.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.meti.go.jp/press/2026/06/20260630005/20260630005.html",
+      "url": "https://www.meti.go.jp/press/2026/06/20260630005/20260630005.html"
+    },
+    {
+      "contentSha256": "129b63a8cf205cbc13329b73fb92e8116e503f3d90c27e3dde8dd4aed488850f",
+      "fetchedAt": "2026-08-01T10:29:19.947112+00:00",
+      "finalUrl": "https://www8.cao.go.jp/cstp/ai/ai_plan/ai_plan.html?s=09",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www8.cao.go.jp/cstp/ai/ai_plan/ai_plan.html?s=09",
+      "url": "https://www8.cao.go.jp/cstp/ai/ai_plan/ai_plan.html?s=09"
+    },
+    {
+      "contentSha256": "4e63dfe86c6a3516e708a031b0d4ad1c85e42f5362f8ccc71975a243ebf747d6",
+      "fetchedAt": "2026-08-01T10:29:20.058510+00:00",
+      "finalUrl": "https://www8.cao.go.jp/cstp/ai/ai_plan/aiplan_20260714.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://www8.cao.go.jp/cstp/ai/ai_plan/aiplan_20260714.pdf",
+      "url": "https://www8.cao.go.jp/cstp/ai/ai_plan/aiplan_20260714.pdf"
+    },
+    {
+      "contentSha256": "d5fed660c96a35e34fce30f6e6f6b266db0760dfef871a86b756845cf0ed7974",
+      "fetchedAt": "2026-08-01T10:29:20.051500+00:00",
+      "finalUrl": "https://www8.cao.go.jp/cstp/ai/yosan_suii.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www8.cao.go.jp/cstp/ai/yosan_suii.pdf",
+      "url": "https://www8.cao.go.jp/cstp/ai/yosan_suii.pdf"
+    }
+  ],
+  "status": "Green"
+}

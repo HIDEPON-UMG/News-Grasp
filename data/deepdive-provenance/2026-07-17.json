@@ -1,0 +1,86 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-17-DeepDive.md",
+  "articleSha256": "09a0ba264de0056d919a5b2cb729c5bfdb5be5e3ddd9904a492c28913190ffd4",
+  "issueDate": "2026-07-17",
+  "manifestSha256": "e9a9c9c87c667306c989a11f5f44b7c9586d568ede256037376d8b83056ec0b9",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "57aafdd0d934787944864c86b95e6dfb115289717ba0fda2ba5f3bed599b207d",
+  "sources": [
+    {
+      "contentSha256": "5f9041c2471137da1eb6aecb203ba3474073c0b64a73c6c0764f29956ee0a939",
+      "fetchedAt": "2026-08-01T10:09:08.785077+00:00",
+      "finalUrl": "https://en.yna.co.kr/view/AEN20260713002400320",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://en.yna.co.kr/view/AEN20260713002400320",
+      "url": "https://en.yna.co.kr/view/AEN20260713002400320"
+    },
+    {
+      "contentSha256": "4a3ae24fa50d0095044e2436d82f33a9255e4857dfbfba48e7d799ece029371d",
+      "fetchedAt": "2026-08-01T10:09:10.527905+00:00",
+      "finalUrl": "https://jp.yna.co.kr/view/AJP20260715003300882",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs"
+      ],
+      "publicHref": "https://jp.yna.co.kr/view/AJP20260715003300882",
+      "url": "https://jp.yna.co.kr/view/AJP20260715003300882"
+    },
+    {
+      "contentSha256": "292683a71d927daa219c45c93fdc75701e4359f4092763f5e12c7fc22bbf27a0",
+      "fetchedAt": "2026-08-01T10:09:15.801815+00:00",
+      "finalUrl": "https://www.bok.or.kr/eng/bbs/E0000628/view.do?depth=400215&menuNo=400215&nttId=10096921&oldMenuNo=400007&programType=newsDataEng&relate=Y",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.bok.or.kr/eng/bbs/E0000628/view.do?depth=400215&menuNo=400215&nttId=10096921&oldMenuNo=400007&programType=newsDataEng&relate=Y",
+      "url": "https://www.bok.or.kr/eng/bbs/E0000628/view.do?depth=400215&menuNo=400215&nttId=10096921&oldMenuNo=400007&programType=newsDataEng&relate=Y"
+    },
+    {
+      "contentSha256": "685774ea3746ef069f06de9a10e93edbdb8c7f243d1ff14d8efc14fa9590cd06",
+      "fetchedAt": "2026-08-01T10:09:15.801815+00:00",
+      "finalUrl": "https://www.bok.or.kr/eng/bbs/E0000634/view.do?depth=400069&menuNo=400069&nttId=11062944&oldMenuNo=400007&programType=newsDataEng&relate=Y",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bok.or.kr/eng/bbs/E0000634/view.do?depth=400069&menuNo=400069&nttId=11062944&oldMenuNo=400007&programType=newsDataEng&relate=Y",
+      "url": "https://www.bok.or.kr/eng/bbs/E0000634/view.do?depth=400069&menuNo=400069&nttId=11062944&oldMenuNo=400007&programType=newsDataEng&relate=Y"
+    },
+    {
+      "contentSha256": "dc1faa77995c1f394d08b2c0dd1f6dbeb9897f9b3ddac81e1bf869560a80657e",
+      "fetchedAt": "2026-08-01T10:09:15.834848+00:00",
+      "finalUrl": "https://www.bok.or.kr/portal/bbs/P0000559/view.do?depth=200690&menuNo=200690&nttId=11062942&programType=newsData&relate=Y",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.bok.or.kr/portal/bbs/P0000559/view.do?depth=200690&menuNo=200690&nttId=11062942&programType=newsData&relate=Y",
+      "url": "https://www.bok.or.kr/portal/bbs/P0000559/view.do?depth=200690&menuNo=200690&nttId=11062942&programType=newsData&relate=Y"
+    },
+    {
+      "contentSha256": "9fb07027ede7d3828acd7014770ef9e38d9cb7f0ca36ccb97d50f4ce2354d04e",
+      "fetchedAt": "2026-08-01T10:09:18.541501+00:00",
+      "finalUrl": "https://www.newsweekjapan.jp/articles/-/328591",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.newsweekjapan.jp/articles/-/328591",
+      "url": "https://www.newsweekjapan.jp/articles/-/328591"
+    }
+  ],
+  "status": "Green"
+}

@@ -17,6 +17,7 @@ SETUP_DOC = ROOT / "SETUP.md"
 POWERSHELL = os.environ.get("NEWS_GRASP_POWERSHELL", "powershell")
 OPS_DIR = ROOT / "scripts" / "ops"
 RUNNER_PS1 = Path(os.environ.get("NEWS_GRASP_RUNNER", str(OPS_DIR / "news-grasp-runner.ps1")))
+SCHEDULED_EQUIVALENT_PS1 = OPS_DIR / "invoke-scheduled-equivalent-nopublish.ps1"
 WATCHER_PS1 = Path(os.environ.get("NEWS_GRASP_WATCHER", str(OPS_DIR / "watch-news-grasp-runner.ps1")))
 
 
@@ -770,6 +771,19 @@ def test_runner_invokes_repair_registry_before_llm_worker() -> None:
     assert repair_body.index("Invoke-DeterministicRegistryRepair") < repair_body.index("Invoke-CodexWrapper")
 
 
+def test_runner_scopes_each_compound_repair_to_primary_issue_artifacts() -> None:
+    """ledger全体のselected_artifactsを単一issueのrepair scopeへ混ぜない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    helper = runner.split("function Get-RepairDecisionArtifacts", 1)[1].split(
+        "function Invoke-DeterministicRegistryRepair", 1
+    )[0]
+
+    artifact_paths = helper.index("'artifact_paths'")
+    primary_return = helper.index("return $selected.ToArray()")
+    selected_artifacts = helper.index("'selected_artifacts'")
+    assert artifact_paths < primary_return < selected_artifacts
+
+
 def test_runner_does_not_report_registry_noop_as_repair_success() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
@@ -1255,8 +1269,9 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
 
     expected = {
         ("distribution", "distribution-manifest"),
-        ("content", "newsroom-editor-timeout"),
-        ("content", "newsroom-editor-preview"),
+            ("content", "newsroom-editor-timeout"),
+            ("content", "newsroom-editor-contract"),
+            ("content", "newsroom-editor-preview"),
         ("content", "newsroom-editor-workspace"),
         ("content", "summary-reflection"),
         ("content", "daily-quality"),
@@ -1269,7 +1284,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
         ("local-tool", "pytest-static"),
         ("local-tool", "daily-tts"),
         ("local-tool", "deepdive-tts"),
-        ("content", "current-deepdive-url"),
+        ("content", "deepdive-shared-quality"),
         ("local-tool", "generate-pages"),
         ("content", "deepdive-required"),
         ("content", "public-html"),
@@ -1311,7 +1326,7 @@ def test_pytest_static_gate_skips_historical_url_liveness_checks() -> None:
 def test_generate_pages_skips_historical_deepdive_url_liveness_after_current_gate() -> None:
     """SSG は過去 DeepDive URL の経年 404 で本日 publish を止めない。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
-    current_gate = "current DeepDive URL gate start"
+    current_gate = "current DeepDive provenance capture start"
     generate_start = "generate_pages.py start"
     deepdive_required = "deepdive required gate start"
 
@@ -1320,6 +1335,39 @@ def test_generate_pages_skips_historical_deepdive_url_liveness_after_current_gat
     assert "$env:NEWS_GRASP_SKIP_URL_CHECK = '1'" in block
     assert "tools\\generate_pages.py" in block
     assert "tools.validate_deepdive_urls" not in block
+
+
+def test_current_deepdive_url_gate_cannot_inherit_skip_environment() -> None:
+    """本番復帰時のURL gateは親プロセスのskip設定を継承してはならない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    start = runner.index('Write-Log "current DeepDive provenance capture start')
+    end = runner.index("Write-Log 'current DeepDive provenance capture OK'", start)
+    block = runner[start:end]
+
+    assert "tools.deepdive_quality" in block
+    assert "'capture'" in block
+    assert "NEWS_GRASP_SKIP_URL_CHECK" not in block
+
+
+def test_runner_requires_deepdive_dialogue_value_gate_before_synthesis() -> None:
+    """全復帰経路で価値台帳を通さず音声・公開へ進めない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    build = "deepdive dialogue script build"
+    value_gate = "deepdive shared quality gate"
+    synth = "deepdive dialogue synthesize"
+    assert runner.index(build) < runner.index(value_gate) < runner.index(synth)
+    assert "tools.deepdive_quality" in runner[runner.index(value_gate):runner.index(synth)]
+    assert "audit-issue" in runner[runner.index(value_gate):runner.index(synth)]
+
+
+def test_runner_rejects_bad_deepdive_urls_before_dialogue_synthesis() -> None:
+    """不良URLへ音声合成・公開リソースを投入しない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    url_gate = 'Write-Log "current DeepDive provenance capture start'
+    build = "deepdive dialogue script build"
+    synth = "deepdive dialogue synthesize"
+    publish = "deepdive dialogue publish"
+    assert runner.index(url_gate) < runner.index(build) < runner.index(synth) < runner.index(publish)
 
 
 def test_runner_writes_machine_readable_state() -> None:
@@ -2218,6 +2266,8 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
     assert manifest["date"] == "2026-06-23"
     assert manifest["pre_publish_commit"] == manifest["_expected_head"]
     assert manifest["publish_commit"] == ""
+    assert manifest["publish_commit_resolution"] == "post_push_verify"
+    assert manifest["same_publish_contract"] == "pre_publish_commit_must_equal_verified_publish_commit"
     assert not Path(manifest["_manifest_path"]).read_bytes().startswith(b"\xef\xbb\xbf")
     assert manifest["primary_podcast_state"] == "build/youtube-podcast/uploads.json"
     assert manifest["deepdive_podcast_state"] == "build/youtube-podcast-deepdive/uploads.json"
@@ -2230,6 +2280,39 @@ def test_runner_writes_distribution_manifest_with_commit_anchor(tmp_path: Path) 
         "function Test-DailyArtifactsExist",
         1,
     )[0]
+
+
+def test_runner_start_log_binds_attempt_to_run_id() -> None:
+    """scheduled/recovery の log range を一意に切れるよう start marker に run_id を残す。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    start_line = next(line for line in runner.splitlines() if "news-grasp-runner.ps1 start" in line)
+    assert "run_id=$RunId" in start_line
+
+
+def test_scheduled_equivalent_nopublish_uses_same_runner_with_isolated_state() -> None:
+    """最終E2Eは smoke 入口でなく、同じ runner を隔離 state/log + NoPublish で通す。"""
+    source = SCHEDULED_EQUIVALENT_PS1.read_text(encoding="utf-8-sig")
+
+    assert "news-grasp-runner.ps1" in source
+    assert "-NoPublish" in source
+    assert "-DateStampOverride" in source
+    assert "-RepoDirOverride" in source
+    assert "-StateFileOverride" in source
+    assert "-LogDirOverride" in source
+    assert "-PyExeOverride" in source
+    assert "-CodexWrapperOverride" in source
+    assert "scripts\\ops\\run_codex_with_timeout.ps1" in source
+    assert "'-WindowStyle', 'Hidden'" in source
+    assert "-NonInteractive" in source
+    assert "scheduled_entrypoint_mode = 'same_runner_script'" in source
+    assert "expected_terminal_state = 'publish_dry_run_ok'" in source
+    assert "elapsed_seconds = $elapsedSeconds" in source
+    assert "duration_slo_limit_seconds = $durationSloLimitSeconds" in source
+    assert "duration_slo_met = $durationSloMet" in source
+    assert "$durationSloLimitSeconds = 3600" in source
+    assert "$durationSloMet" in source.split("ok =", 1)[1]
+    assert "Start-Process" not in source
 
 
 def test_runner_preflight_checks_workspace_write_readiness_before_generation() -> None:

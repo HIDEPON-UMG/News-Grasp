@@ -121,6 +121,12 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "docs/incidents/2026-07-30-pytest-static-historical-corpus-report.html": (
         "0f1d866bd1846378e7b63dae0112ddfe05bd8e5f86733ef5729133afc75692c6"
     ),
+    "docs/incidents/2026-07-31-daily-batch-manufacturing-preview-drop-report.html": (
+        "0b99bd58166b1a666f38658c68d25318948ff35082c652b40e118db1f844d7a2"
+    ),
+    "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html": (
+        "7ba812efbb08bf29ddb52cf669fb93afa5f14ad037142d9fba93554a9d2f0f05"
+    ),
 }
 
 
@@ -625,10 +631,50 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "docs/incidents/2026-07-30-pytest-static-historical-corpus-report.html",
         "runtime_e2e_required",
     ),
+    HistoricalFailureScenario(
+        "2026-07-31",
+        "daily-quality / newsroom editor preview / Manufacturing digest / post-deepdive resume / publish-complete",
+        "editor preview dropped valid Manufacturing candidates, leaving the category digest empty at daily-quality",
+        "editor preview candidate preservation and visible incident corpus boundary",
+        "preview materialization must preserve eligible records, and every visible incident report must be registered before the next static gate",
+        "Manufacturing preview candidate fixture, category_digest_empty routing fixture, visible incident registry fixture, post-deepdive runner resume, publish-complete proof, and public surface proof",
+        "docs/incidents/2026-07-31-daily-batch-manufacturing-preview-drop-report.html",
+        "runtime_e2e_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-01",
+        "post-deepdive recovery / URL liveness / dialogue value gate / publish-complete",
+        "recovery accepted malformed or unverifiable citation URLs and fixed-template dialogue passed length checks despite cross-day semantic repetition",
+        "DeepDive recovery false-success and value-evidence binding boundary",
+        "every recovery route must fail closed on unverifiable current citation URLs and must bind each dialogue value segment to an existing source sentence while rejecting corpus-level repetition",
+        "URL request/TLS/network fixtures, runner skip-isolation fixture, seven-value grounding fixtures, 31-script corpus audit, targeted article render, and runner gate-order fixture",
+        "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html",
+        "fixture_required",
+    ),
 )
 
 
 WEEKLY_FAILURE_REGRESSION_CASES: tuple[WeeklyFailureRegressionCase, ...] = (
+    WeeklyFailureRegressionCase(
+        "2026-07-25",
+        "generation-quality",
+        "audio_script_missing",
+        "llm_generate_missing_artifact",
+        "blocked_audio_script_generation_failed",
+        "llm-missing-generated-artifact",
+        ("digest/Summary/2026-07-25-audio-script.md",),
+        evidence=(("typed_reason", "missing_artifact"),),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-26",
+        "daily-quality",
+        "top_article_stale",
+        "deterministic_handler",
+        "blocked_refill_unresolved",
+        "url-quarantine-refill",
+        ("digest/Mobility/2026-07-26-Mobility.md",),
+        "mobility",
+    ),
     WeeklyFailureRegressionCase(
         "2026-07-17",
         "pytest-static",
@@ -766,6 +812,34 @@ WEEKLY_FAILURE_REGRESSION_CASES: tuple[WeeklyFailureRegressionCase, ...] = (
         "blocked_deterministic_repair_failed",
         "date-evidence-source-patch",
         ("data/articles.jsonl", "tmp/newsroom/2026-07-28/*.records.jsonl"),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-29",
+        "daily-quality",
+        "category_digest_empty",
+        "deterministic_handler",
+        "blocked_articles_only_card_insert_failed",
+        "digest-card-insert-patch",
+        ("digest/IT/2026-07-29-IT.md",),
+        "it",
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-30",
+        "pytest-static",
+        "local_contract_failure",
+        "typed_fatal",
+        "blocked_local_contract_failure",
+        artifact_paths=("tests/", "tools/"),
+    ),
+    WeeklyFailureRegressionCase(
+        "2026-07-31",
+        "daily-quality",
+        "category_digest_empty",
+        "deterministic_handler",
+        "blocked_articles_only_card_insert_failed",
+        "digest-card-insert-patch",
+        ("digest/Manufacturing/2026-07-31-Manufacturing.md",),
+        "manufacturing",
     ),
 )
 
@@ -966,6 +1040,36 @@ def validate_historical_evidence(
 
 def weekly_failure_regression_cases() -> tuple[WeeklyFailureRegressionCase, ...]:
     return WEEKLY_FAILURE_REGRESSION_CASES
+
+
+def unregistered_incident_reports(repo_root: Path) -> list[dict[str, object]]:
+    """visible incident corpus の未登録行を scenario stub 付きで返す。"""
+    incident_root = repo_root / "docs" / "incidents"
+    registered = {scenario.evidence_path for scenario in SCENARIOS}
+    rows: list[dict[str, object]] = []
+    if not incident_root.exists():
+        return rows
+    for path in sorted(incident_root.glob("2026-*-report.html")):
+        evidence_path = path.relative_to(repo_root).as_posix()
+        if evidence_path in registered:
+            continue
+        issue_date = path.name[:10]
+        rows.append(
+            {
+                "evidence_path": evidence_path,
+                "suggested_scenario_stub": {
+                    "issue_date": issue_date,
+                    "stage": "TODO: terminal gate / recovery stage",
+                    "direct_cause": "TODO: evidence-backed direct cause",
+                    "root_pattern": "TODO: cross-day bug class",
+                    "missing_invariant": "TODO: invariant that should have prevented recurrence",
+                    "cheapest_e2e_or_fixture": "TODO: negative fixture and same-gate reverify",
+                    "evidence_path": evidence_path,
+                    "expected_status": "runtime_e2e_required",
+                },
+            }
+        )
+    return rows
 
 
 def historical_failure_horizontal_audits() -> tuple[HistoricalFailureHorizontalAudit, ...]:

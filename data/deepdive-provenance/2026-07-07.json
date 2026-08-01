@@ -1,0 +1,94 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-07-DeepDive.md",
+  "articleSha256": "a0b67270bf72ffbbba0292026aaa7c313020aa2300f8079d5728676ec6665fd5",
+  "issueDate": "2026-07-07",
+  "manifestSha256": "23294b5acf40bb8b2b69e0b6523cd771d95f661e2c0b12a63248a8c4c126ba0a",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "056e4d7670b2b2749c61b906342cb49614371a59cad214ec899a1c6368d4878a",
+  "sources": [
+    {
+      "contentSha256": "f24353f6071f381d9b23a32153a6e4d29445c82cffcbd0ba7d1329eab4d81fc2",
+      "fetchedAt": "2026-08-01T10:29:16.777155+00:00",
+      "finalUrl": "https://prtimes.jp/main/html/rd/p/000000013.000159893.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://prtimes.jp/main/html/rd/p/000000013.000159893.html",
+      "url": "https://prtimes.jp/main/html/rd/p/000000013.000159893.html"
+    },
+    {
+      "contentSha256": "d3b62542882815fb5fe0abb6082e1b74e602637f1c4698a0b78e205e39bb9810",
+      "fetchedAt": "2026-08-01T10:29:16.799772+00:00",
+      "finalUrl": "https://t2.auto/news/2026/0703.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://t2.auto/news/2026/0703.pdf",
+      "url": "https://t2.auto/news/2026/0703.pdf"
+    },
+    {
+      "contentSha256": "0edd3933e7c2ef8e8915b7af87a78237c38218d10e1afe9c0ecc799f0b52e8ca",
+      "fetchedAt": "2026-08-01T10:29:19.507444+00:00",
+      "finalUrl": "https://www.meti.go.jp/shingikai/mono_info_service/sustainable_logistics/pdf/003_01_00.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.meti.go.jp/shingikai/mono_info_service/sustainable_logistics/pdf/003_01_00.pdf",
+      "url": "https://www.meti.go.jp/shingikai/mono_info_service/sustainable_logistics/pdf/003_01_00.pdf"
+    },
+    {
+      "contentSha256": "80f05376fdde70b81303db7a88cc3c553073c6635e391dbede1cde7255f989d5",
+      "fetchedAt": "2026-08-01T10:29:19.470851+00:00",
+      "finalUrl": "https://www.mlit.go.jp/report/press/content/001981214.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.mlit.go.jp/report/press/content/001981214.pdf",
+      "url": "https://www.mlit.go.jp/report/press/content/001981214.pdf"
+    },
+    {
+      "contentSha256": "8f97e5e92ac0681c14cb3ffb15b5c308dfb407b7c17f416b360b54a431f047f2",
+      "fetchedAt": "2026-08-01T10:29:19.433610+00:00",
+      "finalUrl": "https://www.mlit.go.jp/seisakutokatsu/freight/content/001984794.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.mlit.go.jp/seisakutokatsu/freight/content/001984794.pdf",
+      "url": "https://www.mlit.go.jp/seisakutokatsu/freight/content/001984794.pdf"
+    },
+    {
+      "contentSha256": "244136da30dc2c270718a0afe44726a66291385f06a02958f3efe7ec3a8ab950",
+      "fetchedAt": "2026-08-01T10:29:20.022839+00:00",
+      "finalUrl": "https://www.toyota-tsusho.com/english/press/detail/260302_006786.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.toyota-tsusho.com/english/press/detail/260302_006786.html",
+      "url": "https://www.toyota-tsusho.com/english/press/detail/260302_006786.html"
+    }
+  ],
+  "status": "Green"
+}

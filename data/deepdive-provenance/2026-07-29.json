@@ -1,0 +1,93 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-29-DeepDive.md",
+  "articleSha256": "28d41b8539250d2e9300471f2de972724ee9d885b4400b8fe17244616b78b5fb",
+  "issueDate": "2026-07-29",
+  "manifestSha256": "b9c54bd08b77475a67419f0628fb0356c5c7ce77a83f7f9815b55cd6a5fc345f",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "809965173e4484ef93aef010b6e0c73a5168807a4bc6f86957de271fab1af86b",
+  "sources": [
+    {
+      "contentSha256": "d2743fb8c08a101d7c78092bb20cf53f6043ef2cf8cfc226a6b0b27887c00250",
+      "fetchedAt": "2026-08-01T10:29:18.011672+00:00",
+      "finalUrl": "https://www.asml.com/en/investors/annual-report/2023",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.asml.com/en/investors/annual-report/2023",
+      "url": "https://www.asml.com/en/investors/annual-report/2023"
+    },
+    {
+      "contentSha256": "c34d6547cfc6cc60e91c75b2c98ca452b63c18a1eb11afa0cab5d2f0ac240b13",
+      "fetchedAt": "2026-08-01T10:29:17.638654+00:00",
+      "finalUrl": "https://www.asml.com/en/investors/annual-report/2024",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source"
+      ],
+      "publicHref": "https://www.asml.com/en/investors/annual-report/2024",
+      "url": "https://www.asml.com/en/investors/annual-report/2024"
+    },
+    {
+      "contentSha256": "f9782dfc9b35a0e777c763b325f37476030ae2f32eede7050a4c274f493edcb5",
+      "fetchedAt": "2026-08-01T10:29:17.664421+00:00",
+      "finalUrl": "https://www.asml.com/en/investors/annual-report/2025",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.asml.com/en/investors/annual-report/2025",
+      "url": "https://www.asml.com/en/investors/annual-report/2025"
+    },
+    {
+      "contentSha256": "b0cad0a218955feb0784c5cdf405bdfb74b9392a2774809a7b49e82bc65c7f94",
+      "fetchedAt": "2026-08-01T10:29:18.281995+00:00",
+      "finalUrl": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military",
+      "url": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military"
+    },
+    {
+      "contentSha256": "2bded33af3a65da2b05d5c00ebcc2f9815c3cd8ba5289a11e4b16c37704055cb",
+      "fetchedAt": "2026-08-01T10:29:20.111213+00:00",
+      "finalUrl": "https://www.government.nl/latest/news/2024/09/06/the-netherlands-expands-export-control-measure-advanced-semiconductor-manufacturing-equipment",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.government.nl/latest/news/2024/09/06/the-netherlands-expands-export-control-measure-advanced-semiconductor-manufacturing-equipment",
+      "url": "https://www.government.nl/latest/news/2024/09/06/the-netherlands-expands-export-control-measure-advanced-semiconductor-manufacturing-equipment"
+    },
+    {
+      "contentSha256": "6c3f8f86e4976b591d29b6a9adfee9db708ad2e51a47af37a0a79179fa60dd2f",
+      "fetchedAt": "2026-08-01T10:33:11.498082+00:00",
+      "finalUrl": "https://www.investing.com/news/stock-market-news/exclusivechina-starts-production-of-homegrown-immersion-duv-chipmaking-tools--source-4815671",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.investing.com/news/stock-market-news/exclusivechina-starts-production-of-homegrown-immersion-duv-chipmaking-tools--source-4815671",
+      "url": "https://www.investing.com/news/stock-market-news/exclusivechina-starts-production-of-homegrown-immersion-duv-chipmaking-tools--source-4815671"
+    }
+  ],
+  "status": "Green"
+}

@@ -17,7 +17,10 @@ MAX_CONTEXT_CANDIDATES = 8
 MIN_TTS_CONTEXT_SOURCES = 2
 MAX_TTS_CONTEXT_SOURCES = 4
 RELATION_KINDS = ("続報", "主役共有", "波及", "対比")
-GENERIC_TAGS = {"deepdive", "daily", "weekly", "news-grasp"}
+GENERIC_TAGS = {
+    "deepdive", "daily", "weekly", "news-grasp",
+    "news", "grasp", "issue",
+}
 LOW_SIGNAL_CONTEXT_TERMS = {"ai"}
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 _CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
@@ -127,6 +130,8 @@ def tag_terms(tags: list[str]) -> set[str]:
     terms: set[str] = set()
     for tag in tags:
         folded = _clean_term(tag)
+        if folded in GENERIC_TAGS or folded.startswith("issue-"):
+            continue
         if _is_signal_term(folded):
             terms.add(folded)
         for term in _TERM_RE.findall(tag):
@@ -280,11 +285,9 @@ def _context_from_archive(
     item_terms = tag_terms(frontmatter_tags(text)) | title_terms(title)
     tag_overlap = source_terms & item_terms
     title_overlap = source_title_terms & title_terms(title)
-    if source_markdown:
-        folded_source = source_markdown.casefold()
-        tag_overlap |= {term for term in item_terms if len(term) >= 3 and term in folded_source}
     signal_terms = {term for term in (tag_overlap | title_overlap) if _is_signal_term(term)}
-    if not related and not signal_terms:
+    # 明示 related がない自動文脈は、一般概念1語だけの一致を関連扱いしない。
+    if not related and len(signal_terms) < 2:
         return None
     relation = str((related or {}).get("relation") or "").strip()
     if relation not in RELATION_KINDS:
@@ -438,7 +441,9 @@ def context_sources_for_deepdive(
 ) -> list[ContextSource]:
     source_title = frontmatter_value(source_markdown, "title", "DeepDive")
     source_date = date_from_source_name(source_name, frontmatter_value(source_markdown, "date", "1970-01-01"))
-    source_terms = tag_terms(frontmatter_tags(source_markdown)) | title_terms(source_title) | _extract_terms_from_any(body_sentences(source_markdown))
+    # 本文中の一般語まで候補照合へ混ぜると `news` や `市場` だけで異分野記事が
+    # 関連扱いになる。関連性の正本は明示 tags/title と related block に限定する。
+    source_terms = tag_terms(frontmatter_tags(source_markdown)) | title_terms(source_title)
     source_title_terms = title_terms(source_title)
     related_map = related_by_date(source_markdown)
     for item_date in context_source_dates(source_markdown):
@@ -476,6 +481,16 @@ def context_sources_for_deepdive(
                     contexts_by_date[context.date] = context
 
     for candidate in pack_candidates:
+        candidate_terms = {
+            _clean_term(str(term))
+            for term in candidate.get("signal_terms") or []
+            if _is_signal_term(str(term))
+        }
+        if (
+            str(candidate.get("date") or "") not in related_map
+            and len(candidate_terms & source_terms) < 2
+        ):
+            continue
         context = _candidate_to_context(candidate, current_title=source_title)
         if context is None:
             continue
@@ -483,7 +498,7 @@ def context_sources_for_deepdive(
         if len(contexts_by_date) >= max_sources:
             break
 
-    if len(contexts_by_date) < min_sources:
+    if len(contexts_by_date) < max_sources:
         start = source_date - timedelta(days=context_days)
         for path in sorted(resolved_archive_dir.glob("*-DeepDive.md")):
             if path.name == source_filename:

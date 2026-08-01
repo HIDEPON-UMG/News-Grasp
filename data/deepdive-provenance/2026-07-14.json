@@ -1,0 +1,79 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-14-DeepDive.md",
+  "articleSha256": "363c26bfddadde207f5c734be44ef3afdcf4f73d40a243af425daa0d9e426c4f",
+  "issueDate": "2026-07-14",
+  "manifestSha256": "84b19185cc8d01021989a49cb9ae74d505095a96673ef370138555ee682127de",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "32bffc7bf70562c834ed904b9bafa08ae7cff82c6d3d50a618f657f66ece4fb8",
+  "sources": [
+    {
+      "contentSha256": "d4d12ea30b335e9023189c49b12c102c30e3b3fb25859a21b0dd8a388e63c5e6",
+      "fetchedAt": "2026-08-01T10:09:09.684765+00:00",
+      "finalUrl": "https://english.www.gov.cn/archive/statistics/202606/08/content_WS6a26bd66c6d00ca5f9a0b78e.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://english.www.gov.cn/archive/statistics/202606/08/content_WS6a26bd66c6d00ca5f9a0b78e.html",
+      "url": "https://english.www.gov.cn/archive/statistics/202606/08/content_WS6a26bd66c6d00ca5f9a0b78e.html"
+    },
+    {
+      "contentSha256": "21fe93088b427bc1ee46ec8d5894b9f72f2d42bd8f876383160862d4a671a1fb",
+      "fetchedAt": "2026-08-01T10:09:09.651326+00:00",
+      "finalUrl": "https://english.www.gov.cn/archive/statistics/202607/09/content_WS6a4f5a96c6d00ca5f9a0c15a.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://english.www.gov.cn/archive/statistics/202607/09/content_WS6a4f5a96c6d00ca5f9a0c15a.html",
+      "url": "https://english.www.gov.cn/archive/statistics/202607/09/content_WS6a4f5a96c6d00ca5f9a0c15a.html"
+    },
+    {
+      "contentSha256": "83412f0bb3e22cabc563d776f44bb3d018c221123eb16f4034fdb9d3be1509f4",
+      "fetchedAt": "2026-08-01T10:09:17.951314+00:00",
+      "finalUrl": "https://www.nissan-global.com/JP/IR/PERFORMANCE/ASSETS/2026/PDF/Nissan_Sales_202604.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.nissan-global.com/JP/IR/PERFORMANCE/ASSETS/2026/PDF/Nissan_Sales_202604.pdf",
+      "url": "https://www.nissan-global.com/JP/IR/PERFORMANCE/ASSETS/2026/PDF/Nissan_Sales_202604.pdf"
+    },
+    {
+      "contentSha256": "3406c0bfdd6935b31b6cedc099af7424b95d8d65ede368dea9db4a1890bbeea7",
+      "fetchedAt": "2026-08-01T10:09:18.023294+00:00",
+      "finalUrl": "https://www.nissan-global.com/JP/IR/PERFORMANCE/ASSETS/2026/PDF/Nissan_Sales_202605.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://www.nissan-global.com/JP/IR/PERFORMANCE/ASSETS/2026/PDF/Nissan_Sales_202605.pdf",
+      "url": "https://www.nissan-global.com/JP/IR/PERFORMANCE/ASSETS/2026/PDF/Nissan_Sales_202605.pdf"
+    },
+    {
+      "contentSha256": "6e2dedf338789abc8c65111dfe7b28154c4fe082326b5291ec0c346cebc81018",
+      "fetchedAt": "2026-08-01T10:09:20.070629+00:00",
+      "finalUrl": "https://www.yanase.co.jp/company/information/press/2025/pdf/yanasenews20251128_web.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.yanase.co.jp/company/information/press/2025/pdf/yanasenews20251128_web.pdf",
+      "url": "https://www.yanase.co.jp/company/information/press/2025/pdf/yanasenews20251128_web.pdf"
+    }
+  ],
+  "status": "Green"
+}

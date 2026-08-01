@@ -107,6 +107,38 @@ def test_classify_emits_ordered_issue_ledger_and_selected_artifacts(capsys) -> N
     ]
 
 
+def test_classify_repairs_recoverable_date_evidence_before_generating_missing_audio(capsys) -> None:
+    """compound failureは既存artifactのdeterministic patchを先に収束させる。"""
+    output = json.dumps(
+        {
+            "ok": False,
+            "errors": [
+                {
+                    "code": "date_evidence_source_recoverable",
+                    "artifact": "data/articles.jsonl",
+                },
+                {
+                    "code": "missing_artifact",
+                    "artifact": "digest/Summary/2026-08-01-audio-script.md",
+                    "category": "Summary",
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    rc = main(["classify", "--gate-id", "generation-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["issue_code"] == "date_evidence_source_recoverable"
+    assert payload["artifact_paths"] == ["data/articles.jsonl"]
+    assert [issue["issue_code"] for issue in payload["issues"]] == [
+        "date_evidence_source_recoverable",
+        "missing_artifact",
+    ]
+
+
 def test_digest_reconcile_ledger_preserves_direction_and_selected_artifacts(capsys) -> None:
     output = json.dumps(
         {

@@ -1,0 +1,38 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-12-DeepDive.md",
+  "articleSha256": "08fbe39d64030e8f0fc896be362ca9c79850f7cb2c252086c306124f29a4a95a",
+  "issueDate": "2026-07-12",
+  "manifestSha256": "413ba6971c9592d87005cfc40b01ae6717dc3bcf485f60273ca29741e0cd1bb9",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "e697ff2c0988e26fd020fa53c026b420c909379d813df005e2eabfea02b4473a",
+  "sources": [
+    {
+      "contentSha256": "93c6d0a32916750637499b401599938aeef4adb49250f5b675429bf5b4a5e6e7",
+      "fetchedAt": "2026-08-01T10:33:10.392425+00:00",
+      "finalUrl": "https://openai.com/index/advancing-content-provenance/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/advancing-content-provenance/",
+      "url": "https://openai.com/index/advancing-content-provenance/"
+    },
+    {
+      "contentSha256": "85cf19dcd7130f0b4ace887f2349a3be1ceb7a85adc4ea661deecee3adb35bfe",
+      "fetchedAt": "2026-08-01T10:33:11.159045+00:00",
+      "finalUrl": "https://openai.com/index/gpt-5-6/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/gpt-5-6/",
+      "url": "https://openai.com/index/gpt-5-6/"
+    }
+  ],
+  "status": "Green"
+}

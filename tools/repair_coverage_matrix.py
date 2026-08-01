@@ -422,6 +422,54 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
+        "deepdive_url_provenance_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-provenance-recapture",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+        ),
+        "daily-quality",
+        "blocked_deepdive_provenance_fetch_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "deepdive_dialogue_value_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-dialogue-rebuild",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "digest/DeepDive/{date}-DeepDive-dialogue.md",
+        ),
+        "daily-quality",
+        "blocked_deepdive_dialogue_rebuild_failed",
+    ),
+    CoverageRow(
+        "deepdive-shared-quality",
+        "deepdive_url_provenance_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-provenance-recapture",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+        ),
+        "deepdive-shared-quality",
+        "blocked_deepdive_provenance_fetch_failed",
+    ),
+    CoverageRow(
+        "deepdive-shared-quality",
+        "deepdive_dialogue_value_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-dialogue-rebuild",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "digest/DeepDive/{date}-DeepDive-dialogue.md",
+        ),
+        "deepdive-shared-quality",
+        "blocked_deepdive_dialogue_rebuild_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
         "audio_script_quality_invalid",
         RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
         "audio-script-depth-rewrite",
@@ -661,6 +709,16 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "blocked_existing_artifact_llm_recreate",
         "unsafe_existing_artifact_repair",
         "news-grasp",
+    ),
+    CoverageRow(
+        "generation-quality",
+        "audio_script_missing",
+        RepairClass.LLM_GENERATE_MISSING_ARTIFACT,
+        "llm-missing-generated-artifact",
+        ("digest/Summary/{date}-audio-script.md",),
+        "generation-quality",
+        "blocked_audio_script_generation_failed",
+        reason="missing_artifact",
     ),
     CoverageRow(
         "generation-quality",
@@ -1218,6 +1276,10 @@ def _followup_review_metadata(output: str) -> dict[str, Any]:
 
 def _issue_code_from_text(gate_id: str, output: str) -> str:
     text = output.casefold()
+    if "deepdive_url_provenance_invalid" in text:
+        return "deepdive_url_provenance_invalid"
+    if "deepdive_dialogue_value_invalid" in text:
+        return "deepdive_dialogue_value_invalid"
     if gate_id == "daily-quality":
         daily_code = daily_quality_issue_code(output)
         if daily_code != "unknown":
@@ -1427,6 +1489,7 @@ def _issue_priority(issue_code: str) -> int:
         "digest_articles_digest_only": 2,
         "digest_articles_articles_only": 2,
         "date_evidence_source_missing": 3,
+        "date_evidence_source_recoverable": 3,
         "missing_artifact": 10,
         "summary_hero_missing": 20,
         "summary_reflection_missing": 21,
@@ -1435,6 +1498,8 @@ def _issue_priority(issue_code: str) -> int:
         "search_audit_count_mismatch": 24,
         "search_audit_metadata_missing": 25,
         "deepdive_structure_invalid": 30,
+        "deepdive_url_provenance_invalid": 31,
+        "deepdive_dialogue_value_invalid": 32,
         "thumb_invalid_or_missing": 60,
         "audio_script_quality_invalid": 90,
         "unknown": 1000,

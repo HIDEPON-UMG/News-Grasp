@@ -22,6 +22,28 @@ def _write_deepdive(path: Path, *, title: str, tags: list[str], body: str) -> No
     )
 
 
+def _grounded_body() -> str:
+    """7価値×主根拠/補助根拠を偶然の水増しなしで満たす独立fixture。"""
+    return "\n".join(
+        [
+            "最新の一次発表は対象業務と導入時期を明示した。",
+            "公開統計は利用部門ごとに採用速度が異なることを示した。",
+            "制度変更は実行権限と検収責任の分離を求めている。",
+            "企業事例では定型作業から段階的に委任範囲を広げている。",
+            "費用分析は初期導入より継続監査の負担が大きいと示した。",
+            "障害記録は権限境界が曖昧な場合に復旧が遅れると報告した。",
+            "反対事例では自動化率が高くても成果品質は改善しなかった。",
+            "比較資料は一括展開より限定導入の方が検証可能性を保った。",
+            "時系列データでは試行段階から全社運用へ論点が移っている。",
+            "現場調査は再利用手順の有無が定着率を左右すると示した。",
+            "監査結果は成果物の根拠追跡を必須条件として挙げている。",
+            "経営判断では便益だけでなく停止条件の明示も求められる。",
+            "次の確認点は責任者と再検証時期を同時に固定することだ。",
+            "実務対応は小さな対象で証拠を集めてから範囲を広げる。",
+        ]
+    )
+
+
 def test_build_dialogue_markdown_satisfies_deepdive_tts_contract(tmp_path: Path) -> None:
     archive = tmp_path / "digest" / "DeepDive"
     _write_deepdive(
@@ -51,6 +73,7 @@ tags: ["deepdive", "currency", "boj", "market"]
 介入は短期の速度調整に効く一方、追加利上げは副作用管理が必要になる。
 企業には輸入コスト、クラウド費用、海外SaaS契約、価格改定の前提として波及する。
 """
+    source += "\n" + _grounded_body()
     markdown = build_dialogue_markdown(
         source,
         source_name="digest/DeepDive/2026-06-23-DeepDive.md",
@@ -109,6 +132,7 @@ OpenAIがCodex利用データを公開し、社内利用率と外部組織利用
 CodexはChatGPTの代替ではなく、作業を割り振る業務OSとして使われ始めている。
 権限、ファイルアクセス、レビュー設計、skills再利用が導入成否を分ける。
 """
+    source += "\n" + _grounded_body()
 
     markdown = build_dialogue_markdown(
         source,
@@ -119,10 +143,11 @@ CodexはChatGPTの代替ではなく、作業を割り振る業務OSとして使
 
     assert "context_sources:" in markdown
     assert "2026-06-20" in markdown
-    assert "2026-06-21" in markdown
+    assert "2026-06-21" not in markdown
     assert "前回は" in markdown
     assert "今回" in markdown
-    assert "ITコンサルタント" in markdown
+    assert "source:1" in markdown
+    assert "source:13" in markdown
     assert "背景OpenAI" not in markdown
     assert "背景前回" not in markdown
     assert "今回の変化点は、前回は" not in markdown
@@ -152,17 +177,16 @@ tags: ["deepdive", "OpenAI", "Codex", "AI-agent", "workflow", "skills"]
 
 OpenAIがCodex利用データを公開し、業務委任と検収責任が焦点になった。
 """
+    source += "\n" + _grounded_body()
 
-    try:
-        build_dialogue_markdown(
-            source,
-            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-            archive_dir=archive,
-        )
-    except ValueError as exc:
-        assert "関連DeepDive文脈不足" in str(exc)
-    else:
-        raise AssertionError("関連性のない直近DeepDiveをfallback採用してはいけない")
+    markdown = build_dialogue_markdown(
+        source,
+        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+        archive_dir=archive,
+    )
+    assert "食品スーパー" not in markdown
+    assert "旅行需要" not in markdown
+    assert "<!-- value:change_over_time" in markdown
 
 
 def test_build_dialogue_markdown_uses_context_pack_without_related_block(tmp_path: Path) -> None:
@@ -178,6 +202,7 @@ tags: ["deepdive", "OpenAI", "Codex", "AI-agent", "workflow", "skills"]
 Codexは業務を割り振る実行基盤として使われ始めた。
 委任、検収、skills再利用が実務上の焦点になっている。
 """
+    source += "\n" + _grounded_body()
     _write_deepdive(
         archive / "2026-06-20-DeepDive.md",
         title="AIエージェントは操作代行から統制設計へ",
@@ -254,6 +279,7 @@ Codexは業務を割り振る実行基盤として使われ始めた。
 
 導入率を見るだけでは不十分で、権限、レビュー、再利用可能な作業手順まで見ないと実装の深さは測れない。
 """
+    source += "\n" + _grounded_body()
     _write_deepdive(
         archive / "2026-06-20-DeepDive.md",
         title="AIエージェントは操作代行から統制設計へ",
@@ -276,9 +302,9 @@ Codexは業務を割り振る実行基盤として使われ始めた。
     char_count = build_script.effective_char_count("\n".join(turn.text for turn in turns))
 
     assert "audio_target_minutes: 6" in markdown
-    assert len(turns) >= 28
-    assert char_count >= 1600
-    assert "各過去回を、今回の実務判断に変換すると" in markdown
+    assert len(turns) == len(deepdive_dialogue.REQUIRED_VALUE_IDS) * 2
+    assert char_count >= deepdive_dialogue.MIN_DIALOGUE_CHARS
+    assert "<!-- value:decision_implication" in markdown
     assert "最後に、現場で今日から確認できることはありますか" not in markdown
     assert not deepdive_dialogue.validate_dialogue(turns)
 
@@ -322,18 +348,16 @@ tags: ["deepdive", "OpenAI", "Codex", "AI-agent", "workflow", "skills"]
 
 OpenAIがCodex利用データを公開し、業務委任と検収責任が焦点になった。
 """
+    source += "\n" + _grounded_body()
 
-    try:
-        build_dialogue_markdown(
-            source,
-            source_name="digest/DeepDive/2026-06-28-DeepDive.md",
-            archive_dir=archive,
-            context_pack_path=pack,
-        )
-    except ValueError as exc:
-        assert "関連DeepDive文脈不足" in str(exc)
-    else:
-        raise AssertionError("根拠なしcontext pack候補をTTSが採用してはいけない")
+    markdown = build_dialogue_markdown(
+        source,
+        source_name="digest/DeepDive/2026-06-28-DeepDive.md",
+        archive_dir=archive,
+        context_pack_path=pack,
+    )
+    assert "食品スーパー" not in markdown
+    assert "<!-- value:current_signal" in markdown
 
 
 def test_build_dialogue_script_regenerates_existing_script_without_context_sources(tmp_path: Path) -> None:
@@ -346,6 +370,7 @@ def test_build_dialogue_script_regenerates_existing_script_without_context_sourc
             "## 背景\n"
             "Codexは業務を割り振る実行基盤として使われ始めた。\n"
             "委任、検収、skills再利用が実務上の焦点になっている。\n"
+            + _grounded_body()
         ),
     )
     _write_deepdive(
@@ -385,7 +410,7 @@ date: "2026-06-23"
 ## 背景
 
 これは復旧テスト用のDeepDive本文です。政策、企業影響、次の焦点を説明します。
-""",
+""" + _grounded_body(),
         encoding="utf-8",
     )
     _write_deepdive(

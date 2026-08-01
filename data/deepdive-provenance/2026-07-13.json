@@ -1,0 +1,90 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\digest\\DeepDive\\2026-07-13-DeepDive.md",
+  "articleSha256": "448a8d0c4bf5a0d191b37f0f9ff870d9cb35e87967a17d85d8a0c063c4c154aa",
+  "issueDate": "2026-07-13",
+  "manifestSha256": "9cae3f14cb4c3ea291f35f937fe3014f396649fb0beb38bc87c929495efd830d",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "7cbf330f2dd22087767510d520ca4a5a9fab8064a39a69fc10e69a89659861ad",
+  "sources": [
+    {
+      "contentSha256": "49bf4ed35fea8d9feedbf567f5ce52558cd05bc83a85fc9c59f7020b2f4a6f0f",
+      "fetchedAt": "2026-08-01T10:33:07.911289+00:00",
+      "finalUrl": "https://cms03.jftc.go.jp/houdou/pressrelease/2026/apr/260416_generativeai02.pdf",
+      "httpStatus": 206,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://cms03.jftc.go.jp/houdou/pressrelease/2026/apr/260416_generativeai02.pdf",
+      "url": "https://cms03.jftc.go.jp/houdou/pressrelease/2026/apr/260416_generativeai02.pdf"
+    },
+    {
+      "contentSha256": "e198d7fb4640c339e6b5d20ce6fffd2b77f0b9e28d04dac1b8a79d2da67b9bc2",
+      "fetchedAt": "2026-08-01T10:29:15.727663+00:00",
+      "finalUrl": "https://developers.openai.com/api/docs/models",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://developers.openai.com/api/docs/models",
+      "url": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "contentSha256": "fe34bb5699f2a2f89428e617b8cedda4c8980c161394903bdfbb0522b3d2567a",
+      "fetchedAt": "2026-08-01T10:33:10.158251+00:00",
+      "finalUrl": "https://openai.com/index/api-prompt-caching/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/api-prompt-caching/",
+      "url": "https://openai.com/index/api-prompt-caching/"
+    },
+    {
+      "contentSha256": "cdc49cb1214f408ba593db30eca5af227c8ed1539d23adbb5b7114b2db7e3af6",
+      "fetchedAt": "2026-08-01T10:33:11.373302+00:00",
+      "finalUrl": "https://openai.com/index/gpt-4-1/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/index/gpt-4-1/",
+      "url": "https://openai.com/index/gpt-4-1/"
+    },
+    {
+      "contentSha256": "8baa138a373f9550d61049babdbc48bcee7ec1ce6b75cd3a3154cbea312f8b16",
+      "fetchedAt": "2026-08-01T10:33:11.647335+00:00",
+      "finalUrl": "https://openai.com/ja-JP/index/gpt-5-6/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://openai.com/ja-JP/index/gpt-5-6/",
+      "url": "https://openai.com/ja-JP/index/gpt-5-6/"
+    },
+    {
+      "contentSha256": "f9e63ef3ae5f608028106da9fe9b4c19b86b99bc6db404fc1a33a698c0572799",
+      "fetchedAt": "2026-08-01T10:29:16.711657+00:00",
+      "finalUrl": "https://platform.claude.com/docs/ja/about-claude/pricing",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source"
+      ],
+      "publicHref": "https://platform.claude.com/docs/ja/about-claude/pricing",
+      "url": "https://platform.claude.com/docs/ja/about-claude/pricing"
+    }
+  ],
+  "status": "Green"
+}
