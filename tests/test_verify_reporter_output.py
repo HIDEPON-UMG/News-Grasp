@@ -224,6 +224,30 @@ def test_fail_all_null_thumbnails_in_records(tmp_path: Path):
     )
 
 
+def test_fail_single_null_thumbnail_among_valid_records(tmp_path: Path):
+    """1件だけthumb=nullでも、後段隔離でfresh TOPを失うため個別にFAILする。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[2]["thumb"] = None
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+
+    assert any("record #3" in e and "thumb" in e for e in errs), errs
+
+
+def test_fail_empty_or_non_http_thumbnail_per_record(tmp_path: Path):
+    """空文字や非HTTP文字列も有効な記事サムネとして数えない。"""
+    recs = [_record(i) for i in range(1, 6)]
+    recs[0]["thumb"] = ""
+    recs[1]["thumb"] = "local-image.png"
+    repo = _setup(tmp_path, records=recs, audit=None, digest_cards=5)
+
+    errs = verify(repo_root=repo, issue_date=ISSUE, category=CAT)
+
+    assert any("record #1" in e and "thumb" in e for e in errs), errs
+    assert any("record #2" in e and "thumb" in e for e in errs), errs
+
+
 def test_fail_news_grasp_self_reference_thumbnail_in_records(tmp_path: Path):
     """記事 thumb に News-Grasp 自己参照 URL を保存したら、個別記事サムネではないため FAIL。"""
     recs = [_record(i) for i in range(1, 6)]

@@ -202,6 +202,107 @@ def test_classify_routes_search_audit_count_mismatch_to_metadata_patch(capsys) -
     ]
 
 
+def test_compound_gate_groups_every_deterministic_issue_by_handler(capsys) -> None:
+    """複合Redを先頭1件へ潰さず、handlerごとの有限repair planへ変換する。"""
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "daily-quality",
+            "issues": [
+                {
+                    "issue_code": "search_audit_count_mismatch",
+                    "issue_date": "2026-08-01",
+                    "category": "ai",
+                    "artifact_paths": ["data/search_audit/2026-08-01/ai.json"],
+                },
+                {
+                    "issue_code": "search_audit_count_mismatch",
+                    "issue_date": "2026-08-01",
+                    "category": "it",
+                    "artifact_paths": ["data/search_audit/2026-08-01/it.json"],
+                },
+                {
+                    "issue_code": "top_article_stale",
+                    "issue_date": "2026-08-01",
+                    "category": "ai",
+                    "artifact_paths": ["digest/AI/2026-08-01-AI.md"],
+                },
+                {
+                    "issue_code": "followup_review_required",
+                    "issue_date": "2026-08-01",
+                    "artifact_paths": ["data/articles.jsonl"],
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    rc = main(["classify", "--gate-id", "daily-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["repair_plan_kind"] == "compound_deterministic"
+    assert payload["compound_issue_count"] == 4
+    assert payload["batch_repair_eligible"] is True
+    assert payload["repair_steps"] == [
+        {
+            "handler_id": "search-audit-metadata-patch",
+            "repair_class": "deterministic_handler",
+            "issue_codes": ["search_audit_count_mismatch"],
+            "artifact_paths": [
+                "data/search_audit/2026-08-01/ai.json",
+                "data/search_audit/2026-08-01/it.json",
+            ],
+            "verify_gates": ["daily-quality"],
+        },
+        {
+            "handler_id": "url-quarantine-refill",
+            "repair_class": "deterministic_handler",
+            "issue_codes": ["top_article_stale"],
+            "artifact_paths": ["digest/AI/2026-08-01-AI.md"],
+            "verify_gates": ["daily-quality"],
+        },
+        {
+            "handler_id": "followup-review-evidence-patch",
+            "repair_class": "deterministic_handler",
+            "issue_codes": ["followup_review_required"],
+            "artifact_paths": ["data/articles.jsonl"],
+            "verify_gates": ["daily-quality"],
+        },
+    ]
+
+
+def test_compound_gate_deduplicates_same_handler_artifacts_without_losing_issue_views(capsys) -> None:
+    """同一handler内のartifact重複だけを除き、異なる失敗観点は保持する。"""
+    output = json.dumps(
+        {
+            "ok": False,
+            "gate_id": "daily-quality",
+            "issues": [
+                {
+                    "issue_code": "top_article_stale",
+                    "issue_date": "2026-08-01",
+                    "artifact_paths": ["digest/AI/2026-08-01-AI.md", "data/articles.jsonl"],
+                },
+                {
+                    "issue_code": "followup_review_required",
+                    "issue_date": "2026-08-01",
+                    "artifact_paths": ["data/articles.jsonl"],
+                },
+            ],
+        }
+    )
+
+    rc = main(["classify", "--gate-id", "daily-quality", "--output", output])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert len(payload["repair_steps"]) == 2
+    assert payload["repair_steps"][0]["issue_codes"] == ["top_article_stale"]
+    assert payload["repair_steps"][1]["issue_codes"] == ["followup_review_required"]
+    assert payload["repair_steps"][1]["artifact_paths"] == ["data/articles.jsonl"]
+
+
 def test_classify_preserves_structured_artifact_after_warning_prefix(capsys) -> None:
     output = "WARNING: provenance annotation is missing\n" + json.dumps(
         {

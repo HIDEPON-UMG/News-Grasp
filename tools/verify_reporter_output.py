@@ -130,6 +130,11 @@ def _check_records(
             errs.append(
                 f"record #{i}: 媒体トップまたはカテゴリトップに丸まった URL です: {url}"
             )
+        thumb = rec.get("thumb")
+        if not isinstance(thumb, str) or not re.match(r"^https?://", thumb.strip()):
+            errs.append(
+                f"record #{i}: thumb は有効な外部 HTTP(S) URL が必須です: {thumb!r}"
+            )
         if is_news_grasp_self_thumb(rec.get("thumb")):
             errs.append(
                 f"record #{i}: News-Grasp 自己参照 thumb です: {rec.get('thumb')}"

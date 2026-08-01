@@ -236,6 +236,21 @@ def test_news_grasp_e2e_skill_requires_html_report_after_e2e() -> None:
         assert fragment in skill, fragment
 
 
+def test_news_grasp_e2e_skill_forbids_single_issue_compound_red_and_partial_thumb_gate() -> None:
+    """E2Eで露呈した複合Redと部分thumbの抜け道をskill正本へ固定する。"""
+    skill = (
+        Path.home() / ".codex" / "skills" / "news-grasp-e2e-discipline" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    for fragment in [
+        "全deterministic handlerを同一再検証前に各一回",
+        "各recordのthumbを個別に検証",
+        "followup-review-evidence-patch",
+        "repair-plan",
+    ]:
+        assert fragment in skill, fragment
+
+
 def test_20260628_e2e_artifact_collision_has_separate_incident_report() -> None:
     """E2E成果物衝突をフルrunner障害へ混ぜて矮小化しない。"""
     text = E2E_ARTIFACT_INCIDENT_HTML.read_text(encoding="utf-8")

@@ -571,6 +571,239 @@ def test_search_audit_metadata_patch_promotes_dropped_or_not_selected_reasons(tm
     ]
 
 
+def test_compound_repair_plan_executes_each_unique_handler_once(monkeypatch, tmp_path: Path) -> None:
+    """1回の複合Redはhandler単位の有限planとして一括実行する。"""
+    from tools import repair_registry
+
+    calls: list[RepairContext] = []
+
+    def fake_repair(ctx: RepairContext) -> RepairResult:
+        calls.append(ctx)
+        return RepairResult(ctx.handler_id, "repaired", True, tuple(ctx.artifacts))
+
+    monkeypatch.setattr(repair_registry, "repair_with_registry", fake_repair)
+    plan = {
+        "repair_steps": [
+            {
+                "handler_id": "search-audit-metadata-patch",
+                "repair_class": "deterministic_handler",
+                "issue_codes": ["search_audit_count_mismatch"],
+                "artifact_paths": ["data/search_audit/2026-08-01/ai.json"],
+                "verify_gates": ["daily-quality"],
+            },
+            {
+                "handler_id": "url-quarantine-refill",
+                "repair_class": "deterministic_handler",
+                "issue_codes": ["top_article_stale", "followup_review_required"],
+                "artifact_paths": ["digest/AI/2026-08-01-AI.md", "data/articles.jsonl"],
+                "verify_gates": ["daily-quality", "url-liveness"],
+            },
+        ]
+    }
+
+    result = repair_registry.repair_plan_with_registry(tmp_path, "2026-08-01", plan)
+
+    assert result["status"] == "repaired"
+    assert result["handler_count"] == 2
+    assert [ctx.handler_id for ctx in calls] == [
+        "search-audit-metadata-patch",
+        "url-quarantine-refill",
+    ]
+
+
+def test_compound_repair_plan_rejects_duplicate_handler_steps_before_mutation(monkeypatch, tmp_path: Path) -> None:
+    """別step名で同じhandlerを再実行する抜け道は副作用前に拒否する。"""
+    from tools import repair_registry
+
+    called = False
+
+    def fake_repair(ctx: RepairContext) -> RepairResult:
+        nonlocal called
+        called = True
+        return RepairResult(ctx.handler_id, "repaired", True)
+
+    monkeypatch.setattr(repair_registry, "repair_with_registry", fake_repair)
+    step = {
+        "handler_id": "search-audit-metadata-patch",
+        "repair_class": "deterministic_handler",
+        "issue_codes": ["search_audit_count_mismatch"],
+        "artifact_paths": ["data/search_audit/2026-08-01/ai.json"],
+        "verify_gates": ["daily-quality"],
+    }
+
+    result = repair_registry.repair_plan_with_registry(
+        tmp_path,
+        "2026-08-01",
+        {"repair_steps": [step, dict(step)]},
+    )
+
+    assert result["status"] == "blocked_repair_plan_invalid"
+    assert called is False
+
+
+def test_articles_scope_in_compound_url_repair_includes_all_current_followups(tmp_path: Path) -> None:
+    """digest 1カテゴリとarticles全体が同居しても、他カテゴリfollow-upを落とさない。"""
+    from tools.repair_registry import _daily_quality_bad_urls_by_category
+
+    issue = "2026-08-01"
+    path = tmp_path / "data" / "articles.jsonl"
+    path.parent.mkdir(parents=True)
+    rows = [
+        {
+            "date": issue,
+            "genre": "FX",
+            "url": "https://example.com/2026/08/01/fx-new",
+            "is_followup": True,
+            "matched_with": "https://example.com/2026/06/20/fx-old",
+        },
+        {
+            "date": issue,
+            "genre": "IT-Consulting",
+            "url": "https://example.com/2026/08/01/it-new",
+            "is_followup": True,
+            "matched_with": "https://example.com/2026/06/25/it-old",
+        },
+    ]
+    path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
+    ctx = RepairContext(
+        repo_root=tmp_path,
+        issue=issue,
+        handler_id="url-quarantine-refill",
+        artifacts=[f"digest/AI/{issue}-AI.md", "data/articles.jsonl"],
+    )
+
+    bad = _daily_quality_bad_urls_by_category(ctx)
+
+    assert bad == {
+        "fx": ["https://example.com/2026/08/01/fx-new"],
+        "it": ["https://example.com/2026/08/01/it-new"],
+    }
+
+
+def test_followup_review_evidence_patch_marks_only_fresh_reporter_verified_rows(tmp_path: Path) -> None:
+    """当日reporter証拠と意味差分が一致するfresh follow-upだけをreview済みにする。"""
+    issue = "2026-08-01"
+    articles = tmp_path / "data" / "articles.jsonl"
+    articles.parent.mkdir(parents=True)
+    fresh = {
+        "date": issue,
+        "published_date": "2026-08-01",
+        "date_evidence_source": "url-path",
+        "genre": "FX",
+        "url": "https://example.com/2026/08/01/fresh",
+        "is_followup": True,
+        "matched_with": "https://example.com/2026/06/20/old",
+        "followup_new_words": ["ecb"],
+        "followup_new_nums": [],
+    }
+    stale = {
+        "date": issue,
+        "published_date": "2026-07-21",
+        "date_evidence_source": "official-page",
+        "genre": "AI",
+        "url": "https://example.com/stale",
+        "is_followup": True,
+        "matched_with": "https://example.com/2026/07/20/old",
+        "followup_new_words": ["security"],
+        "followup_new_nums": [],
+    }
+    articles.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in [fresh, stale]) + "\n",
+        encoding="utf-8",
+    )
+    reporter = tmp_path / "tmp" / "newsroom" / issue / "fx.records.jsonl"
+    reporter.parent.mkdir(parents=True)
+    reporter.write_text(json.dumps(fresh, ensure_ascii=False) + "\n", encoding="utf-8")
+    ai_reporter = reporter.with_name("ai.records.jsonl")
+    ai_reporter.write_text(json.dumps(stale, ensure_ascii=False) + "\n", encoding="utf-8")
+    manifest = tmp_path / "build" / "reporter-artifacts" / issue / "editor-input-manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        json.dumps(
+            {
+                "reporter_artifacts": [
+                    f"tmp/newsroom/{issue}/fx.records.jsonl",
+                    f"tmp/newsroom/{issue}/ai.records.jsonl",
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="followup-review-evidence-patch",
+            artifacts=["data/articles.jsonl"],
+        )
+    )
+
+    rows = [json.loads(line) for line in articles.read_text(encoding="utf-8").splitlines()]
+    assert result.status == "repaired"
+    assert "reporter_artifact=" in rows[0]["followup_review_note"]
+    assert "followup_review_note" not in rows[1]
+
+
+def test_followup_review_evidence_patch_refuses_unverified_row_without_mutation(tmp_path: Path) -> None:
+    """reporter証拠または意味差分が無い場合は自己申告でreview済みにしない。"""
+    issue = "2026-08-01"
+    articles = tmp_path / "data" / "articles.jsonl"
+    articles.parent.mkdir(parents=True)
+    row = {
+        "date": issue,
+        "published_date": issue,
+        "date_evidence_source": "url-path",
+        "genre": "FX",
+        "url": "https://example.com/2026/08/01/unverified",
+        "is_followup": True,
+        "matched_with": "https://example.com/2026/06/20/old",
+        "followup_new_words": [],
+        "followup_new_nums": [],
+    }
+    articles.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    before = articles.read_bytes()
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="followup-review-evidence-patch",
+            artifacts=["data/articles.jsonl"],
+        )
+    )
+
+    assert result.status == "blocked_deterministic_repair_not_applicable"
+    assert articles.read_bytes() == before
+
+
+def test_url_repair_blocks_when_only_stale_top_card_remains(tmp_path: Path) -> None:
+    """単独stale TOPを「並べ替え対象なし」のnoop成功へ逃がさない。"""
+    issue = "2026-08-01"
+    digest = tmp_path / "digest" / "AI" / f"{issue}-AI.md"
+    digest.parent.mkdir(parents=True)
+    digest.write_text(
+        "---\ndate: 2026-08-01\ncategory: AI\ncategoryId: ai\n---\n\n"
+        "### [90] stale only\n\n"
+        "📅 2026-07-30 · 📰 Example · 🔗 [元記事](https://example.com/news/2026/07/30/article.html)\n\n"
+        "![thumb](https://example.com/thumb.jpg)\n\n"
+        "- stale body\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/AI/{issue}-AI.md"],
+        )
+    )
+
+    assert result.status == "blocked_refill_unresolved"
+    assert "no fresh top candidate" in result.message
+
+
 def test_search_audit_metadata_patch_syncs_selected_total_from_digest_cards(tmp_path: Path) -> None:
     """final digest で落ちた記事数を search_audit selected_total へ同じ述語で戻す。"""
     issue = "2026-07-04"

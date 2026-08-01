@@ -194,6 +194,8 @@ admissionはrunner hash、引数、issue date、scheduled-equivalent intent、�
 
 TDDのRedは、単一の失敗テストや単一fixtureを作れば足りるものではない。Requirementを正常、境界、異常、復旧、replay、identity drift、scope escape、他成果物不変、人間・資源影響へ分解し、各Acceptanceが独立した反証fixtureを持ち、一つのfixtureを削除または別fixtureで代用しても他の要件が検証済みに見えないAcceptance Matrixを実装前に固定する。網羅的なテスト観点を列挙できない状態は要件定義が未完了である反証として扱い、実装へ進まない。collection errorや未実装例外一件で全Redを代表させず、全fixtureを収集して各観点の失敗を個別に観測してからGreen capabilityを発行する。
 
+validatorが同時に複数issueを返した場合は、先頭issueだけを直してretry budgetを消費してはならない。orchestratorは全issueをhandler別の有限 `repair-plan` へ変換し、artifactだけを重複除去して失敗観点を保持する。runnerは全deterministic handlerを同一再検証前に各一回だけ実行し、同じhandlerを別step名で再実行するplan、scope外artifact、unknown handlerを副作用前に拒否する。`followup_review_required` は偽URL隔離と混同せず、`followup-review-evidence-patch` がcurrent reporter artifact、公開日、date evidence、意味差分を一致確認できるfresh recordだけへreview証拠を付与する。reporter境界ではカテゴリ全体ではなく各recordのthumbを個別に検証し、一件でもnull、空、非HTTP、自己参照、Google News proxyならeditorへ渡さない。
+
 高コストconsumerは英字keyだけをgoal権威としてはならない。`単一の最終production-equivalent NoPublish E2E`と、重複探索・E2E連発・無駄な外部model起動の禁止が同じNews-Grasp goalにある場合、final E2E上限を1、正常経路のmodel call上限をreporter 7 + editor 1 + DeepDive 1の9へ解釈する。retry/repair分を先回りで追加しない。旧parserが同一goalを上限0で登録済みでも、call countとE2E countがともに0、stateがactivated、現在goalから再計算した有限上限と完全一致する場合だけ、一度だけ `limits_promoted_from_goal_semantics` へ遷移できる。消費済み、曖昧goal、非0上限、二度目の変更、上限引下げ・引上げは `HIGH_COST_ISSUED_LIMIT_MISMATCH` で拒否し、ledger削除やtask identity変更で回避しない。
 
 E2Eで初見の内部欠陥が出た場合は `UPSTREAM_DESIGN_ESCAPE` として該当する最上流の要件・影響調査・Red fixtureへ戻る。同一E2E runをpatch後にresumeせず、そのissue dateのE2E試行は消費済みとして保持する。外部認証などE2E外の境界が未達なら、そのoperationだけをdeferし、E2Eを繰り返して解決しようとしない。
@@ -343,9 +345,9 @@ repair の根本対策は、repair の回数を増やすことではなく、val
 |---|---|
 | Validator | `issue_code`、対象 artifact、日付、category、evidence を構造化 issue として出す。prose だけの failure は legacy 補助であり、通常完走の完全性証跡ではない。 |
 | Coverage matrix | `issue_code` から repair class、handler、allowed scope、failure status を一意に決める。未掲載は `blocked_unknown_repair_class`。 |
-| Orchestrator | 複数 issue を ordered repair ledger として扱い、最初の issue だけで複合障害を代表させない。 |
+| Orchestrator | 複数 issue をordered repair ledgerからhandler別の有限`repair-plan`へ変換し、最初のissueだけで複合障害を代表させない。 |
 | Registry | handler の存在、入力 scope、handler not-applicable、出力 scope を別 status で返す。 |
-| Runner | selected issue artifacts だけを handler に渡し、typed status を `handler_unimplemented` や generic error へ丸めない。 |
+| Runner | `repair-plan`の全deterministic handlerへ各handlerに属するartifactだけを渡し、同一再検証前に各一回実行する。typed statusを`handler_unimplemented`やgeneric errorへ丸めない。 |
 
 deterministic handler として宣言する row は `_blocked_ambiguous`、`noop`、`not_applicable` を修復実体の代替にしてはならない。registry が `noop` / `not_applicable` を返した場合は repair 成功として扱わない。same-gate re-verify が Green の場合だけ、別実行によって既に収束した状態として runner が次 stage へ進める。
 

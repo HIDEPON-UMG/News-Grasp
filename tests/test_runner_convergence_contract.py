@@ -2362,3 +2362,13 @@ def test_runner_does_not_surface_retry_budget_as_repair_cause() -> None:
     assert "gate retry limit reached before repair worker" not in runner
     assert "gate retry ledger denied repair worker" in runner
     assert "preserving typed gate classification" in runner
+
+
+def test_runner_executes_compound_repair_plan_before_single_gate_reverify() -> None:
+    """複合gateを先頭issueだけで修復する旧経路へ戻さない。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "repair_steps" in runner
+    assert "repair-plan" in runner
+    assert "--plan-file" in runner
+    assert "compound deterministic repair OK" in runner

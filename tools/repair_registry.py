@@ -46,6 +46,7 @@ AMBIGUOUS_STATUS = "blocked_ambiguous_repair"
 ARTICLES_ONLY_INCOMPLETE_STATUS = "blocked_articles_only_record_incomplete"
 DIGEST_ONLY_AMBIGUOUS_STATUS = "blocked_digest_only_ambiguous"
 REPAIR_SYSTEM_INCOMPLETE_STATUS = "blocked_repair_system_incomplete"
+REPAIR_PLAN_INVALID_STATUS = "blocked_repair_plan_invalid"
 
 
 class ReporterArtifactScopeError(ValueError):
@@ -615,8 +616,11 @@ def _is_unreviewed_stale_followup(*, issue_day: date, row: dict[str, object]) ->
 
 def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[str]]:
     scoped_categories: set[str] = set()
+    articles_scope_is_explicit = False
     for artifact in ctx.artifacts:
         rel = _normalize_rel(artifact)
+        if rel == "data/articles.jsonl":
+            articles_scope_is_explicit = True
         for cat_id, info in CATEGORY_PATHS.items():
             folder = str(info.get("digest_folder") or "")
             if rel.startswith(f"digest/{folder}/"):
@@ -689,7 +693,7 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
             continue
         if cat_id is None:
             continue
-        if scoped_categories and cat_id not in scoped_categories:
+        if scoped_categories and not articles_scope_is_explicit and cat_id not in scoped_categories:
             continue
         key = (cat_id, url)
         if key in seen:
@@ -874,11 +878,13 @@ def _repair_stale_top_digest_cards(ctx: RepairContext) -> tuple[list[str], list[
             continue
         raw = path.read_text(encoding="utf-8-sig", errors="replace")
         prefix, blocks, footer = _split_digest_blocks(raw)
-        if len(blocks) < 2:
+        if not blocks:
             continue
         first_date = _digest_block_date(blocks[0])
         if first_date is None or first_date >= allowed_oldest:
             continue
+        if len(blocks) < 2:
+            return changed, messages, f"blocked_refill_unresolved: no fresh top candidate for {cat_id}"
         fresh_index = next(
             (
                 idx
@@ -1021,6 +1027,90 @@ def _article_records(ctx: RepairContext) -> dict[str, dict[str, object]]:
         for row in _read_jsonl_records(ctx.repo_root / "data" / "articles.jsonl")
         if str(row.get("date") or "") == ctx.issue and _record_url(row)
     }
+
+
+def _repair_followup_review_evidence(ctx: RepairContext) -> RepairResult:
+    """current reporterで再確認できるfresh follow-upだけにreview証拠を付与する。"""
+    current = _current_reporter_records(ctx)
+    if current is None:
+        return RepairResult(
+            ctx.handler_id,
+            NOT_APPLICABLE_STATUS,
+            False,
+            message="current reporter artifact manifest is unavailable",
+        )
+    reporter_records, _ = current
+    path = ctx.repo_root / "data" / "articles.jsonl"
+    if not path.exists():
+        return RepairResult(ctx.handler_id, NOT_APPLICABLE_STATUS, False, message="data/articles.jsonl missing")
+
+    issue_day = date.fromisoformat(ctx.issue)
+    allowed_oldest = issue_day - timedelta(days=1)
+    output_lines: list[str] = []
+    changed = 0
+    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not raw_line.strip():
+            output_lines.append(raw_line)
+            continue
+        row = json.loads(raw_line)
+        if not isinstance(row, dict) or str(row.get("date") or "") != ctx.issue:
+            output_lines.append(raw_line)
+            continue
+        if not _is_unreviewed_stale_followup(issue_day=issue_day, row=row):
+            output_lines.append(raw_line)
+            continue
+        published_text = str(row.get("published_date") or "").strip()
+        evidence_source = str(row.get("date_evidence_source") or "").strip()
+        try:
+            published_day = date.fromisoformat(published_text)
+        except ValueError:
+            output_lines.append(raw_line)
+            continue
+        reporter_match = reporter_records.get(_record_url(row))
+        semantic_delta = [
+            str(value).strip()
+            for key in ("followup_new_words", "followup_new_nums")
+            for value in (row.get(key) or [])
+            if str(value).strip()
+        ]
+        if (
+            published_day < allowed_oldest
+            or not evidence_source
+            or reporter_match is None
+            or not semantic_delta
+        ):
+            output_lines.append(raw_line)
+            continue
+        reporter_row, reporter_artifact = reporter_match
+        if (
+            str(reporter_row.get("published_date") or "").strip() != published_text
+            or str(reporter_row.get("date_evidence_source") or "").strip() != evidence_source
+        ):
+            output_lines.append(raw_line)
+            continue
+        row["followup_review_note"] = (
+            "current reporter artifactで新規公開日・日付証拠・意味差分を再確認: "
+            f"reporter_artifact={reporter_artifact}; published_date={published_text}; "
+            f"date_evidence_source={evidence_source}; semantic_delta_count={len(semantic_delta)}"
+        )
+        output_lines.append(json.dumps(row, ensure_ascii=False, separators=(",", ":")))
+        changed += 1
+
+    if changed == 0:
+        return RepairResult(
+            ctx.handler_id,
+            NOT_APPLICABLE_STATUS,
+            False,
+            message="no fresh reporter-verified follow-up row",
+        )
+    _apply_atomic_text_writes({path: "\n".join(output_lines) + "\n"})
+    return RepairResult(
+        ctx.handler_id,
+        REPAIRED_STATUS,
+        True,
+        ("data/articles.jsonl",),
+        f"followup review evidence added: {changed}",
+    )
 
 
 def _digest_card_block(row: dict[str, object]) -> list[str]:
@@ -1550,6 +1640,17 @@ REGISTRY: dict[str, RepairHandler] = {
         repair=_repair_url_quarantine_refill,
         supported_verify_gates=("url-liveness", "daily-quality"),
     ),
+    "followup-review-evidence-patch": RepairHandler(
+        handler_id="followup-review-evidence-patch",
+        kind="deterministic",
+        allowed_artifacts=(
+            "data/articles.jsonl",
+            "build/reporter-artifacts/{date}/editor-input-manifest.json",
+            "tmp/newsroom/{date}/{category}.records.jsonl",
+        ),
+        verify_gate="daily-quality",
+        repair=_repair_followup_review_evidence,
+    ),
     "date-evidence-source-patch": RepairHandler(
         handler_id="date-evidence-source-patch",
         kind="deterministic",
@@ -1710,6 +1811,95 @@ def _result_payload(result: RepairResult) -> dict[str, object]:
     }
 
 
+def repair_plan_with_registry(repo_root: Path, issue: str, plan: dict[str, object]) -> dict[str, object]:
+    """複合gateの全deterministic handlerを、検証前に各1回だけ実行する。"""
+    steps = plan.get("repair_steps")
+    if not isinstance(steps, list) or not steps:
+        return {
+            "status": REPAIR_PLAN_INVALID_STATUS,
+            "changed": False,
+            "handler_count": 0,
+            "results": [],
+            "message": "repair_steps must be a non-empty list",
+        }
+
+    prepared: list[RepairContext] = []
+    seen_handlers: set[str] = set()
+    for raw_step in steps:
+        if not isinstance(raw_step, dict):
+            return {
+                "status": REPAIR_PLAN_INVALID_STATUS,
+                "changed": False,
+                "handler_count": 0,
+                "results": [],
+                "message": "repair step must be an object",
+            }
+        handler_id = str(raw_step.get("handler_id") or "").strip()
+        repair_class = str(raw_step.get("repair_class") or "").strip()
+        artifacts = raw_step.get("artifact_paths")
+        if (
+            not handler_id
+            or repair_class != "deterministic_handler"
+            or not isinstance(artifacts, list)
+            or not all(isinstance(item, str) and item.strip() for item in artifacts)
+            or handler_id in seen_handlers
+        ):
+            return {
+                "status": REPAIR_PLAN_INVALID_STATUS,
+                "changed": False,
+                "handler_count": 0,
+                "results": [],
+                "message": f"invalid or duplicate repair step: {handler_id or '<missing>'}",
+            }
+        handler = find_handler(handler_id)
+        if handler is None or handler.kind != "deterministic":
+            return {
+                "status": REPAIR_PLAN_INVALID_STATUS,
+                "changed": False,
+                "handler_count": 0,
+                "results": [],
+                "message": f"unknown deterministic handler: {handler_id}",
+            }
+        ctx = RepairContext(
+            repo_root=repo_root,
+            issue=issue,
+            handler_id=handler_id,
+            artifacts=list(dict.fromkeys(str(item).strip() for item in artifacts)),
+        )
+        scoped, matched, _ = _artifact_scope_partition(ctx, handler)
+        if scoped and not matched:
+            return {
+                "status": REPAIR_PLAN_INVALID_STATUS,
+                "changed": False,
+                "handler_count": 0,
+                "results": [],
+                "message": f"repair step has no in-scope artifact: {handler_id}",
+            }
+        seen_handlers.add(handler_id)
+        prepared.append(ctx)
+
+    results: list[RepairResult] = []
+    for ctx in prepared:
+        result = repair_with_registry(ctx)
+        results.append(result)
+        if result.status not in {REPAIRED_STATUS, NOOP_STATUS}:
+            return {
+                "status": result.status,
+                "changed": any(item.changed for item in results),
+                "handler_count": len(results),
+                "results": [_result_payload(item) for item in results],
+                "message": result.message,
+            }
+    changed = any(result.changed for result in results)
+    return {
+        "status": REPAIRED_STATUS if changed else NOOP_STATUS,
+        "changed": changed,
+        "handler_count": len(results),
+        "results": [_result_payload(result) for result in results],
+        "message": "compound deterministic repair plan applied",
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="News-Grasp deterministic repair registry.")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -1722,6 +1912,11 @@ def main(argv: list[str] | None = None) -> int:
     repair_parser.add_argument("--repo-root", type=Path, required=True)
     repair_parser.add_argument("--date", required=True)
     repair_parser.add_argument("--artifact", action="append", default=[])
+
+    plan_parser = sub.add_parser("repair-plan")
+    plan_parser.add_argument("--repo-root", type=Path, required=True)
+    plan_parser.add_argument("--date", required=True)
+    plan_parser.add_argument("--plan-file", type=Path, required=True)
 
     args = parser.parse_args(argv)
     if args.cmd == "metadata":
@@ -1762,6 +1957,33 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps(_result_payload(result), ensure_ascii=False, indent=2))
         return 0 if result.status == REPAIRED_STATUS else 1
+    if args.cmd == "repair-plan":
+        completeness = _audit_current_repair_system()
+        if not completeness.ok:
+            payload = {
+                "status": REPAIR_SYSTEM_INCOMPLETE_STATUS,
+                "changed": False,
+                "handler_count": 0,
+                "results": [],
+                "message": "repair completeness audit failed",
+            }
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return 1
+        try:
+            plan = json.loads(args.plan_file.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError) as error:
+            payload = {
+                "status": REPAIR_PLAN_INVALID_STATUS,
+                "changed": False,
+                "handler_count": 0,
+                "results": [],
+                "message": str(error),
+            }
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return 1
+        result = repair_plan_with_registry(args.repo_root, args.date, plan)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["status"] in {REPAIRED_STATUS, NOOP_STATUS} else 1
     raise AssertionError(args.cmd)
 
 

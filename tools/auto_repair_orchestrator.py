@@ -130,6 +130,33 @@ def _decision_ledger_entry(decision: RepairDecision) -> dict[str, Any]:
     }
 
 
+def _deterministic_repair_steps(decisions: list[RepairDecision]) -> list[dict[str, Any]]:
+    """全issueを失わず、同一handlerを一度だけ実行する有限planへ畳む。"""
+    grouped: dict[str, dict[str, Any]] = {}
+    for decision in decisions:
+        if decision.repair_class != RepairClass.DETERMINISTIC_HANDLER or not decision.handler_id:
+            continue
+        step = grouped.setdefault(
+            decision.handler_id,
+            {
+                "handler_id": decision.handler_id,
+                "repair_class": str(decision.repair_class),
+                "issue_codes": [],
+                "artifact_paths": [],
+                "verify_gates": [],
+            },
+        )
+        for key, values in (
+            ("issue_codes", [decision.issue_code]),
+            ("artifact_paths", list(decision.artifact_paths)),
+            ("verify_gates", [decision.verify_gate]),
+        ):
+            for value in values:
+                if value and value not in step[key]:
+                    step[key].append(value)
+    return list(grouped.values())
+
+
 def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDecision] | None = None) -> dict[str, Any]:
     if decision.repair_class == RepairClass.DETERMINISTIC_HANDLER:
         if decision.handler_id == "url-quarantine-refill":
@@ -190,6 +217,14 @@ def _payload_from_decision(decision: RepairDecision, *, decisions: list[RepairDe
         payload["allowed_artifacts"] = list(decision.allowed_artifacts)
     if decisions is not None:
         payload["issues"] = [_decision_ledger_entry(item) for item in decisions]
+        repair_steps = _deterministic_repair_steps(decisions)
+        if repair_steps:
+            payload["repair_plan_kind"] = (
+                "compound_deterministic" if len(decisions) > 1 else "single_deterministic"
+            )
+            payload["compound_issue_count"] = len(decisions)
+            payload["batch_repair_eligible"] = True
+            payload["repair_steps"] = repair_steps
     return payload
 
 

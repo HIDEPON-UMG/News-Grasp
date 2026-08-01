@@ -14,7 +14,7 @@ def test_every_acceptance_has_a_unique_executable_fixture() -> None:
     value = json.loads(MATRIX.read_text(encoding="utf-8"))
     assert value["schemaVersion"] == "NEWS_GRASP_DEEPDIVE_TDD_ACCEPTANCE_MATRIX_V1"
     rows = value["rows"]
-    assert len(rows) >= 76
+    assert len(rows) >= 87
     ids = [row["id"] for row in rows]
     fixtures = [row["fixture"] for row in rows]
     assert len(ids) == len(set(ids))
@@ -49,6 +49,8 @@ def test_matrix_covers_each_failure_family_and_both_polarities() -> None:
     assert counts["high_cost_single_attempt"] >= 11
     assert counts["nested_harness_resolution"] >= 3
     assert counts["goal_budget_semantics"] >= 6
+    assert counts["compound_gate_repair"] >= 9
+    assert counts["reporter_artifact_quality"] >= 2
     assert counts["url_provenance"] >= 10
     assert counts["podcast_value"] >= 9
     assert counts["route_parity"] >= 5

@@ -1699,16 +1699,36 @@ function Invoke-DeterministicRegistryRepair {
         'blocked_repair_handler_unimplemented'
     )
     $repairArtifacts = @(Get-RepairDecisionArtifacts -RepairDecision $decision -FallbackArtifacts $Artifacts)
-
-    $registryArgs = @(
-        '-m', 'tools.repair_registry',
-        'repair',
-        '--handler-id', $decision.handler_id,
-        '--repo-root', $RepoDir,
-        '--date', $DateStamp
+    $hasRepairPlan = (
+        ($decision.PSObject.Properties.Name -contains 'batch_repair_eligible') -and
+        [bool]$decision.batch_repair_eligible -and
+        ($decision.PSObject.Properties.Name -contains 'repair_steps') -and
+        @($decision.repair_steps).Count -gt 0
     )
-    foreach ($artifact in $repairArtifacts) {
-        $registryArgs += @('--artifact', $artifact)
+    if ($hasRepairPlan) {
+        $repairPlanPath = $ClassifyPath
+        if (-not $repairPlanPath -or -not (Test-Path -LiteralPath $repairPlanPath)) {
+            $repairPlanPath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-repair-plan-$GateId-$DateStamp-$RunId.json")
+            $decision | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $repairPlanPath -Encoding UTF8
+        }
+        $registryArgs = @(
+            '-m', 'tools.repair_registry',
+            'repair-plan',
+            '--repo-root', $RepoDir,
+            '--date', $DateStamp,
+            '--plan-file', $repairPlanPath
+        )
+    } else {
+        $registryArgs = @(
+            '-m', 'tools.repair_registry',
+            'repair',
+            '--handler-id', $decision.handler_id,
+            '--repo-root', $RepoDir,
+            '--date', $DateStamp
+        )
+        foreach ($artifact in $repairArtifacts) {
+            $registryArgs += @('--artifact', $artifact)
+        }
     }
     $registryCapture = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-registry-repair-$GateId-$DateStamp.json")
 
@@ -1736,7 +1756,11 @@ function Invoke-DeterministicRegistryRepair {
         return 4
     }
     if ($registryRc -eq 0) {
-        Write-Log "deterministic registry repair OK (gate=$GateId, handler=$($decision.handler_id))"
+        if ($hasRepairPlan) {
+            Write-Log "compound deterministic repair OK (gate=$GateId, handlers=$(@($decision.repair_steps).Count))"
+        } else {
+            Write-Log "deterministic registry repair OK (gate=$GateId, handler=$($decision.handler_id))"
+        }
         return 0
     }
     if ($registryStatus -and $typedRegistryStatuses -contains $registryStatus) {
