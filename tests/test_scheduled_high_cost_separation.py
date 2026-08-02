@@ -280,6 +280,139 @@ def test_recovery_admission_rejects_failure_hash_substitution_and_replay(tmp_pat
     store.close()
 
 
+def _terminal_recovery_state(*, issue_date: str = "2026-08-03") -> dict[str, object]:
+    return {
+        "status": "blocked_refill_unresolved",
+        "message": "gate retry ledger denied repair worker",
+        "exit_code": 1,
+        "date": issue_date,
+        "run_intent": "ScheduledRecoveryFull",
+        "run_id": "d" * 32,
+        "first_terminal_wins": "first-terminal-wins",
+        "phase": "repair",
+        "step": "gate retry ledger denied repair worker",
+    }
+
+
+def test_recovery_continuation_reuses_admission_and_remaining_budget(tmp_path) -> None:
+    continuation_issuer = _required_symbol(
+        "admit_scheduled_recovery_continuation_in_store",
+        "RED_SCHEDULED_RECOVERY_CONTINUATION_ISSUER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+
+    continuation = continuation_issuer(
+        store=store,
+        admission=recovery,
+        runner_state=_terminal_recovery_state(),
+        resume_stage="deepdive",
+    )
+
+    assert continuation["schemaVersion"] == "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1"
+    assert continuation["sourceAdmissionReceiptSha256"] == recovery["receiptSha256"]
+    assert continuation["sourceRunId"] == "d" * 32
+    assert continuation["resumeStage"] == "deepdive"
+    assert continuation["allowedModelRoutes"] == ["deepdive"]
+    reserved = high_cost.reserve_scheduled_model_call_in_store(
+        store=store,
+        admission=continuation,
+        route="deepdive",
+        call_id="continuation-deepdive",
+    )
+    assert reserved["callCount"] == 1
+    store.close()
+
+
+def test_recovery_continuation_rejects_nonterminal_state_and_route_substitution(
+    tmp_path,
+) -> None:
+    continuation_issuer = _required_symbol(
+        "admit_scheduled_recovery_continuation_in_store",
+        "RED_SCHEDULED_RECOVERY_CONTINUATION_ISSUER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+    running = _terminal_recovery_state()
+    running.update({"status": "running", "exit_code": -1})
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_RECOVERY_CONTINUATION_TERMINAL_REQUIRED"
+    ):
+        continuation_issuer(
+            store=store,
+            admission=recovery,
+            runner_state=running,
+            resume_stage="deepdive",
+        )
+    continuation = continuation_issuer(
+        store=store,
+        admission=recovery,
+        runner_state=_terminal_recovery_state(),
+        resume_stage="deepdive",
+    )
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_RECOVERY_CONTINUATION_ROUTE_FORBIDDEN"
+    ):
+        high_cost.reserve_scheduled_model_call_in_store(
+            store=store,
+            admission=continuation,
+            route="reporter:fx",
+            call_id="forbidden-reporter",
+        )
+    assert store.call_count(recovery["taskIdentity"]) == 0
+    store.close()
+
+
+def test_recovery_continuation_is_single_use_per_source_run_and_stage(tmp_path) -> None:
+    continuation_issuer = _required_symbol(
+        "admit_scheduled_recovery_continuation_in_store",
+        "RED_SCHEDULED_RECOVERY_CONTINUATION_ISSUER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+    state = _terminal_recovery_state()
+    continuation_issuer(
+        store=store,
+        admission=recovery,
+        runner_state=state,
+        resume_stage="deepdive",
+    )
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_RECOVERY_CONTINUATION_REPLAY"
+    ):
+        continuation_issuer(
+            store=store,
+            admission=recovery,
+            runner_state=state,
+            resume_stage="deepdive",
+        )
+    store.close()
+
+
 def test_modified_scheduled_receipt_is_rejected_before_call_reservation(
     tmp_path,
 ) -> None:
@@ -653,6 +786,18 @@ def test_runner_consumes_typed_scheduled_authority_and_separates_recovery_state(
     assert "--expected-task-action-sha256" in runner
     assert "--expected-runner-sha256" in runner
     assert "$operationKind = 'scheduled_recovery'" in runner
+
+
+def test_runner_resume_uses_broker_issued_recovery_continuation() -> None:
+    root = Path(__file__).resolve().parents[1]
+    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "admit-news-grasp-recovery-continuation" in runner
+    assert "SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED" in runner
+    assert "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in runner
+    assert "--runner-state" in runner
+    assert "--resume-stage" in runner
 
 
 def test_installer_seals_recurring_audit_mission_authority() -> None:

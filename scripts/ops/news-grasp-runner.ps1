@@ -2476,6 +2476,44 @@ function Assert-HighCostOperationAdmission {
         return
     }
 
+    if ($ResumeFromStage) {
+        if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $HighCostAdmissionPath)) {
+            Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
+            exit 76
+        }
+        $sourceAdmissionReceipt = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
+        if ((-not (Test-Path -LiteralPath $sourceAdmissionReceipt -PathType Leaf)) -or (-not (Test-Path -LiteralPath $StateFile -PathType Leaf))) {
+            Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
+            exit 76
+        }
+        $admissionDir = Join-Path $RepoDir "build\high-cost-operation-admissions\$DateStamp"
+        New-Item -ItemType Directory -Path $admissionDir -Force | Out-Null
+        $admissionReceipt = Join-Path $admissionDir "$RunId-scheduled_recovery_continuation.json"
+        $admissionJson = (& $PyExe $modelSpawnBroker 'admit-news-grasp-recovery-continuation' '--operation-admission' $sourceAdmissionReceipt '--runner-state' $StateFile '--resume-stage' $ResumeFromStage 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_RECOVERY_CONTINUATION_REJECTED exit=$LASTEXITCODE" -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_RECOVERY_CONTINUATION_REJECTED' -ExitCode 76
+            exit 76
+        }
+        try {
+            $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
+            if ($admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -or $admission.operationKind -ne 'scheduled_recovery' -or $admission.issueDate -ne $DateStamp -or $admission.resumeStage -ne $ResumeFromStage) {
+                throw 'scheduled recovery continuation identity drift'
+            }
+            [System.IO.File]::WriteAllText($admissionReceipt, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+            $script:HighCostAdmissionPath = $admissionReceipt
+            $script:HighCostExpectedOperationKind = 'scheduled_recovery'
+            $script:HighCostExpectedIssueDate = $DateStamp
+            return
+        } catch {
+            Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_INVALID reason=$($_.Exception.Message)" -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_INVALID' -ExitCode 76
+            exit 76
+        }
+    }
+
     if ($HighCostAdmissionPath) {
         Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -Encoding UTF8
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -ExitCode 76
