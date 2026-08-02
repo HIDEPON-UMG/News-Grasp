@@ -9,12 +9,7 @@ import pytest
 import tools.harness.high_cost_control_v2 as high_cost
 
 
-BROKER_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "tools"
-    / "harness"
-    / "model_spawn_broker.py"
-)
+BROKER_PATH = Path(high_cost.__file__).resolve().with_name("model_spawn_broker.py")
 
 
 def _load_broker_module():
