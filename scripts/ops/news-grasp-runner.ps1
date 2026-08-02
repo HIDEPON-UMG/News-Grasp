@@ -49,7 +49,7 @@ param(
     [switch] $Stage2EditorSmokeOnly,
     [switch] $StopAfterEditorStart,
     [switch] $StopBeforeDeepDive,
-    [ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive')]
+    [ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
     [string] $ResumeFromStage = '',
     [string] $RepoDirOverride = '',
     [string] $CodexWrapperOverride = '',
@@ -78,6 +78,7 @@ if ($StopBeforeDeepDive) { $NoPublish = $true }
 if ($NoPublish) { $NoPush = $true }
 $ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
 $ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')
+$ResumeGenerationQualityRepair = $ResumeFromStage -eq 'generation-quality-repair'
 # 子 Python の stdin/stdout/stderr を UTF-8 に固定 (境界 1 箇所集約)。日本語版 Windows
 # では子 Python の stderr が pipe 出力時 locale (CP932) になり、[Console]::OutputEncoding
 # = UTF8 の reader が誤デコード → repair プロンプトへ渡る gate stderr が文字化けしていた
@@ -2640,7 +2641,7 @@ if ($PreflightOnly) {
 $NetWait = Join-Path $env:USERPROFILE 'bin\net_wait.py'
 if ($Stage2EditorSmokeOnly) {
     Write-Log 'Stage2EditorSmokeOnly mode: skipping net reachability wait and git sync'
-} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive) {
+} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
     Write-Log 'ResumeFromStage mode: skipping net reachability wait and git sync'
 } else {
     if (Test-Path $NetWait) {
@@ -2674,8 +2675,10 @@ if ($RecoverOnly) {
     $recoverOnlyInputManifest = Write-RecoverOnlyInputManifest
     Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
     Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
-} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive) {
-    if ($ResumeAfterDeepDive) {
+} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
+    if ($ResumeGenerationQualityRepair) {
+        Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality; starting at missing-artifact generation repair"
+    } elseif ($ResumeAfterDeepDive) {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality/DeepDive artifacts; starting after DeepDive"
     } else {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality artifacts; starting at DeepDive"
@@ -3482,7 +3485,7 @@ $DeepDiveTimeoutSec = 1800
 $DeepDiveModel = Get-ModelPolicyValue -Role 'deepdive' -Key 'default'
 $DeepDiveReasoningEffort = Get-ModelPolicyValue -Role 'deepdive' -Key 'reasoning'
 $DeepDiveContextPackFailed = $false
-if ((-not $RecoverOnly) -and (-not $ResumeAfterDeepDive)) {
+if ((-not $RecoverOnly) -and (-not $ResumeAfterDeepDive) -and (-not $ResumeGenerationQualityRepair)) {
     Write-Log "deepdive context pack build start ($DeepDiveContextPack)"
     Push-Location $RepoDir
     try {
@@ -3502,6 +3505,8 @@ if ($RecoverOnly) {
     Write-Log "RecoverOnly mode: skipping deepdive codex; keeping existing DeepDive state"
 } elseif ($ResumeAfterDeepDive) {
     Write-Log 'ResumeFromStage mode: skipping deepdive codex; using existing DeepDive artifact'
+} elseif ($ResumeGenerationQualityRepair) {
+    Write-Log 'ResumeFromStage mode: skipping deepdive codex; generation-quality gate owns missing artifact repair'
 } elseif ($DeepDiveContextPackFailed) {
     Write-Log 'skipping deepdive codex because context pack failed'
 } else {

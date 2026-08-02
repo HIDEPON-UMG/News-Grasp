@@ -413,6 +413,66 @@ def test_recovery_continuation_is_single_use_per_source_run_and_stage(tmp_path) 
     store.close()
 
 
+def test_recovery_continuation_chains_only_into_generation_quality_repair(
+    tmp_path,
+) -> None:
+    continuation_issuer = _required_symbol(
+        "admit_scheduled_recovery_continuation_in_store",
+        "RED_SCHEDULED_RECOVERY_CONTINUATION_ISSUER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+    first = continuation_issuer(
+        store=store,
+        admission=recovery,
+        runner_state=_terminal_recovery_state(),
+        resume_stage="deepdive",
+    )
+    chained_state = _terminal_recovery_state()
+    chained_state.update(
+        {
+            "status": "error",
+            "run_id": "e" * 32,
+            "message": "generation quality autonomous gate failed",
+        }
+    )
+    chained_state.pop("phase")
+    second = continuation_issuer(
+        store=store,
+        admission=first,
+        runner_state=chained_state,
+        resume_stage="generation-quality-repair",
+    )
+    assert second["sourceAdmissionReceiptSha256"] == first["receiptSha256"]
+    assert second["allowedModelRoutes"] == ["repair:generation-quality"]
+    with pytest.raises(
+        high_cost.ControlError,
+        match="SCHEDULED_RECOVERY_CONTINUATION_ROUTE_FORBIDDEN",
+    ):
+        high_cost.reserve_scheduled_model_call_in_store(
+            store=store,
+            admission=second,
+            route="deepdive",
+            call_id="forbidden-deepdive-rerun",
+        )
+    reserved = high_cost.reserve_scheduled_model_call_in_store(
+        store=store,
+        admission=second,
+        route="repair:generation-quality",
+        call_id="missing-deepdive-repair",
+    )
+    assert reserved["callCount"] == 1
+    store.close()
+
+
 def test_modified_scheduled_receipt_is_rejected_before_call_reservation(
     tmp_path,
 ) -> None:
@@ -798,6 +858,8 @@ def test_runner_resume_uses_broker_issued_recovery_continuation() -> None:
     assert "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in runner
     assert "--runner-state" in runner
     assert "--resume-stage" in runner
+    assert "generation-quality-repair" in runner
+    assert "generation-quality gate owns missing artifact repair" in runner
 
 
 def test_installer_seals_recurring_audit_mission_authority() -> None:
