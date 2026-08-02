@@ -432,6 +432,7 @@ def test_weekly_failure_regression_corpus_covers_every_day_without_unknown_outco
         "2026-07-29",
         "2026-07-30",
         "2026-07-31",
+        "2026-08-02",
     } <= {case.issue_date for case in cases}
     assert all(case.issue_code != "unknown" for case in cases)
     assert all(

@@ -1422,6 +1422,90 @@ def test_url_quarantine_refill_handler_reorders_stale_top_article(tmp_path: Path
     assert repaired.index("fresh second") < repaired.index("stale top")
 
 
+def test_url_quarantine_refill_quarantines_stale_digest_url_when_articles_row_is_prior_date(
+    tmp_path: Path,
+) -> None:
+    """digest が当日正本でも articles row の日付ずれで stale URL を見失わない。"""
+    issue = "2026-08-02"
+    digest = tmp_path / "digest" / "FX" / f"{issue}-FX.md"
+    articles = tmp_path / "data" / "articles.jsonl"
+    audit = tmp_path / "data" / "search_audit" / issue / "fx.json"
+    records = tmp_path / "tmp" / "newsroom" / issue / "fx.records.jsonl"
+    for path in (digest, articles, audit, records):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    stale_url = "https://example.com/economy/20260731-stale/"
+    fresh_url = "https://example.com/economy/20260801-fresh/"
+    stale = {
+        "date": "2026-08-01",
+        "genre": "FX",
+        "title": "stale intervention",
+        "title_ja": "古い介入記事",
+        "summary": "stale",
+        "url": stale_url,
+        "thumb": "https://example.com/stale.jpg",
+        "source": "Example",
+        "published_date": "2026-07-31",
+        "date_evidence_source": "url-path",
+    }
+    fresh = {
+        "date": issue,
+        "genre": "FX",
+        "title": "fresh market",
+        "title_ja": "新しい市場記事",
+        "summary": "fresh",
+        "url": fresh_url,
+        "thumb": "https://example.com/fresh.jpg",
+        "source": "Example",
+        "published_date": "2026-08-01",
+        "date_evidence_source": "url-path",
+    }
+    articles.write_text(
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in (stale, fresh)),
+        encoding="utf-8",
+    )
+    records.write_text(
+        "".join(
+            json.dumps(row, ensure_ascii=False) + "\n"
+            for row in (stale | {"date": issue}, fresh)
+        ),
+        encoding="utf-8",
+    )
+    audit.write_text(
+        json.dumps({"category_id": "fx", "date": issue, "selected_total": 2}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    digest.write_text(
+        "---\ncategoryId: fx\n---\n\n"
+        "# FX\n\n"
+        "### [96] stale intervention\n\n"
+        f"📅 2026-07-31 09:00 · 📰 Example · 🔗 [元記事]({stale_url})\n\n"
+        "![thumb](https://example.com/stale.jpg)\n\n"
+        "---\n\n"
+        "### [88] fresh market\n\n"
+        f"📅 2026-08-01 09:00 · 📰 Example · 🔗 [元記事]({fresh_url})\n\n"
+        "![thumb](https://example.com/fresh.jpg)\n",
+        encoding="utf-8",
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="url-quarantine-refill",
+            artifacts=[f"digest/FX/{issue}-FX.md"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert stale_url not in digest.read_text(encoding="utf-8")
+    assert stale_url not in records.read_text(encoding="utf-8")
+    assert stale_url not in articles.read_text(encoding="utf-8")
+    repaired_audit = json.loads(audit.read_text(encoding="utf-8"))
+    assert repaired_audit["selected_total"] == 1
+    assert any(row.get("url") == stale_url for row in repaired_audit["dropped"])
+
+
 def test_digest_articles_reconcile_handler_appends_current_reporter_records(tmp_path: Path) -> None:
     issue = "2026-06-28"
     articles = tmp_path / "data" / "articles.jsonl"

@@ -669,6 +669,17 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
 
 WEEKLY_FAILURE_REGRESSION_CASES: tuple[WeeklyFailureRegressionCase, ...] = (
     WeeklyFailureRegressionCase(
+        "2026-08-02",
+        "daily-quality",
+        "url_dead_or_stale",
+        "deterministic_handler",
+        "blocked_refill_unresolved",
+        "url-quarantine-refill",
+        ("digest/FX/2026-08-02-FX.md",),
+        "fx",
+        evidence=(("failure_mode", "digest_url_stale_articles_row_prior_date"),),
+    ),
+    WeeklyFailureRegressionCase(
         "2026-07-25",
         "generation-quality",
         "audio_script_missing",

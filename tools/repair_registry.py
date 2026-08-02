@@ -616,6 +616,7 @@ def _is_unreviewed_stale_followup(*, issue_day: date, row: dict[str, object]) ->
 
 
 def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[str]]:
+    issue_day = date.fromisoformat(ctx.issue)
     scoped_categories: set[str] = set()
     articles_scope_is_explicit = False
     for artifact in ctx.artifacts:
@@ -646,7 +647,9 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
                 if url:
                     category_by_url[url] = cat_id
                 invalid_url = bool(url) and (
-                    is_google_news_rss_url(url) or looks_homepage_or_section_landing(url)
+                    is_google_news_rss_url(url)
+                    or looks_homepage_or_section_landing(url)
+                    or _is_stale_current_source_url(issue_day=issue_day, url=url)
                 )
                 invalid_thumb = (
                     not thumb
@@ -665,7 +668,6 @@ def _daily_quality_bad_urls_by_category(ctx: RepairContext) -> dict[str, list[st
     path = ctx.repo_root / "data" / "articles.jsonl"
     if not path.exists():
         return by_category
-    issue_day = date.fromisoformat(ctx.issue)
     for line in path.read_text(encoding="utf-8-sig").splitlines():
         if not line.strip():
             continue
@@ -918,12 +920,15 @@ def _repair_url_quarantine_refill(ctx: RepairContext) -> RepairResult:
         )
         if not result.get("ok"):
             reason = str(result.get("reason") or "blocked_refill_unresolved")
+            detail = reason
+            if reason == "blocked_refill_unresolved":
+                detail = f"{reason}: no fresh top candidate for {cat_id}"
             return RepairResult(
                 ctx.handler_id,
                 reason,
                 False,
                 tuple(sorted(changed_artifacts)),
-                f"autonomous_recovery_failed: url_quarantine_refill category={cat_id} reason={reason}",
+                f"autonomous_recovery_failed: url_quarantine_refill category={cat_id} reason={detail}",
             )
         folder = CATEGORY_PATHS[cat_id]["digest_folder"]
         changed_artifacts.update(
