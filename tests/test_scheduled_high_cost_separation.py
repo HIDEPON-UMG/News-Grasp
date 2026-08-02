@@ -860,6 +860,13 @@ def test_runner_resume_uses_broker_issued_recovery_continuation() -> None:
     assert "--resume-stage" in runner
     assert "generation-quality-repair" in runner
     assert "generation-quality gate owns missing artifact repair" in runner
+    artifact_guards = [
+        line
+        for line in runner.splitlines()
+        if "Test-DailyArtifactsExist -TargetDate $DateStamp" in line
+    ]
+    assert len(artifact_guards) == 2
+    assert all("(-not $ResumeGenerationQualityRepair)" in line for line in artifact_guards)
 
 
 def test_installer_seals_recurring_audit_mission_authority() -> None:
