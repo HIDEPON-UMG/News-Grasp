@@ -35,6 +35,7 @@ REQUIRED_RED_REQUIREMENTS = {
     "e2e_evidence_contract",
     "e2e_completion_boundary",
     "deepdive_url_provenance",
+    "deepdive_rendered_public_surface",
     "podcast_reader_value",
 }
 SHARED_QUALITY_ROUTES = {
@@ -46,6 +47,7 @@ SHARED_QUALITY_ROUTES = {
 REQUIRED_VIEWPOINT_SCOPES = {
     "final_e2e",
     "deepdive_url_provenance",
+    "deepdive_rendered_public_surface",
     "podcast_reader_value",
 }
 
@@ -94,6 +96,7 @@ def test_matrix_covers_each_failure_family_and_both_polarities() -> None:
     assert counts["compound_gate_repair"] >= 9
     assert counts["reporter_artifact_quality"] >= 2
     assert counts["url_provenance"] >= 10
+    assert counts["rendered_public_surface"] >= 10
     assert counts["podcast_value"] >= 9
     assert counts["route_parity"] >= 5
     assert {row["polarity"] for row in rows} == {"positive", "negative"}
@@ -128,7 +131,7 @@ def test_each_domain_has_its_own_complete_viewpoint_fixture_set() -> None:
         for binding in bindings:
             for field in ("acceptanceId", "fixture", "expectedRed", "counterevidence"):
                 assert binding.get(field), (scope["id"], field, binding)
-    assert len(all_fixtures) == len(set(all_fixtures)) == 30
+    assert len(all_fixtures) == len(set(all_fixtures)) == 40
 
 
 def test_red_suite_covers_each_user_value_requirement_independently() -> None:
@@ -151,7 +154,7 @@ def test_requirements_and_viewpoints_have_independent_executable_fixtures() -> N
     requirements = coverage.get("requirements", [])
     assert requirements
     requirement_fixtures = [item.get("fixture") for item in requirements]
-    assert len(requirement_fixtures) == len(set(requirement_fixtures)) == 14
+    assert len(requirement_fixtures) == len(set(requirement_fixtures)) == 15
     for requirement in requirements:
         for field in (
             "acceptanceId",
@@ -167,10 +170,10 @@ def test_requirements_and_viewpoints_have_independent_executable_fixtures() -> N
         for binding in scope.get("bindings", [])
     ]
     fixtures = [item.get("fixture") for item in scope_bindings]
-    assert len(fixtures) == len(set(fixtures)) == 30
+    assert len(fixtures) == len(set(fixtures)) == 40
     route_fixtures = [item.get("fixture") for item in coverage.get("routes", [])]
     all_fixtures = [*requirement_fixtures, *fixtures, *route_fixtures]
-    assert len(all_fixtures) == len(set(all_fixtures)) == 49
+    assert len(all_fixtures) == len(set(all_fixtures)) == 60
     for item in [*requirements, *scope_bindings]:
         relative, function_name = item["fixture"].split("::", 1)
         path = ROOT / relative
@@ -207,7 +210,7 @@ def test_red_suite_expands_to_unique_requirement_viewpoint_route_cells() -> None
         for viewpoint in scope_bindings[viewpoint_scope]:
             for route_id in applicable_routes:
                 cells.append((requirement["id"], viewpoint, route_id))
-    assert len(cells) == 200
+    assert len(cells) == 240
     assert len(cells) == len(set(cells))
 
 

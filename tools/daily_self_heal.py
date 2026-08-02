@@ -1961,6 +1961,7 @@ def verify_publish_complete(
     shared_quality = deepdive_quality.audit_issue(
         repo_root=repo_root,
         issue_date=date,
+        require_rendered_public=True,
     )
     base["deepdive_shared_quality"] = shared_quality
     if shared_quality.get("status") != "Green":

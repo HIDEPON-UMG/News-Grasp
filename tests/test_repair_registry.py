@@ -2101,3 +2101,158 @@ def test_digest_only_handler_validates_all_targets_before_articles_append(
 def test_unrouted_legacy_handlers_are_not_registered() -> None:
     assert find_handler("audio-script-length-patch") is None
     assert find_handler("digest-record-sync-patch") is None
+
+
+def test_deepdive_rendered_public_repair_is_issue_scoped(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-17"
+    calls: list[dict[str, object]] = []
+
+    def fake_build(**kwargs):
+        calls.append(kwargs)
+        output = tmp_path / "docs" / "deepdive" / issue / "index.html"
+        output.parent.mkdir(parents=True)
+        output.write_text("repaired", encoding="utf-8")
+        return [output]
+
+    monkeypatch.setattr(
+        registry_module,
+        "build_deepdive_pages",
+        fake_build,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "validate_provenance",
+        lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "validate_rendered_public_surface",
+        lambda *_args: ([], []),
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="deepdive-rendered-public-rebuild",
+            artifacts=[f"docs/deepdive/{issue}/index.html"],
+        )
+    )
+
+    assert result.status == "repaired"
+    assert result.changed is True
+    assert calls == [
+        {
+            "docs_root": tmp_path / "docs",
+            "digest_dir": tmp_path / "digest" / "DeepDive",
+            "issue_date": issue,
+            "validate_live_urls": False,
+        }
+    ]
+
+
+def test_deepdive_rendered_public_repair_refuses_invalid_provenance(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-17"
+    render_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        registry_module,
+        "build_deepdive_pages",
+        lambda **kwargs: render_calls.append(kwargs) or [],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "validate_provenance",
+        lambda *_args: ["DEEPDIVE_ARTICLE_DRIFT"],
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="deepdive-rendered-public-rebuild",
+            artifacts=[f"docs/deepdive/{issue}/index.html"],
+        )
+    )
+
+    assert result.status == "blocked_deepdive_rendered_public_provenance_invalid"
+    assert result.changed is False
+    assert render_calls == []
+
+
+def test_deepdive_rendered_public_repair_returns_typed_failure_on_renderer_error(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-17"
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "validate_provenance",
+        lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        registry_module,
+        "build_deepdive_pages",
+        lambda **_kwargs: (_ for _ in ()).throw(ModuleNotFoundError("jinja2")),
+    )
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="deepdive-rendered-public-rebuild",
+            artifacts=[f"docs/deepdive/{issue}/index.html"],
+        )
+    )
+
+    assert result.status == "blocked_deepdive_rendered_public_rebuild_failed"
+    assert result.changed is False
+    assert "jinja2" in result.message
+
+
+def test_deepdive_rendered_public_repair_rejects_false_success(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    issue = "2026-07-17"
+    output = tmp_path / "docs" / "deepdive" / issue / "index.html"
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "validate_provenance",
+        lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        registry_module.deepdive_quality,
+        "validate_rendered_public_surface",
+        lambda *_args: (
+            ["DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING https://example.com/source"],
+            [],
+        ),
+    )
+
+    def fake_build(**_kwargs):
+        output.parent.mkdir(parents=True)
+        output.write_text("still invalid", encoding="utf-8")
+        return [output]
+
+    monkeypatch.setattr(registry_module, "build_deepdive_pages", fake_build)
+
+    result = repair_with_registry(
+        RepairContext(
+            repo_root=tmp_path,
+            issue=issue,
+            handler_id="deepdive-rendered-public-rebuild",
+            artifacts=[f"docs/deepdive/{issue}/index.html"],
+        )
+    )
+
+    assert result.status == "blocked_deepdive_rendered_public_postcondition_failed"
+    assert result.changed is True
+    assert "DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING" in result.message

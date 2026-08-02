@@ -171,6 +171,178 @@ def test_provenance_rejects_missing_extra_and_duplicate_sources(
         )
 
 
+def _rendered_public_fixture(
+    tmp_path: Path,
+    *,
+    url: str = "https://example.com/source",
+    html: bytes | None = None,
+) -> tuple[Path, Path]:
+    article = _article(tmp_path / "2026-08-01-DeepDive.md", url=url)
+    manifest = tmp_path / "provenance.json"
+    deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[_fetch(url)],
+        output_path=manifest,
+    )
+    rendered = tmp_path / "docs" / "deepdive" / "2026-08-01" / "index.html"
+    if html is not None:
+        rendered.parent.mkdir(parents=True)
+        rendered.write_bytes(html)
+    return manifest, rendered
+
+
+def test_rendered_public_surface_rejects_missing_html(tmp_path: Path) -> None:
+    manifest, rendered = _rendered_public_fixture(tmp_path)
+
+    issues, evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert issues == ["DEEPDIVE_RENDERED_HTML_MISSING"]
+    assert evidence == []
+
+
+def test_rendered_public_surface_rejects_missing_anchor_href(tmp_path: Path) -> None:
+    manifest, rendered = _rendered_public_fixture(
+        tmp_path,
+        html=b'<html><a href="https://example.com/other">other</a></html>',
+    )
+
+    issues, evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert issues == [
+        "DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING https://example.com/source"
+    ]
+    assert evidence[0]["path"] == str(rendered.resolve())
+
+
+def test_rendered_public_surface_rejects_url_text_substitution(tmp_path: Path) -> None:
+    url = "https://example.com/source"
+    manifest, rendered = _rendered_public_fixture(
+        tmp_path,
+        url=url,
+        html=(
+            '<html><script type="application/json">'
+            f'{{"url":"{url}"}}'
+            '</script><a href="https://example.com/other">other</a></html>'
+        ).encode("utf-8"),
+    )
+
+    issues, _evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert issues == [f"DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING {url}"]
+
+
+def test_rendered_public_surface_accepts_entity_bom_and_crlf(tmp_path: Path) -> None:
+    url = "https://example.com/source?a=1&b=2"
+    manifest, rendered = _rendered_public_fixture(
+        tmp_path,
+        url=url,
+        html=(
+            '\ufeff<html>\r\n<a href="https://example.com/source?a=1&amp;b=2">'
+            "source</a>\r\n</html>"
+        ).encode("utf-8"),
+    )
+
+    issues, evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert issues == []
+    assert evidence[0]["canonicalTextSha256"] == deepdive_quality._canonical_text_sha256(
+        rendered.read_bytes()
+    )
+
+
+def test_rendered_public_surface_rejects_cross_date_html_substitution(
+    tmp_path: Path,
+) -> None:
+    manifest, rendered = _rendered_public_fixture(
+        tmp_path,
+        url="https://example.com/2026-08-01",
+        html=(
+            '<html><a href="https://example.com/2026-07-31">old</a></html>'
+        ).encode("utf-8"),
+    )
+
+    issues, _evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert issues == [
+        "DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING https://example.com/2026-08-01"
+    ]
+
+
+def test_rendered_public_surface_validation_does_not_mutate_files(
+    tmp_path: Path,
+) -> None:
+    url = "https://example.com/source"
+    manifest, rendered = _rendered_public_fixture(
+        tmp_path,
+        url=url,
+        html=f'<html><a href="{url}">source</a></html>'.encode("utf-8"),
+    )
+    before = {path: path.read_bytes() for path in (manifest, rendered)}
+
+    issues, _evidence = deepdive_quality.validate_rendered_public_surface(
+        manifest,
+        rendered,
+    )
+
+    assert issues == []
+    assert {path: path.read_bytes() for path in before} == before
+
+
+def test_issue_audit_requires_rendered_public_surface_only_when_requested(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    issue_date = "2026-08-01"
+    deepdive_dir = tmp_path / "digest" / "DeepDive"
+    deepdive_dir.mkdir(parents=True)
+    article = _article(deepdive_dir / f"{issue_date}-DeepDive.md")
+    dialogue = deepdive_dir / f"{issue_date}-DeepDive-dialogue.md"
+    dialogue.write_text("検証用対談", encoding="utf-8")
+    manifest = tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[_fetch("https://example.com/source")],
+        output_path=manifest,
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "validate_dialogue_document",
+        lambda *_args, **_kwargs: [],
+    )
+
+    pre_generation = deepdive_quality.audit_issue(
+        repo_root=tmp_path,
+        issue_date=issue_date,
+        include_corpus=False,
+    )
+    post_generation = deepdive_quality.audit_issue(
+        repo_root=tmp_path,
+        issue_date=issue_date,
+        include_corpus=False,
+        require_rendered_public=True,
+    )
+
+    assert pre_generation["status"] == "Green"
+    assert post_generation["status"] == "Red"
+    assert "deepdive_public_surface_invalid" in post_generation["issueCodes"]
+    assert "DEEPDIVE_RENDERED_HTML_MISSING" in post_generation["issues"]
+
+
 def test_fetch_record_requires_success_and_content_hash(tmp_path: Path) -> None:
     url = "https://example.com/source"
     article = _article(tmp_path / "2026-08-01-DeepDive.md", url=url)
@@ -307,6 +479,34 @@ def test_period_audit_rejects_cross_day_dialogue_loop(
     assert result["status"] == "Red"
     assert result["issueCodes"] == ["deepdive_dialogue_value_invalid"]
     assert result["dialogueCorpusAudit"]["issues"]
+
+
+def test_period_audit_forwards_rendered_public_requirement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_audit_issue(**kwargs):
+        calls.append(kwargs)
+        return _green_issue_row(str(kwargs["issue_date"]))
+
+    monkeypatch.setattr(deepdive_quality, "audit_issue", fake_audit_issue)
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "audit_dialogue_corpus",
+        lambda _paths: _corpus_result(issues=[]),
+    )
+
+    deepdive_quality.audit_period(
+        repo_root=tmp_path,
+        start_date="2026-07-31",
+        end_date="2026-08-01",
+        require_rendered_public=True,
+    )
+
+    assert len(calls) == 2
+    assert all(call["require_rendered_public"] is True for call in calls)
 
 
 def test_period_audit_exposes_green_corpus_evidence(

@@ -12,6 +12,7 @@ import tempfile
 from typing import Callable
 
 from tools import deepdive_quality
+from tools.render_deepdive import build_deepdive_pages
 from tools.publish_inventory import CATEGORY_PATHS, scheduled_category_ids
 from tools.tts import build_deepdive_dialogue_script
 from tools.refill_category_after_quarantine import refill_category
@@ -1564,6 +1565,80 @@ def _repair_deepdive_dialogue(ctx: RepairContext) -> RepairResult:
     )
 
 
+def _repair_deepdive_rendered_public(ctx: RepairContext) -> RepairResult:
+    article = (
+        ctx.repo_root
+        / "digest"
+        / "DeepDive"
+        / f"{ctx.issue}-DeepDive.md"
+    )
+    manifest = (
+        ctx.repo_root
+        / "data"
+        / "deepdive-provenance"
+        / f"{ctx.issue}.json"
+    )
+    provenance_issues = deepdive_quality.validate_provenance(article, manifest)
+    if provenance_issues:
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_rendered_public_provenance_invalid",
+            changed=False,
+            message="; ".join(provenance_issues),
+        )
+    output = (
+        ctx.repo_root
+        / "docs"
+        / "deepdive"
+        / ctx.issue
+        / "index.html"
+    )
+    before = output.read_bytes() if output.is_file() else b""
+    try:
+        written = build_deepdive_pages(
+            docs_root=ctx.repo_root / "docs",
+            digest_dir=ctx.repo_root / "digest" / "DeepDive",
+            issue_date=ctx.issue,
+            validate_live_urls=False,
+        )
+    except Exception as error:  # noqa: BLE001 - repair境界でtyped failureへ正規化する
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_rendered_public_rebuild_failed",
+            changed=False,
+            message=str(error),
+        )
+    if output.resolve() not in {path.resolve() for path in written} or not output.is_file():
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_rendered_public_rebuild_failed",
+            changed=False,
+            message="指定日のDeepDive HTMLが再生成されませんでした",
+        )
+    after = output.read_bytes()
+    postcondition_issues, _evidence = (
+        deepdive_quality.validate_rendered_public_surface(
+            manifest,
+            output,
+        )
+    )
+    if postcondition_issues:
+        return RepairResult(
+            handler_id=ctx.handler_id,
+            status="blocked_deepdive_rendered_public_postcondition_failed",
+            changed=before != after,
+            artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
+            message="; ".join(postcondition_issues),
+        )
+    return RepairResult(
+        handler_id=ctx.handler_id,
+        status=REPAIRED_STATUS,
+        changed=before != after,
+        artifacts=(f"docs/deepdive/{ctx.issue}/index.html",),
+        message="指定日のDeepDive HTMLだけをprovenance入力から再生成しました",
+    )
+
+
 REGISTRY: dict[str, RepairHandler] = {
     "deepdive-provenance-recapture": RepairHandler(
         handler_id="deepdive-provenance-recapture",
@@ -1586,6 +1661,18 @@ REGISTRY: dict[str, RepairHandler] = {
         verify_gate="deepdive-shared-quality",
         repair=_repair_deepdive_dialogue,
         supported_verify_gates=("deepdive-shared-quality", "daily-quality"),
+    ),
+    "deepdive-rendered-public-rebuild": RepairHandler(
+        handler_id="deepdive-rendered-public-rebuild",
+        kind="deterministic",
+        allowed_artifacts=(
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+            "docs/deepdive/{date}/index.html",
+        ),
+        verify_gate="deepdive-required",
+        repair=_repair_deepdive_rendered_public,
+        supported_verify_gates=("deepdive-required", "daily-quality"),
     ),
     "summary-emphasis-patch": RepairHandler(
         handler_id="summary-emphasis-patch",

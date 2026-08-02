@@ -123,6 +123,7 @@ _FENCED_RE = re.compile(r"^```([A-Za-z_]+)\r?\n(.*?)\r?\n```", re.DOTALL | re.MU
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 # 参考リンク bullet: `- 説明文: https://...`  (末尾 URL を拾う)
 _SRC_URL_RE = re.compile(r"(https?://\S+)\s*$")
+_SRC_MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://\S+)\)\s*$")
 
 
 # ── ブロック / 本文抽出 ───────────────────────────────────────────────────────
@@ -190,9 +191,17 @@ def parse_sources(section_text: str) -> list[dict[str, str]]:
         if not line.startswith("- "):
             continue
         item = line[2:].strip()
-        um = _SRC_URL_RE.search(item)
-        url = um.group(1) if um else ""
-        text = item[: um.start()].rstrip(" :：—-") if um else item
+        markdown_link = _SRC_MARKDOWN_LINK_RE.search(item)
+        if markdown_link:
+            prefix = item[: markdown_link.start()].rstrip(" :：—-")
+            text = " ".join(
+                part for part in (prefix, markdown_link.group(1).strip()) if part
+            )
+            url = markdown_link.group(2)
+        else:
+            um = _SRC_URL_RE.search(item)
+            url = um.group(1) if um else ""
+            text = item[: um.start()].rstrip(" :：—-") if um else item
         bm = re.search(r"[「『（(]", text)
         name = text[: bm.start()].strip() if bm else text
         rest = text[bm.start():] if bm else ""
@@ -1710,7 +1719,11 @@ def _require_blocks(md_path: Path, blocks: dict[str, list[Any]]) -> None:
             )
 
 
-def build_deepdive_context(md_path: Path) -> dict[str, Any]:
+def build_deepdive_context(
+    md_path: Path,
+    *,
+    validate_live_urls: bool = True,
+) -> dict[str, Any]:
     """DeepDive md 1 件から Jinja テンプレ用 context を組み立てる。"""
     text = Path(md_path).read_text(encoding="utf-8")
     fm, body = parse_frontmatter(text)
@@ -1720,7 +1733,8 @@ def build_deepdive_context(md_path: Path) -> dict[str, Any]:
     # 1 件でも 404 等 fatal があれば DeepDiveUrlError で公開を阻止。捏造 URL のサイレント
     # 公開を構造的に封じる (2026-06-03 三菱UFJ FX_Monthly 事故の恒久対策・境界 1 箇所集約)。
     # オフライン/CI 環境は NEWS_GRASP_SKIP_URL_CHECK=1 で全スキップできる。
-    require_live_urls(Path(md_path), text)
+    if validate_live_urls:
+        require_live_urls(Path(md_path), text)
     sections = split_sections(body)
 
     date_str = fm.get("date", "")
@@ -1903,8 +1917,12 @@ def _parse_tags(text: str) -> list[str]:
 def build_deepdive_pages(
     *, docs_root: Path | None = None, full: bool = False,
     digest_dir: Path | None = None,
+    issue_date: str | None = None,
+    validate_live_urls: bool = True,
 ) -> list[Path]:
-    """digest/DeepDive/*.md を docs/deepdive/{date}/index.html に全 render。"""
+    """DeepDiveを増分生成する。復旧時はissue_dateの1件だけを強制再生成する。"""
+    if issue_date is not None and re.fullmatch(r"20\d{2}-\d{2}-\d{2}", issue_date) is None:
+        raise ValueError(f"invalid issue_date: {issue_date}")
     docs = Path(docs_root) if docs_root else (_PKG_ROOT / "docs")
     src_dir = Path(digest_dir) if digest_dir else (_PKG_ROOT / "digest" / "DeepDive")
     if not src_dir.exists():
@@ -1912,11 +1930,16 @@ def build_deepdive_pages(
     written: list[Path] = []
     tmpl_mtime = _templates_mtime()  # テンプレ変更も増分判定に含める (generate_pages と同一境界)
     for src in sorted(src_dir.glob("*.md")):
+        if issue_date is not None and src.name != f"{issue_date}-DeepDive.md":
+            continue
         fm, _ = parse_frontmatter(src.read_text(encoding="utf-8"))
         if str(fm.get("kind", "")).strip() != "deepdive":
             continue
         try:
-            ctx = build_deepdive_context(src)
+            ctx = build_deepdive_context(
+                src,
+                validate_live_urls=validate_live_urls,
+            )
         except (DeepDiveIncompleteError, DeepDiveUrlError):
             raise  # 必須ブロック欠落・URL 生存検証 NG は握りつぶさず伝播 (= 未完成記事/捏造 URL の公開を構造的に阻止)
         except Exception as exc:  # noqa: BLE001
@@ -1926,7 +1949,7 @@ def build_deepdive_pages(
             print(f"[skip] DeepDive date 欠落: {src.name}", file=sys.stderr)
             continue
         out = docs / "deepdive" / ctx["date"] / "index.html"
-        if not full and not _needs_rebuild(src, out, tmpl_mtime):
+        if issue_date is None and not full and not _needs_rebuild(src, out, tmpl_mtime):
             continue
         render_page(ctx, out, template_name="deepdive-template.html")
         written.append(out)
@@ -2042,9 +2065,14 @@ if __name__ == "__main__":
 
     ap = argparse.ArgumentParser(description="News-Grasp DeepDive ページ生成")
     ap.add_argument("--full", action="store_true")
+    ap.add_argument("--date", dest="issue_date", default=None)
     ap.add_argument("--docs-root", type=Path, default=None)
     a = ap.parse_args()
-    paths = build_deepdive_pages(docs_root=a.docs_root, full=a.full)
+    paths = build_deepdive_pages(
+        docs_root=a.docs_root,
+        full=a.full,
+        issue_date=a.issue_date,
+    )
     print(f"wrote {len(paths)} DeepDive page(s)")
     for p in paths:
         print(f"  - {p}")

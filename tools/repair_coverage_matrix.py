@@ -279,6 +279,32 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         "blocked_deterministic_repair_failed",
     ),
     CoverageRow(
+        "deepdive-required",
+        "deepdive_public_surface_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-rendered-public-rebuild",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+            "docs/deepdive/{date}/index.html",
+        ),
+        "deepdive-required",
+        "blocked_deepdive_rendered_public_rebuild_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
+        "deepdive_public_surface_invalid",
+        RepairClass.DETERMINISTIC_HANDLER,
+        "deepdive-rendered-public-rebuild",
+        (
+            "digest/DeepDive/{date}-DeepDive.md",
+            "data/deepdive-provenance/{date}.json",
+            "docs/deepdive/{date}/index.html",
+        ),
+        "deepdive-required",
+        "blocked_deepdive_rendered_public_rebuild_failed",
+    ),
+    CoverageRow(
         "daily-quality",
         "published_docs_missing",
         RepairClass.TYPED_FATAL,

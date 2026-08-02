@@ -3,7 +3,8 @@
   "engine": "tools.deepdive_quality",
   "issueCodes": [
     "deepdive_url_provenance_invalid",
-    "deepdive_dialogue_value_invalid"
+    "deepdive_dialogue_value_invalid",
+    "deepdive_public_surface_invalid"
   ],
   "declaredRoutes": [
     "production_generation",

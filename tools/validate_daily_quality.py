@@ -976,6 +976,7 @@ def validate_daily_quality(
         shared_quality = deepdive_quality.audit_issue(
             repo_root=repo_root,
             issue_date=issue.isoformat(),
+            require_rendered_public=True,
         )
         for issue_code in shared_quality["issueCodes"]:
             matching = [

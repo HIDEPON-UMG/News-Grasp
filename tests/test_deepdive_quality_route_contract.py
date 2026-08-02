@@ -53,12 +53,29 @@ def test_daily_quality_uses_shared_quality_engine() -> None:
     assert "deepdive_dialogue_value_invalid" in source
 
 
+def test_post_generation_consumers_require_rendered_public_surface() -> None:
+    runner = RUNNER.read_text(encoding="utf-8-sig")
+    pre_generation = runner.split(
+        "@{ Name = 'deepdive shared quality gate'", 1
+    )[1].split("# ===== 2.9 digest/data commit", 1)[0]
+    daily_quality = DAILY_QUALITY.read_text(encoding="utf-8-sig")
+    publish_complete = PUBLISH_COMPLETE.read_text(encoding="utf-8-sig")
+
+    assert "require_rendered_public=True" not in pre_generation
+    assert "require_rendered_public=True" in daily_quality
+    verify_function = publish_complete.split(
+        "def verify_publish_complete(", 1
+    )[1].split("\n\ndef ", 1)[0]
+    assert "require_rendered_public=True" in verify_function
+
+
 def test_repair_matrix_owns_shared_quality_issue_codes() -> None:
     matrix = REPAIR_MATRIX.read_text(encoding="utf-8-sig")
     registry = REPAIR_REGISTRY.read_text(encoding="utf-8-sig")
     for issue_code, handler_id in (
         ("deepdive_url_provenance_invalid", "deepdive-provenance-recapture"),
         ("deepdive_dialogue_value_invalid", "deepdive-dialogue-rebuild"),
+        ("deepdive_public_surface_invalid", "deepdive-rendered-public-rebuild"),
     ):
         assert issue_code in matrix
         assert handler_id in matrix
@@ -82,6 +99,8 @@ def test_codex_daily_audit_uses_same_shared_quality_cli() -> None:
     assert "tools.deepdive_quality" in source
     assert "audit-issue" in source
     assert "audit-period" in source
+    assert "audit-issue --date <issue-date> --require-rendered-public" in source
+    assert "audit-period --start <start> --end <end> --require-rendered-public" in source
     assert "2026-07-02" not in source
 
 

@@ -53,6 +53,18 @@
         {"viewpoint":"recovery","acceptanceId":"URL-RECOVERY","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_uses_single_system_transport_fallback_for_403","expectedRed":"403 recovery不能または無制限retryになる","counterevidence":"対象transport失敗だけ一回fallbackする"},
         {"viewpoint":"human_impact","acceptanceId":"URL-HUMAN-IMPACT","fixture":"tests/test_deepdive_quality_engine.py::test_period_capture_collects_all_url_failures_without_retry","expectedRed":"最初の失敗が全影響を隠す","counterevidence":"一回の走査で全失敗を収集する"}
       ]},
+      {"id":"deepdive_rendered_public_surface","bindings":[
+        {"viewpoint":"normal","acceptanceId":"PUBLIC-NORMAL","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_accepts_entity_bom_and_crlf","expectedRed":"正当なanchor hrefが拒否される","counterevidence":"HTML entity・BOM・改行差を正規化して受理する"},
+        {"viewpoint":"failure","acceptanceId":"PUBLIC-FAILURE","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_missing_anchor_href","expectedRed":"provenance URL欠落HTMLがGreenになる","counterevidence":"欠落hrefをURL付きtyped Redにする"},
+        {"viewpoint":"boundary","acceptanceId":"PUBLIC-BOUNDARY","fixture":"tests/test_deepdive_render.py::test_parse_sources_preserves_markdown_url_query_exactly","expectedRed":"queryまたは閉じ括弧でURLがdriftする","counterevidence":"Markdown URLをexact抽出する"},
+        {"viewpoint":"substitution","acceptanceId":"PUBLIC-SUBSTITUTION","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_url_text_substitution","expectedRed":"scriptまたは本文文字列がanchor hrefを代用する","counterevidence":"a要素のhref属性だけを証拠にする"},
+        {"viewpoint":"drift","acceptanceId":"PUBLIC-DRIFT","fixture":"tests/test_deepdive_quality_engine.py::test_issue_audit_requires_rendered_public_surface_only_when_requested","expectedRed":"post-generation consumerがHTML driftを見ない","counterevidence":"生成後段だけpublic surfaceを必須化する"},
+        {"viewpoint":"replay","acceptanceId":"PUBLIC-REPLAY","fixture":"tests/test_deepdive_render.py::test_issue_scoped_rebuild_forces_only_requested_deepdive","expectedRed":"mtimeが新しいstale HTMLを再利用する","counterevidence":"指定日だけmtime非依存で再生成する"},
+        {"viewpoint":"missing","acceptanceId":"PUBLIC-MISSING","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_missing_html","expectedRed":"HTML欠落を未検証で通す","counterevidence":"生成HTML欠落をfail-closedにする"},
+        {"viewpoint":"cross_lineage","acceptanceId":"PUBLIC-CROSS-LINEAGE","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_cross_date_html_substitution","expectedRed":"別日のHTMLが当日証拠を代用する","counterevidence":"当日manifest URL集合とのexact差分で拒否する"},
+        {"viewpoint":"recovery","acceptanceId":"PUBLIC-RECOVERY","fixture":"tests/test_repair_registry.py::test_deepdive_rendered_public_repair_is_issue_scoped","expectedRed":"不整合を全件再生成または手編集で直す","counterevidence":"共有handlerが当日1件を再生成し同じgateで検証する"},
+        {"viewpoint":"human_impact","acceptanceId":"PUBLIC-HUMAN-IMPACT","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_validation_does_not_mutate_files","expectedRed":"監査が公開・画面・artifactを変更する","counterevidence":"read-only local artifact検証で閉じる"}
+      ]},
       {"id":"podcast_reader_value","bindings":[
         {"viewpoint":"normal","acceptanceId":"POD-NORMAL","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_valid_reader_value_document_passes_contract","expectedRed":"正当な7価値対談が拒否される","counterevidence":"全価値と根拠を持つ文書が通る"},
         {"viewpoint":"failure","acceptanceId":"POD-FAILURE","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_duplicate_value_segment","expectedRed":"価値区間重複が通る","counterevidence":"重複・順序違反をfatalにする"},
@@ -80,6 +92,7 @@
       "e2e_evidence_contract": "final_e2e",
       "e2e_completion_boundary": "final_e2e",
       "deepdive_url_provenance": "deepdive_url_provenance",
+      "deepdive_rendered_public_surface": "deepdive_rendered_public_surface",
       "podcast_reader_value": "podcast_reader_value"
     },
     "routes": [
@@ -117,6 +130,15 @@
         "productionConsumer": "tools.deepdive_quality shared provenance validator",
         "expectedRed": "未観測・soft-404・stale・別記事URLが公開provenanceへ入る",
         "counterevidence": "article/fetch/public hrefをfresh hashで一対一に束縛する",
+        "routeIds": ["production_generation","repair_publish","daily_quality","codex_daily_audit"]
+      },
+      {
+        "id": "deepdive_rendered_public_surface",
+        "acceptanceId": "DEEPDIVE-RENDERED-PUBLIC-SURFACE",
+        "fixture": "tests/test_deepdive_quality_engine.py::test_period_audit_forwards_rendered_public_requirement",
+        "productionConsumer": "tools.deepdive_quality post-generation public surface validator",
+        "expectedRed": "provenance URLが生成HTMLから欠落しても公開完了になる",
+        "counterevidence": "全publicHrefをanchor hrefへ一対一束縛し31日監査へ伝播する",
         "routeIds": ["production_generation","repair_publish","daily_quality","codex_daily_audit"]
       },
       {
@@ -210,6 +232,17 @@
     {"id":"URL-16","family":"url_provenance","polarity":"negative","requirement":"404・410では別transportへ逃げない","failureMode":"fake URL hidden by fallback","fixture":"tests/test_deepdive_quality_engine.py::test_fetch_never_falls_back_after_404_or_410"},
     {"id":"URL-17","family":"url_provenance","polarity":"negative","requirement":"fallback本文にもsoft-404判定を適用する","failureMode":"curl soft-404 bypasses primary validator","fixture":"tests/test_deepdive_quality_engine.py::test_system_transport_fallback_cannot_bypass_soft_404"},
     {"id":"URL-18","family":"url_provenance","polarity":"negative","requirement":"fallback失敗を成功へ読み替えない","failureMode":"curl nonzero becomes provenance","fixture":"tests/test_deepdive_quality_engine.py::test_system_transport_failure_remains_typed_red"},
+
+    {"id":"PUBLIC-01","family":"rendered_public_surface","polarity":"positive","requirement":"HTML entity・BOM・改行差を正規化","failureMode":"valid rendered href rejected","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_accepts_entity_bom_and_crlf"},
+    {"id":"PUBLIC-02","family":"rendered_public_surface","polarity":"negative","requirement":"provenance URL欠落を拒否","failureMode":"missing href accepted","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_missing_anchor_href"},
+    {"id":"PUBLIC-03","family":"rendered_public_surface","polarity":"negative","requirement":"本文URLでanchorを代用不能","failureMode":"script text accepted as href","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_url_text_substitution"},
+    {"id":"PUBLIC-04","family":"rendered_public_surface","polarity":"negative","requirement":"HTML欠落をfail-closed","failureMode":"missing html accepted","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_missing_html"},
+    {"id":"PUBLIC-05","family":"rendered_public_surface","polarity":"negative","requirement":"別日HTML代用を拒否","failureMode":"cross-date html accepted","fixture":"tests/test_deepdive_quality_engine.py::test_rendered_public_surface_rejects_cross_date_html_substitution"},
+    {"id":"PUBLIC-06","family":"rendered_public_surface","polarity":"positive","requirement":"Markdown URL queryをexact保持","failureMode":"closing parenthesis corrupts href","fixture":"tests/test_deepdive_render.py::test_parse_sources_preserves_markdown_url_query_exactly"},
+    {"id":"PUBLIC-07","family":"rendered_public_surface","polarity":"positive","requirement":"指定日だけ強制再生成","failureMode":"broad rebuild or stale replay","fixture":"tests/test_deepdive_render.py::test_issue_scoped_rebuild_forces_only_requested_deepdive"},
+    {"id":"PUBLIC-08","family":"rendered_public_surface","polarity":"negative","requirement":"偽修復成功を拒否","failureMode":"invalid postcondition reported repaired","fixture":"tests/test_repair_registry.py::test_deepdive_rendered_public_repair_rejects_false_success"},
+    {"id":"PUBLIC-09","family":"rendered_public_surface","polarity":"negative","requirement":"provenance Redで再生成しない","failureMode":"invalid source rendered","fixture":"tests/test_repair_registry.py::test_deepdive_rendered_public_repair_refuses_invalid_provenance"},
+    {"id":"PUBLIC-10","family":"rendered_public_surface","polarity":"negative","requirement":"renderer例外をtyped failure化","failureMode":"dependency error aborts repair process","fixture":"tests/test_repair_registry.py::test_deepdive_rendered_public_repair_returns_typed_failure_on_renderer_error"},
 
     {"id":"POD-01","family":"podcast_value","polarity":"negative","requirement":"7価値の順序と一意性","failureMode":"missing value passes","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_requires_exact_ordered_value_ids"},
     {"id":"POD-02","family":"podcast_value","polarity":"negative","requirement":"価値区間重複を拒否","failureMode":"duplicate value passes","fixture":"tests/test_deepdive_dialogue_value_contract.py::test_value_contract_rejects_duplicate_value_segment"},

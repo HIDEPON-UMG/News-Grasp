@@ -12,6 +12,7 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -44,6 +45,32 @@ SOFT_404_PATTERNS = (
 
 class DeepDiveQualityError(RuntimeError):
     """DeepDive品質をGreenとして表現できない。"""
+
+
+class _RenderedHrefCollector(HTMLParser):
+    """生成HTMLの実anchor hrefだけを収集する。本文文字列は証拠にしない。"""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.hrefs: set[str] = set()
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        if tag.lower() != "a":
+            return
+        for name, value in attrs:
+            if name.lower() == "href" and value:
+                self.hrefs.add(value)
+
+    def handle_startendtag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        self.handle_starttag(tag, attrs)
 
 
 def _canonical_sha256(value: object) -> str:
@@ -274,6 +301,48 @@ def validate_provenance(
         manifest_path,
     )
     return issues
+
+
+def validate_rendered_public_surface(
+    manifest_path: Path,
+    rendered_path: Path,
+) -> tuple[list[str], list[dict[str, str]]]:
+    """provenanceの公開URLが生成HTMLのanchor hrefに全件存在するか検証する。"""
+
+    manifest = Path(manifest_path).resolve()
+    rendered = Path(rendered_path).resolve()
+    if not manifest.is_file():
+        return ["DEEPDIVE_PROVENANCE_MISSING"], []
+    if not rendered.is_file():
+        return ["DEEPDIVE_RENDERED_HTML_MISSING"], []
+    try:
+        value = json.loads(manifest.read_text(encoding="utf-8-sig"))
+        rendered_bytes = rendered.read_bytes()
+        rendered_text = rendered_bytes.decode("utf-8-sig")
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return ["DEEPDIVE_RENDERED_PUBLIC_SURFACE_INVALID"], []
+    sources = value.get("sources") if isinstance(value, dict) else None
+    if not isinstance(sources, list):
+        return ["DEEPDIVE_RENDERED_PUBLIC_MANIFEST_INVALID"], []
+    required_hrefs: set[str] = set()
+    for row in sources:
+        if not isinstance(row, dict):
+            return ["DEEPDIVE_RENDERED_PUBLIC_MANIFEST_INVALID"], []
+        href = row.get("publicHref")
+        if not isinstance(href, str) or not href.startswith(("http://", "https://")):
+            return ["DEEPDIVE_RENDERED_PUBLIC_MANIFEST_INVALID"], []
+        required_hrefs.add(href)
+    collector = _RenderedHrefCollector()
+    try:
+        collector.feed(rendered_text)
+        collector.close()
+    except (ValueError, TypeError):
+        return ["DEEPDIVE_RENDERED_PUBLIC_SURFACE_INVALID"], []
+    issues = [
+        f"DEEPDIVE_RENDERED_PUBLIC_HREF_MISSING {href}"
+        for href in sorted(required_hrefs - collector.hrefs)
+    ]
+    return issues, [_audit_file_evidence(rendered, rendered_bytes)]
 
 
 def _validate_provenance_with_evidence(
@@ -672,6 +741,7 @@ def audit_issue(
     repo_root: Path,
     issue_date: str,
     include_corpus: bool = True,
+    require_rendered_public: bool = False,
 ) -> dict[str, Any]:
     """production runnerと日次監査が共有する一日分の品質判定。"""
 
@@ -680,6 +750,7 @@ def audit_issue(
     article = repo / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
     dialogue = repo / "digest" / "DeepDive" / f"{issue_date}-DeepDive-dialogue.md"
     manifest = repo / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    rendered_public = repo / "docs" / "deepdive" / issue_date / "index.html"
     issue_codes: list[str] = []
     issues: list[str] = []
     provenance_issues, provenance_evidence = _validate_provenance_with_evidence(
@@ -689,6 +760,15 @@ def audit_issue(
     if provenance_issues:
         issue_codes.append("deepdive_url_provenance_invalid")
         issues.extend(provenance_issues)
+    rendered_evidence: list[dict[str, str]] = []
+    if require_rendered_public:
+        rendered_issues, rendered_evidence = validate_rendered_public_surface(
+            manifest,
+            rendered_public,
+        )
+        if rendered_issues:
+            issue_codes.append("deepdive_public_surface_invalid")
+            issues.extend(rendered_issues)
     if not dialogue.is_file() or not article.is_file():
         dialogue_issues = ["DEEPDIVE_DIALOGUE_OR_SOURCE_MISSING"]
     else:
@@ -703,6 +783,8 @@ def audit_issue(
     audited_files = {
         row["path"]: row for row in provenance_evidence
     }
+    for row in rendered_evidence:
+        audited_files[row["path"]] = row
     if include_corpus:
         dialogue_paths = _dialogue_paths_for_period(
             repo_root=repo,
@@ -728,6 +810,7 @@ def audit_issue(
         "articlePath": str(article),
         "dialoguePath": str(dialogue),
         "provenancePath": str(manifest),
+        "renderedPublicPath": str(rendered_public),
         "dialogueCorpusAudit": dialogue_corpus_audit,
         "auditedFiles": [audited_files[path] for path in sorted(audited_files)],
         "auditedPaths": sorted(audited_files),
@@ -739,6 +822,7 @@ def audit_period(
     repo_root: Path,
     start_date: str,
     end_date: str,
+    require_rendered_public: bool = False,
 ) -> dict[str, Any]:
     start = date.fromisoformat(start_date)
     end = date.fromisoformat(end_date)
@@ -756,6 +840,7 @@ def audit_period(
                 repo_root=repo_root,
                 issue_date=current.isoformat(),
                 include_corpus=False,
+                require_rendered_public=require_rendered_public,
             )
         )
         current += timedelta(days=1)
@@ -796,9 +881,11 @@ def main(argv: list[str] | None = None) -> int:
     capture_period.add_argument("--timeout", type=float, default=20.0)
     audit = subparsers.add_parser("audit-issue")
     audit.add_argument("--date", required=True)
+    audit.add_argument("--require-rendered-public", action="store_true")
     period = subparsers.add_parser("audit-period")
     period.add_argument("--start", required=True)
     period.add_argument("--end", required=True)
+    period.add_argument("--require-rendered-public", action="store_true")
     args = parser.parse_args(argv)
     try:
         if args.command == "capture":
@@ -817,13 +904,18 @@ def main(argv: list[str] | None = None) -> int:
             )
             status = result["status"]
         elif args.command == "audit-issue":
-            result = audit_issue(repo_root=args.repo_root, issue_date=args.date)
+            result = audit_issue(
+                repo_root=args.repo_root,
+                issue_date=args.date,
+                require_rendered_public=args.require_rendered_public,
+            )
             status = result["status"]
         else:
             result = audit_period(
                 repo_root=args.repo_root,
                 start_date=args.start,
                 end_date=args.end,
+                require_rendered_public=args.require_rendered_public,
             )
             status = result["status"]
     except (DeepDiveQualityError, ValueError, OSError) as error:

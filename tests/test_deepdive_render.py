@@ -841,6 +841,46 @@ def test_parse_sources_drops_url_less_bullets() -> None:
     assert out[1]["url"] == "https://example.jp/c"
 
 
+def test_parse_sources_extracts_markdown_link_without_closing_parenthesis() -> None:
+    from tools.render_deepdive import parse_sources  # noqa: E402
+
+    out = parse_sources(
+        "- [財務省「外国為替平衡操作」](https://www.mof.go.jp/policy/index.html)\n"
+    )
+
+    assert out == [
+        {
+            "text": "財務省「外国為替平衡操作」",
+            "url": "https://www.mof.go.jp/policy/index.html",
+            "name": "財務省",
+            "rest": "「外国為替平衡操作」",
+        }
+    ]
+
+
+def test_parse_sources_preserves_markdown_url_query_exactly() -> None:
+    from tools.render_deepdive import parse_sources  # noqa: E402
+
+    url = (
+        "https://www.bok.or.kr/view.do?depth=200690&menuNo=200690"
+        "&nttId=11062942&relate=Y"
+    )
+    out = parse_sources(f"- [韓国銀行「通貨政策方向」]({url})\n")
+
+    assert len(out) == 1
+    assert out[0]["url"] == url
+    assert not out[0]["url"].endswith(")")
+
+
+def test_parse_sources_keeps_plain_trailing_url_backward_compatible() -> None:
+    from tools.render_deepdive import parse_sources  # noqa: E402
+
+    out = parse_sources("- 媒体A「既存形式」 https://example.com/plain\n")
+
+    assert out[0]["url"] == "https://example.com/plain"
+    assert out[0]["name"] == "媒体A"
+
+
 def test_deepdive_no_unclickable_div_sources() -> None:
     """ビルド済み deepdive HTML に <div class="dd-source"> が存在しないこと。
 
@@ -1315,3 +1355,57 @@ def test_related_absent_renders_without_related_block(tmp_path: Path) -> None:
     html = pages[0].read_text(encoding="utf-8")
     # CSS 定義 (.dd-related {...}) は常駐するので、描画された要素 (<aside>) の有無で判定する。
     assert '<aside class="dd-related"' not in html, "related が無いのに関連レポート枠が描画された"
+
+
+def test_issue_scoped_rebuild_forces_only_requested_deepdive(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """復旧は全件full rebuildを使わず、指定日だけをmtimeに依存せず再生成する。"""
+    import tools.render_deepdive as renderer
+
+    digest_dir = tmp_path / "digest" / "DeepDive"
+    digest_dir.mkdir(parents=True)
+    for issue_date in ("2026-07-17", "2026-07-18"):
+        (digest_dir / f"{issue_date}-DeepDive.md").write_text(
+            f"kind: deepdive\ndate: {issue_date}\n",
+            encoding="utf-8",
+        )
+    built_contexts: list[str] = []
+
+    monkeypatch.setattr(
+        renderer,
+        "parse_frontmatter",
+        lambda _text: ({"kind": "deepdive"}, ""),
+    )
+
+    def fake_context(
+        path: Path,
+        *,
+        validate_live_urls: bool = True,
+    ) -> dict[str, str]:
+        assert validate_live_urls is True
+        issue_date = path.name[:10]
+        built_contexts.append(issue_date)
+        return {"date": issue_date}
+
+    def fake_render(context, output, *, template_name):
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(context["date"], encoding="utf-8")
+
+    monkeypatch.setattr(renderer, "build_deepdive_context", fake_context)
+    monkeypatch.setattr(renderer, "render_page", fake_render)
+    monkeypatch.setattr(renderer, "_templates_mtime", lambda: 0.0)
+    monkeypatch.setattr(renderer, "_needs_rebuild", lambda *_args: False)
+
+    pages = renderer.build_deepdive_pages(
+        docs_root=tmp_path / "docs",
+        digest_dir=digest_dir,
+        issue_date="2026-07-17",
+    )
+
+    assert built_contexts == ["2026-07-17"]
+    assert [path.relative_to(tmp_path).as_posix() for path in pages] == [
+        "docs/deepdive/2026-07-17/index.html"
+    ]
+    assert not (tmp_path / "docs" / "deepdive" / "2026-07-18").exists()

@@ -21,17 +21,17 @@ def _codes(report: dict) -> set[str]:
     return {finding["code"] for finding in report["findings"]}
 
 
-def test_complete_red_suite_has_two_hundred_composite_coverage_cells() -> None:
+def test_complete_red_suite_has_two_hundred_forty_composite_coverage_cells() -> None:
     report = validate_red_suite_coverage(_value(), root=ROOT)
     assert report["status"] == "Green", report
-    assert report["requirementCount"] == 14
+    assert report["requirementCount"] == 15
     assert report["viewpointCount"] == 10
-    assert report["coverageCellCount"] == 200
-    assert report["fixtureCount"] == 49
+    assert report["coverageCellCount"] == 240
+    assert report["fixtureCount"] == 60
     assert len(report["fixtureSetSha256"]) == 64
     assert len(report["fixtureImplementationSetSha256"]) == 64
     assert len(report["historicalCorpusSha256"]) == 64
-    assert report["pairCaseCount"] == 140
+    assert report["pairCaseCount"] == 150
     assert report["pairCaseMode"] == "traceability_only"
     assert len(report["pairCaseSetSha256"]) == 64
 

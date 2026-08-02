@@ -50,15 +50,18 @@ REQUIRED_REQUIREMENTS = {
     "e2e_evidence_contract",
     "e2e_completion_boundary",
     "deepdive_url_provenance",
+    "deepdive_rendered_public_surface",
     "podcast_reader_value",
 }
 E2E_REQUIREMENTS = REQUIRED_REQUIREMENTS - {
     "deepdive_url_provenance",
+    "deepdive_rendered_public_surface",
     "podcast_reader_value",
 }
 REQUIRED_VIEWPOINT_SCOPES = {
     "final_e2e",
     "deepdive_url_provenance",
+    "deepdive_rendered_public_surface",
     "podcast_reader_value",
 }
 EXPECTED_REQUIREMENT_SCOPES = {
@@ -84,7 +87,7 @@ def _finding(code: str, detail: str) -> dict[str, str]:
 def build_requirement_viewpoint_pair_cases(
     value: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """140個のRequirement×同一domain観点Red caseを決定的に展開する。"""
+    """150個のRequirement×同一domain観点Red caseを決定的に展開する。"""
     coverage = value.get("redSuiteCoverage", {})
     requirements = {
         row.get("id"): row for row in coverage.get("requirements", [])
@@ -368,7 +371,7 @@ def validate_red_suite_coverage(
         findings.append(_finding("duplicate_viewpoint_scope", "scope IDが重複している"))
     if set(scope_ids) != REQUIRED_VIEWPOINT_SCOPES:
         findings.append(
-            _finding("viewpoint_scope_set_mismatch", "必須3 domain scopeと一致しない")
+            _finding("viewpoint_scope_set_mismatch", "必須4 domain scopeと一致しない")
         )
     scope_viewpoint_fixtures: dict[str, dict[str, str]] = {}
     for scope in scope_rows:
@@ -533,22 +536,22 @@ def validate_red_suite_coverage(
                 "Requirement・viewpoint・route間でfixtureが重複している",
             )
         )
-    if len(fixture_refs) != 49 or len(fixture_hashes) != 49:
+    if len(fixture_refs) != 60 or len(fixture_hashes) != 60:
         findings.append(
             _finding(
                 "fixture_count_mismatch",
-                f"declared={len(fixture_refs)} validUnique={len(fixture_hashes)} expected=49",
+                f"declared={len(fixture_refs)} validUnique={len(fixture_hashes)} expected=60",
             )
         )
     implementation_values = list(fixture_implementation_hashes.values())
     if (
-        len(fixture_implementation_hashes) != 49
+        len(fixture_implementation_hashes) != 60
         or len(implementation_values) != len(set(implementation_values))
     ):
         findings.append(
             _finding(
                 "duplicate_fixture_implementation",
-                "49 fixtureの実装本体が独立していない",
+                "60 fixtureの実装本体が独立していない",
             )
         )
     if "final_e2e_discipline" in requirement_ids:
@@ -556,18 +559,18 @@ def validate_red_suite_coverage(
 
     if len(cells) != len(set(cells)):
         findings.append(_finding("duplicate_coverage_cell", "coverage cellが重複している"))
-    if len(cells) != 200:
-        findings.append(_finding("coverage_cell_count_mismatch", f"actual={len(cells)} expected=200"))
+    if len(cells) != 240:
+        findings.append(_finding("coverage_cell_count_mismatch", f"actual={len(cells)} expected=240"))
     if len(composite_proofs) != len(cells):
         findings.append(_finding("composite_proof_not_unique", "観点fixtureとroute fixtureの組が一意でない"))
 
     pair_cases = build_requirement_viewpoint_pair_cases(value)
     pair_case_ids = [case["caseId"] for case in pair_cases]
-    if len(pair_cases) != 140 or len(pair_case_ids) != len(set(pair_case_ids)):
+    if len(pair_cases) != 150 or len(pair_case_ids) != len(set(pair_case_ids)):
         findings.append(
             _finding(
                 "pair_case_set_mismatch",
-                f"actual={len(pair_cases)} unique={len(set(pair_case_ids))} expected=140",
+                f"actual={len(pair_cases)} unique={len(set(pair_case_ids))} expected=150",
             )
         )
     pair_required_fields = (
