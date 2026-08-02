@@ -217,17 +217,17 @@ def _validate_red_suite_execution_receipt(
             value["status"] == "Green",
             value["pairCaseMode"] == "traceability_only",
             isinstance(value["createdAt"], str) and bool(value["createdAt"]),
-            value["selectorCount"] == 49,
+            value["selectorCount"] == 60,
             value["selectors"] == selectors,
             value["selectorSetSha256"] == _canonical_sha256(selectors),
-            value["pairCaseCount"] == 140,
+            value["pairCaseCount"] == 150,
             pair_nodes == expected_pair_nodes,
-            len(pair_nodes) == len(set(pair_nodes)) == 140,
+            len(pair_nodes) == len(set(pair_nodes)) == 150,
             collected == sorted(set(collected)),
-            value["collectedNodeCount"] == len(collected) == 190,
+            value["collectedNodeCount"] == len(collected) == 211,
             value["collectedNodeSetSha256"]
             == _canonical_sha256(collected),
-            value["passedNodeCount"] == len(collected) == 190,
+            value["passedNodeCount"] == len(collected) == 211,
             set(value["nodeOutcomes"]) == set(collected),
             all(
                 outcome == "passed"
@@ -336,11 +336,11 @@ def _normalize_evidence(
             value.get("schemaVersion") == "RED_SUITE_COVERAGE_REPORT_V1"
             and value.get("status") == "Green"
             and value.get("findings") == []
-            and value.get("requirementCount") == 14
+            and value.get("requirementCount") == 15
             and value.get("viewpointCount") == 10
             and value.get("routeCount") == 5
-            and value.get("coverageCellCount") == 200
-            and value.get("fixtureCount") == 49
+            and value.get("coverageCellCount") == 240
+            and value.get("fixtureCount") == 60
             and HEX_64_RE.fullmatch(str(value.get("fixtureSetSha256") or ""))
             and HEX_64_RE.fullmatch(
                 str(value.get("fixtureImplementationSetSha256") or "")
@@ -348,7 +348,7 @@ def _normalize_evidence(
             and HEX_64_RE.fullmatch(
                 str(value.get("historicalCorpusSha256") or "")
             )
-            and value.get("pairCaseCount") == 140
+            and value.get("pairCaseCount") == 150
             and value.get("pairCaseMode") == "traceability_only"
             and HEX_64_RE.fullmatch(
                 str(value.get("pairCaseSetSha256") or "")

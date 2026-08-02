@@ -69,7 +69,7 @@ def _fixture_selectors(coverage: dict[str, Any]) -> list[str]:
         for binding in scope["bindings"]
     )
     selectors.extend(row["fixture"] for row in coverage["routes"])
-    if len(selectors) != 49 or len(selectors) != len(set(selectors)):
+    if len(selectors) != 60 or len(selectors) != len(set(selectors)):
         raise ValueError("RED_SUITE_EXECUTION_SELECTOR_SET_INVALID")
     return selectors
 
@@ -172,9 +172,9 @@ def execute_red_suite(
     pair_nodes_match = collected_pair_nodes == expected_pair_nodes
     collected_node_ids = sorted(collected)
     exact_execution_shape = (
-        len(collected_node_ids) == 190
-        and len(recorder.outcomes) == 190
-        and sum(outcome == "passed" for outcome in recorder.outcomes.values()) == 190
+        len(collected_node_ids) == 211
+        and len(recorder.outcomes) == 211
+        and sum(outcome == "passed" for outcome in recorder.outcomes.values()) == 211
     )
     status = "Green" if all(
         (

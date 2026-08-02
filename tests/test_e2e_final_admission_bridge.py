@@ -69,7 +69,7 @@ def _install_red_suite_source(repo_root: Path) -> dict[str, object]:
     repo_root.mkdir(parents=True, exist_ok=True)
     test_path = repo_root / "tests" / "red_suite_fixture.py"
     test_path.parent.mkdir(parents=True, exist_ok=True)
-    function_names = [f"test_contract_{index}" for index in range(49)]
+    function_names = [f"test_contract_{index}" for index in range(60)]
     test_path.write_text(
         "\n\n".join(
             (
@@ -129,6 +129,7 @@ def _install_red_suite_source(repo_root: Path) -> dict[str, object]:
     requirement_specs = [
         *((requirement_id, ["final_e2e_wrapper"]) for requirement_id in e2e_requirements),
         ("deepdive_url_provenance", shared_routes),
+        ("deepdive_rendered_public_surface", shared_routes),
         ("podcast_reader_value", shared_routes),
     ]
     requirements: list[dict[str, object]] = []
@@ -153,6 +154,7 @@ def _install_red_suite_source(repo_root: Path) -> dict[str, object]:
     scope_ids = [
         "final_e2e",
         "deepdive_url_provenance",
+        "deepdive_rendered_public_surface",
         "podcast_reader_value",
     ]
     for scope_id in scope_ids:
@@ -251,7 +253,7 @@ def _synthetic_execution_receipt(repo_root: Path) -> dict[str, object]:
                 separators=(",", ":"),
             ).encode("utf-8")
         ).hexdigest(),
-        "selectorCount": 49,
+        "selectorCount": 60,
         "selectorSetSha256": hashlib.sha256(
             json.dumps(
                 selectors,
@@ -261,7 +263,7 @@ def _synthetic_execution_receipt(repo_root: Path) -> dict[str, object]:
             ).encode("utf-8")
         ).hexdigest(),
         "selectors": selectors,
-        "pairCaseCount": 140,
+        "pairCaseCount": 150,
         "pairNodeIds": pair_nodes,
         "collectedNodeCount": len(collected),
         "collectedNodeSetSha256": hashlib.sha256(
