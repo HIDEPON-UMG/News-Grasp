@@ -104,6 +104,21 @@ def test_e2e_resource_budget_is_single_use_and_non_resettable() -> None:
     assert all(item in skill for item in required)
 
 
+def test_scheduled_production_budget_is_disjoint_from_final_e2e_budget() -> None:
+    skill = _skill()
+    spec = _spec()
+    required = (
+        "通常06:00 Scheduled TaskはE2Eではない",
+        "scheduled_production",
+        "scheduled_recovery",
+        "issue date単位の最大9 model call",
+        "復旧は同じ日付identityの残予算を共有",
+        "final E2E attemptを消費しない",
+    )
+    assert all(item in skill for item in required)
+    assert all(item in spec for item in required)
+
+
 def test_e2e_side_effect_boundary_requires_nopublish_and_no_push_evidence() -> None:
     wrapper = WRAPPER.read_text(encoding="utf-8-sig")
     skill = _skill()

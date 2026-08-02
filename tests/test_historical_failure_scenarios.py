@@ -472,6 +472,20 @@ def test_2026_07_31_daily_quality_incident_is_registered() -> None:
     assert scenario.evidence_path.endswith("2026-07-31-daily-batch-manufacturing-preview-drop-report.html")
 
 
+def test_2026_08_02_scheduled_high_cost_identity_incident_is_registered() -> None:
+    scenario = next(
+        item for item in historical_failure_scenarios() if item.issue_date == "2026-08-02"
+    )
+
+    assert "scheduled production" in scenario.stage
+    assert "final E2E" in scenario.direct_cause
+    assert "identity separation" in scenario.root_pattern
+    assert "isolated SQLite" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith(
+        "2026-08-02-scheduled-high-cost-tdd-impact.json"
+    )
+
+
 def test_unregistered_visible_incident_includes_suggested_scenario_stub(tmp_path: Path) -> None:
     incident = tmp_path / "docs" / "incidents" / "2026-08-01-example-report.html"
     incident.parent.mkdir(parents=True)

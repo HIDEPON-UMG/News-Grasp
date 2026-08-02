@@ -127,6 +127,9 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html": (
         "7ba812efbb08bf29ddb52cf669fb93afa5f14ad037142d9fba93554a9d2f0f05"
     ),
+    "build/repair-review/2026-08-02-scheduled-high-cost-tdd-impact.json": (
+        "781aa72eb0b88390ee0fb1f07c1ddc599bed6109a1d458a73f23d281cc0f99d2"
+    ),
 }
 
 
@@ -649,6 +652,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "every recovery route must fail closed on unverifiable current citation URLs and must bind each dialogue value segment to an existing source sentence while rejecting corpus-level repetition",
         "URL request/TLS/network fixtures, runner skip-isolation fixture, seven-value grounding fixtures, 31-script corpus audit, targeted article render, and runner gate-order fixture",
         "docs/incidents/2026-08-01-daily-batch-editor-contract-cwd-report.html",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-02",
+        "scheduled production admission / runner start / high-cost durable ledger",
+        "the normal 06:00 Scheduled Task was classified as final E2E and tried to reserve the already-consumed goal-scoped E2E attempt before runner stages started",
+        "scheduled production and final E2E identity separation boundary",
+        "normal daily, same-date recovery, and final NoPublish E2E must own disjoint attempt identities while every scheduled model call shares one date-scoped nine-call budget",
+        "independent scheduled identity fixtures, forged receipt negatives, same-date recovery budget simulation in isolated SQLite, PowerShell AST, and static runner/broker contracts",
+        "build/repair-review/2026-08-02-scheduled-high-cost-tdd-impact.json",
         "fixture_required",
     ),
 )

@@ -237,6 +237,18 @@ def test_product_constitution_defines_final_only_e2e_and_shared_deepdive_quality
         assert phrase in text
 
 
+def test_runner_matrix_separates_scheduled_production_from_final_e2e_budget() -> None:
+    text = _read(SPEC)
+    for phrase in (
+        "scheduled_production",
+        "scheduled_recovery",
+        "final E2E attemptを消費しない",
+        "issue date単位の最大9 model call",
+        "復旧は同じ日付identityの残予算を共有",
+    ):
+        assert phrase in text
+
+
 def test_product_constitution_defines_sustainable_complete_repair_invariants() -> None:
     """内部欠陥を fallback で正常扱いせず、局所 repair と live runner guard を正本化する。"""
     text = _read(SPEC)

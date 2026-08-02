@@ -47,6 +47,8 @@ param(
     [int64] $MaxCapturedOutputBytes = 52428800,
     [Parameter(Mandatory=$true)] [string] $HighCostWorkspaceRoot,
     [string] $HighCostAdmissionPath = '',
+    [Parameter(Mandatory=$true)] [string] $HighCostExpectedOperationKind,
+    [string] $HighCostExpectedIssueDate = '',
     [string] $HighCostBudgetToolPath = '',
     [Parameter(Mandatory=$true)] [string] $HighCostPythonExe,
     [Parameter(Mandatory=$true)] [string] $HighCostCallId,
@@ -79,11 +81,15 @@ function Add-WrapperLog {
 }
 
 function Assert-CanonicalModelBroker {
-    foreach ($requiredPath in @($HighCostWorkspaceRoot, $HighCostPythonExe)) {
-        if (-not (Test-Path -LiteralPath $requiredPath)) {
-            Add-WrapperLog "HIGH_COST_MODEL_CALL_ADMISSION_REQUIRED missing=$([IO.Path]::GetFileName($requiredPath))"
-            exit 126
-        }
+    if ((-not (Test-Path -LiteralPath $HighCostWorkspaceRoot -PathType Container)) -or
+        (-not (Test-Path -LiteralPath $HighCostPythonExe -PathType Leaf)) -or
+        (-not (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf))) {
+        Add-WrapperLog 'HIGH_COST_MODEL_CALL_ADMISSION_REQUIRED'
+        exit 126
+    }
+    if ([string]::IsNullOrWhiteSpace($HighCostExpectedOperationKind)) {
+        Add-WrapperLog 'HIGH_COST_OPERATION_ADMISSION_IDENTITY_REQUIRED'
+        exit 126
     }
     $expectedInstalledBroker = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'))
     $modelSpawnBroker = if ($HighCostBudgetToolPath) { [System.IO.Path]::GetFullPath($HighCostBudgetToolPath) } else { $expectedInstalledBroker }
@@ -367,7 +373,7 @@ try {
             throw 'MODEL_SPAWN_BROKER_UNAVAILABLE'
         }
         $filePath = $HighCostPythonExe
-        $effectiveArgs = @($modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--executable', $modelExecutable, '--') + $modelArgs
+        $effectiveArgs = @($modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--operation-admission', $HighCostAdmissionPath, '--expected-operation-kind', $HighCostExpectedOperationKind, '--expected-issue-date', $HighCostExpectedIssueDate, '--executable', $modelExecutable, '--') + $modelArgs
         $effectiveArgString = ConvertTo-ProcessArgumentString -Arguments $effectiveArgs
         $proc = Start-Process -FilePath $filePath -ArgumentList $effectiveArgString -WorkingDirectory $WorkingDirectory -RedirectStandardInput $stdinFile -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile -WindowStyle Hidden -PassThru
     } finally {

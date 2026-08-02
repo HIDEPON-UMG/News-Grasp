@@ -202,12 +202,28 @@ if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Forc
 
 # YYYY-MM-DD ログファイル
 $DateStamp = if ($DateStampOverride) { $DateStampOverride } else { Get-Date -Format 'yyyy-MM-dd' }
+try {
+    $parsedDateStamp = [DateTime]::ParseExact(
+        $DateStamp,
+        'yyyy-MM-dd',
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::None
+    )
+    if ($parsedDateStamp.ToString('yyyy-MM-dd') -cne $DateStamp) {
+        throw 'date round-trip mismatch'
+    }
+} catch {
+    Write-Host 'ERROR: NEWS_GRASP_DATE_STAMP_INVALID'
+    exit 64
+}
 $LogPath = Join-Path $LogDir ("$DateStamp.log")
 $CodexUsageLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.jsonl"
 $CodexUsageWindowLog = Join-Path $RepoDir "build\codex-usage\$DateStamp.windows.jsonl"
 $script:CodexUsageEndSnapshotWritten = $false
 $RunId = [guid]::NewGuid().ToString('N')
 $script:HighCostCallSequence = 0
+$script:HighCostExpectedOperationKind = ''
+$script:HighCostExpectedIssueDate = ''
 $HighCostCallReceiptDir = Join-Path $RepoDir "build\high-cost-call-receipts\$DateStamp\$RunId"
 $script:RunnerCommandLine = ''
 $script:RunnerCommandLineFingerprint = ''
@@ -1302,6 +1318,8 @@ function Invoke-CodexWrapper {
         'UsageLog' = $CodexUsageLog
         'HighCostWorkspaceRoot' = $HighCostWorkspaceRoot
         'HighCostAdmissionPath' = $HighCostAdmissionPath
+        'HighCostExpectedOperationKind' = $script:HighCostExpectedOperationKind
+        'HighCostExpectedIssueDate' = $script:HighCostExpectedIssueDate
         'HighCostBudgetToolPath' = $HighCostBudgetToolPath
         'HighCostPythonExe' = $PyExe
         'HighCostCallId' = $highCostCallId
@@ -2416,14 +2434,20 @@ function Assert-HighCostOperationAdmission {
         Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_REQUIRED; local critical path remains available' -ExitCode 76
         exit 76
     }
-    $operationKind = 'full_e2e'
+    $operationKind = 'scheduled_production'
     if ($RecoverOnly -or $ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeFromStage) {
-        $operationKind = 'resume_model'
+        $operationKind = 'scheduled_recovery'
     }
-    if ($HighCostAdmissionPath) {
+    if ($NoPublish) {
+        $operationKind = 'full_e2e'
+        if (-not $HighCostAdmissionPath) {
+            Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
+            exit 76
+        }
         $admissionReceipt = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
         $admissionValidator = Join-Path $RepoDir 'tools\high_cost_admission_receipt.py'
-        $expectedAttemptId = if ($NoPublish) { "nopublish:$DateStamp" } else { $RunId }
+        $expectedAttemptId = "nopublish:$DateStamp"
         if ((-not (Test-Path -LiteralPath $admissionReceipt -PathType Leaf)) -or (-not (Test-Path -LiteralPath $admissionValidator -PathType Leaf))) {
             Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -Encoding UTF8
             Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
@@ -2435,12 +2459,37 @@ function Assert-HighCostOperationAdmission {
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID' -ExitCode 76
             exit 76
         }
+        $script:HighCostExpectedOperationKind = $operationKind
+        $script:HighCostExpectedIssueDate = ''
         return
     }
-    & $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $RunId
+
+    if ($HighCostAdmissionPath) {
+        Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -Encoding UTF8
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -ExitCode 76
+        exit 76
+    }
+    $admissionDir = Join-Path $RepoDir "build\high-cost-operation-admissions\$DateStamp"
+    New-Item -ItemType Directory -Path $admissionDir -Force | Out-Null
+    $admissionReceipt = Join-Path $admissionDir "$RunId-$operationKind.json"
+    $admissionJson = (& $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
         Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE" -Encoding UTF8
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
+        exit 76
+    }
+    try {
+        $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
+        if ($admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -or $admission.operationKind -ne $operationKind -or $admission.issueDate -ne $DateStamp) {
+            throw 'scheduled admission identity drift'
+        }
+        [System.IO.File]::WriteAllText($admissionReceipt, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+        $script:HighCostAdmissionPath = $admissionReceipt
+        $script:HighCostExpectedOperationKind = $operationKind
+        $script:HighCostExpectedIssueDate = $DateStamp
+    } catch {
+        Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)" -Encoding UTF8
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
         exit 76
     }
 }
@@ -2840,6 +2889,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $usageLog,
                 $HighCostWorkspaceRoot,
                 $HighCostAdmissionPath,
+                $script:HighCostExpectedOperationKind,
+                $script:HighCostExpectedIssueDate,
                 $HighCostBudgetToolPath,
                 $PyExe,
                 $highCostCallId,
@@ -2862,6 +2913,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$UsageLog,
                     [string]$HighCostWorkspaceRoot,
                     [string]$HighCostAdmissionPath,
+                    [string]$HighCostExpectedOperationKind,
+                    [string]$HighCostExpectedIssueDate,
                     [string]$HighCostBudgetToolPath,
                     [string]$HighCostPythonExe,
                     [string]$HighCostCallId,
@@ -2884,6 +2937,8 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -UsageLog $UsageLog `
                     -HighCostWorkspaceRoot $HighCostWorkspaceRoot `
                     -HighCostAdmissionPath $HighCostAdmissionPath `
+                    -HighCostExpectedOperationKind $HighCostExpectedOperationKind `
+                    -HighCostExpectedIssueDate $HighCostExpectedIssueDate `
                     -HighCostBudgetToolPath $HighCostBudgetToolPath `
                     -HighCostPythonExe $HighCostPythonExe `
                     -HighCostCallId $HighCostCallId `

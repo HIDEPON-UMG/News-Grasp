@@ -127,6 +127,7 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     broker = profile / "bin" / "ai-model-spawn-broker.py"
     workspace = tmp_path / "workspace"
     registry = workspace / "docs" / "harness" / "high_cost_model_routes_v1.json"
+    admission = tmp_path / "scheduled-operation-admission.json"
     broker.parent.mkdir(parents=True, exist_ok=True)
     registry.parent.mkdir(parents=True, exist_ok=True)
     broker.write_text(
@@ -144,6 +145,7 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         encoding="utf-8",
     )
     registry.write_text("{}\n", encoding="utf-8")
+    admission.write_text("{}\n", encoding="utf-8")
     env = os.environ.copy()
     env["USERPROFILE"] = str(profile)
     args = [
@@ -151,6 +153,8 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         "-HighCostBudgetToolPath", str(broker),
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"test-{tmp_path.name}",
+        "-HighCostAdmissionPath", str(admission),
+        "-HighCostExpectedOperationKind", "full_e2e",
     ]
     return args, env
 
