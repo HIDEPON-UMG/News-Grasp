@@ -207,3 +207,4 @@ def test_verify_public_surface_passes_canonical_ops_root_to_completion_verifier(
     assert result["ok"] is True
     assert captured["repo_root"] == artifact_root.resolve()
     assert captured["ops_repo_root"] == ops_root.resolve()
+    assert captured["notification_state_path"] == artifact_root.resolve() / "build" / "notification" / "2026-08-02.json"

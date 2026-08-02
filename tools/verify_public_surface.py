@@ -53,6 +53,7 @@ def verify_public_surface(
     date: str,
     repo_root: Path,
     ops_repo_root: Path | None = None,
+    notification_state_path: Path | None = None,
     remote: str,
     branch: str,
     public_base_url: str,
@@ -62,6 +63,11 @@ def verify_public_surface(
 ) -> dict[str, Any]:
     repo_root = Path(repo_root).resolve()
     ops_repo_root = Path(ops_repo_root).resolve() if ops_repo_root is not None else repo_root
+    notification_state_path = (
+        Path(notification_state_path).resolve()
+        if notification_state_path is not None
+        else repo_root / "build" / "notification" / f"{date}.json"
+    )
     head = _local_head(repo_root)
     remote_head = _remote_head(repo_root, remote, branch)
     required_surfaces = publish_inventory.required_published_repair_artifacts(date)
@@ -75,6 +81,7 @@ def verify_public_surface(
         public_base_url=public_base_url,
         wait_sec=wait_sec,
         poll_sec=poll_sec,
+        notification_state_path=notification_state_path,
     )
 
     checked_at = datetime.now(timezone.utc)
@@ -139,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--ops-repo-root", type=Path, default=None)
+    parser.add_argument("--notification-state", type=Path, default=None)
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", default="main")
     parser.add_argument("--public-base-url", required=True)
@@ -152,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         date=args.date,
         repo_root=args.repo_root,
         ops_repo_root=args.ops_repo_root,
+        notification_state_path=args.notification_state,
         remote=args.remote,
         branch=args.branch,
         public_base_url=args.public_base_url,
