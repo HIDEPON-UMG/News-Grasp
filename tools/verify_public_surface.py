@@ -52,6 +52,7 @@ def verify_public_surface(
     *,
     date: str,
     repo_root: Path,
+    ops_repo_root: Path | None = None,
     remote: str,
     branch: str,
     public_base_url: str,
@@ -60,12 +61,14 @@ def verify_public_surface(
     write_proof: Path | None = None,
 ) -> dict[str, Any]:
     repo_root = Path(repo_root).resolve()
+    ops_repo_root = Path(ops_repo_root).resolve() if ops_repo_root is not None else repo_root
     head = _local_head(repo_root)
     remote_head = _remote_head(repo_root, remote, branch)
     required_surfaces = publish_inventory.required_published_repair_artifacts(date)
     required_digest = canonical_required_surface_digest(required_surfaces)
     manifest = daily_self_heal.verify_publish_complete(
         repo_root=repo_root,
+        ops_repo_root=ops_repo_root,
         date=date,
         remote=remote,
         branch=branch,
@@ -135,6 +138,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verify News-Grasp public surface and write recovery proof.")
     parser.add_argument("--date", required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
+    parser.add_argument("--ops-repo-root", type=Path, default=None)
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", default="main")
     parser.add_argument("--public-base-url", required=True)
@@ -147,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     result = verify_public_surface(
         date=args.date,
         repo_root=args.repo_root,
+        ops_repo_root=args.ops_repo_root,
         remote=args.remote,
         branch=args.branch,
         public_base_url=args.public_base_url,

@@ -167,3 +167,43 @@ def test_verify_public_surface_keeps_public_and_scheduled_attempt_status_separat
     assert result["public_status"] == "green"
     assert result["scheduled_attempt_status"] == "failed_then_recovered"
     assert result["recovery_attempt_status"] == "succeeded"
+
+
+def test_verify_public_surface_passes_canonical_ops_root_to_completion_verifier(monkeypatch, tmp_path: Path) -> None:
+    artifact_root = tmp_path / "recovery"
+    ops_root = tmp_path / "canonical"
+    artifact_root.mkdir()
+    ops_root.mkdir()
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(verify_public_surface, "_local_head", lambda _repo: HEAD)
+    monkeypatch.setattr(verify_public_surface, "_remote_head", lambda *_args: HEAD)
+    monkeypatch.setattr(
+        verify_public_surface.publish_inventory,
+        "required_published_repair_artifacts",
+        lambda _date: ["docs/index.html"],
+    )
+
+    def fake_verify(**kwargs):
+        captured.update(kwargs)
+        return {
+            "ok": True,
+            "public_status": "green",
+            "scheduled_attempt_status": "failed_then_recovered",
+            "recovery_attempt_status": "succeeded",
+        }
+
+    monkeypatch.setattr(verify_public_surface.daily_self_heal, "verify_publish_complete", fake_verify)
+    result = verify_public_surface.verify_public_surface(
+        date="2026-08-02",
+        repo_root=artifact_root,
+        ops_repo_root=ops_root,
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.test/News-Grasp/",
+        wait_sec=0,
+        poll_sec=30,
+    )
+
+    assert result["ok"] is True
+    assert captured["repo_root"] == artifact_root.resolve()
+    assert captured["ops_repo_root"] == ops_root.resolve()
