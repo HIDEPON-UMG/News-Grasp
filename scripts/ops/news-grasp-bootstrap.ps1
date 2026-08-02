@@ -2,6 +2,7 @@
     [switch] $Start,
     [switch] $StartOnly,
     [switch] $SmokeTest,
+    [switch] $SkipSourceSync,
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
     [int] $StaleMinutes = 15,
@@ -192,6 +193,7 @@ if ($StartOnly) {
     $args += '-Start'
 }
 if ($SmokeTest) { $args += '-SmokeTest' }
+if ($SkipSourceSync) { $args += '-SkipSourceSync' }
 if ($RecoverOnly) { $args += '-RecoverOnly' }
 if ($PollSeconds -ne 30) { $args += @('-PollSeconds', [string]$PollSeconds) }
 if ($StaleMinutes -ne 15) { $args += @('-StaleMinutes', [string]$StaleMinutes) }

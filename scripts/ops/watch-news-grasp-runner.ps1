@@ -10,6 +10,7 @@ param(
     [switch] $Status,
 
     [switch] $SmokeTest,
+    [switch] $SkipSourceSync,
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
     [int] $StaleMinutes = 15,
@@ -405,6 +406,9 @@ function Start-RunnerProcess {
     $args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $RunnerPath)
     if ($SmokeTest) {
         $args += '-SmokeTest'
+    }
+    if ($SkipSourceSync) {
+        $args += '-SkipSourceSync'
     }
     if ($RecoverOnly) {
         $args += '-RecoverOnly'

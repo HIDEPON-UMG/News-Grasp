@@ -88,6 +88,10 @@ def _default_live_bootstrap_path() -> Path:
     return Path.home() / "bin" / "news-grasp-bootstrap.ps1"
 
 
+def _default_live_task_launcher_path() -> Path:
+    return Path.home() / "bin" / "news-grasp-task-launcher.pyw"
+
+
 def _command_path_text(value: Path | str) -> str:
     return str(value).strip().strip('"').replace("/", "\\").lower()
 
@@ -153,17 +157,75 @@ def _is_isolated_smoke_path(value: str, *, kind: str) -> bool:
     return "smoke" in text and "news-grasp-logs" not in text
 
 
-def _bootstrap_action_smoke_contract(action_summary: str, *, bootstrap_path_text: str, watcher_text: str) -> dict:
+def _task_launcher_source_contract(path: Path) -> dict:
+    try:
+        compact = re.sub(r"\s+", "", path.read_text(encoding="utf-8-sig", errors="replace"))
+    except OSError:
+        return {"ok": False, "reason": "task_launcher_unreadable"}
+    required_tokens = (
+        'choices=("runner","bootstrap")',
+        '"news-grasp-bootstrap.ps1"',
+        'ifargs.mode=="runner"',
+        '"-Start"',
+        '"-SmokeTest"',
+        '"-PollSeconds","1"',
+        '"-TimeoutMinutes","2"',
+        '"-StateFile","ng-smoke-state.json"',
+        '"-LogDir","ng-smoke-logs"',
+        "subprocess.CREATE_NO_WINDOW",
+    )
+    missing = [token for token in required_tokens if token not in compact]
+    return {
+        "ok": not missing,
+        "reason": "" if not missing else "task_launcher_contract_invalid",
+        "missing_tokens": missing,
+        "timeout_minutes": 2,
+        "state_file": "ng-smoke-state.json",
+        "log_dir": "ng-smoke-logs",
+    }
+
+
+def _task_launcher_action_mode(action_summary: str, *, launcher_path_text: str, mode: str) -> bool:
+    action_text = _command_path_text(action_summary)
+    return bool(
+        launcher_path_text
+        and launcher_path_text in action_text
+        and re.search(rf"(?i)(?:^|\s){re.escape(mode)}(?:\s|$)", action_summary)
+    )
+
+
+def _bootstrap_action_smoke_contract(
+    action_summary: str,
+    *,
+    bootstrap_path_text: str,
+    watcher_text: str,
+    launcher_path_text: str = "",
+    launcher_contract: dict | None = None,
+) -> dict:
     action_text = _command_path_text(action_summary)
     timeout_minutes = _action_option_int(action_summary, "-TimeoutMinutes")
     state_file = _action_option_value(action_summary, "-StateFile")
     log_dir = _action_option_value(action_summary, "-LogDir")
     targets_live_bootstrap = bool(bootstrap_path_text in action_text)
     targets_live_watcher = bool(watcher_text in action_text)
+    targets_live_task_launcher = bool(launcher_path_text and launcher_path_text in action_text)
+    launcher_mode_ok = _task_launcher_action_mode(
+        action_summary,
+        launcher_path_text=launcher_path_text,
+        mode="bootstrap",
+    )
+    launcher_ok = bool(targets_live_task_launcher and launcher_mode_ok and (launcher_contract or {}).get("ok"))
+    if launcher_ok:
+        targets_live_bootstrap = True
+        timeout_minutes = _safe_int((launcher_contract or {}).get("timeout_minutes"))
+        state_file = str((launcher_contract or {}).get("state_file") or "")
+        log_dir = str((launcher_contract or {}).get("log_dir") or "")
     return {
         "targets_live_bootstrap": targets_live_bootstrap,
         "targets_live_watcher": targets_live_watcher,
-        "is_smoke_test": _action_has_switch(action_summary, "-SmokeTest"),
+        "targets_live_task_launcher": targets_live_task_launcher,
+        "task_launcher_mode_ok": launcher_mode_ok,
+        "is_smoke_test": _action_has_switch(action_summary, "-SmokeTest") or launcher_ok,
         "uses_short_timeout": isinstance(timeout_minutes, int) and timeout_minutes <= 2,
         "uses_isolated_state_log": _is_isolated_smoke_path(state_file, kind="state")
         and _is_isolated_smoke_path(log_dir, kind="log"),
@@ -179,9 +241,11 @@ def _runner_action_start_contract(
     targets_live_watcher: bool,
     targets_live_bootstrap: bool,
     targets_live_runner: bool,
+    targets_live_task_launcher: bool = False,
 ) -> dict:
     forbidden_switches = [
         "-SmokeTest",
+        "-SkipSourceSync",
         "-Status",
         "-StartOnly",
         "-PreflightOnly",
@@ -194,9 +258,11 @@ def _runner_action_start_contract(
         "-ResumeFromStage",
     ]
     found_forbidden = [switch for switch in forbidden_switches if _action_has_switch(action_summary, switch)]
-    requires_start = bool(targets_live_watcher or targets_live_bootstrap)
+    requires_start = bool((targets_live_watcher or targets_live_bootstrap) and not targets_live_task_launcher)
     has_start = _action_has_switch(action_summary, "-Start")
-    targets_known_entrypoint = bool(targets_live_watcher or targets_live_bootstrap or targets_live_runner)
+    targets_known_entrypoint = bool(
+        targets_live_watcher or targets_live_bootstrap or targets_live_runner or targets_live_task_launcher
+    )
     return {
         "is_production_start": bool(
             targets_known_entrypoint
@@ -487,6 +553,7 @@ def _run_live_startup_canary(
         str(startup_path),
         "-Start",
         "-SmokeTest",
+        "-SkipSourceSync",
         "-PollSeconds",
         "1",
         "-StaleMinutes",
@@ -575,10 +642,12 @@ def _run_live_startup_canary(
 def verify_live_runner_readiness(
     *,
     repo_root: Path,
+    ops_repo_root: Path | None = None,
     date: str,
     live_runner_path: Path | None = None,
     live_watcher_path: Path | None = None,
     live_bootstrap_path: Path | None = None,
+    live_task_launcher_path: Path | None = None,
     task_name: str = "News-Grasp Runner",
     bootstrap_task_name: str = "News-Grasp Bootstrap",
     run_canary: bool = True,
@@ -586,20 +655,27 @@ def verify_live_runner_readiness(
     powershell_exe: str = "powershell.exe",
 ) -> dict:
     repo_root = repo_root.resolve()
+    ops_repo_root = (ops_repo_root or repo_root).resolve()
     live_runner_path = live_runner_path or _default_live_runner_path()
     live_watcher_path = live_watcher_path or _default_live_watcher_path()
     live_bootstrap_path = live_bootstrap_path or _default_live_bootstrap_path()
-    repo_runner = repo_root / "scripts" / "ops" / "news-grasp-runner.ps1"
-    repo_watcher = repo_root / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
-    repo_bootstrap = repo_root / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    live_task_launcher_path = live_task_launcher_path or _default_live_task_launcher_path()
+    repo_runner = ops_repo_root / "scripts" / "ops" / "news-grasp-runner.ps1"
+    repo_watcher = ops_repo_root / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
+    repo_bootstrap = ops_repo_root / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    repo_task_launcher = ops_repo_root / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
     runner_checksum = compare_files(repo_runner, live_runner_path)
     watcher_checksum = compare_files(repo_watcher, live_watcher_path)
     bootstrap_checksum = compare_files(repo_bootstrap, live_bootstrap_path)
+    task_launcher_checksum = compare_files(repo_task_launcher, live_task_launcher_path)
+    task_launcher_contract = _task_launcher_source_contract(live_task_launcher_path)
     result = {
         "ok": False,
         "reason": "",
         "status": "not_ready",
         "date": date,
+        "artifact_repo_root": str(repo_root),
+        "ops_repo_root": str(ops_repo_root),
         "repo_runner": {
             "path": str(repo_runner),
             "exists": runner_checksum["repo_exists"],
@@ -629,6 +705,17 @@ def verify_live_runner_readiness(
             "path": str(live_bootstrap_path),
             "exists": bootstrap_checksum["live_exists"],
             "sha256": bootstrap_checksum["live_sha256"],
+        },
+        "repo_task_launcher": {
+            "path": str(repo_task_launcher),
+            "exists": task_launcher_checksum["repo_exists"],
+            "sha256": task_launcher_checksum["repo_sha256"],
+        },
+        "live_task_launcher": {
+            "path": str(live_task_launcher_path),
+            "exists": task_launcher_checksum["live_exists"],
+            "sha256": task_launcher_checksum["live_sha256"],
+            "contract": task_launcher_contract,
         },
         "scheduled_task": {},
         "next_run_readiness": {"ok": False, "status": "not_ready"},
@@ -672,16 +759,29 @@ def verify_live_runner_readiness(
     watcher_text = _command_path_text(live_watcher_path)
     runner_text = _command_path_text(live_runner_path)
     bootstrap_path_text = _command_path_text(live_bootstrap_path)
+    task_launcher_path_text = _command_path_text(live_task_launcher_path)
     runner_targets_watcher = bool(action_summary and not action_summary.startswith("unavailable:") and watcher_text in action_text)
     runner_targets_runner = bool(action_summary and not action_summary.startswith("unavailable:") and runner_text in action_text)
     runner_targets_bootstrap = bool(
         action_summary and not action_summary.startswith("unavailable:") and bootstrap_path_text in action_text
     )
+    runner_targets_task_launcher = bool(
+        action_summary and not action_summary.startswith("unavailable:") and task_launcher_path_text in action_text
+    )
+    runner_task_launcher_mode_ok = _task_launcher_action_mode(
+        action_summary,
+        launcher_path_text=task_launcher_path_text,
+        mode="runner",
+    )
+    task_launcher_ready = bool(task_launcher_checksum["synced"] and task_launcher_contract.get("ok"))
     runner_action_contract = _runner_action_start_contract(
         action_summary,
         targets_live_watcher=runner_targets_watcher,
         targets_live_bootstrap=runner_targets_bootstrap,
         targets_live_runner=runner_targets_runner,
+        targets_live_task_launcher=bool(
+            runner_targets_task_launcher and runner_task_launcher_mode_ok and task_launcher_ready
+        ),
     )
     direct_runner_pre_run_interlock = _runner_has_pre_run_bootstrap_interlock(live_runner_path)
     direct_runner_pre_run_reexec = direct_runner_pre_run_interlock
@@ -692,11 +792,18 @@ def verify_live_runner_readiness(
         bootstrap_summary,
         bootstrap_path_text=bootstrap_path_text,
         watcher_text=watcher_text,
+        launcher_path_text=task_launcher_path_text,
+        launcher_contract=task_launcher_contract if task_launcher_checksum["synced"] else {"ok": False},
     )
     bootstrap_targets_watcher = bool(
         bootstrap_summary
         and not bootstrap_summary.startswith("unavailable:")
         and (watcher_text in bootstrap_text or bootstrap_path_text in bootstrap_text)
+    )
+    bootstrap_targets_task_launcher = bool(
+        bootstrap_summary
+        and not bootstrap_summary.startswith("unavailable:")
+        and task_launcher_path_text in bootstrap_text
     )
     runner_state_ok = str(task_details.get("state") or "") in {"Ready", "Running"}
     bootstrap_state_ok = str(bootstrap_details.get("state") or "") in {"Ready", "Running"}
@@ -744,6 +851,7 @@ def verify_live_runner_readiness(
             runner_targets_watcher
             or runner_targets_bootstrap
             or runner_targets_runner
+            or (runner_targets_task_launcher and runner_task_launcher_mode_ok and task_launcher_ready)
         )
     )
     result["scheduled_task"] = {
@@ -766,6 +874,9 @@ def verify_live_runner_readiness(
         "targets_live_watcher": runner_targets_watcher,
         "targets_live_runner": runner_targets_runner,
         "targets_live_bootstrap": runner_targets_bootstrap,
+        "targets_live_task_launcher": runner_targets_task_launcher,
+        "task_launcher_mode_ok": runner_task_launcher_mode_ok,
+        "task_launcher_ready": task_launcher_ready,
         "direct_runner_pre_run_interlock": direct_runner_pre_run_interlock,
         "direct_runner_pre_run_reexec": direct_runner_pre_run_reexec,
         "bootstrap_task_name": bootstrap_task_name,
@@ -782,6 +893,8 @@ def verify_live_runner_readiness(
         "bootstrap_targets_watcher_or_bootstrap": bootstrap_targets_watcher,
         "bootstrap_targets_live_bootstrap": bootstrap_action_contract["targets_live_bootstrap"],
         "bootstrap_targets_live_watcher": bootstrap_action_contract["targets_live_watcher"],
+        "bootstrap_targets_live_task_launcher": bootstrap_targets_task_launcher,
+        "bootstrap_task_launcher_mode_ok": bootstrap_action_contract["task_launcher_mode_ok"],
         "bootstrap_action_is_smoke_test": bootstrap_action_contract["is_smoke_test"],
         "bootstrap_action_uses_short_timeout": bootstrap_action_contract["uses_short_timeout"],
         "bootstrap_action_uses_isolated_state_log": bootstrap_action_contract["uses_isolated_state_log"],
@@ -802,10 +915,22 @@ def verify_live_runner_readiness(
             reason = "scheduled_task_next_run_missing"
         elif not runner_missed_runs_ok:
             reason = "scheduled_task_missed_runs"
-        elif not (runner_targets_watcher or runner_targets_bootstrap or runner_targets_runner):
+        elif not (runner_targets_watcher or runner_targets_bootstrap or runner_targets_runner or runner_targets_task_launcher):
             reason = "scheduled_task_target_mismatch"
+        elif runner_targets_task_launcher and not task_launcher_checksum["synced"]:
+            reason = "task_launcher_hash_mismatch"
+        elif runner_targets_task_launcher and not task_launcher_contract.get("ok"):
+            reason = "task_launcher_contract_invalid"
+        elif runner_targets_task_launcher and not runner_task_launcher_mode_ok:
+            reason = "task_launcher_runner_mode_invalid"
         elif not runner_action_contract["is_production_start"]:
             reason = "scheduled_task_action_not_production_start"
+        elif bootstrap_targets_task_launcher and not task_launcher_checksum["synced"]:
+            reason = "bootstrap_task_launcher_hash_mismatch"
+        elif bootstrap_targets_task_launcher and not task_launcher_contract.get("ok"):
+            reason = "bootstrap_task_launcher_contract_invalid"
+        elif bootstrap_targets_task_launcher and not bootstrap_action_contract["task_launcher_mode_ok"]:
+            reason = "bootstrap_task_launcher_mode_invalid"
         elif runner_targets_runner and not direct_runner_pre_run_interlock:
             reason = "direct_runner_pre_run_interlock_missing"
         elif runner_targets_runner and not direct_runner_pre_run_reexec:
@@ -832,9 +957,13 @@ def verify_live_runner_readiness(
 
     if run_canary:
         canary = _run_live_startup_canary(
-            repo_root=repo_root,
+            repo_root=ops_repo_root,
             startup_path=live_bootstrap_path
-            if runner_targets_bootstrap or (runner_targets_runner and bootstrap_action_contract["targets_live_bootstrap"])
+            if (
+                runner_targets_bootstrap
+                or runner_targets_task_launcher
+                or (runner_targets_runner and bootstrap_action_contract["targets_live_bootstrap"])
+            )
             else live_watcher_path,
             live_runner_path=live_runner_path,
             date=date,
@@ -1932,6 +2061,7 @@ def _verify_deepdive_quality_head_binding(
 def verify_publish_complete(
     *,
     repo_root: Path,
+    ops_repo_root: Path | None = None,
     date: str,
     remote: str,
     branch: str,
@@ -2058,7 +2188,11 @@ def verify_publish_complete(
         if notification.get("reason"):
             return {**manifest, "reason": notification["reason"], "notification": notification}
 
-    live_readiness = verify_live_runner_readiness(repo_root=repo_root, date=date)
+    live_readiness = verify_live_runner_readiness(
+        repo_root=repo_root,
+        ops_repo_root=ops_repo_root,
+        date=date,
+    )
     manifest["live_runner_readiness"] = live_readiness
     if not live_readiness.get("ok"):
         return {**manifest, "reason": str(live_readiness.get("reason") or "live_runner_readiness_failed")}
@@ -2191,6 +2325,7 @@ def main(argv: list[str] | None = None) -> int:
 
     complete = sub.add_parser("verify-publish-complete")
     complete.add_argument("--repo-root", type=Path, required=True)
+    complete.add_argument("--ops-repo-root", type=Path, default=None)
     complete.add_argument("--date", required=True)
     complete.add_argument("--remote", default="origin")
     complete.add_argument("--branch", default="main")
@@ -2204,6 +2339,7 @@ def main(argv: list[str] | None = None) -> int:
 
     live_ready = sub.add_parser("verify-live-runner-readiness")
     live_ready.add_argument("--repo-root", type=Path, required=True)
+    live_ready.add_argument("--ops-repo-root", type=Path, default=None)
     live_ready.add_argument("--date", required=True)
     live_ready.add_argument("--live-runner", type=Path, default=None)
     live_ready.add_argument("--live-watcher", type=Path, default=None)
@@ -2290,6 +2426,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "verify-publish-complete":
         result = verify_publish_complete(
             repo_root=args.repo_root,
+            ops_repo_root=args.ops_repo_root,
             date=args.date,
             remote=args.remote,
             branch=args.branch,
@@ -2309,6 +2446,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "verify-live-runner-readiness":
         result = verify_live_runner_readiness(
             repo_root=args.repo_root,
+            ops_repo_root=args.ops_repo_root,
             date=args.date,
             live_runner_path=args.live_runner,
             live_watcher_path=args.live_watcher,

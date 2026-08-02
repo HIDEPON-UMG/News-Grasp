@@ -38,6 +38,7 @@
 [CmdletBinding()]
 param(
     [switch] $SmokeTest,
+    [switch] $SkipSourceSync,
     [switch] $PreflightOnly,
     [switch] $RecoverOnly,
     [ValidateSet('ScheduledProduction', 'ScheduledRecoveryFull')]
@@ -52,6 +53,7 @@ param(
     [ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
     [string] $ResumeFromStage = '',
     [string] $RepoDirOverride = '',
+    [string] $OpsRepoRootOverride = '',
     [string] $CodexWrapperOverride = '',
     [string] $CodexExeOverride = '',
     [string] $PyExeOverride = '',
@@ -62,6 +64,7 @@ param(
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
     [string] $ScheduledAuthorityEvidencePath = '',
+    [string] $FinalizeVerifiedPublishManifest = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
     [switch] $ForceFullRerun
@@ -74,6 +77,9 @@ $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $UseCodex = $true
+if ($SkipSourceSync -and (-not $SmokeTest)) {
+    throw '-SkipSourceSync is restricted to -SmokeTest readiness canaries.'
+}
 if ($StopBeforeDeepDive) { $NoPublish = $true }
 if ($NoPublish) { $NoPush = $true }
 $ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
@@ -142,6 +148,13 @@ function Resolve-CodexCliExe {
 }
 
 $RepoDir   = Resolve-NewsGraspRepoDir -Override $RepoDirOverride
+$OpsRepoRoot = if ($OpsRepoRootOverride) {
+    (Resolve-Path -LiteralPath $OpsRepoRootOverride).Path
+} elseif ($env:NEWS_GRASP_OPS_REPO_ROOT) {
+    (Resolve-Path -LiteralPath $env:NEWS_GRASP_OPS_REPO_ROOT).Path
+} else {
+    $RepoDir
+}
 $LogDir    = Join-Path $env:USERPROFILE 'bin\news-grasp-logs'
 $GitExe    = 'C:\Program Files\Git\cmd\git.exe'
 $CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride
@@ -425,6 +438,8 @@ function Set-RunnerState {
         [string] $HeartbeatAt = '',
         [string] $PublishManifestPath = '',
         [string] $PublishCommit = '',
+        [string] $ScheduledAttemptStatus = '',
+        [string] $RecoveryAttemptStatus = '',
         [string] $ExternalKind = '',
         [string] $ExternalSystem = '',
         [string] $ExternalStatus = '',
@@ -506,6 +521,8 @@ function Set-RunnerState {
             if ($DeadlineAt) { $state.deadline_at = $DeadlineAt }
             if ($PublishManifestPath) { $state.publish_manifest_path = $PublishManifestPath }
             if ($PublishCommit) { $state.publish_commit = $PublishCommit }
+            if ($ScheduledAttemptStatus) { $state.scheduled_attempt_status = $ScheduledAttemptStatus }
+            if ($RecoveryAttemptStatus) { $state.recovery_attempt_status = $RecoveryAttemptStatus }
             if ($ExternalKind -or $ExternalSystem -or $ExternalStatus -or $ExternalStderr -or $ExternalDetail) {
                 $state.external_readiness = [ordered]@{
                     kind = $ExternalKind
@@ -960,6 +977,7 @@ function Get-RunnerScriptArguments {
     if ($StopBeforeDeepDive) { $runnerArgs += '-StopBeforeDeepDive' }
     if ($ResumeFromStage) { $runnerArgs += @('-ResumeFromStage', $ResumeFromStage) }
     if ($RepoDirOverride) { $runnerArgs += @('-RepoDirOverride', $RepoDirOverride) }
+    if ($OpsRepoRootOverride) { $runnerArgs += @('-OpsRepoRootOverride', $OpsRepoRootOverride) }
     if ($CodexWrapperOverride) { $runnerArgs += @('-CodexWrapperOverride', $CodexWrapperOverride) }
     if ($CodexExeOverride) { $runnerArgs += @('-CodexExeOverride', $CodexExeOverride) }
     if ($PyExeOverride) { $runnerArgs += @('-PyExeOverride', $PyExeOverride) }
@@ -2440,7 +2458,7 @@ function Test-DailyArtifactsExist {
 }
 
 function Assert-HighCostOperationAdmission {
-    if ($SmokeTest -or $PreflightOnly) { return }
+    if ($SmokeTest -or $PreflightOnly -or $FinalizeVerifiedPublishManifest) { return }
     $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
     if ((-not $HighCostWorkspaceRoot) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf))) {
         Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_REQUIRED' -Encoding UTF8
@@ -2571,6 +2589,46 @@ Add-Content -Path $LogPath -Value '==========================================' -
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, run_intent=$RunIntent, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
 
+if ($FinalizeVerifiedPublishManifest) {
+    $expectedManifest = [System.IO.Path]::GetFullPath((Join-Path $RepoDir "build\publish-complete\$DateStamp.json"))
+    $actualManifest = [System.IO.Path]::GetFullPath($FinalizeVerifiedPublishManifest)
+    if ($RunIntent -ne 'ScheduledRecoveryFull' -or $actualManifest -ne $expectedManifest -or (-not (Test-Path -LiteralPath $actualManifest -PathType Leaf))) {
+        Write-Log 'ERROR: publish_complete manifest identity is invalid for typed recovery finalize'
+        Set-RunnerState -Status 'publish_failed' -Message 'publish_complete manifest identity invalid' -ExitCode 1
+        exit 1
+    }
+    try {
+        $verified = Get-Content -LiteralPath $actualManifest -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        Write-Log "ERROR: publish_complete manifest parse failed: $($_.Exception.Message)"
+        Set-RunnerState -Status 'publish_failed' -Message 'publish_complete manifest parse failed' -ExitCode 1
+        exit 1
+    }
+    $publishCommit = [string]$verified.publish.local_head
+    $manifestGreen = (
+        $verified.ok -eq $true -and
+        [string]$verified.date -eq $DateStamp -and
+        [string]$verified.public_status -eq 'green' -and
+        [string]$verified.scheduled_attempt_status -eq 'failed_then_recovered' -and
+        [string]$verified.recovery_attempt_status -eq 'succeeded' -and
+        $verified.live_runner_readiness.ok -eq $true -and
+        $verified.live_runner_readiness.next_run_readiness.ok -eq $true -and
+        $verified.notification.ok -eq $true -and
+        $verified.podcasts.primary.ok -eq $true -and
+        $verified.podcasts.deepdive.ok -eq $true -and
+        $publishCommit -and
+        $publishCommit -eq [string]$verified.publish.remote_head
+    )
+    if (-not $manifestGreen) {
+        Write-Log 'ERROR: publish_complete manifest is not Green for typed recovery finalize'
+        Set-RunnerState -Status 'publish_failed' -Message 'publish_complete manifest is not Green' -ExitCode 1
+        exit 1
+    }
+    Write-Log "typed recovery finalize accepted manifest=$actualManifest publish_commit=$publishCommit"
+    Set-RunnerState -Status 'publish_complete' -Message 'verified recovery publish complete' -ExitCode 0 -PublishManifestPath $actualManifest -PublishCommit $publishCommit -ScheduledAttemptStatus 'failed_then_recovered' -RecoveryAttemptStatus 'succeeded'
+    exit 0
+}
+
 $gateAttemptDir = Join-Path $RepoDir 'data\gate_attempts'
 $gateAttemptArchive = Join-Path $RepoDir "build\recovery\gate-attempt-archives\$DateStamp\$RunId"
 $priorGateAttempts = @(Get-ChildItem -LiteralPath $gateAttemptDir -Filter "$DateStamp*.json" -File -ErrorAction SilentlyContinue)
@@ -2639,7 +2697,9 @@ if ($PreflightOnly) {
 #   に 1 箇所集約し契約テスト tests/test_net_wait.py で担保 ([[feedback_check_design_principles]]
 #   §2/§4)。netstat ポーリングは使わない。github.com:443 へ最大 10 回 × 30 秒待つ。
 $NetWait = Join-Path $env:USERPROFILE 'bin\net_wait.py'
-if ($Stage2EditorSmokeOnly) {
+if ($SkipSourceSync) {
+    Write-Log 'SmokeTest readiness canary: skipping net reachability wait and git sync'
+} elseif ($Stage2EditorSmokeOnly) {
     Write-Log 'Stage2EditorSmokeOnly mode: skipping net reachability wait and git sync'
 } elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
     Write-Log 'ResumeFromStage mode: skipping net reachability wait and git sync'
@@ -4237,7 +4297,7 @@ if ($NoPush) {
     $publishCompleteManifest = Join-Path $RepoDir "build\publish-complete\$DateStamp.json"
     Push-Location $RepoDir
     try {
-        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--output' $publishCompleteManifest }
+        Invoke-Logged { & $PyExe '-m' 'tools.daily_self_heal' 'verify-publish-complete' '--repo-root' $RepoDir '--ops-repo-root' $OpsRepoRoot '--date' $DateStamp '--remote' 'origin' '--branch' 'main' '--public-base-url' $PublicBaseUrl '--wait-sec' '0' '--poll-sec' $PublishVerifyPollSec '--notification-state' $NotificationStatePath '--output' $publishCompleteManifest }
         $publishCompleteRc = $LASTEXITCODE
     } finally {
         Pop-Location

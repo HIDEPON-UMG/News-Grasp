@@ -436,3 +436,10 @@ def test_automation_and_repair_skill_use_executable_fixed_terminal_contract() ->
         assert "scheduledAttempt.status" not in source
         assert "recoveryAttempt.status" not in source
         assert "runnerStatePath" not in source
+        assert "production_scheduled_run" in source
+        assert "production_recovery_run" in source
+        assert "audit_run" in source
+        assert "artifact_repo_root" in source
+        assert "ops_repo_root" in source
+        assert "FinalizeVerifiedPublishManifest" in source
+        assert "audit_major_incident_open" in source

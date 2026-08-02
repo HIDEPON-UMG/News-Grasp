@@ -1857,6 +1857,65 @@ def test_verify_live_runner_readiness_requires_hash_task_and_canary(monkeypatch,
     assert result["canary"]["status"] == "smoke_ok"
 
 
+def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(monkeypatch, tmp_path: Path) -> None:
+    """pythonw task launcher の mode 契約を検証し、正規の 06:00/05:55 action を受理する。"""
+    repo_ops = tmp_path / "scripts" / "ops"
+    live_bin = tmp_path / "bin"
+    repo_ops.mkdir(parents=True)
+    live_bin.mkdir(parents=True)
+    runner_with_interlock = _runner_with_pre_run_interlock_source()
+    launcher_source = """
+parser.add_argument("mode", choices=("runner", "bootstrap"))
+script = bin_dir / "news-grasp-bootstrap.ps1"
+extra = ["-Start"] if args.mode == "runner" else [
+    "-Start", "-SmokeTest", "-PollSeconds", "1", "-TimeoutMinutes", "2",
+    "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
+]
+creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+"""
+    for name, source in {
+        "news-grasp-runner.ps1": runner_with_interlock,
+        "watch-news-grasp-runner.ps1": "watcher",
+        "news-grasp-bootstrap.ps1": "bootstrap",
+        "news-grasp-task-launcher.pyw": launcher_source,
+    }.items():
+        (repo_ops / name).write_text(source, encoding="utf-8")
+        (live_bin / name).write_text(source, encoding="utf-8")
+
+    live_launcher = live_bin / "news-grasp-task-launcher.pyw"
+
+    def fake_task_details(**kwargs):
+        mode = "bootstrap" if kwargs.get("task_name") == "News-Grasp Bootstrap" else "runner"
+        start = "05:55:00" if mode == "bootstrap" else "06:00:00"
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": f'pythonw.exe "{live_launcher}" {mode}',
+            "triggers": [{"enabled": True, "start_boundary": f"2026-06-20T{start}"}],
+            "last_task_result": 0,
+            "next_run_time": f"2026-06-21T{start}",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_bin / "news-grasp-runner.ps1",
+        live_watcher_path=live_bin / "watch-news-grasp-runner.ps1",
+        live_bootstrap_path=live_bin / "news-grasp-bootstrap.ps1",
+        live_task_launcher_path=live_launcher,
+        date="2026-06-20",
+        run_canary=True,
+    )
+
+    assert result["ok"] is True
+    assert result["scheduled_task"]["targets_live_task_launcher"] is True
+    assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
+    assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
+
+
 def test_verify_live_runner_readiness_rejects_scheduler_target_drift(monkeypatch, tmp_path: Path) -> None:
     """Scheduled Task が watcher bootstrap 以外を指す日は next-run ready ではない。"""
     repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
@@ -2484,6 +2543,7 @@ def test_live_runner_canary_rejects_command_not_found_stderr(monkeypatch, tmp_pa
         stderr = "Get-FileHash : The term 'Get-FileHash' is not recognized\nCommandNotFoundException\n"
 
     def fake_run(command, **_kwargs):
+        assert "-SkipSourceSync" in command
         state_file = Path(command[command.index("-StateFile") + 1])
         log_dir = Path(command[command.index("-LogDir") + 1])
         state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -2519,6 +2579,7 @@ def test_live_startup_canary_removes_stale_log_before_run(monkeypatch, tmp_path:
         stderr = ""
 
     def fake_run(command, **_kwargs):
+        assert "-SkipSourceSync" in command
         state_file = Path(command[command.index("-StateFile") + 1])
         log_dir = Path(command[command.index("-LogDir") + 1])
         assert not (log_dir / "2026-06-20.log").exists()

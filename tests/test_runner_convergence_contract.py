@@ -1578,6 +1578,18 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
 
+def test_runner_has_typed_verified_publish_finalize_path() -> None:
+    """公開済み recovery は全生成を再実行せず、同一 manifest から typed terminal state に収束する。"""
+    text = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    assert "FinalizeVerifiedPublishManifest" in text
+    assert "failed_then_recovered" in text
+    assert "recovery_attempt_status" in text
+    assert "publish_complete manifest is not Green" in text
+    assert "Set-RunnerState -Status 'publish_complete'" in text
+    assert "OpsRepoRootOverride" in text
+    assert "--ops-repo-root" in text
+
+
 def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_overwrite() -> None:
     """live runner 同期は上書き前に backup / manifest / rollback 証跡を残す。"""
     installer = OPS_DIR / "install-news-grasp-ops.ps1"
