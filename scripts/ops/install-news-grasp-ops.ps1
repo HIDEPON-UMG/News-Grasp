@@ -17,15 +17,17 @@ function Write-AtomicUtf8Text {
     $parent = Split-Path -Parent $Path
     New-Item -ItemType Directory -Force -Path $parent | Out-Null
     $temporary = Join-Path $parent ('.' + [IO.Path]::GetFileName($Path) + '.' + [Guid]::NewGuid().ToString('N') + '.tmp')
+    $replacementBackup = $temporary + '.replace-backup'
     try {
         [IO.File]::WriteAllText($temporary, $Text, [Text.UTF8Encoding]::new($false))
         if (Test-Path -LiteralPath $Path -PathType Leaf) {
-            [IO.File]::Replace($temporary, $Path, $null, $true)
+            [IO.File]::Replace($temporary, $Path, $replacementBackup, $true)
         } else {
             [IO.File]::Move($temporary, $Path)
         }
     } finally {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+        if (Test-Path -LiteralPath $replacementBackup) { Remove-Item -LiteralPath $replacementBackup -Force }
     }
 }
 

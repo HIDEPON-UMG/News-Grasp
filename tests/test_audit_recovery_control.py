@@ -396,6 +396,16 @@ def test_bootstrap_nonce_and_authority_writes_are_fresh_and_atomic() -> None:
     assert '"bootstrap-$DateStamp-$taskActionSha256-$runnerSha256"' not in bootstrap
     assert "Write-AtomicUtf8Text -Path $missionPath" in bootstrap
     assert "Write-AtomicUtf8Text -Path $launchPermitPath" in bootstrap
+    assert "[IO.File]::Replace($temporary, $Path, $null" not in bootstrap
+    assert "$replacementBackup" in bootstrap
+    installer = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "install-news-grasp-ops.ps1"
+    ).read_text(encoding="utf-8-sig")
+    assert "[IO.File]::Replace($temporary, $Path, $null" not in installer
+    assert "$replacementBackup" in installer
 
 
 def test_audit_cli_cannot_self_mint_completion_or_trust_plain_attempt_status() -> None:
