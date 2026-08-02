@@ -203,6 +203,148 @@ def test_issue_audit_uses_typed_shared_issue_codes(tmp_path: Path) -> None:
     assert "deepdive_dialogue_value_invalid" in result["issueCodes"]
 
 
+def test_issue_audit_validates_date_before_any_path_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        deepdive_quality,
+        "validate_provenance",
+        lambda *_args: pytest.fail("invalid date reached path reader"),
+    )
+    with pytest.raises(ValueError):
+        deepdive_quality.audit_issue(
+            repo_root=tmp_path,
+            issue_date="../../outside",
+        )
+
+
+def _green_issue_row(issue_date: str) -> dict[str, object]:
+    return {
+        "schemaVersion": deepdive_quality.REPORT_SCHEMA,
+        "status": "Green",
+        "issueDate": issue_date,
+        "issueCodes": [],
+        "issues": [],
+    }
+
+
+def _corpus_result(*, issues: list[str]) -> dict[str, object]:
+    return {
+        "script_count": 2,
+        "turn_count": 28,
+        "repeated_turn_rate": 1.0 if issues else 0.0,
+        "maximum_cross_script_similarity": 1.0 if issues else 0.0,
+        "maximum_pair": (
+            "2026-07-31-DeepDive-dialogue.md",
+            "2026-08-01-DeepDive-dialogue.md",
+        ),
+        "issues": issues,
+    }
+
+
+def test_issue_audit_rejects_cross_day_dialogue_loop(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deepdive_dir = tmp_path / "digest" / "DeepDive"
+    deepdive_dir.mkdir(parents=True)
+    for issue_date in ("2026-07-31", "2026-08-01"):
+        _article(deepdive_dir / f"{issue_date}-DeepDive.md")
+        (deepdive_dir / f"{issue_date}-DeepDive-dialogue.md").write_text(
+            "若手: 仮の対談です。\n\n先輩: 仮の回答です。\n",
+            encoding="utf-8",
+        )
+    monkeypatch.setattr(deepdive_quality, "validate_provenance", lambda *_args: [])
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "validate_dialogue_document",
+        lambda *_args, **_kwargs: [],
+    )
+    observed_paths: list[Path] = []
+
+    def red_corpus(paths: list[Path]) -> dict[str, object]:
+        observed_paths.extend(paths)
+        return _corpus_result(issues=["日跨ぎ台本類似度超過"])
+
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "audit_dialogue_corpus",
+        red_corpus,
+    )
+    result = deepdive_quality.audit_issue(
+        repo_root=tmp_path,
+        issue_date="2026-08-01",
+    )
+    assert result["status"] == "Red"
+    assert "deepdive_dialogue_value_invalid" in result["issueCodes"]
+    assert [path.name for path in observed_paths] == [
+        "2026-07-31-DeepDive-dialogue.md",
+        "2026-08-01-DeepDive-dialogue.md",
+    ]
+    assert result["dialogueCorpusAudit"]["issues"]
+
+
+def test_period_audit_rejects_cross_day_dialogue_loop(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        deepdive_quality,
+        "audit_issue",
+        lambda *, issue_date, **_kwargs: _green_issue_row(issue_date),
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "audit_dialogue_corpus",
+        lambda _paths: _corpus_result(issues=["日跨ぎ完全反復率超過"]),
+    )
+    result = deepdive_quality.audit_period(
+        repo_root=tmp_path,
+        start_date="2026-07-31",
+        end_date="2026-08-01",
+    )
+    assert result["status"] == "Red"
+    assert result["issueCodes"] == ["deepdive_dialogue_value_invalid"]
+    assert result["dialogueCorpusAudit"]["issues"]
+
+
+def test_period_audit_exposes_green_corpus_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        deepdive_quality,
+        "audit_issue",
+        lambda *, issue_date, **_kwargs: _green_issue_row(issue_date),
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "audit_dialogue_corpus",
+        lambda _paths: _corpus_result(issues=[]),
+    )
+    result = deepdive_quality.audit_period(
+        repo_root=tmp_path,
+        start_date="2026-07-31",
+        end_date="2026-08-01",
+    )
+    assert result["status"] == "Green"
+    assert result["dialogueCorpusAudit"]["script_count"] == 2
+    assert result["dialogueCorpusAudit"]["issues"] == []
+
+
+def test_period_audit_rejects_more_than_thirty_one_days() -> None:
+    with pytest.raises(
+        deepdive_quality.DeepDiveQualityError,
+        match="DEEPDIVE_PERIOD_TOO_LARGE",
+    ):
+        deepdive_quality.audit_period(
+            repo_root=Path.cwd(),
+            start_date="2026-07-01",
+            end_date="2026-08-01",
+        )
+
+
 def test_period_capture_fetches_each_unique_url_once(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

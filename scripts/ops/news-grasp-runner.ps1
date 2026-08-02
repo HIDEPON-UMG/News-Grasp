@@ -3744,17 +3744,21 @@ Write-Log 'current DeepDive provenance capture OK'
 $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--json')
 if ($NoPublish) { $deepDiveTtsPublishArgs = @('-m', 'tools.tts.deepdive_audio', $DateStamp, '--dry-run', '--json') }
 foreach ($deepDiveTtsStep in @(
-    @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript, '--context-pack', $DeepDiveContextPack) },
-    @{ Name = 'deepdive shared quality gate'; Args = @('-m', 'tools.deepdive_quality', '--repo-root', $RepoDir, 'audit-issue', '--date', $DateStamp) },
-    @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp) },
-    @{ Name = 'deepdive dialogue publish'; Args = $deepDiveTtsPublishArgs }
+    @{ Name = 'deepdive dialogue script build'; Args = @('-m', 'tools.tts.build_deepdive_dialogue_script', $DeepDiveMarkdown, '--output', $DeepDiveDialogueScript, '--context-pack', $DeepDiveContextPack); FailureKind = 'local-tool'; GateId = 'deepdive-tts'; UseAutonomousGate = $false; Artifacts = @($DeepDiveMarkdown, $DeepDiveDialogueScript) },
+    @{ Name = 'deepdive shared quality gate'; Args = @('-m', 'tools.deepdive_quality', '--repo-root', $RepoDir, 'audit-issue', '--date', $DateStamp); FailureKind = 'content'; GateId = 'deepdive-shared-quality'; UseAutonomousGate = $true; Artifacts = @($DeepDiveMarkdown, $DeepDiveDialogueScript, $DeepDiveProvenanceManifest) },
+    @{ Name = 'deepdive dialogue synthesize'; Args = @('-m', 'tools.tts.deepdive_dialogue', $DeepDiveDialogueScript, '--out-name', $DateStamp); FailureKind = 'local-tool'; GateId = 'deepdive-tts'; UseAutonomousGate = $false; Artifacts = @($DeepDiveDialogueScript) },
+    @{ Name = 'deepdive dialogue publish'; Args = $deepDiveTtsPublishArgs; FailureKind = 'local-tool'; GateId = 'deepdive-tts'; UseAutonomousGate = $false; Artifacts = @($DeepDiveDialogueScript) }
 )) {
     Write-Log "$($deepDiveTtsStep.Name) start"
     try {
         Push-Location $RepoDir
         try {
-            Invoke-Logged { & $PyExe @($deepDiveTtsStep.Args) }
-            $deepDiveTtsRc = $LASTEXITCODE
+            if ($deepDiveTtsStep.UseAutonomousGate) {
+                $deepDiveTtsRc = Invoke-AutonomousGate -GateId 'deepdive-shared-quality' -Category 'deepdive' -PythonArgs @($deepDiveTtsStep.Args) -Artifacts @($deepDiveTtsStep.Artifacts)
+            } else {
+                Invoke-Logged { & $PyExe @($deepDiveTtsStep.Args) }
+                $deepDiveTtsRc = $LASTEXITCODE
+            }
         } finally {
             Pop-Location
         }
@@ -3769,12 +3773,22 @@ foreach ($deepDiveTtsStep in @(
                     -ExternalStatus 'service_unavailable' `
                     -ExternalDetail 'tools.tts.deepdive_audio --json; typed evidence is recorded in the runner log'
             }
-            Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason "$($deepDiveTtsStep.Name) failed" -ExitCode $deepDiveTtsRc
+            $failureReason = "$($deepDiveTtsStep.Name) failed"
+            if ($deepDiveTtsStep.GateId -eq 'deepdive-shared-quality') {
+                Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'deepdive-shared-quality' -Reason $failureReason -ExitCode $deepDiveTtsRc
+            } else {
+                Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason $failureReason -ExitCode $deepDiveTtsRc
+            }
         }
         Write-Log "$($deepDiveTtsStep.Name) done"
     } catch {
         Write-Log "ERROR: $($deepDiveTtsStep.Name) failed: $($_.Exception.Message). DeepDive dialogue audio is required for normal publish."
-        Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason "$($deepDiveTtsStep.Name) failed" -ExitCode 1
+        $failureReason = "$($deepDiveTtsStep.Name) failed: $($_.Exception.Message)"
+        if ($deepDiveTtsStep.GateId -eq 'deepdive-shared-quality') {
+            Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'deepdive-shared-quality' -Reason $failureReason -ExitCode 1
+        } else {
+            Invoke-AutonomousCompletionPolicy -FailureKind 'local-tool' -GateId 'deepdive-tts' -Reason $failureReason -ExitCode 1
+        }
     }
 }
 

@@ -6,8 +6,11 @@ import json
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 import tools.daily_self_heal as dsh
+import tools.deepdive_quality as ddq
 from tools.daily_self_heal import (
     classify_phase0,
     compare_files,
@@ -1523,6 +1526,37 @@ def test_verify_publish_rejects_public_status_mismatch(monkeypatch, tmp_path: Pa
 
 
 PUBLISH_COMMIT = "a" * 40
+_REAL_VERIFY_DEEPDIVE_QUALITY_HEAD_BINDING = (
+    dsh._verify_deepdive_quality_head_binding
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_publish_complete_shared_quality(monkeypatch) -> None:
+    """publish verifier固有テストは共有品質engineを明示fixtureで隔離する。"""
+    monkeypatch.setattr(
+        dsh,
+        "deepdive_quality",
+        SimpleNamespace(
+            audit_issue=lambda **_kwargs: {
+                "status": "Green",
+                "issueCodes": [],
+                "issues": [],
+            }
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_verify_deepdive_quality_head_binding",
+        lambda **_kwargs: {
+            "ok": True,
+            "reason": "",
+            "head": PUBLISH_COMMIT,
+            "paths": [],
+        },
+        raising=False,
+    )
 
 
 def _write_publish_complete_inventory(
@@ -1608,6 +1642,156 @@ def test_verify_publish_complete_requires_distribution_inventory(monkeypatch, tm
     assert result["ok"] is False
     assert result["reason"] == "distribution_artifact_missing"
     assert "build/youtube-podcast-deepdive/uploads.json" in result["distribution_artifacts"]["missing"]
+
+
+def test_verify_publish_complete_rejects_shared_deepdive_quality_red_before_public_probe(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """公開完了は単日Greenで日跨ぎ反復を代用せず、共有品質Redを先に返す。"""
+    _write_publish_complete_inventory(tmp_path)
+    public_probe_calls: list[dict] = []
+    monkeypatch.setattr(
+        dsh.deepdive_quality,
+        "audit_issue",
+        lambda **_kwargs: {
+            "status": "Red",
+            "issueCodes": ["deepdive_dialogue_value_invalid"],
+            "issues": ["CORPUS: 日跨ぎ台本類似度超過"],
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **kwargs: public_probe_calls.append(kwargs) or {"ok": True},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deepdive_dialogue_value_invalid"
+    assert result["deepdive_shared_quality"]["status"] == "Red"
+    assert public_probe_calls == []
+
+
+def test_verify_publish_complete_rejects_uncommitted_quality_substitution_before_public_probe(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """working treeだけGreenにした内容を公開commitの品質証明へ代用できない。"""
+    _write_publish_complete_inventory(tmp_path)
+    public_probe_calls: list[dict] = []
+    monkeypatch.setattr(
+        dsh,
+        "_verify_deepdive_quality_head_binding",
+        lambda **_kwargs: {
+            "ok": False,
+            "reason": "deepdive_quality_source_dirty",
+            "paths": ["digest/DeepDive/2026-06-20-DeepDive-dialogue.md"],
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **kwargs: public_probe_calls.append(kwargs) or {"ok": True},
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deepdive_quality_source_dirty"
+    assert result["deepdive_quality_head_binding"]["ok"] is False
+    assert public_probe_calls == []
+
+
+def test_deepdive_quality_head_binding_uses_real_git_bytes(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    target = repo / "digest" / "DeepDive" / "2026-06-20-DeepDive.md"
+    target.parent.mkdir(parents=True)
+    target.write_text("committed quality bytes\n", encoding="utf-8")
+    for args in (
+        ["git", "init", "-q", str(repo)],
+        ["git", "-C", str(repo), "config", "user.email", "test@example.invalid"],
+        ["git", "-C", str(repo), "config", "user.name", "News-Grasp Test"],
+        ["git", "-C", str(repo), "add", "--", target.relative_to(repo).as_posix()],
+        ["git", "-C", str(repo), "commit", "-q", "-m", "fixture"],
+    ):
+        subprocess.run(args, check=True, capture_output=True)
+    committed_evidence = ddq._audit_file_evidence(target, target.read_bytes())
+    audit = {"auditedFiles": [committed_evidence]}
+
+    green = _REAL_VERIFY_DEEPDIVE_QUALITY_HEAD_BINDING(
+        repo_root=repo,
+        audit=audit,
+    )
+    assert green["ok"] is True
+
+    target.write_text("uncommitted substitution\n", encoding="utf-8")
+    substituted_audit = {
+        "auditedFiles": [ddq._audit_file_evidence(target, target.read_bytes())]
+    }
+    red = _REAL_VERIFY_DEEPDIVE_QUALITY_HEAD_BINDING(
+        repo_root=repo,
+        audit=substituted_audit,
+    )
+    assert red["ok"] is False
+    assert red["reason"] == "deepdive_quality_head_blob_mismatch"
+
+
+def test_verify_publish_complete_rejects_quality_head_publish_head_drift(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _write_publish_complete_inventory(tmp_path)
+    monkeypatch.setattr(
+        dsh,
+        "_verify_deepdive_quality_head_binding",
+        lambda **_kwargs: {
+            "ok": True,
+            "reason": "",
+            "head": "b" * 40,
+            "paths": ["digest/DeepDive/2026-06-20-DeepDive.md"],
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "status",
+        },
+    )
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deepdive_quality_head_mismatch"
 
 
 def test_verify_live_runner_readiness_requires_hash_task_and_canary(monkeypatch, tmp_path: Path) -> None:
@@ -2583,6 +2767,11 @@ def test_verify_publish_complete_rejects_manifest_missing_from_head_tree(monkeyp
         dsh,
         "verify_publish",
         lambda **_kwargs: {"ok": True, "local_head": head, "remote_head": head, "url": "status"},
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_verify_deepdive_quality_head_binding",
+        lambda **_kwargs: {"ok": True, "reason": "", "head": head, "paths": []},
     )
 
     result = dsh.verify_publish_complete(

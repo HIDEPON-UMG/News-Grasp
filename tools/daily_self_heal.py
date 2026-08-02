@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import re
 import subprocess
 import sys
+import tarfile
 import time
 import urllib.error
 import urllib.request
@@ -17,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote, urlencode, urljoin, urlparse
 
+from tools import deepdive_quality
 from tools.publish_inventory import required_distribution_artifacts
 
 
@@ -1828,6 +1831,104 @@ def _distribution_artifact_manifest(repo_root: Path, date: str) -> dict:
     }
 
 
+def _canonical_quality_text_sha256(payload: bytes) -> str:
+    text = payload.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _verify_deepdive_quality_head_binding(
+    *,
+    repo_root: Path,
+    audit: dict,
+) -> dict:
+    """品質engineが読んだ全fileを現在のHEAD bytesへ束縛する。"""
+
+    repo = Path(repo_root).resolve()
+    raw_files = list(audit.get("auditedFiles") or [])
+    if not raw_files:
+        return {"ok": False, "reason": "deepdive_quality_audited_paths_missing", "paths": []}
+    evidence_by_path: dict[str, dict] = {}
+    try:
+        for row in raw_files:
+            if not isinstance(row, dict):
+                raise ValueError("audit row is not an object")
+            resolved = Path(str(row.get("path") or "")).resolve(strict=True)
+            relative = resolved.relative_to(repo).as_posix()
+            if relative in evidence_by_path:
+                raise ValueError("duplicate audit path")
+            evidence_by_path[relative] = row
+    except (OSError, ValueError, TypeError):
+        return {"ok": False, "reason": "deepdive_quality_path_invalid", "paths": []}
+    relative_paths = sorted(evidence_by_path)
+    if not _is_git_worktree(repo):
+        return {
+            "ok": False,
+            "reason": "deepdive_quality_head_unavailable",
+            "paths": relative_paths,
+        }
+    try:
+        head = _git_output(repo, ["rev-parse", "HEAD"])
+    except RuntimeError:
+        return {
+            "ok": False,
+            "reason": "deepdive_quality_head_unavailable",
+            "paths": relative_paths,
+        }
+    archive = subprocess.run(
+        ["git", "-C", str(repo), "archive", "--format=tar", head, "--", *relative_paths],
+        capture_output=True,
+        check=False,
+    )
+    if archive.returncode != 0:
+        return {
+            "ok": False,
+            "reason": "deepdive_quality_source_untracked",
+            "head": head,
+            "paths": relative_paths,
+        }
+    archived_hashes: dict[str, str] = {}
+    try:
+        with tarfile.open(fileobj=io.BytesIO(archive.stdout), mode="r:") as stream:
+            for member in stream.getmembers():
+                if not member.isfile() or member.name not in evidence_by_path:
+                    continue
+                extracted = stream.extractfile(member)
+                if extracted is None:
+                    raise tarfile.TarError("archive member body missing")
+                archived_hashes[member.name] = _canonical_quality_text_sha256(
+                    extracted.read()
+                )
+    except (tarfile.TarError, UnicodeError, OSError):
+        return {
+            "ok": False,
+            "reason": "deepdive_quality_head_check_failed",
+            "head": head,
+            "paths": relative_paths,
+        }
+    if set(archived_hashes) != set(relative_paths):
+        return {
+            "ok": False,
+            "reason": "deepdive_quality_source_untracked",
+            "head": head,
+            "paths": relative_paths,
+        }
+    mismatched = [
+        path
+        for path in relative_paths
+        if str(evidence_by_path[path].get("canonicalTextSha256") or "")
+        != archived_hashes[path]
+    ]
+    if mismatched:
+        return {
+            "ok": False,
+            "reason": "deepdive_quality_head_blob_mismatch",
+            "head": head,
+            "paths": relative_paths,
+            "mismatched_paths": mismatched,
+        }
+    return {"ok": True, "reason": "", "head": head, "paths": relative_paths}
+
+
 def verify_publish_complete(
     *,
     repo_root: Path,
@@ -1856,6 +1957,39 @@ def verify_publish_complete(
         return {**base, "reason": "distribution_artifact_missing"}
     if distribution.get("manifest_reason"):
         return {**base, "reason": distribution["manifest_reason"]}
+
+    shared_quality = deepdive_quality.audit_issue(
+        repo_root=repo_root,
+        issue_date=date,
+    )
+    base["deepdive_shared_quality"] = shared_quality
+    if shared_quality.get("status") != "Green":
+        issue_codes = [
+            str(code)
+            for code in shared_quality.get("issueCodes", [])
+            if str(code)
+        ]
+        return {
+            **base,
+            "reason": (
+                issue_codes[0]
+                if issue_codes
+                else "deepdive_shared_quality_invalid"
+            ),
+        }
+    quality_head_binding = _verify_deepdive_quality_head_binding(
+        repo_root=repo_root,
+        audit=shared_quality,
+    )
+    base["deepdive_quality_head_binding"] = quality_head_binding
+    if not quality_head_binding.get("ok"):
+        return {
+            **base,
+            "reason": str(
+                quality_head_binding.get("reason")
+                or "deepdive_quality_source_dirty"
+            ),
+        }
 
     primary_state = primary_podcast_state_path or repo_root / "build" / "youtube-podcast" / "uploads.json"
     deepdive_state = deepdive_podcast_state_path or repo_root / "build" / "youtube-podcast-deepdive" / "uploads.json"
@@ -1891,6 +2025,8 @@ def verify_publish_complete(
     remote_head = str(publish.get("remote_head") or "")
     if not local_head or local_head != remote_head:
         return {**manifest, "reason": "publish_commit_mismatch"}
+    if str(quality_head_binding.get("head") or "") != local_head:
+        return {**manifest, "reason": "deepdive_quality_head_mismatch"}
     manifest_rel = str(distribution.get("manifest_path") or f"data/distribution/{date}.json")
     manifest_in_head = _git_tree_has_path(repo_root, local_head, manifest_rel)
     if manifest_in_head is False:

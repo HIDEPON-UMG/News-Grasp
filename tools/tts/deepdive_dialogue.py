@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from collections import Counter
+import hashlib
 import re
 import sys
 import tempfile
@@ -113,6 +114,15 @@ LEGACY_VALUE_SCAFFOLDS = (
 MAX_SEGMENT_SIMILARITY = 0.58
 MAX_CORPUS_REPEATED_TURN_RATE = 0.10
 MAX_CROSS_SCRIPT_SIMILARITY = 0.45
+
+
+def _audit_file_evidence(path: Path, payload: bytes) -> dict[str, str]:
+    text = payload.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
+    return {
+        "path": str(path.resolve()),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "canonicalTextSha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    }
 
 
 def _warn(message: str) -> None:
@@ -353,13 +363,31 @@ def audit_dialogue_corpus(paths: list[Path]) -> dict[str, object]:
     scripts: list[tuple[Path, list[DialogueTurn], set[str]]] = []
     issues: list[str] = []
     long_turn_keys: list[str] = []
+    audited_files: dict[str, dict[str, str]] = {}
     for path in paths:
-        markdown = path.read_text(encoding="utf-8-sig")
+        script_bytes = path.read_bytes()
+        markdown = script_bytes.decode("utf-8-sig")
+        audited_files[str(path.resolve())] = _audit_file_evidence(
+            path,
+            script_bytes,
+        )
         turns = parse_dialogue(markdown)
         source_path, source_issue = _source_path_for_script(path, markdown)
-        document_issues = [source_issue] if source_issue else validate_dialogue_document(
-            markdown,
-            source_markdown=source_path.read_text(encoding="utf-8-sig") if source_path else None,
+        source_markdown = None
+        if source_path is not None:
+            source_bytes = source_path.read_bytes()
+            source_markdown = source_bytes.decode("utf-8-sig")
+            audited_files[str(source_path.resolve())] = _audit_file_evidence(
+                source_path,
+                source_bytes,
+            )
+        document_issues = (
+            [source_issue]
+            if source_issue
+            else validate_dialogue_document(
+                markdown,
+                source_markdown=source_markdown,
+            )
         )
         if document_issues:
             issues.extend(f"{path.name}: {issue}" for issue in document_issues)
@@ -395,6 +423,9 @@ def audit_dialogue_corpus(paths: list[Path]) -> dict[str, object]:
         "maximum_cross_script_similarity": maximum_similarity,
         "maximum_pair": maximum_pair,
         "issues": issues,
+        "audited_files": [
+            audited_files[path] for path in sorted(audited_files)
+        ],
     }
 
 

@@ -26,6 +26,7 @@ from tools.validate_deepdive_urls import extract_urls
 
 SCHEMA = "DEEPDIVE_SOURCE_PROVENANCE_V1"
 REPORT_SCHEMA = "DEEPDIVE_SHARED_QUALITY_REPORT_V1"
+MAX_AUDIT_PERIOD_DAYS = 31
 OBSERVATION_CACHE_SCHEMA = "DEEPDIVE_URL_OBSERVATION_CACHE_V1"
 HEX_64_RE = re.compile(r"^[a-f0-9]{64}$")
 ISSUE_DATE_RE = re.compile(r"^(20\d{2}-\d{2}-\d{2})-DeepDive\.md$")
@@ -58,6 +59,19 @@ def _canonical_sha256(value: object) -> str:
 
 def _file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _canonical_text_sha256(payload: bytes) -> str:
+    text = payload.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _audit_file_evidence(path: Path, payload: bytes) -> dict[str, str]:
+    return {
+        "path": str(path.resolve()),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "canonicalTextSha256": _canonical_text_sha256(payload),
+    }
 
 
 def canonical_manifest_sha256(value: dict[str, Any]) -> str:
@@ -255,17 +269,42 @@ def validate_provenance(
 ) -> list[str]:
     """manifestの自己hash、記事hash、URL位置、公開hrefを再読込する。"""
 
+    issues, _evidence = _validate_provenance_with_evidence(
+        article_path,
+        manifest_path,
+    )
+    return issues
+
+
+def _validate_provenance_with_evidence(
+    article_path: Path,
+    manifest_path: Path,
+) -> tuple[list[str], list[dict[str, str]]]:
+    """同じ読取bytesでprovenance判定とSHA-256証跡を生成する。"""
+
     issues: list[str] = []
+    evidence: list[dict[str, str]] = []
     article = Path(article_path).resolve()
     manifest = Path(manifest_path).resolve()
     if not article.is_file():
-        return ["DEEPDIVE_ARTICLE_MISSING"]
+        return ["DEEPDIVE_ARTICLE_MISSING"], evidence
     if not manifest.is_file():
-        return ["DEEPDIVE_PROVENANCE_MISSING"]
+        return ["DEEPDIVE_PROVENANCE_MISSING"], evidence
     try:
-        value = _read_json(manifest, "DEEPDIVE_PROVENANCE_INVALID")
-    except DeepDiveQualityError as error:
-        return [str(error)]
+        article_bytes = article.read_bytes()
+        manifest_bytes = manifest.read_bytes()
+        article_text = article_bytes.decode("utf-8-sig")
+        value = json.loads(manifest_bytes.decode("utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return ["DEEPDIVE_PROVENANCE_INVALID"], evidence
+    if not isinstance(value, dict):
+        return ["DEEPDIVE_PROVENANCE_INVALID"], evidence
+    evidence.extend(
+        (
+            _audit_file_evidence(article, article_bytes),
+            _audit_file_evidence(manifest, manifest_bytes),
+        )
+    )
     required_fields = {
         "schemaVersion",
         "status",
@@ -277,26 +316,24 @@ def validate_provenance(
         "manifestSha256",
     }
     if set(value) != required_fields or value.get("schemaVersion") != SCHEMA:
-        return ["DEEPDIVE_PROVENANCE_SCHEMA_INVALID"]
+        return ["DEEPDIVE_PROVENANCE_SCHEMA_INVALID"], evidence
     if value.get("status") != "Green":
         issues.append("DEEPDIVE_PROVENANCE_NOT_GREEN")
     if value.get("manifestSha256") != canonical_manifest_sha256(value):
         issues.append("DEEPDIVE_PROVENANCE_HASH_DRIFT")
     if value.get("articlePath") != str(article):
         issues.append("DEEPDIVE_ARTICLE_PATH_DRIFT")
-    if value.get("articleSha256") != _file_sha256(article):
+    if value.get("articleSha256") != hashlib.sha256(article_bytes).hexdigest():
         issues.append("DEEPDIVE_ARTICLE_DRIFT")
     try:
         if value.get("issueDate") != _issue_date(article):
             issues.append("DEEPDIVE_ISSUE_DATE_DRIFT")
     except DeepDiveQualityError as error:
         issues.append(str(error))
-    expected_locations = _article_url_locations(
-        article.read_text(encoding="utf-8-sig")
-    )
+    expected_locations = _article_url_locations(article_text)
     sources = value.get("sources")
     if not isinstance(sources, list):
-        return issues + ["DEEPDIVE_PROVENANCE_SOURCES_INVALID"]
+        return issues + ["DEEPDIVE_PROVENANCE_SOURCES_INVALID"], evidence
     if value.get("sourceSetSha256") != _canonical_sha256(sources):
         issues.append("DEEPDIVE_SOURCE_SET_DRIFT")
     actual_urls: set[str] = set()
@@ -332,7 +369,7 @@ def validate_provenance(
             issues.append(f"DEEPDIVE_FETCH_TIME_INVALID {url}")
     if actual_urls != set(expected_locations):
         issues.append("DEEPDIVE_URL_SET_DRIFT")
-    return sorted(set(issues))
+    return sorted(set(issues)), evidence
 
 
 def _build_tls_context() -> ssl.SSLContext:
@@ -611,16 +648,44 @@ def capture_period_provenance(
     }
 
 
-def audit_issue(*, repo_root: Path, issue_date: str) -> dict[str, Any]:
+def _dialogue_paths_for_period(
+    *,
+    repo_root: Path,
+    start: date,
+    end: date,
+) -> list[Path]:
+    """存在する対談だけを日付順に一度収集する。"""
+
+    deepdive_dir = Path(repo_root).resolve() / "digest" / "DeepDive"
+    paths: list[Path] = []
+    current = start
+    while current <= end:
+        path = deepdive_dir / f"{current.isoformat()}-DeepDive-dialogue.md"
+        if path.is_file():
+            paths.append(path)
+        current += timedelta(days=1)
+    return paths
+
+
+def audit_issue(
+    *,
+    repo_root: Path,
+    issue_date: str,
+    include_corpus: bool = True,
+) -> dict[str, Any]:
     """production runnerと日次監査が共有する一日分の品質判定。"""
 
+    issue_day = date.fromisoformat(issue_date)
     repo = Path(repo_root).resolve()
     article = repo / "digest" / "DeepDive" / f"{issue_date}-DeepDive.md"
     dialogue = repo / "digest" / "DeepDive" / f"{issue_date}-DeepDive-dialogue.md"
     manifest = repo / "data" / "deepdive-provenance" / f"{issue_date}.json"
     issue_codes: list[str] = []
     issues: list[str] = []
-    provenance_issues = validate_provenance(article, manifest)
+    provenance_issues, provenance_evidence = _validate_provenance_with_evidence(
+        article,
+        manifest,
+    )
     if provenance_issues:
         issue_codes.append("deepdive_url_provenance_invalid")
         issues.extend(provenance_issues)
@@ -634,6 +699,26 @@ def audit_issue(*, repo_root: Path, issue_date: str) -> dict[str, Any]:
     if dialogue_issues:
         issue_codes.append("deepdive_dialogue_value_invalid")
         issues.extend(dialogue_issues)
+    dialogue_corpus_audit: dict[str, object] | None = None
+    audited_files = {
+        row["path"]: row for row in provenance_evidence
+    }
+    if include_corpus:
+        dialogue_paths = _dialogue_paths_for_period(
+            repo_root=repo,
+            start=issue_day - timedelta(days=30),
+            end=issue_day,
+        )
+        dialogue_corpus_audit = deepdive_dialogue.audit_dialogue_corpus(
+            dialogue_paths
+        )
+        for row in dialogue_corpus_audit.get("audited_files", []):
+            audited_files[str(row["path"])] = dict(row)
+        corpus_issues = list(dialogue_corpus_audit["issues"])
+        if corpus_issues:
+            if "deepdive_dialogue_value_invalid" not in issue_codes:
+                issue_codes.append("deepdive_dialogue_value_invalid")
+            issues.extend(f"CORPUS: {issue}" for issue in corpus_issues)
     return {
         "schemaVersion": REPORT_SCHEMA,
         "status": "Green" if not issue_codes else "Red",
@@ -643,6 +728,9 @@ def audit_issue(*, repo_root: Path, issue_date: str) -> dict[str, Any]:
         "articlePath": str(article),
         "dialoguePath": str(dialogue),
         "provenancePath": str(manifest),
+        "dialogueCorpusAudit": dialogue_corpus_audit,
+        "auditedFiles": [audited_files[path] for path in sorted(audited_files)],
+        "auditedPaths": sorted(audited_files),
     }
 
 
@@ -656,12 +744,33 @@ def audit_period(
     end = date.fromisoformat(end_date)
     if end < start:
         raise DeepDiveQualityError("DEEPDIVE_PERIOD_INVALID")
+    if (end - start).days + 1 > MAX_AUDIT_PERIOD_DAYS:
+        raise DeepDiveQualityError(
+            f"DEEPDIVE_PERIOD_TOO_LARGE max={MAX_AUDIT_PERIOD_DAYS}"
+        )
     rows: list[dict[str, Any]] = []
     current = start
     while current <= end:
-        rows.append(audit_issue(repo_root=repo_root, issue_date=current.isoformat()))
+        rows.append(
+            audit_issue(
+                repo_root=repo_root,
+                issue_date=current.isoformat(),
+                include_corpus=False,
+            )
+        )
         current += timedelta(days=1)
     issue_codes = sorted({code for row in rows for code in row["issueCodes"]})
+    dialogue_corpus_audit = deepdive_dialogue.audit_dialogue_corpus(
+        _dialogue_paths_for_period(
+            repo_root=repo_root,
+            start=start,
+            end=end,
+        )
+    )
+    if dialogue_corpus_audit["issues"]:
+        issue_codes = sorted(
+            {*issue_codes, "deepdive_dialogue_value_invalid"}
+        )
     return {
         "schemaVersion": "DEEPDIVE_SHARED_QUALITY_PERIOD_REPORT_V1",
         "status": "Green" if not issue_codes else "Red",
@@ -669,6 +778,7 @@ def audit_period(
         "endDate": end_date,
         "issueCodes": issue_codes,
         "days": rows,
+        "dialogueCorpusAudit": dialogue_corpus_audit,
     }
 
 
