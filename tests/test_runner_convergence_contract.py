@@ -1154,7 +1154,7 @@ def test_runner_exposes_resume_from_deepdive_without_reharvest() -> None:
     _assert_runner_powershell_parses()
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "[ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive')]" in runner
+    assert "[ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]" in runner
     assert "[string] $ResumeFromStage = ''" in runner
     assert "$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')" in runner
     assert "$ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')" in runner
@@ -1192,7 +1192,7 @@ def test_no_publish_e2e_forbids_force_full_rerun_after_artifacts_exist() -> None
 
     assert "$IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive" in guard
     assert "E2E full rerun forbidden after existing artifacts" in guard
-    assert "Use -ResumeFromStage deepdive, post-daily-quality, or post-deepdive" in guard
+    assert "Use a typed -ResumeFromStage path." in guard
     assert guard.index("E2E full rerun forbidden after existing artifacts") < guard.index("existing daily artifacts detected")
     assert "-not $ForceFullRerun" not in guard.split("E2E full rerun forbidden after existing artifacts", 1)[0]
 

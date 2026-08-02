@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from datetime import date
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -23,6 +26,30 @@ except Exception:  # pragma: no cover - dependency absence is handled at runtime
     _local_google_news_decode = None
 
 _SKIP_FILES = {"all.jsonl", "dropped.jsonl"}
+
+
+def _rss_publication_day(value: object) -> str | None:
+    text = str(value or "").strip()
+    match = re.search(r"(\d{4})[/-](\d{2})[/-](\d{2})", text)
+    if match:
+        candidate = "-".join(match.groups())
+        try:
+            return date.fromisoformat(candidate).isoformat()
+        except ValueError:
+            return None
+    try:
+        return parsedate_to_datetime(text).date().isoformat()
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _mark_google_news_resolved(item: dict[str, Any]) -> None:
+    item["google_news_decode_status"] = "resolved"
+    item["url_resolution_action"] = "canonical_resolved"
+    rss_day = _rss_publication_day(item.get("pubDate"))
+    if rss_day:
+        item["published_date"] = rss_day
+        item["date_evidence_source"] = "rss-pubdate"
 
 
 def _decode_google_news_url_with_timeout(url: str, timeout_sec: float) -> str | None:
@@ -112,10 +139,12 @@ def prepare_rows(
                 item["url"] = decoded
                 item["url_norm"] = dedup.normalize_url(decoded)
                 item["google_news_url"] = url
-                item["url_resolution_action"] = "canonical_resolved"
+                _mark_google_news_resolved(item)
                 url = decoded
         elif url:
             item["url_norm"] = dedup.normalize_url(url)
+            if item.get("google_news_url"):
+                _mark_google_news_resolved(item)
 
         if not url or looks_homepage_or_section_landing(url):
             item["drop_reason"] = "homepage_or_section_landing_url"

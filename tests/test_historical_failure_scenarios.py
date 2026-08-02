@@ -183,6 +183,16 @@ def test_registered_local_only_historical_evidence_may_be_absent_in_clean_clone(
     assert validation.actual_sha256 == ""
 
 
+def test_2026_07_28_local_only_historical_evidence_may_be_absent_in_clean_clone(tmp_path: Path) -> None:
+    scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-28")
+
+    validation = validate_historical_evidence(tmp_path, scenario)
+
+    assert validation.valid is True
+    assert validation.mode == "registered_local_only_absent"
+    assert validation.expected_sha256 == LOCAL_ONLY_EVIDENCE_SHA256[scenario.evidence_path]
+
+
 def test_present_local_only_historical_evidence_with_wrong_hash_is_rejected(tmp_path: Path) -> None:
     scenario = next(item for item in historical_failure_scenarios() if item.issue_date == "2026-07-27")
     evidence_path = tmp_path / scenario.evidence_path

@@ -35,6 +35,11 @@ def test_prepare_directory_decodes_google_news_url_and_hydrates_thumb(tmp_path: 
                 "url": "https://news.google.com/rss/articles/CBMiExample?oc=5",
                 "url_norm": "news.google.com/rss/articles/cbmiexample",
                 "category": "ai",
+                "google_news_decode_status": "unresolved",
+                "url_resolution_action": "reporter_must_resolve_canonical",
+                "pubDate": "2026/08/02 12:34:56",
+                "published_date": "2026-07-27",
+                "date_evidence_source": "htmldate",
             }
         ],
     )
@@ -52,6 +57,34 @@ def test_prepare_directory_decodes_google_news_url_and_hydrates_thumb(tmp_path: 
     assert rows[0]["url"] == "https://example.com/ai/story"
     assert rows[0]["url_norm"] == "https://example.com/ai/story"
     assert rows[0]["thumb"] == "https://example.com/ai/thumb.jpg"
+    assert rows[0]["google_news_decode_status"] == "resolved"
+    assert rows[0]["url_resolution_action"] == "canonical_resolved"
+    assert rows[0]["published_date"] == "2026-08-02"
+    assert rows[0]["date_evidence_source"] == "rss-pubdate"
+
+
+def test_prepare_directory_repairs_stale_unresolved_marker_after_url_was_decoded(tmp_path: Path) -> None:
+    """前回実行が残した unresolved を正規 URL の再処理で解消する。"""
+    input_dir = tmp_path / "deduped"
+    _write_jsonl(
+        input_dir / "mobility.jsonl",
+        [
+            {
+                "title": "Mobility story",
+                "url": "https://example.com/mobility/story",
+                "google_news_url": "https://news.google.com/rss/articles/CBMiExample?oc=5",
+                "google_news_decode_status": "unresolved",
+                "url_resolution_action": "reporter_must_resolve_canonical",
+                "thumb": "https://example.com/mobility/thumb.jpg",
+            }
+        ],
+    )
+
+    prepare_directory(input_dir)
+
+    row = _read_jsonl(input_dir / "mobility.jsonl")[0]
+    assert row["google_news_decode_status"] == "resolved"
+    assert row["url_resolution_action"] == "canonical_resolved"
 
 
 def test_prepare_directory_does_not_hydrate_google_news_proxy_thumb(tmp_path: Path) -> None:

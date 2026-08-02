@@ -17,18 +17,18 @@ def test_execution_producer_has_exact_selector_and_pair_case_sets() -> None:
     value = json.loads(MATRIX.read_text(encoding="utf-8"))
     selectors = _fixture_selectors(value["redSuiteCoverage"])
     pair_cases = build_requirement_viewpoint_pair_cases(value)
-    assert len(selectors) == len(set(selectors)) == 49
-    assert len(pair_cases) == 140
-    assert len({case["caseId"] for case in pair_cases}) == 140
+    assert len(selectors) == len(set(selectors)) == 60
+    assert len(pair_cases) == 150
+    assert len({case["caseId"] for case in pair_cases}) == 150
 
 
 def test_pair_cases_are_traceability_red_not_behavior_substitutes() -> None:
     value = json.loads(MATRIX.read_text(encoding="utf-8"))
     pair_cases = build_requirement_viewpoint_pair_cases(value)
-    assert len(pair_cases) == 140
+    assert len(pair_cases) == 150
     assert all(len(case["injectedDefects"]) == 2 for case in pair_cases)
     assert all(len(case["expectedFindings"]) == 2 for case in pair_cases)
-    assert len(_fixture_selectors(value["redSuiteCoverage"])) == 49
+    assert len(_fixture_selectors(value["redSuiteCoverage"])) == 60
 
 
 def test_pytest_execution_recorder_is_hashable_for_plugin_registration() -> None:

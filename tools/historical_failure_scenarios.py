@@ -115,6 +115,9 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "docs/incidents/2026-07-27-digest-articles-reconcile-report.html": (
         "f771f22d3d5c4038dd39f3055c2dc79ce6784272a617f35d1b3c8b8e889f9cdb"
     ),
+    "docs/incidents/2026-07-28-generation-quality-date-evidence-recovery-report.html": (
+        "63fb2317f39480528262f10eae4942c02c328cc47e2b52fce5e9b1a7e7f5c2cc"
+    ),
     "docs/incidents/2026-07-29-daily-quality-recovery-report.html": (
         "9ac2b0220082727502a671731195ac3aaa1c88684f3d7d13efcdc03bece5e5e6"
     ),

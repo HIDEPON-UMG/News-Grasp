@@ -61,8 +61,8 @@ def test_requirement_viewpoint_pair_observes_its_own_red(
 
 
 def test_pair_case_registry_is_exact_and_individually_addressable() -> None:
-    assert len(PAIR_CASES) == 140
+    assert len(PAIR_CASES) == 150
     case_ids = [case["caseId"] for case in PAIR_CASES]
-    assert len(case_ids) == len(set(case_ids)) == 140
+    assert len(case_ids) == len(set(case_ids)) == 150
     assert all(len(case["injectedDefects"]) == 2 for case in PAIR_CASES)
     assert all(len(case["expectedFindings"]) == 2 for case in PAIR_CASES)
