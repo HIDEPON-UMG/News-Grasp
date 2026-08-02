@@ -1,0 +1,47 @@
+{
+  "date": "2026-08-02",
+  "category_id": "game",
+  "queries": [
+    "site:famitsu.com/article/202608 8月発売 PS5 PS4 ビースト・オブ・リンカネーション シュタゲ リブート",
+    "site:nintendo.com/jp/topics/article ニンテンドーeショップ新作ソフト情報 7/31",
+    "site:inside-games.jp/article/2026/08 ワンピース カードゲーム 世界最強の戦士 プレバン",
+    "site:gamebiz.jp/news Dodo Duckie BornMonkie",
+    "site:famitsu.com/article/202608 メルティブラッド トワイルミナ グランドシナリオモード"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nintendo", "Switch 2", "Sony", "Capcom", "Square Enix"],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage1_dedup_fixed",
+  "canonical_resolution": [
+    {"title":"8月発売PS5/PS4新作ゲーム","url":"https://www.famitsu.com/article/202608/82595","status":"resolved_search_and_fetch"},
+    {"title":"ニンテンドーeショップ新作ソフト情報 7/31（金）号。","url":"https://www.nintendo.com/jp/topics/article/18bcece5-a98d-4890-b99b-255debb7702e","status":"resolved_search_and_fetch"},
+    {"title":"ONE PIECEカードゲーム 世界最強の戦士 抽選販売","url":"https://www.inside-games.jp/article/2026/08/02/185571.html","status":"resolved_search_and_fetch"},
+    {"title":"Dodo Duckie PC/Xboxリリース","url":"https://gamebiz.jp/news/430375","status":"resolved_search_and_fetch"},
+    {"title":"MELTY BLOOD TWI-LUMINA グランドシナリオモード","url":"https://www.famitsu.com/article/202608/83210","status":"resolved_search_and_fetch"}
+  ],
+  "dropped": [
+    {"title":"“夏休みおすすめのゲーム”といえば？","reason":"投票・意見募集記事で、ニュースとしての一次事実が薄いため不採用"},
+    {"title":"浜通り車旅「ゲーム」完成","reason":"地域イベントの話題で、ゲーム市場の読者価値が相対的に低いため不採用"},
+    {"title":"京都銀行が教える「親子投資」セミナー","reason":"金融教育イベントが主題で、ゲームニュースとしての焦点が弱いため不採用"},
+    {"title":"今週のお得ゲーム10選","reason":"セール roundup の重複・購買誘導色が強いため不採用"},
+    {"title":"泣けるゲーム「ダレカレ」で記者もおえつ","reason":"体験記中心で、当日ゲーム業界への影響が限定的なため不採用"},
+    {"title":"ゼノブレイド2 Nintendo Switch 2 Editionほか注目タイトルまとめ","reason":"複数タイトルの roundup で、個別ニュースとの重複が大きいため不採用"},
+    {"title":"スーパーマリオサンシャイン Switch 2向け配信ほか記事7選","reason":"roundup で任天堂公式の既報と重なるため不採用"},
+    {"title":"サクナヒメのタマ爺、田んぼに現る","reason":"地域アート紹介が主題で、ゲーム本体の新情報ではないため不採用"},
+    {"title":"Echoes From Ciudadela Steamリリース","reason":"同日gamebiz新作のなかで優先度が下がり、5件枠から除外"},
+    {"title":"Project P.I.T.T. Steamリリース予定","reason":"同日gamebiz新作のなかで優先度が下がり、5件枠から除外"},
+    {"title":"造形あそびで「まち」理解","reason":"STEAM教育記事で、ゲームニュースとしての焦点が弱いため不採用"},
+    {"title":"感染症戦記 レギュレア","reason":"イベント紹介記事で、当日性と市場影響が限定的なため不採用"},
+    {"title":"タスクバーヒーロー レビュー","reason":"レビュー記事で、ニュース性と一次発表性が低いため不採用"},
+    {"title":"秋葉原のレトロゲーム専門店が移転","reason":"店舗移転の地域ニュースで、カテゴリの主要軸から外れるため不採用"},
+    {"title":"Wilds - Night Zookeeper発表","reason":"同日gamebiz新作のなかで優先度が下がり、5件枠から除外"},
+    {"title":"フェイクニュース見抜く謎解きゲーム","reason":"教育ワークショップで、ゲーム市場のニュースとしては周辺的なため不採用"},
+    {"title":"ゲーミング配信 20260801","reason":"個人配信告知で、ニュースの一次性・影響範囲が限定的なため不採用"},
+    {"title":"アリーナMC決定のお知らせ","reason":"スポーツチーム告知で、ゲームカテゴリ外のため不採用"},
+    {"title":"パルワールドカードゲーム高騰","reason":"Yahoo!転載・有料記事で、一次情報を記事単位に確認できないため不採用"},
+    {"title":"ワンピースカード4周年パックの別抽選記事","reason":"今回採用した8月2日付のプレバン抽選記事と重複するため不採用"}
+  ]
+}

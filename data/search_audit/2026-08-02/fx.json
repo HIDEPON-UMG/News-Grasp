@@ -1,0 +1,55 @@
+{
+  "date": "2026-08-02",
+  "category_id": "fx",
+  "queries": [
+    "site:www.nikkei.com 日米が15年ぶり協調介入 円安阻止 片山財務相",
+    "site:jp.reuters.com 片山財務相 日米 円安是正 3日",
+    "site:www.yomiuri.co.jp 日米15年ぶり協調為替介入 円急騰",
+    "site:boj.or.jp 2026年7月31日 金融政策決定会合 政策金利 1.0"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 2,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "片山財務相、日米の円安是正の取り組みを3日に説明へ＝関係者",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5sR0x6MG05YjBVSzJzNVlTa2ZaWU96a1pIU0FlYmlMSVFOTmN1dUlkRXM2ekR3UzlOZmxUZGNjd0RkQkpoUXVEVEVIQnV0d2pGTHVuMXFIbV80Yk91SHJjNU5vNWdEVklpMGpNbFhiWXYxMEdUWi1XUQ?oc=5",
+      "reason": "Stage1候補内の同一介入テーマ重複。正規記事URLを独立確認できる代表記事を採用"
+    },
+    {
+      "title": "日米１５年ぶり協調為替介入、円急騰し一時１５７円２０銭台…両政府が方針表明へ",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9GWVNvZWIwZXpjNHhIQzl1eGtBcTJidE9wSFlsQTFsdzlCV29vMXpyOHhIeTZGU1hqbUhILTNrUVM4ZmFxZHBNb2ZFdE5hbklrTUViN1FYdlNSZUNlTWFXMGgwUlA?oc=5",
+      "reason": "日米協調介入クラスの代表記事と論点が重複"
+    },
+    {
+      "title": "東京海上･宇宙関連株式ファンド(為替ヘッジなし)【49311189】：基準価格・投資信託情報",
+      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE1nM1RKRURfQk5lNkRseTViaG1CQkphMjV4ZHJrZlg4QVQyV1VDdTJ2S2NOeThsUFFZQWpkckZvRWxBWVBsdllNRWRlT1VJOFNIaVRmYg?oc=5",
+      "reason": "為替カテゴリの主要論点に対するニュース性・一次情報性が低い"
+    },
+    {
+      "title": "アニメ『FX戦士くるみちゃん』2026年10月放送決定！",
+      "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE5YRm96NzdVMkowbnAxS0ZWQmpyeUIyZzFCendSYTdtOVM2UldpMjZWUnBaOVp2MUJldm1ueWllcVE4Tl92ZGpiNlpKUDVOVHFnak5Sd25USQ?oc=5",
+      "reason": "FX文字列のみで為替ニュースではない"
+    },
+    {
+      "title": "豪ドル/ドル【AUDUSD】：外国為替相場FXレート・チャートをリアルタイム表示",
+      "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE5qOEVRWE5SbXlYUDFORlYxaXdYajA4Z0Yyb1pENklnb2MwWDEyeFI3QVlyRjhJRTZaMmNidWJCTmRSbkQxUXQxYzlTTmdsMm42NFhNME1n?oc=5",
+      "reason": "記事公開日の独立根拠と記事本文を確認できず採用不可"
+    },
+    {
+      "url": "https://www.yomiuri.co.jp/economy/20260731-GYT1T00384/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

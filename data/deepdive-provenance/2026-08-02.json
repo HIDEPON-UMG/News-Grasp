@@ -1,0 +1,64 @@
+{
+  "articlePath": "C:\\Users\\hidek\\OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\build\\recovery-run-2026-08-02\\digest\\DeepDive\\2026-08-02-DeepDive.md",
+  "articleSha256": "137b3d21f9212a93150007fb53d6d217d491af9f50b47af9dddd13051d8f7144",
+  "issueDate": "2026-08-02",
+  "manifestSha256": "8890658fcf76dc89fe8d30ecc725b8e018cd9eb933c24c40c8c82b7bac75b1a0",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "ac38fb9d1319f8dab4a0a4ba1703329aca10fca921bd722d446f95f9da70c9e9",
+  "sources": [
+    {
+      "contentSha256": "a8371e558081a4d17cfbc28c00904858b9f984a37a2c5b6c5c96824dc3d17dea",
+      "fetchedAt": "2026-08-02T09:06:13.069072+00:00",
+      "finalUrl": "https://www.bundesbank.de/en/press/press-releases/the-bundesbank-s-forecast-for-germany-energy-price-shock-slowing-down-economic-recovery-964668",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bundesbank.de/en/press/press-releases/the-bundesbank-s-forecast-for-germany-energy-price-shock-slowing-down-economic-recovery-964668",
+      "url": "https://www.bundesbank.de/en/press/press-releases/the-bundesbank-s-forecast-for-germany-energy-price-shock-slowing-down-economic-recovery-964668"
+    },
+    {
+      "contentSha256": "b5044720af460d1f196599e6fa645f208d6dff5b13930079ba4ef59f76fc5987",
+      "fetchedAt": "2026-08-02T09:06:15.112956+00:00",
+      "finalUrl": "https://www.bundesbank.de/en/statistics/economic-activity-and-prices/harmonised-consumer-prices/harmonised-index-of-consumer-prices-932146",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.bundesbank.de/en/statistics/economic-activity-and-prices/harmonised-consumer-prices/harmonised-index-of-consumer-prices-932146",
+      "url": "https://www.bundesbank.de/en/statistics/economic-activity-and-prices/harmonised-consumer-prices/harmonised-index-of-consumer-prices-932146"
+    },
+    {
+      "contentSha256": "8ba313fd02a6803618db5b0e39203ebf1c9c6c9d266766b8f3a2084fd310a3e1",
+      "fetchedAt": "2026-08-02T09:06:17.033664+00:00",
+      "finalUrl": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260723~29f24d99bc.en.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260723~29f24d99bc.en.html",
+      "url": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260723~29f24d99bc.en.html"
+    },
+    {
+      "contentSha256": "d14bcf2fab97554fbe284d3b39d8ee67f608be4731fd00f1447644fce43940ce",
+      "fetchedAt": "2026-08-02T09:06:18.905858+00:00",
+      "finalUrl": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/shared/pdf/ecb.ds260611~5b4603b5aa.pt.pdf",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/shared/pdf/ecb.ds260611~5b4603b5aa.pt.pdf",
+      "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/shared/pdf/ecb.ds260611~5b4603b5aa.pt.pdf"
+    }
+  ],
+  "status": "Green"
+}

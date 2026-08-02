@@ -1,0 +1,143 @@
+{
+  "date": "2026-08-02",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"防衛機密、クラウドで運用へ AI活用を本格化\"",
+    "\"見積りソンFY26(夏) 参加者募集のお知らせ ITシステム可視化協議会\"",
+    "\"AI投資の収益格差が鮮明に：クラウド3社の時価総額が週間で1.5兆ドル増加\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "【令和8年熊本地震】被災地の最前線で、医療を守り続ける人を支える",
+      "url": "build/deduped-candidates/it.jsonl#1",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "【関東自動車・茨城交通】お忘れ物の問い合わせに「落とし物クラウドfind」を導入します",
+      "url": "https://prtimes.jp/main/html/rd/p/000000111.000104939.html",
+      "reason": "公開日が2026-07-31で号日の24時間鮮度窓外"
+    },
+    {
+      "title": "愛媛・松山のIT企業、在豪日本人向け情報ポータル「NihonAustralia」を正式公開",
+      "url": "https://www.sanyonews.jp/article/1964999",
+      "reason": "公開日が2026-07-31で号日の24時間鮮度窓外"
+    },
+    {
+      "title": "日本初、都市の中心で建築文化を発信する 「京都建築センター」実現に向けて",
+      "url": "build/deduped-candidates/it.jsonl#5",
+      "reason": "ITカテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "かわにしなつき×Leola、「Let it fly」セッション動画公開",
+      "url": "build/deduped-candidates/it.jsonl#6",
+      "reason": "カテゴリ外のエンタメ記事"
+    },
+    {
+      "title": "鳥栖市にＩＴ親しむ学校 「みんなの学校」で学校長任命式",
+      "url": "build/deduped-candidates/it.jsonl#8",
+      "reason": "IT読者向けの技術ニュースとして優先度不足"
+    },
+    {
+      "title": "1000人で鳴らす合奏の場を未来へ｜千のRockYou!! 継続プロジェクト",
+      "url": "build/deduped-candidates/it.jsonl#9",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "ANG2026『陸上は、ライブだ！！』8月14日(金)15日(土)",
+      "url": "build/deduped-candidates/it.jsonl#10",
+      "reason": "カテゴリ外のイベント告知"
+    },
+    {
+      "title": "Vol.10 レコーディング2日目！",
+      "url": "build/deduped-candidates/it.jsonl#11",
+      "reason": "カテゴリ外の音楽記事"
+    },
+    {
+      "title": "祝20周年・京都音博2026",
+      "url": "build/deduped-candidates/it.jsonl#12",
+      "reason": "カテゴリ外のイベント告知"
+    },
+    {
+      "title": "AIにはできない選曲をARTを未来を。創刊38年 雑誌『freedom dictionary』存続へ",
+      "url": "build/deduped-candidates/it.jsonl#13",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "次世代メダリストが生まれる場所を未来に残したい。",
+      "url": "build/deduped-candidates/it.jsonl#14",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "堀河屋野村｜崩れたら二度と戻せない。330年続く醤油蔵にご支援を！",
+      "url": "build/deduped-candidates/it.jsonl#15",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "「よみがえる新潟の記憶」地域の映像を“未来の宝物”に！",
+      "url": "build/deduped-candidates/it.jsonl#16",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "親子の「大好き」を伝えるMIRAIS絵本をつくりたい",
+      "url": "build/deduped-candidates/it.jsonl#17",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "IT部門のための「バイブコーディング統制術」",
+      "url": "https://news.yahoo.co.jp/articles/a7b37070d44c31d7a7dcb590b1187e3753f2f773/images/000",
+      "reason": "原記事公開日が2026-07-28で鮮度窓外、解決URLも画像ページ"
+    },
+    {
+      "title": "AI投資の収益格差が鮮明に：クラウド3社の時価総額が週間で1.5兆ドル増加、アップルとMetaは売り浴びる",
+      "url": "build/deduped-candidates/it.jsonl#19",
+      "reason": "採用枠のため選外"
+    },
+    {
+      "title": "【ディシディアデュエルム】クラウドの評価と専用アビリティ【DDFF】",
+      "url": "build/deduped-candidates/it.jsonl#20",
+      "reason": "カテゴリ外のゲーム攻略記事"
+    },
+    {
+      "title": "天下五剣・大典太の兄弟刀｜焼失した旧国宝・太刀「光世」復元への一歩",
+      "url": "build/deduped-candidates/it.jsonl#21",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "Vol.19 【ゴール】すべてのリターンが完了しました",
+      "url": "build/deduped-candidates/it.jsonl#22",
+      "reason": "カテゴリ外のクラウドファンディング"
+    },
+    {
+      "title": "YuLife| SaaS／業務システムの比較・紹介| ITセレクト",
+      "url": "https://www.itmedia.co.jp/itselect/product/991/",
+      "reason": "製品紹介ページで当日ニュース性が不足"
+    },
+    {
+      "title": "76％の製造業リーダーが「信頼性の低いデータ」をAIのリスクと回答",
+      "url": "https://enterprisezine.jp/article/detail/24793",
+      "reason": "元レポートの公開日が過去で号日の鮮度窓外"
+    },
+    {
+      "title": "3大クラウド、AI徹底比較",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/03655/",
+      "reason": "連載ランディングページで最新記事単位でない"
+    }
+  ],
+  "notes": "Stage1 dedup済み候補のみを起点に、候補ごとの限定canonical解決と公開日確認だけを実施。広域収集、全カテゴリ横断dedup、候補ファイルの再生成は行っていない。",
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

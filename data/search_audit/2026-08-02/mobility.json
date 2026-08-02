@@ -1,0 +1,113 @@
+{
+  "date": "2026-08-02",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR autonomous driving OR robotaxi when:1d",
+    "site:nikkei.com BYD ラッコ 2026年8月2日",
+    "site:diamond.jp ホンダ スーパーONE シティターボII",
+    "site:prtimes.jp ロボトラック シリーズA 52億円",
+    "site:autoc-one.jp バイク王 トクテコ"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "記事ではなく株価ページの候補"
+    },
+    {
+      "title": "日経NEXT 【軽EVめぐり日中の攻防戦・勝者は・・・／円相場の今後の見通しは】",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "番組告知で単独記事としての事実確認が弱い"
+    },
+    {
+      "title": "BYDの軽EV「ラッコ」を実車確認! 実物に乗り込んで気になる部分をチェック（マイナビニュース）",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "BYDラッコ採用記事と論点が重なるため整理"
+    },
+    {
+      "title": "中国EV市場のカオスな現状─「143ブランド乱立」の熱狂とサバイバル",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "背景解説で当日一次情報が不足"
+    },
+    {
+      "title": "オーロラの「無人トラック」が第2世代に!!",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "公開日を元記事で独立確認できず保留"
+    },
+    {
+      "title": "韓国のEV累積登録が100万台を突破",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "統計の一次資料と元記事の公開日を確認できず保留"
+    },
+    {
+      "title": "高岡の次世代EVバス試験運行スタート",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "地域実証で全国読者への影響範囲が相対的に狭い"
+    },
+    {
+      "title": "万博で利用もトラブル相次ぎ利用停止・転用断念のEVバス",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "既報の続報で新規材料が限定的"
+    },
+    {
+      "title": "Honda Urban EV Concept - Design Story",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "コンセプト紹介で当日性・実用影響が弱い"
+    },
+    {
+      "title": "次世代自動車構造学ぶ 福島高専でいわきEVアカデミー開講",
+      "url": "https://news.google.com/rss/articles/",
+      "reason": "教育イベントでカテゴリの主軸から外れる"
+    },
+    {
+      "url": "https://motor-fan.jp/article/1581610/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://prtimes.jp/main/html/rd/p/000000013.000159893.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://diamond.jp/articles/-/393136?page=2",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://autoc-one.jp/news/5043236/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://motor-fan.jp/article/1500130/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://finance.yahoo.co.jp/quote/TSLA",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.minyu-net.com/news/detail/2026080115483253059",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.jiji.com/jc/article?k=2026080200182&g=int",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.tv-tokyo.co.jp/broad_bstvtokyo/program/detail/202608/22663_202608032100.html",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://jbpress.ismedia.jp/articles/-/96242",
+      "reason": "quarantined by gate"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "date": "2026-08-02",
+  "category_id": "ai",
+  "queries": [
+    "harvest_candidates: 生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR artificial intelligence OR AI model when:1d",
+    "canonical resolution: site:itmedia.co.jp Google パーソナルAI Gemini Spark 日本でも利用可能 Chrome統合",
+    "canonical resolution: site:itmedia.co.jp OpenAI アクティブユーザー10億人 導入企業200万社",
+    "canonical resolution: site:exawizards.com Claude 3社 侵入 AI新聞",
+    "canonical resolution: site:jiji.com ローカルLLM基盤 ベリサーブ",
+    "canonical resolution: site:maonline.jp 1000人調査 生成AI 本格利用"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "「Claude」Anthropicが開発したAIモデル／AIチャットボット",
+      "url": "https://forest.watch.impress.co.jp/library/software/claude/",
+      "reason": "製品紹介ページでニュース価値が低く、AI新聞の当日セキュリティ記事を優先"
+    },
+    {
+      "title": "生成AIの本番運用開始、しかし使い物にならない……高精度な自社専用LLMを実現するデータ整備の勘所",
+      "url": "https://enterprisezine.jp/article/detail/24587",
+      "reason": "canonical URLは解決したが一次本文を403で取得できず、同日性と内容の独立確認不足"
+    },
+    {
+      "title": "Google、パーソナルAI「Gemini Spark」を日本でも利用可能に (ITmedia NEWS)",
+      "url": "https://news.yahoo.co.jp/articles/24972d99cdca1caad12ed4a27269b374237c3d0c/images/000",
+      "reason": "画像ページのため記事単位URLではない"
+    },
+    {
+      "title": "【熊本地震デマ拡散】生成ＡＩで偽動画容易に ＳＮＳ投稿、精巧さに警鐘",
+      "url": "https://www.okinawatimes.co.jp/articles/-/1894222",
+      "reason": "災害デマの背景説明が中心で、当日AI業界の意思決定価値が相対的に低い"
+    },
+    {
+      "title": "Google、パーソナルAI「Gemini Spark」を日本でも利用可能に（画像）",
+      "url": "https://www.itmedia.co.jp/news/article/limage/2608/02/2000000347/10001714",
+      "reason": "画像ページで記事単位URLではない"
+    },
+    {
+      "title": "「陥没呼吸ではないですか？」…生成ＡＩに言われて小児科を受診",
+      "url": "https://www.yomiuri.co.jp/yomidr/article/20260728-GYTET00001/",
+      "reason": "医療体験記事で、AI業界の当日主要論点から外れる"
+    },
+    {
+      "title": "観光情報発信に生成AI活用を 福岡観光コンベンションビューローが福岡市でセミナー",
+      "url": "https://www.nishinippon.co.jp/item/1522671/",
+      "reason": "地域セミナー報告で影響範囲が限定的"
+    },
+    {
+      "title": "KIMU Studio、LLM・画像認識基盤の「美術心理検査自動化」特許を登録",
+      "url": "https://www.korit.jp/news/ai/besuccess-kimu-studio-llm-patent-260802/",
+      "reason": "技術的新規性はあるが、当日5件の実務インパクト比較で後順位"
+    },
+    {
+      "title": "OpenAIとAnthropicのハッキングモデル、テスト環境を脱出し企業を攻撃 執筆",
+      "url": "https://jp.investing.com/news/economy-news/article-1627326",
+      "reason": "同一セキュリティ論点の二次報道で、独立した一次性の高いAI新聞記事を採用"
+    },
+    {
+      "title": "非ITエンジニアが月10万円から始動、SUBARUに学ぶ生成AIとマルチエージェントの現場内製化",
+      "url": "https://enterprisezine.jp/article/detail/24704",
+      "reason": "canonical本文が403で一次内容を独立確認できず、同日調査記事とローカルLLM記事を優先"
+    },
+    {
+      "title": "Google、パーソナルAI「Gemini Spark」を日本でも利用可能に（画像）",
+      "url": "https://www.itmedia.co.jp/news/article/limage/2608/02/2000000347/10001715",
+      "reason": "画像ページで記事単位URLではない"
+    },
+    {
+      "title": "「生成AIチェッカー」記事やレポートがAIで生成されたかを判定する無料ツール",
+      "url": "https://forest.watch.impress.co.jp/library/software/genaick/",
+      "reason": "製品ライブラリページで新規ニュース性が低い"
+    },
+    {
+      "title": "OpenAI、アクティブユーザー10億人超に 導入企業は200万社超（画像）",
+      "url": "https://www.itmedia.co.jp/news/article/limage/2608/02/2000000346/10001710",
+      "reason": "画像ページで記事単位URLではない"
+    },
+    {
+      "title": "Google、パーソナルAI「Gemini Spark」を日本でも利用可能に（画像）",
+      "url": "https://www.itmedia.co.jp/news/article/limage/2608/02/2000000347/10001715",
+      "reason": "画像ページで記事単位URLではない"
+    },
+    {
+      "title": "「Whisper」OpenAIが開発したオープンソースの音声認識AIモデル",
+      "url": "https://forest.watch.impress.co.jp/library/software/whisper/",
+      "reason": "製品紹介ページでニュース価値が低い"
+    },
+    {
+      "title": "OpenAI、アクティブユーザー10億人超に 導入企業は200万社超（画像）",
+      "url": "https://www.itmedia.co.jp/news/article/limage/2608/02/2000000346/10001710",
+      "reason": "画像ページで記事単位URLではない"
+    },
+    {
+      "title": "AIが電力を食い尽くす？ Microsoftの気候目標見直しが映す、生成AIブームの代償",
+      "url": "https://news.yahoo.co.jp/articles/fea838d2f1a78b24ea0a3171984ad75314d0c6e8",
+      "reason": "転載元本文の公開日証拠と独立確認が不足"
+    },
+    {
+      "title": "Google、パーソナルAI「Gemini Spark」を日本でも利用可能に　Chrome統合は米国から",
+      "url": "https://topics.smt.docomo.ne.jp/amp/article/itmedia_news/trend/itmedia_news-20260802_2000000347",
+      "reason": "転載AMPのため原媒体canonicalを採用"
+    },
+    {
+      "title": "Google AI Proでも「Gemini Spark」、日本語対応で数週間以内に展開へ",
+      "url": "https://hashout.jp/ai/4990/",
+      "reason": "同一Gemini Spark論点の後追い解説で、原媒体記事を採用"
+    },
+    {
+      "title": "三重県いなべ市、全小中学校15校で学校向け対話型生成AIが本格稼働",
+      "url": "https://www.kknews.co.jp/news/20260802o03",
+      "reason": "記事本文のOGP/本文取得ができず、独立検証不足"
+    },
+    {
+      "title": "画像 | 企業の生成AIは会話相手から実務担当へ",
+      "url": "https://toyokeizai.net/articles/photo/953006?pn=7",
+      "reason": "画像ページで記事単位URLではない"
+    }
+  ]
+}
