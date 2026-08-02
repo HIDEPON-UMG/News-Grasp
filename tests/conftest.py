@@ -17,10 +17,14 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     broker.parent.mkdir(parents=True, exist_ok=True)
     registry.parent.mkdir(parents=True, exist_ok=True)
     broker.write_text(
+        "import json\n"
         "import subprocess\n"
         "import sys\n"
         "args = sys.argv[1:]\n"
         "if args and args[0] == 'admit':\n"
+        "    operation_kind = args[args.index('--operation-kind') + 1]\n"
+        "    issue_date = args[args.index('--issue-date') + 1]\n"
+        "    print(json.dumps({'schemaVersion': 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1', 'operationKind': operation_kind, 'issueDate': issue_date}))\n"
         "    raise SystemExit(0)\n"
         "if not args or args[0] != 'exec':\n"
         "    raise SystemExit(97)\n"

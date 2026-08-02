@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://news-grasp.local/schemas/audit_recovery_decision.schema.json",
+  "title": "AUDIT_RECOVERY_DECISION_V1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "issuer",
+    "receiptSha256",
+    "issueDate",
+    "classification",
+    "action",
+    "terminal",
+    "reasonCode",
+    "scheduledAttemptStatus",
+    "recoveryAttemptStatus",
+    "publicStatus",
+    "operationState"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "AUDIT_RECOVERY_DECISION_V1"},
+    "issuer": {"const": "tools.audit_recovery_control"},
+    "receiptSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "issueDate": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "classification": {"enum": ["normal", "recoverable", "incident_required"]},
+    "action": {"enum": ["none", "scheduled_recovery", "escalate_major_incident"]},
+    "terminal": {
+      "type": ["string", "null"],
+      "enum": [null, "audit_normal_green", "audit_recovered_green", "audit_major_incident_open"]
+    },
+    "reasonCode": {"type": "string", "minLength": 1},
+    "scheduledAttemptStatus": {"type": "string", "minLength": 1},
+    "recoveryAttemptStatus": {"type": "string", "minLength": 1},
+    "publicStatus": {"enum": ["green", "incomplete"]},
+    "operationState": {"enum": ["complete", "recovery_required", "incident_open"]},
+    "attemptLedgerWitnessSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scheduledFailureReceiptSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "recoveryAuthorityReceiptSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "recoveryAuthorityLedgerWitnessSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "completionEvidenceSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"terminal": {"const": "audit_normal_green"}}},
+      "then": {"required": ["attemptLedgerWitnessSha256", "completionEvidenceSha256"]}
+    },
+    {
+      "if": {"properties": {"terminal": {"const": "audit_recovered_green"}}},
+      "then": {
+        "required": [
+          "scheduledFailureReceiptSha256",
+          "attemptLedgerWitnessSha256",
+          "recoveryAuthorityReceiptSha256",
+          "recoveryAuthorityLedgerWitnessSha256",
+          "completionEvidenceSha256"
+        ]
+      }
+    },
+    {
+      "if": {"properties": {"action": {"const": "scheduled_recovery"}}},
+      "then": {
+        "required": [
+          "attemptLedgerWitnessSha256",
+          "recoveryAuthorityReceiptSha256",
+          "recoveryAuthorityLedgerWitnessSha256"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": true
+}

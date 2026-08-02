@@ -18,6 +18,23 @@ $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+function Write-AtomicUtf8Text {
+    param([string] $Path, [string] $Text)
+    $parent = Split-Path -Parent $Path
+    New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    $temporary = Join-Path $parent ('.' + [IO.Path]::GetFileName($Path) + '.' + [Guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        [IO.File]::WriteAllText($temporary, $Text, [Text.UTF8Encoding]::new($false))
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            [IO.File]::Replace($temporary, $Path, $null, $true)
+        } else {
+            [IO.File]::Move($temporary, $Path)
+        }
+    } finally {
+        if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+    }
+}
+
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
     if ($Override) {
@@ -54,6 +71,24 @@ function Get-FileSha256Hex {
     } finally {
         $stream.Dispose()
     }
+}
+
+function Get-StringSha256Hex {
+    param([string] $Text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([System.BitConverter]::ToString($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Text))) -replace '-', '').ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Get-ScheduledTaskActionSha256 {
+    $task = Get-ScheduledTask -TaskName 'News-Grasp Runner' -ErrorAction Stop
+    $summary = (@($task.Actions) | ForEach-Object {
+        ([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()
+    }) -join ' ; '
+    return Get-StringSha256Hex -Text $summary.Trim().ToLowerInvariant()
 }
 
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
@@ -125,6 +160,27 @@ if ($changed) {
         files = $manifestFiles
     } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 }
+
+if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
+$broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+$python = Join-Path $RepoDir '.venv\Scripts\python.exe'
+$liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
+$authorityDir = Join-Path $BinDir 'news-grasp-authority'
+$missionPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
+$launchPermitPath = Join-Path $authorityDir "$DateStamp-launch-permit.json"
+if ((-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or (-not (Test-Path -LiteralPath $python -PathType Leaf))) {
+    throw 'News-Grasp authority broker or Python runtime is missing.'
+}
+New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
+$missionJson = (& $python $broker 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+Write-AtomicUtf8Text -Path $missionPath -Text ($missionJson + [Environment]::NewLine)
+$taskActionSha256 = Get-ScheduledTaskActionSha256
+$runnerSha256 = Get-FileSha256Hex -Path $liveRunner
+$launchNonce = "bootstrap-$DateStamp-$([Guid]::NewGuid().ToString('N'))"
+$permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $DateStamp '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $missionPath 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "scheduled launch permit issuance failed exit=$LASTEXITCODE" }
+Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitJson + [Environment]::NewLine)
 
 $watcherPath = Join-Path $BinDir 'watch-news-grasp-runner.ps1'
 $args = @('-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', $watcherPath)

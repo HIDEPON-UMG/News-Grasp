@@ -394,6 +394,18 @@ repair の完全性 claim は `tools.repair_system_completeness` を単一 close
 | commitment_scope | News-Grasp local spec/provenance, repair coverage matrix, registry, orchestrator, runner, watcher, self-heal/publish/push status semantics, local AGENTS/CLAUDE, News-Grasp repair/e2e skills, local tests. Excludes push, live runner overwrite, full production E2E, public publish, rollback, and ProjectFolders-wide implementation unless separately approved. |
 | open_questions | None for local implementation. Public actions remain separately approval-gated. |
 
+## 2026-08-02 Scheduled Authority And Audit Recovery Commitment
+
+2026-08-02号の生成開始前停止と6:40監査の復旧不履行を、一つのmajor incidentにおける二重障害として扱う。scheduled productionは対話goalの有無ではなく、導入済み`AUDIT_MISSION_AUTHORITY_V1`と05:55の`SCHEDULED_PRODUCTION_LAUNCH_PERMIT_V1`へ束縛する。scheduled recoveryは同日の不変`SCHEDULED_FAILURE_RECEIPT_V1`からbrokerだけが`SCHEDULED_RECOVERY_AUTHORITY_V1`を派生させ、productionと同じ9 model call予算、full E2E 0を共有する。high-cost guard自体は無効化しない。
+
+6:40 automationと`news-grasp-repair-method`は権限発行を所有しない。repair matrix/orchestratorは`normal|recoverable|incident_required`の修復分類、brokerはauthorityとbudget、`tools.audit_recovery_control`は実行判断とterminal、runnerは実行、既存verifierはsame-date completionを所有する。監査terminalは`audit_normal_green|audit_recovered_green|audit_major_incident_open`の3値だけであり、`operation_deferred`は子operation stateであってtask terminalではない。復旧できない、authorityを導出できない、public面が同日で揃わない場合は`audit_major_incident_open`とする。
+
+audit Greenとterminalはcallerのboolean自己申告から発行しない。scheduled/recovery attemptは固定installed brokerのdurable ledgerにあるreservation、immutable failure、recovery admission eventから導出し、callerのstatus文字列を受理しない。recovery authorityはledger witness、同日completionは固定runner stateと実`validate_daily_quality --require-deepdive` / `verify_publish_complete`再実行へ束縛し、unkeyed receiptだけを読む`check-completion`入口を持たない。decisionはattempt ledger witness hashを保持し、terminal出力は固定incident evidence root配下だけに制限する。JSON入力はsingle-handle 1 MiB上限、subprocess出力はmemoryへ全量bufferせずbounded temp fileで読む。bootstrap launch nonceは実行ごとにfreshとし、broker失敗ログへstdout/stderr全文を露出しない。
+
+全成果物が欠落した同日復旧は`ScheduledRecoveryFull`を使い、`RecoverOnly`、ad hoc手編集、fallback publish、NoPublish、URL 200、前日publish-status、local test Greenを成功証拠にしない。scheduled failureは不変で、recovery attemptとpublic statusを別lineageへ追記する。最終Greenは`validate_daily_quality --require-deepdive`、distribution manifest、publish-status、public surface、primary/DeepDive Podcastとplaylist、notification、runner stateが同一日付・同一run intentで揃う場合だけである。incident reportはprivate-by-defaultとする。
+
+このcommitmentはcurrent active durable goal `8af471ae-0c37-4cff-bbf7-262c7365a1ee`、2026-07-06の実ユーザーmission event hashes `021a8930...6868d` / `6926615f...b03e` / `81bcd640...8017`、current requirement envelope `6850f6c8...17fa`へ束縛する。
+
 ## Acceptance Scenarios
 
 | Scenario | Given | When | Then |

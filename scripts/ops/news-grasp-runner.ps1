@@ -40,6 +40,8 @@ param(
     [switch] $SmokeTest,
     [switch] $PreflightOnly,
     [switch] $RecoverOnly,
+    [ValidateSet('ScheduledProduction', 'ScheduledRecoveryFull')]
+    [string] $RunIntent = 'ScheduledProduction',
     [switch] $NoPush,
     [switch] $NoPublish,
     [switch] $UseCodex,
@@ -59,6 +61,7 @@ param(
     [string] $HighCostAdmissionPath = '',
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
+    [string] $ScheduledAuthorityEvidencePath = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
     [switch] $ForceFullRerun
@@ -439,6 +442,7 @@ function Set-RunnerState {
                     updated_at = $now
                     heartbeat_at = $now
                     date = $DateStamp
+                    run_intent = $RunIntent
                     run_id = $RunId
                     pid = $PID
                     repo_dir = $RepoDir
@@ -481,6 +485,7 @@ function Set-RunnerState {
                 updated_at = $now
                 heartbeat_at = $(if ($HeartbeatAt) { $HeartbeatAt } else { $now })
                 date = $DateStamp
+                run_intent = $RunIntent
                 run_id = $RunId
                 pid = $PID
                 repo_dir = $RepoDir
@@ -520,6 +525,7 @@ function Set-RunnerState {
                 updated_at = $now
                 heartbeat_at = $now
                 date = $DateStamp
+                run_intent = $RunIntent
                 run_id = $RunId
                 pid = $PID
                 repo_dir = $RepoDir
@@ -943,6 +949,7 @@ function Get-RunnerScriptArguments {
     if ($SmokeTest) { $runnerArgs += '-SmokeTest' }
     if ($PreflightOnly) { $runnerArgs += '-PreflightOnly' }
     if ($RecoverOnly) { $runnerArgs += '-RecoverOnly' }
+    if ($RunIntent -ne 'ScheduledProduction') { $runnerArgs += @('-RunIntent', $RunIntent) }
     if ($NoPush) { $runnerArgs += '-NoPush' }
     if ($NoPublish) { $runnerArgs += '-NoPublish' }
     if ($UseCodex) { $runnerArgs += '-UseCodex' }
@@ -958,6 +965,7 @@ function Get-RunnerScriptArguments {
     if ($DateStampOverride) { $runnerArgs += @('-DateStampOverride', $DateStampOverride) }
     if ($LogDirOverride) { $runnerArgs += @('-LogDirOverride', $LogDirOverride) }
     if ($StateFileOverride) { $runnerArgs += @('-StateFileOverride', $StateFileOverride) }
+    if ($ScheduledAuthorityEvidencePath) { $runnerArgs += @('-ScheduledAuthorityEvidencePath', $ScheduledAuthorityEvidencePath) }
     if ($PublishVerifyWaitSec -ne 600) { $runnerArgs += @('-PublishVerifyWaitSec', [string]$PublishVerifyWaitSec) }
     if ($PublishVerifyPollSec -ne 30) { $runnerArgs += @('-PublishVerifyPollSec', [string]$PublishVerifyPollSec) }
     return $runnerArgs
@@ -1056,6 +1064,10 @@ function Invoke-LoggedCapture {
         Add-Content -Path $LogPath -Value $line -Encoding UTF8
         Add-Content -Path $CapturePath -Value $line -Encoding UTF8
     }
+}
+
+function Get-ScheduledTaskActionSha256 {
+    return Get-StringSha256Hex -Text ((Get-ScheduledTaskActionSummary).Trim().ToLowerInvariant())
 }
 
 function Invoke-GitAddWithIndexLockRetry {
@@ -2435,7 +2447,7 @@ function Assert-HighCostOperationAdmission {
         exit 76
     }
     $operationKind = 'scheduled_production'
-    if ($RecoverOnly -or $ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeFromStage) {
+    if ($RunIntent -eq 'ScheduledRecoveryFull' -or $RecoverOnly -or $ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeFromStage) {
         $operationKind = 'scheduled_recovery'
     }
     if ($NoPublish) {
@@ -2469,10 +2481,26 @@ function Assert-HighCostOperationAdmission {
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -ExitCode 76
         exit 76
     }
+    if (-not $ScheduledAuthorityEvidencePath) {
+        if ($operationKind -eq 'scheduled_production') {
+            $ScheduledAuthorityEvidencePath = Join-Path $env:USERPROFILE "bin\news-grasp-authority\$DateStamp-launch-permit.json"
+        } else {
+            Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -Encoding UTF8
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -ExitCode 76
+            exit 76
+        }
+    }
+    if (-not (Test-Path -LiteralPath $ScheduledAuthorityEvidencePath -PathType Leaf)) {
+        Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -Encoding UTF8
+        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -ExitCode 76
+        exit 76
+    }
+    $taskActionSha256 = Get-ScheduledTaskActionSha256
+    $runnerSha256 = Get-FileSha256Hex -Path $PSCommandPath
     $admissionDir = Join-Path $RepoDir "build\high-cost-operation-admissions\$DateStamp"
     New-Item -ItemType Directory -Path $admissionDir -Force | Out-Null
     $admissionReceipt = Join-Path $admissionDir "$RunId-$operationKind.json"
-    $admissionJson = (& $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
+    $admissionJson = (& $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
         Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE" -Encoding UTF8
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
@@ -2497,12 +2525,12 @@ function Assert-HighCostOperationAdmission {
 # ===== sentinel: 起動できた事実 =====
 Assert-HighCostOperationAdmission
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
-Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
+Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly run_intent=$RunIntent no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
 
 Add-Content -Path $LogPath -Value '' -Encoding UTF8
 Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
-Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
+Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, run_intent=$RunIntent, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
 
 $gateAttemptDir = Join-Path $RepoDir 'data\gate_attempts'
 $gateAttemptArchive = Join-Path $RepoDir "build\recovery\gate-attempt-archives\$DateStamp\$RunId"

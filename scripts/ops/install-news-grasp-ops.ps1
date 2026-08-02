@@ -12,6 +12,23 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
+function Write-AtomicUtf8Text {
+    param([string] $Path, [string] $Text)
+    $parent = Split-Path -Parent $Path
+    New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    $temporary = Join-Path $parent ('.' + [IO.Path]::GetFileName($Path) + '.' + [Guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        [IO.File]::WriteAllText($temporary, $Text, [Text.UTF8Encoding]::new($false))
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            [IO.File]::Replace($temporary, $Path, $null, $true)
+        } else {
+            [IO.File]::Move($temporary, $Path)
+        }
+    } finally {
+        if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+    }
+}
+
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
     if ($Override) {
@@ -79,6 +96,18 @@ foreach ($file in $files) {
         after_sha256 = $afterHash
     }
 }
+
+$authorityDir = Join-Path $BinDir 'news-grasp-authority'
+$missionAuthorityPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
+$brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+$pythonPath = Join-Path $RepoDir '.venv\Scripts\python.exe'
+if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
+    throw 'News-Grasp audit mission authority broker is unavailable.'
+}
+New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
+$missionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+Write-AtomicUtf8Text -Path $missionAuthorityPath -Text ($missionAuthorityJson + [Environment]::NewLine)
 
 $rollbackCommands = @(
     "Copy-Item -LiteralPath `"$BackupDir\run_codex_with_timeout.ps1`" -Destination `"$BinDir\run_codex_with_timeout.ps1`" -Force",
@@ -195,6 +224,11 @@ if (-not $SkipTaskRegistration) {
     backup_dir = $BackupDir
     files = $manifestFiles
     rollback_commands = $rollbackCommands
+    mission_authority = [ordered]@{
+        path = $missionAuthorityPath
+        sha256 = (Get-FileHash -LiteralPath $missionAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        schema = 'AUDIT_MISSION_AUTHORITY_V1'
+    }
     scheduled_tasks = $scheduledTasks
 } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ManifestPath -Encoding UTF8
 
