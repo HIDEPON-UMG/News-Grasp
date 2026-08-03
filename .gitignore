@@ -139,6 +139,12 @@ docs/incidents/*-report.html
 !docs/incidents/2026-06-28-full-runner-bug-patterns-report.html
 !docs/incidents/2026-06-28-historical-failure-horizontal-audit-report.html
 build/incidents/
+# Scheduled automation authority / smoke / admission は machine-local private state。
+scripts/ops/news-grasp-authority/
+scripts/ops/ng-smoke-logs/
+scripts/ops/ng-smoke-state.json
+build/audit-recovery/
+build/high-cost-operation-admissions/
 # Project-specific
 artifacts/
 coverage/

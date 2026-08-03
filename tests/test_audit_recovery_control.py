@@ -200,6 +200,90 @@ def test_recoverable_failure_uses_ledger_backed_authority_not_deferred(
     assert decision["recoveryAuthorityLedgerWitnessSha256"]
 
 
+def test_incomplete_public_surface_seals_same_day_recovery_as_first_priority(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control("RED_SAME_DAY_PUBLIC_RECOVERY_PRIORITY_MISSING")
+    failure_path, authority_path = _failure_context(control, monkeypatch, tmp_path)
+    decision = control.decide_audit_recovery(
+        {
+            "issueDate": "2026-08-02",
+            "scheduledFailureReceiptPath": str(failure_path),
+            "repairDecision": {"classification": "recoverable"},
+            "recoveryAuthorityPath": str(authority_path),
+        }
+    )
+    assert decision["publicStatus"] == "incomplete"
+    assert decision["workPriority"] == "same_day_public_recovery_first"
+    assert decision["allowedBeforePublicGreen"] == [
+        "scheduled_recovery",
+        "minimal_recovery_unblocker",
+        "escalate_major_incident",
+    ]
+    assert decision["forbiddenBeforePublicGreen"] == [
+        "incident_report_polish",
+        "root_cause_hardening",
+        "unrelated_cleanup",
+    ]
+
+
+def test_sealer_rejects_incomplete_public_decision_without_recovery_priority() -> None:
+    control = _control("RED_PRIORITY_SEAL_FAIL_CLOSED_MISSING")
+    with pytest.raises(ValueError, match="AUDIT_DECISION_RECEIPT_INVALID"):
+        control.seal_audit_decision(
+            {
+                "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+                "issueDate": "2026-08-02",
+                "classification": "incident_required",
+                "action": "escalate_major_incident",
+                "terminal": "audit_major_incident_open",
+                "reasonCode": "TEST",
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "not_started",
+                "publicStatus": "incomplete",
+                "operationState": "incident_open",
+            }
+        )
+
+
+def test_green_public_surface_releases_root_cause_work_only_after_recovery(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control("RED_ROOT_CAUSE_AFTER_PUBLIC_GREEN_MISSING")
+    failure_path, authority_path = _failure_context(control, monkeypatch, tmp_path)
+    failure_value = json.loads(failure_path.read_text(encoding="utf-8"))
+    authority_value = json.loads(authority_path.read_text(encoding="utf-8"))
+    monkeypatch.setattr(
+        control,
+        "_inspect_attempt_via_broker",
+        lambda **_: {
+            **_attempt_witness(
+                scheduled_status="failed",
+                recovery_status="started",
+                failure_sha=str(failure_value["receiptSha256"]),
+            ),
+            "recoveryAuthorityReceiptSha256": authority_value["receiptSha256"],
+            "recoveryEventSequence": 4,
+            "recoveryEventHash": "e" * 64,
+        },
+    )
+    monkeypatch.setattr(
+        control,
+        "_verify_same_date_completion",
+        lambda **_: _green_completion(control, "ScheduledRecoveryFull"),
+    )
+    decision = control.decide_audit_recovery(
+        {
+            "issueDate": "2026-08-02",
+            "scheduledFailureReceiptPath": str(failure_path),
+            "repairDecision": {"classification": "recoverable"},
+            "recoveryAuthorityPath": str(authority_path),
+        }
+    )
+    assert decision["publicStatus"] == "green"
+    assert decision["workPriority"] == "root_cause_after_public_green"
+
+
 def test_missing_or_unvalidated_authority_is_major_incident(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -311,6 +395,17 @@ def test_terminal_writer_has_internal_root_and_only_three_terminals(
             "recoveryAttemptStatus": "not_started",
             "publicStatus": "incomplete",
             "operationState": "incident_open",
+            "workPriority": "same_day_public_recovery_first",
+            "allowedBeforePublicGreen": [
+                "scheduled_recovery",
+                "minimal_recovery_unblocker",
+                "escalate_major_incident",
+            ],
+            "forbiddenBeforePublicGreen": [
+                "incident_report_polish",
+                "root_cause_hardening",
+                "unrelated_cleanup",
+            ],
         }
     )
     terminal = control.write_audit_terminal(decision)
@@ -443,3 +538,18 @@ def test_automation_and_repair_skill_use_executable_fixed_terminal_contract() ->
         assert "ops_repo_root" in source
         assert "FinalizeVerifiedPublishManifest" in source
         assert "audit_major_incident_open" in source
+        assert "same_day_public_recovery_first" in source
+        assert "incident_report_polish" in source
+        assert "root_cause_hardening" in source
+        assert "attempt_terminal" in source
+        assert "scheduled_failure_receipt_path" in source
+        assert "audit_major_incident_open" in source
+
+
+def test_product_constitution_makes_same_day_public_recovery_preemptive() -> None:
+    root = Path(__file__).resolve().parents[1]
+    for path in (root / "AGENTS.md", root / "CLAUDE.md", root / "docs" / "spec.md"):
+        source = path.read_text(encoding="utf-8-sig")
+        assert "same_day_public_recovery_first" in source
+        assert "incident_report_polish" in source
+        assert "root_cause_hardening" in source

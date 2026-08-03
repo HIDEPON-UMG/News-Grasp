@@ -3,6 +3,7 @@
     [switch] $StartOnly,
     [switch] $SmokeTest,
     [switch] $SkipSourceSync,
+    [switch] $UseProductionRuntime,
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
     [int] $StaleMinutes = 15,
@@ -12,7 +13,8 @@
     [string] $LogDir = '',
     [string] $DateStamp = '',
     [string] $RepoDir = '',
-    [string] $BinDir = (Join-Path $env:USERPROFILE 'bin')
+    [string] $BinDir = (Join-Path $env:USERPROFILE 'bin'),
+    [string] $ScheduledTaskName = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,6 +60,57 @@ function Resolve-NewsGraspRepoDir {
     throw 'News-Grasp repo not found. Set NEWS_GRASP_REPO_DIR or pass -RepoDir.'
 }
 
+function Resolve-ProductionRuntimeRepo {
+    param([string] $SourceRepoDir)
+
+    $gitExe = 'C:\Program Files\Git\cmd\git.exe'
+    if (-not (Test-Path -LiteralPath $gitExe -PathType Leaf)) {
+        throw 'PRODUCTION_RUNTIME_GIT_MISSING'
+    }
+    $fetchExit = Invoke-BoundedGitFetch -GitExe $gitExe -WorkingDirectory $SourceRepoDir
+    if ($fetchExit -ne 0) {
+        throw "PRODUCTION_RUNTIME_FETCH_FAILED exit=$fetchExit"
+    }
+    $originSha = ((& $gitExe -C $SourceRepoDir rev-parse origin/main 2>$null) | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $originSha -notmatch '^[0-9a-fA-F]{40}$') {
+        throw 'PRODUCTION_RUNTIME_ORIGIN_SHA_INVALID'
+    }
+    $runtimeRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime'
+    $runtimeRepo = Join-Path $runtimeRoot 'production-runtime'
+    New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
+    if (-not (Test-Path -LiteralPath $runtimeRepo)) {
+        & $gitExe -C $SourceRepoDir worktree add --detach $runtimeRepo $originSha
+        if ($LASTEXITCODE -ne 0) {
+            throw "PRODUCTION_RUNTIME_WORKTREE_CREATE_FAILED exit=$LASTEXITCODE"
+        }
+    } else {
+        $inside = ((& $gitExe -C $runtimeRepo rev-parse --is-inside-work-tree 2>$null) | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $inside -ne 'true') {
+            throw 'PRODUCTION_RUNTIME_IDENTITY_INVALID'
+        }
+        $dirty = ((& $gitExe -C $runtimeRepo status --porcelain=v1 --untracked-files=normal 2>$null) | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $dirty) {
+            throw 'PRODUCTION_RUNTIME_DIRTY'
+        }
+        & $gitExe -C $runtimeRepo checkout --detach $originSha --quiet
+        if ($LASTEXITCODE -ne 0) {
+            throw "PRODUCTION_RUNTIME_CHECKOUT_FAILED exit=$LASTEXITCODE"
+        }
+    }
+    $runtimeSha = ((& $gitExe -C $runtimeRepo rev-parse HEAD 2>$null) | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $runtimeSha -ne $originSha) {
+        throw 'PRODUCTION_RUNTIME_HEAD_DRIFT'
+    }
+    foreach ($dependency in @('.venv', 'node_modules')) {
+        $sourceDependency = Join-Path $SourceRepoDir $dependency
+        $runtimeDependency = Join-Path $runtimeRepo $dependency
+        if ((Test-Path -LiteralPath $sourceDependency) -and (-not (Test-Path -LiteralPath $runtimeDependency))) {
+            New-Item -ItemType Junction -Path $runtimeDependency -Target $sourceDependency | Out-Null
+        }
+    }
+    return $runtimeRepo
+}
+
 function Get-FileSha256Hex {
     param([string] $Path)
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -94,8 +147,191 @@ function Get-ScheduledTaskActionSha256 {
     return Get-StringSha256Hex -Text $summary.Trim().ToLowerInvariant()
 }
 
-$RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+function Assert-ScheduledTaskLaunchContext {
+    param(
+        [string] $TaskName,
+        [bool] $IsSmokeTest
+    )
+    $expectedTaskName = if ($IsSmokeTest) { 'News-Grasp Bootstrap' } else { 'News-Grasp Runner' }
+    $expectedMode = if ($IsSmokeTest) { 'bootstrap' } else { 'runner' }
+    if (-not $TaskName -or $TaskName -ne $expectedTaskName) {
+        throw 'SCHEDULED_TASK_CONTEXT_REQUIRED'
+    }
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    $info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop
+    $actionSummary = (@($task.Actions) | ForEach-Object {
+        ([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()
+    }) -join ' ; '
+    $ageMinutes = [math]::Abs(((Get-Date) - $info.LastRunTime).TotalMinutes)
+    $modePattern = "(?i)(?:^|\s)$([regex]::Escape($expectedMode))(?:\s|$)"
+    if (
+        [string]$task.State -ne 'Running' -or
+        $ageMinutes -gt 10 -or
+        $actionSummary -notmatch '(?i)news-grasp-task-launcher\.pyw' -or
+        $actionSummary -notmatch $modePattern
+    ) {
+        throw 'SCHEDULED_TASK_CONTEXT_INVALID'
+    }
+}
+
+function Invoke-BoundedGitFetch {
+    param(
+        [string] $GitExe,
+        [string] $WorkingDirectory
+    )
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $GitExe
+    $startInfo.WorkingDirectory = $WorkingDirectory
+    $startInfo.Arguments = '-c credential.interactive=never -c http.lowSpeedLimit=1 -c http.lowSpeedTime=30 fetch origin main --quiet'
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.EnvironmentVariables['GIT_TERMINAL_PROMPT'] = '0'
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $startInfo
+    try {
+        if (-not $process.Start()) { return 126 }
+        if (-not $process.WaitForExit(60000)) {
+            $process.Kill()
+            $process.WaitForExit()
+            return 124
+        }
+        return [int]$process.ExitCode
+    } finally {
+        $process.Dispose()
+    }
+}
+
+function Write-PreliminaryLaunchPermit {
+    param(
+        [string] $SourceRepoDir,
+        [string] $BinDir,
+        [string] $IssueDate
+    )
+    $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+    $python = Join-Path $SourceRepoDir '.venv\Scripts\python.exe'
+    $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
+    if (
+        (-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or
+        (-not (Test-Path -LiteralPath $python -PathType Leaf)) -or
+        (-not (Test-Path -LiteralPath $liveRunner -PathType Leaf))
+    ) {
+        throw 'PRELIMINARY_LAUNCH_AUTHORITY_INPUT_MISSING'
+    }
+    $authorityDir = Join-Path $BinDir 'news-grasp-authority'
+    $missionPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
+    $launchPermitPath = Join-Path $authorityDir "$IssueDate-launch-permit.json"
+    New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
+    $missionJson = (& $python $broker 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+    Write-AtomicUtf8Text -Path $missionPath -Text ($missionJson + [Environment]::NewLine)
+    $taskActionSha256 = Get-ScheduledTaskActionSha256
+    $runnerSha256 = Get-FileSha256Hex -Path $liveRunner
+    $launchNonce = "bootstrap-preliminary-$IssueDate-$([Guid]::NewGuid().ToString('N'))"
+    $permitJson = (& $python $broker 'issue-news-grasp-launch-permit' '--issue-date' $IssueDate '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--launch-nonce' $launchNonce '--mission-authority' $missionPath 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "preliminary scheduled launch permit issuance failed exit=$LASTEXITCODE" }
+    Write-AtomicUtf8Text -Path $launchPermitPath -Text ($permitJson + [Environment]::NewLine)
+    return [ordered]@{
+        broker = $broker
+        python = $python
+        live_runner = $liveRunner
+        mission_path = $missionPath
+        launch_permit_path = $launchPermitPath
+        task_action_sha256 = $taskActionSha256
+        runner_sha256 = $runnerSha256
+    }
+}
+
+function Record-StartupFailureForAudit {
+    param(
+        [object] $AuthorityContext,
+        [string] $SourceRepoDir,
+        [string] $BinDir,
+        [string] $IssueDate,
+        [string] $Detail
+    )
+    $runId = [Guid]::NewGuid().ToString('N')
+    $statePath = Join-Path $BinDir 'news-grasp-runner-state.json'
+    $logPath = Join-Path $BinDir "news-grasp-logs\$IssueDate.log"
+    $receiptPath = Join-Path $SourceRepoDir "build\scheduled-failure-receipts\$IssueDate-bootstrap-$runId.json"
+    $now = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    $state = [ordered]@{
+        status = 'blocked_startup_self_repair_failed'
+        message = 'pre-run bootstrap failed exit=1'
+        exit_code = 72
+        updated_at = $now
+        heartbeat_at = $now
+        date = $IssueDate
+        run_intent = 'ScheduledProduction'
+        run_id = $runId
+        phase = 'startup_self_repair'
+        attempt_terminal = $true
+        recovery_class = 'startup_self_repair_failure'
+        scheduled_attempt_status = 'failed'
+        recovery_attempt_status = 'not_started'
+        first_terminal_wins = 'first-terminal-wins'
+        scheduled_failure_receipt_path = $receiptPath
+    }
+    Write-AtomicUtf8Text -Path $statePath -Text (($state | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $logPath) | Out-Null
+    [System.IO.File]::AppendAllText(
+        $logPath,
+        "[$now] ERROR: STARTUP_SELF_REPAIR_FAILED detail=$Detail" + [Environment]::NewLine,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $admissionJson = (& $AuthorityContext.python $AuthorityContext.broker 'admit' '--operation-kind' 'scheduled_production' '--attempt-id' $IssueDate '--issue-date' $IssueDate '--authority-evidence' $AuthorityContext.launch_permit_path '--expected-task-action-sha256' $AuthorityContext.task_action_sha256 '--expected-runner-sha256' $AuthorityContext.runner_sha256 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "startup scheduled admission failed exit=$LASTEXITCODE detail=$admissionJson" }
+    $stateSha256 = Get-FileSha256Hex -Path $statePath
+    $logSha256 = Get-FileSha256Hex -Path $logPath
+    $failureJson = (& $AuthorityContext.python $AuthorityContext.broker 'record-news-grasp-failure' '--issue-date' $IssueDate '--last-task-result' '72' '--runner-state' 'blocked_startup_self_repair_failed' '--state-sha256' $stateSha256 '--log-sha256' $logSha256 '--task-action-sha256' $AuthorityContext.task_action_sha256 '--runner-sha256' $AuthorityContext.runner_sha256 '--failure-stage' 'startup_self_repair' 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "startup failure freeze failed exit=$LASTEXITCODE detail=$failureJson" }
+    $failure = $failureJson | ConvertFrom-Json -ErrorAction Stop
+    if ($failure.schemaVersion -ne 'SCHEDULED_FAILURE_RECEIPT_V1' -or $failure.issueDate -ne $IssueDate) {
+        throw 'startup failure receipt invalid'
+    }
+    Write-AtomicUtf8Text -Path $receiptPath -Text ($failureJson + [Environment]::NewLine)
+}
+
+$SourceRepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+$preliminaryAuthority = $null
+$runtimeMutex = $null
+$runtimeMutexOwned = $false
+if ($UseProductionRuntime) {
+    Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest)
+    $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspProductionRuntime-$env:USERNAME")
+    try {
+        $runtimeMutexOwned = $runtimeMutex.WaitOne(0)
+    } catch [System.Threading.AbandonedMutexException] {
+        $runtimeMutexOwned = $true
+    }
+    if (-not $runtimeMutexOwned) {
+        $runtimeMutex.Dispose()
+        exit 72
+    }
+}
+try {
+if ($UseProductionRuntime) {
+    $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp
+}
+try {
+    $RepoDir = if ($UseProductionRuntime) {
+        Resolve-ProductionRuntimeRepo -SourceRepoDir $SourceRepoDir
+    } else {
+        $SourceRepoDir
+    }
+} catch {
+    if ($UseProductionRuntime -and (-not $SmokeTest) -and $preliminaryAuthority) {
+        try {
+            Record-StartupFailureForAudit -AuthorityContext $preliminaryAuthority -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -Detail $_.Exception.Message
+        } catch {
+            $failureLog = Join-Path $BinDir "news-grasp-logs\$DateStamp.log"
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $failureLog) | Out-Null
+            Add-Content -LiteralPath $failureLog -Value "WARN: STARTUP_FAILURE_TERMINALIZER_FAILED reason=$($_.Exception.Message)" -Encoding UTF8
+        }
+    }
+    exit 72
+}
 $opsDir = Join-Path $RepoDir 'scripts\ops'
 if ($SmokeTest) {
     if (-not $StateFile) {
@@ -111,7 +347,7 @@ if ($StateFile -and -not [System.IO.Path]::IsPathRooted($StateFile)) {
 if ($LogDir -and -not [System.IO.Path]::IsPathRooted($LogDir)) {
     $LogDir = Join-Path $BinDir $LogDir
 }
-foreach ($file in @('news-grasp-bootstrap.ps1', 'watch-news-grasp-runner.ps1', 'news-grasp-runner.ps1', 'news-grasp-deadman.ps1', 'news-grasp-deadman-launcher.pyw')) {
+foreach ($file in @('news-grasp-bootstrap.ps1', 'watch-news-grasp-runner.ps1', 'news-grasp-runner.ps1', 'news-grasp-deadman.ps1', 'news-grasp-deadman-launcher.pyw', 'news-grasp-task-launcher.pyw')) {
     $source = Join-Path $opsDir $file
     $destination = Join-Path $BinDir $file
     if (-not (Test-Path -LiteralPath $source)) {
@@ -125,7 +361,7 @@ $manifestPath = Join-Path $backupDir 'auto-repair-manifest.json'
 $manifestFiles = @()
 $changed = $false
 
-foreach ($file in @('news-grasp-bootstrap.ps1', 'watch-news-grasp-runner.ps1', 'news-grasp-runner.ps1', 'news-grasp-deadman.ps1', 'news-grasp-deadman-launcher.pyw')) {
+foreach ($file in @('news-grasp-bootstrap.ps1', 'watch-news-grasp-runner.ps1', 'news-grasp-runner.ps1', 'news-grasp-deadman.ps1', 'news-grasp-deadman-launcher.pyw', 'news-grasp-task-launcher.pyw')) {
     $source = Join-Path $opsDir $file
     $destination = Join-Path $BinDir $file
     $sourceHash = Get-FileSha256Hex -Path $source
@@ -164,7 +400,6 @@ if ($changed) {
     } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 }
 
-if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
 $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
 $python = Join-Path $RepoDir '.venv\Scripts\python.exe'
 $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
@@ -198,11 +433,22 @@ if ($RecoverOnly) { $args += '-RecoverOnly' }
 if ($PollSeconds -ne 30) { $args += @('-PollSeconds', [string]$PollSeconds) }
 if ($StaleMinutes -ne 15) { $args += @('-StaleMinutes', [string]$StaleMinutes) }
 if ($TimeoutMinutes -ne 120) { $args += @('-TimeoutMinutes', [string]$TimeoutMinutes) }
-if ($RunnerPath) { $args += @('-RunnerPath', $RunnerPath) }
+if ($UseProductionRuntime) {
+    $args += @('-RunnerPath', (Join-Path $RepoDir 'scripts\ops\news-grasp-runner.ps1'))
+} elseif ($RunnerPath) { $args += @('-RunnerPath', $RunnerPath) }
 if ($StateFile) { $args += @('-StateFile', $StateFile) }
 if ($LogDir) { $args += @('-LogDir', $LogDir) }
 if ($DateStamp) { $args += @('-DateStamp', $DateStamp) }
 $args += @('-RepoDir', $RepoDir, '-BinDir', $BinDir)
 
 & powershell.exe @args
-exit $LASTEXITCODE
+$watcherExit = $LASTEXITCODE
+} finally {
+    if ($runtimeMutex) {
+        if ($runtimeMutexOwned) {
+            try { $runtimeMutex.ReleaseMutex() } catch { }
+        }
+        $runtimeMutex.Dispose()
+    }
+}
+exit $watcherExit

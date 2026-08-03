@@ -416,6 +416,7 @@ function Start-RunnerProcess {
     $args += @('-DateStampOverride', $DateStamp)
     $args += @('-LogDirOverride', $LogDir)
     $args += @('-StateFileOverride', $StateFile)
+    $args += @('-RepoDirOverride', $RepoDir)
     if ($HighCostAdmissionPath) {
         $args += @('-HighCostAdmissionPath', $HighCostAdmissionPath)
     }

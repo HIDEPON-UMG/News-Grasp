@@ -20,6 +20,8 @@ def _live_runner_readiness() -> dict:
         "live_watcher": {"sha256": "watcher-sha"},
         "repo_bootstrap": {"sha256": "bootstrap-sha"},
         "live_bootstrap": {"sha256": "bootstrap-sha"},
+        "repo_task_launcher": {"sha256": "launcher-sha"},
+        "live_task_launcher": {"sha256": "launcher-sha"},
         "scheduled_task": {
             "ok": True,
             "state": "Ready",
@@ -27,6 +29,9 @@ def _live_runner_readiness() -> dict:
             "number_of_missed_runs": 0,
             "trigger_start_minutes": 360,
             "runner_action_is_production_start": True,
+            "targets_live_task_launcher": True,
+            "task_launcher_mode_ok": True,
+            "task_launcher_ready": True,
             "targets_live_bootstrap": True,
             "bootstrap_repairs_before_run": True,
             "bootstrap_before_runner": True,
@@ -273,6 +278,9 @@ def test_batch_completion_history_rejects_direct_runner_interlock_without_reexec
         {
             "targets_live_bootstrap": False,
             "targets_live_runner": True,
+            "targets_live_task_launcher": False,
+            "task_launcher_mode_ok": False,
+            "task_launcher_ready": False,
             "direct_runner_pre_run_interlock": True,
         }
     )

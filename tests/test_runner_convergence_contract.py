@@ -1119,7 +1119,7 @@ def test_runner_exposes_no_push_dry_run_switch() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
     assert "[switch] $NoPush" in runner
-    assert "NoPush mode: skipping git push origin main" in runner
+    assert "NoPush mode: skipping git push origin HEAD:main" in runner
     assert "NoPush mode: skipping send_push" in runner
 
 
@@ -1606,7 +1606,9 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "news-grasp-bootstrap.ps1" in text
     assert "News-Grasp Bootstrap" in text
     assert "register_failed_bootstrap_required" in text
-    assert '"-SmokeTest", "-PollSeconds", "1", "-TimeoutMinutes", "2"' in launcher_text
+    assert '"-SmokeTest", "-SkipSourceSync"' in launcher_text
+    assert '"-PollSeconds", "1", "-TimeoutMinutes", "2"' in launcher_text
+    assert launcher_text.count('"-UseProductionRuntime"') == 2
     assert '"-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs"' in launcher_text
     assert text.index("$BackupDir") < text.index("$files = @(")
     assert text.index("$BackupDir") < text.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
@@ -2242,7 +2244,7 @@ def test_runner_verifies_publish_complete_manifest_before_success() -> None:
     assert runner.count("$distributionSummary = Write-DistributionManifest") == 1
     assert 'add "data/distribution/$DateStamp.json"' in before_block
     assert 'commit -m "distribution: record publish state for $DateStamp"' in before_block
-    assert runner.index("$distributionSummary = Write-DistributionManifest") < runner.index("push origin main start")
+    assert runner.index("$distributionSummary = Write-DistributionManifest") < runner.index("push origin HEAD:main start")
     assert "$DateStamp.json" in distribution_body
     assert "build\\publish-complete\\$DateStamp.json" in block
     assert "build\\notification\\$DateStamp.json" in runner

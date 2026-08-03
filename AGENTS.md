@@ -4,6 +4,13 @@ This is the root routing contract for Claude Code and Codex.
 
 ## Root Workflow Contract
 
+### Same-day public recovery constitution
+
+- `same_day_public_recovery_first`: 対象日の公開面が Definition of Done を満たさない間は、同日公開の typed recovery を最優先の作業とする。
+- 公開 Green 前に許されるのは `scheduled_recovery`、その開始に不可欠な `minimal_recovery_unblocker`、または復旧不能を明示する `escalate_major_incident` だけである。
+- `incident_report_polish`、`root_cause_hardening`、無関係な cleanup は公開 Green の後に行う。公開欠落を報告作成やハーネス改善より後回しにしてはならない。
+- この順序は `tools.audit_recovery_control` の sealed decision と 6:40 automation が同じ predicate で fail-closed に強制する。
+
 - Keep sibling `CLAUDE.md` and `AGENTS.md` files aligned. Claude Code consumes `CLAUDE.md`; Codex consumes `AGENTS.md`.
 - Treat `docs/spec.md` as stable product truth, `tasks/current.md` as a derived status snapshot, and `tasks/todos.md` as the deferred-goal ledger; current execution stays in the active plan's `## Task Breakdown`.
 - For any 非自明な News-Grasp 改修, treat `docs/spec.md` as the 上位プロダクト真実 and check whether the change preserves the mission, Definition of Done, repair-first principle, and system integrity before implementation.

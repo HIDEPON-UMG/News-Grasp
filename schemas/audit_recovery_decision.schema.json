@@ -15,7 +15,8 @@
     "scheduledAttemptStatus",
     "recoveryAttemptStatus",
     "publicStatus",
-    "operationState"
+    "operationState",
+    "workPriority"
   ],
   "properties": {
     "schemaVersion": {"const": "AUDIT_RECOVERY_DECISION_V1"},
@@ -33,6 +34,15 @@
     "recoveryAttemptStatus": {"type": "string", "minLength": 1},
     "publicStatus": {"enum": ["green", "incomplete"]},
     "operationState": {"enum": ["complete", "recovery_required", "incident_open"]},
+    "workPriority": {
+      "enum": ["same_day_public_recovery_first", "root_cause_after_public_green"]
+    },
+    "allowedBeforePublicGreen": {
+      "const": ["scheduled_recovery", "minimal_recovery_unblocker", "escalate_major_incident"]
+    },
+    "forbiddenBeforePublicGreen": {
+      "const": ["incident_report_polish", "root_cause_hardening", "unrelated_cleanup"]
+    },
     "attemptLedgerWitnessSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "scheduledFailureReceiptSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "recoveryAuthorityReceiptSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
@@ -40,6 +50,19 @@
     "completionEvidenceSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
   },
   "allOf": [
+    {
+      "if": {"properties": {"publicStatus": {"const": "incomplete"}}},
+      "then": {
+        "required": ["allowedBeforePublicGreen", "forbiddenBeforePublicGreen"],
+        "properties": {"workPriority": {"const": "same_day_public_recovery_first"}}
+      }
+    },
+    {
+      "if": {"properties": {"publicStatus": {"const": "green"}}},
+      "then": {
+        "properties": {"workPriority": {"const": "root_cause_after_public_green"}}
+      }
+    },
     {
       "if": {"properties": {"terminal": {"const": "audit_normal_green"}}},
       "then": {"required": ["attemptLedgerWitnessSha256", "completionEvidenceSha256"]}

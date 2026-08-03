@@ -4,6 +4,8 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
 
 import pytest
 import tools.harness.high_cost_control_v2 as high_cost
@@ -828,6 +830,142 @@ def test_bootstrap_issues_same_date_mission_and_launch_permit() -> None:
     assert "issue-news-grasp-launch-permit" in bootstrap
     assert "Get-ScheduledTaskActionSha256" in bootstrap
     assert "'--runner-sha256' $runnerSha256" in bootstrap
+
+
+def test_bootstrap_reserves_and_freezes_failure_before_production_runtime_can_abort() -> None:
+    """remote fetch/worktree failureも同日attempt ledgerの外へ脱落させない。"""
+    root = Path(__file__).resolve().parents[1]
+    bootstrap = (root / "scripts" / "ops" / "news-grasp-bootstrap.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    resolve_runtime = bootstrap.index("Resolve-ProductionRuntimeRepo -SourceRepoDir")
+    preliminary_permit = bootstrap.index("Write-PreliminaryLaunchPermit")
+    assert preliminary_permit < resolve_runtime
+    assert "function Record-StartupFailureForAudit" in bootstrap
+    terminalizer = bootstrap.split("function Record-StartupFailureForAudit", 1)[1].split(
+        "function Resolve-ProductionRuntimeRepo", 1
+    )[0]
+    assert "'admit'" in terminalizer
+    assert "'record-news-grasp-failure'" in terminalizer
+    assert "scheduled-failure-receipts" in terminalizer
+    assert "blocked_startup_self_repair_failed" in terminalizer
+
+
+def test_bootstrap_authenticates_task_context_serializes_runtime_and_bounds_fetch() -> None:
+    """任意手動起動、並行worktree更新、対話git hangをscheduled attemptへ入れない。"""
+    root = Path(__file__).resolve().parents[1]
+    bootstrap = (root / "scripts" / "ops" / "news-grasp-bootstrap.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    launcher = (root / "scripts" / "ops" / "news-grasp-task-launcher.pyw").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "ScheduledTaskName" in bootstrap
+    assert "Assert-ScheduledTaskLaunchContext" in bootstrap
+    assert "Get-ScheduledTaskInfo" in bootstrap
+    assert "News-Grasp Bootstrap" in bootstrap
+    assert "News-Grasp Runner" in bootstrap
+    assert "news-grasp-task-launcher.pyw" in bootstrap
+    assert "Global\\NewsGraspProductionRuntime" in bootstrap
+    assert "WaitOne(0)" in bootstrap
+    assert "AbandonedMutexException" in bootstrap
+    assert "finally" in bootstrap.split("$runtimeMutex =", 1)[1]
+    assert "GIT_TERMINAL_PROMPT" in bootstrap
+    assert "WaitForExit(60000)" in bootstrap
+    assert '"-ScheduledTaskName", "News-Grasp Runner"' in launcher
+    assert '"-ScheduledTaskName", "News-Grasp Bootstrap"' in launcher
+
+
+def test_local_authority_and_smoke_artifacts_are_never_commit_candidates() -> None:
+    ignore = (Path(__file__).resolve().parents[1] / ".gitignore").read_text(
+        encoding="utf-8-sig"
+    )
+    for entry in (
+        "scripts/ops/news-grasp-authority/",
+        "scripts/ops/ng-smoke-logs/",
+        "scripts/ops/ng-smoke-state.json",
+        "build/audit-recovery/",
+        "build/high-cost-operation-admissions/",
+    ):
+        assert entry in ignore
+
+
+def test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_closed() -> None:
+    root = Path(__file__).resolve().parents[1]
+    launcher = (root / "scripts" / "ops" / "news-grasp-task-launcher.pyw").read_text(
+        encoding="utf-8-sig"
+    )
+    bootstrap = (root / "scripts" / "ops" / "news-grasp-bootstrap.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert launcher.count('"-UseProductionRuntime"') == 2
+    assert '"-SkipSourceSync"' in launcher
+    assert 'state.get("status") != "smoke_ok"' in launcher
+    assert "[switch] $UseProductionRuntime" in bootstrap
+    assert "Resolve-ProductionRuntimeRepo" in bootstrap
+    assert "production-runtime" in bootstrap
+    assert "worktree add --detach" in bootstrap
+    assert "origin/main" in bootstrap
+    assert "PRODUCTION_RUNTIME_DIRTY" in bootstrap
+    assert bootstrap.count("'news-grasp-task-launcher.pyw'") >= 2
+
+
+def test_clean_runtime_identity_is_forwarded_to_runner_and_detached_push_is_exact() -> None:
+    root = Path(__file__).resolve().parents[1]
+    watcher = (root / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    start_body = watcher.split("function Start-RunnerProcess", 1)[1].split(
+        "function Test-TerminalState", 1
+    )[0]
+    assert "@('-RepoDirOverride', $RepoDir)" in start_body
+    assert "push origin HEAD:main" in runner
+    assert "push origin main" not in runner.split("if ($NoPush)", 1)[1].split(
+        "# ===== publish reflection verify", 1
+    )[0]
+
+
+def test_scheduled_failure_is_terminalized_for_audit_recovery_lineage() -> None:
+    root = Path(__file__).resolve().parents[1]
+    runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "function Invoke-ScheduledFailureTerminalizer" in runner
+    assert "record-news-grasp-failure" in runner
+    assert "scheduled_failure_receipt_path" in runner
+    assert "Invoke-ScheduledFailureTerminalizer" in runner.split(
+        "function Exit-Runner", 1
+    )[1].split("function Write-Log", 1)[0]
+
+
+def test_task_launcher_freezes_pre_runner_failure_in_fixed_state(tmp_path: Path) -> None:
+    """fetch/worktree/bootstrap が runner 前に落ちても監査が回収できる typed state を残す。"""
+    root = Path(__file__).resolve().parents[1]
+    launcher_path = root / "scripts" / "ops" / "news-grasp-task-launcher.pyw"
+    loader = SourceFileLoader("news_grasp_task_launcher_test", str(launcher_path))
+    spec = spec_from_loader(loader.name, loader)
+    assert spec is not None
+    module = module_from_spec(spec)
+    loader.exec_module(module)
+
+    state_path = tmp_path / "news-grasp-runner-state.json"
+    module.write_startup_failure_state(
+        state_path=state_path,
+        returncode=72,
+        issue_date="2026-08-03",
+        detail="PRODUCTION_RUNTIME_FETCH_FAILED",
+    )
+
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["status"] == "blocked_startup_self_repair_failed"
+    assert state["exit_code"] == 72
+    assert state["date"] == "2026-08-03"
+    assert state["run_intent"] == "ScheduledProduction"
+    assert state["attempt_terminal"] is True
+    assert state["recovery_class"] == "startup_self_repair_failure"
 
 
 def test_runner_consumes_typed_scheduled_authority_and_separates_recovery_state() -> None:

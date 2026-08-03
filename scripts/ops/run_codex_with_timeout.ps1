@@ -147,6 +147,14 @@ function Protect-LogText {
     param([string] $Text)
     if (-not $Text) { return $Text }
     $protected = $Text
+    if ($WorkingDirectory) {
+        $protected = [regex]::Replace(
+            $protected,
+            [regex]::Escape([System.IO.Path]::GetFullPath($WorkingDirectory)),
+            '<WORKING_DIRECTORY>',
+            [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+        )
+    }
     if ($env:USERPROFILE) {
         $protected = [regex]::Replace(
             $protected,

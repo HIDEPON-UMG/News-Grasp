@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import io
 import json
@@ -159,7 +160,8 @@ def _is_isolated_smoke_path(value: str, *, kind: str) -> bool:
 
 def _task_launcher_source_contract(path: Path) -> dict:
     try:
-        compact = re.sub(r"\s+", "", path.read_text(encoding="utf-8-sig", errors="replace"))
+        source = path.read_text(encoding="utf-8-sig", errors="replace")
+        compact = re.sub(r"\s+", "", source)
     except OSError:
         return {"ok": False, "reason": "task_launcher_unreadable"}
     required_tokens = (
@@ -175,6 +177,52 @@ def _task_launcher_source_contract(path: Path) -> dict:
         "subprocess.CREATE_NO_WINDOW",
     )
     missing = [token for token in required_tokens if token not in compact]
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        tree = None
+    runner_args: list[str] = []
+    bootstrap_args: list[str] = []
+    if tree is not None:
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign) or not any(
+                isinstance(target, ast.Name) and target.id == "extra"
+                for target in node.targets
+            ):
+                continue
+            if not isinstance(node.value, ast.IfExp):
+                continue
+            if isinstance(node.value.body, ast.List):
+                runner_args = [
+                    str(item.value)
+                    for item in node.value.body.elts
+                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
+                ]
+            if isinstance(node.value.orelse, ast.List):
+                bootstrap_args = [
+                    str(item.value)
+                    for item in node.value.orelse.elts
+                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
+                ]
+            break
+    required_runner_args = [
+        "-Start",
+        "-UseProductionRuntime",
+        "-ScheduledTaskName",
+        "News-Grasp Runner",
+    ]
+    required_bootstrap_args = [
+        "-Start",
+        "-UseProductionRuntime",
+        "-ScheduledTaskName",
+        "News-Grasp Bootstrap",
+        "-SmokeTest",
+        "-SkipSourceSync",
+    ]
+    if not all(item in runner_args for item in required_runner_args):
+        missing.append("runner_args:UseProductionRuntime+ScheduledTaskName")
+    if not all(item in bootstrap_args for item in required_bootstrap_args):
+        missing.append("bootstrap_args:UseProductionRuntime+ScheduledTaskName")
     return {
         "ok": not missing,
         "reason": "" if not missing else "task_launcher_contract_invalid",
@@ -363,6 +411,12 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
     live_watcher = readiness.get("live_watcher") if isinstance(readiness.get("live_watcher"), dict) else {}
     repo_bootstrap = readiness.get("repo_bootstrap") if isinstance(readiness.get("repo_bootstrap"), dict) else {}
     live_bootstrap = readiness.get("live_bootstrap") if isinstance(readiness.get("live_bootstrap"), dict) else {}
+    repo_task_launcher = (
+        readiness.get("repo_task_launcher") if isinstance(readiness.get("repo_task_launcher"), dict) else {}
+    )
+    live_task_launcher = (
+        readiness.get("live_task_launcher") if isinstance(readiness.get("live_task_launcher"), dict) else {}
+    )
     scheduled_task = readiness.get("scheduled_task") if isinstance(readiness.get("scheduled_task"), dict) else {}
     canary = readiness.get("canary") if isinstance(readiness.get("canary"), dict) else {}
     repo_sha = str(repo_runner.get("sha256") or "")
@@ -371,6 +425,8 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
     live_watcher_sha = str(live_watcher.get("sha256") or "")
     repo_bootstrap_sha = str(repo_bootstrap.get("sha256") or "")
     live_bootstrap_sha = str(live_bootstrap.get("sha256") or "")
+    repo_task_launcher_sha = str(repo_task_launcher.get("sha256") or "")
+    live_task_launcher_sha = str(live_task_launcher.get("sha256") or "")
     runner_schedule_ok = bool(
         scheduled_task.get("ok") is True
         and str(scheduled_task.get("state") or "") in {"Ready", "Running"}
@@ -391,22 +447,12 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
         and scheduled_task.get("bootstrap_before_runner") is True
         and scheduled_task.get("bootstrap_repairs_before_run") is True
     )
-    direct_runner_ok = bool(
-        not scheduled_task.get("targets_live_runner")
-        or (
-            scheduled_task.get("direct_runner_pre_run_interlock") is True
-            and scheduled_task.get("direct_runner_pre_run_reexec") is True
-        )
-    )
     runner_target_ok = bool(
         scheduled_task.get("runner_action_is_production_start") is True
         and bootstrap_contract_ok
-        and direct_runner_ok
-        and (
-            scheduled_task.get("targets_live_watcher")
-            or scheduled_task.get("targets_live_bootstrap")
-            or scheduled_task.get("targets_live_runner")
-        )
+        and scheduled_task.get("targets_live_task_launcher") is True
+        and scheduled_task.get("task_launcher_mode_ok") is True
+        and scheduled_task.get("task_launcher_ready") is True
     )
     return bool(
         repo_sha
@@ -418,6 +464,9 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
         and repo_bootstrap_sha
         and live_bootstrap_sha
         and repo_bootstrap_sha == live_bootstrap_sha
+        and repo_task_launcher_sha
+        and live_task_launcher_sha
+        and repo_task_launcher_sha == live_task_launcher_sha
         and runner_schedule_ok
         and runner_target_ok
         and canary.get("ok") is True
@@ -846,13 +895,9 @@ def verify_live_runner_readiness(
         runner_schedule_ok
         and runner_action_contract["is_production_start"]
         and bootstrap_pre_run_ok
-        and (not runner_targets_runner or (direct_runner_pre_run_interlock and direct_runner_pre_run_reexec))
-        and (
-            runner_targets_watcher
-            or runner_targets_bootstrap
-            or runner_targets_runner
-            or (runner_targets_task_launcher and runner_task_launcher_mode_ok and task_launcher_ready)
-        )
+        and runner_targets_task_launcher
+        and runner_task_launcher_mode_ok
+        and task_launcher_ready
     )
     result["scheduled_task"] = {
         "ok": task_ok,
@@ -917,14 +962,14 @@ def verify_live_runner_readiness(
             reason = "scheduled_task_missed_runs"
         elif not (runner_targets_watcher or runner_targets_bootstrap or runner_targets_runner or runner_targets_task_launcher):
             reason = "scheduled_task_target_mismatch"
+        elif not runner_action_contract["is_production_start"]:
+            reason = "scheduled_task_action_not_production_start"
         elif runner_targets_task_launcher and not task_launcher_checksum["synced"]:
             reason = "task_launcher_hash_mismatch"
         elif runner_targets_task_launcher and not task_launcher_contract.get("ok"):
             reason = "task_launcher_contract_invalid"
         elif runner_targets_task_launcher and not runner_task_launcher_mode_ok:
             reason = "task_launcher_runner_mode_invalid"
-        elif not runner_action_contract["is_production_start"]:
-            reason = "scheduled_task_action_not_production_start"
         elif bootstrap_targets_task_launcher and not task_launcher_checksum["synced"]:
             reason = "bootstrap_task_launcher_hash_mismatch"
         elif bootstrap_targets_task_launcher and not task_launcher_contract.get("ok"):
@@ -951,6 +996,8 @@ def verify_live_runner_readiness(
             reason = "bootstrap_task_last_result_not_ok"
         elif runner_targets_runner and not bootstrap_before_runner:
             reason = "bootstrap_task_not_before_runner"
+        elif not runner_targets_task_launcher:
+            reason = "scheduled_task_launcher_required"
         else:
             reason = "scheduled_task_target_mismatch"
         return {**result, "reason": reason}

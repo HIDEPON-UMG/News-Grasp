@@ -27,6 +27,12 @@ News-Grasp は、繁忙なITコンサルタントが膨大なニュースを一�
 
 ## Definition of Done
 
+### Same-day public recovery priority
+
+`same_day_public_recovery_first` は News-Grasp の作業順序に関する憲法である。対象日の公開面が本 Definition of Done を満たさない間、最優先の action は `scheduled_recovery` とし、その開始に不可欠な `minimal_recovery_unblocker` だけを先行できる。復旧不能なら黙って deferred にせず `escalate_major_incident` とする。
+
+公開 Green 前の `incident_report_polish`、`root_cause_hardening`、無関係な cleanup を禁止する。障害報告と恒久修正は公開 Green 後に `root_cause_after_public_green` として開始する。`tools.audit_recovery_control` の sealed decision、6:40 automation、runner/recovery state はこの同じ順序述語を使う。
+
 Scheduled Task / runner / bootstrap / deadman はTask Actionから最深childまでno-consoleで動作する。Taskは`pythonw.exe`とversioned launcherを使い、launcher childは`CREATE_NO_WINDOW`を強制する。このサブ端末では既存Disabled状態を維持し、no-console移行を理由に自動enableしない。
 
 通常日次バッチの OK marker は、次の成果物と公開面がすべて verified になった後にだけ書く。

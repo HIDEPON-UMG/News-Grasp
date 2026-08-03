@@ -1794,8 +1794,10 @@ def test_verify_publish_complete_rejects_quality_head_publish_head_drift(
     assert result["reason"] == "deepdive_quality_head_mismatch"
 
 
-def test_verify_live_runner_readiness_requires_hash_task_and_canary(monkeypatch, tmp_path: Path) -> None:
-    """live runner readiness は repo/live ops hash、watcher task target、実起動 canary をまとめて見る。"""
+def test_verify_live_runner_readiness_rejects_direct_bootstrap_without_task_launcher(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """06:00 は clean production runtime を選ぶ pythonw launcher 以外を Green にしない。"""
     repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
     repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
     repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
@@ -1843,18 +1845,18 @@ def test_verify_live_runner_readiness_requires_hash_task_and_canary(monkeypatch,
         live_runner_path=live_runner,
         live_watcher_path=live_watcher,
         live_bootstrap_path=live_bootstrap,
+        live_task_launcher_path=live_runner.parent / "news-grasp-task-launcher.pyw",
         date="2026-06-20",
         run_canary=True,
     )
 
-    assert result["ok"] is True
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_launcher_required"
     assert result["repo_runner"]["sha256"] == result["live_runner"]["sha256"]
     assert result["repo_watcher"]["sha256"] == result["live_watcher"]["sha256"]
     assert result["repo_bootstrap"]["sha256"] == result["live_bootstrap"]["sha256"]
     assert result["scheduled_task"]["targets_live_bootstrap"] is True
     assert result["scheduled_task"]["runner_action_is_production_start"] is True
-    assert result["scheduled_task"]["direct_runner_pre_run_reexec"] is True
-    assert result["canary"]["status"] == "smoke_ok"
 
 
 def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(monkeypatch, tmp_path: Path) -> None:
@@ -1867,8 +1869,11 @@ def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(mon
     launcher_source = """
 parser.add_argument("mode", choices=("runner", "bootstrap"))
 script = bin_dir / "news-grasp-bootstrap.ps1"
-extra = ["-Start"] if args.mode == "runner" else [
-    "-Start", "-SmokeTest", "-PollSeconds", "1", "-TimeoutMinutes", "2",
+extra = [
+    "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
+] if args.mode == "runner" else [
+    "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Bootstrap",
+    "-SmokeTest", "-SkipSourceSync", "-PollSeconds", "1", "-TimeoutMinutes", "2",
     "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
 ]
 creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
@@ -1914,6 +1919,31 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     assert result["scheduled_task"]["targets_live_task_launcher"] is True
     assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
     assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
+
+
+def test_task_launcher_contract_requires_clean_runtime_on_both_scheduled_modes(
+    tmp_path: Path,
+) -> None:
+    """旧launcherに単語があるだけでなく、runner/bootstrap両引数列のclean runtimeを必須にする。"""
+    launcher = tmp_path / "news-grasp-task-launcher.pyw"
+    launcher.write_text(
+        '''
+parser.add_argument("mode", choices=("runner", "bootstrap"))
+script = bin_dir / "news-grasp-bootstrap.ps1"
+extra = ["-Start"] if args.mode == "runner" else [
+    "-Start", "-SmokeTest", "-PollSeconds", "1", "-TimeoutMinutes", "2",
+    "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
+]
+creationflags = subprocess.CREATE_NO_WINDOW
+''',
+        encoding="utf-8",
+    )
+
+    result = dsh._task_launcher_source_contract(launcher)
+
+    assert result["ok"] is False
+    assert result["reason"] == "task_launcher_contract_invalid"
+    assert any("UseProductionRuntime" in token for token in result["missing_tokens"])
 
 
 def test_verify_live_runner_readiness_rejects_scheduler_target_drift(monkeypatch, tmp_path: Path) -> None:
@@ -2226,8 +2256,8 @@ $IsE2EOrDryRun = $false
     assert result["reason"] == "direct_runner_pre_run_interlock_missing"
 
 
-def test_verify_live_runner_readiness_accepts_bootstrap_before_direct_runner(monkeypatch, tmp_path: Path) -> None:
-    """既存 runner task を変更できない環境でも、事前 bootstrap が watcher を指せば self-heal ready とする。"""
+def test_verify_live_runner_readiness_rejects_bootstrap_before_direct_runner(monkeypatch, tmp_path: Path) -> None:
+    """事前bootstrapがGreenでも06:00 direct runnerをclean-runtime routeにしない。"""
     repo_runner = tmp_path / "scripts" / "ops" / "news-grasp-runner.ps1"
     repo_watcher = tmp_path / "scripts" / "ops" / "watch-news-grasp-runner.ps1"
     repo_bootstrap = tmp_path / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
@@ -2281,13 +2311,12 @@ def test_verify_live_runner_readiness_accepts_bootstrap_before_direct_runner(mon
         run_canary=True,
     )
 
-    assert result["ok"] is True
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_launcher_required"
     assert result["scheduled_task"]["targets_live_runner"] is True
     assert result["scheduled_task"]["direct_runner_pre_run_interlock"] is True
     assert result["scheduled_task"]["direct_runner_pre_run_reexec"] is True
     assert result["scheduled_task"]["bootstrap_repairs_before_run"] is True
-    assert result["status"] == "ready_with_failed_last_schedule"
-    assert result["next_run_readiness"]["ok"] is True
     assert result["last_scheduled_attempt"]["status"] == "failed"
     assert result["last_scheduled_attempt"]["last_task_result"] == 72
 

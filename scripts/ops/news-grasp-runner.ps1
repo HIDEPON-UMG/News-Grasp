@@ -447,6 +447,15 @@ function Set-RunnerState {
         [string] $ExternalDetail = ''
     )
     $now = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK'
+    $scheduledFailureReceiptPath = ''
+    if (
+        $RunIntent -eq 'ScheduledProduction' -and
+        (-not $SmokeTest) -and
+        (-not $PreflightOnly) -and
+        $ExitCode -gt 0
+    ) {
+        $scheduledFailureReceiptPath = Join-Path $RepoDir "build\scheduled-failure-receipts\$DateStamp-$RunId.json"
+    }
     try {
         Invoke-WithRunnerStateLock {
             $prev = Read-RunnerStateOrNull -Path $StateFile
@@ -523,6 +532,7 @@ function Set-RunnerState {
             if ($PublishCommit) { $state.publish_commit = $PublishCommit }
             if ($ScheduledAttemptStatus) { $state.scheduled_attempt_status = $ScheduledAttemptStatus }
             if ($RecoveryAttemptStatus) { $state.recovery_attempt_status = $RecoveryAttemptStatus }
+            if ($scheduledFailureReceiptPath) { $state.scheduled_failure_receipt_path = $scheduledFailureReceiptPath }
             if ($ExternalKind -or $ExternalSystem -or $ExternalStatus -or $ExternalStderr -or $ExternalDetail) {
                 $state.external_readiness = [ordered]@{
                     kind = $ExternalKind
@@ -556,6 +566,9 @@ function Set-RunnerState {
         } else {
             throw
         }
+    }
+    if ($scheduledFailureReceiptPath) {
+        Invoke-ScheduledFailureTerminalizer -Status $Status -ExitCode $ExitCode -ReceiptPath $scheduledFailureReceiptPath
     }
 }
 
@@ -615,7 +628,60 @@ function Exit-Runner {
         [string] $ExternalDetail = ''
     )
     Set-RunnerState -Status $Status -Message $Message -ExitCode $ExitCode -ExternalKind $ExternalKind -ExternalSystem $ExternalSystem -ExternalStatus $ExternalStatus -ExternalStderr $ExternalStderr -ExternalDetail $ExternalDetail
+    if ($RunIntent -eq 'ScheduledProduction' -and $ExitCode -gt 0) {
+        $failureReceiptPath = Join-Path $RepoDir "build\scheduled-failure-receipts\$DateStamp-$RunId.json"
+        Invoke-ScheduledFailureTerminalizer -Status $Status -ExitCode $ExitCode -ReceiptPath $failureReceiptPath
+    }
     exit $ExitCode
+}
+
+function Invoke-ScheduledFailureTerminalizer {
+    param(
+        [string] $Status,
+        [int] $ExitCode,
+        [string] $ReceiptPath
+    )
+    if (
+        $script:ScheduledFailureTerminalized -or
+        $RunIntent -ne 'ScheduledProduction' -or
+        $SmokeTest -or
+        $PreflightOnly -or
+        $ExitCode -le 0
+    ) {
+        return
+    }
+    $script:ScheduledFailureTerminalized = $true
+    try {
+        $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+        if (
+            (-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $StateFile -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $LogPath -PathType Leaf))
+        ) {
+            throw 'scheduled failure terminalizer input missing'
+        }
+        $stateSha256 = Get-FileSha256Hex -Path $StateFile
+        $logSha256 = Get-FileSha256Hex -Path $LogPath
+        $taskActionSha256 = Get-ScheduledTaskActionSha256
+        $runnerSha256 = Get-FileSha256Hex -Path $PSCommandPath
+        if ((-not $stateSha256) -or (-not $logSha256) -or (-not $taskActionSha256) -or (-not $runnerSha256)) {
+            throw 'scheduled failure terminalizer hash unavailable'
+        }
+        $failureStage = ([regex]::Replace([string]$Status, '[^A-Za-z0-9_.-]', '_')).Trim('_')
+        if (-not $failureStage) { $failureStage = 'unknown_failure' }
+        $receiptJson = (& $PyExe $broker 'record-news-grasp-failure' '--issue-date' $DateStamp '--last-task-result' ([string]$ExitCode) '--runner-state' $Status '--state-sha256' $stateSha256 '--log-sha256' $logSha256 '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--failure-stage' $failureStage 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "record-news-grasp-failure failed exit=$LASTEXITCODE detail=$receiptJson"
+        }
+        $receipt = $receiptJson | ConvertFrom-Json -ErrorAction Stop
+        if ($receipt.schemaVersion -ne 'SCHEDULED_FAILURE_RECEIPT_V1' -or $receipt.issueDate -ne $DateStamp -or $receipt.scheduledAttemptStatus -ne 'failed') {
+            throw 'scheduled failure receipt invalid'
+        }
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ReceiptPath) | Out-Null
+        [System.IO.File]::WriteAllText($ReceiptPath, ($receiptJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+    } catch {
+        Add-Content -LiteralPath $LogPath -Value "WARN: SCHEDULED_FAILURE_TERMINALIZER_FAILED reason=$($_.Exception.Message)" -Encoding UTF8 -ErrorAction SilentlyContinue
+    }
 }
 
 function Write-Log {
@@ -4125,13 +4191,13 @@ if ($NoPublish) {
 # amending」に従い amend は使わず、digest commit と docs commit を別 commit として
 # 同時 push する。
 if ($NoPush) {
-    Write-Log 'NoPush mode: skipping git push origin main'
+    Write-Log 'NoPush mode: skipping git push origin HEAD:main'
     Write-Log 'NoPush mode: skipping send_push'
 } else {
-    Write-Log 'push origin main start (digest + docs を同時公開)'
-    Invoke-Logged { & $GitExe -C $RepoDir push origin main }
+    Write-Log 'push origin HEAD:main start (digest + docs を同時公開)'
+    Invoke-Logged { & $GitExe -C $RepoDir push origin HEAD:main }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: push failed (rc=$LASTEXITCODE)"; exit 1 }
-    Write-Log 'push origin main done (digest + docs pushed)'
+    Write-Log 'push origin HEAD:main done (digest + docs pushed)'
 
     Write-Log 'publish verification start (remote HEAD + public publish-status sentinel + public audio sentinel)'
     Update-RunnerProgress -Phase 'publish-verify' -Step 'publish verification start'

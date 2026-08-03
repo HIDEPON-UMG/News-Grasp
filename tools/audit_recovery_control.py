@@ -20,6 +20,18 @@ AUDIT_TERMINALS = {
     "audit_recovered_green",
     "audit_major_incident_open",
 }
+SAME_DAY_PUBLIC_RECOVERY_PRIORITY = "same_day_public_recovery_first"
+PUBLIC_GREEN_FOLLOWUP_PRIORITY = "root_cause_after_public_green"
+ALLOWED_BEFORE_PUBLIC_GREEN = [
+    "scheduled_recovery",
+    "minimal_recovery_unblocker",
+    "escalate_major_incident",
+]
+FORBIDDEN_BEFORE_PUBLIC_GREEN = [
+    "incident_report_polish",
+    "root_cause_hardening",
+    "unrelated_cleanup",
+]
 COMPLETION_FIELDS = (
     "quality",
     "distributionManifest",
@@ -73,6 +85,23 @@ def seal_audit_decision(decision: object) -> dict[str, Any]:
         raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
     terminal = decision.get("terminal")
     if terminal is not None and terminal not in AUDIT_TERMINALS:
+        raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
+    public_status = decision.get("publicStatus")
+    if public_status == "incomplete":
+        if (
+            decision.get("workPriority") != SAME_DAY_PUBLIC_RECOVERY_PRIORITY
+            or decision.get("allowedBeforePublicGreen")
+            != ALLOWED_BEFORE_PUBLIC_GREEN
+            or decision.get("forbiddenBeforePublicGreen")
+            != FORBIDDEN_BEFORE_PUBLIC_GREEN
+            or decision.get("action")
+            not in {"scheduled_recovery", "escalate_major_incident"}
+        ):
+            raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
+    elif public_status == "green":
+        if decision.get("workPriority") != PUBLIC_GREEN_FOLLOWUP_PRIORITY:
+            raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
+    else:
         raise ValueError("AUDIT_DECISION_RECEIPT_INVALID")
     body = dict(decision)
     body["issuer"] = DECISION_ISSUER
@@ -448,6 +477,9 @@ def _incident(
         "recoveryAttemptStatus": recovery_status,
         "publicStatus": "incomplete",
         "operationState": "incident_open",
+        "workPriority": SAME_DAY_PUBLIC_RECOVERY_PRIORITY,
+        "allowedBeforePublicGreen": ALLOWED_BEFORE_PUBLIC_GREEN,
+        "forbiddenBeforePublicGreen": FORBIDDEN_BEFORE_PUBLIC_GREEN,
     })
 
 
@@ -536,6 +568,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 "recoveryAttemptStatus": "not_started",
                 "publicStatus": "green",
                 "operationState": "complete",
+                "workPriority": PUBLIC_GREEN_FOLLOWUP_PRIORITY,
                 "attemptLedgerWitnessSha256": attempt_witness["receiptSha256"],
                 "completionEvidenceSha256": completion["receiptSha256"],
             })
@@ -591,6 +624,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 "recoveryAttemptStatus": "succeeded",
                 "publicStatus": "green",
                 "operationState": "complete",
+                "workPriority": PUBLIC_GREEN_FOLLOWUP_PRIORITY,
                 "attemptLedgerWitnessSha256": attempt_witness["receiptSha256"],
                 "scheduledFailureReceiptSha256": failure_sha,
                 "recoveryAuthorityReceiptSha256": authority["receiptSha256"],
@@ -609,6 +643,9 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 "recoveryAttemptStatus": recovery_status,
                 "publicStatus": "incomplete",
                 "operationState": "recovery_required",
+                "workPriority": SAME_DAY_PUBLIC_RECOVERY_PRIORITY,
+                "allowedBeforePublicGreen": ALLOWED_BEFORE_PUBLIC_GREEN,
+                "forbiddenBeforePublicGreen": FORBIDDEN_BEFORE_PUBLIC_GREEN,
                 "attemptLedgerWitnessSha256": attempt_witness["receiptSha256"],
                 "recoveryAuthorityReceiptSha256": authority["receiptSha256"],
                 "recoveryAuthorityLedgerWitnessSha256": witness["receiptSha256"],

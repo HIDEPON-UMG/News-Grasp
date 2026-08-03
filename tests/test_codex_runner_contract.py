@@ -67,7 +67,7 @@ def test_runner_youtube_podcast_is_required_distribution_gate() -> None:
     deepdive_youtube_prepare = runner.index("deepdive youtube podcast prepare")
     digest_commit = runner.index("2.9 digest/data commit")
     docs_commit = runner.index("4. docs/ commit")
-    push_start = runner.index("push origin main start")
+    push_start = runner.index("push origin HEAD:main start")
     publish_verify = runner.index("publish verification start")
     youtube_finalize = runner.index("youtube podcast finalize")
     deepdive_youtube_finalize = runner.index("deepdive youtube podcast finalize")
