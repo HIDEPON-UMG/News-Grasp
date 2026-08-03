@@ -910,8 +910,8 @@ def test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_cl
     assert bootstrap.count("'news-grasp-task-launcher.pyw'") >= 2
 
 
-def test_production_runtime_resolver_never_leaks_git_stdout_into_repo_path() -> None:
-    """git成功メッセージを関数のRepoDir戻り値へ混入させない。"""
+def test_production_runtime_resolver_never_leaks_git_output_into_repo_path() -> None:
+    """git の stdout/stderr を関数の RepoDir 戻り値へ混入させない。"""
     bootstrap = (
         Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
     ).read_text(encoding="utf-8-sig")
@@ -919,8 +919,8 @@ def test_production_runtime_resolver_never_leaks_git_stdout_into_repo_path() -> 
         "function Get-FileSha256Hex", 1
     )[0]
 
-    assert "worktree add --detach $runtimeRepo $originSha | Out-Null" in resolver
-    assert "checkout --detach $originSha --quiet | Out-Null" in resolver
+    assert "worktree add --detach $runtimeRepo $originSha 2>$null | Out-Null" in resolver
+    assert "checkout --detach $originSha --quiet 2>$null | Out-Null" in resolver
     assert "return $runtimeRepo" in resolver
 
 
