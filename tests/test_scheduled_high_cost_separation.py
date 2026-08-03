@@ -910,6 +910,20 @@ def test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_cl
     assert bootstrap.count("'news-grasp-task-launcher.pyw'") >= 2
 
 
+def test_production_runtime_resolver_never_leaks_git_stdout_into_repo_path() -> None:
+    """git成功メッセージを関数のRepoDir戻り値へ混入させない。"""
+    bootstrap = (
+        Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    ).read_text(encoding="utf-8-sig")
+    resolver = bootstrap.split("function Resolve-ProductionRuntimeRepo", 1)[1].split(
+        "function Get-FileSha256Hex", 1
+    )[0]
+
+    assert "worktree add --detach $runtimeRepo $originSha | Out-Null" in resolver
+    assert "checkout --detach $originSha --quiet | Out-Null" in resolver
+    assert "return $runtimeRepo" in resolver
+
+
 def test_clean_runtime_identity_is_forwarded_to_runner_and_detached_push_is_exact() -> None:
     root = Path(__file__).resolve().parents[1]
     watcher = (root / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(

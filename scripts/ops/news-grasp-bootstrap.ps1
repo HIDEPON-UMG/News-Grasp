@@ -80,7 +80,7 @@ function Resolve-ProductionRuntimeRepo {
     $runtimeRepo = Join-Path $runtimeRoot 'production-runtime'
     New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
     if (-not (Test-Path -LiteralPath $runtimeRepo)) {
-        & $gitExe -C $SourceRepoDir worktree add --detach $runtimeRepo $originSha
+        & $gitExe -C $SourceRepoDir worktree add --detach $runtimeRepo $originSha | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "PRODUCTION_RUNTIME_WORKTREE_CREATE_FAILED exit=$LASTEXITCODE"
         }
@@ -93,7 +93,7 @@ function Resolve-ProductionRuntimeRepo {
         if ($LASTEXITCODE -ne 0 -or $dirty) {
             throw 'PRODUCTION_RUNTIME_DIRTY'
         }
-        & $gitExe -C $runtimeRepo checkout --detach $originSha --quiet
+        & $gitExe -C $runtimeRepo checkout --detach $originSha --quiet | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "PRODUCTION_RUNTIME_CHECKOUT_FAILED exit=$LASTEXITCODE"
         }
