@@ -1824,6 +1824,27 @@ def test_watcher_kills_only_verified_runner_and_writes_typed_watchdog_state() ->
     assert "stale_seconds" in watcher
 
 
+def test_watcher_ignores_previous_run_state_until_new_process_claims_identity() -> None:
+    """起動直後に前runの古いstate/logを新runのstale判定へ流用しない。"""
+    watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")
+
+    assert "function Test-StateBelongsToRunnerProcess" in watcher
+    watch_body = watcher.split("function Watch-Runner", 1)[1].split(
+        "if ($PSCmdlet.ParameterSetName -eq 'Status')", 1
+    )[0]
+    assert "$stateBoundToProcess = Test-StateBelongsToRunnerProcess" in watch_body
+    assert "if (-not $stateBoundToProcess)" in watch_body
+    assert "continue" in watch_body.split("if (-not $stateBoundToProcess)", 1)[1].split(
+        "if (Test-TerminalState", 1
+    )[0]
+    assert watch_body.index("if (-not $stateBoundToProcess)") < watch_body.index(
+        "if (Test-TerminalState"
+    )
+    assert watch_body.index("if (-not $stateBoundToProcess)") < watch_body.index(
+        "$staleSeconds = Get-StaleSeconds"
+    )
+
+
 def test_runner_and_watcher_retry_transient_state_reads_before_declaring_corrupt() -> None:
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     watcher = WATCHER_PS1.read_text(encoding="utf-8-sig")

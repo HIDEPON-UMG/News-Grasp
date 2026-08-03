@@ -327,6 +327,32 @@ function Test-RunnerProcessIdentity {
     return $true
 }
 
+function Test-StateBelongsToRunnerProcess {
+    param(
+        $State,
+        [System.Diagnostics.Process] $Process
+    )
+    if (
+        -not $State -or
+        -not $State.pid -or
+        -not $State.process_creation_time -or
+        -not $State.runner_path -or
+        [int]$State.pid -ne $Process.Id
+    ) {
+        return $false
+    }
+    if (-not ([string]$State.runner_path).Equals($RunnerPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+    try {
+        $expectedCreation = [datetime]::Parse([string]$State.process_creation_time)
+        $actualCreation = $Process.StartTime
+        return [math]::Abs(($actualCreation - $expectedCreation).TotalSeconds) -le 2
+    } catch {
+        return $false
+    }
+}
+
 function Stop-VerifiedRunner {
     param(
         $State,
@@ -450,6 +476,23 @@ function Watch-Runner {
             Write-StatusJson -Mode 'state_corrupt' -State (Read-State) -ProcessId $Process.Id -Message 'runner state json is corrupt'
             $script:WatchExitCode = 125
             return
+        }
+        $stateBoundToProcess = Test-StateBelongsToRunnerProcess -State $state -Process $Process
+        if (-not $stateBoundToProcess) {
+            if ($Process.HasExited) {
+                Write-StatusJson -Mode 'failed' -State $state -ProcessId $Process.Id -Message 'runner process exited before claiming a fresh state identity'
+                $script:WatchExitCode = 1
+                return
+            }
+            $startupElapsed = (Get-Date) - $started
+            if ($startupElapsed.TotalMinutes -ge $TimeoutMinutes) {
+                $message = "runner did not claim a fresh state identity within $TimeoutMinutes minutes"
+                Write-WatchdogState -State $state -Status 'watchdog_startup_identity_timeout' -Message $message -ExitCode 125
+                Write-StatusJson -Mode 'startup_identity_timeout' -State (Read-State) -ProcessId $Process.Id -Message $message
+                $script:WatchExitCode = 125
+                return
+            }
+            continue
         }
         if (-not $watchRunId -and $state -and $state.run_id) {
             $watchRunId = [string]$state.run_id
