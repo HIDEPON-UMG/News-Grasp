@@ -2732,6 +2732,54 @@ def test_verify_publish_complete_requires_live_runner_readiness(monkeypatch, tmp
     assert result["live_runner_readiness"]["ok"] is False
 
 
+def test_verify_publish_complete_uses_current_date_for_next_run_canary(monkeypatch, tmp_path: Path) -> None:
+    """過去号の公開再検証でも、次回runner canaryは現在日付のauthorityを使う。"""
+    _write_publish_complete_inventory(tmp_path)
+    monkeypatch.setattr(dsh, "_current_jst_date", lambda: "2026-08-04", raising=False)
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish",
+        lambda **_kwargs: {
+            "ok": True,
+            "local_head": PUBLISH_COMMIT,
+            "remote_head": PUBLISH_COMMIT,
+            "url": "https://example.com/News-Grasp/publish-status.json",
+            "pwa": {"ok": True},
+            "audio": {"ok": True},
+            "podcast": {"ok": True, "videoId": "primary-video"},
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_podcast",
+        lambda **_kwargs: {
+            "ok": True,
+            "videoId": "deepdive-video",
+            "title": "News-Grasp DeepDive Dialogue 2026-06-20",
+        },
+    )
+    captured: dict[str, object] = {}
+
+    def fake_readiness(**kwargs):
+        captured.update(kwargs)
+        return _live_runner_readiness_ok()
+
+    monkeypatch.setattr(dsh, "verify_live_runner_readiness", fake_readiness)
+
+    result = dsh.verify_publish_complete(
+        repo_root=tmp_path,
+        date="2026-06-20",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is True
+    assert captured["date"] == "2026-08-04"
+
+
 def test_verify_publish_complete_rejects_invalid_distribution_manifest(monkeypatch, tmp_path: Path) -> None:
     """distribution manifest は存在だけでなく JSON/schema を満たす必要がある。"""
     _write_publish_complete_inventory(tmp_path, distribution_manifest="{not-json")

@@ -38,6 +38,11 @@ RUNNER_START_MINUTES = 6 * 60
 BOOTSTRAP_START_MINUTES = 5 * 60 + 55
 
 
+def _current_jst_date() -> str:
+    """次回production readinessを検証する現在のJST日付を返す。"""
+    return datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+
+
 def _parse_dt(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -2180,6 +2185,7 @@ def verify_publish_complete(
     notification_state_path: Path | None = None,
 ) -> dict:
     """公開完了を remote/public/audio/podcast/local inventory の同一 manifest として検証する。"""
+    readiness_date = _current_jst_date()
     distribution = _distribution_artifact_manifest(repo_root, date)
     base = {
         "ok": False,
@@ -2188,6 +2194,7 @@ def verify_publish_complete(
         "scheduled_attempt_status": "unknown",
         "recovery_attempt_status": "not_verified",
         "date": date,
+        "readiness_date": readiness_date,
         "distribution_artifacts": distribution,
     }
     if distribution["missing"]:
@@ -2298,7 +2305,7 @@ def verify_publish_complete(
     live_readiness = verify_live_runner_readiness(
         repo_root=repo_root,
         ops_repo_root=ops_repo_root,
-        date=date,
+        date=readiness_date,
     )
     manifest["live_runner_readiness"] = live_readiness
     if not live_readiness.get("ok"):
