@@ -2968,7 +2968,7 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     # フレーズは frontmatter `hero_left`/`hero_right` 優先、無ければ theme 機械分割 (summary subtitle fallback 用)。
     left, right = _hero_phrases(editorial)
     hero_subtitle = reflection.get("subtitle") or (
-        f"{left}と{right}" if left and right else ""
+        f"{left}{right}" if left and right else ""
     )
 
     # ---- Pull quote ----

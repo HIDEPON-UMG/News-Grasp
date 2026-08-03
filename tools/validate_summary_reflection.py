@@ -8,12 +8,20 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-from tools.generate_pages import CATEGORIES, TAG_TO_CID, parse_reflection
+from tools.generate_pages import CATEGORIES, TAG_TO_CID, parse_frontmatter, parse_reflection
 
 _DATE_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
 _HEADING_SPLIT_RE = re.compile(r"\s+[—–-]\s+", re.ASCII)
 _COUNT_ONLY_RE = re.compile(r"(?:\d+|[一二三四五六七八九十]+)\s*件")
 _INLINE_MARK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]|\*\*(.+?)\*\*|__(.+?)__")
+_NEWS_HEADLINE_ANCHORS = (
+    "AI", "OpenAI", "円", "ドル", "為替", "金利", "介入", "クラウド", "半導体",
+    "EV", "自動車", "企業", "政府", "日銀", "米国", "日本", "ゲーム", "資源", "決算",
+)
+_NEWS_HEADLINE_ACTIONS = (
+    "発表", "開始", "拡大", "縮小", "値下げ", "値上げ", "迫る", "決定", "導入", "参入",
+    "撤退", "再開", "停止", "成立", "合意", "更新", "転換", "上昇", "下落", "回復", "再編",
+)
 
 
 def _plain_text(text: str) -> str:
@@ -111,6 +119,37 @@ def validate_summary_category_focus(
     return errs
 
 
+def validate_summary_headline(path: Path) -> list[str]:
+    """Summary heroを抽象的な二句標語ではなく、具体的な一つのニュース見出しに固定する。"""
+    if not path.exists():
+        return []
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
+    frontmatter, _body = parse_frontmatter(text)
+    title = str(frontmatter.get("title") or "").strip()
+    left = str(frontmatter.get("hero_left") or "").strip()
+    right = str(frontmatter.get("hero_right") or "").strip()
+    if not (title or left or right):
+        return []
+
+    errs: list[str] = []
+    if not title or not left or not right:
+        return [f"{path}: summary news headline fields missing (title / hero_left / hero_right)."]
+    headline = title.split("—", 1)[-1].strip().rstrip("。")
+    joined = f"{left}{right}".strip().rstrip("。")
+    if headline != joined:
+        errs.append(
+            f"{path}: hero fragments must form a single continuous headline: "
+            f"title={headline!r}, hero_left+hero_right={joined!r}."
+        )
+    if not 12 <= len(headline) <= 42:
+        errs.append(f"{path}: summary news headline length invalid ({len(headline)} chars): {headline}")
+    if not any(anchor.casefold() in headline.casefold() for anchor in _NEWS_HEADLINE_ANCHORS):
+        errs.append(f"{path}: concrete news anchor missing from summary headline: {headline}")
+    if not any(action in headline for action in _NEWS_HEADLINE_ACTIONS):
+        errs.append(f"{path}: concrete news action missing from summary headline: {headline}")
+    return errs
+
+
 def find_latest_summary(summary_dir: Path) -> Path:
     """digest/Summary 内の最新 YYYY-MM-DD.md を返す。"""
     candidates = sorted(p for p in summary_dir.glob("*.md") if _DATE_FILE_RE.match(p.name))
@@ -139,6 +178,7 @@ def validate_summary_reflection(path: Path) -> list[str]:
             f"{path}: reflection lead が短すぎます ({len(lead.strip())} chars)。",
             "LP の TODAY'S THEME に出る本文として、`## § 本日のテーマ考察` 直下へ180文字以上の blockquote lead を置いてください。",
         ])
+    errs.extend(validate_summary_headline(path))
     errs.extend(validate_summary_category_focus(path))
     return errs
 

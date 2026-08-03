@@ -8,6 +8,7 @@ from tools.validate_summary_reflection import (
     find_latest_summary,
     main,
     validate_summary_category_focus,
+    validate_summary_headline,
     validate_summary_reflection,
 )
 
@@ -135,3 +136,34 @@ def test_cli_returns_nonzero_for_missing_reflection(tmp_path: Path, capsys) -> N
     captured = capsys.readouterr()
     assert rc == 1
     assert "ERROR:" in captured.err
+
+
+def test_summary_headline_rejects_abstract_two_phrase_slogan(tmp_path: Path) -> None:
+    summary = tmp_path / "2026-08-02.md"
+    summary.write_text(
+        "---\n"
+        "title: 'News Grasp #20260802 — 広がる入口、狭める境界'\n"
+        "hero_left: '広がる入口'\n"
+        "hero_right: '狭める境界'\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    errs = validate_summary_headline(summary)
+
+    assert any("concrete news anchor missing" in err for err in errs)
+    assert any("single continuous headline" in err for err in errs)
+
+
+def test_summary_headline_accepts_concrete_subject_action_and_contiguous_hero(tmp_path: Path) -> None:
+    summary = tmp_path / "2026-08-03.md"
+    summary.write_text(
+        "---\n"
+        "title: 'News Grasp #20260803 — 円買い介入とAI値下げ、企業に運用再設計迫る'\n"
+        "hero_left: '円買い介入とAI値下げ、'\n"
+        "hero_right: '企業に運用再設計迫る'\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    assert validate_summary_headline(summary) == []

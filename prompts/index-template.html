@@ -143,7 +143,7 @@
             <h2 class="home-hero__title">
               {% if hero_phrase_left %}
                 <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>
-                {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
+                {% if hero_phrase_right %}<br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
               {% else %}
                 <span class="hl-gold">時勢</span>を掴み、<br/><span class="hl-blue">日々</span>に新たに。
               {% endif %}
@@ -193,7 +193,7 @@
       <h2 class="home-hero__title">
         {% if hero_phrase_left %}
           <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>
-          {% if hero_phrase_right %} と <br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
+          {% if hero_phrase_right %}<br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
         {% else %}
           <span class="hl-gold">時勢</span>を掴み、<br/><span class="hl-blue">日々</span>に新たに。
         {% endif %}
@@ -403,7 +403,7 @@
           <h2>
             本日のテーマ考察
             {% if hero_phrase_left and hero_phrase_right %}
-            <span>— 「{{ hero_phrase_left }}と{{ hero_phrase_right }}」</span>
+            <span>— 「{{ hero_phrase_left }}{{ hero_phrase_right }}」</span>
             {% endif %}
           </h2>
         </div>

@@ -411,18 +411,18 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 `editor-input-manifest.json` の `scheduled_categories` が当日の唯一の対象カテゴリ正本である。**Summary frontmatter の categories / tags は scheduled_categories のみ**にし、**非対象カテゴリの section を作らない**。Game は火木土日のみ、Manufacturing / Economy は月火水木金のみ。非対象カテゴリを休載文・穴埋め・過去 artifact からの引用で Summary / audio script / DeepDive テーマに混ぜない。
 
-**Summary テーマの直近3日重複を避ける（2026-06-23 追加）**。執筆前に `digest/Summary/{前日}.md` / `{2日前}.md` / `{3日前}.md` が存在する場合、frontmatter の `title` / `hero_left` / `hero_right` / `theme` と `Today's Theme` 冒頭だけを読む。候補を最低3本作り、各候補の「同じ骨格」「主役カテゴリ」「切り口」を直近3日と比較してから採用する。大手ニュース見出しに多いタイトルパターン帳として、①主体+動作、②転換/節目、③対比/衝突、④影響/波及、⑤数字/期限、⑥現場/地域、⑦次の焦点を使い、最低3系統を候補に混ぜる。直近3日にある `A と B` 型、同じ末尾語、同じ抽象語の組み替えは採用禁止。特に `現場実装`、`制御境界`、`条件設計`、`制度化`、`供給網再編` を続けて主語・述語・左右いずれかに置かない。続報が多い日は、今日だけ増えた一次材料、対立、数字、期限、現場、読者の判断軸のどれかをタイトルに出す。
+**Summary テーマの直近3日重複を避ける（2026-06-23 追加）**。執筆前に `digest/Summary/{前日}.md` / `{2日前}.md` / `{3日前}.md` が存在する場合、frontmatter の `title` / `hero_left` / `hero_right` / `theme` と `Today's Theme` 冒頭だけを読む。候補を最低3本作り、各候補の「同じ骨格」「主役カテゴリ」「切り口」を直近3日と比較してから採用する。大手ニュース見出しに多いタイトルパターン帳として、①主体+動作、②転換/節目、③対比/衝突、④影響/波及、⑤数字/期限、⑥現場/地域、⑦次の焦点を使い、最低3系統を候補に混ぜる。最終採用は一つのニュース見出しとし、主体・出来事・動作または影響先を明示する。`広がる入口、狭める境界` のような抽象語二句の対比は禁止する。直近3日にある `A と B` 型、同じ末尾語、同じ抽象語の組み替えも採用禁止。特に `現場実装`、`制御境界`、`条件設計`、`制度化`、`供給網再編` を続けて主語・述語・左右いずれかに置かない。続報が多い日は、今日だけ増えた一次材料、対立、数字、期限、現場、読者の判断軸のどれかをタイトルに出す。
 
 ```jsonc
 {
-  "title": "金利の天井とAIの底入れ",       // 大見出し（10〜20 字）
+  "title": "円買い介入とAI値下げ、企業に運用再設計迫る", // 一つのニュース見出し（12〜42字）
   "subtitle": "...",                     // サブタイトル（30〜50 字）
 
-  // ↓ frontmatter に出力する LP / overview banner の 2 トーン Hero 見出し。
-  // hl-gold「{hero_left}」と hl-blue「{hero_right}」を「{left} と {right}。」の 1 文に組む。
-  // 各 ≤14 字・単独で意味が通る名詞句。"AI" 等の裸の英略語 1 語で終わらせない。
-  "hero_left": "金利の天井",
-  "hero_right": "AIの底入れ",
+  // ↓ 一つのニュース見出しを色分けする連続する前半・後半。
+  // hero_left + hero_right は title と完全一致し、renderer は間に「と」等を補わない。
+  // 前半へ主体・出来事、後半へ動作・影響を置く。抽象語二句の対比にしない。
+  "hero_left": "円買い介入とAI値下げ、",
+  "hero_right": "企業に運用再設計迫る",
 
   // ===== γ schema (Pattern D Editorial Summary 用) =====
 
@@ -487,10 +487,10 @@ Editorial Summary (Pattern D) を駆動する γ schema** に従い、`reflectio
 
 #### γ schema の必須ルール
 
-- **`hero_left` / `hero_right` を必ず frontmatter に出力**。各 ≤14 字・それぞれ単独で意味が
-  通る名詞句で、「{hero_left} と {hero_right}。」が日本語の 1 文として成立させる。`"AI"` `"GPT-5"`
-  のような裸の英略語 1 語で終わらせない (LP hero が「Gemma 4 12B と AI」と断片化し意味不明改行に
-  なった 2026-06-06 事故を人手オーサで防ぐ)。frontmatter `title`/`theme` (長文可) とは別物。
+- **`hero_left` / `hero_right` を必ず frontmatter に出力**。両者は独立した対句ではなく、一つの
+  具体的ニュース見出しを表示上だけ二分した連続断片にする。`hero_left + hero_right` が title の
+  em dash 後と完全一致し、間に renderer が接続詞や句読点を補わなくても主体・出来事・動作または
+  影響先が分かること。`"AI"` `"GPT-5"` のような裸の英略語だけの断片は禁止する。
 - **sections は scheduled_categories だけで構成**する。順序は 総論 → scheduled_categories の公開順 → 明日へ。
   水曜は Game section を作らない。土日は Manufacturing / Economy section を作らない。非対象カテゴリを休載文で繋がない。
 - **朗読原稿も scheduled_categories 件だけを巡回**する。カテゴリ巡回 7 件の固定構成は禁止。水曜は Game に触れず、土日は Manufacturing / Economy に触れない。非対象カテゴリを休載文・穴埋め・過去 artifact 由来の話題で補わない。実効字数は曜日にかかわらず 2,500〜3,000字に収める。

@@ -64,3 +64,47 @@ def test_routine_prompt_keeps_summary_theme_diversity_contract() -> None:
         "採用禁止",
     ]:
         assert needle in prompt
+    assert "{hero_left} と {hero_right}" not in prompt
+
+
+def test_summary_prompts_require_one_concrete_news_headline_not_abstract_pair() -> None:
+    for prompt_path in (EDITOR_PROMPT, ROUTINE_PROMPT):
+        prompt = _read(prompt_path)
+        for needle in [
+            "一つのニュース見出し",
+            "主体・出来事・動作",
+            "抽象語二句の対比",
+            "連続する前半・後半",
+            "hero_left + hero_right",
+        ]:
+            assert needle in prompt
+
+
+def test_home_templates_do_not_force_contrast_joiner_between_hero_fragments() -> None:
+    index = _read(ROOT / "prompts" / "index-template.html")
+    overview = _read(ROOT / "prompts" / "overview-template.html")
+
+    assert "</span> と <br/>" not in index
+    assert "</span>と<span" not in overview
+    assert "{{ hero_phrase_left }}と{{ hero_phrase_right }}" not in index
+
+
+def test_summary_renderer_does_not_force_contrast_joiner_between_hero_fragments() -> None:
+    renderer = _read(ROOT / "tools" / "generate_pages.py")
+
+    assert 'f"{left}と{right}"' not in renderer
+    for date in ("2026-08-02", "2026-08-03"):
+        rendered = _read(ROOT / "docs" / date / "summary" / "index.html")
+        assert "、と" not in rendered
+
+
+def test_august_2_and_3_summary_titles_are_concrete_contiguous_news_headlines() -> None:
+    for date in ("2026-08-02", "2026-08-03"):
+        summary = _read(SUMMARY_DIR / f"{date}.md")
+        title = _frontmatter_value(summary, "title").split("—", 1)[-1].strip(" '\"")
+        left = _frontmatter_value(summary, "hero_left").strip(" '\"")
+        right = _frontmatter_value(summary, "hero_right").strip(" '\"")
+
+        assert title == left + right
+        assert any(anchor in title for anchor in ("AI", "円", "介入", "企業", "クラウド", "EV"))
+        assert any(action in title for action in ("拡大", "値下げ", "迫る", "開始", "決定", "導入"))
