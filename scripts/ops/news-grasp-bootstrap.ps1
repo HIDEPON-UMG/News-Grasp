@@ -367,7 +367,12 @@ foreach ($file in @('news-grasp-bootstrap.ps1', 'watch-news-grasp-runner.ps1', '
 }
 
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$backupDir = Join-Path $RepoDir "build\live-bootstrap-self-repair\$timestamp"
+$repairEvidenceRoot = if ($UseProductionRuntime) {
+    Join-Path $BinDir 'news-grasp-runtime-backups'
+} else {
+    Join-Path $RepoDir 'build\live-bootstrap-self-repair'
+}
+$backupDir = Join-Path $repairEvidenceRoot $timestamp
 $manifestPath = Join-Path $backupDir 'auto-repair-manifest.json'
 $manifestFiles = @()
 $changed = $false

@@ -924,6 +924,21 @@ def test_production_runtime_resolver_never_leaks_git_stdout_into_repo_path() -> 
     assert "return $runtimeRepo" in resolver
 
 
+def test_production_runtime_self_repair_evidence_is_written_outside_clean_worktree() -> None:
+    """自己修復backup/manifestがproduction runtime自身をdirtyにしない。"""
+    bootstrap = (
+        Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    ).read_text(encoding="utf-8-sig")
+    evidence_block = bootstrap.split("$timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'", 1)[1].split(
+        "$manifestFiles = @()", 1
+    )[0]
+
+    assert "$repairEvidenceRoot = if ($UseProductionRuntime)" in evidence_block
+    assert "Join-Path $BinDir 'news-grasp-runtime-backups'" in evidence_block
+    assert "Join-Path $RepoDir 'build\\live-bootstrap-self-repair'" in evidence_block
+    assert "$backupDir = Join-Path $repairEvidenceRoot $timestamp" in evidence_block
+
+
 def test_clean_runtime_identity_is_forwarded_to_runner_and_detached_push_is_exact() -> None:
     root = Path(__file__).resolve().parents[1]
     watcher = (root / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
