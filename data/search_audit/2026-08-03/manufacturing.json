@@ -1,0 +1,126 @@
+{
+  "date": "2026-08-03",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "熊本地震により自動車各社の部品供給網寸断、トヨタは愛知県の工場も停止（ビジネス＋IT）",
+      "url": "https://news.yahoo.co.jp/articles/fb7d595b20fa1abed49e58461144e588c1acb342",
+      "reason": "熊本地震の供給網報道が選択済みのホンダ・アイシン記事と重複"
+    },
+    {
+      "title": "半導体生産スピード復旧、10年前と違う要因 自動車・物流は不透明 [2026年熊本地震]",
+      "url": "https://www.asahi.com/articles/ASV832PGYV83ULFA020M.html?iref=comtop_Business_01",
+      "reason": "熊本地震の半導体復旧報道が選択済みの供給網記事と重複"
+    },
+    {
+      "title": "【熊本地震 企業影響 3日】工場で操業停止 生産一部再開も",
+      "url": "https://news.web.nhk/newsweb/na/na-k10015194851000",
+      "reason": "選択済みのホンダ・アイシン記事より個別の製造判断が薄い"
+    },
+    {
+      "title": "中国ＣＸＭＴ、北京経済技術開発区に新工場検討 資金支援協議",
+      "url": "https://jp.reuters.com/world/HASSJ3LQ65J4ZDKF5FLB3X2T3U-2026-08-03/",
+      "reason": "CXMTテーマは候補内で重複し、一次確認できた選択候補を優先"
+    },
+    {
+      "title": "熊本地震で自動車工場の稼働停止長引く 半導体は順次再開へ",
+      "url": "https://www.jiji.com/jc/article?k=2026080200181&g=eco",
+      "reason": "熊本地震の続報が選択済みの工場停止・再開記事と重複"
+    },
+    {
+      "title": "【日本】国内景気動向は消費を中心に堅調／半導体は縮小サイクル入りも意識",
+      "url": "https://media.monex.co.jp/articles/amp/29873",
+      "reason": "製造現場の一次情報ではなく景気概況"
+    },
+    {
+      "title": "【速報】熊本県の三菱電機工場、月内にも通常操業",
+      "url": "https://www.47news.jp/14733077.html",
+      "reason": "熊本地震の復旧続報が選択済みのアイシン記事と重複"
+    },
+    {
+      "title": "水道水の工場見学ツアーが開催されました",
+      "url": "https://www.nishi.or.jp/shisei/koho/shashin-news/2026/202607/20260730photonews02.html",
+      "reason": "製造業の競争力・供給網に直結しない"
+    },
+    {
+      "title": "トヨタ、国内4工場停止…令和8年熊本地震（日刊工業新聞電子版）",
+      "url": "https://news.yahoo.co.jp/articles/702b26ad1cf8936769a32180444f8c978e958184",
+      "reason": "熊本地震の供給網報道が選択済みのホンダ記事と重複"
+    },
+    {
+      "title": "インド製造業ＰＭＩ、7月は約5年ぶり低水準 需要低迷続く",
+      "url": "https://jp.reuters.com/markets/japan/XDAJP54B6VOVBCP56CIU3DLLN4-2026-08-03/",
+      "reason": "マクロPMIで、製造現場の個別変化より読者価値が低い"
+    },
+    {
+      "title": "〔熊本地震影響〕三菱電機、8月中に通常操業へ＝一時停止した半導体工場(時事通信)",
+      "url": "https://finance.yahoo.co.jp/news/detail/446ed58c9e08eda840e9027894abd2404b25111a",
+      "reason": "熊本地震の復旧続報が選択済みの供給網記事と重複"
+    },
+    {
+      "title": "三菱自動車、5日にも岡山の工場復旧へ 熊本地震で部品調達遅れ",
+      "url": "https://www.nikkei.com/article/DGXZQOUC034O80T00C26A8000000/",
+      "reason": "熊本地震の復旧続報が選択済みのアイシン記事と重複"
+    },
+    {
+      "title": "トヨタ自動車の田原工場 熊本地震の影響で稼働停止 3日から7日までの5日間（メ〜テレ（名古屋テレビ））",
+      "url": "https://news.yahoo.co.jp/articles/d09271fa8bc1a2759e6b42b4d4458c4742a54602",
+      "reason": "熊本地震の供給網報道が選択済みのホンダ記事と重複"
+    },
+    {
+      "title": "〔ソウル株式〕5％反落＝半導体が売り主導（3日）(時事通信)",
+      "url": "https://finance.yahoo.co.jp/news/detail/16da7d1c825aab6dc467e72efb7372cb7de09ebe",
+      "reason": "製造現場ではなく株式市場の速報"
+    },
+    {
+      "title": "アルミ圧延品出荷9.9%増 6月、缶材や半導体関連が好調",
+      "url": "https://www.nikkei.com/article/DGXZQOUB287XO0Y6A720C2000000/",
+      "reason": "重要度はあるが、当日号の工場停止・集積・知財・脱炭素より優先度が低い"
+    },
+    {
+      "title": "まもなく英製造業PMI購買担当者景気指数・確報値の発表",
+      "url": "https://fx.minkabu.jp/news/375082",
+      "reason": "発表予告であり、製造業の確定した変化を伝えない"
+    },
+    {
+      "title": "7月の中国製造業PMIは50．9＝4カ月ぶり低水準―米S＆P(時事通信)",
+      "url": "https://finance.yahoo.co.jp/news/detail/d7097918f7a44244f01ed3682e174177fec09a0e",
+      "reason": "マクロPMIで、個別の製造能力・技術変化が薄い"
+    },
+    {
+      "title": "アルフレッサG、羽田に再生医療の開発・製造拠点",
+      "url": "https://www.logi-today.com/984447",
+      "reason": "物流企業の拠点開設で、候補内の半導体・自動車・製造設備より優先度が低い"
+    },
+    {
+      "title": "中国CXMTの評価二極化－半導体メモリー市場の競争どう変えるかが焦点",
+      "url": "https://www.bloomberg.com/jp/news/articles/2026-08-03/TJ650ER24U8N00",
+      "reason": "CXMTテーマが候補内で重複し、選択済みの半導体集積記事を優先"
+    },
+    {
+      "title": "韓国製造業ＰＭＩ、7月は53.1に上昇 輸出需要が増加",
+      "url": "https://jp.reuters.com/markets/japan/TGE3NYNTDBIU5CM442FZUH6EJY-2026-08-03/",
+      "reason": "マクロPMIで、製造現場の個別変化が薄い"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only"
+}
+

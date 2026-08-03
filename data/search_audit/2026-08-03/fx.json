@@ -1,0 +1,43 @@
+{
+  "date": "2026-08-03",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "コラム：日米協調介入、自力では円安を防げなくなった日本＝植野大作氏",
+      "url": "https://jp.reuters.com/opinion/forex-forum/D2SDBD5WCRIWDHOSZ6TWJRTTVI-2026-08-03/",
+      "reason": "同一の協調介入テーマが重複。採用した公表・市場・構造分析で主要論点をカバーしたため非選択。"
+    },
+    {
+      "title": "【速報】トランプ大統領 米政府の円買い介入「日本は円安に苦しみ助けを求めていた」",
+      "url": "https://news.yahoo.co.jp/articles/28cdbea0ee5ddb4b5698d1999b0cccf705580666",
+      "reason": "BBC・時事通信と事実関係が重複し、二次転載のため非選択。"
+    },
+    {
+      "title": "異例の日米協調介入、背景と今後は？ なぜユーロ売り？ 識者の見方",
+      "url": "https://www.asahi.com/articles/ASV83169RV83ULFA010M.html",
+      "reason": "協調介入の背景分析が野村證券・BBCと重複するため非選択。"
+    },
+    {
+      "title": "【ドル円見通し】日米協調介入で相場の空気が一変｜155円の恐怖と158円の希望が交錯する週へ FX分析 2026年8月3日",
+      "url": "https://www.gaitame.com/media/entry/2026/08/03/130539",
+      "reason": "同一媒体の週間見通しで、採用した当日夜の市場見通しと論点が重なるため非選択。"
+    }
+  ]
+}
+

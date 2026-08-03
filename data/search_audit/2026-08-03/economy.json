@@ -1,0 +1,39 @@
+{
+  "date": "2026-08-03",
+  "category_id": "economy",
+  "category": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR economy OR interest rate when:1d",
+    "canonical verification: site:nikkei.com 三菱商事の純利益47%増 4〜6月",
+    "canonical verification: site:nikkei.com 日産の最終黒字37億円 4〜6月"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"],
+  "dropped": [
+    {"title":"日産自動車、2026年度第1四半期決算を発表","url":"https://global.nissannews.com/ja-JP/releases/260803-01-j","reason":"日産の報道記事と重複する一次発表。記事カードは読者向け要約のある日経報道を採用。"},
+    {"title":"★本日の【サプライズ決算】続報 (08月03日)","url":"https://kabutan.jp/news/marketnews/?b=n202608030999","reason":"複数銘柄を束ねた速報で、個別の論点が薄い。"},
+    {"title":"ラベルレスPETボトルの対象拡大に関する省令が公布・施行されるとともに、小森経済産業大臣政務官が当該取組等について発信するためのイベントに参加しました（METI","url":"https://www.meti.go.jp/press/2026/08/20260803002.html","reason":"制度変更の経済波及が限定的で、当日号の上位論点に届かない。"},
+    {"title":"VOICENCEが経済産業省『IP360』に採択","url":"https://www.ntt-west.co.jp/news/2608/260803a.html","reason":"個別事業の採択で、economy の広域読者価値が相対的に低い。"},
+    {"title":"スペースＸの決算説明会、個人投資家は業績よりロケットやマスコットに関心","url":"https://jp.reuters.com/economy/NBQUYEVSRJM3PC6GDZDH7FIUGI-2026-08-03/","reason":"個人投資家行動の話題で、国内経済・企業判断への直結度が低い。"},
+    {"title":"決算速報系のYahoo!ファイナンス転載記事","url":"https://finance.yahoo.co.jp/news/detail/9d5899da4d228a68f872eeaf14307941b05b9f31","reason":"日産の選定記事と内容が重複する二次転載。"},
+    {"title":"三菱商事、株価が一時4%安 好決算も材料出尽くし","url":"https://www.nikkei.com/article/DGXZQOUB0335A0T00C26A8000000/","reason":"三菱商事の決算記事と同一テーマで重複する続報。"},
+    {"title":"【決算速報】三菱ＵＦＪＦＧ、1Q経常1,117,934百万","url":"https://finance.yahoo.co.jp/news/detail/9e53cc825862b2892d22a86bd97ba3e25f5e8c5e","reason":"二次速報で、候補内の商社・自動車・航空より経済波及の説明力が低い。"},
+    {"title":"日産自動車[7201]：2027年3月期 第1四半期 決算短信","url":"https://www.nikkei.com/markets/company/sys/redirect_dis.aspr?ano=g1mqp4&t=https://www.nikkei.com/nkd/disclosure/tdnr/20260724599464/","reason":"決算短信の再掲で、日産の報道記事と重複する。"},
+    {"title":"【決算速報】三井Ｅ＆Ｓ、今期経常を5％上方修正","url":"https://finance.yahoo.co.jp/news/detail/5cefff798a3d89b0f6fabf090cb3ddd5db0e0c2e","reason":"個別銘柄の上方修正で、相対的な影響範囲が小さい。"},
+    {"title":"明日の決算発表予定 三菱重、イビデン、日本製鉄など90社","url":"https://finance.yahoo.co.jp/news/detail/5715e2f05ffe24320fee56bc2c8ea2524891632a","reason":"予定一覧で、発生事実と判断材料が不足する。"},
+    {"title":"アライアンス･バーンスタイン･米国成長株投信Dコースの基準価額","url":"https://finance.yahoo.co.jp/quote/39312149","reason":"記事ではなく金融商品の個別ページ。"},
+    {"title":"決算速報＞三菱ＵＦＪ、純利益48.2％増","url":"https://finance.yahoo.co.jp/news/detail/6b8c0e8f3ed4f9c33b88fea81cf79db833801806","reason":"MUFGの二次速報で、一次性と重複回避の観点から除外。"},
+    {"title":"〔決算〕山形銀行、連結純利益65.3％増","url":"https://finance.yahoo.co.jp/news/detail/3256697dd7ae0f6f26142459b1fd48fd96b38b6c","reason":"地域銀行の個別決算で、影響範囲が限定的。"},
+    {"title":"決算プラス・インパクト銘柄 東証プライム","url":"https://finance.yahoo.co.jp/news/detail/b3804206704e6485fdcd2b244322044903f14db1","reason":"過去発表分の銘柄集計で、当日発生ニュースとしての鮮度が弱い。"},
+    {"title":"〔決算〕富山第一銀、連結純利益56.5％増","url":"https://finance.yahoo.co.jp/news/detail/3be817d76a9ffd6ab60f74bf034940f8adb23935","reason":"地域銀行の個別決算で、影響範囲が限定的。"},
+    {"title":"〔決算〕航空2社、4〜6月期の売上高は最高","url":"https://finance.yahoo.co.jp/news/detail/315525d520074627e472d525ba1a29df2f06867a","reason":"JALの記事と論点が重複する集約速報。"},
+    {"title":"決算:ヤマトHDが4期連続最終赤字","url":"https://www.nikkei.com/article/DGXZQOUB226LW0S6A720C2000000/","reason":"個別企業の赤字で、当日号の上位5件より読者価値が相対的に低い。"},
+    {"title":"法人決算書・個人確定申告書提出システム Fin-Dock","url":"https://prtimes.jp/main/html/rd/p/000000105.000031872.html","reason":"PR転載で一次報道性とeconomy適合性が低い。"},
+    {"title":"ユーロ圏家計消費、イラン紛争初期に急減 ECB経済報告","url":"https://jp.reuters.com/markets/japan/WQAMU6SF3RILNL73EVFQN5HNHA-2026-08-03/","reason":"重要なマクロ候補だが、本文取得失敗のためURL・日付の独立検証を完了できず採用保留。"}
+  ]
+}

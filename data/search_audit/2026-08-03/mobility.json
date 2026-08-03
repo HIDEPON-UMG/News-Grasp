@@ -1,0 +1,41 @@
+{
+  "date": "2026-08-03",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "2026年8月3日 BYD 軽EV ラッコ 受注 700台 7月販売 125台 日経",
+    "2026年8月3日 スズキ 軽 EV 欧州輸出 日本 独自規格 日経",
+    "2026年8月3日 VW中国 地平線 L3 L4 自動運転 AI基盤モデル",
+    "2026年8月3日 T2 自動運転トラック ECCV 2026 BEV"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dropped": [
+    {"title":"VW中国、地平線との連携強化で「L3・L4」自動運転へ AI基盤モデルを活用（重複候補）","url":"https://36kr.jp/499864/","reason":"採用候補の重複参照"},
+    {"title":"テスラの自動運転試験、「ワンオペ」中に居眠り？","url":"https://jidounten-lab.com/u_65792","reason":"一次情報性が低く安全性の事実確認が薄い"},
+    {"title":"中国奇瑞、韓国ＫＧモビリティに転換社債で7500万ドル投資","url":"https://jp.reuters.com/economy/POQCJHSECJORHOGUUFSTPWRJ5Y-2026-08-03/","reason":"RSS以外の公開日・本文・OGPをこの実行環境で独立確認できず"},
+    {"title":"テスラ家庭用蓄電池 Powerwall 3、販売開始。多くの補助金の対象に。","url":"https://prtimes.jp/main/html/rd/p/000000024.000043349.html","reason":"モビリティより家庭用蓄電が主題"},
+    {"title":"軽EV「ラッコ」の受注速報は？ オープンしたばかりのBYD AUTO東京杉並で直撃","url":"https://news.yahoo.co.jp/articles/84f9b793b3c07e6792d8539f5b668cd89bd9377a","reason":"採用した受注速報と論点が重複"},
+    {"title":"フィンテックから自動運転タクシーの開発へ newmo曾川CTOが語るデジタル技術と社会実装","url":"https://www.projectdesign.jp/articles/news/505d7f8a-4994-460f-960f-6f1d3502f848","reason":"当日掲載だが本文は6月19日付記事の転載"},
+    {"title":"道路管理の自動運転実証で車両提供者募集","url":"https://www.logi-today.com/984212","reason":"本文の公開日証拠とOGPが不足"},
+    {"title":"日産セレナは自動運転できるって本当？ハンズオフの性能は？","url":"https://jidounten-lab.com/u_65791","reason":"解説記事で当日の新規材料が薄い"},
+    {"title":"「eKクロス EV」が新デザインに。BYDラッコ登場で販売はさらに厳しく？","url":"https://carview.yahoo.co.jp/article/detail/55135c98ab94cf06d822aad5c8530b6e4a4ba1d4/","reason":"BYD軽EV競争の二次解説で一次情報性が低い"},
+    {"title":"軽EVとは 街乗りとの親和性高いが普及は途上","url":"https://www.nikkei.com/article/DGXZQOUC0315O0T00C26A8000000/","reason":"背景解説で新規ニュース性が低い"},
+    {"title":"AINOHOT、大阪・心斎橋に電動モビリティ体験型店舗をオープン","url":"https://prtimes.jp/main/html/rd/p/000000022.000110620.html","reason":"地域限定の店舗開設で影響範囲が狭い"},
+    {"title":"BYDの軽EVラッコ「日本のためにゼロから」、元サクラ開発者","url":"https://xtech.nikkei.com/atcl/nxt/column/18/03259/073000037/","reason":"開発背景の解説で販売速報と比べ新規性が低い"},
+    {"title":"ついに出現！ 中国・BYDが放った軽自動車EV","url":"https://news.yahoo.co.jp/articles/304df94073fe18629a3bbe9eae3a68104ec65c00","reason":"BYDラッコの二次報道で採用候補と重複"},
+    {"title":"今夜のNEXT 軽EVで日中攻防、日本は軽自動車の牙城守れるか","url":"https://www.nikkei.com/article/DGXZQOCD031JF0T00C26A8000000/","reason":"論評・予告記事で一次ニュース性が低い"},
+    {"title":"Nature EV Switch、アイエーエナジーEVエコホームで取扱い開始","url":"https://prtimes.jp/main/html/rd/p/000000175.000019285.html","reason":"住宅向けサービスでモビリティの中心論点から外れる"},
+    {"title":"コンピュータ・ビジョン分野のECCV 2026でT2社員の論文が採択","url":"https://prtimes.jp/main/html/rd/p/000000095.000110471.html","reason":"T2採用記事と同一ニュースのプレスリリース"},
+    {"title":"モビリティリゾートもてぎがSport Positive Awards 2026のファイナリスト","url":"https://prtimes.jp/main/html/rd/p/000000273.000023355.html","reason":"受賞候補で産業インパクトが限定的"},
+    {"title":"軽EV、競争本格化へ＝BYD参入、補助金頼みに課題","url":"https://finance.yahoo.co.jp/news/detail/dc6a9d4f323982a63e0ec0f65931e38807ed3ca9","reason":"BYD軽EVの二次報道で受注速報と重複"},
+    {"title":"デンソー、走行中のEVへ無線給電 公道実証を2027年度に開始","url":"https://www.netdenjd.com/archives/667592","reason":"本文の実公開日は2026年5月25日で鮮度ゲート外"},
+    {"title":"編集者の視点「足踏みするテスラのロボタクシー」","url":"https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC304IH0Q6A730C2000000","reason":"論評記事で新規一次材料が薄い"},
+    {"title":"メルセデスCLAのEVが登場、Sクラスと同等の頭脳","url":"https://news.yahoo.co.jp/articles/247c68438c7f3615d332bf23e841352f89e5e33f","reason":"転載記事で一次情報性が低い"}
+  ]
+}

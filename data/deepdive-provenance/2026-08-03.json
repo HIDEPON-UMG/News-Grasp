@@ -1,0 +1,81 @@
+{
+  "articlePath": "C:\\Users\\hidek\\ng-r803\\digest\\DeepDive\\2026-08-03-DeepDive.md",
+  "articleSha256": "1e79a5b5507db91984e4e6401a07c70910dae64729ff9545c08357cd93253053",
+  "issueDate": "2026-08-03",
+  "manifestSha256": "f3b21420097d773dfd112b26105b7b56459991cee449f44ea991c4c4e8468df4",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "c8671f2ab9b7421d936985142a8e617855c037199b588f5679b12f6136a7023d",
+  "sources": [
+    {
+      "contentSha256": "4f93443a4e74dc70ab2f2bb62e056980a8de15e19b1d3d6332ec35f80e47500a",
+      "fetchedAt": "2026-08-03T11:42:12.428664+00:00",
+      "finalUrl": "https://exawizards.com/column/ai-trend/news-08-02-2026/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://exawizards.com/column/ai-trend/news-08-02-2026/",
+      "url": "https://exawizards.com/column/ai-trend/news-08-02-2026/"
+    },
+    {
+      "contentSha256": "c87aac89ab228546f17c040860e6cf312d754969f7ef6e981de47b7655c76f45",
+      "fetchedAt": "2026-08-03T11:42:12.741487+00:00",
+      "finalUrl": "https://forbesjapan.com/articles/detail/102138",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://forbesjapan.com/articles/detail/102138",
+      "url": "https://forbesjapan.com/articles/detail/102138"
+    },
+    {
+      "contentSha256": "fd1c560e7285e112f4aaa97c4bf5470641447f7ca2c16f218222d332bd6c3228",
+      "fetchedAt": "2026-08-03T11:42:16.112872+00:00",
+      "finalUrl": "https://www.asahi.com/articles/ASV8315S9V83UTIL00TM.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.asahi.com/articles/ASV8315S9V83UTIL00TM.html",
+      "url": "https://www.asahi.com/articles/ASV8315S9V83UTIL00TM.html"
+    },
+    {
+      "contentSha256": "78f2fce43273a00fd3ddd90c5cdc89271da9ed560b1086ecf5d169a82cbd6c9c",
+      "fetchedAt": "2026-08-03T11:42:16.734024+00:00",
+      "finalUrl": "https://www.sbbit.jp/article/cont1/186362",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.sbbit.jp/article/cont1/186362",
+      "url": "https://www.sbbit.jp/article/cont1/186362"
+    },
+    {
+      "contentSha256": "23d6b34cbc8668664b74e00ed6a263951a4b902a43ba172cf2e7d26ccda6dfd3",
+      "fetchedAt": "2026-08-03T11:42:17.051755+00:00",
+      "finalUrl": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11939/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11939/",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11939/"
+    }
+  ],
+  "status": "Green"
+}

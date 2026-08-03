@@ -1,0 +1,40 @@
+{
+  "date": "2026-08-03",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini when:1d",
+    "AIエージェント OR RAG OR LLM OR 生成AI when:1d",
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://venturebeat.com/category/ai/feed/",
+    "https://www.technologyreview.com/feed/",
+    "https://deepmind.google/blog/rss.xml"
+  ],
+  "raw_results_total": 330,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {"title":"生成AI 子どもの性的画像を作成 被害倍増 加害者のほとんどが同級生… 警察庁","url":"https://news.tv-asahi.co.jp/news_society/articles/000523781.html","reason":"朝日新聞の同一事案を採用し、横断重複を避けた"},
+    {"title":"グーグル「Gemini Robotics 2」発表、全身制御・器用な手・複数ロボ協働まで対応 ｜Seizo Trend","url":"https://www.sbbit.jp/article/st/186365","reason":"KDDI・Geminiの実装記事を優先し、ロボティクス同系統の件数を整理した"},
+    {"title":"週刊生成AI with AWS – 2026/7/27週","url":"https://aws.amazon.com/jp/blogs/news/weekly-genai-20260727/","reason":"週次まとめ記事より当日発生・当日公開の個別ニュースを優先した"}
+  ],
+  "selected": [
+    {"title":"OpenAIの80%値下げが、AI業界の「安売り競争」を引き起こしかねない理由","url":"https://forbesjapan.com/articles/detail/102138","score":96,"date_evidence_source":"htmldate"},
+    {"title":"AI時代の2強OpenAIとAnthropicの戦略が分岐し始めた","url":"https://exawizards.com/column/ai-trend/news-08-02-2026/","score":94,"date_evidence_source":"htmldate"},
+    {"title":"生成AI学習の新手法「Explorative Modeling」を米研究チーム発表、データ効率は6.2倍","url":"https://www.sbbit.jp/article/cont1/186362","score":92,"date_evidence_source":"htmldate"},
+    {"title":"KDDIなどが国産ヒューマノイドにGemini搭載、自然な会話で人間味ある接客","url":"https://xtech.nikkei.com/atcl/nxt/column/18/00001/11939/","score":90,"date_evidence_source":"htmldate"},
+    {"title":"生成AIで児童画像の性的加工、上半期123件 前年の倍に、警察庁 [AIの時代]","url":"https://www.asahi.com/articles/ASV8315S9V83UTIL00TM.html","score":88,"date_evidence_source":"htmldate"}
+  ]
+}

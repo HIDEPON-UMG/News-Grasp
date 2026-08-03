@@ -1,0 +1,40 @@
+{
+  "date": "2026-08-03",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR enterprise software OR cybersecurity when:1d",
+    "防衛省、防衛機密情報のAIクラウド運用を本格化",
+    "SCS評価制度対応アセスメントソリューション JSOL",
+    "AI時代のクラウド運用をどう変えるか NTTドコモ",
+    "GMOサイバーセキュリティ byイエラエ LIG D&A"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "dropped": [
+    {"title":"フォーティネット、年次グローバル調査「サイバーセキュリティ スキルギャップレポート」の最新版を発表","url":"https://digitalpr.jp/r/140380","reason":"本文取得時にタイトルとの内容不一致を確認"},
+    {"title":"システムソフト[7527]：不動産企業向けSaaS「SSクラウドシリーズ」７月末の累計利用拠点数のお知らせ","url":"https://www.nikkei.com/markets/company/sys/redirect_dis.aspr?ano=g266tz&t=https://www.nikkei.com/nkd/disclosure/tdnr/20260803506839/","reason":"有料・開示資料中心で読者向け背景が薄い"},
+    {"title":"SOCチームが今すぐ導入すべき、クラウド検知・対応（CDR）戦略とは？","url":"https://japan.zdnet.com/paper/30001750/30008703/","reason":"ホワイトペーパー色が強く一次ニュース性が低い"},
+    {"title":"人工知能（AI）サイバーセキュリティ市場の規模、シェア、および2026年～2036年の予測","url":"https://www.dreamnews.jp/press/0000358115","reason":"市場予測の転載で一次情報性と具体的変化が弱い"},
+    {"title":"この夏から始めるIT資産管理！ 基本的な機能や活用例をイチから解説","url":"https://kyodonewsprwire.jp/release/202608033569","reason":"解説・PR色が強くニュース性が低い"},
+    {"title":"ＫＰＭＧコンサルティングとあずさ監査法人、「データナレッジ形式知化・利活用エージェント」提供開始","url":"https://enterprisezine.jp/news/detail/24799","reason":"候補URLの本文取得不能で記事単位の検証を完了できない"},
+    {"title":"ぶっちゃけ、あのSaaSってどう!? 情シスがガチ格付け！","url":"https://ascii.jp/elem/000/004/423/4423916/","reason":"ランキング・企画記事で当日重要度が相対的に低い"},
+    {"title":"ＧＭＯテック","url":"https://www.nikkei.com/markets/company/sys/redirect_dis.aspr?ano=g26718&t=https://www.nikkei.com/nkd/disclosure/tdnr/20260803507100/","reason":"タイトルが企業名のみで論点を特定できない"},
+    {"title":"サイバーインシデント相談件数、3年連続で8月に増加","url":"https://prtimes.jp/main/html/rd/p/000000182.000017714.html","reason":"採用候補と競合するセキュリティ記事が多く、PR由来の統計として順位を下げた"},
+    {"title":"Forrester社のAIコンサルティングサービスに関するベンダー調査において、リーダーに選出","url":"https://www.ey.com/ja_jp/newsroom/information/2026/ey-japan-info-2026-08-03","reason":"ベンダー自己評価のPRで比較情報の検証範囲が限定的"},
+    {"title":"「オン」が新作ランニングシューズ“クラウドランナー 3 マックス”を発売","url":"https://www.wwdjapan.com/articles/2464195","reason":"ITカテゴリとの関連が薄い"},
+    {"title":"酒場SF映画「REUNION」 シリーズ最終章・制作応援プロジェクト","url":"https://motion-gallery.net/projects/reunion03/updates/62212","reason":"ITカテゴリとの関連がない"},
+    {"title":"東日本大震災を経験したラジオ局Date fmが能登に元気を届けたい","url":"https://readyfor.jp/projects/datefm","reason":"ITカテゴリとの関連がない"},
+    {"title":"GMO TECH、店舗・地域向けAI検索コンサルティングサービスを提供開始","url":"https://prtimes.jp/main/html/rd/p/000005451.000000136.html","reason":"サービス開始のPRで、採用記事より影響範囲が限定的"},
+    {"title":"【劇場限定】映画『LEONIDAS』を世界へ届けたい！","url":"https://motion-gallery.net/projects/leonidas/updates/62204","reason":"ITカテゴリとの関連がない"},
+    {"title":"2026年クラウドAI学習アクセラレータチップ市場レポート","url":"https://www.dreamnews.jp/press/0000358072","reason":"市場予測の転載で一次情報性が低い"},
+    {"title":"倉吉市が東京都のＩＴ人材登用 観光振興に関する業務を委嘱","url":"https://www.nnn.co.jp/articles/-/777664","reason":"地域人事のニュースで読者への波及が限定的"},
+    {"title":"AIがIT運用を自動化する時代へ。アクロニスが描く「自律型IT」とは？","url":"https://news.yahoo.co.jp/articles/4de1b8a41a8f5aeb1c5c69ba37f5c4232a198cfd","reason":"企業PR色が強く、採用記事との論点重複を回避"},
+    {"title":"石上純也展ー徳島文化芸術ホールへと続く、風景と建築の思想ー","url":"https://motion-gallery.net/projects/ishigami-tokushima/updates/62210","reason":"ITカテゴリとの関連がない"},
+    {"title":"日本ハイブリッドクラウド市場予測 2034","url":"https://www.dreamnews.jp/press/0000358132","reason":"市場予測の転載で一次情報性が低い"}
+  ]
+}
