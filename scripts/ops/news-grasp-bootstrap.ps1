@@ -4,6 +4,7 @@
     [switch] $SmokeTest,
     [switch] $SkipSourceSync,
     [switch] $UseProductionRuntime,
+    [switch] $LegacyDirectEntrypoint,
     [switch] $RecoverOnly,
     [int] $PollSeconds = 30,
     [int] $StaleMinutes = 15,
@@ -150,7 +151,8 @@ function Get-ScheduledTaskActionSha256 {
 function Assert-ScheduledTaskLaunchContext {
     param(
         [string] $TaskName,
-        [bool] $IsSmokeTest
+        [bool] $IsSmokeTest,
+        [bool] $AllowLegacyDirectEntrypoint
     )
     $expectedTaskName = if ($IsSmokeTest) { 'News-Grasp Bootstrap' } else { 'News-Grasp Runner' }
     $expectedMode = if ($IsSmokeTest) { 'bootstrap' } else { 'runner' }
@@ -164,11 +166,20 @@ function Assert-ScheduledTaskLaunchContext {
     }) -join ' ; '
     $ageMinutes = [math]::Abs(((Get-Date) - $info.LastRunTime).TotalMinutes)
     $modePattern = "(?i)(?:^|\s)$([regex]::Escape($expectedMode))(?:\s|$)"
+    $launcherEntrypoint = (
+        $actionSummary -match '(?i)news-grasp-task-launcher\.pyw' -and
+        $actionSummary -match $modePattern
+    )
+    $legacyDirectEntrypoint = (
+        $AllowLegacyDirectEntrypoint -and
+        (-not $IsSmokeTest) -and
+        $actionSummary -match '(?i)powershell(?:\.exe)?' -and
+        $actionSummary -match '(?i)news-grasp-runner\.ps1'
+    )
     if (
         [string]$task.State -ne 'Running' -or
         $ageMinutes -gt 10 -or
-        $actionSummary -notmatch '(?i)news-grasp-task-launcher\.pyw' -or
-        $actionSummary -notmatch $modePattern
+        (-not ($launcherEntrypoint -or $legacyDirectEntrypoint))
     ) {
         throw 'SCHEDULED_TASK_CONTEXT_INVALID'
     }
@@ -298,7 +309,7 @@ $preliminaryAuthority = $null
 $runtimeMutex = $null
 $runtimeMutexOwned = $false
 if ($UseProductionRuntime) {
-    Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest)
+    Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest) -AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)
     $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspProductionRuntime-$env:USERNAME")
     try {
         $runtimeMutexOwned = $runtimeMutex.WaitOne(0)

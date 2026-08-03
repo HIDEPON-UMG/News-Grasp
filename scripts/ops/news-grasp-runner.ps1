@@ -76,6 +76,66 @@ param(
 $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+function Invoke-LegacyScheduledProductionTrampoline {
+    if (
+        $RepoDirOverride -or $SmokeTest -or $SkipSourceSync -or $PreflightOnly -or
+        $RecoverOnly -or $NoPush -or $NoPublish -or $Stage2EditorSmokeOnly -or
+        $StopAfterEditorStart -or $StopBeforeDeepDive -or $ResumeFromStage -or
+        $FinalizeVerifiedPublishManifest -or
+        $env:NEWS_GRASP_LEGACY_TRAMPOLINE -eq '1'
+    ) {
+        return
+    }
+    try {
+        $task = Get-ScheduledTask -TaskName 'News-Grasp Runner' -ErrorAction Stop
+        $info = Get-ScheduledTaskInfo -TaskName 'News-Grasp Runner' -ErrorAction Stop
+    } catch {
+        return
+    }
+    $actionSummary = (@($task.Actions) | ForEach-Object {
+        ([string]$_.Execute + ' ' + [string]$_.Arguments).Trim()
+    }) -join ' ; '
+    $ageMinutes = [math]::Abs(((Get-Date) - $info.LastRunTime).TotalMinutes)
+    if (
+        [string]$task.State -ne 'Running' -or
+        $ageMinutes -gt 10 -or
+        $actionSummary -notmatch '(?i)powershell(?:\.exe)?' -or
+        $actionSummary -notmatch '(?i)news-grasp-runner\.ps1' -or
+        $actionSummary -notmatch [regex]::Escape($PSCommandPath)
+    ) {
+        return
+    }
+    $bootstrapPath = Join-Path (Split-Path -Parent $PSCommandPath) 'news-grasp-bootstrap.ps1'
+    $bootstrapArgs = @(
+        '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+        '-File', $bootstrapPath,
+        '-Start', '-UseProductionRuntime',
+        '-ScheduledTaskName', 'News-Grasp Runner',
+        '-LegacyDirectEntrypoint'
+    )
+    $previousTrampoline = $env:NEWS_GRASP_LEGACY_TRAMPOLINE
+    try {
+        $env:NEWS_GRASP_LEGACY_TRAMPOLINE = '1'
+        $proc = Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs -WindowStyle Hidden -PassThru -Wait
+        $exitCode = [int]$proc.ExitCode
+    } catch {
+        $logPath = Join-Path (Split-Path -Parent $PSCommandPath) 'news-grasp-logs\startup-trampoline.log'
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $logPath) | Out-Null
+        Add-Content -LiteralPath $logPath -Value "ERROR: LEGACY_SCHEDULED_TRAMPOLINE_FAILED $($_.Exception.Message)" -Encoding UTF8
+        $exitCode = 72
+    } finally {
+        if ($null -eq $previousTrampoline) {
+            Remove-Item Env:\NEWS_GRASP_LEGACY_TRAMPOLINE -ErrorAction SilentlyContinue
+        } else {
+            $env:NEWS_GRASP_LEGACY_TRAMPOLINE = $previousTrampoline
+        }
+    }
+    exit $exitCode
+}
+
+Invoke-LegacyScheduledProductionTrampoline
+
 $UseCodex = $true
 if ($SkipSourceSync -and (-not $SmokeTest)) {
     throw '-SkipSourceSync is restricted to -SmokeTest readiness canaries.'

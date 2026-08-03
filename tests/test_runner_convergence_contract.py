@@ -1753,6 +1753,37 @@ def test_direct_runner_reexecutes_synced_runner_after_bootstrap_repairs_hash_dri
     assert "exit $exitCode" in reexec_body
 
 
+def test_legacy_direct_scheduled_action_trampolines_to_clean_production_runtime() -> None:
+    """管理者権限でTask actionを更新できなくても旧direct入口を安全なproduction routeへ収束する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    bootstrap = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+
+    assert "function Invoke-LegacyScheduledProductionTrampoline" in runner
+    assert "Invoke-LegacyScheduledProductionTrampoline" in runner.split(
+        "$RepoDir   = Resolve-NewsGraspRepoDir", 1
+    )[0]
+    trampoline = runner.split("function Invoke-LegacyScheduledProductionTrampoline", 1)[1].split(
+        "Invoke-LegacyScheduledProductionTrampoline", 1
+    )[0]
+    assert "Get-ScheduledTask -TaskName 'News-Grasp Runner'" in trampoline
+    assert "Get-ScheduledTaskInfo -TaskName 'News-Grasp Runner'" in trampoline
+    assert "news-grasp-runner\\.ps1" in trampoline
+    assert "-UseProductionRuntime" in trampoline
+    assert "-ScheduledTaskName" in trampoline
+    assert "-LegacyDirectEntrypoint" in trampoline
+    assert "-SmokeTest" not in trampoline
+    assert "exit $exitCode" in trampoline
+
+    assert "[switch] $LegacyDirectEntrypoint" in bootstrap
+    scheduled_context = bootstrap.split("function Assert-ScheduledTaskLaunchContext", 1)[1].split(
+        "function Invoke-BoundedGitFetch", 1
+    )[0]
+    assert "[bool] $AllowLegacyDirectEntrypoint" in scheduled_context
+    assert "news-grasp-runner\\.ps1" in scheduled_context
+    assert "$AllowLegacyDirectEntrypoint" in scheduled_context
+    assert "-AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)" in bootstrap
+
+
 def test_runner_smoke_test_writes_terminal_smoke_ok_state() -> None:
     """実起動 canary はログだけでなく state に smoke_ok を残す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
