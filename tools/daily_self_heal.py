@@ -401,6 +401,44 @@ def _runner_has_pre_run_bootstrap_interlock(live_runner_path: Path) -> bool:
     )
 
 
+def _legacy_direct_clean_runtime_contract(live_runner_path: Path, live_bootstrap_path: Path) -> bool:
+    """旧direct Task actionがclean production runtimeへ必ず移譲する契約を検証する。"""
+    try:
+        runner = live_runner_path.read_text(encoding="utf-8-sig", errors="replace")
+        bootstrap = live_bootstrap_path.read_text(encoding="utf-8-sig", errors="replace")
+        trampoline = runner.split("function Invoke-LegacyScheduledProductionTrampoline", 1)[1].split(
+            "Invoke-LegacyScheduledProductionTrampoline", 1
+        )[0]
+        runner_prefix = runner.split("$RepoDir   = Resolve-NewsGraspRepoDir", 1)[0]
+        scheduled_context = bootstrap.split("function Assert-ScheduledTaskLaunchContext", 1)[1].split(
+            "function Invoke-BoundedGitFetch", 1
+        )[0]
+    except (OSError, IndexError):
+        return False
+    runner_tokens = (
+        "Get-ScheduledTask -TaskName 'News-Grasp Runner'",
+        "Get-ScheduledTaskInfo -TaskName 'News-Grasp Runner'",
+        "news-grasp-runner\\.ps1",
+        "-UseProductionRuntime",
+        "-ScheduledTaskName",
+        "-LegacyDirectEntrypoint",
+        "exit $exitCode",
+    )
+    bootstrap_tokens = (
+        "[switch] $LegacyDirectEntrypoint",
+        "[bool] $AllowLegacyDirectEntrypoint",
+        "news-grasp-runner\\.ps1",
+        "-AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)",
+    )
+    return bool(
+        all(token in trampoline for token in runner_tokens)
+        and "-SmokeTest" not in trampoline
+        and "Invoke-LegacyScheduledProductionTrampoline" in runner_prefix
+        and all(token in bootstrap for token in bootstrap_tokens)
+        and "$AllowLegacyDirectEntrypoint" in scheduled_context
+    )
+
+
 def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
     """publish-complete 履歴から再利用できる live ops readiness の正本判定。"""
     if not isinstance(readiness, dict) or not readiness.get("ok"):
@@ -447,13 +485,23 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
         and scheduled_task.get("bootstrap_before_runner") is True
         and scheduled_task.get("bootstrap_repairs_before_run") is True
     )
-    runner_target_ok = bool(
+    launcher_runner_target_ok = bool(
         scheduled_task.get("runner_action_is_production_start") is True
         and bootstrap_contract_ok
         and scheduled_task.get("targets_live_task_launcher") is True
         and scheduled_task.get("task_launcher_mode_ok") is True
         and scheduled_task.get("task_launcher_ready") is True
     )
+    legacy_runner_target_ok = bool(
+        scheduled_task.get("runner_action_is_production_start") is True
+        and bootstrap_contract_ok
+        and scheduled_task.get("targets_live_runner") is True
+        and scheduled_task.get("legacy_direct_clean_runtime_trampoline") is True
+        and scheduled_task.get("bootstrap_targets_live_task_launcher") is True
+        and scheduled_task.get("bootstrap_task_launcher_mode_ok") is True
+        and scheduled_task.get("task_launcher_ready") is True
+    )
+    runner_target_ok = launcher_runner_target_ok or legacy_runner_target_ok
     return bool(
         repo_sha
         and live_sha
@@ -834,6 +882,9 @@ def verify_live_runner_readiness(
     )
     direct_runner_pre_run_interlock = _runner_has_pre_run_bootstrap_interlock(live_runner_path)
     direct_runner_pre_run_reexec = direct_runner_pre_run_interlock
+    legacy_direct_clean_runtime_trampoline = _legacy_direct_clean_runtime_contract(
+        live_runner_path, live_bootstrap_path
+    )
     bootstrap_details = _scheduled_task_details(task_name=bootstrap_task_name, powershell_exe=powershell_exe)
     bootstrap_summary = str(bootstrap_details.get("action_summary") or "")
     bootstrap_text = _command_path_text(bootstrap_summary)
@@ -891,13 +942,21 @@ def verify_live_runner_readiness(
         and runner_next_run_ok
         and runner_missed_runs_ok
     )
+    launcher_runner_ready = bool(
+        runner_targets_task_launcher and runner_task_launcher_mode_ok and task_launcher_ready
+    )
+    legacy_direct_runner_ready = bool(
+        runner_targets_runner
+        and legacy_direct_clean_runtime_trampoline
+        and bootstrap_targets_task_launcher
+        and bootstrap_action_contract["task_launcher_mode_ok"]
+        and task_launcher_ready
+    )
     task_ok = bool(
         runner_schedule_ok
         and runner_action_contract["is_production_start"]
         and bootstrap_pre_run_ok
-        and runner_targets_task_launcher
-        and runner_task_launcher_mode_ok
-        and task_launcher_ready
+        and (launcher_runner_ready or legacy_direct_runner_ready)
     )
     result["scheduled_task"] = {
         "ok": task_ok,
@@ -924,6 +983,7 @@ def verify_live_runner_readiness(
         "task_launcher_ready": task_launcher_ready,
         "direct_runner_pre_run_interlock": direct_runner_pre_run_interlock,
         "direct_runner_pre_run_reexec": direct_runner_pre_run_reexec,
+        "legacy_direct_clean_runtime_trampoline": legacy_direct_clean_runtime_trampoline,
         "bootstrap_task_name": bootstrap_task_name,
         "bootstrap_action_summary": bootstrap_summary,
         "bootstrap_state": bootstrap_details.get("state"),

@@ -1921,6 +1921,67 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
 
 
+def test_verify_live_runner_readiness_accepts_hardened_legacy_direct_trampoline(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Task更新権限がなくても、安全化済みdirect入口と正規05:55 launcherの組合せを受理する。"""
+    source_ops = Path(__file__).resolve().parents[1] / "scripts" / "ops"
+    repo_ops = tmp_path / "scripts" / "ops"
+    live_bin = tmp_path / "bin"
+    repo_ops.mkdir(parents=True)
+    live_bin.mkdir(parents=True)
+    for name in (
+        "news-grasp-runner.ps1",
+        "watch-news-grasp-runner.ps1",
+        "news-grasp-bootstrap.ps1",
+        "news-grasp-task-launcher.pyw",
+    ):
+        source = (source_ops / name).read_text(encoding="utf-8-sig")
+        (repo_ops / name).write_text(source, encoding="utf-8")
+        (live_bin / name).write_text(source, encoding="utf-8")
+
+    live_runner = live_bin / "news-grasp-runner.ps1"
+    live_launcher = live_bin / "news-grasp-task-launcher.pyw"
+
+    def fake_task_details(**kwargs):
+        bootstrap = kwargs.get("task_name") == "News-Grasp Bootstrap"
+        start = "05:55:00" if bootstrap else "06:00:00"
+        action = (
+            f'pythonw.exe "{live_launcher}" bootstrap'
+            if bootstrap
+            else f'powershell.exe -File "{live_runner}"'
+        )
+        return {
+            "ok": True,
+            "state": "Ready",
+            "action_summary": action,
+            "triggers": [{"enabled": True, "start_boundary": f"2026-06-20T{start}"}],
+            "last_task_result": 0 if bootstrap else 72,
+            "last_run_time": f"2026-06-20T{start}",
+            "next_run_time": f"2026-06-21T{start}",
+            "number_of_missed_runs": 0,
+        }
+
+    monkeypatch.setattr(dsh, "_scheduled_task_details", fake_task_details)
+    monkeypatch.setattr(dsh, "_run_live_startup_canary", lambda **_kwargs: {"ok": True, "status": "smoke_ok"})
+
+    result = dsh.verify_live_runner_readiness(
+        repo_root=tmp_path,
+        live_runner_path=live_runner,
+        live_watcher_path=live_bin / "watch-news-grasp-runner.ps1",
+        live_bootstrap_path=live_bin / "news-grasp-bootstrap.ps1",
+        live_task_launcher_path=live_launcher,
+        date="2026-06-20",
+        run_canary=True,
+    )
+
+    assert result["ok"] is True
+    assert result["status"] == "ready_with_failed_last_schedule"
+    assert result["scheduled_task"]["legacy_direct_clean_runtime_trampoline"] is True
+    assert result["scheduled_task"]["targets_live_runner"] is True
+    assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
+
+
 def test_task_launcher_contract_requires_clean_runtime_on_both_scheduled_modes(
     tmp_path: Path,
 ) -> None:
