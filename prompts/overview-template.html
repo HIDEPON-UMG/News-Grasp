@@ -92,7 +92,9 @@
   <div class="overview-theme__inner">
     <span class="overview-theme__eyebrow">━━ TODAY'S THEME</span>
     <h3 class="overview-theme__title">
-      {% if hero_phrase_left and hero_phrase_right %}
+      {% if hero_headline %}
+        <span style="background: rgba(201,161,85,0.3); padding: 0 6px;">{{ hero_headline }}</span>
+      {% elif hero_phrase_left and hero_phrase_right %}
         <span style="background: rgba(201,161,85,0.3); padding: 0 6px;">{{ hero_phrase_left }}</span><span style="background: rgba(45,91,184,0.4); padding: 0 6px;">{{ hero_phrase_right }}</span>
       {% else %}
         <span style="background: rgba(201,161,85,0.3); padding: 0 6px;">時勢</span>を掴み、<span style="background: rgba(45,91,184,0.4); padding: 0 6px;">日々</span>に新たに。

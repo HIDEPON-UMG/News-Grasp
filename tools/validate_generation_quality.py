@@ -12,6 +12,7 @@ import sys
 from typing import Any
 
 from tools.publish_inventory import CATEGORY_PATHS, required_generated_artifacts, scheduled_category_ids
+from tools.summary_headline import summary_headline_quality_errors, uses_single_headline
 
 
 PLACEHOLDER_RE = re.compile(r"(準備中|TODO|TBD|placeholder|coming soon|本文未生成)", re.IGNORECASE)
@@ -310,7 +311,20 @@ def _validate_summary(repo_root: Path, rel: str, issue: str) -> list[GenerationQ
         return errors
     text = _read_text(repo_root / rel)
     frontmatter, body = _split_frontmatter(text)
-    if not frontmatter.get("hero_left") or not frontmatter.get("hero_right"):
+    if uses_single_headline(frontmatter, repo_root / rel):
+        headline_errors = summary_headline_quality_errors(frontmatter.get("hero_headline", ""))
+        for reason in headline_errors:
+            errors.append(
+                _error(
+                    "summary_news_headline_invalid",
+                    rel,
+                    category="summary",
+                    reason=reason,
+                    expected="single concrete hero_headline about one lead story",
+                    actual=str(frontmatter.get("hero_headline") or "missing"),
+                )
+            )
+    elif not frontmatter.get("hero_left") or not frontmatter.get("hero_right"):
         errors.append(
             _error(
                 "summary_hero_missing",

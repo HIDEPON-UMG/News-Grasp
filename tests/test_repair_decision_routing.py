@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from tools.repair_coverage_matrix import RepairClass, RepairIssue, classify_repair_issue
+from tools.repair_coverage_matrix import (
+    RepairClass,
+    RepairIssue,
+    _issue_code_from_text,
+    classify_repair_issue,
+)
 
 
 def test_deterministic_issue_routes_to_handler_metadata() -> None:
@@ -21,6 +26,32 @@ def test_deterministic_issue_routes_to_handler_metadata() -> None:
     assert decision.allowed_artifacts == ("digest/Summary/{date}.md",)
     assert decision.verify_gate == "generation-quality"
     assert decision.status_on_failure == "blocked_deterministic_repair_failed"
+
+
+def test_summary_news_headline_issue_routes_to_typed_rewrite() -> None:
+    decision = classify_repair_issue(
+        RepairIssue(
+            gate_id="generation-quality",
+            issue_code="summary_news_headline_invalid",
+            message="hero_headline は複数の独立ニュースを接合しない",
+            artifact_paths=("digest/Summary/2026-08-03.md",),
+            issue_date="2026-08-03",
+            category="summary",
+            raw_output="summary_news_headline_invalid",
+        )
+    )
+
+    assert decision.repair_class == RepairClass.LLM_REWRITE_EXISTING_ARTIFACT
+    assert decision.handler_id == "summary-headline-rewrite"
+    assert decision.verify_gate == "generation-quality"
+    assert decision.status_on_failure == "blocked_summary_headline_rewrite_failed"
+
+
+def test_repair_text_classifier_does_not_route_field_name_only() -> None:
+    assert _issue_code_from_text(
+        "generation-quality",
+        "debug: hero_headline renderer field present",
+    ) == "unknown"
 
 
 def test_llm_missing_artifact_rejects_partial_existing_artifacts() -> None:

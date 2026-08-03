@@ -9,21 +9,12 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from tools.generate_pages import CATEGORIES, TAG_TO_CID, parse_frontmatter, parse_reflection
+from tools.summary_headline import summary_headline_quality_errors, uses_single_headline
 
 _DATE_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
 _HEADING_SPLIT_RE = re.compile(r"\s+[—–-]\s+", re.ASCII)
 _COUNT_ONLY_RE = re.compile(r"(?:\d+|[一二三四五六七八九十]+)\s*件")
 _INLINE_MARK_RE = re.compile(r"\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]|\*\*(.+?)\*\*|__(.+?)__")
-_NEWS_HEADLINE_ANCHORS = (
-    "AI", "OpenAI", "円", "ドル", "為替", "金利", "介入", "クラウド", "半導体",
-    "EV", "自動車", "企業", "政府", "日銀", "米国", "日本", "ゲーム", "資源", "決算",
-)
-_NEWS_HEADLINE_ACTIONS = (
-    "発表", "開始", "拡大", "縮小", "値下げ", "値上げ", "迫る", "決定", "導入", "参入",
-    "撤退", "再開", "停止", "成立", "合意", "更新", "転換", "上昇", "下落", "回復", "再編",
-)
-
-
 def _plain_text(text: str) -> str:
     """Markdown 装飾を外して validator 用の短い素テキストにする。"""
     def repl(match: re.Match[str]) -> str:
@@ -126,6 +117,16 @@ def validate_summary_headline(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8-sig", errors="replace")
     frontmatter, _body = parse_frontmatter(text)
     title = str(frontmatter.get("title") or "").strip()
+    headline = str(frontmatter.get("hero_headline") or "").strip().rstrip("。")
+    if uses_single_headline(frontmatter, path):
+        errs = [f"{path}: {error}" for error in summary_headline_quality_errors(headline)]
+        title_headline = title.split("—", 1)[-1].strip().rstrip("。") if title else ""
+        if title_headline != headline:
+            errs.append(
+                f"{path}: title と hero_headline が一致しません: "
+                f"title={title_headline!r}, hero_headline={headline!r}."
+            )
+        return errs
     left = str(frontmatter.get("hero_left") or "").strip()
     right = str(frontmatter.get("hero_right") or "").strip()
     if not (title or left or right):
@@ -141,12 +142,6 @@ def validate_summary_headline(path: Path) -> list[str]:
             f"{path}: hero fragments must form a single continuous headline: "
             f"title={headline!r}, hero_left+hero_right={joined!r}."
         )
-    if not 12 <= len(headline) <= 42:
-        errs.append(f"{path}: summary news headline length invalid ({len(headline)} chars): {headline}")
-    if not any(anchor.casefold() in headline.casefold() for anchor in _NEWS_HEADLINE_ANCHORS):
-        errs.append(f"{path}: concrete news anchor missing from summary headline: {headline}")
-    if not any(action in headline for action in _NEWS_HEADLINE_ACTIONS):
-        errs.append(f"{path}: concrete news action missing from summary headline: {headline}")
     return errs
 
 

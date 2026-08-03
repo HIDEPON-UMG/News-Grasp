@@ -21,6 +21,7 @@ from tools.generate_pages import (
 )
 from tools.publish_inventory import CATEGORY_PATHS, required_published_docs_artifacts
 from tools.publish_inventory import scheduled_category_ids
+from tools.summary_headline import summary_headline_quality_errors, uses_single_headline
 from tools.validate_summary_reflection import validate_summary_category_focus
 from tools.url_quality import (
     is_google_news_proxy_thumb,
@@ -66,12 +67,14 @@ def _parse_issue_date(value: str) -> date:
 
 
 def validate_summary_hero(summary_path: Path) -> list[str]:
-    """LP hero がブランド文言 fallback に落ちないための短文句を検査する。"""
+    """LP hero が単一の具体的ニュース見出しを表示できるか検査する。"""
     if not summary_path.exists():
         return [f"Summary digest が存在しません: {summary_path}"]
     fm, _body = parse_frontmatter(summary_path.read_text(encoding="utf-8-sig", errors="replace"))
-    left = (fm.get("hero_left") or "").strip()
-    right = (fm.get("hero_right") or "").strip()
+    if uses_single_headline(fm, summary_path):
+        return [f"{summary_path}: {error}" for error in summary_headline_quality_errors(fm.get("hero_headline", ""))]
+    left = str(fm.get("hero_left") or "").strip()
+    right = str(fm.get("hero_right") or "").strip()
     if left and right:
         return []
     return [
@@ -1150,6 +1153,13 @@ def daily_quality_issue_code(message: str) -> str:
         return "search_audit_dropped_evidence_recoverable"
     if "dropped reasons are required" in text:
         return "search_audit_dropped_evidence_missing"
+    if (
+        "summary_news_headline_invalid" in text
+        or "frontmatter hero_headline" in text
+        or "hero_headline は" in text
+        or "複数の独立ニュース" in text
+    ):
+        return "summary_news_headline_invalid"
     if "hero_left" in text or "hero_right" in text:
         return "summary_hero_missing"
     if "card #" in text and "lacks required emphasis" in text:

@@ -71,11 +71,10 @@ def test_summary_prompts_require_one_concrete_news_headline_not_abstract_pair() 
     for prompt_path in (EDITOR_PROMPT, ROUTINE_PROMPT):
         prompt = _read(prompt_path)
         for needle in [
-            "一つのニュース見出し",
+            "単一の主役ニュース",
             "主体・出来事・動作",
-            "抽象語二句の対比",
-            "連続する前半・後半",
-            "hero_left + hero_right",
+            "複数の独立ニュース",
+            "hero_headline",
         ]:
             assert needle in prompt
 
@@ -99,12 +98,14 @@ def test_summary_renderer_does_not_force_contrast_joiner_between_hero_fragments(
 
 
 def test_august_2_and_3_summary_titles_are_concrete_contiguous_news_headlines() -> None:
-    for date in ("2026-08-02", "2026-08-03"):
-        summary = _read(SUMMARY_DIR / f"{date}.md")
-        title = _frontmatter_value(summary, "title").split("—", 1)[-1].strip(" '\"")
-        left = _frontmatter_value(summary, "hero_left").strip(" '\"")
-        right = _frontmatter_value(summary, "hero_right").strip(" '\"")
+    august_2 = _read(SUMMARY_DIR / "2026-08-02.md")
+    title_2 = _frontmatter_value(august_2, "title").split("—", 1)[-1].strip(" '\"")
+    assert title_2 == (
+        _frontmatter_value(august_2, "hero_left").strip(" '\"")
+        + _frontmatter_value(august_2, "hero_right").strip(" '\"")
+    )
 
-        assert title == left + right
-        assert any(anchor in title for anchor in ("AI", "円", "介入", "企業", "クラウド", "EV"))
-        assert any(action in title for action in ("拡大", "値下げ", "迫る", "開始", "決定", "導入"))
+    august_3 = _read(SUMMARY_DIR / "2026-08-03.md")
+    title_3 = _frontmatter_value(august_3, "title").split("—", 1)[-1].strip(" '\"")
+    headline_3 = _frontmatter_value(august_3, "hero_headline").strip(" '\"")
+    assert title_3 == headline_3 == "日米が円買い協調介入、ドル円は一時155円台前半へ"

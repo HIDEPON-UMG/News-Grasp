@@ -725,6 +725,7 @@ def build_context(digest_path: Path) -> dict[str, Any]:
         "site_title": SITE_TITLE,
         "summary_text": summary_text,
         "theme": fm.get("theme", ""),
+        "hero_headline": fm.get("hero_headline", ""),
         "hero_left": fm.get("hero_left", ""),
         "hero_right": fm.get("hero_right", ""),
         "reflection": reflection,
@@ -1499,6 +1500,7 @@ def _summary_entry(ctx: dict[str, Any]) -> dict[str, Any]:
         "canonical": ctx["canonical"],
         "summary_text": ctx.get("summary_text", ""),
         "theme": ctx.get("theme", ""),
+        "hero_headline": ctx.get("hero_headline", ""),
         "hero_left": ctx.get("hero_left", ""),
         "hero_right": ctx.get("hero_right", ""),
         "reflection": ctx.get("reflection") or {},
@@ -1858,6 +1860,15 @@ def _hero_phrases(editorial: dict[str, Any] | None) -> tuple[str, str]:
     return _split_theme_phrases(theme_phrase)
 
 
+def _hero_content(editorial: dict[str, Any] | None) -> tuple[str, str, str]:
+    """単一見出しを一次ソースにし、過去号だけ左右フレーズへ後方互換する。"""
+    headline = str((editorial or {}).get("hero_headline") or "").strip()
+    if headline:
+        return (headline, "", "")
+    left, right = _hero_phrases(editorial)
+    return ("", left, right)
+
+
 def _emphasize_entities(text: str, tags: list[str]) -> str:
     """text 内に出現する固有名詞 (tags 由来) を hl-gold マーカーで強調した安全 HTML。
 
@@ -2004,6 +2015,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
             "yesterday_date": "",
             "is_yesterday": False,
             "issue_no": "",
+            "hero_headline": "",
             "hero_phrase_left": "",
             "hero_phrase_right": "",
             "hero_lead": "本日のダイジェスト準備中。",
@@ -2099,7 +2111,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
     # 旧実装は editorial.summary_text (= 本文先頭の [!summary] = 為替カテゴリ要約) を使い
     # 為替語句しか出なかったため、日全体を表す theme 由来に変更。
     reflection = (editorial.get("reflection") if editorial else None) or {}
-    hero_phrase_left, hero_phrase_right = _hero_phrases(editorial)
+    hero_headline, hero_phrase_left, hero_phrase_right = _hero_content(editorial)
 
     # 本日のテーマ考察 (多カテゴリ横断・150〜250字)。考察 lead の末尾遷移句だけ除去し、
     # 装飾記法 (`[[ ]]` `__ __` `**`) は保持 → テンプレ側で render_emph により
@@ -2149,6 +2161,7 @@ def build_index(entries: list[dict[str, Any]], docs_root: Path,
         "is_yesterday": is_yesterday,
         "issue_no": issue_no,
 
+        "hero_headline": hero_headline,
         "hero_phrase_left": hero_phrase_left,
         "hero_phrase_right": hero_phrase_right,
         "hero_lead": hero_lead,
@@ -2227,8 +2240,8 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
 
     # Theme banner: 同日 summary digest から 2 フレーズ抽出
     editorial = next((e for e in same_day if e["category_id"] == "summary"), None)
-    # フレーズは frontmatter `hero_left`/`hero_right` (LLM オーサ) 優先、無ければ theme 機械分割。
-    hero_phrase_left, hero_phrase_right = _hero_phrases(editorial)
+    # 2026-08-03以降は単一見出しを正本とし、左右フレーズは過去号の表示互換に限る。
+    hero_headline, hero_phrase_left, hero_phrase_right = _hero_content(editorial)
 
     # Stats
     stories_total = sum(r["articles_count"] for r in cat_rows)
@@ -2249,6 +2262,7 @@ def build_overview(date: str, entries: list[dict[str, Any]], docs_root: Path) ->
         "date_mmdd": date_mmdd,
         "issue_no": issue_no,
 
+        "hero_headline": hero_headline,
         "hero_phrase_left": hero_phrase_left,
         "hero_phrase_right": hero_phrase_right,
 
@@ -2965,10 +2979,10 @@ def build_summary(date: str, entries: list[dict[str, Any]], docs_root: Path,
     # `.summary-hero__lead` の CSS は max-height / line-clamp なしで縦に flex する設計なので、
     # 長文でも枠がそのまま下に広がる。長すぎる lead は digest md オーサ側で短く書く方針。
 
-    # フレーズは frontmatter `hero_left`/`hero_right` 優先、無ければ theme 機械分割 (summary subtitle fallback 用)。
-    left, right = _hero_phrases(editorial)
+    # 単一ニュース見出しをsubtitleの一次ソースにし、過去号だけ左右フレーズへ後方互換する。
+    headline, left, right = _hero_content(editorial)
     hero_subtitle = reflection.get("subtitle") or (
-        f"{left}{right}" if left and right else ""
+        headline or (f"{left}{right}" if left and right else "")
     )
 
     # ---- Pull quote ----

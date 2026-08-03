@@ -141,7 +141,9 @@
           <!-- slide: SUMMARY (本日の考察) -->
           <div class="home-hero__slide" data-slide="summary">
             <h2 class="home-hero__title">
-              {% if hero_phrase_left %}
+              {% if hero_headline %}
+                <span class="hl-gold">{{ hero_headline|insert_wbr }}</span>
+              {% elif hero_phrase_left %}
                 <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>
                 {% if hero_phrase_right %}<br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
               {% else %}
@@ -191,7 +193,9 @@
       {% else %}
       <div class="home-hero__eyebrow"><span class="rule">━━</span> {% if is_yesterday %}YESTERDAY{% else %}TODAY{% endif %}'S THEME</div>
       <h2 class="home-hero__title">
-        {% if hero_phrase_left %}
+        {% if hero_headline %}
+          <span class="hl-gold">{{ hero_headline|insert_wbr }}</span>
+        {% elif hero_phrase_left %}
           <span class="hl-gold">{{ hero_phrase_left|insert_wbr }}</span>
           {% if hero_phrase_right %}<br/><span class="hl-blue">{{ hero_phrase_right|insert_wbr }}</span>。{% else %}。{% endif %}
         {% else %}
@@ -402,7 +406,9 @@
           <div class="home-editorial__sub">EDITORIAL · {{ stats.categories }} SECTIONS · 9 MIN</div>
           <h2>
             本日のテーマ考察
-            {% if hero_phrase_left and hero_phrase_right %}
+            {% if hero_headline %}
+            <span>— 「{{ hero_headline }}」</span>
+            {% elif hero_phrase_left and hero_phrase_right %}
             <span>— 「{{ hero_phrase_left }}{{ hero_phrase_right }}」</span>
             {% endif %}
           </h2>

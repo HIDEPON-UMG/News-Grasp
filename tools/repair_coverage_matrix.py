@@ -102,6 +102,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
     ),
     CoverageRow(
         "daily-quality",
+        "summary_news_headline_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "summary-headline-rewrite",
+        ("digest/Summary/{date}.md",),
+        "generation-quality",
+        "blocked_summary_headline_rewrite_failed",
+    ),
+    CoverageRow(
+        "daily-quality",
         "summary_hero_missing",
         RepairClass.DETERMINISTIC_HANDLER,
         "summary-hero-patch",
@@ -545,6 +554,15 @@ COVERAGE_ROWS: tuple[CoverageRow, ...] = (
         ("digest/Summary/{date}-audio-script.md",),
         "generation-quality",
         "blocked_audio_script_rewrite_failed",
+    ),
+    CoverageRow(
+        "generation-quality",
+        "summary_news_headline_invalid",
+        RepairClass.LLM_REWRITE_EXISTING_ARTIFACT,
+        "summary-headline-rewrite",
+        ("digest/Summary/{date}.md",),
+        "generation-quality",
+        "blocked_summary_headline_rewrite_failed",
     ),
     CoverageRow(
         "generation-quality",
@@ -1325,6 +1343,13 @@ def _issue_code_from_text(gate_id: str, output: str) -> str:
         return "digest_articles_digest_only"
     if "audio_script_quality_invalid" in text:
         return "audio_script_quality_invalid"
+    if (
+        "summary_news_headline_invalid" in text
+        or "frontmatter hero_headline" in text
+        or "hero_headline は" in text
+        or "複数の独立ニュース" in text
+    ):
+        return "summary_news_headline_invalid"
     if "summary_hero_missing" in text or "hero_left" in text or "hero_right" in text:
         return "summary_hero_missing"
     if "summary_reflection_missing" in text:
@@ -1516,6 +1541,7 @@ def _issue_priority(issue_code: str) -> int:
         "date_evidence_source_missing": 3,
         "date_evidence_source_recoverable": 3,
         "missing_artifact": 10,
+        "summary_news_headline_invalid": 19,
         "summary_hero_missing": 20,
         "summary_reflection_missing": 21,
         "summary_reflection_emphasis_missing": 22,

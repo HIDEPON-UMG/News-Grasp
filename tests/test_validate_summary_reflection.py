@@ -139,29 +139,28 @@ def test_cli_returns_nonzero_for_missing_reflection(tmp_path: Path, capsys) -> N
 
 
 def test_summary_headline_rejects_abstract_two_phrase_slogan(tmp_path: Path) -> None:
-    summary = tmp_path / "2026-08-02.md"
+    summary = tmp_path / "2026-08-03.md"
     summary.write_text(
         "---\n"
-        "title: 'News Grasp #20260802 — 広がる入口、狭める境界'\n"
-        "hero_left: '広がる入口'\n"
-        "hero_right: '狭める境界'\n"
+        "date: 2026-08-03\n"
+        "title: 'News Grasp #20260803 — 広がる入口、狭める境界'\n"
+        "hero_headline: '広がる入口、狭める境界'\n"
         "---\n",
         encoding="utf-8",
     )
 
     errs = validate_summary_headline(summary)
 
-    assert any("concrete news anchor missing" in err for err in errs)
-    assert any("single continuous headline" in err for err in errs)
+    assert any("具体的なニュース見出し" in err for err in errs)
 
 
 def test_summary_headline_accepts_concrete_subject_action_and_contiguous_hero(tmp_path: Path) -> None:
     summary = tmp_path / "2026-08-03.md"
     summary.write_text(
         "---\n"
-        "title: 'News Grasp #20260803 — 円買い介入とAI値下げ、企業に運用再設計迫る'\n"
-        "hero_left: '円買い介入とAI値下げ、'\n"
-        "hero_right: '企業に運用再設計迫る'\n"
+        "date: 2026-08-03\n"
+        "title: 'News Grasp #20260803 — 日米が円買い協調介入、ドル円は一時155円台前半へ'\n"
+        "hero_headline: '日米が円買い協調介入、ドル円は一時155円台前半へ'\n"
         "---\n",
         encoding="utf-8",
     )
