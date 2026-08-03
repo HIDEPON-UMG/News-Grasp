@@ -1887,6 +1887,47 @@ def wait_for_deploy_workflow(
         time.sleep(max(1, poll_sec))
 
 
+_DEPLOY_RELEVANT_PATHS = ("docs", ".github/workflows/deploy-pages.yml")
+
+
+def resolve_deploy_head(*, repo_root: Path, source_head: str) -> dict:
+    """制御コード HEAD から、Pages が実際に公開する直近 commit を解決する。"""
+    try:
+        deploy_head = _git_output(
+            repo_root,
+            ["rev-list", "-1", source_head, "--", *_DEPLOY_RELEVANT_PATHS],
+        )
+    except RuntimeError as exc:
+        return {
+            "ok": False,
+            "reason": "deploy_head_unavailable",
+            "detail": str(exc),
+            "source_head": source_head,
+            "deploy_head": "",
+            "deploy_relevant_paths": list(_DEPLOY_RELEVANT_PATHS),
+        }
+    if not deploy_head:
+        return {
+            "ok": False,
+            "reason": "deploy_relevant_commit_missing",
+            "source_head": source_head,
+            "deploy_head": "",
+            "deploy_relevant_paths": list(_DEPLOY_RELEVANT_PATHS),
+        }
+    return {
+        "ok": True,
+        "reason": "",
+        "source_head": source_head,
+        "deploy_head": deploy_head,
+        "resolution": (
+            "source_head_is_deploy_relevant"
+            if deploy_head == source_head
+            else "latest_deploy_relevant_ancestor"
+        ),
+        "deploy_relevant_paths": list(_DEPLOY_RELEVANT_PATHS),
+    }
+
+
 def verify_publish(
     *,
     repo_root: Path,
@@ -1903,12 +1944,39 @@ def verify_publish(
     remote_head = _git_output(repo_root, ["ls-remote", remote, f"refs/heads/{branch}"]).split()[0]
     if local_head != remote_head:
         return {"ok": False, "reason": "remote_head_mismatch", "local_head": local_head, "remote_head": remote_head}
+    if _is_git_worktree(repo_root):
+        deploy_resolution = resolve_deploy_head(repo_root=repo_root, source_head=local_head)
+        if not deploy_resolution["ok"]:
+            return {
+                "ok": False,
+                "reason": deploy_resolution["reason"],
+                "local_head": local_head,
+                "remote_head": remote_head,
+                "deploy_head_resolution": deploy_resolution,
+            }
+    else:
+        # unit fixture など git metadata を持たない呼出元は従来契約を保つ。
+        deploy_resolution = {
+            "ok": True,
+            "reason": "",
+            "source_head": local_head,
+            "deploy_head": local_head,
+            "resolution": "source_head_without_git_metadata",
+            "deploy_relevant_paths": list(_DEPLOY_RELEVANT_PATHS),
+        }
+    deploy_head = str(deploy_resolution["deploy_head"])
+    head_state = {
+        "local_head": local_head,
+        "remote_head": remote_head,
+        "deploy_head": deploy_head,
+        "deploy_head_resolution": deploy_resolution,
+    }
     deadline = time.monotonic() + max(0, wait_sec)
     deploy_workflow = wait_for_deploy_workflow(
         repo_root=repo_root,
         remote=remote,
         branch=branch,
-        expected_commit=local_head,
+        expected_commit=deploy_head,
         deadline=deadline,
         poll_sec=poll_sec,
     )
@@ -1916,17 +1984,15 @@ def verify_publish(
         return {
             "ok": False,
             "reason": deploy_workflow["reason"],
-            "local_head": local_head,
-            "remote_head": remote_head,
+            **head_state,
             "deploy_workflow": deploy_workflow,
         }
-    pages = verify_pages_build(repo_root=repo_root, remote=remote, expected_commit=local_head, branch=branch)
+    pages = verify_pages_build(repo_root=repo_root, remote=remote, expected_commit=deploy_head, branch=branch)
     if not pages["ok"]:
         return {
             "ok": False,
             "reason": pages["reason"],
-            "local_head": local_head,
-            "remote_head": remote_head,
+            **head_state,
             "deploy_workflow": deploy_workflow,
             "pages": pages,
         }
@@ -1943,8 +2009,7 @@ def verify_publish(
                     return {
                         "ok": False,
                         "reason": pwa["reason"],
-                        "local_head": local_head,
-                        "remote_head": remote_head,
+                        **head_state,
                         "url": status_url,
                         "deploy_workflow": deploy_workflow,
                         "pages": pages,
@@ -1964,8 +2029,7 @@ def verify_publish(
                             return {
                                 "ok": False,
                                 "reason": podcast["reason"],
-                                "local_head": local_head,
-                                "remote_head": remote_head,
+                                **head_state,
                                 "url": status_url,
                                 "deploy_workflow": deploy_workflow,
                                 "pages": pages,
@@ -1976,8 +2040,7 @@ def verify_publish(
                     return {
                         "ok": True,
                         "reason": "",
-                        "local_head": local_head,
-                        "remote_head": remote_head,
+                        **head_state,
                         "url": status_url,
                         "deploy_workflow": deploy_workflow,
                         "pages": pages,
@@ -1988,8 +2051,7 @@ def verify_publish(
                 return {
                     "ok": False,
                     "reason": audio["reason"],
-                    "local_head": local_head,
-                    "remote_head": remote_head,
+                    **head_state,
                     "url": status_url,
                     "deploy_workflow": deploy_workflow,
                     "pages": pages,
@@ -2004,8 +2066,7 @@ def verify_publish(
                 "ok": False,
                 "reason": "public_sentinel_missing",
                 "detail": last_error,
-                "local_head": local_head,
-                "remote_head": remote_head,
+                **head_state,
                 "url": status_url,
                 "deploy_workflow": deploy_workflow,
                 "pages": pages,
@@ -2268,8 +2329,11 @@ def verify_publish_complete(
 
     local_head = str(publish.get("local_head") or "")
     remote_head = str(publish.get("remote_head") or "")
+    deploy_head = str(publish.get("deploy_head") or local_head)
     if not local_head or local_head != remote_head:
         return {**manifest, "reason": "publish_commit_mismatch"}
+    manifest["source_commit"] = local_head
+    manifest["deploy_head"] = deploy_head
     if str(quality_head_binding.get("head") or "") != local_head:
         return {**manifest, "reason": "deepdive_quality_head_mismatch"}
     manifest_rel = str(distribution.get("manifest_path") or f"data/distribution/{date}.json")
@@ -2330,12 +2394,15 @@ def verify_publish_complete(
         "public_status": "green",
         "scheduled_attempt_status": scheduled_attempt_status,
         "recovery_attempt_status": recovery_attempt_status,
-        "publish_commit": local_head,
+        "source_commit": local_head,
+        "publish_commit": deploy_head,
         "same_publish": {
             "date": date,
             "local_head": local_head,
             "remote_head": remote_head,
-            "publish_commit": local_head,
+            "source_head": local_head,
+            "deploy_head": deploy_head,
+            "publish_commit": deploy_head,
             "distribution_date": str(distribution_manifest.get("date") or ""),
             "distribution_pre_publish_commit": pre_publish_commit,
             "distribution_publish_commit_resolution": str(

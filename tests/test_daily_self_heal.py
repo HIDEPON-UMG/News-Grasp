@@ -57,6 +57,57 @@ def _write_deploy_workflow(repo_root: Path) -> None:
     (workflow_dir / "deploy-pages.yml").write_text("name: Deploy Pages\n", encoding="utf-8")
 
 
+def _commit_fixture(repo_root: Path, message: str, *relative_paths: str) -> str:
+    for relative_path in relative_paths:
+        subprocess.run(
+            ["git", "add", "--", relative_path],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+        )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", message],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    return subprocess.check_output(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        text=True,
+        encoding="utf-8",
+    ).strip()
+
+
+def _init_deploy_history(repo_root: Path) -> tuple[str, str]:
+    subprocess.run(["git", "init", "-q"], cwd=repo_root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.invalid"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "News-Grasp Test"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    _write_local_sw(repo_root)
+    _write_deploy_workflow(repo_root)
+    deploy_head = _commit_fixture(
+        repo_root,
+        "deploy fixture",
+        "docs/sw.js",
+        ".github/workflows/deploy-pages.yml",
+    )
+    tool = repo_root / "tools" / "control.py"
+    tool.parent.mkdir(parents=True, exist_ok=True)
+    tool.write_text("CONTROL = True\n", encoding="utf-8")
+    source_head = _commit_fixture(repo_root, "control-only fixture", "tools/control.py")
+    return deploy_head, source_head
+
+
 def _runner_with_pre_run_interlock_source() -> str:
     return """
 $BootstrapSmokeStateFile = 'ng-smoke-state.json'
@@ -576,6 +627,96 @@ def test_verify_publish_requires_deploy_pages_workflow_success(monkeypatch, tmp_
     assert result["ok"] is False
     assert result["reason"] == "deploy_workflow_not_success"
     assert result["deploy_workflow"]["status"] == "in_progress"
+
+
+def test_resolve_deploy_head_uses_latest_deploy_relevant_ancestor(tmp_path: Path) -> None:
+    """tools-only HEAD は直近の docs deploy commit を公開正本として解決する。"""
+    deploy_head, source_head = _init_deploy_history(tmp_path)
+
+    result = dsh.resolve_deploy_head(repo_root=tmp_path, source_head=source_head)
+
+    assert result == {
+        "ok": True,
+        "reason": "",
+        "source_head": source_head,
+        "deploy_head": deploy_head,
+        "resolution": "latest_deploy_relevant_ancestor",
+        "deploy_relevant_paths": ["docs", ".github/workflows/deploy-pages.yml"],
+    }
+
+
+def test_resolve_deploy_head_keeps_head_when_head_changes_docs(tmp_path: Path) -> None:
+    """現在 HEAD が docs を変更した場合は過去の成功 workflow へ逃がさない。"""
+    _deploy_head, _source_head = _init_deploy_history(tmp_path)
+    sw = tmp_path / "docs" / "sw.js"
+    sw.write_text("const SW_VERSION = 'next-version';\n", encoding="utf-8")
+    current_head = _commit_fixture(tmp_path, "current deploy fixture", "docs/sw.js")
+
+    result = dsh.resolve_deploy_head(repo_root=tmp_path, source_head=current_head)
+
+    assert result["ok"] is True
+    assert result["source_head"] == current_head
+    assert result["deploy_head"] == current_head
+    assert result["resolution"] == "source_head_is_deploy_relevant"
+
+
+def test_verify_publish_separates_source_head_from_deploy_head(monkeypatch, tmp_path: Path) -> None:
+    """公開 verifier は制御コード HEAD と Pages deploy HEAD を別々に検証する。"""
+    deploy_head, source_head = _init_deploy_history(tmp_path)
+    real_git_output = dsh._git_output
+    seen: dict[str, str] = {}
+
+    def fake_git(repo_root: Path, args: list[str]) -> str:
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{source_head}\trefs/heads/main"
+        return real_git_output(repo_root, args)
+
+    def fake_deploy(**kwargs):
+        seen["workflow"] = kwargs["expected_commit"]
+        return {
+            "ok": True,
+            "reason": "",
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": kwargs["expected_commit"],
+        }
+
+    def fake_pages(**kwargs):
+        seen["pages"] = kwargs["expected_commit"]
+        return {"ok": True, "reason": "", "status": "built", "commit": kwargs["expected_commit"]}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"result": "published_ok", "date": "2026-06-15"}).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(dsh, "verify_deploy_workflow", fake_deploy)
+    monkeypatch.setattr(dsh, "verify_pages_build", fake_pages)
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse())
+    monkeypatch.setattr(dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'expected-version';\n")
+    monkeypatch.setattr(dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True})
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is True
+    assert result["local_head"] == source_head
+    assert result["remote_head"] == source_head
+    assert result["deploy_head"] == deploy_head
+    assert seen == {"workflow": deploy_head, "pages": deploy_head}
 
 
 def test_verify_publish_rejects_deploy_pages_workflow_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
@@ -3161,6 +3302,7 @@ def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Pat
             "ok": True,
             "local_head": PUBLISH_COMMIT,
             "remote_head": PUBLISH_COMMIT,
+            "deploy_head": "b" * 40,
             "url": "https://example.com/News-Grasp/publish-status.json",
             "pwa": {"ok": True, "local_sw_version": "expected-version", "public_sw_version": "expected-version"},
             "audio": {"ok": True, "latest_audio_url": "https://example.com/audio/2026-06-20.mp3"},
@@ -3197,6 +3339,9 @@ def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Pat
     file_manifest = json.loads(output.read_text(encoding="utf-8"))
     assert rc == 0
     assert stdout_manifest["ok"] is True
-    assert stdout_manifest["publish_commit"] == PUBLISH_COMMIT
+    assert stdout_manifest["source_commit"] == PUBLISH_COMMIT
+    assert stdout_manifest["publish_commit"] == "b" * 40
+    assert stdout_manifest["same_publish"]["source_head"] == PUBLISH_COMMIT
+    assert stdout_manifest["same_publish"]["deploy_head"] == "b" * 40
     assert stdout_manifest["same_publish"]["distribution_pre_publish_commit"] == PUBLISH_COMMIT
     assert stdout_manifest == file_manifest
