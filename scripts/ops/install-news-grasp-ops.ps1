@@ -1,6 +1,7 @@
 ﻿param(
     [string] $RepoDir = '',
     [string] $BinDir = (Join-Path $env:USERPROFILE 'bin'),
+    [string] $TaskPythonwPath = '',
     [string] $RunnerTaskName = 'News-Grasp Runner',
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
@@ -55,7 +56,34 @@ function Resolve-NewsGraspRepoDir {
     throw 'News-Grasp repo not found. Set NEWS_GRASP_REPO_DIR or pass -RepoDir.'
 }
 
+function Resolve-NewsGraspTaskPythonw {
+    param([string] $Override, [string] $ResolvedRepoDir)
+    if ($Override) {
+        if (-not (Test-Path -LiteralPath $Override -PathType Leaf)) {
+            throw "指定されたTask Pythonが見つかりません: $Override"
+        }
+        return (Resolve-Path -LiteralPath $Override).Path
+    }
+    if ($env:NEWS_GRASP_TASK_PYTHONW) {
+        if (-not (Test-Path -LiteralPath $env:NEWS_GRASP_TASK_PYTHONW -PathType Leaf)) {
+            throw "NEWS_GRASP_TASK_PYTHONWが指すPythonが見つかりません: $env:NEWS_GRASP_TASK_PYTHONW"
+        }
+        return (Resolve-Path -LiteralPath $env:NEWS_GRASP_TASK_PYTHONW).Path
+    }
+    $candidates = @(
+        (Join-Path $env:USERPROFILE 'OneDrive\ドキュメント\ProjectFolders\News-Grasp\.venv\Scripts\pythonw.exe'),
+        (Join-Path $ResolvedRepoDir '.venv\Scripts\pythonw.exe')
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return (Resolve-Path -LiteralPath $candidate).Path
+        }
+    }
+    throw 'News-Grasp Scheduled Task用の安定したpythonw.exeが見つかりません。-TaskPythonwPathを指定してください。'
+}
+
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+$TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
 $ops = Join-Path $RepoDir 'scripts\ops'
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 
@@ -127,7 +155,7 @@ if (-not $SkipTaskRegistration) {
     $bootstrapPath = Join-Path $BinDir 'news-grasp-bootstrap.ps1'
     $deadmanLauncherPath = Join-Path $BinDir 'news-grasp-deadman-launcher.pyw'
     $taskLauncherPath = Join-Path $BinDir 'news-grasp-task-launcher.pyw'
-    $pythonw = Join-Path $RepoDir '.venv\Scripts\pythonw.exe'
+    $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
     $existingRunner = Get-ScheduledTask -TaskName $RunnerTaskName -ErrorAction SilentlyContinue
     $runnerWasEnabled = $existingRunner -and $existingRunner.Settings.Enabled
@@ -222,6 +250,7 @@ if (-not $SkipTaskRegistration) {
 [ordered]@{
     created_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
     repo_dir = $RepoDir
+    task_pythonw_path = $TaskPythonwPath
     bin_dir = $BinDir
     backup_dir = $BackupDir
     files = $manifestFiles

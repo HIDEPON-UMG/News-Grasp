@@ -1578,6 +1578,19 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
 
+def test_scheduled_tasks_bind_to_stable_pythonw_not_recovery_worktree() -> None:
+    """一時worktreeからinstallしてもScheduled Taskは安定したPythonへ束縛する。"""
+    installer_text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+
+    assert "[string] $TaskPythonwPath = ''" in installer_text
+    assert "function Resolve-NewsGraspTaskPythonw" in installer_text
+    assert "$env:NEWS_GRASP_TASK_PYTHONW" in installer_text
+    assert "OneDrive\\ドキュメント\\ProjectFolders\\News-Grasp\\.venv\\Scripts\\pythonw.exe" in installer_text
+    assert "$TaskPythonwPath = Resolve-NewsGraspTaskPythonw" in installer_text
+    assert "$pythonw = $TaskPythonwPath" in installer_text
+    assert "task_pythonw_path = $TaskPythonwPath" in installer_text
+
+
 def test_runner_has_typed_verified_publish_finalize_path() -> None:
     """公開済み recovery は全生成を再実行せず、同一 manifest から typed terminal state に収束する。"""
     text = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
