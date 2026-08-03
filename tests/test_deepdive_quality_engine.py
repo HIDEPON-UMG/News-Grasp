@@ -435,7 +435,7 @@ def test_issue_audit_rejects_cross_day_dialogue_loop(
     )
     observed_paths: list[Path] = []
 
-    def red_corpus(paths: list[Path]) -> dict[str, object]:
+    def red_corpus(paths: list[Path], **_kwargs) -> dict[str, object]:
         observed_paths.extend(paths)
         return _corpus_result(issues=["日跨ぎ台本類似度超過"])
 
@@ -457,6 +457,55 @@ def test_issue_audit_rejects_cross_day_dialogue_loop(
     assert result["dialogueCorpusAudit"]["issues"]
 
 
+def test_issue_audit_binds_dialogue_sources_to_explicit_repo_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """module 所在repoが別でも auditedFiles を artifact repo だけへ束縛する。"""
+    artifact_repo = tmp_path / "artifact-repo"
+    runtime_repo = tmp_path / "runtime-repo"
+    issue_date = "2026-08-01"
+    artifact_dir = artifact_repo / "digest" / "DeepDive"
+    runtime_dir = runtime_repo / "digest" / "DeepDive"
+    artifact_dir.mkdir(parents=True)
+    runtime_dir.mkdir(parents=True)
+    article = _article(artifact_dir / f"{issue_date}-DeepDive.md")
+    (runtime_dir / article.name).write_bytes(article.read_bytes())
+    dialogue = artifact_dir / f"{issue_date}-DeepDive-dialogue.md"
+    dialogue.write_text(
+        "---\nsource: digest/DeepDive/2026-08-01-DeepDive.md\n---\n\n"
+        "若手: 検証用の問いです。\n\n先輩: 検証用の回答です。\n",
+        encoding="utf-8",
+    )
+    manifest = artifact_repo / "data" / "deepdive-provenance" / f"{issue_date}.json"
+    deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[_fetch("https://example.com/source")],
+        output_path=manifest,
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "REPO_ROOT",
+        runtime_repo,
+    )
+    monkeypatch.setattr(
+        deepdive_quality.deepdive_dialogue,
+        "validate_dialogue_document",
+        lambda *_args, **_kwargs: [],
+    )
+
+    result = deepdive_quality.audit_issue(
+        repo_root=artifact_repo,
+        issue_date=issue_date,
+    )
+
+    audited_paths = [Path(str(row["path"])).resolve() for row in result["auditedFiles"]]
+    assert result["status"] == "Green"
+    assert audited_paths
+    assert all(path.is_relative_to(artifact_repo.resolve()) for path in audited_paths)
+    assert not any(path.is_relative_to(runtime_repo.resolve()) for path in audited_paths)
+
+
 def test_period_audit_rejects_cross_day_dialogue_loop(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -469,7 +518,7 @@ def test_period_audit_rejects_cross_day_dialogue_loop(
     monkeypatch.setattr(
         deepdive_quality.deepdive_dialogue,
         "audit_dialogue_corpus",
-        lambda _paths: _corpus_result(issues=["日跨ぎ完全反復率超過"]),
+        lambda _paths, **_kwargs: _corpus_result(issues=["日跨ぎ完全反復率超過"]),
     )
     result = deepdive_quality.audit_period(
         repo_root=tmp_path,
@@ -495,7 +544,7 @@ def test_period_audit_forwards_rendered_public_requirement(
     monkeypatch.setattr(
         deepdive_quality.deepdive_dialogue,
         "audit_dialogue_corpus",
-        lambda _paths: _corpus_result(issues=[]),
+        lambda _paths, **_kwargs: _corpus_result(issues=[]),
     )
 
     deepdive_quality.audit_period(
@@ -521,7 +570,7 @@ def test_period_audit_exposes_green_corpus_evidence(
     monkeypatch.setattr(
         deepdive_quality.deepdive_dialogue,
         "audit_dialogue_corpus",
-        lambda _paths: _corpus_result(issues=[]),
+        lambda _paths, **_kwargs: _corpus_result(issues=[]),
     )
     result = deepdive_quality.audit_period(
         repo_root=tmp_path,

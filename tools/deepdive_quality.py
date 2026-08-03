@@ -792,7 +792,8 @@ def audit_issue(
             end=issue_day,
         )
         dialogue_corpus_audit = deepdive_dialogue.audit_dialogue_corpus(
-            dialogue_paths
+            dialogue_paths,
+            repo_root=repo,
         )
         for row in dialogue_corpus_audit.get("audited_files", []):
             audited_files[str(row["path"])] = dict(row)
@@ -850,7 +851,8 @@ def audit_period(
             repo_root=repo_root,
             start=start,
             end=end,
-        )
+        ),
+        repo_root=Path(repo_root).resolve(),
     )
     if dialogue_corpus_audit["issues"]:
         issue_codes = sorted(

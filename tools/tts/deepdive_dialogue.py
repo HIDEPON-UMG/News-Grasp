@@ -341,16 +341,22 @@ def validate_dialogue_document(markdown: str, *, source_markdown: str | None = N
     return issues
 
 
-def _source_path_for_script(script_path: Path, markdown: str) -> tuple[Path | None, str | None]:
+def _source_path_for_script(
+    script_path: Path,
+    markdown: str,
+    *,
+    repo_root: Path | None = None,
+) -> tuple[Path | None, str | None]:
     match = _SOURCE_FIELD_RE.search(markdown)
     if not match:
         return None, "source frontmatter欠落"
     raw = match.group(1).strip().replace("\\", "/")
     if Path(raw).is_absolute():
         return None, "sourceはrepo内相対パスでなければなりません"
-    resolved = (REPO_ROOT / raw).resolve()
+    source_repo = Path(repo_root or REPO_ROOT).resolve()
+    resolved = (source_repo / raw).resolve()
     try:
-        resolved.relative_to(REPO_ROOT.resolve())
+        resolved.relative_to(source_repo)
     except ValueError:
         return None, "sourceがrepo外を参照しています"
     if not resolved.is_file():
@@ -358,7 +364,11 @@ def _source_path_for_script(script_path: Path, markdown: str) -> tuple[Path | No
     return resolved, None
 
 
-def audit_dialogue_corpus(paths: list[Path]) -> dict[str, object]:
+def audit_dialogue_corpus(
+    paths: list[Path],
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, object]:
     """日別台本を横断し、日をまたぐテンプレ反復をfatalとして返す。"""
     scripts: list[tuple[Path, list[DialogueTurn], set[str]]] = []
     issues: list[str] = []
@@ -372,7 +382,11 @@ def audit_dialogue_corpus(paths: list[Path]) -> dict[str, object]:
             script_bytes,
         )
         turns = parse_dialogue(markdown)
-        source_path, source_issue = _source_path_for_script(path, markdown)
+        source_path, source_issue = _source_path_for_script(
+            path,
+            markdown,
+            repo_root=repo_root,
+        )
         source_markdown = None
         if source_path is not None:
             source_bytes = source_path.read_bytes()
