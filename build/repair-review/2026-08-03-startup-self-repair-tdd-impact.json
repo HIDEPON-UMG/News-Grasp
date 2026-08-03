@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "NEWS_GRASP_STARTUP_SELF_REPAIR_TDD_IMPACT_V1",
+  "issueDate": "2026-08-03",
+  "classification": "major_incident_double_failure",
+  "scheduledAttempt": {
+    "lastTaskResult": 72,
+    "terminalStatus": "blocked_startup_self_repair_failed",
+    "preservedAsFailure": true
+  },
+  "publicRecovery": {
+    "priority": "same_day_public_recovery_first",
+    "status": "publish_complete",
+    "scheduledAttemptStatus": "failed_then_recovered",
+    "recoveryAttemptStatus": "succeeded",
+    "publishCommit": "4a7f0dbc88ee826ac91b9436ca23d206172170ff"
+  },
+  "rootCauseClasses": [
+    "scheduled_task_direct_runner_bypassed_clean_runtime",
+    "bootstrap_success_stdout_contaminated_repo_path",
+    "watcher_reused_previous_run_state_before_identity_claim",
+    "self_repair_evidence_dirtied_clean_runtime",
+    "audit_deferred_instead_of_recover_or_major_incident"
+  ],
+  "fixedInvariants": [
+    "same_day_public_recovery_first",
+    "fixed_attempt_terminal_and_scheduled_failure_receipt",
+    "legacy_direct_trampoline_to_clean_production_runtime",
+    "watcher_prior_state_isolation_by_pid_creation_time_and_runner_path",
+    "runtime_repair_evidence_outside_clean_worktree",
+    "audit_outcome_is_recovered_or_major_incident_never_silent_deferred"
+  ],
+  "verification": {
+    "bootstrapScheduledTaskLastResult": 0,
+    "bootstrapSmokeStatus": "smoke_ok",
+    "productionRuntimeHead": "ec6de62df041af3bd2cbb477e17112cb1d159c5a",
+    "productionRuntimeDirty": false,
+    "nextRunReadiness": "ready_with_failed_last_schedule",
+    "legacyDirectCleanRuntimeTrampoline": true,
+    "fullExternalModelE2ERepeated": false
+  }
+}

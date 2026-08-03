@@ -497,6 +497,23 @@ def test_2026_08_02_scheduled_high_cost_identity_incident_is_registered() -> Non
     )
 
 
+def test_2026_08_03_startup_self_repair_and_audit_recovery_incident_is_registered() -> None:
+    scenario = next(
+        item for item in historical_failure_scenarios() if item.issue_date == "2026-08-03"
+    )
+
+    assert "scheduled startup" in scenario.stage
+    assert "6:40 audit recovery" in scenario.stage
+    assert "deferred" in scenario.direct_cause
+    assert "same-day public recovery first" in scenario.root_pattern
+    assert "fixed attempt terminal" in scenario.missing_invariant
+    assert "legacy direct trampoline" in scenario.cheapest_e2e_or_fixture
+    assert "watcher prior-state isolation" in scenario.cheapest_e2e_or_fixture
+    assert scenario.evidence_path.endswith(
+        "2026-08-03-startup-self-repair-tdd-impact.json"
+    )
+
+
 def test_unregistered_visible_incident_includes_suggested_scenario_stub(tmp_path: Path) -> None:
     incident = tmp_path / "docs" / "incidents" / "2026-08-01-example-report.html"
     incident.parent.mkdir(parents=True)

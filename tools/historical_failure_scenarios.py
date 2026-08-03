@@ -133,6 +133,9 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     "build/repair-review/2026-08-02-scheduled-high-cost-tdd-impact.json": (
         "781aa72eb0b88390ee0fb1f07c1ddc599bed6109a1d458a73f23d281cc0f99d2"
     ),
+    "build/repair-review/2026-08-03-startup-self-repair-tdd-impact.json": (
+        "0747687b84537c7446aae4359cbeebbbea7fa2201601fc9be7d3c07b5864d545"
+    ),
 }
 
 
@@ -665,6 +668,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "normal daily, same-date recovery, and final NoPublish E2E must own disjoint attempt identities while every scheduled model call shares one date-scoped nine-call budget",
         "independent scheduled identity fixtures, forged receipt negatives, same-date recovery budget simulation in isolated SQLite, PowerShell AST, and static runner/broker contracts",
         "build/repair-review/2026-08-02-scheduled-high-cost-tdd-impact.json",
+        "fixture_required",
+    ),
+    HistoricalFailureScenario(
+        "2026-08-03",
+        "scheduled startup / bootstrap self-repair / 6:40 audit recovery / same-day public recovery",
+        "the 06:00 direct runner bypassed the clean production runtime, startup self-repair stopped before generation, and the 6:40 audit recovery ended deferred instead of recovering or escalating a major incident",
+        "same-day public recovery first and startup route identity boundary",
+        "every scheduled startup failure must emit a fixed attempt terminal plus immutable failure receipt, and audit must recover the missing public day or stop as a typed major incident rather than deferred",
+        "legacy direct trampoline fixture, clean-runtime git stdout isolation, watcher prior-state isolation, runtime evidence-root fixture, fixed attempt terminal contract, audit recover-or-major-incident decision fixture, live Bootstrap Scheduled Task smoke, and next-run readiness proof",
+        "build/repair-review/2026-08-03-startup-self-repair-tdd-impact.json",
         "fixture_required",
     ),
 )
