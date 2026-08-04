@@ -1768,6 +1768,109 @@ def verify_deploy_workflow(repo_root: Path, remote: str, branch: str, expected_c
     }
 
 
+def verify_deploy_workflow_covering_deploy_head(
+    *, repo_root: Path, remote: str, branch: str, source_head: str, deploy_relevant_head: str
+) -> dict:
+    """同一docs treeを実際にdeployした祖先push tipを検証する。"""
+    workflow_file = "deploy-pages.yml"
+    if not (repo_root / ".github" / "workflows" / workflow_file).exists():
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_unavailable",
+            "detail": f"workflow_missing:{workflow_file}",
+        }
+    try:
+        remote_url = _git_output(repo_root, ["config", "--get", f"remote.{remote}.url"])
+        ancestors = set(_git_output(repo_root, ["rev-list", source_head]).splitlines())
+    except Exception as exc:
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "detail": str(exc)}
+    slug = _repo_slug_from_remote_url(remote_url)
+    if slug is None:
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "remote_url": remote_url}
+    owner, repo = slug
+    query = urlencode({"branch": branch, "per_page": 50})
+    url = (
+        f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}/actions/workflows/"
+        f"{quote(workflow_file, safe='')}/runs?{query}"
+    )
+    try:
+        payload = _github_api_json(url)
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        ValueError,
+    ) as exc:
+        return {"ok": False, "reason": "deploy_workflow_unavailable", "url": url, "detail": str(exc)}
+    runs = payload.get("workflow_runs") if isinstance(payload, dict) else None
+    if not isinstance(runs, list):
+        return {
+            "ok": False,
+            "reason": "deploy_workflow_unavailable",
+            "url": url,
+            "detail": "workflow_runs_not_list",
+        }
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        candidate_head = str(run.get("head_sha") or "")
+        if candidate_head not in ancestors:
+            continue
+        resolution = resolve_deploy_head(repo_root=repo_root, source_head=candidate_head)
+        if not resolution.get("ok") or resolution.get("deploy_head") != deploy_relevant_head:
+            continue
+        status = str(run.get("status") or "")
+        conclusion = str(run.get("conclusion") or "")
+        return {
+            "ok": status == "completed" and conclusion == "success",
+            "reason": "" if status == "completed" and conclusion == "success" else "deploy_workflow_not_success",
+            "status": status,
+            "conclusion": conclusion,
+            "head_sha": candidate_head,
+            "covered_deploy_head": deploy_relevant_head,
+            "event": str(run.get("event") or ""),
+            "run_id": run.get("id", ""),
+            "html_url": run.get("html_url", ""),
+            "url": url,
+            "workflow_file": workflow_file,
+            "coverage_resolution": resolution,
+        }
+    return {
+        "ok": False,
+        "reason": "deploy_workflow_not_success",
+        "url": url,
+        "workflow_file": workflow_file,
+        "covered_deploy_head": deploy_relevant_head,
+    }
+
+
+def wait_for_deploy_workflow_covering_deploy_head(
+    *,
+    repo_root: Path,
+    remote: str,
+    branch: str,
+    source_head: str,
+    deploy_relevant_head: str,
+    deadline: float,
+    poll_sec: int,
+) -> dict:
+    while True:
+        result = verify_deploy_workflow_covering_deploy_head(
+            repo_root=repo_root,
+            remote=remote,
+            branch=branch,
+            source_head=source_head,
+            deploy_relevant_head=deploy_relevant_head,
+        )
+        if result.get("ok") or not _is_retryable_deploy_workflow(result):
+            return result
+        if time.monotonic() >= deadline:
+            return {**result, "detail": "deploy_workflow_wait_timeout"}
+        time.sleep(max(1, poll_sec))
+
+
 def _deploy_workflow_fresh_dispatch_recovery(*, result: dict, branch: str, remote: str) -> dict | None:
     if result.get("ok") or result.get("reason") != "deploy_workflow_not_success":
         return None
@@ -1992,15 +2095,17 @@ def verify_publish(
     elif not _is_retryable_deploy_workflow(source_workflow):
         deploy_workflow = source_workflow
     elif deploy_relevant_head != local_head:
-        deploy_head = deploy_relevant_head
-        deploy_workflow = wait_for_deploy_workflow(
+        deploy_workflow = wait_for_deploy_workflow_covering_deploy_head(
             repo_root=repo_root,
             remote=remote,
             branch=branch,
-            expected_commit=deploy_relevant_head,
+            source_head=local_head,
+            deploy_relevant_head=deploy_relevant_head,
             deadline=deadline,
             poll_sec=poll_sec,
         )
+        if deploy_workflow.get("ok"):
+            deploy_head = str(deploy_workflow["head_sha"])
     else:
         deploy_workflow = wait_for_deploy_workflow(
             repo_root=repo_root,

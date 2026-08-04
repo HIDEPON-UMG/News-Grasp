@@ -660,6 +660,100 @@ def test_resolve_deploy_head_keeps_head_when_head_changes_docs(tmp_path: Path) -
     assert result["resolution"] == "source_head_is_deploy_relevant"
 
 
+def test_deploy_workflow_accepts_successful_ancestor_push_covering_same_docs(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """docs commit後のpush tipで成功したworkflowを、後続code-only HEADから検証できる。"""
+    deploy_head, workflow_head = _init_deploy_history(tmp_path)
+    later = tmp_path / "tools" / "later.py"
+    later.write_text("LATER = True\n", encoding="utf-8")
+    source_head = _commit_fixture(tmp_path, "later control fixture", "tools/later.py")
+    subprocess.run(
+        ["git", "config", "remote.origin.url", "https://github.com/HIDEPON-UMG/News-Grasp.git"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_github_api_json",
+        lambda _url: {
+            "workflow_runs": [
+                {
+                    "id": 123,
+                    "head_sha": workflow_head,
+                    "status": "completed",
+                    "conclusion": "success",
+                    "event": "push",
+                    "html_url": "https://example.invalid/run/123",
+                }
+            ]
+        },
+    )
+
+    result = dsh.verify_deploy_workflow_covering_deploy_head(
+        repo_root=tmp_path,
+        remote="origin",
+        branch="main",
+        source_head=source_head,
+        deploy_relevant_head=deploy_head,
+    )
+
+    assert result["ok"] is True
+    assert result["head_sha"] == workflow_head
+    assert result["covered_deploy_head"] == deploy_head
+
+
+def test_deploy_workflow_rejects_ancestor_run_before_later_docs_change(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """祖先workflow成功後にdocsが変わった場合、過去deployへ逃がさない。"""
+    _old_deploy_head, workflow_head = _init_deploy_history(tmp_path)
+    sw = tmp_path / "docs" / "sw.js"
+    sw.write_text("const SW_VERSION = 'later-docs';\n", encoding="utf-8")
+    source_head = _commit_fixture(tmp_path, "later docs fixture", "docs/sw.js")
+    deploy_relevant_head = dsh.resolve_deploy_head(
+        repo_root=tmp_path, source_head=source_head
+    )["deploy_head"]
+    subprocess.run(
+        ["git", "config", "remote.origin.url", "https://github.com/HIDEPON-UMG/News-Grasp.git"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    monkeypatch.setattr(
+        dsh,
+        "_github_api_json",
+        lambda _url: {
+            "workflow_runs": [
+                {
+                    "id": 123,
+                    "head_sha": "f" * 40,
+                    "status": "completed",
+                    "conclusion": "success",
+                },
+                {
+                    "id": 124,
+                    "head_sha": workflow_head,
+                    "status": "completed",
+                    "conclusion": "success",
+                },
+            ]
+        },
+    )
+
+    result = dsh.verify_deploy_workflow_covering_deploy_head(
+        repo_root=tmp_path,
+        remote="origin",
+        branch="main",
+        source_head=source_head,
+        deploy_relevant_head=deploy_relevant_head,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "deploy_workflow_not_success"
+
+
 def test_verify_publish_prefers_successful_push_head_over_deploy_ancestor(monkeypatch, tmp_path: Path) -> None:
     """同一 push の最終 HEAD で Deploy Pages が成功した場合は途中 docs commit を待たない。"""
     deploy_head, source_head = _init_deploy_history(tmp_path)
