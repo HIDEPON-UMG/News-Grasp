@@ -148,7 +148,10 @@ def test_runner_invokes_codex_wrapper_with_named_parameter_splatting() -> None:
     assert "$codexArgs['SuccessProbeIntervalSec'] = $SuccessProbeIntervalSec" in wrapper
     assert "$codexArgs['SuccessProbeMinElapsedSec'] = $SuccessProbeMinElapsedSec" in wrapper
     assert "$wrapperOk = $?" in wrapper
-    assert "return 125" in wrapper
+    assert "if (-not $wrapperOk)" in wrapper
+    assert "if ($null -eq $wrapperRc -or $wrapperRc -eq 0) { $wrapperRc = 125 }" in wrapper
+    assert "Test-ArtifactExecutableTreeIntegrity" in wrapper
+    assert "return $wrapperRc" in wrapper
     assert "'OutputSchema' = $CodexOutputSchema" not in wrapper
     assert "'-CodexExe', $CodexExe" not in wrapper
 

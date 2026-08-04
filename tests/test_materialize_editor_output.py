@@ -18,6 +18,31 @@ from tools.materialize_editor_output import (
 
 
 ISSUE_DATE = "2026-08-04"
+MATERIALIZER_SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "materialize_editor_output.py"
+
+
+def test_recover_only_entrypoint_runs_under_isolated_python(tmp_path: Path) -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            str(MATERIALIZER_SCRIPT),
+            "--repo-root",
+            str(tmp_path),
+            "--date",
+            ISSUE_DATE,
+            "--recover-only",
+        ],
+        text=True,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)["status"] == "no_pending_transaction"
 
 
 def _payload(*, valid: bool = True) -> dict:

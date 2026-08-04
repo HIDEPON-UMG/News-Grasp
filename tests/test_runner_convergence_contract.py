@@ -599,7 +599,7 @@ def test_llm_repair_uses_repair_model_policy_not_style_editor() -> None:
 def test_runner_never_passes_long_prompt_or_html_via_native_argument() -> None:
     """長大 prompt/report/html 本文は file/stdin 境界に閉じ、native argv へ載せない。"""
     runner_path = OPS_DIR / "news-grasp-runner.ps1"
-    wrapper_path = Path.home() / "bin" / "run_codex_with_timeout.ps1"
+    wrapper_path = OPS_DIR / "run_codex_with_timeout.ps1"
     runner = runner_path.read_text(encoding="utf-8-sig")
     wrapper = wrapper_path.read_text(encoding="utf-8-sig")
 
@@ -634,6 +634,10 @@ def test_runner_never_passes_long_prompt_or_html_via_native_argument() -> None:
     argument_boundaries = (
         _normalized_powershell_statements(runner, "-ArgumentList")
         + [re.sub(r"\s+", " ", stmt).strip() for stmt in _powershell_command_extents(wrapper_path, "Start-Process")]
+        + [
+            re.sub(r"\s+", " ", stmt).strip()
+            for stmt in _powershell_command_extents(wrapper_path, "CreateSuspendedAssignedProcess")
+        ]
     )
     assert argument_boundaries
     for statement in argument_boundaries:
@@ -642,9 +646,12 @@ def test_runner_never_passes_long_prompt_or_html_via_native_argument() -> None:
                 f"long prompt must be file/stdin, not native argv: {statement}"
             )
 
-    start_process = " ".join(_normalized_powershell_statements(wrapper, "Start-Process"))
-    assert "-RedirectStandardInput $stdinFile" in start_process
-    assert "-ArgumentList $effectiveArgString" in start_process
+    native_launch = " ".join(
+        _normalized_powershell_statements(wrapper, "CreateSuspendedAssignedProcess")
+    )
+    assert "$stdinFile" in native_launch
+    assert "$stdoutFile" in native_launch
+    assert "$stderrFile" in native_launch
     assert "--prompt" not in wrapper
     assert "$argList += $promptText" not in wrapper
 

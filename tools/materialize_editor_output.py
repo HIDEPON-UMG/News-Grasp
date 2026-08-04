@@ -14,12 +14,13 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-try:
-    from tools.validate_editor_output_preview import validate_editor_output_preview
-except ModuleNotFoundError:
-    # python -I で canonical script を直接実行する場合だけ sibling を明示する。
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from validate_editor_output_preview import validate_editor_output_preview
+# runner は sitecustomize/PYTHONPATH 注入を遮断するため -I でこの正本を直接実行する。
+# import root は実行時 cwd ではなく、検証対象 script 自身の親 repo へ固定する。
+_CANONICAL_IMPORT_ROOT = str(Path(__file__).resolve().parents[1])
+if _CANONICAL_IMPORT_ROOT not in sys.path:
+    sys.path.insert(0, _CANONICAL_IMPORT_ROOT)
+
+from tools.validate_editor_output_preview import validate_editor_output_preview
 
 
 class MaterializationError(RuntimeError):
