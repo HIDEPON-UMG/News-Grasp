@@ -660,8 +660,8 @@ def test_resolve_deploy_head_keeps_head_when_head_changes_docs(tmp_path: Path) -
     assert result["resolution"] == "source_head_is_deploy_relevant"
 
 
-def test_verify_publish_separates_source_head_from_deploy_head(monkeypatch, tmp_path: Path) -> None:
-    """公開 verifier は制御コード HEAD と Pages deploy HEAD を別々に検証する。"""
+def test_verify_publish_prefers_successful_push_head_over_deploy_ancestor(monkeypatch, tmp_path: Path) -> None:
+    """同一 push の最終 HEAD で Deploy Pages が成功した場合は途中 docs commit を待たない。"""
     deploy_head, source_head = _init_deploy_history(tmp_path)
     real_git_output = dsh._git_output
     seen: dict[str, str] = {}
@@ -715,8 +715,9 @@ def test_verify_publish_separates_source_head_from_deploy_head(monkeypatch, tmp_
     assert result["ok"] is True
     assert result["local_head"] == source_head
     assert result["remote_head"] == source_head
-    assert result["deploy_head"] == deploy_head
-    assert seen == {"workflow": deploy_head, "pages": deploy_head}
+    assert result["deploy_head"] == source_head
+    assert result["deploy_relevant_head"] == deploy_head
+    assert seen == {"workflow": source_head, "pages": source_head}
 
 
 def test_verify_publish_rejects_deploy_pages_workflow_commit_mismatch(monkeypatch, tmp_path: Path) -> None:

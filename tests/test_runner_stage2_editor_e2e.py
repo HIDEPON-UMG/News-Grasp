@@ -38,13 +38,18 @@ def _copy_minimal_repo(dst: Path) -> None:
         "validate_record.py",
         "verify_reporter_output.py",
         "prepare_editor_workspace.py",
+        "materialize_editor_output.py",
     ]:
         shutil.copy2(ROOT / "tools" / name, dst / "tools" / name)
     # semantic details are covered by test_validate_editor_output_preview.py;
-    # this isolated runner fixture only proves the pre-materialization call boundary.
+    # this isolated runner fixture exposes the same callable/CLI boundary only.
     (dst / "tools" / "validate_editor_output_preview.py").write_text(
         "import argparse\nfrom pathlib import Path\n"
-        "p=argparse.ArgumentParser(); p.add_argument('preview', type=Path, nargs='?'); p.add_argument('--date'); p.add_argument('--print-producer-contract', action='store_true'); a=p.parse_args(); print('EDITOR_PREVIEW_PRODUCER_CONTRACT_V1') if a.print_producer_contract else None; raise SystemExit(0 if a.print_producer_contract or (a.preview and a.preview.exists()) else 1)\n",
+        "def validate_editor_output_preview(preview: Path, *, issue_date: str):\n"
+        "    return [] if preview.exists() else ['missing preview']\n"
+        "def main():\n"
+        "    p=argparse.ArgumentParser(); p.add_argument('preview', type=Path, nargs='?'); p.add_argument('--date'); p.add_argument('--print-producer-contract', action='store_true'); a=p.parse_args(); print('EDITOR_PREVIEW_PRODUCER_CONTRACT_V1') if a.print_producer_contract else None; return 0 if a.print_producer_contract or (a.preview and not validate_editor_output_preview(a.preview, issue_date=a.date)) else 1\n"
+        "if __name__ == '__main__': raise SystemExit(main())\n",
         encoding="utf-8",
     )
     (dst / "data").mkdir()
@@ -348,14 +353,17 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
 
 
 def test_runner_validates_editor_preview_before_materialization() -> None:
-    """Semantic Red の editor JSON を Summary/articles へ反映してはならない。"""
+    """単一 materializer が semantic validation 後にだけ Summary/articles を反映する。"""
     runner = RUNNER.read_text(encoding="utf-8-sig")
     success_block = runner.split("if ($agentRc -eq 0)", 1)[1].split("if ($agentRc -eq 124)", 1)[0]
+    materializer = runner.split("function Sync-EditorOutputPreview", 1)[1].split(
+        "function Read-RepairDecision", 1
+    )[0]
 
-    validate = "tools.validate_editor_output_preview"
-    sync = "Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage\n"
-    assert validate in success_block
-    assert success_block.index(validate) < success_block.index(sync)
+    sync = "Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage -CapturePath $EditorPreviewValidationCapture"
+    assert "& $PyExe '-I' $canonicalMaterializer" in materializer
+    assert "tools.validate_editor_output_preview' $editorOutputPreview" not in success_block
+    assert sync in success_block
     assert "editor preview semantic validation failed" in success_block
 
 
@@ -389,10 +397,12 @@ def test_runner_injects_preview_contract_and_feeds_validation_errors_to_next_att
     prompt_write = runner.index("Set-Content -Path $EditorPromptFile", contract)
     attempt_prompt = runner.index("$EditorAttemptPromptFile", prompt_write)
     invocation = runner.index("Invoke-CodexWrapper -PromptFile $EditorAttemptPromptFile", attempt_prompt)
-    capture = runner.index("Invoke-LoggedCapture -CapturePath $EditorPreviewValidationCapture", invocation)
-    feedback = runner.index("$EditorRetryFeedback = Get-Content", capture)
+    materialize = runner.index(
+        "Sync-EditorOutputPreview -PreviewPath $editorOutputPreview", invocation
+    )
+    feedback = runner.index("$EditorRetryFeedback = Get-Content", materialize)
 
-    assert contract < prompt_write < attempt_prompt < invocation < capture < feedback
+    assert contract < prompt_write < attempt_prompt < invocation < materialize < feedback
 
 
 def test_editor_attempt_snapshot_flattens_reporter_artifact_paths() -> None:

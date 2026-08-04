@@ -1272,6 +1272,7 @@ def test_autonomous_completion_policy_call_sites_are_covered_by_no_publish_contr
             ("content", "newsroom-editor-timeout"),
             ("content", "newsroom-editor-contract"),
             ("content", "newsroom-editor-preview"),
+            ("content", "newsroom-editor-transaction-recovery"),
         ("content", "newsroom-editor-workspace"),
         ("content", "summary-reflection"),
         ("content", "daily-quality"),
@@ -1576,6 +1577,102 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "Set-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction" in installer_text
     assert "if (-not $runnerRegistered) {" in installer_text
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
+
+
+def test_editor_retry_prefers_current_attempt_fallback_preview() -> None:
+    """retry 成功時は stale な前回 preview より当該 attempt の last-message を検証する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    body = runner.split("function Sync-EditorOutputPreview", 1)[1].split(
+        "function Read-RepairDecision", 1
+    )[0]
+
+    fallback_branch = "if ($FallbackPath -and (Test-Path -LiteralPath $FallbackPath))"
+    preview_missing_branch = "elseif (-not (Test-Path -LiteralPath $sourcePath))"
+    assert fallback_branch in body
+    assert preview_missing_branch in body
+    assert body.index(fallback_branch) < body.index(preview_missing_branch)
+
+
+def test_editor_materialization_uses_one_production_boundary_and_recovers_before_model() -> None:
+    """production runner は旧直書きを廃止し、WAL 回復後に単一 materializer を使う。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    body = runner.split("function Sync-EditorOutputPreview", 1)[1].split(
+        "function Read-RepairDecision", 1
+    )[0]
+    editor_flow = runner.split("$gateAttemptDir =", 1)[0]
+
+    assert "& $PyExe '-I' $canonicalMaterializer" in body
+    assert "ConvertFrom-Json" not in body
+    assert "[System.IO.File]::WriteAllText" not in body
+    assert "Add-JsonlRecordsIfMissing" not in body
+    assert "--recover-only" in editor_flow
+    assert "EDITOR_OUTPUT_TRANSACTION_RECOVERY_REQUIRED" in editor_flow
+    assert "tools.validate_editor_output_preview' $editorOutputPreview '--date'" not in runner
+    assert editor_flow.rfind("--recover-only") < editor_flow.rfind("$gateAttemptDir =") or "$gateAttemptDir =" not in editor_flow
+    assert "$PyExe     = Join-Path $OpsRepoRoot '.venv\\Scripts\\python.exe'" in runner
+    assert "$env:PYTHONSAFEPATH = '1'" in runner
+    assert "$env:PYTHONNOUSERSITE = '1'" in runner
+    assert "$env:PYTHONPATH = $RepoDir" in runner
+    assert "$env:GIT_CONFIG_GLOBAL = 'NUL'" not in runner
+    assert "$GitSafeArgs = @(" in runner
+    assert "& $GitExe -C" not in runner
+    assert "& $GitExe @GitSafeArgs -C" in runner
+    assert "function Test-ArtifactExecutableTreeIntegrity" in runner
+    assert "verify-artifact-tree" in runner
+    assert "ARTIFACT_EXECUTABLE_TREE_INVALID after reporter fan-out" in runner
+    assert "& $PyExe '-I' $auditControl" in runner
+    wrapper = runner.split("function Invoke-CodexWrapper", 1)[1].split(
+        "function ConvertTo-JsonlLine", 1
+    )[0]
+    assert "if ($wrapperRc -eq 0 -and" not in wrapper
+    assert "return 125" not in wrapper.split("if (-not $wrapperOk)", 1)[1].split(
+        "Test-ArtifactExecutableTreeIntegrity", 1
+    )[0]
+    assert "$wrapperRc = 125" in wrapper
+    reporter = runner.split(
+        "$waveResults = Invoke-ReporterWave -Attempt $attempt -WaveCategories $retryCategories",
+        1,
+    )[1]
+    verify = reporter.index("Test-ArtifactExecutableTreeIntegrity")
+    artifact_validator = reporter.index("tools.verify_reporter_output")
+    assert verify < artifact_validator
+
+
+def test_editor_materializer_uses_isolated_canonical_script() -> None:
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    body = runner.split("function Sync-EditorOutputPreview", 1)[1].split(
+        "function Read-RepairDecision", 1
+    )[0]
+    startup = runner.split("$gateAttemptDir =", 1)[0]
+    assert "$canonicalMaterializer = Join-Path $OpsRepoRoot 'tools\\materialize_editor_output.py'" in runner
+    assert "& $PyExe '-I' $canonicalMaterializer" in body
+    assert "& $PyExe '-I' $canonicalMaterializer" in startup
+    assert "'-m' 'tools.materialize_editor_output'" not in runner
+
+
+def test_editor_attempt_snapshot_rejects_recursive_or_outside_repo_targets() -> None:
+    """editor rollback は許可済みfileだけを扱い、repo外・directory・改変manifestを拒否する。"""
+    runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
+    snapshot = runner.split("function New-EditorAttemptSnapshot", 1)[1].split(
+        "$MaxAgentAttempts = 3", 1
+    )[0]
+
+    assert "function Resolve-EditorArtifactPath" in runner
+    assert "[System.IO.Path]::IsPathRooted($RelativePath)" in runner
+    assert "[System.IO.Path]::GetFullPath" in runner
+    assert "[System.IO.FileAttributes]::ReparsePoint" in runner
+    assert "EDITOR_SNAPSHOT_PATH_INVALID" in runner
+    assert "EDITOR_SNAPSHOT_DIRECTORY_FORBIDDEN" in snapshot
+    assert "snapshot_sha256" in snapshot
+    assert "[System.IO.Path]::GetTempPath()" in snapshot
+    assert "[Guid]::NewGuid().ToString('N')" in snapshot
+    assert "manifest_sha256" in snapshot
+    assert "manifest.sha256" not in snapshot
+    assert "EDITOR_SNAPSHOT_MANIFEST_TAMPERED" in snapshot
+    assert "function Remove-EditorAttemptSnapshot" in snapshot
+    assert "Remove-Item -LiteralPath $snapshotDir -Recurse" not in snapshot
+    assert "Remove-Item -LiteralPath $destination -Recurse -Force" not in snapshot
+    assert "Copy-Item -LiteralPath $source -Destination $snapshotPath -Recurse -Force" not in snapshot
 
 
 def test_scheduled_tasks_bind_to_stable_pythonw_not_recovery_worktree() -> None:

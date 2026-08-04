@@ -51,9 +51,12 @@ def test_default_raw_roots_are_ignored_ops_paths() -> None:
     assert lifecycle.default_raw_root("external-benchmark-matrix").as_posix() == "_ops/benchmark-runs/external-benchmark-matrix"
 
 
-def test_runner_editor_attempt_snapshots_use_ops_root() -> None:
+def test_runner_editor_attempt_snapshots_use_owned_temp_root() -> None:
     runner = (REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
-    assert '"_ops\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' in runner
+    assert "[System.IO.Path]::GetTempPath()" in runner
+    assert "news-grasp-editor-snapshot-$DateStamp-$PID-$Attempt-" in runner
+    assert "function Remove-EditorAttemptSnapshot" in runner
+    assert '"_ops\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' not in runner
     assert '"build\\editor-attempt-snapshots\\$DateStamp\\attempt-$Attempt"' not in runner
 
 

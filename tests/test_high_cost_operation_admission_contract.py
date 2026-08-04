@@ -89,8 +89,12 @@ def test_wrapper_and_runner_do_not_reserve_two_full_e2e_attempts() -> None:
 def test_every_model_process_reserves_call_budget_immediately_before_start() -> None:
     text = MODEL_WRAPPER.read_text(encoding="utf-8-sig")
     reserve = text.rindex("\nAssert-CanonicalModelBroker")
-    launch = text.index("$proc = Start-Process -FilePath $filePath")
+    launch = text.index("$ownedLaunch = [NewsGraspOwnedJob]::CreateSuspendedAssignedProcess(", reserve)
     assert reserve < launch
+    native = text.split("public static OwnedLaunch CreateSuspendedAssignedProcess", 1)[1].split(
+        "public static void CloseOwnedJob", 1
+    )[0]
+    assert native.index("CreateProcess(") < native.index("AssignProcessToJobObject(") < native.index("ResumeThread(")
     body = text.split("function Assert-CanonicalModelBroker", 1)[1].split("function ", 1)[0]
     assert "bin\\ai-model-spawn-broker.py" in body
     assert "expectedInstalledBroker" in body

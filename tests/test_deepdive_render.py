@@ -660,6 +660,45 @@ def test_relations_same_band_peer_edge_no_pierce() -> None:
                 f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
 
 
+def test_relations_unknown_directed_kinds_form_flow_layers_without_piercing() -> None:
+    """生成語彙の一方向 edge も flow として層化し、同段の第三ノードを貫かない。"""
+    from tools.render_deepdive import layout_relations
+
+    rel = {
+        "title": "AI評価から復旧責任までの経路",
+        "nodes": [
+            {"id": "model", "label": "AIモデル", "group": "能力"},
+            {"id": "eval", "label": "評価環境", "group": "評価"},
+            {"id": "boundary", "label": "権限境界", "group": "統制"},
+            {"id": "targets", "label": "第三者", "group": "影響"},
+            {"id": "defense", "label": "監視・停止", "group": "防御"},
+            {"id": "recovery", "label": "復旧責任", "group": "結果"},
+        ],
+        "edges": [
+            {"from": "model", "to": "eval", "label": "測る", "kind": "評価"},
+            {"from": "eval", "to": "boundary", "label": "設計", "kind": "統制"},
+            {"from": "boundary", "to": "targets", "label": "波及", "kind": "波及"},
+            {"from": "targets", "to": "recovery", "label": "説明", "kind": "波及"},
+            {"from": "defense", "to": "targets", "label": "防ぐ", "kind": "防御"},
+            {"from": "defense", "to": "recovery", "label": "支える", "kind": "統制"},
+        ],
+    }
+
+    lay = layout_relations(rel)
+    pos = {nd["id"]: (nd["x"], nd["y"]) for nd in lay["nodes"]}
+    assert pos["model"][1] < pos["eval"][1] < pos["boundary"][1]
+    assert pos["boundary"][1] < pos["targets"][1] < pos["recovery"][1]
+
+    svg = relations_svg(rel)
+    circles = _node_circles(svg)
+    segs = [(float(a), float(b), float(c), float(d))
+            for a, b, c, d, _stroke, w in _EDGE_LINE_RE.findall(svg) if float(w) >= 2.0]
+    for seg in segs:
+        for ncx, ncy, ncr in circles:
+            assert _seg_point_dist(seg, ncx, ncy) >= ncr - 1.0, \
+                f"エッジ線がノード円を貫通: seg={seg} circle=({ncx},{ncy},{ncr})"
+
+
 _AI_INFRA_20260704_CROSSING_REL = {
     "title": "2026-07-04 AI基盤再設計: Samsung/AWS 競合線を含む",
     "nodes": [

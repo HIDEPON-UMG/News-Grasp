@@ -87,8 +87,9 @@ _COOP_KINDS = {"出資", "提携", "供給", "協力"}
 _AUTH_KINDS = {"規制"}
 _FRENEMY_KINDS = {"協調的競合", "協力競合", "frenemy"}
 # 一方向 (→) のフロー・エッジ: 親→子 (出資)・供給元→先 (供給)・当局→対象 (規制)。
-# 陣営を成さない事業者を段に分ける longest-path layering に使う (双方向の競合/協調的
-# 競合は peer 関係なのでランクに使わず同段に残す)。
+# 生成側が「評価」「統制」「波及」のような新しい kind を使う場合も、競合・提携など
+# 明示的な peer 関係でない限り一方向フローとして扱う。既知語だけの allowlist にすると
+# 未知 kind が全て同段へ潰れ、長い edge が途中ノードを貫くためである。
 _FLOW_KINDS = {"出資", "供給", "規制"}
 # frenemy の二面エッジで使う色 (協力面=提携の緑 / 競合面=競合の赤)。
 _FRENEMY_COOP_COLOR = "#2E6B52"
@@ -366,7 +367,10 @@ def _flow_layers(
     indeg: dict[str, int] = {i: 0 for i in operators}
     for e in edges:
         a, b = str(e.get("from", "")), str(e.get("to", ""))
-        if e.get("kind") in _FLOW_KINDS and a in ops and b in ops and a != b:
+        kind = str(e.get("kind", ""))
+        is_peer = kind in (_RIVAL_KINDS | _FRENEMY_KINDS | {"提携", "協力"})
+        is_directed_flow = kind in _FLOW_KINDS or (bool(kind) and not is_peer)
+        if is_directed_flow and a in ops and b in ops and a != b:
             succ[a].append(b)
             indeg[b] += 1
     rank: dict[str, int] = {i: 0 for i in operators}

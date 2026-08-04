@@ -1155,6 +1155,97 @@ def test_attempt_status_is_derived_from_canonical_ledger_not_caller_text(tmp_pat
     store.close()
 
 
+def test_observed_pre_admission_failure_is_reconciled_for_current_issue_date(tmp_path) -> None:
+    """runner到達前のTask失敗も当日ledgerへ一度だけ凍結できる。"""
+    reconcile = _required_symbol(
+        "reconcile_observed_scheduled_pre_admission_failure_in_store",
+        "RED_SCHEDULED_PRE_ADMISSION_RECONCILER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    evidence = {
+        "schemaVersion": "OBSERVED_SCHEDULED_PRE_ADMISSION_FAILURE_V1",
+        "productId": "News-Grasp",
+        "issueDate": "2026-08-04",
+        "taskName": "News-Grasp Runner",
+        "lastRunDate": "2026-08-04",
+        "lastTaskResult": 1,
+        "taskState": "Ready",
+        "runnerState": "scheduled_task_failed_before_current_state_write",
+        "stateSha256": "1" * 64,
+        "logSha256": "2" * 64,
+        "taskActionSha256": "3" * 64,
+        "runnerSha256": "4" * 64,
+        "observer": "installed_broker_scheduler_observer",
+    }
+    failure = reconcile(store=store, evidence=evidence)
+    assert failure["schemaVersion"] == "SCHEDULED_FAILURE_RECEIPT_V1"
+    assert failure["issueDate"] == "2026-08-04"
+    assert failure["scheduledAttemptStatus"] == "failed"
+    assert failure["lastTaskResult"] == 1
+    assert failure["runnerState"] == "scheduled_task_failed_before_current_state_write"
+    witness = high_cost.inspect_scheduled_news_grasp_attempt_in_store(
+        store=store, issue_date="2026-08-04"
+    )
+    assert witness["scheduledAttemptStatus"] == "failed"
+    assert witness["recoveryAttemptStatus"] == "not_started"
+    assert witness["failureReceiptSha256"] == failure["receiptSha256"]
+    with pytest.raises(high_cost.ControlError, match="SCHEDULED_PRE_ADMISSION_RECONCILE_REPLAY"):
+        reconcile(store=store, evidence=evidence)
+    store.close()
+
+
+def test_broker_exposes_self_observing_pre_admission_reconcile_command() -> None:
+    """broker自身がTaskを観測し、caller JSONを証拠として受け取らない。"""
+    source = BROKER_PATH.read_text(encoding="utf-8-sig")
+    assert 'sub.add_parser("reconcile-news-grasp-scheduled-pre-admission-failure")' in source
+    assert "observe_news_grasp_scheduled_pre_admission_failure" in source
+    command_block = source.split(
+        'sub.add_parser("reconcile-news-grasp-scheduled-pre-admission-failure")', 1
+    )[1].split("sub.add_parser", 1)[0]
+    assert "--evidence" not in command_block
+    observer_block = source.split(
+        "def observe_news_grasp_scheduled_pre_admission_failure", 1
+    )[1].split("def ", 1)[0]
+    assert "Get-FileHash" not in observer_block
+    assert "[System.Security.Cryptography.SHA256]::Create()" in observer_block
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (("lastTaskResult", 0), ("lastRunDate", "2026-08-03"), ("taskState", "Running")),
+)
+def test_pre_admission_reconcile_rejects_non_failure_or_cross_date_evidence(
+    tmp_path, field: str, value: object
+) -> None:
+    reconcile = high_cost.reconcile_observed_scheduled_pre_admission_failure_in_store
+    evidence = {
+        "schemaVersion": "OBSERVED_SCHEDULED_PRE_ADMISSION_FAILURE_V1",
+        "productId": "News-Grasp",
+        "issueDate": "2026-08-04",
+        "taskName": "News-Grasp Runner",
+        "lastRunDate": "2026-08-04",
+        "lastTaskResult": 1,
+        "taskState": "Ready",
+        "runnerState": "scheduled_task_failed_before_current_state_write",
+        "stateSha256": "1" * 64,
+        "logSha256": "2" * 64,
+        "taskActionSha256": "3" * 64,
+        "runnerSha256": "4" * 64,
+        "observer": "installed_broker_scheduler_observer",
+    }
+    evidence[field] = value
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_PRE_ADMISSION_EVIDENCE_INVALID"
+    ):
+        reconcile(store=store, evidence=evidence)
+    store.close()
+
+
 def test_broker_exposes_attempt_ledger_inspection_command() -> None:
     source = BROKER_PATH.read_text(encoding="utf-8-sig")
     assert 'sub.add_parser("inspect-news-grasp-attempt")' in source

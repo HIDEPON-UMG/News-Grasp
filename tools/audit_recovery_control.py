@@ -7,9 +7,12 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -46,6 +49,7 @@ MAX_JSON_BYTES = 1024 * 1024
 DECISION_ISSUER = "tools.audit_recovery_control"
 VERIFIED_COMPLETION_ISSUER = "tools.audit_recovery_control.actual_verifiers"
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
 CANONICAL_REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_TERMINAL_ROOT = CANONICAL_REPO_ROOT / "build" / "incidents"
 CANONICAL_BROKER_PATH = Path.home() / "bin" / "ai-model-spawn-broker.py"
@@ -167,26 +171,429 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _run_bounded(command: list[str], *, cwd: Path, timeout: int) -> tuple[int, bytes]:
+def _assign_windows_owned_job(process: subprocess.Popen[bytes]):
+    if os.name != "nt":
+        return None
+    from ctypes import wintypes
+
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+    JobObjectExtendedLimitInformation = 9
+
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_longlong),
+            ("PerJobUserTimeLimit", ctypes.c_longlong),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_ulonglong),
+            ("WriteOperationCount", ctypes.c_ulonglong),
+            ("OtherOperationCount", ctypes.c_ulonglong),
+            ("ReadTransferCount", ctypes.c_ulonglong),
+            ("WriteTransferCount", ctypes.c_ulonglong),
+            ("OtherTransferCount", ctypes.c_ulonglong),
+        ]
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+    ]
+    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        raise ValueError("OWNED_PROCESS_JOB_CREATE_FAILED")
+    info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    if not kernel32.SetInformationJobObject(
+        job,
+        JobObjectExtendedLimitInformation,
+        ctypes.byref(info),
+        ctypes.sizeof(info),
+    ) or not kernel32.AssignProcessToJobObject(job, wintypes.HANDLE(process._handle)):
+        kernel32.CloseHandle(job)
+        process.terminate()
+        process.wait(timeout=5)
+        raise ValueError("OWNED_PROCESS_JOB_ASSIGNMENT_FAILED")
+    return job
+
+
+def _terminate_owned_process_tree(
+    process: subprocess.Popen[bytes], windows_job: object | None
+) -> None:
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        if windows_job:
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+            kernel32.TerminateJobObject.restype = wintypes.BOOL
+            if not kernel32.TerminateJobObject(windows_job, 1):
+                raise ValueError("OWNED_PROCESS_JOB_TERMINATION_FAILED")
+        else:
+            process.terminate()
+    else:
+        os.killpg(process.pid, signal.SIGTERM)
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            if windows_job:
+                from ctypes import wintypes
+
+                kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+                kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+                kernel32.TerminateJobObject.restype = wintypes.BOOL
+                if not kernel32.TerminateJobObject(windows_job, 1):
+                    raise ValueError("OWNED_PROCESS_JOB_TERMINATION_FAILED")
+            else:
+                process.kill()
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=5)
+
+
+def _resume_windows_owned_process(process: subprocess.Popen[bytes]) -> None:
+    if os.name != "nt":
+        return
+    from ctypes import wintypes
+
+    ntdll = ctypes.WinDLL("ntdll", use_last_error=True)
+    ntdll.NtResumeProcess.argtypes = [wintypes.HANDLE]
+    ntdll.NtResumeProcess.restype = ctypes.c_long
+    status = ntdll.NtResumeProcess(wintypes.HANDLE(process._handle))
+    if status != 0:
+        raise ValueError("OWNED_PROCESS_RESUME_FAILED")
+
+
+def _run_bounded(
+    command: list[str],
+    *,
+    cwd: Path,
+    timeout: int,
+    env_overrides: dict[str, str] | None = None,
+) -> tuple[int, bytes]:
     creationflags = 0
     if os.name == "nt":
-        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
-        completed = subprocess.run(
-            command,
-            cwd=cwd,
-            stdout=stdout_file,
-            stderr=stderr_file,
-            timeout=timeout,
-            check=False,
-            shell=False,
-            creationflags=creationflags,
-        )
-        stdout_file.seek(0)
-        stdout = stdout_file.read(MAX_JSON_BYTES + 1)
-        if len(stdout) > MAX_JSON_BYTES:
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(
+            subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+        ) | getattr(subprocess, "CREATE_SUSPENDED", 0x00000004)
+    child_env = os.environ.copy()
+    child_env["PYTHONUTF8"] = "1"
+    child_env["PYTHONIOENCODING"] = "utf-8"
+    if env_overrides:
+        child_env.update(env_overrides)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        creationflags=creationflags,
+        env=child_env,
+        start_new_session=os.name != "nt",
+    )
+    windows_job = None
+    stdout = bytearray()
+    stderr = bytearray()
+    exceeded = threading.Event()
+
+    def drain(stream, target: bytearray) -> None:
+        reader = getattr(stream, "read1", stream.read)
+        while True:
+            chunk = reader(64 * 1024)
+            if not chunk:
+                return
+            remaining = MAX_JSON_BYTES + 1 - len(target)
+            if remaining > 0:
+                target.extend(chunk[:remaining])
+            if len(target) > MAX_JSON_BYTES or len(chunk) > remaining:
+                exceeded.set()
+                return
+
+    try:
+        windows_job = _assign_windows_owned_job(process)
+        _resume_windows_owned_process(process)
+        threads = [
+            threading.Thread(target=drain, args=(process.stdout, stdout), daemon=True),
+            threading.Thread(target=drain, args=(process.stderr, stderr), daemon=True),
+        ]
+        for thread in threads:
+            thread.start()
+        deadline = time.monotonic() + timeout
+        timed_out = False
+        while process.poll() is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                timed_out = True
+                _terminate_owned_process_tree(process, windows_job)
+                break
+            if exceeded.wait(min(0.05, remaining)):
+                _terminate_owned_process_tree(process, windows_job)
+                break
+        for thread in threads:
+            thread.join(timeout=5)
+        if exceeded.is_set() or len(stdout) > MAX_JSON_BYTES or len(stderr) > MAX_JSON_BYTES:
             raise ValueError("BOUNDED_SUBPROCESS_OUTPUT_EXCEEDED")
-        return completed.returncode, stdout
+        if timed_out:
+            raise ValueError("BOUNDED_SUBPROCESS_TIMEOUT")
+        return int(process.returncode or 0), bytes(stdout)
+    finally:
+        if process.poll() is None:
+            _terminate_owned_process_tree(process, windows_job)
+        if os.name == "nt" and windows_job:
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+            kernel32.CloseHandle.restype = wintypes.BOOL
+            if not kernel32.CloseHandle(windows_job):
+                raise ValueError("OWNED_PROCESS_JOB_CLOSE_FAILED")
+
+
+def _git_bytes(repo_root: Path, *args: str) -> bytes:
+    return_code, stdout = _run_bounded(
+        [
+            "git",
+            "-c",
+            f"core.hooksPath={os.devnull}",
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            f"core.attributesFile={os.devnull}",
+            "-C",
+            str(repo_root),
+            *args,
+        ],
+        cwd=repo_root,
+        timeout=30,
+        env_overrides={
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_ATTR_NOSYSTEM": "1",
+        },
+    )
+    if return_code != 0:
+        raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+    return stdout
+
+
+def _git_text(repo_root: Path, *args: str) -> str:
+    try:
+        return _git_bytes(repo_root, *args).decode("utf-8").strip()
+    except UnicodeDecodeError as error:
+        raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID") from error
+
+
+def _resolve_artifact_repo_root(payload: dict[str, Any]) -> Path:
+    if not payload.get("artifactRepoRoot") and not payload.get("opsRepoRoot"):
+        if not CANONICAL_REPO_ROOT.is_dir() or CANONICAL_REPO_ROOT.is_symlink():
+            raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+        return CANONICAL_REPO_ROOT.resolve()
+    candidate = Path(
+        str(payload.get("artifactRepoRoot") or CANONICAL_REPO_ROOT)
+    ).resolve()
+    if not candidate.is_dir() or candidate.is_symlink():
+        raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+    top_level = Path(_git_text(candidate, "rev-parse", "--show-toplevel")).resolve()
+    if top_level != candidate:
+        raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+    canonical_origin = _git_text(CANONICAL_REPO_ROOT, "remote", "get-url", "origin")
+    candidate_origin = _git_text(candidate, "remote", "get-url", "origin")
+    if not canonical_origin or candidate_origin != canonical_origin:
+        raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+    canonical_common_dir = Path(
+        _git_text(
+            CANONICAL_REPO_ROOT,
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+        )
+    ).resolve()
+    candidate_common_dir = Path(
+        _git_text(
+            candidate,
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+        )
+    ).resolve()
+    if candidate_common_dir != canonical_common_dir:
+        raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+    ops_root = Path(
+        str(payload.get("opsRepoRoot") or CANONICAL_REPO_ROOT)
+    ).resolve()
+    if ops_root != CANONICAL_REPO_ROOT.resolve():
+        raise ValueError("OPS_REPO_IDENTITY_INVALID")
+    return candidate
+
+
+def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
+    """実行対象codeはtrusted remote HEADと一致するclean treeに限定する。"""
+    for startup_name in ("sitecustomize.py", "usercustomize.py"):
+        startup_path = artifact_repo_root / startup_name
+        if startup_path.exists() or startup_path.is_symlink():
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    filter_return_code, filter_stdout = _run_bounded(
+        [
+            "git",
+            "-c",
+            f"core.hooksPath={os.devnull}",
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            f"core.attributesFile={os.devnull}",
+            "-C",
+            str(artifact_repo_root),
+            "config",
+            "--includes",
+            "--local",
+            "--name-only",
+            "--get-regexp",
+            r"^filter\..*\.(clean|smudge|process)$",
+        ],
+        cwd=artifact_repo_root,
+        timeout=30,
+        env_overrides={
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_ATTR_NOSYSTEM": "1",
+        },
+    )
+    if filter_return_code not in {0, 1} or filter_stdout.strip():
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    common_dir = Path(
+        _git_text(
+            artifact_repo_root,
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+        )
+    ).resolve()
+    info_attributes = common_dir / "info" / "attributes"
+    if info_attributes.exists() or info_attributes.is_symlink():
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    artifact_head = _git_text(artifact_repo_root, "rev-parse", "HEAD")
+    trusted_head = _git_text(
+        CANONICAL_REPO_ROOT, "rev-parse", "refs/remotes/origin/main"
+    )
+    if (
+        GIT_SHA_PATTERN.fullmatch(artifact_head) is None
+        or artifact_head != trusted_head
+    ):
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    dirty_executables = _git_text(
+        artifact_repo_root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--",
+        "scripts",
+        "tools",
+        "schemas",
+        "prompts",
+        "pyproject.toml",
+        "pytest.ini",
+        "requirements.txt",
+        "requirements-dev.txt",
+        ".gitattributes",
+    )
+    if dirty_executables:
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    index_tags = _git_text(
+        artifact_repo_root,
+        "ls-files",
+        "-v",
+        "--",
+        "scripts",
+        "tools",
+        "schemas",
+        "prompts",
+        "pyproject.toml",
+        "pytest.ini",
+        "requirements.txt",
+        "requirements-dev.txt",
+        ".gitattributes",
+    )
+    if any(not line.startswith("H ") for line in index_tags.splitlines() if line):
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    tree = _git_bytes(
+        CANONICAL_REPO_ROOT,
+        "ls-tree",
+        "-r",
+        "-z",
+        "--full-tree",
+        trusted_head,
+        "--",
+        "scripts",
+        "tools",
+        "schemas",
+        "prompts",
+        "pyproject.toml",
+        "pytest.ini",
+        "requirements.txt",
+        "requirements-dev.txt",
+        ".gitattributes",
+    )
+    total_bytes = 0
+    entries = [entry for entry in tree.split(b"\0") if entry]
+    if not entries or len(entries) > 5000:
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    tree_paths: set[str] = set()
+    for entry in entries:
+        try:
+            metadata, raw_relative = entry.split(b"\t", 1)
+            mode, object_type, expected_blob = metadata.decode("ascii").split(" ")
+            relative = raw_relative.decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as error:
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID") from error
+        if object_type != "blob" or mode not in {"100644", "100755"}:
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+        tree_paths.add(relative)
+        candidate = artifact_repo_root.joinpath(*Path(relative).parts)
+        if not candidate.is_file() or candidate.is_symlink():
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+        data = candidate.read_bytes()
+        total_bytes += len(data)
+        if len(data) > 16 * 1024 * 1024 or total_bytes > 512 * 1024 * 1024:
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+        actual_blob = hashlib.sha1(
+            f"blob {len(data)}\0".encode("ascii") + data
+        ).hexdigest()
+        if actual_blob != expected_blob:
+            raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    worktree_attributes = artifact_repo_root / ".gitattributes"
+    if (
+        (worktree_attributes.exists() or worktree_attributes.is_symlink())
+        and ".gitattributes" not in tree_paths
+    ):
+        raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
+    return artifact_head
 
 
 def _inspect_attempt_via_broker(*, issue_date: str) -> dict[str, Any]:
@@ -242,17 +649,18 @@ def _inspect_attempt_via_broker(*, issue_date: str) -> dict[str, Any]:
 
 
 def _validate_scheduled_failure_path(
-    scheduled: object, *, issue_date: str
+    scheduled: object, *, issue_date: str, evidence_repo_root: Path | None = None
 ) -> dict[str, Any]:
     if not isinstance(scheduled, dict) or scheduled.get("status") != "failed":
         raise ValueError("SCHEDULED_ATTEMPT_EVIDENCE_INVALID")
+    evidence_build_root = (evidence_repo_root or CANONICAL_REPO_ROOT) / "build"
     failure_path = _contained_file(
         scheduled.get("failureReceiptPath"),
-        root=CANONICAL_REPO_ROOT / "build",
+        root=evidence_build_root,
         code="SCHEDULED_ATTEMPT_EVIDENCE_INVALID",
     )
     failure = _validate_sealed(
-        _load(failure_path, expected_root=CANONICAL_REPO_ROOT / "build"),
+        _load(failure_path, expected_root=evidence_build_root),
         schema_version="SCHEDULED_FAILURE_RECEIPT_V1",
         code="SCHEDULED_ATTEMPT_EVIDENCE_INVALID",
     )
@@ -265,11 +673,13 @@ def _validate_scheduled_failure_path(
 
 
 def _validate_recovery_authority_via_broker(
-    *, issue_date: str, authority_path_value: object, failure_receipt_sha256: str
+    *, issue_date: str, authority_path_value: object, failure_receipt_sha256: str,
+    evidence_repo_root: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    evidence_build_root = (evidence_repo_root or CANONICAL_REPO_ROOT) / "build"
     authority_path = _contained_file(
         authority_path_value,
-        root=CANONICAL_REPO_ROOT / "build",
+        root=evidence_build_root,
         code="RECOVERY_AUTHORITY_INVALID",
     )
     if not CANONICAL_BROKER_PATH.is_file():
@@ -301,7 +711,7 @@ def _validate_recovery_authority_via_broker(
         code="RECOVERY_AUTHORITY_LEDGER_INVALID",
     )
     authority = _validate_recovery_authority(
-        _load(authority_path, expected_root=CANONICAL_REPO_ROOT / "build"),
+        _load(authority_path, expected_root=evidence_build_root),
         issue_date=issue_date,
         failure_receipt_sha256=failure_receipt_sha256,
     )
@@ -320,6 +730,8 @@ def _validate_recovery_authority_via_broker(
 def _verify_same_date_completion(
     *, issue_date: str, payload: dict[str, Any], expected_run_intent: str
 ) -> dict[str, Any] | None:
+    artifact_repo_root = _resolve_artifact_repo_root(payload)
+    artifact_repo_head = _validate_artifact_executable_tree(artifact_repo_root)
     runner_state_path = CANONICAL_RUNNER_STATE_PATH
     if not runner_state_path.is_file() or runner_state_path.is_symlink():
         raise ValueError("RUNNER_STATE_EVIDENCE_INVALID")
@@ -347,7 +759,7 @@ def _verify_same_date_completion(
             "--require-deepdive",
             "--json",
         ],
-        cwd=CANONICAL_REPO_ROOT,
+        cwd=artifact_repo_root,
         timeout=180,
     )
     if quality_return_code != 0:
@@ -356,20 +768,44 @@ def _verify_same_date_completion(
         quality = json.loads(quality_stdout.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return None
-    from tools.daily_self_heal import verify_publish_complete
-
-    publish = verify_publish_complete(
-        repo_root=CANONICAL_REPO_ROOT,
-        date=issue_date,
-        remote="origin",
-        branch="main",
-        public_base_url="https://hidepon-umg.github.io/News-Grasp/",
-        wait_sec=wait_sec,
-        poll_sec=poll_sec,
-        notification_state_path=(
-            CANONICAL_REPO_ROOT / "build" / "notification" / f"{issue_date}.json"
-        ),
+    publish_return_code, publish_stdout = _run_bounded(
+        [
+            sys.executable,
+            "-m",
+            "tools.daily_self_heal",
+            "verify-publish-complete",
+            "--repo-root",
+            str(artifact_repo_root),
+            "--ops-repo-root",
+            str(CANONICAL_REPO_ROOT),
+            "--date",
+            issue_date,
+            "--remote",
+            "origin",
+            "--branch",
+            "main",
+            "--public-base-url",
+            "https://hidepon-umg.github.io/News-Grasp/",
+            "--wait-sec",
+            str(wait_sec),
+            "--poll-sec",
+            str(poll_sec),
+            "--primary-podcast-state",
+            str(artifact_repo_root / "build" / "youtube-podcast" / "uploads.json"),
+            "--deepdive-podcast-state",
+            str(artifact_repo_root / "build" / "youtube-podcast-deepdive" / "uploads.json"),
+            "--notification-state",
+            str(artifact_repo_root / "build" / "notification" / f"{issue_date}.json"),
+        ],
+        cwd=artifact_repo_root,
+        timeout=900,
     )
+    if publish_return_code != 0:
+        return None
+    try:
+        publish = json.loads(publish_stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
     if publish.get("ok") is not True or publish.get("date") != issue_date:
         return None
     evidence_seed = {
@@ -436,7 +872,14 @@ def classify_repair_payload(payload: object) -> str:
     return "incident_required"
 
 
-def validate_recovery_execution_manifest(manifest: object) -> dict[str, Any]:
+def validate_recovery_execution_manifest(
+    manifest: object,
+    *,
+    issue_date: str | None = None,
+    authority_receipt_sha256: str | None = None,
+    artifact_repo_head: str | None = None,
+    runner_sha256: str | None = None,
+) -> dict[str, Any]:
     if not isinstance(manifest, dict):
         raise ValueError("HUMAN_IMPACT_CONTRACT_INVALID")
     if (
@@ -448,6 +891,18 @@ def validate_recovery_execution_manifest(manifest: object) -> dict[str, Any]:
         or manifest.get("noAutoOpen") is not True
     ):
         raise ValueError("HUMAN_IMPACT_CONTRACT_INVALID")
+    if issue_date is not None and (
+        manifest.get("issueDate") != issue_date
+        or manifest.get("recoveryAuthorityReceiptSha256")
+        != authority_receipt_sha256
+        or manifest.get("artifactRepoHead") != artifact_repo_head
+        or manifest.get("runnerSha256") != runner_sha256
+        or not _valid_sha256(manifest.get("recoveryAuthorityReceiptSha256"))
+        or GIT_SHA_PATTERN.fullmatch(str(manifest.get("artifactRepoHead") or ""))
+        is None
+        or not _valid_sha256(manifest.get("runnerSha256"))
+    ):
+        raise ValueError("RECOVERY_EXECUTION_BINDING_INVALID")
     return dict(manifest)
 
 
@@ -581,12 +1036,14 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
 
     if ledger_scheduled_status == "failed":
         try:
+            artifact_repo_root = _resolve_artifact_repo_root(payload)
             failure = _validate_scheduled_failure_path(
                 {
                     "status": "failed",
                     "failureReceiptPath": payload.get("scheduledFailureReceiptPath"),
                 },
                 issue_date=issue_date,
+                evidence_repo_root=artifact_repo_root,
             )
             failure_sha = str(failure["receiptSha256"])
             if failure_sha != attempt_witness.get("failureReceiptSha256"):
@@ -595,6 +1052,7 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
                 issue_date=issue_date,
                 authority_path_value=payload.get("recoveryAuthorityPath"),
                 failure_receipt_sha256=failure_sha,
+                evidence_repo_root=artifact_repo_root,
             )
             if authority.get("receiptSha256") != attempt_witness.get(
                 "recoveryAuthorityReceiptSha256"
@@ -670,6 +1128,103 @@ def decide_audit_recovery(payload: object) -> dict[str, Any]:
         recovery_status=recovery_status,
         reason_code="REPAIR_CLASS_INCIDENT_REQUIRED",
     )
+
+
+def execute_audit_recovery(payload: object) -> dict[str, Any]:
+    """監査判断、production recovery 1回、same-gate再検証、typed terminalを一続きで閉じる。"""
+    if not isinstance(payload, dict):
+        raise ValueError("AUDIT_RECOVERY_INPUT_INVALID")
+    issue_date = _validate_issue_date(payload.get("issueDate"))
+    decision = decide_audit_recovery(payload)
+    if decision.get("terminal"):
+        write_audit_terminal(decision)
+        return decision
+    if decision.get("action") != "scheduled_recovery":
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status=str(decision.get("scheduledAttemptStatus") or "unverified"),
+            recovery_status=str(decision.get("recoveryAttemptStatus") or "unverified"),
+            reason_code="AUDIT_RECOVERY_ACTION_INVALID",
+        )
+        write_audit_terminal(incident)
+        return incident
+
+    artifact_repo_root = _resolve_artifact_repo_root(payload)
+    artifact_repo_head = _validate_artifact_executable_tree(artifact_repo_root)
+    authority_path = _contained_file(
+        payload.get("recoveryAuthorityPath"),
+        root=artifact_repo_root / "build",
+        code="RECOVERY_AUTHORITY_INVALID",
+    )
+    runner_path = CANONICAL_REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
+    if not runner_path.is_file() or runner_path.is_symlink():
+        raise ValueError("RECOVERY_RUNNER_INVALID")
+    runner_sha256 = _file_sha256(runner_path)
+    canonical_python = CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe"
+    if not canonical_python.is_file() or canonical_python.is_symlink():
+        raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
+    validate_recovery_execution_manifest(
+        payload.get("recoveryExecution"),
+        issue_date=issue_date,
+        authority_receipt_sha256=str(
+            decision.get("recoveryAuthorityReceiptSha256") or ""
+        ),
+        artifact_repo_head=artifact_repo_head,
+        runner_sha256=runner_sha256,
+    )
+    high_cost_workspace = CANONICAL_REPO_ROOT.parent
+    state_path = Path.home() / "bin" / "news-grasp-runner-state.json"
+    log_dir = Path.home() / "bin" / "news-grasp-logs"
+    command = [
+        "powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(runner_path),
+        "-RunIntent",
+        "ScheduledRecoveryFull",
+        "-DateStampOverride",
+        issue_date,
+        "-RepoDirOverride",
+        str(artifact_repo_root),
+        "-OpsRepoRootOverride",
+        str(CANONICAL_REPO_ROOT),
+        "-PyExeOverride",
+        str(canonical_python),
+        "-StateFileOverride",
+        str(state_path),
+        "-LogDirOverride",
+        str(log_dir),
+        "-HighCostWorkspaceRoot",
+        str(high_cost_workspace),
+        "-HighCostBudgetToolPath",
+        str(CANONICAL_BROKER_PATH),
+        "-ScheduledAuthorityEvidencePath",
+        str(authority_path),
+    ]
+    return_code, _ = _run_bounded(command, cwd=artifact_repo_root, timeout=10800)
+    if return_code != 0:
+        incident = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status="started",
+            reason_code=f"RECOVERY_EXECUTION_FAILED_{return_code}",
+        )
+        write_audit_terminal(incident)
+        return incident
+
+    final_decision = decide_audit_recovery(payload)
+    if final_decision.get("terminal") != "audit_recovered_green":
+        final_decision = _incident(
+            issue_date=issue_date,
+            scheduled_status="failed",
+            recovery_status="started",
+            reason_code="RECOVERY_COMPLETION_INVALID",
+        )
+    write_audit_terminal(final_decision)
+    return final_decision
 
 
 def write_audit_terminal(decision: object) -> dict[str, Any]:
@@ -783,15 +1338,30 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     decide = sub.add_parser("decide")
     decide.add_argument("--input", type=Path, required=True)
+    execute = sub.add_parser("execute")
+    execute.add_argument("--input", type=Path, required=True)
     classify = sub.add_parser("classify-repair")
     classify.add_argument("--input", type=Path, required=True)
+    verify_tree = sub.add_parser("verify-artifact-tree")
+    verify_tree.add_argument("--artifact-root", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "decide":
         result = decide_audit_recovery(_load(args.input))
         if result.get("terminal"):
             write_audit_terminal(result)
+    elif args.command == "execute":
+        result = execute_audit_recovery(_load(args.input))
     elif args.command == "classify-repair":
         result = {"classification": classify_repair_payload(_load(args.input))}
+    elif args.command == "verify-artifact-tree":
+        artifact_root = args.artifact_root.resolve()
+        if not artifact_root.is_dir() or artifact_root.is_symlink():
+            raise ValueError("ARTIFACT_REPO_IDENTITY_INVALID")
+        result = {
+            "schemaVersion": "ARTIFACT_EXECUTABLE_TREE_VERIFICATION_V1",
+            "artifactRepoHead": _validate_artifact_executable_tree(artifact_root),
+            "status": "trusted_tree_bytes_match",
+        }
     else:
         raise ValueError("AUDIT_RECOVERY_COMMAND_INVALID")
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))

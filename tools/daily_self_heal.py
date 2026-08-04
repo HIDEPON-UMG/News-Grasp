@@ -1964,22 +1964,59 @@ def verify_publish(
             "resolution": "source_head_without_git_metadata",
             "deploy_relevant_paths": list(_DEPLOY_RELEVANT_PATHS),
         }
-    deploy_head = str(deploy_resolution["deploy_head"])
+    deploy_relevant_head = str(deploy_resolution["deploy_head"])
+    deadline = time.monotonic() + max(0, wait_sec)
+    # 複数 commit を 1 push した場合、workflow の head_sha は docs を変更した途中 commit
+    # ではなく push の最終 HEAD になる。まず source HEAD を実測し、workflow が存在しない
+    # tools-only push の場合だけ直近 deploy-relevant ancestor へフォールバックする。
+    source_workflow = verify_deploy_workflow(
+        repo_root=repo_root,
+        remote=remote,
+        branch=branch,
+        expected_commit=local_head,
+    )
+    deploy_head = local_head
+    if source_workflow.get("ok"):
+        deploy_workflow = source_workflow
+    elif _is_retryable_deploy_workflow(source_workflow) and str(source_workflow.get("status") or ""):
+        if time.monotonic() < deadline:
+            time.sleep(max(1, poll_sec))
+        deploy_workflow = wait_for_deploy_workflow(
+            repo_root=repo_root,
+            remote=remote,
+            branch=branch,
+            expected_commit=local_head,
+            deadline=deadline,
+            poll_sec=poll_sec,
+        )
+    elif not _is_retryable_deploy_workflow(source_workflow):
+        deploy_workflow = source_workflow
+    elif deploy_relevant_head != local_head:
+        deploy_head = deploy_relevant_head
+        deploy_workflow = wait_for_deploy_workflow(
+            repo_root=repo_root,
+            remote=remote,
+            branch=branch,
+            expected_commit=deploy_relevant_head,
+            deadline=deadline,
+            poll_sec=poll_sec,
+        )
+    else:
+        deploy_workflow = wait_for_deploy_workflow(
+            repo_root=repo_root,
+            remote=remote,
+            branch=branch,
+            expected_commit=local_head,
+            deadline=deadline,
+            poll_sec=poll_sec,
+        )
     head_state = {
         "local_head": local_head,
         "remote_head": remote_head,
         "deploy_head": deploy_head,
+        "deploy_relevant_head": deploy_relevant_head,
         "deploy_head_resolution": deploy_resolution,
     }
-    deadline = time.monotonic() + max(0, wait_sec)
-    deploy_workflow = wait_for_deploy_workflow(
-        repo_root=repo_root,
-        remote=remote,
-        branch=branch,
-        expected_commit=deploy_head,
-        deadline=deadline,
-        poll_sec=poll_sec,
-    )
     if not deploy_workflow["ok"]:
         return {
             "ok": False,

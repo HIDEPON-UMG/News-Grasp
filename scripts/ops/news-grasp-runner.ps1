@@ -217,8 +217,10 @@ $OpsRepoRoot = if ($OpsRepoRootOverride) {
 }
 $LogDir    = Join-Path $env:USERPROFILE 'bin\news-grasp-logs'
 $GitExe    = 'C:\Program Files\Git\cmd\git.exe'
+$GitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
+$env:GIT_ATTR_NOSYSTEM = '1'
 $CodexExe  = Resolve-CodexCliExe -Override $CodexExeOverride
-$PyExe     = Join-Path $RepoDir '.venv\Scripts\python.exe'
+$PyExe     = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe'
 $CodexWrapper = Join-Path $env:USERPROFILE 'bin\run_codex_with_timeout.ps1'
 $TimeoutSec = 4800  # 2026-06-12: 3600→4800。日次 digest の wall-clock timeout を 80 分へ延長。真の暴走は IdleTimeoutSec 900 が先に検知する
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
@@ -226,6 +228,7 @@ $CodexOutputSchema = Join-Path $RepoDir 'schemas\model_eval_output.schema.json'
 $CodexLastMessage = Join-Path $RepoDir 'build\codex-last-message.txt'
 $RepoManagedRunner = Join-Path $RepoDir 'scripts\ops\news-grasp-runner.ps1'
 $RepoManagedWatcher = Join-Path $RepoDir 'scripts\ops\watch-news-grasp-runner.ps1'
+$canonicalMaterializer = Join-Path $OpsRepoRoot 'tools\materialize_editor_output.py'
 $PublicBaseUrl = 'https://hidepon-umg.github.io/News-Grasp/'
 $InvokedLog = Join-Path $env:USERPROFILE 'bin\news-grasp-invoked.log'
 $StateFile  = Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'
@@ -268,7 +271,10 @@ if (-not $HighCostBudgetToolPath) {
     }
 }
 $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT = $HighCostWorkspaceRoot
-if (-not $PyExeOverride) { $PyExe = Join-Path $RepoDir '.venv\Scripts\python.exe' }
+if (-not $PyExeOverride) { $PyExe = Join-Path $OpsRepoRoot '.venv\Scripts\python.exe' }
+$env:PYTHONSAFEPATH = '1'
+$env:PYTHONNOUSERSITE = '1'
+$env:PYTHONPATH = $RepoDir
 $PromptFile = Join-Path $RepoDir 'prompts\runner-prompt.md'
 $CodexOutputSchema = Join-Path $RepoDir 'schemas\model_eval_output.schema.json'
 $CodexLastMessage = Join-Path $RepoDir 'build\codex-last-message.txt'
@@ -373,10 +379,10 @@ function Get-PublishInventoryArtifacts {
     }
 }
 
-$DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'
-$PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'
-$PublishedRepairArtifacts = Get-PublishInventoryArtifacts -Kind 'published-repair'
-$script:RequiredCategoriesForSlo = @(Get-PublishInventoryArtifacts -Kind 'categories')
+$DailyDigestArtifacts = @()
+$PublishedDocsArtifacts = @()
+$PublishedRepairArtifacts = @()
+$script:RequiredCategoriesForSlo = @()
 
 function Get-RunnerStateMutexName {
     param([string] $Path)
@@ -947,13 +953,13 @@ function Test-WorkspaceWriteReadiness {
 
 function Test-PublishExternalReadiness {
     try {
-        Invoke-Logged { & $GitExe -C $RepoDir ls-remote --exit-code origin main }
+        Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir ls-remote --exit-code origin main }
         if ($LASTEXITCODE -ne 0) {
             Write-Log "publish external readiness failed: git ls-remote origin main rc=$LASTEXITCODE"
             return New-ExternalReadinessResult -Ok $false -Kind 'github_remote' -System 'github' -Status "rc=$LASTEXITCODE" -Detail 'git ls-remote origin main'
         }
         if (-not $NoPush) {
-            Invoke-Logged { & $GitExe -C $RepoDir push --dry-run origin HEAD:main }
+            Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir push --dry-run origin HEAD:main }
             if ($LASTEXITCODE -ne 0) {
                 Write-Log "publish external readiness failed: git push --dry-run origin HEAD:main rc=$LASTEXITCODE"
                 return New-ExternalReadinessResult -Ok $false -Kind 'git_push_auth' -System 'github' -Status "rc=$LASTEXITCODE" -Detail 'git push --dry-run origin HEAD:main'
@@ -1168,7 +1174,7 @@ function Assert-RunnerBinaryInSync {
     $repoRunnerSha = Get-FileSha256Hex -Path $RepoManagedRunner
     $repoWatcherSha = Get-FileSha256Hex -Path $RepoManagedWatcher
     $taskAction = Get-ScheduledTaskActionSummary
-    Write-Log "runner launch snapshot repo_dir=$RepoDir repo_head=$(& $GitExe -C $RepoDir rev-parse --short HEAD 2>$null) live_runner_sha=$liveRunnerSha repo_runner_sha=$repoRunnerSha repo_watcher_sha=$repoWatcherSha task_action=$taskAction"
+    Write-Log "runner launch snapshot repo_dir=$RepoDir repo_head=$(& $GitExe @GitSafeArgs -C $RepoDir rev-parse --short HEAD 2>$null) live_runner_sha=$liveRunnerSha repo_runner_sha=$repoRunnerSha repo_watcher_sha=$repoWatcherSha task_action=$taskAction"
     if ($liveRunnerSha -ne $repoRunnerSha) {
         if (Test-NormalDailyPublishRun) {
             if ($env:NEWS_GRASP_RUNNER_SYNC_REEXEC -eq '1') {
@@ -1222,7 +1228,7 @@ function Invoke-GitAddWithIndexLockRetry {
         [int] $MaxAttempts = 5
     )
     for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
-        Invoke-Logged { & $GitExe -C $RepoDir add @Pathspecs }
+        Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir add @Pathspecs }
         $addRc = $LASTEXITCODE
         if ($addRc -eq 0) {
             return $true
@@ -1444,6 +1450,27 @@ function Test-YouTubePodcastAuthReadiness {
     return $true
 }
 
+function Test-ArtifactExecutableTreeIntegrity {
+    if ($Stage2EditorSmokeOnly -or $SmokeTest -or $PreflightOnly) { return $true }
+    $auditControl = Join-Path $OpsRepoRoot 'tools\audit_recovery_control.py'
+    if (-not (Test-Path -LiteralPath $auditControl -PathType Leaf)) {
+        Write-Log "ERROR: trusted artifact verifier missing: $auditControl"
+        return $false
+    }
+    Push-Location $RepoDir
+    try {
+        Invoke-Logged { & $PyExe '-I' $auditControl 'verify-artifact-tree' '--artifact-root' $RepoDir }
+        $verifyRc = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($verifyRc -ne 0) {
+        Write-Log "ERROR: ARTIFACT_EXECUTABLE_TREE_INVALID rc=$verifyRc"
+        return $false
+    }
+    return $true
+}
+
 function Invoke-CodexWrapper {
     param(
         [string] $PromptFile,
@@ -1493,7 +1520,10 @@ function Invoke-CodexWrapper {
     $wrapperOk = $?
     $wrapperRc = $LASTEXITCODE
     if (-not $wrapperOk) {
-        if ($null -eq $wrapperRc -or $wrapperRc -eq 0) { return 125 }
+        if ($null -eq $wrapperRc -or $wrapperRc -eq 0) { $wrapperRc = 125 }
+    }
+    if ($FlowName -notlike 'reporter:*') {
+        if (-not (Test-ArtifactExecutableTreeIntegrity)) { return 126 }
     }
     return $wrapperRc
 }
@@ -1544,42 +1574,29 @@ function Sync-EditorOutputPreview {
     param(
         [Parameter(Mandatory=$true)][string] $PreviewPath,
         [string] $FallbackPath = '',
-        [switch] $ValidateOnly
+        [string] $CapturePath = ''
     )
     $sourcePath = $PreviewPath
-    if (-not (Test-Path -LiteralPath $sourcePath)) {
-        if ($FallbackPath -and (Test-Path -LiteralPath $FallbackPath)) {
-            $sourcePath = $FallbackPath
-        } else {
-            Write-Log "editor output preview missing: $PreviewPath"
-            return
-        }
+    if ($FallbackPath -and (Test-Path -LiteralPath $FallbackPath)) {
+        # CodexLastMessage は attempt ごとに更新される。前 attempt の preview が残っていても、
+        # 現 attempt の出力を先に検証して preview へ昇格する。
+        $sourcePath = $FallbackPath
+    } elseif (-not (Test-Path -LiteralPath $sourcePath)) {
+        Write-Log "ERROR: editor output preview missing: $PreviewPath"
+        return 2
     }
+    if (-not $CapturePath) {
+        $CapturePath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-materialize-$DateStamp-$PID.log")
+    }
+    $receiptPath = Join-Path $ReporterArtifactDir 'editor-materialization-receipt.json'
+    Push-Location $RepoDir
     try {
-        $payload = Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8 | ConvertFrom-Json
-    } catch {
-        Write-Log "ERROR: editor output preview JSON parse failed: $sourcePath reason=$($_.Exception.Message)"
-        return
-    }
-    if ($ValidateOnly) {
-        if ([System.IO.Path]::GetFullPath($sourcePath) -ne [System.IO.Path]::GetFullPath($PreviewPath)) {
-            Copy-Item -LiteralPath $sourcePath -Destination $PreviewPath -Force
+        Invoke-LoggedCapture -CapturePath $CapturePath -Block {
+            & $PyExe '-I' $canonicalMaterializer '--source' $sourcePath '--repo-root' $RepoDir '--date' $DateStamp '--receipt' $receiptPath
         }
-        return
-    }
-
-    $summary = [string] $payload.summary_markdown
-    if (-not [string]::IsNullOrWhiteSpace($summary)) {
-        $summaryPath = Join-Path $RepoDir "digest\Summary\$DateStamp.md"
-        New-Item -ItemType Directory -Path (Split-Path -Parent $summaryPath) -Force | Out-Null
-        [System.IO.File]::WriteAllText($summaryPath, ($summary.TrimEnd() + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
-        Write-Log "editor summary materialized: $summaryPath"
-    }
-
-    if ($payload.PSObject.Properties.Name -contains 'append_records') {
-        $articlesPath = Join-Path $RepoDir 'data\articles.jsonl'
-        $added = Add-JsonlRecordsIfMissing -Path $articlesPath -Records @($payload.append_records)
-        Write-Log "editor append_records materialized: added=$added path=$articlesPath"
+        return $LASTEXITCODE
+    } finally {
+        Pop-Location
     }
 }
 
@@ -2189,7 +2206,7 @@ function Test-RepairPatchExistingPolicy {
 }
 
 function Snapshot-RepairWorkspace {
-    $lines = @(& $GitExe -C $RepoDir status --porcelain --untracked-files=all)
+    $lines = @(& $GitExe @GitSafeArgs -C $RepoDir status --porcelain --untracked-files=all)
     if ($LASTEXITCODE -ne 0) {
         Write-Log "WARN: failed to snapshot repair workspace (rc=$LASTEXITCODE)"
         return @()
@@ -2419,9 +2436,9 @@ function Preserve-UnverifiedGeneratedArtifacts {
             Copy-Item -LiteralPath $full -Destination $dest -Recurse -Force
             Write-Log "preserved unverified generated artifact: $rel -> $dest"
         }
-        $tracked = & $GitExe -C $RepoDir ls-files -- $rel
+        $tracked = & $GitExe @GitSafeArgs -C $RepoDir ls-files -- $rel
         if ($tracked) {
-            Invoke-Logged { & $GitExe -C $RepoDir checkout -- $rel }
+            Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir checkout -- $rel }
             if ($LASTEXITCODE -ne 0) {
                 Write-Log "WARN: failed to restore tracked generated artifact: $rel (rc=$LASTEXITCODE)"
             }
@@ -2432,7 +2449,7 @@ function Preserve-UnverifiedGeneratedArtifacts {
 function Resolve-LastGoodDocsRef {
     $shortDate = $DateStamp.Substring(5)
     $compactDate = $DateStamp.Replace('-', '')
-    $history = & $GitExe -C $RepoDir log "--format=%H`t%s" -- 'docs/index.html'
+    $history = & $GitExe @GitSafeArgs -C $RepoDir log "--format=%H`t%s" -- 'docs/index.html'
     foreach ($entry in $history) {
         $parts = $entry -split "`t", 2
         if ($parts.Count -lt 2) { continue }
@@ -2507,7 +2524,7 @@ function Write-RecoverOnlyInputManifest {
 
     $repoHead = 'unknown'
     try {
-        $head = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
+        $head = (& $GitExe @GitSafeArgs -C $RepoDir rev-parse HEAD 2>$null)
         if ($LASTEXITCODE -eq 0 -and $head) {
             $repoHead = [string] $head
         }
@@ -2534,7 +2551,7 @@ function Write-RecoverOnlyInputManifest {
 function Write-DistributionManifest {
     $prePublishCommit = ''
     try {
-        $head = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
+        $head = (& $GitExe @GitSafeArgs -C $RepoDir rev-parse HEAD 2>$null)
         if ($LASTEXITCODE -eq 0 -and $head) {
             $candidate = [string] $head
             if ($candidate -match '^[0-9a-fA-F]{40}$') {
@@ -2755,6 +2772,27 @@ if ($FinalizeVerifiedPublishManifest) {
     exit 0
 }
 
+# 前回 crash の WAL を、daily artifact の inventory/read と reporter/model 起動より先に回復する。
+$EditorTransactionRecoveryCapture = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-transaction-recovery-$DateStamp-$PID.log")
+Push-Location $RepoDir
+try {
+    Invoke-LoggedCapture -CapturePath $EditorTransactionRecoveryCapture -Block {
+        & $PyExe '-I' $canonicalMaterializer '--repo-root' $RepoDir '--date' $DateStamp '--recover-only'
+    }
+    $editorTransactionRecoveryRc = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+if ($editorTransactionRecoveryRc -ne 0) {
+    Write-Log "ERROR: EDITOR_OUTPUT_TRANSACTION_RECOVERY_REQUIRED rc=$editorTransactionRecoveryRc capture=$EditorTransactionRecoveryCapture"
+    Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-transaction-recovery' -Reason 'EDITOR_OUTPUT_TRANSACTION_RECOVERY_REQUIRED' -ExitCode $editorTransactionRecoveryRc
+}
+
+$DailyDigestArtifacts = Get-PublishInventoryArtifacts -Kind 'digest'
+$PublishedDocsArtifacts = Get-PublishInventoryArtifacts -Kind 'published'
+$PublishedRepairArtifacts = Get-PublishInventoryArtifacts -Kind 'published-repair'
+$script:RequiredCategoriesForSlo = @(Get-PublishInventoryArtifacts -Kind 'categories')
+
 $gateAttemptDir = Join-Path $RepoDir 'data\gate_attempts'
 $gateAttemptArchive = Join-Path $RepoDir "build\recovery\gate-attempt-archives\$DateStamp\$RunId"
 $priorGateAttempts = @(Get-ChildItem -LiteralPath $gateAttemptDir -Filter "$DateStamp*.json" -File -ErrorAction SilentlyContinue)
@@ -2843,12 +2881,16 @@ if ($SkipSourceSync) {
 
     # ===== 1. git fetch / pull =====
     Write-Log 'git fetch start'
-    Invoke-Logged { & $GitExe -C $RepoDir fetch --quiet origin main }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir fetch --quiet origin main }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git fetch failed (rc=$LASTEXITCODE)"; exit 1 }
 
     Write-Log 'git pull --ff-only start'
-    Invoke-Logged { & $GitExe -C $RepoDir pull --ff-only origin main }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir pull --ff-only origin main }
     if ($LASTEXITCODE -ne 0) { Stop-ExternalReadiness -Reason "git pull failed (rc=$LASTEXITCODE)" -ExitCode 71 -Kind 'github_remote' -System 'github' -ExternalStatus "rc=$LASTEXITCODE" -ExternalDetail 'git pull --ff-only origin main' }
+}
+
+if (-not (Test-ArtifactExecutableTreeIntegrity)) {
+    Exit-Runner -Status 'blocked_artifact_executable_tree_invalid' -Message 'ARTIFACT_EXECUTABLE_TREE_INVALID before production tools' -ExitCode 126
 }
 
 if ($SmokeTest) {
@@ -3333,6 +3375,9 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $ReporterTerminalExitCode = 1
     for ($attempt = 1; $attempt -le $ReporterMaxAttempts -and $retryCategories.Count -gt 0; $attempt++) {
         $waveResults = Invoke-ReporterWave -Attempt $attempt -WaveCategories $retryCategories
+        if (-not (Test-ArtifactExecutableTreeIntegrity)) {
+            Exit-Runner -Status 'blocked_artifact_executable_tree_invalid' -Message 'ARTIFACT_EXECUTABLE_TREE_INVALID immediately after reporter wave' -ExitCode 126
+        }
         $nextRetryCategories = @()
         $failedCategories = @()
 
@@ -3401,6 +3446,10 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         exit $ReporterTerminalExitCode
     }
 
+    if (-not (Test-ArtifactExecutableTreeIntegrity)) {
+        Exit-Runner -Status 'blocked_artifact_executable_tree_invalid' -Message 'ARTIFACT_EXECUTABLE_TREE_INVALID after reporter fan-out' -ExitCode 126
+    }
+
     Push-Location $RepoDir
     try {
         Invoke-Logged { & $PyExe '-m' 'tools.prepare_editor_workspace' '--repo-root' $RepoDir '--date' $DateStamp }
@@ -3461,11 +3510,64 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     Set-Content -Path $EditorPromptFile -Value ($DateHeader + "`n`n" + $EditorProducerContract + "`n`n" + $PromptBody) -Encoding UTF8
     Write-Log "editor prompt date injected: header='$DateHeader' -> $EditorPromptFile"
 
+    function Resolve-EditorArtifactPath {
+        param([Parameter(Mandatory=$true)][string] $RelativePath)
+        if ([System.IO.Path]::IsPathRooted($RelativePath)) {
+            throw "EDITOR_SNAPSHOT_PATH_INVALID: rooted path"
+        }
+        $normalized = $RelativePath.Replace('\', '/').TrimStart('/')
+        $escapedDate = [regex]::Escape($DateStamp)
+        $allowedPatterns = @(
+            '^data/articles\.jsonl$',
+            "^digest/Summary/$escapedDate(?:-audio-script)?\.md$",
+            "^digest/[A-Za-z0-9_-]+/$escapedDate-[A-Za-z0-9_-]+\.md$",
+            "^tmp/newsroom/$escapedDate/[A-Za-z0-9_-]+\.records\.jsonl$",
+            "^data/search_audit/$escapedDate/[A-Za-z0-9_-]+\.json$"
+        )
+        if (-not @($allowedPatterns | Where-Object { $normalized -match $_ })) {
+            throw "EDITOR_SNAPSHOT_PATH_INVALID: path is outside the artifact allowlist"
+        }
+        $repoFull = [System.IO.Path]::GetFullPath($RepoDir).TrimEnd('\', '/')
+        $candidate = [System.IO.Path]::GetFullPath((Join-Path $repoFull $normalized))
+        $repoPrefix = $repoFull + [System.IO.Path]::DirectorySeparatorChar
+        if (-not $candidate.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "EDITOR_SNAPSHOT_PATH_INVALID: path escaped repo root"
+        }
+        $current = $repoFull
+        foreach ($segment in $normalized.Split('/')) {
+            $current = Join-Path $current $segment
+            if (Test-Path -LiteralPath $current) {
+                $attributes = [System.IO.File]::GetAttributes($current)
+                if (($attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    throw "EDITOR_SNAPSHOT_PATH_INVALID: reparse point"
+                }
+            }
+        }
+        return $candidate
+    }
+
+    function Get-EditorSnapshotSha256 {
+        param([Parameter(Mandatory=$true)][string] $Path)
+        return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+
     function New-EditorAttemptSnapshot {
         param([int] $Attempt)
-        $snapshotDir = Join-Path $RepoDir "_ops\editor-attempt-snapshots\$DateStamp\attempt-$Attempt"
-        if (Test-Path $snapshotDir) { Remove-Item -LiteralPath $snapshotDir -Recurse -Force }
+        $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/')
+        $tempAttributes = [System.IO.File]::GetAttributes($tempRoot)
+        if (($tempAttributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'EDITOR_SNAPSHOT_PATH_INVALID: temp root is a reparse point'
+        }
+        $snapshotName = "news-grasp-editor-snapshot-$DateStamp-$PID-$Attempt-$([Guid]::NewGuid().ToString('N'))"
+        $snapshotDir = [System.IO.Path]::GetFullPath((Join-Path $tempRoot $snapshotName))
+        if ((Split-Path -Parent $snapshotDir) -ne $tempRoot -or (Test-Path -LiteralPath $snapshotDir)) {
+            throw 'EDITOR_SNAPSHOT_PATH_INVALID: snapshot directory is not fresh'
+        }
         New-Item -ItemType Directory -Path $snapshotDir -Force | Out-Null
+        $snapshotAttributes = [System.IO.File]::GetAttributes($snapshotDir)
+        if (($snapshotAttributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'EDITOR_SNAPSHOT_PATH_INVALID: snapshot directory is a reparse point'
+        }
         $paths = @('data/articles.jsonl', "digest/Summary/$DateStamp.md", "digest/Summary/$DateStamp-audio-script.md")
         foreach ($artifact in $ReporterArtifacts) {
             foreach ($artifactPath in @($artifact.records_file, $artifact.digest_file, $artifact.search_audit)) {
@@ -3478,7 +3580,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         }
         $entries = @()
         foreach ($relativePath in @($paths | Select-Object -Unique)) {
-            $source = Join-Path $RepoDir $relativePath
+            $source = Resolve-EditorArtifactPath -RelativePath $relativePath
             $sha = [System.Security.Cryptography.SHA256]::Create()
             try {
                 $snapshotName = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($relativePath)))).Replace('-', '').ToLowerInvariant()
@@ -3487,32 +3589,108 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             }
             $snapshotPath = Join-Path $snapshotDir $snapshotName
             $exists = Test-Path -LiteralPath $source
-            if ($exists) { Copy-Item -LiteralPath $source -Destination $snapshotPath -Force }
-            $entries += [pscustomobject]@{ relative_path = $relativePath; existed = $exists; snapshot_path = $snapshotPath }
+            if ($exists) {
+                if (Test-Path -LiteralPath $source -PathType Container) {
+                    throw "EDITOR_SNAPSHOT_DIRECTORY_FORBIDDEN: $relativePath"
+                }
+                Copy-Item -LiteralPath $source -Destination $snapshotPath -Force | Out-Null
+            }
+            $entries += [pscustomobject]@{
+                relative_path = $relativePath
+                existed = $exists
+                snapshot_name = $snapshotName
+                snapshot_sha256 = if ($exists) { Get-EditorSnapshotSha256 -Path $snapshotPath } else { '' }
+            }
         }
         $manifestPath = Join-Path $snapshotDir 'manifest.json'
         $entries | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
-        return $manifestPath
+        return [pscustomobject]@{
+            manifest_path = $manifestPath
+            manifest_sha256 = Get-EditorSnapshotSha256 -Path $manifestPath
+            snapshot_dir = $snapshotDir
+        }
     }
 
     function Restore-EditorAttemptSnapshot {
-        param([string] $ManifestPath)
-        $entries = @(Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+        param([object] $Snapshot)
+        $manifestFull = [System.IO.Path]::GetFullPath([string]$Snapshot.manifest_path)
+        $snapshotDir = Split-Path -Parent $manifestFull
+        $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/')
+        if ((Split-Path -Parent $snapshotDir) -ne $tempRoot -or
+            [System.IO.Path]::GetFullPath([string]$Snapshot.snapshot_dir) -ne $snapshotDir -or
+            -not (Test-Path -LiteralPath $snapshotDir -PathType Container) -or
+            -not (Test-Path -LiteralPath $manifestFull -PathType Leaf)) {
+            throw 'EDITOR_SNAPSHOT_MANIFEST_TAMPERED: snapshot identity mismatch'
+        }
+        foreach ($protectedPath in @($snapshotDir, $manifestFull)) {
+            $attributes = [System.IO.File]::GetAttributes($protectedPath)
+            if (($attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw 'EDITOR_SNAPSHOT_MANIFEST_TAMPERED: reparse point'
+            }
+        }
+        $expectedManifestSha = ([string]$Snapshot.manifest_sha256).ToLowerInvariant()
+        if ($expectedManifestSha -notmatch '^[0-9a-f]{64}$' -or (Get-EditorSnapshotSha256 -Path $manifestFull) -ne $expectedManifestSha) {
+            throw 'EDITOR_SNAPSHOT_MANIFEST_TAMPERED: manifest hash mismatch'
+        }
+        $entries = @(Get-Content -LiteralPath $manifestFull -Raw -Encoding UTF8 | ConvertFrom-Json)
         foreach ($entry in $entries) {
-            $destination = Join-Path $RepoDir ([string]$entry.relative_path)
+            $destination = Resolve-EditorArtifactPath -RelativePath ([string]$entry.relative_path)
             if ([bool]$entry.existed) {
+                $snapshotName = [string]$entry.snapshot_name
+                if ($snapshotName -notmatch '^[0-9a-f]{64}$') {
+                    throw 'EDITOR_SNAPSHOT_MANIFEST_TAMPERED: snapshot name invalid'
+                }
+                $snapshotPath = [System.IO.Path]::GetFullPath((Join-Path $snapshotDir $snapshotName))
+                $snapshotDirPrefix = [System.IO.Path]::GetFullPath($snapshotDir).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+                if (-not $snapshotPath.StartsWith($snapshotDirPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+                    -not (Test-Path -LiteralPath $snapshotPath -PathType Leaf) -or
+                    (([System.IO.File]::GetAttributes($snapshotPath) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) -or
+                    (Get-EditorSnapshotSha256 -Path $snapshotPath) -ne ([string]$entry.snapshot_sha256).ToLowerInvariant()) {
+                    throw 'EDITOR_SNAPSHOT_MANIFEST_TAMPERED: snapshot hash mismatch'
+                }
                 $parent = Split-Path -Parent $destination
                 if ($parent) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-                Copy-Item -LiteralPath ([string]$entry.snapshot_path) -Destination $destination -Force
+                if (Test-Path -LiteralPath $destination -PathType Container) {
+                    throw "EDITOR_SNAPSHOT_DIRECTORY_FORBIDDEN: $($entry.relative_path)"
+                }
+                Copy-Item -LiteralPath $snapshotPath -Destination $destination -Force | Out-Null
             } elseif (Test-Path -LiteralPath $destination) {
+                if (Test-Path -LiteralPath $destination -PathType Container) {
+                    throw "EDITOR_SNAPSHOT_DIRECTORY_FORBIDDEN: $($entry.relative_path)"
+                }
                 Remove-Item -LiteralPath $destination -Force
             }
         }
-        Write-Log "editor attempt workspace restored from snapshot: $ManifestPath"
+        Write-Log "editor attempt workspace restored from snapshot: $manifestFull"
+        Remove-EditorAttemptSnapshot -Snapshot $Snapshot
+    }
+
+    function Remove-EditorAttemptSnapshot {
+        param([object] $Snapshot)
+        $snapshotDir = [System.IO.Path]::GetFullPath([string]$Snapshot.snapshot_dir)
+        $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/')
+        if ((Split-Path -Parent $snapshotDir) -ne $tempRoot -or
+            -not ([System.IO.Path]::GetFileName($snapshotDir)).StartsWith("news-grasp-editor-snapshot-$DateStamp-$PID-", [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'EDITOR_SNAPSHOT_PATH_INVALID: cleanup identity mismatch'
+        }
+        if (-not (Test-Path -LiteralPath $snapshotDir)) { return }
+        $snapshotAttributes = [System.IO.File]::GetAttributes($snapshotDir)
+        if (($snapshotAttributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'EDITOR_SNAPSHOT_PATH_INVALID: cleanup reparse point'
+        }
+        foreach ($item in @(Get-ChildItem -LiteralPath $snapshotDir -Force)) {
+            if ($item.PSIsContainer -or
+                (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) -or
+                ($item.Name -ne 'manifest.json' -and $item.Name -notmatch '^[0-9a-f]{64}$')) {
+                throw 'EDITOR_SNAPSHOT_MANIFEST_TAMPERED: unexpected cleanup entry'
+            }
+            Remove-Item -LiteralPath $item.FullName -Force
+        }
+        Remove-Item -LiteralPath $snapshotDir -Force
     }
 
     $MaxAgentAttempts = 3
-    $preHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
+    $preHead = (& $GitExe @GitSafeArgs -C $RepoDir rev-parse HEAD 2>$null)
     $agentRc = $null
     $EditorRetryFeedback = ''
     $NewsroomEditorReasoningEffort = Get-ModelPolicyValue -Role 'newsroom_editor' -Key 'reasoning'
@@ -3532,30 +3710,25 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
 
         if ($agentRc -eq 0) {
             $editorOutputPreview = Join-Path $ReporterArtifactDir 'editor-output.preview.json'
-            Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage -ValidateOnly
-            $EditorPreviewValidationCapture = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-preview-validation-$DateStamp-$PID-attempt-$attempt.log")
-            Push-Location $RepoDir
-            try {
-                Invoke-LoggedCapture -CapturePath $EditorPreviewValidationCapture -Block { & $PyExe '-m' 'tools.validate_editor_output_preview' $editorOutputPreview '--date' $DateStamp }
-                $editorPreviewRc = $LASTEXITCODE
-            } finally {
-                Pop-Location
-            }
+            $EditorPreviewValidationCapture = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-materialization-$DateStamp-$PID-attempt-$attempt.log")
+            $editorPreviewRc = Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage -CapturePath $EditorPreviewValidationCapture
             if ($editorPreviewRc -eq 0) {
-                Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage
+                Remove-EditorAttemptSnapshot -Snapshot $editorAttemptSnapshot
                 break
             }
             Write-Log "WARN: editor preview semantic validation failed attempt=$attempt rc=$editorPreviewRc; output was not materialized"
             $EditorRetryFeedback = Get-Content -Path $EditorPreviewValidationCapture -Raw -Encoding UTF8
-            Restore-EditorAttemptSnapshot -ManifestPath $editorAttemptSnapshot
+            Restore-EditorAttemptSnapshot -Snapshot $editorAttemptSnapshot
             if ($attempt -ge $MaxAgentAttempts) {
                 Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-preview' -Reason 'editor preview semantic validation failed' -ExitCode $editorPreviewRc
             }
             continue
         }
 
+        Restore-EditorAttemptSnapshot -Snapshot $editorAttemptSnapshot
+
         if ($agentRc -eq 124) {
-            $postHead = (& $GitExe -C $RepoDir rev-parse HEAD 2>$null)
+            $postHead = (& $GitExe @GitSafeArgs -C $RepoDir rev-parse HEAD 2>$null)
             if ($postHead -ne $preHead) {
                 Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'newsroom-editor-timeout' -Reason "codex timeout after partial output (HEAD changed $preHead -> $postHead)" -ExitCode 124
             }
@@ -3573,8 +3746,6 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
         Stop-ExternalReadiness -Reason "codex exited with $agentRc" -ExitCode $agentRc -Kind 'codex_cli_failed' -System 'openai_codex' -ExternalStatus "rc=$agentRc" -ExternalDetail 'codex newsroom editor invocation'
     }
     if ($StopAfterEditorStart) {
-        $editorOutputPreview = Join-Path $ReporterArtifactDir 'editor-output.preview.json'
-        Sync-EditorOutputPreview -PreviewPath $editorOutputPreview -FallbackPath $CodexLastMessage
         Write-Log 'StopAfterEditorStart mode: editor wrapper succeeded; skipping downstream gates'
         Write-Log 'news-grasp-runner.ps1 SMOKE OK'
         exit 0
@@ -4064,11 +4235,11 @@ if ($NoPublish) {
         Write-Log "ERROR: git add digest/data failed"
         exit 1
     }
-    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir diff --cached --quiet }
     $digestDiffRc = $LASTEXITCODE
     if ($digestDiffRc -eq 1) {
         Write-Log 'digest/data has changes, committing'
-        Invoke-Logged { & $GitExe -C $RepoDir commit -m "daily: digest and data for $DateStamp" }
+        Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir commit -m "daily: digest and data for $DateStamp" }
         if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: digest commit failed (rc=$LASTEXITCODE)"; exit 1 }
     } elseif ($digestDiffRc -eq 0) {
         Write-Log 'digest/data no changes (commit skip)'
@@ -4167,11 +4338,11 @@ if ($NoPublish) {
     }
 
     # git diff --cached --quiet docs/ は差分があると exit 1、無いと exit 0。
-    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- 'docs/' }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir diff --cached --quiet -- 'docs/' }
     $diffRc = $LASTEXITCODE
     if ($diffRc -eq 1) {
         Write-Log 'docs/ has changes, committing'
-        Invoke-Logged { & $GitExe -C $RepoDir commit -m "docs: generate public pages for $DateStamp" }
+        Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir commit -m "docs: generate public pages for $DateStamp" }
         if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: docs commit failed (rc=$LASTEXITCODE)"; exit 1 }
     } elseif ($diffRc -eq 0) {
         Write-Log 'docs no changes (digest commit のみを push します)'
@@ -4228,13 +4399,13 @@ Write-Log "distribution manifest written before push: $distributionSummary"
 if ($NoPublish) {
     Write-Log 'NoPublish mode: skipping distribution manifest git add + commit'
 } else {
-    Invoke-Logged { & $GitExe -C $RepoDir add "data/distribution/$DateStamp.json" }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir add "data/distribution/$DateStamp.json" }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: git add distribution manifest failed (rc=$LASTEXITCODE)"; exit 1 }
-    Invoke-Logged { & $GitExe -C $RepoDir diff --cached --quiet -- "data/distribution/$DateStamp.json" }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir diff --cached --quiet -- "data/distribution/$DateStamp.json" }
     $distributionDiffRc = $LASTEXITCODE
     if ($distributionDiffRc -eq 1) {
         Write-Log 'distribution manifest has changes, committing'
-        Invoke-Logged { & $GitExe -C $RepoDir commit -m "distribution: record publish state for $DateStamp" }
+        Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir commit -m "distribution: record publish state for $DateStamp" }
         if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: distribution manifest commit failed (rc=$LASTEXITCODE)"; exit 1 }
     } elseif ($distributionDiffRc -eq 0) {
         Write-Log 'distribution manifest no changes'
@@ -4255,7 +4426,7 @@ if ($NoPush) {
     Write-Log 'NoPush mode: skipping send_push'
 } else {
     Write-Log 'push origin HEAD:main start (digest + docs を同時公開)'
-    Invoke-Logged { & $GitExe -C $RepoDir push origin HEAD:main }
+    Invoke-Logged { & $GitExe @GitSafeArgs -C $RepoDir push origin HEAD:main }
     if ($LASTEXITCODE -ne 0) { Write-Log "ERROR: push failed (rc=$LASTEXITCODE)"; exit 1 }
     Write-Log 'push origin HEAD:main done (digest + docs pushed)'
 
