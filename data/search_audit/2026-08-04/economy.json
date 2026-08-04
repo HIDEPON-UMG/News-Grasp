@@ -1,0 +1,69 @@
+{
+  "date": "2026-08-04",
+  "category_id": "economy",
+  "category": "economy",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR economy OR interest rate when:1d",
+    "candidate verification: Nikkei 5大銀行 純利益 4〜6月",
+    "candidate verification: Nikkei 三菱商事 株価 材料出尽くし",
+    "candidate verification: Nikkei 金利上昇 家計負担",
+    "candidate verification: NHK 大手企業 3か月決算 熊本地震 中東情勢",
+    "candidate verification: Diamond 決算 キャッシュフロー 3つの数字"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "本日の決算発表予定 … 三菱重、イビデン、トヨタなど 90社 (8月4日)",
+      "url": "https://kabutan.jp/news/marketnews/?b=n202608040132",
+      "reason": "決算予定の一覧で、個別の確定ニュースではない。"
+    },
+    {
+      "title": "日産自動車、2026年度第1四半期決算を発表",
+      "url": "https://global.nissannews.com/ja-JP/releases/260803-01-j",
+      "reason": "NHKの大手企業決算報道と同論点で、一次発表単独より横断的な影響を扱う記事を採用。"
+    },
+    {
+      "title": "小森経済産業大臣政務官がアンティグア・バーブーダ共和国のニコラス情報通信技術・公共事業・エネルギー大臣と会談しました",
+      "url": "https://www.meti.go.jp/press/2026/08/20260803004.html",
+      "reason": "二国間経済関係の協力方針で、当日号の読者判断への直接性が相対的に低い。"
+    },
+    {
+      "title": "★本日の【サプライズ決算】速報 (08月03日)",
+      "url": "https://kabutan.jp/news/marketnews/?b=n202608030999",
+      "reason": "複数銘柄を束ねた速報で、個別の論点が薄い。"
+    },
+    {
+      "title": "米有権者、経済運営で民主を支持 10年ぶりに共和上回る＝調査",
+      "url": "https://jp.reuters.com/world/us/LY22IAYQA5LXNMNZXXWJY363AI-2026-08-03/",
+      "reason": "外部アクセスが401で一次本文とOGPを独立確認できず、URL liveness gateを満たさない。"
+    },
+    {
+      "title": "米ＮＹ連銀総裁、インフレ鈍化見込む 必要なら利上げ対応辞さず",
+      "url": "https://jp.reuters.com/markets/japan/4O2TTAKL5RITZEKDQAS4MUAM6E-2026-08-03/",
+      "reason": "外部アクセスが401で一次本文とOGPを独立確認できず、URL liveness gateを満たさない。"
+    },
+    {
+      "title": "JALグループ 2027年3月期 第1四半期連結業績",
+      "url": "https://press.jal.co.jp/ja/release/202608/009656.html",
+      "reason": "外部アクセスが403で一次本文とOGPを独立確認できず、URL liveness gateを満たさない。"
+    },
+    {
+      "title": "その他の候補",
+      "url": "build/deduped-candidates/economy.jsonl",
+      "reason": "選定スコア、論点の重複、一次確認可能性を比較し、上位5件に絞った。"
+    }
+  ]
+}

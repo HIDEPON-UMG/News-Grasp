@@ -1,0 +1,135 @@
+{
+  "date": "2026-08-04",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "SaaS OR クラウド OR enterprise software OR cybersecurity when:1d",
+    "コンサルティング OR DX OR ガバメントクラウド OR IT投資 when:1d",
+    "https://www.infoq.com/feed/",
+    "https://www.ciodive.com/feeds/news/",
+    "https://www.cybersecuritydive.com/feeds/news/",
+    "https://www.theregister.com/software/headlines.atom"
+  ],
+  "raw_results_total": 233,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "selection_note": "広域収集・横断dedupは再実施せず、Stage1 dedup済み候補のみを記事単位で確認・選別した。",
+  "dropped": [
+    {
+      "title": "中国製PCS、サイバーセキュリティ対応は十分？ - 特集 - メガソーラービジネス plus",
+      "url": "https://project.nikkeibp.co.jp/ms/atcl/19/feature/00007/00193/?ST=msb",
+      "reason": "ITインフラへの示唆はあるが、ITカテゴリの当日主題として優先度が低い"
+    },
+    {
+      "title": "〔NY株式のポイント〕ボーイング8％高、大型IT軒並み上昇＝イーベイ下落（3日）(時事通信)",
+      "url": "https://finance.yahoo.co.jp/news/detail/528f1047554f8684ce4683632b4311dc0c17fde3",
+      "reason": "株式市況が中心でIT事業の新材料が薄い"
+    },
+    {
+      "title": "秦野市×湘南ベルマーレ｜SB-CAMPUSはだの支援プロジェクト",
+      "url": "https://readyfor.jp/projects/Bellmare_Hadano_GCF_2026",
+      "reason": "ITカテゴリとの関連が弱いクラウドファンディング"
+    },
+    {
+      "title": "ぶっちゃけ、あのSaaSってどう!? 情シスがガチ格付け！",
+      "url": "https://ascii.jp/elem/000/004/423/4423916/",
+      "reason": "比較特集で、当日発生の企業・市場ニュースではない"
+    },
+    {
+      "title": "BOOM BOOM SATELLITES 全110曲収録BOX『＋One』ビジュアル公開",
+      "url": "https://www.sonymusic.co.jp/artist/BoomBoomSatellites/info/585638",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "THE MUSIC OF NOTE - BONNIE PINK Let it grow -｜ピックアップ",
+      "url": "http://cocolo.jp/site/pickup_detail/2920",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "2026/8/18(火) ネットワーク機器メンテナンスのお知らせ",
+      "url": "https://www.chukyo-u.ac.jp/student-staff/it/2026/08/027288.html",
+      "reason": "個別組織の保守告知で、読者影響が限定的"
+    },
+    {
+      "title": "フォーティネット、年次グローバル調査「サイバーセキュリティ スキルギャップレポート」の最新版を発表",
+      "url": "https://digitalpr.jp/r/140380",
+      "reason": "PR転載で、独立報道による裏付けが薄い"
+    },
+    {
+      "title": "AIが使いやすいSaaSへ",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/nc/18/041700482/072800018/",
+      "reason": "継続的な解説記事で、当日ニュースとしての新規性が弱い"
+    },
+    {
+      "title": "祝20周年・京都音博2026｜環境・文化・音楽を“くるり”と繋ごう",
+      "url": "https://readyfor.jp/projects/onpaku2026",
+      "reason": "ITカテゴリとの関連が弱いクラウドファンディング"
+    },
+    {
+      "title": "【AD】IBMとデロイトが経営管理高度化で協業",
+      "url": "https://business.nikkei.com/atcl/gen/19/00019/071700047/",
+      "reason": "広告表記があり、独立報道としての優先度が低い"
+    },
+    {
+      "title": "信濃國一之宮 諏訪大社秋宮｜新たな夏の伝統「光の奉納」実施へ",
+      "url": "https://readyfor.jp/projects/suwataisha2026cf",
+      "reason": "ITカテゴリとの関連が弱いクラウドファンディング"
+    },
+    {
+      "title": "栃木の誠和、園芸農業を効率化 データ収集・クラウド管理",
+      "url": "https://www.nikkei.com/article/DGXZQOCC030PU0T00C26A8000000/",
+      "reason": "業務導入事例としては有用だが、選定5件では相対的に優先度が低い"
+    },
+    {
+      "title": "AIで効率化してもITフリーランスの月額単価は動かない。9割超が横ばい以上・上がったのは4.7%",
+      "url": "https://hrog.net/news/136296/",
+      "reason": "調査テーマは重要だが、選定5件では市場構造の変化を直接示す記事を優先"
+    },
+    {
+      "title": "IT未経験から経営層の相談相手へ 花キューピット星野氏が「便利屋」を脱するまで",
+      "url": "https://techtarget.itmedia.co.jp/tt/news/2608/01/news01.html",
+      "reason": "キャリア連載で、当日発生の市場ニュースではない"
+    },
+    {
+      "title": "システムソフト[7527]：不動産企業向けSaaS「SSクラウドシリーズ」７月末の累計利用拠点数のお知らせ",
+      "url": "https://www.nikkei.com/markets/company/sys/redirect_dis.aspr?ano=g266tz&t=https://www.nikkei.com/nkd/disclosure/tdnr/20260803506839/",
+      "reason": "単一企業の利用拠点数開示で、影響範囲が限定的"
+    },
+    {
+      "title": "DATAFLUCT、「Airlake Copilot Agents」の企業プライベートクラウド版を2026年8月3日より提供開始",
+      "url": "https://prtimes.jp/main/html/rd/p/000000358.000046062.html",
+      "reason": "企業発表のみで、独立報道による重要度確認が不足"
+    },
+    {
+      "title": "「オン」が新作ランニングシューズ“クラウドランナー 3 マックス”を発売",
+      "url": "https://www.wwdjapan.com/articles/2464195",
+      "reason": "ITカテゴリ外"
+    },
+    {
+      "title": "サイバーセキュリティクラウド[4493]：従業員持株会の奨励金付与率引き上げに関するお知らせ",
+      "url": "https://www.nikkei.com/nkd/disclosure/tdnr/20260803507068/",
+      "reason": "社内制度の開示で、読者の業務判断への影響が限定的"
+    },
+    {
+      "title": "Trump says Iran faces 'decapitation' if it doesn't strike deal",
+      "url": "https://jp.reuters.com/video/watch/idRW295303082026RP1/",
+      "reason": "ITカテゴリとの直接的な関連がない動画ニュース"
+    },
+    {
+      "url": "https://www.publickey1.jp/blog/26/aws28google_cloud1154220262synergy_research.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

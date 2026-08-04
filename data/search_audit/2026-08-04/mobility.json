@@ -1,0 +1,124 @@
+{
+  "date": "2026-08-04",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "Stage1 deduped candidate file review: selected URLs only; no new broad collection",
+    "Stage1 selected-candidate article body/date/OGP verification: no cross-category dedup"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "高速道路におけるEV急速充電設備の整備・運営事業者を公募します | NEXCO東日本",
+      "url": "https://www.e-nexco.co.jp/amp/news/bids/2026/0803/00016418.html",
+      "reason": "OGP取得失敗のため採用条件未達"
+    },
+    {
+      "title": "北海道・ニセコひらふ地区で次世代マイクロモビリティ『TOCKLE』の実証実験を開始",
+      "url": "https://prtimes.jp/main/html/rd/p/000000090.000082085.html",
+      "reason": "一次情報性はあるが影響範囲が相対的に限定"
+    },
+    {
+      "title": "東日本計算センターなど、自動運転除草を福島でデモ 複数台を同時稼働",
+      "url": "https://www.nikkan.co.jp/articles/view/00788450?gnr_footer=0088227",
+      "reason": "農業用途でカテゴリ中心への影響が狭い"
+    },
+    {
+      "title": "メルセデスベンツ『CLA』初のEV発売、最大航続771kmで668万円から、補助金は98万円が適用",
+      "url": "https://news.kakaku.com/prdnews/cd=kuruma/ctcd=7010/id=157912/",
+      "reason": "製品スペック中心で相対スコア下位"
+    },
+    {
+      "title": "米国のEV比率5.8%で横ばい: 4～6月、テスラがEV市場シェア5割占める",
+      "url": "https://www.alterna.co.jp/174682/",
+      "reason": "Tesla単一銘柄の市場記事で影響範囲が限定"
+    },
+    {
+      "title": "国土交通省 5日に制限区域内自動運転検討委 | 航空 | ニュース",
+      "url": "https://www.daily-cargo.com/news/aviation/2026/08/179083/",
+      "reason": "検討会予定で当日ニュース性が弱い"
+    },
+    {
+      "title": "日本のEV普及を阻む者達について",
+      "url": "https://blog.evsmart.net/t/ev/3893",
+      "reason": "論説記事で一次事実が限定"
+    },
+    {
+      "title": "文遠知行、デンマークで自動運転事業に参入",
+      "url": "https://emb-media.com/europe/2026/08/04/662995/",
+      "reason": "モメンタ記事と自動運転海外展開で論点が重複"
+    },
+    {
+      "title": "マルチ・スズキ、ハンサルプール工場D棟が稼働…EV『eビターラ』生産開始",
+      "url": "https://carcareplus.jp/article/2026/08/04/15002.html",
+      "reason": "生産開始の製造寄り記事でmobility相対スコア下位"
+    },
+    {
+      "title": "バイク王、電動モビリティの専門通販ブランド「トクテコ」を展開。特定小型原付やシニアカーなどを販売",
+      "url": "https://smart-mobility.jp/_ct/17854994",
+      "reason": "新ブランド発表の影響範囲が限定"
+    },
+    {
+      "title": "関西電力のEV充電サービス「カンモビチャージ」、抽選で最大15万円相当のEV旅などが当たるキャンペーン「ドドンと!!大還元祭 第一弾」を実施",
+      "url": "https://prtimes.jp/main/html/rd/p/000000140.000064489.html",
+      "reason": "キャンペーン告知でニュース性が相対的に下位"
+    },
+    {
+      "title": "8月3日のTesla Inc (TSLA) 値動きは3.39%上昇：投資家が知っておくべき情報",
+      "url": "https://www.tradingkey.com/jp/news/market-movers/262071005-market-movers-tsla-20260803",
+      "reason": "単一銘柄の値動き解説でカテゴリ中心から外れる"
+    },
+    {
+      "title": "中国奇瑞、韓国ＫＧモビリティに転換社債で7500万ドル投資",
+      "url": "https://jp.reuters.com/economy/POQCJHSECJORHOGUUFSTPWRJ5Y-2026-08-03/",
+      "reason": "本文・OGP取得がHTTP 401で検証不能"
+    },
+    {
+      "title": "軽EV、競争本格化へ（時事通信）",
+      "url": "https://news.yahoo.co.jp/articles/96950016574825dc5770b6356e7c69632fd505e5",
+      "reason": "軽EV競争の要約記事で独自材料が薄い"
+    },
+    {
+      "title": "テスラの自動運転試験、「ワンオペ」中に居眠り？",
+      "url": "https://jidounten-lab.com/u_65792",
+      "reason": "安全事案の報道量が限定され裏取りを優先"
+    },
+    {
+      "title": "軽EVとは 街乗りとの親和性高いが普及は途上",
+      "url": "https://www.nikkei.com/article/DGXZQOUC0315O0T00C26A8000000/",
+      "reason": "解説記事でBYD・スズキの当日材料と重複"
+    },
+    {
+      "title": "フィアット、超小型EV「トポリーノ」は地中海沿岸のライフスタイルを表現…高級ビーチウェアブランド・ビルブレカンと「コレクターズエディション」を欧州で発表",
+      "url": "https://carcareplus.jp/article/2026/08/04/14998.html",
+      "reason": "限定モデルの市場影響が限定"
+    },
+    {
+      "title": "自動運転駐車ロボットの世界市場（2026年～2032年）、市場規模（クランプ式、その他）・分析レポートを発表",
+      "url": "https://www.atpress.ne.jp/news/4343612",
+      "reason": "市場調査レポートの発表で一次事実が限定"
+    },
+    {
+      "title": "「eKクロス EV」が“新デザイン”に。上位グレード人気も、BYD「ラッコ」登場で販売はさらに厳しく？",
+      "url": "https://carview.yahoo.co.jp/article/detail/55135c98ab94cf06d822aad5c8530b6e4a4ba1d4/",
+      "reason": "BYD・軽EVの競合文脈が採用記事と重複"
+    },
+    {
+      "title": "テスラ家庭用蓄電池 Powerwall 3、販売開始。多くの補助金の対象に。 | Tesla Japan合同会社のプレスリリース",
+      "url": "https://prtimes.jp/main/html/rd/p/000000024.000043349.html",
+      "reason": "家庭用蓄電池でmobility対象軸外"
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "date": "2026-08-04",
+  "category_id": "game",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "collection_scope": "Stage1 dedup済み候補のみを入力とし、広域収集と横断dedupは再実行していない。",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "Nintendo OR Switch 2 OR PlayStation OR Steam when:1d",
+    "ゲーム株 OR gamebiz OR ファミ通 OR Game Watch when:1d"
+  ],
+  "raw_results_total": 239,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "9/12(土) プレシーズンゲーム vs島根 開催のお知らせ",
+      "url": "https://www.evessa.com/news/detail/id=24673",
+      "reason": "スポーツ興行の告知で、ゲーム業界ニュースではない。"
+    },
+    {
+      "title": "台風がもたらしたノーゲーム、「うそやろ」駒大苫小牧が逃した初勝利",
+      "url": "https://www.asahi.com/articles/ASV7Z137MV7ZPTQP00BM.html",
+      "reason": "野球のノーゲームで、ゲーム業界ニュースではない。"
+    },
+    {
+      "title": "The Walking Dead: Streets of Survival を購入 | Xbox",
+      "url": "https://www.microsoft.com/ja-jp/p/the-walking-dead-streets-of-survival/9nvpsn28jpm4",
+      "reason": "商品購入ページで、独立したニュース記事ではない。"
+    },
+    {
+      "title": "8/15 京都「ホームゲーム開催情報」について",
+      "url": "https://www.frontale.co.jp/info/2026/0803_13.html",
+      "reason": "スポーツ興行の告知で、ゲーム業界ニュースではない。"
+    },
+    {
+      "title": "【TICKET】2026-27シーズン ホームゲーム チケット販売スケジュール",
+      "url": "https://ballooners.jp/news/detail/id=51982",
+      "reason": "スポーツ興行のチケット告知で、ゲーム業界ニュースではない。"
+    },
+    {
+      "title": "【コラム】500ドルのゲーム機は死んだ",
+      "url": "https://jp.ign.com/playstation-6/83917/500",
+      "reason": "意見・コラムで、新規の一次事実より分析比重が高い。"
+    },
+    {
+      "title": "イトケンの新たな“下水道曲”が爆誕!? ガチ下水処理ゲーム『下水王国』に伊藤賢治氏の新曲が実装決定。開発陣の熱すぎる独占コメントも到着",
+      "url": "http://news.dengeki.com/article/202608/83367",
+      "reason": "個別作品のタイアップ告知で、相対的な影響範囲が小さい。"
+    },
+    {
+      "title": "第4部 ゲーム依存という病（3）自主性尊重の久里浜方式【アテンション、プリーズ！】：ニュース",
+      "url": "https://biz.chunichi.co.jp/news/article/10/128548/",
+      "reason": "連載解説で、当日のゲーム業界の動きではない。"
+    },
+    {
+      "title": "協力型コメディホラーゲーム「QUIET」，Steamでプレイテストを開始。プレイムービーも公開に",
+      "url": "https://www.4gamer.net/games/002/G100220/20260803009/",
+      "reason": "小規模作品のテスト開始で、採用5件との相対優先度が低い。"
+    },
+    {
+      "title": "引きこもりはゲーム内でも交流を好まない、奈良先端大が587人調査　「ゲームで社会復帰」に落とし穴？",
+      "url": "https://topics.smt.docomo.ne.jp/article/itmedia_news/trend/itmedia_news-20260803_2000000329",
+      "reason": "研究紹介として有用だが、当日の業界動向5件を優先した。"
+    },
+    {
+      "title": "『カラテカ』インスパイアのロボット格闘アクション『ROBOTEKA』Steamでデモ版公開",
+      "url": "https://www.gamespark.jp/article/2026/08/04/170162.html",
+      "reason": "小規模作品のデモ公開で、採用5件との相対優先度が低い。"
+    },
+    {
+      "title": "ガチョウのゲーム「Untitled Goose Game」開発元の新作パズルアドベンチャー「Big Walk」本日発売",
+      "url": "https://game.watch.impress.co.jp/docs/news/2128293.html",
+      "reason": "新作発売だが、同日発売のゲームフリーク完全新作を優先した。"
+    },
+    {
+      "title": "『Beast of Reincarnation』明日8月4日発売！ ゲームフリークが贈る“一人と一匹のアクションRPG”【特集第3回】",
+      "url": "https://blog.ja.playstation.com/2026/08/03/20260803-bor-launch-reminder-s/",
+      "reason": "同一作品の発売前紹介で、発売当日の報道と重複する。"
+    },
+    {
+      "title": "8月発売のPS5®/PS4®注目ソフトはこれだ！【今月のおすすめ新作ガイド】",
+      "url": "https://blog.ja.playstation.com/2026/08/03/20260803-monthly-picks-s/",
+      "reason": "月間の作品紹介で、個別の当日ニュースより速報性が低い。"
+    },
+    {
+      "title": "9月開催ホームゲーム チケット販売スケジュールのお知らせ",
+      "url": "https://fufc.jp/news/13140/",
+      "reason": "スポーツ興行の告知で、ゲーム業界ニュースではない。"
+    },
+    {
+      "title": "「重度障害児にゲームを」視線感知活用、アプリ開発…吉川英治文化賞に県立大講師の伊藤さん",
+      "url": "https://www.yomiuri.co.jp/local/iwate/news/20260803-GYTNT00243/",
+      "reason": "社会面の人物・地域記事で、業界動向5件を優先した。"
+    },
+    {
+      "title": "『ジュマンジ』シリーズ最終章、12・25公開 ゲームを飛び出し現実世界へ「ここはジュマンジではない」",
+      "url": "https://www.oricon.co.jp/news/2471927/",
+      "reason": "映画作品の告知で、ゲーム業界ニュースではない。"
+    },
+    {
+      "title": "“ファッションショー×音楽ライブ”「X VORDER RUNWAY」VTuber、ゲーム・アニメキャラクター、リアルアーティスト全出演者が集結するテーマソング『交錯 OMNIVERSE』MVを公開！",
+      "url": "https://prtimes.jp/main/html/rd/p/000000104.000022741.html",
+      "reason": "エンタメイベントのプロモーション告知で、業界影響が限定的。"
+    },
+    {
+      "title": "ゲーム依存で御三家中高からフリーターに…。その後、医学部へ逆転合格した現役医師が断言「ゲームの経験が受験勉強に役立った」そう考える背景とは",
+      "url": "https://hugkum.sho.jp/797996",
+      "reason": "人物インタビュー・生活記事で、当日の業界動向ではない。"
+    },
+    {
+      "title": "ライソン、1993年のゲーム「イーハトーヴォ物語」を復刻 宮沢賢治生誕130年の記念企画として8月1日発売",
+      "url": "https://kyodonewsprwire.jp/corp/shioj/10285/",
+      "reason": "8月1日発売の復刻告知で、当日性と影響範囲が低い。"
+    },
+    {
+      "url": "https://doope.jp/2026/08169265.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

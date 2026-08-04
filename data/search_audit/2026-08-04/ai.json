@@ -1,0 +1,128 @@
+{
+  "date": "2026-08-04",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "site:internet.watch.impress.co.jp/docs/news/2130096.html Claude サイバー攻撃 3件 不正アクセス",
+    "site:www.itmedia.co.jp/enterprise/articles/2608/04/news019.html 25ドル WordPress 生成AI",
+    "site:aismiley.co.jp/ai_news/local-government-genai-survey/ 自治体 78.2% 82.7%",
+    "site:gigazine.net/news/20260803-openai-astra-lean OpenAI Astra Lean"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "Claude暴走、企業に侵入 AnthropicとOpenAIの事例から学ぶ3つの教訓：フロンティアAIのリスクがついに顕在化",
+      "url": "https://atmarkit.itmedia.co.jp/ait/articles/2608/03/news041.html",
+      "reason": "選定したAnthropic記事と同一インシデントの解説・続報で重複"
+    },
+    {
+      "title": "ソフトバンク経由で日本市場に入るOpenAIリスク(ダイヤモンド・オンライン)",
+      "url": "https://finance.yahoo.co.jp/news/detail/bc8ace662c4b5ea93322c7232d53aa74b54c2fa9",
+      "reason": "二次的な論考で、一次情報に近い選定記事を優先"
+    },
+    {
+      "title": "サツドラが切り開くOMO戦略と生成AI活用--DXは「熱意とインハウス」で加速する",
+      "url": "https://japan.zdnet.com/article/35250350/",
+      "reason": "企業導入の論点が住友化学・Lloydsと重なるため優先度調整"
+    },
+    {
+      "title": "「Gemini Enterprise」に大規模導入の波 ― SOMPO・NTTデータ・Skyが描く“エージェント企業”への進化 (1/4)",
+      "url": "https://ascii.jp/elem/000/004/424/4424449/",
+      "reason": "続報扱いで、シリーズ記事かつサムネ取得証跡が不足"
+    },
+    {
+      "title": "Polimill、自治体向け生成AI「QommonsAI」の研修を3自治体で実施 業務効率化と実務活用へ",
+      "url": "https://www.kknews.co.jp/news/20260804o02",
+      "reason": "個別サービスの研修告知で、影響範囲が限定的"
+    },
+    {
+      "title": "【Google Gemini Spark】Chromeを制御しWebタスクを自動化へ",
+      "url": "https://finance.biggo.jp/news/01999bcd-5e70-4cf8-a34f-f62bab2150b8",
+      "reason": "二次的な製品紹介で、一次情報と実装影響が不足"
+    },
+    {
+      "title": "【生成AIにつぶされない強みをもつ企業も】サイバー攻撃の脅威に対抗できる「国産サイバーセキュリティ関連銘柄」5選",
+      "url": "https://gendai.media/articles/-/169838",
+      "reason": "投資銘柄紹介で、AIカテゴリの主要ニュースとしては優先度が低い"
+    },
+    {
+      "title": "AI時代のSEOやデータ分析がわかる「生成AI×マーケティング フォーラム 2026」講師の必読記事7選【8/27開催】",
+      "url": "https://webtan.impress.co.jp/e/2026/08/04/53067",
+      "reason": "イベント告知・推薦記事でニュース性が低い"
+    },
+    {
+      "title": "OpenAI「勝手にAIが他社へ侵入」、次はあなたの会社でAIが暴走するかも？被害側と加害側に共通する「セキュリティの甘さ」",
+      "url": "https://finance.yahoo.co.jp/news/detail/26dddc1b6f6362a46c368170b198009785525dd5",
+      "reason": "選定したAI安全性記事と論点が重なる二次解説"
+    },
+    {
+      "title": "東大メタバース工学部ジュニア講座、夏休み講座の受講受付中〜生成AI、渋滞学、工学から考える幸せなど",
+      "url": "https://www.kknews.co.jp/news/20260804o01",
+      "reason": "講座受付の告知で、読者の意思決定への影響が限定的"
+    },
+    {
+      "title": "自治体の78.2%が生成AI活用に着手。活用の課題は「職員のリテラシー不足」が82.7%で最多",
+      "url": "https://aismiley.co.jp/ai_news/local-government-genai-survey/",
+      "reason": "調査結果は有用だが、当日上位5件では研究・安全・大規模導入を優先"
+    },
+    {
+      "title": "Sakana AI、日本語特化LLM API「Sakana Namazu」を正式提供開始",
+      "url": "https://hashout.jp/ai/5103/",
+      "reason": "提供開始の一次情報性と影響範囲を確認できず、採用を見送り"
+    },
+    {
+      "title": "ＥＵ、生成ＡＩ表示義務の適用開始",
+      "url": "https://emb-media.com/europe/2026/08/04/662890/",
+      "reason": "規制情報の一次資料への接続が弱く、独立確認不足"
+    },
+    {
+      "title": "AI時代に生存できるビジネスパーソンへ。社会人向けプログラミングスクールSiiD、新コース「Claude Codeエンジニアリング」を新設",
+      "url": "https://prtimes.jp/main/html/rd/p/000000003.000155521.html",
+      "reason": "サービス告知・PR転載で、ニュース性が低い"
+    },
+    {
+      "title": "Anthropic CEO、新入社員の給料目当て入社増加に懸念",
+      "url": "https://hashout.jp/ai/5106/",
+      "reason": "人物発言の二次転載で、読者の業務判断への影響が限定的"
+    },
+    {
+      "title": "【タイムテーブル決定】8月5日（水）開催「自治体における文書・データ管理および生成AI活用に関する実態調査」調査報告会",
+      "url": "https://prtimes.jp/main/html/rd/p/000000376.000132312.html",
+      "reason": "イベント告知で、調査結果そのものではない"
+    },
+    {
+      "title": "京王電鉄、生成AIが身だしなみ指導 職員の意識向上に活用",
+      "url": "https://www.nikkei.com/article/DGXZQOCC035XE0T00C26A8000000/",
+      "reason": "個別業務利用の事例で、当日上位5件より影響範囲が狭い"
+    },
+    {
+      "title": "写真とAI生成AI利用率は6割超へ。アドビの最新レポートが明かす「日本のクリエイター×AI」の現実",
+      "url": "https://dc.watch.impress.co.jp/docs/column/photo_ai/2129982.html",
+      "reason": "特定職種向け調査で、カテゴリ全体への影響が相対的に低い"
+    },
+    {
+      "title": "石黒教授を再現した生成AIアンドロイドと対話体験 大阪大学石黒研究室が「ジェミノイドサロン」を開催",
+      "url": "https://robotstart.info/article/2026/08/03/382226.html",
+      "reason": "イベント報告で、当日上位5件より業務影響が限定的"
+    },
+    {
+      "title": "生成AIで210億円の価値創出へ 英ロイズが踏み出す4000億円コスト削減とAI武装の全容",
+      "url": "https://techtarget.itmedia.co.jp/tt/news/2608/04/news06.html",
+      "reason": "採用済み"
+    }
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only"
+}

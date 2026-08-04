@@ -1,0 +1,135 @@
+{
+  "date": "2026-08-04",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "半導体 OR TSMC OR Samsung OR Intel OR 量産 when:1d",
+    "工場 OR サプライチェーン OR 製造業 OR 特許 when:1d",
+    "https://semiengineering.com/feed/",
+    "https://www.manufacturingdive.com/feeds/news/",
+    "https://www.supplychainbrain.com/rss/articles",
+    "https://www.supplychainbrain.com/rss/topic/1148-technology",
+    "https://semiwiki.com/feed/"
+  ],
+  "raw_results_total": 337,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "米ＩＳＭ製造業景気指数、7月は約4年ぶり高水準 雇用回復もコスト高続く",
+      "url": "https://jp.reuters.com/markets/japan/42N2ARXNYJKBRNBJVXRBI64ESY-2026-08-03/",
+      "reason": "産業横断の景況感より個別の製造能力・技術・拠点変化を優先。OGP取得失敗もあり未採用"
+    },
+    {
+      "title": "半導体工場の早期再開と災害対策について 7213",
+      "url": "https://www.komei.or.jp/km/gyota/2026/08/04/%E5%8D%8A%E5%B0%8E%E4%BD%93%E5%B7%A5%E5%A0%B4%E3%81%AE%E6%97%A9%E6%9C%9F%E5%86%8D%E9%96%8B%E3%81%A8%E7%81%BD%E5%AE%B3%E5%AF%BE%E7%AD%96%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6-7213/",
+      "reason": "個人ブログで一次情報性が低く、朝日新聞の復旧報道と重複"
+    },
+    {
+      "title": "震度7の熊本地震の揺れで示された半導体産業の耐震力",
+      "url": "https://toyokeizai.net/articles/-/953559?display=b",
+      "reason": "熊本復旧テーマの解説重複。一次報道を優先"
+    },
+    {
+      "title": "TSMC、熊本工場の復旧確認＝被災地に2．5億円寄付",
+      "url": "https://finance.yahoo.co.jp/news/detail/af9555a4b669c07a1eec653a8a8a35ccf535dfa3",
+      "reason": "時事通信転載でTSMC採用記事と内容重複"
+    },
+    {
+      "title": "【熊本震度7】流通や製造業は復旧急ぐ 半導体関連は一部で本格稼働に復帰",
+      "url": "https://www.nishinippon.co.jp/item/1523257/",
+      "reason": "熊本復旧テーマの重複。半導体に焦点を絞った一次報道を優先"
+    },
+    {
+      "title": "【COMPUTEX 2026：Arm編】チップ自社製造で鍵を握る台湾サプライチェーン",
+      "url": "https://dcross.impress.co.jp/docs/news/004771.html",
+      "reason": "イベント解説で、当日発生の製造能力変化より優先度が低い"
+    },
+    {
+      "title": "ＴＳＭＣ工場 通常体制に",
+      "url": "https://www.yomiuri.co.jp/economy/20260804-GYT1T00023/",
+      "reason": "TSMC熊本の復旧記事と同一事象で重複"
+    },
+    {
+      "title": "工場で発生する紙容器損紙が段ボールに!? カゴメらが共同実証を開始",
+      "url": "https://monoist.itmedia.co.jp/mn/articles/2608/04/news034.html",
+      "reason": "技術的には有意だが製造業全体への構造的影響が小さく、5件枠から除外"
+    },
+    {
+      "title": "「半導体、光電融合はなぜ重要なのか」 熾烈な開発競争の深層が分かる本",
+      "url": "https://bookplus.nikkei.com/atcl/column/063000732/072700005/",
+      "reason": "書籍紹介で当日ニュース性・一次発表性が低い"
+    },
+    {
+      "title": "半導体生産スピード復旧、10年前と違う要因 自動車・物流は不透明",
+      "url": "https://www.asahi.com/articles/ASV832PGYV83ULFA020M.html",
+      "reason": "熊本復旧の背景解説で、朝日新聞の半導体製造記事と重複"
+    },
+    {
+      "title": "佐川急便、定温管理で猛暑でも溶けないチョコレート配送 半導体での活用に商機",
+      "url": "https://business.nikkei.com/atcl/gen/19/00905/072900004/",
+      "reason": "半導体への応用可能性はあるが、製造拠点・能力の主題から外れる"
+    },
+    {
+      "title": "中国、半導体設計情報の保護強化 規則厳格化と懲罰的賠償も",
+      "url": "https://jp.reuters.com/world/china/2PU2VLKPFRNIHM5OTBBL3NV3Y-2026-08-03/",
+      "reason": "知財規制の重要性はあるが、今号は製造能力と工場投資を優先"
+    },
+    {
+      "title": "熊本地震、リョーユーパン系工場は復旧に3カ月",
+      "url": "https://www.nikkei.com/article/DGXZQOJC297580Z20C26A7000000/",
+      "reason": "食品工場の復旧で、製造カテゴリの半導体・部材軸から外れる"
+    },
+    {
+      "title": "熊本地震により自動車各社の部品供給網寸断、トヨタは愛知県の工場も停止",
+      "url": "https://news.yahoo.co.jp/articles/fb7d595b20fa1abed49e58461144e588c1acb342",
+      "reason": "自動車部品供給の続報だが、熊本復旧記事との同一災害テーマ重複"
+    },
+    {
+      "title": "再処理工場稼働にらみ独法新設 規制委、IAEA査察対応や検査移管検討",
+      "url": "https://www.nikkei.com/article/DGXZQOUA238HD0T20C26A7000000/",
+      "reason": "原子力規制・制度設計で、製造現場の当日シグナルから遠い"
+    },
+    {
+      "title": "中国ＣＸＭＴ、北京経済技術開発区に新工場検討 資金支援協議",
+      "url": "https://jp.reuters.com/world/HASSJ3LQ65J4ZDKF5FLB3X2T3U-2026-08-03/",
+      "reason": "工場投資として有力だが、OGP取得失敗と一次本文の検証負荷から今号は採用見送り"
+    },
+    {
+      "title": "アップルとアマゾンの業績を圧迫する半導体不足、旺盛なAI需要の裏で部材高騰が深刻化",
+      "url": "https://jbpress.ismedia.jp/articles/-/96266",
+      "reason": "需給解説で、個別の製造能力・技術投資のニュースを優先"
+    },
+    {
+      "title": "TSMC、「水の天国」熊本と送電網を備えた高雄を選択…着工3年で稼働",
+      "url": "https://www.chosunonline.com/m/svc/article.amp.html?contid=2026080380115",
+      "reason": "TSMCの立地背景解説で、熊本工場復旧の当日報道と重複"
+    },
+    {
+      "title": "【熊本地震 企業影響 3日】工場で操業停止続く 生産一部再開も",
+      "url": "https://news.web.nhk/newsweb/na/na-k10015194851000",
+      "reason": "企業影響の総括で、朝日新聞の半導体復旧記事と重複"
+    },
+    {
+      "title": "トヨタ発Walden Roboticsが示す「工場で育つロボット」の現実解",
+      "url": "https://wirelesswire.jp/2026/08/94110/",
+      "reason": "工場ロボットの論考で、当日ニュースとしての一次情報性が低い"
+    },
+    {
+      "url": "https://newswitch.jp/p/49902",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

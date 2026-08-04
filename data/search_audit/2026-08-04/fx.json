@@ -1,0 +1,125 @@
+{
+  "date": "2026-08-04",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "日米協調介入 円安 2026年8月4日",
+    "為替介入 5兆円 7月31日 日銀",
+    "協調介入 日銀利上げ 円安 構造要因"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "コラム：日米が本気の協調介入、円安の流れは反転できるのか＝熊野英生氏",
+      "url": "https://jp.reuters.com/opinion/forex-forum/V2MLDXZJ2VKAXEN2FLVBDURN2Y-2026-08-03/",
+      "reason": "論点が協調介入の持続性に集中し、採用枠内で優先度を下げた"
+    },
+    {
+      "title": "30-31日の為替介入 計11兆円超か",
+      "url": "https://news.yahoo.co.jp/pickup/6590420",
+      "reason": "元記事単位ではなくピックアップページのため採用しない"
+    },
+    {
+      "title": "為替介入の勢いでドル153円まで円高進行も、一時的な動きに－TD",
+      "url": "https://www.bloomberg.com/jp/news/articles/2026-08-03/TJ7J3PT96OSG00",
+      "reason": "本文取得経路が利用できず、事実確認を完了できない"
+    },
+    {
+      "title": "ドル円、１５７円台に買い戻される展開 日米協調介入の急落から買戻し＝ＮＹ為替概況 -",
+      "url": "https://fx.minkabu.jp/news/375133",
+      "reason": "採用枠内で、規模と政策論点を扱う記事を優先した"
+    },
+    {
+      "title": "社説：日米為替介入 利害一致した２８年ぶりの協調",
+      "url": "https://www.yomiuri.co.jp/editorial/20260804-GYT1T00009/",
+      "reason": "採用枠内で同論点の社説は1件に絞った"
+    },
+    {
+      "title": "ドル/円の8月見通し 「円買い介入の影響残るもカギはドルの動き」",
+      "url": "https://www.gaitame.com/media/entry/2026/08/03/194457",
+      "reason": "前日見通しで、当日朝の更新版を優先した"
+    },
+    {
+      "title": "（社説）日米協調介入 円安抑制は財政規律で",
+      "url": "https://www.asahi.com/articles/DA3S16519577.html",
+      "reason": "採用枠内で同社の解説記事を優先した"
+    },
+    {
+      "title": "コラム：日米協調介入、自力では円安を防げなくなった日本＝植野大作氏",
+      "url": "https://jp.reuters.com/opinion/forex-forum/D2SDBD5WCRIWDHOSZ6TWJRTTVI-2026-08-03/",
+      "reason": "論点が既採用記事と重なり、採用枠内で優先度を下げた"
+    },
+    {
+      "title": "短期市場にマネー流入、10年で倍増 日銀の利上げが呼び水に",
+      "url": "https://www.nikkei.com/article/DGXZQOUB252JD0V20C26A7000000/",
+      "reason": "為替介入の当日中心論点から外れるため採用しない"
+    },
+    {
+      "title": "焦点：米から再三の懸念、円安変わらず協調介入に 「次の一手」は日銀の早期利上げか",
+      "url": "https://jp.reuters.com/opinion/OVF7P42NZ5MTFLLQHNZG6QFFBE-2026-08-03/",
+      "reason": "URL本文の取得を完了できず、採用しない"
+    },
+    {
+      "title": "危機モードの円安阻止、日米が協調介入発表 金利上昇の連鎖を懸念",
+      "url": "https://www.nikkei.com/article/DGXZQOUA032NG0T00C26A8000000/",
+      "reason": "協調介入の発表事実は時事通信記事で代表させた"
+    },
+    {
+      "title": "日米が円安阻止で協調、その裏で米国が抱いた他の狙い 有識者に聞く",
+      "url": "https://www.asahi.com/articles/ASV833V1LV83ULFA02VM.html",
+      "reason": "米国側の思惑は採用した朝日新聞記事で代表させた"
+    },
+    {
+      "title": "インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/18312991",
+      "reason": "FXの当日ニュース記事ではなく商品ページのため採用しない"
+    },
+    {
+      "title": "日米が為替に「協調介入」…どんな意味がある？ 円安続く相場への効果は、アメリカ側の思惑は",
+      "url": "https://www.tokyo-np.co.jp/article/506282",
+      "reason": "採用した東京新聞社説と論点が重なるため採用しない"
+    },
+    {
+      "title": "【FX】8/3 ドル円急落！日米協調介入で相場は転換するのか？ ｜為替市場ニュースの振り返り、今日の見通し",
+      "url": "https://www.gaitame.com/media/entry/2026/08/03/113000",
+      "reason": "前日の振り返り記事で、当日朝の更新版を優先した"
+    },
+    {
+      "title": "円買い日米協調介入、識者の見方は 山本雅文氏、丸山凜途氏",
+      "url": "https://www.asahi.com/articles/DA3S16519472.html",
+      "reason": "解説の追加性が採用5件に比べて低いため採用しない"
+    },
+    {
+      "title": "銀行金利に広がる格差 続く日銀利上げ路線、預金者還元に課題",
+      "url": "https://www.nikkei.com/article/DGXZQOCD306AA0Q6A730C2000000/",
+      "reason": "FXの当日介入論点から外れるため採用しない"
+    },
+    {
+      "title": "円安是正へ「令和のプラザ合意」 日米協調介入で150円予想も浮上",
+      "url": "https://www.nikkei.com/article/DGXZQOUB032VG0T00C26A8000000/",
+      "reason": "相場予想の主張が強く、規模・政策・市場反応を優先した"
+    },
+    {
+      "title": "【ドル円見通し】日米協調介入で相場の空気が一変｜155円の恐怖と158円の希望が交錯する週へ FX分析 2026年8月3日",
+      "url": "https://www.gaitame.com/media/entry/2026/08/03/130539",
+      "reason": "前日分析で、当日朝の更新版を優先した"
+    },
+    {
+      "title": "朝のドル円は１５７．３０円台での推移＝東京為替",
+      "url": "https://fx.minkabu.jp/news/375137",
+      "reason": "短い市況速報より、当日朝の見通しと政策論点を優先した"
+    }
+  ]
+}

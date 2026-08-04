@@ -1,0 +1,55 @@
+{
+  "articlePath": "C:\\Users\\hidek\\ng-r803\\digest\\DeepDive\\2026-08-04-DeepDive.md",
+  "articleSha256": "c062ddc21b83c18ebccfb842062c27055d22661aae4c7101948591ba37a93f7c",
+  "issueDate": "2026-08-04",
+  "manifestSha256": "1be55fdc0c006d650a81ca230579f521530b7e81c539414a339febb2c1f4b87f",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "f9348f642ccc4c7fca390efec9d7a097ded1c78950f11de6b962cbeff337df06",
+  "sources": [
+    {
+      "contentSha256": "3504537b5c286d14bb61319e1f2903099ab5998972c8f138b0cc67d03a72ad70",
+      "fetchedAt": "2026-08-04T00:37:09.467524+00:00",
+      "finalUrl": "https://gigazine.net/news/20260803-openai-astra-lean/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://gigazine.net/news/20260803-openai-astra-lean/",
+      "url": "https://gigazine.net/news/20260803-openai-astra-lean/"
+    },
+    {
+      "contentSha256": "78b757d23bf8655ec93336a581a22950f4c9d96672d7d3bbf600fee58286f7a9",
+      "fetchedAt": "2026-08-04T00:37:09.707712+00:00",
+      "finalUrl": "https://internet.watch.impress.co.jp/docs/news/2130096.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://internet.watch.impress.co.jp/docs/news/2130096.html",
+      "url": "https://internet.watch.impress.co.jp/docs/news/2130096.html"
+    },
+    {
+      "contentSha256": "752f3f2f1187ff5ed005ed9b0a2d6dc1c6c8587557203b2b73604e3d2f37d084",
+      "fetchedAt": "2026-08-04T00:37:09.905885+00:00",
+      "finalUrl": "https://www.itmedia.co.jp/enterprise/articles/2608/04/news019.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.itmedia.co.jp/enterprise/articles/2608/04/news019.html",
+      "url": "https://www.itmedia.co.jp/enterprise/articles/2608/04/news019.html"
+    }
+  ],
+  "status": "Green"
+}
