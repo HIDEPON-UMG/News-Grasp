@@ -1,0 +1,21 @@
+{
+  "date": "2026-08-06",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "候補検証: 米企業5年ぶり好決算 S&P500 全体で5割増益",
+    "候補検証: 米国経済 AIブーム スペースX ソフトバンクG ホンダ"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"],
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {"title": "不透明感がユーロ圏経済の重し、ＡＩなど無形資産投資が下押し緩和＝ＥＣＢ", "url": "https://jp.reuters.com/markets/japan/JDLXKGBHJNI25PKBTTR7QH2OEE-2026-08-05/", "reason": "元記事がHTTP 401で取得できず、日付・本文・OGPを独立確認できないため採用見送り"},
+    {"title": "インドネシアGDP（26年4-6月期）～成長率は5.29％に鈍化、政府消費が内需を下支え", "url": "https://www.nli-research.co.jp/report/detail/id=86473?mobileapp=1&site=nli", "reason": "本文と日付は確認できたがOGP画像が取得できず、thumb契約を満たせないため採用見送り"},
+    {"title": "経済産業省「次世代革新炉の開発・建設に向けた技術開発・サプライチェーン構築支援事業」に当社提案3件が採択、国内適用を見据えて国産技術による小型軽水炉開発も推進", "url": "https://www.mhi.com/jp/news/260805.html", "reason": "一次情報として確認できたが、当日号の主要経済テーマとの相対重要度で5件枠から除外"}
+  ]
+}

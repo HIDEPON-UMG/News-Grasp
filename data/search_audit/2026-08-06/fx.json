@@ -1,0 +1,43 @@
+{
+  "date": "2026-08-06",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "ドル円 OR USDJPY OR 日銀 OR BOJ OR 為替介入 when:1d",
+    "FRB OR Fed OR ECB OR 金利 OR forex when:1d",
+    "https://www.forexlive.com/feed/",
+    "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    "https://www.boj.or.jp/rss/whatsnew.xml",
+    "https://www.mof.go.jp/english/news.rss"
+  ],
+  "raw_results_total": 325,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "selection_policy": "Stage1 dedup済み候補のみを使用。広域収集・横断dedupは再実行していない。URLのHTTP 200、本文の公開日メタデータ、OGPを個別確認した5件を採用。",
+  "dropped": [
+    {"title":"【テクニカル】乖離ランク＝ドル円・クロス円は連日でマイナス幅を縮小","reason":"定型テクニカルで重要度が相対的に低い"},
+    {"title":"クックＦＲＢ理事、インフレ鈍化なければ利上げの用意 「高すぎる」水準に対処","reason":"候補URLの本文取得とOGP確認が完了せず採用保留"},
+    {"title":"アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場","reason":"相場ページで記事ではない"},
+    {"title":"日銀「利上げ、長期金利の安定につながる」 6月議事要旨","reason":"NHKの同一議事要旨報道と重複"},
+    {"title":"インド中銀は様子見姿勢維持､予防的利上げに慎重で「データ」確認へ","reason":"国内ドル円の当日焦点から外れる"},
+    {"title":"５日の為替市場の四本値（ドル円・ユーロドル・ユーロ円）","reason":"市況集計でニュース性が低い"},
+    {"title":"ＦＲＢ、段階的利上げ必要 情報発信継続は重要＝ミネアポリス連銀総裁","reason":"候補URLの本文取得とOGP確認が完了せず採用保留"},
+    {"title":"日銀は半年に1回の「利上げペース」加速!?","reason":"解説・予測色が強く一次情報性が低い"},
+    {"title":"「為替介入」って結局なに？ 国が円を買う理由と、そのあとに起きること","reason":"基礎解説で当日ニュース性が低い"},
+    {"title":"8月5日のNY為替概況(フィスコ)","reason":"市況集計でニュース性が低い"},
+    {"title":"ドル円、１５７．７５円付近での推移 買戻しもロング勢も慎重","reason":"短期市況で重要度が相対的に低い"},
+    {"title":"ＮＹ外為市場＝ドル157円台後半で安定、中東鎮静化期待で「有事のドル買い」後退","reason":"候補URLの本文取得とOGP確認が完了せず採用保留"},
+    {"title":"FX実践解説、協調介入後も本当に円安は続くのか","reason":"解説記事で一次情報性が低い"},
+    {"title":"8月チェココルナ円見通し、円高圧力とCNBの利上げ余地を見極める","reason":"国内ドル円の当日焦点から外れる"},
+    {"title":"〈Check Point〉為替介入、財源にできる？ 5兆円分は難しく","reason":"日本経済新聞の採用記事と同一テーマの別版"},
+    {"title":"ニューヨーク外国為替市場概況・5日 ユーロドル、小幅続伸","reason":"市況集計でニュース性が低い"},
+    {"title":"ドル円157.50円挟んで振幅、157.50円に買い・157.80円に売り散見","reason":"注文情報で重要度が相対的に低い"},
+    {"title":"【FX】ライブトレード 欧州タイムを攻略だ！","reason":"ライブ配信・取引解説で一次報道ではない"},
+    {"title":"FX個人投資家動向｜ベッセント砲でドル安・円高も後が続かず","reason":"個人投資家動向の解説で重要度が相対的に低い"},
+    {"title":"【ドル/円、今夜の見通し】ドル/円、日米協調介入警戒で157円の上値が重い","reason":"市況見通しで重要度が相対的に低い"}
+  ]
+}

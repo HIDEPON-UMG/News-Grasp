@@ -1,0 +1,41 @@
+{
+  "date": "2026-08-06",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:nikkan.co.jp \"TOTO、神奈川・茅ヶ崎に研究棟\"",
+    "site:xtech.nikkei.com \"ソニーやルネサス、半導体工場を再稼働\"",
+    "site:nikkei.com \"日本製紙社長、熊本工場\"",
+    "site:newsdig.tbs.co.jp \"新たな植物工場の研究拠点開設\"",
+    "site:xtech.nikkei.com \"積水化学とパナソニックの雨どい特許侵害訴訟\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "coverage_terms_checked": ["TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"],
+  "dropped": [
+    {"title":"米政権、太陽光パネル・半導体の主原材料に15％関税へ 6日にも発表","url":"https://jp.reuters.com/world/security/BZA6SKJ4MVO6ZPJKWGFQB2K7NM-2026-08-05/","reason":"元記事が401で取得できず、canonical本文と公開日を独立確認できないため"},
+    {"title":"９人が犠牲になった日本製紙の工場長「正直何もできなかった」","url":"https://www.yomiuri.co.jp/national/20260805-GYT1T00492/","reason":"日本製紙八代工場の同一事故に関する重複報道のため"},
+    {"title":"TOTO、NGK、ノリタケ、日本特殊陶業…陶磁器メーカーから隠れた半導体関連銘柄へ!?","url":"https://diamond.jp/articles/-/396504","reason":"背景解説・銘柄分析で、当日発生の製造ニュースではないため"},
+    {"title":"製造業の将来技術EXPO 東京 2026","url":"https://events.nikkeibp.co.jp/xtechnext/2026tky/future-manufacturing/","reason":"イベント告知で、ニュース記事としての新規事実が薄いため"},
+    {"title":"トヨタ、九州の工場稼働再開へ＝ダイハツも、部品調達にめど","url":"https://finance.yahoo.co.jp/news/detail/61992ecb9c90cbc4070a153eab540bddb6aa92c0","reason":"熊本地震の操業再開テーマが半導体復旧記事と重なり、一次情報度で劣後したため"},
+    {"title":"エネアグリ「完全資源循環型植物工場システム」を開発、特許出願を完了","url":"https://smartagri-jp.com/news/14706","reason":"企業発表転載に近く、Oishii Farmの大規模研究拠点記事を優先したため"},
+    {"title":"熊本の被災地240工場、1週間後の「人流」は八代で2割減","url":"https://www.nikkei.com/article/DGXZQOUE038DU0T00C26A8000000/","reason":"熊本地震関連の復旧分析で、工場個別の一次情報を優先したため"},
+    {"title":"煙突倒壊の日本製紙工場、犠牲の9人は事務所でオフィスワーク中","url":"https://www.yomiuri.co.jp/national/20260806-GYT1T00075/","reason":"日本製紙八代工場の同一事故に関する重複報道のため"},
+    {"title":"顧客のデータを即時で把握、米アマゾンのサプライチェーン・エコシステム","url":"https://xtech.nikkei.com/atcl/nxt/column/18/03698/072300004/","reason":"過去掲載の解説記事で、当日性を満たさないため"},
+    {"title":"SCREENHD後藤社長「半導体装置のものづくりは国内、技術流出防ぐ」","url":"https://www.nikkei.com/article/DGXZQOUF160K50W6A710C2000000/","reason":"URLパスが2026年7月10日で、当日性を独立確認できないため"},
+    {"title":"日本製紙の折れた煙突が象徴 G7で最も老朽化した日本の製造基盤","url":"https://business.nikkei.com/atcl/seminar/19/00030/080500801/","reason":"論考・背景解説で、事故の一次報道を優先したため"},
+    {"title":"日本製紙、八代工場の再開めど立たず 業績予想、今期未定に","url":"https://www.nikkei.com/article/DGKKZO98000280V00C26A8EA1000/","reason":"日本製紙八代工場の同一事故に関する続報重複のため"},
+    {"title":"カルコパイライト×ペロブスカイト 発電5割増、28年量産","url":"https://www.nikkei.com/prime/gx/article/DGXZQOUC305TT0Q6A630C2000000","reason":"URLパスが2026年6月30日で、当日性を満たさないため"},
+    {"title":"変わる中国経済の象徴 半導体の時価総額1年で3倍","url":"https://www.nikkei.com/article/DGXZQOFL051OMTV00C26A8000000/","reason":"半導体株の市場分析で、製造現場の構造変化が主題ではないため"},
+    {"title":"韓国、「AI・半導体」依存症で始まる社会崩壊？","url":"https://jbpress.ismedia.jp/articles/-/96312","reason":"論評・市場解説で、製造業の一次情報度が低いため"},
+    {"title":"「本業は事業の工場」 DeNA南場社長、AI活用し利益の循環へ","url":"https://www.asahi.com/articles/ASV853VQKV85ULFA01SM.html","reason":"AI事業論で、製造業の生産・供給テーマから外れるため"},
+    {"title":"日産キックスが好調な滑り出し、追浜工場最後の新型車","url":"https://bookplus.nikkei.com/atcl/column/041500053/073000520/","reason":"消費者向け車種評価が主題で、Mobility寄りのため"},
+    {"title":"トヨタ、工場の緑化で「3K」イメージ払拭","url":"https://www.nikkei.com/article/DGXZQOUC2812C0Y6A720C2000000/","reason":"職場環境・CSRの話題で、当日の製造競争力への影響が相対的に小さいため"},
+    {"title":"70年の灯、つないで／ホタルクス滋賀工場","url":"https://www.denkishimbun.com/archives/414247","reason":"地域企業の記念記事で、構造変化のインパクトが相対的に小さいため"},
+    {"title":"工場で9人死亡「重く受け止める」 日本製紙社長が会見","url":"https://www.jiji.com/jc/article?k=2026080500754&g=eco","reason":"日本製紙八代工場の同一事故に関する重複報道のため"}
+  ]
+}

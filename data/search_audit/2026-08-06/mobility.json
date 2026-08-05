@@ -1,0 +1,38 @@
+{
+  "date": "2026-08-06",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:response.jp ティアフォー Astemo E2E型 自動運転AI 2026年8月6日",
+    "site:japan.cnet.com Waymo ダラス 自動運転タクシー 一般提供",
+    "site:mezha.net Zoox ラスベガス ロボタクシー 有料 8月10日",
+    "site:cargo-news.online アース製薬 鈴与 T2 中継輸送",
+    "site:news.yahoo.co.jp 日産 アトラス EVコンバージョン 1000km"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dropped": [
+    {"title":"ティアフォー、Astemoと自動運転AI共同開発","url":"https://www.logi-today.com/985421","reason":"Astemo・ティアフォーの同一テーマで、Response.jpの一次情報に近い記事を優先"},
+    {"title":"編集者の視点 ｢テスラ式自動運転､ウェイモCEOが否定｣","url":"https://www.nikkei.com/prime/mobility/article/DGXZQOUC051FL0V00C26A8000000","reason":"Waymo一般提供の事実記事を優先し、解説記事は見送り"},
+    {"title":"万博「負の遺産」EVバスは今 大阪メトロ報告書の「常とう句」と、曖昧なまま終わらせた「核心」","url":"https://www.tokyo-np.co.jp/article/506766","reason":"地域事例で影響範囲が限定的"},
+    {"title":"中国製EVをめぐる言説はどこまでが本当なのか？","url":"https://wired.jp/article/sz-theres-a-lot-of-hype-about-chinese-evs-is-any-of-it-true/","reason":"背景解説であり、当日の実装・事業進展を優先"},
+    {"title":"万博で不具合連発「EVMJ」の事業を譲受、経営者が語る狙い","url":"https://gendai.media/articles/-/169943","reason":"EVモーターズ・ジャパン関連の重複テーマ"},
+    {"title":"アマゾン・ドット・コムのZoox、来週ラスベガスで有料ロボタクシーサービスを開始 執筆","url":"https://jp.investing.com/news/stock-market-news/article-93CH-1633573","reason":"Zoox同一ニュースの二次転載"},
+    {"title":"ウーバー、弱気の利益見通し発表——ロボタクシー推進に100億ドル超を投入へ","url":"https://finance.biggo.jp/news/64e7fb96-7074-4c47-a4e2-4d2a25c2b187","reason":"二次情報で、Waymo・Zooxのサービス進展を優先"},
+    {"title":"真夏や夜間に自動運転バス実験 三重県四日市市、バッテリー消耗など確認","url":"https://www.chunichi.co.jp/article/1292332","reason":"地域実証で影響範囲が限定的"},
+    {"title":"中古リーフを移動電源車に ベルエナジー、EVや建機対象","url":"https://www.nikkei.com/prime/mobility/article/DGXZQOUC219LA0R20C26A7000000","reason":"EV商用化の新規性はあるが、当日の自動運転・物流進展を優先"},
+    {"title":"アステモとティアフォー、E2E型自動運転AIを共同開発へ、2030年代前半のレベル4実用化目指す","url":"https://finance.biggo.jp/news/0252bad3-f94f-4d52-9149-9225adffdae1","reason":"Astemo・ティアフォーの同一テーマの二次転載"},
+    {"title":"アステモ、ティアフォーと自動運転システム 30年代前半に実用化へ","url":"https://www.nikkei.com/article/DGXZQOUC051QP0V00C26A8000000/","reason":"Astemo・ティアフォーの同一テーマでResponse.jpを優先"},
+    {"title":"テスラ7月の中国製ＥＶ販売台数、前年比38％増","url":"https://jp.reuters.com/economy/3OP7KUE6D5PRDBGHMMH5VOIA5M-2026-08-05/","reason":"本文取得がHTTP 401で、当日記事の事実確認を完了できず見送り"},
+    {"title":"自動運転車用ステレオカメラの世界市場（2026年～2032年）、市場規模・分析レポートを発表","url":"https://www.atpress.ne.jp/news/6593839","reason":"市場調査レポートの告知で一次ニュース性が低い"},
+    {"title":"「エンジンなんて要りません」 1980台限定「EV」が動かす自動車構造の大転換！","url":"https://merkmal-biz.jp/post/119563","reason":"製品解説・特集で当日の新規事実が薄い"},
+    {"title":"Zooxがラスベガスでロボタクシーの有料運行を8月10日に開始","url":"https://mezha.net/jp/bukvy/3575496c_zoox_will_start/","reason":"採用済みの同一候補のため重複除外"},
+    {"title":"豪７月新車販売は７％増、ＥＶ需要が続く","url":"https://www.nna.jp/news/2953338","reason":"地域市場統計で、選定5件より読者の意思決定影響が低い"},
+    {"title":"テキサス、自動運転トラック導入拡大＝砂を運搬","url":"https://emb-media.com/autoedge/?p=663276","reason":"自動運転トラックの物流テーマがT2実証と重複"},
+    {"title":"民事再生中のEVモーターズ・ジャパン、EVバス事業をイクヨに譲渡（レスポンス）","url":"https://news.yahoo.co.jp/articles/378000f77744b6fb175bb6d21ef3d9f4368f3948","reason":"前日掲載テーマとの継続性が高く、当日は新規運用実証を優先"},
+    {"title":"スズキ、EV生産増強","url":"https://newswitch.jp/p/49924","reason":"生産能力増強が主題で、製造カテゴリとの境界により見送り"},
+    {"title":"チャンギ空港、自動運転車いすの運用開始","url":"https://www.nna.jp/news/2953285","reason":"本文の公開部分で運用詳細を十分確認できず見送り"}
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "date": "2026-08-06",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "query_policy": "Stage1 dedup済み候補を唯一の入力とし、広域収集・横断dedup・追加検索は実施していない。",
+  "dropped": [
+    {"title":"日本のサイバーセキュリティ市場規模、2034年までに460億米ドルに到達へ ― 2026～2034年のCAGRは9.50%","url":"https://newscast.jp/smart/news/8723967","reason":"市場予測のPR転載で、当日読者への具体的な意思決定材料が薄い。"},
+    {"title":"ダウ平均は最高値更新が続く ＩＴ・ハイテク株は戻り売り＝米国株概況","url":"https://s.kabutan.jp/news/n202608060132/","reason":"株式市況が主題で、ITカテゴリの技術・業務変化としての独自性が低い。"},
+    {"title":"さらなる発展の局面を迎える人民元国際化","url":"https://www.nri.com/jp/knowledge/publication/kinyu_itf_202608/07.html","reason":"為替・金融テーマであり、ITカテゴリの選定軸から外れる。"},
+    {"title":"AIに任せる方が早いけれど、あえて人間に残すべき仕事とは","url":"https://project.nikkeibp.co.jp/HumanCapital/atcl/column/00015/072200143/","reason":"AIカテゴリ寄りの論考で、当日の企業ITニュースとしての具体的な新展開が弱い。"},
+    {"title":"米国のガバメントクラウド: 官公庁向けDXソリューション","url":"https://jpn.nec.com/government/dcs/col_dg3/index.html","reason":"NECの解説・営業導線に近い自社コラムで、独立したニュース性が低い。"},
+    {"title":"SCS評価制度から考える これからの企業に求められるセキュリティとは","url":"https://www.sbbit.jp/movie/sp/16049","reason":"会員限定の提供コンテンツで、制度の最新決定や一次資料を確認できない。"},
+    {"title":"「Black Hat Asia 2026」「DEF CON Singapore」参加レポート | サイバーセキュリティ情報局","url":"https://eset-info.canon-its.jp/malware_info/activity/260805.html","reason":"イベント参加報告であり、当日の企業ITに与える具体的な変化が限定的。"},
+    {"title":"シトロエンの7人乗り小型SUV「C3エアクロスハイブリッド」、ACC見送り","url":"https://xtech.nikkei.com/atcl/nxt/column/18/03259/080300038/","reason":"モビリティカテゴリの製品記事で、IT論点が主題ではない。"},
+    {"title":"IT革命さなかにバラマキ投資、「骨太の方針」に欠く政府の時代認識","url":"https://xtech.nikkei.com/atcl/nxt/column/18/00849/00195/","reason":"政策評論が主題で、企業ITの具体的な一次情報を含まない。"},
+    {"title":"日本ＧＬＰ／ＣＢクラウド 入居企業向けの配送ＰＦサービス提供","url":"https://cargo-news.online/news/detail.php?id=11690","reason":"物流施設向けサービスの個別発表で、ITカテゴリの読者影響が相対的に小さい。"},
+    {"title":"2026 PLAVE World Tour [KEEP IT MANIC] in Taipei & Macao 追加公演のご案内","url":"https://weverse.io/plave/notice/38153?hl=ja","reason":"エンターテインメント告知で、ITカテゴリの対象外。"},
+    {"title":"ダウ先物は続伸 ＩＴ・ハイテク大手の決算見極めの一方、中東情勢の注視＝米国株","url":"https://s.kabutan.jp/news/n202608051646/","reason":"株式市況が主題で、ITカテゴリの技術・業務変化としての独自性が低い。"},
+    {"title":"SUPER EIGHT、EP『ダンダーラ』より“Do it!!!!!”初パフォーマンス映像公開。「EIGHT-JAM FES 2026」でHIROKI＆NAOTO（ORANGE RANGE）等と一夜限りのコラボ","url":"https://tower.jp/article/news/2026/08/05/tg004","reason":"音楽告知で、ITカテゴリの対象外。"},
+    {"title":"NEW EP『And so it goes…』から先行SG「Silvershoes」リリース！","url":"https://www.universal-music.co.jp/liana-flores/news/2026-08-05/","reason":"音楽作品の告知で、ITカテゴリの対象外。"},
+    {"title":"SHIFTの60代前半・ITエンジニア（開発系）職の年収は？【5000件の口コミ情報データ】","url":"https://diamond.jp/articles/-/396173","reason":"求人・年収の解説記事で、当日の企業ITニュースとしての速報性が弱い。"},
+    {"title":"Gerard Piqué: 'We're enjoying it and so are the fans'","url":"https://www.fcbarcelona.jp/ja/barca-play/videos/2535244/gerard-pique-were-enjoying-it-and-so-are-the-fans","reason":"スポーツ動画で、ITカテゴリの対象外。"},
+    {"title":"Xbox、パーティーチャット録音とクラウドセーブ復元機能をテスト開始―Insider向けに先行提供","url":"https://finance.biggo.jp/news/40ba8475-25de-4990-9d56-2b3a32c27cd5","reason":"ゲームカテゴリの製品機能テストで、ITカテゴリの優先度が低い。"},
+    {"title":"さくらのクラウド検定 ベーシック 2026年第4回試験の結果を発表しました","url":"https://www.sakura.ad.jp/certification/news/basic-certification-exam-results-2026-08/","reason":"資格試験結果の自社告知で、企業ITの構造変化や読者影響が限定的。"},
+    {"title":"「【SIer向け】ガバメントクラウド対応！省庁・独法案件を勝ち取る「さくらのクラウド」提案塾」を開催いたします","url":"https://www.sakura.ad.jp/corporate/information/events/2026/08/05/1968225534/","reason":"自社イベント告知で、ニュースとしての新規事実と独立性が弱い。"},
+    {"title":"NAS利用企業の半数近くが「IT専任者不在」、中でもIT担当ではない社員が管理する環境では54.0％がアクセス権限を「適切に設定できていない・わからない」と回答","url":"https://www.kubell.com/news/2026/08/samba-research-nas02.html","reason":"自社サービスに紐づく調査発表で、5件の上位ニュースと比べて一次情報の独立性が低い。"}
+  ]
+}

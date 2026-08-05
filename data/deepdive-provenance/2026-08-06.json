@@ -1,0 +1,69 @@
+{
+  "articlePath": "C:\\Users\\hidek\\ng-r806\\digest\\DeepDive\\2026-08-06-DeepDive.md",
+  "articleSha256": "ac26a7709a3854cb77f94967df0a0e3ebdf534d00dfb003913c276512a30396f",
+  "issueDate": "2026-08-06",
+  "manifestSha256": "72ff91675c5996fd3cae09461586af01e48daffbcc678248693cdf5fa3415e32",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "7402ab1bd37b83c35f1ddb3b0b6f97ac8357639a9c5c6769b270c0f2ff10a7e5",
+  "sources": [
+    {
+      "contentSha256": "73cc0d89930769cff7caff9054f03d64431a71eef77064e5ea416db564913176",
+      "fetchedAt": "2026-08-05T23:14:28.817143+00:00",
+      "finalUrl": "https://waymo.com/blog/2025/07/our-next-city-dallas/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2025/07/our-next-city-dallas/",
+      "url": "https://waymo.com/blog/2025/07/our-next-city-dallas/"
+    },
+    {
+      "contentSha256": "936b0209159cc5796365effcae755639f6be38965c03a38443e670c92b44ca79",
+      "fetchedAt": "2026-08-05T23:14:29.210766+00:00",
+      "finalUrl": "https://waymo.com/blog/2026/02/dallas-houston-san-antonio-orlando/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://waymo.com/blog/2026/02/dallas-houston-san-antonio-orlando/",
+      "url": "https://waymo.com/blog/2026/02/dallas-houston-san-antonio-orlando/"
+    },
+    {
+      "contentSha256": "26ca956b4d0eed81d8aa6f8f36dc95fbf04d68b828840f6681f0d113db228b80",
+      "fetchedAt": "2026-08-05T23:14:30.150680+00:00",
+      "finalUrl": "https://zoox.com/journal/the-updated-zoox-robotaxi",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://zoox.com/journal/the-updated-zoox-robotaxi",
+      "url": "https://zoox.com/journal/the-updated-zoox-robotaxi"
+    },
+    {
+      "contentSha256": "d37ce018564a69917b4998ae4421c679edfbe853b9209c42af3021d4063d8b50",
+      "fetchedAt": "2026-08-05T23:14:31.090277+00:00",
+      "finalUrl": "https://zoox.com/journal/zoox-service-updates-and-expansions",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://zoox.com/journal/zoox-service-updates-and-expansions",
+      "url": "https://zoox.com/journal/zoox-service-updates-and-expansions"
+    }
+  ],
+  "status": "Green"
+}

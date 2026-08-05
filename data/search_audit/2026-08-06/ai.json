@@ -1,0 +1,43 @@
+{
+  "date": "2026-08-06",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "Stage1候補のcanonical URL検証（新規収集なし）",
+    "Stage1候補のOGP検証（新規収集なし）"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title":"AIエージェント「Gemini Spark」を日本のProユーザー向けに順次提供開始","url":"https://enterprisezine.jp/news/detail/24798","reason":"canonical取得が403で、当日性とOGPを独立確認できず不採用"},
+    {"title":"バイブコーディングが阻害するスキル形成、生成AIに「丸投げ」は厳禁","url":"https://xtech.nikkei.com/atcl/nxt/column/18/03673/072700007/","reason":"採用"},
+    {"title":"マイクロソフトのAI売上高、大半はOpenAI関連が占める－開示資料","url":"https://www.bloomberg.com/jp/news/articles/2026-08-05/TJB6W6T96OSI00","reason":"canonical取得が403で、本文とOGPを独立確認できず不採用"},
+    {"title":"がんの情報収集・相談先「生成ＡＩ」７％ 対がん協会、患者・家族に調査","url":"https://www.asahi.com/articles/DA3S16521021.html","reason":"採用"},
+    {"title":"Claude Cowork、3層管理でリスク回避 「便利だが危ない」を克服する処方箋","url":"https://active.nikkeibp.co.jp/atcl/act/19/00796/070700004/","reason":"本文が2026-06-11執筆情報の再掲で、当日新規性が弱く不採用"},
+    {"title":"国内外デザイン賞獲得…コニカミノルタ・デザイン部門の「AI活用術」が凄すぎる理由","url":"https://www.sbbit.jp/article/st/186022","reason":"企業事例として有用だが、上位5件より影響範囲が狭く不採用"},
+    {"title":"OpenAIの「インフルエンサー招待旅行」が物議","url":"https://news.yahoo.co.jp/articles/4fbb691babc0b318fc79d6fcb97f819fe25e0605?source=rss","reason":"論点が広報・反応中心で、実務影響が相対的に小さく不採用"},
+    {"title":"生成AIサービスでのショート動画の作成・先行一般公開","url":"https://www.tv-tokyo.co.jp/plus/external-pr/entry/201453.html","reason":"PR色が強く、一次情報としての独立性が低く不採用"},
+    {"title":"メタ、AIコーディングエージェント「Muse Code」発表、価格でAnthropicとOpenAIに対抗","url":"https://finance.biggo.jp/news/96c2b19f-e323-4cc5-8b77-6d143441b2ec","reason":"重要候補だが、上位5件との重複論点があり二次集約記事を不採用"},
+    {"title":"FDUA 生成AIWG、『金融生成AIガイドライン（第1.2版）』を公開","url":"https://prtimes.jp/main/html/rd/p/000000043.000103937.html","reason":"ガイドライン更新として有用だが、業界横断インパクトが相対的に小さく不採用"},
+    {"title":"【IT業界の5年後大予測】富士通・NEC・野村総研…","url":"https://diamond.jp/articles/-/396494","reason":"予測・論評中心で、当日発生事実としての確度が低く不採用"},
+    {"title":"コニカミノルタ、生成AIパイロット校の活用傾向と実践を集約した教員向け冊子を無料公開","url":"https://edu.watch.impress.co.jp/docs/news/2130929.html","reason":"学校事例として有用だが、上位5件より対象範囲が限定的で不採用"},
+    {"title":"アンソロピック、独自のAI半導体開発へ 「Claude」に最適化","url":"https://www.nikkei.com/article/DGXZQOGN05BWO0V00C26A8000000/","reason":"採用"},
+    {"title":"マイクロソフトのAI収益、OpenAIへの依存鮮明に－新規開示で判明","url":"https://finance.biggo.jp/news/0fd25731-a8e9-4533-ad9b-46e834bc53af","reason":"Bloomberg候補と同論点の二次記事で、独立候補として不採用"},
+    {"title":"生成AI時代に問われる「統計分析」の真価 変わるマーケティング","url":"https://bookplus.nikkei.com/atcl/column/072800750/072800001/","reason":"解説・書籍紹介で、当日ニュースの即時性が弱く不採用"},
+    {"title":"LLMをカスタマイズして仕組みがわかる！ ブラウザで動かすLLM実装入門","url":"https://www.impress.co.jp/newsrelease/2026/08/20260804-01.html","reason":"書籍発売告知で、ニュース価値が相対的に小さく不採用"},
+    {"title":"今すぐ使えるかんたん Gemini Notebook 仕事術&時短技","url":"https://gihyo.jp/dp/ebook/2026/978-4-297-15736-4","reason":"書籍紹介で、当日ニュースの即時性が弱く不採用"},
+    {"title":"北海道内建設業でＩＣＴ施工や生成ＡＩ導入進む","url":"https://e-kensin.net/n/nb57654109ef0","reason":"地域業界の事例で、カテゴリ横断インパクトが相対的に小さく不採用"},
+    {"title":"「Google Earth」の生成AI機能が1日で休止 偽画像を懸念","url":"https://www.nikkei.com/article/DGXZQOUC053CE0V00C26A8000000/","reason":"採用"},
+    {"title":"生成AIでWebサイトをリニューアルしてみる","url":"https://london3.jp/2026/08/ai-webrenewal/","reason":"個人実践記で、一般化できる影響範囲が狭く不採用"},
+    {"title":"Anthropic、独自のAIチップ設計チーム構築のための人材を募集中","url":"https://article.auone.jp/81b5ee06-c275-4544-92f7-046b55177424","reason":"Anthropic半導体候補と同論点の再掲で不採用"},
+    {"title":"アップル、さらに多くの元従業員によるOpenAIへの企業秘密漏洩の可能性を主張","url":"https://www.gamebusiness.jp/article/2026/08/06/27623.html","reason":"採用"},
+    {"title":"AIで学術論文にもシンギュラリティ到来？","url":"https://jbpress.ismedia.jp/articles/-/96293","reason":"煽情的な論評で、一次事実の確認範囲が不足し不採用"},
+    {"title":"経理業務を変える生成AI活用術：Geminiを使った実践デモ","url":"https://www.manegy.com/news/detail/16575/","reason":"セッション紹介で、当日ニュースの独立性が弱く不採用"},
+    {"title":"Helpfeel調査、生成AI経由のヘルプサイト流入数が1年で3.2倍","url":"https://prtimes.jp/main/html/rd/p/000000515.000027275.html","reason":"企業調査PRで、上位5件より公共的影響が限定的で不採用"}
+  ]
+}
