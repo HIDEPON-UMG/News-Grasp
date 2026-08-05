@@ -1,0 +1,37 @@
+{
+  "date": "2026-08-05",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:denso.com/jp/ja/news/newsroom/2026/20260805-01 RE-CORE",
+    "site:monoist.itmedia.co.jp/mn/articles/2608/05/news052.html リンテック 200億円"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": ["TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"],
+  "dropped": [
+    {"title":"サムスン、ＡＩ向け次世代メモリー半導体技術を発表","url":"https://jp.reuters.com/economy/VJJN634IFFPGXG54WOPEQLMEBQ-2026-08-04/","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"},
+    {"title":"デンソーとSTATION Ai、製造業向けオープンイノベーション支援プログラム「RE-CORE」を開始","url":"https://www.denso.com/jp/ja/news/newsroom/2026/20260805-01","reason":"候補thumbがnull。公開日根拠は確認できるが画像要件で未採用"},
+    {"title":"ウェーハ洗浄装置市場は2035年に228億3000万米ドルへ拡大、CAGR 8.57％で半導体微細化・高性能チップ需要が成長を牽引","url":"https://www.atpress.ne.jp/news/4538262","reason":"市場予測の転載・調査資料型で、一次情報度が相対的に低い"},
+    {"title":"ホンダ、埼玉と鈴鹿の工場停止19日まで延長 部品安定調達めど立たず","url":"https://www.nikkei.com/article/DGXZQOUC049MP0U6A800C2000000/","reason":"熊本地震の供給懸念を扱う採用記事と内容が重複"},
+    {"title":"リンテック、200億円投じ福岡に次世代半導体材料の研究拠点を開設：研究開発の最前線","url":"https://monoist.itmedia.co.jp/mn/articles/2608/05/news052.html","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"},
+    {"title":"熊本被災地へ 台湾の半導体大手TSMCが2億5000万円寄付へ","url":"https://news.web.nhk/newsweb/na/na-k10015196651000","reason":"社会支援が主題で、製造競争力・供給網の主題としては優先度を下げた"},
+    {"title":"米、ポリシリコンの新たな輸入規制準備 半導体・太陽光パネルの主要原材料","url":"https://jp.reuters.com/world/security/QLVCWCRFYBL7BEUV5ATEMT5TXE-2026-08-05/","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"},
+    {"title":"ルネサス、熊本市の川尻工場が生産再開 1日前倒し","url":"https://www.nikkei.com/article/DGXZQOUC044PC0U6A800C2000000/","reason":"熊本復旧の採用記事に含まれる事実と重複"},
+    {"title":"トヨタ、福岡県内の3工場6日から生産再開 部品供給にめど","url":"https://jp.reuters.com/economy/EXMJLUNKRBKBZOTKSU56D3KLGM-2026-08-05/","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"},
+    {"title":"旭化成－SBIが目標株価引き上げ 「ヘルスケア」と「AI・半導体」好調続く","url":"https://finance.yahoo.co.jp/news/detail/0676ce736405784f81299fb3731ca5e3d7b5898e","reason":"株価評価が主題で、製造現場の構造変化との直接性が低い"},
+    {"title":"日産、九州工場6〜7日は通常稼働 連休明けは検討中","url":"https://www.nikkei.com/article/DGXZQOUC04A7Z0U6A800C2000000/","reason":"熊本地震の供給・稼働状況を扱う採用記事と重複"},
+    {"title":"前場に注目すべき3つのポイント～物色は半導体やAI関連株のほか原油安を好感する流れに～","url":"https://finance.yahoo.co.jp/news/detail/8eac09ef14175d90fd4a7bd954a70fbe7eef16d4","reason":"株式市場の短期動向が主題で、製造業の一次情報度が低い"},
+    {"title":"長周期地震動が影響か 細長い建物揺れやすく 日本製紙工場の煙突倒壊・専門家・熊本震度7","url":"https://news.yahoo.co.jp/articles/9680ecd1705c0bd991a1ea72e75d2d4837410822","reason":"工場被害は重要だが、採用記事の災害復旧・供給網と比べて波及範囲が限定的"},
+    {"title":"ホンダ、2工場の停止期間延長","url":"https://news.yahoo.co.jp/articles/0bc91a125feebc551320923cab05ee3a1acedc68","reason":"採用した熊本地震関連記事と内容が重複"},
+    {"title":"熊本地震〉日産、九州工場は8月6日から通常稼働 8～16日は夏季休暇","url":"https://news.yahoo.co.jp/articles/da55d73f0ed579a5ba839b43017eba778dfbd958","reason":"採用記事に含まれる日産の復旧情報と重複"},
+    {"title":"米国製AI半導体の対中迂回輸出を遮断、NVIDIAがアジア顧客半減 管理された依存の深層","url":"https://jbpress.ismedia.jp/articles/-/96288","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"},
+    {"title":"本土寄り付き：安寄り後に一進一退、半導体関連株に買い","url":"https://finance.yahoo.co.jp/news/detail/b9eb4aaa00ec6bc728acbddd7218c7483ba22d04","reason":"株式市場の短期動向が主題で、製造業の構造変化との直接性が低い"},
+    {"title":"韓国「半導体高校」に熱視線 サムスン就職の最短ルート 高給報道、学歴社会で新風","url":"https://www.okinawatimes.co.jp/articles/-/1896268","reason":"人材・教育の話題で、当日号の製造設備・供給網の優先度を下回る"},
+    {"title":"半導体、AI需要で成長続く 日本のシェア回復、中小企業の力が鍵","url":"https://www.saga-s.co.jp/articles/-/1764865","reason":"講演要旨であり、現時点の具体的な製造計画・一次発表ではない"},
+    {"title":"製造現場向け「AIエージェント活用」の研究開発・実証を開始","url":"https://prtimes.jp/main/html/rd/p/000000007.000136506.html","reason":"PR発表単独で、製造競争力への実証結果がまだ限定的"},
+    {"title":"日清食品株式会社 新工場建設に関するお知らせ","url":"https://www.nissin.com/jp/company/news/13864/","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"},
+    {"title":"ウシオ電がカイ気配切り上げ、半導体関連の光源好調で４～６月期経常益３．３倍","url":"https://s.kabutan.jp/news/n202608050433/","reason":"候補thumbがnullで、記者境界の有効thumb要件を満たせない"}
+  ]
+}

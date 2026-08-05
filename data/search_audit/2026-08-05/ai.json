@@ -1,0 +1,35 @@
+{
+  "date": "2026-08-05",
+  "category_id": "ai",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "queries": [
+    "Stage1 deduped candidates: build/deduped-candidates/ai.jsonl",
+    "article canonical URL/date/OGP verification for selected Stage1 candidates",
+    "AI watchlist coverage: OpenAI / Anthropic / Google / Apple / Microsoft / Meta / NVIDIA"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title": "AIエージェント「Gemini Spark」を日本のProユーザー向けに順次提供開始", "url": "https://enterprisezine.jp/news/detail/24798", "reason": "canonical本文・OGPを取得できず、日付根拠がRSS掲載時刻のため不採用"},
+    {"title": "【生成AIワークショップ@東京】生成AIを使った人事データ分析を実践しました｜ニュース", "url": "https://corp.kaonavi.jp/news/info_20260805/", "reason": "企業ワークショップ報告で、当日号のAIカテゴリ上位5件より読者影響が小さいため不採用"},
+    {"title": "Copilot・ChatGPT・Gemini？ガートナー流「AIアシスタント」選定の“4つの基準”とは", "url": "https://www.sbbit.jp/article/cont1/186319", "reason": "選定解説で、速報性と一次情報性が採用5件を下回るため不採用"},
+    {"title": "【８月５日newリリース！】自治体職員のための生成AIサービス『ELDA』β版", "url": "https://prtimes.jp/main/html/rd/p/000000850.000059164.html", "reason": "企業プレスリリースで、PR転載のため重要度を減点し不採用"},
+    {"title": "AI議事録「Rimo」はOpenAI、Anthropic時代にどう勝ち筋を描くか──元Google・相川氏が説く現代のプロダクト戦略", "url": "https://codezine.jp/article/detail/29084", "reason": "続報注釈はあるが新材料の一次確認が弱く、採用5件より優先度が低いため不採用"},
+    {"title": "激変するGoogle Workspace、Gemini Sparkがもたらす「自律型AIとのコラボレーション」", "url": "https://news.yahoo.co.jp/articles/2452508314a43af0c003e59b2e8a7cafe78e8004", "reason": "続報かつ二次転載で、一次記事の公開日・本文根拠を独立確認できないため不採用"},
+    {"title": "正念場のソフトバンクG株、決算焦点はAI戦略進度－OpenAI傾斜に懸念", "url": "https://www.bloomberg.com/jp/news/articles/2026-08-04/TJ897QT96OSH00?srnd=jp-homepage", "reason": "対象カテゴリのAI上位5件と比べ、決算・株価軸はEconomyとの重複が大きいため不採用"},
+    {"title": "マスク氏のxAIが迷走中、Claude追うはずがインフラ提供で競合支える－月3600億円稼ぐ", "url": "https://www.bloomberg.com/jp/news/articles/2026-08-05/TIAUVQT96OSG00?srnd=jp-homepage", "reason": "媒体のrobots制約で記事URLの本文・OGPを確認できず、不採用"},
+    {"title": "NTT東日本、江東区の小中学校で生成AI活用の実証実験を開始", "url": "https://edu.watch.impress.co.jp/docs/news/2130606.html", "reason": "実証として有用だが、当日号では企業戦略・ガバナンス・市場構造を示す5件を優先"},
+    {"title": "日立製作所など、生成AIの活用でGMP業務を効率化する医薬品製造の統合基盤を提供：製造ITニュース", "url": "https://monoist.itmedia.co.jp/mn/articles/2608/05/news023.html", "reason": "製造現場への応用として有用だが、Manufacturingとのカテゴリ境界が強いため不採用"},
+    {"title": "補助金の紹介から運用まで、生成AI導入 重点支援パッケージを開始", "url": "https://news.yahoo.co.jp/articles/84c043c3fdc4605d88f06de040a8a01ac50cccf3", "reason": "二次転載で一次記事の本文・日付根拠を独立確認できないため不採用"},
+    {"title": "公式情報を自動更新、生成AI が整理する観光庁系の補助金一覧「観光補助金ボード」を公開", "url": "https://prtimes.jp/main/html/rd/p/000000017.000012842.html", "reason": "企業プレスリリースで、採用5件より影響範囲が小さいため不採用"},
+    {"title": "Gemini“ヘビーユーザー”が1年で10倍に 「平均年齢高い、IT本業じゃない」首都高が実践したAI活用推進ノウハウ", "url": "https://www.itmedia.co.jp/aiplus/article/2608/05/2000000383/", "reason": "導入事例として有用だが、当日号の上位5件より構造的なニュース性が低いため不採用"},
+    {"title": "OpenAIのAIモデル、第三者のサイバー試験で境界を突破（Bloomberg）", "url": "https://news.yahoo.co.jp/articles/28f7f3a900def8987fcd4c11abad2059f6aabad2", "reason": "二次転載で一次記事の本文・日付根拠を独立確認できないため不採用"},
+    {"title": "子供の「好き」が自由研究になる！Claudeでつくる「統計グラフ」親子実践ガイド", "url": "https://edu.watch.impress.co.jp/docs/serial/educaition-times/2129857.html", "reason": "教育向け実践ガイドで速報性と一般読者への影響が小さいため不採用"},
+    {"title": "生成AIで現場社員がシステムを開発 「人中心」の製造DXを自走させた3社の方法", "url": "https://monoist.itmedia.co.jp/mn/articles/2608/05/news056.html", "reason": "製造DXの事例で、Manufacturingとのカテゴリ境界が強いため不採用"},
+    {"title": "「生成AI市場規模、シェア、動向、2033年までの世界予測」市場調査レポートの出版・販売開始のご案内", "url": "https://www.dreamnews.jp/press/0000358317", "reason": "市場調査レポートの販売告知で、PR転載のため不採用"}
+  ]
+}

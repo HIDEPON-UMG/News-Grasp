@@ -1,0 +1,41 @@
+{
+  "date": "2026-08-05",
+  "category_id": "mobility",
+  "queries": [
+    "site:newsroom.kddi.com/news/detail kddi_nr-1112_4640 堺市 自動運転タクシー 2026年8月5日",
+    "site:jp.reuters.com/economy/3OP7KUE6D5PRDBGHMMH5VOIA5M Tesla 7月 中国製 EV 38% 2026",
+    "堺市自動運転タクシー実装コンソーシアム KDDI 2026 8 5",
+    "ウィーライド デンマーク レベル4 自動運転",
+    "Stage1 deduped candidate article body/date/OGP verification; no new broad collection or cross-category dedup"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {"title":"テスラ【TSLA】：株価・株式情報","url":"https://finance.yahoo.co.jp/quote/TSLA","reason":"株価ページで記事単位のニュースではない"},
+    {"title":"テスラ7月の中国製ＥＶ販売台数、前年比38％増","url":"https://jp.reuters.com/economy/3OP7KUE6D5PRDBGHMMH5VOIA5M-2026-08-05/","reason":"本文取得がHTTP 401で検証不能"},
+    {"title":"中国製ロボタクシー相次ぎ海外へ AIサービス輸出が国内問題の転嫁手段に","url":"https://business.nikkei.com/atcl/NBD/19/world/00816/","reason":"広域分析で当日固有の一次材料が選定上位に届かなかった"},
+    {"title":"ティアフォー、Astemoの次世代開発プラットフォームを共同開発","url":"https://prtimes.jp/main/html/rd/p/000000131.000040119.html","reason":"量産開発基盤が主題で製造カテゴリ寄り"},
+    {"title":"ウィーライド、デンマークでレベル4自動運転","url":"https://www.logi-today.com/985057","reason":"本文の一次確認とOGP取得が不足し、KDDI・Turingより優先度が低い"},
+    {"title":"ＥＶ充電器販売のココプラグ 「オフグリッド」カーポート開発 非常用電源にも活用 今月初披露、年内発売","url":"https://www.chukei-news.co.jp/news/2026/08/05/OK0002608050301_01/","reason":"限定的な製品発表で影響範囲が相対的に狭い"},
+    {"title":"民事再生手続き中のＥＶモーターズ・ジャパン、ＥＶバス事業を自動車部品メーカーのイクヨに譲渡へ（読売新聞オンライン）","url":"https://news.yahoo.co.jp/articles/9c37e8ea8af1419e7b1fbdeb122c4ccb48e99ca0","reason":"同一事象をより詳細な日本経済新聞のcanonical記事で採用"},
+    {"title":"Market Talk: Tesla, SpaceX merger 'makes sense'","url":"https://jp.reuters.com/video/watch/idRW306304082026RP1/","reason":"動画記事で本文取得がHTTP 401、モビリティ本体のニュース性も低い"},
+    {"title":"日本､EVシェアようやく3% トヨタの本気と破格の補助金","url":"https://www.nikkei.com/prime/mobility/article/DGXZQOUC2177T0R20C26A7000000","reason":"市場背景の解説で、当日発生の実装・事業変化を優先"},
+    {"title":"ホンダの小型EV「スーパーワン」はなぜ売れた？40年前の名車「シティターボII」のDNAを継ぐ強烈な加速感","url":"https://finance.yahoo.co.jp/news/detail/9dbd0f3225eef5cdddbfbd55b47343047509354a","reason":"製品・試乗解説で構造変化への影響が相対的に狭い"},
+    {"title":"軽EV、競争本格化へ＝BYD参入、補助金頼みに課題(時事通信)","url":"https://finance.yahoo.co.jp/news/detail/dc6a9d4f323982a63e0ec0f65931e38807ed3ca9","reason":"軽EV競争の要約記事で独自材料が薄い"},
+    {"title":"イクヨ、EVモーターズ事業買収 品質問題で民事再生中","url":"https://www.nikkei.com/article/DGXZQOUC047TY0U6A800C2000000/","reason":"採用済みのため除外"},
+    {"title":"BYDの軽EV、2年の爆速開発に見る「超垂直統合」 脱「X in 1」も自在","url":"https://xtech.nikkei.com/atcl/nxt/column/18/00138/080202078/","reason":"作り手の垂直統合が主題で製造カテゴリ寄り"},
+    {"title":"From the road — August 4, 2026","url":"https://waymo.com/intl/jp/blog/shorts/dallas-open-to-all/","reason":"OGPがGoogle News代理サムネで採用条件未達"},
+    {"title":"シティターボⅡの再来 話題の小型EV Super-ONE","url":"https://www.bs-asahi.co.jp/cgtv/lineup/prg_2041/","reason":"番組紹介で一次ニュース性が低い"},
+    {"title":"「自動運転だから大丈夫」と思っていませんか？ ドライバー90%が信じる安心感、その裏で変わる安全基準とは","url":"https://topics.smt.docomo.ne.jp/article/merkmalbiz/business/merkmalbiz-119412","reason":"調査・論説で当日固有の事業変化ではない"},
+    {"title":"T2、自動運転トラック向け認識技術が採択","url":"https://www.logi-today.com/984895","reason":"物流用途の狭い採択ニュースで相対的に優先度が低い"},
+    {"title":"テスラが世界にその名を知らしめた「モデルＳ」！　今じゃEVなんて当たり前のようだがその功績を振り返ると偉大すぎる!!","url":"https://www.webcartop.jp/2026/08/1866335/2/","reason":"過去の功績を振り返る記事で当日性が低い"},
+    {"title":"アウディ『A2』がEVで復活へ！…“早すぎた名車”は電動化時代に成功できるか？（レスポンス）","url":"https://news.yahoo.co.jp/articles/59ad26f677d2b7d3de08fbdd5ad18d2f738dbaeb","reason":"将来製品の紹介で当日影響が限定的"},
+    {"title":"「EVのF1」夜の東京でファン作り 日産はスポーツ車仕様のリーフをPR","url":"https://www.nikkei.com/article/DGXZQOUC2759O0X20C26A7000000/","reason":"7月開催イベントのPR・解説で当日性と構造影響が相対的に低い"},
+    {"title":"米アトラス、自動運転砂輸送を100台へ拡大","url":"https://www.logi-today.com/985042","reason":"産業用途の狭い拡大計画で、本文・OGP確認も不足"}
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "date": "2026-08-05",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:business.nikkei.com \"効率化とサイバー対策をAIで両立\"",
+    "site:japan.zdnet.com \"AIが新たなサイバー兵器で巨大な標的でもある\"",
+    "site:www.cloudflare.com \"Cloudflare、AIエージェントに「身元」と「ウォレット」を提供\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "dropped": [
+    {"title":"「【SIer向け】ガバメントクラウド対応！省庁・独法案件を勝ち取る「さくらのクラウド」提案塾」を開催いたします","url":"https://www.sakura.ad.jp/corporate/information/events/2026/08/05/1968225534/","reason":"イベント告知で、当日ITニュースとしての意思決定影響が選定上位に届かない"},
+    {"title":"【辻・本郷 ITコンサルティング】加盟士業向けDXプラットフォーム「withDX」提供開始のお知らせ","url":"https://prtimes.jp/main/html/rd/p/000000137.000086807.html","reason":"単独PR発表で、独立報道による話題性と影響範囲が限定的"},
+    {"title":"OBC－岡三がレーティング引き上げ クラウドシフト加速と値上げで投資妙味拡大〔DZH 個別株情報〕(時事通信)","url":"https://finance.yahoo.co.jp/news/detail/ec28a88f4123b62c971a901f32384d5c7b76bfb4","reason":"証券会社レーティングの転載で、ITカテゴリの構造変化より投資情報寄り"},
+    {"title":"【横浜・金沢の海】第52回金沢まつり花火大会を未来へ","url":"https://readyfor.jp/projects/kz-matsuri52","reason":"ITカテゴリとの関連が薄いクラウド検索ノイズ"},
+    {"title":"KPMGコンサルティングとあずさ監査法人、「データナレッジ形式知化・利活用エージェント」提供開始","url":"https://enterprisezine.jp/news/detail/24799","reason":"公開本文とOGPを限定取得できず、独立確認を完了できない"},
+    {"title":"Evo Agentic AppSec: Remediation and Malicious Code Defense","url":"https://snyk.io/jp/blog/remediation-agent-malicious-code-defense/","reason":"製品・サービス告知色が強く、上位5件との重複論点を避けた"},
+    {"title":"ＡＩ新世紀：勝ち筋は独自開発 自民党国家サイバーセキュリティ戦略本部長・平将明氏","url":"https://mainichi.jp/articles/20260805/ddm/012/020/119000c","reason":"政策論考・インタビューで、今回の企業IT実装ニュースより優先度が低い"},
+    {"title":"総務省、学生や若手社会人向けのサイバーセキュリティ競技会「全国型CTFコンテスト」を10月に開催、参加受付中","url":"https://news.yahoo.co.jp/articles/161f55e1cf962b40a7771e18ae61b6314877537a","reason":"人材育成イベントで、企業ITの当日変化としては優先度が低い"},
+    {"title":"3大クラウド、AI徹底比較","url":"https://xtech.nikkei.com/atcl/nxt/mag/nc/18/072800563/?i_cid=nbpnxt_feature1_top_it_01","reason":"比較・解説記事で、同じクラウド市場の一次情報に近い記事を優先"},
+    {"title":"祝20周年・京都音博2026｜環境・文化・音楽を“くるり”と繋ごう","url":"https://readyfor.jp/projects/onpaku2026","reason":"ITカテゴリとの関連が薄いクラウド検索ノイズ"},
+    {"title":"バーテックス、決算受け大幅安 通期クラウド事業の売上見通しを下方修正＝米国株個別(株探ニュース)","url":"https://finance.yahoo.co.jp/news/detail/fdb0ff1b717d5e55ccc98de72a6d3c3700ad7f2b","reason":"個別株決算の転載で、ITカテゴリの広い読者価値が限定的"},
+    {"title":"電子カルテが止まれば、診療も止まる 群馬大学病院が考える医療IT基盤の条件 | 日本経済新聞 電子版特集(PR)","url":"https://ps.nikkei.com/everpure2606/3.html","reason":"PR特集で、独立報道と一次情報度の比較で優先度が低い"},
+    {"title":"独自調査から中堅企業が直面する成長の壁と突破条件を整理 ゲストが実務と学術の両面で議論「中堅企業白書特別ウェビナー～中堅企業白書2026から読み解く持続的成長に向けた経営基盤の整備と組織・人材戦略～」","url":"https://prtimes.jp/main/html/rd/p/000000371.000058707.html","reason":"ウェビナー告知で、ITカテゴリの直接的な技術変化が薄い"},
+    {"title":"NEC、海外向け通信機器再販事業など譲渡 イタリアのIT会社に","url":"https://www.nikkei.com/article/DGXZQOUC050TM0V00C26A8000000/","reason":"重要な事業整理だが、今回のAI・クラウド基盤・セキュリティの上位5件を優先"},
+    {"title":"クラウドストライク(CRWD.US)、取締役が738.65万ドルで普通株3.75万株を売却(moomoo証券)","url":"https://finance.yahoo.co.jp/news/detail/f1e631a1480452d7bd284efd3237b8d95a97eac2","reason":"役員株式売却の転載で、ITニュースとしての影響範囲が限定的"},
+    {"title":"「苦笑」 Cloud クラウド 果物さんの映画レビュー（感想・評価）","url":"https://eiga.com/movie/101239/review/06807902/","reason":"クラウド語の検索ノイズでITニュースではない"},
+    {"title":"矢崎、クラウド連携対応デジタコ9月発売へ","url":"https://www.logi-today.com/984747","reason":"物流機器の製品ニュースで、モビリティ寄りのため今回のIT上位から除外"},
+    {"title":"パターン・マッチャーにはパターンが必要：B2B SaaSにおけるAI競争","url":"https://forbesjapan.com/articles/detail/102270","reason":"論考・解説で、当日発表や調査結果を優先"},
+    {"title":"米クラウドフレア、AIエージェント向け専用ウォレット機能を発表(CoinPost)","url":"https://finance.yahoo.co.jp/news/detail/bdb1598749381fa37959ab30c331bcda0edf0202","reason":"Cloudflare公式発表と重複する転載のため除外"},
+    {"title":"「いい生活売買クラウド」物件調査業務を効率化する「物件調査機能」をリリース 投稿日時： 2026/08/05 10:00[適時開示]","url":"https://s.minkabu.jp/news/4585309","reason":"単一製品の適時開示で、カテゴリ全体への影響が限定的"}
+  ]
+}

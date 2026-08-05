@@ -1,0 +1,38 @@
+{
+  "date": "2026-08-05",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "Stage1 candidate provenance: source=google_news_rss, category=economy",
+    "Stage1 candidate set only; supplemental search and cross-category dedup not executed"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Nikkei", "S&P 500", "Fed", "BOJ", "SoftBank", "NVIDIA"],
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {"title":"スペースＸが初の四半期決算、92％増収 ＡＩ・スターリンク好調","url":"https://jp.reuters.com/economy/555F4R7BDNN5DMO5LZHPGMYQV4-2026-08-04/","reason":"同一SpaceX決算の採用記事と重複"},
+    {"title":"スペースXが上場後の初決算 売上高9割増も損益850億円の赤字に","url":"https://www.asahi.com/articles/ASV85042DV85UHBI02SM.html","reason":"同一SpaceX決算の採用記事と重複"},
+    {"title":"国内製薬 2026年12月期2Q決算ハイライト【随時更新】","url":"https://answers.and-pro.jp/pharmanews/32882/","reason":"個別業界の随時更新まとめで優先度が低い"},
+    {"title":"決算発表シーズンが最大のチャンス！ 株価の勢いに乗る「決算モメンタム投資」の極意","url":"https://diamond.jp/articles/-/394920","reason":"一般的な投資解説で当日ニュース性が低い"},
+    {"title":"米 スペースX 上場後初の決算 AI開発投資が負担となり赤字に","url":"https://news.web.nhk/newsweb/na/na-k10015196821000","reason":"同一SpaceX決算の採用記事と重複"},
+    {"title":"インフレ「高すぎる」、金融引き締め必要＝カンザスシティー連銀総裁","url":"https://jp.reuters.com/markets/japan/JVSR5RU3QFMAJERA3V2H2MVIPA-2026-08-05/","reason":"一次本文を取得できず採用見送り"},
+    {"title":"決算マイナス・インパクト銘柄 【東証スタンダード・グロース】寄付 … ＭＴＧ、第一建設、不二サッシ (8月4日発表分)","url":"https://kabutan.jp/news/marketnews/?&b=n202608050492","reason":"個別株ランキングで主題の独自性が低い"},
+    {"title":"イラン巡り高まる地政学リスク 「企業は経済安全保障統括部門を」 危機管理コンサルの羽生田慶介CEOに聞く","url":"https://bizgate.nikkei.com/article/DGXZQOLM133RC013072026000000","reason":"インタビュー・解説で速報性が低い"},
+    {"title":"米国株式市場＝ダウ・Ｓ＆Ｐ最高値、キャタピラー好決算や米イラン合意への期待で","url":"https://jp.reuters.com/markets/japan/DMWQLTWC4VNSFDYHWALHM7EKUY-2026-08-04/","reason":"AI株の期待差を扱う採用記事と論点が近い"},
+    {"title":"きょうの主な経済指標・スケジュール＞米７月ＡＤＰ雇用統計、米７月ＩＳＭ非製造業景況指数など(ウエルスアドバイザー)","url":"https://finance.yahoo.co.jp/news/detail/a6aeac40a6345365006636a3190df8d3d29109e3","reason":"指標予定で実績ニュースではない"},
+    {"title":"テーオーシが続伸、２７年３月期第１四半期決算は大幅増益で着地(ウエルスアドバイザー)","url":"https://finance.yahoo.co.jp/news/detail/c98df769c9abf893cb8a1ea5e06821d62c7bf34e","reason":"単一小型株で影響範囲が限定的"},
+    {"title":"【解説】スペースX初決算！ベールを脱いだイーロン・マスクによる「宇宙×AI」の収益力","url":"https://media.rakuten-sec.net/articles/-/53109","reason":"同一SpaceX決算の解説記事と重複"},
+    {"title":"【要人発言】米カンザスシティー連銀総裁「インフレ率を2％の目標に戻すにはより緊縮的な金融政策が必要」(トレーダーズ・ウェブ)","url":"https://finance.yahoo.co.jp/news/detail/29a5b01f86adb2d2ad45b8f1e3251912f4f22368","reason":"同一発言のReuters候補と重複"},
+    {"title":"★本日の【サプライズ決算】速報 (08月04日)","url":"https://kabutan.jp/news/marketnews/?b=n202608041096","reason":"採用した好決算まとめと重複"},
+    {"title":"４日の動意株＞トヨタ、増額修正も不透明感残す―決算発表後に乱高下(ウエルスアドバイザー)","url":"https://finance.yahoo.co.jp/news/detail/cbce6d6817f86382bdb179b4e280858aecfe1244","reason":"Mobility/Manufacturingとの境界が強く編集長横断判断へ委譲"},
+    {"title":"決算マイナス・インパクト銘柄 【東証プライム】寄付 … トヨタ、三井物、川崎汽 (8月4日発表分)","url":"https://kabutan.jp/news/marketnews/?&b=n202608050494","reason":"個別株ランキングで主題の独自性が低い"},
+    {"title":"４日の動意株＞ＬＩＴＡＬＩ、大幅増益決算発表で年初来高値を更新(ウエルスアドバイザー)","url":"https://finance.yahoo.co.jp/news/detail/667d6c62004a0fe123d746d443d9dbc898b762e1","reason":"単一小型株で影響範囲が限定的"},
+    {"title":"スペースX株下落、IPO後初の決算でAI投資膨らむ－設備投資急増","url":"https://newsdig.tbs.co.jp/articles/withbloomberg/2851580?display=1","reason":"同一SpaceX決算の採用記事と重複"},
+    {"title":"本社定点観測／中堅・中小企業 社長100人に聞く","url":"https://www.nikkan.co.jp/spaces/view/0088246","reason":"OGP取得失敗のため契約上採用不可"},
+    {"title":"〔米株式〕ダウ続伸、2日連続最高値＝中東緊張緩和や企業決算好感（4日）☆差替(時事通信)","url":"https://finance.yahoo.co.jp/news/detail/c285db41bc0f779996ace3a29f4d41d9aa7c3fa2","reason":"AI株の期待差を扱う採用記事と論点が近い"}
+  ]
+}

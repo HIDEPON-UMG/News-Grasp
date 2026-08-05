@@ -1,0 +1,86 @@
+{
+  "articlePath": "C:\\Users\\hidek\\ng-r805\\digest\\DeepDive\\2026-08-05-DeepDive.md",
+  "articleSha256": "834e7cdf4391a21744c65469e3ee0865fc361b5a3d75215df9b03c39ddd3dcda",
+  "issueDate": "2026-08-05",
+  "manifestSha256": "7f6ec1344c849e71f84ddd895012517c1392607efa191d8d6777e65efb8d4aba",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "d77b8cbfd42a94664f789041116c25ddf62095438e3528584f0ef665588a9bb8",
+  "sources": [
+    {
+      "contentSha256": "417c6ebc3531285f6c099bd12b6f76b364cf0f3a6743eedd792b1630ecf156d8",
+      "fetchedAt": "2026-08-05T02:49:27.081858+00:00",
+      "finalUrl": "https://japan.cnet.com/article/35251275/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://japan.cnet.com/article/35251275/",
+      "url": "https://japan.cnet.com/article/35251275/"
+    },
+    {
+      "contentSha256": "889f3fb585e5460c1c6e3f5c5fe7e2c706532fb7daeedc1427d8c8f98e3f4e6f",
+      "fetchedAt": "2026-08-05T02:49:28.093383+00:00",
+      "finalUrl": "https://media-innovation.jp/article/2026/08/05/143580.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://media-innovation.jp/article/2026/08/05/143580.html",
+      "url": "https://media-innovation.jp/article/2026/08/05/143580.html"
+    },
+    {
+      "contentSha256": "25d333d2893d51296298d38b2a5592f3eed6e8b29b3601d0aa98bb0a8adcfb88",
+      "fetchedAt": "2026-08-05T02:49:28.324620+00:00",
+      "finalUrl": "https://www.businessinsider.jp/article/2607-ai-open-letter-automated-development/",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.businessinsider.jp/article/2607-ai-open-letter-automated-development/",
+      "url": "https://www.businessinsider.jp/article/2607-ai-open-letter-automated-development/"
+    },
+    {
+      "contentSha256": "be7aca6b8f87258dec51fc9cd0f5001062deab71e8b15f585038b713d9175f27",
+      "fetchedAt": "2026-08-05T02:49:28.542918+00:00",
+      "finalUrl": "https://www.itmedia.co.jp/enterprise/articles/2608/05/news028.html",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.itmedia.co.jp/enterprise/articles/2608/05/news028.html",
+      "url": "https://www.itmedia.co.jp/enterprise/articles/2608/05/news028.html"
+    },
+    {
+      "contentSha256": "7dd4a1f4c79fd3d19c68b0973d615b4e66a859f1d32b72e9eb9c6cba21e39028",
+      "fetchedAt": "2026-08-05T02:49:29.337118+00:00",
+      "finalUrl": "https://www.projectdesign.jp/articles/news/0eae784a-3ed8-46da-b245-bf9cd46e16be",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.projectdesign.jp/articles/news/0eae784a-3ed8-46da-b245-bf9cd46e16be",
+      "url": "https://www.projectdesign.jp/articles/news/0eae784a-3ed8-46da-b245-bf9cd46e16be"
+    }
+  ],
+  "status": "Green"
+}

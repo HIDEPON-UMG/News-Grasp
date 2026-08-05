@@ -1,0 +1,41 @@
+{
+  "date": "2026-08-05",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "build/deduped-candidates/fx.jsonl (stage1 dedup済み候補のみ使用)",
+    "site:jp.reuters.com EJZHEJR2JRLZPGTIKEDFDVUHP4 2026-08-05 日銀 6月会合 要旨",
+    "site:nikkei.com DGXZQOUB041740U6A800C2000000 為替介入 12兆円",
+    "site:jiji.com 2026080500143 ベセント 日銀 追加利上げ",
+    "site:fx.minkabu.jp/news/375286 円買い優勢 日銀9月利上げ 実質賃金"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["USDJPY", "EURUSD", "BOJ", "Fed", "ECB"],
+  "dropped": [
+    {"title":"「為替介入」って結局なに？ 国が円を買う理由と、そのあとに起きること","url":"https://www.gaitame.com/media/entry/2026/08/05/084433","reason":"解説記事であり、当日の政策・市場変化を直接伝える採用候補より優先度が低い。"},
+    {"title":"米ドル/円【USDJPY】：外国為替相場FXレート・チャートをリアルタイム表示","url":"https://finance.yahoo.co.jp/quote/USDJPY=FX","reason":"相場表示ページで、独立したニュース記事ではない。"},
+    {"title":"高市首相、日銀総裁に「国債買い入れ」要請 積極財政にらみ、金利抑制狙う","url":"https://www.jiji.com/jc/article?k=2026080400781&g=pol","reason":"国債買い入れ論点が採用した時事記事と重複するため、より具体的な発動条件記事を採用した。"},
+    {"title":"利上げ継続を確認、一部委員「早期に中立金利に近づける必要」＝日銀6月会合要旨","url":"https://jp.reuters.com/economy/bank-of-japan/EJZHEJR2JRLZPGTIKEDFDVUHP4-2026-08-05/","reason":"本文の独立確認ができず、実質賃金と相場反応まで確認できたみんかぶ記事を採用した。"},
+    {"title":"東京為替：ドル・円はもみ合い推移","url":"https://s.kabutan.jp/news/n202608050435/","reason":"短時間の市況速報で、政策材料を扱う採用記事と重複する。"},
+    {"title":"ドル/円見通し(為替/FX ニュース )：ドル円は円安で157円台後半","url":"https://www.oanda.jp/lab-education/market_news/2026_08_05_usdjpy/","reason":"日々の見通し記事で、協調介入・政策材料の一次報道より独自性が弱い。"},
+    {"title":"植田日銀総裁、日本経済にとって最善の策を講じると確信＝米財務長官","url":"https://jp.reuters.com/opinion/PLTDCUMTKVJOHAVOCSFBX7U7BE-2026-08-04/","reason":"意見欄で、同日の時事通信による直接発言記事と論点が重複する。"},
+    {"title":"アライアンス･バーンスタイン･米国成長株投信Dコース毎月決算型","url":"https://finance.yahoo.co.jp/quote/39312149","reason":"投資信託の基準価額ページで、FXニュースではない。"},
+    {"title":"日銀、利上げ「長期金利の安定につながる」 6月議事要旨","url":"https://www.nikkei.com/article/DGXZQOUB04BGO0U6A800C2000000/","reason":"日銀議事要旨の続報で、採用した実質賃金・相場反応記事と重複する。"},
+    {"title":"【今日のドル円】昨日の振り返りと今日のドル円相場見通し","url":"https://www.gaitame.com/media/entry/2026/08/05/101000","reason":"市況見通しであり、政策変化を伝える記事より優先度が低い。"},
+    {"title":"経済下振れリスク「大きく低下」＝利上げ決定の6月日銀会合","url":"https://finance.yahoo.co.jp/news/detail/75ed757c362837f2f59861c331aa08b0821b9b82","reason":"二次転載ページで、元記事単位の独自本文とcanonicalを優先した。"},
+    {"title":"ドル円午前の為替予想、介入警戒感が残るなか、じりじりと上値を試す展開が続く","url":"https://www.gaitame.com/media/entry/2026/08/05/075059","reason":"介入警戒の短期見通しで、介入規模・政策圧力を扱う記事と重複する。"},
+    {"title":"今日のFX予想：米イラン協議進展でも ドル円の下値は限定的","url":"https://www.gaitame.com/media/entry/2026/08/05/090900","reason":"地政学材料の市況見通しで、当日のFX政策軸より優先度が低い。"},
+    {"title":"【テクニカル】乖離ランク＝ドル円・クロス円は軒並みマイナス幅を縮小","url":"https://www.gaitame.com/media/entry/2026/08/05/044110","reason":"テクニカル速報で、政策・需給の独立ニュースではない。"},
+    {"title":"【ドル/円、今夜の見通し】ドル/円、157円台後半を回復","url":"https://www.gaitame.com/media/entry/2026/08/04/162710","reason":"前日市況の見通しで、当日確認できた政策報道より鮮度と独自性が弱い。"},
+    {"title":"【テクニカル】日足テクニカル・ドル円＝200日線が攻防の分岐点に","url":"https://www.gaitame.com/media/entry/2026/08/05/110710","reason":"テクニカル分析で、政策・経済指標のニュースではない。"},
+    {"title":"日銀議事録と実質賃金受けドル円軟化、9月利上げ確率上昇","url":"https://fx.minkabu.jp/news/375284","reason":"採用したみんかぶ記事と同一材料を扱う速報で、内容が重複する。"},
+    {"title":"５日の東京外国為替市場見通し＝ドル・円、１５７円台を中心にやや下押す展開か","url":"https://finance.yahoo.co.jp/news/detail/67633cccdb44967edd77285a1154b83133557182","reason":"二次転載の市場見通しで、採用記事と重複する。"},
+    {"title":"東京為替：ドル・円は157円81銭まで上昇後は軟化","url":"https://finance.yahoo.co.jp/news/detail/b9d82258d1b7c45451188232910f4c7f44f64a0e","reason":"二次転載の市況速報で、独立した政策材料がない。"},
+    {"title":"日銀の利上げは9月？日米協調介入との関係と今後の注目点","url":"https://finance.yahoo.co.jp/news/detail/04f2342d6ffbc3744a45c5e2dc5397c5151900e9","reason":"二次解説で、時事・読売・みんかぶの一次確認済み論点と重複する。"}
+  ],
+  "notes": "広域収集と横断dedupは再実行していない。Stage1 dedup済み候補25件から選別し、採用候補のみ本文・canonical URL・公開日根拠・OGPを個別確認した。RSSのpubDateは公開日根拠に使用していない。"
+}
