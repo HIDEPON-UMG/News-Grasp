@@ -393,9 +393,12 @@ if (-not $SkipTaskRegistration) {
     $deadmanArgs = "`"$deadmanLauncherPath`""
     $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
     $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
-    $deadmanTrigger.Repetition.Interval = 'PT1H'
-    $deadmanTrigger.Repetition.Duration = 'P1D'
-    $deadmanTrigger.Repetition.StopAtDurationEnd = $false
+    $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{
+        Interval = 'PT1H'
+        Duration = 'P1D'
+        StopAtDurationEnd = $false
+    }
+    $deadmanTrigger.Repetition = $deadmanRepetition
     $deadmanSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
     Register-ScheduledTask -TaskName $DeadmanTaskName -Action $deadmanAction -Trigger $deadmanTrigger -Settings $deadmanSettings -Description 'News-Grasp hourly audit and bounded recovery control.' -Force -ErrorAction Stop | Out-Null
     Enable-ScheduledTask -TaskName $DeadmanTaskName -ErrorAction Stop | Out-Null

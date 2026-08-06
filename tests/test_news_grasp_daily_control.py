@@ -682,5 +682,10 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "[string]$task.Settings.MultipleInstances -ne 'IgnoreNew'" in source
     assert "[string]$trigger.Repetition.Duration" in source
     assert "[bool]$trigger.Repetition.StopAtDurationEnd" in source
+    assert "$deadmanRepetition = New-CimInstance" in source
+    assert "-ClassName 'MSFT_TaskRepetitionPattern'" in source
+    assert "$deadmanTrigger.Repetition = $deadmanRepetition" in source
+    assert "$deadmanTrigger.Repetition.Interval =" not in source
+    assert "$deadmanTrigger.Repetition.Duration =" not in source
     assert "trap {" in source
     assert "Invoke-NewsGraspInstallRollback" in source
