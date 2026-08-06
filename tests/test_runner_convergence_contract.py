@@ -1154,7 +1154,7 @@ def test_runner_exposes_resume_from_deepdive_without_reharvest() -> None:
     _assert_runner_powershell_parses()
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "[ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive')]" in runner
+    assert "[ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]" in runner
     assert "[string] $ResumeFromStage = ''" in runner
     assert "$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')" in runner
     assert "$ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')" in runner
@@ -1192,7 +1192,7 @@ def test_no_publish_e2e_forbids_force_full_rerun_after_artifacts_exist() -> None
 
     assert "$IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive" in guard
     assert "E2E full rerun forbidden after existing artifacts" in guard
-    assert "Use -ResumeFromStage deepdive, post-daily-quality, or post-deepdive" in guard
+    assert "Use -ResumeFromStage deepdive, post-daily-quality, post-deepdive, or generation-quality-repair" in guard
     assert guard.index("E2E full rerun forbidden after existing artifacts") < guard.index("existing daily artifacts detected")
     assert "-not $ForceFullRerun" not in guard.split("E2E full rerun forbidden after existing artifacts", 1)[0]
 
@@ -1402,7 +1402,8 @@ def test_runner_typed_terminal_state_can_replace_generic_error() -> None:
     state_body = runner.split("function Set-RunnerState", 1)[1].split("function Exit-Runner", 1)[0]
 
     assert "typed terminal state must replace generic error" in state_body
-    assert "$prev.status -eq 'error'" in state_body
+    assert "$previousStatus -eq 'error'" in state_body
+    assert "Get-RunnerStateProperty" in runner
     for status in ["blocked_external_readiness", "publish_failed", "distribution_failed"]:
         assert status in state_body
 
@@ -1533,12 +1534,16 @@ def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
     assert "tools.daily_self_heal" in text
     assert "deadman" in text
     assert "news-grasp-alerts" in text
-    assert "$exitCode -eq 2" in text
-    assert "exit 0" in text
-    assert "Invoke-RecoverOnlyIfStaleDeadPid" in text
+    assert "Invoke-Audit0640Control" in text
+    assert "tools.news_grasp_daily_control" in text
+    assert "public_incomplete" in text
+    assert "exit (Invoke-Audit0640Control)" in text
+    assert "major incident continuation" in text
+    assert "Invoke-RecoverOnlyIfStaleDeadPid" not in text
+    assert "-RecoveryDecisionPath" in text
     assert "watch-news-grasp-runner.ps1" in text
-    assert "-StartOnly" in text
-    assert "-RecoverOnly" in text
+    assert "-Start" in text
+    assert "-RecoverOnly" not in text
 
 
 def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
@@ -1570,10 +1575,14 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "New-ScheduledTaskAction -Execute 'powershell.exe'" not in installer_text
     assert '/TR "powershell.exe ' not in installer_text
     assert "schtasks.exe /Create /TN $BootstrapTaskName" not in installer_text
-    assert 'news-grasp-task-launcher.pyw`" -Destination' in installer_text
+    assert "Invoke-NewsGraspInstallRollback" in installer_text
+    assert "existed_before" in installer_text
+    assert "Export-ScheduledTask" in installer_text
+    assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in installer_text
     assert "execute = $pythonw" in installer_text
     assert "[Console]::OutputEncoding" in installer_text
-    assert "Set-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction" in installer_text
+    assert "Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings" in installer_text
+    assert "Enable-ScheduledTask -TaskName $RunnerTaskName" in installer_text
     assert "if (-not $runnerRegistered) {" in installer_text
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
@@ -1592,6 +1601,17 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "Get-FileHash" in text
     assert "install-manifest.json" in text
     assert "news-grasp-bootstrap.ps1" in text
+    assert "news-grasp-lineage.ps1" in text
+    assert "news-grasp-task-launcher.pyw" in text
+    bootstrap_text = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    watcher_text = (OPS_DIR / "watch-news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    for dependency in (
+        "run_codex_with_timeout.ps1",
+        "news-grasp-lineage.ps1",
+        "news-grasp-task-launcher.pyw",
+    ):
+        assert dependency in bootstrap_text
+        assert dependency in watcher_text
     assert "News-Grasp Bootstrap" in text
     assert "register_failed_bootstrap_required" in text
     assert '"-SmokeTest", "-PollSeconds", "1", "-TimeoutMinutes", "2"' in launcher_text

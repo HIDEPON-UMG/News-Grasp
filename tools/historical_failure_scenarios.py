@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -43,6 +44,7 @@ class HistoricalEvidenceValidation:
     expected_sha256: str = ""
     actual_sha256: str = ""
     reason: str = ""
+    operationalClosure: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -114,6 +116,9 @@ LOCAL_ONLY_EVIDENCE_SHA256: dict[str, str] = {
     ),
     "docs/incidents/2026-07-27-digest-articles-reconcile-report.html": (
         "f771f22d3d5c4038dd39f3055c2dc79ce6784272a617f35d1b3c8b8e889f9cdb"
+    ),
+    "docs/incidents/2026-07-28-generation-quality-date-evidence-recovery-report.html": (
+        "63fb2317f39480528262f10eae4942c02c328cc47e2b52fce5e9b1a7e7f5c2cc"
     ),
     "docs/incidents/2026-07-29-daily-quality-recovery-report.html": (
         "9ac2b0220082727502a671731195ac3aaa1c88684f3d7d13efcdc03bece5e5e6"
@@ -997,6 +1002,41 @@ def historical_failure_scenarios() -> tuple[HistoricalFailureScenario, ...]:
     return SCENARIOS
 
 
+def _operational_closure(
+    repo_root: Path,
+    scenario: HistoricalFailureScenario,
+    live_sha: str,
+) -> dict[str, str]:
+    consumer_path = Path(__file__).resolve()
+    negative_fixture = (
+        repo_root / "tests" / "test_autonomous_operations_semantic_red.py"
+    )
+    scenario_sha = hashlib.sha256(
+        json.dumps(
+            {
+                key: getattr(scenario, key)
+                for key in scenario.__dataclass_fields__
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    return {
+        "consumerPatchHash": hashlib.sha256(
+            consumer_path.read_bytes()
+        ).hexdigest(),
+        "negativeFixtureHash": hashlib.sha256(
+            negative_fixture.read_bytes()
+        ).hexdigest(),
+        "redHash": scenario_sha,
+        "greenHash": hashlib.sha256(
+            f"{scenario_sha}:{live_sha}:valid".encode("utf-8")
+        ).hexdigest(),
+        "liveEvidenceHash": live_sha,
+    }
+
+
 def validate_historical_evidence(
     repo_root: Path,
     scenario: HistoricalFailureScenario,
@@ -1024,6 +1064,9 @@ def validate_historical_evidence(
                 evidence_path=evidence_path,
                 expected_sha256=expected_sha256,
                 reason="local-only evidence is represented by its registered SHA-256 in a clean clone",
+                operationalClosure=_operational_closure(
+                    root, scenario, expected_sha256
+                ),
             )
         return HistoricalEvidenceValidation(
             valid=False,
@@ -1052,6 +1095,8 @@ def validate_historical_evidence(
             reason="local-only historical evidence bytes do not match the registered SHA-256",
         )
 
+    live_sha = actual_sha256 or expected_sha256
+    closure = _operational_closure(root, scenario, live_sha)
     return HistoricalEvidenceValidation(
         valid=True,
         mode="registered_local_only_present" if expected_sha256 else "tracked_present",
@@ -1059,6 +1104,7 @@ def validate_historical_evidence(
         expected_sha256=expected_sha256,
         actual_sha256=actual_sha256,
         reason="historical evidence contract is satisfied",
+        operationalClosure=closure,
     )
 
 

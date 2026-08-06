@@ -1,0 +1,686 @@
+from __future__ import annotations
+
+import inspect
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+
+REPO = Path(__file__).resolve().parents[1]
+
+
+def _control():
+    try:
+        from tools import news_grasp_daily_control
+    except ImportError as error:
+        pytest.fail(f"PRODUCTION_FAILURE_CONTROLLER_MISSING: {error}")
+    return news_grasp_daily_control
+
+
+def _audit_plan(*, action: str, branch: str | None = None) -> dict[str, object]:
+    value: dict[str, object] = {
+        "issueDate": "2026-08-06",
+        "action": action,
+        "scheduledAttemptStatus": "failed",
+        "recoveryAttemptStatus": "not_started",
+        "decisionPath": "C:/fixed/decision.json",
+        "receiptSha256": "1" * 64,
+    }
+    if branch is not None:
+        value.update(
+            {
+                "recoveryBranch": branch,
+                "scheduledAuthorityEvidencePath": "C:/fixed/authority.json",
+            }
+        )
+    return value
+
+
+def _same_date_completion(control, *, run_intent: str = "ScheduledProduction") -> dict[str, object]:
+    audit = control.audit_recovery_control
+    issue_date = "2026-08-06"
+    run_id = "run-2026-08-06"
+    return audit._sealed(
+        {
+            "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
+            "issuer": audit.VERIFIED_COMPLETION_ISSUER,
+            "issueDate": issue_date,
+            "publishStatusIssueDate": issue_date,
+            "runIntent": run_intent,
+            "runId": run_id,
+            **audit._completion_lineage(
+                issue_date=issue_date,
+                run_intent=run_intent,
+                run_id=run_id,
+            ),
+            "checks": {field: True for field in audit.COMPLETION_FIELDS},
+            "evidenceSha256": {
+                field: hashlib.sha256(field.encode("utf-8")).hexdigest()
+                for field in audit.COMPLETION_FIELDS
+            },
+        }
+    )
+
+
+def test_audit_normal_green_preserves_full_same_date_completion_evidence(monkeypatch) -> None:
+    control = _control()
+    completion = _same_date_completion(control)
+    plan = _audit_plan(action="none")
+    plan.update(
+        {
+            "completion": True,
+            "completionEvidenceSha256": completion["receiptSha256"],
+            "completionEvidence": completion,
+        }
+    )
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        terminal_writer=lambda value: value,
+    )
+    assert result["terminal"] == "audit_normal_green"
+    assert result["completionEvidence"] == completion
+    assert result["completionEvidence"]["checks"] == {
+        field: True for field in control.audit_recovery_control.COMPLETION_FIELDS
+    }
+
+
+def test_audit_terminal_writer_rejects_green_completion_hash_stub(monkeypatch, tmp_path) -> None:
+    control = _control()
+    audit = control.audit_recovery_control
+    monkeypatch.setattr(audit, "CANONICAL_TERMINAL_ROOT", tmp_path)
+    stub = {"receiptSha256": "2" * 64}
+    terminal = control._audit_green_terminal(
+        issue_date="2026-08-06",
+        decision=_audit_plan(action="none"),
+        completion=stub,
+        recovered=False,
+    )
+    with pytest.raises(ValueError, match="AUDIT_TERMINAL_INVALID"):
+        audit.write_audit_terminal(terminal)
+
+
+def test_audit_minimal_unblocker_must_reverify_and_write_recovered_terminal(monkeypatch) -> None:
+    control = _control()
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: _audit_plan(action="launch_minimal_unblocker", branch="minimal_unblocker"))
+    monkeypatch.setattr(control.audit_recovery_control, "same_date_completion_green", lambda *_: True)
+    terminals: list[dict[str, object]] = []
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        minimal_executor=lambda _: {"completion": False},
+        completion_verifier=lambda *_: {"receiptSha256": "2" * 64},
+        terminal_writer=lambda value: terminals.append(value) or value,
+    )
+    assert result["terminal"] == "audit_recovered_green"
+    assert result["completionEvidenceSha256"] == "2" * 64
+    assert result["sourceDecision"]["recoveryBranch"] == "minimal_unblocker"
+    assert result["completionEvidence"]["receiptSha256"] == "2" * 64
+    assert terminals == [result]
+
+
+def test_audit_resume_branch_is_executed_before_same_date_green(monkeypatch) -> None:
+    control = _control()
+    plan = _audit_plan(action="launch_recovery", branch="ResumeFromStage")
+    plan.update({"resumeStage": "deepdive", "sourceAdmissionPath": "C:/fixed/admission.json"})
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
+    monkeypatch.setattr(control.audit_recovery_control, "same_date_completion_green", lambda *_: True)
+    commands: list[list[str]] = []
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        backend=SimpleNamespace(
+            repo_root=REPO,
+            runner_path=REPO / "scripts/ops/news-grasp-runner.ps1",
+            broker_path=Path("C:/fixed/broker.py"),
+        ),
+        command_runner=lambda command, **_: commands.append(command) or 0,
+        completion_verifier=lambda *_: {"receiptSha256": "3" * 64},
+        terminal_writer=lambda value: value,
+    )
+    assert result["terminal"] == "audit_recovered_green"
+    assert commands and "-ResumeFromStage" in commands[0]
+    assert commands[0][commands[0].index("-ResumeFromStage") + 1] == "deepdive"
+
+
+def test_audit_recovery_exit_zero_with_incomplete_public_surface_is_major_incident(monkeypatch) -> None:
+    control = _control()
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: _audit_plan(action="launch_recovery", branch="ScheduledRecoveryFull"))
+    monkeypatch.setattr(control.audit_recovery_control, "same_date_completion_green", lambda *_: False)
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        backend=SimpleNamespace(
+            repo_root=REPO,
+            runner_path=REPO / "scripts/ops/news-grasp-runner.ps1",
+            broker_path=Path("C:/fixed/broker.py"),
+        ),
+        command_runner=lambda *_args, **_kwargs: 0,
+        completion_verifier=lambda *_: {"receiptSha256": "4" * 64},
+        terminal_writer=lambda value: value,
+    )
+    assert result["terminal"] == "audit_major_incident_open"
+    assert result["owner"] == "News-Grasp Operations"
+    assert result["nextAction"] == "resume_same_date_recovery_from_verified_stop_point"
+
+
+def test_audit_controller_failure_writes_owned_major_incident(monkeypatch) -> None:
+    control = _control()
+    monkeypatch.setattr(
+        control,
+        "prepare_recovery",
+        lambda **_: (_ for _ in ()).throw(ValueError("primary evidence invalid")),
+    )
+    terminals: list[dict[str, object]] = []
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        terminal_writer=lambda value: terminals.append(value) or value,
+    )
+    assert result["terminal"] == "audit_major_incident_open"
+    assert result["owner"] == "News-Grasp Operations"
+    assert result["nextAction"] == "resume_same_date_recovery_from_verified_stop_point"
+    assert terminals == [result]
+
+
+def test_deadman_delegates_to_single_canonical_audit_executor() -> None:
+    source = (REPO / "scripts/ops/news-grasp-deadman.ps1").read_text(encoding="utf-8-sig")
+    assert "'execute-audit-0640'" in source
+    assert "launch_minimal_unblocker" not in source
+    assert "Start -RecoveryDecisionPath" not in source
+    registry = json.loads(
+        (REPO / "config/news_grasp_daily_control_routes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    route = next(
+        row for row in registry["routes"] if row["routeId"] == "audit_0640_control"
+    )
+    assert route["consumerSymbol"] == "execute_audit_0640"
+    assert route["productionCallSymbol"] == "execute-audit-0640"
+
+
+def test_failure_classification_is_derived_from_observed_state_only() -> None:
+    control = _control()
+    signature = inspect.signature(control.classify_observed_failure)
+    assert "payload" not in signature.parameters
+    assert "classification" not in signature.parameters
+    assert (
+        control.classify_observed_failure(
+            runner_state={
+                "status": "operation_rejected_high_cost_admission",
+                "exit_code": 76,
+            },
+            process_exit_code=76,
+            log_text="ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=1",
+        )
+        == "recoverable"
+    )
+    assert (
+        control.classify_observed_failure(
+            runner_state={
+                "status": "blocked_external_readiness",
+                "external_readiness": {"kind": "oauth_consent_required"},
+            },
+            process_exit_code=71,
+            log_text="oauth consent required",
+        )
+        == "incident_required"
+    )
+
+
+def test_recovery_plan_is_bounded_and_preserves_scheduled_failure() -> None:
+    control = _control()
+    plan = control.build_recovery_plan(
+        issue_date="2026-08-05",
+        trigger="production_failure",
+        classification="recoverable",
+        branch="ScheduledRecoveryFull",
+        authority_path=Path("C:/evidence/recovery-authority.json"),
+        failure_receipt_sha256="a" * 64,
+        operational_truth_sha256="b" * 64,
+    )
+    assert plan["action"] == "launch_recovery"
+    assert plan["runIntent"] == "ScheduledRecoveryFull"
+    assert plan["maxAutomaticRecoveryAttempts"] == 1
+    assert plan["scheduledAttemptStatus"] == "failed"
+    assert plan["recoveryAttemptStatus"] == "not_started"
+    assert plan["scheduledFailureRetained"] is True
+    assert plan["noFocusTheft"] is True
+    assert plan["noAutoOpen"] is True
+    assert plan["noUserMonitoring"] is True
+
+
+def test_second_recovery_attempt_becomes_major_incident_not_loop() -> None:
+    control = _control()
+    plan = control.build_recovery_plan(
+        issue_date="2026-08-05",
+        trigger="production_failure",
+        classification="recoverable",
+        branch="ScheduledRecoveryFull",
+        authority_path=Path("C:/evidence/recovery-authority.json"),
+        failure_receipt_sha256="a" * 64,
+        operational_truth_sha256="b" * 64,
+        recovery_attempt_number=1,
+    )
+    assert plan["action"] == "major_incident_continuation"
+    assert plan["terminal"] == "production_major_incident_open"
+    assert plan["reasonCode"] == "BOUNDED_RECOVERY_ATTEMPT_EXHAUSTED"
+    assert plan["completion"] is False
+
+
+def test_watcher_executes_controller_after_failure_and_rewatches_once() -> None:
+    source = (REPO / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "tools.news_grasp_daily_control" in source, "PRODUCTION_FAILURE_CONTROLLER_MISSING"
+    assert "production_failure" in source
+    assert "maxAutomaticRecoveryAttempts" in source
+    assert "Start-RecoveryFromDecision" in source
+    assert source.count("Start-RecoveryFromDecision") == 3
+
+
+def test_runner_serializes_daily_log_append_and_hash_at_one_boundary() -> None:
+    runner = (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "function Invoke-WithRunnerLogLock" in runner
+    assert "function Add-RunnerLogLine" in runner
+    assert "function Get-RunnerLogSha256" in runner
+    assert "function New-ScheduledFailureTerminalInput" in runner
+    terminalizer = runner[runner.index("function Invoke-ScheduledFailureTerminalizer") :]
+    assert "NEWS_GRASP_SCHEDULED_FAILURE_TERMINAL_INPUT_V1" in terminalizer
+    assert "--run-id" in terminalizer
+    assert "stateEvidenceSha256" in terminalizer
+    assert "logEvidenceSha256" in terminalizer
+    assert "Get-RunnerLogSha256" not in terminalizer
+    assert "Get-FileSha256Hex -Path $StateFile" not in terminalizer
+    assert "Add-Content -Path $LogPath" not in runner
+    assert "Add-Content -LiteralPath $LogPath" not in runner
+
+
+def test_deadman_calls_same_controller_for_public_incomplete() -> None:
+    source = (REPO / "scripts" / "ops" / "news-grasp-deadman.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "tools.news_grasp_daily_control" in source, "AUDIT_0640_CONTROLLER_MISSING"
+    assert "execute-audit-0640" in source
+    assert "Invoke-RecoverOnlyIfStaleDeadPid" not in source
+    assert "audit canonical executor" in source
+
+
+def test_resume_branch_consumes_recovery_authority_not_failed_production_admission() -> None:
+    runner = (REPO / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    watcher = (REPO / "scripts" / "ops" / "watch-news-grasp-runner.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "[string] $RecoveryDecisionPath" in runner
+    assert "validate-decision" in runner
+    assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
+    assert "-RecoveryDecisionPath" in watcher
+    resume_block = runner[
+        runner.index("if ($ResumeFromStage)") : runner.index(
+            "if ($HighCostAdmissionPath)", runner.index("if ($ResumeFromStage)")
+        )
+    ]
+    assert "admit-news-grasp-recovery-continuation" not in resume_block
+    assert "ScheduledAuthorityEvidencePath" in resume_block
+    assert "start-news-grasp-recovery-stage" in runner
+    assert "consume-news-grasp-recovery-stage-decision" not in runner
+    assert runner.index("start-news-grasp-recovery-stage") > runner.index(
+        "} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {"
+    )
+    assert "sourceAdmissionReceipt" not in resume_block
+
+
+def test_resume_plan_without_broker_ledger_decision_falls_back_to_full_recovery() -> None:
+    control = _control()
+    plan = control.build_recovery_plan(
+        issue_date="2026-08-05",
+        trigger="production_failure",
+        classification="recoverable",
+        branch="ResumeFromStage",
+        authority_path=Path("C:/evidence/recovery-authority.json"),
+        failure_receipt_sha256="a" * 64,
+        operational_truth_sha256="b" * 64,
+        resume_stage="deepdive",
+        source_admission_path="C:/evidence/source-production-admission.json",
+        source_admission_sha256="c" * 64,
+    )
+    assert plan["recoveryBranch"] == "ScheduledRecoveryFull"
+    assert plan["resumeStage"] is None
+
+
+def test_resume_plan_binds_broker_ledger_decision() -> None:
+    control = _control()
+    plan = control.build_recovery_plan(
+        issue_date="2026-08-05",
+        trigger="production_failure",
+        classification="recoverable",
+        branch="ResumeFromStage",
+        authority_path=Path("C:/evidence/recovery-authority.json"),
+        failure_receipt_sha256="a" * 64,
+        operational_truth_sha256="b" * 64,
+        resume_stage="deepdive",
+        source_admission_path="C:/evidence/source-production-admission.json",
+        source_admission_sha256="c" * 64,
+        broker_stage_decision_path="C:/evidence/stage-decision.json",
+        broker_stage_decision_sha256="d" * 64,
+        broker_stage_decision_receipt_sha256="e" * 64,
+    )
+    assert plan["recoveryBranch"] == "ResumeFromStage"
+    assert plan["brokerStageDecisionPath"] == "C:/evidence/stage-decision.json"
+    assert plan["brokerStageDecisionSha256"] == "d" * 64
+    assert plan["brokerStageDecisionReceiptSha256"] == "e" * 64
+
+
+def test_audit_decision_does_not_accept_caller_repair_classification() -> None:
+    from tools import audit_recovery_control
+
+    source = Path(audit_recovery_control.__file__).read_text(encoding="utf-8-sig")
+    decision_source = source[source.index("def decide_audit_recovery") :]
+    assert 'payload.get("repairDecision")' not in decision_source, (
+        "CALLER_REPAIR_CLASSIFICATION_ACCEPTED"
+    )
+    assert "classify_observed_failure" in decision_source
+
+
+def test_minimal_unblocker_requires_sealed_public_proof(monkeypatch, tmp_path: Path) -> None:
+    from tools import audit_recovery_control
+
+    repo = tmp_path / "repo"
+    state_path = tmp_path / "ops" / "state.json"
+    state_path.parent.mkdir(parents=True)
+    monkeypatch.setattr(audit_recovery_control, "CANONICAL_REPO_ROOT", repo)
+    monkeypatch.setattr(audit_recovery_control, "CANONICAL_RUNNER_STATE_PATH", state_path)
+    date = "2026-08-05"
+    for relative in (
+        f"digest/Summary/{date}.md",
+        f"digest/DeepDive/{date}-DeepDive.md",
+        f"docs/{date}/index.html",
+        f"data/distribution/{date}.json",
+    ):
+        path = repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("local-only", encoding="utf-8")
+    state_path.write_text(
+        json.dumps(
+            {
+                "date": date,
+                "status": "publish_complete",
+                "phase": "publish_complete",
+                "run_id": "test-run",
+                "run_intent": "ScheduledProduction",
+            }
+        ),
+        encoding="utf-8",
+    )
+    witness = {
+        "receiptSha256": "c" * 64,
+        "scheduledAttemptStatus": "failed",
+    }
+    monkeypatch.setattr(
+        audit_recovery_control,
+        "_verify_public_without_notification",
+        lambda **_: None,
+        raising=False,
+    )
+    truth = audit_recovery_control._observe_operational_truth(
+        issue_date=date, attempt_witness=witness
+    )
+    assert "minimalUnblockerReceiptSha256" not in truth, (
+        "MINIMAL_UNBLOCKER_PUBLIC_PROOF_MISSING"
+    )
+
+
+def test_operational_truth_separates_admission_file_hash_from_ledger_receipt(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from tools import audit_recovery_control
+
+    issue_date = "2026-08-05"
+    repo = tmp_path / "repo"
+    state_path = tmp_path / "ops" / "state.json"
+    admission_path = repo / "build" / "high-cost-operation-admissions" / issue_date / "source.json"
+    artifact_path = repo / "digest" / "Summary" / f"{issue_date}.md"
+    admission_path.parent.mkdir(parents=True)
+    artifact_path.parent.mkdir(parents=True)
+    state_path.parent.mkdir(parents=True)
+    artifact_path.write_text("partial artifact", encoding="utf-8")
+    admission_body = {
+        "schemaVersion": "HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1",
+        "issueDate": issue_date,
+        "operationKind": "scheduled_production",
+    }
+    admission_receipt = hashlib.sha256(
+        json.dumps(
+            admission_body,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    admission = {**admission_body, "receiptSha256": admission_receipt}
+    admission_path.write_text(json.dumps(admission), encoding="utf-8")
+    admission_file_sha = hashlib.sha256(admission_path.read_bytes()).hexdigest()
+    state_path.write_text(
+        json.dumps(
+            {
+                "date": issue_date,
+                "status": "failed_generation_quality",
+                "phase": "generation-quality-repair",
+                "run_id": "a" * 32,
+                "run_intent": "ScheduledProduction",
+                "resumeStage": "generation-quality-repair",
+                "highCostAdmissionPath": str(admission_path),
+                "highCostAdmissionSha256": admission_file_sha,
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(audit_recovery_control, "CANONICAL_REPO_ROOT", repo)
+    monkeypatch.setattr(audit_recovery_control, "CANONICAL_RUNNER_STATE_PATH", state_path)
+    truth = audit_recovery_control._observe_operational_truth(
+        issue_date=issue_date,
+        attempt_witness={
+            "receiptSha256": "b" * 64,
+            "scheduledAttemptStatus": "failed",
+        },
+    )
+    assert truth["sourceAdmissionSha256"] == admission_receipt
+    assert truth["sourceAdmissionFileSha256"] == admission_file_sha
+    assert truth["resumeStage"] == "generation-quality-repair"
+
+
+def test_registry_requires_production_call_edge(tmp_path: Path) -> None:
+    from tools.news_grasp_operational_contract import validate_operational_registry
+
+    consumer = tmp_path / "consumer.py"
+    caller = tmp_path / "caller.py"
+    consumer.write_text("def claimed_consumer():\n    return True\n", encoding="utf-8")
+    caller.write_text("# claimed_consumer is intentionally not called\n", encoding="utf-8")
+    registry = {
+        "schemaVersion": "NEWS_GRASP_DAILY_CONTROL_REGISTRY_V1",
+        **{
+            field: "x"
+            for field in (
+                "owner",
+                "trigger",
+                "actor",
+                "entryGate",
+                "executionPath",
+                "states",
+                "statePredicate",
+                "outcomes",
+                "evidence",
+                "recovery",
+                "maintenance",
+                "contractTest",
+                "operationalCost",
+            )
+        },
+        "declaredRouteIds": ["route"],
+        "consumerRouteIds": ["route"],
+        "positiveFixtureRouteIds": ["route"],
+        "negativeFixtureRouteIds": ["route"],
+        "routes": [
+            {
+                "routeId": "route",
+                "consumerPath": "consumer.py",
+                "consumerSymbol": "claimed_consumer",
+                "productionCallerPath": "caller.py",
+                "productionCallSymbol": "claimed_consumer",
+            }
+        ],
+    }
+    result = validate_operational_registry(registry, repo_root=tmp_path)
+    assert result["status"] == "Red", "DEAD_CONSUMER_ACCEPTED"
+    assert result["reason"] == "NEWS_GRASP_ROUTE_PRODUCTION_EDGE_MISSING"
+
+
+def test_promotion_manifest_cannot_omit_any_isolated_delta(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools import root_fix_promotion_control as promotion
+
+    monkeypatch.setattr(
+        promotion,
+        "_PROMOTION_REPO_PATHS",
+        frozenset({"first.py", "second.py"}),
+    )
+    build_candidate_manifest = promotion.build_candidate_manifest
+    validate_overlap_manifest = promotion.validate_overlap_manifest
+
+    candidate = tmp_path / "candidate"
+    source_isolation = tmp_path / "source-isolation"
+    repo = candidate / "repo"
+    source_repo = source_isolation / "repo"
+    shared = tmp_path / "shared"
+    for root in (repo, source_repo, shared):
+        root.mkdir(parents=True)
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "fixture@example.invalid"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "fixture"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    for relative in ("first.py", "second.py"):
+        (repo / relative).write_text("base\n", encoding="utf-8")
+        (source_repo / relative).write_text("isolated-root-fix\n", encoding="utf-8")
+        (shared / relative).write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "add", "first.py", "second.py"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "base"], cwd=repo, check=True, capture_output=True)
+    for relative in ("first.py", "second.py"):
+        base_bytes = subprocess.run(
+            ["git", "show", f"HEAD:{relative}"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+        ).stdout
+        (shared / relative).write_bytes(base_bytes)
+    (repo / "first.py").write_text("merged-root-fix-first\n", encoding="utf-8")
+    (repo / "second.py").write_text("merged-root-fix-second\n", encoding="utf-8")
+    cache = repo / "%SystemDrive%" / "ProgramData" / "Microsoft" / "Windows" / "Caches" / "runtime.db"
+    cache.parent.mkdir(parents=True)
+    cache.write_bytes(b"runtime-cache")
+    state = repo / "ops" / "news-grasp-runner-state.json"
+    state.parent.mkdir(parents=True)
+    state.write_text("{}\n", encoding="utf-8")
+    manifest = build_candidate_manifest(
+        candidate_root=candidate,
+        source_isolation_root=source_isolation,
+        shared_root=shared,
+    )
+    assert [row["relativePath"] for row in manifest["targetRows"]] == [
+        "first.py",
+        "second.py",
+    ]
+    unexpected = repo / "surprise.py"
+    unexpected.write_text("not-authorized\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="PROMOTION_UNDECLARED_DELTA"):
+        build_candidate_manifest(
+            candidate_root=candidate,
+            source_isolation_root=source_isolation,
+            shared_root=shared,
+        )
+    unexpected.unlink()
+    omitted = json.loads(json.dumps(manifest))
+    omitted["targetRows"] = omitted["targetRows"][:1]
+    result = validate_overlap_manifest(omitted)
+    assert result["mutationCapability"] is False
+    assert result["reason"] == "PROMOTION_TARGET_SET_NOT_EXACT"
+    assert result["missingTargetRows"] == ["second.py"]
+
+    evidence_only = validate_overlap_manifest(manifest)
+    assert "overlapEvidenceValid" in evidence_only, evidence_only
+    assert evidence_only["overlapEvidenceValid"] is True
+    assert evidence_only["candidateTreeSha256"] == manifest["candidateTreeSha256"]
+    assert evidence_only["mutationCapability"] is False, "OVERLAP_ONLY_MUTATION_BYPASS"
+
+    (repo / "first.py").write_text("review-after-candidate-swap\n", encoding="utf-8")
+    drift = validate_overlap_manifest(manifest)
+    assert drift["reason"] == "PROMOTION_CANDIDATE_BYTES_DRIFT"
+    assert drift["mutationCapability"] is False
+    (repo / "first.py").write_text("merged-root-fix-first\n", encoding="utf-8")
+
+    for relative in ("first.py", "second.py"):
+        current = (shared / relative).read_bytes().replace(b"\n", b"\r\n")
+        (shared / relative).write_bytes(current)
+    crlf_manifest = build_candidate_manifest(
+        candidate_root=candidate,
+        source_isolation_root=source_isolation,
+        shared_root=shared,
+    )
+    crlf_evidence = validate_overlap_manifest(crlf_manifest)
+    assert crlf_evidence["overlapEvidenceValid"] is True
+    assert crlf_evidence["mutationCapability"] is False
+
+
+def test_installer_rollback_restores_absent_files_and_task_definitions() -> None:
+    source = (REPO / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    assert "Export-ScheduledTask" in source
+    assert "existed_before" in source
+    assert "enabled_before" in source
+    assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in source
+    assert "Unregister-ScheduledTask -TaskName $taskName -Confirm:$false" in source
+    assert "Remove-Item -LiteralPath ([string]$row.destination) -Force" in source
+    assert "$missionAuthorityBackup" in source
+    assert "file = 'audit-mission-authority-v1.json'" in source
+    assert "destination = $missionAuthorityPath" in source
+    assert "Recover-NewsGraspInterruptedInstall" in source
+    prepared = source.index("Write-NewsGraspInstallJournal -Phase 'prepared'")
+    bin_dir_create = source.index("New-Item -ItemType Directory -Force -Path $BinDir")
+    first_live_copy = source.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
+    assert prepared < bin_dir_create, "INSTALL_JOURNAL_WRITTEN_AFTER_BINDIR_MUTATION"
+    assert prepared < first_live_copy, "INSTALL_JOURNAL_WRITTEN_AFTER_LIVE_MUTATION"
+    assert "bin_dir_existed_before = $binDirExistedBefore" in source
+    assert "if (-not [bool]$Journal.bin_dir_existed_before" in source
+    assert "Assert-NewsGraspInstalledState" in source
+    verified = source.rindex("Assert-NewsGraspInstalledState")
+    committed = source.rindex("$script:InstallationCommitted = $true")
+    assert verified < committed, "INSTALL_COMMITTED_BEFORE_RELOAD_VERIFICATION"
+    assert "Enable-ScheduledTask -TaskName $RunnerTaskName" in source
+    assert "Enable-ScheduledTask -TaskName $BootstrapTaskName" in source
+    assert "if (-not $runnerWasEnabled)" not in source
+    assert "if (-not $bootstrapWasEnabled)" not in source
+    assert "Register-ScheduledTask -TaskName $DeadmanTaskName" in source
+    assert "schtasks.exe /Query /TN $DeadmanTaskName" not in source
+    assert "if ($actions.Count -ne 1 -or $triggers.Count -ne 1)" in source
+    assert "[string]$action.WorkingDirectory" in source
+    assert "[bool]$task.Settings.StartWhenAvailable" in source
+    assert "[string]$task.Settings.MultipleInstances -ne 'IgnoreNew'" in source
+    assert "[string]$trigger.Repetition.Duration" in source
+    assert "[bool]$trigger.Repetition.StopAtDurationEnd" in source
+    assert "trap {" in source
+    assert "Invoke-NewsGraspInstallRollback" in source

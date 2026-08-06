@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "TDD_IMPACT_ANALYSIS_RECEIPT_V1",
+  "taskIdentity": "news-grasp-two-pillar-autonomous-daily-control",
+  "scopeHash": "97723326641c2ef1f95def34",
+  "requirements": [
+    "R-PRODUCTION-SELF-HEAL",
+    "R-AUDIT-RECOVERY-PRIORITY",
+    "R-NO-CALLER-SELF-REPORT",
+    "R-SAFE-PROMOTION-AND-ROLLBACK"
+  ],
+  "canonicalSources": {
+    "scripts/ops/watch-news-grasp-runner.ps1": "c78d91da3da39a6b1af65ff98a9cf89c0bd930ab067277a3042bb65ae8b033e4",
+    "scripts/ops/news-grasp-deadman.ps1": "db6e8324ef6b1e2867f01e86ef70c392eae1aecc6bf653bae069bdb6bbb52bbd",
+    "scripts/ops/news-grasp-runner.ps1": "66f9392bc07438011902caa2a6b9c8f1f2f364d2a64b621a6fa3c9ee26ff03cd",
+    "scripts/ops/install-news-grasp-ops.ps1": "d0131b3702cb6fd57c6af7502145e45b9be419a86fc847457d2ee48460a6767e",
+    "tools/audit_recovery_control.py": "e87855e10df6dc235ba4f7828c232a9ba4c96c1f16757615d3df2837ebfd88ff",
+    "tools/news_grasp_operational_contract.py": "241296280a3eb250447bdba79b5d6f2e09c3ea3c0441b24ce8a95a430d97007b",
+    "config/news_grasp_daily_control_routes.json": "f4ad508ef21d7c883739dda78efe9f7682422c682bef2202cab27db2733fd7bc"
+  },
+  "liveConsumers": [
+    "News-Grasp Runner -> news-grasp-task-launcher.pyw -> news-grasp-bootstrap.ps1 -> watch-news-grasp-runner.ps1",
+    "News-Grasp Deadman -> news-grasp-deadman-launcher.pyw -> news-grasp-deadman.ps1"
+  ],
+  "counterevidence": [
+    "watcher exits nonzero without deriving recovery authority",
+    "deadman invokes RecoverOnly only for a stale running PID and otherwise alerts",
+    "audit decision accepts unsigned payload.repairDecision.classification",
+    "minimal_unblocker uses local file presence and runner status text only",
+    "promotion checks caller-selected targetRows instead of the complete isolated diff",
+    "installer rollback neither records absent-before files nor Task Scheduler definitions",
+    "registry accepts symbol text without a production call edge"
+  ],
+  "redSuiteCoverageV2": {
+    "routes": [
+      "production_failure_controller",
+      "audit_0640_controller",
+      "operational_truth_classifier",
+      "minimal_unblocker_verifier",
+      "root_fix_promotion",
+      "ops_installer_rollback",
+      "operational_registry_runtime_edge"
+    ],
+    "perspectives": [
+      "normal",
+      "failure",
+      "boundary",
+      "substitution",
+      "drift",
+      "replay",
+      "missing",
+      "cross_lineage",
+      "recovery",
+      "human_impact"
+    ],
+    "requiredTestKinds": [
+      "primary_behavior",
+      "adversarial_boundary",
+      "operational_recovery"
+    ],
+    "plannedFixture": "tests/test_news_grasp_daily_control.py",
+    "expectedPreChangeSignatures": [
+      "PRODUCTION_FAILURE_CONTROLLER_MISSING",
+      "AUDIT_0640_CONTROLLER_MISSING",
+      "CALLER_REPAIR_CLASSIFICATION_ACCEPTED",
+      "MINIMAL_UNBLOCKER_PUBLIC_PROOF_MISSING",
+      "PROMOTION_TARGET_OMISSION_ACCEPTED",
+      "INSTALL_ROLLBACK_INCOMPLETE",
+      "DEAD_CONSUMER_ACCEPTED"
+    ]
+  },
+  "humanImpact": {
+    "noFocusTheft": true,
+    "noAutoOpen": true,
+    "noUserMonitoring": true,
+    "boundedAutomaticRecoveryAttempts": 1
+  },
+  "e2ePolicy": "final_confirmation_only",
+  "status": "impact_closed_red_not_yet_observed"
+}

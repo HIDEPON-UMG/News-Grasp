@@ -1532,8 +1532,9 @@ _REAL_VERIFY_DEEPDIVE_QUALITY_HEAD_BINDING = (
 
 
 @pytest.fixture(autouse=True)
-def _isolate_publish_complete_shared_quality(monkeypatch) -> None:
+def _isolate_publish_complete_shared_quality(monkeypatch, tmp_path: Path) -> None:
     """publish verifier固有テストは共有品質engineを明示fixtureで隔離する。"""
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     monkeypatch.setattr(
         dsh,
         "deepdive_quality",
@@ -1565,6 +1566,30 @@ def _write_publish_complete_inventory(
     *,
     distribution_manifest: dict | str | None = None,
 ) -> None:
+    state_path = repo_root / "News-Grasp" / "ops" / "news-grasp-runner-state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    run_id = "fixture-run"
+    run_intent = "ScheduledProduction"
+    lineage = dsh._producer_lineage_expected(
+        repo_root=repo_root,
+        ops_root=state_path.parent,
+        date=date,
+        run_intent=run_intent,
+        run_id=run_id,
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "date": date,
+                "status": "publish_complete",
+                "exit_code": 0,
+                "run_id": run_id,
+                "run_intent": run_intent,
+                **lineage,
+            }
+        ),
+        encoding="utf-8",
+    )
     _write_local_sw(repo_root)
     (repo_root / "build" / "tts").mkdir(parents=True, exist_ok=True)
     (repo_root / "build" / "tts" / "latest_audio.json").write_text(

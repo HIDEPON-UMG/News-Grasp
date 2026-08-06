@@ -53,56 +53,14 @@ function Write-SupervisorLog {
     Add-Content -LiteralPath $supervisorLog -Value $line -Encoding UTF8
 }
 
-function Test-PidAlive {
-    param($PidValue)
-    if (-not $PidValue) {
-        return $false
+function Invoke-Audit0640Control {
+    $terminalJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'execute-audit-0640' '--issue-date' $DateStamp 2>&1 | Out-String).Trim()
+    $executorExitCode = $LASTEXITCODE
+    Write-SupervisorLog "audit canonical executor: exit=$executorExitCode terminal=$terminalJson"
+    if ($executorExitCode -notin @(0, 2)) {
+        return 2
     }
-    try {
-        $null = Get-Process -Id ([int]$PidValue) -ErrorAction Stop
-        return $true
-    } catch {
-        return $false
-    }
-}
-
-function Invoke-RecoverOnlyIfStaleDeadPid {
-    if (-not (Test-Path -LiteralPath $StateFile)) {
-        return
-    }
-    $state = Get-Content -LiteralPath $StateFile -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ([string]$state.status -ne 'running') {
-        return
-    }
-    if (Test-PidAlive -PidValue $state.pid) {
-        return
-    }
-
-    $key = "{0}|{1}|{2}" -f $state.date, $state.pid, $state.updated_at
-    if (Test-Path -LiteralPath $recoverMarker) {
-        $last = Get-Content -LiteralPath $recoverMarker -Raw -Encoding UTF8 | ConvertFrom-Json
-        if ([string]$last.key -eq $key) {
-            Write-SupervisorLog "recover skipped: duplicate stale pid key=$key"
-            return
-        }
-    }
-    if (-not (Test-Path -LiteralPath $WatcherPath)) {
-        Write-SupervisorLog "recover failed: watcher not found: $WatcherPath"
-        throw "watcher not found: $WatcherPath"
-    }
-
-    Write-SupervisorLog "recover start: stale running pid=$($state.pid) key=$key"
-    & powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $WatcherPath -StartOnly -RecoverOnly 2>&1 |
-        ForEach-Object { Write-SupervisorLog "recover output: $_" }
-    if ($LASTEXITCODE -ne 0) {
-        Write-SupervisorLog "recover failed: exit=$LASTEXITCODE"
-        throw "recover start failed: exit=$LASTEXITCODE"
-    }
-    [ordered]@{
-        key = $key
-        recovered_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
-    } | ConvertTo-Json | Set-Content -LiteralPath $recoverMarker -Encoding UTF8
-    Write-SupervisorLog "recover launched: key=$key"
+    return $executorExitCode
 }
 
 Push-Location $RepoDir
@@ -113,12 +71,11 @@ try {
         '--max-ok-age-hours' $MaxOkAgeHours `
         '--alert-log' $alertLog `
         '--marker' $marker
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -eq 2) {
-        Invoke-RecoverOnlyIfStaleDeadPid
-        exit 0
+    $deadmanExitCode = $LASTEXITCODE
+    if ($deadmanExitCode -notin @(0, 2)) {
+        Write-SupervisorLog "legacy deadman observer returned exit=$deadmanExitCode; audit controller remains authoritative"
     }
-    exit $exitCode
+    exit (Invoke-Audit0640Control)
 } finally {
     Pop-Location
 }

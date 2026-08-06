@@ -27,6 +27,11 @@ def _seal(value: dict[str, object]) -> dict[str, object]:
 
 
 def _green_completion(control, run_intent: str) -> dict[str, object]:
+    lineage = control._completion_lineage(
+        issue_date="2026-08-02",
+        run_intent=run_intent,
+        run_id="test-run",
+    )
     return _seal(
         {
             "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
@@ -35,6 +40,7 @@ def _green_completion(control, run_intent: str) -> dict[str, object]:
             "publishStatusIssueDate": "2026-08-02",
             "runIntent": run_intent,
             "runId": "test-run",
+            **lineage,
             "checks": {field: True for field in control.COMPLETION_FIELDS},
             "evidenceSha256": {
                 field: "9" * 64 for field in control.COMPLETION_FIELDS
@@ -309,12 +315,21 @@ def test_terminal_writer_has_internal_root_and_only_three_terminals(
             "reasonCode": "TEST_INCIDENT",
             "scheduledAttemptStatus": "failed",
             "recoveryAttemptStatus": "not_started",
-            "publicStatus": "incomplete",
-            "operationState": "incident_open",
+                "publicStatus": "incomplete",
+                "operationState": "incident_open",
+                "workPriority": control.SAME_DAY_PUBLIC_RECOVERY_PRIORITY,
+                "allowedBeforePublicGreen": control.ALLOWED_BEFORE_PUBLIC_GREEN,
+                "forbiddenBeforePublicGreen": control.FORBIDDEN_BEFORE_PUBLIC_GREEN,
+                "owner": "News-Grasp Operations",
+                "nextAction": "resume_same_date_recovery_from_verified_stop_point",
+                "evidenceSha256": "a" * 64,
         }
     )
     terminal = control.write_audit_terminal(decision)
     assert terminal["decisionReceiptSha256"] == decision["receiptSha256"]
+    assert terminal["owner"] == "News-Grasp Operations"
+    assert terminal["nextAction"] == "resume_same_date_recovery_from_verified_stop_point"
+    assert terminal["evidenceSha256"] == "a" * 64
     assert (incident_root / "2026-08-02-audit-terminal.json").is_file()
     parser_source = Path(control.__file__).read_text(encoding="utf-8-sig")
     assert "--terminal-root" not in parser_source
@@ -326,7 +341,10 @@ def test_actual_completion_verifier_owns_all_required_gates() -> None:
     source = Path(control.__file__).read_text(encoding="utf-8-sig")
     assert '"tools.validate_daily_quality"' in source
     assert '"--require-deepdive"' in source
-    assert "verify_publish_complete(" in source
+    assert "from tools.daily_self_heal import verify_publish_complete" in source
+    assert "publish = verify_publish_complete(" in source
+    assert 'child_env["PYTHONUTF8"] = "1"' in source
+    assert 'child_env["PYTHONIOENCODING"] = "utf-8"' in source
     assert 'runner_state.get("run_intent") != expected_run_intent' in source
     assert 'runner_state.get("status") != "publish_complete"' in source
 
@@ -427,6 +445,11 @@ def test_automation_and_repair_skill_use_executable_fixed_terminal_contract() ->
     ).read_text(encoding="utf-8-sig")
     for source in (automation, skill):
         assert "python -m tools.audit_recovery_control decide --input <audit-input.json>" in source
+        assert "python -m tools.audit_recovery_control execute --input <audit-input.json>" in source
+        assert "audit agent は runner を直接起動しない" in source
+        assert "artifactRepoRoot" in source
+        assert "opsRepoRoot" in source
+        assert "recoveryExecution" in source
         assert "--terminal-output <terminal.json>" not in source
         assert "build/incidents/<issue-date>-audit-terminal.json" in source
         assert "durable ledger" in source
@@ -436,3 +459,69 @@ def test_automation_and_repair_skill_use_executable_fixed_terminal_contract() ->
         assert "scheduledAttempt.status" not in source
         assert "recoveryAttempt.status" not in source
         assert "runnerStatePath" not in source
+
+
+def test_execute_runs_one_typed_recovery_then_writes_recovered_terminal(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control("RED_AUDIT_EXECUTOR_MISSING")
+    repo = tmp_path / "recovery-repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("# test runner\n", encoding="utf-8")
+    canonical_python = repo / ".venv" / "Scripts" / "python.exe"
+    canonical_python.parent.mkdir(parents=True)
+    canonical_python.write_bytes(b"fixture-python")
+    authority = tmp_path / "authority.json"
+    authority.write_text("{}", encoding="utf-8")
+    decisions = iter(
+        [
+            {
+                "action": "scheduled_recovery",
+                "terminal": None,
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "not_started",
+            },
+            {
+                "action": "none",
+                "terminal": "audit_recovered_green",
+                "scheduledAttemptStatus": "failed",
+                "recoveryAttemptStatus": "succeeded",
+            },
+        ]
+    )
+    commands: list[list[str]] = []
+    terminals: list[dict[str, object]] = []
+    monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
+    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", repo)
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: repo)
+    monkeypatch.setattr(control, "_validate_artifact_executable_tree", lambda _root: "a" * 40)
+    monkeypatch.setattr(control, "validate_recovery_execution_manifest", lambda *args, **kwargs: None)
+    monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
+    monkeypatch.setattr(
+        control,
+        "_run_bounded",
+        lambda command, **kwargs: (commands.append(command) or 0, b""),
+    )
+    monkeypatch.setattr(control, "write_audit_terminal", lambda value: terminals.append(value))
+
+    result = control.execute_audit_recovery(
+        {
+            "issueDate": "2026-08-02",
+            "recoveryAuthorityPath": str(authority),
+            "recoveryExecution": {
+                "runIntent": "ScheduledRecoveryFull",
+                "maxExternalModelCalls": 9,
+                "maxFullE2EAttempts": 0,
+                "noFocusTheft": True,
+                "noUserMonitoring": True,
+                "noAutoOpen": True,
+            },
+        }
+    )
+
+    assert result["terminal"] == "audit_recovered_green"
+    assert len(commands) == 1
+    assert "ScheduledRecoveryFull" in commands[0]
+    assert "-ScheduledAuthorityEvidencePath" in commands[0]
+    assert terminals == [result]
