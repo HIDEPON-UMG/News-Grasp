@@ -1,0 +1,67 @@
+{
+  "date": "2026-08-09",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "Stage1 deduped candidates: build/deduped-candidates/fx.jsonl",
+    "site:jiji.com 2026080800232 雇用急ブレーキ 9月利上げ後退",
+    "site:fukuishimbun.co.jp 2671196 円安 46% 111社",
+    "site:newsdig.tbs.co.jp 2861521 FRB 利上げ 意見割れる",
+    "site:fx.minkabu.jp 375653 米雇用 物価統計",
+    "site:gaitame.com 2026/08/09/060200 豪ドル円 RBA 政策金利"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "Stage1候補の投資信託基準価額ページ",
+      "url": "https://finance.yahoo.co.jp/quote/18312991",
+      "reason": "ニュース性が低い"
+    },
+    {
+      "title": "サンデーモーニング 円安危機？",
+      "url": "https://www.tbs.co.jp/tv/20260809_B773.html",
+      "reason": "番組案内でニュース本文がなく、記事単位の一次情報性が低い"
+    },
+    {
+      "title": "日本の31日の為替介入は約5.33兆円の可能性－日銀当座預金が示唆 フォトギャラリー",
+      "url": "https://newsdig.tbs.co.jp/articles/gallery/2848083?station=withbloomberg",
+      "reason": "ページのdatePublishedが2026-08-03で、号日の前日窓外"
+    },
+    {
+      "title": "名目賃金は5カ月連続3%超え、高水準の春闘反映－日銀利上げ路線支え フォトギャラリー",
+      "url": "https://newsdig.tbs.co.jp/articles/gallery/2851627?station=withbloomberg&image=2",
+      "reason": "ページのdatePublishedが2026-08-05で、号日の前日窓外"
+    },
+    {
+      "title": "円安を食い止められるのは日銀だけ",
+      "url": "https://www.jomo-news.co.jp/articles/-/996487",
+      "reason": "論説色が強く、採用5件より一次報道・市場判断の直接性が低い"
+    },
+    {
+      "title": "経済好循環に懸念材料 中東、為替に不透明感",
+      "url": "https://ryukyushimpo.jp/economics/entry-5445818.html",
+      "reason": "主要111社調査の解説で、採用した調査報道と論点が重複"
+    },
+    {
+      "title": "利上げ警戒薄れ ＮＹ株が１５１ドル高",
+      "url": "https://ryukyushimpo.jp/economics/entry-5445812.html",
+      "reason": "株価中心で、米雇用材料は採用した時事記事と重複"
+    },
+    {
+      "title": "来週のドル円相場はどうなる？8/10週のイベント予定 2026年8月9日",
+      "url": "https://www.gaitame.com/media/entry/2026/08/09/060400",
+      "reason": "米CPI・PPIの論点がみんかぶ採用記事と重複"
+    }
+  ]
+}

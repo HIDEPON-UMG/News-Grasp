@@ -1,0 +1,91 @@
+{
+  "date": "2026-08-09",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini when:1d",
+    "AIエージェント OR RAG OR LLM OR 生成AI when:1d",
+    "site:itmedia.co.jp/news OpenAI Astra Critical サイバー",
+    "site:jiji.com 生成AI 被災地 熊本 偽映像",
+    "site:asahi.com OECD 教育 生成AI シュライヒャー",
+    "site:ryukyushimpo.jp 生成AI 全社活用 83%",
+    "OpenAI AI speaker GPT-Live 300 400 dollars"
+  ],
+  "raw_results_total": 330,
+  "candidates_total": 25,
+  "selected_total": 6,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "著名人の声は「パブリシティー権」で保護されると明記…法務省が指針、生成ＡＩによる無断利用の責任整理",
+      "url": "https://news.yahoo.co.jp/articles/d333510b47ec755615f6c6b06b7f645d20fc0242",
+      "reason": "本文の公開日は2026-08-07で24時間窓を超えるため不採用"
+    },
+    {
+      "title": "OpenAIがNextSlideを買収、AIプレゼン作成チームをChatGPT開発に統合",
+      "url": "https://mezha.net/jp/bukvy/b30d80ed_openai_acquires_nextslide/",
+      "reason": "一次情報または独立した同日報道を確認できず、第三者転載のみのため不採用"
+    },
+    {
+      "title": "OpenAIは、同社のAIモデル「Astra」のセキュリティ対策を強化した。",
+      "url": "https://www.vietnam.vn/ja/openai-tang-cuong-bien-phap-an-toan-doi-voi-mo-hinh-ai-astra",
+      "reason": "Astra関連記事との重複・翻訳転載のため不採用"
+    },
+    {
+      "title": "OpenAI次世代モデル「Astra」の開発を一時制限 高いサイバー能力に懸念",
+      "url": "https://www.watch.impress.co.jp/docs/news/2131759.html",
+      "reason": "ITmediaの同一ニュースと重複するため不採用"
+    },
+    {
+      "title": "AIモデルが自律的サイバー攻撃能力を獲得、OpenAIが安全懸念で「Astra」開発を初の一時停止",
+      "url": "https://finance.biggo.jp/news/2f4da3e0-a41c-44bb-bc6d-63258f73a91f",
+      "reason": "Astraの同一ニュースを転載した集約ページのため不採用"
+    },
+    {
+      "title": "OpenAI、新モデル「Astra」の開発を一部停止　「重大」水準のサイバー攻撃能力の可能性",
+      "url": "https://topics.smt.docomo.ne.jp/amp/article/mycom/business/mycom_3216130",
+      "reason": "Astraの同一ニュースを転載した集約ページのため不採用"
+    },
+    {
+      "title": "OpenAIのAstraが数学成果強調巡り盗用批判拡大",
+      "url": "https://biz.chosun.com/jp/jp-science/2026/08/09/KWZ77IG2ZRHUVCZKTKE2CJ7XBE/",
+      "reason": "Astra関連記事との重複で、当日新材料を独立確認できないため不採用"
+    },
+    {
+      "title": "OpenAI×データセクションが議論、“日本クオリティ”のAI開発における可能性とは？",
+      "url": "https://enterprisezine.jp/news/detail/24836",
+      "reason": "本文とOGPがHTTP 403で確認できず、事実確認の証拠不足"
+    },
+    {
+      "title": "Kimi K3を徹底解説：Anthropicの企業価値を揺るがすほどの実力とは？",
+      "url": "https://note.com/trans_n_ai/n/nd4ca65ffe321",
+      "reason": "7月27日公開モデルの後追い解説で、同日ニュースとしての新材料が薄い"
+    },
+    {
+      "title": "生成AIに物語作り指示、「サボってうそをつく」特性も学ぶ",
+      "url": "https://www.chunichi.co.jp/article/1293759?rct=h_tokai_news",
+      "reason": "公開時刻が号日朝の24時間窓をわずかに超え、地域イベントの重要度も相対的に低いため不採用"
+    },
+    {
+      "title": "なぜOpenAIのエージェントは暴走したのか？ 原因と対策",
+      "url": "https://www.lifehacker.jp/article/2608ai-bots-can-steal-your-login-credentials-but-you-can-protect-yourself/",
+      "reason": "記事本文を取得できず、ページの見出し以外の事実確認が不足"
+    },
+    {
+      "title": "８割超が生成ＡＩ全面活用",
+      "url": "https://ryukyushimpo.jp/economics/entry-5445817.html#related",
+      "reason": "同一記事の重複候補"
+    }
+  ]
+}

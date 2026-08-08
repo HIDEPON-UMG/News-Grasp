@@ -1,0 +1,122 @@
+{
+  "date": "2026-08-09",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:sbbit.jp/article/sp/185905 ティアフォー 2026年8月8日",
+    "site:nikkansports.com 軽井沢 自動運転バス 予約制 1日あたり6便 9月6日"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "エアコン付きの3輪モビリティ!! 都市型小型EV「リーン3」の販売網に豊田通商が参加!!",
+      "url": "https://bestcarweb.jp/news/1595467",
+      "reason": "法人向け小型EVのPR色が強く、採用5件と比べ影響範囲が狭い"
+    },
+    {
+      "title": "自動運転の“想定外1％”問題、どう越える？ティアフォーが挑む「AIでAI育てる」技術",
+      "url": "https://www.sbbit.jp/article/sp/185905",
+      "reason": "元記事の公開日が2026-08-07で、24時間鮮度ゲート外"
+    },
+    {
+      "title": "Tesla Has Fallen 34% From Its High. Is the Selloff a Setup or a Trap?",
+      "url": "https://www.tikr.com/ja/blog/tesla-has-fallen-34-from-its-high-is-the-selloff-a-setup-or-a-trap?",
+      "reason": "株価分析が主題で、当日モビリティ記事の一次情報性が低い"
+    },
+    {
+      "title": "社説高岡に次世代ＥＶ／公共交通の進化を期待",
+      "url": "https://webun.jp/articles/-/1071572",
+      "reason": "社説で新規事実より論評が中心"
+    },
+    {
+      "title": "ロンドンで「自動運転タクシー」が今夏始動へ。すでに10万人超が乗車待ち",
+      "url": "https://article.auone.jp/article/68ff4298-aaf2-4d5f-9d47-1fb3ea55df22",
+      "reason": "外部記事への短い転載案内で、本文の独立確認が不足"
+    },
+    {
+      "title": "岐阜市で導入された自動運転バス＝1月 - 自動運転、乗らず嫌い？ 経験者は信頼、民間調査 - 写真・画像(1/1)",
+      "url": "https://www.nishinippon.co.jp/image/1070077/",
+      "reason": "記事本文ではなく画像ページ"
+    },
+    {
+      "title": "BYDの軽EV「ラッコ」 日本の軽自動車を徹底研究して実現したパッケージングと利便性",
+      "url": "https://www.asahi.com/and/m/article/16786793",
+      "reason": "RACCO関連記事と主題が重複"
+    },
+    {
+      "title": "日本メーカーは猛省せよ！ 軽スーパーハイトワゴン初のEV「BYDラッコ」誕生の衝撃（webCG）",
+      "url": "https://news.yahoo.co.jp/articles/a3d763d1b1563256f9574cceb6e81c51b99fe2d6",
+      "reason": "RACCO関連記事と主題が重複し、論評色が強い"
+    },
+    {
+      "title": "式年遷宮に向け自動運転バス「レベル4」 三重交通GHD 伊勢市内で導入へ：ニュース",
+      "url": "https://biz.chunichi.co.jp/news/article/10/128989/",
+      "reason": "元記事の公開日が2026-08-05で鮮度ゲート外"
+    },
+    {
+      "title": "中国EVとの協業が生命線 タイ自動車部品大手、生き残り戦略",
+      "url": "https://www.nikkei.com/article/DGKKZO98063120Y6A800C2TM7000/",
+      "reason": "部品企業の生産・協業戦略が主題でmanufacturing寄り"
+    },
+    {
+      "title": "この夏注目のニューモデル《eKクロスEV》（グーネット） | 自動車情報・ニュース",
+      "url": "https://carview.yahoo.co.jp/news/detail/7a4c77ad4f96113aaae94fc0721fa7b9917b90a2/",
+      "reason": "モデル紹介で当日性・構造変化の情報量が低い"
+    },
+    {
+      "title": "自動運転バス、未経験者の5割超が「利用拒否」 体験で信頼感に大きな差",
+      "url": "https://finance.biggo.jp/news/8b25dd05-ee6e-4e03-aa8e-d9e867ba0f42",
+      "reason": "MM総研調査が採用記事と重複"
+    },
+    {
+      "title": "newmo、「堺市自動運転タクシー実装コンソーシアム」を共同設立。未来都・堺相互タクシー・KDDI・KDDI スマートモビリティ・関西電力が参画。",
+      "url": "http://www.excite.co.jp/news/article/Prtimes_2026-08-09-137033-68/",
+      "reason": "地域交通の官民連携PRで、軽井沢実証と地域実装テーマが重複"
+    },
+    {
+      "title": "重いEVやSUVに対応！ ネクセンが新型スタッドレス「ウインガード アイス 3」を発表（Auto Messe Web）",
+      "url": "https://news.yahoo.co.jp/articles/12becae69bc516edaf36a9753e11f9e5cd3912e0",
+      "reason": "タイヤ製品発表で読者への影響範囲が限定的"
+    },
+    {
+      "title": "日産自動車の投資分析｜Re:NissanとEV・e-POWERの再建",
+      "url": "https://www.d-sharing.jp/a/news/nissan-investment-20260808",
+      "reason": "投資分析の転載で一次情報性が低い"
+    },
+    {
+      "title": "ブリヂストンのキャリア研究――品質・保全・モビリティデータの融合",
+      "url": "https://www.d-sharing.jp/a/news/20260808145900-4",
+      "reason": "採用・キャリア記事で当日主要ニュースの影響範囲が狭い"
+    },
+    {
+      "title": "Honda-Prologue-2024-1280-43007bb7670f297c70003e1170ea88476c",
+      "url": "https://motor-fan.jp/article/1589573/honda-prologue-2024-1280-43007bb7670f297c70003e1170ea88476c-4/",
+      "reason": "画像ファイル名型タイトルでニュース本文の識別性が低い"
+    },
+    {
+      "title": "ポケモンデザインのEVバス1台導入 三重交通、三重県伊勢市「外宮内宮線」で運行",
+      "url": "https://www.chunichi.co.jp/article/1293824?rct=mie",
+      "reason": "1台導入の地域PRで、採用済みの公共交通実証と重複"
+    },
+    {
+      "title": "55年前のビュイックが起源。GMが切り拓いたトラクションコントロール技術、最新EVへと至る進化の軌跡",
+      "url": "https://carview.yahoo.co.jp/news/detail/da63d347152ad1465c62fcbd9efabf5bd3817ddc/",
+      "reason": "歴史解説で新規ニュース性が低い"
+    },
+    {
+      "title": "【自動運転】 中国・北京では「無人タクシー」が走る 北海道紋別市で自動運転バスの実証実験 霧で思わぬブレーキの課題も",
+      "url": "https://newsdig.tbs.co.jp/articles/hbc/2847990?page=4",
+      "reason": "公開日が2026-08-07で、採用済みの実証・受容性記事と論点が重複"
+    }
+  ],
+  "source_policy": "stage0_stage1_only"
+}

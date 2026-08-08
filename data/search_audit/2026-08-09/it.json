@@ -1,0 +1,71 @@
+{
+  "date": "2026-08-09",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "\"SaaSは死んでいない\" ByteDance Alibaba Tencent AIエージェント",
+    "\"SaaSの死\" チャンス マネーフォワード 辻社長",
+    "サーバーワークス 企業のクラウドとAI活用に関する調査結果 16629696",
+    "ANA エクイニクス クラウドネットワークハブ 構築"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 6,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "「SaaSの死」はチャンス、進化の機会と捉えるマネーフォワード辻社長",
+      "url": "https://xtech.nikkei.com/atcl/nxt/column/18/00677/042100200/",
+      "reason": "元記事の公開日が2026-04-27でfreshness gate外"
+    },
+    {
+      "title": "サーバーワークス、企業のクラウドとAI活用に関する調査結果を公表",
+      "url": "https://www.asahi.com/and/pressrelease/16629696",
+      "reason": "候補URLが404で記事単位の200確認不可"
+    },
+    {
+      "title": "ANA、エクイニクスとともにクラウドネットワークハブを構築 企業リリース",
+      "url": "https://www.nikkan.co.jp/releases/view/222193",
+      "reason": "元記事の公開日が2026-08-06でfreshness gate外"
+    },
+    {
+      "title": "サイバーセキュリティ関連株を探すなら見たい 3つの注目銘柄",
+      "url": "https://simplywall.st/ja/stocks/us/software/nasdaq-team/atlassian/news/e2898f32d9371dbb/amp",
+      "reason": "投資銘柄紹介で新規のIT実務ニュース性が低い"
+    },
+    {
+      "title": "AGE20’Sパウダー新発売！毛穴を自然にぼかすクラウドブラー肌に注目",
+      "url": "https://topics.smt.docomo.ne.jp/amp/article/cocotte/trend/cocotte-613554",
+      "reason": "ITカテゴリとの関連が薄い"
+    },
+    {
+      "title": "「乃木坂配信中」にて「【タコパ】東京パソコンクラブのイベントの打ち上げしてみた！」を公開！",
+      "url": "https://www.nogizaka46.com/s/n46/news/detail/102163",
+      "reason": "ITカテゴリの業務・産業論点が薄い"
+    },
+    {
+      "title": "Valverde: Team ready to make it through to last eight",
+      "url": "https://www.fcbarcelona.jp/ja/barca-play/videos/1098408/valverde-team-ready-to-make-it-through-to-last-eight",
+      "reason": "ITカテゴリとの関連が薄い"
+    },
+    {
+      "title": "酒場SF映画「REUNION」 シリーズ最終章・制作応援プロジェクト",
+      "url": "https://motion-gallery.net/projects/reunion03/updates/62298",
+      "reason": "ITカテゴリとの関連が薄い"
+    },
+    {
+      "url": "https://readyfor.jp/projects/Bellmare_Hadano_GCF_2026",
+      "reason": "quarantined by gate"
+    }
+  ]
+}

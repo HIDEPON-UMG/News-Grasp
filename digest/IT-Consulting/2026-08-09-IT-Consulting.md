@@ -1,0 +1,131 @@
+---
+title: "News Grasp #20260809 — IT-Consulting"
+date: 2026-08-09
+issue: 20260809
+weekday: 日曜日
+edition: Morning Edition
+publisher: News Grasp
+category: IT-Consulting
+categoryId: it
+accent: "#2E6B52"
+glyph: "▲"
+tags:
+  - daily
+  - newsletter
+  - news-grasp
+  - issue-20260809
+  - cat/it
+  - co/Alibaba
+  - co/Apple
+  - co/ByteDance
+  - co/CMC-Telecom
+  - co/China-Mobile
+  - co/China-Telecom
+  - co/China-Unicom
+  - co/CXMT
+  - co/Huawei
+  - co/IREN
+  - co/Microsoft
+  - co/Mirantis
+  - co/NVIDIA
+  - co/Palantir
+  - co/Qualcomm
+  - co/SK-hynix
+  - co/Samsung-Electronics
+  - co/Tencent
+  - co/Xiaomi
+  - country/中国
+  - country/ベトナム
+  - country/米国
+  - country/韓国
+---
+# ▲ IT-Consulting — IT・コンサル
+
+> __**[!summary]**（[[[!summary]]]）__
+> *__*AIが業務ソフトとインフラの設計を変える。** SaaSは画面からエージェントの実行基盤へ、クラウドはGPU貸しから運用ソフトへ、企業のセキュリティは規制対応と実装ロードマップの一体化へ進む。__
+
+---
+
+### [89] SaaSは死なない　中国テック3社が業務ソフトをAIエージェント基盤へ
+
+📅 2026-08-08 22:14 · 📰 note.com · 🔗 [元記事](https://note.com/zhenren63/n/nf20f6654af42)
+
+#cat/it #co/Alibaba #co/ByteDance #co/Tencent #country/中国 #topic/AIエージェント #score/高
+
+![thumb](https://assets.st-note.com/production/uploads/images/301056650/rectangle_large_type_2_2cd0775a90ec2d97359bf512597a9c68.png?fit=bounds&quality=85&width=1280)
+
+- 【事実・概要】：__**[[Alibaba]]、Tencent、ByteDanceが業務ソフト**をAIエージェントの実行基盤へ寄せている。人間向け画面より、企業データと承認フローが中核になる。__
+- 【背景・要点】：__単なる入力フォーム型SaaSはAIに代替されやすい一方、権限・文脈・履歴を持つ基盤はAIの手足と記憶になる。**価値の源泉がUIから業務データへ移る。**（[[価値の源泉がUIから業務データへ移る。]]）__
+- 【影響・展望】：**導入企業は製品名だけでなく、エージェントが扱える権限管理と監査ログ**（[[導入企業は製品名だけでなく、エージェントが扱える権限管理と監査ログ]]）を確認したい。__既存SaaSのAI化が業務設計の再点検を促す。__
+
+---
+
+### [86] パランティア、決算前から37%上昇　AI成長を株価は織り込んだか
+
+📅 2026-08-09 03:14 · 📰 TIKR.com · 🔗 [元記事](https://www.tikr.com/ja/blog/palantir-is-up-37-since-its-q2-blowout-is-it-too-late-to-buy?)
+
+#cat/it #co/Palantir #country/米国 #topic/企業AI #event/決算 #score/高
+
+![thumb](https://res.cloudinary.com/tikr/images/w_600,h_400,c_scale/f_webp,q_auto/v1786211357/images/2-4_122746c7123/2-4_122746c7123.png?_i=AA)
+
+- 【事実・概要】：__**Palantir株は決算前の8月7日に一日で10**（[[Palantir株は決算前の8月7日に一日で10]]）.32%上昇し、8月3日終値から約37%高となった。米国商業部門の成長が材料視されている。__
+- 【背景・要点】：__記事は企業向けAI基盤「AIP」とAI主権を成長の柱に挙げる。**高成長の裏側で、売上高倍率が約40倍に達する評価負担も残る。**（[[高成長の裏側で、売上高倍率が約40倍に達する評価負担も残る。]]）__
+- 【影響・展望】：**コンサル現場ではAI導入の成長率より、顧客データ**（[[コンサル現場ではAI導入の成長率より、顧客データ]]）を所有・運用できる基盤かを見極めたい。__次の決算で商業部門の伸びが焦点になる。__
+
+---
+
+### [80] ベトナムの中小企業、サイバー法対応へ　CMCが実務ロードマップを提示
+
+📅 2026-08-08 17:56 · 📰 Vietnam.vn · 🔗 [元記事](https://www.vietnam.vn/ja/cmc-telecom-to-chuc-webinar-giai-ma-luat-an-ninh-mang-2025-dong-hanh-cung-doanh-nghiep-sme-tren-hanh-trinh-tuan-thu-va-phat-trien-ben-vung)
+
+#cat/it #co/CMC-Telecom #country/ベトナム #topic/サイバーセキュリティ #event/規制公表 #score/中
+
+![thumb](https://vstatic.vietnam.vn/vietnam/resource/IMAGE/2026/08/08/1786176437530_anh-bai-viet.png)
+
+- 【事実・概要】：__**CMC Telecomは、ベトナムのサイバーセキュリティ法と個人データ保護規制**（[[CMC Telecomは、ベトナムのサイバーセキュリティ法と個人データ保護規制]]）を中小企業向けに解説するウェビナーを8月13日に開く。__
+- 【背景・要点】：__限られた予算と人材を前提に、ファイアウォール、WAF、EDR、教育を段階導入する案を示した。**規制対応を実装計画へ落とす内容だ。**（[[規制対応を実装計画へ落とす内容だ。]]）__
+- 【影響・展望】：**海外拠点**（[[海外拠点]]）を持つ企業は法令の適用範囲だけでなく、証跡・脆弱性評価・教育の運用責任を確認したい。__SME向け支援サービスの需要が続く。__
+
+---
+
+### [78] 中国スマホ、メモリー高騰で値上げ　AIクラウドフォンが浮上
+
+📅 2026-08-08 18:26 · 📰 BigGo ファイナンス · 🔗 [元記事](https://finance.biggo.jp/news/142a4691-febe-4501-ace6-68a8a6c5380a)
+
+#cat/it #co/Samsung-Electronics #co/SK-hynix #co/Xiaomi #country/中国 #topic/半導体需給 #score/中
+
+![thumb](https://img.biggo.com/LLdqGiw_u49gw90B2ormz1XCsNw_w4W65WUlEYY8Odw/fit/1200/0/sm/0/aHR0cHM6Ly9pbWcuYmdvLm9uZS9uZXdzLWltYWdlL2FpX2dlbmVyYXRlZC8yMDI2LTA4LzE0MmE0NjkxLWZlYmUtNDUwMS1hY2U2LTY4YThhNmM1MzgwYV8xNzg2MTgxMzg1X2RlZmF1bHQuanBn.jpg)
+
+- 【事実・概要】：__**AI向けHBMなどへの生産シフトでモバイルメモリーが逼迫し、中国スマホの価格上昇が進む。高性能処理**（[[AI向けHBMなどへの生産シフトでモバイルメモリーが逼迫し、中国スマホの価格上昇が進む。高性能処理]]）をクラウドへ寄せる案が浮上した。__
+- 【背景・要点】：__端末を入出力中心にし、5G経由でAI処理をクラウドへ移す構想だ。**半導体の需給変化が端末設計とサービスモデルを同時に揺らす。**（[[半導体の需給変化が端末設計とサービスモデルを同時に揺らす。]]）__
+- 【影響・展望】：**クラウドフォンは低価格化の切り札になり得るが、通信品質、個人情報保護、月額課金の定着が課題だ。__エッジとクラウドの役割分担**（[[クラウドフォンは低価格化の切り札になり得るが、通信品質、個人情報保護、月額課金の定着が課題だ。__エッジとクラウドの役割分担]]）を見たい。__
+
+---
+
+### [74] IREN、AIクラウド化へ転換　Mirantis買収でGPUにソフト層
+
+📅 2026-08-09 04:12 · 📰 TIKR.com · 🔗 [元記事](https://www.tikr.com/ja/blog/iren-is-up-9-from-its-lows-as-it-closes-its-mirantis-deal-heres-where-the-stock-could-go-in-2026?)
+
+#cat/it #co/IREN #co/Mirantis #co/NVIDIA #country/米国 #topic/AIインフラ #event/M-A #score/中
+
+![thumb](https://res.cloudinary.com/tikr/images/w_600,h_400,c_scale/f_webp,q_auto/v1786159615/images/2-4_122746c7123/2-4_122746c7123.png?_i=AA)
+
+- 【事実・概要】：__**IRENは約6億2500万ドルでMirantis買収**（[[IRENは約6億2500万ドルでMirantis買収]]）を完了し、GPU・電力中心の事業にクラウド運用ソフトの層を加えた。__
+- 【背景・要点】：__Mirantisはベアメタル、仮想マシン、Kubernetes上のAIワークロード管理を担う。**計算資源だけでなく、顧客が使える運用基盤が競争点になる。**（[[計算資源だけでなく、顧客が使える運用基盤が競争点になる。]]）__
+- 【影響・展望】：**AIインフラ案件ではGPUの保有量に加え、プロビジョニング、監視、サポートの実装力**（[[AIインフラ案件ではGPUの保有量に加え、プロビジョニング、監視、サポートの実装力]]）を評価したい。__電力からサービス化への転換を追う。__
+
+---
+
+__**← [[2026-08-08|前号]] | [[2026-08-10|翌号]] →**__
+
+*__**🤖 Auto-generated by News-Grasp Runner — `news-grasp-runner**（[[🤖 Auto-generated by News-Grasp Runner — `news-grasp-runner]]）.bat` @ 2026-08-09 06:00 JST*__
+
+
+### [70] 荘子it、1stソロアルバム『人生劇場』のリリースライブを開催。バックDJはillicit tsuboi
+
+2026-08-08 · 📰 pointed.jp · 🔗 [元記事](https://pointed.jp/2026/08/09/zozhit-1st-solo-album-release-live/)
+
+![thumb](https://pointed.jp/wp-content/uploads/2026/08/APIC_ZoZhit_202605_low.jpg)
+
+- **補充採用**: [[補充候補]]として採用。__reserve candidates exhausted after quarantine__
+---

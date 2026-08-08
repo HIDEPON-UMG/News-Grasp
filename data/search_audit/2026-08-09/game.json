@@ -1,0 +1,124 @@
+{
+  "date": "2026-08-09",
+  "category_id": "game",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "\"ドラゴンボール ゼノバース3\" 東京ゲームショウ2026 出展",
+    "\"めっちゃカメレオン\" 1500万本 2026年8月9日",
+    "\"Beast of Reincarnation\" レビュー 2026年8月8日"
+  ],
+  "raw_results_total": 24,
+  "candidates_total": 24,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "dedup_file": "build/deduped-candidates/game.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "専門学生制作のゲームを体験しよう 栃木県立美術館で「信長の野望」展関連イベント開催",
+      "url": "https://www.shimotsuke.co.jp/articles/-/1400194",
+      "reason": "地域イベントで全国的なゲーム業界ニュース性が低い"
+    },
+    {
+      "title": "楽しみながらゲーム作り 宮崎市で自動プログラミング教室",
+      "url": "https://www.the-miyanichi.co.jp/today/kennaiippan/980741.html",
+      "reason": "地域教育イベントで業界動向の一次情報性が低い"
+    },
+    {
+      "title": "Xbox、将来のタイトルをSteamから撤退か──PCゲーム市場の勢力図に激変の兆し",
+      "url": "https://finance.biggo.jp/news/49261e3a-ec07-49db-9cd0-e8a010245330",
+      "reason": "二次分析由来の未確認観測で、反証報道もあり採用見送り"
+    },
+    {
+      "title": "「男子御三家」出身も、ゲーム三昧で大学受験に失敗 再起支えたものは（Hanasone）",
+      "url": "https://news.yahoo.co.jp/articles/17a1f8d0b9e649d2b607f92399d30c444de656e2",
+      "reason": "個人・生活体験記事でゲーム業界ニュースではない"
+    },
+    {
+      "title": "埼玉・草加市にクレーンゲーム専門店「GiGOクレーンゲームオアシス」オープン 220台のゲーム機を展開",
+      "url": "https://ampmedia.jp/2026/08/08/cranegame-oasis-soka/",
+      "reason": "単一店舗の地域開業で影響範囲が限定的"
+    },
+    {
+      "title": "お金と経済、クイズやゲームで学ぶ SMBC日興証券佐賀支店で「家族でワクワク体験DAY」",
+      "url": "https://www.saga-s.co.jp/articles/-/1767735",
+      "reason": "地域イベントでゲーム業界ニュースではない"
+    },
+    {
+      "title": "【8/7(金)更新】9月5日(土) プレシーズンゲーム in 軽井沢 開催のお知らせ",
+      "url": "https://www.b-warriors.net/news/detail/id=20410",
+      "reason": "スポーツ興行のゲーム表現で対象カテゴリ外"
+    },
+    {
+      "title": "【卓球】早田ひな、第５ゲーム落とす 粘り見せるもゲームカウント1－4で敗れ４強ならず",
+      "url": "https://www.nikkansports.com/sports/photonews/photonews_nsInc_202608080001707-2.html",
+      "reason": "スポーツの試合結果で対象カテゴリ外"
+    },
+    {
+      "title": "札幌でゲームイベント10月開催へ 高校生向け企画を新設",
+      "url": "https://news.yahoo.co.jp/articles/1c7d680d2bae2763af6e7bb1ea38e228f5944d19",
+      "reason": "地域イベントで影響範囲が限定的"
+    },
+    {
+      "title": "地域の高齢者と子どもたちがゲーム交流 甘久自治公民館に「ひんやりスポット」 武雄市",
+      "url": "https://www.saga-s.co.jp/articles/-/1767739",
+      "reason": "地域交流記事で業界ニュースではない"
+    },
+    {
+      "title": "Steamで高評価の実写ADV『FLAM EVAW』を実況プレイ。探偵メープル・クロサワが美しき助手たちと潜入捜査に挑む",
+      "url": "https://dengekionline.com/article/202608/83917",
+      "reason": "個別タイトルの番組告知でニュース影響が限定的"
+    },
+    {
+      "title": "美少女サバイバルTPS『アノマリス』Steam体験版が8月9日配信終了を撤回し無期限で提供へ",
+      "url": "https://news.yahoo.co.jp/articles/68d99bc9c2f508a9b87d9d639ede86a055c04f87/images/000",
+      "reason": "候補URLがYahooの画像エンドポイントで、元記事canonicalを確定できない"
+    },
+    {
+      "title": "【名古屋グランパス】GKピサノ、「あの1本でゲームが決まってしまう」",
+      "url": "https://www.chunichi.co.jp/article/1294096",
+      "reason": "スポーツの試合結果で対象カテゴリ外"
+    },
+    {
+      "title": "「スーパーゲーム！」藤枝の槙野智章監督がいきなり英語でインタビュー対応",
+      "url": "https://news.yahoo.co.jp/articles/c77d23b251fb7bbee830985015c09211eb670cbc",
+      "reason": "スポーツ記事で対象カテゴリ外"
+    },
+    {
+      "title": "前年V張本智和 欧州王者・ルブラン兄を破る！次戦は松島との日本頂上対決",
+      "url": "https://www.tv-tokyo.co.jp/tabletennis/news/2026/08/042323_amp.html",
+      "reason": "スポーツの試合結果で対象カテゴリ外"
+    },
+    {
+      "title": "【卓球】張本智和、大逆転で第２ゲーム連取！",
+      "url": "https://news.yahoo.co.jp/articles/ae54b059f32026b0308212e5a669e3052564531a",
+      "reason": "スポーツの試合結果で対象カテゴリ外"
+    },
+    {
+      "title": "【卓球】早田ひな、３ゲーム連取され後がなくなる",
+      "url": "https://news.yahoo.co.jp/articles/ed6b365cfbf55e1e3325a0c96efb3668da82a64e",
+      "reason": "スポーツの試合結果で対象カテゴリ外"
+    },
+    {
+      "title": "ゲームフォト - 08月08日 対中日戦 京セラD",
+      "url": "https://m.hanshintigers.jp/game/photo_list/2026080801",
+      "reason": "スポーツの試合写真で対象カテゴリ外"
+    },
+    {
+      "url": "https://mainichi.jp/premier/business/articles/20260806/biz/00m/020/003000c",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://www.fukuishimbun.co.jp/articles/gallery/2668597",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}
