@@ -1,0 +1,86 @@
+{
+  "articlePath": "C:\\Users\\hidek\\ng-r808\\digest\\DeepDive\\2026-08-08-DeepDive.md",
+  "articleSha256": "c6db050559218305ea54de6416a0961aca87483e3748aeccc5787e550075f412",
+  "issueDate": "2026-08-08",
+  "manifestSha256": "d967b0479cbfbedd73d9135c4d8cca4fb316a1b8f1a13b72835e28b564131a34",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "69114c3f20ce99969b794256a1f9217bae9482e49876366dc50a88ac31c67443",
+  "sources": [
+    {
+      "contentSha256": "dcb187a08a3d20949241937504a5055ba9196fa90bfcc285a3e88846b09415db",
+      "fetchedAt": "2026-08-08T05:55:08.039797+00:00",
+      "finalUrl": "https://www.iea.org/articles/global-ev-outlook-2026",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.iea.org/articles/global-ev-outlook-2026",
+      "url": "https://www.iea.org/articles/global-ev-outlook-2026"
+    },
+    {
+      "contentSha256": "8bf00c5023981f8c466d1e2ed33fe3295948d7f36e2a508e19c8e442ae15cf50",
+      "fetchedAt": "2026-08-08T05:55:08.245353+00:00",
+      "finalUrl": "https://www.iea.org/news/quarterly-sales-of-electric-cars-break-records-in-several-key-markets-amid-energy-crisis",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.iea.org/news/quarterly-sales-of-electric-cars-break-records-in-several-key-markets-amid-energy-crisis",
+      "url": "https://www.iea.org/news/quarterly-sales-of-electric-cars-break-records-in-several-key-markets-amid-energy-crisis"
+    },
+    {
+      "contentSha256": "64138eea493095652e3b65a5003522f9c1e8bc8416ec6cf505c076823ebcef19",
+      "fetchedAt": "2026-08-08T05:55:09.530445+00:00",
+      "finalUrl": "https://www.iea.org/reports/electric-car-markets-in-a-time-of-uncertainty/executive-summary",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.iea.org/reports/electric-car-markets-in-a-time-of-uncertainty/executive-summary",
+      "url": "https://www.iea.org/reports/electric-car-markets-in-a-time-of-uncertainty/executive-summary"
+    },
+    {
+      "contentSha256": "518f7e2d93eb019ce348909f757649d6fbad14ac5c981fcd2481d9126f5439d7",
+      "fetchedAt": "2026-08-08T05:55:09.759930+00:00",
+      "finalUrl": "https://www.iea.org/reports/global-ev-outlook-2025/trends-in-electric-car-affordability",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.iea.org/reports/global-ev-outlook-2025/trends-in-electric-car-affordability",
+      "url": "https://www.iea.org/reports/global-ev-outlook-2025/trends-in-electric-car-affordability"
+    },
+    {
+      "contentSha256": "c888b9a5ed49e278170597945dc3ecb93780b164b90d05b4e06450ff7be57d95",
+      "fetchedAt": "2026-08-08T05:55:11.697131+00:00",
+      "finalUrl": "https://www.iea.org/reports/global-ev-outlook-2026/trends-in-electric-cars",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://www.iea.org/reports/global-ev-outlook-2026/trends-in-electric-cars",
+      "url": "https://www.iea.org/reports/global-ev-outlook-2026/trends-in-electric-cars"
+    },
+    {
+      "contentSha256": "d049228bf690ed9b1d14f143ff3eba5220c001861af7321379a66fe9cfe2b45b",
+      "fetchedAt": "2026-08-08T05:55:14.553008+00:00",
+      "finalUrl": "https://www.jetro.go.jp/world/gtir/2025/ch2/sec2/sub3.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.jetro.go.jp/world/gtir/2025/ch2/sec2/sub3.html",
+      "url": "https://www.jetro.go.jp/world/gtir/2025/ch2/sec2/sub3.html"
+    }
+  ],
+  "status": "Green"
+}

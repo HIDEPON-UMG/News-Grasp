@@ -1,0 +1,125 @@
+{
+  "date": "2026-08-08",
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "Stage1 handoff: build/deduped-candidates/ai.jsonl",
+    "Reporter source policy: stage0_stage1_only"
+  ],
+  "raw_results_total": 22,
+  "candidates_total": 22,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {
+      "title": "AIがサイバー攻撃――OpenAIやClaudeで相次ぐ事態、波及リスクは：1週間を凝縮！ 今週の製造業ニュース",
+      "url": "https://monoist.itmedia.co.jp/mn/articles/2608/08/news008.html",
+      "reason": "採用済みのため重複記録を除外"
+    },
+    {
+      "title": "「VIVANT」で生成AIが使われたのはこのシーンだ！～TBSドラマ初の本格利用～【調査情報デジタル】",
+      "url": "https://newsdig.tbs.co.jp/articles/gallery/2838323",
+      "reason": "採用済みのため重複記録を除外"
+    },
+    {
+      "title": "画像・写真：生成ＡＩ、被災地照らす ：時事ドットコム",
+      "url": "https://www.jiji.com/jc/p?id=20260808091906-0092457802",
+      "reason": "画像単体で記事本文の判断材料が不足"
+    },
+    {
+      "title": "生成ＡＩ、被災地照らす",
+      "url": "https://morioka.keizai.biz/gpnews/1748479/",
+      "reason": "同一話題の転載・本文差分が薄い"
+    },
+    {
+      "title": "AGENTIC STAR SaaS版にLLM Gateway機能を標準搭載",
+      "url": "https://www.softbank.jp/business/news/2026/0807-01",
+      "reason": "製品機能の単独発表で影響範囲が限定的"
+    },
+    {
+      "title": "OpenAI次世代モデルAstraの開発を一時制限",
+      "url": "https://www.watch.impress.co.jp/docs/news/2131759.html",
+      "reason": "Astra関連の重複報道。代表記事を採用"
+    },
+    {
+      "title": "OpenAI、次期モデルAstraの一部開発を停止",
+      "url": "https://www.itmedia.co.jp/news/article/2608/08/2000000459/",
+      "reason": "Astra関連の重複報道。代表記事を採用"
+    },
+    {
+      "title": "GoogleマップでGeminiとのチャットで場所を探せる機能が日本で提供開始",
+      "url": "https://forest.watch.impress.co.jp/docs/news/2131578.html",
+      "reason": "当日号の主要テーマに対する相対的重要度が低い"
+    },
+    {
+      "title": "Anthropic、Fable 5の生物学の制限を緩和",
+      "url": "https://news.yahoo.co.jp/articles/07e2d3465000683dc2a132e3d598fd097a157dc3/images/000",
+      "reason": "画像プロキシURLで元記事単位の確認が不足"
+    },
+    {
+      "title": "Anthropic、Fable 5の生物学の制限を緩和",
+      "url": "https://www.itmedia.co.jp/news/article/2608/08/2000000460/",
+      "reason": "Stage1候補の公開日根拠がRSS時刻のみ"
+    },
+    {
+      "title": "生成AI活用実態調査",
+      "url": "https://www.kknews.co.jp/news/20260808o04",
+      "reason": "教育調査でAIカテゴリの中心テーマから距離"
+    },
+    {
+      "title": "OpenAI、次期モデルAstraの一部開発を停止",
+      "url": "https://news.yahoo.co.jp/articles/aa1e03e7b74ef91255d6b7cc600c75be90b8af55/images/000",
+      "reason": "画像プロキシURLで元記事単位の確認が不足"
+    },
+    {
+      "title": "生成AIが新ウイルス設計 米研究",
+      "url": "https://news.yahoo.co.jp/pickup/6590898",
+      "reason": "ピックアップページで元記事単位の確認が不足"
+    },
+    {
+      "title": "Claudeシリーズ第5世代のプロンプトやモデルの選び方を図解した書籍が無償公開",
+      "url": "https://forest.watch.impress.co.jp/docs/bookwatch/news/2131651.html",
+      "reason": "書籍紹介で当日号の主要テーマに対する重要度が低い"
+    },
+    {
+      "title": "GeminiがChatGPTを逆転、利用率80.4%",
+      "url": "https://hashout.jp/ai/5398/",
+      "reason": "調査の一次情報性と記事本文の確認が不足"
+    },
+    {
+      "title": "Gemini利用者を10倍にした首都高の泥臭いDX",
+      "url": "https://news.yahoo.co.jp/articles/5fc246b4b3779711525fe547f607908c60a03a9d/images/000",
+      "reason": "画像プロキシURLで元記事単位の確認が不足"
+    },
+    {
+      "title": "スタディポケット、岡山県に学校向け生成AIサービスを継続導入",
+      "url": "https://www.sanyonews.jp/article/1968159",
+      "reason": "導入事例で影響範囲が限定的"
+    },
+    {
+      "title": "Kimi開発のMoonshot AIが5500億円調達",
+      "url": "https://36kr.jp/500176/",
+      "reason": "HiDream採用により資金調達テーマが重複"
+    },
+    {
+      "url": "https://www.nikkei.com/article/DGXZQOGN07BV60X00C26A8000000/",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://monoist.itmedia.co.jp/mn/articles/2608/08/news008.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

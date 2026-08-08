@@ -1,0 +1,96 @@
+{
+  "category_id": "ai",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini when:1d",
+    "AIエージェント OR RAG OR LLM OR 生成AI when:1d",
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://venturebeat.com/category/ai/feed/",
+    "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+    "https://www.technologyreview.com/feed/",
+    "https://deepmind.google/blog/rss.xml"
+  ],
+  "raw_results_total": 330,
+  "candidates_total": 315,
+  "selected_total": 50,
+  "source_breakdown": {
+    "google_news:生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E7%94%9F%E6%88%90AI+OR+LLM+OR+OpenAI+OR+Anthropic+OR+Claude+OR+Gemini+OR+%22artificial+intelligence%22+OR+%22AI+model%22+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 99,
+      "dropped": 1
+    },
+    "google_news:OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini when:1d": {
+      "url": "https://news.google.com/rss/search?q=OpenAI+OR+Anthropic+OR+Claude+OR+ChatGPT+OR+Gemini+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 92,
+      "dropped": 8
+    },
+    "google_news:AIエージェント OR RAG OR LLM OR 生成AI when:1d": {
+      "url": "https://news.google.com/rss/search?q=AI%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88+OR+RAG+OR+LLM+OR+%E7%94%9F%E6%88%90AI+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 100,
+      "candidates": 100,
+      "dropped": 0
+    },
+    "techcrunch.com/category/artificial-intelligence/feed": {
+      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 10,
+      "candidates": 9,
+      "dropped": 1
+    },
+    "venturebeat.com/category/ai/feed": {
+      "url": "https://venturebeat.com/category/ai/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 7,
+      "candidates": 7,
+      "dropped": 0
+    },
+    "www.theverge.com/rss/ai-artificial-intelligence/index.xml": {
+      "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 0,
+      "candidates": 0,
+      "dropped": 0
+    },
+    "www.technologyreview.com/feed": {
+      "url": "https://www.technologyreview.com/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 3,
+      "dropped": 5
+    },
+    "deepmind.google/blog/rss.xml": {
+      "url": "https://deepmind.google/blog/rss.xml",
+      "mode": "rss",
+      "trust_tier": "official",
+      "raw": 5,
+      "candidates": 5,
+      "dropped": 0
+    }
+  },
+  "negative_filter_dropped": {
+    "global:jobs": 4,
+    "ai:tutorial": 5,
+    "global:podcast_only": 1,
+    "source:include_keyword_miss": 5
+  },
+  "scrapling_sources_used": [],
+  "broken_sources": [
+    {
+      "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+      "mode": "rss",
+      "reason": "empty_or_unparseable"
+    }
+  ]
+}

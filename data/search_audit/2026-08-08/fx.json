@@ -1,0 +1,76 @@
+{
+  "date": "2026-08-08",
+  "category_id": "fx",
+  "candidate_file": "build/deduped-candidates/fx.jsonl",
+  "dedup_file": "build/deduped-candidates/fx.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "\"為替介入、初６兆円\" 2026 8月8日",
+    "\"投機勢の円売り幅、為替介入後に7割減\"",
+    "\"米金利先物市場、9月のＦＲＢ利上げ観測後退\"",
+    "\"日銀、警戒強める「AI発インフレ」\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "インベスコ 世界厳選株式オープン＜為替ヘッジなし＞(毎月決算型)【18312991】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/18312991",
+      "reason": "投資信託の基準価額ページでニュース性が低い"
+    },
+    {
+      "title": "NYダウは反発、雇用統計悪化で利上げ観測後退 S&P500は最高値",
+      "url": "https://www.nikkei.com/article/DGXZQOFL080090Y6A800C2000000/",
+      "reason": "株価中心でFXの主題性が弱く、米雇用材料は採用記事と重複"
+    },
+    {
+      "title": "米金利先物市場、9月のＦＲＢ利上げ観測後退 雇用統計受け",
+      "url": "https://jp.reuters.com/markets/japan/JRN4C5WLR5IYHJQK2NLICDBR4M-2026-08-07/",
+      "reason": "米雇用統計を扱う採用記事と論点が重複"
+    },
+    {
+      "title": "米国株式市場＝Ｓ＆Ｐ最高値、雇用統計軟調で利上げ観測後退",
+      "url": "https://jp.reuters.com/markets/japan/IROGUMSZKFMOBJV6A4VECGSR4M-2026-08-07/",
+      "reason": "株価中心で採用記事と材料が重複"
+    },
+    {
+      "title": "為替相場まとめ８月３日から８月７日の週",
+      "url": "https://fx.minkabu.jp/news/375652",
+      "reason": "週次まとめで個別材料の一次性が弱い"
+    },
+    {
+      "title": "７日の為替市場の四本値（ポンド円・豪ドル円・カナダ円）",
+      "url": "https://fx.minkabu.jp/news/375645",
+      "reason": "相場表中心で解説価値が低い"
+    },
+    {
+      "title": "来週の為替予想（米ドル/円）追加介入とベッセント砲に警戒｜米CPI・米債入札が焦点",
+      "url": "https://www.gaitame.com/media/entry/2026/08/08/060400",
+      "reason": "採用した欧州通貨の見通しより論点が狭く、介入記事と重複"
+    },
+    {
+      "title": "日経平均は堅調な展開か 米利上げ観測の後退が追い風",
+      "url": "https://www.nikkei.com/article/DGXZQOUB065FE0W6A800C2000000/",
+      "reason": "株価見通しでFXの主題性が弱い"
+    },
+    {
+      "title": "三井住友FGの好調は「利上げ」だけじゃない…独自の収益基盤と投資家が好む評価ポイント",
+      "url": "https://www.newsweekjapan.jp/articles/-/330743",
+      "reason": "銀行株の企業分析で為替の直接性が弱い"
+    },
+    {
+      "title": "ＮＹ円、１５７円台後半",
+      "url": "https://www.oanda.jp/lab-education/market_news/kn_2026080801000178/",
+      "reason": "相場水準の短報で背景・展望が薄い"
+    }
+  ]
+}

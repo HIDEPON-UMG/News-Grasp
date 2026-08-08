@@ -1,0 +1,128 @@
+{
+  "date": "2026-08-08",
+  "category_id": "game",
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/game.jsonl",
+  "queries": [
+    "ゲーム OR Nintendo OR PlayStation OR Steam OR ゲーム業界 OR \"video game\" OR \"game release\" when:1d",
+    "Nintendo OR Switch 2 OR PlayStation OR Steam when:1d",
+    "ゲーム株 OR gamebiz OR ファミ通 OR Game Watch when:1d"
+  ],
+  "raw_results_total": 277,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "Nintendo",
+    "Switch 2",
+    "Sony",
+    "Capcom",
+    "Square Enix"
+  ],
+  "dropped": [
+    {
+      "title": "ホームゲームでの「サステナビリティパーク」開設について",
+      "url": "https://www.avispa.co.jp/news/post-89837",
+      "reason": "スポーツクラブのホームゲーム告知で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "【8/7(金)更新】9月5日(土) プレシーズンゲーム in 軽井沢 開催のお知らせ",
+      "url": "https://www.b-warriors.net/news/detail/id=20410",
+      "reason": "スポーツイベント告知で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "明日 8/9（日）は愛媛FCホームゲーム開幕戦 vs 奈良クラブ",
+      "url": "https://ehimefc.com/topics/topic54444.html",
+      "reason": "スポーツ試合告知で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "五等分の花嫁 カードゲーム presents ラジオ『五等分の花嫁＊』 公開収録2026開催決定！",
+      "url": "https://www.tbsradio.jp/articles/110545/",
+      "reason": "ラジオ公開収録告知で、ゲーム本体の動きが薄い"
+    },
+    {
+      "title": "【フュージョンワールド情報】「ドラゴンボール」のストーリーにフォーカスした特別弾「STORY BOOSTER 01 [ST01]」が発売！全パラレルカードを一挙公開だ!!",
+      "url": "https://dragon-ball-official.com/news/01_4322.html",
+      "reason": "トレーディングカード商品告知で、相対スコアが下位"
+    },
+    {
+      "title": "『スルタンのゲーム』制限時間は7日間。無理難題を達成できなければ即処刑……邪知暴虐な王様のカードゲーム【とっておきインディー】",
+      "url": "https://www.famitsu.com/article/202608/83935",
+      "reason": "単一インディー作品紹介で、上位5件との相対順位で見送り"
+    },
+    {
+      "title": "日テレ・東京ヴェルディベレーザ ホームゲーム託児サービスについて",
+      "url": "https://www.verdy.co.jp/news/15137",
+      "reason": "スポーツ観戦支援の告知で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "【古淵校】9/6(日)『ゼルビア･夏祭りゲームDAY』",
+      "url": "https://acmachida-zelvia.com/news-cat/58748/",
+      "reason": "地域イベント告知で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "“悪魔絵師”異名のゲームクリエイター「古巣の会社の作品についての質問にはお答えしない」",
+      "url": "https://news.yahoo.co.jp/articles/af979164178ae8b30caf6d073ffad236f443048a",
+      "reason": "人物インタビューで新作・事業の具体的動きが薄い"
+    },
+    {
+      "title": "〈子どもが伸びる家庭の習慣〉42 夏休みのゲーム・動画",
+      "url": "https://www.seikyoonline.com/article/5F79FA36B02845A20BDF7C2BAD20C9FA",
+      "reason": "家庭教育記事で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "世界の中古ボードゲーム４００点販売 ９日、秋田市河辺でイベント",
+      "url": "https://www.sakigake.jp/news/article/20260807AK0054/",
+      "reason": "地域イベント告知で、業界全体への影響が限定的"
+    },
+    {
+      "title": "ゲームばかりで大丈夫？ 元ゲーム依存の医師が語る、親子で考えたいゲームルール",
+      "url": "https://kosodate.mynavi.jp/articles/45569",
+      "reason": "家庭・教育記事で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "一宮市でボードゲームしよう！初心者OKの13種類 「地域住民の居場所づくり」マージャンプロ選手がオープン",
+      "url": "https://www.chunichi.co.jp/article/1293595?rct=aichi",
+      "reason": "地域施設の紹介で、業界ニュースとしての影響が限定的"
+    },
+    {
+      "title": "”サ終”相次ぐスマホゲーム、倒産も急増 過去最多ペースで推移 「当たれば一攫千金」過去の時代に",
+      "url": "https://news.yahoo.co.jp/articles/d5dbb32009f49fe6edce2985d2ff92538e10ec49",
+      "reason": "重要テーマだが、公開本文の一次情報確認範囲が限定的で見送り"
+    },
+    {
+      "title": "『Together in Forgotten Lands』が8月8日にSteamでリリース",
+      "url": "https://news.denfaminicogamer.jp/news/260808s",
+      "reason": "上位5件との相対順位で見送り"
+    },
+    {
+      "title": "ゲオのレトロゲーム戦略に迫る。激変する中古市場でパッケージソフトが持ち続ける価値とは",
+      "url": "https://gamebiz.jp/news/430115",
+      "reason": "業界テーマだが、上位の一次情報・研究・発売情報を優先"
+    },
+    {
+      "title": "「勝ちに持ってこられるゲームだった」２点リードも逆転負け。スティーブ・コリカ監督が悔しさ露わ",
+      "url": "https://www.soccerdigestweb.com/news/detail/id=195451",
+      "reason": "スポーツ試合記事で、ゲーム業界ニュースの対象外"
+    },
+    {
+      "title": "『Grizzy and the Lemmings – Crazy Party』発売、PlayStation 5、Xbox Series X|S、PCで配信中",
+      "url": "https://www.gamespress.com/ja-JP/GRIZZY-AND-THE-LEMMINGS-CRAZY-PARTY-IS-OUT-NOW-ON-NINTENDO-SWITCH-PS5-",
+      "reason": "プレスリリース転載で、上位5件との相対順位で見送り"
+    },
+    {
+      "title": "『Breathedge』が無料で配布中。入手できる期間は8月10日まで。",
+      "url": "https://news.denfaminicogamer.jp/news/260808c",
+      "reason": "期間限定配布の案内で、重要度が下位"
+    },
+    {
+      "title": "二宮和也主演の無限ループゲーム映画『８番出口』金曜ロードショーでノーカット地上波初放送！",
+      "url": "https://news.yahoo.co.jp/articles/eafd5e436f1371f15f981bb420208d8c88474977",
+      "reason": "ゲーム関連映画の放送告知で、ゲーム業界の直接情報ではない"
+    },
+    {
+      "url": "https://automaton-media.com/articles/newsjp/20260806-458897/",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

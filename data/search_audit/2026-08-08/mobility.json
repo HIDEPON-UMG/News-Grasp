@@ -1,0 +1,127 @@
+{
+  "date": "2026-08-08",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped_count": 20,
+  "dropped": [
+    {
+      "title": "【自動運転】 中国・北京では「無人タクシー」が走る 北海道紋別市で自動運転バスの実証実験 霧で思わぬブレーキの課題も",
+      "url": "https://news.yahoo.co.jp/articles/6e32c11fd17b3b8e85be52e26ea629349d3e0ae4",
+      "reason": "地域実証を含む複合記事で、影響範囲と一次情報性が採用5件を下回る"
+    },
+    {
+      "title": "NVIDIAのロボタクシーAI無償公開は「寛大さを装ったプラットフォーム囲い込み」、Autonomy AI創業者が指摘",
+      "url": "https://finance.biggo.jp/news/ace2a9aee45fdd6d",
+      "reason": "Alpamayo 2 Superの採用記事と同一テーマの二次報道"
+    },
+    {
+      "title": "式年遷宮に向け自動運転バス「レベル4」 三重交通GHD 伊勢市内で導入へ：ニュース",
+      "url": "https://biz.chunichi.co.jp/news/article/10/128989/",
+      "reason": "地域導入で、採用5件より広域インパクトが小さい"
+    },
+    {
+      "title": "EVの常識を撃ち抜くAMGの野性。航続800kmと直6の咆哮を宿す新型「GT 53 4ドアクーペ」",
+      "url": "https://levolant.jp/2026/08/08/448780/",
+      "reason": "製品紹介中心で、構造変化を示すニュース性が低い"
+    },
+    {
+      "title": "電気自動車(EV)の補助金って？2026年の金額の目安や申請方法を解説",
+      "url": "https://motor-fan.jp/headline/1586407/",
+      "reason": "制度解説で新規の政策発表ではない"
+    },
+    {
+      "title": "（けいざい＋）新たな主戦場、インド：下 ＥＶと牛ふん、生き残りへカギ",
+      "url": "https://www.asahi.com/articles/DA3S16522693.html",
+      "reason": "インドEV連載の前回記事で、当日採用記事とテーマが重複"
+    },
+    {
+      "title": "ラグジュアリーミニバンもEVの時代「メルセデス・ベンツ VLE」が生産開始「航続距離700km超」【動画】",
+      "url": "https://motor-fan.jp/article/1539410/der-neue-elektrische-mercedes-benz-vle-vereint-die-fahreigenschaften-einer-limousine-mit-der-variabilitat-eines-mpvthe-all-new-electric-mercedes-benz-vle-combining-limousine-like-ride-and-handling-13/",
+      "reason": "新型車紹介で、採用5件より読者意思決定への影響が小さい"
+    },
+    {
+      "title": "日本メーカーは猛省せよ！ 軽スーパーハイトワゴン初のEV「BYDラッコ」誕生の衝撃（webCG）",
+      "url": "https://news.yahoo.co.jp/articles/a3d763d1b1563256f9574cceb6e81c51b99fe2d6",
+      "reason": "BYD軽EVの同一テーマが複数候補に分散し、代表性の高い候補を優先"
+    },
+    {
+      "title": "スズキが目指す「世界共通EV戦略」は軽EV？ 新型コンパクトEVの欧州公道テストをスクープ【写真・9枚目】",
+      "url": "https://motor-fan.jp/article/1587174/suzuki-ev-12/",
+      "reason": "スクープ記事で一次発表の確認が薄い"
+    },
+    {
+      "title": "BYDの軽EV「RACCO」は買いか？ 補助金込みで200万円切り、競合の日産・ホンダが受ける衝撃（ITmedia NEWS）",
+      "url": "https://news.yahoo.co.jp/articles/9028521f8e31d4bb874f8a47fb3f5edb5382a430",
+      "reason": "BYD軽EVの同一テーマで、価格構造全体を扱う日経記事を優先"
+    },
+    {
+      "title": "熊本地震でEV充電器を「無償」開放 充電スポットリスト…EV充電事業者と自動車メーカーが被災者支援",
+      "url": "https://carcareplus.jp/article/2026/08/08/15089.html",
+      "reason": "地域支援情報で、全国的な構造変化を扱う記事を優先"
+    },
+    {
+      "title": "T2が品質マネジメントシステムの国際規格「ISO9001」認証取得、自動運転分野で国内初",
+      "url": "https://online.logi-biz.com/148656/",
+      "reason": "T2の品質認証テーマで、当日5件の総合影響度を優先"
+    },
+    {
+      "title": "「日本の聖域」軽自動車に赤船来襲 BYDが199万円「新型EV軽」で仕掛ける一発逆転（ITmedia ビジネスオンライン）",
+      "url": "https://news.yahoo.co.jp/articles/a58c5b5b6d2f7d4e9824881fd5a3a658df6fc702",
+      "reason": "BYD軽EVの同一テーマで重複"
+    },
+    {
+      "title": "T2、自動運転輸送の品質管理で国際認証",
+      "url": "https://www.logi-today.com/986538",
+      "reason": "T2の品質認証テーマで重複"
+    },
+    {
+      "title": "もはや電気自動車に「らしさ」は不要？　中国ブランドは「特別感のないデザイン」ばかりになっている",
+      "url": "https://www.webcartop.jp/2026/08/1866694/",
+      "reason": "論評・デザイン解説中心で、実装ニュースを優先"
+    },
+    {
+      "title": "三重交通、ポケモンデザインのEVバス1台導入 伊勢で8日から運行：ニュース",
+      "url": "https://biz.chunichi.co.jp/news/article/10/129182/",
+      "reason": "単車両の地域導入で影響範囲が限定的"
+    },
+    {
+      "title": "EVより牛ふん？ インドに「眠る資源」、開所式に酪農家2万人超",
+      "url": "https://www.asahi.com/articles/ASV7S5K0HV7SULFA00QM.html",
+      "reason": "インドEV連載の前回記事で、最新の三輪EV記事を優先"
+    },
+    {
+      "title": "この夏注目のニューモデル《eKクロスEV》",
+      "url": "https://topics.smt.docomo.ne.jp/amp/article/goonet/trend/goonet-288481",
+      "reason": "新型車紹介でニュース性が低い"
+    },
+    {
+      "title": "自動運転ＥＶバス 試験運行 きょうからニセコ東急周辺で",
+      "url": "https://www.hokkaido-np.co.jp/article/1350518/",
+      "reason": "地域実証で、採用5件より広域インパクトが小さい"
+    },
+    {
+      "title": "【新店・Kitchen Ev. from BAKE UP】昼も夜も。カフェとバルのいいとこ取り！",
+      "url": "https://tjniigata.jp/gourmet/202608kitchen-ev-from-bakeup/",
+      "reason": "EVを含むがモビリティニュースではない"
+    },
+    {
+      "url": "https://www.asahi.com/articles/ASV7R1PWRV7RULFA00QM.html",
+      "reason": "quarantined by gate"
+    }
+  ]
+}
