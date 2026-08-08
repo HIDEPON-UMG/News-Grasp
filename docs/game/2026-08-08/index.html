@@ -1,0 +1,577 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260808 — Game</title>
+<meta name="description" content="IPの世界展開、実況参加、レビュー分析、協力型作品が同じ日に並んだ。ゲームは遊ぶだけでなく、配信・データ・共同体へ広がっている。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/game/2026-08-08/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260808 — Game">
+<meta property="og:description" content="IPの世界展開、実況参加、レビュー分析、協力型作品が同じ日に並んだ。ゲームは遊ぶだけでなく、配信・データ・共同体へ広がっている。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/game/2026-08-08/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260808 — Game">
+<meta name="twitter:description" content="IPの世界展開、実況参加、レビュー分析、協力型作品が同じ日に並んだ。ゲームは遊ぶだけでなく、配信・データ・共同体へ広がっている。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="game">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill " style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill is-active" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-08-08 · #20260808</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/game.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ GAMING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">▶</span>
+      <h1 class="cat-hero__title">ゲーム.</h1>
+    </div>
+
+    <div class="cat-hero__summary">IPの世界展開、実況参加、レビュー分析、協力型作品が同じ日に並んだ。ゲームは遊ぶだけでなく、配信・データ・共同体へ広がっている。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">86</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">08·08</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260808</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">← BACK TO GAMING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-08-07 08:48 · KLab</span>
+    <span class="top-story__score">94</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://www.klab.com/jp/press/release/2026/0807/j.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.klab.com/jp/press/assets/cms/GL_KV_EN_2.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.klab.com/jp/press/release/2026/0807/j.html" rel="noopener nofollow" target="_blank" style="color: inherit;">『ジョジョの奇妙な冒険 黄金讃歌』、8月13日に世界配信へ　事前登録200万人</a>
+
+      </h2>
+
+
+<div class="summary-lanes summary-lanes--full" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">ジョジョの奇妙な冒険 黄金讃歌</strong>の正式サービスが8月13日に始まる。事前登録者数は<strong>200万人</strong>を超えた。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">日本・中国大陸・香港・台湾・マカオを除く全世界へ配信。<span class="emph-und">IPを海外向けゲームに転換するモデル</span>が軸になる。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">登録者を実プレイヤーへ転換できるかが焦点。海外向けゲーム開発支援モデルの収益化を次に見る。</div>
+    </div>
+  </div>
+
+</div>
+
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">▶</span>
+          <span class="category-label-break"><span class="category-label-break__line">GAMING</span></span>
+        </span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-08-08</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ▶ stories</h2>
+    <span class="more-stories__head-meta">3 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-08-08 12:30</span>
+        <span>· Game*Spark</span>
+        <span class="more-card__score">88</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.gamespark.jp/article/2026/08/08/170401.html" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.gamespark.jp/imgs/ogp_f/1169823.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.gamespark.jp/article/2026/08/08/170401.html" rel="noopener nofollow" target="_blank">ゲーム実況の「見るだけ」を収益化へ　CEDEC 2026が示す視聴者連携</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body">CEDEC 2026で<strong class="emph-bold">ゲーム実況の視聴者連携</strong>が議論された。視聴者が配信中にゲームへ参加する仕組みを整理した。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">実況は購入促進だけでなく、配信者と関わりたい欲求を満たす場でもある。<strong>視聴者参加機能</strong>が価値と収益の接点になる。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">YouTubeやTwitchのコメントをゲームへ反映する設計が広がるかが焦点。<span class="emph-und">見るだけの層を継続参加へ導くKPI</span>が次の論点だ。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-08-08 10:30</span>
+        <span>· AUTOMATON</span>
+        <span class="more-card__score">82</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://automaton-media.com/articles/newsjp/grain-rot-20260808-459264/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://automaton-media.com/wp-content/uploads/2026/08/grain-rot-20260808-459264-header.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://automaton-media.com/articles/newsjp/grain-rot-20260808-459264/" rel="noopener nofollow" target="_blank">協力ホラー『GRAIN ROT』発売　4人協力といたずら要素で25万ウィッシュリスト</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">GRAIN ROT</strong>がSteamで発売された。最大4人協力、機体への乗り移り、味方への“いたずら”を組み合わせたホラー脱出ゲームだ。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">デモは<strong>35万回以上</strong>ダウンロードされ、ウィッシュリストは25万件を突破。協力とコミカルな妨害が注目を集めた。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">追加された敵やバイオームが初動を支えられるかが焦点。<span class="emph-und">発売後の安定性改善とプレイヤー定着</span>を追う。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-08-08 11:51</span>
+        <span>· gamebiz</span>
+        <span class="more-card__score">78</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://gamebiz.jp/news/430808" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://i3.gamebiz.jp/media/e509a4fe-f9d8-4903-ab46-c0b864dca29d.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://gamebiz.jp/news/430808" rel="noopener nofollow" target="_blank">『Dreamcards』8月19日発売へ　記憶をカード化する手描き風ローグライク</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body">Vsoo Gamesが<strong class="emph-bold">Dreamcards</strong>を8月19日にSteamで発売する。記憶をカード化し、夢が悪夢へ変わる前に攻略する。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body"><strong>100種類以上のカード</strong>、200枚超の手描きイラスト、テキストを使わない80以上の記憶表現を組み合わせる。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">カード効果の連鎖と個人的な記憶の物語が差別化になるかが焦点。<span class="emph-und">発売前の反応と継続プレイ性</span>を見たい。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§06 OF 7 · GAMING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p>KLabの『黄金讃歌』は8月13日開始、事前登録200万人。CEDECでは実況視聴者のゲーム参加が議論され、Steamでは低評価が短時間で長文になりやすい傾向が1503万件分析で示された。<strong class="emph-bold">登録</strong>と視聴を<strong>継続プレイ</strong>へ変えるには、IPの海外展開だけでなく、<span class="emph-und">参加後の定着と改善速度</span>が問われる。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-08/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row ">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · GAMING · 2026-08-08
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/">GAMING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>
