@@ -785,16 +785,17 @@ def test_same_date_completion_separates_artifact_data_from_trusted_ops_code(
 
     def verify_publish_complete(**kwargs):
         publish_calls.append(kwargs)
+        lineage = control._completion_lineage(
+            issue_date="2026-08-09",
+            run_intent="ScheduledRecoveryFull",
+            run_id="a" * 32,
+            artifact_root=artifact,
+            ops_root=ops,
+        )
         return {
             "ok": True,
             "date": "2026-08-09",
-            "artifactRoot": str(artifact),
-            "opsRoot": str(ops),
-            "dailyRootId": "c" * 64,
-            "rootOperationId": "d" * 64,
-            "producerRunIntent": "ScheduledRecoveryFull",
-            "producerOperationId": "e" * 64,
-            "lineageReceiptSha256": "f" * 64,
+            **lineage,
         }
 
     monkeypatch.setattr(control, "_resolve_artifact_repo_root", resolve)
@@ -809,6 +810,7 @@ def test_same_date_completion_separates_artifact_data_from_trusted_ops_code(
     )
 
     assert completion is not None
+    assert control.same_date_completion_green("2026-08-09", completion) is True
     assert resolved_payloads == [
         {"artifactRepoRoot": str(artifact), "opsRepoRoot": str(ops)}
     ]

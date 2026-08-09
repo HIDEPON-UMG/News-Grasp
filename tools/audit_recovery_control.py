@@ -494,10 +494,23 @@ def _observe_operational_truth(
 
 
 def _completion_lineage(
-    *, issue_date: str, run_intent: str, run_id: object
+    *,
+    issue_date: str,
+    run_intent: str,
+    run_id: object,
+    artifact_root: object | None = None,
+    ops_root: object | None = None,
 ) -> dict[str, str]:
-    artifact_root = str(CANONICAL_REPO_ROOT.resolve())
-    ops_root = str(CANONICAL_RUNNER_STATE_PATH.parent.resolve())
+    artifact_root = str(
+        Path(str(artifact_root)).resolve()
+        if artifact_root
+        else CANONICAL_REPO_ROOT.resolve()
+    )
+    ops_root = str(
+        Path(str(ops_root)).resolve()
+        if ops_root
+        else CANONICAL_RUNNER_STATE_PATH.parent.resolve()
+    )
     daily_root_id = hashlib.sha256(
         f"News-Grasp|{issue_date}|{artifact_root.casefold()}|{ops_root.casefold()}".encode(
             "utf-8"
@@ -1121,6 +1134,8 @@ def same_date_completion_green(issue_date: str, completion: object) -> bool:
         issue_date=issue_date,
         run_intent=str(value.get("runIntent") or ""),
         run_id=value.get("runId"),
+        artifact_root=value.get("artifactRoot"),
+        ops_root=value.get("opsRoot"),
     )
     for field in (
         "artifactRoot",
