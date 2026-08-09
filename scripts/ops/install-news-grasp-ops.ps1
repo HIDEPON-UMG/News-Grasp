@@ -302,6 +302,10 @@ function Assert-NewsGraspInstalledState {
             throw "scheduled task unexpected repetition: $($spec.name)"
         }
     }
+    $legacyTask = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
+    if ($legacyTask -and $legacyTask.Settings.Enabled) {
+        throw "legacy task remains enabled: $LegacyRunnerTaskName"
+    }
 }
 
 trap {
@@ -540,6 +544,15 @@ if (-not $SkipTaskRegistration) {
         arguments = $deadmanArgs
         trigger = 'daily 06:40 with hourly repetition'
         status = 'registered_deadman_control'
+    }
+    $legacyTask = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
+    if ($legacyTask -and $legacyTask.Settings.Enabled) {
+        Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop | Out-Null
+    }
+    $scheduledTasks += [ordered]@{
+        task_name = $LegacyRunnerTaskName
+        trigger = 'legacy daily 06:00'
+        status = if ($legacyTask) { 'legacy_task_disabled' } else { 'legacy_task_absent' }
     }
     Write-NewsGraspInstallJournal -Phase 'tasks_converged'
 }

@@ -1951,13 +1951,22 @@ def test_install_guard_limits_reparse_check_to_the_trusted_managed_root() -> Non
     assert completed.returncode == 0, completed.stderr
 
 
-def test_ops_installer_snapshots_legacy_tombstone_without_mutating_it() -> None:
-    """旧taskはrollback evidenceへ含めるが、管理者変更やcanonical成功扱いはしない。"""
+def test_ops_installer_disables_legacy_task_after_canonical_convergence() -> None:
+    """旧taskはrollback可能なsnapshotを保持し、正規3taskの収束後に無効化する。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
 
     assert "[string] $LegacyRunnerTaskName = 'News-Grasp Runner'" in text
     assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)" in text
-    assert "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName" not in text
+    assert "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop" in text
+    assert "legacy task remains enabled" in text
+    deadman_registration = text.index(
+        "Register-ScheduledTask -TaskName $DeadmanTaskName"
+    )
+    legacy_disable = text.index(
+        "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop"
+    )
+    tasks_converged = text.index("Write-NewsGraspInstallJournal -Phase 'tasks_converged'")
+    assert deadman_registration < legacy_disable < tasks_converged
 
 
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
