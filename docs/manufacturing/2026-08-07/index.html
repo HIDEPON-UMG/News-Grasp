@@ -1,0 +1,649 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp #20260807 — Manufacturing</title>
+<meta name="description" content="米国の素材政策、食品工場の大型投資、半導体部材・検査技術の開発が同時に動いた。製造業の競争力は、関税・量産能力・品質データ・研究開発を一体で見極める局面にある。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-08-07/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp #20260807 — Manufacturing">
+<meta property="og:description" content="米国の素材政策、食品工場の大型投資、半導体部材・検査技術の開発が同時に動いた。製造業の競争力は、関税・量産能力・品質データ・研究開発を一体で見極める局面にある。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/manufacturing/2026-08-07/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp #20260807 — Manufacturing">
+<meta name="twitter:description" content="米国の素材政策、食品工場の大型投資、半導体部材・検査技術の開発が同時に動いた。製造業の競争力は、関税・量産能力・品質データ・研究開発を一体で見極める局面にある。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg">
+
+<!-- Webfonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<!-- Favicon: News Grasp N→ mark -->
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="manufacturing">
+
+<!-- ============= Brand zone (navy header) ============= -->
+<section class="brand-zone">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<!-- ============= Lens nav (5 lens pills) ============= -->
+<nav class="lens-nav">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill " style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill " style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill " style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill " style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill is-active" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill " style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill " style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <span class="lens-nav__meta">2026-08-07 · #20260807</span>
+  </div>
+</nav>
+
+<!-- ============= Hero (480px KV) ============= -->
+<header class="cat-hero">
+  <img class="cat-hero__bg" src="https://hidepon-umg.github.io/News-Grasp/assets/og/manufacturing.jpg" alt="" loading="eager">
+  <div class="cat-hero__gradient"></div>
+  <div class="cat-hero__title-block">
+    <div class="cat-hero__eyebrow">━━━━━━━━━━ MANUFACTURING EDITION</div>
+    <div class="cat-hero__title-row">
+      <span class="cat-hero__glyph">⬢</span>
+      <h1 class="cat-hero__title">製造.</h1>
+    </div>
+
+    <div class="cat-hero__summary">米国の素材政策、食品工場の大型投資、半導体部材・検査技術の開発が同時に動いた。製造業の競争力は、関税・量産能力・品質データ・研究開発を一体で見極める局面にある。</div>
+
+    <div class="cat-hero__stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">STORIES</div>
+      </div>
+      <div>
+        <div class="stat-num">90</div>
+        <div class="stat-label">AVG SCORE</div>
+      </div>
+      <div>
+        <div class="stat-num">~12</div>
+        <div class="stat-label">MIN READ</div>
+      </div>
+    </div>
+  </div>
+  <div class="cat-hero__date">
+    <div class="cat-hero__date-label">DATE</div>
+    <div class="cat-hero__date-big">08·07</div>
+    <div class="cat-hero__date-small">2026 · ISSUE #20260807</div>
+  </div>
+  <div class="cat-hero__bottom-bar">
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">← BACK TO MANUFACTURING ARCHIVE</a>
+    <span>SCROLL TO BEGIN ↓</span>
+  </div>
+</header>
+
+<div class="cat-container">
+
+
+<!-- ============= TOP story ============= -->
+<section class="top-story">
+  <div class="top-story__meta">
+    <span class="top-story__badge">TOP STORY</span>
+    <span>2026-08-07 09:02 · 産経ニュース</span>
+    <span class="top-story__score">95</span>
+  </div>
+  <div class="top-story__grid">
+
+
+    <div class="top-story__thumb-wrap">
+
+      <a href="https://www.sankei.com/article/20260807-PXO6CICFSZKMDJZ5DYB2I6PCOQ/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.sankei.com/resizer/v2/UOJRGWNONJPRBIU7NJPXW5I2NA.jpg?auth=8274d2616a252bb255329064efdbcf09f0638c34a0667bc53f5289b6e76b31be&amp;quality=50&amp;smart=true&amp;width=1200&amp;height=675" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+    </div>
+    <div>
+      <h2 class="top-story__title">
+        <a href="https://www.sankei.com/article/20260807-PXO6CICFSZKMDJZ5DYB2I6PCOQ/" rel="noopener nofollow" target="_blank" style="color: inherit;">米、ポリシリコンに15％追加関税　日本などは上限特例</a>
+
+      </h2>
+
+
+<div class="summary-lanes summary-lanes--full" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">米政権</strong>が半導体・太陽光パネル材料のポリシリコンに<strong>15％の追加関税</strong>と最低輸入価格を課す布告に署名した。発動は12月4日で、日本などには上限特例を設ける。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">措置は中国のダンピング防止と米国内生産の拡大が狙いだ。承認された国内投資には関税免除も想定され、<strong class="emph-bold">供給網</strong>の組み替えを促す政策になる。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body"><span class="emph-und">12月の発動</span>までに、対象品目の範囲と各国の実効税率を確認したい。米国での<strong class="emph-bold">素材生産</strong>投資が実際に増えるかが次の焦点だ。</div>
+    </div>
+  </div>
+
+</div>
+
+      <div class="top-story__tags">
+        <span class="top-story__tag is-accent">
+          <span class="category-label-break__glyph">⬢</span>
+          <span class="category-label-break"><span class="category-label-break__line">MANUFACTURING</span></span>
+        </span>
+        <span class="top-story__tag">#FEATURED</span>
+        <span class="top-story__tag">#2026-08-07</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ============= More stories grid ============= -->
+<section class="more-stories">
+  <div class="more-stories__head">
+    <h2>More ⬢ stories</h2>
+    <span class="more-stories__head-meta">4 REMAINING · SORTED BY ORDER</span>
+  </div>
+  <div class="more-stories__grid">
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">02</span>
+        <span>2026-08-07 08:04</span>
+        <span>· 建設通信新聞Digital</span>
+        <span class="more-card__score">92</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.kensetsunews.com/sokuho/1269532" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://www.kensetsunews.com/PB5001H/wp-content/uploads/2026/08/e9d585fb01b8f46004c52b4ef2b038dd.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.kensetsunews.com/sokuho/1269532" rel="noopener nofollow" target="_blank">日清食品、茨城にカップヌードル新工場　700億円投資</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">日清食品</strong>が茨城県つくばみらい市に延べ約4万1000平方メートルの<strong>カップ麺工場</strong>を建設する。投資額は700億円で、2029年度の稼働を目指す。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">新工場はカップヌードルに特化し、年間最大5億食を生産する計画だ。熱源を回収・再利用し、<strong class="emph-bold">生産能力</strong>と<span class="emph-und">エネルギー効率</span>を同時に高める。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">2027年5月の着工後、量産立ち上げと物流設計が焦点になる。<strong>CO2排出10％以上削減</strong>を含む設備運用が、食品工場の競争力を左右する。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">03</span>
+        <span>2026-08-07 05:00</span>
+        <span>· 日経クロステック</span>
+        <span class="more-card__score">90</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/00001/11946/" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://xtech.nikkei.com/atcl/nxt/column/18/00001/11946/topm.jpg?20220512" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://xtech.nikkei.com/atcl/nxt/column/18/00001/11946/" rel="noopener nofollow" target="_blank">オムロン、NVIDIAと半導体実装検査を高度化</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">オムロン</strong>はNVIDIAの技術を活用し、半導体パッケージ基板の検査装置事業を強化する。デジタルツインと<strong>AI</strong>で異常を可視化する。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">部品の反りなど微細な異常を捉え、不良予測や原因究明につなげる狙いだ。<strong class="emph-bold">検査工程</strong>のデータ化が、後工程の品質管理と<span class="emph-und">開発速度</span>を左右する。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">半導体メーカーや後工程受託企業への提供を目指す。試験導入で<strong>不良予測の精度</strong>と現場定着をどこまで示せるかが次の評価点になる。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">04</span>
+        <span>2026-08-07 06:03</span>
+        <span>· ニュースイッチ</span>
+        <span class="more-card__score">88</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://newswitch.jp/p/49942" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://images.newswitch.jp/images/d13c5ef9-e23e-44f7-9106-003bd8ce5df2.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://newswitch.jp/p/49942" rel="noopener nofollow" target="_blank">TOTO、半導体装置部品の研究棟に170億円</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">TOTO</strong>が茅ケ崎工場に半導体製造装置向け部品の研究開発棟を建設する。<strong>投資額は170億円</strong>で、2026年12月着工、2028年4月竣工を予定する。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">静電チャックやAD部材の高機能化を見据え、次世代品の研究と試作品ラインを拡張する。<strong class="emph-bold">研究開発投資</strong>を国内3拠点へ広げる計画の一部だ。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">半導体装置の高性能化に対し、部材側の開発速度が競争力を左右する。<span class="emph-und">顧客との技術連携</span>から試作・量産へ移れるかを確認したい。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+    <article class="more-card">
+      <div class="more-card__meta">
+        <span class="more-card__no">05</span>
+        <span>2026-08-07 05:05</span>
+        <span>· 日刊県民福井Web</span>
+        <span class="more-card__score">84</span>
+      </div>
+
+      <div class="more-card__thumb-wrap">
+
+
+        <a href="https://www.chunichi.co.jp/article/1293104?rct=f_news" rel="noopener nofollow" target="_blank" aria-label="元記事を新しいタブで開く"><img src="https://static.chunichi.co.jp/image/article/size1/b/3/b/2/b3b26df7b4731dcf9dba67338d1e8324_1.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></a>
+
+      </div>
+      <h3 class="more-card__title">
+        <a href="https://www.chunichi.co.jp/article/1293104?rct=f_news" rel="noopener nofollow" target="_blank">SHINDO、新工場で下水道向け新製品を量産</a>
+
+      </h3>
+
+
+<div class="summary-lanes summary-lanes--compact" data-summary-lanes="true">
+  <div class="summary-lanes__spine" aria-hidden="true"></div>
+
+
+
+  <div class="summary-lane summary-lane--fact" data-role="fact">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="summary-lane__short">FACT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【事実・概要】</span>
+      <div class="summary-lane__body"><strong class="emph-bold">SHINDO</strong>が産業資材事業の第2工場を稼働させ、下水道管向けガラス繊維基材の新製品を量産する。新工場は延べ約3700平方メートルだ。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--context" data-role="context">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="5" height="14"/><rect x="13" y="5" width="5" height="14"/></svg>
+      </div>
+      <div class="summary-lane__short">CONTEXT</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【背景・要点】</span>
+      <div class="summary-lane__body">新製品は従来品より薄く、強度を高められる。<strong class="emph-bold">インフラ素材</strong>の量産体制を整え、FRP用基材の用途拡大と<span class="emph-und">製品性能の向上</span>につなげる。</div>
+    </div>
+  </div>
+
+
+
+  <div class="summary-lane summary-lane--outlook" data-role="outlook">
+    <div class="summary-lane__avatar-col" aria-hidden="true">
+      <div class="summary-lane__avatar">
+        <svg class="summary-lane__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 16 9 11 13 14 20 7"/><polyline points="15 7 20 7 20 12"/></svg>
+      </div>
+      <div class="summary-lane__short">OUTLOOK</div>
+    </div>
+    <div class="summary-lane__content">
+      <span class="summary-lane__marker">【影響・展望】</span>
+      <div class="summary-lane__body">試験稼働を経て<strong>2027年4月に本格稼働</strong>する予定だ。下水道更新需要を取り込めるか、品質安定と量産歩留まりを次に見たい。</div>
+    </div>
+  </div>
+
+</div>
+
+    </article>
+
+  </div>
+</section>
+
+
+
+<!-- ============= Editorial (dark navy) ============= -->
+<section class="editorial">
+  <div class="editorial__grid">
+    <div class="editorial__left">
+      <div class="editorial__eyebrow">━━ EDITORIAL</div>
+      <div class="editorial__sigil">§</div>
+      <div class="editorial__meta">§01 OF 7 · MANUFACTURING</div>
+    </div>
+    <div class="editorial__body">
+      <h2>本日のテーマ考察</h2>
+
+      <p>米国はポリシリコンへ15％の追加関税を決め、日清食品は700億円の新工場、TOTOは170億円の研究棟を計画した。オムロンはNVIDIAと半導体実装検査を高度化する。政策・設備・AIを投入しても、<strong class="emph-bold">量産能力</strong>へ変わらなければ競争力にはならず、<span class="emph-und">歩留まり・エネルギー効率・顧客連携</span>が評価点になる。</p>
+      <div class="editorial__cta">
+        <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-07/summary/" class="btn-gold">READ ALL 7 SECTIONS →</a>
+        <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="btn-ghost">BACK TO ARCHIVE</a>
+      </div>
+    </div>
+    <div class="editorial__outline">
+      <div class="editorial__outline-head">━━ ALL § OUTLINE</div>
+
+      <div class="editorial__outline-row is-active">
+        <span>§01</span>
+        <span>総論</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§02</span>
+        <span>為替</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§03</span>
+        <span>AI</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§04</span>
+        <span>IT</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§05</span>
+        <span>経済</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§06</span>
+        <span>ゲーム</span>
+      </div>
+
+      <div class="editorial__outline-row ">
+        <span>§07</span>
+        <span>明日へ</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+</div><!-- /.cat-container -->
+
+<!-- ============= Footer ============= -->
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · MANUFACTURING · 2026-08-07
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">MANUFACTURING</a>
+    <a href="https://github.com/HIDEPON-UMG/News-Grasp">GITHUB</a>
+  </div>
+</footer>
+
+</body>
+</html>

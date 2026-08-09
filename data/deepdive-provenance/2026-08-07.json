@@ -1,0 +1,75 @@
+{
+  "articlePath": "C:\\Users\\hidek\\ng-r807-final\\digest\\DeepDive\\2026-08-07-DeepDive.md",
+  "articleSha256": "8d4f03c306766094fc92537165e96abf4278385dcf990dabfd0ce602dc5e4d7a",
+  "issueDate": "2026-08-07",
+  "manifestSha256": "9fbe4a3c4a4388f2efa444787244f9f5c1c1d6c65683773969b53f4949a407b1",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "5ab19196238915cf8209d3146b5da19486897d5e30fb821cf1ebb519403b63ca",
+  "sources": [
+    {
+      "contentSha256": "ff40ef08525924d4592b63d10c6aa2c97d891bd4c9c819156544fa35d50c2b07",
+      "fetchedAt": "2026-08-09T05:13:09.274786+00:00",
+      "finalUrl": "https://atmarkit.itmedia.co.jp/ait/articles/2608/06/news052.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs"
+      ],
+      "publicHref": "https://atmarkit.itmedia.co.jp/ait/articles/2608/06/news052.html",
+      "url": "https://atmarkit.itmedia.co.jp/ait/articles/2608/06/news052.html"
+    },
+    {
+      "contentSha256": "e498881ffb7cf5552cb1ddde1b7c32f93fa5ed574efff7560508ba0c185147dc",
+      "fetchedAt": "2026-08-09T05:13:10.745449+00:00",
+      "finalUrl": "https://www.47news.jp/14753054.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.47news.jp/14753054.html",
+      "url": "https://www.47news.jp/14753054.html"
+    },
+    {
+      "contentSha256": "1d26e48bb28e9097f59337bc87883e3423091bbde2fabc61c92cf9525ce3eb2e",
+      "fetchedAt": "2026-08-09T05:13:12.110108+00:00",
+      "finalUrl": "https://www.infoq.com/jp/news/2026/08/cloudflare-claude-agents/",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.infoq.com/jp/news/2026/08/cloudflare-claude-agents/",
+      "url": "https://www.infoq.com/jp/news/2026/08/cloudflare-claude-agents/"
+    },
+    {
+      "contentSha256": "d3bcd8e61da154ce7332cb98ee5b95500d77eebf3182fa7dbcf34f66914ffe41",
+      "fetchedAt": "2026-08-09T05:13:12.435371+00:00",
+      "finalUrl": "https://www.isct.ac.jp/ja/news/tfm99air5ms4",
+      "httpStatus": 200,
+      "locations": [
+        "chart.source",
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.isct.ac.jp/ja/news/tfm99air5ms4",
+      "url": "https://www.isct.ac.jp/ja/news/tfm99air5ms4"
+    },
+    {
+      "contentSha256": "caba4f2b724848b882a51b5af04c964fa2557b555a5dcc56e1b488f843671105",
+      "fetchedAt": "2026-08-09T05:13:12.669262+00:00",
+      "finalUrl": "https://www.meti.go.jp/policy/mono_info_service/geniac/geniac_magazine/usercompanies_03.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "relations.source",
+        "table.source",
+        "timeline"
+      ],
+      "publicHref": "https://www.meti.go.jp/policy/mono_info_service/geniac/geniac_magazine/usercompanies_03.html",
+      "url": "https://www.meti.go.jp/policy/mono_info_service/geniac/geniac_magazine/usercompanies_03.html"
+    }
+  ],
+  "status": "Green"
+}

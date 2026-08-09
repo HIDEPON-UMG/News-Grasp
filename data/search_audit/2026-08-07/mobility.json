@@ -1,0 +1,38 @@
+{
+  "date": "2026-08-07",
+  "category_id": "mobility",
+  "queries": [
+    "STAGE1_INPUT build/deduped-candidates/mobility.jsonl",
+    "htmldate validation for selected candidate URLs",
+    "fetch_article_body and fetch_ogp for selected mobility candidates"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "dropped": [
+    {"title":"ロボタクシーの車種・モデル一覧（自動運転）","url":"https://jidounten-lab.com/u_66086","reason":"一覧・解説記事で当日発生ニュース性が低く、採用枠外"},
+    {"title":"7月輸入車販売10%減 EV比率2割迫る､テスラがけん引","url":"https://www.nikkei.com/prime/mobility/article/DGXZQOUC067UI0W6A800C2000000","reason":"有力候補だが、今回は個別製品・市場構造の新材料を優先"},
+    {"title":"「EV嫌いにこそ刺さります」 日本の軽EVは新たな主役になれるのか？ 中国車12%の欧州で揺れる勢力図、その行方とは","url":"https://news.yahoo.co.jp/articles/b4dcdd76a91bd73ea5edc29a9bd0472d30f75b5b","reason":"BYD軽EVの分析が他候補と重なり、一次材料の具体性で選外"},
+    {"title":"EV充電、不足車を優先 船橋総行が新システム","url":"https://www.nikkan.co.jp/articles/view/00788876?gnr_footer=0088293","reason":"充電運用の候補だが、本文確認枠と採用枠の比較で選外"},
+    {"title":"日本メーカーは猛省せよ！ 軽スーパーハイトワゴン初のEV「BYDラッコ」誕生の衝撃","url":"https://www.webcg.net/articles/-/54156","reason":"論評中心で、受注実績を伝える候補より一次材料が弱い"},
+    {"title":"自動運転の“想定外1％”問題、どう越える？ティアフォーが挑む「AIでAI育てる」技術","url":"https://www.sbbit.jp/article/sp/185905","reason":"会員限定の続きがあり、公開範囲の事実量が少ないため選外"},
+    {"title":"2026ADAM発表会 ～21世紀のモビリティの新しい価値観創出を目指して～開催のご案内","url":"https://www.shibaura-it.ac.jp/headline/detail_event/20251105-7180_1.html","reason":"イベント案内でニュース性・当日性が弱い"},
+    {"title":"世界のEV市場、成長の第2幕 「モロッコのVW」が映す EVシフトの転換点","url":"https://business.nikkei.com/atcl/NBD/19/special/02605/?SS=imgview&FD=-754558997","reason":"有料連載の背景記事で、同日ジェトロの横断データと重複"},
+    {"title":"フォード、北米で3万ドル切る低価格EVトラック 車名は「ファゾム」","url":"https://www.nikkei.com/article/DGXZQOGN06B1X0W6A800C2000000/","reason":"重要候補だが、今回は日本市場と新興国を優先"},
+    {"title":"ボルボ日本法人社長「EV充電料金などの支援、対象車種拡大を検討」","url":"https://www.nikkei.com/article/DGXZQOUC044RJ0U6A800C2000000/","reason":"インタビュー記事で、実装の新規性が採用候補より低い"},
+    {"title":"欧州EV、再加速 VW陣営がテスラ追撃 「2万ユーロ台」の消耗戦","url":"https://business.nikkei.com/atcl/NBD/19/special/02606/?SS=imgview&FD=-753635476","reason":"有料連載の背景記事で、ジェトロの市場構造記事と重複"},
+    {"title":"BMWの新EVノイエ・クラッセ、航続900km「国内最長」 800Vで急速充電","url":"https://xtech.nikkei.com/atcl/nxt/column/18/03259/080500039/","reason":"個別車種記事だが、当日の市場インパクト比較で選外"},
+    {"title":"経済性でアジア揺るがすEVシフト ベトナム発「国民EV」 ASEANで価格革命","url":"https://business.nikkei.com/atcl/NBD/19/special/02607/?SS=imgview&FD=-752711955","reason":"有料連載の背景記事で、ジェトロの新興国データと重複"},
+    {"title":"欧州が中国製EVバッテリーへの依存を続ければ105億ユーロの利益を失う可能性も―仏メディア","url":"https://topics.smt.docomo.ne.jp/amp/article/recordchina/world/recordchina-RC_988953","reason":"転載・孫引き色が強く、一次情報度が低い"},
+    {"title":"急速充電、自動運転、エンジン…… 淘汰が進む中国EV 電池でBYD対CATL","url":"https://business.nikkei.com/atcl/NBD/19/special/02608/","reason":"有料連載の背景記事で、当日一次ソースの具体性が弱い"},
+    {"title":"「EV失速」の幻想 安さが世界を塗り替える","url":"https://business.nikkei.com/atcl/NBD/19/special/02604/","reason":"論点整理型の背景記事で、ジェトロのデータ記事と重複"},
+    {"title":"実質199万5000円で｢軽の牙城｣に挑むEV世界一のBYD､軽EV｢ラッコ｣が日本攻略の切り札になる理由","url":"https://toyokeizai.net/articles/-/954039?display=b","reason":"BYD軽EVの背景分析で、受注実績を含むオルタナ記事を優先"},
+    {"title":"株式会社EVモーターズ・ジャパンからの事業譲受に関するお知らせ","url":"https://prtimes.jp/main/html/rd/p/000000011.000184530.html","reason":"事業譲受の規模・利用者影響が小さく、採用枠外"},
+    {"title":"テスラ、低価格車販売で減益 『モデル3』と『モデルY』がグローバルで大黒柱に ロボタクシー移行は停滞中","url":"https://news.yahoo.co.jp/articles/0d522a1bd151f99d9bb17f2c795fe7ddf81eddcd","reason":"Tesla関連記事だが、一次ソース距離と市場構造の具体性で選外"},
+    {"title":"EV、コスパで選ばれる時代に","url":"https://business.nikkei.com/atcl/NBD/19/00107/00397/","reason":"抽象度の高い論点記事で、具体的な当日材料を優先"}
+  ]
+}

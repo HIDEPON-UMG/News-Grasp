@@ -1,0 +1,27 @@
+{
+  "date": "2026-08-07",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR economy OR interest rate when:1d",
+    "Stage1 deduped candidate canonical validation: selected Economy URLs",
+    "Recovery validation: tools/fetch_article_body.py + tools/fetch_ogp.py"
+  ],
+  "raw_results_total": 50,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "source_policy": "immutable_2026-08-07_stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "canonical_validation": {
+    "method": "tools/fetch_article_body.py + tools/fetch_ogp.py",
+    "validated_count": 5,
+    "date_evidence_source": "article-body",
+    "thumb_status": "all selected URLs have external HTTP(S) images"
+  },
+  "recovery": {
+    "reason": "original reporter wrapper exited 126 before category materialization",
+    "lineage": "retained immutable 2026-08-07 candidates and reporter prompt",
+    "external_model_calls_added": 0,
+    "dropped_count": 20
+  }
+}

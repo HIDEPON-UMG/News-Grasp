@@ -1,0 +1,44 @@
+{
+  "date": "2026-08-07",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "Stage1 deduped candidate canonical validation: selected IT URLs",
+    "Stage1 deduped candidate OGP validation: selected IT URLs"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "canonical_validation": {
+    "method": "tools/fetch_article_body.py + tools/fetch_ogp.py",
+    "validated_count": 5,
+    "date_evidence_source": "article-body",
+    "thumb_status": "all_selected_urls_returned_og_image"
+  },
+  "dropped": [
+    {"title":"レコモット、「moconavi LGWANクラウドゲートウェイサービス」で新たに5種類のサービスと連携開始","url":"https://cloud.watch.impress.co.jp/docs/news/2130731.html","reason":"個別サービス連携で影響範囲が限定的"},
+    {"title":"LRM、セキュリティ教育クラウド「セキュリオ」に新機能 従業員の“行動変容”を実現する","url":"https://enterprisezine.jp/news/detail/24830","reason":"個別SaaS機能の紹介で優先度が相対的に低い"},
+    {"title":"AIインフラ・AIデータセンター カンファレンス Online 2026","url":"https://www.sbbit.jp/eventinfo/detail/89749","reason":"イベント告知でニュース性が低い"},
+    {"title":"クラウドフレア株が16%急騰、AIブームで通期利益見通しを上方修正","url":"https://finance.biggo.jp/news/cc5c9082-d162-40fa-b39c-b94982b3fbc9","reason":"二次集約記事で、同社決算の直接報道を優先"},
+    {"title":"Vol.32 Strings ダビング完了しました。 / 天野月 活動25周年記念 リテイクベストアルバム『25』制作支援プロジェクト","url":"https://motion-gallery.net/projects/amano-nijyugonenjer-project/updates/62265","reason":"ITカテゴリとの関連が薄い"},
+    {"title":"使えるねっと「IT・情シス DXPO 東京'26【夏】」に出展","url":"https://prtimes.jp/main/html/rd/p/000000047.000016359.html","reason":"出展告知でニュース性が低い"},
+    {"title":"自工会・部工会、AI性能の高度化を踏まえたサイバーセキュリティ対策強化を要請 Claude Mythosが示す脅威の変質と、サプライチェーンが今すぐ着手すべき対策|セキュリティニュースのセキュリティ対策Lab","url":"https://rocket-boys.co.jp/security-measures-lab/jama-japia-claude-mythos-ai-cybersecurity-supply-chain/","reason":"製造業寄りの続報で、ITカテゴリの上位5件から除外"},
+    {"title":"IT業界の女性は9割が10年で消える 人材枯渇を招く“見えない壁”の正体：特選プレミアムコンテンツガイド","url":"https://techtarget.itmedia.co.jp/tt/news/2608/07/news12.html","reason":"調査解説で当日の主要な企業・基盤ニュースを優先"},
+    {"title":"クラウドフレア クラスA(NET.US)、SEIFERT THOMAS Jが1,651.63万ドルで普通株5.5万株を売却(moomoo証券)","url":"https://finance.yahoo.co.jp/news/detail/5ffd9246358308307488ba98cc54fe4d45a8b6cb","reason":"個別インサイダー取引で決算記事と重複"},
+    {"title":"＜Ｉｔ’s涼タイム＞北陸電力（富山市） 打ち水でひんやり","url":"https://webun.jp/articles/-/1070434","reason":"ITカテゴリとの関連がない"},
+    {"title":"遺失物管理サービス「落とし物クラウドfind」を、関東自動車・茨城交通のバスに導入…チャットで24時間問い合わせOK","url":"https://carcareplus.jp/article/2026/08/07/15068.html","reason":"個別導入事例で影響範囲が限定的"},
+    {"title":"BBIX、「OCX」の接続サービスで「Google Cloud」に対応","url":"https://cloud.watch.impress.co.jp/docs/news/2131074.html","reason":"ANAの大規模クラウド刷新と論点が近く、相対的に影響が小さい"},
+    {"title":"LenovoのITインフラ事業責任者が語った「DellとHPE追撃の勝算」","url":"https://japan.zdnet.com/article/35251381/","reason":"インタビュー中心で具体的な新規発表が少ない"},
+    {"title":"「選定ミス」で運用コスト増？ クラウドPBX導入前に見るべき7つのチェックリスト","url":"https://www.sbbit.jp/document/sp/24260","reason":"資料案内でニュース性が低い"},
+    {"title":"セキュリティ人材の実践的育成に強み--英Hack The Box、日本市場で展開強化","url":"https://japan.zdnet.com/article/35251217/","reason":"市場展開の説明で、当日の標準化・決算ニュースを優先"},
+    {"title":"【オンライン】ランサムウェア攻撃の最新動向と対策検証 ― 自動セキュリティ検証で確かめる自組織の防御の実力","url":"https://www.sbbit.jp/eventinfo/89925?ref=rss","reason":"イベント告知でニュース性が低い"},
+    {"title":"未経験ITエンジニア転職、休日出勤は4割超 それでも8割が満足と答えたワケ：調査から見る「リアルな声」","url":"https://techtarget.itmedia.co.jp/tt/news/2608/07/news11.html","reason":"人材調査で当日の基盤・企業ニュースを優先"},
+    {"title":"「次世代のエンジニアへ：さくらのクラウド検定対策ウェビナー」を開催いたします","url":"https://www.sakura.ad.jp/corporate/information/events/2026/08/06/1968225558/","reason":"ウェビナー告知でニュース性が低い"},
+    {"title":"「実践事例から学ぶ、クラウド活用と運用最適化セミナー ～ミライト・ワンとさくらインターネットが語るクラウド基盤の選び方～」を開催いたします","url":"https://www.sakura.ad.jp/corporate/information/events/2026/08/06/1968225554/","reason":"セミナー告知でニュース性が低い"},
+    {"title":"6日の米株式市場、中国ネット・IT株はまちまち(トレーダーズ・ウェブ)","url":"https://finance.yahoo.co.jp/news/detail/15d25f0ad357531d74606532f8d422325197ebed","reason":"市場概況でIT企業の個別ニュースより優先度が低い"}
+  ]
+}

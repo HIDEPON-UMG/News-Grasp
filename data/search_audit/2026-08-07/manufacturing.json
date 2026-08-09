@@ -1,0 +1,39 @@
+{
+  "date": "2026-08-07",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR \"semiconductor\" OR \"supply chain\" when:1d",
+    "site:sankei.com 2026/8/7 ポリシリコン 15％ 追加関税 最低輸入価格",
+    "site:kensetsunews.com 日清 茨城 4.1万㎡ カップヌードル工場 700億円",
+    "site:xtech.nikkei.com オムロン NVIDIA 半導体実装検査 AIエージェント"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "coverage_terms_checked": ["TSMC", "Samsung", "Intel", "NVIDIA", "Foxconn", "Toyota"],
+  "dropped": [
+    {"title":"米、半導体・太陽光パネル向け素材保護で貿易措置 中国に対抗","url":"https://jp.reuters.com/economy/25I2HJP54FJBDJHUSTNFXMYFIQ-2026-08-06/","reason":"同一ポリシーの産経記事を本文確認できたため、取得不能なReuters版は重複採用しなかった"},
+    {"title":"前場に注目すべき3つのポイント～半導体やAI関連株の底堅さを見極め～","url":"https://kabutan.jp/news/marketnews/?b=n202608070483","reason":"市況解説で、製造現場の構造変化を伝える記事を優先した"},
+    {"title":"〔東京株式〕小反発＝半導体関連銘柄の一角などに買い（7日前場寄り付き）(時事通信)","url":"https://finance.yahoo.co.jp/news/detail/971b727e8144e2febbc016ef78f095c06d1da60c","reason":"市況記事で、製造業の生産・技術テーマから外れるため"},
+    {"title":"半導体業界の現場知見をもとに、求職者の経験を業界目線で読み解く「LAYLA-HR」ベータ版を公開","url":"https://prtimes.jp/main/html/rd/p/000000020.000053531.html","reason":"人材サービスの発表で、製造能力・技術・供給網への直接性が相対的に低いため"},
+    {"title":"AI時代の半導体産業（2）AIの社会実装で活躍広がる半導体（世界） | 特集 - 地域・分析レポート - 海外ビジネス情報","url":"https://www.jetro.go.jp/biz/areareports/special/2026/0801/adf38a7c21c7f8ea.html","reason":"背景分析で、当日発生の製造ニュースではないため"},
+    {"title":"中国と米国の経済界が関係を強化し、サプライチェーン協力の新たな機会を模索","url":"https://www.shimotsuke.co.jp/articles/-/1399354","reason":"経済界交流の一般報道で、具体的な生産計画が薄いため"},
+    {"title":"習近平政権が招いた「半導体不足」の代償…中国AI戦略に広がる深刻なひずみ","url":"https://diamond.jp/articles/amp/396482","reason":"論評・背景解説で、当日発生の製造ニュースではないため"},
+    {"title":"日本サプライチェーン管理（SCM）ソフトウェア市場は勢いを増しており、2034年までに米ドル 1,616.7 百万に達し、CAGR 3.42%で成長すると予測","url":"https://www.atpress.ne.jp/news/8898274","reason":"市場予測の転載で、製造業の具体的な供給網変化ではないため"},
+    {"title":"半導体振興へ有識者会議 三重県、一層の集積目指す","url":"https://www.chukei-news.co.jp/news/2026/08/07/OK0002608070701_05/","reason":"地域政策の検討段階で、具体的な生産投資の規模が不明なため"},
+    {"title":"ニッパツ－反発 半導体プロセス部品に約60億円投資〔DZH 個別株情報〕(時事通信)","url":"https://finance.yahoo.co.jp/news/detail/35166ab9f27dda96a151115ef01e9f9552e9d35d","reason":"株価コメント中心で、一次情報度が採用記事より低いため"},
+    {"title":"AI向け半導体の「主役」に迫る（世界） AI時代の半導体産業（1）","url":"https://www.jetro.go.jp/biz/areareports/special/2026/0801/1aee4b7856c0c87c.html","reason":"背景分析で、当日発生の製造ニュースではないため"},
+    {"title":"【8/21・22】工場全体の生産性を高める「LIVLOTS 新機能紹介」イベントを開催","url":"https://prtimes.jp/main/html/rd/p/000000136.000140940.html","reason":"イベント告知で、ニュースとしての新規事実が薄いため"},
+    {"title":"スペースＸとテスラ、ＡＩ半導体工場「テラファブ」に当初168億ドル投資","url":"https://jp.reuters.com/economy/YLNLYVNBR5KAHP7DBWI54CXXMU-2026-08-06/","reason":"本文を独立確認できず、当日性と内容の裏取りを完了できないため"},
+    {"title":"半導体やAI関連株の底堅さを見極め／オープニングコメント(フィスコ)","url":"https://finance.yahoo.co.jp/news/detail/779e26f7355c065804ad48f9d20ff7463fadd8cc","reason":"市況コメントで、製造業の構造変化を伝える記事を優先した"},
+    {"title":"燃料ガス式綿菓子製造機の世界市場（2026年～2032年）、市場規模・分析レポートを発表","url":"https://newscast.jp/smart/news/6988600","reason":"市場調査の転載で、製造業の主要読者への影響が小さいため"},
+    {"title":"【特許】オルガノ、純水製造システム全体の水回収率向上","url":"https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC271ET0X20C26A7000000","reason":"特許見出しのみでは発明内容と生産影響の本文確認が不足するため"},
+    {"title":"米政権、ポリシリコン製品に15％関税＝半導体原材料、国内生産促す(時事通信)","url":"https://finance.yahoo.co.jp/news/detail/ce234ee2d0f9c4139dccb764d5154ae29a6079ab","reason":"同一ポリシーの産経記事を優先したため"},
+    {"title":"半導体材料に15％追加関税 米、最低輸入価格も導入（共同通信）","url":"https://news.yahoo.co.jp/articles/0a0e1d47464840cd9c6dca346d6426d0c2396b6f","reason":"同一ポリシーの産経記事を優先したため"},
+    {"title":"レスター、インドの技術商社と合弁 現地製造業への半導体拡販に足場","url":"https://www.nikkei.com/article/DGXZQOUC044Z10U6A800C2000000/","reason":"有料本文の独立確認が不足するため"},
+    {"title":"HKSがタイでサスペンション製造・販売事業を開始 新ブランドも発売予定","url":"https://news.yahoo.co.jp/articles/315c546166bf4f879565bd47c03bdd99691a3c6a","reason":"製品販売寄りで、製造競争力への構造的インパクトが相対的に小さいため"}
+  ]
+}
