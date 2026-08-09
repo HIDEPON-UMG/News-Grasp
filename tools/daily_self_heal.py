@@ -1368,6 +1368,115 @@ def verify_public_audio(*, repo_root: Path, date: str, public_base_url: str) -> 
     return {"checked": True, "ok": True, "latest_audio_url": audio_url}
 
 
+def _canonical_public_text_sha256(text: str) -> str:
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def verify_historical_public_archive(
+    *, repo_root: Path, date: str, public_base_url: str
+) -> dict:
+    """最新号を維持したまま、過去号3面と同日音声2本の公開一致を検証する。"""
+
+    base = public_base_url.rstrip("/") + "/"
+    surfaces = {
+        "daily": (repo_root / "docs" / date / "index.html", urljoin(base, f"{date}/")),
+        "summary": (
+            repo_root / "docs" / date / "summary" / "index.html",
+            urljoin(base, f"{date}/summary/"),
+        ),
+        "deepdive": (
+            repo_root / "docs" / "deepdive" / date / "index.html",
+            urljoin(base, f"deepdive/{date}/"),
+        ),
+    }
+    pages: dict[str, dict] = {}
+    missing_local = [name for name, (path, _url) in surfaces.items() if not path.exists()]
+    if missing_local:
+        return {
+            "ok": False,
+            "reason": "historical_archive_local_missing",
+            "missing": missing_local,
+        }
+    try:
+        for name, (path, url) in surfaces.items():
+            local_text = path.read_text(encoding="utf-8-sig")
+            public_text = _fetch_text(url)
+            local_sha256 = _canonical_public_text_sha256(local_text)
+            public_sha256 = _canonical_public_text_sha256(public_text)
+            pages[name] = {
+                "url": url,
+                "local_sha256": local_sha256,
+                "public_sha256": public_sha256,
+                "public_text": public_text,
+            }
+    except (OSError, urllib.error.URLError, TimeoutError, UnicodeDecodeError) as exc:
+        return {
+            "ok": False,
+            "reason": "historical_archive_fetch_failed",
+            "detail": str(exc),
+            "pages": pages,
+        }
+    mismatched = [
+        name
+        for name, row in pages.items()
+        if row["local_sha256"] != row["public_sha256"]
+    ]
+    if mismatched:
+        return {
+            "ok": False,
+            "reason": "historical_archive_mismatch",
+            "mismatched": mismatched,
+            "pages": pages,
+        }
+
+    audio_specs = {
+        "daily": ("summary", "audio-daily"),
+        "deepdive": ("deepdive", "audio-deepdive"),
+    }
+    audio_urls: dict[str, str] = {}
+    for name, (surface, release_tag) in audio_specs.items():
+        pattern = re.compile(
+            rf"https://github\.com/HIDEPON-UMG/News-Grasp/releases/download/"
+            rf"{release_tag}/{re.escape(date)}\.mp3(?:\?[^\"'<>\s]+)?"
+        )
+        match = pattern.search(str(pages[surface]["public_text"]))
+        if match is None:
+            return {
+                "ok": False,
+                "reason": "historical_archive_audio_missing",
+                "audio_kind": name,
+                "pages": pages,
+            }
+        audio_urls[name] = match.group(0)
+    try:
+        unavailable = [name for name, url in audio_urls.items() if not _url_head_ok(url)]
+    except (urllib.error.URLError, TimeoutError) as exc:
+        return {
+            "ok": False,
+            "reason": "historical_archive_audio_fetch_failed",
+            "detail": str(exc),
+            "audio_urls": audio_urls,
+            "pages": pages,
+        }
+    if unavailable:
+        return {
+            "ok": False,
+            "reason": "historical_archive_audio_not_200",
+            "unavailable": unavailable,
+            "audio_urls": audio_urls,
+            "pages": pages,
+        }
+    for row in pages.values():
+        row.pop("public_text", None)
+    return {
+        "ok": True,
+        "reason": "",
+        "pages": pages,
+        "audio": {"checked": True, "ok": True, "urls": audio_urls},
+    }
+
+
 def _load_podcast_row(state_path: Path, date: str) -> dict:
     if not state_path.exists():
         return {}
@@ -2173,7 +2282,29 @@ def verify_publish(
         try:
             with urllib.request.urlopen(status_url, timeout=20) as res:  # noqa: S310 - fixed public URL from runner config
                 status = json.loads(res.read().decode("utf-8-sig"))
-            if status.get("result") == "published_ok" and status.get("date") == date:
+            status_date = str(status.get("date") or "")
+            status_mode = ""
+            historical_archive: dict = {}
+            if status.get("result") == "published_ok" and status_date == date:
+                status_mode = "current_issue"
+            elif (
+                status.get("result") == "published_ok"
+                and re.fullmatch(r"\d{4}-\d{2}-\d{2}", status_date)
+                and status_date > date
+            ):
+                historical_archive = verify_historical_public_archive(
+                    repo_root=repo_root,
+                    date=date,
+                    public_base_url=public_base_url,
+                )
+                if historical_archive.get("ok"):
+                    status_mode = "historical_archive"
+                else:
+                    last_error = (
+                        f"{historical_archive.get('reason')}: "
+                        f"{historical_archive!r}"
+                    )
+            if status_mode:
                 pwa = verify_public_sw_version(repo_root=repo_root, public_base_url=public_base_url)
                 if not pwa["ok"]:
                     return {
@@ -2185,7 +2316,15 @@ def verify_publish(
                         "pages": pages,
                         "pwa": pwa,
                     }
-                audio = verify_public_audio(repo_root=repo_root, date=date, public_base_url=public_base_url)
+                audio = (
+                    dict(historical_archive["audio"])
+                    if status_mode == "historical_archive"
+                    else verify_public_audio(
+                        repo_root=repo_root,
+                        date=date,
+                        public_base_url=public_base_url,
+                    )
+                )
                 if audio["ok"]:
                     podcast = {"checked": False, "ok": True, "reason": "podcast_not_required"}
                     if require_podcast:
@@ -2212,6 +2351,9 @@ def verify_publish(
                         "reason": "",
                         **head_state,
                         "url": status_url,
+                        "status_mode": status_mode,
+                        "public_status_date": status_date,
+                        "historical_archive": historical_archive,
                         "deploy_workflow": deploy_workflow,
                         "pages": pages,
                         "pwa": pwa,
@@ -2223,12 +2365,16 @@ def verify_publish(
                     "reason": audio["reason"],
                     **head_state,
                     "url": status_url,
+                    "status_mode": status_mode,
+                    "public_status_date": status_date,
+                    "historical_archive": historical_archive,
                     "deploy_workflow": deploy_workflow,
                     "pages": pages,
                     "pwa": pwa,
                     "audio": audio,
                 }
-            last_error = f"publish-status mismatch: {status!r}"
+            if not last_error:
+                last_error = f"publish-status mismatch: {status!r}"
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
             last_error = str(exc)
         if time.monotonic() >= deadline:

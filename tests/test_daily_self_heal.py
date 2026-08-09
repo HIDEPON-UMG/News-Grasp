@@ -1849,6 +1849,180 @@ def test_verify_publish_rejects_public_status_mismatch(monkeypatch, tmp_path: Pa
     assert result["reason"] == "public_sentinel_missing"
 
 
+def _write_historical_public_archive(tmp_path: Path, date: str) -> dict[str, str]:
+    daily_audio = (
+        "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
+        f"audio-daily/{date}.mp3?v=dailyhash"
+    )
+    deepdive_audio = (
+        "https://github.com/HIDEPON-UMG/News-Grasp/releases/download/"
+        f"audio-deepdive/{date}.mp3?v=deephash"
+    )
+    pages = {
+        f"{date}/": f"<html><title>{date}</title></html>",
+        f"{date}/summary/": f'<html><audio src="{daily_audio}"></audio></html>',
+        f"deepdive/{date}/": f'<html><audio src="{deepdive_audio}"></audio></html>',
+    }
+    for suffix, body in pages.items():
+        target = tmp_path / "docs" / suffix / "index.html"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+    return {**pages, "daily_audio": daily_audio, "deepdive_audio": deepdive_audio}
+
+
+def test_verify_publish_accepts_historical_archive_after_newer_daily_publish(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """後日復旧は最新日のroot sentinelを巻き戻さず、対象日archiveをHEAD一致で証明する。"""
+    date = "2026-08-07"
+    archive = _write_historical_public_archive(tmp_path, date)
+    monkeypatch.setattr(dsh, "_git_output", lambda _repo, args: "abc123\trefs/heads/main" if args[0] == "ls-remote" else "abc123")
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
+    monkeypatch.setattr(dsh, "verify_public_sw_version", lambda **_kwargs: {"ok": True})
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str = ""):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if url.endswith("publish-status.json"):
+            return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-08-09"}))
+        if url in {archive["daily_audio"], archive["deepdive_audio"]}:
+            return FakeResponse()
+        base = "https://example.com/News-Grasp/"
+        suffix = url.removeprefix(base)
+        if suffix in archive:
+            return FakeResponse(archive[suffix])
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    result = verify_publish(
+        repo_root=tmp_path,
+        date=date,
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is True
+    assert result["status_mode"] == "historical_archive"
+    assert result["historical_archive"]["audio"]["ok"] is True
+
+
+def test_verify_publish_rejects_historical_archive_content_drift(monkeypatch, tmp_path: Path) -> None:
+    date = "2026-08-07"
+    archive = _write_historical_public_archive(tmp_path, date)
+    monkeypatch.setattr(dsh, "_git_output", lambda _repo, args: "abc123\trefs/heads/main" if args[0] == "ls-remote" else "abc123")
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str = ""):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if url.endswith("publish-status.json"):
+            return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-08-09"}))
+        suffix = url.removeprefix("https://example.com/News-Grasp/")
+        if suffix == f"{date}/summary/":
+            return FakeResponse("<html>stale summary</html>")
+        if suffix in archive:
+            return FakeResponse(archive[suffix])
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    result = verify_publish(
+        repo_root=tmp_path,
+        date=date,
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "public_sentinel_missing"
+    assert "historical_archive_mismatch" in result["detail"]
+
+
+def test_verify_publish_rejects_historical_archive_missing_surface(monkeypatch, tmp_path: Path) -> None:
+    date = "2026-08-07"
+    archive = _write_historical_public_archive(tmp_path, date)
+    monkeypatch.setattr(dsh, "_git_output", lambda _repo, args: "abc123\trefs/heads/main" if args[0] == "ls-remote" else "abc123")
+    _mock_deploy_workflow_success(monkeypatch)
+    _mock_pages_build_success(monkeypatch)
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, body: str = ""):
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return self._body.encode("utf-8")
+
+    def fake_urlopen(req, *args, **kwargs):
+        url = getattr(req, "full_url", str(req))
+        if url.endswith("publish-status.json"):
+            return FakeResponse(json.dumps({"result": "published_ok", "date": "2026-08-09"}))
+        suffix = url.removeprefix("https://example.com/News-Grasp/")
+        if suffix == f"deepdive/{date}/":
+            raise dsh.urllib.error.URLError("not found")
+        if suffix in archive:
+            return FakeResponse(archive[suffix])
+        raise AssertionError(url)
+
+    monkeypatch.setattr(dsh.urllib.request, "urlopen", fake_urlopen)
+    result = verify_publish(
+        repo_root=tmp_path,
+        date=date,
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "public_sentinel_missing"
+    assert "historical_archive_fetch_failed" in result["detail"]
+
+
 PUBLISH_COMMIT = "a" * 40
 _REAL_VERIFY_DEEPDIVE_QUALITY_HEAD_BINDING = (
     dsh._verify_deepdive_quality_head_binding
