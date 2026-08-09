@@ -814,6 +814,94 @@ def test_verify_publish_prefers_successful_push_head_over_deploy_ancestor(monkey
     assert seen == {"workflow": source_head, "pages": source_head}
 
 
+def test_verify_publish_accepts_clean_artifact_head_before_control_only_descendant(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """公開artifact commit後のcontrol-only更新は、公開済み成果をRedへ戻さない。"""
+    deploy_head, source_head = _init_deploy_history(tmp_path)
+    subprocess.run(
+        ["git", "switch", "--detach", deploy_head],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    real_git_output = dsh._git_output
+
+    def fake_git(repo_root: Path, args: list[str]) -> str:
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{source_head}\trefs/heads/main"
+        return real_git_output(repo_root, args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {"result": "published_ok", "date": "2026-06-15"}
+            ).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(
+        dsh,
+        "verify_deploy_workflow",
+        lambda **_kwargs: {
+            "ok": False,
+            "reason": "deploy_workflow_not_success",
+            "status": "",
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "wait_for_deploy_workflow_covering_deploy_head",
+        lambda **_kwargs: {
+            "ok": True,
+            "reason": "",
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": deploy_head,
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_pages_build",
+        lambda **kwargs: {
+            "ok": True,
+            "reason": "",
+            "status": "built",
+            "commit": kwargs["expected_commit"],
+        },
+    )
+    monkeypatch.setattr(
+        dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse()
+    )
+    monkeypatch.setattr(
+        dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'expected-version';\n"
+    )
+    monkeypatch.setattr(
+        dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True}
+    )
+
+    result = verify_publish(
+        repo_root=tmp_path,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+
+    assert result["ok"] is True, result.get("reason")
+    assert result["artifact_head"] == deploy_head
+    assert result["local_head"] == source_head
+    assert result["remote_head"] == source_head
+    assert result["deploy_relevant_head"] == deploy_head
+
+
 def test_verify_publish_rejects_deploy_pages_workflow_commit_mismatch(monkeypatch, tmp_path: Path) -> None:
     """Deploy Pages workflow run が別 commit なら publish_complete にしない。"""
     _write_local_sw(tmp_path)

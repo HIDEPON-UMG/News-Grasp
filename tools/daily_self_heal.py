@@ -2043,17 +2043,44 @@ def verify_publish(
     require_podcast: bool = False,
     podcast_state_path: Path | None = None,
 ) -> dict:
-    local_head = _git_output(repo_root, ["rev-parse", "HEAD"])
+    artifact_head = _git_output(repo_root, ["rev-parse", "HEAD"])
     remote_head = _git_output(repo_root, ["ls-remote", remote, f"refs/heads/{branch}"]).split()[0]
-    if local_head != remote_head:
-        return {"ok": False, "reason": "remote_head_mismatch", "local_head": local_head, "remote_head": remote_head}
+    source_head = artifact_head
+    if artifact_head != remote_head:
+        if not _commit_is_ancestor(repo_root, artifact_head, remote_head):
+            return {
+                "ok": False,
+                "reason": "remote_head_mismatch",
+                "artifact_head": artifact_head,
+                "local_head": artifact_head,
+                "remote_head": remote_head,
+            }
+        remote_resolution = resolve_deploy_head(
+            repo_root=repo_root, source_head=remote_head
+        )
+        if (
+            not remote_resolution.get("ok")
+            or remote_resolution.get("deploy_head") != artifact_head
+        ):
+            return {
+                "ok": False,
+                "reason": "artifact_publish_head_stale",
+                "artifact_head": artifact_head,
+                "local_head": artifact_head,
+                "remote_head": remote_head,
+                "deploy_head_resolution": remote_resolution,
+            }
+        source_head = remote_head
     if _is_git_worktree(repo_root):
-        deploy_resolution = resolve_deploy_head(repo_root=repo_root, source_head=local_head)
+        deploy_resolution = resolve_deploy_head(
+            repo_root=repo_root, source_head=source_head
+        )
         if not deploy_resolution["ok"]:
             return {
                 "ok": False,
                 "reason": deploy_resolution["reason"],
-                "local_head": local_head,
+                "artifact_head": artifact_head,
+                "local_head": source_head,
                 "remote_head": remote_head,
                 "deploy_head_resolution": deploy_resolution,
             }
@@ -2062,8 +2089,8 @@ def verify_publish(
         deploy_resolution = {
             "ok": True,
             "reason": "",
-            "source_head": local_head,
-            "deploy_head": local_head,
+            "source_head": source_head,
+            "deploy_head": source_head,
             "resolution": "source_head_without_git_metadata",
             "deploy_relevant_paths": list(_DEPLOY_RELEVANT_PATHS),
         }
@@ -2076,9 +2103,9 @@ def verify_publish(
         repo_root=repo_root,
         remote=remote,
         branch=branch,
-        expected_commit=local_head,
+        expected_commit=source_head,
     )
-    deploy_head = local_head
+    deploy_head = source_head
     if source_workflow.get("ok"):
         deploy_workflow = source_workflow
     elif _is_retryable_deploy_workflow(source_workflow) and str(source_workflow.get("status") or ""):
@@ -2088,18 +2115,18 @@ def verify_publish(
             repo_root=repo_root,
             remote=remote,
             branch=branch,
-            expected_commit=local_head,
+            expected_commit=source_head,
             deadline=deadline,
             poll_sec=poll_sec,
         )
     elif not _is_retryable_deploy_workflow(source_workflow):
         deploy_workflow = source_workflow
-    elif deploy_relevant_head != local_head:
+    elif deploy_relevant_head != source_head:
         deploy_workflow = wait_for_deploy_workflow_covering_deploy_head(
             repo_root=repo_root,
             remote=remote,
             branch=branch,
-            source_head=local_head,
+            source_head=source_head,
             deploy_relevant_head=deploy_relevant_head,
             deadline=deadline,
             poll_sec=poll_sec,
@@ -2111,12 +2138,13 @@ def verify_publish(
             repo_root=repo_root,
             remote=remote,
             branch=branch,
-            expected_commit=local_head,
+            expected_commit=source_head,
             deadline=deadline,
             poll_sec=poll_sec,
         )
     head_state = {
-        "local_head": local_head,
+        "artifact_head": artifact_head,
+        "local_head": source_head,
         "remote_head": remote_head,
         "deploy_head": deploy_head,
         "deploy_relevant_head": deploy_relevant_head,
@@ -2549,12 +2577,14 @@ def verify_publish_complete(
 
     local_head = str(publish.get("local_head") or "")
     remote_head = str(publish.get("remote_head") or "")
+    artifact_head = str(publish.get("artifact_head") or local_head)
     deploy_head = str(publish.get("deploy_head") or local_head)
     if not local_head or local_head != remote_head:
         return {**manifest, "reason": "publish_commit_mismatch"}
     manifest["source_commit"] = local_head
+    manifest["artifact_commit"] = artifact_head
     manifest["deploy_head"] = deploy_head
-    if str(quality_head_binding.get("head") or "") != local_head:
+    if str(quality_head_binding.get("head") or "") != artifact_head:
         return {**manifest, "reason": "deepdive_quality_head_mismatch"}
     manifest_rel = str(distribution.get("manifest_path") or f"data/distribution/{date}.json")
     manifest_in_head = _git_tree_has_path(repo_root, local_head, manifest_rel)
