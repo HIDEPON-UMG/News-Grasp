@@ -1024,7 +1024,7 @@ def _operational_closure(
     negative_fixture = (
         Path(__file__).resolve().parents[1]
         / "tests"
-        / "test_autonomous_operations_semantic_red.py"
+        / "test_historical_failure_scenarios.py"
     )
     scenario_sha = hashlib.sha256(
         json.dumps(
