@@ -30,6 +30,11 @@ def _seal(value: dict[str, object]) -> dict[str, object]:
 
 
 def _green_completion(control, run_intent: str) -> dict[str, object]:
+    lineage = control._completion_lineage(
+        issue_date="2026-08-02",
+        run_intent=run_intent,
+        run_id="test-run",
+    )
     return _seal(
         {
             "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
@@ -38,6 +43,7 @@ def _green_completion(control, run_intent: str) -> dict[str, object]:
             "publishStatusIssueDate": "2026-08-02",
             "runIntent": run_intent,
             "runId": "test-run",
+            **lineage,
             "checks": {field: True for field in control.COMPLETION_FIELDS},
             "evidenceSha256": {
                 field: "9" * 64 for field in control.COMPLETION_FIELDS
@@ -158,6 +164,7 @@ def test_audit_normal_requires_actual_same_date_public_green(monkeypatch) -> Non
     )
     assert decision["terminal"] == "audit_normal_green"
     assert decision["completionEvidenceSha256"]
+    assert decision["completionEvidence"]["receiptSha256"] == decision["completionEvidenceSha256"]
 
 
 def test_caller_boolean_or_url_200_cannot_produce_green(monkeypatch) -> None:
@@ -409,10 +416,16 @@ def test_terminal_writer_has_internal_root_and_only_three_terminals(
                 "root_cause_hardening",
                 "unrelated_cleanup",
             ],
+            "owner": "News-Grasp Operations",
+            "nextAction": "resume_same_date_recovery_from_verified_stop_point",
+            "evidenceSha256": "a" * 64,
         }
     )
     terminal = control.write_audit_terminal(decision)
     assert terminal["decisionReceiptSha256"] == decision["receiptSha256"]
+    assert terminal["owner"] == "News-Grasp Operations"
+    assert terminal["nextAction"] == "resume_same_date_recovery_from_verified_stop_point"
+    assert terminal["evidenceSha256"] == "a" * 64
     assert (incident_root / "2026-08-02-audit-terminal.json").is_file()
     parser_source = Path(control.__file__).read_text(encoding="utf-8-sig")
     assert "--terminal-root" not in parser_source
@@ -424,7 +437,8 @@ def test_actual_completion_verifier_owns_all_required_gates() -> None:
     source = Path(control.__file__).read_text(encoding="utf-8-sig")
     assert '"tools.validate_daily_quality"' in source
     assert '"--require-deepdive"' in source
-    assert '"verify-publish-complete"' in source
+    assert "from tools.daily_self_heal import verify_publish_complete" in source
+    assert "publish = verify_publish_complete(" in source
     assert 'child_env["PYTHONUTF8"] = "1"' in source
     assert 'child_env["PYTHONIOENCODING"] = "utf-8"' in source
     assert 'runner_state.get("run_intent") != expected_run_intent' in source
@@ -947,6 +961,13 @@ def test_execute_runs_one_typed_recovery_then_writes_recovered_terminal(
     runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
     runner.parent.mkdir(parents=True)
     runner.write_text("# test runner\n", encoding="utf-8")
+    canonical_repo = tmp_path / "canonical-repo"
+    canonical_runner = canonical_repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    canonical_runner.parent.mkdir(parents=True)
+    canonical_runner.write_text("# canonical test runner\n", encoding="utf-8")
+    python = canonical_repo / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_bytes(b"test-python")
     authority = tmp_path / "authority.json"
     authority.write_text("{}", encoding="utf-8")
     decisions = iter(
@@ -969,6 +990,7 @@ def test_execute_runs_one_typed_recovery_then_writes_recovered_terminal(
     commands: list[list[str]] = []
     terminals: list[dict[str, object]] = []
     monkeypatch.setattr(control, "decide_audit_recovery", lambda _payload: next(decisions))
+    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", canonical_repo)
     monkeypatch.setattr(control, "_resolve_artifact_repo_root", lambda _payload: repo)
     monkeypatch.setattr(control, "_contained_file", lambda *args, **kwargs: authority)
     monkeypatch.setattr(control, "_git_text", lambda *args, **kwargs: "b" * 40)

@@ -50,7 +50,7 @@ param(
     [switch] $Stage2EditorSmokeOnly,
     [switch] $StopAfterEditorStart,
     [switch] $StopBeforeDeepDive,
-    [ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
+    [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
     [string] $ResumeFromStage = '',
     [string] $RepoDirOverride = '',
     [string] $OpsRepoRootOverride = '',
@@ -64,7 +64,10 @@ param(
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
     [string] $ScheduledAuthorityEvidencePath = '',
+    [string] $ScheduledFailureReceiptRootOverride = '',
+    [string] $LegacyTaskReceiptPathOverride = '',
     [string] $FinalizeVerifiedPublishManifest = '',
+    [string] $RecoveryDecisionPath = '',
     [int] $PublishVerifyWaitSec = 600,
     [int] $PublishVerifyPollSec = 30,
     [switch] $ForceFullRerun
@@ -106,32 +109,29 @@ function Invoke-LegacyScheduledProductionTrampoline {
     ) {
         return
     }
-    $bootstrapPath = Join-Path (Split-Path -Parent $PSCommandPath) 'news-grasp-bootstrap.ps1'
-    $bootstrapArgs = @(
-        '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-        '-File', $bootstrapPath,
-        '-Start', '-UseProductionRuntime',
-        '-ScheduledTaskName', 'News-Grasp Runner',
-        '-LegacyDirectEntrypoint'
-    )
-    $previousTrampoline = $env:NEWS_GRASP_LEGACY_TRAMPOLINE
-    try {
-        $env:NEWS_GRASP_LEGACY_TRAMPOLINE = '1'
-        $proc = Start-Process -FilePath 'powershell' -ArgumentList $bootstrapArgs -WindowStyle Hidden -PassThru -Wait
-        $exitCode = [int]$proc.ExitCode
-    } catch {
-        $logPath = Join-Path (Split-Path -Parent $PSCommandPath) 'news-grasp-logs\startup-trampoline.log'
-        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $logPath) | Out-Null
-        Add-Content -LiteralPath $logPath -Value "ERROR: LEGACY_SCHEDULED_TRAMPOLINE_FAILED $($_.Exception.Message)" -Encoding UTF8
-        $exitCode = 72
-    } finally {
-        if ($null -eq $previousTrampoline) {
-            Remove-Item Env:\NEWS_GRASP_LEGACY_TRAMPOLINE -ErrorAction SilentlyContinue
-        } else {
-            $env:NEWS_GRASP_LEGACY_TRAMPOLINE = $previousTrampoline
-        }
+    $receiptPath = if ($LegacyTaskReceiptPathOverride) {
+        $LegacyTaskReceiptPathOverride
+    } else {
+        Join-Path (Split-Path -Parent $PSCommandPath) 'news-grasp-legacy-task-tombstone.json'
     }
-    exit $exitCode
+    $receipt = [ordered]@{
+        schemaVersion = "NEWS_GRASP_LEGACY_TASK_TOMBSTONE_V1"
+        status = "legacy_task_superseded"
+        legacy_task_name = "News-Grasp Runner"
+        canonical_task_name = "News-Grasp Production"
+        scheduled_attempt_status = "not_started_legacy_tombstone"
+        production_started = $false
+        action_summary = $actionSummary
+        task_last_run_time = $info.LastRunTime.ToString('o')
+        observed_at = (Get-Date).ToString('o')
+    }
+    $parent = Split-Path -Parent $receiptPath
+    if ($parent) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+    $temporary = "$receiptPath.tmp.$PID"
+    $json = $receipt | ConvertTo-Json -Depth 8
+    [IO.File]::WriteAllText($temporary, $json + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $temporary -Destination $receiptPath -Force
+    exit 0
 }
 
 Invoke-LegacyScheduledProductionTrampoline
@@ -145,6 +145,7 @@ if ($NoPublish) { $NoPush = $true }
 $ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')
 $ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')
 $ResumeGenerationQualityRepair = $ResumeFromStage -eq 'generation-quality-repair'
+$ResumeAfterReporter = $ResumeFromStage -in @('post-reporter', 'editor')
 # 子 Python の stdin/stdout/stderr を UTF-8 に固定 (境界 1 箇所集約)。日本語版 Windows
 # では子 Python の stderr が pipe 出力時 locale (CP932) になり、[Console]::OutputEncoding
 # = UTF8 の reader が誤デコード → repair プロンプトへ渡る gate stderr が文字化けしていた
@@ -215,6 +216,7 @@ $OpsRepoRoot = if ($OpsRepoRootOverride) {
 } else {
     $RepoDir
 }
+. (Join-Path $PSScriptRoot 'news-grasp-lineage.ps1')
 $LogDir    = Join-Path $env:USERPROFILE 'bin\news-grasp-logs'
 $GitExe    = 'C:\Program Files\Git\cmd\git.exe'
 $GitSafeArgs = @('-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false', '-c', 'core.attributesFile=NUL')
@@ -313,6 +315,13 @@ $script:RunnerCommandLineFingerprint = ''
 $script:RunnerProcessCreationTime = ''
 $script:PublishCompleteManifestPath = ''
 $script:PublishCompleteCommit = ''
+$script:ScheduledFailureTerminalized = $false
+$script:ScheduledFailureTerminalInputPath = ''
+$ScheduledFailureReceiptRoot = if ($ScheduledFailureReceiptRootOverride) {
+    [System.IO.Path]::GetFullPath($ScheduledFailureReceiptRootOverride)
+} else {
+    Join-Path $RepoDir 'build\scheduled-failure-receipts'
+}
 
 function Get-StringSha256Hex {
     param([string] $Text)
@@ -390,6 +399,66 @@ function Get-RunnerStateMutexName {
     return "Local\NewsGraspRunnerState-$hash"
 }
 
+function Get-RunnerLogMutexName {
+    param([string] $Path)
+    $hash = (Get-StringSha256Hex -Text ([System.IO.Path]::GetFullPath($Path).ToLowerInvariant())).Substring(0, 24)
+    return "Local\NewsGraspRunnerLog-$hash"
+}
+
+function Invoke-WithRunnerLogLock {
+    param([scriptblock] $Block)
+    $mutex = [System.Threading.Mutex]::new($false, (Get-RunnerLogMutexName -Path $LogPath))
+    $locked = $false
+    try {
+        try {
+            $locked = $mutex.WaitOne(5000)
+        } catch [System.Threading.AbandonedMutexException] {
+            $locked = $true
+        }
+        if (-not $locked) { throw 'blocked_runner_log_lock_timeout' }
+        & $Block
+    } finally {
+        if ($locked) { $mutex.ReleaseMutex() }
+        $mutex.Dispose()
+    }
+}
+
+function Add-RunnerLogLine {
+    param([AllowEmptyString()][string] $Text)
+    Invoke-WithRunnerLogLock {
+        $stream = [System.IO.FileStream]::new(
+            $LogPath,
+            [System.IO.FileMode]::Append,
+            [System.IO.FileAccess]::Write,
+            [System.IO.FileShare]::Read
+        )
+        try {
+            $writer = [System.IO.StreamWriter]::new(
+                $stream,
+                [System.Text.UTF8Encoding]::new($false),
+                1024,
+                $false
+            )
+            try {
+                $writer.WriteLine($Text)
+                $writer.Flush()
+                $stream.Flush($true)
+            } finally {
+                $writer.Dispose()
+            }
+        } finally {
+            $stream.Dispose()
+        }
+    }
+}
+
+function Get-RunnerLogSha256 {
+    $sha256 = Invoke-WithRunnerLogLock {
+        Get-FileSha256Hex -Path $LogPath
+    }
+    return $sha256
+}
+
 function Test-TerminalRunnerStatus {
     param([string] $Status)
     if ([string]$Status -like 'blocked_*') { return $true }
@@ -453,6 +522,74 @@ function Write-RunnerStateAtomic {
     }
 }
 
+function Write-RunnerJsonExclusive {
+    param(
+        [string] $Path,
+        [object] $Payload
+    )
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    }
+    $json = ($Payload | ConvertTo-Json -Depth 12) + "`n"
+    $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($json)
+    $stream = [System.IO.File]::Open(
+        $Path,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::Read
+    )
+    try {
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush($true)
+    } finally {
+        $stream.Dispose()
+    }
+}
+
+function New-ScheduledFailureTerminalInput {
+    param(
+        [object] $State,
+        [string] $Status,
+        [int] $ExitCode
+    )
+    $inputRoot = Join-Path $ScheduledFailureReceiptRoot 'inputs'
+    $stateEvidencePath = Join-Path $inputRoot ("$DateStamp-$RunId-state.json")
+    $logEvidencePath = Join-Path $inputRoot ("$DateStamp-$RunId-log.json")
+    $terminalInputPath = Join-Path $inputRoot ("$DateStamp-$RunId-terminal-input.json")
+    Write-RunnerJsonExclusive -Path $stateEvidencePath -Payload $State
+    $stateEvidenceSha256 = Get-FileSha256Hex -Path $stateEvidencePath
+    Invoke-WithRunnerLogLock {
+        $dailyLogSha256 = Get-FileSha256Hex -Path $LogPath
+        $logEvidence = [ordered]@{
+            schemaVersion = 'NEWS_GRASP_RUN_LOG_EVIDENCE_V1'
+            issueDate = $DateStamp
+            runId = $RunId
+            runIntent = $RunIntent
+            status = $Status
+            exitCode = $ExitCode
+            dailyLogPath = [System.IO.Path]::GetFullPath($LogPath)
+            dailyLogSha256 = $dailyLogSha256
+        }
+        Write-RunnerJsonExclusive -Path $logEvidencePath -Payload $logEvidence
+    }
+    $logEvidenceSha256 = Get-FileSha256Hex -Path $logEvidencePath
+    $terminalInput = [ordered]@{
+        schemaVersion = 'NEWS_GRASP_SCHEDULED_FAILURE_TERMINAL_INPUT_V1'
+        issueDate = $DateStamp
+        runId = $RunId
+        runIntent = $RunIntent
+        status = $Status
+        exitCode = $ExitCode
+        stateEvidencePath = $stateEvidencePath
+        stateEvidenceSha256 = $stateEvidenceSha256
+        logEvidencePath = $logEvidencePath
+        logEvidenceSha256 = $logEvidenceSha256
+    }
+    Write-RunnerJsonExclusive -Path $terminalInputPath -Payload $terminalInput
+    return $terminalInputPath
+}
+
 function Read-RunnerStateOrNull {
     param([string] $Path)
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
@@ -469,6 +606,17 @@ function Read-RunnerStateOrNull {
     $corrupt = "$Path.corrupt.$stamp.json"
     try { Copy-Item -LiteralPath $Path -Destination $corrupt -Force -ErrorAction SilentlyContinue } catch { }
     return [pscustomobject]@{ __corrupt = $true; corrupt_backup = $corrupt }
+}
+
+function Get-RunnerStateProperty {
+    param(
+        [object] $State,
+        [string] $Name,
+        [object] $Default = $null
+    )
+    if ($null -eq $State) { return $Default }
+    if ($State.PSObject.Properties.Name -notcontains $Name) { return $Default }
+    return $State.$Name
 }
 
 function Invoke-WithRunnerStateLock {
@@ -510,7 +658,9 @@ function Set-RunnerState {
         [string] $ExternalSystem = '',
         [string] $ExternalStatus = '',
         [string] $ExternalStderr = '',
-        [string] $ExternalDetail = ''
+        [string] $ExternalDetail = '',
+        [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
+        [string] $ResumeStageCheckpoint = ''
     )
     $now = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffK'
     $scheduledFailureReceiptPath = ''
@@ -520,12 +670,17 @@ function Set-RunnerState {
         (-not $PreflightOnly) -and
         $ExitCode -gt 0
     ) {
-        $scheduledFailureReceiptPath = Join-Path $RepoDir "build\scheduled-failure-receipts\$DateStamp-$RunId.json"
+        $scheduledFailureReceiptPath = Join-Path $ScheduledFailureReceiptRoot "$DateStamp-$RunId.json"
     }
     try {
         Invoke-WithRunnerStateLock {
             $prev = Read-RunnerStateOrNull -Path $StateFile
-            if ($prev -and $prev.__corrupt) {
+            $previousStateIsCorrupt = (
+                $prev -and
+                ($prev.PSObject.Properties.Name -contains '__corrupt') -and
+                [bool]$prev.__corrupt
+            )
+            if ($previousStateIsCorrupt) {
                 $payload = [ordered]@{
                     status = 'blocked_runner_state_corrupt'
                     message = "runner state corrupt: $($prev.corrupt_backup)"
@@ -546,11 +701,18 @@ function Set-RunnerState {
                 Write-RunnerStateAtomic -Path $StateFile -Payload $payload
                 return
             }
-            if ($prev -and $prev.run_id -eq $RunId -and (Test-TerminalRunnerStatus -Status ([string]$prev.status))) {
+            $previousRunId = [string](Get-RunnerStateProperty -State $prev -Name 'run_id' -Default '')
+            $previousStatus = [string](Get-RunnerStateProperty -State $prev -Name 'status' -Default '')
+            $previousStartedAt = [string](Get-RunnerStateProperty -State $prev -Name 'started_at' -Default '')
+            $previousControlEvents = @(Get-RunnerStateProperty -State $prev -Name 'immutableControlEvents' -Default @())
+            $previousPhase = [string](Get-RunnerStateProperty -State $prev -Name 'phase' -Default '')
+            $previousStep = [string](Get-RunnerStateProperty -State $prev -Name 'step' -Default '')
+            $previousResumeStage = [string](Get-RunnerStateProperty -State $prev -Name 'resumeStage' -Default '')
+            if ($previousRunId -eq $RunId -and (Test-TerminalRunnerStatus -Status $previousStatus)) {
                 # typed terminal state must replace generic error: Write-Log("ERROR:*") can run before
                 # a typed status such as publish_failed / distribution_failed / blocked_external_readiness.
                 $typedTerminalOverridesGenericError = (
-                    [string]$prev.status -eq 'error' -and
+                    $previousStatus -eq 'error' -and
                     @('blocked_external_readiness', 'publish_failed', 'distribution_failed', 'publish_complete') -contains [string]$Status
                 )
                 if ($typedTerminalOverridesGenericError) {
@@ -560,14 +722,14 @@ function Set-RunnerState {
                 return
                 }
             }
-            if ($ResetStartedAt -and $prev -and $prev.run_id -and $prev.run_id -ne $RunId) {
+            if ($ResetStartedAt -and $previousRunId -and $previousRunId -ne $RunId) {
                 $previous = "$StateFile.previous.$(Get-Date -Format 'yyyyMMddHHmmss').json"
                 try { Copy-Item -LiteralPath $StateFile -Destination $previous -Force -ErrorAction SilentlyContinue } catch { }
             }
 
             $startedAt = $now
-            if (-not $ResetStartedAt -and $prev -and $prev.started_at) {
-                $startedAt = [string]$prev.started_at
+            if (-not $ResetStartedAt -and $previousStartedAt) {
+                $startedAt = $previousStartedAt
             }
             $state = [ordered]@{
                 status = $Status
@@ -587,8 +749,24 @@ function Set-RunnerState {
                 command_line_fingerprint = $script:RunnerCommandLineFingerprint
                 first_terminal_wins = 'first-terminal-wins'
             }
-            if ($Phase) { $state.phase = $Phase }
-            if ($Step) { $state.step = $Step }
+            # Completion/recovery verifiers must consume lineage emitted by the
+            # producer runner.  They are not allowed to manufacture it later.
+            $lineage = New-NewsGraspProducerLineage `
+                -ArtifactRoot $RepoDir `
+                -OpsRoot (Split-Path -Parent $StateFile) `
+                -IssueDate $DateStamp `
+                -RunIntent $RunIntent `
+                -RunId $RunId
+            foreach ($field in $lineage.Keys) { $state[$field] = $lineage[$field] }
+            $dailyRootId = [string]$lineage.dailyRootId
+            $rootOperationId = [string]$lineage.rootOperationId
+            if ($Phase) { $state.phase = $Phase } elseif ($previousPhase) { $state.phase = $previousPhase }
+            if ($Step) { $state.step = $Step } elseif ($previousStep) { $state.step = $previousStep }
+            if ($ResumeStageCheckpoint) { $state.resumeStage = $ResumeStageCheckpoint } elseif ($previousResumeStage) { $state.resumeStage = $previousResumeStage }
+            if ($script:HighCostAdmissionPath -and (Test-Path -LiteralPath $script:HighCostAdmissionPath -PathType Leaf)) {
+                $state.highCostAdmissionPath = [System.IO.Path]::GetFullPath($script:HighCostAdmissionPath)
+                $state.highCostAdmissionSha256 = Get-FileSha256Hex -Path $script:HighCostAdmissionPath
+            }
             if ($GateId) { $state.gate_id = $GateId }
             if ($Category) { $state.category = $Category }
             if ($Attempt -gt 0) { $state.attempt = $Attempt }
@@ -608,7 +786,68 @@ function Set-RunnerState {
                     detail = $ExternalDetail
                 }
             }
+            if ($Status -like 'operation_rejected_high_cost*') {
+                $previousEvents = @($previousControlEvents)
+                $previousEventHash = if ($previousEvents.Count -gt 0) {
+                    [string]$previousEvents[-1].eventHash
+                } else { '0' * 64 }
+                $eventBody = [ordered]@{
+                    eventSequence = $previousEvents.Count + 1
+                    previousEventHash = $previousEventHash
+                    dailyRootId = $dailyRootId
+                    rootOperationId = $rootOperationId
+                    runId = $RunId
+                    runIntent = $RunIntent
+                    eventType = 'scheduled_attempt_failed'
+                    scheduledAttemptStatus = 'failed'
+                    recoveryAttemptStatus = 'not_started'
+                    productionPublicOutcomeStatus = 'unknown'
+                    reasonCode = $Message.Split(';')[0]
+                    observedAt = $now
+                }
+                $eventHash = Get-StringSha256Hex -Text ($eventBody | ConvertTo-Json -Depth 8 -Compress)
+                $event = [ordered]@{}
+                foreach ($key in $eventBody.Keys) { $event[$key] = $eventBody[$key] }
+                $event.eventHash = $eventHash
+                $state.eventSequence = $eventBody.eventSequence
+                $state.previousEventHash = $previousEventHash
+                $state.dailyRootId = $dailyRootId
+                $state.rootOperationId = $eventBody.rootOperationId
+                $state.preAttemptStatus = 'runner_reached'
+                $state.scheduledAttemptStatus = 'failed'
+                $state.recoveryAttemptStatus = 'not_started'
+                $state.productionPublicOutcomeStatus = 'unknown'
+                $state.continuationState = 'scheduled_recovery_required'
+                $state.scheduledFailureRetained = $true
+                $state.priorStatusRetained = [bool]$previousStatus
+                $state.immutableControlEvents = @($previousEvents) + @($event)
+                $receiptDir = Split-Path -Parent $StateFile
+                $receiptPath = Join-Path $receiptDir ("scheduled-failure-receipt-{0}.json" -f $RunId)
+                $receipt = [ordered]@{
+                    schemaVersion = 'SCHEDULED_FAILURE_RECEIPT_V2'
+                    productId = 'News-Grasp'
+                    issueDate = $DateStamp
+                    runIntent = $RunIntent
+                    runId = $RunId
+                    dailyRootId = $dailyRootId
+                    rootOperationId = $eventBody.rootOperationId
+                    eventSequence = $eventBody.eventSequence
+                    eventHash = $eventHash
+                    scheduledAttemptStatus = 'failed'
+                    continuationState = 'scheduled_recovery_required'
+                }
+                $receipt.receiptSha256 = Get-StringSha256Hex -Text ($receipt | ConvertTo-Json -Depth 8 -Compress)
+                Write-RunnerStateAtomic -Path $receiptPath -Payload $receipt
+                $state.failureReceiptPath = $receiptPath
+                $state.failureReceiptSha256 = $receipt.receiptSha256
+            }
             Write-RunnerStateAtomic -Path $StateFile -Payload $state
+            if ($scheduledFailureReceiptPath -and -not $script:ScheduledFailureTerminalInputPath) {
+                $script:ScheduledFailureTerminalInputPath = New-ScheduledFailureTerminalInput `
+                    -State $state `
+                    -Status $Status `
+                    -ExitCode $ExitCode
+            }
         }
     } catch {
         if ([string]$_.Exception.Message -eq 'blocked_runner_state_lock_timeout') {
@@ -648,9 +887,11 @@ function Update-RunnerProgress {
         [object] $ActiveJobs = $null,
         [string] $DeadlineAt = '',
         [string] $RepairSignature = '',
-        [bool] $ArtifactProgress = $false
+        [bool] $ArtifactProgress = $false,
+        [ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]
+        [string] $ResumeStageCheckpoint = ''
     )
-    Set-RunnerState -Status 'running' -Message $Step -ExitCode -1 -Phase $Phase -Step $Step -GateId $GateId -Category $Category -Attempt $Attempt -ActiveJobs $ActiveJobs -DeadlineAt $DeadlineAt
+    Set-RunnerState -Status 'running' -Message $Step -ExitCode -1 -Phase $Phase -Step $Step -GateId $GateId -Category $Category -Attempt $Attempt -ActiveJobs $ActiveJobs -DeadlineAt $DeadlineAt -ResumeStageCheckpoint $ResumeStageCheckpoint
     try {
         $requiredArtifacts = @($DailyDigestArtifacts)
         $completedUnits = 0
@@ -695,7 +936,7 @@ function Exit-Runner {
     )
     Set-RunnerState -Status $Status -Message $Message -ExitCode $ExitCode -ExternalKind $ExternalKind -ExternalSystem $ExternalSystem -ExternalStatus $ExternalStatus -ExternalStderr $ExternalStderr -ExternalDetail $ExternalDetail
     if ($RunIntent -eq 'ScheduledProduction' -and $ExitCode -gt 0) {
-        $failureReceiptPath = Join-Path $RepoDir "build\scheduled-failure-receipts\$DateStamp-$RunId.json"
+        $failureReceiptPath = Join-Path $ScheduledFailureReceiptRoot "$DateStamp-$RunId.json"
         Invoke-ScheduledFailureTerminalizer -Status $Status -ExitCode $ExitCode -ReceiptPath $failureReceiptPath
     }
     exit $ExitCode
@@ -718,16 +959,34 @@ function Invoke-ScheduledFailureTerminalizer {
     }
     $script:ScheduledFailureTerminalized = $true
     try {
-        $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+        $broker = $HighCostBudgetToolPath
+        $terminalInputPath = $script:ScheduledFailureTerminalInputPath
         if (
             (-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or
-            (-not (Test-Path -LiteralPath $StateFile -PathType Leaf)) -or
-            (-not (Test-Path -LiteralPath $LogPath -PathType Leaf))
+            (-not $terminalInputPath) -or
+            (-not (Test-Path -LiteralPath $terminalInputPath -PathType Leaf))
         ) {
             throw 'scheduled failure terminalizer input missing'
         }
-        $stateSha256 = Get-FileSha256Hex -Path $StateFile
-        $logSha256 = Get-FileSha256Hex -Path $LogPath
+        $terminalInput = Get-Content -LiteralPath $terminalInputPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if (
+            $terminalInput.schemaVersion -ne 'NEWS_GRASP_SCHEDULED_FAILURE_TERMINAL_INPUT_V1' -or
+            $terminalInput.issueDate -ne $DateStamp -or
+            $terminalInput.runId -ne $RunId -or
+            $terminalInput.runIntent -ne $RunIntent -or
+            $terminalInput.status -ne $Status -or
+            [int]$terminalInput.exitCode -ne $ExitCode
+        ) {
+            throw 'scheduled failure terminalizer run binding invalid'
+        }
+        $stateSha256 = Get-FileSha256Hex -Path ([string]$terminalInput.stateEvidencePath)
+        $logSha256 = Get-FileSha256Hex -Path ([string]$terminalInput.logEvidencePath)
+        if (
+            $stateSha256 -ne [string]$terminalInput.stateEvidenceSha256 -or
+            $logSha256 -ne [string]$terminalInput.logEvidenceSha256
+        ) {
+            throw 'scheduled failure terminalizer evidence drift'
+        }
         $taskActionSha256 = Get-ScheduledTaskActionSha256
         $runnerSha256 = Get-FileSha256Hex -Path $PSCommandPath
         if ((-not $stateSha256) -or (-not $logSha256) -or (-not $taskActionSha256) -or (-not $runnerSha256)) {
@@ -735,18 +994,18 @@ function Invoke-ScheduledFailureTerminalizer {
         }
         $failureStage = ([regex]::Replace([string]$Status, '[^A-Za-z0-9_.-]', '_')).Trim('_')
         if (-not $failureStage) { $failureStage = 'unknown_failure' }
-        $receiptJson = (& $PyExe $broker 'record-news-grasp-failure' '--issue-date' $DateStamp '--last-task-result' ([string]$ExitCode) '--runner-state' $Status '--state-sha256' $stateSha256 '--log-sha256' $logSha256 '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--failure-stage' $failureStage 2>&1 | Out-String).Trim()
+        $receiptJson = (& $PyExe $broker 'record-news-grasp-failure' '--issue-date' $DateStamp '--run-id' $RunId '--last-task-result' ([string]$ExitCode) '--runner-state' $Status '--state-sha256' $stateSha256 '--log-sha256' $logSha256 '--task-action-sha256' $taskActionSha256 '--runner-sha256' $runnerSha256 '--failure-stage' $failureStage 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
             throw "record-news-grasp-failure failed exit=$LASTEXITCODE detail=$receiptJson"
         }
         $receipt = $receiptJson | ConvertFrom-Json -ErrorAction Stop
-        if ($receipt.schemaVersion -ne 'SCHEDULED_FAILURE_RECEIPT_V1' -or $receipt.issueDate -ne $DateStamp -or $receipt.scheduledAttemptStatus -ne 'failed') {
+        if ($receipt.schemaVersion -ne 'SCHEDULED_FAILURE_RECEIPT_V1' -or $receipt.issueDate -ne $DateStamp -or $receipt.runId -ne $RunId -or $receipt.scheduledAttemptStatus -ne 'failed') {
             throw 'scheduled failure receipt invalid'
         }
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ReceiptPath) | Out-Null
         [System.IO.File]::WriteAllText($ReceiptPath, ($receiptJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
     } catch {
-        Add-Content -LiteralPath $LogPath -Value "WARN: SCHEDULED_FAILURE_TERMINALIZER_FAILED reason=$($_.Exception.Message)" -Encoding UTF8 -ErrorAction SilentlyContinue
+        try { Add-RunnerLogLine -Text "WARN: SCHEDULED_FAILURE_TERMINALIZER_FAILED reason=$($_.Exception.Message)" } catch { }
     }
 }
 
@@ -756,7 +1015,7 @@ function Write-Log {
     $line = "[$ts] $Text"
     # console 出力 (Task Scheduler の標準出力は捨てられるので保険)
     Write-Host $line
-    Add-Content -Path $LogPath -Value $line -Encoding UTF8
+    Add-RunnerLogLine -Text $line
     if ($Text -like 'ERROR:*') {
         if (-not $script:CodexUsageEndSnapshotWritten -and (Get-Command Write-CodexUsageWindowSnapshot -ErrorAction SilentlyContinue)) {
             $script:CodexUsageEndSnapshotWritten = $true
@@ -810,6 +1069,7 @@ function Test-PreRunBootstrapSmokeMarker {
 
 function Test-NormalDailyPublishRun {
     return (
+        $RunIntent -eq 'ScheduledProduction' -and
         (-not $SmokeTest) -and
         (-not $PreflightOnly) -and
         (-not $RecoverOnly) -and
@@ -1200,7 +1460,7 @@ function Invoke-Logged {
     # 引数の Block で外部コマンドを呼び出すだけにする (sub-process 化はしない)。
     param([scriptblock] $Block)
     & $Block 2>&1 | ForEach-Object {
-        Add-Content -Path $LogPath -Value $_.ToString() -Encoding UTF8
+        Add-RunnerLogLine -Text $_.ToString()
     }
 }
 
@@ -1212,7 +1472,7 @@ function Invoke-LoggedCapture {
     if (Test-Path $CapturePath) { Remove-Item -LiteralPath $CapturePath -Force -ErrorAction SilentlyContinue }
     & $Block 2>&1 | ForEach-Object {
         $line = $_.ToString()
-        Add-Content -Path $LogPath -Value $line -Encoding UTF8
+        Add-RunnerLogLine -Text $line
         Add-Content -Path $CapturePath -Value $line -Encoding UTF8
     }
 }
@@ -1292,7 +1552,7 @@ function Invoke-PythonStdoutFileUtf8 {
     [System.IO.File]::WriteAllText($StdoutPath, $stdout, [System.Text.UTF8Encoding]::new($false))
     if ($stderr) {
         foreach ($line in $stderr -split "\r?\n") {
-            if ($line) { Add-Content -Path $LogPath -Value $line -Encoding UTF8 }
+            if ($line) { Add-RunnerLogLine -Text $line }
         }
     }
     return $proc.ExitCode
@@ -1582,8 +1842,8 @@ function Sync-EditorOutputPreview {
         # 現 attempt の出力を先に検証して preview へ昇格する。
         $sourcePath = $FallbackPath
     } elseif (-not (Test-Path -LiteralPath $sourcePath)) {
-        Write-Log "ERROR: editor output preview missing: $PreviewPath"
-        return 2
+        Write-Log "editor output preview missing: $PreviewPath"
+        return
     }
     if (-not $CapturePath) {
         $CapturePath = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-editor-materialize-$DateStamp-$PID.log")
@@ -1816,9 +2076,9 @@ $failureText
 "@
     [System.IO.File]::WriteAllText($repairPrompt, $prompt, [System.Text.UTF8Encoding]::new($false))
     $issueCount = 1
-    if ($decision.issue_ledger) {
+    if ($decision.PSObject.Properties.Name -contains 'issue_ledger' -and $decision.issue_ledger) {
         $issueCount = @($decision.issue_ledger).Count
-    } elseif ($decision.issues) {
+    } elseif ($decision.PSObject.Properties.Name -contains 'issues' -and $decision.issues) {
         $issueCount = @($decision.issues).Count
     }
     $scopeAmbiguous = @('repair_context_scope_mismatch', 'repair_context_overbroad') -contains [string]$decision.failure_status
@@ -2604,7 +2864,7 @@ function Assert-HighCostOperationAdmission {
     if ($SmokeTest -or $PreflightOnly -or $FinalizeVerifiedPublishManifest) { return }
     $modelSpawnBroker = [System.IO.Path]::GetFullPath($HighCostBudgetToolPath)
     if ((-not $HighCostWorkspaceRoot) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf))) {
-        Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_REQUIRED' -Encoding UTF8
+        Add-RunnerLogLine -Text 'ERROR: HIGH_COST_OPERATION_ADMISSION_REQUIRED'
         Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_REQUIRED; local critical path remains available' -ExitCode 76
         exit 76
     }
@@ -2615,7 +2875,7 @@ function Assert-HighCostOperationAdmission {
     if ($NoPublish) {
         $operationKind = 'full_e2e'
         if (-not $HighCostAdmissionPath) {
-            Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -Encoding UTF8
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
             exit 76
         }
@@ -2623,13 +2883,13 @@ function Assert-HighCostOperationAdmission {
         $admissionValidator = Join-Path $RepoDir 'tools\high_cost_admission_receipt.py'
         $expectedAttemptId = "nopublish:$DateStamp"
         if ((-not (Test-Path -LiteralPath $admissionReceipt -PathType Leaf)) -or (-not (Test-Path -LiteralPath $admissionValidator -PathType Leaf))) {
-            Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -Encoding UTF8
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
             exit 76
         }
         & $PyExe $admissionValidator 'validate' '--path' $admissionReceipt '--expected-operation-kind' $operationKind '--expected-attempt-id' $expectedAttemptId
         if ($LASTEXITCODE -ne 0) {
-            Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID exit=$LASTEXITCODE" -Encoding UTF8
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID exit=$LASTEXITCODE"
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID' -ExitCode 76
             exit 76
         }
@@ -2638,60 +2898,76 @@ function Assert-HighCostOperationAdmission {
         return
     }
 
+    $stageDecisionReceipt = ''
+    $script:UsesHighCostContinuationAdmission = $false
     if ($ResumeFromStage) {
-        if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $HighCostAdmissionPath)) {
-            Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -Encoding UTF8
+        if ($HighCostAdmissionPath) {
+            try {
+                $continuationAdmission = Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            } catch {
+                Add-RunnerLogLine -Text "ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID $($_.Exception.Message)"
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
+                exit 76
+            }
+            if (
+                [string]$continuationAdmission.schemaVersion -ne 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -or
+                [string]$continuationAdmission.operationKind -ne 'scheduled_recovery' -or
+                [string]$continuationAdmission.issueDate -ne $DateStamp -or
+                [string]$continuationAdmission.resumeStage -ne $ResumeFromStage
+            ) {
+                Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID'
+                Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID' -ExitCode 76
+                exit 76
+            }
+            $script:UsesHighCostContinuationAdmission = $true
+            $script:HighCostExpectedOperationKind = $operationKind
+            $script:HighCostExpectedIssueDate = $DateStamp
+            return
+        }
+        if ($RunIntent -ne 'ScheduledRecoveryFull' -or (-not $RecoveryDecisionPath) -or (-not $ScheduledAuthorityEvidencePath)) {
+            Add-RunnerLogLine -Text 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
             exit 76
         }
-        $sourceAdmissionReceipt = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
-        if ((-not (Test-Path -LiteralPath $sourceAdmissionReceipt -PathType Leaf)) -or (-not (Test-Path -LiteralPath $StateFile -PathType Leaf))) {
-            Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -Encoding UTF8
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED' -ExitCode 76
-            exit 76
-        }
-        $admissionDir = Join-Path $RepoDir "build\high-cost-operation-admissions\$DateStamp"
-        New-Item -ItemType Directory -Path $admissionDir -Force | Out-Null
-        $admissionReceipt = Join-Path $admissionDir "$RunId-scheduled_recovery_continuation.json"
-        $admissionJson = (& $PyExe $modelSpawnBroker 'admit-news-grasp-recovery-continuation' '--operation-admission' $sourceAdmissionReceipt '--runner-state' $StateFile '--resume-stage' $ResumeFromStage 2>&1 | Out-String).Trim()
+        $decisionJson = (& $PyExe '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $RecoveryDecisionPath 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
-            Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_RECOVERY_CONTINUATION_REJECTED exit=$LASTEXITCODE" -Encoding UTF8
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_RECOVERY_CONTINUATION_REJECTED' -ExitCode 76
+            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_INVALID exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_INVALID' -ExitCode 76
             exit 76
         }
         try {
-            $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
-            if ($admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1' -or $admission.operationKind -ne 'scheduled_recovery' -or $admission.issueDate -ne $DateStamp -or $admission.resumeStage -ne $ResumeFromStage) {
-                throw 'scheduled recovery continuation identity drift'
+            $decision = $decisionJson | ConvertFrom-Json -ErrorAction Stop
+            $stageDecisionReceipt = [System.IO.Path]::GetFullPath([string]$decision.brokerStageDecisionPath)
+            if (
+                [string]$decision.issueDate -ne $DateStamp -or
+                [string]$decision.runIntent -ne 'ScheduledRecoveryFull' -or
+                [string]$decision.recoveryBranch -ne 'ResumeFromStage' -or
+                [string]$decision.resumeStage -ne $ResumeFromStage -or
+                [System.IO.Path]::GetFullPath([string]$decision.scheduledAuthorityEvidencePath) -ne [System.IO.Path]::GetFullPath($ScheduledAuthorityEvidencePath) -or
+                (-not (Test-Path -LiteralPath $stageDecisionReceipt -PathType Leaf)) -or
+                (Get-FileSha256Hex -Path $stageDecisionReceipt) -ne [string]$decision.brokerStageDecisionSha256
+            ) {
+                throw 'RECOVERY_DECISION_BRANCH_MISMATCH'
             }
-            [System.IO.File]::WriteAllText($admissionReceipt, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
-            $script:HighCostAdmissionPath = $admissionReceipt
-            $script:HighCostExpectedOperationKind = 'scheduled_recovery'
-            $script:HighCostExpectedIssueDate = $DateStamp
-            return
+            $HighCostAdmissionPath = ''
         } catch {
-            Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_INVALID reason=$($_.Exception.Message)" -Encoding UTF8
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_INVALID' -ExitCode 76
+            Add-RunnerLogLine -Text "ERROR: RECOVERY_DECISION_BRANCH_MISMATCH reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'RECOVERY_DECISION_BRANCH_MISMATCH' -ExitCode 76
             exit 76
         }
     }
 
-    if ($HighCostAdmissionPath) {
-        Add-Content -Path $LogPath -Value 'ERROR: HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -Encoding UTF8
-        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_CALLER_RECEIPT_FORBIDDEN' -ExitCode 76
-        exit 76
-    }
     if (-not $ScheduledAuthorityEvidencePath) {
         if ($operationKind -eq 'scheduled_production') {
             $ScheduledAuthorityEvidencePath = Join-Path $env:USERPROFILE "bin\news-grasp-authority\$DateStamp-launch-permit.json"
         } else {
-            Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -Encoding UTF8
+            Add-RunnerLogLine -Text 'ERROR: SCHEDULED_OPERATION_AUTHORITY_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -ExitCode 76
             exit 76
         }
     }
     if (-not (Test-Path -LiteralPath $ScheduledAuthorityEvidencePath -PathType Leaf)) {
-        Add-Content -Path $LogPath -Value 'ERROR: SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -Encoding UTF8
+        Add-RunnerLogLine -Text 'ERROR: SCHEDULED_OPERATION_AUTHORITY_REQUIRED'
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'SCHEDULED_OPERATION_AUTHORITY_REQUIRED' -ExitCode 76
         exit 76
     }
@@ -2700,15 +2976,30 @@ function Assert-HighCostOperationAdmission {
     $admissionDir = Join-Path $RepoDir "build\high-cost-operation-admissions\$DateStamp"
     New-Item -ItemType Directory -Path $admissionDir -Force | Out-Null
     $admissionReceipt = Join-Path $admissionDir "$RunId-$operationKind.json"
-    $admissionJson = (& $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) {
-        Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE" -Encoding UTF8
-        Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
-        exit 76
+    if ($HighCostAdmissionPath) {
+        if (-not (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf)) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_SCHEDULED_CALLER_RECEIPT_MISSING'
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_CALLER_RECEIPT_MISSING' -ExitCode 76
+            exit 76
+        }
+        $admissionJson = (Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8).Trim()
+    } else {
+        $admissionJson = (& $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
+            exit 76
+        }
     }
     try {
         $admission = $admissionJson | ConvertFrom-Json -ErrorAction Stop
-        if ($admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -or $admission.operationKind -ne $operationKind -or $admission.issueDate -ne $DateStamp) {
+        $authority = Get-Content -LiteralPath $ScheduledAuthorityEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+        if (
+            $admission.schemaVersion -ne 'HIGH_COST_SCHEDULED_OPERATION_ADMISSION_V1' -or
+            $admission.operationKind -ne $operationKind -or
+            $admission.issueDate -ne $DateStamp -or
+            $admission.operationAuthoritySha256 -ne $authority.receiptSha256
+        ) {
             throw 'scheduled admission identity drift'
         }
         [System.IO.File]::WriteAllText($admissionReceipt, ($admissionJson + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
@@ -2716,19 +3007,29 @@ function Assert-HighCostOperationAdmission {
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = $DateStamp
     } catch {
-        Add-Content -Path $LogPath -Value "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)" -Encoding UTF8
+        Add-RunnerLogLine -Text "ERROR: HIGH_COST_SCHEDULED_ADMISSION_INVALID reason=$($_.Exception.Message)"
         Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_SCHEDULED_ADMISSION_INVALID' -ExitCode 76
         exit 76
     }
 }
 
 # ===== sentinel: 起動できた事実 =====
+if ($RepoDirOverride -or $SmokeTest) {
+    Write-Log 'RepoDirOverride mode: skipping artifact-root operational registry validation'
+} else {
+    Invoke-Logged { & $PyExe -m tools.news_grasp_operational_contract validate-registry --repo-root $RepoDir }
+    $operationalRegistryRc = $LASTEXITCODE
+    if ($operationalRegistryRc -ne 0) {
+        Set-RunnerState -Status 'blocked_operational_registry_invalid' -Message 'NEWS_GRASP_OPERATIONAL_REGISTRY_INVALID' -ExitCode 78
+        exit 78
+    }
+}
 Assert-HighCostOperationAdmission
 $pidStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
 Add-Content -Path $InvokedLog -Value "[$pidStamp] runner-invoked pid=$PID ps1 smoke=$SmokeTest recover=$RecoverOnly run_intent=$RunIntent no_publish=$NoPublish resume_from_stage=$ResumeFromStage" -Encoding UTF8
 
-Add-Content -Path $LogPath -Value '' -Encoding UTF8
-Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
+Add-RunnerLogLine -Text ''
+Add-RunnerLogLine -Text '=========================================='
 Set-RunnerState -Status 'running' -Message 'runner started' -ExitCode -1 -ResetStartedAt
 Write-Log "news-grasp-runner.ps1 start (run_id=$RunId, smoke=$SmokeTest, recover=$RecoverOnly, run_intent=$RunIntent, no_publish=$NoPublish, resume_from_stage=$ResumeFromStage, pid=$PID)"
 
@@ -2806,18 +3107,18 @@ if ($priorGateAttempts.Count -gt 0) {
 Assert-PreRunBootstrapInterlock
 Assert-RunnerBinaryInSync
 $IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive
-if ($IsE2EOrDryRun -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (-not $ResumeGenerationQualityRepair) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
-    Write-Log "ERROR: E2E full rerun forbidden after existing artifacts date=$DateStamp. Use a typed -ResumeFromStage path."
+if ($IsE2EOrDryRun -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeAfterReporter) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (-not $ResumeGenerationQualityRepair) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
+    Write-Log "ERROR: E2E full rerun forbidden after existing artifacts date=$DateStamp. Use -ResumeFromStage deepdive, post-daily-quality, post-deepdive, or generation-quality-repair."
     Set-RunnerState -Status 'blocked_e2e_full_rerun_forbidden' -Message 'E2E full rerun forbidden after existing artifacts' -ExitCode 65
     exit 65
 }
-if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (-not $ResumeGenerationQualityRepair) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
+if ((-not $ForceFullRerun) -and (-not $SmokeTest) -and (-not $PreflightOnly) -and (-not $RecoverOnly) -and (-not $Stage2EditorSmokeOnly) -and (-not $ResumeAfterReporter) -and (-not $ResumeFromPostDailyQuality) -and (-not $ResumeAfterDeepDive) -and (-not $ResumeGenerationQualityRepair) -and (Test-DailyArtifactsExist -TargetDate $DateStamp)) {
     Write-Log "ERROR: existing daily artifacts detected; refusing full rerun for date=$DateStamp. Use -ForceFullRerun only after explicit user approval; otherwise resume from existing artifacts."
     Set-RunnerState -Status 'failed' -Message 'existing daily artifacts detected; refusing full rerun' -ExitCode 64
     exit 64
 }
 Write-CodexUsageWindowSnapshot -Phase 'start'
-Add-Content -Path $LogPath -Value '==========================================' -Encoding UTF8
+Add-RunnerLogLine -Text '=========================================='
 
 # ===== 0. リポ存在チェック =====
 if (-not (Test-Path (Join-Path $RepoDir '.git'))) {
@@ -2863,9 +3164,11 @@ if ($PreflightOnly) {
 $NetWait = Join-Path $env:USERPROFILE 'bin\net_wait.py'
 if ($SkipSourceSync) {
     Write-Log 'SmokeTest readiness canary: skipping net reachability wait and git sync'
+} elseif ($RepoDirOverride) {
+    Write-Log 'RepoDirOverride mode: skipping git sync for fixed artifact workspace'
 } elseif ($Stage2EditorSmokeOnly) {
     Write-Log 'Stage2EditorSmokeOnly mode: skipping net reachability wait and git sync'
-} elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
+} elseif ($ResumeAfterReporter -or $ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
     Write-Log 'ResumeFromStage mode: skipping net reachability wait and git sync'
 } else {
     if (Test-Path $NetWait) {
@@ -2904,6 +3207,33 @@ if ($RecoverOnly) {
     Write-Log "RecoverOnly input manifest: $recoverOnlyInputManifest"
     Write-Log 'RecoverOnly mode: skipping digest codex; using current local digest/data commits and files'
 } elseif ($ResumeFromPostDailyQuality -or $ResumeAfterDeepDive -or $ResumeGenerationQualityRepair) {
+    # 事前admissionではdecisionを消費しない。ここが実際のResume stage開始境界であり、
+    # このstate書込より前のcrashでは同じdecisionを未開始として安全に再利用できる。
+    Set-RunnerState -Status 'running' -Message 'scheduled recovery stage start boundary' -ExitCode -1 -Phase 'resume' -Step 'stage-start-boundary' -ResumeStageCheckpoint $ResumeFromStage
+    if ($script:UsesHighCostContinuationAdmission) {
+        Write-Log "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for ResumeFromStage=$ResumeFromStage"
+    } else {
+        try {
+            $stageWitnessJson = (& $PyExe $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+                throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
+            }
+            $stageWitness = $stageWitnessJson | ConvertFrom-Json -ErrorAction Stop
+            if (
+                [string]$stageWitness.schemaVersion -ne 'SCHEDULED_RECOVERY_STAGE_STARTED_V1' -or
+                [string]$stageWitness.issueDate -ne $DateStamp -or
+                [string]$stageWitness.resumeStage -ne $ResumeFromStage -or
+                [string]$stageWitness.consumerRunId -ne $RunId -or
+                [string]$stageWitness.decisionReceiptSha256 -ne [string]$decision.brokerStageDecisionReceiptSha256
+            ) {
+                throw 'SCHEDULED_RECOVERY_STAGE_START_WITNESS_INVALID'
+            }
+        } catch {
+            Write-Log "ERROR: scheduled recovery stage start boundary failed: $($_.Exception.Message)"
+            Set-RunnerState -Status 'failed' -Message 'scheduled recovery stage start boundary failed' -ExitCode 76 -Phase 'resume' -Step 'stage-start-boundary'
+            exit 76
+        }
+    }
     if ($ResumeGenerationQualityRepair) {
         Write-Log "ResumeFromStage=${ResumeFromStage}: reusing Stage0/Reporter/Editor/daily-quality; starting at missing-artifact generation repair"
     } elseif ($ResumeAfterDeepDive) {
@@ -2952,8 +3282,12 @@ if ($RecoverOnly) {
         Write-Log "ERROR: scheduled category list is empty date=$DateStamp"
         exit 1
     }
-    if ($Stage2EditorSmokeOnly) {
-        Write-Log 'Stage2EditorSmokeOnly mode: skipping Stage0 harvest and Stage1 dedup; using existing deduped candidates'
+    if ($Stage2EditorSmokeOnly -or $ResumeAfterReporter) {
+        if ($ResumeAfterReporter) {
+            Write-Log "ResumeFromStage=${ResumeFromStage}: skipping Stage0/Stage1/Stage1.5; using existing deduped candidates and reporter artifacts"
+        } else {
+            Write-Log 'Stage2EditorSmokeOnly mode: skipping Stage0 harvest and Stage1 dedup; using existing deduped candidates'
+        }
         New-Item -ItemType Directory -Path $DedupedCandidateDir -Force | Out-Null
     } else {
         if (Test-Path $CandidateDir) { Remove-Item -LiteralPath $CandidateDir -Recurse -Force -ErrorAction SilentlyContinue }
@@ -3275,7 +3609,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
             $key = [string]$Path
             $offset = if ($wrapper_log_offsets.ContainsKey($key)) { [int]$wrapper_log_offsets[$key] } else { 0 }
             if ($text.Length -gt $offset) {
-                Add-Content -Path $LogPath -Value $text.Substring($offset) -Encoding UTF8
+                Add-RunnerLogLine -Text $text.Substring($offset)
                 $wrapper_log_offsets[$key] = $text.Length
             }
         }
@@ -3373,39 +3707,44 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     $retryCategories = @($Categories)
     $terminalFailures = @{}
     $ReporterTerminalExitCode = 1
-    for ($attempt = 1; $attempt -le $ReporterMaxAttempts -and $retryCategories.Count -gt 0; $attempt++) {
-        $waveResults = Invoke-ReporterWave -Attempt $attempt -WaveCategories $retryCategories
-        if (-not (Test-ArtifactExecutableTreeIntegrity)) {
-            Exit-Runner -Status 'blocked_artifact_executable_tree_invalid' -Message 'ARTIFACT_EXECUTABLE_TREE_INVALID immediately after reporter wave' -ExitCode 126
-        }
-        $nextRetryCategories = @()
-        $failedCategories = @()
+    if ($ResumeAfterReporter) {
+        Write-Log "ResumeFromStage=${ResumeFromStage}: skipping reporter fan-out; verifying existing reporter artifacts"
+        $retryCategories = @()
+    } else {
+        for ($attempt = 1; $attempt -le $ReporterMaxAttempts -and $retryCategories.Count -gt 0; $attempt++) {
+            $waveResults = Invoke-ReporterWave -Attempt $attempt -WaveCategories $retryCategories
+            if (-not (Test-ArtifactExecutableTreeIntegrity)) {
+                Exit-Runner -Status 'blocked_artifact_executable_tree_invalid' -Message 'ARTIFACT_EXECUTABLE_TREE_INVALID immediately after reporter wave' -ExitCode 126
+            }
+            $nextRetryCategories = @()
+            $failedCategories = @()
 
-        foreach ($waveResult in $waveResults) {
+            foreach ($waveResult in $waveResults) {
             $catName = [string]$waveResult.category
             $failureReason = $null
-            if (Test-ReporterCodexQuotaFailure -WaveResult $waveResult) {
-                Stop-ExternalReadiness -Reason "codex CLI rate limit / out of credits during reporter category=$catName attempt=$attempt" -ExitCode 123 -Kind 'codex_quota' -System 'openai_codex' -ExternalStatus "rc=$($waveResult.rc)" -ExternalDetail "reporter:$catName attempt=$attempt wrapper_log=$($waveResult.wrapper_log)"
+            $verifyReporterArgs = @('-m', 'tools.verify_reporter_output', '--date', $DateStamp, '--category', $catName)
+            $verifyCapture = Join-Path $ReporterArtifactDir "$catName.verify-attempt$attempt.log"
+            Push-Location $RepoDir
+            try {
+                Invoke-LoggedCapture -CapturePath $verifyCapture -Block { & $PyExe @verifyReporterArgs }
+                $verifyReporterRc = $LASTEXITCODE
+            } finally {
+                Pop-Location
             }
-            if ([int]$waveResult.rc -ne 0) {
+            if ($verifyReporterRc -eq 0) {
+                if ([int]$waveResult.rc -ne 0) {
+                    Write-Log "WARN: reporter wrapper rc=$($waveResult.rc) ignored after reporter artifact verification Green category=$catName attempt=$attempt"
+                }
+            } elseif (Test-ReporterCodexQuotaFailure -WaveResult $waveResult) {
+                Stop-ExternalReadiness -Reason "codex CLI rate limit / out of credits during reporter category=$catName attempt=$attempt" -ExitCode 123 -Kind 'codex_quota' -System 'openai_codex' -ExternalStatus "rc=$($waveResult.rc)" -ExternalDetail "reporter:$catName attempt=$attempt wrapper_log=$($waveResult.wrapper_log)"
+            } elseif ([int]$waveResult.rc -ne 0) {
                 $failureReason = "wrapper_rc=$($waveResult.rc)"
                 if ([int]$waveResult.rc -eq 124) {
                     $ReporterTerminalExitCode = 124
                 }
             } else {
-                $verifyReporterArgs = @('-m', 'tools.verify_reporter_output', '--date', $DateStamp, '--category', $catName)
-                $verifyCapture = Join-Path $ReporterArtifactDir "$catName.verify-attempt$attempt.log"
-                Push-Location $RepoDir
-                try {
-                    Invoke-LoggedCapture -CapturePath $verifyCapture -Block { & $PyExe @verifyReporterArgs }
-                    $verifyReporterRc = $LASTEXITCODE
-                } finally {
-                    Pop-Location
-                }
-                if ($verifyReporterRc -ne 0) {
-                    $verifyText = if (Test-Path $verifyCapture) { (Get-Content -LiteralPath $verifyCapture -Raw -Encoding UTF8).Trim() } else { '' }
-                    $failureReason = "verify_rc=$verifyReporterRc $verifyText"
-                }
+                $verifyText = if (Test-Path $verifyCapture) { (Get-Content -LiteralPath $verifyCapture -Raw -Encoding UTF8).Trim() } else { '' }
+                $failureReason = "verify_rc=$verifyReporterRc $verifyText"
             }
 
             if ($null -eq $failureReason) {
@@ -3427,12 +3766,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $ReporterFailureSignatures[$catName] = $failureSignature
                 $nextRetryCategories += $catName
             }
-        }
+            }
 
-        if ($failedCategories.Count -gt 0) {
-            Write-Log "Stage2 reporter failed categories attempt=${attempt}: $($failedCategories -join ',')"
+            if ($failedCategories.Count -gt 0) {
+                Write-Log "Stage2 reporter failed categories attempt=${attempt}: $($failedCategories -join ',')"
+            }
+            $retryCategories = @($nextRetryCategories)
         }
-        $retryCategories = @($nextRetryCategories)
     }
 
     if ($terminalFailures.Count -gt 0 -or $retryCategories.Count -gt 0) {
@@ -3775,6 +4115,7 @@ if ($dailyQualityRc -ne 0) {
     Invoke-AutonomousCompletionPolicy -FailureKind 'content' -GateId 'daily-quality' -Reason 'daily quality autonomous gate failed' -ExitCode $dailyQualityRc
 }
 Write-Log 'daily quality gate OK'
+Update-RunnerProgress -Phase 'checkpoint' -Step 'daily quality checkpoint committed' -ResumeStageCheckpoint 'post-daily-quality'
 
 if ($StopBeforeDeepDive) {
     Write-Log 'pre-DeepDive production volume gate start'
@@ -3905,6 +4246,7 @@ if ($generationNormalizeRc -ne 0) {
 Write-Log 'generation artifact normalize OK'
 
 Write-Log 'generation quality gate start (validate_generation_quality)'
+Update-RunnerProgress -Phase 'checkpoint' -Step 'deepdive generation checkpoint committed' -ResumeStageCheckpoint 'generation-quality-repair'
 $generationQualityRc = Invoke-AutonomousGate -GateId 'generation-quality' -Category 'generated' -PythonArgs @('-m', 'tools.validate_generation_quality', '--date', $DateStamp, '--repo-root', $RepoDir, '--json') -Artifacts $GeneratedArtifacts
 if ($generationQualityRc -ne 0) {
     Write-Log "generation quality autonomous gate failed (rc=$generationQualityRc)"

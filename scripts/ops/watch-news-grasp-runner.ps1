@@ -23,7 +23,8 @@ param(
     [string] $BinDir = '',
     [string] $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH,
     [string] $HighCostBudgetToolPath = $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH,
-    [string] $HighCostWorkspaceRoot = $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT
+    [string] $HighCostWorkspaceRoot = $env:NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT,
+    [string] $RecoveryDecisionPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -127,11 +128,14 @@ function Repair-LiveOpsFromRepo {
     }
     New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
     $files = @(
+        'run_codex_with_timeout.ps1',
         'news-grasp-bootstrap.ps1',
         'news-grasp-runner.ps1',
+        'news-grasp-lineage.ps1',
         'watch-news-grasp-runner.ps1',
         'news-grasp-deadman.ps1',
-        'news-grasp-deadman-launcher.pyw'
+        'news-grasp-deadman-launcher.pyw',
+        'news-grasp-task-launcher.pyw'
     )
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     $backupDir = Join-Path $RepoDir "build\live-runner-self-repair\$timestamp"
@@ -426,6 +430,7 @@ function Write-StartedJson {
 }
 
 function Start-RunnerProcess {
+    param([object] $RecoveryDecision = $null)
     if (-not (Test-Path $RunnerPath)) {
         throw "runner not found: $RunnerPath"
     }
@@ -452,7 +457,63 @@ function Start-RunnerProcess {
     if ($HighCostWorkspaceRoot) {
         $args += @('-HighCostWorkspaceRoot', $HighCostWorkspaceRoot)
     }
+    if ($RecoveryDecision) {
+        $args += @('-RunIntent', 'ScheduledRecoveryFull')
+        $args += @('-ScheduledAuthorityEvidencePath', [string]$RecoveryDecision.scheduledAuthorityEvidencePath)
+        if ([string]$RecoveryDecision.recoveryBranch -eq 'ResumeFromStage') {
+            $args += @('-ResumeFromStage', [string]$RecoveryDecision.resumeStage)
+            $args += @('-HighCostAdmissionPath', [string]$RecoveryDecision.sourceAdmissionPath)
+        }
+        $args += @('-RecoveryDecisionPath', [string]$RecoveryDecision.decisionPath)
+    }
     return Start-Process -FilePath 'powershell' -ArgumentList $args -WindowStyle Hidden -PassThru
+}
+
+function Get-DailyControlPython {
+    $candidate = Join-Path $RepoDir '.venv\Scripts\python.exe'
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
+    return 'python'
+}
+
+function Get-RecoveryDecision {
+    param(
+        [string] $Trigger,
+        [int] $ProcessExitCode,
+        [int] $RecoveryAttemptNumber = 0
+    )
+    $python = Get-DailyControlPython
+    Push-Location $RepoDir
+    try {
+        $json = (& $python '-m' 'tools.news_grasp_daily_control' 'prepare' '--issue-date' $DateStamp '--trigger' $Trigger '--process-exit-code' $ProcessExitCode '--recovery-attempt-number' $RecoveryAttemptNumber 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Write-BootstrapLog "daily control failed trigger=$Trigger exit=$LASTEXITCODE detail=$json"
+            return $null
+        }
+        return $json | ConvertFrom-Json -ErrorAction Stop
+    } finally {
+        Pop-Location
+    }
+}
+
+function Read-ValidatedRecoveryDecision {
+    param([string] $Path)
+    $python = Get-DailyControlPython
+    Push-Location $RepoDir
+    try {
+        $json = (& $python '-m' 'tools.news_grasp_daily_control' 'validate-decision' '--path' $Path 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) { throw "recovery decision invalid: $json" }
+        return $json | ConvertFrom-Json -ErrorAction Stop
+    } finally {
+        Pop-Location
+    }
+}
+
+function Start-RecoveryFromDecision {
+    param([Parameter(Mandatory=$true)][object] $Decision)
+    if ([string]$Decision.action -ne 'launch_recovery' -or [int]$Decision.maxAutomaticRecoveryAttempts -ne 1) {
+        throw "typed recovery launch not admitted: action=$($Decision.action)"
+    }
+    return Start-RunnerProcess -RecoveryDecision $Decision
 }
 
 function Test-TerminalState {
@@ -542,11 +603,25 @@ if ($PSCmdlet.ParameterSetName -eq 'Status') {
 }
 
 Repair-LiveOpsFromRepo
-$proc = Start-RunnerProcess
+$decision = $null
+if ($RecoveryDecisionPath) {
+    $decision = Read-ValidatedRecoveryDecision -Path $RecoveryDecisionPath
+}
+$proc = if ($decision) { Start-RecoveryFromDecision -Decision $decision } else { Start-RunnerProcess }
 if ($PSCmdlet.ParameterSetName -eq 'StartOnly') {
     Write-StartedJson -Process $proc
     exit 0
 }
 
 Watch-Runner -Process $proc
+if ($script:WatchExitCode -ne 0 -and (-not $decision) -and (-not $SmokeTest) -and (-not $RecoverOnly)) {
+    $decision = Get-RecoveryDecision -Trigger 'production_failure' -ProcessExitCode $script:WatchExitCode
+    if ($decision -and [string]$decision.action -eq 'launch_recovery') {
+        $recoveryProcess = Start-RecoveryFromDecision -Decision $decision
+        Watch-Runner -Process $recoveryProcess
+        if ($script:WatchExitCode -ne 0) {
+            $null = Get-RecoveryDecision -Trigger 'production_failure' -ProcessExitCode $script:WatchExitCode -RecoveryAttemptNumber 1
+        }
+    }
+}
 exit $script:WatchExitCode

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -11,7 +12,17 @@ import pytest
 import tools.harness.high_cost_control_v2 as high_cost
 
 
-BROKER_PATH = Path(high_cost.__file__).resolve().with_name("model_spawn_broker.py")
+BROKER_PATH = (
+    Path(
+        os.environ.get(
+            "NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT",
+            str(Path(__file__).resolve().parents[2]),
+        )
+    )
+    / "tools"
+    / "harness"
+    / "model_spawn_broker.py"
+)
 
 
 def _load_broker_module():
@@ -40,6 +51,7 @@ def _issue_recovery_authority_in_store(store, issue_date: str):
         )
     failure = high_cost.freeze_scheduled_failure_receipt(
         issue_date=issue_date,
+        run_id="scheduled-high-cost-separation",
         last_task_result=76,
         runner_state="operation_rejected_high_cost_admission",
         state_sha256="3" * 64,
@@ -174,6 +186,65 @@ def test_recovery_reuses_same_date_identity_attempt_and_remaining_budget(tmp_pat
     store.close()
 
 
+def test_recovery_reclaims_only_unleased_reporter_reservations(tmp_path) -> None:
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, recovery_authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=recovery_authority,
+    )
+    source_run_id = "a" * 32
+    leased = high_cost.reserve_scheduled_model_call_in_store(
+        store=store,
+        admission=recovery,
+        route="reporter:ai",
+        call_id=f"{source_run_id}:reporter:ai:1",
+    )
+    high_cost.issue_model_process_lease_in_store(
+        store=store,
+        reservation=leased,
+        api="pytest",
+    )
+    row = store.db.execute(
+        "SELECT authorization_id,max_calls,admission_digest FROM tasks WHERE task_identity=?",
+        (recovery["taskIdentity"],),
+    ).fetchone()
+    store.reserve_call(
+        {
+            "authorizationId": row["authorization_id"],
+            "taskIdentity": recovery["taskIdentity"],
+            "maxExternalModelCalls": row["max_calls"],
+            "admissionDigest": row["admission_digest"],
+        },
+        call_id=f"{source_run_id}:reporter:fx:1",
+        request_id=f"model:{recovery['taskIdentity']}:reporter:fx:{source_run_id}:reporter:fx:1",
+    )
+
+    result = high_cost.reclaim_unleased_scheduled_recovery_reservations_in_store(
+        store=store,
+        admission=recovery,
+        runner_state={
+            "date": "2026-08-03",
+            "run_intent": "ScheduledRecoveryFull",
+            "run_id": source_run_id,
+            "status": "error",
+            "first_terminal_wins": "first-terminal-wins",
+        },
+    )
+    row = store.db.execute(
+        "SELECT call_count FROM tasks WHERE task_identity=?",
+        (recovery["taskIdentity"],),
+    ).fetchone()
+
+    assert result["reclaimedCallCount"] == 1
+    assert row["call_count"] == 1
+    store.close()
+
+
 def test_recovery_can_own_the_single_attempt_when_pre_admission_start_failed(
     tmp_path,
 ) -> None:
@@ -277,6 +348,111 @@ def test_recovery_admission_rejects_failure_hash_substitution_and_replay(tmp_pat
     store.close()
 
 
+def _startup_failed_recovery_state(*, issue_date: str = "2026-08-03") -> dict[str, object]:
+    return {
+        "status": "blocked_startup_self_repair_failed",
+        "message": "pre-run bootstrap failed exit=1",
+        "exit_code": 72,
+        "date": issue_date,
+        "run_intent": "ScheduledRecoveryFull",
+        "run_id": "e" * 32,
+        "first_terminal_wins": "first-terminal-wins",
+        "phase": "startup",
+        "step": "bootstrap_interlock",
+    }
+
+
+def test_startup_failed_recovery_can_reenter_same_attempt_once_without_budget_reset(
+    tmp_path,
+) -> None:
+    reconcile = _required_symbol(
+        "reconcile_scheduled_recovery_startup_failure_in_store",
+        "RED_RECOVERY_STARTUP_REENTRY_RECONCILER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+
+    permit = reconcile(
+        store=store,
+        admission=recovery,
+        runner_state=_startup_failed_recovery_state(),
+    )
+    assert permit["schemaVersion"] == "SCHEDULED_RECOVERY_STARTUP_REENTRY_PERMIT_V1"
+    assert permit["maxAdditionalModelCalls"] == 0
+    restarted = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+    assert restarted == recovery
+    assert store.call_count(recovery["taskIdentity"]) == 0
+    with pytest.raises(high_cost.ControlError, match="SCHEDULED_RECOVERY_ADMISSION_REPLAY"):
+        high_cost.admit_scheduled_news_grasp_operation_in_store(
+            store=store,
+            issue_date="2026-08-03",
+            operation_kind="scheduled_recovery",
+            authority_evidence=authority,
+        )
+    store.close()
+
+
+def test_startup_reentry_rejects_nonstartup_failure_and_any_reserved_model_call(
+    tmp_path,
+) -> None:
+    reconcile = _required_symbol(
+        "reconcile_scheduled_recovery_startup_failure_in_store",
+        "RED_RECOVERY_STARTUP_REENTRY_RECONCILER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+    wrong_state = _startup_failed_recovery_state()
+    wrong_state["status"] = "failed_daily_quality"
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_RECOVERY_STARTUP_FAILURE_REQUIRED"
+    ):
+        reconcile(store=store, admission=recovery, runner_state=wrong_state)
+
+    high_cost.reserve_scheduled_model_call_in_store(
+        store=store,
+        admission=recovery,
+        route="reporter:ai",
+        call_id="already-consumed",
+    )
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_RECOVERY_STARTUP_REENTRY_BUDGET_DIRTY"
+    ):
+        reconcile(
+            store=store,
+            admission=recovery,
+            runner_state=_startup_failed_recovery_state(),
+        )
+    store.close()
+
+
+def test_broker_exposes_typed_recovery_startup_reconcile_command() -> None:
+    source = BROKER_PATH.read_text(encoding="utf-8")
+    assert "reconcile-news-grasp-recovery-startup" in source, (
+        "RED_RECOVERY_STARTUP_RECONCILE_COMMAND_MISSING"
+    )
+
+
 def _terminal_recovery_state(*, issue_date: str = "2026-08-03") -> dict[str, object]:
     return {
         "status": "blocked_refill_unresolved",
@@ -326,6 +502,53 @@ def test_recovery_continuation_reuses_admission_and_remaining_budget(tmp_path) -
         call_id="continuation-deepdive",
     )
     assert reserved["callCount"] == 1
+    store.close()
+
+
+def test_post_reporter_recovery_continuation_allows_only_remaining_generation_routes(tmp_path) -> None:
+    continuation_issuer = _required_symbol(
+        "admit_scheduled_recovery_continuation_in_store",
+        "RED_SCHEDULED_RECOVERY_CONTINUATION_ISSUER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+
+    continuation = continuation_issuer(
+        store=store,
+        admission=recovery,
+        runner_state=_terminal_recovery_state(),
+        resume_stage="post-reporter",
+    )
+
+    assert continuation["resumeStage"] == "post-reporter"
+    assert continuation["allowedModelRoutes"] == [
+        "newsroom_editor",
+        "deepdive",
+        "repair:generation-quality",
+    ]
+    high_cost.reserve_scheduled_model_call_in_store(
+        store=store,
+        admission=continuation,
+        route="newsroom_editor",
+        call_id="continuation-editor",
+    )
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_RECOVERY_CONTINUATION_ROUTE_FORBIDDEN"
+    ):
+        high_cost.reserve_scheduled_model_call_in_store(
+            store=store,
+            admission=continuation,
+            route="reporter:ai",
+            call_id="forbidden-reporter",
+        )
     store.close()
 
 
@@ -467,6 +690,78 @@ def test_recovery_continuation_chains_only_into_generation_quality_repair(
         call_id="missing-deepdive-repair",
     )
     assert reserved["callCount"] == 1
+    store.close()
+
+
+def test_incident_publication_repair_adds_one_scoped_call_after_exhaustion(
+    tmp_path,
+) -> None:
+    issuer = _required_symbol(
+        "admit_news_grasp_incident_publication_repair_in_store",
+        "RED_NEWS_GRASP_INCIDENT_REPAIR_ISSUER_MISSING",
+    )
+    store = high_cost.HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
+    )
+    _, authority = _issue_recovery_authority_in_store(store, "2026-08-03")
+    recovery = high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_recovery",
+        authority_evidence=authority,
+    )
+    for index in range(9):
+        high_cost.reserve_scheduled_model_call_in_store(
+            store=store,
+            admission=recovery,
+            route="deepdive",
+            call_id=f"used-{index}",
+        )
+    artifacts = {
+        "digest/DeepDive/2026-08-03-DeepDive.md": "1" * 64,
+        "digest/Summary/2026-08-03-audio-script.md": "2" * 64,
+    }
+    incident = issuer(
+        store=store,
+        admission=recovery,
+        runner_state=_terminal_recovery_state(),
+        artifact_hashes=artifacts,
+    )
+    assert incident["schemaVersion"] == "HIGH_COST_SCHEDULED_INCIDENT_REPAIR_V1"
+    assert incident["maxExternalModelCalls"] == 10
+    assert incident["allowedModelRoutes"] == ["repair:incident-publication"]
+    with pytest.raises(
+        high_cost.ControlError,
+        match="SCHEDULED_RECOVERY_CONTINUATION_ROUTE_FORBIDDEN",
+    ):
+        high_cost.reserve_scheduled_model_call_in_store(
+            store=store,
+            admission=incident,
+            route="deepdive",
+            call_id="forbidden-rerun",
+        )
+    final_call = high_cost.reserve_scheduled_model_call_in_store(
+        store=store,
+        admission=incident,
+        route="repair:incident-publication",
+        call_id="incident-repair",
+    )
+    assert final_call["callCount"] == 10
+    zero_model_continuation = high_cost.admit_scheduled_recovery_continuation_in_store(
+        store=store,
+        admission=incident,
+        runner_state=_terminal_recovery_state(),
+        resume_stage="post-deepdive",
+    )
+    assert zero_model_continuation["maxExternalModelCalls"] == 10
+    assert zero_model_continuation["allowedModelRoutes"] == []
+    with pytest.raises(high_cost.ControlError, match="HIGH_COST_CALL_BUDGET_EXHAUSTED"):
+        high_cost.reserve_scheduled_model_call_in_store(
+            store=store,
+            admission=incident,
+            route="repair:incident-publication",
+            call_id="incident-repair-replay-bypass",
+        )
     store.close()
 
 
@@ -720,6 +1015,7 @@ def test_failure_receipt_freezes_scheduled_failure_without_recovery_overwrite() 
     )
     receipt = freezer(
         issue_date="2026-08-02",
+        run_id="freeze-scheduled-failure",
         last_task_result=76,
         runner_state="operation_rejected_high_cost_admission",
         state_sha256="3" * 64,
@@ -743,6 +1039,7 @@ def test_recovery_authority_requires_installed_mission_and_same_date_failure() -
     )
     failure = freezer(
         issue_date="2026-08-02",
+        run_id="recovery-authority-same-date",
         last_task_result=76,
         runner_state="operation_rejected_high_cost_admission",
         state_sha256="3" * 64,
@@ -773,6 +1070,7 @@ def test_recovery_authority_rejects_cross_date_substitution() -> None:
     )
     failure = freezer(
         issue_date="2026-08-01",
+        run_id="recovery-authority-cross-date",
         last_task_result=76,
         runner_state="operation_rejected_high_cost_admission",
         state_sha256="3" * 64,
@@ -1015,11 +1313,12 @@ def test_runner_resume_uses_broker_issued_recovery_continuation() -> None:
     runner = (root / "scripts" / "ops" / "news-grasp-runner.ps1").read_text(
         encoding="utf-8-sig"
     )
-    assert "admit-news-grasp-recovery-continuation" in runner
+    assert "admit-news-grasp-recovery-continuation" not in runner
     assert "SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_REQUIRED" in runner
-    assert "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in runner
-    assert "--runner-state" in runner
-    assert "--resume-stage" in runner
+    assert "tools.news_grasp_daily_control" in runner
+    assert "validate-decision" in runner
+    assert "RECOVERY_DECISION_BRANCH_MISMATCH" in runner
+    assert "ScheduledAuthorityEvidencePath" in runner
     assert "generation-quality-repair" in runner
     assert "generation-quality gate owns missing artifact repair" in runner
     artifact_guards = [
@@ -1155,95 +1454,93 @@ def test_attempt_status_is_derived_from_canonical_ledger_not_caller_text(tmp_pat
     store.close()
 
 
-def test_observed_pre_admission_failure_is_reconciled_for_current_issue_date(tmp_path) -> None:
-    """runner到達前のTask失敗も当日ledgerへ一度だけ凍結できる。"""
-    reconcile = _required_symbol(
-        "reconcile_observed_scheduled_pre_admission_failure_in_store",
-        "RED_SCHEDULED_PRE_ADMISSION_RECONCILER_MISSING",
+def test_current_scheduled_failure_is_atomically_recorded_for_recovery(tmp_path) -> None:
+    recorder = _required_symbol(
+        "record_scheduled_news_grasp_failure_in_store",
+        "RED_SCHEDULED_FAILURE_TERMINALIZER_MISSING",
     )
     store = high_cost.HighCostControlStore.create_for_test(
         tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
     )
-    evidence = {
-        "schemaVersion": "OBSERVED_SCHEDULED_PRE_ADMISSION_FAILURE_V1",
-        "productId": "News-Grasp",
-        "issueDate": "2026-08-04",
-        "taskName": "News-Grasp Runner",
-        "lastRunDate": "2026-08-04",
-        "lastTaskResult": 1,
-        "taskState": "Ready",
-        "runnerState": "scheduled_task_failed_before_current_state_write",
-        "stateSha256": "1" * 64,
-        "logSha256": "2" * 64,
-        "taskActionSha256": "3" * 64,
-        "runnerSha256": "4" * 64,
-        "observer": "installed_broker_scheduler_observer",
-    }
-    failure = reconcile(store=store, evidence=evidence)
-    assert failure["schemaVersion"] == "SCHEDULED_FAILURE_RECEIPT_V1"
-    assert failure["issueDate"] == "2026-08-04"
-    assert failure["scheduledAttemptStatus"] == "failed"
-    assert failure["lastTaskResult"] == 1
-    assert failure["runnerState"] == "scheduled_task_failed_before_current_state_write"
+    high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_production",
+    )
+
+    failure = recorder(
+        store=store,
+        issue_date="2026-08-03",
+        run_id="atomic-failure-record",
+        last_task_result=72,
+        runner_state="blocked_startup_self_repair_failed",
+        state_sha256="3" * 64,
+        log_sha256="4" * 64,
+        task_action_sha256="1" * 64,
+        runner_sha256="2" * 64,
+        failure_stage="startup_self_repair",
+    )
+
     witness = high_cost.inspect_scheduled_news_grasp_attempt_in_store(
-        store=store, issue_date="2026-08-04"
+        store=store,
+        issue_date="2026-08-03",
     )
+    assert failure["schemaVersion"] == "SCHEDULED_FAILURE_RECEIPT_V1"
     assert witness["scheduledAttemptStatus"] == "failed"
-    assert witness["recoveryAttemptStatus"] == "not_started"
     assert witness["failureReceiptSha256"] == failure["receiptSha256"]
-    with pytest.raises(high_cost.ControlError, match="SCHEDULED_PRE_ADMISSION_RECONCILE_REPLAY"):
-        reconcile(store=store, evidence=evidence)
+    event = store.db.execute(
+        "SELECT request_id,payload_json FROM events WHERE event_type='scheduled_failure_frozen'"
+    ).fetchone()
+    assert event["request_id"].endswith(":2026-08-03:atomic-failure-record")
+    assert json.loads(event["payload_json"])["runId"] == "atomic-failure-record"
+    assert json.loads(event["payload_json"])["failureStage"] == "startup_self_repair"
     store.close()
 
 
-def test_broker_exposes_self_observing_pre_admission_reconcile_command() -> None:
-    """broker自身がTaskを観測し、caller JSONを証拠として受け取らない。"""
-    source = BROKER_PATH.read_text(encoding="utf-8-sig")
-    assert 'sub.add_parser("reconcile-news-grasp-scheduled-pre-admission-failure")' in source
-    assert "observe_news_grasp_scheduled_pre_admission_failure" in source
-    command_block = source.split(
-        'sub.add_parser("reconcile-news-grasp-scheduled-pre-admission-failure")', 1
-    )[1].split("sub.add_parser", 1)[0]
-    assert "--evidence" not in command_block
-    observer_block = source.split(
-        "def observe_news_grasp_scheduled_pre_admission_failure", 1
-    )[1].split("def ", 1)[0]
-    assert "Get-FileHash" not in observer_block
-    assert "[System.Security.Cryptography.SHA256]::Create()" in observer_block
-
-
-@pytest.mark.parametrize(
-    ("field", "value"),
-    (("lastTaskResult", 0), ("lastRunDate", "2026-08-03"), ("taskState", "Running")),
-)
-def test_pre_admission_reconcile_rejects_non_failure_or_cross_date_evidence(
-    tmp_path, field: str, value: object
+def test_current_scheduled_failure_terminalizer_rejects_replay_and_missing_reservation(
+    tmp_path,
 ) -> None:
-    reconcile = high_cost.reconcile_observed_scheduled_pre_admission_failure_in_store
-    evidence = {
-        "schemaVersion": "OBSERVED_SCHEDULED_PRE_ADMISSION_FAILURE_V1",
-        "productId": "News-Grasp",
-        "issueDate": "2026-08-04",
-        "taskName": "News-Grasp Runner",
-        "lastRunDate": "2026-08-04",
-        "lastTaskResult": 1,
-        "taskState": "Ready",
-        "runnerState": "scheduled_task_failed_before_current_state_write",
-        "stateSha256": "1" * 64,
-        "logSha256": "2" * 64,
-        "taskActionSha256": "3" * 64,
-        "runnerSha256": "4" * 64,
-        "observer": "installed_broker_scheduler_observer",
-    }
-    evidence[field] = value
+    recorder = _required_symbol(
+        "record_scheduled_news_grasp_failure_in_store",
+        "RED_SCHEDULED_FAILURE_TERMINALIZER_MISSING",
+    )
     store = high_cost.HighCostControlStore.create_for_test(
         tmp_path / "ledger.sqlite3", high_cost.MemoryAnchor()
     )
+    kwargs = {
+        "store": store,
+        "issue_date": "2026-08-03",
+        "run_id": "terminalizer-replay",
+        "last_task_result": 72,
+        "runner_state": "blocked_startup_self_repair_failed",
+        "state_sha256": "3" * 64,
+        "log_sha256": "4" * 64,
+        "task_action_sha256": "1" * 64,
+        "runner_sha256": "2" * 64,
+        "failure_stage": "startup_self_repair",
+    }
     with pytest.raises(
-        high_cost.ControlError, match="SCHEDULED_PRE_ADMISSION_EVIDENCE_INVALID"
+        high_cost.ControlError, match="SCHEDULED_ATTEMPT_LEDGER_EVENT_MISSING"
     ):
-        reconcile(store=store, evidence=evidence)
+        recorder(**kwargs)
+
+    high_cost.admit_scheduled_news_grasp_operation_in_store(
+        store=store,
+        issue_date="2026-08-03",
+        operation_kind="scheduled_production",
+    )
+    recorder(**kwargs)
+    with pytest.raises(
+        high_cost.ControlError, match="SCHEDULED_FAILURE_TERMINAL_REPLAY"
+    ):
+        recorder(**kwargs)
     store.close()
+
+
+def test_broker_exposes_atomic_scheduled_failure_terminalizer() -> None:
+    source = BROKER_PATH.read_text(encoding="utf-8-sig")
+    assert 'sub.add_parser("record-news-grasp-failure")' in source
+    assert "record_scheduled_news_grasp_failure_in_store" in source
 
 
 def test_broker_exposes_attempt_ledger_inspection_command() -> None:

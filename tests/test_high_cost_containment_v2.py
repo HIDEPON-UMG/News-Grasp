@@ -28,6 +28,42 @@ def test_complaint_race_defers_call_and_runs_local_path(tmp_path) -> None:
     store.close()
 
 
+def test_model_process_lease_accepts_colon_route_and_call_id(tmp_path) -> None:
+    from tools.harness.high_cost_control_v2 import (
+        CanonicalAuthority,
+        HighCostControlStore,
+        MemoryAnchor,
+        issue_model_process_lease_in_store,
+    )
+
+    authority = CanonicalAuthority(
+        "task-1", "thread-1", "a" * 64, "goal-1", FINAL_E2E_OBJECTIVE
+    )
+    store = HighCostControlStore.create_for_test(
+        tmp_path / "ledger.sqlite3", MemoryAnchor()
+    )
+    store.ensure_production_task(
+        authority=authority,
+        max_calls=9,
+        max_full_e2e_attempts=0,
+        request_id="issue:task-1",
+    )
+
+    reservation = store.reserve_production_call(
+        authority=authority,
+        route="reporter:fx",
+        call_id="run-1:reporter:fx:1",
+    )
+    lease = issue_model_process_lease_in_store(
+        store=store,
+        reservation={**reservation, "taskIdentity": authority.task_identity, "route": "reporter:fx"},
+        api="pytest",
+    )
+
+    assert lease["reservationEventSequence"] == reservation["eventSequence"]
+    store.close()
+
+
 def test_japanese_goal_allows_exactly_one_final_nopublish_e2e() -> None:
     from tools.harness.high_cost_control_v2 import _objective_full_e2e_limit
 

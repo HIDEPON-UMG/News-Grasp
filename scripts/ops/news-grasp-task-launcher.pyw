@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import subprocess
 import sys
+import time
 from datetime import date, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -60,25 +63,114 @@ def freeze_startup_failure_if_needed(
     )
 
 
+def _write_json_atomic(path: Path, value: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(f"{path.name}.tmp.{os.getpid()}")
+    temp.write_text(
+        json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    temp.replace(path)
+
+
+def _pre_attempt_identity(mode: str, script: Path) -> dict[str, object]:
+    launch_evidence = {
+        "mode": mode,
+        "launcherPath": str(Path(__file__).resolve()),
+        "scriptPath": str(script.resolve()),
+        "processId": os.getpid(),
+        "processStartNonce": time.time_ns(),
+    }
+    launch_key = hashlib.sha256(
+        json.dumps(
+            launch_evidence,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    root_operation_id = hashlib.sha256(
+        f"News-Grasp|{launch_key}|root-operation".encode("utf-8")
+    ).hexdigest()
+    return {
+        "schemaVersion": "NEWS_GRASP_PRE_ATTEMPT_WAL_V1",
+        "launchKey": launch_key,
+        "rootOperationId": root_operation_id,
+        "preAttemptStatus": "launch_reserved",
+        "continuationState": "pre_controller_running",
+        "walClosed": False,
+        "observerReconstructable": True,
+        "scheduledRecoveryFullAuthorityProvable": False,
+        "launchEvidence": launch_evidence,
+    }
+
+
+def record_missing_pre_attempt_from_task_history(
+    task_evidence: dict[str, object],
+) -> dict[str, object]:
+    """launcher/broker未到達時のidentityをTask Scheduler一次証拠から復元する。"""
+    required = ("Execute", "Arguments", "LastRunTime", "LastTaskResult")
+    if any(task_evidence.get(field) in {None, ""} for field in required):
+        raise ValueError("TASK_HISTORY_EVIDENCE_INCOMPLETE")
+    evidence = {field: task_evidence[field] for field in required}
+    launch_key = hashlib.sha256(
+        json.dumps(
+            evidence,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    root_operation_id = hashlib.sha256(
+        f"News-Grasp|{launch_key}|root-operation".encode("utf-8")
+    ).hexdigest()
+    failed = int(task_evidence["LastTaskResult"]) != 0
+    return {
+        "schemaVersion": "NEWS_GRASP_TASK_HISTORY_PRE_ATTEMPT_V1",
+        "launchKey": launch_key,
+        "rootOperationId": root_operation_id,
+        "preAttemptStatus": (
+            "failed_before_attempt" if failed else "task_action_completed"
+        ),
+        "scheduledRecoveryFullAuthorityProvable": failed,
+        "callerAttemptIdentityAccepted": False,
+        "taskEvidenceSha256": hashlib.sha256(
+            json.dumps(
+                evidence,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("runner", "bootstrap"))
     parser.add_argument("--probe", type=Path)
+    parser.add_argument("--scheduled-task-name", required=False)
     args = parser.parse_args()
     if args.probe:
         args.probe.parent.mkdir(parents=True, exist_ok=True)
         args.probe.write_text("probe_ok", encoding="utf-8")
         return 0
     bin_dir = Path.home() / "bin"
-    script = bin_dir / ("news-grasp-bootstrap.ps1" if args.mode == "runner" else "news-grasp-bootstrap.ps1")
+    script = bin_dir / "news-grasp-bootstrap.ps1"
     extra = [
         "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
+        "-ProductionTaskName", "News-Grasp Production",
     ] if args.mode == "runner" else [
         "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Bootstrap",
-        "-SmokeTest", "-SkipSourceSync",
+        "-ProductionTaskName", "News-Grasp Production",
+        "-SmokeTest",
+        "-SkipSourceSync",
         "-PollSeconds", "1", "-TimeoutMinutes", "2",
         "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
     ]
+    if args.scheduled_task_name:
+        extra[extra.index("-ScheduledTaskName") + 1] = args.scheduled_task_name
     powershell = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
     issue_date = date.today().isoformat()
     failure_state = bin_dir / (
@@ -94,6 +186,9 @@ def main() -> int:
         return 66
     creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     log = bin_dir / "news-grasp-task-launcher.log"
+    wal = bin_dir / "news-grasp-task-launcher-wal.json"
+    pre_attempt = _pre_attempt_identity(args.mode, script)
+    _write_json_atomic(wal, pre_attempt)
     with log.open("a", encoding="utf-8", errors="replace") as stream:
         result = subprocess.run(
             [str(powershell), "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script), *extra],
@@ -104,23 +199,42 @@ def main() -> int:
             creationflags=creationflags,
             check=False,
         )
-    if result.returncode != 0:
-        freeze_startup_failure_if_needed(
-            state_path=failure_state,
-            returncode=int(result.returncode),
-            issue_date=issue_date,
-            detail=f"STARTUP_SELF_REPAIR_FAILED exit={result.returncode}",
-        )
-        return int(result.returncode)
-    if args.mode == "bootstrap":
+    effective_returncode = int(result.returncode)
+    if effective_returncode == 0 and args.mode == "bootstrap":
         state_path = bin_dir / "ng-smoke-state.json"
         try:
             state = json.loads(state_path.read_text(encoding="utf-8-sig"))
         except (OSError, ValueError, TypeError):
-            return 73
-        if state.get("status") != "smoke_ok":
-            return 73
-    return 0
+            effective_returncode = 73
+        else:
+            if state.get("status") != "smoke_ok":
+                effective_returncode = 73
+    if effective_returncode != 0:
+        freeze_startup_failure_if_needed(
+            state_path=failure_state,
+            returncode=effective_returncode,
+            issue_date=issue_date,
+            detail=f"STARTUP_SELF_REPAIR_FAILED exit={effective_returncode}",
+        )
+    pre_attempt.update(
+        {
+            "childReturnCode": effective_returncode,
+            "preAttemptStatus": (
+                "controller_started"
+                if effective_returncode == 0
+                else "failed_before_attempt"
+            ),
+            "continuationState": (
+                "controller_owns_continuation"
+                if effective_returncode == 0
+                else "scheduled_recovery_required"
+            ),
+            "walClosed": True,
+            "scheduledRecoveryFullAuthorityProvable": effective_returncode != 0,
+        }
+    )
+    _write_json_atomic(wal, pre_attempt)
+    return effective_returncode
 
 
 if __name__ == "__main__":

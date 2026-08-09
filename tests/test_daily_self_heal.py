@@ -1768,8 +1768,9 @@ _REAL_VERIFY_DEEPDIVE_QUALITY_HEAD_BINDING = (
 
 
 @pytest.fixture(autouse=True)
-def _isolate_publish_complete_shared_quality(monkeypatch) -> None:
+def _isolate_publish_complete_shared_quality(monkeypatch, tmp_path: Path) -> None:
     """publish verifier固有テストは共有品質engineを明示fixtureで隔離する。"""
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     monkeypatch.setattr(
         dsh,
         "deepdive_quality",
@@ -1801,6 +1802,30 @@ def _write_publish_complete_inventory(
     *,
     distribution_manifest: dict | str | None = None,
 ) -> None:
+    state_path = repo_root / "News-Grasp" / "ops" / "news-grasp-runner-state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    run_id = "fixture-run"
+    run_intent = "ScheduledProduction"
+    lineage = dsh._producer_lineage_expected(
+        repo_root=repo_root,
+        ops_root=state_path.parent,
+        date=date,
+        run_intent=run_intent,
+        run_id=run_id,
+    )
+    state_path.write_text(
+        json.dumps(
+            {
+                "date": date,
+                "status": "publish_complete",
+                "exit_code": 0,
+                "run_id": run_id,
+                "run_intent": run_intent,
+                **lineage,
+            }
+        ),
+        encoding="utf-8",
+    )
     _write_local_sw(repo_root)
     (repo_root / "build" / "tts").mkdir(parents=True, exist_ok=True)
     (repo_root / "build" / "tts" / "latest_audio.json").write_text(
@@ -2157,10 +2182,10 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
 
 
-def test_verify_live_runner_readiness_accepts_hardened_legacy_direct_trampoline(
+def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_success(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """Task更新権限がなくても、安全化済みdirect入口と正規05:55 launcherの組合せを受理する。"""
+    """legacy Runnerのexit 0をcanonical Production成功へ読み替えない。"""
     source_ops = Path(__file__).resolve().parents[1] / "scripts" / "ops"
     repo_ops = tmp_path / "scripts" / "ops"
     live_bin = tmp_path / "bin"
@@ -2211,9 +2236,9 @@ def test_verify_live_runner_readiness_accepts_hardened_legacy_direct_trampoline(
         run_canary=True,
     )
 
-    assert result["ok"] is True
-    assert result["status"] == "ready_with_failed_last_schedule"
-    assert result["scheduled_task"]["legacy_direct_clean_runtime_trampoline"] is True
+    assert result["ok"] is False
+    assert result["reason"] == "scheduled_task_launcher_required"
+    assert result["scheduled_task"]["legacy_direct_clean_runtime_trampoline"] is False
     assert result["scheduled_task"]["targets_live_runner"] is True
     assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
 

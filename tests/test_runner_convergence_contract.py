@@ -1161,7 +1161,7 @@ def test_runner_exposes_resume_from_deepdive_without_reharvest() -> None:
     _assert_runner_powershell_parses()
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
 
-    assert "[ValidateSet('', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]" in runner
+    assert "[ValidateSet('', 'post-reporter', 'editor', 'deepdive', 'post-daily-quality', 'post-deepdive', 'generation-quality-repair')]" in runner
     assert "[string] $ResumeFromStage = ''" in runner
     assert "$ResumeFromPostDailyQuality = $ResumeFromStage -in @('deepdive', 'post-daily-quality')" in runner
     assert "$ResumeAfterDeepDive = $ResumeFromStage -in @('post-deepdive')" in runner
@@ -1199,7 +1199,7 @@ def test_no_publish_e2e_forbids_force_full_rerun_after_artifacts_exist() -> None
 
     assert "$IsE2EOrDryRun = $NoPublish -or $NoPush -or $StopBeforeDeepDive" in guard
     assert "E2E full rerun forbidden after existing artifacts" in guard
-    assert "Use a typed -ResumeFromStage path." in guard
+    assert "Use -ResumeFromStage deepdive, post-daily-quality, post-deepdive, or generation-quality-repair" in guard
     assert guard.index("E2E full rerun forbidden after existing artifacts") < guard.index("existing daily artifacts detected")
     assert "-not $ForceFullRerun" not in guard.split("E2E full rerun forbidden after existing artifacts", 1)[0]
 
@@ -1410,7 +1410,8 @@ def test_runner_typed_terminal_state_can_replace_generic_error() -> None:
     state_body = runner.split("function Set-RunnerState", 1)[1].split("function Exit-Runner", 1)[0]
 
     assert "typed terminal state must replace generic error" in state_body
-    assert "$prev.status -eq 'error'" in state_body
+    assert "$previousStatus -eq 'error'" in state_body
+    assert "Get-RunnerStateProperty" in runner
     for status in ["blocked_external_readiness", "publish_failed", "distribution_failed"]:
         assert status in state_body
 
@@ -1497,6 +1498,70 @@ def test_reporter_codex_quota_uses_external_readiness_boundary() -> None:
     assert "terminalFailures" not in quota_block
 
 
+def test_reporter_quota_rc_does_not_override_verified_green_artifact() -> None:
+    """記者 artifact 検証が Green なら wrapper の quota rc は公開生成を止めない。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    reporter_body = runner.split("$retryCategories = @($Categories)", 1)[1].split(
+        "foreach ($artifactCat in $Categories)",
+        1,
+    )[0]
+    success_marker = "if ($verifyReporterRc -eq 0) {"
+    quota_failure_marker = "} elseif (Test-ReporterCodexQuotaFailure -WaveResult $waveResult) {"
+    green_warning = "artifact verification Green category=$catName attempt=$attempt"
+
+    assert success_marker in reporter_body
+    assert quota_failure_marker in reporter_body
+    assert green_warning in reporter_body
+    assert reporter_body.index(success_marker) < reporter_body.index(green_warning)
+    assert reporter_body.index(green_warning) < reporter_body.index(quota_failure_marker)
+
+
+def test_post_reporter_resume_reuses_verified_reporter_artifacts_without_refanout() -> None:
+    """post-reporter resume は reporter を再消費せず、既存 artifact 検証から editor へ進む。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    reporter_body = runner.split("$retryCategories = @($Categories)", 1)[1].split(
+        "foreach ($artifactCat in $Categories)",
+        1,
+    )[0]
+
+    assert "$ResumeAfterReporter = $ResumeFromStage -in @('post-reporter', 'editor')" in runner
+    assert "(-not $ResumeAfterReporter)" in runner
+    assert "ResumeFromStage=${ResumeFromStage}: skipping Stage0/Stage1/Stage1.5" in runner
+    assert "if ($ResumeAfterReporter) {" in reporter_body
+    assert "skipping reporter fan-out; verifying existing reporter artifacts" in reporter_body
+    assert "$retryCategories = @()" in reporter_body
+    assert "HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in runner
+    assert "SCHEDULED_RECOVERY_CONTINUATION_SOURCE_ADMISSION_INVALID" in runner
+
+
+def test_recovery_continuation_admission_covers_deepdive_resume_boundary() -> None:
+    """DeepDive resume も broker-issued continuation admission で再開できる。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    admission_block = runner.split("$stageDecisionReceipt = ''", 1)[1].split(
+        "if (-not $ScheduledAuthorityEvidencePath)",
+        1,
+    )[0]
+    resume_block = runner.split("scheduled recovery stage start boundary", 1)[1].split(
+        "if ($ResumeGenerationQualityRepair)",
+        1,
+    )[0]
+
+    assert "if ($HighCostAdmissionPath)" in admission_block
+    assert "[string]$continuationAdmission.resumeStage -ne $ResumeFromStage" in admission_block
+    assert "$script:UsesHighCostContinuationAdmission = $true" in admission_block
+    assert "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1" in resume_block
+    assert "start-news-grasp-recovery-stage" in resume_block
+
+
+def test_scheduled_recovery_resume_never_converts_pytest_failure_to_success() -> None:
+    """同日公開復旧でもpytest failureを成功へ書き換えず、品質劣化を拒否する。"""
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    block = runner.split("if ($pytestGateRc -ne 0)", 1)[1].split("Write-Log 'pytest gate OK'", 1)[0]
+
+    assert "$pytestGateRc = 0" not in block
+    assert "Invoke-AutonomousCompletionPolicy" in block
+
+
 def test_runner_is_repo_managed_and_requires_approved_live_sync_outside_normal_daily() -> None:
     """手動・検証系の bin 実行体 drift は backup + 明示承認 + rollback を要求する。"""
     repo_runner = OPS_DIR / "news-grasp-runner.ps1"
@@ -1541,12 +1606,17 @@ def test_deadman_wrapper_exists_and_uses_non_webpush_alert_log() -> None:
     assert "tools.daily_self_heal" in text
     assert "deadman" in text
     assert "news-grasp-alerts" in text
-    assert "$exitCode -eq 2" in text
-    assert "exit 0" in text
-    assert "Invoke-RecoverOnlyIfStaleDeadPid" in text
-    assert "watch-news-grasp-runner.ps1" in text
-    assert "-StartOnly" in text
-    assert "-RecoverOnly" in text
+    assert "Invoke-Audit0640Control" in text
+    assert "tools.news_grasp_daily_control" in text
+    assert "execute-audit-0640" in text
+    assert "audit controller remains authoritative" in text
+    assert "exit (Invoke-Audit0640Control)" in text
+    assert "$terminalJson" in text
+    assert "$executorExitCode -notin @(0, 2)" in text
+    assert "Invoke-RecoverOnlyIfStaleDeadPid" not in text
+    assert "-RecoveryDecisionPath" not in text
+    assert "watch-news-grasp-runner.ps1" not in text
+    assert "-RecoverOnly" not in text
 
 
 def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
@@ -1572,16 +1642,22 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert launcher.exists()
     launcher_text = launcher.read_text(encoding="utf-8")
     installer_text = installer.read_text(encoding="utf-8-sig")
+    assert 'script = bin_dir / "news-grasp-bootstrap.ps1"' in launcher_text
+    assert '"news-grasp-runner.ps1" if args.mode == "runner"' not in launcher_text
     assert "subprocess.CREATE_NO_WINDOW" in launcher_text
     assert "stdin=subprocess.DEVNULL" in launcher_text
     assert "news-grasp-task-launcher.pyw" in installer_text
     assert "New-ScheduledTaskAction -Execute 'powershell.exe'" not in installer_text
     assert '/TR "powershell.exe ' not in installer_text
     assert "schtasks.exe /Create /TN $BootstrapTaskName" not in installer_text
-    assert 'news-grasp-task-launcher.pyw`" -Destination' in installer_text
+    assert "Invoke-NewsGraspInstallRollback" in installer_text
+    assert "existed_before" in installer_text
+    assert "Export-ScheduledTask" in installer_text
+    assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in installer_text
     assert "execute = $pythonw" in installer_text
     assert "[Console]::OutputEncoding" in installer_text
-    assert "Set-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction" in installer_text
+    assert "Register-ScheduledTask -TaskName $RunnerTaskName -Action $runnerAction -Trigger $runnerTrigger -Settings $runnerSettings" in installer_text
+    assert "Enable-ScheduledTask -TaskName $RunnerTaskName" in installer_text
     assert "if (-not $runnerRegistered) {" in installer_text
     assert 'throw "failed to converge $RunnerTaskName action:' in installer_text
 
@@ -1721,18 +1797,139 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "Get-FileHash" in text
     assert "install-manifest.json" in text
     assert "news-grasp-bootstrap.ps1" in text
+    assert "news-grasp-lineage.ps1" in text
+    assert "news-grasp-task-launcher.pyw" in text
+    bootstrap_text = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    watcher_text = (OPS_DIR / "watch-news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    for dependency in (
+        "run_codex_with_timeout.ps1",
+        "news-grasp-lineage.ps1",
+        "news-grasp-task-launcher.pyw",
+    ):
+        assert dependency in bootstrap_text
+        assert dependency in watcher_text
     assert "News-Grasp Bootstrap" in text
     assert "register_failed_bootstrap_required" in text
-    assert '"-SmokeTest", "-SkipSourceSync"' in launcher_text
-    assert '"-PollSeconds", "1", "-TimeoutMinutes", "2"' in launcher_text
-    assert launcher_text.count('"-UseProductionRuntime"') == 2
+    for argument in ('"-SmokeTest"', '"-PollSeconds"', '"-TimeoutMinutes"'):
+        assert argument in launcher_text
     assert '"-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs"' in launcher_text
     assert text.index("$BackupDir") < text.index("$files = @(")
     assert text.index("$BackupDir") < text.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
     assert "Register-ScheduledTask" in text
     assert "watch-news-grasp-runner.ps1" in text
     assert "-Start" in text
-    assert "News-Grasp Runner" in text
+    assert "[string] $RunnerTaskName = 'News-Grasp Production'" in text
+
+
+def test_ops_installer_preserves_pre_mutation_error_without_rollback_masking(tmp_path: Path) -> None:
+    """変更開始前の失敗はrollbackへ入らず、元の診断をそのまま返す。"""
+    installer = OPS_DIR / "install-news-grasp-ops.ps1"
+    missing_repo = tmp_path / "missing-repo"
+    bin_dir = tmp_path / "bin"
+
+    completed = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(installer),
+            "-RepoDir",
+            str(missing_repo),
+            "-BinDir",
+            str(bin_dir),
+            "-SkipTaskRegistration",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+
+    diagnostic = completed.stdout + completed.stderr
+    assert completed.returncode != 0
+    assert "Cannot find path" in diagnostic or "パス" in diagnostic
+    assert "Invoke-NewsGraspInstallRollback" not in diagnostic
+    assert not bin_dir.exists()
+
+
+def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
+    tmp_path: Path,
+) -> None:
+    """復旧journalは任意file/taskを一件も変更する前に全体を拒否する。"""
+    guard = OPS_DIR / "install-news-grasp-ops-guard.ps1"
+    backup_root = tmp_path / "backups"
+    transaction_dir = backup_root / "20260809-120000"
+    transaction_dir.mkdir(parents=True)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("unchanged", encoding="utf-8")
+    journal_path = transaction_dir / "install-manifest.json"
+    journal = {
+        "schemaVersion": "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+        "transaction_id": "20260809-120000",
+        "phase": "files_installed",
+        "updated_at": "2026-08-09T12:00:00+09:00",
+        "repo_dir": str(tmp_path / "repo"),
+        "bin_dir": str(bin_dir),
+        "task_pythonw_path": str(tmp_path / "pythonw.exe"),
+        "bin_dir_existed_before": True,
+        "backup_dir": str(transaction_dir),
+        "files": [
+            {
+                "file": "news-grasp-runner.ps1",
+                "source": "source",
+                "destination": str(outside),
+                "backup": "",
+                "before_sha256": "",
+                "source_sha256": "",
+                "after_sha256": "",
+            }
+        ],
+        "rollback_commands": ["Invoke-NewsGraspInstallRollback"],
+        "mission_authority": {
+            "path": "",
+            "sha256": "",
+            "schema": "AUDIT_MISSION_AUTHORITY_V1",
+        },
+        "scheduled_tasks": [],
+        "task_snapshots": [
+            {
+                "task_name": "Arbitrary Privileged Task",
+                "existed_before": False,
+                "enabled_before": False,
+                "xml_backup": "",
+            }
+        ],
+    }
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+    command = (
+        f". '{guard}'; "
+        f"$journal=Get-Content -LiteralPath '{journal_path}' -Raw -Encoding UTF8 | ConvertFrom-Json; "
+        "Assert-NewsGraspRecoveryJournal "
+        f"-JournalPath '{journal_path}' -Journal $journal "
+        f"-ExpectedBackupRoot '{backup_root}' -ExpectedRepoDir '{tmp_path / 'repo'}' "
+        f"-ExpectedBinDir '{bin_dir}' "
+        "-ExpectedTaskNames @('News-Grasp Production','News-Grasp Bootstrap','News-Grasp Deadman')"
+    )
+
+    completed = subprocess.run(
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_INSTALL_JOURNAL_" in completed.stderr
+    assert outside.read_text(encoding="utf-8") == "unchanged"
 
 
 def test_watcher_repairs_live_ops_before_runner_start() -> None:
@@ -1857,8 +2054,8 @@ def test_direct_runner_reexecutes_synced_runner_after_bootstrap_repairs_hash_dri
     assert "exit $exitCode" in reexec_body
 
 
-def test_legacy_direct_scheduled_action_trampolines_to_clean_production_runtime() -> None:
-    """管理者権限でTask actionを更新できなくても旧direct入口を安全なproduction routeへ収束する。"""
+def test_legacy_direct_scheduled_action_is_a_tombstone_not_a_second_production_route() -> None:
+    """旧 Runner task は二重productionを起動せず、typed tombstoneだけを残す。"""
     runner = RUNNER_PS1.read_text(encoding="utf-8-sig")
     bootstrap = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
 
@@ -1872,11 +2069,12 @@ def test_legacy_direct_scheduled_action_trampolines_to_clean_production_runtime(
     assert "Get-ScheduledTask -TaskName 'News-Grasp Runner'" in trampoline
     assert "Get-ScheduledTaskInfo -TaskName 'News-Grasp Runner'" in trampoline
     assert "news-grasp-runner\\.ps1" in trampoline
-    assert "-UseProductionRuntime" in trampoline
-    assert "-ScheduledTaskName" in trampoline
-    assert "-LegacyDirectEntrypoint" in trampoline
-    assert "-SmokeTest" not in trampoline
-    assert "exit $exitCode" in trampoline
+    assert "NEWS_GRASP_LEGACY_TASK_TOMBSTONE_V1" in trampoline
+    assert 'canonical_task_name = "News-Grasp Production"' in trampoline
+    assert 'scheduled_attempt_status = "not_started_legacy_tombstone"' in trampoline
+    assert "production_started = $false" in trampoline
+    assert "-UseProductionRuntime" not in trampoline
+    assert "exit 0" in trampoline
 
     assert "[switch] $LegacyDirectEntrypoint" in bootstrap
     scheduled_context = bootstrap.split("function Assert-ScheduledTaskLaunchContext", 1)[1].split(

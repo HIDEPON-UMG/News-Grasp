@@ -529,7 +529,7 @@ def live_runner_readiness_manifest_ok(readiness: dict) -> bool:
 
 def _scheduled_task_action_summary(
     *,
-    task_name: str = "News-Grasp Runner",
+    task_name: str = "News-Grasp Production",
     powershell_exe: str = "powershell.exe",
 ) -> str:
     safe_task_name = task_name.replace("'", "''")
@@ -559,7 +559,7 @@ def _scheduled_task_action_summary(
 
 def _scheduled_task_details(
     *,
-    task_name: str = "News-Grasp Runner",
+    task_name: str = "News-Grasp Production",
     powershell_exe: str = "powershell.exe",
 ) -> dict:
     safe_task_name = task_name.replace("'", "''")
@@ -750,7 +750,7 @@ def verify_live_runner_readiness(
     live_watcher_path: Path | None = None,
     live_bootstrap_path: Path | None = None,
     live_task_launcher_path: Path | None = None,
-    task_name: str = "News-Grasp Runner",
+    task_name: str = "News-Grasp Production",
     bootstrap_task_name: str = "News-Grasp Bootstrap",
     run_canary: bool = True,
     canary_timeout_sec: int = 60,
@@ -2373,6 +2373,69 @@ def _verify_deepdive_quality_head_binding(
     return {"ok": True, "reason": "", "head": head, "paths": relative_paths}
 
 
+def _producer_lineage_expected(
+    *, repo_root: Path, ops_root: Path, date: str, run_intent: str, run_id: str
+) -> dict[str, str]:
+    artifact_root = str(repo_root.resolve())
+    canonical_ops_root = str(ops_root.resolve())
+    daily_root_id = hashlib.sha256(
+        (
+            f"News-Grasp|{date}|{artifact_root.casefold()}|"
+            f"{canonical_ops_root.casefold()}"
+        ).encode("utf-8")
+    ).hexdigest()
+    root_operation_id = hashlib.sha256(
+        f"{daily_root_id}|{run_id}|root-operation".encode("utf-8")
+    ).hexdigest()
+    producer_operation_id = hashlib.sha256(
+        f"{root_operation_id}|producer|{run_intent}".encode("utf-8")
+    ).hexdigest()
+    receipt_sha256 = hashlib.sha256(
+        (
+            "NEWS_GRASP_PRODUCER_LINEAGE_V1|"
+            f"{date}|{artifact_root.casefold()}|{canonical_ops_root.casefold()}|"
+            f"{daily_root_id}|{root_operation_id}|{producer_operation_id}|"
+            f"{run_intent}|{run_id}"
+        ).encode("utf-8")
+    ).hexdigest()
+    return {
+        "artifactRoot": artifact_root,
+        "opsRoot": canonical_ops_root,
+        "dailyRootId": daily_root_id,
+        "rootOperationId": root_operation_id,
+        "producerOperationId": producer_operation_id,
+        "producerRunIntent": run_intent,
+        "lineageReceiptSha256": receipt_sha256,
+    }
+
+
+def _load_producer_lineage(
+    *, repo_root: Path, state_path: Path, date: str
+) -> dict[str, str] | None:
+    if not state_path.is_file() or state_path.is_symlink():
+        return None
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(state, dict) or state.get("date") != date:
+        return None
+    run_intent = str(state.get("run_intent") or "")
+    run_id = str(state.get("run_id") or "")
+    if not run_intent or not run_id:
+        return None
+    expected = _producer_lineage_expected(
+        repo_root=repo_root,
+        ops_root=state_path.parent,
+        date=date,
+        run_intent=run_intent,
+        run_id=run_id,
+    )
+    if any(state.get(field) != value for field, value in expected.items()):
+        return None
+    return expected
+
+
 def verify_publish_complete(
     *,
     repo_root: Path,
@@ -2386,6 +2449,7 @@ def verify_publish_complete(
     primary_podcast_state_path: Path | None = None,
     deepdive_podcast_state_path: Path | None = None,
     notification_state_path: Path | None = None,
+    producer_state_path: Path | None = None,
 ) -> dict:
     """公開完了を remote/public/audio/podcast/local inventory の同一 manifest として検証する。"""
     readiness_date = _current_jst_date()
@@ -2404,6 +2468,19 @@ def verify_publish_complete(
         return {**base, "reason": "distribution_artifact_missing"}
     if distribution.get("manifest_reason"):
         return {**base, "reason": distribution["manifest_reason"]}
+    state_path = producer_state_path or (
+        Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+        / "News-Grasp"
+        / "ops"
+        / "news-grasp-runner-state.json"
+    )
+    producer_lineage = _load_producer_lineage(
+        repo_root=repo_root,
+        state_path=state_path,
+        date=date,
+    )
+    if producer_lineage is None:
+        return {**base, "reason": "producer_lineage_invalid"}
 
     shared_quality = deepdive_quality.audit_issue(
         repo_root=repo_root,
@@ -2454,6 +2531,7 @@ def verify_publish_complete(
     )
     manifest = {
         **base,
+        **producer_lineage,
         "publish": publish,
         "local_head": publish.get("local_head", ""),
         "remote_head": publish.get("remote_head", ""),
@@ -2667,7 +2745,7 @@ def main(argv: list[str] | None = None) -> int:
     live_ready.add_argument("--live-runner", type=Path, default=None)
     live_ready.add_argument("--live-watcher", type=Path, default=None)
     live_ready.add_argument("--live-bootstrap", type=Path, default=None)
-    live_ready.add_argument("--task-name", default="News-Grasp Runner")
+    live_ready.add_argument("--task-name", default="News-Grasp Production")
     live_ready.add_argument("--bootstrap-task-name", default="News-Grasp Bootstrap")
     live_ready.add_argument("--skip-canary", action="store_true")
     live_ready.add_argument("--canary-timeout-sec", type=int, default=60)
