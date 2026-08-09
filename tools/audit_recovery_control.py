@@ -63,6 +63,16 @@ CANONICAL_CONTROL_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_TERMINAL_ROOT = CANONICAL_REPO_ROOT / "build" / "incidents"
 CANONICAL_BROKER_PATH = Path.home() / "bin" / "ai-model-spawn-broker.py"
 CANONICAL_RUNNER_STATE_PATH = Path.home() / "bin" / "news-grasp-runner-state.json"
+GIT_HARDENED_CONFIG_ARGS = (
+    "-c",
+    f"core.hooksPath={os.devnull}",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    f"core.attributesFile={os.devnull}",
+    "-c",
+    "core.autocrlf=true",
+)
 
 
 def _canonical(value: object) -> bytes:
@@ -636,12 +646,7 @@ def _git_bytes(repo_root: Path, *args: str) -> bytes:
     return_code, stdout = _run_bounded(
         [
             "git",
-            "-c",
-            f"core.hooksPath={os.devnull}",
-            "-c",
-            "core.fsmonitor=false",
-            "-c",
-            f"core.attributesFile={os.devnull}",
+            *GIT_HARDENED_CONFIG_ARGS,
             "-C",
             str(repo_root),
             *args,
@@ -719,12 +724,7 @@ def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
     filter_return_code, filter_stdout = _run_bounded(
         [
             "git",
-            "-c",
-            f"core.hooksPath={os.devnull}",
-            "-c",
-            "core.fsmonitor=false",
-            "-c",
-            f"core.attributesFile={os.devnull}",
+            *GIT_HARDENED_CONFIG_ARGS,
             "-C",
             str(artifact_repo_root),
             "config",
@@ -765,11 +765,11 @@ def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
         or artifact_head != trusted_head
     ):
         raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
-    dirty_executables = _git_text(
+    untracked_executables = _git_text(
         artifact_repo_root,
-        "status",
-        "--porcelain=v1",
-        "--untracked-files=all",
+        "ls-files",
+        "--others",
+        "--exclude-standard",
         "--",
         "scripts",
         "tools",
@@ -781,7 +781,7 @@ def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
         "requirements-dev.txt",
         ".gitattributes",
     )
-    if dirty_executables:
+    if untracked_executables:
         raise ValueError("ARTIFACT_EXECUTABLE_TREE_INVALID")
     index_tags = _git_text(
         artifact_repo_root,
@@ -843,6 +843,7 @@ def _validate_artifact_executable_tree(artifact_repo_root: Path) -> str:
         hash_return_code, hash_stdout = _run_bounded(
             [
                 "git",
+                *GIT_HARDENED_CONFIG_ARGS,
                 "-C",
                 str(artifact_repo_root),
                 "hash-object",

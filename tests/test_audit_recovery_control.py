@@ -629,7 +629,25 @@ def test_bootstrap_nonce_and_authority_writes_are_fresh_and_atomic() -> None:
         / "install-news-grasp-ops.ps1"
     ).read_text(encoding="utf-8-sig")
     assert "[IO.File]::Replace($temporary, $Path, $null" not in installer
-    assert "$replacementBackup" in installer
+    assert "Write-NewsGraspAtomicFile" in installer
+    guard = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "install-news-grasp-ops-guard.ps1"
+    ).read_text(encoding="utf-8-sig")
+    assert "[NewsGraspVerifiedFileBoundary]::WriteAtomic($Path, $Bytes)" in guard
+    boundary = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "install-news-grasp-verified-file-boundary.ps1"
+    ).read_text(encoding="utf-8-sig")
+    assert "public static string WriteAtomic(string path, byte[] bytes)" in boundary
+    assert "FlushFileBuffers(temporaryHandle)" in boundary
+    assert "RenameByHandle(temporaryHandle, destination)" in boundary
+    assert "MarkDelete(temporaryHandle)" in boundary
+    assert "NEWS_GRASP_ATOMIC_POSTCOMMIT_HASH_MISMATCH" in boundary
 
 
 def test_audit_cli_cannot_self_mint_completion_or_trust_plain_attempt_status() -> None:
@@ -1134,3 +1152,42 @@ def test_product_constitution_makes_same_day_public_recovery_preemptive() -> Non
         assert "same_day_public_recovery_first" in source
         assert "incident_report_polish" in source
         assert "root_cause_hardening" in source
+
+
+def test_artifact_executable_tree_accepts_windows_crlf_but_rejects_content_drift(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control("RED_WINDOWS_CRLF_FALSE_DRIFT")
+    repo = tmp_path / "artifact-repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        assert completed.returncode == 0, completed.stderr
+        return completed.stdout.strip()
+
+    git("init")
+    git("config", "user.name", "News-Grasp Contract Test")
+    git("config", "user.email", "contract-test@example.invalid")
+    tracked = repo / "tools" / "sample.py"
+    tracked.parent.mkdir()
+    tracked.write_bytes(b"print('stable')\n")
+    git("add", "tools/sample.py")
+    git("commit", "-m", "fixture")
+    head = git("rev-parse", "HEAD")
+    git("update-ref", "refs/remotes/origin/main", head)
+    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", repo)
+
+    tracked.write_bytes(b"print('stable')\r\n")
+    assert control._validate_artifact_executable_tree(repo) == head
+
+    tracked.write_bytes(b"print('changed')\r\n")
+    with pytest.raises(ValueError, match="ARTIFACT_EXECUTABLE_TREE_INVALID"):
+        control._validate_artifact_executable_tree(repo)
