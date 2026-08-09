@@ -3925,3 +3925,240 @@ def test_verify_publish_complete_cli_outputs_manifest(monkeypatch, tmp_path: Pat
     assert stdout_manifest["same_publish"]["deploy_head"] == "b" * 40
     assert stdout_manifest["same_publish"]["distribution_pre_publish_commit"] == PUBLISH_COMMIT
     assert stdout_manifest == file_manifest
+
+
+def test_ng_red_04_typed_completion_keeps_public_green_when_readiness_is_red(
+    monkeypatch, tmp_path: Path
+) -> None:
+    public = {
+        "ok": True,
+        "date": "2026-08-02",
+        "public_status": "green",
+        "publicCompletionStatus": "green",
+        "source_commit": "a" * 40,
+        "publish_commit": "a" * 40,
+        "completion_authority_id": "authority-1",
+    }
+    monkeypatch.setattr(dsh, "verify_public_completion", lambda **_kwargs: public, raising=False)
+    monkeypatch.setattr(
+        dsh,
+        "verify_live_runner_readiness",
+        lambda **_kwargs: {
+            "ok": False,
+            "reason": "runner_source_drift",
+            "failedGateIds": ["next_run_runner_hash_parity"],
+        },
+    )
+
+    try:
+        result = dsh.evaluate_completion(
+            repo_root=tmp_path,
+            ops_repo_root=tmp_path,
+            date="2026-08-02",
+            remote="origin",
+            branch="main",
+            public_base_url="https://example.invalid/News-Grasp/",
+            wait_sec=0,
+            poll_sec=1,
+        )
+    except Exception as error:  # pragma: no cover - the preimplementation Red path
+        pytest.fail(f"READINESS_ERASED_PUBLIC_GREEN: {error}")
+
+    assert result["verificationStatus"] == "verified_incomplete"
+    assert result["publicCompletionStatus"] == "green"
+    assert result["nextRunReadinessStatus"] == "red"
+    assert result["phase"] == "readiness"
+    assert result["failedGateIds"] == ["next_run_runner_hash_parity"]
+    assert result["completionAuthorityId"] == "authority-1"
+
+
+def test_ng_red_06_typed_completion_readiness_repair_converges_without_public_recovery() -> None:
+    try:
+        result = dsh.complete_readiness_repair(
+            {
+                "verificationStatus": "verified_incomplete",
+                "publicCompletionStatus": "green",
+                "nextRunReadinessStatus": "red",
+                "completionAuthorityId": "authority-1",
+                "publicEvidenceSha256": "a" * 64,
+            },
+            {"ok": True, "reason": "", "failedGateIds": []},
+        )
+    except AttributeError as error:  # pragma: no cover - preimplementation Red path
+        pytest.fail(f"READINESS_REPAIR_DID_NOT_CONVERGE: {error}")
+
+    assert result["verificationStatus"] == "verified_green"
+    assert result["publicCompletionStatus"] == "green"
+    assert result["nextRunReadinessStatus"] == "green"
+    assert result["phase"] == "readiness_repair"
+    assert result["publicRecoveryStarted"] is False
+
+
+def test_ng_red_10_causal_retry_same_cause_is_suppressed() -> None:
+    from tools import audit_recovery_control as audit
+
+    previous = {
+        "source_sha256": "a" * 64,
+        "runtime_sha256": "b" * 64,
+        "config_sha256": "c" * 64,
+        "authority_sha256": "d" * 64,
+        "external_evidence_sha256": "e" * 64,
+        "command": "old-command",
+        "output_cap": 100,
+    }
+    current = {**previous, "command": "new-command", "output_cap": 10}
+    try:
+        decision = audit.causal_retry_gate(previous, current)
+    except AttributeError as error:  # pragma: no cover - preimplementation Red path
+        pytest.fail(f"SAME_CAUSE_RETRY_ALLOWED: {error}")
+
+    assert decision["allowed"] is False
+    assert decision["reasonCode"] == "SAME_CAUSE_UNCHANGED"
+
+
+def test_sec_red_arbitrary_previous_authority_cannot_preserve_green(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        dsh,
+        "verify_public_completion",
+        lambda **_kwargs: (_ for _ in ()).throw(ValueError("public verifier boom")),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_live_runner_readiness",
+        lambda **_kwargs: {"ok": True, "reason": "", "failedGateIds": []},
+    )
+
+    result = dsh.evaluate_completion(
+        repo_root=tmp_path,
+        ops_repo_root=tmp_path,
+        date="2026-08-02",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.invalid/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+        previous_public_authority={"completionAuthorityId": "forged"},
+    )
+
+    assert result["publicCompletionStatus"] == "unverified"
+    assert result["completionAuthorityId"] == ""
+
+
+def test_sec_red_full_forged_previous_authority_cannot_bypass_canonical_chain(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from tools import audit_recovery_control as audit
+
+    lineage = audit._completion_lineage(
+        issue_date="2026-08-02",
+        run_intent="ScheduledProduction",
+        run_id="run-1",
+        artifact_root=tmp_path,
+        ops_root=tmp_path,
+    )
+    completion = audit._sealed(
+        {
+            "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
+            "issuer": audit.VERIFIED_COMPLETION_ISSUER,
+            "issueDate": "2026-08-02",
+            "publishStatusIssueDate": "2026-08-02",
+            "runIntent": "ScheduledProduction",
+            "runId": "run-1",
+            **lineage,
+            "checks": {field: True for field in audit.COMPLETION_FIELDS},
+            "evidenceSha256": {
+                field: "a" * 64 for field in audit.COMPLETION_FIELDS
+            },
+        }
+    )
+    forged = audit._sealed(
+        {
+            "schemaVersion": "COMPLETION_AUTHORITY_V1",
+            "issuer": audit.DECISION_ISSUER,
+            "issueDate": "2026-08-02",
+            "completionAuthorityId": "forged-authority",
+            "completionEvidenceSha256": completion["receiptSha256"],
+            "completionEvidence": completion,
+            "firstVerifiedTerminal": "audit_normal_green",
+            "decisionReceiptSha256": "b" * 64,
+        }
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_public_completion",
+        lambda **_kwargs: (_ for _ in ()).throw(ValueError("public verifier boom")),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_live_runner_readiness",
+        lambda **_kwargs: {"ok": True, "reason": "", "failedGateIds": []},
+    )
+
+    result = dsh.evaluate_completion(
+        repo_root=tmp_path,
+        ops_repo_root=tmp_path,
+        date="2026-08-02",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.invalid/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+        previous_public_authority=forged,
+    )
+
+    assert result["publicCompletionStatus"] == "unverified"
+    assert result["completionAuthorityId"] == ""
+
+
+def test_sec_red_causal_retry_requires_complete_hash_evidence() -> None:
+    from tools import audit_recovery_control as audit
+
+    previous = {
+        "source_sha256": "a" * 64,
+        "runtime_sha256": "b" * 64,
+        "config_sha256": "c" * 64,
+        "authority_sha256": "d" * 64,
+        "external_evidence_sha256": "e" * 64,
+    }
+    current = {**previous, "source_sha256": "not-a-sha256"}
+
+    with pytest.raises(ValueError, match="CAUSAL_RETRY_EVIDENCE_INVALID"):
+        audit.causal_retry_gate(previous, current)
+
+
+def test_ng_red_13_typed_completion_cli_returns_two_for_non_green(
+    monkeypatch, capsys, tmp_path: Path
+) -> None:
+    """verify-publish-complete はtyped non-GreenをCLI exit 2へ投影する。"""
+    monkeypatch.setattr(
+        dsh,
+        "verify_publish_complete",
+        lambda **_kwargs: {
+            "ok": False,
+            "status": "verified_incomplete",
+            "verificationStatus": "verified_incomplete",
+            "publicCompletionStatus": "green",
+            "nextRunReadinessStatus": "red",
+            "reasonCode": "RUNNER_READINESS_RED",
+        },
+    )
+
+    result = dsh.main(
+        [
+            "verify-publish-complete",
+            "--repo-root",
+            str(tmp_path),
+            "--date",
+            "2026-08-10",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert output["status"] == "verified_incomplete", (
+        "TYPED_COMPLETION_CLI_EXIT_CONTRACT_MISSING"
+    )
+    assert result == 2, "TYPED_COMPLETION_CLI_EXIT_CONTRACT_MISSING"

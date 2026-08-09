@@ -65,21 +65,46 @@ def test_model_process_lease_accepts_colon_route_and_call_id(tmp_path) -> None:
 
 
 def test_japanese_goal_allows_exactly_one_final_nopublish_e2e() -> None:
-    from tools.harness.high_cost_control_v2 import _objective_full_e2e_limit
+    from tools.harness.high_cost_control_v2 import CanonicalAuthority
 
-    assert _objective_full_e2e_limit(FINAL_E2E_OBJECTIVE) == 1
+    authority = CanonicalAuthority(
+        "task-1",
+        "thread-1",
+        "a" * 64,
+        "goal-1",
+        FINAL_E2E_OBJECTIVE,
+        max_external_model_calls=9,
+        max_full_e2e_attempts=1,
+    )
+    assert authority.max_full_e2e_attempts == 1
 
 
 def test_news_grasp_final_e2e_goal_gets_minimum_normal_path_model_budget() -> None:
-    from tools.harness.high_cost_control_v2 import _objective_external_model_limit
+    from tools.harness.high_cost_control_v2 import CanonicalAuthority
 
-    assert _objective_external_model_limit(FINAL_E2E_OBJECTIVE) == 9
+    authority = CanonicalAuthority(
+        "task-1",
+        "thread-1",
+        "a" * 64,
+        "goal-1",
+        FINAL_E2E_OBJECTIVE,
+        max_external_model_calls=9,
+        max_full_e2e_attempts=1,
+    )
+    assert authority.max_external_model_calls == 9
 
 
 def test_ambiguous_japanese_goal_does_not_gain_external_model_budget() -> None:
-    from tools.harness.high_cost_control_v2 import _objective_external_model_limit
+    from tools.harness.high_cost_control_v2 import CanonicalAuthority
 
-    assert _objective_external_model_limit("単一の最終E2Eを実行する") == 0
+    authority = CanonicalAuthority(
+        "task-1",
+        "thread-1",
+        "a" * 64,
+        "goal-1",
+        "単一の最終E2Eを実行する",
+    )
+    assert authority.max_external_model_calls == 0
 
 
 def test_unconsumed_zero_limits_can_promote_from_same_goal_semantics(tmp_path) -> None:
@@ -90,7 +115,13 @@ def test_unconsumed_zero_limits_can_promote_from_same_goal_semantics(tmp_path) -
     )
 
     authority = CanonicalAuthority(
-        "task-1", "thread-1", "a" * 64, "goal-1", FINAL_E2E_OBJECTIVE
+        "task-1",
+        "thread-1",
+        "a" * 64,
+        "goal-1",
+        FINAL_E2E_OBJECTIVE,
+        max_external_model_calls=9,
+        max_full_e2e_attempts=1,
     )
     store = HighCostControlStore.create_for_test(
         tmp_path / "ledger.sqlite3", MemoryAnchor()
@@ -130,7 +161,13 @@ def test_consumed_or_nonzero_limits_cannot_be_promoted(tmp_path) -> None:
     )
 
     authority = CanonicalAuthority(
-        "task-1", "thread-1", "a" * 64, "goal-1", FINAL_E2E_OBJECTIVE
+        "task-1",
+        "thread-1",
+        "a" * 64,
+        "goal-1",
+        FINAL_E2E_OBJECTIVE,
+        max_external_model_calls=9,
+        max_full_e2e_attempts=1,
     )
     store = HighCostControlStore.create_for_test(
         tmp_path / "ledger.sqlite3", MemoryAnchor()
@@ -163,7 +200,13 @@ def test_promoted_limits_cannot_be_changed_again(tmp_path) -> None:
     )
 
     authority = CanonicalAuthority(
-        "task-1", "thread-1", "a" * 64, "goal-1", FINAL_E2E_OBJECTIVE
+        "task-1",
+        "thread-1",
+        "a" * 64,
+        "goal-1",
+        FINAL_E2E_OBJECTIVE,
+        max_external_model_calls=9,
+        max_full_e2e_attempts=1,
     )
     store = HighCostControlStore.create_for_test(
         tmp_path / "ledger.sqlite3", MemoryAnchor()

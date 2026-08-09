@@ -246,3 +246,6 @@ scripts/repo-harness/
 .repo-harness/mcp.oauth.json
 .repo-harness/mcp.oauth-tokens.json
 .ai/harness/mcp/audit.log
+# local goal execution evidence contains machine paths and thread lineage
+build/goal-control/
+**/.managed-root.pin

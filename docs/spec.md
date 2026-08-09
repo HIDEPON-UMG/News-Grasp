@@ -413,6 +413,30 @@ audit Greenとterminalはcallerのboolean自己申告から発行しない。sch
 
 このcommitmentはcurrent active durable goal `8af471ae-0c37-4cff-bbf7-262c7365a1ee`、2026-07-06の実ユーザーmission event hashes `021a8930...6868d` / `6926615f...b03e` / `81bcd640...8017`、current requirement envelope `6850f6c8...17fa`へ束縛する。
 
+## 2026-08-10 Audit Green Non-regression And Typed Recovery Commitment
+
+通常scheduled productionは、人間が翌朝の自然実行を監視しなくても、実行、必要時の型付き復旧、公開確認、証拠確定まで閉じなければならない。自然scheduled run、翌朝6:00／6:40の待機、ユーザー目視をTODO、Acceptance、完了証拠へ含めない。最終実行証拠は、全上流契約がGreenになった後の隔離scheduled-equivalent `NoPublish` E2E一回だけとする。
+
+同日公開完了、次回runner readiness、最新audit観測は交換不能な別stateである。`CompletionVerificationResultV1`は`verified_green|verified_incomplete|verification_unavailable`を型として保持し、`publicCompletionStatus`、`nextRunReadinessStatus`、`phase`、`reasonCode`、`failedGateIds`、source/runtime/config/evidence hashを持つ。例外、subprocess失敗、JSON parse失敗、gate Redを`None`や単一booleanへ潰してはならない。
+
+同日Greenを証明したcompletion authorityはimmutable receiptとし、後続のreadiness Redまたはverification unavailableから上書きしない。既存Green後にprimary verifierが例外を返した場合、公開専用oracleを一回だけ実行する。公開Greenならauthorityを保持し、audit観測を`audit_observation_unverified`、CLI exitを`2`とし、readinessは別に検証する。構造化public gate Redが実測された場合だけpublic regressionとし、公開復旧へ分岐する。readiness Redはreadiness修復だけへ分岐する。
+
+completion authorityはreceipt単体の自己SHAをauthorityにしない。`build/incidents`の正規managed rootを単一writerの信頼境界とし、同じauthority ID・decision receipt・最初のGreen terminalを持つ検証済みevent chainと、最終event hashへ一致するsealed latest projectionが同時に存在する場合だけ再利用する。caller／runnerが渡す完全形式receiptもcanonical chainへanchorされなければ拒否する。同一Windowsユーザーがmanaged root一式を悪意を持って再署名する脅威は今回のproduct運用境界外であり、その脅威まで扱う場合は別service identityとkeyed署名を追加Requirementとして設計し直す。
+
+2026-08-02 commitmentの3値terminal限定は、本commitmentにより互換projectionの状態集合について上書きする。互換`<date>-audit-terminal.json`は`audit_normal_green|audit_recovered_green|audit_observation_unverified|audit_major_incident_open`を表せる。ただし`audit_observation_unverified`は既存completion authorityを失効させず、公開Greenを自己申告しない。`audit_recovered_green`は実際に修復operationを行った場合だけ使い、単なる再検証Greenをrecoveryへ偽装しない。
+
+全audit観測は`AuditObservationEventV1`としてevent ID、単調sequence、previous event hash、completion authority ID、cause fingerprint、action、result、observedAtを持ち、日時別eventへatomic appendする。互換terminalは最新eventのprojectionに限定する。最大48 event／日、31日保持は既存artifact lifecycleが所有し、整理によってcompletion authority、scheduled failure、recovery lineageを改変しない。replay、cross-lineage、concurrent writer、source driftをfail-closedにする。
+
+historyと互換terminalの2-file更新はsealed WALで束縛する。recovery時はlive historyとjournal historyのevent hash列を比較し、liveがjournalを包含するstale WALは破棄、journalがliveを包含する場合だけ前進適用、divergeはfail-closedとする。Windows productionでは検証済みmanaged rootと固定pin fileのhandleを`FILE_SHARE_DELETE`なしでlock全期間保持し、第二root検証後のrename／junction swapをOS境界で拒否する。goal実行証拠`build/goal-control/`はmachine pathとthread lineageを含むためgit公開境界から除外する。
+
+retryは回数ではなく因果で許可する。同一cause fingerprintかつsource、runtime、config、authority、external evidence hashが不変ならretryしない。前回原因へ作用するhashが変化した場合だけ一回再許可し、command名、output cap、出力形式だけの変更をcause changeにしない。
+
+実装generationは`origin/main`起点のclean worktree、単一writer、固定source/config/task hashを使用し、dirty canonical WIPとproduction runtimeを直接編集しない。commit、fast-forward push、remote HEAD、正規installer、installed runtime byte parity、Scheduled Task定義、rollback receiptを同じgenerationへ束縛する。completion guard、deadman、runner、audit CLI、incident evidenceは同じ型付きconsumer契約を読む。
+
+要件・設計・競合判断は`gpt-5.6-sol` Max、判断不要な機械編集と限定fixtureは`gpt-5.6-luna` Max、hash、JSON、test、parityはlocal deterministic toolが担当する。Luna packetはexact write set、baseline hash、Requirement／Acceptance／Red oracle、causal retry、delivery snapshot、`unresolvedDecisionIds=[]`を持ち、未確定decisionをLunaへ渡さない。
+
+本commitmentの正本要件は`NG-R01`〜`NG-R12`、Acceptanceは`NG-A01`〜`NG-A08`であり、goal-controlのrequirement contract、generation manifest、TDD impact receipt、HumanImpactContractと同じgenerationへ束縛する。
+
 ## Acceptance Scenarios
 
 | Scenario | Given | When | Then |

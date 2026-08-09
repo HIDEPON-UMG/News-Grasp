@@ -8,12 +8,13 @@ import json
 import os
 import re
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
 import threading
 import time
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ from tools.news_grasp_operational_contract import (
     finalize_audit_decision,
     select_recovery_branch_from_truth,
     validate_canonical_operational_registry,
+    validate_completion_authority_receipt,
     validate_operational_truth_receipt,
 )
 
@@ -29,6 +31,7 @@ from tools.news_grasp_operational_contract import (
 AUDIT_TERMINALS = {
     "audit_normal_green",
     "audit_recovered_green",
+    "audit_observation_unverified",
     "audit_major_incident_open",
 }
 SAME_DAY_PUBLIC_RECOVERY_PRIORITY = "same_day_public_recovery_first"
@@ -58,6 +61,25 @@ DECISION_ISSUER = "tools.audit_recovery_control"
 VERIFIED_COMPLETION_ISSUER = "tools.audit_recovery_control.actual_verifiers"
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+AUDIT_EVENT_HISTORY_LIMIT = 48
+MAX_AUDIT_EVENT_BYTES = 64 * 1024
+MAX_AUDIT_HISTORY_BYTES = AUDIT_EVENT_HISTORY_LIMIT * MAX_AUDIT_EVENT_BYTES
+AUDIT_RETENTION_DAYS = 31
+AUDIT_LIFECYCLE_OWNER = "News-Grasp Operations"
+CAUSE_INPUT_FIELDS = (
+    "source_sha256",
+    "runtime_sha256",
+    "config_sha256",
+    "authority_sha256",
+    "external_evidence_sha256",
+)
+CAUSE_INPUT_ALIASES = {
+    "source_sha256": "sourceSha256",
+    "runtime_sha256": "runtimeSha256",
+    "config_sha256": "configSha256",
+    "authority_sha256": "authoritySha256",
+    "external_evidence_sha256": "externalEvidenceSha256",
+}
 CANONICAL_REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_CONTROL_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_TERMINAL_ROOT = CANONICAL_REPO_ROOT / "build" / "incidents"
@@ -89,6 +111,58 @@ def _sealed(value: dict[str, Any]) -> dict[str, Any]:
 
 def _valid_sha256(value: object) -> bool:
     return SHA256_PATTERN.fullmatch(str(value or "")) is not None
+
+
+def _cause_inputs(value: object) -> dict[str, str]:
+    source = value if isinstance(value, dict) else {}
+    return {
+        field: str(source.get(field) or source.get(CAUSE_INPUT_ALIASES[field]) or "")
+        for field in CAUSE_INPUT_FIELDS
+    }
+
+
+def cause_fingerprint(value: object) -> str:
+    """原因へ作用するhashだけから安定fingerprintを作る。"""
+    return hashlib.sha256(_canonical(_cause_inputs(value))).hexdigest()
+
+
+def causal_retry_gate(previous: object, current: object) -> dict[str, Any]:
+    """同じ原因は再試行せず、原因入力の変化後だけ一回許可する。"""
+    previous_value = previous if isinstance(previous, dict) else {}
+    current_value = current if isinstance(current, dict) else {}
+    current_inputs = _cause_inputs(current_value)
+    previous_inputs = _cause_inputs(previous_value)
+    if not all(_valid_sha256(current_inputs[field]) for field in CAUSE_INPUT_FIELDS):
+        raise ValueError("CAUSAL_RETRY_EVIDENCE_INVALID")
+    if previous_value and not all(
+        _valid_sha256(previous_inputs[field]) for field in CAUSE_INPUT_FIELDS
+    ):
+        raise ValueError("CAUSAL_RETRY_EVIDENCE_INVALID")
+    previous_fingerprint = cause_fingerprint(previous_value)
+    current_fingerprint = cause_fingerprint(current_value)
+    changed = [
+        field
+        for field in CAUSE_INPUT_FIELDS
+        if previous_inputs[field] != current_inputs[field]
+    ]
+    if not changed or previous_fingerprint == current_fingerprint:
+        return {
+            "allowed": False,
+            "reasonCode": (
+                "CAUSAL_RETRY_ALREADY_CONSUMED"
+                if previous_value.get("retryConsumed") is True
+                else "SAME_CAUSE_UNCHANGED"
+            ),
+            "causeFingerprint": current_fingerprint,
+            "changedInputs": [],
+        }
+    return {
+        "allowed": True,
+        "reasonCode": "CAUSE_INPUT_CHANGED",
+        "causeFingerprint": current_fingerprint,
+        "changedInputs": changed,
+        "retryConsumed": True,
+    }
 
 
 def _validate_sealed(value: object, *, schema_version: str, code: str) -> dict[str, Any]:
@@ -188,6 +262,126 @@ def _file_sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _typed_completion_hashes(
+    *, issue_date: str, payload: dict[str, Any], evidence: object
+) -> dict[str, str]:
+    runtime = Path(sys.executable)
+    try:
+        runtime_sha = (
+            _file_sha256(runtime)
+            if runtime.is_file() and not runtime.is_symlink()
+            else hashlib.sha256(str(runtime).encode("utf-8")).hexdigest()
+        )
+    except OSError:
+        runtime_sha = hashlib.sha256(str(runtime).encode("utf-8")).hexdigest()
+    config_sha = hashlib.sha256(
+        _canonical(
+            {
+                "issueDate": issue_date,
+                "verificationWaitSec": payload.get("verificationWaitSec", 0),
+                "verificationPollSec": payload.get("verificationPollSec", 10),
+                "expectedRunIntent": payload.get("expectedRunIntent", ""),
+            }
+        )
+    ).hexdigest()
+    authority_claims: list[str] = []
+
+    def collect_authority_claims(value: object) -> None:
+        if isinstance(value, dict):
+            for key, item in sorted(value.items()):
+                if key in {
+                    "completionAuthorityId",
+                    "completion_authority_id",
+                    "authorityReceiptSha256",
+                } and item:
+                    authority_claims.append(f"{key}={item}")
+                elif isinstance(item, (dict, list, tuple)):
+                    collect_authority_claims(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect_authority_claims(item)
+
+    collect_authority_claims(evidence)
+    external_evidence_sha = hashlib.sha256(_canonical(evidence)).hexdigest()
+    return {
+        "sourceSha256": _file_sha256(Path(__file__)),
+        "runtimeSha256": runtime_sha,
+        "configSha256": config_sha,
+        "authoritySha256": hashlib.sha256(
+            _canonical(
+                {
+                    "issueDate": issue_date,
+                    "authorityClaims": authority_claims,
+                }
+            )
+        ).hexdigest(),
+        "externalEvidenceSha256": external_evidence_sha,
+        "evidenceHashSha256": external_evidence_sha,
+    }
+
+
+def _typed_public_green_readiness_red(
+    *,
+    issue_date: str,
+    payload: dict[str, Any],
+    expected_run_intent: str,
+    runner_state: dict[str, Any],
+    public: dict[str, Any],
+    readiness: dict[str, Any],
+    runner_state_path: Path,
+    artifact_repo_root: Path,
+) -> dict[str, Any]:
+    lineage = _completion_lineage(
+        issue_date=issue_date,
+        run_intent=expected_run_intent,
+        run_id=runner_state.get("run_id"),
+        artifact_root=artifact_repo_root,
+        ops_root=CANONICAL_REPO_ROOT,
+    )
+    evidence_seed = {
+        "public": public,
+        "readiness": readiness,
+        "runnerStateSha256": _file_sha256(runner_state_path),
+    }
+    typed_hashes = _typed_completion_hashes(
+        issue_date=issue_date, payload=payload, evidence=evidence_seed
+    )
+    authority_id = str(
+        runner_state.get("completionAuthorityId")
+        or public.get("completion_authority_id")
+        or public.get("completionAuthorityId")
+        or ""
+    )
+    return _sealed(
+        {
+            "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
+            "issuer": VERIFIED_COMPLETION_ISSUER,
+            "issueDate": issue_date,
+            "publishStatusIssueDate": issue_date,
+            "runIntent": expected_run_intent,
+            "runId": runner_state.get("run_id"),
+            **lineage,
+            "checks": {field: False for field in COMPLETION_FIELDS},
+            "evidenceSha256": {
+                field: hashlib.sha256(
+                    _canonical({"field": field, **evidence_seed})
+                ).hexdigest()
+                for field in COMPLETION_FIELDS
+            },
+            "verificationStatus": "verified_incomplete",
+            "publicCompletionStatus": "green",
+            "nextRunReadinessStatus": "red",
+            "phase": "readiness",
+            "reasonCode": str(readiness.get("reason") or "READINESS_RED"),
+            "failedGateIds": list(readiness.get("failedGateIds") or [
+                str(readiness.get("reason") or "next_run_readiness")
+            ]),
+            "completionAuthorityId": authority_id,
+            **typed_hashes,
+        }
+    )
 
 
 def _assign_windows_owned_job(process: subprocess.Popen[bytes]):
@@ -1051,38 +1245,158 @@ def _verify_same_date_completion(
         quality = json.loads(quality_stdout.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return None
+    from tools import daily_self_heal
     from tools.daily_self_heal import verify_publish_complete
 
-    publish = verify_publish_complete(
-        repo_root=artifact_repo_root,
-        ops_repo_root=CANONICAL_REPO_ROOT,
-        date=issue_date,
-        remote="origin",
-        branch="main",
-        public_base_url="https://hidepon-umg.github.io/News-Grasp/",
-        wait_sec=wait_sec,
-        poll_sec=poll_sec,
-        primary_podcast_state_path=(
+    publish_kwargs = {
+        "repo_root": artifact_repo_root,
+        "ops_repo_root": CANONICAL_REPO_ROOT,
+        "date": issue_date,
+        "remote": "origin",
+        "branch": "main",
+        "public_base_url": "https://hidepon-umg.github.io/News-Grasp/",
+        "wait_sec": wait_sec,
+        "poll_sec": poll_sec,
+        "primary_podcast_state_path": (
             artifact_repo_root / "build" / "youtube-podcast" / "uploads.json"
         ),
-        deepdive_podcast_state_path=(
+        "deepdive_podcast_state_path": (
             artifact_repo_root
             / "build"
             / "youtube-podcast-deepdive"
             / "uploads.json"
         ),
-        notification_state_path=(
+        "notification_state_path": (
             artifact_repo_root / "build" / "notification" / f"{issue_date}.json"
         ),
-        producer_state_path=runner_state_path,
-    )
+        "producer_state_path": runner_state_path,
+    }
+    primary_exception: Exception | None = None
+    preserved_authority: dict[str, Any] | None = None
+    try:
+        publish = verify_publish_complete(**publish_kwargs)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        primary_exception = error
+        try:
+            publish = daily_self_heal.verify_public_completion(**publish_kwargs)
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as public_error:
+            try:
+                preserved_authority = load_completion_authority_receipt(issue_date)
+            except ValueError:
+                preserved_authority = None
+            publish = {
+                "ok": False,
+                "date": issue_date,
+                "public_status": "green" if preserved_authority else "unverified",
+                "publicCompletionStatus": (
+                    "green" if preserved_authority else "unverified"
+                ),
+                "verification_unavailable": True,
+                "reason": "PUBLIC_ORACLE_EXCEPTION",
+                "exceptionType": type(public_error).__name__,
+            }
+    if primary_exception is not None:
+        lineage = _completion_lineage(
+            issue_date=issue_date,
+            run_intent=expected_run_intent,
+            run_id=runner_state.get("run_id"),
+            artifact_root=artifact_repo_root,
+            ops_root=CANONICAL_REPO_ROOT,
+        )
+        evidence_seed = {
+            "quality": quality,
+            "publish": publish,
+            "runnerStateSha256": _file_sha256(runner_state_path),
+            "primaryException": type(primary_exception).__name__,
+        }
+        typed_hashes = _typed_completion_hashes(
+            issue_date=issue_date, payload=payload, evidence=evidence_seed
+        )
+        fresh_public_green = (
+            publish.get("ok") is True
+            and publish.get("date") == issue_date
+            and str(
+                publish.get("publicCompletionStatus")
+                or publish.get("public_status")
+                or ""
+            )
+            == "green"
+        )
+        selected_authority_id = (
+            (
+                publish.get("completion_authority_id")
+                or publish.get("completionAuthorityId")
+            )
+            if fresh_public_green
+            else (preserved_authority or {}).get("completionAuthorityId")
+        )
+        authority_id = str(selected_authority_id or "")
+        public_completion_status = (
+            "green" if fresh_public_green or preserved_authority else "unverified"
+        )
+        return _sealed(
+            {
+                "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
+                "issuer": VERIFIED_COMPLETION_ISSUER,
+                "issueDate": issue_date,
+                "publishStatusIssueDate": issue_date,
+                "runIntent": expected_run_intent,
+                "runId": runner_state.get("run_id"),
+                **lineage,
+                "checks": {field: False for field in COMPLETION_FIELDS},
+                "evidenceSha256": {
+                    field: hashlib.sha256(
+                        _canonical({"field": field, **evidence_seed})
+                    ).hexdigest()
+                    for field in COMPLETION_FIELDS
+                },
+                "verificationStatus": "verification_unavailable",
+                "publicCompletionStatus": str(
+                    public_completion_status
+                ),
+                "nextRunReadinessStatus": "unverified",
+                "phase": "public_oracle",
+                "reasonCode": "PRIMARY_VERIFIER_EXCEPTION",
+                "failedGateIds": ["primary_completion_verifier"],
+                "completionAuthorityId": authority_id,
+                **typed_hashes,
+            }
+        )
+
     if publish.get("ok") is not True or publish.get("date") != issue_date:
+        nested_public = publish.get("publish")
+        readiness = publish.get("live_runner_readiness")
+        if (
+            isinstance(nested_public, dict)
+            and nested_public.get("ok") is True
+            and isinstance(readiness, dict)
+            and readiness.get("ok") is not True
+        ):
+            return _typed_public_green_readiness_red(
+                issue_date=issue_date,
+                payload=payload,
+                expected_run_intent=expected_run_intent,
+                runner_state=runner_state,
+                public=nested_public,
+                readiness=readiness,
+                runner_state_path=runner_state_path,
+                artifact_repo_root=artifact_repo_root,
+            )
         return None
     evidence_seed = {
         "quality": quality,
         "publish": publish,
         "runnerStateSha256": _file_sha256(runner_state_path),
     }
+    typed_hashes = _typed_completion_hashes(
+        issue_date=issue_date, payload=payload, evidence=evidence_seed
+    )
+    completion_authority_id = str(
+        runner_state.get("completionAuthorityId")
+        or publish.get("completion_authority_id")
+        or publish.get("completionAuthorityId")
+        or ""
+    )
     return _sealed(
         {
             "schemaVersion": "SAME_DATE_COMPLETION_EVIDENCE_V1",
@@ -1114,6 +1428,14 @@ def _verify_same_date_completion(
                 ).hexdigest()
                 for field in COMPLETION_FIELDS
             },
+            "verificationStatus": "verified_green",
+            "publicCompletionStatus": "green",
+            "nextRunReadinessStatus": "green",
+            "phase": "public_and_readiness",
+            "reasonCode": "VERIFIED_GREEN",
+            "failedGateIds": [],
+            "completionAuthorityId": completion_authority_id,
+            **typed_hashes,
         }
     )
 
@@ -1130,6 +1452,12 @@ def same_date_completion_green(issue_date: str, completion: object) -> bool:
     if value.get("issuer") != VERIFIED_COMPLETION_ISSUER:
         return False
     if value.get("issueDate") != issue_date or value.get("publishStatusIssueDate") != issue_date:
+        return False
+    if value.get("verificationStatus") not in {None, "verified_green"}:
+        return False
+    if value.get("publicCompletionStatus") not in {None, "green"}:
+        return False
+    if value.get("nextRunReadinessStatus") not in {None, "green"}:
         return False
     expected_lineage = _completion_lineage(
         issue_date=issue_date,
@@ -1265,39 +1593,238 @@ def _incident(
     })
 
 
-@contextlib.contextmanager
-def _locked_directory(path: Path):
-    path.mkdir(parents=True, exist_ok=True)
-    if path.is_symlink():
-        raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
-    if os.name != "nt":
-        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            yield
-        finally:
-            os.close(descriptor)
-        return
-    kernel32 = ctypes.windll.kernel32
-    kernel32.GetFileAttributesW.restype = ctypes.c_uint32
-    kernel32.CreateFileW.restype = ctypes.c_void_p
-    attributes = kernel32.GetFileAttributesW(str(path))
-    if attributes == 0xFFFFFFFF or attributes & 0x400:
-        raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
-    handle = kernel32.CreateFileW(
-        str(path),
-        0x0001,
-        0x0001 | 0x0002,
-        None,
-        3,
-        0x02000000 | 0x00200000,
-        None,
+def _lexical_absolute(path: Path) -> Path:
+    return Path(os.path.abspath(os.fspath(path)))
+
+
+def _same_lexical_path(left: Path, right: Path) -> bool:
+    return os.path.normcase(os.fspath(_lexical_absolute(left))) == os.path.normcase(
+        os.fspath(_lexical_absolute(right))
     )
-    if handle in (0, ctypes.c_void_p(-1).value):
-        raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
+
+
+def _is_reparse_or_symlink(path: Path) -> bool:
     try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return False
+    if stat.S_ISLNK(metadata.st_mode):
+        return True
+    attributes = getattr(metadata, "st_file_attributes", 0)
+    return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+
+
+def _validated_managed_root(
+    *,
+    repo_root: Path,
+    candidate_root: Path,
+    relative_parts: tuple[str, ...],
+    code: str,
+    create: bool = True,
+) -> Path:
+    repo = _lexical_absolute(repo_root)
+    expected = repo.joinpath(*relative_parts)
+    if not _same_lexical_path(candidate_root, expected):
+        raise ValueError(code)
+    if not repo.is_dir() or _is_reparse_or_symlink(repo):
+        raise ValueError(code)
+    current = repo
+    for part in relative_parts:
+        current = current / part
+        if current.exists():
+            if not current.is_dir() or _is_reparse_or_symlink(current):
+                raise ValueError(code)
+        elif create:
+            current.mkdir(exist_ok=True)
+            if not current.is_dir() or _is_reparse_or_symlink(current):
+                raise ValueError(code)
+        else:
+            return expected
+    try:
+        resolved_repo = repo.resolve(strict=True)
+        resolved_expected = expected.resolve(strict=True)
+    except OSError as error:
+        raise ValueError(code) from error
+    if resolved_expected != expected or resolved_repo not in resolved_expected.parents:
+        raise ValueError(code)
+    return expected
+
+
+def _validated_terminal_root(*, create: bool = True) -> Path:
+    return _validated_managed_root(
+        repo_root=CANONICAL_REPO_ROOT,
+        candidate_root=CANONICAL_TERMINAL_ROOT,
+        relative_parts=("build", "incidents"),
+        code="AUDIT_TERMINAL_OUTPUT_INVALID",
+        create=create,
+    )
+
+
+@contextlib.contextmanager
+def _pinned_directory(
+    path: Path, *, invalid_code: str, anchor: Path | None = None
+):
+    """anchorからmanaged rootまでの全component差替えを封止する。"""
+    root = _lexical_absolute(path)
+    anchor_path = _lexical_absolute(anchor or path)
+    try:
+        relative = root.relative_to(anchor_path)
+    except ValueError as error:
+        raise ValueError(invalid_code) from error
+    components = [anchor_path]
+    current = anchor_path
+    for part in relative.parts:
+        current = current / part
+        components.append(current)
+    if any(
+        not component.is_dir() or _is_reparse_or_symlink(component)
+        for component in components
+    ):
+        raise ValueError(invalid_code)
+
+    if os.name != "nt":
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(
+            os, "O_NOFOLLOW", 0
+        )
+        descriptors: list[int] = []
+        try:
+            for component in components:
+                descriptors.append(os.open(component, flags))
+            yield
+        except OSError as error:
+            raise ValueError(invalid_code) from error
+        finally:
+            for descriptor in reversed(descriptors):
+                os.close(descriptor)
+        return
+
+    kernel32 = ctypes.windll.kernel32
+    kernel32.CreateFileW.argtypes = [
+        ctypes.c_wchar_p,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+    ]
+    kernel32.CreateFileW.restype = ctypes.c_void_p
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    handles: list[int] = []
+    try:
+        for component in components:
+            directory_handle = kernel32.CreateFileW(
+                str(component),
+                0x0080,
+                0x0001 | 0x0002,
+                None,
+                3,
+                0x02000000 | 0x00200000,
+                None,
+            )
+            if directory_handle in (0, ctypes.c_void_p(-1).value):
+                raise ValueError(invalid_code)
+            handles.append(directory_handle)
+            pin_path = component / ".managed-root.pin"
+            pin_handle = kernel32.CreateFileW(
+                str(pin_path),
+                0x80000000 | 0x40000000,
+                0x0001 | 0x0002,
+                None,
+                4,
+                0x00000002 | 0x00200000,
+                None,
+            )
+            if pin_handle in (0, ctypes.c_void_p(-1).value):
+                raise ValueError(invalid_code)
+            handles.append(pin_handle)
+            if _is_reparse_or_symlink(component) or _is_reparse_or_symlink(
+                pin_path
+            ):
+                raise ValueError(invalid_code)
         yield
     finally:
-        kernel32.CloseHandle(handle)
+        for handle in reversed(handles):
+            kernel32.CloseHandle(handle)
+
+
+@contextlib.contextmanager
+def _exclusive_file_lock(
+    lock_path: Path,
+    *,
+    busy_code: str,
+    invalid_code: str,
+    wait_timeout_sec: float = 0.0,
+):
+    if lock_path.exists() and _is_reparse_or_symlink(lock_path):
+        raise ValueError(invalid_code)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    stream = lock_path.open("a+b")
+    locked = False
+    try:
+        if _is_reparse_or_symlink(lock_path) or not lock_path.is_file():
+            raise ValueError(invalid_code)
+        stream.seek(0, os.SEEK_END)
+        if stream.tell() == 0:
+            stream.write(b"\0")
+            stream.flush()
+            os.fsync(stream.fileno())
+        stream.seek(0)
+        deadline = time.monotonic() + max(0.0, wait_timeout_sec)
+        while True:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(
+                        stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB
+                    )
+                locked = True
+                break
+            except OSError as error:
+                if time.monotonic() >= deadline:
+                    raise ValueError(busy_code) from error
+                time.sleep(0.01)
+                stream.seek(0)
+        yield
+    finally:
+        if locked:
+            try:
+                stream.seek(0)
+                if os.name == "nt":
+                    import msvcrt
+
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+        stream.close()
+
+
+@contextlib.contextmanager
+def _locked_directory(path: Path):
+    root = _validated_terminal_root()
+    if not _same_lexical_path(path, root):
+        raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
+    with _pinned_directory(
+        root,
+        anchor=CANONICAL_REPO_ROOT,
+        invalid_code="AUDIT_TERMINAL_OUTPUT_INVALID",
+    ):
+        with _exclusive_file_lock(
+            root / ".audit-terminal.lock",
+            busy_code="AUDIT_TERMINAL_BUSY",
+            invalid_code="AUDIT_TERMINAL_OUTPUT_INVALID",
+        ):
+            _validated_terminal_root()
+            yield
 
 
 def decide_audit_recovery(payload: object) -> dict[str, Any]:
@@ -1637,101 +2164,463 @@ def execute_audit_recovery(payload: object) -> dict[str, Any]:
     return final_decision
 
 
-def execute_audit_recovery(payload: object) -> dict[str, Any]:
-    """監査判断、production recovery 1回、same-gate再検証、typed terminalを一続きで閉じる。"""
-    if not isinstance(payload, dict):
-        raise ValueError("AUDIT_RECOVERY_INPUT_INVALID")
-    issue_date = _validate_issue_date(payload.get("issueDate"))
-    decision = decide_audit_recovery(payload)
-    if decision.get("terminal"):
-        write_audit_terminal(decision)
-        return decision
-    if decision.get("action") != "scheduled_recovery":
-        incident = _incident(
-            issue_date=issue_date,
-            scheduled_status=str(decision.get("scheduledAttemptStatus") or "unverified"),
-            recovery_status=str(decision.get("recoveryAttemptStatus") or "unverified"),
-            reason_code="AUDIT_RECOVERY_ACTION_INVALID",
-        )
-        write_audit_terminal(incident)
-        return incident
+def _audit_event_history_path(root: Path, issue_date: str) -> Path:
+    return root / f"{issue_date}-audit-events.jsonl"
 
-    artifact_repo_root = _resolve_artifact_repo_root(payload)
-    artifact_repo_head = _validate_artifact_executable_tree(artifact_repo_root)
-    authority_path = _contained_file(
-        payload.get("recoveryAuthorityPath"),
-        root=artifact_repo_root / "build",
-        code="RECOVERY_AUTHORITY_INVALID",
+
+def _completion_authority_path(root: Path, issue_date: str) -> Path:
+    return root / f"{issue_date}-completion-authority.json"
+
+
+def _audit_transaction_path(root: Path, issue_date: str) -> Path:
+    return root / f".{issue_date}-audit-terminal-transaction.json"
+
+
+def _read_bounded_bytes(
+    path: Path, *, maximum: int, code: str, limit_code: str | None = None
+) -> bytes:
+    if path.is_symlink() or _is_reparse_or_symlink(path) or not path.is_file():
+        raise ValueError(code)
+    try:
+        with path.open("rb") as stream:
+            payload = stream.read(maximum + 1)
+    except OSError as error:
+        raise ValueError(code) from error
+    if len(payload) > maximum:
+        raise ValueError(limit_code or code)
+    return payload
+
+
+def _atomic_write_bytes(path: Path, payload: bytes) -> None:
+    if path.exists() and _is_reparse_or_symlink(path):
+        raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
     )
-    runner_path = CANONICAL_REPO_ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"
-    if not runner_path.is_file() or runner_path.is_symlink():
-        raise ValueError("RECOVERY_RUNNER_INVALID")
-    runner_sha256 = _file_sha256(runner_path)
-    canonical_python = CANONICAL_REPO_ROOT / ".venv" / "Scripts" / "python.exe"
-    if not canonical_python.is_file() or canonical_python.is_symlink():
-        raise ValueError("RECOVERY_RUNTIME_INTERPRETER_INVALID")
-    validate_recovery_execution_manifest(
-        payload.get("recoveryExecution"),
-        issue_date=issue_date,
-        authority_receipt_sha256=str(
-            decision.get("recoveryAuthorityReceiptSha256") or ""
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _load_terminal_projection(root: Path, issue_date: str) -> dict[str, Any]:
+    path = root / f"{issue_date}-audit-terminal.json"
+    try:
+        value = json.loads(
+            _read_bounded_bytes(
+                path,
+                maximum=MAX_JSON_BYTES,
+                code="AUDIT_TERMINAL_PROJECTION_INVALID",
+            ).decode("utf-8")
+        )
+        terminal = _validate_sealed(
+            value,
+            schema_version="AUDIT_TERMINAL_V1",
+            code="AUDIT_TERMINAL_PROJECTION_INVALID",
+        )
+    except (UnicodeError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError("AUDIT_TERMINAL_PROJECTION_INVALID") from error
+    if terminal.get("issuer") != DECISION_ISSUER or terminal.get(
+        "issueDate"
+    ) != issue_date:
+        raise ValueError("AUDIT_TERMINAL_PROJECTION_INVALID")
+    return terminal
+
+
+def _validate_completion_authority_anchor(
+    *, root: Path, issue_date: str, authority: dict[str, Any]
+) -> None:
+    """managed-rootを信頼境界とし、caller由来receipt単体のGreen化を拒否する。"""
+    events = validate_audit_observation_history(
+        _audit_event_history_path(root, issue_date)
+    )
+    if not events:
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+    terminal = _load_terminal_projection(root, issue_date)
+    if (
+        terminal.get("eventSequence") != events[-1].get("sequence")
+        or terminal.get("eventHash") != events[-1].get("eventHash")
+    ):
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+    authority_id = authority.get("completionAuthorityId")
+    decision_sha = authority.get("decisionReceiptSha256")
+    first_terminal = authority.get("firstVerifiedTerminal")
+    if not any(
+        event.get("completionAuthorityId") == authority_id
+        and event.get("decisionReceiptSha256") == decision_sha
+        and event.get("result") == first_terminal
+        for event in events
+    ):
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+
+
+def load_completion_authority_receipt(issue_date: str) -> dict[str, Any] | None:
+    """正規managed-rootのevent chainへanchorされたauthorityだけを返す。"""
+    issue_date = _validate_issue_date(issue_date)
+    root = _validated_terminal_root(create=False)
+    path = _completion_authority_path(root, issue_date)
+    if not path.exists():
+        return None
+    with _pinned_directory(
+        root,
+        anchor=CANONICAL_REPO_ROOT,
+        invalid_code="AUDIT_COMPLETION_AUTHORITY_INVALID",
+    ):
+        _validated_terminal_root(create=False)
+        try:
+            payload = _read_bounded_bytes(
+                path,
+                maximum=MAX_JSON_BYTES,
+                code="AUDIT_COMPLETION_AUTHORITY_INVALID",
+            )
+            value = json.loads(payload.decode("utf-8"))
+            authority = validate_completion_authority_receipt(
+                value, issue_date=issue_date
+            )
+            _validate_completion_authority_anchor(
+                root=root, issue_date=issue_date, authority=authority
+            )
+            return authority
+        except (UnicodeError, json.JSONDecodeError, ValueError) as error:
+            raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID") from error
+
+
+def prune_audit_artifacts(
+    root: Path, *, issue_date: str, owner: str = AUDIT_LIFECYCLE_OWNER
+) -> list[str]:
+    """正規ownerだけがissue date基準の31日超artifactを整理する。"""
+    if owner != AUDIT_LIFECYCLE_OWNER:
+        raise ValueError("AUDIT_RETENTION_OWNER_INVALID")
+    current = _validate_issue_date(issue_date)
+    cutoff = date.fromisoformat(current) - timedelta(days=AUDIT_RETENTION_DAYS)
+    canonical_root = _validated_terminal_root(create=False)
+    if not _same_lexical_path(root, canonical_root):
+        raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
+    root = canonical_root
+    if not root.exists():
+        return []
+    removed: list[str] = []
+    for pattern in (
+        "*-audit-events.jsonl",
+        "*-audit-terminal.json",
+        "*-completion-authority.json",
+    ):
+        for path in sorted(root.glob(pattern)):
+            prefix = path.name[:10]
+            try:
+                artifact_date = date.fromisoformat(prefix)
+            except ValueError:
+                continue
+            if artifact_date >= cutoff:
+                continue
+            if path.is_symlink() or not path.is_file():
+                raise ValueError("AUDIT_RETENTION_ARTIFACT_INVALID")
+            path.unlink()
+            removed.append(path.name)
+    return removed
+
+
+def _completion_authority_receipt(
+    *, decision: dict[str, Any], terminal: dict[str, Any]
+) -> dict[str, Any] | None:
+    completion = decision.get("completionEvidence")
+    if not isinstance(completion, dict):
+        return None
+    authority_id = str(
+        decision.get("completionAuthorityId")
+        or completion.get("completionAuthorityId")
+        or completion.get("completion_authority_id")
+        or ""
+    )
+    if not authority_id:
+        return None
+    return _sealed(
+        {
+            "schemaVersion": "COMPLETION_AUTHORITY_V1",
+            "issuer": DECISION_ISSUER,
+            "issueDate": decision.get("issueDate"),
+            "completionAuthorityId": authority_id,
+            "completionEvidenceSha256": decision.get("completionEvidenceSha256"),
+            "completionEvidence": completion,
+            "firstVerifiedTerminal": terminal.get("terminal"),
+            "decisionReceiptSha256": decision.get("receiptSha256"),
+        }
+    )
+
+
+def _ensure_immutable_completion_authority(
+    *, root: Path, issue_date: str, decision: dict[str, Any], terminal: dict[str, Any]
+) -> Path | None:
+    receipt = _completion_authority_receipt(decision=decision, terminal=terminal)
+    if receipt is None:
+        return None
+    path = _completion_authority_path(root, issue_date)
+    if path.exists():
+        try:
+            existing = json.loads(
+                _read_bounded_bytes(
+                    path,
+                    maximum=MAX_JSON_BYTES,
+                    code="AUDIT_COMPLETION_AUTHORITY_INVALID",
+                ).decode("utf-8")
+            )
+            existing = validate_completion_authority_receipt(
+                existing, issue_date=issue_date
+            )
+        except (UnicodeError, json.JSONDecodeError, ValueError) as error:
+            raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID") from error
+        if (
+            existing.get("completionAuthorityId")
+            != receipt.get("completionAuthorityId")
+        ):
+            raise ValueError("AUDIT_EVENT_CROSS_LINEAGE")
+        return path
+    validate_completion_authority_receipt(receipt, issue_date=issue_date)
+    _atomic_write_bytes(
+        path,
+        (json.dumps(receipt, ensure_ascii=False, indent=2) + "\n").encode("utf-8"),
+    )
+    return path
+
+
+def _validate_audit_observation_history_bytes(payload: bytes) -> list[dict[str, Any]]:
+    encoded_lines = payload.splitlines()
+    if any(len(line) > MAX_AUDIT_EVENT_BYTES for line in encoded_lines):
+        raise ValueError("AUDIT_EVENT_HISTORY_LIMIT_EXCEEDED")
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeError as error:
+        raise ValueError("AUDIT_EVENT_HISTORY_INVALID") from error
+    lines = text.splitlines()
+    if len(lines) > AUDIT_EVENT_HISTORY_LIMIT:
+        raise ValueError("AUDIT_EVENT_HISTORY_LIMIT_EXCEEDED")
+    events: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    authority_id = ""
+    for expected_sequence, line in enumerate(lines, start=1):
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise ValueError("AUDIT_EVENT_HISTORY_INVALID") from error
+        if not isinstance(event, dict):
+            raise ValueError("AUDIT_EVENT_HISTORY_INVALID")
+        event_id = str(event.get("eventId") or "")
+        if not event_id or event_id in seen_ids:
+            raise ValueError("AUDIT_EVENT_REPLAY")
+        if event.get("schemaVersion") != "AUDIT_OBSERVATION_EVENT_V1":
+            raise ValueError("AUDIT_EVENT_HISTORY_INVALID")
+        if event.get("sequence") != expected_sequence:
+            raise ValueError("AUDIT_EVENT_REPLAY")
+        previous_hash = str(event.get("previousEventHash") or "")
+        expected_previous = "0" * 64 if expected_sequence == 1 else str(events[-1]["eventHash"])
+        if previous_hash != expected_previous:
+            raise ValueError("AUDIT_EVENT_REPLAY")
+        current_authority = str(event.get("completionAuthorityId") or "")
+        if current_authority and current_authority != "unverified" and not authority_id:
+            authority_id = current_authority
+        elif (
+            current_authority
+            and current_authority != "unverified"
+            and authority_id
+            and current_authority != authority_id
+        ):
+            raise ValueError("AUDIT_EVENT_CROSS_LINEAGE")
+        event_hash = str(event.get("eventHash") or "")
+        body = {key: value for key, value in event.items() if key != "eventHash"}
+        if not _valid_sha256(event_hash) or hashlib.sha256(_canonical(body)).hexdigest() != event_hash:
+            raise ValueError("AUDIT_EVENT_HISTORY_INVALID")
+        seen_ids.add(event_id)
+        events.append(event)
+    return events
+
+
+def validate_audit_observation_history(path: Path) -> list[dict[str, Any]]:
+    """event historyをdecode前のbyte上限と単調hash chainで検証する。"""
+    if not path.exists():
+        return []
+    payload = _read_bounded_bytes(
+        path,
+        maximum=MAX_AUDIT_HISTORY_BYTES,
+        code="AUDIT_EVENT_HISTORY_INVALID",
+        limit_code="AUDIT_EVENT_HISTORY_LIMIT_EXCEEDED",
+    )
+    return _validate_audit_observation_history_bytes(payload)
+
+
+def _build_audit_observation_event(
+    *, decision: dict[str, Any], previous: dict[str, Any] | None, sequence: int
+) -> dict[str, Any]:
+    previous_hash = str(previous.get("eventHash") if previous else "0" * 64)
+    previous_authority = str(previous.get("completionAuthorityId") if previous else "")
+    completion = decision.get("completionEvidence")
+    completion_authority = str(decision.get("completionAuthorityId") or "")
+    if not completion_authority and isinstance(completion, dict):
+        completion_authority = str(completion.get("completionAuthorityId") or "")
+    if (
+        previous_authority
+        and previous_authority != "unverified"
+        and completion_authority
+        and completion_authority != "unverified"
+        and previous_authority != completion_authority
+    ):
+        raise ValueError("AUDIT_EVENT_CROSS_LINEAGE")
+    completion_authority = completion_authority or previous_authority or "unverified"
+    event_body = {
+        "schemaVersion": "AUDIT_OBSERVATION_EVENT_V1",
+        "eventId": hashlib.sha256(
+            _canonical(
+                {
+                    "issueDate": decision.get("issueDate"),
+                    "sequence": sequence,
+                    "decisionReceiptSha256": decision.get("receiptSha256"),
+                }
+            )
+        ).hexdigest(),
+        "issueDate": decision.get("issueDate"),
+        "sequence": sequence,
+        "previousEventHash": previous_hash,
+        "completionAuthorityId": completion_authority,
+        "causeFingerprint": str(
+            decision.get("causeFingerprint") or cause_fingerprint(decision)
         ),
-        artifact_repo_head=artifact_repo_head,
-        runner_sha256=runner_sha256,
-    )
-    high_cost_workspace = CANONICAL_REPO_ROOT.parent
-    state_path = Path.home() / "bin" / "news-grasp-runner-state.json"
-    log_dir = Path.home() / "bin" / "news-grasp-logs"
-    command = [
-        "powershell.exe",
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        str(runner_path),
-        "-RunIntent",
-        "ScheduledRecoveryFull",
-        "-DateStampOverride",
-        issue_date,
-        "-RepoDirOverride",
-        str(artifact_repo_root),
-        "-OpsRepoRootOverride",
-        str(CANONICAL_REPO_ROOT),
-        "-PyExeOverride",
-        str(canonical_python),
-        "-StateFileOverride",
-        str(state_path),
-        "-LogDirOverride",
-        str(log_dir),
-        "-HighCostWorkspaceRoot",
-        str(high_cost_workspace),
-        "-HighCostBudgetToolPath",
-        str(CANONICAL_BROKER_PATH),
-        "-ScheduledAuthorityEvidencePath",
-        str(authority_path),
-    ]
-    return_code, _ = _run_bounded(command, cwd=artifact_repo_root, timeout=10800)
-    if return_code != 0:
-        incident = _incident(
-            issue_date=issue_date,
-            scheduled_status="failed",
-            recovery_status="started",
-            reason_code=f"RECOVERY_EXECUTION_FAILED_{return_code}",
-        )
-        write_audit_terminal(incident)
-        return incident
+        "action": decision.get("action"),
+        "result": decision.get("terminal"),
+        "observedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "decisionReceiptSha256": decision.get("receiptSha256"),
+        "sourceSha256": str(decision.get("sourceSha256") or ""),
+        "runtimeSha256": str(decision.get("runtimeSha256") or ""),
+        "configSha256": str(decision.get("configSha256") or ""),
+        "externalEvidenceSha256": str(decision.get("externalEvidenceSha256") or ""),
+    }
+    return {
+        **event_body,
+        "eventHash": hashlib.sha256(_canonical(event_body)).hexdigest(),
+    }
 
-    final_decision = decide_audit_recovery(payload)
-    if final_decision.get("terminal") != "audit_recovered_green":
-        final_decision = _incident(
-            issue_date=issue_date,
-            scheduled_status="failed",
-            recovery_status="started",
-            reason_code="RECOVERY_COMPLETION_INVALID",
+
+def _audit_history_bytes(events: list[dict[str, Any]]) -> bytes:
+    encoded_events = [
+        json.dumps(event, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        for event in events
+    ]
+    if any(len(event) > MAX_AUDIT_EVENT_BYTES for event in encoded_events):
+        raise ValueError("AUDIT_EVENT_HISTORY_LIMIT_EXCEEDED")
+    payload = b"".join(event + b"\n" for event in encoded_events)
+    if len(payload) > MAX_AUDIT_HISTORY_BYTES:
+        raise ValueError("AUDIT_EVENT_HISTORY_LIMIT_EXCEEDED")
+    return payload
+
+
+def _json_document_bytes(value: dict[str, Any]) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def _audit_transaction_receipt(
+    *, issue_date: str, history_payload: bytes, terminal: dict[str, Any]
+) -> dict[str, Any]:
+    return _sealed(
+        {
+            "schemaVersion": "AUDIT_TERMINAL_TRANSACTION_V1",
+            "issuer": DECISION_ISSUER,
+            "issueDate": issue_date,
+            "historyJsonl": history_payload.decode("utf-8"),
+            "historySha256": hashlib.sha256(history_payload).hexdigest(),
+            "terminal": terminal,
+            "terminalReceiptSha256": terminal.get("receiptSha256"),
+        }
+    )
+
+
+def _validate_audit_transaction(
+    value: object, *, issue_date: str
+) -> tuple[bytes, dict[str, Any]]:
+    try:
+        transaction = _validate_sealed(
+            value,
+            schema_version="AUDIT_TERMINAL_TRANSACTION_V1",
+            code="AUDIT_TERMINAL_TRANSACTION_INVALID",
         )
-    write_audit_terminal(final_decision)
-    return final_decision
+        history_text = transaction.get("historyJsonl")
+        terminal = _validate_sealed(
+            transaction.get("terminal"),
+            schema_version="AUDIT_TERMINAL_V1",
+            code="AUDIT_TERMINAL_TRANSACTION_INVALID",
+        )
+        if not isinstance(history_text, str):
+            raise ValueError("AUDIT_TERMINAL_TRANSACTION_INVALID")
+        history_payload = history_text.encode("utf-8")
+        events = _validate_audit_observation_history_bytes(history_payload)
+        if (
+            transaction.get("issuer") != DECISION_ISSUER
+            or transaction.get("issueDate") != issue_date
+            or transaction.get("historySha256")
+            != hashlib.sha256(history_payload).hexdigest()
+            or transaction.get("terminalReceiptSha256")
+            != terminal.get("receiptSha256")
+            or terminal.get("issueDate") != issue_date
+            or not events
+            or terminal.get("eventSequence") != events[-1].get("sequence")
+            or terminal.get("eventHash") != events[-1].get("eventHash")
+        ):
+            raise ValueError("AUDIT_TERMINAL_TRANSACTION_INVALID")
+    except (UnicodeError, ValueError) as error:
+        raise ValueError("AUDIT_TERMINAL_TRANSACTION_INVALID") from error
+    return history_payload, terminal
+
+
+def _recover_audit_transaction(root: Path, issue_date: str) -> None:
+    journal = _audit_transaction_path(root, issue_date)
+    if not journal.exists():
+        return
+    try:
+        value = json.loads(
+            _read_bounded_bytes(
+                journal,
+                maximum=MAX_AUDIT_HISTORY_BYTES + MAX_JSON_BYTES,
+                code="AUDIT_TERMINAL_TRANSACTION_INVALID",
+            ).decode("utf-8")
+        )
+        history_payload, terminal = _validate_audit_transaction(
+            value, issue_date=issue_date
+        )
+    except (UnicodeError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError("AUDIT_TERMINAL_TRANSACTION_INVALID") from error
+    history_path = _audit_event_history_path(root, issue_date)
+    journal_events = _validate_audit_observation_history_bytes(history_payload)
+    live_events = validate_audit_observation_history(history_path)
+
+    def is_prefix(
+        prefix: list[dict[str, Any]], full: list[dict[str, Any]]
+    ) -> bool:
+        return len(prefix) <= len(full) and all(
+            left.get("eventHash") == right.get("eventHash")
+            for left, right in zip(prefix, full)
+        )
+
+    if live_events and is_prefix(journal_events, live_events):
+        if len(live_events) > len(journal_events):
+            projection = _load_terminal_projection(root, issue_date)
+            if (
+                projection.get("eventSequence") != live_events[-1].get("sequence")
+                or projection.get("eventHash") != live_events[-1].get("eventHash")
+            ):
+                raise ValueError("AUDIT_TERMINAL_TRANSACTION_INVALID")
+            journal.unlink()
+            return
+    elif live_events and not is_prefix(live_events, journal_events):
+        raise ValueError("AUDIT_TERMINAL_TRANSACTION_INVALID")
+
+    _atomic_write_bytes(history_path, history_payload)
+    _atomic_write_bytes(
+        root / f"{issue_date}-audit-terminal.json",
+        _json_document_bytes(terminal),
+    )
+    journal.unlink()
 
 
 def write_audit_terminal(decision: object) -> dict[str, Any]:
@@ -1756,6 +2645,15 @@ def write_audit_terminal(decision: object) -> dict[str, Any]:
         or not _valid_sha256(decision_value.get("evidenceSha256"))
     ):
         raise ValueError("AUDIT_TERMINAL_INVALID")
+    if decision_value.get("terminal") == "audit_observation_unverified" and (
+        decision_value.get("publicStatus") not in {"green", "unverified"}
+        or (
+            decision_value.get("publicStatus") == "green"
+            and not str(decision_value.get("completionAuthorityId") or "")
+        )
+        or not str(decision_value.get("reasonCode") or "")
+    ):
+        raise ValueError("AUDIT_TERMINAL_INVALID")
     if decision_value.get("terminal") in {
         "audit_normal_green",
         "audit_recovered_green",
@@ -1769,49 +2667,85 @@ def write_audit_terminal(decision: object) -> dict[str, Any]:
         )
     ):
         raise ValueError("AUDIT_TERMINAL_INVALID")
-    root = CANONICAL_TERMINAL_ROOT.resolve()
+    root = _validated_terminal_root()
     target = root / f"{issue_date}-audit-terminal.json"
+    history_path = _audit_event_history_path(root, issue_date)
     if target.exists() and target.is_symlink():
         raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
-    terminal = _sealed(
-        {
-            "schemaVersion": "AUDIT_TERMINAL_V1",
-            "issuer": DECISION_ISSUER,
-            "decisionReceiptSha256": decision_value["receiptSha256"],
-            "issueDate": decision_value.get("issueDate"),
-            "terminal": decision_value.get("terminal"),
-            "scheduledAttemptStatus": decision_value.get("scheduledAttemptStatus"),
-            "recoveryAttemptStatus": decision_value.get("recoveryAttemptStatus"),
-            "publicStatus": decision_value.get("publicStatus"),
-            "reasonCode": decision_value.get("reasonCode"),
-            "owner": decision_value.get("owner"),
-            "nextAction": decision_value.get("nextAction"),
-            "evidenceSha256": decision_value.get("evidenceSha256"),
-            "completionEvidenceSha256": decision_value.get(
-                "completionEvidenceSha256"
-            ),
-            "sourceDecision": decision_value.get("sourceDecision") or decision_value,
-            "completionEvidence": decision_value.get("completionEvidence"),
-        }
-    )
     with _locked_directory(root):
-        if target.parent.resolve() != root:
+        root = _validated_terminal_root()
+        if not _same_lexical_path(target.parent, root) or not _same_lexical_path(
+            history_path.parent, root
+        ):
             raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
+        _recover_audit_transaction(root, issue_date)
+        events = validate_audit_observation_history(history_path)
+        if len(events) >= AUDIT_EVENT_HISTORY_LIMIT:
+            raise ValueError("AUDIT_EVENT_HISTORY_LIMIT_EXCEEDED")
+        if any(
+            event.get("decisionReceiptSha256") == decision_value["receiptSha256"]
+            for event in events
+        ):
+            raise ValueError("AUDIT_EVENT_REPLAY")
+        prune_audit_artifacts(
+            root,
+            issue_date=issue_date,
+            owner=AUDIT_LIFECYCLE_OWNER,
         )
-        temporary = Path(temporary_name)
+        event = _build_audit_observation_event(
+            decision=decision_value,
+            previous=events[-1] if events else None,
+            sequence=len(events) + 1,
+        )
+        terminal = _sealed(
+            {
+                "schemaVersion": "AUDIT_TERMINAL_V1",
+                "issuer": DECISION_ISSUER,
+                "decisionReceiptSha256": decision_value["receiptSha256"],
+                "issueDate": decision_value.get("issueDate"),
+                "terminal": decision_value.get("terminal"),
+                "scheduledAttemptStatus": decision_value.get("scheduledAttemptStatus"),
+                "recoveryAttemptStatus": decision_value.get("recoveryAttemptStatus"),
+                "publicStatus": decision_value.get("publicStatus"),
+                "reasonCode": decision_value.get("reasonCode"),
+                "owner": decision_value.get("owner"),
+                "nextAction": decision_value.get("nextAction"),
+                "evidenceSha256": decision_value.get("evidenceSha256"),
+                "completionEvidenceSha256": decision_value.get(
+                    "completionEvidenceSha256"
+                ),
+                "sourceDecision": decision_value.get("sourceDecision") or decision_value,
+                "completionEvidence": decision_value.get("completionEvidence"),
+                "eventId": event["eventId"],
+                "eventSequence": event["sequence"],
+                "previousEventHash": event["previousEventHash"],
+                "eventHash": event["eventHash"],
+                "completionAuthorityId": event["completionAuthorityId"],
+                "causeFingerprint": event["causeFingerprint"],
+                "observedAt": event["observedAt"],
+            }
+        )
+        _ensure_immutable_completion_authority(
+            root=root,
+            issue_date=issue_date,
+            decision=decision_value,
+            terminal=terminal,
+        )
+        history_payload = _audit_history_bytes([*events, event])
+        transaction = _audit_transaction_receipt(
+            issue_date=issue_date,
+            history_payload=history_payload,
+            terminal=terminal,
+        )
+        journal = _audit_transaction_path(root, issue_date)
+        _atomic_write_bytes(journal, _json_document_bytes(transaction))
         try:
-            with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
-                json.dump(terminal, stream, ensure_ascii=False, indent=2)
-                stream.write("\n")
-                stream.flush()
-                os.fsync(stream.fileno())
-            if target.parent.resolve() != root:
-                raise ValueError("AUDIT_TERMINAL_OUTPUT_INVALID")
-            os.replace(temporary, target)
-        finally:
-            temporary.unlink(missing_ok=True)
+            _atomic_write_bytes(history_path, history_payload)
+            _atomic_write_bytes(target, _json_document_bytes(terminal))
+        except Exception:
+            raise
+        else:
+            journal.unlink()
     return terminal
 
 

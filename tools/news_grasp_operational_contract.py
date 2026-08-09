@@ -4,6 +4,7 @@ import hashlib
 import json
 import argparse
 import ast
+import re
 from pathlib import Path
 import sys
 from typing import Any
@@ -30,6 +31,19 @@ OPERATIONAL_DESIGN_FIELDS = (
     "operationalCost",
 )
 OPERATIONAL_TRUTH_ISSUER = "tools.audit_recovery_control.actual_observer"
+COMPLETION_AUTHORITY_ISSUER = "tools.audit_recovery_control"
+VERIFIED_COMPLETION_ISSUER = "tools.audit_recovery_control.actual_verifiers"
+COMPLETION_FIELDS = (
+    "quality",
+    "distributionManifest",
+    "publishStatus",
+    "publicSurface",
+    "primaryPodcast",
+    "deepDivePodcast",
+    "notification",
+    "runnerState",
+)
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 
 def _canonical(value: object) -> bytes:
@@ -63,6 +77,106 @@ def validate_operational_truth_receipt(value: object) -> dict[str, Any]:
     ):
         raise ValueError("OPERATIONAL_TRUTH_RECEIPT_INVALID")
     return body
+
+
+def validate_completion_authority_receipt(
+    value: object, *, issue_date: str
+) -> dict[str, Any]:
+    """immutable public Green authorityをseal・日付・lineageまで検証する。"""
+    if not isinstance(value, dict):
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+    authority_body = {
+        key: item for key, item in value.items() if key != "receiptSha256"
+    }
+    completion = authority_body.get("completionEvidence")
+    if not isinstance(completion, dict):
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+    completion_body = {
+        key: item for key, item in completion.items() if key != "receiptSha256"
+    }
+    checks = completion_body.get("checks")
+    evidence = completion_body.get("evidenceSha256")
+    if (
+        authority_body.get("schemaVersion") != "COMPLETION_AUTHORITY_V1"
+        or authority_body.get("issuer") != COMPLETION_AUTHORITY_ISSUER
+        or authority_body.get("issueDate") != issue_date
+        or value.get("receiptSha256") != _sha(authority_body)
+        or not str(authority_body.get("completionAuthorityId") or "")
+        or authority_body.get("completionEvidenceSha256")
+        != completion.get("receiptSha256")
+        or SHA256_PATTERN.fullmatch(
+            str(authority_body.get("completionEvidenceSha256") or "")
+        )
+        is None
+        or SHA256_PATTERN.fullmatch(
+            str(authority_body.get("decisionReceiptSha256") or "")
+        )
+        is None
+        or authority_body.get("firstVerifiedTerminal")
+        not in {"audit_normal_green", "audit_recovered_green"}
+        or completion_body.get("schemaVersion")
+        != "SAME_DATE_COMPLETION_EVIDENCE_V1"
+        or completion_body.get("issuer") != VERIFIED_COMPLETION_ISSUER
+        or completion_body.get("issueDate") != issue_date
+        or completion_body.get("publishStatusIssueDate") != issue_date
+        or completion.get("receiptSha256") != _sha(completion_body)
+        or completion_body.get("verificationStatus") not in {None, "verified_green"}
+        or completion_body.get("publicCompletionStatus") not in {None, "green"}
+        or completion_body.get("nextRunReadinessStatus") not in {None, "green"}
+        or not isinstance(checks, dict)
+        or not isinstance(evidence, dict)
+        or not all(
+            checks.get(field) is True
+            and SHA256_PATTERN.fullmatch(str(evidence.get(field) or "")) is not None
+            for field in COMPLETION_FIELDS
+        )
+    ):
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+
+    artifact_root = str(completion_body.get("artifactRoot") or "")
+    ops_root = str(completion_body.get("opsRoot") or "")
+    run_intent = str(completion_body.get("runIntent") or "")
+    run_id = str(completion_body.get("runId") or "")
+    if not artifact_root or not ops_root or not run_intent:
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+    daily_root_id = hashlib.sha256(
+        f"News-Grasp|{issue_date}|{artifact_root.casefold()}|{ops_root.casefold()}".encode(
+            "utf-8"
+        )
+    ).hexdigest()
+    root_operation_id = hashlib.sha256(
+        f"{daily_root_id}|{run_id}|root-operation".encode("utf-8")
+    ).hexdigest()
+    producer_operation_id = hashlib.sha256(
+        f"{root_operation_id}|producer|{run_intent}".encode("utf-8")
+    ).hexdigest()
+    lineage_receipt_sha256 = hashlib.sha256(
+        (
+            "NEWS_GRASP_PRODUCER_LINEAGE_V1|"
+            f"{issue_date}|{artifact_root.casefold()}|{ops_root.casefold()}|"
+            f"{daily_root_id}|{root_operation_id}|{producer_operation_id}|"
+            f"{run_intent}|{run_id}"
+        ).encode("utf-8")
+    ).hexdigest()
+    expected_lineage = {
+        "dailyRootId": daily_root_id,
+        "rootOperationId": root_operation_id,
+        "producerDailyRootId": daily_root_id,
+        "producerRootOperationId": root_operation_id,
+        "producerRunIntent": run_intent,
+        "verifierRunIntent": run_intent,
+        "producerOperationId": producer_operation_id,
+        "lineageReceiptSha256": lineage_receipt_sha256,
+        "verifierOperationId": hashlib.sha256(
+            f"{root_operation_id}|verifier|{run_intent}".encode("utf-8")
+        ).hexdigest(),
+    }
+    if any(
+        completion_body.get(field) != expected
+        for field, expected in expected_lineage.items()
+    ):
+        raise ValueError("AUDIT_COMPLETION_AUTHORITY_INVALID")
+    return dict(value)
 
 
 def select_recovery_branch_from_truth(value: object) -> str:
@@ -335,10 +449,46 @@ def finalize_audit_decision(
     result["controlChainValid"] = bool(
         result.get("operationalTruthReceiptSha256")
     )
+    public_status = str(
+        result.get("publicStatus")
+        or result.get("publicCompletionStatus")
+        or "incomplete"
+    )
+    audit_status = str(result.get("auditObservationStatus") or "")
+    if not audit_status:
+        terminal = str(result.get("terminal") or "")
+        audit_status = (
+            "green"
+            if terminal in {"audit_normal_green", "audit_recovered_green"}
+            else "unverified"
+            if terminal == "audit_observation_unverified"
+            else "red"
+            if terminal == "audit_major_incident_open"
+            else str(result.get("verificationStatus") or "unverified")
+        )
+    completion = result.get("completionEvidence")
+    completion_value = completion if isinstance(completion, dict) else {}
+    readiness_status = str(
+        result.get("nextRunReadinessStatus")
+        or completion_value.get("nextRunReadinessStatus")
+        or "unverified"
+    )
+    operational_status = str(result.get("operationalStatus") or "")
+    if not operational_status:
+        operational_status = (
+            "recovery_required"
+            if public_status != "green"
+            else "green"
+            if audit_status == "green" and readiness_status == "green"
+            else "degraded"
+        )
     result["stateVector"] = {
         "scheduledAttemptStatus": result.get("scheduledAttemptStatus", "unverified"),
         "recoveryAttemptStatus": result.get("recoveryAttemptStatus", "unverified"),
-        "productionPublicOutcomeStatus": result.get("publicStatus", "incomplete"),
+        "publicStatus": public_status,
+        "auditObservationStatus": audit_status,
+        "nextRunReadinessStatus": readiness_status,
+        "operationalStatus": operational_status,
     }
     result = bind_outcome_target(payload, result)
     result = map_quality_issue_to_work_order(payload, result)

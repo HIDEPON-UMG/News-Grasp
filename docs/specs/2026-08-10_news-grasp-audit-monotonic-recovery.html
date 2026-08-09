@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>News-Grasp 監査Green非後退・型付き自動復旧 仕様</title>
+  <style>
+    :root {
+      --color-primary: #1A1A1A;
+      --color-secondary: #5C5A52;
+      --color-accent: #C9A155;
+      --color-paper: #FAF7F0;
+      --color-surface: #FFFFFF;
+      --color-border: #E2DED4;
+      --color-paper-soft: #F2EEE3;
+      --color-navy: #181C2A;
+      --color-cream: #F0EBE0;
+      --color-success: #3D7E60;
+      --color-warning: #B7773D;
+      --color-error: #B83A2D;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --font-body: "Noto Serif JP", "Yu Mincho", serif;
+      --font-heading: Inter, "Segoe UI", sans-serif;
+      --font-code: "JetBrains Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { max-width: 100%; overflow-x: hidden; color-scheme: light; }
+    body {
+      margin: 0;
+      max-width: 100%;
+      overflow-x: hidden;
+      color: var(--color-primary);
+      background: var(--color-paper);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.85;
+    }
+    .container { min-width: 0; min-height: 100vh; }
+    header {
+      padding: var(--space-2xl) clamp(var(--space-md), 5vw, 72px);
+      color: var(--color-cream);
+      background: var(--color-navy);
+      border-bottom: 4px solid var(--color-accent);
+    }
+    .eyebrow, .spec-eyebrow, .status, code, th, button, label, select {
+      font-family: var(--font-code);
+    }
+    .eyebrow, .spec-eyebrow { color: var(--color-accent); letter-spacing: .15em; font-weight: 700; }
+    h1, h2 { font-family: var(--font-heading); line-height: 1.2; }
+    h1 { max-width: 980px; margin: var(--space-sm) 0; overflow-wrap: anywhere; font-size: clamp(2rem, 5vw, 3.5rem); }
+    h2 { margin-top: 0; font-size: clamp(1.6rem, 3vw, 2.25rem); }
+    .lead { max-width: 850px; overflow-wrap: anywhere; font-size: 1.1rem; }
+    main { width: min(1180px, calc(100% - 32px)); min-width: 0; margin: var(--space-xl) auto var(--space-2xl); }
+    .summary-grid, .metric-grid { display: grid; gap: var(--space-md); grid-template-columns: repeat(3, 1fr); }
+    .panel, .card { min-width: 0; padding: var(--space-lg); overflow-wrap: anywhere; background: var(--color-surface); border: 1px solid var(--color-border); }
+    .panel strong, .card strong { display: block; font-family: var(--font-heading); font-size: 1.15rem; }
+    .status { display: inline-block; padding: var(--space-xs) var(--space-sm); border-left: 4px solid currentColor; font-weight: 700; }
+    .status.green { color: var(--color-success); }
+    .status.warn { color: var(--color-warning); }
+    .tabs { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin: var(--space-xl) 0 0; border-bottom: 2px solid var(--color-navy); }
+    .tabs button {
+      min-height: 44px;
+      padding: var(--space-sm) var(--space-md);
+      color: var(--color-navy);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-bottom: 0;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] { color: var(--color-cream); background: var(--color-navy); }
+    .tabs button:focus-visible, select:focus-visible, .copy:focus-visible { outline: 4px solid var(--color-accent); outline-offset: 2px; }
+    [role="tabpanel"] { padding: var(--space-xl) 0; }
+    [role="tabpanel"][hidden] { display: none; }
+    table { width: 100%; border-collapse: collapse; background: var(--color-surface); }
+    th, td { padding: 12px; text-align: left; vertical-align: top; border: 1px solid var(--color-border); }
+    th { color: var(--color-cream); background: var(--color-navy); }
+    .table-wrap { overflow-x: auto; }
+    svg { display: block; width: 100%; min-width: 760px; height: auto; background: var(--color-surface); border: 1px solid var(--color-border); }
+    .flow-wrap { overflow-x: auto; }
+    .work-list { display: grid; gap: var(--space-md); padding: 0; list-style: none; }
+    .work-list li { padding: var(--space-md); background: var(--color-surface); border-left: 4px solid var(--color-accent); }
+    .playground { padding: var(--space-lg); background: var(--color-paper-soft); border: 1px solid var(--color-border); }
+    label { display: block; margin-bottom: var(--space-sm); font-weight: 700; }
+    select { width: 100%; min-height: 44px; padding: var(--space-sm); color: var(--color-primary); background: var(--color-surface); border: 2px solid var(--color-navy); }
+    pre { overflow-x: auto; padding: var(--space-md); color: var(--color-cream); background: var(--color-navy); white-space: pre-wrap; }
+    .copy { min-height: 44px; padding: var(--space-sm) var(--space-md); color: var(--color-navy); background: var(--color-accent); border: 2px solid var(--color-navy); font-family: var(--font-code); font-weight: 700; cursor: pointer; }
+    footer { padding: var(--space-lg); color: var(--color-secondary); text-align: center; border-top: 1px solid var(--color-border); }
+    @media (max-width: 767px) {
+      .summary-grid, .metric-grid { grid-template-columns: 1fr; }
+      main { width: min(100% - 24px, 1180px); }
+      header { padding: var(--space-xl) var(--space-md); }
+      [role="tabpanel"] { padding-top: var(--space-lg); }
+    }
+    @media (forced-colors: active) {
+      * { forced-color-adjust: auto; }
+      .panel, table, svg, .playground { border: 2px solid CanvasText; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+  <header class="spec-header">
+    <div class="spec-eyebrow">NEWS-GRASP / OPERATIONAL SPEC / 2026-08-10</div>
+    <h1>監査Greenを後退させず、異常終了から型付きで自動復旧する</h1>
+    <p class="lead">今回の対応内でscheduled productionを「実行→必要時復旧→公開確認→証拠確定」まで閉じる。自然実行待ちと人間監視は完了条件にしない。</p>
+  </header>
+  <main>
+    <section class="summary-grid" aria-label="仕様の要点">
+      <div class="card"><span class="status green">TARGET</span><strong>public Greenはimmutable</strong>readinessやaudit観測不能から既存authorityを消さない。</div>
+      <div class="panel"><span class="status warn">BRANCH</span><strong>原因別に復旧を分離</strong>public regression、readiness Red、verification unavailableを別経路へ送る。</div>
+      <div class="panel"><span class="status green">PROOF</span><strong>final-only E2E</strong>L0〜L7後の隔離NoPublish E2E一回だけで閉じる。</div>
+    </section>
+
+    <nav class="tabs" role="tablist" aria-label="仕様セクション">
+      <button class="tab active" data-tab="overview" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview">概要</button>
+      <button class="tab" data-tab="alternatives" id="tab-alternatives" role="tab" aria-selected="false" aria-controls="alternatives" tabindex="-1">比較</button>
+      <button class="tab" data-tab="dataflow" id="tab-dataflow" role="tab" aria-selected="false" aria-controls="dataflow" tabindex="-1">データフロー</button>
+      <button class="tab" data-tab="impl" id="tab-impl" role="tab" aria-selected="false" aria-controls="impl" tabindex="-1">実装ステップ</button>
+      <button class="tab" data-tab="playground" id="tab-playground" role="tab" aria-selected="false" aria-controls="playground" tabindex="-1">パラメータ</button>
+    </nav>
+
+    <section class="tab-panel active" id="overview" role="tabpanel" aria-labelledby="tab-overview">
+      <h2>状態を潰さず、同じconsumerで判断する</h2>
+      <div class="metric-grid">
+        <div class="panel"><strong>12 Requirements</strong>NG-R01〜NG-R12</div>
+        <div class="panel"><strong>8 Acceptance</strong>NG-A01〜NG-A08</div>
+        <div class="panel"><strong>12 Red nodes</strong>4論点×3観点</div>
+      </div>
+      <p><code>CompletionVerificationResultV1</code>は公開完了、次回readiness、検証phase、原因、evidence hashを別fieldで返す。<code>AuditObservationEventV1</code>はappend-onlyで、互換terminalは最新eventのprojectionに限る。</p>
+      <p>公開Greenを証明したcompletion authorityはimmutableである。primary verifierが例外でも、公開専用oracleがGreenならpublicはGreenのまま、auditだけを<code>audit_observation_unverified</code>としてexit 2にする。</p>
+    </section>
+
+    <section class="tab-panel" id="alternatives" role="tabpanel" aria-labelledby="tab-alternatives" hidden>
+      <h2>総期待資源が最小のclean single generationを選択</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>経路</th><th>期待時間</th><th>model call</th><th>主risk</th><th>判断</th></tr></thead>
+          <tbody>
+            <tr><td>dirty WIP統合</td><td>17.0h</td><td>18</td><td>部分merge、証拠失効</td><td>不採用</td></tr>
+            <tr><td>clean single generation</td><td>12.8h</td><td>15</td><td>Temp 1.5GiB</td><td>採用</td></tr>
+            <tr><td>runtime hotfix</td><td>15.0h</td><td>14</td><td>二重writer、本番先行</td><td>不採用</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>単一callの安さではなく、失敗確率、手戻り、context再構築、rollback、人間負担まで含む総期待資源で選ぶ。</p>
+    </section>
+
+    <section class="tab-panel" id="dataflow" role="tabpanel" aria-labelledby="tab-dataflow" hidden>
+      <h2>公開、readiness、観測の3 laneを分離</h2>
+      <div class="flow-wrap">
+        <svg viewBox="0 0 1100 520" role="img" aria-labelledby="flow-title flow-desc">
+          <title id="flow-title">型付き監査と復旧のデータフロー</title>
+          <desc id="flow-desc">primary verifier結果から公開Green、公開回帰、readiness Red、検証不能へ分岐し、completion authorityとappend-only eventを別々に更新する。</desc>
+          <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--color-navy)"/></marker></defs>
+          <g font-family="var(--font-code)" font-size="16" fill="var(--color-primary)" stroke="var(--color-navy)" stroke-width="2">
+            <rect x="30" y="210" width="190" height="80" fill="var(--color-paper-soft)"/><text x="55" y="245" stroke="none">primary verifier</text><text x="55" y="270" stroke="none">typed result</text>
+            <rect x="320" y="40" width="220" height="80" fill="var(--color-surface)"/><text x="345" y="75" stroke="none">verified public Green</text><text x="345" y="100" stroke="none">authority保持</text>
+            <rect x="320" y="160" width="220" height="80" fill="var(--color-surface)"/><text x="345" y="195" stroke="none">readiness Red</text><text x="345" y="220" stroke="none">readiness修復のみ</text>
+            <rect x="320" y="280" width="220" height="80" fill="var(--color-surface)"/><text x="345" y="315" stroke="none">verification unavailable</text><text x="345" y="340" stroke="none">cause変化待ち</text>
+            <rect x="320" y="400" width="220" height="80" fill="var(--color-surface)"/><text x="345" y="435" stroke="none">verified regression</text><text x="345" y="460" stroke="none">public復旧</text>
+            <rect x="660" y="95" width="380" height="100" fill="var(--color-paper-soft)"/><text x="690" y="135" stroke="none">immutable completion authority</text><text x="690" y="165" stroke="none">同日Greenの証明を上書きしない</text>
+            <rect x="660" y="295" width="380" height="100" fill="var(--color-paper-soft)"/><text x="690" y="335" stroke="none">append-only observation events</text><text x="690" y="365" stroke="none">hash lineage + causal retry</text>
+            <path d="M220 250 L320 80" fill="none" marker-end="url(#arrow)"/><path d="M220 250 L320 200" fill="none" marker-end="url(#arrow)"/><path d="M220 250 L320 320" fill="none" marker-end="url(#arrow)"/><path d="M220 250 L320 440" fill="none" marker-end="url(#arrow)"/>
+            <path d="M540 80 L660 135" fill="none" marker-end="url(#arrow)"/><path d="M540 200 L660 330" fill="none" marker-end="url(#arrow)"/><path d="M540 320 L660 345" fill="none" marker-end="url(#arrow)"/><path d="M540 440 L660 370" fill="none" marker-end="url(#arrow)"/>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="impl" role="tabpanel" aria-labelledby="tab-impl" hidden>
+      <h2>generation固定から物理提出まで</h2>
+      <ol class="work-list">
+        <li><strong>WP-01〜02</strong> clean worktree、hash manifest、task commitment、impact receiptを封印する。</li>
+        <li><strong>WP-03</strong> production source変更前に12 task-specific Redを同じconsumerで実測する。</li>
+        <li><strong>WP-04〜06</strong> 型付きresult、状態分離、immutable authority、append-only event、causal retryを実装する。</li>
+        <li><strong>Authority境界</strong> receipt単体ではなくmanaged root内のGreen event chainとlatest projectionへexact bindingする。</li>
+        <li><strong>Crash／並行安全</strong> forward-only WAL、process排他lock、Windows directory handle pinでrollbackとjunction swapを拒否する。</li>
+        <li><strong>WP-07</strong> 同じ12 node Green、focused regression、historical scenario、drift/replayを一回ずつ検証する。</li>
+        <li><strong>WP-08</strong> safe commit、push、remote HEAD、正規installer、runtime/task parity、rollbackを閉じる。</li>
+        <li><strong>WP-09〜10</strong> L0〜L7後にNoPublish E2Eを一回実行し、最終state vectorを提出する。</li>
+      </ol>
+    </section>
+
+    <section class="tab-panel" id="playground" role="tabpanel" aria-labelledby="tab-playground" hidden>
+      <h2>単一playgroundでbranchを確認</h2>
+      <div class="playground">
+        <label for="scenario">監査入力scenario</label>
+        <select id="scenario">
+          <option value="verifier_exception">既存Green + primary verifier例外</option>
+          <option value="readiness_red">公開Green + readiness Red</option>
+          <option value="public_regression">構造化public gate Red</option>
+          <option value="same_cause">同じcause fingerprintの再到来</option>
+        </select>
+        <pre id="result" aria-live="polite"></pre>
+        <button class="copy" id="copy-prompt" type="button">プロンプトとしてコピー</button>
+      </div>
+    </section>
+  </main>
+  <footer>Source: docs/spec.md / NG-R01〜R12 / NG-A01〜A08 / generation ng-audit-monotonic-20260810-g1</footer>
+  </div>
+  <script>
+    const tabs = [...document.querySelectorAll('.tab')];
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activate(tab));
+      tab.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const offset = event.key === 'ArrowRight' ? 1 : -1;
+        const next = tabs[(index + offset + tabs.length) % tabs.length];
+        activate(next); next.focus();
+      });
+    });
+    function activate(selected) {
+      tabs.forEach(tab => {
+        const active = tab === selected;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
+      });
+    }
+    const routes = {
+      verifier_exception: {publicCompletionStatus:'green', auditObservationStatus:'audit_observation_unverified', action:'preserve_authority_and_wait_for_cause_change', exitCode:2},
+      readiness_red: {publicCompletionStatus:'green', nextRunReadinessStatus:'red', action:'repair_readiness_only', exitCode:2},
+      public_regression: {publicCompletionStatus:'incomplete', action:'repair_public_surface', exitCode:2},
+      same_cause: {retryAllowed:false, action:'suppress_retry_until_causal_input_hash_changes', exitCode:2}
+    };
+    const scenario = document.getElementById('scenario');
+    const result = document.getElementById('result');
+    function render() { result.textContent = JSON.stringify(routes[scenario.value], null, 2); }
+    scenario.addEventListener('change', render); render();
+    document.getElementById('copy-prompt').addEventListener('click', async () => {
+      const text = `News-Grasp監査branchを次の固定条件で実装・検証してください。\nscenario=${scenario.value}\nexpected=${JSON.stringify(routes[scenario.value])}\nunresolvedDecisionIds=[]`;
+      await navigator.clipboard.writeText(text);
+    });
+  </script>
+</body>
+</html>

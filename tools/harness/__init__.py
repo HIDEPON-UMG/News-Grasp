@@ -7,14 +7,26 @@ from pathlib import Path
 
 def resolve_workspace_harness_path() -> Path:
     workspace = os.environ.get("NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT", "").strip()
-    candidate = (
-        Path(workspace).resolve() / "tools" / "harness"
-        if workspace
-        else Path(__file__).resolve().parents[3] / "tools" / "harness"
-    )
-    if not candidate.is_dir():
+    if workspace:
+        candidate = Path(workspace).resolve() / "tools" / "harness"
+        if candidate.is_dir():
+            return candidate
         raise RuntimeError(f"WORKSPACE_HARNESS_UNAVAILABLE: {candidate}")
-    return candidate
+
+    source = Path(__file__).resolve()
+    checked: list[Path] = []
+    for ancestor in source.parents:
+        candidate = ancestor / "tools" / "harness"
+        checked.append(candidate)
+        if (
+            candidate.is_dir()
+            and (candidate / "model_spawn_broker.py").is_file()
+        ):
+            return candidate.resolve()
+    raise RuntimeError(
+        "WORKSPACE_HARNESS_UNAVAILABLE: "
+        + ", ".join(str(path) for path in checked)
+    )
 
 
 _WORKSPACE_HARNESS = resolve_workspace_harness_path()

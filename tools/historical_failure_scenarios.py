@@ -682,6 +682,16 @@ SCENARIOS: tuple[HistoricalFailureScenario, ...] = (
         "build/repair-review/2026-08-03-startup-self-repair-tdd-impact.json",
         "fixture_required",
     ),
+    HistoricalFailureScenario(
+        "2026-08-10",
+        "audit recovery / completion verifier / readiness / observation ledger",
+        "primary completion verification could erase an already verified public Green and a fixed terminal projection could overwrite audit lineage",
+        "typed completion monotonicity and append-only audit authority boundary",
+        "public completion authority must survive readiness Red or verification-unavailable observation while scheduled, recovery, and audit event lineage remains immutable",
+        "NG-RED-01 through NG-RED-12, typed public/readiness evaluator, append-only event history, replay and causal retry negatives",
+        "build/goal-control/2026-08-10-audit-monotonic/requirement-contract-v1.json",
+        "fixture_required",
+    ),
 )
 
 

@@ -4,6 +4,7 @@ import inspect
 import hashlib
 import json
 import subprocess
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -642,7 +643,7 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "enabled_before" in source
     assert "Register-ScheduledTask -TaskName $taskName -Xml $xml -Force" in source
     assert "Unregister-ScheduledTask -TaskName $taskName -Confirm:$false" in source
-    assert "Remove-Item -LiteralPath ([string]$row.destination) -Force" in source
+    assert "Remove-NewsGraspVerifiedFile" in source
     assert "$missionAuthorityBackup" in source
     assert "file = 'audit-mission-authority-v1.json'" in source
     assert "destination = $missionAuthorityPath" in source
@@ -652,11 +653,11 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     ), "INSTALL_ROLLBACK_LATCH_INITIALIZED_AFTER_GUARD"
     prepared = source.index("Write-NewsGraspInstallJournal -Phase 'prepared'")
     bin_dir_create = source.index("New-Item -ItemType Directory -Force -Path $BinDir")
-    first_live_copy = source.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
+    first_live_copy = source.index("Write-NewsGraspAtomicFile", prepared)
     assert prepared < bin_dir_create, "INSTALL_JOURNAL_WRITTEN_AFTER_BINDIR_MUTATION"
     assert prepared < first_live_copy, "INSTALL_JOURNAL_WRITTEN_AFTER_LIVE_MUTATION"
     assert "bin_dir_existed_before = $binDirExistedBefore" in source
-    assert "if (-not [bool]$Journal.bin_dir_existed_before" in source
+    assert "DestinationBoundary ([string]$Journal.bin_dir)" in source
     assert "Assert-NewsGraspInstalledState" in source
     verified = source.rindex("Assert-NewsGraspInstalledState")
     committed = source.rindex("$script:InstallationCommitted = $true")
@@ -680,3 +681,249 @@ def test_installer_rollback_restores_absent_files_and_task_definitions() -> None
     assert "$deadmanTrigger.Repetition.Duration =" not in source
     assert "trap {" in source
     assert "Invoke-NewsGraspInstallRollback" in source
+
+
+def test_ng_red_01_green_valueerror_green_preserves_public_authority(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control()
+    import tools.audit_recovery_control as audit
+
+    state = {
+        "date": "2026-08-02",
+        "status": "publish_complete",
+        "exit_code": 0,
+        "run_id": "run-1",
+        "run_intent": "ScheduledProduction",
+        "completionAuthorityId": "authority-1",
+    }
+    witness = {
+        "scheduledAttemptStatus": "reserved",
+        "recoveryAttemptStatus": "not_started",
+    }
+    backend = SimpleNamespace(
+        repo_root=tmp_path,
+        load_state=lambda _date: state,
+        log_text=lambda _date: "",
+        inspect_attempt=lambda _date: witness,
+    )
+    monkeypatch.setattr(
+        audit,
+        "_verify_same_date_completion",
+        lambda **_kwargs: (_ for _ in ()).throw(ValueError("primary verifier boom")),
+    )
+    monkeypatch.setattr(
+        audit,
+        "load_completion_authority_receipt",
+        lambda _issue_date: {"completionAuthorityId": "authority-1"},
+    )
+
+    try:
+        result = control.prepare_recovery(
+            issue_date="2026-08-02",
+            trigger="audit_0640",
+            process_exit_code=2,
+            backend=backend,
+        )
+    except Exception as error:  # pragma: no cover - the preimplementation Red path
+        pytest.fail(f"PUBLIC_GREEN_REGRESSED_ON_VERIFIER_EXCEPTION: {error}")
+
+    assert result["action"] == "audit_observation_unverified"
+    assert result["publicStatus"] == "green"
+    assert result["recoveryStarted"] is False
+    assert result["terminal"] == "audit_observation_unverified"
+    assert result["exitCode"] == 2
+
+
+def test_ng_red_03_green_valueerror_green_cli_returns_typed_exit_two(monkeypatch, capsys) -> None:
+    control = _control()
+    monkeypatch.setattr(
+        control,
+        "execute_audit_0640",
+        lambda **_kwargs: {
+            "terminal": "audit_observation_unverified",
+            "publicStatus": "green",
+            "reasonCode": "PRIMARY_VERIFIER_EXCEPTION",
+        },
+    )
+
+    result = control.main(["execute-audit-0640", "--issue-date", "2026-08-02"])
+    capsys.readouterr()
+    assert result == 2, "UNVERIFIED_OBSERVATION_NOT_TYPED_EXIT_2"
+
+
+def test_ng_red_05_audit_monotonic_readiness_red_never_starts_public_recovery() -> None:
+    control = _control()
+    try:
+        result = control.select_audit_recovery_action(
+            {
+                "verificationStatus": "verified_incomplete",
+                "publicCompletionStatus": "green",
+                "nextRunReadinessStatus": "red",
+                "reasonCode": "RUNNER_READINESS_RED",
+                "completionAuthorityId": "authority-1",
+            }
+        )
+    except AttributeError as error:  # pragma: no cover - preimplementation Red path
+        pytest.fail(f"READINESS_RED_STARTED_PUBLIC_RECOVERY: {error}")
+
+    assert result["action"] == "readiness_repair"
+    assert result["recoveryScope"] == "next_run_readiness"
+    assert result["publicStatus"] == "green"
+    assert result["publicRecoveryStarted"] is False
+
+
+def test_ng_red_14_readiness_repair_executes_canonical_installer_once(
+    monkeypatch,
+) -> None:
+    control = _control()
+    completion = _same_date_completion(control)
+    plan = _audit_plan(action="readiness_repair")
+    plan.update(
+        {
+            "publicStatus": "green",
+            "nextRunReadinessStatus": "red",
+            "completionAuthorityId": "authority-1",
+            "reasonCode": "RUNNER_READINESS_RED",
+        }
+    )
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
+    commands: list[list[str]] = []
+    verifications: list[tuple[str, str]] = []
+
+    def run_command(command: list[str], **_kwargs: object) -> int:
+        commands.append(command)
+        return 0
+
+    def verify(issue_date: str, run_intent: str) -> dict[str, object]:
+        verifications.append((issue_date, run_intent))
+        return completion
+
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        backend=SimpleNamespace(repo_root=REPO),
+        command_runner=run_command,
+        completion_verifier=verify,
+        terminal_writer=lambda value: value,
+    )
+
+    assert len(commands) == 1, "READINESS_REPAIR_NOT_EXECUTED_BY_RUNTIME"
+    command = commands[0]
+    assert command[0].casefold() == "powershell.exe"
+    assert "-NonInteractive" in command
+    assert "-File" in command
+    assert any(
+        value.endswith("scripts\\ops\\install-news-grasp-ops.ps1")
+        or value.endswith("scripts/ops/install-news-grasp-ops.ps1")
+        for value in command
+    ), "READINESS_REPAIR_NOT_EXECUTED_BY_RUNTIME"
+    assert verifications == [("2026-08-06", "ScheduledProduction")]
+    assert result["terminal"] == "audit_normal_green"
+    assert result["publicStatus"] == "green"
+    assert result["recoveryStarted"] is False
+
+
+def test_sec_red_causal_retry_compare_and_consume_is_single_writer(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control()
+    current = {
+        "sourceSha256": "a" * 64,
+        "runtimeSha256": "b" * 64,
+        "configSha256": "c" * 64,
+        "authoritySha256": "d" * 64,
+        "externalEvidenceSha256": "e" * 64,
+    }
+    barrier = threading.Barrier(2)
+    monkeypatch.setattr(control, "_atomic_json", lambda *_args, **_kwargs: barrier.wait(timeout=5))
+    results: list[dict[str, object]] = []
+    errors: list[Exception] = []
+
+    def run() -> None:
+        try:
+            results.append(
+                control._admit_causal_retry(
+                    repo_root=tmp_path,
+                    issue_date="2026-08-02",
+                    runner_state={},
+                    completion=current,
+                )
+            )
+        except Exception as error:  # pragma: no cover - diagnostic capture
+            errors.append(error)
+
+    threads = [threading.Thread(target=run) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=5)
+
+    assert not errors
+    assert all(not thread.is_alive() for thread in threads)
+    assert sum(result["allowed"] is True for result in results) == 1
+
+
+def test_sec_red_causal_retry_rejects_state_path_escape(
+    monkeypatch, tmp_path: Path
+) -> None:
+    control = _control()
+    repo = tmp_path / "repo"
+    outside = tmp_path / "outside.json"
+    current = {
+        "sourceSha256": "a" * 64,
+        "runtimeSha256": "b" * 64,
+        "configSha256": "c" * 64,
+        "authoritySha256": "d" * 64,
+        "externalEvidenceSha256": "e" * 64,
+    }
+    monkeypatch.setattr(control, "_causal_retry_state_path", lambda *_args: outside)
+
+    with pytest.raises(ValueError, match="CAUSAL_RETRY_STATE_PATH_INVALID"):
+        control._admit_causal_retry(
+            repo_root=repo,
+            issue_date="2026-08-02",
+            runner_state={},
+            completion=current,
+        )
+    assert not outside.exists()
+
+
+def test_sec_red_actual_completion_producer_feeds_causal_retry_gate(
+    tmp_path: Path,
+) -> None:
+    control = _control()
+    audit = control.audit_recovery_control
+    runner_state_path = tmp_path / "runner-state.json"
+    runner_state_path.write_text('{"status":"publish_complete"}', encoding="utf-8")
+    completion = audit._typed_public_green_readiness_red(
+        issue_date="2026-08-02",
+        payload={"verificationWaitSec": 0, "verificationPollSec": 1},
+        expected_run_intent="ScheduledProduction",
+        runner_state={
+            "run_id": "run-1",
+            "completionAuthorityId": "authority-1",
+        },
+        public={
+            "ok": True,
+            "date": "2026-08-02",
+            "publicCompletionStatus": "green",
+            "completionAuthorityId": "authority-1",
+        },
+        readiness={
+            "ok": False,
+            "reason": "RUNNER_READINESS_RED",
+            "failedGateIds": ["runner_readiness"],
+        },
+        runner_state_path=runner_state_path,
+        artifact_repo_root=tmp_path,
+    )
+
+    result = control._admit_causal_retry(
+        repo_root=tmp_path,
+        issue_date="2026-08-02",
+        runner_state={},
+        completion=completion,
+    )
+
+    assert result["allowed"] is True
+    assert result["reasonCode"] == "CAUSE_INPUT_CHANGED"

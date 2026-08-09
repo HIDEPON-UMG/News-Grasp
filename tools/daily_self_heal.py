@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from functools import wraps
 import hashlib
 import io
 import json
@@ -69,6 +70,196 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+@dataclass(frozen=True)
+class CompletionVerificationResultV1:
+    """公開完了、次回 readiness、audit 観測を混同しない内部結果。"""
+
+    status: str
+    verificationStatus: str
+    publicCompletionStatus: str
+    nextRunReadinessStatus: str
+    phase: str
+    reasonCode: str
+    failedGateIds: tuple[str, ...]
+    sourceSha256: str
+    runtimeSha256: str
+    configSha256: str
+    evidenceSha256: str
+    publicAuthority: dict[str, object]
+
+    def to_dict(self) -> dict[str, object]:
+        authority = dict(self.publicAuthority)
+        return {
+            "schemaVersion": "COMPLETION_VERIFICATION_RESULT_V1",
+            "status": self.status,
+            "verificationStatus": self.verificationStatus,
+            "publicCompletionStatus": self.publicCompletionStatus,
+            "nextRunReadinessStatus": self.nextRunReadinessStatus,
+            "phase": self.phase,
+            "reasonCode": self.reasonCode,
+            "failedGateIds": list(self.failedGateIds),
+            "sourceSha256": self.sourceSha256,
+            "runtimeSha256": self.runtimeSha256,
+            "configSha256": self.configSha256,
+            "evidenceSha256": self.evidenceSha256,
+            "publicAuthority": authority,
+            "completionAuthorityId": str(
+                authority.get("completionAuthorityId")
+                or authority.get("id")
+                or ""
+            ),
+        }
+
+
+def _completion_runtime_sha256() -> str:
+    runtime = Path(sys.executable)
+    if runtime.is_file() and not runtime.is_symlink():
+        try:
+            return sha256_file(runtime)
+        except OSError:
+            pass
+    return hashlib.sha256(str(runtime).encode("utf-8")).hexdigest()
+
+
+def _completion_config_sha256(
+    *,
+    repo_root: Path,
+    ops_repo_root: Path | None,
+    date: str,
+    remote: str,
+    branch: str,
+    public_base_url: str,
+    wait_sec: int,
+    poll_sec: int,
+) -> str:
+    body = {
+        "repoRoot": str(repo_root.resolve()),
+        "opsRepoRoot": str((ops_repo_root or repo_root).resolve()),
+        "date": date,
+        "remote": remote,
+        "branch": branch,
+        "publicBaseUrl": public_base_url,
+        "waitSec": wait_sec,
+        "pollSec": poll_sec,
+    }
+    return hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _completion_result(
+    *,
+    repo_root: Path,
+    ops_repo_root: Path | None,
+    date: str,
+    remote: str,
+    branch: str,
+    public_base_url: str,
+    wait_sec: int,
+    poll_sec: int,
+    public: dict[str, object],
+    readiness: dict[str, object],
+    phase: str,
+    reason_code: str,
+    verification_status: str | None = None,
+    public_authority: dict[str, object] | None = None,
+) -> dict[str, object]:
+    public_green = public.get("ok") is True or (
+        public.get("public_status") == "green" and public_authority
+    )
+    readiness_ok = readiness.get("ok") is True
+    readiness_unavailable = bool(readiness.get("verification_unavailable"))
+    public_status = (
+        "green"
+        if public_green
+        else "unverified"
+        if public.get("verification_unavailable")
+        else "incomplete"
+    )
+    readiness_status = (
+        "green" if readiness_ok else "unverified" if readiness_unavailable else "red"
+    )
+    if verification_status is None:
+        if public.get("verification_unavailable") or readiness_unavailable:
+            verification_status = "verification_unavailable"
+        elif public_green and readiness_ok:
+            verification_status = "verified_green"
+        else:
+            verification_status = "verified_incomplete"
+    failed = []
+    for source in (public, readiness):
+        values = source.get("failedGateIds")
+        if isinstance(values, (list, tuple)):
+            failed.extend(str(value) for value in values if str(value))
+    if not failed and verification_status != "verified_green" and reason_code:
+        failed.append(reason_code)
+    authority = dict(public_authority or {})
+    authority.setdefault(
+        "completionAuthorityId",
+        str(public.get("completion_authority_id") or public.get("completionAuthorityId") or ""),
+    )
+    public_evidence = {
+        "public": public,
+        "authority": authority,
+        "date": date,
+    }
+    evidence_sha = hashlib.sha256(
+        json.dumps(
+            {"public": public_evidence, "readiness": readiness, "phase": phase},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    result = CompletionVerificationResultV1(
+        status=verification_status,
+        verificationStatus=verification_status,
+        publicCompletionStatus=public_status,
+        nextRunReadinessStatus=readiness_status,
+        phase=phase,
+        reasonCode=reason_code,
+        failedGateIds=tuple(dict.fromkeys(failed)),
+        sourceSha256=sha256_file(Path(__file__)),
+        runtimeSha256=_completion_runtime_sha256(),
+        configSha256=_completion_config_sha256(
+            repo_root=repo_root,
+            ops_repo_root=ops_repo_root,
+            date=date,
+            remote=remote,
+            branch=branch,
+            public_base_url=public_base_url,
+            wait_sec=wait_sec,
+            poll_sec=poll_sec,
+        ),
+        evidenceSha256=evidence_sha,
+        publicAuthority=authority,
+    )
+    return {
+        **result.to_dict(),
+        "ok": verification_status == "verified_green",
+        "date": date,
+        "public_status": public_status,
+        "readiness_status": readiness_status,
+        "public": public,
+        "readiness": readiness,
+    }
+
+
+def completion_cli_exit_code(result: object) -> int:
+    """typed completionのaggregate Greenだけを成功終了コードへ投影する。"""
+    value = result if isinstance(result, dict) else {}
+    status = str(value.get("status") or "")
+    aggregate_green = (
+        status == "verified_green"
+        and value.get("ok") is True
+        and value.get("publicCompletionStatus") == "green"
+        and value.get("nextRunReadinessStatus") == "green"
+    )
+    return 0 if aggregate_green else 2
 
 
 def compare_files(repo_path: Path, live_path: Path) -> dict:
@@ -2726,6 +2917,15 @@ def _load_producer_lineage(
     return expected
 
 
+def _typed_completion_manifest(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        return _typed_manifest_result(function(*args, **kwargs))
+
+    return wrapped
+
+
+@_typed_completion_manifest
 def verify_publish_complete(
     *,
     repo_root: Path,
@@ -2740,6 +2940,7 @@ def verify_publish_complete(
     deepdive_podcast_state_path: Path | None = None,
     notification_state_path: Path | None = None,
     producer_state_path: Path | None = None,
+    include_readiness: bool = True,
 ) -> dict:
     """公開完了を remote/public/audio/podcast/local inventory の同一 manifest として検証する。"""
     readiness_date = _current_jst_date()
@@ -2878,6 +3079,23 @@ def verify_publish_complete(
         if notification.get("reason"):
             return {**manifest, "reason": notification["reason"], "notification": notification}
 
+    if not include_readiness:
+        return {
+            **manifest,
+            "ok": True,
+            "reason": "",
+            "public_status": "green",
+            "publicCompletionStatus": "green",
+            "nextRunReadinessStatus": "unverified",
+            "publicAuthority": {
+                "completionAuthorityId": str(
+                    manifest.get("completion_authority_id")
+                    or manifest.get("completionAuthorityId")
+                    or ""
+                )
+            },
+        }
+
     live_readiness = verify_live_runner_readiness(
         repo_root=repo_root,
         ops_repo_root=ops_repo_root,
@@ -2925,6 +3143,260 @@ def verify_publish_complete(
             ),
         },
     }
+
+
+def _typed_manifest_result(result: dict) -> dict:
+    """legacy manifestへCompletionVerificationResultV1の主要typed stateを付与する。"""
+    if str(result.get("status") or "") in {
+        "verified_green",
+        "verified_incomplete",
+        "verification_unavailable",
+    }:
+        return result
+    nested_public = result.get("publish")
+    public = nested_public if isinstance(nested_public, dict) else result
+    readiness = result.get("live_runner_readiness")
+    readiness_value = readiness if isinstance(readiness, dict) else {}
+    public_green = public.get("ok") is True or (
+        public.get("public_status") == "green"
+        and bool(
+            public.get("completion_authority_id")
+            or public.get("completionAuthorityId")
+            or result.get("completion_authority_id")
+            or result.get("completionAuthorityId")
+        )
+    )
+    readiness_ok = readiness_value.get("ok") is True or (
+        not readiness_value and result.get("nextRunReadinessStatus") == "green"
+    )
+    unavailable = bool(
+        result.get("verification_unavailable")
+        or public.get("verification_unavailable")
+        or readiness_value.get("verification_unavailable")
+    )
+    public_status = "green" if public_green else "incomplete"
+    readiness_status = (
+        str(result.get("nextRunReadinessStatus") or "unverified")
+        if not readiness_value
+        else "green"
+        if readiness_ok
+        else "unverified"
+        if unavailable
+        else "red"
+    )
+    status = (
+        "verification_unavailable"
+        if unavailable
+        else "verified_green"
+        if public_green and readiness_ok
+        else "verified_incomplete"
+    )
+    failed = []
+    for source in (result, public, readiness_value):
+        values = source.get("failedGateIds")
+        if isinstance(values, (list, tuple)):
+            failed.extend(str(value) for value in values if str(value))
+    reason = str(
+        result.get("reason")
+        or public.get("reason")
+        or readiness_value.get("reason")
+        or ""
+    )
+    if not failed and status != "verified_green" and reason:
+        failed.append(reason)
+    return {
+        **result,
+        "status": status,
+        "verificationStatus": status,
+        "publicCompletionStatus": public_status,
+        "nextRunReadinessStatus": readiness_status,
+        "phase": (
+            "verification_unavailable"
+            if unavailable
+            else "public_and_readiness"
+            if readiness_value
+            else "public"
+        ),
+        "reasonCode": reason,
+        "failedGateIds": list(dict.fromkeys(failed)),
+        "public_status": public_status,
+        "readiness_status": readiness_status,
+    }
+
+
+def verify_public_completion(
+    *,
+    repo_root: Path,
+    ops_repo_root: Path | None = None,
+    date: str,
+    remote: str,
+    branch: str,
+    public_base_url: str,
+    wait_sec: int,
+    poll_sec: int,
+    primary_podcast_state_path: Path | None = None,
+    deepdive_podcast_state_path: Path | None = None,
+    notification_state_path: Path | None = None,
+    producer_state_path: Path | None = None,
+) -> dict:
+    """次回 readiness を実行せず、同日公開面だけを一回検証する。"""
+    return verify_publish_complete(
+        repo_root=repo_root,
+        ops_repo_root=ops_repo_root,
+        date=date,
+        remote=remote,
+        branch=branch,
+        public_base_url=public_base_url,
+        wait_sec=wait_sec,
+        poll_sec=poll_sec,
+        primary_podcast_state_path=primary_podcast_state_path,
+        deepdive_podcast_state_path=deepdive_podcast_state_path,
+        notification_state_path=notification_state_path,
+        producer_state_path=producer_state_path,
+        include_readiness=False,
+    )
+
+
+def evaluate_completion(
+    *,
+    repo_root: Path,
+    ops_repo_root: Path | None = None,
+    date: str,
+    remote: str,
+    branch: str,
+    public_base_url: str,
+    wait_sec: int,
+    poll_sec: int,
+    primary_podcast_state_path: Path | None = None,
+    deepdive_podcast_state_path: Path | None = None,
+    notification_state_path: Path | None = None,
+    producer_state_path: Path | None = None,
+    previous_public_authority: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """公開 authority と次回 readiness を型付き結果へ分離して返す。"""
+    validated_previous_authority: dict[str, object] | None = None
+    if previous_public_authority is not None:
+        try:
+            from tools import audit_recovery_control
+
+            canonical_authority = (
+                audit_recovery_control.load_completion_authority_receipt(date)
+            )
+            if (
+                canonical_authority is not None
+                and canonical_authority.get("receiptSha256")
+                == previous_public_authority.get("receiptSha256")
+            ):
+                validated_previous_authority = canonical_authority
+        except (OSError, ValueError):
+            validated_previous_authority = None
+    public: dict[str, object]
+    try:
+        public = dict(
+            verify_public_completion(
+                repo_root=repo_root,
+                ops_repo_root=ops_repo_root,
+                date=date,
+                remote=remote,
+                branch=branch,
+                public_base_url=public_base_url,
+                wait_sec=wait_sec,
+                poll_sec=poll_sec,
+                primary_podcast_state_path=primary_podcast_state_path,
+                deepdive_podcast_state_path=deepdive_podcast_state_path,
+                notification_state_path=notification_state_path,
+                producer_state_path=producer_state_path,
+            )
+        )
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        public = {
+            "ok": bool(validated_previous_authority),
+            "public_status": (
+                "green" if validated_previous_authority else "unverified"
+            ),
+            "publicCompletionStatus": (
+                "green" if validated_previous_authority else "unverified"
+            ),
+            "verification_unavailable": True,
+            "reason": "PRIMARY_PUBLIC_ORACLE_EXCEPTION",
+            "exceptionType": type(error).__name__,
+        }
+    try:
+        readiness = dict(
+            verify_live_runner_readiness(
+                repo_root=repo_root,
+                ops_repo_root=ops_repo_root,
+                date=_current_jst_date(),
+            )
+        )
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        readiness = {
+            "ok": False,
+            "verification_unavailable": True,
+            "reason": "READINESS_VERIFIER_EXCEPTION",
+            "exceptionType": type(error).__name__,
+        }
+    authority = validated_previous_authority
+    if authority is None and isinstance(public.get("publicAuthority"), dict):
+        authority = dict(public["publicAuthority"])
+    return _completion_result(
+        repo_root=repo_root,
+        ops_repo_root=ops_repo_root,
+        date=date,
+        remote=remote,
+        branch=branch,
+        public_base_url=public_base_url,
+        wait_sec=wait_sec,
+        poll_sec=poll_sec,
+        public=public,
+        readiness=readiness,
+        phase=(
+            "public_and_readiness"
+            if public.get("ok") is True and readiness.get("ok") is True
+            else "readiness"
+            if public.get("ok") is True
+            else "public"
+        ),
+        reason_code=str(
+            readiness.get("reason")
+            if public.get("ok") is True and readiness.get("ok") is not True
+            else public.get("reason") or "VERIFIED_GREEN"
+        ),
+        public_authority=authority,
+    )
+
+
+def complete_readiness_repair(
+    completion: dict[str, object], readiness: dict[str, object]
+) -> dict[str, object]:
+    """readiness だけを修復し、公開 authority を再生成・巻き戻ししない。"""
+    result = dict(completion)
+    if (
+        result.get("publicCompletionStatus") != "green"
+        or readiness.get("ok") is not True
+    ):
+        return result
+    result.update(
+        {
+            "schemaVersion": "COMPLETION_VERIFICATION_RESULT_V1",
+            "verificationStatus": "verified_green",
+            "nextRunReadinessStatus": "green",
+            "phase": "readiness_repair",
+            "reasonCode": "READINESS_REPAIR_GREEN",
+            "failedGateIds": [],
+            "publicRecoveryStarted": False,
+        }
+    )
+    result["evidenceSha256"] = hashlib.sha256(
+        json.dumps(
+            {"completion": result, "readiness": readiness},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    result["ok"] = True
+    return result
 
 
 _KNOWN_NOTIFICATION_STATUSES = {
@@ -3135,7 +3607,7 @@ def main(argv: list[str] | None = None) -> int:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(text + "\n", encoding="utf-8")
         print(text)
-        return 0 if result["ok"] else 1
+        return completion_cli_exit_code(result)
     if args.cmd == "verify-live-runner-readiness":
         result = verify_live_runner_readiness(
             repo_root=args.repo_root,

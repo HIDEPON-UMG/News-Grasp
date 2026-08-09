@@ -9,18 +9,12 @@ from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 
 import pytest
+from tools import harness as workspace_harness
 import tools.harness.high_cost_control_v2 as high_cost
 
 
 BROKER_PATH = (
-    Path(
-        os.environ.get(
-            "NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT",
-            str(Path(__file__).resolve().parents[2]),
-        )
-    )
-    / "tools"
-    / "harness"
+    workspace_harness.resolve_workspace_harness_path()
     / "model_spawn_broker.py"
 )
 
@@ -945,6 +939,9 @@ def test_sealed_cross_date_receipt_file_is_rejected_without_reservation(tmp_path
             receipt_path,
             expected_operation_kind="scheduled_production",
             expected_issue_date="2026-08-04",
+            expected_route="scheduled-production-test",
+            expected_command_sha256="a" * 64,
+            expected_call_id="scheduled-cross-date-test",
         )
 
     assert store.call_count(receipt["taskIdentity"]) == 0

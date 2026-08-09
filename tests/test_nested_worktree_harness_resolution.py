@@ -35,3 +35,28 @@ def test_harness_namespace_uses_same_explicit_workspace_root(
     harness_root.mkdir(parents=True)
     monkeypatch.setenv("NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT", str(workspace))
     assert harness.resolve_workspace_harness_path() == harness_root.resolve()
+
+
+def test_default_nested_worktree_walks_to_workspace_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = tmp_path / "workspace"
+    nested_module = (
+        workspace
+        / "_worktrees"
+        / "News-Grasp-clean"
+        / "tools"
+        / "harness"
+        / "__init__.py"
+    )
+    nested_module.parent.mkdir(parents=True)
+    nested_module.write_text("# fixture\n", encoding="utf-8")
+    harness_root = workspace / "tools" / "harness"
+    harness_root.mkdir(parents=True)
+    (harness_root / "model_spawn_broker.py").write_text(
+        "# fixture\n", encoding="utf-8"
+    )
+    monkeypatch.delenv("NEWS_GRASP_HIGH_COST_WORKSPACE_ROOT", raising=False)
+    monkeypatch.setattr(harness, "__file__", str(nested_module))
+
+    assert harness.resolve_workspace_harness_path() == harness_root.resolve()

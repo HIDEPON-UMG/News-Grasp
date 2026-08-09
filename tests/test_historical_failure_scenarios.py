@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from tools.historical_failure_scenarios import (
     LOCAL_ONLY_EVIDENCE_SHA256,
@@ -538,3 +542,194 @@ def test_compound_failure_matrix_never_treats_internal_block_as_success() -> Non
     for scenario in scenarios:
         if scenario.expected_status.startswith("green_"):
             assert "block" not in " ".join(scenario.dimensions).casefold()
+
+
+def test_ng_red_09_audit_monotonic_projection_and_incident_corpus_keep_authority_lineage(
+    monkeypatch, tmp_path: Path
+) -> None:
+    scenario = next(
+        item for item in historical_failure_scenarios() if item.issue_date == "2026-08-10"
+    )
+    assert set(scenario.horizontal_lanes) == REQUIRED_HORIZONTAL_LANES
+    assert "audit" in scenario.stage
+    assert "authority" in scenario.missing_invariant
+
+    from tools import audit_recovery_control as audit
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    root = repo / "build" / "incidents"
+    monkeypatch.setattr(audit, "CANONICAL_REPO_ROOT", repo)
+    monkeypatch.setattr(audit, "CANONICAL_TERMINAL_ROOT", root)
+    decision = audit.seal_audit_decision(
+        {
+            "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+            "issueDate": "2026-08-10",
+            "classification": "incident_required",
+            "action": "escalate_major_incident",
+            "terminal": "audit_major_incident_open",
+            "reasonCode": "TEST_PROJECTION",
+            "scheduledAttemptStatus": "failed",
+            "recoveryAttemptStatus": "not_started",
+            "publicStatus": "incomplete",
+            "operationState": "incident_open",
+            "workPriority": "same_day_public_recovery_first",
+            "allowedBeforePublicGreen": [
+                "scheduled_recovery",
+                "minimal_recovery_unblocker",
+                "escalate_major_incident",
+            ],
+            "forbiddenBeforePublicGreen": [
+                "incident_report_polish",
+                "root_cause_hardening",
+                "unrelated_cleanup",
+            ],
+            "owner": "News-Grasp Operations",
+            "nextAction": "resume_same_date_recovery_from_verified_stop_point",
+            "evidenceSha256": "a" * 64,
+            "completionAuthorityId": "authority-1",
+        }
+    )
+    terminal = audit.write_audit_terminal(decision)
+    projection = json.loads(
+        (root / "2026-08-10-audit-terminal.json").read_text(encoding="utf-8")
+    )
+    for key in ("eventId", "eventSequence", "previousEventHash", "eventHash", "completionAuthorityId"):
+        assert projection.get(key) == terminal.get(key), "PROJECTION_LOST_AUTHORITY_LINEAGE"
+
+
+def test_ng_red_11_causal_retry_output_shape_does_not_change_fingerprint() -> None:
+    from tools import audit_recovery_control as audit
+
+    first = {
+        "source_sha256": "a" * 64,
+        "runtime_sha256": "b" * 64,
+        "config_sha256": "c" * 64,
+        "authority_sha256": "d" * 64,
+        "external_evidence_sha256": "e" * 64,
+        "command": "command-a",
+        "output_cap": 100,
+        "output_format": "json",
+    }
+    second = {
+        **first,
+        "command": "command-b",
+        "output_cap": 10,
+        "output_format": "text",
+    }
+    try:
+        first_fingerprint = audit.cause_fingerprint(first)
+        second_fingerprint = audit.cause_fingerprint(second)
+    except AttributeError as error:  # pragma: no cover - preimplementation Red path
+        pytest.fail(f"OUTPUT_SHAPE_CHANGED_CAUSE_FINGERPRINT: {error}")
+    assert first_fingerprint == second_fingerprint
+
+
+def test_ng_red_12_causal_retry_changed_evidence_is_authorized_once() -> None:
+    from tools import audit_recovery_control as audit
+
+    previous = {
+        "source_sha256": "a" * 64,
+        "runtime_sha256": "b" * 64,
+        "config_sha256": "c" * 64,
+        "authority_sha256": "d" * 64,
+        "external_evidence_sha256": "e" * 64,
+    }
+    changed = {**previous, "external_evidence_sha256": "f" * 64}
+    changed_again = {**changed, "external_evidence_sha256": "1" * 64}
+    try:
+        allowed = audit.causal_retry_gate(previous, changed)
+        consumed = audit.causal_retry_gate(
+            {**changed, "retryConsumed": True}, changed
+        )
+        reauthorized = audit.causal_retry_gate(
+            {**changed, "retryConsumed": True}, changed_again
+        )
+    except AttributeError as error:  # pragma: no cover - preimplementation Red path
+        pytest.fail(f"CHANGED_EVIDENCE_RETRY_NOT_REAUTHORIZED_ONCE: {error}")
+    assert allowed["allowed"] is True
+    assert allowed["reasonCode"] == "CAUSE_INPUT_CHANGED"
+    assert consumed["allowed"] is False
+    assert consumed["reasonCode"] == "CAUSAL_RETRY_ALREADY_CONSUMED"
+    assert reauthorized["allowed"] is True
+    assert reauthorized["reasonCode"] == "CAUSE_INPUT_CHANGED"
+
+
+def test_ng_red_16_prepare_recovery_connects_causal_retry_runtime(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from tools import audit_recovery_control as audit
+    from tools import news_grasp_daily_control as daily
+
+    cause = {
+        "sourceSha256": "a" * 64,
+        "runtimeSha256": "b" * 64,
+        "configSha256": "c" * 64,
+        "authoritySha256": "d" * 64,
+        "externalEvidenceSha256": "e" * 64,
+    }
+    state = {
+        "date": "2026-08-02",
+        "status": "publish_complete",
+        "exit_code": 0,
+        "run_intent": "ScheduledProduction",
+        "completionAuthorityId": "authority-1",
+        "causalRetryState": dict(cause),
+    }
+    witness = {
+        "scheduledAttemptStatus": "succeeded",
+        "recoveryAttemptStatus": "not_started",
+    }
+    completion = {
+        "verificationStatus": "verified_incomplete",
+        "publicCompletionStatus": "green",
+        "nextRunReadinessStatus": "red",
+        "completionAuthorityId": "authority-1",
+        **cause,
+    }
+    backend = SimpleNamespace(
+        repo_root=tmp_path,
+        load_state=lambda _date: state,
+        log_text=lambda _date: "",
+        inspect_attempt=lambda _date: witness,
+    )
+    monkeypatch.setattr(audit, "_verify_same_date_completion", lambda **_: completion)
+
+    first = daily.prepare_recovery(
+        issue_date="2026-08-02",
+        trigger="audit_0640",
+        process_exit_code=1,
+        backend=backend,
+    )
+    assert first["causalRetry"]["allowed"] is False, (
+        "CAUSAL_RETRY_NOT_CONNECTED_TO_RUNTIME"
+    )
+    assert first["causalRetry"]["reasonCode"] == "SAME_CAUSE_UNCHANGED"
+
+    changed = {**completion, "externalEvidenceSha256": "f" * 64}
+    monkeypatch.setattr(audit, "_verify_same_date_completion", lambda **_: changed)
+    second = daily.prepare_recovery(
+        issue_date="2026-08-02",
+        trigger="audit_0640",
+        process_exit_code=1,
+        backend=backend,
+    )
+    assert second["causalRetry"]["allowed"] is True, (
+        "CAUSAL_RETRY_NOT_CONNECTED_TO_RUNTIME"
+    )
+    assert second["causalRetry"]["reasonCode"] == "CAUSE_INPUT_CHANGED"
+    state["causalRetryState"] = {
+        **changed,
+        **second["causalRetry"],
+    }
+
+    third = daily.prepare_recovery(
+        issue_date="2026-08-02",
+        trigger="audit_0640",
+        process_exit_code=1,
+        backend=backend,
+    )
+    assert third["causalRetry"]["allowed"] is False, (
+        "CAUSAL_RETRY_NOT_CONNECTED_TO_RUNTIME"
+    )
+    assert third["causalRetry"]["reasonCode"] == "CAUSAL_RETRY_ALREADY_CONSUMED"

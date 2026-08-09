@@ -108,6 +108,50 @@ def classify_observed_failure(
     return "incident_required"
 
 
+def select_audit_recovery_action(completion: object) -> dict[str, Any]:
+    """public Green を保持したまま readiness だけを選択的に修復する。"""
+    value = completion if isinstance(completion, dict) else {}
+    public_status = str(value.get("publicCompletionStatus") or "")
+    readiness_status = str(value.get("nextRunReadinessStatus") or "")
+    authority_id = str(value.get("completionAuthorityId") or "")
+    if str(value.get("verificationStatus") or "") == "verification_unavailable":
+        return {
+            "action": "audit_observation_unverified",
+            "terminal": "audit_observation_unverified",
+            "publicStatus": "green" if authority_id else "unverified",
+            "publicRecoveryStarted": False,
+            "recoveryStarted": False,
+            "exitCode": 2,
+            "completionAuthorityId": authority_id,
+            "reasonCode": str(value.get("reasonCode") or "VERIFICATION_UNAVAILABLE"),
+        }
+    if public_status == "green" and readiness_status == "red":
+        return {
+            "action": "readiness_repair",
+            "recoveryScope": "next_run_readiness",
+            "publicStatus": "green",
+            "publicRecoveryStarted": False,
+            "completionAuthorityId": authority_id,
+            "reasonCode": str(value.get("reasonCode") or "READINESS_RED"),
+        }
+    if public_status == "green" and readiness_status in {"green", "unverified"}:
+        return {
+            "action": "none",
+            "recoveryScope": "none",
+            "publicStatus": "green",
+            "publicRecoveryStarted": False,
+            "completionAuthorityId": authority_id,
+        }
+    return {
+        "action": "public_recovery",
+        "recoveryScope": "public_completion",
+        "publicStatus": "incomplete",
+        "publicRecoveryStarted": True,
+        "completionAuthorityId": authority_id,
+        "reasonCode": str(value.get("reasonCode") or "PUBLIC_COMPLETION_RED"),
+    }
+
+
 def build_recovery_plan(
     *,
     issue_date: str,
@@ -451,6 +495,130 @@ class ProductionBackend:
         return decision, path
 
 
+def _causal_retry_state_path(repo_root: Path, issue_date: str) -> Path:
+    return (
+        repo_root
+        / "build"
+        / "recovery"
+        / "control"
+        / f"{issue_date}-causal-retry.json"
+    )
+
+
+def _load_causal_retry_state(
+    *, repo_root: Path, issue_date: str, runner_state: dict[str, Any]
+) -> dict[str, Any]:
+    path = _causal_retry_state_path(repo_root, issue_date)
+    if path.exists():
+        try:
+            payload = audit_recovery_control._read_bounded_bytes(
+                path,
+                maximum=64 * 1024,
+                code="CAUSAL_RETRY_STATE_INVALID",
+            )
+            value = json.loads(payload.decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError, ValueError) as error:
+            raise ValueError("CAUSAL_RETRY_STATE_INVALID") from error
+        if not isinstance(value, dict):
+            raise ValueError("CAUSAL_RETRY_STATE_INVALID")
+        return dict(value)
+    for key in ("causalRetryState", "causal_retry_state"):
+        value = runner_state.get(key)
+        if isinstance(value, dict):
+            return dict(value)
+    return {}
+
+
+def _normalize_causal_retry_evidence(value: object) -> dict[str, Any]:
+    current = dict(value) if isinstance(value, dict) else {}
+    for canonical, alias in audit_recovery_control.CAUSE_INPUT_ALIASES.items():
+        selected = str(current.get(canonical) or current.get(alias) or "")
+        current[canonical] = selected
+        current[alias] = selected
+    return current
+
+
+def _admit_causal_retry(
+    *,
+    repo_root: Path,
+    issue_date: str,
+    runner_state: dict[str, Any],
+    completion: dict[str, Any],
+) -> dict[str, Any]:
+    current = _normalize_causal_retry_evidence(completion)
+    expected_root = Path(repo_root) / "build" / "recovery" / "control"
+    state_path = _causal_retry_state_path(repo_root, issue_date)
+    expected_path = expected_root / f"{issue_date}-causal-retry.json"
+    if not audit_recovery_control._same_lexical_path(state_path, expected_path):
+        raise ValueError("CAUSAL_RETRY_STATE_PATH_INVALID")
+    root = audit_recovery_control._validated_managed_root(
+        repo_root=Path(repo_root),
+        candidate_root=expected_root,
+        relative_parts=("build", "recovery", "control"),
+        code="CAUSAL_RETRY_STATE_PATH_INVALID",
+    )
+    with audit_recovery_control._pinned_directory(
+        root,
+        anchor=Path(repo_root),
+        invalid_code="CAUSAL_RETRY_STATE_PATH_INVALID",
+    ):
+        with audit_recovery_control._exclusive_file_lock(
+            root / ".causal-retry.lock",
+            busy_code="CAUSAL_RETRY_BUSY",
+            invalid_code="CAUSAL_RETRY_STATE_PATH_INVALID",
+            wait_timeout_sec=2.0,
+        ):
+            root = audit_recovery_control._validated_managed_root(
+                repo_root=Path(repo_root),
+                candidate_root=expected_root,
+                relative_parts=("build", "recovery", "control"),
+                code="CAUSAL_RETRY_STATE_PATH_INVALID",
+            )
+            previous = _load_causal_retry_state(
+                repo_root=repo_root,
+                issue_date=issue_date,
+                runner_state=runner_state,
+            )
+            decision = audit_recovery_control.causal_retry_gate(previous, current)
+            result = {
+                "schemaVersion": "CAUSAL_RETRY_RUNTIME_EVENT_V1",
+                "allowed": bool(decision.get("allowed")),
+                "reasonCode": str(
+                    decision.get("reasonCode") or "CAUSAL_RETRY_REJECTED"
+                ),
+                "causeFingerprint": str(
+                    decision.get("causeFingerprint")
+                    or audit_recovery_control.cause_fingerprint(current)
+                ),
+                "previousCauseFingerprint": audit_recovery_control.cause_fingerprint(
+                    previous
+                ),
+                "changedInputs": list(decision.get("changedInputs") or []),
+                "retryConsumed": bool(decision.get("retryConsumed")),
+                "sourceSha256": current.get("source_sha256", ""),
+                "runtimeSha256": current.get("runtime_sha256", ""),
+                "configSha256": current.get("config_sha256", ""),
+                "authoritySha256": current.get("authority_sha256", ""),
+                "externalEvidenceSha256": current.get(
+                    "external_evidence_sha256", ""
+                ),
+            }
+            if result["allowed"]:
+                state = {
+                    **current,
+                    "schemaVersion": "CAUSAL_RETRY_RUNTIME_STATE_V1",
+                    "causeFingerprint": result["causeFingerprint"],
+                    "retryConsumed": True,
+                }
+                audit_recovery_control._atomic_write_bytes(
+                    state_path,
+                    (
+                        json.dumps(state, ensure_ascii=False, sort_keys=True) + "\n"
+                    ).encode("utf-8"),
+                )
+            return result
+
+
 def prepare_recovery(
     *,
     issue_date: str,
@@ -492,8 +660,75 @@ def prepare_recovery(
                 payload={"verificationWaitSec": 0, "verificationPollSec": 10},
                 expected_run_intent=expected_intent,
             )
-        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
-            completion = None
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
+            try:
+                authority = audit_recovery_control.load_completion_authority_receipt(
+                    issue_date
+                )
+            except ValueError:
+                authority = None
+            completion = {
+                "verificationStatus": "verification_unavailable",
+                "publicCompletionStatus": "green" if authority else "unverified",
+                "nextRunReadinessStatus": "unverified",
+                "phase": "public_oracle",
+                "reasonCode": "PRIMARY_VERIFIER_EXCEPTION",
+                "failedGateIds": ["primary_completion_verifier"],
+                "completionAuthorityId": str(
+                    (authority or {}).get("completionAuthorityId") or ""
+                ),
+                "exceptionType": type(error).__name__,
+            }
+        selected = select_audit_recovery_action(completion)
+        causal_retry: dict[str, Any] | None = None
+        retry_suppressed = False
+        if selected.get("action") == "readiness_repair":
+            causal_retry = _admit_causal_retry(
+                repo_root=actual.repo_root,
+                issue_date=issue_date,
+                runner_state=state,
+                completion=completion,
+            )
+            retry_suppressed = causal_retry.get("allowed") is not True
+            selected = {
+                **selected,
+                "retrySuppressed": retry_suppressed,
+            }
+        if selected.get("action") in {"audit_observation_unverified", "readiness_repair"}:
+            plan = _sealed(
+                {
+                    "schemaVersion": SCHEMA,
+                    "issuer": ISSUER,
+                    "issueDate": issue_date,
+                    "trigger": trigger,
+                    "scheduledAttemptStatus": (
+                        "failed" if witness.get("scheduledAttemptStatus") == "failed" else "succeeded"
+                    ),
+                    "recoveryAttemptStatus": (
+                        "succeeded" if witness.get("recoveryAttemptStatus") == "started" else "not_started"
+                    ),
+                    "completion": False,
+                    "maxAutomaticRecoveryAttempts": 1,
+                    "noFocusTheft": True,
+                    "noAutoOpen": True,
+                    "noUserMonitoring": True,
+                    "recoveryStarted": False,
+                    **completion,
+                    **selected,
+                    "causalRetry": causal_retry,
+                    "retrySuppressed": retry_suppressed,
+                    "causeFingerprint": (
+                        causal_retry.get("causeFingerprint")
+                        if causal_retry
+                        else ""
+                    ),
+                    "terminal": selected.get("terminal")
+                    or "audit_readiness_repair_pending",
+                }
+            )
+            output = actual.repo_root / "build" / "recovery" / "control" / f"{issue_date}-{trigger}.json"
+            _atomic_json(output, plan)
+            return {**plan, "decisionPath": str(output.resolve())}
         if audit_recovery_control.same_date_completion_green(issue_date, completion):
             plan = _sealed(
                 {
@@ -777,9 +1012,54 @@ def _audit_green_terminal(
             "publicStatus": "green",
             "operationState": "complete",
             "workPriority": audit_recovery_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+            "publicRecoveryStarted": False,
+            "recoveryStarted": False,
             "completionEvidenceSha256": completion["receiptSha256"],
             "sourceDecision": decision,
             "completionEvidence": completion,
+        }
+    )
+
+
+def _audit_observation_terminal(
+    *, issue_date: str, decision: dict[str, Any]
+) -> dict[str, Any]:
+    return audit_recovery_control.seal_audit_decision(
+        {
+            "schemaVersion": "AUDIT_RECOVERY_DECISION_V1",
+            "issueDate": issue_date,
+            "classification": "observation_unverified",
+            "action": "none",
+            "terminal": "audit_observation_unverified",
+            "reasonCode": str(decision.get("reasonCode") or "VERIFICATION_UNAVAILABLE"),
+            "scheduledAttemptStatus": str(
+                decision.get("scheduledAttemptStatus") or "unverified"
+            ),
+            "recoveryAttemptStatus": str(
+                decision.get("recoveryAttemptStatus") or "not_started"
+            ),
+            "publicStatus": "green",
+            "operationState": "observation_unverified",
+            "workPriority": audit_recovery_control.PUBLIC_GREEN_FOLLOWUP_PRIORITY,
+            "exitCode": 2,
+            "completionAuthorityId": str(
+                decision.get("completionAuthorityId") or ""
+            ),
+            "sourceSha256": str(decision.get("sourceSha256") or ""),
+            "runtimeSha256": str(decision.get("runtimeSha256") or ""),
+            "configSha256": str(decision.get("configSha256") or ""),
+            "externalEvidenceSha256": str(
+                decision.get("externalEvidenceSha256") or ""
+            ),
+            "evidenceSha256": _sha(
+                {
+                    "issueDate": issue_date,
+                    "reasonCode": decision.get("reasonCode"),
+                    "completionAuthorityId": decision.get("completionAuthorityId"),
+                }
+            ),
+            "sourceDecision": decision,
+            "completionEvidence": None,
         }
     )
 
@@ -844,6 +1124,73 @@ def execute_audit_0640(
                 recovered=(
                     decision.get("recoveryAttemptStatus") == "succeeded"
                 ),
+            )
+            write_terminal(terminal)
+            return terminal
+        if action == "audit_observation_unverified":
+            terminal = _audit_observation_terminal(
+                issue_date=issue_date,
+                decision=decision,
+            )
+            write_terminal(terminal)
+            return terminal
+        if action == "readiness_repair":
+            if decision.get("retrySuppressed") is True:
+                terminal = _audit_observation_terminal(
+                    issue_date=issue_date,
+                    decision={
+                        **decision,
+                        "reasonCode": str(
+                            (decision.get("causalRetry") or {}).get("reasonCode")
+                            or "CAUSAL_RETRY_SUPPRESSED"
+                        ),
+                    },
+                )
+                write_terminal(terminal)
+                return terminal
+            installer_path = (
+                actual.repo_root / "scripts" / "ops" / "install-news-grasp-ops.ps1"
+            )
+            command = [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(installer_path),
+                "-RepoDir",
+                str(actual.repo_root),
+            ]
+            return_code = int(run_command(command, cwd=actual.repo_root))
+            if return_code != 0:
+                terminal = _audit_observation_terminal(
+                    issue_date=issue_date,
+                    decision={
+                        **decision,
+                        "reasonCode": f"READINESS_REPAIR_EXECUTION_FAILED_{return_code}",
+                    },
+                )
+                write_terminal(terminal)
+                return terminal
+            completion = verify_completion(issue_date, "ScheduledProduction")
+            if not audit_recovery_control.same_date_completion_green(
+                issue_date, completion
+            ):
+                terminal = _audit_observation_terminal(
+                    issue_date=issue_date,
+                    decision={
+                        **decision,
+                        "reasonCode": "READINESS_REPAIR_COMPLETION_INVALID",
+                    },
+                )
+                write_terminal(terminal)
+                return terminal
+            terminal = _audit_green_terminal(
+                issue_date=issue_date,
+                decision=decision,
+                completion=completion,
+                recovered=False,
             )
             write_terminal(terminal)
             return terminal
@@ -927,11 +1274,23 @@ def execute_audit_0640(
         write_terminal(terminal)
         return terminal
     except (OSError, ValueError, subprocess.SubprocessError) as error:
-        terminal = _audit_incident_terminal(
-            issue_date=issue_date,
-            reason_code="AUDIT_EXECUTOR_FAILED_" + type(error).__name__.upper(),
-            decision=decision,
-        )
+        if decision and decision.get("action") == "readiness_repair":
+            terminal = _audit_observation_terminal(
+                issue_date=issue_date,
+                decision={
+                    **decision,
+                    "reasonCode": (
+                        "READINESS_REPAIR_RUNTIME_FAILED_"
+                        + type(error).__name__.upper()
+                    ),
+                },
+            )
+        else:
+            terminal = _audit_incident_terminal(
+                issue_date=issue_date,
+                reason_code="AUDIT_EXECUTOR_FAILED_" + type(error).__name__.upper(),
+                decision=decision,
+            )
         write_terminal(terminal)
         return terminal
 
@@ -971,7 +1330,14 @@ def main(argv: list[str] | None = None) -> int:
         print(str(error), file=sys.stderr)
         return 2
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-    return 2 if result.get("terminal") == "audit_major_incident_open" else 0
+    return (
+        2
+        if result.get("terminal")
+        in {"audit_major_incident_open", "audit_observation_unverified"}
+        or result.get("action")
+        in {"audit_observation_unverified", "readiness_repair"}
+        else 0
+    )
 
 
 if __name__ == "__main__":
