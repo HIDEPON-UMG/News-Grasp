@@ -1208,6 +1208,21 @@ def test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_cl
     assert bootstrap.count("'news-grasp-task-launcher.pyw'") >= 2
 
 
+def test_production_runtime_dirty_gate_separates_source_drift_from_runtime_state() -> None:
+    bootstrap = (
+        Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    ).read_text(encoding="utf-8-sig")
+    resolver = bootstrap.split("function Resolve-ProductionRuntimeRepo", 1)[1].split(
+        "function Get-FileSha256Hex", 1
+    )[0]
+
+    assert "status --porcelain=v1 --untracked-files=normal" not in resolver
+    assert "diff --quiet --no-ext-diff --ignore-cr-at-eol HEAD --" in resolver
+    assert "ls-files --others --exclude-standard" in resolver
+    assert "$relative -notmatch '^build/'" in resolver
+    assert "PRODUCTION_RUNTIME_DIRTY" in resolver
+
+
 def test_production_runtime_resolver_never_leaks_git_output_into_repo_path() -> None:
     """git の stdout/stderr を関数の RepoDir 戻り値へ混入させない。"""
     bootstrap = (

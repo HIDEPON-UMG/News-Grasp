@@ -92,8 +92,20 @@ function Resolve-ProductionRuntimeRepo {
         if ($LASTEXITCODE -ne 0 -or $inside -ne 'true') {
             throw 'PRODUCTION_RUNTIME_IDENTITY_INVALID'
         }
-        $dirty = ((& $gitExe -C $runtimeRepo status --porcelain=v1 --untracked-files=normal 2>$null) | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0 -or $dirty) {
+        & $gitExe -c 'core.hooksPath=NUL' -c 'core.fsmonitor=false' -c 'core.attributesFile=NUL' -C $runtimeRepo diff --quiet --no-ext-diff --ignore-cr-at-eol HEAD --
+        $trackedDiffExit = $LASTEXITCODE
+        $untracked = @(
+            & $gitExe -c 'core.hooksPath=NUL' -c 'core.fsmonitor=false' -c 'core.attributesFile=NUL' -C $runtimeRepo ls-files --others --exclude-standard 2>$null |
+                ForEach-Object { ([string]$_).Replace('\', '/') }
+        )
+        $untrackedExit = $LASTEXITCODE
+        $unexpectedUntracked = @(
+            $untracked | Where-Object {
+                $relative = ([string]$_).Trim()
+                $relative -and $relative -notmatch '^build/'
+            }
+        )
+        if ($trackedDiffExit -ne 0 -or $untrackedExit -ne 0 -or $unexpectedUntracked.Count -gt 0) {
             throw 'PRODUCTION_RUNTIME_DIRTY'
         }
         & $gitExe -C $runtimeRepo checkout --detach $originSha --quiet 2>$null | Out-Null
