@@ -227,8 +227,8 @@ function Assert-NewsGraspInstalledState {
     if ($missionSchema -ne 'AUDIT_MISSION_AUTHORITY_V1') { throw 'audit mission authority schema mismatch' }
     if ($SkipTaskRegistration) { return }
     $expected = @(
-        [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $runnerArgs; working = $BinDir; start = 'T06:00' },
-        [ordered]@{ name = $BootstrapTaskName; execute = $pythonw; arguments = $bootstrapArgs; working = $BinDir; start = 'T05:55' },
+        [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $runnerArgs; working = $BinDir; start = 'T06:00'; interval = ''; duration = '' },
+        [ordered]@{ name = $BootstrapTaskName; execute = $pythonw; arguments = $bootstrapArgs; working = $BinDir; start = 'T05:55'; interval = ''; duration = '' },
         [ordered]@{ name = $DeadmanTaskName; execute = $pythonw; arguments = $deadmanArgs; working = $BinDir; start = 'T06:40'; interval = 'PT1H'; duration = 'P1D' }
     )
     foreach ($spec in $expected) {

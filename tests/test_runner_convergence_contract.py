@@ -1857,6 +1857,18 @@ def test_ops_installer_preserves_pre_mutation_error_without_rollback_masking(tmp
     assert not bin_dir.exists()
 
 
+def test_ops_installer_task_specs_are_shape_complete_under_strict_mode() -> None:
+    """全task specはrepetition有無にかかわらず同一property shapeを持つ。"""
+    text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    expected_block = text.split("$expected = @(", 1)[1].split("    )", 1)[0]
+    task_specs = [line for line in expected_block.splitlines() if "[ordered]@{" in line]
+
+    assert len(task_specs) == 3
+    for spec in task_specs:
+        assert "interval =" in spec, spec
+        assert "duration =" in spec, spec
+
+
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
     tmp_path: Path,
 ) -> None:
