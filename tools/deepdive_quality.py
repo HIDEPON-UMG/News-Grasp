@@ -93,6 +93,13 @@ def _canonical_text_sha256(payload: bytes) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _portable_article_path(path: Path) -> str:
+    article = Path(path).resolve()
+    if article.parent.name == "DeepDive" and article.parent.parent.name == "digest":
+        return f"digest/DeepDive/{article.name}"
+    return article.name
+
+
 def _audit_file_evidence(path: Path, payload: bytes) -> dict[str, str]:
     return {
         "path": str(path.resolve()),
@@ -280,8 +287,8 @@ def build_provenance_manifest(
         "schemaVersion": SCHEMA,
         "status": "Green",
         "issueDate": _issue_date(article),
-        "articlePath": str(article),
-        "articleSha256": _file_sha256(article),
+        "articlePath": _portable_article_path(article),
+        "articleSha256": _canonical_text_sha256(article.read_bytes()),
         "sources": sources,
         "sourceSetSha256": _canonical_sha256(sources),
     }
@@ -390,9 +397,9 @@ def _validate_provenance_with_evidence(
         issues.append("DEEPDIVE_PROVENANCE_NOT_GREEN")
     if value.get("manifestSha256") != canonical_manifest_sha256(value):
         issues.append("DEEPDIVE_PROVENANCE_HASH_DRIFT")
-    if value.get("articlePath") != str(article):
+    if value.get("articlePath") != _portable_article_path(article):
         issues.append("DEEPDIVE_ARTICLE_PATH_DRIFT")
-    if value.get("articleSha256") != hashlib.sha256(article_bytes).hexdigest():
+    if value.get("articleSha256") != _canonical_text_sha256(article_bytes):
         issues.append("DEEPDIVE_ARTICLE_DRIFT")
     try:
         if value.get("issueDate") != _issue_date(article):

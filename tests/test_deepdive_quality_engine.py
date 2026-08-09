@@ -343,6 +343,25 @@ def test_issue_audit_requires_rendered_public_surface_only_when_requested(
     assert "DEEPDIVE_RENDERED_HTML_MISSING" in post_generation["issues"]
 
 
+def test_provenance_manifest_is_worktree_portable_and_crlf_stable(tmp_path: Path) -> None:
+    issue_date = "2026-08-01"
+    deepdive_dir = tmp_path / "digest" / "DeepDive"
+    deepdive_dir.mkdir(parents=True)
+    article = _article(deepdive_dir / f"{issue_date}-DeepDive.md")
+    manifest = tmp_path / "data" / "deepdive-provenance" / f"{issue_date}.json"
+
+    value = deepdive_quality.build_provenance_manifest(
+        article_path=article,
+        fetch_records=[_fetch("https://example.com/source")],
+        output_path=manifest,
+    )
+    stable_text = article.read_text(encoding="utf-8").replace("\r\n", "\n")
+    article.write_bytes(stable_text.replace("\n", "\r\n").encode("utf-8"))
+
+    assert value["articlePath"] == f"digest/DeepDive/{issue_date}-DeepDive.md"
+    assert deepdive_quality.validate_provenance(article, manifest) == []
+
+
 def test_fetch_record_requires_success_and_content_hash(tmp_path: Path) -> None:
     url = "https://example.com/source"
     article = _article(tmp_path / "2026-08-01-DeepDive.md", url=url)
