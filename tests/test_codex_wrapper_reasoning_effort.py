@@ -72,6 +72,7 @@ def test_runner_passes_reasoning_effort_for_every_codex_role() -> None:
 def test_installer_syncs_wrapper_with_backup_and_rollback() -> None:
     source = INSTALLER.read_text(encoding="utf-8-sig")
 
-    assert source.count("run_codex_with_timeout.ps1") >= 2
-    assert "$BackupDir\\run_codex_with_timeout.ps1" in source
+    assert source.count("run_codex_with_timeout.ps1") >= 1
+    assert "$backup = Join-Path $BackupDir $file" in source
+    assert "install-news-grasp-ops-guard.ps1" in source
     assert "rollback_commands" in source

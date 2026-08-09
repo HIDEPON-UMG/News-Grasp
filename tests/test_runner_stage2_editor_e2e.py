@@ -263,7 +263,10 @@ def test_stage2_parallel_reporters_finish_and_editor_reads_all_artifacts(
     log_dir = tmp_path / "runner-logs"
     state_file = tmp_path / "runner-state.json"
     scheduled_authority = tmp_path / "scheduled-production-authority.json"
-    scheduled_authority.write_text("{}\n", encoding="utf-8")
+    scheduled_authority.write_text(
+        json.dumps({"receiptSha256": "a" * 64}) + "\n",
+        encoding="utf-8",
+    )
     _fake_codex_wrapper(wrapper)
     high_cost_args, _broker_env = canonical_model_broker
     high_cost = dict(zip(high_cost_args[::2], high_cost_args[1::2]))

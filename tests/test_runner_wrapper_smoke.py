@@ -254,7 +254,7 @@ def test_codex_wrapper_quotes_argument_list_for_paths_with_spaces() -> None:
     text = WRAPPER.read_text(encoding="utf-8-sig")
     assert "ConvertTo-ProcessArgumentString" in text
     assert "$effectiveArgString = ConvertTo-ProcessArgumentString" in text
-    assert "CreateSuspendedAssignedProcess($filePath, $effectiveArgString" in text
+    assert "[NewsGraspOwnedJob]::CreateSuspendedAssignedProcess($filePath, $effectiveArgString" in text
     assert "-ArgumentList $effectiveArgs" not in text
 
 
