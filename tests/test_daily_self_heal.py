@@ -108,6 +108,153 @@ def _init_deploy_history(repo_root: Path) -> tuple[str, str]:
     return deploy_head, source_head
 
 
+def _init_issue_scoped_deploy_history(
+    repo_root: Path, *, mutate_current_issue: bool, mutate_category_landing: bool = False
+) -> tuple[str, str]:
+    subprocess.run(["git", "init", "-q"], cwd=repo_root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.invalid"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "News-Grasp Test"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    _write_local_sw(repo_root, "artifact-version")
+    _write_deploy_workflow(repo_root)
+    issue_paths = dsh.required_published_docs_artifacts("2026-06-15")
+    issue_paths.append("docs/deepdive/2026-06-15/index.html")
+    issue_paths.extend(
+        f"docs/{dsh.CATEGORY_PATHS[cat_id]['docs_segment']}/index.html"
+        for cat_id in dsh.scheduled_category_ids("2026-06-15")
+    )
+    for relative_path in issue_paths:
+        issue_file = repo_root / relative_path
+        issue_file.parent.mkdir(parents=True, exist_ok=True)
+        issue_file.write_text(f"current issue: {relative_path}\n", encoding="utf-8")
+    (repo_root / "docs" / "index.html").write_text("current home\n", encoding="utf-8")
+    (repo_root / "docs" / "publish-status.json").write_text(
+        '{"result":"published_ok","date":"2026-06-15"}\n',
+        encoding="utf-8",
+    )
+    artifact_head = _commit_fixture(
+        repo_root,
+        "issue artifact fixture",
+        "docs/sw.js",
+        ".github/workflows/deploy-pages.yml",
+        *issue_paths,
+        "docs/index.html",
+        "docs/publish-status.json",
+    )
+    _write_local_sw(repo_root, "remote-version")
+    if mutate_category_landing:
+        changed_path = "docs/fx/index.html"
+        (repo_root / changed_path).write_text(
+            "mutated current issue category landing\n", encoding="utf-8"
+        )
+    elif mutate_current_issue:
+        changed_path = "docs/fx/2026-06-15/index.html"
+        (repo_root / changed_path).write_text(
+            "mutated current issue category\n", encoding="utf-8"
+        )
+    else:
+        historical = repo_root / "docs" / "2026-06-14" / "summary" / "index.html"
+        historical.parent.mkdir(parents=True)
+        historical.write_text("historical correction\n", encoding="utf-8")
+        changed_path = "docs/2026-06-14/summary/index.html"
+    remote_head = _commit_fixture(
+        repo_root,
+        "later public correction",
+        "docs/sw.js",
+        changed_path,
+    )
+    subprocess.run(
+        ["git", "switch", "--detach", artifact_head],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+    return artifact_head, remote_head
+
+
+def _verify_issue_scoped_publish_fixture(
+    monkeypatch,
+    repo_root: Path,
+    *,
+    mutate_current_issue: bool,
+    mutate_category_landing: bool = False,
+) -> tuple[dict, str, str]:
+    artifact_head, remote_head = _init_issue_scoped_deploy_history(
+        repo_root,
+        mutate_current_issue=mutate_current_issue,
+        mutate_category_landing=mutate_category_landing,
+    )
+    real_git_output = dsh._git_output
+
+    def fake_git(root: Path, args: list[str]) -> str:
+        if args == ["ls-remote", "origin", "refs/heads/main"]:
+            return f"{remote_head}\trefs/heads/main"
+        return real_git_output(root, args)
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {"result": "published_ok", "date": "2026-06-15"}
+            ).encode("utf-8")
+
+    monkeypatch.setattr(dsh, "_git_output", fake_git)
+    monkeypatch.setattr(
+        dsh,
+        "verify_deploy_workflow",
+        lambda **_kwargs: {
+            "ok": True,
+            "reason": "",
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": remote_head,
+        },
+    )
+    monkeypatch.setattr(
+        dsh,
+        "verify_pages_build",
+        lambda **kwargs: {
+            "ok": True,
+            "reason": "",
+            "status": "built",
+            "commit": kwargs["expected_commit"],
+        },
+    )
+    monkeypatch.setattr(
+        dsh.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse()
+    )
+    monkeypatch.setattr(
+        dsh, "_fetch_text", lambda _url: "const SW_VERSION = 'remote-version';\n"
+    )
+    monkeypatch.setattr(
+        dsh, "verify_public_audio", lambda **_kwargs: {"checked": False, "ok": True}
+    )
+    result = verify_publish(
+        repo_root=repo_root,
+        date="2026-06-15",
+        remote="origin",
+        branch="main",
+        public_base_url="https://example.com/News-Grasp/",
+        wait_sec=0,
+        poll_sec=1,
+    )
+    return result, artifact_head, remote_head
+
+
 def _runner_with_pre_run_interlock_source() -> str:
     return """
 $BootstrapSmokeStateFile = 'ng-smoke-state.json'
@@ -327,7 +474,11 @@ def test_verify_publish_requires_remote_head_and_public_status(monkeypatch, tmp_
     )
 
     assert result["ok"] is True
-    assert calls == [["rev-parse", "HEAD"], ["ls-remote", "origin", "refs/heads/main"]]
+    assert calls == [
+        ["rev-parse", "HEAD"],
+        ["ls-remote", "origin", "refs/heads/main"],
+        ["ls-remote", "origin", "refs/heads/main"],
+    ]
 
 
 def test_repo_slug_from_remote_url_accepts_github_https_and_ssh() -> None:
@@ -900,6 +1051,53 @@ def test_verify_publish_accepts_clean_artifact_head_before_control_only_descenda
     assert result["local_head"] == source_head
     assert result["remote_head"] == source_head
     assert result["deploy_relevant_head"] == deploy_head
+
+
+def test_verify_publish_accepts_later_public_change_outside_current_issue(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """別日付の公開修正は、対象日付の公開完了をRedへ戻さない。"""
+    result, artifact_head, remote_head = _verify_issue_scoped_publish_fixture(
+        monkeypatch, tmp_path, mutate_current_issue=False
+    )
+
+    assert result["ok"] is True, result.get("reason")
+    assert result["artifact_head"] == artifact_head
+    assert result["local_head"] == remote_head
+    assert result["remote_head"] == remote_head
+    assert result["issue_public_tree_unchanged"] is True
+    assert result["pwa"]["public_sw_version"] == "remote-version"
+
+
+def test_verify_publish_rejects_later_change_to_current_issue_category(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """対象日付の公開artifactが変わった場合は、旧artifact完了を受理しない。"""
+    result, artifact_head, remote_head = _verify_issue_scoped_publish_fixture(
+        monkeypatch, tmp_path, mutate_current_issue=True
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "artifact_publish_head_stale"
+    assert result["artifact_head"] == artifact_head
+    assert result["remote_head"] == remote_head
+
+
+def test_verify_publish_rejects_later_change_to_current_issue_category_landing(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """対象号をfeatured表示するカテゴリlandingの後続改変も拒否する。"""
+    result, artifact_head, remote_head = _verify_issue_scoped_publish_fixture(
+        monkeypatch,
+        tmp_path,
+        mutate_current_issue=False,
+        mutate_category_landing=True,
+    )
+
+    assert result["ok"] is False
+    assert result["reason"] == "artifact_publish_head_stale"
+    assert result["artifact_head"] == artifact_head
+    assert result["remote_head"] == remote_head
 
 
 def test_verify_publish_rejects_deploy_pages_workflow_commit_mismatch(monkeypatch, tmp_path: Path) -> None:

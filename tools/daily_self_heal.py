@@ -21,7 +21,12 @@ from pathlib import Path
 from urllib.parse import quote, urlencode, urljoin, urlparse
 
 from tools import deepdive_quality
-from tools.publish_inventory import required_distribution_artifacts
+from tools.publish_inventory import (
+    CATEGORY_PATHS,
+    required_distribution_artifacts,
+    required_published_docs_artifacts,
+    scheduled_category_ids,
+)
 
 
 ALERT_STATUSES = {
@@ -1277,14 +1282,30 @@ def _extract_sw_version(text: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def verify_public_sw_version(*, repo_root: Path, public_base_url: str) -> dict:
+def verify_public_sw_version(
+    *, repo_root: Path, public_base_url: str, source_head: str | None = None
+) -> dict:
     local_sw = repo_root / "docs" / "sw.js"
-    if not local_sw.exists():
-        return {"ok": False, "reason": "local_sw_missing", "path": str(local_sw)}
-    try:
-        local_version = _extract_sw_version(local_sw.read_text(encoding="utf-8-sig"))
-    except UnicodeDecodeError as exc:
-        return {"ok": False, "reason": "local_sw_unreadable", "detail": str(exc), "path": str(local_sw)}
+    if source_head:
+        try:
+            expected_sw = _git_output(
+                repo_root, ["show", f"{source_head}:docs/sw.js"]
+            )
+        except RuntimeError as exc:
+            return {
+                "ok": False,
+                "reason": "source_sw_unavailable",
+                "detail": str(exc),
+                "source_head": source_head,
+            }
+    else:
+        if not local_sw.exists():
+            return {"ok": False, "reason": "local_sw_missing", "path": str(local_sw)}
+        try:
+            expected_sw = local_sw.read_text(encoding="utf-8-sig")
+        except UnicodeDecodeError as exc:
+            return {"ok": False, "reason": "local_sw_unreadable", "detail": str(exc), "path": str(local_sw)}
+    local_version = _extract_sw_version(expected_sw)
     if not local_version:
         return {"ok": False, "reason": "local_sw_version_missing", "path": str(local_sw)}
 
@@ -1320,6 +1341,7 @@ def verify_public_sw_version(*, repo_root: Path, public_base_url: str) -> dict:
         "url": public_sw_url,
         "local_sw_version": local_version,
         "public_sw_version": public_version,
+        "source_head": source_head or "",
     }
 
 
@@ -2100,6 +2122,52 @@ def wait_for_deploy_workflow(
 
 
 _DEPLOY_RELEVANT_PATHS = ("docs", ".github/workflows/deploy-pages.yml")
+_ISSUE_PUBLIC_PATHS = (
+    "docs/index.html",
+    "docs/publish-status.json",
+)
+
+
+def resolve_issue_public_tree_equivalence(
+    *, repo_root: Path, artifact_head: str, remote_head: str, date: str
+) -> dict:
+    """後続commitが対象日付の公開面を変えていないことをtree objectで証明する。"""
+    paths: dict[str, dict[str, str]] = {}
+    issue_paths = list(_ISSUE_PUBLIC_PATHS)
+    issue_paths.extend(required_published_docs_artifacts(date))
+    issue_paths.append(f"docs/deepdive/{date}/index.html")
+    issue_paths.extend(
+        f"docs/{CATEGORY_PATHS[cat_id]['docs_segment']}/index.html"
+        for cat_id in scheduled_category_ids(date)
+    )
+    for path in dict.fromkeys(issue_paths):
+        try:
+            artifact_tree = _git_output(
+                repo_root, ["rev-parse", f"{artifact_head}:{path}"]
+            )
+            remote_tree = _git_output(
+                repo_root, ["rev-parse", f"{remote_head}:{path}"]
+            )
+        except RuntimeError as exc:
+            return {
+                "ok": False,
+                "reason": "issue_public_tree_unavailable",
+                "detail": str(exc),
+                "path": path,
+                "paths": paths,
+            }
+        paths[path] = {
+            "artifactTree": artifact_tree,
+            "remoteTree": remote_tree,
+        }
+        if not artifact_tree or artifact_tree != remote_tree:
+            return {
+                "ok": False,
+                "reason": "issue_public_tree_changed",
+                "path": path,
+                "paths": paths,
+            }
+    return {"ok": True, "reason": "", "paths": paths}
 
 
 def resolve_deploy_head(*, repo_root: Path, source_head: str) -> dict:
@@ -2155,6 +2223,11 @@ def verify_publish(
     artifact_head = _git_output(repo_root, ["rev-parse", "HEAD"])
     remote_head = _git_output(repo_root, ["ls-remote", remote, f"refs/heads/{branch}"]).split()[0]
     source_head = artifact_head
+    issue_tree_resolution: dict = {
+        "ok": True,
+        "reason": "artifact_head_is_remote_head",
+        "paths": {},
+    }
     if artifact_head != remote_head:
         if not _commit_is_ancestor(repo_root, artifact_head, remote_head):
             return {
@@ -2167,10 +2240,7 @@ def verify_publish(
         remote_resolution = resolve_deploy_head(
             repo_root=repo_root, source_head=remote_head
         )
-        if (
-            not remote_resolution.get("ok")
-            or remote_resolution.get("deploy_head") != artifact_head
-        ):
+        if not remote_resolution.get("ok"):
             return {
                 "ok": False,
                 "reason": "artifact_publish_head_stale",
@@ -2178,6 +2248,29 @@ def verify_publish(
                 "local_head": artifact_head,
                 "remote_head": remote_head,
                 "deploy_head_resolution": remote_resolution,
+            }
+        if remote_resolution.get("deploy_head") != artifact_head:
+            issue_tree_resolution = resolve_issue_public_tree_equivalence(
+                repo_root=repo_root,
+                artifact_head=artifact_head,
+                remote_head=remote_head,
+                date=date,
+            )
+            if not issue_tree_resolution.get("ok"):
+                return {
+                    "ok": False,
+                    "reason": "artifact_publish_head_stale",
+                    "artifact_head": artifact_head,
+                    "local_head": artifact_head,
+                    "remote_head": remote_head,
+                    "deploy_head_resolution": remote_resolution,
+                    "issue_public_tree_resolution": issue_tree_resolution,
+                }
+        else:
+            issue_tree_resolution = {
+                "ok": True,
+                "reason": "deploy_tree_unchanged",
+                "paths": {},
             }
         source_head = remote_head
     if _is_git_worktree(repo_root):
@@ -2258,6 +2351,8 @@ def verify_publish(
         "deploy_head": deploy_head,
         "deploy_relevant_head": deploy_relevant_head,
         "deploy_head_resolution": deploy_resolution,
+        "issue_public_tree_unchanged": issue_tree_resolution.get("ok") is True,
+        "issue_public_tree_resolution": issue_tree_resolution,
     }
     if not deploy_workflow["ok"]:
         return {
@@ -2305,7 +2400,11 @@ def verify_publish(
                         f"{historical_archive!r}"
                     )
             if status_mode:
-                pwa = verify_public_sw_version(repo_root=repo_root, public_base_url=public_base_url)
+                pwa = verify_public_sw_version(
+                    repo_root=repo_root,
+                    public_base_url=public_base_url,
+                    source_head=(source_head if source_head != artifact_head else None),
+                )
                 if not pwa["ok"]:
                     return {
                         "ok": False,
@@ -2346,6 +2445,23 @@ def verify_publish(
                                 "audio": audio,
                                 "podcast": podcast,
                             }
+                    confirmed_remote_head = _git_output(
+                        repo_root,
+                        ["ls-remote", remote, f"refs/heads/{branch}"],
+                    ).split()[0]
+                    if confirmed_remote_head != remote_head:
+                        return {
+                            "ok": False,
+                            "reason": "remote_head_changed_during_verify",
+                            **head_state,
+                            "confirmed_remote_head": confirmed_remote_head,
+                            "url": status_url,
+                            "deploy_workflow": deploy_workflow,
+                            "pages": pages,
+                            "pwa": pwa,
+                            "audio": audio,
+                            "podcast": podcast,
+                        }
                     return {
                         "ok": True,
                         "reason": "",
