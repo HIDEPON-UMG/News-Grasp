@@ -841,7 +841,9 @@ def execute_audit_0640(
                 issue_date=issue_date,
                 decision=decision,
                 completion=completion,
-                recovered=False,
+                recovered=(
+                    decision.get("recoveryAttemptStatus") == "succeeded"
+                ),
             )
             write_terminal(terminal)
             return terminal

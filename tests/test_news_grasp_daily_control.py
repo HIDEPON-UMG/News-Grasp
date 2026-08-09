@@ -116,6 +116,33 @@ def test_audit_normal_green_preserves_full_same_date_completion_evidence(monkeyp
     }
 
 
+def test_existing_recovery_green_preserves_recovery_terminal_status(monkeypatch) -> None:
+    """既存の復旧成功を通常scheduled成功へ上書きしない。"""
+    control = _control()
+    completion = _same_date_completion(control, run_intent="ScheduledRecoveryFull")
+    plan = _audit_plan(action="none")
+    plan.update(
+        {
+            "recoveryAttemptStatus": "succeeded",
+            "completion": True,
+            "completionEvidenceSha256": completion["receiptSha256"],
+            "completionEvidence": completion,
+        }
+    )
+    monkeypatch.setattr(control, "prepare_recovery", lambda **_: plan)
+
+    result = control.execute_audit_0640(
+        issue_date="2026-08-06",
+        terminal_writer=lambda value: value,
+    )
+
+    assert result["terminal"] == "audit_recovered_green"
+    assert result["scheduledAttemptStatus"] == "failed"
+    assert result["recoveryAttemptStatus"] == "succeeded"
+    assert result["reasonCode"] == "SAME_DATE_RECOVERY_COMPLETION_GREEN"
+    assert result["sourceDecision"]["recoveryAttemptStatus"] == "succeeded"
+
+
 def test_audit_terminal_writer_rejects_green_completion_hash_stub(monkeypatch, tmp_path) -> None:
     control = _control()
     audit = control.audit_recovery_control
