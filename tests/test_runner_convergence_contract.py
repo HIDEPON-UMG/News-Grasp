@@ -1634,6 +1634,9 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "subprocess.run(" in launcher_text
     assert "news-grasp-deadman.ps1" in launcher_text
     assert "news-grasp-deadman-launcher.pyw" in installer_text
+    assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
+    assert '["-RepoDir", str(repo_dir)]' in launcher_text
+    assert '$deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`""' in installer_text
 
 
 def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
@@ -1647,6 +1650,9 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert "subprocess.CREATE_NO_WINDOW" in launcher_text
     assert "stdin=subprocess.DEVNULL" in launcher_text
     assert "news-grasp-task-launcher.pyw" in installer_text
+    assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
+    assert 'extra.extend(["-RepoDir", str(repo_dir)])' in launcher_text
+    assert '--repo-dir `"$RepoDir`"' in installer_text
     assert "New-ScheduledTaskAction -Execute 'powershell.exe'" not in installer_text
     assert '/TR "powershell.exe ' not in installer_text
     assert "schtasks.exe /Create /TN $BootstrapTaskName" not in installer_text
@@ -1869,17 +1875,28 @@ def test_ops_installer_task_specs_are_shape_complete_under_strict_mode() -> None
         assert "duration =" in spec, spec
 
 
-def test_ops_installer_disables_legacy_runner_as_a_rollback_protected_tombstone() -> None:
-    """旧06:00 taskは削除せず、snapshot後に無効化して二重実行を防ぐ。"""
+def test_ops_installer_task_rollback_fails_closed_before_rolled_back_receipt() -> None:
+    """task復元失敗を非終端errorとして扱い、rolled_backへ誤記録しない。"""
     text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    rollback_blocks = [
+        text.split("function Invoke-NewsGraspRollbackJournal", 1)[1].split(
+            "function Recover-NewsGraspInterruptedInstall", 1
+        )[0],
+        text.split("function Invoke-NewsGraspInstallRollback", 1)[1].split(
+            "function Write-NewsGraspInstallJournal", 1
+        )[0],
+    ]
 
-    assert "[string] $LegacyRunnerTaskName = 'News-Grasp Runner'" in text
-    assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)" in text
-    snapshot = text.index("$taskSnapshots = @()")
-    disable = text.index("Disable-ScheduledTask -TaskName $LegacyRunnerTaskName")
-    assert snapshot < disable
-    assert "legacy runner tombstone is enabled" in text
-    assert "status = 'legacy_tombstone_disabled'" in text
+    for block in rollback_blocks:
+        for command in (
+            "Register-ScheduledTask",
+            "Enable-ScheduledTask",
+            "Disable-ScheduledTask",
+            "Unregister-ScheduledTask",
+        ):
+            matching = [line for line in block.splitlines() if command in line]
+            assert matching
+            assert all("-ErrorAction Stop" in line for line in matching), matching
 
 
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(

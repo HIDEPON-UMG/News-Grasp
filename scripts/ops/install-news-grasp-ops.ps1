@@ -5,7 +5,6 @@
     [string] $RunnerTaskName = 'News-Grasp Production',
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
-    [string] $LegacyRunnerTaskName = 'News-Grasp Runner',
     [switch] $SkipTaskRegistration
 )
 
@@ -100,14 +99,14 @@ function Invoke-NewsGraspRollbackJournal {
         $taskName = [string]$snapshot.task_name
         if ([bool]$snapshot.existed_before) {
             $xml = Get-Content -LiteralPath ([string]$snapshot.xml_backup) -Raw -Encoding Unicode
-            Register-ScheduledTask -TaskName $taskName -Xml $xml -Force | Out-Null
+            Register-ScheduledTask -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
             if ([bool]$snapshot.enabled_before) {
-                Enable-ScheduledTask -TaskName $taskName | Out-Null
+                Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             } else {
-                Disable-ScheduledTask -TaskName $taskName | Out-Null
+                Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             }
         } elseif (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
     if (-not [bool]$Journal.bin_dir_existed_before -and (Test-Path -LiteralPath ([string]$Journal.bin_dir) -PathType Container)) {
@@ -166,14 +165,14 @@ function Invoke-NewsGraspInstallRollback {
         $taskName = [string]$snapshot.task_name
         if ([bool]$snapshot.existed_before) {
             $xml = Get-Content -LiteralPath ([string]$snapshot.xml_backup) -Raw -Encoding Unicode
-            Register-ScheduledTask -TaskName $taskName -Xml $xml -Force | Out-Null
+            Register-ScheduledTask -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
             if ([bool]$snapshot.enabled_before) {
-                Enable-ScheduledTask -TaskName $taskName | Out-Null
+                Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             } else {
-                Disable-ScheduledTask -TaskName $taskName | Out-Null
+                Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             }
         } elseif (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
     if (-not $binDirExistedBefore -and (Test-Path -LiteralPath $BinDir -PathType Container)) {
@@ -261,10 +260,6 @@ function Assert-NewsGraspInstalledState {
             throw "scheduled task unexpected repetition: $($spec.name)"
         }
     }
-    $legacyRunner = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
-    if ($legacyRunner -and [bool]$legacyRunner.Settings.Enabled) {
-        throw "legacy runner tombstone is enabled: $LegacyRunnerTaskName"
-    }
 }
 
 trap {
@@ -302,7 +297,7 @@ Recover-NewsGraspInterruptedInstall `
     -BackupRoot $backupRoot `
     -ExpectedRepoDir $RepoDir `
     -ExpectedBinDir $BinDir `
-    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)
+    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName)
 $binDirExistedBefore = Test-Path -LiteralPath $BinDir -PathType Container
 
 # backup + explicit approval + rollback: live runner overwrite must leave a restorable manifest.
@@ -315,7 +310,7 @@ $script:InstallationMutationStarted = $true
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
 if (-not $SkipTaskRegistration) {
-    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)) {
+    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         $xmlPath = Join-Path $BackupDir (("task-{0}.xml" -f ($taskName -replace '[^A-Za-z0-9._-]', '_')))
         if ($task) {
@@ -401,7 +396,7 @@ if (-not $SkipTaskRegistration) {
     $taskLauncherPath = Join-Path $BinDir 'news-grasp-task-launcher.pyw'
     $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
-    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`""
+    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --repo-dir `"$RepoDir`""
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
     $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -430,7 +425,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`""
+    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --repo-dir `"$RepoDir`""
     $bootstrapAction = New-ScheduledTaskAction -Execute $pythonw -Argument $bootstrapArgs -WorkingDirectory $BinDir
     $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
     $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -458,7 +453,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $deadmanArgs = "`"$deadmanLauncherPath`""
+    $deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`""
     $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
     $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
     $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{
@@ -476,14 +471,6 @@ if (-not $SkipTaskRegistration) {
         arguments = $deadmanArgs
         trigger = 'daily 06:40 with hourly repetition'
         status = 'registered_deadman_control'
-    }
-    $legacyRunner = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
-    if ($legacyRunner) {
-        Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop | Out-Null
-        $scheduledTasks += [ordered]@{
-            task_name = $LegacyRunnerTaskName
-            status = 'legacy_tombstone_disabled'
-        }
     }
     Write-NewsGraspInstallJournal -Phase 'tasks_converged'
 }
