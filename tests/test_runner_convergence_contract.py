@@ -1869,6 +1869,19 @@ def test_ops_installer_task_specs_are_shape_complete_under_strict_mode() -> None
         assert "duration =" in spec, spec
 
 
+def test_ops_installer_disables_legacy_runner_as_a_rollback_protected_tombstone() -> None:
+    """旧06:00 taskは削除せず、snapshot後に無効化して二重実行を防ぐ。"""
+    text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+
+    assert "[string] $LegacyRunnerTaskName = 'News-Grasp Runner'" in text
+    assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)" in text
+    snapshot = text.index("$taskSnapshots = @()")
+    disable = text.index("Disable-ScheduledTask -TaskName $LegacyRunnerTaskName")
+    assert snapshot < disable
+    assert "legacy runner tombstone is enabled" in text
+    assert "status = 'legacy_tombstone_disabled'" in text
+
+
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
     tmp_path: Path,
 ) -> None:

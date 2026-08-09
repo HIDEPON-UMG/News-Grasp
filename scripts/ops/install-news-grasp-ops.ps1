@@ -5,6 +5,7 @@
     [string] $RunnerTaskName = 'News-Grasp Production',
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
+    [string] $LegacyRunnerTaskName = 'News-Grasp Runner',
     [switch] $SkipTaskRegistration
 )
 
@@ -260,6 +261,10 @@ function Assert-NewsGraspInstalledState {
             throw "scheduled task unexpected repetition: $($spec.name)"
         }
     }
+    $legacyRunner = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
+    if ($legacyRunner -and [bool]$legacyRunner.Settings.Enabled) {
+        throw "legacy runner tombstone is enabled: $LegacyRunnerTaskName"
+    }
 }
 
 trap {
@@ -297,7 +302,7 @@ Recover-NewsGraspInterruptedInstall `
     -BackupRoot $backupRoot `
     -ExpectedRepoDir $RepoDir `
     -ExpectedBinDir $BinDir `
-    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName)
+    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)
 $binDirExistedBefore = Test-Path -LiteralPath $BinDir -PathType Container
 
 # backup + explicit approval + rollback: live runner overwrite must leave a restorable manifest.
@@ -310,7 +315,7 @@ $script:InstallationMutationStarted = $true
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
 if (-not $SkipTaskRegistration) {
-    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName)) {
+    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         $xmlPath = Join-Path $BackupDir (("task-{0}.xml" -f ($taskName -replace '[^A-Za-z0-9._-]', '_')))
         if ($task) {
@@ -471,6 +476,14 @@ if (-not $SkipTaskRegistration) {
         arguments = $deadmanArgs
         trigger = 'daily 06:40 with hourly repetition'
         status = 'registered_deadman_control'
+    }
+    $legacyRunner = Get-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction SilentlyContinue
+    if ($legacyRunner) {
+        Disable-ScheduledTask -TaskName $LegacyRunnerTaskName -ErrorAction Stop | Out-Null
+        $scheduledTasks += [ordered]@{
+            task_name = $LegacyRunnerTaskName
+            status = 'legacy_tombstone_disabled'
+        }
     }
     Write-NewsGraspInstallJournal -Phase 'tasks_converged'
 }
