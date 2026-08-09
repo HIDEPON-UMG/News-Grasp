@@ -21,6 +21,33 @@ def _control():
     return news_grasp_daily_control
 
 
+def test_production_backend_resolves_legacy_failure_receipt_by_ledger_hash(
+    tmp_path: Path,
+) -> None:
+    """runtime cutover後も旧repoの当日receiptを台帳hashで限定再利用する。"""
+    control = _control()
+    current = tmp_path / "current"
+    legacy = tmp_path / "legacy"
+    receipt = control._sealed(
+        {
+            "schemaVersion": "SCHEDULED_FAILURE_RECEIPT_V1",
+            "productId": "News-Grasp",
+            "issueDate": "2026-08-09",
+            "scheduledAttemptStatus": "failed",
+        }
+    )
+    path = legacy / "build" / "scheduled-failure-receipts" / "2026-08-09-bootstrap-run.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    backend = control.ProductionBackend(repo_root=current, evidence_root=legacy)
+    resolved = backend.resolve_failure_receipt(
+        "2026-08-09", str(receipt["receiptSha256"])
+    )
+
+    assert resolved == path.resolve()
+
+
 def _audit_plan(*, action: str, branch: str | None = None) -> dict[str, object]:
     value: dict[str, object] = {
         "issueDate": "2026-08-06",

@@ -435,16 +435,20 @@ foreach ($file in $files) {
     $row = @($manifestFiles | Where-Object { $_.file -eq $file })[0]
     $row['after_sha256'] = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
 }
+$runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
+$runtimeEvidenceRepoDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $TaskPythonwPath))
 $runtimeRoot = [ordered]@{
     schemaVersion = 'NEWS_GRASP_RUNTIME_ROOT_V1'
     repoDir = $RepoDir
+    pythonExe = $runtimePythonPath
+    evidenceRepoDir = $runtimeEvidenceRepoDir
 }
 Write-AtomicUtf8Text -Path $runtimeRootPath -Text (($runtimeRoot | ConvertTo-Json -Depth 3) + [Environment]::NewLine)
 $runtimeRootRow['after_sha256'] = (Get-FileHash -LiteralPath $runtimeRootPath -Algorithm SHA256).Hash
 Write-NewsGraspInstallJournal -Phase 'files_installed'
 
 $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
-$pythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
+$pythonPath = $runtimePythonPath
 if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
     throw 'News-Grasp audit mission authority broker is unavailable.'
 }
@@ -461,7 +465,7 @@ if (-not $SkipTaskRegistration) {
     $taskLauncherPath = Join-Path $BinDir 'news-grasp-task-launcher.pyw'
     $pythonw = $TaskPythonwPath
     if (-not (Test-Path -LiteralPath $pythonw)) { throw 'News-Grasp .venv pythonw.exe が見つかりません。' }
-    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --repo-dir `"$RepoDir`""
+    $runnerArgs = "`"$taskLauncherPath`" runner --scheduled-task-name `"$RunnerTaskName`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""
     $runnerAction = New-ScheduledTaskAction -Execute $pythonw -Argument $runnerArgs -WorkingDirectory $BinDir
     $runnerTrigger = New-ScheduledTaskTrigger -Daily -At 6:00am
     $runnerSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -490,7 +494,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --repo-dir `"$RepoDir`""
+    $bootstrapArgs = "`"$taskLauncherPath`" bootstrap --scheduled-task-name `"$BootstrapTaskName`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""
     $bootstrapAction = New-ScheduledTaskAction -Execute $pythonw -Argument $bootstrapArgs -WorkingDirectory $BinDir
     $bootstrapTrigger = New-ScheduledTaskTrigger -Daily -At 5:55am
     $bootstrapSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
@@ -518,7 +522,7 @@ if (-not $SkipTaskRegistration) {
         }
     }
 
-    $deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`""
+    $deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""
     $deadmanAction = New-ScheduledTaskAction -Execute $pythonw -Argument $deadmanArgs -WorkingDirectory $BinDir
     $deadmanTrigger = New-ScheduledTaskTrigger -Daily -At 6:40am
     $deadmanRepetition = New-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' -ClassName 'MSFT_TaskRepetitionPattern' -ClientOnly -Property @{

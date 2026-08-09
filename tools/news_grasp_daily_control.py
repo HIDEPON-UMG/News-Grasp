@@ -206,8 +206,19 @@ def build_recovery_plan(
 
 
 class ProductionBackend:
-    def __init__(self, *, repo_root: Path | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        repo_root: Path | None = None,
+        evidence_root: Path | None = None,
+    ) -> None:
         self.repo_root = (repo_root or Path(__file__).resolve().parents[1]).resolve()
+        configured_evidence = evidence_root or (
+            Path(os.environ["NEWS_GRASP_EVIDENCE_REPO_DIR"])
+            if os.environ.get("NEWS_GRASP_EVIDENCE_REPO_DIR")
+            else None
+        )
+        self.evidence_root = configured_evidence.resolve() if configured_evidence else None
         self.bin_dir = Path.home() / "bin"
         self.state_path = self.bin_dir / "news-grasp-runner-state.json"
         self.log_dir = self.bin_dir / "news-grasp-logs"
@@ -215,6 +226,43 @@ class ProductionBackend:
         self.broker_path = self.bin_dir / "ai-model-spawn-broker.py"
         self.authority_dir = self.bin_dir / "news-grasp-authority"
         self.mission_path = self.authority_dir / "audit-mission-authority-v1.json"
+
+    def resolve_failure_receipt(self, issue_date: str, receipt_sha256: str) -> Path:
+        issue_date = _validate_date(issue_date)
+        if re.fullmatch(r"[0-9a-f]{64}", receipt_sha256) is None:
+            raise ValueError("SCHEDULED_FAILURE_RECEIPT_MISSING")
+        candidates = [
+            self.repo_root
+            / "build"
+            / "recovery"
+            / "authority"
+            / f"{issue_date}-scheduled-failure.json"
+        ]
+        if self.evidence_root is not None:
+            legacy_dir = self.evidence_root / "build" / "scheduled-failure-receipts"
+            legacy_candidates = sorted(legacy_dir.glob(f"{issue_date}-*.json"))
+            if len(legacy_candidates) > 32:
+                raise ValueError("SCHEDULED_FAILURE_RECEIPT_AMBIGUOUS")
+            candidates.extend(legacy_candidates)
+        for path in candidates:
+            if not path.is_file() or path.is_symlink():
+                continue
+            try:
+                value = json.loads(path.read_text(encoding="utf-8-sig"))
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                continue
+            if not isinstance(value, dict):
+                continue
+            claimed = str(value.get("receiptSha256") or "")
+            body = {key: item for key, item in value.items() if key != "receiptSha256"}
+            if (
+                value.get("schemaVersion") == "SCHEDULED_FAILURE_RECEIPT_V1"
+                and value.get("issueDate") == issue_date
+                and claimed == receipt_sha256
+                and _sha(body) == claimed
+            ):
+                return path.resolve()
+        raise ValueError("SCHEDULED_FAILURE_RECEIPT_MISSING")
 
     def _run_broker(self, *args: str) -> dict[str, Any]:
         if not self.broker_path.is_file():
@@ -500,6 +548,10 @@ def prepare_recovery(
         witness = actual.inspect_attempt(issue_date)
     else:
         try:
+            failure_path = actual.resolve_failure_receipt(
+                issue_date,
+                str(witness.get("failureReceiptSha256") or ""),
+            )
             failure = json.loads(failure_path.read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             raise ValueError("SCHEDULED_FAILURE_RECEIPT_MISSING") from error

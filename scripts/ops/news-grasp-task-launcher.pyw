@@ -151,6 +151,8 @@ def main() -> int:
     parser.add_argument("mode", choices=("runner", "bootstrap"))
     parser.add_argument("--probe", type=Path)
     parser.add_argument("--repo-dir", type=Path)
+    parser.add_argument("--python-exe", type=Path)
+    parser.add_argument("--evidence-repo-dir", type=Path)
     parser.add_argument("--scheduled-task-name", required=False)
     args = parser.parse_args()
     if args.probe:
@@ -173,6 +175,8 @@ def main() -> int:
     if args.scheduled_task_name:
         extra[extra.index("-ScheduledTaskName") + 1] = args.scheduled_task_name
     runtime_repo = args.repo_dir
+    runtime_python = args.python_exe
+    runtime_evidence: Path | None = args.evidence_repo_dir
     if runtime_repo is None:
         runtime_config = bin_dir / "news-grasp-runtime-root-v1.json"
         if runtime_config.is_file():
@@ -180,9 +184,11 @@ def main() -> int:
                 config = json.loads(runtime_config.read_text(encoding="utf-8-sig"))
             except (OSError, ValueError, TypeError):
                 return 66
-            if set(config) != {"schemaVersion", "repoDir"} or config.get("schemaVersion") != "NEWS_GRASP_RUNTIME_ROOT_V1":
+            if set(config) != {"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"} or config.get("schemaVersion") != "NEWS_GRASP_RUNTIME_ROOT_V1":
                 return 66
             runtime_repo = Path(str(config.get("repoDir", "")))
+            runtime_python = Path(str(config.get("pythonExe", "")))
+            runtime_evidence = Path(str(config.get("evidenceRepoDir", "")))
     if runtime_repo is not None:
         try:
             repo_dir = runtime_repo.resolve(strict=True)
@@ -191,6 +197,22 @@ def main() -> int:
         if not (repo_dir / "tools" / "daily_self_heal.py").is_file():
             return 66
         extra.extend(["-RepoDir", str(repo_dir)])
+        if runtime_python is None:
+            return 66
+        try:
+            python_exe = runtime_python.resolve(strict=True)
+        except OSError:
+            return 66
+        if not python_exe.is_file():
+            return 66
+        extra.extend(["-PythonExe", str(python_exe)])
+        if runtime_evidence is None:
+            runtime_evidence = repo_dir
+        try:
+            evidence_repo = runtime_evidence.resolve(strict=True)
+        except OSError:
+            return 66
+        extra.extend(["-EvidenceRepoDir", str(evidence_repo)])
     powershell = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
     issue_date = date.today().isoformat()
     failure_state = bin_dir / (

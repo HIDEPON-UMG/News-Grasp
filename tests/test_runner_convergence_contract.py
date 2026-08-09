@@ -1636,8 +1636,13 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert "news-grasp-deadman-launcher.pyw" in installer_text
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert '["-RepoDir", str(repo_dir)]' in launcher_text
-    assert '$deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`""' in installer_text
+    assert '$deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`" --python-exe `"$pythonPath`" --evidence-repo-dir `"$runtimeEvidenceRepoDir`""' in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
+    assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
+    assert '["-PythonExe", str(python_exe)]' in launcher_text
+    deadman_text = (OPS_DIR / "news-grasp-deadman.ps1").read_text(encoding="utf-8-sig")
+    assert "$OutputEncoding = [System.Text.Encoding]::UTF8" in deadman_text
+    assert "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8" in deadman_text
 
 
 def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
@@ -1655,6 +1660,8 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert 'extra.extend(["-RepoDir", str(repo_dir)])' in launcher_text
     assert '--repo-dir `"$RepoDir`"' in installer_text
     assert 'news-grasp-runtime-root-v1.json' in launcher_text
+    assert '{"schemaVersion", "repoDir", "pythonExe", "evidenceRepoDir"}' in launcher_text
+    assert 'extra.extend(["-PythonExe", str(python_exe)])' in launcher_text
     assert "New-ScheduledTaskAction -Execute 'powershell.exe'" not in installer_text
     assert '/TR "powershell.exe ' not in installer_text
     assert "schtasks.exe /Create /TN $BootstrapTaskName" not in installer_text
@@ -1796,6 +1803,7 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     installer = OPS_DIR / "install-news-grasp-ops.ps1"
     text = installer.read_text(encoding="utf-8-sig")
     launcher_text = (OPS_DIR / "news-grasp-task-launcher.pyw").read_text(encoding="utf-8")
+    bootstrap_text = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
 
     assert "backup + explicit approval + rollback" in text
     assert "$BackupDir" in text
@@ -1810,7 +1818,10 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "news-grasp-runtime-root-v1.json" in text
     assert "NEWS_GRASP_RUNTIME_ROOT_V1" in text
     assert "generated:runtime-root" in text
-    bootstrap_text = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
+    assert "pythonExe = $runtimePythonPath" in text
+    assert "evidenceRepoDir = $runtimeEvidenceRepoDir" in text
+    assert "[string] $PythonExe = ''" in bootstrap_text
+    assert "'-PyExeOverride', $PythonExe" in bootstrap_text
     watcher_text = (OPS_DIR / "watch-news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     for dependency in (
         "run_codex_with_timeout.ps1",

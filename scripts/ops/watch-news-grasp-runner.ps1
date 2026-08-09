@@ -20,6 +20,7 @@ param(
     [string] $LogDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-logs'),
     [string] $DateStamp = (Get-Date -Format 'yyyy-MM-dd'),
     [string] $RepoDir = '',
+    [string] $PyExeOverride = '',
     [string] $BinDir = '',
     [string] $HighCostAdmissionPath = $env:NEWS_GRASP_HIGH_COST_ADMISSION_PATH,
     [string] $HighCostBudgetToolPath = $env:NEWS_GRASP_HIGH_COST_BUDGET_TOOL_PATH,
@@ -448,6 +449,7 @@ function Start-RunnerProcess {
     $args += @('-LogDirOverride', $LogDir)
     $args += @('-StateFileOverride', $StateFile)
     $args += @('-RepoDirOverride', $RepoDir)
+    if ($PyExeOverride) { $args += @('-PyExeOverride', $PyExeOverride) }
     if ($HighCostAdmissionPath) {
         $args += @('-HighCostAdmissionPath', $HighCostAdmissionPath)
     }
@@ -470,6 +472,7 @@ function Start-RunnerProcess {
 }
 
 function Get-DailyControlPython {
+    if ($PyExeOverride -and (Test-Path -LiteralPath $PyExeOverride -PathType Leaf)) { return $PyExeOverride }
     $candidate = Join-Path $RepoDir '.venv\Scripts\python.exe'
     if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
     return 'python'

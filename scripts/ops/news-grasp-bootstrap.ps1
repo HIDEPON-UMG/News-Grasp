@@ -14,6 +14,8 @@
     [string] $LogDir = '',
     [string] $DateStamp = '',
     [string] $RepoDir = '',
+    [string] $PythonExe = '',
+    [string] $EvidenceRepoDir = '',
     [string] $BinDir = (Join-Path $env:USERPROFILE 'bin'),
     [string] $ScheduledTaskName = '',
     [string] $ProductionTaskName = 'News-Grasp Production'
@@ -231,10 +233,11 @@ function Write-PreliminaryLaunchPermit {
     param(
         [string] $SourceRepoDir,
         [string] $BinDir,
-        [string] $IssueDate
+        [string] $IssueDate,
+        [string] $PythonExe
     )
     $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
-    $python = Join-Path $SourceRepoDir '.venv\Scripts\python.exe'
+    $python = $PythonExe
     $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
     if (
         (-not (Test-Path -LiteralPath $broker -PathType Leaf)) -or
@@ -318,6 +321,9 @@ function Record-StartupFailureForAudit {
 }
 
 $SourceRepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
+$PythonExe = if ($PythonExe) { (Resolve-Path -LiteralPath $PythonExe).Path } else { Join-Path $SourceRepoDir '.venv\Scripts\python.exe' }
+if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) { throw 'News-Grasp Python runtime is missing.' }
+if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = (Resolve-Path -LiteralPath $EvidenceRepoDir).Path }
 if (-not $DateStamp) { $DateStamp = Get-Date -Format 'yyyy-MM-dd' }
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 $preliminaryAuthority = $null
@@ -338,7 +344,7 @@ if ($UseProductionRuntime) {
 }
 try {
 if ($UseProductionRuntime -and (-not $SmokeTest)) {
-    $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp
+    $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -PythonExe $PythonExe
 }
 try {
     $RepoDir = if ($UseProductionRuntime -and (-not $SmokeTest)) {
@@ -432,7 +438,7 @@ if ($changed) {
 }
 
 $broker = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
-$python = Join-Path $RepoDir '.venv\Scripts\python.exe'
+$python = $PythonExe
 $liveRunner = Join-Path $BinDir 'news-grasp-runner.ps1'
 $authorityDir = Join-Path $BinDir 'news-grasp-authority'
 $missionPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
@@ -471,6 +477,7 @@ if ($StateFile) { $args += @('-StateFile', $StateFile) }
 if ($LogDir) { $args += @('-LogDir', $LogDir) }
 if ($DateStamp) { $args += @('-DateStamp', $DateStamp) }
 $args += @('-RepoDir', $RepoDir, '-BinDir', $BinDir)
+$args += @('-PyExeOverride', $PythonExe)
 
 & powershell.exe @args
 $watcherExit = $LASTEXITCODE

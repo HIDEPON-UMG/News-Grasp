@@ -1,5 +1,7 @@
 ﻿param(
     [string] $RepoDir = '',
+    [string] $PythonExe = '',
+    [string] $EvidenceRepoDir = '',
     [string] $StateFile = (Join-Path $env:USERPROFILE 'bin\news-grasp-runner-state.json'),
     [string] $AlertDir = (Join-Path $env:USERPROFILE 'bin\news-grasp-alerts'),
     [string] $DateStamp = (Get-Date -Format 'yyyy-MM-dd'),
@@ -7,6 +9,8 @@
 )
 
 $ErrorActionPreference = 'Stop'
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
@@ -35,8 +39,9 @@ function Resolve-NewsGraspRepoDir {
 }
 
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
-$PyExe = Join-Path $RepoDir '.venv\Scripts\python.exe'
-if (-not (Test-Path -LiteralPath $PyExe)) {
+if ($EvidenceRepoDir) { $env:NEWS_GRASP_EVIDENCE_REPO_DIR = (Resolve-Path -LiteralPath $EvidenceRepoDir).Path }
+$PyExe = if ($PythonExe) { $PythonExe } else { Join-Path $RepoDir '.venv\Scripts\python.exe' }
+if (-not (Test-Path -LiteralPath $PyExe -PathType Leaf)) {
     $PyExe = 'python'
 }
 
