@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import os
 import json
+import hashlib
 import re
 import subprocess
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -1809,8 +1812,9 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "$BackupDir" in text
     assert "$ManifestPath" in text
     assert "rollback_commands" in text
-    assert "Copy-Item -LiteralPath $destination -Destination" in text
-    assert "Get-FileHash" in text
+    assert "Read-NewsGraspVerifiedFile" in text
+    assert "Write-NewsGraspAtomicFile" in text
+    assert ".Sha256" in text
     assert "install-manifest.json" in text
     assert "news-grasp-bootstrap.ps1" in text
     assert "news-grasp-lineage.ps1" in text
@@ -1836,7 +1840,7 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
         assert argument in launcher_text
     assert '"-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs"' in launcher_text
     assert text.index("$BackupDir") < text.index("$files = @(")
-    assert text.index("$BackupDir") < text.index("Copy-Item -LiteralPath $source -Destination $destination -Force")
+    assert text.index("$BackupDir") < text.index("$afterHash = Write-NewsGraspAtomicFile")
     assert "Register-ScheduledTask" in text
     assert "watch-news-grasp-runner.ps1" in text
     assert "-Start" in text
@@ -2874,3 +2878,343 @@ def test_runner_executes_compound_repair_plan_before_single_gate_reverify() -> N
     assert "repair-plan" in runner
     assert "--plan-file" in runner
     assert "compound deterministic repair OK" in runner
+
+
+def _run_install_guard(command: str) -> subprocess.CompletedProcess[str]:
+    guard = OPS_DIR / "install-news-grasp-ops-guard.ps1"
+    script = (
+        "$ErrorActionPreference='Stop'; "
+        f"try {{ . '{guard}'; {command} }} catch {{ "
+        "[Console]::Error.WriteLine($_.Exception.ToString()); exit 1 }"
+    )
+    return subprocess.run(
+        [POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+
+
+def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation() -> None:
+    """runtime-root の repoDir だけを install authority とし、復旧前に照合する。"""
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    guard = (OPS_DIR / "install-news-grasp-ops-guard.ps1").read_text(encoding="utf-8-sig")
+
+    assert "function Assert-NewsGraspCanonicalInstallSource" in guard
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in guard
+    assert "[string]$runtimeRoot.repoDir" in guard
+    main = installer.split("$RepoDir = Resolve-NewsGraspRepoDir", 1)[1]
+    authority_call = main.index("Assert-NewsGraspCanonicalInstallSource")
+    assert authority_call < main.index("Recover-NewsGraspInterruptedInstall")
+    assert authority_call < main.index("$script:InstallationMutationStarted = $true")
+    pre_mutation = main.split("$script:InstallationMutationStarted = $true", 1)[0]
+    assert "Read-NewsGraspVerifiedFile" in pre_mutation
+    assert "$sourceSnapshots[$file]" in pre_mutation
+
+
+def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_path: Path) -> None:
+    canonical_repo = tmp_path / "canonical"
+    legacy_repo = tmp_path / "legacy"
+    bin_dir = tmp_path / "bin"
+    canonical_repo.mkdir()
+    legacy_repo.mkdir()
+    bin_dir.mkdir()
+    sentinel = tmp_path / "sentinel.txt"
+    sentinel.write_text("unchanged", encoding="utf-8")
+    runtime_root = {
+        "schemaVersion": "NEWS_GRASP_RUNTIME_ROOT_V1",
+        "repoDir": str(canonical_repo),
+        "pythonExe": str(tmp_path / "python.exe"),
+        "evidenceRepoDir": str(canonical_repo),
+    }
+    (bin_dir / "news-grasp-runtime-root-v1.json").write_text(
+        json.dumps(runtime_root), encoding="utf-8"
+    )
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{legacy_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @()"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+    assert sentinel.read_text(encoding="utf-8") == "unchanged"
+
+
+def test_verified_source_reader_rejects_hardlinked_authority_file(tmp_path: Path) -> None:
+    """source/hash/read は同一 handle へ束縛し、複数 hard-link の authority file を拒否する。"""
+    source = tmp_path / "source.ps1"
+    alias = tmp_path / "alias.ps1"
+    source.write_bytes(b"trusted")
+    os.link(source, alias)
+
+    completed = _run_install_guard(
+        "Read-NewsGraspVerifiedFile "
+        f"-Path '{source}' -TrustedBoundary '{tmp_path}' -RequireSingleLink"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_VERIFIED_SOURCE_HARDLINK_FORBIDDEN" in completed.stderr
+
+
+def test_verified_source_reader_and_atomic_writer_reject_symlink_entries(tmp_path: Path) -> None:
+    target = tmp_path / "target.ps1"
+    source_link = tmp_path / "source-link.ps1"
+    destination_link = tmp_path / "destination-link.ps1"
+    target.write_bytes(b"unchanged")
+    try:
+        os.symlink(target, source_link)
+        os.symlink(target, destination_link)
+    except OSError as exc:
+        target_dir = tmp_path / "junction-target"
+        junction = tmp_path / "junction"
+        target_dir.mkdir()
+        target = target_dir / "target.ps1"
+        target.write_bytes(b"unchanged")
+        junction_result = subprocess.run(
+            [
+                POWERSHELL,
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                f"New-Item -ItemType Junction -Path '{junction}' -Target '{target_dir}' | Out-Null",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            timeout=30,
+        )
+        if junction_result.returncode != 0:
+            pytest.skip(f"reparse fixture unavailable: {exc}; {junction_result.stderr}")
+        source_link = junction / "target.ps1"
+        destination_link = junction / "destination.ps1"
+
+    source_result = _run_install_guard(
+        "Read-NewsGraspVerifiedFile "
+        f"-Path '{source_link}' -TrustedBoundary '{tmp_path}' -RequireSingleLink"
+    )
+    destination_result = _run_install_guard(
+        "Write-NewsGraspAtomicFile "
+        f"-Path '{destination_link}' -TrustedBoundary '{tmp_path}' "
+        "-Bytes ([Text.Encoding]::UTF8.GetBytes('new'))"
+    )
+
+    assert source_result.returncode != 0
+    assert "REPARSE_POINT_FORBIDDEN" in source_result.stderr
+    assert destination_result.returncode != 0
+    assert "REPARSE_POINT_FORBIDDEN" in destination_result.stderr
+    assert target.read_bytes() == b"unchanged"
+
+
+def test_atomic_install_replaces_hardlink_entry_without_mutating_sibling(tmp_path: Path) -> None:
+    """live destination が hard-link でも entry を原子的に置換し、兄弟linkの内容を壊さない。"""
+    destination = tmp_path / "runner.ps1"
+    sibling = tmp_path / "runner-sibling.ps1"
+    destination.write_bytes(b"old")
+    os.link(destination, sibling)
+    payload = "[Text.Encoding]::UTF8.GetBytes('new')"
+
+    completed = _run_install_guard(
+        "Write-NewsGraspAtomicFile "
+        f"-Path '{destination}' -TrustedBoundary '{tmp_path}' -Bytes ({payload})"
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert destination.read_bytes() == b"new"
+    assert sibling.read_bytes() == b"old"
+
+
+def test_atomic_install_failure_preserves_old_destination(tmp_path: Path) -> None:
+    """commit 境界が失敗しても旧 live file は truncate されず、temp も残らない。"""
+    destination = tmp_path / "runner.ps1"
+    destination.write_bytes(b"old")
+    command = (
+        f"$held=[IO.File]::Open('{destination}',[IO.FileMode]::Open,"
+        "[IO.FileAccess]::Read,[IO.FileShare]::Read); "
+        "try { Write-NewsGraspAtomicFile "
+        f"-Path '{destination}' -TrustedBoundary '{tmp_path}' "
+        "-Bytes ([Text.Encoding]::UTF8.GetBytes('new')) } finally { $held.Dispose() }"
+    )
+
+    completed = _run_install_guard(command)
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_ATOMIC_COMMIT_FAILED" in completed.stderr
+    assert destination.read_bytes() == b"old"
+    assert not list(tmp_path.glob(".news-grasp-install-*.tmp"))
+
+
+def test_verified_rollback_restore_and_delete_do_not_mutate_hardlink_sibling(tmp_path: Path) -> None:
+    backup = tmp_path / "backup.ps1"
+    destination = tmp_path / "runner.ps1"
+    sibling = tmp_path / "runner-sibling.ps1"
+    backup.write_bytes(b"backup")
+    destination.write_bytes(b"old")
+    os.link(destination, sibling)
+
+    restored = _run_install_guard(
+        "Restore-NewsGraspVerifiedFile "
+        f"-BackupPath '{backup}' -DestinationPath '{destination}' "
+        f"-BackupBoundary '{tmp_path}' -DestinationBoundary '{tmp_path}'"
+    )
+
+    assert restored.returncode == 0, restored.stderr
+    assert destination.read_bytes() == b"backup"
+    assert sibling.read_bytes() == b"old"
+
+    removed = _run_install_guard(
+        f"Remove-NewsGraspVerifiedFile -Path '{destination}' -TrustedBoundary '{tmp_path}'"
+    )
+
+    assert removed.returncode == 0, removed.stderr
+    assert not destination.exists()
+    assert sibling.read_bytes() == b"old"
+
+
+def test_install_and_rollback_use_one_verified_atomic_file_boundary() -> None:
+    """forward/recovery/rollback の file mutation を同じ verified boundary に集約する。"""
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    boundary = (OPS_DIR / "install-news-grasp-verified-file-boundary.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    recovery = installer.split("function Invoke-NewsGraspRollbackJournal", 1)[1].split(
+        "function Recover-NewsGraspInterruptedInstall", 1
+    )[0]
+    rollback = installer.split("function Invoke-NewsGraspInstallRollback", 1)[1].split(
+        "function Write-NewsGraspInstallJournal", 1
+    )[0]
+    install = installer.split("foreach ($file in $files) {", 2)[2].split(
+        "$runtimePythonPath", 1
+    )[0]
+
+    for block in (recovery, rollback):
+        assert "Restore-NewsGraspVerifiedFile" in block
+        assert "Remove-NewsGraspVerifiedFile" in block
+        assert "Copy-Item -LiteralPath ([string]$row.backup)" not in block
+        assert "Remove-Item -LiteralPath ([string]$row.destination)" not in block
+    assert "Read-NewsGraspVerifiedFile" in install
+    assert "Write-NewsGraspAtomicFile" in install
+    assert "Copy-Item -LiteralPath $source -Destination $destination -Force" not in install
+    assert "NtSetInformationFile" in boundary
+    assert "FILE_RENAME_INFORMATION_CLASS = 10" in boundary
+    assert "GetFinalPath(temporaryHandle)" in boundary
+    assert boundary.index("renamed = true") < boundary.index(
+        "GetFinalPath(temporaryHandle)", boundary.index("renamed = true")
+    )
+    assert "if (!renamed)" in boundary
+    assert "if (!committed)" not in boundary
+    assert "ReplaceFileW" not in boundary
+    assert "MoveFileExW" not in boundary
+
+
+def test_recovery_journal_ingestion_is_handle_bound_and_complete_set_required() -> None:
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    guard = (OPS_DIR / "install-news-grasp-ops-guard.ps1").read_text(encoding="utf-8-sig")
+    recovery = installer.split("function Recover-NewsGraspInterruptedInstall", 1)[1].split(
+        "function Invoke-NewsGraspInstallRollback", 1
+    )[0]
+
+    assert "Read-NewsGraspVerifiedFile" in recovery
+    assert "-RequireSingleLink" in recovery
+    assert "Get-Content -LiteralPath $journal" not in recovery
+    assert "NEWS_GRASP_INSTALL_JOURNAL_FILE_SET_INVALID" in guard
+    assert "$seenFiles.Count -ne $allowedFiles.Count" in guard
+    assert "NEWS_GRASP_INSTALL_JOURNAL_LIVE_STATE_DRIFT" in guard
+
+
+def test_recovery_journal_missing_managed_rows_cannot_delete_live_file(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    ops = repo / "scripts" / "ops"
+    ops.mkdir(parents=True)
+    source = ops / "news-grasp-runner.ps1"
+    source.write_bytes(b"canonical")
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    destination = bin_dir / "news-grasp-runner.ps1"
+    destination.write_bytes(b"canonical")
+    backup_root = tmp_path / "backups"
+    transaction_dir = backup_root / "20260809-130000"
+    transaction_dir.mkdir(parents=True)
+    journal_path = transaction_dir / "install-manifest.json"
+    journal = {
+        "schemaVersion": "NEWS_GRASP_OPS_INSTALL_JOURNAL_V1",
+        "transaction_id": "20260809-130000",
+        "phase": "files_installed",
+        "updated_at": "2026-08-09T13:00:00+09:00",
+        "repo_dir": str(repo),
+        "bin_dir": str(bin_dir),
+        "task_pythonw_path": str(tmp_path / "pythonw.exe"),
+        "bin_dir_existed_before": True,
+        "backup_dir": str(transaction_dir),
+        "files": [
+            {
+                "file": "news-grasp-runner.ps1",
+                "source": str(source),
+                "destination": str(destination),
+                "backup": "",
+                "before_sha256": "",
+                "source_sha256": source_hash,
+                "after_sha256": source_hash,
+            }
+        ],
+        "rollback_commands": ["Invoke-NewsGraspInstallRollback"],
+        "mission_authority": {
+            "path": "",
+            "sha256": "",
+            "schema": "AUDIT_MISSION_AUTHORITY_V1",
+        },
+        "scheduled_tasks": [],
+        "task_snapshots": [],
+    }
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+    command = (
+        f"$journal=Get-Content -LiteralPath '{journal_path}' -Raw -Encoding UTF8 | ConvertFrom-Json; "
+        "Assert-NewsGraspRecoveryJournal "
+        f"-JournalPath '{journal_path}' -Journal $journal "
+        f"-ExpectedBackupRoot '{backup_root}' -ExpectedRepoDir '{repo}' "
+        f"-ExpectedBinDir '{bin_dir}' -ExpectedTaskNames @('News-Grasp Production')"
+    )
+
+    completed = _run_install_guard(command)
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_INSTALL_JOURNAL_FILE_SET_INVALID" in completed.stderr
+    assert destination.read_bytes() == b"canonical"
+
+
+def test_task_xml_backup_hash_is_checked_again_immediately_before_privileged_restore(
+    tmp_path: Path,
+) -> None:
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    guard = (OPS_DIR / "install-news-grasp-ops-guard.ps1").read_text(encoding="utf-8-sig")
+    xml_path = tmp_path / "task.xml"
+    original = "<Task><Actions /></Task>".encode("utf-16-le")
+    xml_path.write_bytes(original)
+    expected_hash = hashlib.sha256(original).hexdigest()
+    xml_path.write_bytes("<Task><Exec>attacker</Exec></Task>".encode("utf-16-le"))
+
+    completed = _run_install_guard(
+        "Read-NewsGraspVerifiedTaskXml "
+        f"-Path '{xml_path}' -TrustedBoundary '{tmp_path}' "
+        f"-ExpectedSha256 '{expected_hash}'"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_DRIFT" in completed.stderr
+    assert "xml_backup_sha256" in installer
+    assert "xml_backup_sha256" in guard
+    for marker in (
+        "function Invoke-NewsGraspRollbackJournal",
+        "function Invoke-NewsGraspInstallRollback",
+    ):
+        rollback = installer.split(marker, 1)[1]
+        assert "Read-NewsGraspVerifiedTaskXml" in rollback
+        assert "-ExpectedSha256 ([string]$snapshot.xml_backup_sha256)" in rollback

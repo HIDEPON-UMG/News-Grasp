@@ -22,19 +22,10 @@ function Write-AtomicUtf8Text {
     param([string] $Path, [string] $Text)
     $parent = Split-Path -Parent $Path
     New-Item -ItemType Directory -Force -Path $parent | Out-Null
-    $temporary = Join-Path $parent ('.' + [IO.Path]::GetFileName($Path) + '.' + [Guid]::NewGuid().ToString('N') + '.tmp')
-    $replacementBackup = $temporary + '.replace-backup'
-    try {
-        [IO.File]::WriteAllText($temporary, $Text, [Text.UTF8Encoding]::new($false))
-        if (Test-Path -LiteralPath $Path -PathType Leaf) {
-            [IO.File]::Replace($temporary, $Path, $replacementBackup, $true)
-        } else {
-            [IO.File]::Move($temporary, $Path)
-        }
-    } finally {
-        if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
-        if (Test-Path -LiteralPath $replacementBackup) { Remove-Item -LiteralPath $replacementBackup -Force }
-    }
+    Write-NewsGraspAtomicFile `
+        -Path $Path `
+        -TrustedBoundary $parent `
+        -Bytes ([Text.UTF8Encoding]::new($false).GetBytes($Text)) | Out-Null
 }
 
 function Resolve-NewsGraspRepoDir {
@@ -89,11 +80,18 @@ function Resolve-NewsGraspTaskPythonw {
 
 function Invoke-NewsGraspRollbackJournal {
     param([string] $JournalPath, [object] $Journal)
+    $journalDirectory = Split-Path -Parent $JournalPath
     foreach ($row in @($Journal.files) | Select-Object -Last 100) {
         if ([string]$row.backup -and (Test-Path -LiteralPath ([string]$row.backup) -PathType Leaf)) {
-            Copy-Item -LiteralPath ([string]$row.backup) -Destination ([string]$row.destination) -Force
+            Restore-NewsGraspVerifiedFile `
+                -BackupPath ([string]$row.backup) `
+                -DestinationPath ([string]$row.destination) `
+                -BackupBoundary $journalDirectory `
+                -DestinationBoundary ([string]$Journal.bin_dir)
         } elseif (Test-Path -LiteralPath ([string]$row.destination) -PathType Leaf) {
-            Remove-Item -LiteralPath ([string]$row.destination) -Force
+            Remove-NewsGraspVerifiedFile `
+                -Path ([string]$row.destination) `
+                -TrustedBoundary ([string]$Journal.bin_dir)
         }
     }
     foreach ($snapshot in @($Journal.task_snapshots)) {
@@ -101,7 +99,10 @@ function Invoke-NewsGraspRollbackJournal {
         $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         $taskNeedsRestore = $true
         if ([bool]$snapshot.existed_before) {
-            $xml = Get-Content -LiteralPath ([string]$snapshot.xml_backup) -Raw -Encoding Unicode
+            $xml = Read-NewsGraspVerifiedTaskXml `
+                -Path ([string]$snapshot.xml_backup) `
+                -TrustedBoundary $journalDirectory `
+                -ExpectedSha256 ([string]$snapshot.xml_backup_sha256)
             if ($currentTask) {
                 $currentXml = Export-ScheduledTask -TaskName $taskName
                 if (
@@ -123,11 +124,6 @@ function Invoke-NewsGraspRollbackJournal {
             if (-not $taskNeedsRestore) { continue }
         } else {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
-        }
-    }
-    if (-not [bool]$Journal.bin_dir_existed_before -and (Test-Path -LiteralPath ([string]$Journal.bin_dir) -PathType Container)) {
-        if (-not (Get-ChildItem -LiteralPath ([string]$Journal.bin_dir) -Force)) {
-            Remove-Item -LiteralPath ([string]$Journal.bin_dir) -Force
         }
     }
     $Journal.phase = 'rolled_back'
@@ -145,26 +141,43 @@ function Recover-NewsGraspInterruptedInstall {
     if (-not (Test-Path -LiteralPath $BackupRoot -PathType Container)) { return }
     $transactionDirs = @(
         Get-ChildItem -LiteralPath $BackupRoot -Directory |
-            Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0 } |
+            Where-Object { $_.Name -match '^\d{8}-\d{6}$' } |
             Sort-Object LastWriteTime
     )
     foreach ($transactionDir in $transactionDirs) {
-        $journalFile = Get-Item -LiteralPath (Join-Path $transactionDir.FullName 'install-manifest.json') -ErrorAction SilentlyContinue
-        if (-not $journalFile -or ($journalFile.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { continue }
-        try {
-            $journal = Get-Content -LiteralPath $journalFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-        } catch {
-            continue
+        Assert-NewsGraspNoReparsePath -Path $transactionDir.FullName -Boundary $BackupRoot
+        $journalPath = Join-Path $transactionDir.FullName 'install-manifest.json'
+        if (-not (Test-Path -LiteralPath $journalPath -PathType Leaf)) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_INGEST_MISSING'
         }
-        if ($journal.schemaVersion -eq 'NEWS_GRASP_OPS_INSTALL_JOURNAL_V1' -and $journal.phase -notin @('committed', 'rolled_back')) {
+        try {
+            $journalFile = Read-NewsGraspVerifiedFile `
+                -Path $journalPath `
+                -TrustedBoundary $BackupRoot `
+                -RequireSingleLink
+            $journal = [Text.Encoding]::UTF8.GetString($journalFile.Bytes) | ConvertFrom-Json
+        } catch {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_INGEST_INVALID'
+        }
+        if (
+            [string]$journal.schemaVersion -ne 'NEWS_GRASP_OPS_INSTALL_JOURNAL_V1' -or
+            [string]$journal.transaction_id -ne $transactionDir.Name -or
+            [string]$journal.phase -notin @(
+                'prepared', 'files_installed', 'authority_issued',
+                'tasks_registered', 'committed', 'rolled_back'
+            )
+        ) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_INGEST_INVALID'
+        }
+        if ([string]$journal.phase -notin @('committed', 'rolled_back')) {
             Assert-NewsGraspRecoveryJournal `
-                -JournalPath $journalFile.FullName `
+                -JournalPath $journalPath `
                 -Journal $journal `
                 -ExpectedBackupRoot $BackupRoot `
                 -ExpectedRepoDir $ExpectedRepoDir `
                 -ExpectedBinDir $ExpectedBinDir `
                 -ExpectedTaskNames $ExpectedTaskNames | Out-Null
-            Invoke-NewsGraspRollbackJournal -JournalPath $journalFile.FullName -Journal $journal
+            Invoke-NewsGraspRollbackJournal -JournalPath $journalPath -Journal $journal
         }
     }
 }
@@ -172,9 +185,15 @@ function Recover-NewsGraspInterruptedInstall {
 function Invoke-NewsGraspInstallRollback {
     foreach ($row in @($manifestFiles) | Select-Object -Last 100) {
         if ([string]$row.backup -and (Test-Path -LiteralPath ([string]$row.backup) -PathType Leaf)) {
-            Copy-Item -LiteralPath ([string]$row.backup) -Destination ([string]$row.destination) -Force
+            Restore-NewsGraspVerifiedFile `
+                -BackupPath ([string]$row.backup) `
+                -DestinationPath ([string]$row.destination) `
+                -BackupBoundary $BackupDir `
+                -DestinationBoundary $BinDir
         } elseif (Test-Path -LiteralPath ([string]$row.destination) -PathType Leaf) {
-            Remove-Item -LiteralPath ([string]$row.destination) -Force
+            Remove-NewsGraspVerifiedFile `
+                -Path ([string]$row.destination) `
+                -TrustedBoundary $BinDir
         }
     }
     foreach ($snapshot in $taskSnapshots) {
@@ -182,7 +201,10 @@ function Invoke-NewsGraspInstallRollback {
         $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         $taskNeedsRestore = $true
         if ([bool]$snapshot.existed_before) {
-            $xml = Get-Content -LiteralPath ([string]$snapshot.xml_backup) -Raw -Encoding Unicode
+            $xml = Read-NewsGraspVerifiedTaskXml `
+                -Path ([string]$snapshot.xml_backup) `
+                -TrustedBoundary $BackupDir `
+                -ExpectedSha256 ([string]$snapshot.xml_backup_sha256)
             if ($currentTask) {
                 $currentXml = Export-ScheduledTask -TaskName $taskName
                 if (
@@ -206,18 +228,17 @@ function Invoke-NewsGraspInstallRollback {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
-    if (-not $binDirExistedBefore -and (Test-Path -LiteralPath $BinDir -PathType Container)) {
-        if (-not (Get-ChildItem -LiteralPath $BinDir -Force)) {
-            Remove-Item -LiteralPath $BinDir -Force
-        }
-    }
 }
 
 function Write-NewsGraspInstallJournal {
     param([string] $Phase)
     $missionSha = ''
     if ($missionAuthorityPath -and (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf)) {
-        $missionSha = (Get-FileHash -LiteralPath $missionAuthorityPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $missionSnapshot = Read-NewsGraspVerifiedFile `
+            -Path $missionAuthorityPath `
+            -TrustedBoundary $BinDir `
+            -RequireSingleLink
+        $missionSha = [string]$missionSnapshot.Sha256
     }
     $journal = [ordered]@{
         schemaVersion = 'NEWS_GRASP_OPS_INSTALL_JOURNAL_V1'
@@ -249,14 +270,30 @@ function Assert-NewsGraspInstalledState {
         if (-not (Test-Path -LiteralPath $destination -PathType Leaf)) {
             throw "installed file missing: $destination"
         }
-        $sourceSha = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
-        $installedSha = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+        $sourceFile = Read-NewsGraspVerifiedFile `
+            -Path $source `
+            -TrustedBoundary $RepoDir `
+            -RequireSingleLink
+        $installedFile = Read-NewsGraspVerifiedFile `
+            -Path $destination `
+            -TrustedBoundary $BinDir `
+            -RequireSingleLink
+        $sourceSha = [string]$sourceFile.Sha256
+        $installedSha = [string]$installedFile.Sha256
         if ($sourceSha -ne $installedSha) { throw "installed file hash mismatch: $file" }
     }
-    $mission = Get-Content -LiteralPath $missionAuthorityPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $missionFile = Read-NewsGraspVerifiedFile `
+        -Path $missionAuthorityPath `
+        -TrustedBoundary $BinDir `
+        -RequireSingleLink
+    $mission = [Text.Encoding]::UTF8.GetString($missionFile.Bytes) | ConvertFrom-Json
     $missionSchema = [string]$(if ($mission.schemaVersion) { $mission.schemaVersion } else { $mission.schema })
     if ($missionSchema -ne 'AUDIT_MISSION_AUTHORITY_V1') { throw 'audit mission authority schema mismatch' }
-    $runtimeRoot = Get-Content -LiteralPath $runtimeRootPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $runtimeRootFile = Read-NewsGraspVerifiedFile `
+        -Path $runtimeRootPath `
+        -TrustedBoundary $canonicalBinDir `
+        -RequireSingleLink
+    $runtimeRoot = [Text.Encoding]::UTF8.GetString($runtimeRootFile.Bytes) | ConvertFrom-Json
     if (
         [string]$runtimeRoot.schemaVersion -ne 'NEWS_GRASP_RUNTIME_ROOT_V1' -or
         -not [string]::Equals(
@@ -338,12 +375,41 @@ $files = @(
 $RepoDir = Resolve-NewsGraspRepoDir -Override $RepoDir
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
 $ops = Join-Path $RepoDir 'scripts\ops'
+$installTrustedBoundary = (Resolve-Path -LiteralPath $env:USERPROFILE).Path
+$canonicalBinDir = Join-Path $installTrustedBoundary 'bin'
+$managedTaskNames = @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)
+$runtimeRootAuthoritySha = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ManagedTaskNames $managedTaskNames
+$sourceSnapshots = @{}
+foreach ($file in $files) {
+    $sourceSnapshots[$file] = Read-NewsGraspVerifiedFile `
+        -Path (Join-Path $ops $file) `
+        -TrustedBoundary $RepoDir `
+        -RequireSingleLink
+}
 $backupRoot = Join-Path $RepoDir 'build\live-runner-backups'
+$null = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+    -ManagedTaskNames $managedTaskNames
 Recover-NewsGraspInterruptedInstall `
     -BackupRoot $backupRoot `
     -ExpectedRepoDir $RepoDir `
     -ExpectedBinDir $BinDir `
-    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)
+    -ExpectedTaskNames $managedTaskNames
+$runtimeRootAuthoritySha = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ManagedTaskNames $managedTaskNames
 $binDirExistedBefore = Test-Path -LiteralPath $BinDir -PathType Container
 
 # backup + explicit approval + rollback: live runner overwrite must leave a restorable manifest.
@@ -352,6 +418,23 @@ $BackupDir = Join-Path $backupRoot $timestamp
 $ManifestPath = Join-Path $BackupDir 'install-manifest.json'
 $taskSnapshots = @()
 $manifestFiles = @()
+$destinationSnapshots = @{}
+$null = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+    -ManagedTaskNames $managedTaskNames
+foreach ($file in $files) {
+    $destination = Join-Path $BinDir $file
+    if (Test-Path -LiteralPath $destination) {
+        Assert-NewsGraspInstallDestination -DestinationPath $destination -CanonicalBinDir $canonicalBinDir
+        $destinationSnapshots[$file] = Read-NewsGraspVerifiedFile `
+            -Path $destination `
+            -TrustedBoundary $canonicalBinDir
+    }
+}
 $script:InstallationMutationStarted = $true
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
@@ -359,14 +442,20 @@ if (-not $SkipTaskRegistration) {
     foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         $xmlPath = Join-Path $BackupDir (("task-{0}.xml" -f ($taskName -replace '[^A-Za-z0-9._-]', '_')))
+        $taskXmlSha256 = ''
         if ($task) {
-            Export-ScheduledTask -TaskName $taskName | Set-Content -LiteralPath $xmlPath -Encoding Unicode
+            $taskXml = Export-ScheduledTask -TaskName $taskName
+            $taskXmlSha256 = Write-NewsGraspAtomicFile `
+                -Path $xmlPath `
+                -TrustedBoundary $BackupDir `
+                -Bytes ([Text.Encoding]::Unicode.GetBytes($taskXml))
         }
         $taskSnapshots += [ordered]@{
             task_name = $taskName
             existed_before = [bool]$task
             enabled_before = [bool]($task -and $task.Settings.Enabled)
             xml_backup = if ($task) { $xmlPath } else { '' }
+            xml_backup_sha256 = $taskXmlSha256
         }
     }
 }
@@ -376,11 +465,16 @@ foreach ($file in $files) {
     $destination = Join-Path $BinDir $file
     $backup = Join-Path $BackupDir $file
     $beforeHash = ''
-    if (Test-Path -LiteralPath $destination) {
-        Copy-Item -LiteralPath $destination -Destination $backup -Force
-        $beforeHash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+    if ($destinationSnapshots.ContainsKey($file)) {
+        $destinationSnapshot = $destinationSnapshots[$file]
+        Write-NewsGraspAtomicFile `
+            -Path $backup `
+            -TrustedBoundary $BackupDir `
+            -Bytes $destinationSnapshot.Bytes | Out-Null
+        $beforeHash = [string]$destinationSnapshot.Sha256
     }
-    $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+    $sourceSnapshot = $sourceSnapshots[$file]
+    $sourceHash = [string]$sourceSnapshot.Sha256
     $manifestFiles += [ordered]@{
         file = $file
         source = $source
@@ -397,8 +491,14 @@ $missionAuthorityPath = Join-Path $authorityDir 'audit-mission-authority-v1.json
 $missionAuthorityBackup = Join-Path $BackupDir 'audit-mission-authority-v1.json'
 $missionAuthorityBeforeHash = ''
 if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
-    Copy-Item -LiteralPath $missionAuthorityPath -Destination $missionAuthorityBackup -Force
-    $missionAuthorityBeforeHash = (Get-FileHash -LiteralPath $missionAuthorityPath -Algorithm SHA256).Hash
+    $missionAuthoritySnapshot = Read-NewsGraspVerifiedFile `
+        -Path $missionAuthorityPath `
+        -TrustedBoundary $BinDir
+    Write-NewsGraspAtomicFile `
+        -Path $missionAuthorityBackup `
+        -TrustedBoundary $BackupDir `
+        -Bytes $missionAuthoritySnapshot.Bytes | Out-Null
+    $missionAuthorityBeforeHash = [string]$missionAuthoritySnapshot.Sha256
 }
 $missionAuthorityRow = [ordered]@{
     file = 'audit-mission-authority-v1.json'
@@ -414,8 +514,15 @@ $runtimeRootPath = Join-Path $BinDir 'news-grasp-runtime-root-v1.json'
 $runtimeRootBackup = Join-Path $BackupDir 'news-grasp-runtime-root-v1.json'
 $runtimeRootBeforeHash = ''
 if (Test-Path -LiteralPath $runtimeRootPath -PathType Leaf) {
-    Copy-Item -LiteralPath $runtimeRootPath -Destination $runtimeRootBackup -Force
-    $runtimeRootBeforeHash = (Get-FileHash -LiteralPath $runtimeRootPath -Algorithm SHA256).Hash
+    $runtimeRootSnapshot = Read-NewsGraspVerifiedFile `
+        -Path $runtimeRootPath `
+        -TrustedBoundary $canonicalBinDir `
+        -RequireSingleLink
+    Write-NewsGraspAtomicFile `
+        -Path $runtimeRootBackup `
+        -TrustedBoundary $BackupDir `
+        -Bytes $runtimeRootSnapshot.Bytes | Out-Null
+    $runtimeRootBeforeHash = [string]$runtimeRootSnapshot.Sha256
 }
 $runtimeRootRow = [ordered]@{
     file = 'news-grasp-runtime-root-v1.json'
@@ -435,9 +542,20 @@ New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 foreach ($file in $files) {
     $source = Join-Path $ops $file
     $destination = Join-Path $BinDir $file
-    Copy-Item -LiteralPath $source -Destination $destination -Force
+    $null = Assert-NewsGraspCanonicalInstallSource `
+        -ResolvedRepoDir $RepoDir `
+        -RequestedBinDir $BinDir `
+        -CanonicalBinDir $canonicalBinDir `
+        -TrustedBoundary $installTrustedBoundary `
+        -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+        -ManagedTaskNames $managedTaskNames
+    Assert-NewsGraspInstallDestination -DestinationPath $destination -CanonicalBinDir $canonicalBinDir
+    $afterHash = Write-NewsGraspAtomicFile `
+        -Path $destination `
+        -TrustedBoundary $canonicalBinDir `
+        -Bytes $sourceSnapshots[$file].Bytes
     $row = @($manifestFiles | Where-Object { $_.file -eq $file })[0]
-    $row['after_sha256'] = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+    $row['after_sha256'] = $afterHash
 }
 $runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
 $runtimeEvidenceRepoDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $TaskPythonwPath))
@@ -447,8 +565,20 @@ $runtimeRoot = [ordered]@{
     pythonExe = $runtimePythonPath
     evidenceRepoDir = $runtimeEvidenceRepoDir
 }
+$null = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+    -ManagedTaskNames $managedTaskNames
 Write-AtomicUtf8Text -Path $runtimeRootPath -Text (($runtimeRoot | ConvertTo-Json -Depth 3) + [Environment]::NewLine)
-$runtimeRootRow['after_sha256'] = (Get-FileHash -LiteralPath $runtimeRootPath -Algorithm SHA256).Hash
+$runtimeRootInstalled = Read-NewsGraspVerifiedFile `
+    -Path $runtimeRootPath `
+    -TrustedBoundary $canonicalBinDir `
+    -RequireSingleLink
+$runtimeRootRow['after_sha256'] = [string]$runtimeRootInstalled.Sha256
+$runtimeRootAuthoritySha = [string]$runtimeRootInstalled.Sha256
 Write-NewsGraspInstallJournal -Phase 'files_installed'
 
 $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
@@ -456,13 +586,38 @@ $pythonPath = $runtimePythonPath
 if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
     throw 'News-Grasp audit mission authority broker is unavailable.'
 }
+$null = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+    -ManagedTaskNames $managedTaskNames
 New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
 $missionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+$null = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+    -ManagedTaskNames $managedTaskNames
 Write-AtomicUtf8Text -Path $missionAuthorityPath -Text ($missionAuthorityJson + [Environment]::NewLine)
-$missionAuthorityRow['after_sha256'] = (Get-FileHash -LiteralPath $missionAuthorityPath -Algorithm SHA256).Hash
+$missionAuthorityInstalled = Read-NewsGraspVerifiedFile `
+    -Path $missionAuthorityPath `
+    -TrustedBoundary $BinDir `
+    -RequireSingleLink
+$missionAuthorityRow['after_sha256'] = [string]$missionAuthorityInstalled.Sha256
 Write-NewsGraspInstallJournal -Phase 'authority_issued'
 if (-not $SkipTaskRegistration) {
+    $null = Assert-NewsGraspCanonicalInstallSource `
+        -ResolvedRepoDir $RepoDir `
+        -RequestedBinDir $BinDir `
+        -CanonicalBinDir $canonicalBinDir `
+        -TrustedBoundary $installTrustedBoundary `
+        -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+        -ManagedTaskNames $managedTaskNames
     $watcherPath = Join-Path $BinDir 'watch-news-grasp-runner.ps1'
     $bootstrapPath = Join-Path $BinDir 'news-grasp-bootstrap.ps1'
     $deadmanLauncherPath = Join-Path $BinDir 'news-grasp-deadman-launcher.pyw'

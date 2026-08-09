@@ -1,5 +1,7 @@
 ﻿Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot 'install-news-grasp-verified-file-boundary.ps1')
+
 function Get-NewsGraspCanonicalPath {
     param([Parameter(Mandatory = $true)][string] $Path)
     return [System.IO.Path]::GetFullPath($Path).TrimEnd(
@@ -15,6 +17,19 @@ function Test-NewsGraspSamePath {
         (Get-NewsGraspCanonicalPath -Path $Right),
         [System.StringComparison]::OrdinalIgnoreCase
     )
+}
+
+function Test-NewsGraspUnsafeTraversalReparsePoint {
+    param([Parameter(Mandatory = $true)][object] $Item)
+    if (($Item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {
+        return $false
+    }
+    $linkType = [string]$Item.LinkType
+    if ($linkType -in @('SymbolicLink', 'Junction')) {
+        return $true
+    }
+    $targets = @($Item.Target | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    return $targets.Count -gt 0 -and $linkType -ne 'HardLink'
 }
 
 function Assert-NewsGraspNoReparsePath {
@@ -34,7 +49,7 @@ function Assert-NewsGraspNoReparsePath {
     while ($cursor) {
         if (Test-Path -LiteralPath $cursor) {
             $item = Get-Item -LiteralPath $cursor -Force
-            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            if (Test-NewsGraspUnsafeTraversalReparsePoint -Item $item) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_REPARSE_POINT_FORBIDDEN'
             }
         }
@@ -47,6 +62,72 @@ function Assert-NewsGraspNoReparsePath {
     }
 }
 
+function Read-NewsGraspVerifiedFile {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $TrustedBoundary,
+        [switch] $RequireSingleLink
+    )
+    Assert-NewsGraspNoReparsePath -Path $Path -Boundary $TrustedBoundary
+    return [NewsGraspVerifiedFileBoundary]::ReadVerified($Path, [bool]$RequireSingleLink)
+}
+
+function Write-NewsGraspAtomicFile {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $TrustedBoundary,
+        [Parameter(Mandatory = $true)][byte[]] $Bytes
+    )
+    Assert-NewsGraspNoReparsePath -Path $Path -Boundary $TrustedBoundary
+    return [NewsGraspVerifiedFileBoundary]::WriteAtomic($Path, $Bytes)
+}
+
+function Remove-NewsGraspVerifiedFile {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $TrustedBoundary
+    )
+    $parent = Split-Path -Parent (Get-NewsGraspCanonicalPath -Path $Path)
+    Assert-NewsGraspNoReparsePath -Path $parent -Boundary $TrustedBoundary
+    [NewsGraspVerifiedFileBoundary]::DeleteVerified($Path)
+}
+
+function Restore-NewsGraspVerifiedFile {
+    param(
+        [Parameter(Mandatory = $true)][string] $BackupPath,
+        [Parameter(Mandatory = $true)][string] $DestinationPath,
+        [Parameter(Mandatory = $true)][string] $BackupBoundary,
+        [Parameter(Mandatory = $true)][string] $DestinationBoundary
+    )
+    $backup = Read-NewsGraspVerifiedFile `
+        -Path $BackupPath `
+        -TrustedBoundary $BackupBoundary `
+        -RequireSingleLink
+    Write-NewsGraspAtomicFile `
+        -Path $DestinationPath `
+        -TrustedBoundary $DestinationBoundary `
+        -Bytes $backup.Bytes | Out-Null
+}
+
+function Read-NewsGraspVerifiedTaskXml {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $TrustedBoundary,
+        [Parameter(Mandatory = $true)][string] $ExpectedSha256
+    )
+    if ($ExpectedSha256 -notmatch '^[A-Fa-f0-9]{64}$') {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_HASH_INVALID'
+    }
+    $xmlFile = Read-NewsGraspVerifiedFile `
+        -Path $Path `
+        -TrustedBoundary $TrustedBoundary `
+        -RequireSingleLink
+    if ([string]$xmlFile.Sha256 -ne $ExpectedSha256.ToLowerInvariant()) {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_DRIFT'
+    }
+    return [Text.Encoding]::Unicode.GetString($xmlFile.Bytes)
+}
+
 function Assert-NewsGraspExactKeys {
     param([object] $Value, [string[]] $Expected, [string] $Code)
     if ($null -eq $Value) { throw $Code }
@@ -55,6 +136,153 @@ function Assert-NewsGraspExactKeys {
     if ($actual.Count -ne $wanted.Count -or @(Compare-Object $actual $wanted).Count -ne 0) {
         throw $Code
     }
+}
+
+function Assert-NewsGraspCanonicalInstallSource {
+    param(
+        [Parameter(Mandatory = $true)][string] $ResolvedRepoDir,
+        [Parameter(Mandatory = $true)][string] $RequestedBinDir,
+        [Parameter(Mandatory = $true)][string] $CanonicalBinDir,
+        [Parameter(Mandatory = $true)][string] $TrustedBoundary,
+        [string] $ExpectedRuntimeRootSha256 = '',
+        [string[]] $ManagedTaskNames = @(
+            'News-Grasp Production',
+            'News-Grasp Bootstrap',
+            'News-Grasp Deadman',
+            'News-Grasp Runner'
+        )
+    )
+    $trustedRoot = Get-NewsGraspCanonicalPath -Path $TrustedBoundary
+    $trustedPrefix = $trustedRoot + [System.IO.Path]::DirectorySeparatorChar
+    foreach ($candidate in @($ResolvedRepoDir, $CanonicalBinDir)) {
+        $canonicalCandidate = Get-NewsGraspCanonicalPath -Path $candidate
+        if (
+            -not (Test-NewsGraspSamePath -Left $canonicalCandidate -Right $trustedRoot) -and
+            -not $canonicalCandidate.StartsWith($trustedPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+        ) {
+            throw 'NEWS_GRASP_INSTALL_AUTHORITY_OUTSIDE_TRUSTED_BOUNDARY'
+        }
+    }
+    Assert-NewsGraspNoReparsePath -Path $ResolvedRepoDir -Boundary $TrustedBoundary
+    if (Test-Path -LiteralPath $CanonicalBinDir -PathType Container) {
+        Assert-NewsGraspNoReparsePath -Path $CanonicalBinDir -Boundary $TrustedBoundary
+    }
+    if (-not (Test-NewsGraspSamePath -Left $RequestedBinDir -Right $CanonicalBinDir)) {
+        throw 'NEWS_GRASP_INSTALL_BIN_AUTHORITY_MISMATCH'
+    }
+
+    $runtimeRootPath = Join-Path $CanonicalBinDir 'news-grasp-runtime-root-v1.json'
+    $runtimeRootEntries = @()
+    if (Test-Path -LiteralPath $CanonicalBinDir -PathType Container) {
+        $runtimeRootEntries = @(
+            Get-ChildItem -LiteralPath $CanonicalBinDir -Force |
+                Where-Object { $_.Name -ieq 'news-grasp-runtime-root-v1.json' }
+        )
+    }
+    if ($runtimeRootEntries.Count -eq 0) {
+        if ($ExpectedRuntimeRootSha256 -and $ExpectedRuntimeRootSha256 -ne 'MISSING') {
+            throw 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_DRIFT'
+        }
+        $managedFileNames = @(
+            'run_codex_with_timeout.ps1',
+            'news-grasp-bootstrap.ps1',
+            'news-grasp-runner.ps1',
+            'news-grasp-lineage.ps1',
+            'watch-news-grasp-runner.ps1',
+            'news-grasp-deadman.ps1',
+            'news-grasp-deadman-launcher.pyw',
+            'news-grasp-task-launcher.pyw'
+        )
+        $managedFileFound = $false
+        if (Test-Path -LiteralPath $CanonicalBinDir -PathType Container) {
+            $managedFileFound = @(
+                Get-ChildItem -LiteralPath $CanonicalBinDir -Force |
+                    Where-Object { $_.Name -in $managedFileNames }
+            ).Count -gt 0
+        }
+        $managedTaskFound = $false
+        foreach ($taskName in @($ManagedTaskNames)) {
+            if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+                $managedTaskFound = $true
+                break
+            }
+        }
+        if ($managedFileFound -or $managedTaskFound) {
+            throw 'NEWS_GRASP_RUNTIME_ROOT_REQUIRED_FOR_EXISTING_INSTALL'
+        }
+        return 'MISSING'
+    }
+    if (
+        $runtimeRootEntries.Count -ne 1 -or
+        $runtimeRootEntries[0].Name -cne 'news-grasp-runtime-root-v1.json' -or
+        [bool]$runtimeRootEntries[0].PSIsContainer -or
+        (Test-NewsGraspUnsafeTraversalReparsePoint -Item $runtimeRootEntries[0])
+    ) {
+        throw 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_INVALID'
+    }
+
+    try {
+        $runtimeRootFile = Read-NewsGraspVerifiedFile `
+            -Path $runtimeRootPath `
+            -TrustedBoundary $CanonicalBinDir `
+            -RequireSingleLink
+        $runtimeRootSha256 = [string]$runtimeRootFile.Sha256
+        $runtimeRoot = [Text.Encoding]::UTF8.GetString($runtimeRootFile.Bytes) | ConvertFrom-Json
+    } catch {
+        if ($_.Exception.Message -like 'NEWS_GRASP_*') { throw }
+        throw 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_INVALID'
+    }
+    if ($ExpectedRuntimeRootSha256 -and $ExpectedRuntimeRootSha256 -ne $runtimeRootSha256) {
+        throw 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_DRIFT'
+    }
+    Assert-NewsGraspExactKeys -Value $runtimeRoot -Expected @(
+        'schemaVersion', 'repoDir', 'pythonExe', 'evidenceRepoDir'
+    ) -Code 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_INVALID'
+    if (
+        [string]$runtimeRoot.schemaVersion -ne 'NEWS_GRASP_RUNTIME_ROOT_V1' -or
+        -not [string]$runtimeRoot.repoDir -or
+        -not [string]$runtimeRoot.pythonExe -or
+        -not [string]$runtimeRoot.evidenceRepoDir -or
+        -not [System.IO.Path]::IsPathRooted([string]$runtimeRoot.repoDir) -or
+        -not [System.IO.Path]::IsPathRooted([string]$runtimeRoot.evidenceRepoDir)
+    ) {
+        throw 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_INVALID'
+    }
+    if (-not (Test-NewsGraspSamePath -Left $ResolvedRepoDir -Right ([string]$runtimeRoot.repoDir))) {
+        throw 'NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE'
+    }
+    return $runtimeRootSha256
+}
+
+function Assert-NewsGraspInstallDestination {
+    param(
+        [Parameter(Mandatory = $true)][string] $DestinationPath,
+        [Parameter(Mandatory = $true)][string] $CanonicalBinDir
+    )
+    $canonicalDestination = Get-NewsGraspCanonicalPath -Path $DestinationPath
+    $canonicalBin = Get-NewsGraspCanonicalPath -Path $CanonicalBinDir
+    if (-not (Test-NewsGraspSamePath -Left (Split-Path -Parent $canonicalDestination) -Right $canonicalBin)) {
+        throw 'NEWS_GRASP_INSTALL_DESTINATION_INVALID'
+    }
+    $expectedName = Split-Path -Leaf $canonicalDestination
+    if (Test-Path -LiteralPath $canonicalBin -PathType Container) {
+        $entries = @(
+            Get-ChildItem -LiteralPath $canonicalBin -Force |
+                Where-Object { $_.Name -ieq $expectedName }
+        )
+        if (
+            $entries.Count -gt 1 -or
+            ($entries.Count -eq 1 -and (
+                $entries[0].Name -cne $expectedName -or
+                [bool]$entries[0].PSIsContainer -or
+                (Test-NewsGraspUnsafeTraversalReparsePoint -Item $entries[0]) -or
+                -not (Test-NewsGraspSamePath -Left $entries[0].FullName -Right $canonicalDestination)
+            ))
+        ) {
+            throw 'NEWS_GRASP_INSTALL_DESTINATION_INVALID'
+        }
+    }
+    Assert-NewsGraspNoReparsePath -Path (Split-Path -Parent $canonicalDestination) -Boundary $canonicalBin
 }
 
 function Assert-NewsGraspRecoveryJournal {
@@ -129,13 +357,81 @@ function Assert-NewsGraspRecoveryJournal {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_DESTINATION_INVALID'
         }
         Assert-NewsGraspNoReparsePath -Path ([string]$row.destination) -Boundary $ExpectedBinDir
+        $beforeSha256 = [string]$row.before_sha256
+        $sourceSha256 = [string]$row.source_sha256
+        $afterSha256 = [string]$row.after_sha256
+        foreach ($hashValue in @($beforeSha256, $sourceSha256, $afterSha256)) {
+            if ($hashValue -and $hashValue -notmatch '^[A-Fa-f0-9]{64}$') {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_HASH_INVALID'
+            }
+        }
+        if ($fileName -eq 'audit-mission-authority-v1.json') {
+            if ([string]$row.source -ne 'broker:issue-news-grasp-audit-mission' -or $sourceSha256) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
+            }
+        } elseif ($fileName -eq 'news-grasp-runtime-root-v1.json') {
+            if ([string]$row.source -ne 'generated:runtime-root' -or $sourceSha256) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
+            }
+        } else {
+            $expectedSource = Join-Path (Join-Path $ExpectedRepoDir 'scripts\ops') $fileName
+            if (
+                -not (Test-NewsGraspSamePath -Left ([string]$row.source) -Right $expectedSource) -or
+                -not $sourceSha256 -or
+                ($afterSha256 -and $afterSha256 -ne $sourceSha256)
+            ) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
+            }
+            $sourceFile = Read-NewsGraspVerifiedFile `
+                -Path $expectedSource `
+                -TrustedBoundary $ExpectedRepoDir `
+                -RequireSingleLink
+            if ([string]$sourceFile.Sha256 -ne $sourceSha256) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_DRIFT'
+            }
+        }
         if ([string]$row.backup) {
             $expectedBackup = Join-Path $journalDir $fileName
             if (-not (Test-NewsGraspSamePath -Left ([string]$row.backup) -Right $expectedBackup)) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_BACKUP_INVALID'
             }
             Assert-NewsGraspNoReparsePath -Path ([string]$row.backup) -Boundary $journalDir
+            if (-not $beforeSha256) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_BACKUP_INVALID'
+            }
+            $backupFile = Read-NewsGraspVerifiedFile `
+                -Path ([string]$row.backup) `
+                -TrustedBoundary $journalDir `
+                -RequireSingleLink
+            if ([string]$backupFile.Sha256 -ne $beforeSha256) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_BACKUP_DRIFT'
+            }
+        } elseif ($beforeSha256) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_BACKUP_INVALID'
         }
+
+        $destinationExists = Test-Path -LiteralPath ([string]$row.destination) -PathType Leaf
+        $expectedLiveSha256 = if ($afterSha256) { $afterSha256 } else { $beforeSha256 }
+        if ($expectedLiveSha256) {
+            if (-not $destinationExists) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_LIVE_STATE_DRIFT'
+            }
+            $liveFile = Read-NewsGraspVerifiedFile `
+                -Path ([string]$row.destination) `
+                -TrustedBoundary $ExpectedBinDir
+            if ([string]$liveFile.Sha256 -ne $expectedLiveSha256) {
+                throw 'NEWS_GRASP_INSTALL_JOURNAL_LIVE_STATE_DRIFT'
+            }
+        } elseif ($destinationExists) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_LIVE_STATE_DRIFT'
+        }
+    }
+
+    if (
+        $seenFiles.Count -ne $allowedFiles.Count -or
+        @($allowedFiles | Where-Object { -not $seenFiles.ContainsKey($_) }).Count -ne 0
+    ) {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_FILE_SET_INVALID'
     }
 
     $rollbackCommands = @($Journal.rollback_commands)
@@ -149,7 +445,8 @@ function Assert-NewsGraspRecoveryJournal {
     $seenTasks = @{}
     foreach ($snapshot in $snapshots) {
         Assert-NewsGraspExactKeys -Value $snapshot -Expected @(
-            'task_name', 'existed_before', 'enabled_before', 'xml_backup'
+            'task_name', 'existed_before', 'enabled_before',
+            'xml_backup', 'xml_backup_sha256'
         ) -Code 'NEWS_GRASP_INSTALL_JOURNAL_TASK_SCHEMA_INVALID'
         $taskName = [string]$snapshot.task_name
         if ($taskName -notin $ExpectedTaskNames -or $seenTasks.ContainsKey($taskName)) {
@@ -162,7 +459,11 @@ function Assert-NewsGraspRecoveryJournal {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_INVALID'
             }
             Assert-NewsGraspNoReparsePath -Path ([string]$snapshot.xml_backup) -Boundary $journalDir
-        } elseif ([string]$snapshot.xml_backup) {
+            Read-NewsGraspVerifiedTaskXml `
+                -Path ([string]$snapshot.xml_backup) `
+                -TrustedBoundary $journalDir `
+                -ExpectedSha256 ([string]$snapshot.xml_backup_sha256) | Out-Null
+        } elseif ([string]$snapshot.xml_backup -or [string]$snapshot.xml_backup_sha256) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_INVALID'
         }
     }
