@@ -18,8 +18,19 @@ function Test-NewsGraspSamePath {
 }
 
 function Assert-NewsGraspNoReparsePath {
-    param([Parameter(Mandatory = $true)][string] $Path)
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $Boundary
+    )
     $cursor = Get-NewsGraspCanonicalPath -Path $Path
+    $trustedBoundary = Get-NewsGraspCanonicalPath -Path $Boundary
+    $trustedPrefix = $trustedBoundary + [System.IO.Path]::DirectorySeparatorChar
+    if (
+        -not (Test-NewsGraspSamePath -Left $cursor -Right $trustedBoundary) -and
+        -not $cursor.StartsWith($trustedPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+    ) {
+        throw 'NEWS_GRASP_INSTALL_JOURNAL_PATH_OUTSIDE_TRUSTED_ROOT'
+    }
     while ($cursor) {
         if (Test-Path -LiteralPath $cursor) {
             $item = Get-Item -LiteralPath $cursor -Force
@@ -27,8 +38,11 @@ function Assert-NewsGraspNoReparsePath {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_REPARSE_POINT_FORBIDDEN'
             }
         }
+        if (Test-NewsGraspSamePath -Left $cursor -Right $trustedBoundary) { break }
         $parent = Split-Path -Parent $cursor
-        if (-not $parent -or (Test-NewsGraspSamePath -Left $parent -Right $cursor)) { break }
+        if (-not $parent -or (Test-NewsGraspSamePath -Left $parent -Right $cursor)) {
+            throw 'NEWS_GRASP_INSTALL_JOURNAL_BOUNDARY_INVALID'
+        }
         $cursor = $parent
     }
 }
@@ -53,9 +67,9 @@ function Assert-NewsGraspRecoveryJournal {
         [Parameter(Mandatory = $true)][string[]] $ExpectedTaskNames
     )
 
-    Assert-NewsGraspNoReparsePath -Path $ExpectedBackupRoot
-    Assert-NewsGraspNoReparsePath -Path $ExpectedBinDir
-    Assert-NewsGraspNoReparsePath -Path $JournalPath
+    Assert-NewsGraspNoReparsePath -Path $ExpectedBackupRoot -Boundary $ExpectedBackupRoot
+    Assert-NewsGraspNoReparsePath -Path $ExpectedBinDir -Boundary $ExpectedBinDir
+    Assert-NewsGraspNoReparsePath -Path $JournalPath -Boundary $ExpectedBackupRoot
     Assert-NewsGraspExactKeys -Value $Journal -Expected @(
         'schemaVersion', 'transaction_id', 'phase', 'updated_at', 'repo_dir',
         'bin_dir', 'task_pythonw_path', 'bin_dir_existed_before', 'backup_dir',
@@ -92,6 +106,7 @@ function Assert-NewsGraspRecoveryJournal {
         'news-grasp-deadman.ps1',
         'news-grasp-deadman-launcher.pyw',
         'news-grasp-task-launcher.pyw',
+        'news-grasp-runtime-root-v1.json',
         'audit-mission-authority-v1.json'
     )
     $seenFiles = @{}
@@ -113,13 +128,13 @@ function Assert-NewsGraspRecoveryJournal {
         if (-not (Test-NewsGraspSamePath -Left ([string]$row.destination) -Right $expectedDestination)) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_DESTINATION_INVALID'
         }
-        Assert-NewsGraspNoReparsePath -Path ([string]$row.destination)
+        Assert-NewsGraspNoReparsePath -Path ([string]$row.destination) -Boundary $ExpectedBinDir
         if ([string]$row.backup) {
             $expectedBackup = Join-Path $journalDir $fileName
             if (-not (Test-NewsGraspSamePath -Left ([string]$row.backup) -Right $expectedBackup)) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_BACKUP_INVALID'
             }
-            Assert-NewsGraspNoReparsePath -Path ([string]$row.backup)
+            Assert-NewsGraspNoReparsePath -Path ([string]$row.backup) -Boundary $journalDir
         }
     }
 
@@ -146,7 +161,7 @@ function Assert-NewsGraspRecoveryJournal {
             if (-not (Test-NewsGraspSamePath -Left ([string]$snapshot.xml_backup) -Right $expectedXml)) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_INVALID'
             }
-            Assert-NewsGraspNoReparsePath -Path ([string]$snapshot.xml_backup)
+            Assert-NewsGraspNoReparsePath -Path ([string]$snapshot.xml_backup) -Boundary $journalDir
         } elseif ([string]$snapshot.xml_backup) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_TASK_XML_INVALID'
         }

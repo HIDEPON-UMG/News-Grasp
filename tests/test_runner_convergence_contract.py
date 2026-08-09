@@ -1637,6 +1637,7 @@ def test_deadman_task_launcher_uses_pythonw_and_create_no_window() -> None:
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert '["-RepoDir", str(repo_dir)]' in launcher_text
     assert '$deadmanArgs = "`"$deadmanLauncherPath`" --repo-dir `"$RepoDir`""' in installer_text
+    assert 'news-grasp-runtime-root-v1.json' in launcher_text
 
 
 def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
@@ -1653,6 +1654,7 @@ def test_runner_and_bootstrap_tasks_use_pythonw_no_console_launcher() -> None:
     assert 'parser.add_argument("--repo-dir", type=Path)' in launcher_text
     assert 'extra.extend(["-RepoDir", str(repo_dir)])' in launcher_text
     assert '--repo-dir `"$RepoDir`"' in installer_text
+    assert 'news-grasp-runtime-root-v1.json' in launcher_text
     assert "New-ScheduledTaskAction -Execute 'powershell.exe'" not in installer_text
     assert '/TR "powershell.exe ' not in installer_text
     assert "schtasks.exe /Create /TN $BootstrapTaskName" not in installer_text
@@ -1805,6 +1807,9 @@ def test_ops_installer_creates_backup_manifest_and_rollback_hint_before_live_ove
     assert "news-grasp-bootstrap.ps1" in text
     assert "news-grasp-lineage.ps1" in text
     assert "news-grasp-task-launcher.pyw" in text
+    assert "news-grasp-runtime-root-v1.json" in text
+    assert "NEWS_GRASP_RUNTIME_ROOT_V1" in text
+    assert "generated:runtime-root" in text
     bootstrap_text = (OPS_DIR / "news-grasp-bootstrap.ps1").read_text(encoding="utf-8-sig")
     watcher_text = (OPS_DIR / "watch-news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
     for dependency in (
@@ -1897,6 +1902,51 @@ def test_ops_installer_task_rollback_fails_closed_before_rolled_back_receipt() -
             matching = [line for line in block.splitlines() if command in line]
             assert matching
             assert all("-ErrorAction Stop" in line for line in matching), matching
+    assert "$Journal | Add-Member -NotePropertyName 'rolled_back_at'" in text
+    assert "$Journal.rolled_back_at =" not in text
+
+
+def test_ops_installer_skips_privileged_task_restore_when_snapshot_is_unchanged() -> None:
+    """task XML と enabled state が同一なら、非管理者復旧はtask mutationを呼ばない。"""
+    text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    for marker in (
+        "function Invoke-NewsGraspRollbackJournal",
+        "function Invoke-NewsGraspInstallRollback",
+    ):
+        block = text.split(marker, 1)[1]
+        assert "$taskNeedsRestore = $true" in block
+        assert "$taskNeedsRestore = $false" in block
+        assert "if (-not $taskNeedsRestore) { continue }" in block
+
+
+def test_install_guard_limits_reparse_check_to_the_trusted_managed_root() -> None:
+    """OneDrive祖先は許容し、repo配下に現れるreparseだけを拒否対象にする。"""
+    guard = OPS_DIR / "install-news-grasp-ops-guard.ps1"
+    backup_root = ROOT / "build" / "live-runner-backups"
+    command = (
+        f". '{guard}'; "
+        f"Assert-NewsGraspNoReparsePath -Path '{backup_root}' -Boundary '{ROOT}'"
+    )
+
+    completed = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", command],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_ops_installer_snapshots_legacy_tombstone_without_mutating_it() -> None:
+    """旧taskはrollback evidenceへ含めるが、管理者変更やcanonical成功扱いはしない。"""
+    text = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+
+    assert "[string] $LegacyRunnerTaskName = 'News-Grasp Runner'" in text
+    assert "@($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)" in text
+    assert "Disable-ScheduledTask -TaskName $LegacyRunnerTaskName" not in text
 
 
 def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_mutation(
@@ -1972,6 +2022,15 @@ def test_interrupted_install_rejects_forged_journal_paths_and_task_names_before_
     assert completed.returncode != 0
     assert "NEWS_GRASP_INSTALL_JOURNAL_" in completed.stderr
     assert outside.read_text(encoding="utf-8") == "unchanged"
+
+
+def test_install_guard_limits_reparse_walk_to_each_trusted_root() -> None:
+    """OneDrive等の正規親を拒否せず、trusted root外とroot内reparseだけを拒否する。"""
+    guard = (OPS_DIR / "install-news-grasp-ops-guard.ps1").read_text(encoding="utf-8-sig")
+    assert "[string] $Boundary" in guard
+    assert "NEWS_GRASP_INSTALL_JOURNAL_BOUNDARY_INVALID" in guard
+    assert "if (Test-NewsGraspSamePath -Left $cursor -Right $trustedBoundary) { break }" in guard
+    assert "Assert-NewsGraspNoReparsePath -Path $JournalPath -Boundary $ExpectedBackupRoot" in guard
 
 
 def test_watcher_repairs_live_ops_before_runner_start() -> None:

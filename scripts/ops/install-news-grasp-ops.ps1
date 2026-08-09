@@ -5,6 +5,7 @@
     [string] $RunnerTaskName = 'News-Grasp Production',
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
+    [string] $LegacyRunnerTaskName = 'News-Grasp Runner',
     [switch] $SkipTaskRegistration
 )
 
@@ -97,15 +98,30 @@ function Invoke-NewsGraspRollbackJournal {
     }
     foreach ($snapshot in @($Journal.task_snapshots)) {
         $taskName = [string]$snapshot.task_name
+        $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        $taskNeedsRestore = $true
         if ([bool]$snapshot.existed_before) {
             $xml = Get-Content -LiteralPath ([string]$snapshot.xml_backup) -Raw -Encoding Unicode
+            if ($currentTask) {
+                $currentXml = Export-ScheduledTask -TaskName $taskName
+                if (
+                    $currentXml.Trim() -eq $xml.Trim() -and
+                    [bool]$currentTask.Settings.Enabled -eq [bool]$snapshot.enabled_before
+                ) {
+                    $taskNeedsRestore = $false
+                }
+            }
+            if (-not $taskNeedsRestore) { continue }
             Register-ScheduledTask -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
             if ([bool]$snapshot.enabled_before) {
                 Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             } else {
                 Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             }
-        } elseif (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+        } elseif (-not $currentTask) {
+            $taskNeedsRestore = $false
+            if (-not $taskNeedsRestore) { continue }
+        } else {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
@@ -115,7 +131,7 @@ function Invoke-NewsGraspRollbackJournal {
         }
     }
     $Journal.phase = 'rolled_back'
-    $Journal.rolled_back_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+    $Journal | Add-Member -NotePropertyName 'rolled_back_at' -NotePropertyValue ((Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')) -Force
     Write-AtomicUtf8Text -Path $JournalPath -Text (($Journal | ConvertTo-Json -Depth 10) + [Environment]::NewLine)
 }
 
@@ -163,15 +179,30 @@ function Invoke-NewsGraspInstallRollback {
     }
     foreach ($snapshot in $taskSnapshots) {
         $taskName = [string]$snapshot.task_name
+        $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        $taskNeedsRestore = $true
         if ([bool]$snapshot.existed_before) {
             $xml = Get-Content -LiteralPath ([string]$snapshot.xml_backup) -Raw -Encoding Unicode
+            if ($currentTask) {
+                $currentXml = Export-ScheduledTask -TaskName $taskName
+                if (
+                    $currentXml.Trim() -eq $xml.Trim() -and
+                    [bool]$currentTask.Settings.Enabled -eq [bool]$snapshot.enabled_before
+                ) {
+                    $taskNeedsRestore = $false
+                }
+            }
+            if (-not $taskNeedsRestore) { continue }
             Register-ScheduledTask -TaskName $taskName -Xml $xml -Force -ErrorAction Stop | Out-Null
             if ([bool]$snapshot.enabled_before) {
                 Enable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             } else {
                 Disable-ScheduledTask -TaskName $taskName -ErrorAction Stop | Out-Null
             }
-        } elseif (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+        } elseif (-not $currentTask) {
+            $taskNeedsRestore = $false
+            if (-not $taskNeedsRestore) { continue }
+        } else {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
         }
     }
@@ -225,6 +256,17 @@ function Assert-NewsGraspInstalledState {
     $mission = Get-Content -LiteralPath $missionAuthorityPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $missionSchema = [string]$(if ($mission.schemaVersion) { $mission.schemaVersion } else { $mission.schema })
     if ($missionSchema -ne 'AUDIT_MISSION_AUTHORITY_V1') { throw 'audit mission authority schema mismatch' }
+    $runtimeRoot = Get-Content -LiteralPath $runtimeRootPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (
+        [string]$runtimeRoot.schemaVersion -ne 'NEWS_GRASP_RUNTIME_ROOT_V1' -or
+        -not [string]::Equals(
+            [System.IO.Path]::GetFullPath([string]$runtimeRoot.repoDir),
+            [System.IO.Path]::GetFullPath($RepoDir),
+            [System.StringComparison]::OrdinalIgnoreCase
+        )
+    ) {
+        throw 'runtime root binding mismatch'
+    }
     if ($SkipTaskRegistration) { return }
     $expected = @(
         [ordered]@{ name = $RunnerTaskName; execute = $pythonw; arguments = $runnerArgs; working = $BinDir; start = 'T06:00'; interval = ''; duration = '' },
@@ -297,7 +339,7 @@ Recover-NewsGraspInterruptedInstall `
     -BackupRoot $backupRoot `
     -ExpectedRepoDir $RepoDir `
     -ExpectedBinDir $BinDir `
-    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName)
+    -ExpectedTaskNames @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)
 $binDirExistedBefore = Test-Path -LiteralPath $BinDir -PathType Container
 
 # backup + explicit approval + rollback: live runner overwrite must leave a restorable manifest.
@@ -310,7 +352,7 @@ $script:InstallationMutationStarted = $true
 New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 
 if (-not $SkipTaskRegistration) {
-    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName)) {
+    foreach ($taskName in @($RunnerTaskName, $BootstrapTaskName, $DeadmanTaskName, $LegacyRunnerTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         $xmlPath = Join-Path $BackupDir (("task-{0}.xml" -f ($taskName -replace '[^A-Za-z0-9._-]', '_')))
         if ($task) {
@@ -364,6 +406,23 @@ $missionAuthorityRow = [ordered]@{
     after_sha256 = ''
 }
 $manifestFiles += $missionAuthorityRow
+$runtimeRootPath = Join-Path $BinDir 'news-grasp-runtime-root-v1.json'
+$runtimeRootBackup = Join-Path $BackupDir 'news-grasp-runtime-root-v1.json'
+$runtimeRootBeforeHash = ''
+if (Test-Path -LiteralPath $runtimeRootPath -PathType Leaf) {
+    Copy-Item -LiteralPath $runtimeRootPath -Destination $runtimeRootBackup -Force
+    $runtimeRootBeforeHash = (Get-FileHash -LiteralPath $runtimeRootPath -Algorithm SHA256).Hash
+}
+$runtimeRootRow = [ordered]@{
+    file = 'news-grasp-runtime-root-v1.json'
+    source = 'generated:runtime-root'
+    destination = $runtimeRootPath
+    backup = if (Test-Path -LiteralPath $runtimeRootBackup -PathType Leaf) { $runtimeRootBackup } else { '' }
+    before_sha256 = $runtimeRootBeforeHash
+    source_sha256 = ''
+    after_sha256 = ''
+}
+$manifestFiles += $runtimeRootRow
 $scheduledTasks = @()
 $rollbackCommands = @('Invoke-NewsGraspInstallRollback')
 Write-NewsGraspInstallJournal -Phase 'prepared'
@@ -376,6 +435,12 @@ foreach ($file in $files) {
     $row = @($manifestFiles | Where-Object { $_.file -eq $file })[0]
     $row['after_sha256'] = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
 }
+$runtimeRoot = [ordered]@{
+    schemaVersion = 'NEWS_GRASP_RUNTIME_ROOT_V1'
+    repoDir = $RepoDir
+}
+Write-AtomicUtf8Text -Path $runtimeRootPath -Text (($runtimeRoot | ConvertTo-Json -Depth 3) + [Environment]::NewLine)
+$runtimeRootRow['after_sha256'] = (Get-FileHash -LiteralPath $runtimeRootPath -Algorithm SHA256).Hash
 Write-NewsGraspInstallJournal -Phase 'files_installed'
 
 $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
