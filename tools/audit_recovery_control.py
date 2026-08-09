@@ -989,8 +989,6 @@ def _validate_recovery_authority_via_broker(
 def _verify_same_date_completion(
     *, issue_date: str, payload: dict[str, Any], expected_run_intent: str
 ) -> dict[str, Any] | None:
-    artifact_repo_root = _resolve_artifact_repo_root(payload)
-    artifact_repo_head = _validate_artifact_executable_tree(artifact_repo_root)
     runner_state_path = CANONICAL_RUNNER_STATE_PATH
     if not runner_state_path.is_file() or runner_state_path.is_symlink():
         raise ValueError("RUNNER_STATE_EVIDENCE_INVALID")
@@ -1004,6 +1002,13 @@ def _verify_same_date_completion(
         or runner_state.get("run_intent") != expected_run_intent
     ):
         return None
+    artifact_repo_root = _resolve_artifact_repo_root(
+        {
+            "artifactRepoRoot": str(runner_state.get("artifactRoot") or ""),
+            "opsRepoRoot": str(CANONICAL_REPO_ROOT),
+        }
+    )
+    _validate_artifact_executable_tree(CANONICAL_REPO_ROOT)
     wait_sec = int(payload.get("verificationWaitSec", 0))
     poll_sec = int(payload.get("verificationPollSec", 10))
     if wait_sec < 0 or wait_sec > 600 or poll_sec < 1 or poll_sec > 60:
@@ -1011,6 +1016,7 @@ def _verify_same_date_completion(
     quality_return_code, quality_stdout = _run_bounded(
         [
             sys.executable,
+            "-P",
             "-m",
             "tools.validate_daily_quality",
             "--date",
@@ -1020,6 +1026,10 @@ def _verify_same_date_completion(
         ],
         cwd=artifact_repo_root,
         timeout=180,
+        env_overrides={
+            "PYTHONPATH": str(CANONICAL_REPO_ROOT),
+            "PYTHONNOUSERSITE": "1",
+        },
     )
     if quality_return_code != 0:
         return None
@@ -1031,6 +1041,7 @@ def _verify_same_date_completion(
 
     publish = verify_publish_complete(
         repo_root=artifact_repo_root,
+        ops_repo_root=CANONICAL_REPO_ROOT,
         date=issue_date,
         remote="origin",
         branch="main",

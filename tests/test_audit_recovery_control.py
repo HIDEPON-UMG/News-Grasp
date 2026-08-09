@@ -733,6 +733,90 @@ def test_artifact_repo_rejects_unregistered_same_origin_clone(
         )
 
 
+def test_same_date_completion_separates_artifact_data_from_trusted_ops_code(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """復旧artifactのbuild証跡は保持しつつ、検証codeはcleanな現行ops treeだけを使う。"""
+    control = _control("RED_ARTIFACT_AND_OPS_ROOT_CONFLATED")
+    from tools import daily_self_heal
+
+    artifact = tmp_path / "artifact"
+    ops = tmp_path / "ops"
+    state_path = tmp_path / "bin" / "news-grasp-runner-state.json"
+    artifact.mkdir()
+    ops.mkdir()
+    state_path.parent.mkdir()
+    state_path.write_text(
+        json.dumps(
+            {
+                "date": "2026-08-09",
+                "status": "publish_complete",
+                "exit_code": 0,
+                "run_intent": "ScheduledRecoveryFull",
+                "run_id": "a" * 32,
+                "artifactRoot": str(artifact),
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(control, "CANONICAL_REPO_ROOT", ops)
+    monkeypatch.setattr(control, "CANONICAL_RUNNER_STATE_PATH", state_path)
+
+    resolved_payloads: list[dict[str, object]] = []
+    validated_roots: list[Path] = []
+    publish_calls: list[dict[str, object]] = []
+
+    def resolve(payload: dict[str, object]) -> Path:
+        resolved_payloads.append(payload)
+        return artifact
+
+    def validate(root: Path) -> str:
+        validated_roots.append(root)
+        return "b" * 40
+
+    def run_bounded(command, *, cwd, timeout, env_overrides=None):
+        assert command[1:3] == ["-P", "-m"]
+        assert cwd == artifact
+        assert env_overrides == {
+            "PYTHONPATH": str(ops),
+            "PYTHONNOUSERSITE": "1",
+        }
+        return 0, b'{"ok": true}'
+
+    def verify_publish_complete(**kwargs):
+        publish_calls.append(kwargs)
+        return {
+            "ok": True,
+            "date": "2026-08-09",
+            "artifactRoot": str(artifact),
+            "opsRoot": str(ops),
+            "dailyRootId": "c" * 64,
+            "rootOperationId": "d" * 64,
+            "producerRunIntent": "ScheduledRecoveryFull",
+            "producerOperationId": "e" * 64,
+            "lineageReceiptSha256": "f" * 64,
+        }
+
+    monkeypatch.setattr(control, "_resolve_artifact_repo_root", resolve)
+    monkeypatch.setattr(control, "_validate_artifact_executable_tree", validate)
+    monkeypatch.setattr(control, "_run_bounded", run_bounded)
+    monkeypatch.setattr(daily_self_heal, "verify_publish_complete", verify_publish_complete)
+
+    completion = control._verify_same_date_completion(
+        issue_date="2026-08-09",
+        payload={"verificationWaitSec": 0, "verificationPollSec": 10},
+        expected_run_intent="ScheduledRecoveryFull",
+    )
+
+    assert completion is not None
+    assert resolved_payloads == [
+        {"artifactRepoRoot": str(artifact), "opsRepoRoot": str(ops)}
+    ]
+    assert validated_roots == [ops]
+    assert publish_calls[0]["repo_root"] == artifact
+    assert publish_calls[0]["ops_repo_root"] == ops
+
+
 def test_artifact_tree_rejects_assume_unchanged_byte_substitution(
     monkeypatch, tmp_path: Path
 ) -> None:
