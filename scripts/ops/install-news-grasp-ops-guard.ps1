@@ -269,9 +269,15 @@ function Test-NewsGraspPromotableInstallSource {
             $relativePath = [string]$Matches[2]
             if (
                 [System.IO.Path]::IsPathRooted($relativePath) -or
-                $relativePath.StartsWith('"', [System.StringComparison]::Ordinal) -or
-                -not $trackedPathSet.Add($relativePath)
+                $relativePath.StartsWith('"', [System.StringComparison]::Ordinal)
             ) { return $false }
+            if ($relativePath.StartsWith('build/', [System.StringComparison]::Ordinal)) {
+                # build/ is an evidence and generated-artifact area.  It is
+                # scanned for reparse safety below, but is deliberately not
+                # part of the promotable source generation hash set.
+                continue
+            }
+            if (-not $trackedPathSet.Add($relativePath)) { return $false }
             $trackedPaths.Add($relativePath)
             $expectedHashes.Add($expectedHash)
         }
