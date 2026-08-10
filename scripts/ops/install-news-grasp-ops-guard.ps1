@@ -150,9 +150,10 @@ function Get-NewsGraspTrackedWorkingHashes {
         [Parameter(Mandatory = $true)][System.Collections.Generic.List[string]] $TrackedPaths,
         [Parameter(Mandatory = $true)][int] $MaxEntries
     )
-    # Feed UTF-8 path bytes directly to one git process.  stdin-paths applies
-    # the repository's canonical clean filter, so CRLF worktree bytes are
-    # compared with the exact index generation rather than a raw-file hash.
+    # Windows PowerShell 5.1 adds a UTF-8 BOM to redirected stdin even when
+    # BaseStream is used.  Pass bounded path batches as argv instead, while
+    # retaining Git's trusted system autocrlf normalization and blocking all
+    # user/global attribute and replacement-object configuration.
     $normalizedPaths = [System.Collections.Generic.List[string]]::new()
     foreach ($trackedPath in $TrackedPaths) {
         $normalizedPaths.Add(([string]$trackedPath).TrimStart([char]0xFEFF))
@@ -160,46 +161,50 @@ function Get-NewsGraspTrackedWorkingHashes {
             throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
         }
     }
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = $GitExe
-    $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
-    $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --stdin-paths'
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-    $startInfo.RedirectStandardInput = $true
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $startInfo
-    try {
-        if (-not $process.Start()) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-        $stderrTask = $process.StandardError.ReadToEndAsync()
-        $payload = [Text.Encoding]::UTF8.GetBytes((($normalizedPaths -join "`n") + "`n"))
-        $process.StandardInput.BaseStream.Write($payload, 0, $payload.Length)
-        $process.StandardInput.BaseStream.Flush()
-        $process.StandardInput.Close()
-        $process.WaitForExit()
-        $stdout = $stdoutTask.Result
-        $stderr = $stderrTask.Result
-        if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
-        if ($hashes.Count -ne $normalizedPaths.Count) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        foreach ($hash in $hashes) {
-            if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
+    $allHashes = [System.Collections.Generic.List[string]]::new()
+    for ($offset = 0; $offset -lt $normalizedPaths.Count; $offset += 128) {
+        $end = [Math]::Min($offset + 127, $normalizedPaths.Count - 1)
+        $batch = @($normalizedPaths[$offset..$end])
+        $quotedPaths = @($batch | ForEach-Object {
+                '"' + ([string]$_).Replace('"', '\"') + '"'
+            })
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = $GitExe
+        $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
+        $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object -- ' + ($quotedPaths -join ' ')
+        $startInfo.UseShellExecute = $false
+        $startInfo.CreateNoWindow = $true
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $process = [System.Diagnostics.Process]::new()
+        $process.StartInfo = $startInfo
+        try {
+            if (-not $process.Start()) {
                 throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
             }
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.Result
+            $stderr = $stderrTask.Result
+            if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
+                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+            }
+            $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
+            if ($hashes.Count -ne $batch.Count) {
+                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+            }
+            foreach ($hash in $hashes) {
+                if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
+                    throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+                }
+                $allHashes.Add(([string]$hash).ToLowerInvariant())
+            }
+        } finally {
+            $process.Dispose()
         }
-        return @($hashes | ForEach-Object { ([string]$_).ToLowerInvariant() })
-    } finally {
-        $process.Dispose()
     }
+    return @($allHashes)
 }
 
 function Test-NewsGraspPromotableInstallSource {
@@ -224,20 +229,17 @@ function Test-NewsGraspPromotableInstallSource {
             [System.Environment]::SetEnvironmentVariable($gitEnvironmentName, $null, 'Process')
         }
         $fixedGitEnvironment = @{
-            'GIT_CONFIG_NOSYSTEM' = '1'
             'GIT_CONFIG_GLOBAL' = 'NUL'
             'GIT_ATTR_NOSYSTEM' = '1'
             'GIT_OPTIONAL_LOCKS' = '0'
             'GIT_NO_REPLACE_OBJECTS' = '1'
-            'GIT_CONFIG_COUNT' = '4'
+            'GIT_CONFIG_COUNT' = '3'
             'GIT_CONFIG_KEY_0' = 'core.fsmonitor'
             'GIT_CONFIG_VALUE_0' = 'false'
             'GIT_CONFIG_KEY_1' = 'core.hooksPath'
             'GIT_CONFIG_VALUE_1' = 'NUL'
             'GIT_CONFIG_KEY_2' = 'core.attributesFile'
             'GIT_CONFIG_VALUE_2' = 'NUL'
-            'GIT_CONFIG_KEY_3' = 'core.autocrlf'
-            'GIT_CONFIG_VALUE_3' = 'false'
         }
         foreach ($fixedGitEnvironmentName in $fixedGitEnvironment.Keys) {
             [System.Environment]::SetEnvironmentVariable(
@@ -251,15 +253,6 @@ function Test-NewsGraspPromotableInstallSource {
         if (-not (Test-Path -LiteralPath $gitExe -PathType Leaf)) { return $false }
         Assert-NewsGraspNoReparsePath -Path $CurrentRepoDir -Boundary $TrustedBoundary
         Assert-NewsGraspNoReparsePath -Path $CandidateRepoDir -Boundary $TrustedBoundary
-        $eolEntries = @(& $gitExe -C $CandidateRepoDir ls-files --eol 2>$null)
-        if ($LASTEXITCODE -ne 0 -or $eolEntries.Count -gt $MaxEntries) { return $false }
-        $needsAutoCrlf = @($eolEntries | Where-Object { ([string]$_) -match '^i/lf\s+w/crlf\s' }).Count -gt 0
-        [System.Environment]::SetEnvironmentVariable(
-            'GIT_CONFIG_VALUE_3',
-            $(if ($needsAutoCrlf) { 'true' } else { 'false' }),
-            'Process'
-        )
-
         $currentTopLevelRaw = ((& $gitExe -C $CurrentRepoDir rev-parse --show-toplevel 2>$null) | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or -not $currentTopLevelRaw) { return $false }
         $candidateTopLevelRaw = ((& $gitExe -C $CandidateRepoDir rev-parse --show-toplevel 2>$null) | Out-String).Trim()
