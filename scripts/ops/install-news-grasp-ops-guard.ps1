@@ -166,13 +166,22 @@ function Get-NewsGraspTrackedWorkingHashes {
     for ($offset = 0; $offset -lt $normalizedPaths.Count; $offset += 128) {
         $end = [Math]::Min($offset + 127, $normalizedPaths.Count - 1)
         $batch = @($normalizedPaths[$offset..$end])
-        $quotedPaths = @($batch | ForEach-Object {
-                '"' + ([string]$_).Replace('"', '\"') + '"'
-            })
         $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $startInfo.FileName = $GitExe
-        $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
-        $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --no-filters -- ' + ($quotedPaths -join ' ')
+        # ProcessStartInfo.Arguments を手組みすると、Git for Windows の
+        # MSYS argv 変換が引用符を文字として残し、日本語名の tracked file
+        # を開けない。ArgumentList は Windows の argv 境界を保持する。
+        if ($null -eq $startInfo.ArgumentList) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_ARGUMENT_LIST_UNAVAILABLE'
+        }
+        $startInfo.ArgumentList.Add('-C')
+        $startInfo.ArgumentList.Add($RepoDir)
+        $startInfo.ArgumentList.Add('hash-object')
+        $startInfo.ArgumentList.Add('--no-filters')
+        $startInfo.ArgumentList.Add('--')
+        foreach ($path in $batch) {
+            $startInfo.ArgumentList.Add([string]$path)
+        }
         $startInfo.UseShellExecute = $false
         $startInfo.CreateNoWindow = $true
         $startInfo.RedirectStandardOutput = $true
