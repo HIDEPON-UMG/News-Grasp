@@ -185,6 +185,7 @@
         <li><strong>Crash／並行安全</strong> forward-only WAL、process排他lock、Windows directory handle pinでrollbackとjunction swapを拒否する。</li>
         <li><strong>WP-07</strong> 同じ12 node Green、focused regression、historical scenario、drift/replayを一回ずつ検証する。</li>
         <li><strong>WP-08</strong> safe commit、push、remote HEAD、正規installer、runtime/task parity、rollbackを閉じる。</li>
+        <li><strong>Installer generation移行</strong> 既存runtime-rootとは別pathでも、同一Git common-dir、remote main exact、通常index flag、tracked clean、reparseを含まないbuild-onlyの未追跡／ignored stateを満たすsibling worktreeだけを受理し、runtime-root移行後も同じpredicateを毎回再検証する。</li>
         <li><strong>WP-09〜10</strong> L0〜L7後にNoPublish E2Eを一回実行し、最終state vectorを提出する。</li>
       </ol>
     </section>

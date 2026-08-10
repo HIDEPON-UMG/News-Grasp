@@ -2899,13 +2899,21 @@ def _run_install_guard(command: str) -> subprocess.CompletedProcess[str]:
 
 
 def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation() -> None:
-    """runtime-root の repoDir だけを install authority とし、復旧前に照合する。"""
+    """runtime-root正本または同一common-dirのclean remote-main generationだけを許可する。"""
     installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
     guard = (OPS_DIR / "install-news-grasp-ops-guard.ps1").read_text(encoding="utf-8-sig")
 
     assert "function Assert-NewsGraspCanonicalInstallSource" in guard
     assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in guard
     assert "[string]$runtimeRoot.repoDir" in guard
+    assert "function Test-NewsGraspPromotableInstallSource" in guard
+    assert "rev-parse --show-toplevel" in guard
+    assert "refs/remotes/origin/main" in guard
+    assert "ls-files -v" in guard
+    assert "hash-object --stdin-paths" in guard
+    assert "[int] $MaxEntries = 16384" in guard
+    assert "[string]$runtimeRoot.evidenceRepoDir" in guard
+    assert "Test-NewsGraspUnsafeTraversalReparsePoint -Item $buildItem" in guard
     main = installer.split("$RepoDir = Resolve-NewsGraspRepoDir", 1)[1]
     authority_call = main.index("Assert-NewsGraspCanonicalInstallSource")
     assert authority_call < main.index("Recover-NewsGraspInterruptedInstall")
@@ -2944,6 +2952,302 @@ def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_
     assert completed.returncode != 0
     assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
     assert sentinel.read_text(encoding="utf-8") == "unchanged"
+
+
+def _install_source_generation_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    canonical_repo = tmp_path / "canonical"
+    promoted_repo = tmp_path / "promoted"
+    bin_dir = tmp_path / "bin"
+    canonical_repo.mkdir()
+    bin_dir.mkdir()
+    subprocess.run([git, "-C", str(canonical_repo), "init", "-b", "main"], check=True)
+    subprocess.run([git, "-C", str(canonical_repo), "config", "user.email", "test@example.invalid"], check=True)
+    subprocess.run([git, "-C", str(canonical_repo), "config", "user.name", "News Grasp Test"], check=True)
+    (canonical_repo / "tracked.txt").write_text("clean\n", encoding="utf-8")
+    (canonical_repo / ".gitignore").write_text(".venv/\n", encoding="utf-8")
+    subprocess.run([git, "-C", str(canonical_repo), "add", "."], check=True)
+    subprocess.run([git, "-C", str(canonical_repo), "commit", "-m", "fixture"], check=True)
+    subprocess.run(
+        [git, "-C", str(canonical_repo), "update-ref", "refs/remotes/origin/main", "HEAD"],
+        check=True,
+    )
+    subprocess.run(
+        [git, "-C", str(canonical_repo), "worktree", "add", "--detach", str(promoted_repo), "HEAD"],
+        check=True,
+    )
+    runtime_root = {
+        "schemaVersion": "NEWS_GRASP_RUNTIME_ROOT_V1",
+        "repoDir": str(canonical_repo),
+        "pythonExe": str(tmp_path / "python.exe"),
+        "evidenceRepoDir": str(canonical_repo),
+    }
+    (bin_dir / "news-grasp-runtime-root-v1.json").write_text(
+        json.dumps(runtime_root), encoding="utf-8"
+    )
+    return canonical_repo, promoted_repo, bin_dir
+
+
+def test_install_guard_accepts_clean_origin_main_sibling_worktree_promotion(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    (promoted_repo / "build" / "evidence").mkdir(parents=True)
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_install_guard_rejects_sibling_worktree_with_head_drift(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    (promoted_repo / "tracked.txt").write_text("next generation\n", encoding="utf-8")
+    subprocess.run([git, "-C", str(promoted_repo), "add", "tracked.txt"], check=True)
+    subprocess.run([git, "-C", str(promoted_repo), "commit", "-m", "drift"], check=True)
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_sibling_worktree_with_tracked_dirty_state(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    (promoted_repo / "tracked.txt").write_text("dirty\n", encoding="utf-8")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_nested_directory_inside_promotable_worktree(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    nested = promoted_repo / "build" / "evil"
+    nested.mkdir(parents=True)
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{nested}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_reparse_build_root_in_promotable_worktree(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    outside = tmp_path / "outside-build"
+    outside.mkdir()
+    build_root = promoted_repo / "build"
+    junction_result = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            f"New-Item -ItemType Junction -Path '{build_root}' -Target '{outside}' | Out-Null",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    if junction_result.returncode != 0:
+        pytest.skip(f"junction fixture unavailable: {junction_result.stderr}")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_nested_reparse_under_allowed_build_tree(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    outside = tmp_path / "outside-backups"
+    outside.mkdir()
+    sentinel = outside / "sentinel.txt"
+    sentinel.write_text("unchanged", encoding="utf-8")
+    nested_reparse = promoted_repo / "build" / "live-runner-backups"
+    nested_reparse.parent.mkdir(parents=True)
+    junction_result = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            f"New-Item -ItemType Junction -Path '{nested_reparse}' -Target '{outside}' | Out-Null",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    if junction_result.returncode != 0:
+        pytest.skip(f"junction fixture unavailable: {junction_result.stderr}")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+    assert sentinel.read_text(encoding="utf-8") == "unchanged"
+
+
+def test_install_guard_rejects_ignored_executable_payload_outside_build(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    fake_python = promoted_repo / ".venv" / "Scripts" / "python.exe"
+    fake_python.parent.mkdir(parents=True)
+    fake_python.write_bytes(b"untrusted executable")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_revalidates_generation_after_runtime_root_path_migration(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    runtime_root_path = bin_dir / "news-grasp-runtime-root-v1.json"
+    runtime_root = json.loads(runtime_root_path.read_text(encoding="utf-8"))
+    runtime_root["repoDir"] = str(promoted_repo)
+    runtime_root_path.write_text(json.dumps(runtime_root), encoding="utf-8")
+    (promoted_repo / "tracked.txt").write_text("drift after migration\n", encoding="utf-8")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_assume_unchanged_tracked_payload(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    subprocess.run(
+        [git, "-C", str(promoted_repo), "update-index", "--assume-unchanged", "tracked.txt"],
+        check=True,
+    )
+    (promoted_repo / "tracked.txt").write_text("hidden drift\n", encoding="utf-8")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_unrelated_repo_recreated_at_canonical_runtime_path(
+    tmp_path: Path,
+) -> None:
+    canonical_repo, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    runtime_root_path = bin_dir / "news-grasp-runtime-root-v1.json"
+    runtime_root = json.loads(runtime_root_path.read_text(encoding="utf-8"))
+    runtime_root["repoDir"] = str(promoted_repo)
+    runtime_root_path.write_text(json.dumps(runtime_root), encoding="utf-8")
+    subprocess.run(
+        [git, "-C", str(canonical_repo), "worktree", "remove", "--force", str(promoted_repo)],
+        check=True,
+    )
+    promoted_repo.mkdir()
+    subprocess.run([git, "-C", str(promoted_repo), "init", "-b", "main"], check=True)
+    subprocess.run([git, "-C", str(promoted_repo), "config", "user.email", "test@example.invalid"], check=True)
+    subprocess.run([git, "-C", str(promoted_repo), "config", "user.name", "Unrelated Repo"], check=True)
+    (promoted_repo / "tracked.txt").write_text("unrelated payload\n", encoding="utf-8")
+    subprocess.run([git, "-C", str(promoted_repo), "add", "."], check=True)
+    subprocess.run([git, "-C", str(promoted_repo), "commit", "-m", "unrelated"], check=True)
+    subprocess.run(
+        [git, "-C", str(promoted_repo), "update-ref", "refs/remotes/origin/main", "HEAD"],
+        check=True,
+    )
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_tracked_bytes_hidden_by_stat_cache(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    tracked = promoted_repo / "tracked.txt"
+    original_stat = tracked.stat()
+    tracked.write_bytes(b"drift\n")
+    os.utime(tracked, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_bounds_promotable_source_tree_scan(tmp_path: Path) -> None:
+    canonical_repo, promoted_repo, _ = _install_source_generation_fixture(tmp_path)
+    build_root = promoted_repo / "build"
+    build_root.mkdir()
+    for index in range(4):
+        (build_root / f"artifact-{index}.json").write_text("{}", encoding="utf-8")
+
+    completed = _run_install_guard(
+        "$result = Test-NewsGraspPromotableInstallSource "
+        f"-CurrentRepoDir '{canonical_repo}' -CandidateRepoDir '{promoted_repo}' "
+        f"-TrustedBoundary '{tmp_path}' -MaxEntries 3; "
+        "if ($result) { throw 'PROMOTABLE_SOURCE_SCAN_LIMIT_NOT_ENFORCED' }"
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_verified_source_reader_rejects_hardlinked_authority_file(tmp_path: Path) -> None:

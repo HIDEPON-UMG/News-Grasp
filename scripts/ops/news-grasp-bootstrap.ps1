@@ -340,7 +340,7 @@ if ($UseProductionRuntime) {
         schemaVersion = 'NEWS_GRASP_RUNTIME_LIFECYCLE_OWNER_V1'
         ownerPid = [int]$PID
         ownerNonce = $runtimeOwnerNonce
-        mutexName = "Global\NewsGraspProductionRuntime-$env:USERNAME"
+        mutexName = "Global\NewsGraspBootstrapOrchestration-$env:USERNAME"
         issuedAtUtc = [DateTime]::UtcNow.ToString('o')
     }
     $ownerBytes = [System.Text.UTF8Encoding]::new($false).GetBytes(
@@ -354,7 +354,7 @@ if ($UseProductionRuntime) {
     )
     $runtimeOwnerReceiptStream.Write($ownerBytes, 0, $ownerBytes.Length)
     $runtimeOwnerReceiptStream.Flush($true)
-    $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspProductionRuntime-$env:USERNAME")
+    $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspBootstrapOrchestration-$env:USERNAME")
     try {
         $runtimeMutexOwned = $runtimeMutex.WaitOne(0)
     } catch [System.Threading.AbandonedMutexException] {

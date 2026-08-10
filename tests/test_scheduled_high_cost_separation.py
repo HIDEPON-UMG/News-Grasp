@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import ctypes
+import hashlib
 import importlib.util
 import json
 import os
@@ -1164,7 +1165,7 @@ def test_bootstrap_authenticates_task_context_serializes_runtime_and_bounds_fetc
     assert "News-Grasp Bootstrap" in bootstrap
     assert "News-Grasp Runner" in bootstrap
     assert "news-grasp-task-launcher.pyw" in bootstrap
-    assert "Global\\NewsGraspProductionRuntime" in bootstrap
+    assert "Global\\NewsGraspBootstrapOrchestration" in bootstrap
     assert "WaitOne(0)" in bootstrap
     assert "AbandonedMutexException" in bootstrap
     assert "finally" in bootstrap.split("$runtimeMutex =", 1)[1]
@@ -1475,7 +1476,7 @@ def _lock_runtime_owner_receipt_for_current_process(
                 "ownerPid": os.getpid(),
                 "ownerNonce": nonce,
                 "mutexName": (
-                    f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+                    f"Global\\NewsGraspBootstrapOrchestration-{os.environ['USERNAME']}"
                 ),
                 "issuedAtUtc": "2026-08-10T03:00:00+00:00",
             },
@@ -1504,7 +1505,7 @@ def _start_runtime_lifecycle_owner(
 ) -> tuple[subprocess.Popen[str], Path, int]:
     receipt_path = home / "bin" / "news-grasp-runtime-lifecycle-owner.json"
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    mutex_name = f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+    mutex_name = f"Global\\NewsGraspBootstrapOrchestration-{os.environ['USERNAME']}"
     owner_code = r'''
 import ctypes, json, os, sys
 receipt_path, nonce, mutex_name = sys.argv[1:4]
@@ -1566,7 +1567,7 @@ def test_direct_converge_runtime_requires_same_runtime_mutex_across_processes(
         None, False, "Global\\NewsGraspProductionRuntimeConvergence"
     )
     bootstrap_handle = kernel32.CreateMutexW(
-        None, False, f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+        None, False, f"Global\\NewsGraspBootstrapOrchestration-{os.environ['USERNAME']}"
     )
     assert runtime_handle and bootstrap_handle
     assert kernel32.WaitForSingleObject(runtime_handle, 0) in (0, 0x80)
@@ -1878,10 +1879,34 @@ def _write_anchored_committed_runtime_transaction(
         "sourceCommonDir": str(launcher._git_common_dir(source)),
         "runtimePath": str(runtime),
         "quarantinePath": str(quarantine),
+        "transactionPath": str(runtime_root / "transactions" / transaction_id),
+        "replacementStagingPath": str(
+            runtime_root
+            / "transactions"
+            / transaction_id
+            / "replacement-staging"
+            / "production-runtime"
+        ),
         "issuedAtUtc": "2026-08-10T03:00:00+00:00",
     }
     authority["authoritySha256"] = launcher._sha256_json(authority)
     authority_path.write_text(json.dumps(authority), encoding="utf-8")
+    issue_path = runtime_root / "ledger" / "issues" / f"{transaction_id}.json"
+    issue_path.parent.mkdir(parents=True, exist_ok=True)
+    issue = {
+        "schemaVersion": "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_ISSUE_V1",
+        "transactionId": transaction_id,
+        "authoritySha256": authority["authoritySha256"],
+        "originSha": authority["originSha"],
+        "sourceCommonDir": authority["sourceCommonDir"],
+        "runtimePath": authority["runtimePath"],
+        "quarantinePath": authority["quarantinePath"],
+        "transactionPath": authority["transactionPath"],
+        "replacementStagingPath": authority["replacementStagingPath"],
+        "issuedAtUtc": authority["issuedAtUtc"],
+    }
+    issue["issueSha256"] = launcher._sha256_json(issue)
+    issue_path.write_text(json.dumps(issue), encoding="utf-8")
     events: list[dict[str, object]] = []
     previous = "0" * 64
     for sequence, phase in enumerate(launcher.RUNTIME_RECOVERY_PHASES, start=1):
@@ -1907,12 +1932,32 @@ def _write_anchored_committed_runtime_transaction(
         "quarantinePath": str(quarantine),
         "authorityPath": str(authority_path),
         "authoritySha256": authority["authoritySha256"],
+        "issuePath": str(issue_path),
+        "issueSha256": issue["issueSha256"],
+        "transactionPath": authority["transactionPath"],
+        "replacementStagingPath": authority["replacementStagingPath"],
         "publishOrTerminalAmbiguous": False,
         "events": events,
     }
-    (transaction_dir / "runtime-recovery.json").write_text(
-        json.dumps(journal), encoding="utf-8"
-    )
+    archive_dir = quarantine.parent
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_dir / "runtime-recovery.json"
+    archive_bytes = json.dumps(journal).encode("utf-8")
+    archive_path.write_bytes(archive_bytes)
+    terminal_path = runtime_root / "ledger" / "terminals" / f"{transaction_id}.json"
+    terminal_path.parent.mkdir(parents=True, exist_ok=True)
+    terminal = {
+        "schemaVersion": "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_TERMINAL_V1",
+        "transactionId": transaction_id,
+        "finalJournalSha256": hashlib.sha256(archive_bytes).hexdigest(),
+        "archivePath": str(archive_path),
+        "authoritySha256": authority["authoritySha256"],
+        "issuePath": str(issue_path),
+        "issueSha256": issue["issueSha256"],
+        "committedAtUtc": "2026-08-10T03:00:00+00:00",
+    }
+    terminal["terminalSha256"] = launcher._sha256_json(terminal)
+    terminal_path.write_text(json.dumps(terminal), encoding="utf-8")
 
 
 def test_runtime_recovery_remains_operational_after_64_committed_turnovers(
@@ -2390,3 +2435,189 @@ def test_broker_exposes_ledger_backed_recovery_authority_validation() -> None:
     parser_source = BROKER_PATH.read_text(encoding="utf-8-sig")
     assert "validate-news-grasp-recovery-authority" in parser_source
     assert "validate_scheduled_recovery_authority_in_store" in parser_source
+
+
+def test_runtime_recovery_rejects_third_party_outer_mutex_bypass_before_mutation(
+    tmp_path: Path,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Windows named mutex contract")
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    before = (runtime / "tracked.txt").read_bytes()
+    mutex_name = f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+    holder_code = r'''
+import ctypes, sys
+k = ctypes.WinDLL("kernel32", use_last_error=True)
+h = k.CreateMutexW(None, False, sys.argv[1])
+if not h or k.WaitForSingleObject(h, 0) not in (0, 0x80):
+    raise SystemExit(91)
+print("ready", flush=True)
+sys.stdin.readline()
+k.ReleaseMutex(h)
+k.CloseHandle(h)
+'''
+    holder = subprocess.Popen(
+        [sys.executable, "-c", holder_code, mutex_name],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    assert holder.stdout is not None
+    assert holder.stdout.readline().strip() == "ready"
+    try:
+        with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_MUTEX_BUSY"):
+            launcher.converge_production_runtime(
+                source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+            )
+    finally:
+        assert holder.stdin is not None
+        holder.stdin.write("stop\n")
+        holder.stdin.flush()
+        holder.wait(timeout=10)
+    assert (runtime / "tracked.txt").read_bytes() == before
+
+
+def test_runtime_recovery_rejects_self_consistent_forged_authority_and_prepared_journal_before_mutation(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("forged authority preserved\n", encoding="utf-8")
+    transaction_id = "20260810T120000000000Z-abcdef0123456789"
+    transaction_dir = runtime_root / "transactions" / transaction_id
+    transaction_dir.mkdir(parents=True)
+    authority_path = runtime_root / "authorities" / f"{transaction_id}.json"
+    authority_path.parent.mkdir(parents=True, exist_ok=True)
+    authority = {
+        "schemaVersion": launcher.RUNTIME_RECOVERY_AUTHORITY_SCHEMA,
+        "transactionId": transaction_id,
+        "originSha": origin_sha,
+        "sourceCommonDir": str(launcher._git_common_dir(source)),
+        "runtimePath": str(runtime),
+        "quarantinePath": str(runtime_root / "quarantine" / transaction_id / "production-runtime"),
+        "transactionPath": str(transaction_dir),
+        "replacementStagingPath": str(transaction_dir / "replacement-staging" / "production-runtime"),
+        "issuedAtUtc": "2026-08-10T03:00:00+00:00",
+    }
+    authority["authoritySha256"] = launcher._sha256_json(authority)
+    authority_path.write_text(json.dumps(authority), encoding="utf-8")
+    event = {
+        "sequence": 1,
+        "phase": "prepared",
+        "previousEventSha256": "0" * 64,
+        "observedAtUtc": "2026-08-10T03:00:00+00:00",
+        "observations": {"runtimeDirty": True},
+    }
+    event["eventSha256"] = launcher._sha256_json(event)
+    journal = {
+        "schemaVersion": launcher.RUNTIME_RECOVERY_SCHEMA,
+        "transactionId": transaction_id,
+        "phase": "prepared",
+        "originSha": origin_sha,
+        "sourceCommonDir": authority["sourceCommonDir"],
+        "runtimePath": authority["runtimePath"],
+        "quarantinePath": authority["quarantinePath"],
+        "authorityPath": str(authority_path),
+        "authoritySha256": authority["authoritySha256"],
+        "issuePath": str(runtime_root / "ledger" / "issues" / f"{transaction_id}.json"),
+        "issueSha256": "0" * 64,
+        "transactionPath": authority["transactionPath"],
+        "replacementStagingPath": authority["replacementStagingPath"],
+        "publishOrTerminalAmbiguous": False,
+        "events": [event],
+    }
+    (transaction_dir / "runtime-recovery.json").write_text(json.dumps(journal), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID"):
+        launcher.converge_production_runtime(
+            source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+        )
+    assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "forged authority preserved\n"
+
+
+def test_runtime_recovery_rejects_terminal_transaction_replay_before_mutation(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("terminal replay preserved\n", encoding="utf-8")
+    _write_anchored_committed_runtime_transaction(
+        launcher, source=source, runtime_root=runtime_root, origin_sha=origin_sha, index=999
+    )
+    transaction_id = "20260810T000000000999Z-00000000000003e7"
+    archive_path = runtime_root / "quarantine" / transaction_id / "runtime-recovery.json"
+    transaction_dir = runtime_root / "transactions" / transaction_id
+    transaction_dir.mkdir(parents=True, exist_ok=True)
+    archive_path.replace(transaction_dir / "runtime-recovery.json")
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_TERMINAL_REPLAY"):
+        launcher.converge_production_runtime(
+            source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+        )
+    assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "terminal replay preserved\n"
+
+
+def test_runtime_recovery_rejects_parent_junction_swap_without_external_write_or_move(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    parent = tmp_path / "managed"
+    try:
+        parent.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable")
+    module = _load_task_launcher_module()
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_REPARSE_INVALID"):
+        with module._managed_directory_handle(
+            parent / "child", tmp_path, "PRODUCTION_RUNTIME_REPARSE_INVALID"
+        ):
+            pass
+
+
+def test_runtime_recovery_forwards_after_partial_replacement_worktree_add_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("partial add preserved\n", encoding="utf-8")
+    real_run_git = launcher._run_git
+    injected = {"raised": False}
+
+    def crash_after_add(repo, *args, **kwargs):
+        result = real_run_git(repo, *args, **kwargs)
+        if args[:3] == ("worktree", "add", "--detach") and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_AFTER_PARTIAL_REPLACEMENT_ADD")
+        return result
+
+    monkeypatch.setattr(launcher, "_run_git", crash_after_add)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_PARTIAL_REPLACEMENT_ADD"):
+        launcher.converge_production_runtime(
+            source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+        )
+    monkeypatch.setattr(launcher, "_run_git", real_run_git)
+    recovered = launcher.converge_production_runtime(
+        source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+    )
+    assert recovered["phase"] == "committed"
+    assert _git(runtime, "rev-parse", "HEAD") == origin_sha
+    assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(encoding="utf-8") == "partial add preserved\n"
+
+
+def test_runtime_recovery_capacity_admission_precedes_runtime_move_and_bounds_metadata(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("capacity preserved\n", encoding="utf-8")
+    issue_dir = runtime_root / "ledger" / "issues"
+    issue_dir.mkdir(parents=True, exist_ok=True)
+    for index in range(launcher.RUNTIME_LEDGER_MAX_ENTRIES):
+        (issue_dir / f"capacity-{index:02d}.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED"):
+        launcher.converge_production_runtime(
+            source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+        )
+    assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "capacity preserved\n"

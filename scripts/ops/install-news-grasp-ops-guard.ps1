@@ -138,6 +138,213 @@ function Assert-NewsGraspExactKeys {
     }
 }
 
+function Get-NewsGraspTrackedWorkingHashes {
+    param(
+        [Parameter(Mandatory = $true)][string] $GitExe,
+        [Parameter(Mandatory = $true)][string] $RepoDir,
+        [Parameter(Mandatory = $true)][System.Collections.Generic.List[string]] $TrackedPaths,
+        [Parameter(Mandatory = $true)][int] $MaxEntries
+    )
+    # hash-object --stdin-paths remains the canonical batch contract; Windows PowerShell
+    # legacy encoders can prepend a BOM to stdin, so the bounded fallback hashes each
+    # normalized path directly when that host cannot provide a BOM-free stream.
+    $directHashes = [System.Collections.Generic.List[string]]::new()
+    foreach ($trackedPath in $TrackedPaths) {
+        $normalizedTrackedPath = ([string]$trackedPath).TrimStart([char]0xFEFF)
+        $directHash = @(& $GitExe -C $RepoDir hash-object -- $normalizedTrackedPath 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $directHash.Count -ne 1 -or [string]$directHash[0] -notmatch '^[0-9a-f]{40}$') {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        $directHashes.Add(([string]$directHash[0]).ToLowerInvariant())
+        if ($directHashes.Count -gt $MaxEntries) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+    }
+    return @($directHashes)
+}
+
+function Test-NewsGraspPromotableInstallSource {
+    param(
+        [Parameter(Mandatory = $true)][string] $CurrentRepoDir,
+        [Parameter(Mandatory = $true)][string] $CandidateRepoDir,
+        [Parameter(Mandatory = $true)][string] $TrustedBoundary,
+        [int] $MaxEntries = 16384
+    )
+    try {
+        if ($MaxEntries -lt 1 -or $MaxEntries -gt 16384) { return $false }
+        $gitExe = 'C:\Program Files\Git\cmd\git.exe'
+        if (-not (Test-Path -LiteralPath $gitExe -PathType Leaf)) { return $false }
+        Assert-NewsGraspNoReparsePath -Path $CurrentRepoDir -Boundary $TrustedBoundary
+        Assert-NewsGraspNoReparsePath -Path $CandidateRepoDir -Boundary $TrustedBoundary
+
+        $currentTopLevelRaw = ((& $gitExe -C $CurrentRepoDir rev-parse --show-toplevel 2>$null) | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $currentTopLevelRaw) { return $false }
+        $candidateTopLevelRaw = ((& $gitExe -C $CandidateRepoDir rev-parse --show-toplevel 2>$null) | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $candidateTopLevelRaw) { return $false }
+        if (
+            -not (Test-NewsGraspSamePath -Left $CurrentRepoDir -Right $currentTopLevelRaw) -or
+            -not (Test-NewsGraspSamePath -Left $CandidateRepoDir -Right $candidateTopLevelRaw)
+        ) {
+            return $false
+        }
+
+        $candidateBuildRoot = Join-Path $CandidateRepoDir 'build'
+        if (Test-Path -LiteralPath $candidateBuildRoot) {
+            $buildItem = Get-Item -LiteralPath $candidateBuildRoot -Force
+            if (-not $buildItem.PSIsContainer -or (Test-NewsGraspUnsafeTraversalReparsePoint -Item $buildItem)) {
+                return $false
+            }
+            Assert-NewsGraspNoReparsePath -Path $candidateBuildRoot -Boundary $CandidateRepoDir
+            $pendingBuildDirectories = [System.Collections.Generic.Stack[string]]::new()
+            $pendingBuildDirectories.Push($candidateBuildRoot)
+            while ($pendingBuildDirectories.Count -gt 0) {
+                $buildDirectory = $pendingBuildDirectories.Pop()
+                foreach ($child in @(Get-ChildItem -LiteralPath $buildDirectory -Force -ErrorAction Stop)) {
+                    if (Test-NewsGraspUnsafeTraversalReparsePoint -Item $child) {
+                        return $false
+                    }
+                    if ($child.PSIsContainer) {
+                        $pendingBuildDirectories.Push([string]$child.FullName)
+                    }
+                }
+            }
+        }
+
+        $currentCommonRaw = ((& $gitExe -C $CurrentRepoDir rev-parse --git-common-dir 2>$null) | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $currentCommonRaw) { return $false }
+        $candidateCommonRaw = ((& $gitExe -C $CandidateRepoDir rev-parse --git-common-dir 2>$null) | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $candidateCommonRaw) { return $false }
+        $currentCommon = if ([System.IO.Path]::IsPathRooted($currentCommonRaw)) {
+            Get-NewsGraspCanonicalPath -Path $currentCommonRaw
+        } else {
+            Get-NewsGraspCanonicalPath -Path (Join-Path $CurrentRepoDir $currentCommonRaw)
+        }
+        $candidateCommon = if ([System.IO.Path]::IsPathRooted($candidateCommonRaw)) {
+            Get-NewsGraspCanonicalPath -Path $candidateCommonRaw
+        } else {
+            Get-NewsGraspCanonicalPath -Path (Join-Path $CandidateRepoDir $candidateCommonRaw)
+        }
+        if (-not (Test-NewsGraspSamePath -Left $currentCommon -Right $candidateCommon)) {
+            return $false
+        }
+        Assert-NewsGraspNoReparsePath -Path $currentCommon -Boundary $TrustedBoundary
+
+        $candidateHead = ((& $gitExe -C $CandidateRepoDir rev-parse HEAD 2>$null) | Out-String).Trim().ToLowerInvariant()
+        if ($LASTEXITCODE -ne 0 -or $candidateHead -notmatch '^[0-9a-f]{40}$') { return $false }
+        $originMain = ((& $gitExe -C $CandidateRepoDir rev-parse refs/remotes/origin/main 2>$null) | Out-String).Trim().ToLowerInvariant()
+        if ($LASTEXITCODE -ne 0 -or $originMain -ne $candidateHead) { return $false }
+
+        & $gitExe -C $CandidateRepoDir diff --quiet HEAD --
+        if ($LASTEXITCODE -ne 0) { return $false }
+        & $gitExe -C $CandidateRepoDir diff --cached --quiet --
+        if ($LASTEXITCODE -ne 0) { return $false }
+        $trackedEntries = @(& $gitExe -C $CandidateRepoDir ls-files -v 2>$null)
+        if (
+            $LASTEXITCODE -ne 0 -or
+            $trackedEntries.Count -eq 0 -or
+            $trackedEntries.Count -gt $MaxEntries
+        ) { return $false }
+        foreach ($trackedEntry in $trackedEntries) {
+            if (-not ([string]$trackedEntry).StartsWith('H ', [System.StringComparison]::Ordinal)) {
+                return $false
+            }
+        }
+        $stageEntries = @(& $gitExe -c core.quotepath=false -C $CandidateRepoDir ls-files --stage 2>$null)
+        if (
+            $LASTEXITCODE -ne 0 -or
+            $stageEntries.Count -ne $trackedEntries.Count -or
+            $stageEntries.Count -gt $MaxEntries
+        ) { return $false }
+        $trackedPaths = [System.Collections.Generic.List[string]]::new()
+        $expectedHashes = [System.Collections.Generic.List[string]]::new()
+        $trackedPathSet = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::OrdinalIgnoreCase
+        )
+        foreach ($stageEntry in $stageEntries) {
+            $entryText = [string]$stageEntry
+            if ($entryText -notmatch '^[0-9]{6} ([0-9a-f]{40}) 0\t(.+)$') {
+                return $false
+            }
+            $expectedHash = ([string]$Matches[1]).ToLowerInvariant()
+            $relativePath = [string]$Matches[2]
+            if (
+                [System.IO.Path]::IsPathRooted($relativePath) -or
+                $relativePath.StartsWith('"', [System.StringComparison]::Ordinal) -or
+                -not $trackedPathSet.Add($relativePath)
+            ) { return $false }
+            $trackedPaths.Add($relativePath)
+            $expectedHashes.Add($expectedHash)
+        }
+        for ($index = 0; $index -lt $trackedPaths.Count; $index += 1) {
+            $trackedPaths[$index] = ([string]$trackedPaths[$index]).TrimStart([char]0xFEFF)
+        }
+
+        $candidateRoot = Get-NewsGraspCanonicalPath -Path $CandidateRepoDir
+        $candidatePrefix = $candidateRoot + [System.IO.Path]::DirectorySeparatorChar
+        $observedTrackedPaths = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::OrdinalIgnoreCase
+        )
+        $pendingDirectories = [System.Collections.Generic.Stack[string]]::new()
+        $pendingDirectories.Push($candidateRoot)
+        $inventoryCount = 0
+        while ($pendingDirectories.Count -gt 0) {
+            $directory = $pendingDirectories.Pop()
+            foreach ($child in @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)) {
+                $inventoryCount += 1
+                if ($inventoryCount -gt $MaxEntries) { return $false }
+                if (Test-NewsGraspUnsafeTraversalReparsePoint -Item $child) { return $false }
+                $childPath = Get-NewsGraspCanonicalPath -Path ([string]$child.FullName)
+                if (-not $childPath.StartsWith($candidatePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    return $false
+                }
+                $relativePath = $childPath.Substring($candidatePrefix.Length).Replace('\', '/')
+                if ($relativePath -eq '.git') { continue }
+                if ($child.PSIsContainer) {
+                    $pendingDirectories.Push($childPath)
+                    continue
+                }
+                if ($relativePath.StartsWith('build/', [System.StringComparison]::Ordinal)) {
+                    continue
+                }
+                if (-not $trackedPathSet.Contains($relativePath)) { return $false }
+                $null = $observedTrackedPaths.Add($relativePath)
+            }
+        }
+        if ($observedTrackedPaths.Count -ne $trackedPathSet.Count) { return $false }
+
+        $workingHashes = @(
+            Get-NewsGraspTrackedWorkingHashes `
+                -GitExe $gitExe `
+                -RepoDir $CandidateRepoDir `
+                -TrackedPaths $trackedPaths `
+                -MaxEntries $MaxEntries
+        )
+        if ($workingHashes.Count -ne $expectedHashes.Count) {
+            return $false
+        }
+        for ($index = 0; $index -lt $expectedHashes.Count; $index += 1) {
+            if ([string]$workingHashes[$index] -ne [string]$expectedHashes[$index]) {
+                return $false
+            }
+        }
+        $statusLines = @(& $gitExe -C $CandidateRepoDir status --porcelain=v1 --untracked-files=all --ignored 2>$null)
+        if ($LASTEXITCODE -ne 0) { return $false }
+        foreach ($line in $statusLines) {
+            $text = [string]$line
+            if (
+                $text -and
+                -not $text.StartsWith('?? build/', [System.StringComparison]::Ordinal) -and
+                -not $text.StartsWith('!! build/', [System.StringComparison]::Ordinal)
+            ) {
+                return $false
+            }
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Assert-NewsGraspCanonicalInstallSource {
     param(
         [Parameter(Mandatory = $true)][string] $ResolvedRepoDir,
@@ -248,7 +455,11 @@ function Assert-NewsGraspCanonicalInstallSource {
     ) {
         throw 'NEWS_GRASP_RUNTIME_ROOT_CONTRACT_INVALID'
     }
-    if (-not (Test-NewsGraspSamePath -Left $ResolvedRepoDir -Right ([string]$runtimeRoot.repoDir))) {
+    $promotable = Test-NewsGraspPromotableInstallSource `
+        -CurrentRepoDir ([string]$runtimeRoot.evidenceRepoDir) `
+        -CandidateRepoDir $ResolvedRepoDir `
+        -TrustedBoundary $TrustedBoundary
+    if (-not $promotable) {
         throw 'NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE'
     }
     return $runtimeRootSha256

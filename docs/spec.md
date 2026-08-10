@@ -433,7 +433,7 @@ historyと互換terminalの2-file更新はsealed WALで束縛する。recovery�
 
 retryは回数ではなく因果で許可する。同一cause fingerprintかつsource、runtime、config、authority、external evidence hashが不変ならretryしない。前回原因へ作用するhashが変化した場合だけ一回再許可し、command名、output cap、出力形式だけの変更をcause changeにしない。
 
-実装generationは`origin/main`起点のclean worktree、単一writer、固定source/config/task hashを使用し、dirty canonical WIPとproduction runtimeを直接編集しない。commit、fast-forward push、remote HEAD、正規installer、installed runtime byte parity、Scheduled Task定義、rollback receiptを同じgenerationへ束縛する。completion guard、deadman、runner、audit CLI、incident evidenceは同じ型付きconsumer契約を読む。
+実装generationは`origin/main`起点のclean worktree、単一writer、固定source/config/task hashを使用し、dirty canonical WIPとproduction runtimeを直接編集しない。正規installerは既存runtime-rootと別pathでも、同一Git common-dir、`HEAD == origin/main`、tracked clean、index flagが通常状態、未追跡／ignoredがreparseを含まない`build/`内だけのsibling worktreeを次のcanonical source generationとして受理する。runtime-root移行後を含む各mutation境界で同じpredicateを再評価し、それ以外のpath／HEAD／index／payload／dirty driftをmutation前に拒否する。commit、fast-forward push、remote HEAD、正規installer、installed runtime byte parity、Scheduled Task定義、rollback receiptを同じgenerationへ束縛する。completion guard、deadman、runner、audit CLI、incident evidenceは同じ型付きconsumer契約を読む。
 
 要件・設計・競合判断は`gpt-5.6-sol` Max、判断不要な機械編集と限定fixtureは`gpt-5.6-luna` Max、hash、JSON、test、parityはlocal deterministic toolが担当する。Luna packetはexact write set、baseline hash、Requirement／Acceptance／Red oracle、causal retry、delivery snapshot、`unresolvedDecisionIds=[]`を持ち、未確定decisionをLunaへ渡さない。
 
