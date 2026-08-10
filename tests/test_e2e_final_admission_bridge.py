@@ -47,6 +47,16 @@ RED_VIEWPOINTS = (
 )
 
 
+@pytest.fixture(autouse=True)
+def _synthetic_workspace_anchor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """合成repoはworkspace markerを持たないため、正本anchorだけを局所注入する。"""
+    monkeypatch.setattr(
+        bridge_module,
+        "_require_trusted_workspace_root",
+        lambda _repo: None,
+    )
+
+
 def _write_json(path: Path, value: dict[str, object]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -62,6 +72,16 @@ def _sha256(path: Path) -> str:
 
 def consume_admission(*, admission_path: Path, ledger_path: Path) -> dict[str, object]:
     """issue後にmaterializeしてvalidate-issuedを通してからconsumeする。"""
+    original_require = bridge_module._require_trusted_workspace_root
+    bridge_module._require_trusted_workspace_root = lambda _repo: None
+    try:
+        return _consume_admission_fixture(admission_path=admission_path, ledger_path=ledger_path)
+    finally:
+        bridge_module._require_trusted_workspace_root = original_require
+
+
+def _consume_admission_fixture(*, admission_path: Path, ledger_path: Path) -> dict[str, object]:
+    """合成repo用の内部materialize実装。"""
     value = json.loads(admission_path.read_text(encoding="utf-8"))
     arguments_path = Path(value["expectedRunnerArgumentsPath"])
     arguments_path.write_bytes(
@@ -146,7 +166,12 @@ def issue_admission(**kwargs: object) -> dict[str, object]:
         "runner_executable_path", Path(str(arguments["runner_path"]))
     )
     arguments.setdefault("authority_python_executable_path", Path(sys.executable))
-    return _issue_admission(**arguments)
+    original_require = bridge_module._require_trusted_workspace_root
+    bridge_module._require_trusted_workspace_root = lambda _repo: None
+    try:
+        return _issue_admission(**arguments)
+    finally:
+        bridge_module._require_trusted_workspace_root = original_require
 
 
 def _materialize_runner_arguments_only(admission: Path) -> tuple[dict[str, object], Path]:
@@ -171,6 +196,8 @@ def _lock_probe_worker(
     os.environ["LOCALAPPDATA"] = local_app_data
     os.environ["TEMP"] = temp_root
     os.environ["TMP"] = temp_root
+    # 合成repoはworkspace markerを持たないため、子processでも同じテストanchorを使う。
+    bridge_module._require_trusted_workspace_root = lambda _repo: None
     try:
         ledger = bridge_module.default_attempt_ledger_path()
         barrier.wait(timeout=15)
@@ -217,6 +244,8 @@ def _consume_claim_process_worker(
     os.environ["LOCALAPPDATA"] = local_app_data
     os.environ["TEMP"] = temp_root
     os.environ["TMP"] = temp_root
+    # 合成repoはworkspace markerを持たないため、子processでも同じテストanchorを使う。
+    bridge_module._require_trusted_workspace_root = lambda _repo: None
     admission = Path(admission_text)
     ledger = Path(ledger_text)
     parent = Path(parent_text)
@@ -1332,6 +1361,36 @@ def test_expected_parent_path_composition_is_red_before_authorize_fix(
     arguments_path.write_bytes(bridge_module._canonical_runner_arguments_bytes(arguments))
 
 
+def test_issue_rejects_authority_python_when_workspace_anchor_is_unavailable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """workspace正本を発見できないbridge直呼出しはauthority Pythonを受理しない。"""
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    monkeypatch.setattr(
+        bridge_module,
+        "_require_trusted_workspace_root",
+        lambda _repo: (_ for _ in ()).throw(
+            E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID")
+        ),
+    )
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_AUTHORITY_PYTHON_INVALID"):
+        _issue_admission(
+            issue_date="2026-08-01",
+            canonical_product_id="News-Grasp",
+            repo_root=repo,
+            runner_path=runner,
+            runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+            expected_parent_authority_path=repo / "admission.json.high-cost-parent-authority.json",
+            runner_arguments_path=repo / "admission.json.runner-arguments.json",
+            runner_executable_path=runner,
+            authority_python_executable_path=Path(sys.executable),
+            evidence_bindings=_green_evidence(tmp_path / "untrusted", repo_root=repo),
+            output_path=repo / "admission.json",
+        )
 def test_immutable_admission_reservation_and_claim_composition_is_red(
     tmp_path: Path,
 ) -> None:

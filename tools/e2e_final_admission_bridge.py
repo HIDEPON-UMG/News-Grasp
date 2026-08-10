@@ -434,6 +434,15 @@ def _trusted_workspace_root(repo_root: Path) -> Path | None:
     return None
 
 
+def _require_trusted_workspace_root(repo_root: Path) -> Path:
+    """authority Python の発行・再検証を workspace 正本へ束縛する。"""
+
+    trusted = _trusted_workspace_root(repo_root)
+    if trusted is None:
+        raise E2EFinalAdmissionError("E2E_AUTHORITY_PYTHON_INVALID")
+    return trusted
+
+
 def _canonical_directory(path: Path, *, code: str) -> Path:
     try:
         resolved = Path(path).resolve(strict=True)
@@ -1252,7 +1261,7 @@ def issue_admission(
         raise E2EFinalAdmissionError("E2E_PRODUCT_ID_INVALID")
     try:
         repo = _canonical_directory(repo_root, code="E2E_RUNNER_INVALID")
-        trusted_workspace = _trusted_workspace_root(repo)
+        trusted_workspace = _require_trusted_workspace_root(repo)
         runner = _canonical_file(
             runner_path,
             code="E2E_RUNNER_INVALID",
@@ -1542,7 +1551,7 @@ def _validate_runtime_bindings(
         repo_root = _canonical_directory(
             Path(str(value["repoRoot"])), code="E2E_ADMISSION_INVALID"
         )
-        trusted_workspace = _trusted_workspace_root(repo_root)
+        trusted_workspace = _require_trusted_workspace_root(repo_root)
         runner = _canonical_file(
             Path(str(value["runnerPath"])),
             code="E2E_RUNNER_INVALID",

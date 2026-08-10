@@ -59,7 +59,7 @@ def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
     gate = text.split("function Assert-HighCostOperationAdmission", 1)[1].split("# ===== sentinel", 1)[0]
     assert "'admit'" in gate or '"admit"' in gate
     assert "blocked_high_cost" not in gate
-    assert "if (-not $HighCostParentAuthorityPath)" in gate
+    assert "if (-not $incomingHighCostParentAuthorityPath)" in gate
     assert "HIGH_COST_OPERATION_ADMISSION_V1" in gate
     assert "activated" in gate
     assert "'scheduled_production'" in gate
@@ -101,7 +101,7 @@ def test_wrapper_and_runner_do_not_reserve_two_full_e2e_attempts() -> None:
     nopublish_gate = runner_gate.split("if ($NoPublish)", 1)[1].split(
         "\n    if ($HighCostAdmissionPath)", 1
     )[0]
-    assert "if (-not $HighCostParentAuthorityPath)" in nopublish_gate
+    assert "if (-not $incomingHighCostParentAuthorityPath)" in nopublish_gate
     assert "return" in nopublish_gate
     assert "'admit'" not in nopublish_gate
 
@@ -298,11 +298,8 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
     evidence = workspace / "tools" / "harness" / "high_cost_operation_budget.py"
     evidence.parent.mkdir(parents=True, exist_ok=True)
     evidence.write_text("fixture\n", encoding="utf-8")
-    profile_python = Path(sys.base_prefix) / "python.exe"
-    if not profile_python.is_file() or profile_python.is_symlink():
-        raise AssertionError(
-            f"base interpreter fixture unavailable: {profile_python}"
-        )
+    profile_python = workspace / "python.exe"
+    profile_python.write_bytes(b"MZ synthetic authority executable\n")
     args = [
         "powershell.exe",
         "-NoProfile",
@@ -404,19 +401,24 @@ def _bridge_fixture_support():
 
 def _claim_fixture_admission(bridge_module, admission: Path, ledger: Path, *, reservation: Path | None = None):
     value = json.loads(admission.read_text(encoding="utf-8"))
-    return bridge_module.claim_runner(
-        admission_path=admission,
-        ledger_path=ledger,
-        runner_arguments=list(value["runnerArguments"]),
-        parent_authority_path=Path(value["expectedParentAuthorityPath"]),
-        runner_arguments_path=Path(value["expectedRunnerArgumentsPath"]),
-        reservation_receipt=reservation or Path(value["expectedReservationReceiptPath"]),
-        claim_output=Path(value["expectedClaimReceiptPath"]),
-        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
-        actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
-        current_runner_pid=os.getpid(),
-        claim_nonce="a" * 64,
-    )
+    original_require = bridge_module._require_trusted_workspace_root
+    bridge_module._require_trusted_workspace_root = lambda _repo: None
+    try:
+        return bridge_module.claim_runner(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=list(value["runnerArguments"]),
+            parent_authority_path=Path(value["expectedParentAuthorityPath"]),
+            runner_arguments_path=Path(value["expectedRunnerArgumentsPath"]),
+            reservation_receipt=reservation or Path(value["expectedReservationReceiptPath"]),
+            claim_output=Path(value["expectedClaimReceiptPath"]),
+            actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(value["authorityPythonExecutablePath"]),
+            current_runner_pid=os.getpid(),
+            claim_nonce="a" * 64,
+        )
+    finally:
+        bridge_module._require_trusted_workspace_root = original_require
 
 
 def test_immutable_admission_bytes_and_typed_reservation_rejections(tmp_path: Path) -> None:

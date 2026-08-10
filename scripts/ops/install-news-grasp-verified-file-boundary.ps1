@@ -328,7 +328,7 @@ public static class NewsGraspVerifiedFileBoundary
         }
     }
 
-    public static NewsGraspVerifiedFileData ReadVerified(string path, bool requireSingleLink)
+    public static NewsGraspVerifiedFileData ReadVerified(string path, bool requireSingleLink, long maxBytes)
     {
         string parent = Path.GetDirectoryName(NormalizePath(path));
         using (SafeFileHandle parentHandle = OpenVerifiedDirectory(parent))
@@ -342,6 +342,12 @@ public static class NewsGraspVerifiedFileBoundary
         using (FileStream stream = new FileStream(fileHandle, FileAccess.Read))
         using (MemoryStream memory = new MemoryStream())
         {
+            BY_HANDLE_FILE_INFORMATION before = GetInformation(fileHandle);
+            ulong fileSize = ((ulong)before.FileSizeHigh << 32) | before.FileSizeLow;
+            if (maxBytes > 0 && fileSize > (ulong)maxBytes)
+            {
+                throw new IOException("NEWS_GRASP_VERIFIED_FILE_TOO_LARGE");
+            }
             stream.CopyTo(memory);
             byte[] bytes = memory.ToArray();
             BY_HANDLE_FILE_INFORMATION after = GetInformation(fileHandle);
@@ -414,7 +420,7 @@ public static class NewsGraspVerifiedFileBoundary
             throw new IOException("NEWS_GRASP_ATOMIC_POSTCOMMIT_VERIFICATION_FAILED");
         }
 
-        NewsGraspVerifiedFileData installed = ReadVerified(destination, true);
+        NewsGraspVerifiedFileData installed = ReadVerified(destination, true, 0);
         string expectedHash = HashBytes(bytes);
         if (!String.Equals(installed.Sha256, expectedHash, StringComparison.OrdinalIgnoreCase))
         {

@@ -385,6 +385,36 @@ $runtimeRootAuthoritySha = Assert-NewsGraspCanonicalInstallSource `
     -CanonicalBinDir $canonicalBinDir `
     -TrustedBoundary $installTrustedBoundary `
     -ManagedTaskNames $managedTaskNames
+$runtimeEvidenceRepoDir = if ($EvidenceRepoDir) {
+    if (-not (Test-Path -LiteralPath $EvidenceRepoDir -PathType Container)) {
+        throw "指定されたEvidence repoが見つかりません: $EvidenceRepoDir"
+    }
+    (Resolve-Path -LiteralPath $EvidenceRepoDir).Path
+} else {
+    throw 'NEWS_GRASP_EVIDENCE_REPO_REQUIRED'
+}
+Assert-NewsGraspNoReparsePath -Path $runtimeEvidenceRepoDir -Boundary $installTrustedBoundary
+if (Test-NewsGraspSamePath -Left $runtimeEvidenceRepoDir -Right $RepoDir) {
+    throw 'NEWS_GRASP_EVIDENCE_REPO_SELF_REFERENCE_FORBIDDEN'
+}
+$existingRuntimeRootPath = Join-Path $canonicalBinDir 'news-grasp-runtime-root-v1.json'
+if (Test-Path -LiteralPath $existingRuntimeRootPath -PathType Leaf) {
+    $existingRuntimeRootSnapshot = Read-NewsGraspVerifiedFile `
+        -Path $existingRuntimeRootPath `
+        -TrustedBoundary $canonicalBinDir `
+        -MaxBytes 65536 `
+        -RequireSingleLink
+    if ([string]$existingRuntimeRootSnapshot.Sha256 -cne [string]$runtimeRootAuthoritySha) {
+        throw 'NEWS_GRASP_EVIDENCE_REPO_GENERATION_DRIFT'
+    }
+    $existingRuntimeRoot = [Text.Encoding]::UTF8.GetString($existingRuntimeRootSnapshot.Bytes) | ConvertFrom-Json
+    if (
+        $existingRuntimeRoot.evidenceRepoDir -and
+        -not (Test-NewsGraspSamePath -Left $runtimeEvidenceRepoDir -Right ([string]$existingRuntimeRoot.evidenceRepoDir))
+    ) {
+        throw 'NEWS_GRASP_EVIDENCE_REPO_GENERATION_DRIFT'
+    }
+}
 $sourceSnapshots = @{}
 foreach ($file in $files) {
     $sourceSnapshots[$file] = Read-NewsGraspVerifiedFile `
@@ -559,15 +589,6 @@ foreach ($file in $files) {
     $row['after_sha256'] = $afterHash
 }
 $runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
-$runtimeEvidenceRepoDir = if ($EvidenceRepoDir) {
-    if (-not (Test-Path -LiteralPath $EvidenceRepoDir -PathType Container)) {
-        throw "指定されたEvidence repoが見つかりません: $EvidenceRepoDir"
-    }
-    (Resolve-Path -LiteralPath $EvidenceRepoDir).Path
-} else {
-    Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $TaskPythonwPath))
-}
-Assert-NewsGraspNoReparsePath -Path $runtimeEvidenceRepoDir -Boundary $installTrustedBoundary
 $runtimeRoot = [ordered]@{
     schemaVersion = 'NEWS_GRASP_RUNTIME_ROOT_V1'
     repoDir = $RepoDir

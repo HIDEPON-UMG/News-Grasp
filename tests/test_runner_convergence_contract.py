@@ -2914,16 +2914,28 @@ def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation()
     assert "rev-parse --show-toplevel" in guard
     assert "refs/remotes/origin/main" in guard
     assert "ls-files -v" in guard
-    assert "hash-object -- " in guard
+    assert "hash-object --no-filters -- " in guard
     assert "'GIT_CONFIG_GLOBAL' = 'NUL'" in guard
     assert "'GIT_ATTR_NOSYSTEM' = '1'" in guard
     assert "'GIT_NO_REPLACE_OBJECTS' = '1'" in guard
-    assert "'GIT_CONFIG_NOSYSTEM'" not in guard
+    assert "'GIT_CONFIG_NOSYSTEM' = '1'" in guard
     assert "diff --quiet HEAD --" not in guard
     assert "diff --cached --quiet --no-ext-diff --no-textconv --" in guard
     assert "[int] $MaxEntries = 16384" in guard
     assert "[string]$runtimeRoot.evidenceRepoDir" in guard
     assert "[string] $EvidenceRepoDir" in installer
+    assert "NEWS_GRASP_EVIDENCE_REPO_REQUIRED" in installer
+    assert "NEWS_GRASP_EVIDENCE_REPO_SELF_REFERENCE_FORBIDDEN" in installer
+    assert "Read-NewsGraspVerifiedFile" in installer
+    assert "existingRuntimeRootSnapshot.Sha256" in installer
+    assert "runtimeRootAuthoritySha" in installer
+    assert "Get-Content -LiteralPath $existingRuntimeRootPath -Raw" not in installer
+    assert "[int64] $MaxBytes" in guard
+    assert "-MaxBytes 65536" in guard
+    assert "-MaxBytes 65536" in installer
+    evidence_validation = installer.index("$runtimeEvidenceRepoDir = if ($EvidenceRepoDir)")
+    mutation_start = installer.index("$script:InstallationMutationStarted = $true")
+    assert evidence_validation < mutation_start
     assert "Test-NewsGraspUnsafeTraversalReparsePoint -Item $buildItem" in guard
     main = installer.split("$RepoDir = Resolve-NewsGraspRepoDir", 1)[1]
     authority_call = main.index("Assert-NewsGraspCanonicalInstallSource")

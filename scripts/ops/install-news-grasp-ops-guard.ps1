@@ -71,10 +71,11 @@ function Read-NewsGraspVerifiedFile {
     param(
         [Parameter(Mandatory = $true)][string] $Path,
         [Parameter(Mandatory = $true)][string] $TrustedBoundary,
+        [int64] $MaxBytes = 0,
         [switch] $RequireSingleLink
     )
     Assert-NewsGraspNoReparsePath -Path $Path -Boundary $TrustedBoundary
-    return [NewsGraspVerifiedFileBoundary]::ReadVerified($Path, [bool]$RequireSingleLink)
+    return [NewsGraspVerifiedFileBoundary]::ReadVerified($Path, [bool]$RequireSingleLink, $MaxBytes)
 }
 
 function Write-NewsGraspAtomicFile {
@@ -171,7 +172,7 @@ function Get-NewsGraspTrackedWorkingHashes {
         $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $startInfo.FileName = $GitExe
         $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
-        $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object -- ' + ($quotedPaths -join ' ')
+        $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --no-filters -- ' + ($quotedPaths -join ' ')
         $startInfo.UseShellExecute = $false
         $startInfo.CreateNoWindow = $true
         $startInfo.RedirectStandardOutput = $true
@@ -230,6 +231,7 @@ function Test-NewsGraspPromotableInstallSource {
         }
         $fixedGitEnvironment = @{
             'GIT_CONFIG_GLOBAL' = 'NUL'
+            'GIT_CONFIG_NOSYSTEM' = '1'
             'GIT_ATTR_NOSYSTEM' = '1'
             'GIT_OPTIONAL_LOCKS' = '0'
             'GIT_NO_REPLACE_OBJECTS' = '1'
@@ -530,6 +532,7 @@ function Assert-NewsGraspCanonicalInstallSource {
         $runtimeRootFile = Read-NewsGraspVerifiedFile `
             -Path $runtimeRootPath `
             -TrustedBoundary $CanonicalBinDir `
+            -MaxBytes 65536 `
             -RequireSingleLink
         $runtimeRootSha256 = [string]$runtimeRootFile.Sha256
         $runtimeRoot = [Text.Encoding]::UTF8.GetString($runtimeRootFile.Bytes) | ConvertFrom-Json
