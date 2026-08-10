@@ -2,6 +2,11 @@
 
 . (Join-Path $PSScriptRoot 'install-news-grasp-verified-file-boundary.ps1')
 
+function Test-NewsGraspWindowsAbsolutePath {
+    param([Parameter(Mandatory = $true)][string] $Path)
+    return $Path -match '^(?:[A-Za-z]:[\\/]|\\\\)'
+}
+
 function Get-NewsGraspCanonicalPath {
     param([Parameter(Mandatory = $true)][string] $Path)
     return [System.IO.Path]::GetFullPath($Path).TrimEnd(
@@ -224,13 +229,15 @@ function Test-NewsGraspPromotableInstallSource {
             'GIT_ATTR_NOSYSTEM' = '1'
             'GIT_OPTIONAL_LOCKS' = '0'
             'GIT_NO_REPLACE_OBJECTS' = '1'
-            'GIT_CONFIG_COUNT' = '3'
+            'GIT_CONFIG_COUNT' = '4'
             'GIT_CONFIG_KEY_0' = 'core.fsmonitor'
             'GIT_CONFIG_VALUE_0' = 'false'
             'GIT_CONFIG_KEY_1' = 'core.hooksPath'
             'GIT_CONFIG_VALUE_1' = 'NUL'
             'GIT_CONFIG_KEY_2' = 'core.attributesFile'
             'GIT_CONFIG_VALUE_2' = 'NUL'
+            'GIT_CONFIG_KEY_3' = 'core.autocrlf'
+            'GIT_CONFIG_VALUE_3' = 'false'
         }
         foreach ($fixedGitEnvironmentName in $fixedGitEnvironment.Keys) {
             [System.Environment]::SetEnvironmentVariable(
@@ -244,6 +251,14 @@ function Test-NewsGraspPromotableInstallSource {
         if (-not (Test-Path -LiteralPath $gitExe -PathType Leaf)) { return $false }
         Assert-NewsGraspNoReparsePath -Path $CurrentRepoDir -Boundary $TrustedBoundary
         Assert-NewsGraspNoReparsePath -Path $CandidateRepoDir -Boundary $TrustedBoundary
+        $eolEntries = @(& $gitExe -C $CandidateRepoDir ls-files --eol 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $eolEntries.Count -gt $MaxEntries) { return $false }
+        $needsAutoCrlf = @($eolEntries | Where-Object { ([string]$_) -match '^i/lf\s+w/crlf\s' }).Count -gt 0
+        [System.Environment]::SetEnvironmentVariable(
+            'GIT_CONFIG_VALUE_3',
+            $(if ($needsAutoCrlf) { 'true' } else { 'false' }),
+            'Process'
+        )
 
         $currentTopLevelRaw = ((& $gitExe -C $CurrentRepoDir rev-parse --show-toplevel 2>$null) | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or -not $currentTopLevelRaw) { return $false }
@@ -288,12 +303,12 @@ function Test-NewsGraspPromotableInstallSource {
         if ($LASTEXITCODE -ne 0 -or -not $currentCommonRaw) { return $false }
         $candidateCommonRaw = ((& $gitExe -C $CandidateRepoDir rev-parse --git-common-dir 2>$null) | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or -not $candidateCommonRaw) { return $false }
-        $currentCommon = if ([System.IO.Path]::IsPathRooted($currentCommonRaw)) {
+        $currentCommon = if (Test-NewsGraspWindowsAbsolutePath -Path $currentCommonRaw) {
             Get-NewsGraspCanonicalPath -Path $currentCommonRaw
         } else {
             Get-NewsGraspCanonicalPath -Path (Join-Path $CurrentRepoDir $currentCommonRaw)
         }
-        $candidateCommon = if ([System.IO.Path]::IsPathRooted($candidateCommonRaw)) {
+        $candidateCommon = if (Test-NewsGraspWindowsAbsolutePath -Path $candidateCommonRaw) {
             Get-NewsGraspCanonicalPath -Path $candidateCommonRaw
         } else {
             Get-NewsGraspCanonicalPath -Path (Join-Path $CandidateRepoDir $candidateCommonRaw)
