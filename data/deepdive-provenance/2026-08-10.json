@@ -1,0 +1,23 @@
+{
+  "articlePath": "digest/DeepDive/2026-08-10-DeepDive.md",
+  "articleSha256": "a9d16ad95613273bd4b294389db138e21e9dccd90fadd1762b2bf9920c797794",
+  "issueDate": "2026-08-10",
+  "manifestSha256": "8a01366402b9978cb79fe11f571d2911ffd90db6ab570e5e11f442dd7c9c6ead",
+  "schemaVersion": "DEEPDIVE_SOURCE_PROVENANCE_V1",
+  "sourceSetSha256": "da829f63146a4e388754c783813f2a12a248ba4d37186dc6457166cfd69dfc1f",
+  "sources": [
+    {
+      "contentSha256": "bb69b4344c6838b124ff49df2130da9719956ab886e3d8e9dfde0fe380e06152",
+      "fetchedAt": "2026-08-10T01:10:16.797000+00:00",
+      "finalUrl": "https://www.pref.hokkaido.lg.jp/ss/tkk/hodo/gcomment/r6/185000.html",
+      "httpStatus": 200,
+      "locations": [
+        "refs",
+        "timeline"
+      ],
+      "publicHref": "https://www.pref.hokkaido.lg.jp/ss/tkk/hodo/gcomment/r6/185000.html",
+      "url": "https://www.pref.hokkaido.lg.jp/ss/tkk/hodo/gcomment/r6/185000.html"
+    }
+  ],
+  "status": "Green"
+}

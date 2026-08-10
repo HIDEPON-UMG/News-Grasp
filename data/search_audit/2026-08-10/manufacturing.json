@@ -1,0 +1,131 @@
+{
+  "date": "2026-08-10",
+  "category_id": "manufacturing",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "Stage1 dedup candidate review: manufacturing.jsonl",
+    "selected candidate article-page date and OGP verification"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {
+      "title": "アップル、中国ＣＸＭＴのメモリー半導体を試験 部品不足で＝ＷＳＪ",
+      "url": "https://jp.reuters.com/economy/SZ63EGVN7FNOFE26NW6ZR2KWVY-2026-08-09/",
+      "reason": "記事本文と独立した公開日証拠を取得できず、RSS時刻を代用しないため未採用"
+    },
+    {
+      "title": "半導体やAI関連株の再動意を見極め／オープニングコメント",
+      "url": "https://kabutan.jp/news/marketnews/?b=n202608100043",
+      "reason": "株式市況コメントが中心で、製造能力・技術・供給網の構造変化が薄い"
+    },
+    {
+      "title": "インド再エネ大手、超高純度グリーンアンモニア製造事業に着手(インド) | ビジネス短信",
+      "url": "https://www.jetro.go.jp/biznews/2026/08/fa2746686512f09a.html",
+      "reason": "製造関連性はあるが、OGPが記事固有画像ではなく企業ロゴだったため未採用"
+    },
+    {
+      "title": "「被災確認に2日以上かかります」 東海地区の自動車製造業で広がる初動の空白！ なぜ現場は「報告待ち」から抜け出せないのか？（Merkmal）",
+      "url": "https://news.yahoo.co.jp/articles/ff30b8a16a1ff6a27f62e4bb5952044ff12430cb",
+      "reason": "サプライチェーン論点は重要だが、転載・解説記事で一次情報度が相対的に低い"
+    },
+    {
+      "title": "日本の製造用ロボット市場規模、2034年までに51,300台を突破へ（CAGR 15.89%）",
+      "url": "https://www.atpress.ne.jp/news/5105730",
+      "reason": "市場予測のプレスリリースで、一次情報による当日構造変化としての確度が低い"
+    },
+    {
+      "title": "台湾｢新型新幹線｣で見えた日台ビジネスのリアル 製造費めぐり交渉難航｢破談の危機｣乗り越え完成",
+      "url": "https://toyokeizai.net/articles/-/954002",
+      "reason": "製造案件としては有益だが、当日号の半導体・部品供給網シグナルより優先度が低い"
+    },
+    {
+      "title": "半導体がどうやって作られるかがゲーム風のビジュアルと説明で簡単にすぐわかる「ChipTycoon」",
+      "url": "https://gigazine.net/news/20260810-chip-tycoon/",
+      "reason": "教育コンテンツであり、製造業の競争力・投資・量産判断のニュースではない"
+    },
+    {
+      "title": "光電融合が圧倒、AI推論も 読まれた記事〜半導体編",
+      "url": "https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC054AU0V00C26A8000000",
+      "reason": "既報の反響まとめで、当日発生した新しい製造上の決定ではない"
+    },
+    {
+      "title": "高市戦略17分野、AI用半導体に賭け 官民68兆円投資の勝算は？",
+      "url": "https://www.nikkei.com/article/DGXZQOUA231UJ0T20C26A7000000/",
+      "reason": "過去月の解説記事でfreshness gate外のため未採用"
+    },
+    {
+      "title": "国際学会「ECTC 2026」まとめ読み AI半導体に「限界論」",
+      "url": "https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC056D70V00C26A8000000",
+      "reason": "学会まとめ記事で、当日号の一次的な設備投資・量産決定より優先度が低い"
+    },
+    {
+      "title": "自民・山際大志郎氏、日の丸半導体へ「政府は徹底的に関与」",
+      "url": "https://www.nikkei.com/article/DGXZQOUA0557C0V00C26A8000000/",
+      "reason": "政策発言の解説で、具体的な製造投資・実行計画の一次情報が薄い"
+    },
+    {
+      "title": "住友ベークライト株が最高値接近 世界シェア4割の半導体材料好調、中国に照準",
+      "url": "https://www.nikkei.com/prime/veritas/article/DGXZQOUC039XT0T00C26A8000000",
+      "reason": "株価中心の解説で、製造業の新規投資・量産判断が主題ではない"
+    },
+    {
+      "title": "静岡・東西工業 新工場稼働で断熱パネル生産能力3倍、環境試験用",
+      "url": "https://www.nikkei.com/article/DGXZQOCC088RT0Y6A700C2000000/",
+      "reason": "設備増強は重要だが、採用5件と比べて産業波及・技術深度が相対的に低い"
+    },
+    {
+      "title": "ラピダスに神風は吹くのか…半導体戦争・自民党のキーマンが解説する「日の丸企業のこれからの出口戦略」",
+      "url": "https://gendai.media/articles/-/169718",
+      "reason": "解説記事で、北海道クラスターの政府公表という一次的な当日材料を優先"
+    },
+    {
+      "title": "テスラ「テラファブ」計画の衝撃",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/at/18/00012/00227/",
+      "reason": "計画解説で、当日ページ確認できた設備投資・量産記事より優先度が低い"
+    },
+    {
+      "title": "「半導体ルネッサンス」を推進してきた自民党のキーマンが明かす「ニッポンの勝ち筋」",
+      "url": "https://gendai.media/articles/-/169717",
+      "reason": "解説記事で、具体的な当日投資決定の情報が薄い"
+    },
+    {
+      "title": "「タウの法則」でTSMCに挑戦",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/at/18/00145/00003/",
+      "reason": "過去の技術解説でfreshness gate外のため未採用"
+    },
+    {
+      "title": "サンG、フーコック空港隣接地にスマート機内食工場 12月稼働［経済］",
+      "url": "https://www.viet-jo.com/news/economy/260807133328.html",
+      "reason": "海外工場案件だが、記事公開日が当日窓外で採用優先度が低い"
+    },
+    {
+      "title": "工場棟に「和（やわらぎ）」のカフェ風社員食堂 広島の自動車部品製造ワイテック【社食探訪 気になる企業の一皿】",
+      "url": "https://www.chugoku-np.co.jp/articles/-/876806",
+      "reason": "工場紹介であり、製造能力・技術・供給網の変化を扱わない"
+    },
+    {
+      "title": "キリンビール横浜工場の「新ガーデンBBQ」へ！手ぶら＆極上ビールで楽しむ最高の夏飲み体験",
+      "url": "https://www.walkerplus.com/article/1425095/",
+      "reason": "工場を扱うが製造業の競争力・生産技術のニュースではない"
+    },
+    {
+      "url": "https://newswitch.jp/p/49955",
+      "reason": "quarantined by gate"
+    },
+    {
+      "url": "https://newswitch.jp/p/49961",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

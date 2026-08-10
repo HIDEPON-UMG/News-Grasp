@@ -1,0 +1,131 @@
+{
+  "date": "2026-08-10",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "Stage1 deduped candidate canonical/date validation: economy",
+    "tools/fetch_article_body.py + tools/fetch_ogp.py selected candidate validation"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "canonical_validation": {
+    "method": "tools/fetch_article_body.py + tools/fetch_ogp.py",
+    "validated_count": 5,
+    "date_evidence_source": "htmldate",
+    "thumb_status": "all selected URLs have external HTTP(S) images"
+  },
+  "dropped": [
+    {
+      "title": "インフレ統計が試金石、原油・債券利回りも注視＝今週の米株式市場",
+      "url": "https://jp.reuters.com/markets/japan/LHGPWQJSCNPCVGKL4MNW27MD5E-2026-08-09/",
+      "reason": "本文とOGPを取得できず、記事単位の事実確認を完了できないため"
+    },
+    {
+      "title": "2026.8.19_対大阪経済大",
+      "url": "https://www.giants.jp/game/sangun_26081930_0/",
+      "reason": "カテゴリ不一致（野球日程）"
+    },
+    {
+      "title": "「高付加価値なら値上げに理解」 キユーピー社長がみる景気",
+      "url": "https://www.nikkei.com/article/DGXZQOCB238410T20C26A6000000/",
+      "reason": "有料記事の公開部分は確認したが、5件の優先順位で選外"
+    },
+    {
+      "title": "きょうの主な経済指標・スケジュール＞７月景気ウオッチャー調査、住友鉱が決算発表 速報",
+      "url": "https://kabushiki.jp/news/762916",
+      "reason": "日次予定表で独立したニュース性が弱いため"
+    },
+    {
+      "title": "税金の先食い続く今夏 経済担当・伊藤友一",
+      "url": "https://www.chugoku-np.co.jp/articles/-/863546",
+      "reason": "論説テーマで、当日の統計・制度・決算より優先度が低いため"
+    },
+    {
+      "title": "8月10日（月）に決算発表を予定している企業リスト",
+      "url": "https://shikiho.toyokeizai.net/news/0/954021",
+      "reason": "発表予定の一覧で、個別の新材料がないため"
+    },
+    {
+      "title": "《経済やわらかゼミ》夏休み海外旅行6年ぶり減 円安、燃料費高騰で二の足",
+      "url": "https://www.jomo-news.co.jp/articles/-/997411",
+      "reason": "消費テーマは確認したが、当日のマクロ・制度記事より優先度が低いため"
+    },
+    {
+      "title": "トランプ大統領、イランに「控えめな対応を取っている」 経済的圧力維持を強調 「兵士に給与払う資金もない」",
+      "url": "https://www.fnn.jp/articles/-/1091861",
+      "reason": "イラン情勢はNHK候補と同一論点で重複するため"
+    },
+    {
+      "title": "本日の決算発表予定 … サンリオ、住友鉱、楽天グループなど 243社 (8月10日)(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/30b1d643ba2cdb3f9ee7e18c57120efe4cdb9b6e",
+      "reason": "決算予定一覧で、個別の業績材料がないため"
+    },
+    {
+      "title": "本日の経済スケジュール ─ 国際収支など",
+      "url": "https://s.kabutan.jp/news/n202608100010/",
+      "reason": "経済スケジュールの再掲で、独立した論点がないため"
+    },
+    {
+      "title": "ピクテ･バイオ医薬品ファンド(毎月決算型)為替ヘッジなしコース【4231104A】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/4231104A",
+      "reason": "記事ではなく金融商品の個別ページのため"
+    },
+    {
+      "title": "イラン 米に補償求める 米は経済的圧力示唆で駆け引き続く",
+      "url": "https://news.web.nhk/newsweb/na/nd-20260810de43045",
+      "reason": "イラン情勢は経済カテゴリの当日優先軸から外し、同一論点の重複を避けたため"
+    },
+    {
+      "title": "毎日新聞「経済プレミア」より：成年後見制度の大改革「家族信託は万能」論は変わるか 渡辺精一",
+      "url": "https://weekly-economist.mainichi.jp/articles/20260805/se1/00m/020/004000d",
+      "reason": "制度解説の公開部分が限定的で、当日の優先度が低いため"
+    },
+    {
+      "title": "【米国市場】インフレ指標とAI関連決算、史上最高値の株式市場を試す試金石に",
+      "url": "https://finance.biggo.jp/news/2788c74e-416c-401c-a245-0b7ca3427dc1",
+      "reason": "二次転載系の媒体で、直接確認できた国内制度・決算記事を優先したため"
+    },
+    {
+      "title": "高齢者の入り口を考える 主任研究員 望月泰介",
+      "url": "https://www.sannichi.co.jp/article/2026/08/10/00896074?g=se_0619",
+      "reason": "社会保障の論点で、経済カテゴリの当日優先軸との適合が弱いため"
+    },
+    {
+      "title": "講壇／需要弱く供給過剰、中国の「K字型」経済 日本国際問題研究所客員研究員（現代中国研究家）・津上俊哉",
+      "url": "https://www.nikkan.co.jp/articles/view/00788990",
+      "reason": "会員限定の論考で公開本文が限定的なため、速報性のある統計記事を優先"
+    },
+    {
+      "title": "【米ドル円】8月第3週の為替相場にインパクトを与える「重要な経済指標」【解説：東京海上アセットマネジメント】",
+      "url": "https://news.yahoo.co.jp/articles/e80cb3bde85c5cc79e7419eed84e5c8e6f5fa8f2",
+      "reason": "為替は独立カテゴリFXへ振り分けるため"
+    },
+    {
+      "title": "経済プラス：お盆は「家じまい」を話し合う好機？ 「隠れ空き家」に注意を",
+      "url": "https://mainichi.jp/articles/20260806/k00/00m/020/329000c",
+      "reason": "社会・不動産の深掘り記事で、当日のマクロ・企業論点より優先度が低いため"
+    },
+    {
+      "title": "生産者への感謝を形に 第１回さとうきびまつり 与論町｜社会・経済",
+      "url": "https://www.nankainn.com/news/p-economy/%E7%94%9F%E7%94%A3%E8%80%85%E3%81%B8%E3%81%AE%E6%84%9F%E8%AC%9D%E3%82%92%E5%BD%A2%E3%81%AB%E3%80%80%E7%AC%AC%EF%BC%91%E5%9B%9E%E3%81%95%E3%81%A8%E3%81%86%E3%81%8D%E3%81%B3%E3%81%BE%E3%81%A4%E3%82%8A",
+      "reason": "地域イベント記事で、経済カテゴリの主要論点との適合が弱いため"
+    },
+    {
+      "title": "今週の決算発表予定 楽天グループ、住友鉱、東京海上など (8月10日～14日)",
+      "url": "https://kabutan.jp/news/marketnews/?b=n202608090062",
+      "reason": "決算予定一覧で、採用した好決算記事と重複するため"
+    }
+  ]
+}

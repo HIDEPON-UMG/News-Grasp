@@ -1,0 +1,136 @@
+{
+  "date": "2026-08-10",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini when:1d",
+    "AIエージェント OR RAG OR LLM OR 生成AI when:1d",
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://venturebeat.com/category/ai/feed/",
+    "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+    "https://www.technologyreview.com/feed/",
+    "https://deepmind.google/blog/rss.xml"
+  ],
+  "raw_results_total": 260,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "coverage_terms_checked": [
+    "OpenAI",
+    "Anthropic",
+    "Google",
+    "Apple",
+    "Microsoft",
+    "Meta",
+    "NVIDIA"
+  ],
+  "dropped": [
+    {
+      "title": "【AI安全性警鐘】OpenAI、Anthropic、Meta、中国Moonshot AIの最先端モデルが相次ぎセキュリティテスト環境から脱走",
+      "url": "https://finance.biggo.jp/news/78dfacd2-112b-4a58-a3d9-5c4d6aa1e9dd",
+      "reason": "重要性は高いが、一次情報への距離と複数事案の混載を考慮し今回の5件から除外"
+    },
+    {
+      "title": "ADK・A2A・MCPで本番エージェント開発、「Gemini Enterprise Agent Platform」が正式提供 (1/3)|DeveloperZine",
+      "url": "https://codezine.jp/article/detail/29223",
+      "reason": "Stage1候補だが、本文取得ができず公開事実の検証証跡を確定できないため除外"
+    },
+    {
+      "title": "OpenAI、次世代モデル「Astra」のサイバー能力を最高リスクと評価し一部開発を停止（ビジネス＋IT）",
+      "url": "https://news.yahoo.co.jp/articles/619b35f2ddb51bd83eb018220e4f69b01e9a2a19",
+      "reason": "前号のAstra関連記事と論点が近く、今回の新規性を優先して除外"
+    },
+    {
+      "title": "OpenAI、消しても2日で戻ったAIエージェントの「掲示板」｜封じ込めの単位という盲点",
+      "url": "https://innovatopia.jp/ai/ai-news/115499/",
+      "reason": "安全性論点が選定済み候補と重なるため除外"
+    },
+    {
+      "title": "Anthropic、Claude Codeの自動モードをPro・Max・Teamの標準設定に変更へ",
+      "url": "https://mezha.net/jp/bukvy/1ad90c40_anthropic_will_make/",
+      "reason": "機能変更の転載であり、一次情報への距離を考慮して除外"
+    },
+    {
+      "title": "OpenAI×データセクションが議論、“日本クオリティ”のAI開発における可能性とは？",
+      "url": "https://enterprisezine.jp/news/detail/24836",
+      "reason": "イベント議論の比重が高く、選定済みの企業導入記事より実務論点が狭いため除外"
+    },
+    {
+      "title": "韓国大統領室が米国でAIサミットを開催、OpenAIとAnthropicのCEOも参加",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/rob/18/00006/00202/",
+      "reason": "イベント参加報道で、AI実装・製品の新情報が限定的なため除外"
+    },
+    {
+      "title": "とんでもない動画生成AIが出てきた 無料で試し放題の「MiniMax H3」を徹底検証 (1/5)",
+      "url": "https://ascii.jp/elem/000/004/426/4426043/",
+      "reason": "製品レビュー色が強く、企業運用の論点を優先して除外"
+    },
+    {
+      "title": "【AI開発最前線】コードの99.9%をAIエージェントが生成、月間15億トークン消費——Superconductorのシン氏が語る「人間とAIの協業」新段階",
+      "url": "https://finance.biggo.jp/news/8e2f778ab8373662",
+      "reason": "単一企業の事例で、数値の一次確認範囲が限定的なため除外"
+    },
+    {
+      "title": "正念場のソフトバンクG株、決算焦点はAI戦略進度－OpenAI傾斜に懸念(Bloomberg)",
+      "url": "https://finance.yahoo.co.jp/news/detail/9ff974c65da933f8bd195cf841a0a36ddb7fa93d",
+      "reason": "株価・決算論点を含むが、AIカテゴリの中心論点としては優先度を下げた"
+    },
+    {
+      "title": "夏休みの読書感想文、AI使う？ 「考える力」との向き合い方 [AIの時代][SNS]",
+      "url": "https://www.asahi.com/articles/ASV851TV6V85ULFA02HM.html",
+      "reason": "教育・生活面の話題で、ITコンサルタント向けの実務影響が相対的に低いため除外"
+    },
+    {
+      "title": "生成AI限定で阿波踊りポスターコン プロンプト審査で著作権クリア [徳島県]",
+      "url": "https://www.asahi.com/sp/articles/photo/AS20260722005294.html",
+      "reason": "公開日根拠がStage1のRSS時刻に依存し、元記事の当日性を確定できないため除外"
+    },
+    {
+      "title": "就活で生成AI利用が当たり前の時代に～各調査で利用は8～9割超に、落とし穴も #エキスパートトピ",
+      "url": "https://news.yahoo.co.jp/expert/articles/34763e643648f5a243a216544201c487ee86da20",
+      "reason": "解説記事であり、企業導入の一次・現場情報を優先して除外"
+    },
+    {
+      "title": "WEST.重岡大毅“航”、”完全犯罪の方法”を生成AIに尋ねる",
+      "url": "https://www.sanyonews.jp/article/1967454?kw=l8%E3%80%908S.LC%E3%80%91.xucf",
+      "reason": "芸能作品の宣伝記事で、AIの実務的な新情報が限定的なため除外"
+    },
+    {
+      "title": "アンスロピックIPO：Claudeの開発元について知っておくべき重要な情報",
+      "url": "https://www.tradingkey.com/jp/analysis/stocks/us-stocks/261951084-anthropic-ipo-claude-ai-tradingkey",
+      "reason": "投資解説の比重が高く、一次情報への距離を考慮して除外"
+    },
+    {
+      "title": "【今週の注目トピック(3)】金融510社が生成AI指針改訂",
+      "url": "https://finance.yahoo.co.jp/news/detail/e1be322ca52960c3e24d7c8c89fa534e19902956",
+      "reason": "週次まとめ記事で、新規の一次発表として切り出せないため除外"
+    },
+    {
+      "title": "OpenAIが初公表：AIが連携して自己復旧し、サイバー攻撃を画策",
+      "url": "https://note.com/trans_n_ai/n/n69cbdd09bac4",
+      "reason": "二次解説であり、一次情報への距離を考慮して除外"
+    },
+    {
+      "title": "Anthropic、独自のAIチップ設計チーム構築のための人材を募集中",
+      "url": "https://article.auone.jp/81b5ee06-c275-4544-92f7-046b55177424",
+      "reason": "転載記事であり、採用済みの開発運用論点を優先して除外"
+    },
+    {
+      "title": "Gemini ムーン・リーの12星座占い",
+      "url": "https://www.fashion-headline.com/ja/horoscope/503/487937",
+      "reason": "AIニュースではなく占い記事のため除外"
+    },
+    {
+      "title": "生成ＡＩ活用し農産物を販売 ２６日に実践塾",
+      "url": "https://j-times.jp/archives/146644",
+      "reason": "地域イベント告知で、読者の意思決定への影響が限定的なため除外"
+    },
+    {
+      "url": "https://www.publickey1.jp/blog/26/agent_plugins_100aimcpopenaiawsgoogle.html",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

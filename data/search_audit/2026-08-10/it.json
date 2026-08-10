@@ -1,0 +1,125 @@
+{
+  "date": "2026-08-10",
+  "category_id": "it",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "site:sbbit.jp/article/cont1/186443 Microsoft Copilot 一律導入 ライセンス使い分け 2026/08/10",
+    "\"ANA、「Equinix Fabric」を活用してデジタルインフラを刷新\"",
+    "\"東陽テクニカ、ネットワークテスター\" \"UET検証ソリューション\"",
+    "site:minkabu.jp/news/4592043 いい生活 1Q SaaS with AI 2026/08/10",
+    "\"マルチモーダル基盤モデル\" FRONTia 2026.08.10"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "McKinsey",
+    "BCG",
+    "Accenture",
+    "Deloitte",
+    "PwC",
+    "NTT"
+  ],
+  "dropped": [
+    {
+      "title": "存続をかけた秋へ。幻の第4便で駿河湾フェリー本来の価値を証明したい",
+      "url": "https://readyfor.jp/projects/172309",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "日本TCSが新事業戦略を発表──IT主権の回復とヒューマン＋AIによる内製化支援を軸に",
+      "url": "https://enterprisezine.jp/news/detail/24842",
+      "reason": "前号掲載の日本TCS戦略と近く、当日新材料を独立確認できないため除外。"
+    },
+    {
+      "title": "AI市場の主流がパブリッククラウドでも、なぜプライベートAIに商機が生まれるのか：『ビジネス2.0』の視点",
+      "url": "https://blogs.itmedia.co.jp/business20/2026/08/aiai_15.html",
+      "reason": "論考・再整理記事で、当日の新規事実性と一次情報度が低いため除外。"
+    },
+    {
+      "title": "＜次回予告＞「乃木坂工事中」",
+      "url": "https://www.nogizaka46.com/s/n46/news/detail/102157",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "クラウドフレア、AIエージェント向けブラウザ「Kitesurf」発表――Chromium非依存の新ランタイム",
+      "url": "https://finance.biggo.jp/news/d3173832-edfd-4b91-856d-425856c85719",
+      "reason": "元記事の公開日が8月6日で、号日の当日・前日 freshness gate 外のため除外。"
+    },
+    {
+      "title": "＜Ｉｔ’ｓ涼タイム＞呉羽青少年自然の家（富山市） ぷかぷか池遊び",
+      "url": "https://webun.jp/articles/-/1072100",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "信濃國一之宮 諏訪大社秋宮｜新たな夏の伝統「光の奉納」実施へ",
+      "url": "https://readyfor.jp/projects/suwataisha2026cf",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "KPMGコンサルティングとあずさ監査法人、「データナレッジ形式知化・利活用エージェント」提供開始",
+      "url": "https://enterprisezine.jp/news/detail/24799",
+      "reason": "元記事の公開日と当日新材料を独立確認できず、確証不足のため除外。"
+    },
+    {
+      "title": "サイバーセキュリティ株式オープン(為替ヘッジなし)予想分配金提示型【03319211】：基準価格・投資信託情報",
+      "url": "https://finance.yahoo.co.jp/quote/03319211",
+      "reason": "ITニュースではなく投資信託の基準価額ページのため除外。"
+    },
+    {
+      "title": "「乃木坂工事中」の最新話「新キャプテンと一致団結 前編」をYouTubeにて公開！【乃木坂配信中】",
+      "url": "https://www.nogizaka46.com/s/n46/news/detail/102165",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "25歳・ITエンジニアがボディコンテスト優勝！「平日の食事は固定メニュー、でも休日は揚げ物やピザも食べます！」",
+      "url": "https://news.yahoo.co.jp/articles/2d1f4248e6e43f01a1bb247546bf95c47031aefe",
+      "reason": "IT業界のニュースではなく人物紹介記事のため除外。"
+    },
+    {
+      "title": "再び、国立の主役へ。新しい早稲田を証明する。",
+      "url": "https://readyfor.jp/projects/waseda-wksoccer2026",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "「世界一のまちがいさがし」への挑戦！作品を一緒につくる仲間募集！",
+      "url": "https://readyfor.jp/projects/rocket-go",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "1200年の歴史「悠久の歴史を未来へつなぐプロジェクト」にご支援を",
+      "url": "https://readyfor.jp/projects/akiujinja-1220",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "病室の窓から見える花火。上田市丸子で続く「病院花火」を未来へ",
+      "url": "https://readyfor.jp/projects/maruko-firework2026",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "令和8年8月8日、8回目！",
+      "url": "https://www.nogizaka46.com/s/n46/diary/detail/104768?ima=2619",
+      "reason": "ITカテゴリの主題に該当せず除外。"
+    },
+    {
+      "title": "サイバーセキュリティセクターを深掘り、FTNT急騰後のバリュエーションとZSの買いロジック",
+      "url": "https://www.moomoo.com/ja/community/feed/analyzing-the-cybersecurity-sector-ftnt-s-valuation-after-a-sharp-117065148530694",
+      "reason": "投資コミュニティの二次分析で、一次情報度とIT実務への直接性が低いため除外。"
+    },
+    {
+      "title": "年度末処理7割削減 神奈川県信用保証協会がクラウド勤怠管理導入で得た副産物",
+      "url": "https://techtarget.itmedia.co.jp/tt/news/2608/10/news07.html",
+      "reason": "有用な導入事例だが、5件の上位候補と比べ影響範囲・話題性が低く、選定枠外。"
+    },
+    {
+      "title": "地元で人材育て産業振興 学び、指導の充実不可欠 ＜ＩＴ校の行方－益田・職業能力開発短期大学校＞（上）どんな学校に",
+      "url": "https://www.sanin-chuo.co.jp/articles/-/1058410",
+      "reason": "地域教育の特集で、ITコンサル読者への直接的な意思決定価値が低いため除外。"
+    },
+    {
+      "title": "「にゃんこ大戦争」がAWSを脱出した理由 無停止移行に潜む“わな”",
+      "url": "https://techtarget.itmedia.co.jp/tt/news/2608/10/news11.html",
+      "reason": "過去記事の再掲・ベストヒットで、新規発表としての当日性が弱いため除外。"
+    }
+  ]
+}

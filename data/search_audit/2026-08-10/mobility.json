@@ -1,0 +1,128 @@
+{
+  "date": "2026-08-10",
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "site:jidounten-lab.com/u_66222 ロボタクシー 日本 外資100% 2026-08-09",
+    "site:xtech.nikkei.com/atcl/nxt/mag/at/18/00012/00226 E2E自動運転 VLA",
+    "site:chunichi.co.jp/article/1294454 中国の軽EV 本家 日本勢",
+    "site:newswitch.jp/p/49957 クボタ 遠隔監視型 無人 自動運転 トラクター"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "Tesla",
+    "Waymo",
+    "BYD",
+    "Toyota",
+    "Uber"
+  ],
+  "dropped": [
+    {
+      "title": "テスラ【TSLA】：株価・株式情報",
+      "url": "https://finance.yahoo.co.jp/quote/TSLA",
+      "reason": "株価情報ページであり、当日ニュース記事ではない"
+    },
+    {
+      "title": "大炎上したフェラーリ初のEV「Luce」を擁護する",
+      "url": "https://wired.jp/article/i-like-ferrari-luce-ev-but-this-is-why-its-heartbreaking/",
+      "reason": "論評色が強く、選定上位の市場・制度ニュースを優先"
+    },
+    {
+      "title": "世界最高峰の大学が「自動運転チャリ」を開発",
+      "url": "https://jidounten-lab.com/u_66223",
+      "reason": "技術の話題性はあるが、対象市場への影響が限定的"
+    },
+    {
+      "title": "【2029年までにデビューするEV】VW ID.ポロGTI、トヨタGR MR2 EVなど、今後数年間に発売される電気自動車29台の詳細を明らかにする！",
+      "url": "https://news.yahoo.co.jp/articles/68cf6255db5cddfcf86c819977abde295446820b",
+      "reason": "複数車種の roundup で、単一の新規動向としての焦点が弱い"
+    },
+    {
+      "title": "EV補助金、BYD｢勝負にならない｣ 読まれた記事〜総合編",
+      "url": "https://www.nikkei.com/prime/mobility/article/DGXZQOUC047BF0U6A800C2000000",
+      "reason": "過去記事の総合ランキングで、当日単一ニュースではない"
+    },
+    {
+      "title": "EV･PHV、世界の販売動向は IEA調査分析まとめ読み",
+      "url": "https://www.nikkei.com/prime/mobility/article/DGXZQOUC053C20V00C26A8000000",
+      "reason": "連載まとめ記事で、個別の当日発表を優先"
+    },
+    {
+      "title": "メルセデスAMGの高性能EV『GT 4ドア・クーペ』に価格を抑えた『53』モデル登場 直列6気筒のエンジン音再現",
+      "url": "https://news.yahoo.co.jp/articles/01e53bc0597fdd8d46d306d88b822c79881750db",
+      "reason": "高価格帯の派生モデルで、普及市場への影響が相対的に小さい"
+    },
+    {
+      "title": "フォード、北米で3万ドル切るEV 車名は「ファゾム」",
+      "url": "https://www.nikkei.com/prime/mobility/article/DGXZQOUC070LJ0X00C26A8000000",
+      "reason": "採用済み候補と重複しないが、選定上位5件の比較を優先して未採用"
+    },
+    {
+      "title": "酷評されたフェラーリ初EV「ルーチェ」、9600万円超でも発表2カ月で約500人が購入希望（MEN’S CLUB）",
+      "url": "https://news.yahoo.co.jp/articles/e18f77ba2a1af67ce5be9ec5cc9f92118f65b48e",
+      "reason": "高級EVの反応記事で、業界構造への影響が限定的"
+    },
+    {
+      "title": "スバルがEV戦略見直しで混流生産、矢島工場「トヨタ方式に合わせる」",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/at/18/00006/00901/",
+      "reason": "生産方式が主題で、manufacturing 境界に近い"
+    },
+    {
+      "title": "VWが最廉価EVにSiCとLFP、ID.PoloでM1E競争に対策",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/at/18/00006/00907/",
+      "reason": "部材・生産技術が主題で、manufacturing 境界に近い"
+    },
+    {
+      "title": "クボタが来春投入、国産初「遠隔監視型無人自動運転トラクター」の機能",
+      "url": "https://newswitch.jp/p/49957",
+      "reason": "重要だが農業機械の業務用途で、上位5件より対象読者への波及が狭い"
+    },
+    {
+      "title": "ホンダの小型EV「Super-ONE」 受注好調、背後に補助金マジック",
+      "url": "https://xtech.nikkei.com/atcl/nxt/mag/at/18/00006/00905/",
+      "reason": "軽EV競争と補助金論点が採用記事と重なるため重複回避"
+    },
+    {
+      "title": "「危機の日産」と「好調トヨタ」2010年代の選択の決定的な違い",
+      "url": "https://diamond.jp/articles/amp/394656",
+      "reason": "過去の選択を扱う解説で、当日新材料が薄い"
+    },
+    {
+      "title": "「航続距離が短すぎて不安？」 日産サクラ10万台突破で揺れるEV選びの新基準！ “大容量バッテリー神話”は崩れるのか",
+      "url": "https://news.yahoo.co.jp/articles/e9981f7d6f4b993ce7ce19b3d2341f2bf43e252a",
+      "reason": "二次的な論評で、一次発表を含む候補を優先"
+    },
+    {
+      "title": "ホンダの過去最高益を後押しした“ライバルの敵失”とは？幹部は「ラッキーが重なった結果」…好業績の裏側に迫る",
+      "url": "https://diamond.jp/articles/amp/396733",
+      "reason": "企業業績の回顧分析で、当日のモビリティ構造変化を優先"
+    },
+    {
+      "title": "三重交通 内外装にポケモン 伊勢で大型ＥＶバス運行",
+      "url": "https://www.chukei-news.co.jp/news/2026/08/10/OK0002608100501_05/",
+      "reason": "地域運行の個別事例で、影響範囲が限定的"
+    },
+    {
+      "title": "名城大でトヨタEV展示 ATグループ、学生と協力：ニュース",
+      "url": "https://biz.chunichi.co.jp/news/article/10/129169/",
+      "reason": "展示イベントで、事業・制度の新規性が小さい"
+    },
+    {
+      "title": "ストリーモ、セコムの警備・巡回業務向けモビリティとして三輪電動キックボードの利用実証を開始",
+      "url": "https://smart-mobility.jp/_ct/17856544",
+      "reason": "業務用途の実証で、上位5件より市場影響が限定的"
+    },
+    {
+      "title": "Ｔ２、自動運転分野で国内初の国際規格認証を取得",
+      "url": "https://chemicaldaily.com/archives/840465",
+      "reason": "重要性はあるが、公開本文で確認できる事実が少なく、根拠密度を優先"
+    },
+    {
+      "title": "Zooxがロボタクシーの有料運行を開始へ、UberとMooveも自動運転市場への投資を加速",
+      "url": "https://mezha.net/jp/bukvy/1f3168a0_zoox_moves_toward/",
+      "reason": "複数社を束ねた二次報道で、制度の一次論点を優先"
+    }
+  ]
+}
