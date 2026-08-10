@@ -145,56 +145,71 @@ function Get-NewsGraspTrackedWorkingHashes {
         [Parameter(Mandatory = $true)][System.Collections.Generic.List[string]] $TrackedPaths,
         [Parameter(Mandatory = $true)][int] $MaxEntries
     )
-    # hash-object --stdin-paths remains the canonical batch contract.  Writing
-    # bytes to StandardInput.BaseStream avoids Windows PowerShell's BOM-prone
-    # text pipeline and keeps the whole generation hash in one git process.
-    $normalizedPaths = [System.Collections.Generic.List[string]]::new()
-    foreach ($trackedPath in $TrackedPaths) {
-        $normalizedPaths.Add(([string]$trackedPath).TrimStart([char]0xFEFF))
-        if ($normalizedPaths.Count -gt $MaxEntries) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-    }
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = $GitExe
-    $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
-    $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --stdin-paths'
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-    $startInfo.RedirectStandardInput = $true
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $startInfo
-    try {
-        if (-not $process.Start()) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-        $stderrTask = $process.StandardError.ReadToEndAsync()
-        $payload = [Text.Encoding]::UTF8.GetBytes((($normalizedPaths -join "`n") + "`n"))
-        $process.StandardInput.BaseStream.Write($payload, 0, $payload.Length)
-        $process.StandardInput.BaseStream.Flush()
-        $process.StandardInput.Close()
-        $process.WaitForExit()
-        $stdout = $stdoutTask.Result
-        $stderr = $stderrTask.Result
-        if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
-        if ($hashes.Count -ne $normalizedPaths.Count) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        foreach ($hash in $hashes) {
-            if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
+    $allHashes = [System.Collections.Generic.List[string]]::new()
+    $runBatch = {
+        param([System.Collections.Generic.List[string]] $Paths)
+        if ($Paths.Count -eq 0) { return }
+        $quotedPaths = @($Paths | ForEach-Object { '"{0}"' -f $_ })
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = $GitExe
+        $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
+        $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --no-filters -- ' + ([string]::Join(' ', $quotedPaths))
+        $startInfo.UseShellExecute = $false
+        $startInfo.CreateNoWindow = $true
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $process = [System.Diagnostics.Process]::new()
+        $process.StartInfo = $startInfo
+        try {
+            if (-not $process.Start()) {
                 throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
             }
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.Result
+            $stderr = $stderrTask.Result
+            if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
+                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+            }
+            $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
+            if ($hashes.Count -ne $Paths.Count) {
+                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+            }
+            foreach ($hash in $hashes) {
+                if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
+                    throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+                }
+                $allHashes.Add(([string]$hash).ToLowerInvariant())
+            }
+        } finally {
+            $process.Dispose()
         }
-        return @($hashes | ForEach-Object { ([string]$_).ToLowerInvariant() })
-    } finally {
-        $process.Dispose()
     }
+    $batch = [System.Collections.Generic.List[string]]::new()
+    $argumentChars = 0
+    foreach ($trackedPath in $TrackedPaths) {
+        $normalizedPath = ([string]$trackedPath) -replace '^[\uFEFF]', ''
+        if ($normalizedPath -notmatch '^[^"\r\n]+$') {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        $quotedLength = $normalizedPath.Length + 2
+        if ($batch.Count -ge 128 -or $argumentChars + $quotedLength -gt 24000) {
+            & $runBatch $batch
+            $batch.Clear()
+            $argumentChars = 0
+        }
+        $batch.Add($normalizedPath)
+        $argumentChars += $quotedLength + 1
+        if ($batch.Count -gt $MaxEntries) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+    }
+    & $runBatch $batch
+    if ($allHashes.Count -ne $TrackedPaths.Count -or $allHashes.Count -gt $MaxEntries) {
+        throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+    }
+    return $allHashes.ToArray()
 }
 
 function Test-NewsGraspPromotableInstallSource {
@@ -204,7 +219,41 @@ function Test-NewsGraspPromotableInstallSource {
         [Parameter(Mandatory = $true)][string] $TrustedBoundary,
         [int] $MaxEntries = 16384
     )
+    $gitEnvironmentBackup = @{}
     try {
+        $inheritedGitNames = @(
+            [System.Environment]::GetEnvironmentVariables('Process').Keys |
+                ForEach-Object { [string]$_ } |
+                Where-Object { $_.StartsWith('GIT_', [System.StringComparison]::OrdinalIgnoreCase) }
+        )
+        foreach ($gitEnvironmentName in $inheritedGitNames) {
+            $gitEnvironmentBackup[$gitEnvironmentName] = [System.Environment]::GetEnvironmentVariable(
+                $gitEnvironmentName,
+                'Process'
+            )
+            [System.Environment]::SetEnvironmentVariable($gitEnvironmentName, $null, 'Process')
+        }
+        $fixedGitEnvironment = @{
+            'GIT_CONFIG_NOSYSTEM' = '1'
+            'GIT_CONFIG_GLOBAL' = 'NUL'
+            'GIT_ATTR_NOSYSTEM' = '1'
+            'GIT_OPTIONAL_LOCKS' = '0'
+            'GIT_NO_REPLACE_OBJECTS' = '1'
+            'GIT_CONFIG_COUNT' = '3'
+            'GIT_CONFIG_KEY_0' = 'core.fsmonitor'
+            'GIT_CONFIG_VALUE_0' = 'false'
+            'GIT_CONFIG_KEY_1' = 'core.hooksPath'
+            'GIT_CONFIG_VALUE_1' = 'NUL'
+            'GIT_CONFIG_KEY_2' = 'core.attributesFile'
+            'GIT_CONFIG_VALUE_2' = 'NUL'
+        }
+        foreach ($fixedGitEnvironmentName in $fixedGitEnvironment.Keys) {
+            [System.Environment]::SetEnvironmentVariable(
+                $fixedGitEnvironmentName,
+                [string]$fixedGitEnvironment[$fixedGitEnvironmentName],
+                'Process'
+            )
+        }
         if ($MaxEntries -lt 1 -or $MaxEntries -gt 16384) { return $false }
         $gitExe = 'C:\Program Files\Git\cmd\git.exe'
         if (-not (Test-Path -LiteralPath $gitExe -PathType Leaf)) { return $false }
@@ -231,14 +280,20 @@ function Test-NewsGraspPromotableInstallSource {
             Assert-NewsGraspNoReparsePath -Path $candidateBuildRoot -Boundary $CandidateRepoDir
             $pendingBuildDirectories = [System.Collections.Generic.Stack[string]]::new()
             $pendingBuildDirectories.Push($candidateBuildRoot)
+            $buildInventoryCount = 0
             while ($pendingBuildDirectories.Count -gt 0) {
                 $buildDirectory = $pendingBuildDirectories.Pop()
-                foreach ($child in @(Get-ChildItem -LiteralPath $buildDirectory -Force -ErrorAction Stop)) {
+                Get-ChildItem -LiteralPath $buildDirectory -Force -ErrorAction Stop | ForEach-Object {
+                    $child = $_
+                    $buildInventoryCount += 1
+                    if ($buildInventoryCount -gt $MaxEntries) {
+                        throw 'NEWS_GRASP_INSTALL_SOURCE_INVENTORY_LIMIT_EXCEEDED'
+                    }
                     if (Test-NewsGraspUnsafeTraversalReparsePoint -Item $child) {
-                        return $false
+                        throw 'NEWS_GRASP_INSTALL_SOURCE_REPARSE_POINT_FORBIDDEN'
                     }
                     if ($child.PSIsContainer) {
-                        $pendingBuildDirectories.Push([string]$child.FullName)
+                        $null = $pendingBuildDirectories.Push([string]$child.FullName)
                     }
                 }
             }
@@ -268,9 +323,7 @@ function Test-NewsGraspPromotableInstallSource {
         $originMain = ((& $gitExe -C $CandidateRepoDir rev-parse refs/remotes/origin/main 2>$null) | Out-String).Trim().ToLowerInvariant()
         if ($LASTEXITCODE -ne 0 -or $originMain -ne $candidateHead) { return $false }
 
-        & $gitExe -C $CandidateRepoDir diff --quiet HEAD --
-        if ($LASTEXITCODE -ne 0) { return $false }
-        & $gitExe -C $CandidateRepoDir diff --cached --quiet --
+        & $gitExe -C $CandidateRepoDir diff --cached --quiet --no-ext-diff --no-textconv --
         if ($LASTEXITCODE -ne 0) { return $false }
         $trackedEntries = @(& $gitExe -C $CandidateRepoDir ls-files -v 2>$null)
         if (
@@ -300,17 +353,11 @@ function Test-NewsGraspPromotableInstallSource {
                 return $false
             }
             $expectedHash = ([string]$Matches[1]).ToLowerInvariant()
-            $relativePath = [string]$Matches[2]
+            $relativePath = ([string]$Matches[2]).TrimStart([char]0xFEFF)
             if (
                 [System.IO.Path]::IsPathRooted($relativePath) -or
                 $relativePath.StartsWith('"', [System.StringComparison]::Ordinal)
             ) { return $false }
-            if ($relativePath.StartsWith('build/', [System.StringComparison]::Ordinal)) {
-                # build/ is an evidence and generated-artifact area.  It is
-                # scanned for reparse safety below, but is deliberately not
-                # part of the promotable source generation hash set.
-                continue
-            }
             if (-not $trackedPathSet.Add($relativePath)) { return $false }
             $trackedPaths.Add($relativePath)
             $expectedHashes.Add($expectedHash)
@@ -329,36 +376,50 @@ function Test-NewsGraspPromotableInstallSource {
         $inventoryCount = 0
         while ($pendingDirectories.Count -gt 0) {
             $directory = $pendingDirectories.Pop()
-            foreach ($child in @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)) {
+            Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop | ForEach-Object {
+                $child = $_
                 $inventoryCount += 1
-                if ($inventoryCount -gt $MaxEntries) { return $false }
-                if (Test-NewsGraspUnsafeTraversalReparsePoint -Item $child) { return $false }
+                if ($inventoryCount -gt $MaxEntries) {
+                    throw 'NEWS_GRASP_INSTALL_SOURCE_INVENTORY_LIMIT_EXCEEDED'
+                }
+                if (Test-NewsGraspUnsafeTraversalReparsePoint -Item $child) {
+                    throw 'NEWS_GRASP_INSTALL_SOURCE_REPARSE_POINT_FORBIDDEN'
+                }
                 $childPath = Get-NewsGraspCanonicalPath -Path ([string]$child.FullName)
                 if (-not $childPath.StartsWith($candidatePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-                    return $false
+                    throw 'NEWS_GRASP_INSTALL_SOURCE_PATH_OUTSIDE_ROOT'
                 }
                 $relativePath = $childPath.Substring($candidatePrefix.Length).Replace('\', '/')
-                if ($relativePath -eq '.git') { continue }
+                if ($relativePath -eq '.git') { return }
                 if ($child.PSIsContainer) {
-                    $pendingDirectories.Push($childPath)
-                    continue
+                    $null = $pendingDirectories.Push($childPath)
+                    return
                 }
                 if ($relativePath.StartsWith('build/', [System.StringComparison]::Ordinal)) {
-                    continue
+                    if ($trackedPathSet.Contains($relativePath)) {
+                        $null = $observedTrackedPaths.Add($relativePath)
+                    }
+                    return
                 }
-                if (-not $trackedPathSet.Contains($relativePath)) { return $false }
+                if (-not $trackedPathSet.Contains($relativePath)) {
+                    throw 'NEWS_GRASP_INSTALL_SOURCE_UNTRACKED_PAYLOAD_FORBIDDEN'
+                }
                 $null = $observedTrackedPaths.Add($relativePath)
             }
         }
         if ($observedTrackedPaths.Count -ne $trackedPathSet.Count) { return $false }
 
-        $workingHashes = @(
-            Get-NewsGraspTrackedWorkingHashes `
-                -GitExe $gitExe `
-                -RepoDir $CandidateRepoDir `
-                -TrackedPaths $trackedPaths `
-                -MaxEntries $MaxEntries
-        )
+        try {
+            $workingHashes = @(
+                Get-NewsGraspTrackedWorkingHashes `
+                    -GitExe $gitExe `
+                    -RepoDir $CandidateRepoDir `
+                    -TrackedPaths $trackedPaths `
+                    -MaxEntries $MaxEntries
+            )
+        } catch {
+            return $false
+        }
         if ($workingHashes.Count -ne $expectedHashes.Count) {
             return $false
         }
@@ -367,21 +428,25 @@ function Test-NewsGraspPromotableInstallSource {
                 return $false
             }
         }
-        $statusLines = @(& $gitExe -C $CandidateRepoDir status --porcelain=v1 --untracked-files=all --ignored 2>$null)
-        if ($LASTEXITCODE -ne 0) { return $false }
-        foreach ($line in $statusLines) {
-            $text = [string]$line
-            if (
-                $text -and
-                -not $text.StartsWith('?? build/', [System.StringComparison]::Ordinal) -and
-                -not $text.StartsWith('!! build/', [System.StringComparison]::Ordinal)
-            ) {
-                return $false
-            }
-        }
         return $true
     } catch {
         return $false
+    } finally {
+        $activeGitNames = @(
+            [System.Environment]::GetEnvironmentVariables('Process').Keys |
+                ForEach-Object { [string]$_ } |
+                Where-Object { $_.StartsWith('GIT_', [System.StringComparison]::OrdinalIgnoreCase) }
+        )
+        foreach ($activeGitName in $activeGitNames) {
+            [System.Environment]::SetEnvironmentVariable($activeGitName, $null, 'Process')
+        }
+        foreach ($backupName in $gitEnvironmentBackup.Keys) {
+            [System.Environment]::SetEnvironmentVariable(
+                $backupName,
+                [string]$gitEnvironmentBackup[$backupName],
+                'Process'
+            )
+        }
     }
 }
 

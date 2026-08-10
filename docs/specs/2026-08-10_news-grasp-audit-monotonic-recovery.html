@@ -185,7 +185,7 @@
         <li><strong>Crash／並行安全</strong> forward-only WAL、process排他lock、Windows directory handle pinでrollbackとjunction swapを拒否する。</li>
         <li><strong>WP-07</strong> 同じ12 node Green、focused regression、historical scenario、drift/replayを一回ずつ検証する。</li>
         <li><strong>WP-08</strong> safe commit、push、remote HEAD、正規installer、runtime/task parity、rollbackを閉じる。</li>
-        <li><strong>Installer generation移行</strong> 既存runtime-rootとは別pathでも、同一Git common-dir、remote main exact、通常index flag、tracked clean、reparseを含まないbuild-onlyの未追跡／ignored stateを満たすsibling worktreeだけを受理し、runtime-root移行後も同じpredicateを毎回再検証する。</li>
+        <li><strong>Installer generation移行</strong> 継承GIT_*を一時除去・finally復元し、system/global config・system attributes・fsmonitor・hook・replace-refの実行面を固定した上で、既存runtime-rootとは別pathでも同一Git common-dir、remote main exact、通常index flag、tracked clean、<code>git hash-object --no-filters --stdin-paths</code>によるHEAD blobとworking raw bytesの直接一致、reparseを含まないbuild-onlyの未追跡／ignored stateを満たすsibling worktreeだけを受理する。working-tree diffは実行せずraw hash照合へ一本化し、cached diffも<code>--no-ext-diff --no-textconv</code>で外部helper・textconvを実行しない。継承global clean filter、repo-local external diff helper、replace-refによるpayload隠蔽はmutation前に拒否し、runtime-root移行後も同じpredicateを毎回再検証する。</li>
         <li><strong>WP-09〜10</strong> L0〜L7後にNoPublish E2Eを一回実行し、最終state vectorを提出する。</li>
       </ol>
     </section>
