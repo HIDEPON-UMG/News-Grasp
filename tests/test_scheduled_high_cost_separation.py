@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import copy
+import ctypes
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -1198,26 +1201,847 @@ def test_scheduled_launcher_enters_clean_production_runtime_and_smoke_is_fail_cl
     assert 'state.get("status") != "smoke_ok"' in launcher
     assert "[switch] $UseProductionRuntime" in bootstrap
     assert "Resolve-ProductionRuntimeRepo" in bootstrap
-    assert "production-runtime" in bootstrap
-    assert "worktree add --detach" in bootstrap
+    assert "production-runtime" in launcher
+    assert '"worktree", "add", "--detach"' in launcher
     assert "origin/main" in bootstrap
-    assert "PRODUCTION_RUNTIME_DIRTY" in bootstrap
+    assert "converge-runtime" in bootstrap
+    assert "PRODUCTION_RUNTIME_RECOVERY_V1" in launcher
     assert bootstrap.count("'news-grasp-task-launcher.pyw'") >= 2
 
 
 def test_production_runtime_dirty_gate_separates_source_drift_from_runtime_state() -> None:
-    bootstrap = (
-        Path(__file__).resolve().parents[1] / "scripts" / "ops" / "news-grasp-bootstrap.ps1"
+    launcher = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "news-grasp-task-launcher.pyw"
     ).read_text(encoding="utf-8-sig")
-    resolver = bootstrap.split("function Resolve-ProductionRuntimeRepo", 1)[1].split(
-        "function Get-FileSha256Hex", 1
+    resolver = launcher.split("def _runtime_state", 1)[1].split(
+        "def _load_runtime_recovery_journal", 1
     )[0]
 
     assert "status --porcelain=v1 --untracked-files=normal" not in resolver
-    assert "diff --quiet --no-ext-diff --ignore-cr-at-eol HEAD --" in resolver
-    assert "ls-files --others --exclude-standard" in resolver
-    assert "$relative -notmatch '^build/'" in resolver
-    assert "PRODUCTION_RUNTIME_DIRTY" in resolver
+    assert '"diff",' in resolver
+    assert '"--ignore-cr-at-eol"' in resolver
+    assert '"ls-files", "--others", "--exclude-standard", "-z"' in resolver
+    assert 'not item.startswith("build/")' in resolver
+    assert "MAX_UNTRACKED_PATHS" in resolver
+
+
+def _load_task_launcher_module():
+    launcher_path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "news-grasp-task-launcher.pyw"
+    )
+    loader = SourceFileLoader("news_grasp_task_launcher_runtime_test", str(launcher_path))
+    spec = spec_from_loader(loader.name, loader)
+    assert spec is not None
+    module = module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def _git(cwd: Path, *args: str) -> str:
+    completed = subprocess.run(
+        [r"C:\Program Files\Git\cmd\git.exe", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return completed.stdout.strip()
+
+
+def _runtime_fixture(tmp_path: Path) -> tuple[object, Path, Path, str]:
+    launcher = _load_task_launcher_module()
+    source = tmp_path / "source"
+    source.mkdir()
+    _git(source, "init")
+    _git(source, "config", "user.email", "test@example.invalid")
+    _git(source, "config", "user.name", "News Grasp Test")
+    (source / "tools").mkdir()
+    (source / "tools" / "daily_self_heal.py").write_text("# fixture\n", encoding="utf-8")
+    (source / "tracked.txt").write_text("clean\n", encoding="utf-8")
+    _git(source, "add", ".")
+    _git(source, "commit", "-m", "fixture")
+    origin_sha = _git(source, "rev-parse", "HEAD")
+    runtime_root = tmp_path / ".news-grasp-runtime"
+    runtime_root.mkdir()
+    _git(source, "worktree", "add", "--detach", str(runtime_root / "production-runtime"), origin_sha)
+    return launcher, source, runtime_root, origin_sha
+
+
+def test_dirty_production_runtime_is_quarantined_and_replaced_without_data_loss(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty preserved\n", encoding="utf-8")
+
+    result = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+
+    quarantine = Path(result["quarantinePath"])
+    assert result["phase"] == "committed"
+    assert (quarantine / "tracked.txt").read_text(encoding="utf-8") == "dirty preserved\n"
+    assert _git(runtime, "rev-parse", "HEAD") == origin_sha
+    assert _git(runtime, "diff", "--name-only") == ""
+
+
+def test_runtime_recovery_forwards_after_move_before_phase_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty crash fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+    injected = {"raised": False}
+
+    def crash_once(*args, **kwargs):
+        if kwargs.get("phase") == "runtime_quarantined" and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_AFTER_MOVE_BEFORE_PHASE")
+        return real_append(*args, **kwargs)
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_once)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_MOVE_BEFORE_PHASE"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+
+    recovered = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+    assert recovered["phase"] == "committed"
+    assert _git(runtime, "rev-parse", "HEAD") == origin_sha
+    assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(
+        encoding="utf-8"
+    ) == "dirty crash fixture\n"
+
+
+def test_runtime_recovery_forwards_after_replacement_before_phase_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty replacement fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+    injected = {"raised": False}
+
+    def crash_once(*args, **kwargs):
+        if kwargs.get("phase") == "replacement_created" and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_AFTER_ADD_BEFORE_PHASE")
+        return real_append(*args, **kwargs)
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_once)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_ADD_BEFORE_PHASE"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+
+    recovered = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+    assert recovered["phase"] == "committed"
+    assert _git(runtime, "rev-parse", "HEAD") == origin_sha
+    assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(
+        encoding="utf-8"
+    ) == "dirty replacement fixture\n"
+
+
+def test_runtime_recovery_forwards_after_quarantine_parent_only_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty parent fixture\n", encoding="utf-8")
+    real_run_git = launcher._run_git
+    injected = {"raised": False}
+
+    def crash_before_move(repo, *args, **kwargs):
+        if args[:2] == ("worktree", "move") and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_AFTER_QUARANTINE_PARENT")
+        return real_run_git(repo, *args, **kwargs)
+
+    monkeypatch.setattr(launcher, "_run_git", crash_before_move)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_QUARANTINE_PARENT"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_run_git", real_run_git)
+
+    recovered = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+    assert recovered["phase"] == "committed"
+    assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(
+        encoding="utf-8"
+    ) == "dirty parent fixture\n"
+
+
+def test_runtime_recovery_handles_orphan_transaction_before_journal_publish(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty orphan fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+    injected = {"raised": False}
+
+    def crash_before_journal(*args, **kwargs):
+        if kwargs.get("phase") == "prepared" and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_BEFORE_JOURNAL_PUBLISH")
+        return real_append(*args, **kwargs)
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_before_journal)
+    with pytest.raises(RuntimeError, match="INJECTED_BEFORE_JOURNAL_PUBLISH"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+
+    recovered = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+    assert recovered["phase"] == "committed"
+    assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(
+        encoding="utf-8"
+    ) == "dirty orphan fixture\n"
+
+
+def test_foreign_runtime_common_dir_is_rejected_before_checkout_or_dependency_binding(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    _git(source, "worktree", "remove", "--force", str(runtime))
+    _git(tmp_path, "clone", "--no-local", str(source), str(runtime))
+    _git(runtime, "config", "user.email", "test@example.invalid")
+    _git(runtime, "config", "user.name", "Foreign Runtime")
+    (runtime / "tracked.txt").write_text("foreign generation\n", encoding="utf-8")
+    _git(runtime, "add", "tracked.txt")
+    _git(runtime, "commit", "-m", "foreign")
+    foreign_head = _git(runtime, "rev-parse", "HEAD")
+    (source / ".venv").mkdir()
+
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_COMMON_DIR_DRIFT"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+
+    assert _git(runtime, "rev-parse", "HEAD") == foreign_head
+    assert not (runtime / ".venv").exists()
+
+
+def _lock_runtime_owner_receipt_for_current_process(
+    home: Path, *, nonce: str
+) -> tuple[Path, int]:
+    receipt_path = home / "bin" / "news-grasp-runtime-lifecycle-owner.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = (
+        json.dumps(
+            {
+                "schemaVersion": "NEWS_GRASP_RUNTIME_LIFECYCLE_OWNER_V1",
+                "ownerPid": os.getpid(),
+                "ownerNonce": nonce,
+                "mutexName": (
+                    f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+                ),
+                "issuedAtUtc": "2026-08-10T03:00:00+00:00",
+            },
+            separators=(",", ":"),
+        )
+        + "\n"
+    ).encode("utf-8")
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateFileW.restype = ctypes.c_void_p
+    handle = kernel32.CreateFileW(
+        str(receipt_path), 0xC0000000, 0x1, None, 2, 0x80, None
+    )
+    assert handle != ctypes.c_void_p(-1).value
+    written = ctypes.c_uint32()
+    buffer = ctypes.create_string_buffer(payload)
+    assert kernel32.WriteFile(
+        handle, buffer, len(payload), ctypes.byref(written), None
+    )
+    assert written.value == len(payload)
+    assert kernel32.FlushFileBuffers(handle)
+    return receipt_path, int(handle)
+
+
+def _start_runtime_lifecycle_owner(
+    home: Path, *, nonce: str
+) -> tuple[subprocess.Popen[str], Path, int]:
+    receipt_path = home / "bin" / "news-grasp-runtime-lifecycle-owner.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    mutex_name = f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+    owner_code = r'''
+import ctypes, json, os, sys
+receipt_path, nonce, mutex_name = sys.argv[1:4]
+payload = (json.dumps({
+    "schemaVersion": "NEWS_GRASP_RUNTIME_LIFECYCLE_OWNER_V1",
+    "ownerPid": os.getpid(),
+    "ownerNonce": nonce,
+    "mutexName": mutex_name,
+    "issuedAtUtc": "2026-08-10T03:00:00+00:00",
+}, separators=(",", ":")) + "\n").encode("utf-8")
+k = ctypes.WinDLL("kernel32", use_last_error=True)
+k.CreateFileW.restype = ctypes.c_void_p
+file_handle = k.CreateFileW(receipt_path, 0xC0000000, 0x1, None, 2, 0x80, None)
+if file_handle == ctypes.c_void_p(-1).value:
+    raise SystemExit(91)
+written = ctypes.c_uint32()
+buffer = ctypes.create_string_buffer(payload)
+if not k.WriteFile(file_handle, buffer, len(payload), ctypes.byref(written), None):
+    raise SystemExit(92)
+k.FlushFileBuffers(file_handle)
+mutex_handle = k.CreateMutexW(None, False, mutex_name)
+if k.WaitForSingleObject(mutex_handle, 0) not in (0, 0x80):
+    raise SystemExit(93)
+print(json.dumps({"pid": os.getpid()}), flush=True)
+sys.stdin.readline()
+k.ReleaseMutex(mutex_handle)
+k.CloseHandle(mutex_handle)
+k.CloseHandle(file_handle)
+'''
+    owner = subprocess.Popen(
+        [sys.executable, "-c", owner_code, str(receipt_path), nonce, mutex_name],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    assert owner.stdout is not None
+    ready = json.loads(owner.stdout.readline())
+    return owner, receipt_path, int(ready["pid"])
+
+
+def test_direct_converge_runtime_requires_same_runtime_mutex_across_processes(
+    tmp_path: Path,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Windows named mutex contract")
+    _, source, _, origin_sha = _runtime_fixture(tmp_path)
+    launcher_path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "news-grasp-task-launcher.pyw"
+    )
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    runtime_handle = kernel32.CreateMutexW(
+        None, False, "Global\\NewsGraspProductionRuntimeConvergence"
+    )
+    bootstrap_handle = kernel32.CreateMutexW(
+        None, False, f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+    )
+    assert runtime_handle and bootstrap_handle
+    assert kernel32.WaitForSingleObject(runtime_handle, 0) in (0, 0x80)
+    assert kernel32.WaitForSingleObject(bootstrap_handle, 0) in (0, 0x80)
+    isolated_home = tmp_path / "isolated-home"
+    isolated_home.mkdir()
+    owner_nonce = "1" * 32
+    owner_receipt, owner_receipt_handle = (
+        _lock_runtime_owner_receipt_for_current_process(
+            isolated_home,
+            nonce=owner_nonce,
+        )
+    )
+    env = dict(os.environ)
+    env["USERPROFILE"] = str(isolated_home)
+    env["HOME"] = str(isolated_home)
+    try:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(launcher_path),
+                "converge-runtime",
+                "--source-repo",
+                str(source),
+                "--origin-sha",
+                origin_sha,
+                "--bootstrap-owner-pid",
+                str(os.getpid()),
+                "--bootstrap-owner-receipt",
+                str(owner_receipt),
+                "--bootstrap-owner-nonce",
+                owner_nonce,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            check=False,
+            timeout=20,
+        )
+    finally:
+        kernel32.CloseHandle(owner_receipt_handle)
+        kernel32.ReleaseMutex(bootstrap_handle)
+        kernel32.CloseHandle(bootstrap_handle)
+        kernel32.ReleaseMutex(runtime_handle)
+        kernel32.CloseHandle(runtime_handle)
+    assert completed.returncode == 72
+    assert "PRODUCTION_RUNTIME_MUTEX_BUSY" in completed.stderr
+
+
+def test_direct_converge_runtime_is_blocked_while_bootstrap_runtime_lifecycle_mutex_is_held(
+    tmp_path: Path,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Windows named mutex contract")
+    _, source, _, origin_sha = _runtime_fixture(tmp_path)
+    launcher_path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "news-grasp-task-launcher.pyw"
+    )
+    isolated_home = tmp_path / "direct-home"
+    isolated_home.mkdir()
+    owner_nonce = "2" * 32
+    owner, owner_receipt, owner_pid = _start_runtime_lifecycle_owner(
+        isolated_home,
+        nonce=owner_nonce,
+    )
+    env = dict(os.environ)
+    env["USERPROFILE"] = str(isolated_home)
+    env["HOME"] = str(isolated_home)
+    try:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(launcher_path),
+                "converge-runtime",
+                "--source-repo",
+                str(source),
+                "--origin-sha",
+                origin_sha,
+                "--bootstrap-owner-pid",
+                str(owner_pid),
+                "--bootstrap-owner-receipt",
+                str(owner_receipt),
+                "--bootstrap-owner-nonce",
+                owner_nonce,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            check=False,
+            timeout=20,
+        )
+    finally:
+        owner.communicate(input="\n", timeout=10)
+    assert completed.returncode == 72
+    assert "PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID" in completed.stderr
+    assert not (isolated_home / ".news-grasp-runtime" / "production-runtime").exists()
+
+
+def test_direct_converge_cannot_borrow_unrelated_bootstrap_mutex_holder(
+    tmp_path: Path,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Windows named mutex contract")
+    _, source, _, origin_sha = _runtime_fixture(tmp_path)
+    launcher_path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "news-grasp-task-launcher.pyw"
+    )
+    isolated_home = tmp_path / "borrowed-home"
+    isolated_home.mkdir()
+    owner_nonce = "3" * 32
+    owner, owner_receipt, _ = _start_runtime_lifecycle_owner(
+        isolated_home,
+        nonce=owner_nonce,
+    )
+    env = dict(os.environ)
+    env["USERPROFILE"] = str(isolated_home)
+    env["HOME"] = str(isolated_home)
+    try:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(launcher_path),
+                "converge-runtime",
+                "--source-repo",
+                str(source),
+                "--origin-sha",
+                origin_sha,
+                "--bootstrap-owner-pid",
+                str(os.getpid()),
+                "--bootstrap-owner-receipt",
+                str(owner_receipt),
+                "--bootstrap-owner-nonce",
+                owner_nonce,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            check=False,
+            timeout=20,
+        )
+    finally:
+        owner.communicate(input="\n", timeout=10)
+    assert completed.returncode == 72
+    assert "PRODUCTION_RUNTIME_MUTEX_OWNER_RECEIPT_INVALID" in completed.stderr
+    assert not (isolated_home / ".news-grasp-runtime" / "production-runtime").exists()
+
+
+def test_runtime_mutex_owner_rejects_process_beyond_bounded_ancestry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    launcher = _load_task_launcher_module()
+    monkeypatch.setattr(launcher, "_process_ancestor_pids", lambda max_hops=3: (11, 22, 33))
+
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID"):
+        launcher._require_bootstrap_runtime_mutex_owner(
+            44,
+            owner_receipt_path=tmp_path / "unused.json",
+            owner_nonce="4" * 32,
+        )
+
+
+def test_runtime_mutex_owner_snapshot_failure_is_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Windows process snapshot contract")
+    launcher = _load_task_launcher_module()
+
+    class _FailedSnapshot:
+        def __init__(self) -> None:
+            self.argtypes = None
+            self.restype = None
+
+        def __call__(self, *_args):
+            return ctypes.c_void_p(-1).value
+
+    class _UnusedApi:
+        def __init__(self) -> None:
+            self.argtypes = None
+            self.restype = None
+
+        def __call__(self, *_args):
+            raise AssertionError("snapshot失敗後にprocess列挙してはならない")
+
+    class _Kernel32:
+        CreateToolhelp32Snapshot = _FailedSnapshot()
+        Process32FirstW = _UnusedApi()
+        Process32NextW = _UnusedApi()
+        CloseHandle = _UnusedApi()
+
+    monkeypatch.setattr(launcher.ctypes, "WinDLL", lambda *_args, **_kwargs: _Kernel32())
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID"):
+        launcher._process_ancestor_pids()
+
+
+def test_runtime_recovery_archives_atomic_write_temp_after_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty temp fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+    injected = {"raised": False}
+
+    def crash_after_temp(*args, **kwargs):
+        if kwargs.get("phase") == "committed" and not injected["raised"]:
+            injected["raised"] = True
+            journal_path = Path(args[0])
+            orphan = journal_path.with_name(
+                f"{journal_path.name}.tmp.123.{'a' * 32}"
+            )
+            orphan.write_text('{"partial":true}\n', encoding="utf-8")
+            raise RuntimeError("INJECTED_AFTER_TEMP_BEFORE_REPLACE")
+        return real_append(*args, **kwargs)
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_after_temp)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_TEMP_BEFORE_REPLACE"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+
+    recovered = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+    archive_dir = Path(recovered["journalPath"]).parent
+    assert recovered["phase"] == "committed"
+    assert len(list(archive_dir.glob("orphaned-write-*.tmp"))) == 1
+
+
+def test_runtime_recovery_rejects_self_consistent_unanchored_journal(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty unanchored fixture\n", encoding="utf-8")
+    transaction_id = "20260810T120000000000Z-0123456789abcdef"
+    transaction_dir = runtime_root / "transactions" / transaction_id
+    transaction_dir.mkdir(parents=True)
+    event = {
+        "sequence": 1,
+        "phase": "prepared",
+        "previousEventSha256": "0" * 64,
+        "observedAtUtc": "2026-08-10T03:00:00+00:00",
+        "observations": {"runtimeDirty": True, "runtimeHead": origin_sha},
+    }
+    event["eventSha256"] = launcher._sha256_json(event)
+    journal = {
+        "schemaVersion": launcher.RUNTIME_RECOVERY_SCHEMA,
+        "transactionId": transaction_id,
+        "phase": "prepared",
+        "originSha": origin_sha,
+        "sourceCommonDir": str(launcher._git_common_dir(source)),
+        "runtimePath": str(runtime),
+        "quarantinePath": str(
+            runtime_root / "quarantine" / transaction_id / "production-runtime"
+        ),
+        "publishOrTerminalAmbiguous": False,
+        "events": [event],
+    }
+    (transaction_dir / "runtime-recovery.json").write_text(
+        json.dumps(journal), encoding="utf-8"
+    )
+
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    assert (runtime / "tracked.txt").read_text(encoding="utf-8") == (
+        "dirty unanchored fixture\n"
+    )
+
+
+def _write_anchored_committed_runtime_transaction(
+    launcher: object,
+    *,
+    source: Path,
+    runtime_root: Path,
+    origin_sha: str,
+    index: int,
+) -> None:
+    transaction_id = f"20260810T{index:012d}Z-{index:016x}"
+    runtime = runtime_root / "production-runtime"
+    quarantine = runtime_root / "quarantine" / transaction_id / "production-runtime"
+    authority_path = runtime_root / "authorities" / f"{transaction_id}.json"
+    authority_path.parent.mkdir(parents=True, exist_ok=True)
+    authority = {
+        "schemaVersion": "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_V1",
+        "transactionId": transaction_id,
+        "originSha": origin_sha,
+        "sourceCommonDir": str(launcher._git_common_dir(source)),
+        "runtimePath": str(runtime),
+        "quarantinePath": str(quarantine),
+        "issuedAtUtc": "2026-08-10T03:00:00+00:00",
+    }
+    authority["authoritySha256"] = launcher._sha256_json(authority)
+    authority_path.write_text(json.dumps(authority), encoding="utf-8")
+    events: list[dict[str, object]] = []
+    previous = "0" * 64
+    for sequence, phase in enumerate(launcher.RUNTIME_RECOVERY_PHASES, start=1):
+        event: dict[str, object] = {
+            "sequence": sequence,
+            "phase": phase,
+            "previousEventSha256": previous,
+            "observedAtUtc": "2026-08-10T03:00:00+00:00",
+            "observations": {},
+        }
+        event["eventSha256"] = launcher._sha256_json(event)
+        previous = str(event["eventSha256"])
+        events.append(event)
+    transaction_dir = runtime_root / "transactions" / transaction_id
+    transaction_dir.mkdir(parents=True)
+    journal = {
+        "schemaVersion": launcher.RUNTIME_RECOVERY_SCHEMA,
+        "transactionId": transaction_id,
+        "phase": "committed",
+        "originSha": origin_sha,
+        "sourceCommonDir": str(launcher._git_common_dir(source)),
+        "runtimePath": str(runtime),
+        "quarantinePath": str(quarantine),
+        "authorityPath": str(authority_path),
+        "authoritySha256": authority["authoritySha256"],
+        "publishOrTerminalAmbiguous": False,
+        "events": events,
+    }
+    (transaction_dir / "runtime-recovery.json").write_text(
+        json.dumps(journal), encoding="utf-8"
+    )
+
+
+def test_runtime_recovery_remains_operational_after_64_committed_turnovers(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    for index in range(65):
+        _write_anchored_committed_runtime_transaction(
+            launcher,
+            source=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+            index=index,
+        )
+
+    result = launcher.converge_production_runtime(
+        source_repo=source,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+    )
+
+    assert result["phase"] == "committed"
+    assert not any((runtime_root / "transactions").iterdir())
+    archived = list((runtime_root / "quarantine").glob("*/runtime-recovery.json"))
+    assert len(archived) == 65
+
+
+def test_runtime_recovery_rejects_forged_journal_path_before_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("dirty forged fixture\n", encoding="utf-8")
+    real_append = launcher._append_runtime_recovery_event
+
+    def crash_after_prepared(*args, **kwargs):
+        real_append(*args, **kwargs)
+        if kwargs.get("phase") == "prepared":
+            raise RuntimeError("INJECTED_AFTER_PREPARED")
+
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", crash_after_prepared)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_PREPARED"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    monkeypatch.setattr(launcher, "_append_runtime_recovery_event", real_append)
+    journal_path = next((runtime_root / "transactions").glob("*/runtime-recovery.json"))
+    journal = json.loads(journal_path.read_text(encoding="utf-8"))
+    outside = tmp_path / "outside"
+    journal["quarantinePath"] = str(outside)
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_JOURNAL_INVALID"):
+        launcher.converge_production_runtime(
+            source_repo=source,
+            runtime_root=runtime_root,
+            origin_sha=origin_sha,
+        )
+    assert not outside.exists()
+    assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "dirty forged fixture\n"
+
+
+def test_launcher_uses_evidence_source_when_configured_runtime_is_missing(
+    tmp_path: Path,
+) -> None:
+    launcher = _load_task_launcher_module()
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    evidence = tmp_path / "evidence"
+    (evidence / "tools").mkdir(parents=True)
+    (evidence / "tools" / "daily_self_heal.py").write_text("# fixture\n", encoding="utf-8")
+    python_exe = tmp_path / "python.exe"
+    python_exe.write_bytes(b"fixture")
+    configured_runtime = tmp_path / ".news-grasp-runtime" / "production-runtime"
+    config = {
+        "schemaVersion": "NEWS_GRASP_RUNTIME_ROOT_V1",
+        "repoDir": str(configured_runtime),
+        "pythonExe": str(python_exe),
+        "evidenceRepoDir": str(evidence),
+    }
+    (bin_dir / "news-grasp-runtime-root-v1.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
+
+    resolved = launcher.resolve_bootstrap_launch_roots(bin_dir=bin_dir)
+    assert resolved["repoDir"] == evidence.resolve()
+    assert resolved["configuredRuntime"] == configured_runtime.absolute()
+    assert not configured_runtime.exists()
+
+
+def test_runtime_recovery_and_installer_phase_contract_is_forward_only() -> None:
+    root = Path(__file__).resolve().parents[1]
+    launcher = (root / "scripts" / "ops" / "news-grasp-task-launcher.pyw").read_text(
+        encoding="utf-8-sig"
+    )
+    installer = (root / "scripts" / "ops" / "install-news-grasp-ops.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    bootstrap = (root / "scripts" / "ops" / "news-grasp-bootstrap.ps1").read_text(
+        encoding="utf-8-sig"
+    )
+    for phase in (
+        "prepared",
+        "runtime_quarantined",
+        "replacement_created",
+        "dependencies_bound",
+        "committed",
+    ):
+        assert phase in launcher
+    assert "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_V1" in launcher
+    assert "MAX_RUNTIME_RECOVERY_TRANSACTIONS = 64" in launcher
+    assert "--bootstrap-owner-pid" in bootstrap
+    assert "--bootstrap-owner-receipt" in bootstrap
+    assert "--bootstrap-owner-nonce" in bootstrap
+    assert "([string]$PID)" in bootstrap
+    assert "PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID" in launcher
+    assert "NEWS_GRASP_RUNTIME_LIFECYCLE_OWNER_V1" in bootstrap
+    assert "[System.IO.FileShare]::Read" in bootstrap
+    assert bootstrap.index("$runtimeOwnerReceiptStream.Write") < bootstrap.index(
+        "$runtimeMutex = New-Object System.Threading.Mutex"
+    )
+    assert "tasks_converged" in installer
+    assert "verified" in installer
+    recovery = installer.split("function Recover-NewsGraspInterruptedInstall", 1)[1].split(
+        "function Invoke-NewsGraspInstallRollback", 1
+    )[0]
+    assert "tasks_registered" not in recovery
 
 
 def test_production_runtime_resolver_never_leaks_git_output_into_repo_path() -> None:
@@ -1229,8 +2053,9 @@ def test_production_runtime_resolver_never_leaks_git_output_into_repo_path() -> 
         "function Get-FileSha256Hex", 1
     )[0]
 
-    assert "worktree add --detach $runtimeRepo $originSha 2>$null | Out-Null" in resolver
-    assert "checkout --detach $originSha --quiet 2>$null | Out-Null" in resolver
+    assert "$convergenceJson = (& $PythonExe" in resolver
+    assert "$convergenceJson | ConvertFrom-Json" in resolver
+    assert "PRODUCTION_RUNTIME_CONVERGENCE_RESULT_INVALID" in resolver
     assert "return $runtimeRepo" in resolver
 
 

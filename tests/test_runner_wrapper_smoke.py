@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -127,13 +128,17 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     broker = profile / "bin" / "ai-model-spawn-broker.py"
     workspace = tmp_path / "workspace"
     registry = workspace / "docs" / "harness" / "high_cost_model_routes_v1.json"
+    budget_validator = workspace / "tools" / "harness" / "high_cost_operation_budget.py"
     admission = tmp_path / "scheduled-operation-admission.json"
     broker.parent.mkdir(parents=True, exist_ok=True)
     registry.parent.mkdir(parents=True, exist_ok=True)
+    budget_validator.parent.mkdir(parents=True, exist_ok=True)
     broker.write_text(
         "import subprocess\n"
         "import sys\n"
         "args = sys.argv[1:]\n"
+        "if args and args[0] == '-I':\n"
+        "    args = args[1:]\n"
         "if not args or args[0] != 'exec':\n"
         "    raise SystemExit(97)\n"
         "try:\n"
@@ -145,6 +150,10 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         encoding="utf-8",
     )
     registry.write_text("{}\n", encoding="utf-8")
+    budget_validator.write_text(
+        "# scheduled_production smoke fixture: presence-only; validator is not executed.\n",
+        encoding="utf-8",
+    )
     admission.write_text("{}\n", encoding="utf-8")
     env = os.environ.copy()
     env["USERPROFILE"] = str(profile)
@@ -154,9 +163,229 @@ def _canonical_test_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"test-{tmp_path.name}",
         "-HighCostAdmissionPath", str(admission),
-        "-HighCostExpectedOperationKind", "full_e2e",
+        "-HighCostExpectedOperationKind", "scheduled_production",
     ]
     return args, env
+
+
+def _full_e2e_claim_fixture(tmp_path: Path, claim_mode: str) -> tuple[list[str], dict[str, str], Path]:
+    profile = tmp_path / "profile"
+    workspace = tmp_path / "workspace"
+    execution_root = tmp_path / "execution"
+    bridge_root = execution_root / "tools"
+    broker = profile / "bin" / "ai-model-spawn-broker.py"
+    validator = workspace / "tools" / "harness" / "high_cost_operation_budget.py"
+    registry = workspace / "docs" / "harness" / "high_cost_model_routes_v1.json"
+    parent = execution_root / "parent-authority.json"
+    admission = execution_root / "admission.json"
+    arguments = execution_root / "admission.runner-arguments.json"
+    reservation = execution_root / "admission.e2e-final-reservation.json"
+    claim = execution_root / "admission.e2e-final-claim.json"
+    bridge = bridge_root / "e2e_final_admission_bridge.py"
+    for path in (broker, validator, registry, parent, admission, arguments, reservation):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    bridge_root.mkdir(parents=True, exist_ok=True)
+    broker.write_text(
+        "import os,sys\n"
+        "args=sys.argv[1:]\n"
+        "if args and args[0] == '-I': args=args[1:]\n"
+        "if args and args[0] == 'exec':\n"
+        "    open(os.environ['BROKER_SENTINEL'],'w').write('broker')\n"
+        "raise SystemExit(97)\n",
+        encoding="utf-8",
+    )
+    registry.write_text("{}\n", encoding="utf-8")
+    parent_payload = {
+        "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+        "state": "activated",
+        "attemptKind": "full_e2e",
+        "executionRoot": str(execution_root.resolve()),
+        "lineageEpoch": 1,
+    }
+    parent.write_text(json.dumps(parent_payload) + "\n", encoding="utf-8")
+    validator.write_text(
+        "import json,sys\n"
+        "if sys.argv[1:] and sys.argv[1] == 'validate-activated':\n"
+        f"    print({json.dumps(parent_payload)})\n"
+        "    raise SystemExit(0)\n"
+        "raise SystemExit(97)\n",
+        encoding="utf-8",
+    )
+    admission.write_text("{}\n", encoding="utf-8")
+    arguments.write_text("[]\n", encoding="utf-8")
+    reservation.write_text("{}\n", encoding="utf-8")
+    if claim_mode != "missing":
+        claim.write_text(json.dumps({"state": claim_mode}) + "\n", encoding="utf-8")
+    bridge.write_text(
+        "import sys\n"
+        "if sys.argv[1:] and sys.argv[1] == 'validate-runner-claim':\n"
+        "    raise SystemExit(2)\n"
+        "raise SystemExit(97)\n",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["USERPROFILE"] = str(profile)
+    env["BROKER_SENTINEL"] = str(tmp_path / "broker-started.txt")
+    model_sentinel = tmp_path / "model-started.txt"
+    codex = tmp_path / "fake-codex.ps1"
+    codex.write_text(
+        f"[IO.File]::WriteAllText('{model_sentinel}', 'started')\nexit 0\n",
+        encoding="utf-8",
+    )
+    env["MODEL_SENTINEL"] = str(model_sentinel)
+    args = [
+        "-HighCostWorkspaceRoot", str(workspace),
+        "-HighCostBudgetToolPath", str(broker),
+        "-HighCostPythonExe", sys.executable,
+        "-HighCostCallId", f"claim-{claim_mode}",
+        "-HighCostExpectedOperationKind", "full_e2e",
+        "-HighCostAttemptId", "nopublish:2026-08-10",
+        "-HighCostParentAuthorityPath", str(parent),
+        "-E2EFinalAdmissionPath", str(admission),
+        "-E2EFinalRunnerArgumentsPath", str(arguments),
+        "-E2EFinalReservationReceiptPath", str(reservation),
+        "-E2EFinalClaimReceiptPath", str(claim),
+        "-HighCostClaimWitness", "{}",
+        "-HighCostCallReceiptPath",
+        str(execution_root / "build" / "high-cost-call-receipts" / "call-receipt.json"),
+    ]
+    return args, env, codex
+
+
+def _composed_claim_witness_fixture(
+    tmp_path: Path,
+) -> tuple[list[str], dict[str, str], Path, Path]:
+    """claim witness fileをwrapper→brokerへ実引数で通す隔離composition fixture。"""
+
+    powershell_executable = Path(shutil.which(POWERSHELL) or POWERSHELL).resolve(strict=True)
+    profile = tmp_path / "profile"
+    workspace = tmp_path / "workspace"
+    execution_root = tmp_path / "execution"
+    broker = profile / "bin" / "ai-model-spawn-broker.py"
+    validator = workspace / "tools" / "harness" / "high_cost_operation_budget.py"
+    registry = workspace / "docs" / "harness" / "high_cost_model_routes_v1.json"
+    bridge = execution_root / "tools" / "e2e_final_admission_bridge.py"
+    parent = execution_root / "parent-authority.json"
+    admission = execution_root / "admission.json"
+    arguments = execution_root / "admission.runner-arguments.json"
+    reservation = execution_root / "admission.e2e-final-reservation.json"
+    claim = execution_root / "admission.e2e-final-claim.json"
+    witness = execution_root / "admission.e2e-final-claim-witness.json"
+    child_admission = execution_root / "child-admission.json"
+    model_sentinel = tmp_path / "model-started.txt"
+    broker_capture = tmp_path / "broker-capture.jsonl"
+    for path in (broker, validator, registry, bridge, parent, admission, arguments, reservation, claim):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    parent_payload = {
+        "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+        "state": "activated",
+        "attemptKind": "full_e2e",
+        "executionRoot": str(execution_root.resolve()),
+        "lineageEpoch": 1,
+    }
+    parent.write_text(json.dumps(parent_payload) + "\n", encoding="utf-8")
+    admission.write_text(
+        json.dumps(
+            {
+                "expectedClaimWitnessPath": str(witness.resolve()),
+                "runnerExecutablePath": str(powershell_executable),
+                "authorityPythonExecutablePath": str(Path(sys.executable).resolve()),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    arguments.write_text('["-NoPublish"]\n', encoding="utf-8")
+    reservation.write_text("{}\n", encoding="utf-8")
+    claim.write_text("{}\n", encoding="utf-8")
+    witness_value = {
+        "schemaVersion": "E2E_FINAL_RUNNER_CLAIM_WITNESS_V1",
+        "claimId": "a" * 64,
+        "claimReceiptPath": str(claim.resolve()),
+        "claimReceiptSha256": "b" * 64,
+        "ownerProcessIdentity": {
+            "pid": os.getpid(),
+            "parentPid": 1,
+            "creationFileTimeUtc": "fixture-owner",
+            "imagePath": str(powershell_executable),
+            "imageSha256": "c" * 64,
+        },
+        "attemptKey": "News-Grasp:2026-08-10:scheduled-equivalent-nopublish",
+        "admissionId": "d" * 64,
+        "admissionPath": str(admission.resolve()),
+        "runnerArgumentsPath": str(arguments.resolve()),
+        "reservationReceiptPath": str(reservation.resolve()),
+        "reservationReceiptSha256": "e" * 64,
+    }
+    witness.write_text(json.dumps(witness_value) + "\n", encoding="utf-8")
+    validator.write_text(
+        "import json,sys\n"
+        "if sys.argv[1:] and sys.argv[1] == 'validate-activated':\n"
+        f"    print({json.dumps(parent_payload)})\n"
+        "    raise SystemExit(0)\n"
+        "raise SystemExit(97)\n",
+        encoding="utf-8",
+    )
+    registry.write_text("{}\n", encoding="utf-8")
+    bridge.write_text(
+        "import json,sys\n"
+        "args=sys.argv[1:]\n"
+        "if not args or args[0] != 'validate-runner-claim-witness': raise SystemExit(96)\n"
+        "path=args[args.index('--claim-witness')+1]\n"
+        "print(json.dumps(json.load(open(path,encoding='utf-8'))))\n",
+        encoding="utf-8",
+    )
+    broker.write_text(
+        "import json,os,sys\n"
+        "args=sys.argv[1:]\n"
+        "if args and args[0] == '-I': args=args[1:]\n"
+        "witness=args[args.index('--e2e-final-claim-witness')+1]\n"
+        "if not os.path.isabs(witness) or not os.path.isfile(witness): raise SystemExit(95)\n"
+        "with open(os.environ['BROKER_CAPTURE'],'a',encoding='utf-8') as s: s.write(json.dumps({'command':args[0],'witness':witness})+'\\n')\n"
+        "if args[0] == 'admit':\n"
+        "    receipt=os.environ['CHILD_ADMISSION']\n"
+        "    value={'schemaVersion':'HIGH_COST_OPERATION_ADMISSION_V3','operationKind':'full_e2e','attemptId':'nopublish:2026-08-10','route':args[args.index('--route')+1],'executionRoot':args[args.index('--execution-root')+1],'parentAuthorityPath':args[args.index('--parent-operation-authority')+1],'callIdSha256':'f'*64,'commandSha256':'1'*64,'receiptPath':receipt}\n"
+        "    open(receipt,'w',encoding='utf-8').write(json.dumps(value))\n"
+        "    print(json.dumps(value)); raise SystemExit(0)\n"
+        "if args[0] == 'exec':\n"
+        "    open(os.environ['MODEL_SENTINEL'],'w',encoding='utf-8').write('started')\n"
+        "    raise SystemExit(0)\n"
+        "raise SystemExit(94)\n",
+        encoding="utf-8",
+    )
+    codex = tmp_path / "unused-codex.ps1"
+    codex.write_text("exit 93\n", encoding="utf-8-sig")
+    env = os.environ.copy()
+    env.update(
+        {
+            "USERPROFILE": str(profile),
+            "BROKER_CAPTURE": str(broker_capture),
+            "CHILD_ADMISSION": str(child_admission),
+            "MODEL_SENTINEL": str(model_sentinel),
+        }
+    )
+    args = [
+        "-HighCostWorkspaceRoot", str(workspace),
+        "-HighCostBudgetToolPath", str(broker),
+        "-HighCostPythonExe", sys.executable,
+        "-HighCostCallId", "claim-composition",
+        "-HighCostExpectedOperationKind", "full_e2e",
+        "-HighCostAttemptId", "nopublish:2026-08-10",
+        "-HighCostParentAuthorityPath", str(parent),
+        "-E2EFinalAdmissionPath", str(admission),
+        "-E2EFinalRunnerArgumentsPath", str(arguments),
+        "-E2EFinalReservationReceiptPath", str(reservation),
+        "-E2EFinalClaimReceiptPath", str(claim),
+        "-HighCostClaimWitness", str(witness),
+        "-HighCostCallReceiptPath",
+        str(
+            execution_root
+            / "build"
+            / "high-cost-call-receipts"
+            / "claim-composition.json"
+        ),
+    ]
+    return args, env, codex, broker_capture
 
 
 def test_codex_wrapper_uses_prompt_file_working_directory_and_schema(tmp_path: Path) -> None:
@@ -251,11 +480,181 @@ def test_codex_wrapper_has_no_legacy_agent_parameters() -> None:
 
 
 def test_codex_wrapper_quotes_argument_list_for_paths_with_spaces() -> None:
-    text = WRAPPER.read_text(encoding="utf-8-sig")
+    text = REPO_WRAPPER.read_text(encoding="utf-8-sig")
     assert "ConvertTo-ProcessArgumentString" in text
     assert "$effectiveArgString = ConvertTo-ProcessArgumentString" in text
-    assert "[NewsGraspOwnedJob]::CreateSuspendedAssignedProcess($filePath, $effectiveArgString" in text
+    assert "[NewsGraspOwnedJob]::CreateSuspendedAssignedProcess($filePath, $effectiveArgString, $WorkingDirectory" in text
     assert "-ArgumentList $effectiveArgs" not in text
+
+
+def test_codex_wrapper_rejects_direct_cross_mode_inputs_before_model_start(tmp_path: Path) -> None:
+    prompt_file = tmp_path / "prompt.md"
+    prompt_file.write_text("cross-mode rejection\n", encoding="utf-8")
+    sentinel = tmp_path / "model-started.txt"
+
+    scheduled_args, scheduled_env = _canonical_test_broker(tmp_path / "scheduled")
+    scheduled_args = list(scheduled_args)
+    scheduled_args += ["-HighCostParentAuthorityPath", str(tmp_path / "scheduled-parent.json")]
+    scheduled_result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(REPO_WRAPPER),
+            "-CodexExe", str(_fake_codex(tmp_path)),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(tmp_path / "scheduled.log"),
+            "-WorkingDirectory", str(ROOT),
+            "-FlowName", "scheduled:test",
+            *scheduled_args,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        env=scheduled_env,
+    )
+    assert scheduled_result.returncode == 126
+    assert not sentinel.exists()
+    assert "HIGH_COST_SCHEDULED_PARENT_AUTHORITY_FORBIDDEN" in (
+        tmp_path / "scheduled.log"
+    ).read_text(encoding="utf-8", errors="replace")
+
+    full_args, full_env = _canonical_test_broker(tmp_path / "full")
+    full_args = list(full_args)
+    full_args[full_args.index("-HighCostExpectedOperationKind") + 1] = "full_e2e"
+    full_result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(REPO_WRAPPER),
+            "-CodexExe", str(_fake_codex(tmp_path)),
+            "-PromptFile", str(prompt_file),
+            "-LogFile", str(tmp_path / "full.log"),
+            "-WorkingDirectory", str(ROOT),
+            "-FlowName", "full:test",
+            *full_args,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        env=full_env,
+    )
+    assert full_result.returncode == 126
+    assert not sentinel.exists()
+    assert "HIGH_COST_FULL_E2E_SHARED_ADMISSION_FORBIDDEN" in (
+        tmp_path / "full.log"
+    ).read_text(encoding="utf-8", errors="replace")
+
+
+@pytest.mark.parametrize("claim_mode", ["missing", "foreign", "stale"])
+def test_full_e2e_direct_wrapper_rejects_claim_before_broker_or_model(
+    tmp_path: Path, claim_mode: str
+) -> None:
+    args, env, codex = _full_e2e_claim_fixture(tmp_path / claim_mode, claim_mode)
+    (tmp_path / "prompt.md").write_text("claim validation\n", encoding="utf-8")
+    log_file = tmp_path / f"{claim_mode}.log"
+    result = subprocess.run(
+        [
+            POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(REPO_WRAPPER),
+            "-CodexExe", str(codex),
+            "-PromptFile", str(tmp_path / "prompt.md"),
+            "-LogFile", str(log_file),
+            "-WorkingDirectory", str((tmp_path / claim_mode / "execution").resolve()),
+            "-FlowName", f"full:{claim_mode}",
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        env=env,
+    )
+    assert result.returncode == 126, result.stderr + result.stdout
+    assert not (tmp_path / claim_mode / "broker-started.txt").exists()
+    assert not (tmp_path / claim_mode / "model-started.txt").exists()
+
+
+@pytest.mark.parametrize("launch_mode", ["sequential", "start_job"])
+def test_full_e2e_claim_witness_file_composes_sequential_and_start_job(
+    tmp_path: Path,
+    launch_mode: str,
+) -> None:
+    args, env, codex, broker_capture = _composed_claim_witness_fixture(
+        tmp_path / launch_mode
+    )
+    prompt = tmp_path / "prompt.md"
+    log_file = tmp_path / f"{launch_mode}.log"
+    prompt.write_text("claim composition\n", encoding="utf-8")
+    invocation = [
+        "-CodexExe", str(codex),
+        "-PromptFile", str(prompt),
+        "-LogFile", str(log_file),
+        "-TimeoutSec", "30",
+        "-IdleTimeoutSec", "30",
+        "-WorkingDirectory", str((tmp_path / launch_mode / "execution").resolve()),
+        "-FlowName", "reporter:composition",
+        *args,
+    ]
+    if launch_mode == "sequential":
+        command = [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(REPO_WRAPPER),
+            *invocation,
+        ]
+    else:
+        env = env.copy()
+        isolated_profile = env["USERPROFILE"]
+        env["USERPROFILE"] = os.environ["USERPROFILE"]
+        invocation_path = tmp_path / "invocation.json"
+        invocation_path.write_text(json.dumps(invocation), encoding="utf-8")
+        harness = tmp_path / "start-job-harness.ps1"
+        harness.write_text(
+            "param([string]$Wrapper,[string]$InvocationPath,[string]$Profile)\n"
+                "$job=Start-Job -ScriptBlock { $env:USERPROFILE=$using:Profile; $raw=Get-Content -LiteralPath $using:InvocationPath -Raw -Encoding UTF8 | ConvertFrom-Json; $named=@{}; for($i=0;$i -lt $raw.Count;$i+=2){$named[[string]$raw[$i].TrimStart('-')]=[string]$raw[$i+1]}; $w=$using:Wrapper; & $w @named }\n"
+            "Receive-Job -Job $job -Wait -AutoRemoveJob\n"
+            "exit 0\n",
+            encoding="utf-8-sig",
+        )
+        command = [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(harness),
+            "-Wrapper",
+            str(REPO_WRAPPER),
+                "-InvocationPath",
+                str(invocation_path),
+                "-Profile",
+                isolated_profile,
+            ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=90,
+        env=env,
+    )
+    log_text = (
+        log_file.read_text(encoding="utf-8", errors="replace")
+        if log_file.exists()
+        else ""
+    )
+    assert result.returncode == 0, result.stderr + result.stdout + log_text
+    assert broker_capture.is_file(), result.stderr + result.stdout + log_text
+    rows = [json.loads(line) for line in broker_capture.read_text(encoding="utf-8").splitlines()]
+    assert [row["command"] for row in rows] == ["admit", "exec"]
+    assert all(Path(row["witness"]).is_file() for row in rows)
 
 
 def test_codex_wrapper_writes_flow_usage_jsonl(tmp_path: Path) -> None:

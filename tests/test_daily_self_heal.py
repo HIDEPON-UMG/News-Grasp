@@ -2588,7 +2588,7 @@ def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(mon
     live_bin.mkdir(parents=True)
     runner_with_interlock = _runner_with_pre_run_interlock_source()
     launcher_source = """
-parser.add_argument("mode", choices=("runner", "bootstrap"))
+parser.add_argument("mode", choices=("runner", "bootstrap", "converge-runtime"))
 script = bin_dir / "news-grasp-bootstrap.ps1"
 extra = [
     "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",

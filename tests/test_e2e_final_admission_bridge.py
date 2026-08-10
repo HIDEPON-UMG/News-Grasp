@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
+import os
+import sys
+import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event
@@ -16,7 +21,7 @@ from tools.deepdive_red_suite_coverage import (
 from tools.e2e_final_admission_bridge import (
     E2EFinalAdmissionError,
     consume_admission as _consume_admission,
-    issue_admission,
+    issue_admission as _issue_admission,
 )
 from tools.red_suite_execution import (
     PAIR_TEST_SELECTOR,
@@ -56,13 +61,218 @@ def _sha256(path: Path) -> str:
 
 
 def consume_admission(*, admission_path: Path, ledger_path: Path) -> dict[str, object]:
-    """既存テストも実起動引数との照合を必ず通す。"""
+    """issue後にmaterializeしてvalidate-issuedを通してからconsumeする。"""
     value = json.loads(admission_path.read_text(encoding="utf-8"))
+    arguments_path = Path(value["expectedRunnerArgumentsPath"])
+    arguments_path.write_bytes(
+        bridge_module._canonical_runner_arguments_bytes(
+            list(value["runnerArguments"])
+        )
+    )
+    parent_path = Path(value["expectedParentAuthorityPath"])
+    _write_json(
+        parent_path,
+        {
+            "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+            "state": "activated",
+            "taskIdentity": "fixture-task",
+            "threadId": "fixture-thread",
+            "taskRootUserEventHash": "a" * 64,
+            "latestActualUserEventHash": "b" * 64,
+            "authorizationId": "fixture-authorization",
+            "lineageEpoch": 1,
+        },
+    )
+    bridge_module.validate_issued_admission(
+        admission_path=admission_path,
+        runner_arguments=list(value["runnerArguments"]),
+        expected_parent_authority_path=parent_path,
+        runner_arguments_path=arguments_path,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        claim_witness_output=Path(value["expectedClaimWitnessPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            value["authorityPythonExecutablePath"]
+        ),
+    )
     return _consume_admission(
         admission_path=admission_path,
         ledger_path=ledger_path,
         runner_arguments=list(value["runnerArguments"]),
+        parent_authority_path=parent_path,
+        runner_arguments_path=arguments_path,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            value["authorityPythonExecutablePath"]
+        ),
     )
+
+
+def issue_admission(**kwargs: object) -> dict[str, object]:
+    """issue時は4つの将来ファイルを作らず、deterministic pathだけを注入する。"""
+
+    arguments = dict(kwargs)
+    repo = Path(str(arguments["repo_root"]))
+    output = Path(str(arguments["output_path"]))
+    try:
+        output.resolve().relative_to(repo.resolve())
+    except ValueError:
+        mapped_output = repo / ".e2e-final-admissions" / output.name
+        if output.exists():
+            mapped_output.parent.mkdir(parents=True, exist_ok=True)
+            mapped_output.write_bytes(output.read_bytes())
+        arguments["output_path"] = mapped_output
+        output = mapped_output
+    stem = output.stem
+    arguments.setdefault(
+        "expected_parent_authority_path",
+        repo / f"{stem}.high-cost-parent-authority.json",
+    )
+    arguments.setdefault(
+        "runner_arguments_path",
+        repo / f"{stem}.runner-arguments.json",
+    )
+    arguments.setdefault(
+        "expected_reservation_receipt_path",
+        repo / f"{stem}.e2e-final-reservation.json",
+    )
+    arguments.setdefault(
+        "expected_claim_receipt_path",
+        repo / f"{stem}.e2e-final-claim.json",
+    )
+    arguments.setdefault(
+        "runner_executable_path", Path(str(arguments["runner_path"]))
+    )
+    arguments.setdefault("authority_python_executable_path", Path(sys.executable))
+    return _issue_admission(**arguments)
+
+
+def _materialize_runner_arguments_only(admission: Path) -> tuple[dict[str, object], Path]:
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    arguments_path = Path(value["expectedRunnerArgumentsPath"])
+    arguments_path.write_bytes(
+        bridge_module._canonical_runner_arguments_bytes(
+            list(value["runnerArguments"])
+        )
+    )
+    return value, arguments_path
+
+
+def _lock_probe_worker(
+    local_app_data: str,
+    temp_root: str,
+    tmp_root: str,
+    lock_target: str,
+    barrier: object,
+    result_queue: object,
+) -> None:
+    os.environ["LOCALAPPDATA"] = local_app_data
+    os.environ["TEMP"] = temp_root
+    os.environ["TMP"] = temp_root
+    try:
+        ledger = bridge_module.default_attempt_ledger_path()
+        barrier.wait(timeout=15)
+        started = time.monotonic()
+        for _ in range(750):
+            try:
+                with bridge_module._issue_execution_lock(
+                    Path(lock_target), wait_for_lock=False
+                ):
+                    entered = time.monotonic()
+                    Path(tmp_root, f"entered-{os.getpid()}").write_text("1", encoding="utf-8")
+                    time.sleep(0.25)
+                    exited = time.monotonic()
+                break
+            except E2EFinalAdmissionError as error:
+                if str(error) != "E2E_ADMISSION_ISSUE_BUSY":
+                    raise
+                time.sleep(0.02)
+        else:
+            raise RuntimeError("lock probe exhausted")
+        result_queue.put(
+            {
+                "ledger": str(ledger),
+                "started": started,
+                "entered": entered,
+                "exited": exited,
+            }
+        )
+    except BaseException as error:  # pragma: no cover - surfaced by parent assertion
+        result_queue.put({"error": repr(error)})
+
+
+def _consume_claim_process_worker(
+    admission_text: str,
+    ledger_text: str,
+    parent_text: str,
+    arguments_text: str,
+    local_app_data: str,
+    temp_root: str,
+    barrier: object,
+    result_queue: object,
+    nonce: str,
+) -> None:
+    os.environ["LOCALAPPDATA"] = local_app_data
+    os.environ["TEMP"] = temp_root
+    os.environ["TMP"] = temp_root
+    admission = Path(admission_text)
+    ledger = Path(ledger_text)
+    parent = Path(parent_text)
+    arguments = Path(arguments_text)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    try:
+        barrier.wait(timeout=30)
+        reserved = _consume_admission(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=list(value["runnerArguments"]),
+            parent_authority_path=parent,
+            runner_arguments_path=arguments,
+            reservation_output=Path(value["expectedReservationReceiptPath"]),
+            actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(
+                value["authorityPythonExecutablePath"]
+            ),
+        )
+        reserved_state = str(reserved.get("state"))
+    except E2EFinalAdmissionError as error:
+        reserved_state = f"error:{error}"
+    try:
+        claimed = bridge_module.claim_runner(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=list(value["runnerArguments"]),
+            parent_authority_path=parent,
+            runner_arguments_path=arguments,
+            reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+            claim_output=Path(value["expectedClaimReceiptPath"]),
+            actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(
+                value["authorityPythonExecutablePath"]
+            ),
+            current_runner_pid=os.getpid(),
+            claim_nonce=nonce,
+        )
+        claimed_state = str(claimed.get("state"))
+    except E2EFinalAdmissionError as error:
+        claimed_state = f"error:{error}"
+    result_queue.put(
+        {
+            "ledger": str(bridge_module.default_attempt_ledger_path()),
+            "reserved": reserved_state,
+            "claimed": claimed_state,
+        }
+    )
+
+
+def _configure_spawn_executable() -> None:
+    """venv launcherの二重spawnを避け、focused process fixtureを安定させる。"""
+    if os.name == "nt":
+        base_executable = Path(sys.base_prefix) / "python.exe"
+        if base_executable.is_file():
+            multiprocessing.set_executable(str(base_executable))
 
 
 def _install_red_suite_source(repo_root: Path) -> dict[str, object]:
@@ -331,7 +541,7 @@ def _issue(
     runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
     runner.parent.mkdir(parents=True, exist_ok=True)
     runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
-    admission = tmp_path / admission_name
+    admission = repo / ".e2e-final-admissions" / admission_name
     ledger = tmp_path / "durable" / "attempts.json"
     issue_admission(
         issue_date="2026-08-01",
@@ -718,7 +928,7 @@ def test_valid_admission_is_consumed_once(tmp_path: Path) -> None:
         f"{admission.stem}.red-suite-execution.json"
     )
     result = consume_admission(admission_path=admission, ledger_path=ledger)
-    assert result["state"] == "consumed"
+    assert result["state"] == "runner_reserved"
     ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
     assert list(ledger_value["attempts"]) == [
         "News-Grasp:2026-08-01:scheduled-equivalent-nopublish"
@@ -753,7 +963,7 @@ def test_admission_is_consumed_once_across_worktree_and_receipt_paths(
     )
     with pytest.raises(
         E2EFinalAdmissionError,
-        match="E2E_FINAL_ATTEMPT_ALREADY_CONSUMED",
+        match="E2E_WAL_CROSS_LINEAGE",
     ):
         consume_admission(admission_path=second, ledger_path=ledger)
 
@@ -832,17 +1042,35 @@ def test_admission_rejects_identity_tamper(tmp_path: Path) -> None:
 def test_consumed_admission_is_typed_replay(tmp_path: Path) -> None:
     admission, ledger = _issue(tmp_path)
     consume_admission(admission_path=admission, ledger_path=ledger)
-    with pytest.raises(E2EFinalAdmissionError, match="E2E_ADMISSION_REPLAY"):
+    with pytest.raises(
+        E2EFinalAdmissionError,
+        match="E2E_FINAL_ATTEMPT_ALREADY_CONSUMED",
+    ):
         consume_admission(admission_path=admission, ledger_path=ledger)
 
 
 def test_consumer_rejects_actual_runner_argument_drift(tmp_path: Path) -> None:
     admission, ledger = _issue(tmp_path)
     with pytest.raises(E2EFinalAdmissionError, match="E2E_COMMAND_DRIFT"):
+        value = json.loads(admission.read_text(encoding="utf-8"))
+        arguments_path = Path(value["expectedRunnerArgumentsPath"])
+        arguments_path.write_bytes(
+            bridge_module._canonical_runner_arguments_bytes(
+                list(value["runnerArguments"])
+            )
+        )
+        parent_path = Path(value["expectedParentAuthorityPath"])
+        _write_json(parent_path, {"state": "activated", "fixture": "canonical"})
         _consume_admission(
             admission_path=admission,
             ledger_path=ledger,
             runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-02"],
+            parent_authority_path=parent_path,
+            runner_arguments_path=arguments_path,
+            actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(
+                value["authorityPythonExecutablePath"]
+            ),
         )
 
 
@@ -852,14 +1080,344 @@ def test_parallel_consume_has_exactly_one_winner(tmp_path: Path) -> None:
     def consume() -> str:
         try:
             consume_admission(admission_path=admission, ledger_path=ledger)
-            return "consumed"
+            return "runner_reserved"
         except E2EFinalAdmissionError as error:
             return str(error)
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(lambda _index: consume(), range(2)))
-    assert results.count("consumed") == 1
+    assert results.count("runner_reserved") == 1
     assert len(results) == 2
+
+
+def _claim_reserved(
+    admission: Path,
+    ledger: Path,
+    *,
+    nonce: str,
+    pid: int | None = None,
+) -> dict[str, object]:
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    return bridge_module.claim_runner(
+        admission_path=admission,
+        ledger_path=ledger,
+        runner_arguments=list(value["runnerArguments"]),
+        parent_authority_path=Path(value["expectedParentAuthorityPath"]),
+        runner_arguments_path=Path(value["expectedRunnerArgumentsPath"]),
+        reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            value["authorityPythonExecutablePath"]
+        ),
+        current_runner_pid=pid or os.getpid(),
+        claim_nonce=nonce,
+    )
+
+
+def test_reserved_admission_claims_once_and_seals_runner_identity(
+    tmp_path: Path,
+) -> None:
+    admission, ledger = _issue(tmp_path)
+    reserved = consume_admission(admission_path=admission, ledger_path=ledger)
+    assert reserved["state"] == "runner_reserved"
+    issued_before_claim = admission.read_bytes()
+    claimed = _claim_reserved(admission, ledger, nonce="a" * 64)
+    assert claimed["state"] == "runner_claimed"
+    assert claimed["claimNonce"] == "a" * 64
+    assert admission.read_bytes() == issued_before_claim
+    ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
+    row = ledger_value["attempts"][claimed["attemptKey"]]
+    assert row["state"] == "runner_claimed"
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_RUNNER_CLAIM_REPLAY"):
+        _claim_reserved(admission, ledger, nonce="b" * 64)
+
+
+def test_concurrent_claims_have_exactly_one_winner(tmp_path: Path) -> None:
+    admission, ledger = _issue(tmp_path)
+    consume_admission(admission_path=admission, ledger_path=ledger)
+
+    def claim(nonce: str) -> str:
+        try:
+            _claim_reserved(admission, ledger, nonce=nonce)
+            return "claimed"
+        except E2EFinalAdmissionError as error:
+            return str(error)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(claim, ("c" * 64, "d" * 64)))
+    assert results.count("claimed") == 1
+    assert len(results) == 2
+
+
+def test_stale_lock_file_does_not_block_handle_lock_recovery(tmp_path: Path) -> None:
+    admission, ledger = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    lock_root = (
+        bridge_module._managed_authority_root()
+        / "news-grasp-e2e-final-admission-locks"
+    )
+    lock_root.mkdir(parents=True, exist_ok=True)
+    lock_identity = {
+        "ledgerPath": bridge_module._path_key(ledger.resolve()),
+        "admissionPath": bridge_module._path_key(admission.resolve()),
+        "attemptKey": value["attemptKey"],
+    }
+    lock_path = lock_root / f"{bridge_module._canonical_sha256(lock_identity)}.lock"
+    lock_path.write_bytes(b"stale")
+    result = consume_admission(admission_path=admission, ledger_path=ledger)
+    assert result["state"] == "runner_reserved"
+
+
+@pytest.mark.parametrize("crash_after", [1, 2])
+def test_wal_recovers_after_each_replace_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    crash_after: int,
+) -> None:
+    admission, ledger = _issue(tmp_path)
+    original_replace = bridge_module._replace_json
+    calls = 0
+
+    def crash(path: Path, value: dict[str, object]) -> None:
+        nonlocal calls
+        calls += 1
+        original_replace(path, value)
+        if calls == crash_after:
+            raise RuntimeError("simulated crash")
+
+    monkeypatch.setattr(bridge_module, "_replace_json", crash)
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        consume_admission(admission_path=admission, ledger_path=ledger)
+    monkeypatch.setattr(bridge_module, "_replace_json", original_replace)
+    recovered = consume_admission(admission_path=admission, ledger_path=ledger)
+    assert recovered["state"] == "runner_reserved"
+    assert not list(ledger.parent.glob(f".{ledger.name}.*.reserve.wal.json"))
+
+
+@pytest.mark.parametrize("crash_after", [1, 2])
+def test_claim_wal_recovers_after_each_replace_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    crash_after: int,
+) -> None:
+    admission, ledger = _issue(tmp_path)
+    consume_admission(admission_path=admission, ledger_path=ledger)
+    issued_hash = _sha256(admission)
+    original_replace = bridge_module._replace_json
+    calls = 0
+
+    def crash(path: Path, value: dict[str, object]) -> None:
+        nonlocal calls
+        calls += 1
+        original_replace(path, value)
+        if calls == crash_after:
+            raise RuntimeError("simulated claim crash")
+
+    monkeypatch.setattr(bridge_module, "_replace_json", crash)
+    with pytest.raises(RuntimeError, match="simulated claim crash"):
+        _claim_reserved(admission, ledger, nonce="e" * 64)
+    monkeypatch.setattr(bridge_module, "_replace_json", original_replace)
+    recovered = _claim_reserved(admission, ledger, nonce="e" * 64)
+    assert recovered["state"] == "runner_claimed"
+    assert _sha256(admission) == issued_hash
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    assert Path(value["expectedClaimReceiptPath"]).is_file()
+    assert not list(ledger.parent.glob(f".{ledger.name}.*.claim.wal.json"))
+
+
+def test_divergent_ledger_row_is_rejected_before_forward_recovery(
+    tmp_path: Path,
+) -> None:
+    admission, ledger = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    _write_json(
+        ledger,
+        {
+            "schemaVersion": "NEWS_GRASP_E2E_FINAL_ATTEMPT_LEDGER_V1",
+            "attempts": {
+                value["attemptKey"]: {
+                    "admissionId": "f" * 64,
+                    "state": "runner_claimed",
+                }
+            },
+        },
+    )
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_WAL_CROSS_LINEAGE"):
+        consume_admission(admission_path=admission, ledger_path=ledger)
+
+
+def test_parent_remains_canonically_valid_after_bridge_reservation(
+    tmp_path: Path,
+) -> None:
+    admission, ledger = _issue(tmp_path)
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    issued_hash = _sha256(admission)
+    reserved = consume_admission(admission_path=admission, ledger_path=ledger)
+    parent = Path(value["expectedParentAuthorityPath"])
+    arguments = Path(value["expectedRunnerArgumentsPath"])
+    assert reserved["state"] == "runner_reserved"
+    assert _sha256(admission) == issued_hash
+    bridge_module.validate_issued_admission(
+        admission_path=admission,
+        runner_arguments=list(value["runnerArguments"]),
+        expected_parent_authority_path=parent,
+        runner_arguments_path=arguments,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        claim_output=Path(value["expectedClaimReceiptPath"]),
+        claim_witness_output=Path(value["expectedClaimWitnessPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            value["authorityPythonExecutablePath"]
+        ),
+    )
+    reservation_path = Path(value["expectedReservationReceiptPath"])
+    reservation = bridge_module._read_json(
+        reservation_path, "E2E_RESERVATION_RECEIPT_INVALID"
+    )
+    bridge_module._validate_reservation_receipt(reservation)
+    assert reservation["parentAuthorityPath"] == str(parent.resolve())
+    assert reservation_path.is_file()
+    assert parent.is_file()
+
+
+def test_existing_canonical_row_from_other_admission_is_cross_lineage(
+    tmp_path: Path,
+) -> None:
+    first, ledger = _issue(
+        tmp_path,
+        repo_root=tmp_path / "first-worktree",
+        admission_name="first.json",
+    )
+    consume_admission(admission_path=first, ledger_path=ledger)
+    second, _ = _issue(
+        tmp_path,
+        repo_root=tmp_path / "second-worktree",
+        admission_name="second.json",
+    )
+    with pytest.raises(E2EFinalAdmissionError, match="E2E_WAL_CROSS_LINEAGE"):
+        consume_admission(admission_path=second, ledger_path=ledger)
+
+
+def test_expected_parent_path_composition_is_red_before_authorize_fix(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    arguments_path = repo / "receipt.json.runner-arguments.json"
+    arguments = ["-NoPublish", "-DateStampOverride", "2026-08-01"]
+    expected_parent = repo / "receipt.json.high-cost-parent-authority.json"
+    admission = repo / "receipt.json"
+    value = _issue_admission(
+        issue_date="2026-08-01",
+        canonical_product_id="News-Grasp",
+        repo_root=repo,
+        runner_path=runner,
+        runner_arguments=arguments,
+        expected_parent_authority_path=expected_parent,
+        runner_arguments_path=arguments_path,
+        runner_executable_path=runner,
+        authority_python_executable_path=Path(sys.executable),
+        evidence_bindings=_green_evidence(tmp_path / "red", repo_root=repo),
+        output_path=admission,
+    )
+    assert value["state"] == "issued"
+    assert value["expectedParentAuthorityPath"] == str(expected_parent.resolve())
+    assert not expected_parent.exists()
+    assert not arguments_path.exists()
+    assert not Path(value["expectedReservationReceiptPath"]).exists()
+    assert not Path(value["expectedClaimReceiptPath"]).exists()
+    arguments_path.write_bytes(bridge_module._canonical_runner_arguments_bytes(arguments))
+
+
+def test_immutable_admission_reservation_and_claim_composition_is_red(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    arguments_path = repo / "receipt.json.runner-arguments.json"
+    arguments = ["-NoPublish", "-DateStampOverride", "2026-08-01"]
+    expected_parent = repo / "receipt.json.high-cost-parent-authority.json"
+    admission = repo / "receipt.json"
+    reservation = repo / "receipt.json.e2e-final-reservation.json"
+    claim = repo / "receipt.json.e2e-final-claim.json"
+    claim_witness = repo / "receipt.json.e2e-final-claim-witness.json"
+    _issue_admission(
+        issue_date="2026-08-01",
+        canonical_product_id="News-Grasp",
+        repo_root=repo,
+        runner_path=runner,
+        runner_arguments=arguments,
+        expected_parent_authority_path=expected_parent,
+        runner_arguments_path=arguments_path,
+        runner_executable_path=runner,
+        authority_python_executable_path=Path(sys.executable),
+        expected_reservation_receipt_path=reservation,
+        expected_claim_receipt_path=claim,
+        expected_claim_witness_path=claim_witness,
+        evidence_bindings=_green_evidence(tmp_path / "red-immutable", repo_root=repo),
+        output_path=admission,
+    )
+    before = admission.read_bytes()
+    arguments_path.write_bytes(bridge_module._canonical_runner_arguments_bytes(arguments))
+    bridge_module.validate_issued_admission(
+        admission_path=admission,
+        runner_arguments=arguments,
+        expected_parent_authority_path=expected_parent,
+        runner_arguments_path=arguments_path,
+        reservation_output=reservation,
+        claim_output=claim,
+        claim_witness_output=claim_witness,
+        actual_runner_executable_path=runner,
+        actual_authority_python_executable_path=Path(sys.executable),
+    )
+    _write_json(
+        expected_parent,
+        {
+            "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+            "state": "activated",
+            "taskIdentity": "fixture-task",
+            "threadId": "fixture-thread",
+            "taskRootUserEventHash": "a" * 64,
+            "latestActualUserEventHash": "b" * 64,
+            "authorizationId": "fixture-authorization",
+            "lineageEpoch": 1,
+        },
+    )
+    reserved = bridge_module.consume_admission(
+        admission_path=admission,
+        ledger_path=tmp_path / "durable" / "attempts.json",
+        runner_arguments=arguments,
+        parent_authority_path=expected_parent,
+        runner_arguments_path=arguments_path,
+        reservation_output=reservation,
+        actual_runner_executable_path=runner,
+        actual_authority_python_executable_path=Path(sys.executable),
+    )
+    assert reserved["state"] == "runner_reserved"
+    assert admission.read_bytes() == before
+    claimed = bridge_module.claim_runner(
+        admission_path=admission,
+        ledger_path=tmp_path / "durable" / "attempts.json",
+        runner_arguments=arguments,
+        parent_authority_path=expected_parent,
+        runner_arguments_path=arguments_path,
+        reservation_receipt=reservation,
+        claim_output=claim,
+        actual_runner_executable_path=runner,
+        actual_authority_python_executable_path=Path(sys.executable),
+        current_runner_pid=os.getpid(),
+        claim_nonce="a" * 64,
+    )
+    assert claimed["state"] == "runner_claimed"
+    assert admission.read_bytes() == before
+    assert expected_parent.exists()
+    assert reservation.exists()
+    assert claim.exists()
 
 
 def test_cli_does_not_accept_caller_selected_ledger() -> None:
@@ -901,3 +1459,377 @@ def test_final_e2e_wrapper_consumes_before_runner_and_forbids_resume() -> None:
     assert source.index("$runnerArguments = @(") < source.index("'consume'") < launch
     assert "-ResumeFromStage" not in source
     assert "resume_model" not in source
+
+
+def test_issue_and_consume_seal_all_executable_and_parent_argument_identities() -> None:
+    import inspect
+
+    issue_parameters = inspect.signature(bridge_module.issue_admission).parameters
+    consume_parameters = inspect.signature(bridge_module.consume_admission).parameters
+    for name in (
+        "expected_parent_authority_path",
+        "runner_executable_path",
+        "authority_python_executable_path",
+    ):
+        assert name in issue_parameters
+    for name in (
+        "parent_authority_path",
+        "runner_arguments_path",
+        "runner_executable_path",
+        "authority_python_executable_path",
+    ):
+        assert name in consume_parameters
+    assert "actual_runner_executable_path" in consume_parameters
+    assert "actual_authority_python_executable_path" in consume_parameters
+
+
+def test_bridge_has_read_only_validate_issued_and_one_shot_claim_runner() -> None:
+    source = BRIDGE.read_text(encoding="utf-8-sig")
+    assert callable(getattr(bridge_module, "validate_issued_admission", None))
+    assert callable(getattr(bridge_module, "claim_runner", None))
+    assert "validate-issued" in source
+    assert "claim-runner" in source
+    assert "os.O_EXCL" not in source
+
+
+def test_validate_issued_binds_all_future_paths_read_only_and_typed() -> None:
+    admission, _ = _issue(Path(tempfile.mkdtemp()) / "p1-future-paths")
+    value, arguments_path = _materialize_runner_arguments_only(admission)
+    parent = Path(value["expectedParentAuthorityPath"])
+    reservation = Path(value["expectedReservationReceiptPath"])
+    claim = Path(value["expectedClaimReceiptPath"])
+    claim_witness = Path(value["expectedClaimWitnessPath"])
+    common = dict(
+        admission_path=admission,
+        runner_arguments=list(value["runnerArguments"]),
+        runner_arguments_path=arguments_path,
+        expected_parent_authority_path=parent,
+        reservation_output=reservation,
+        claim_output=claim,
+        claim_witness_output=claim_witness,
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            value["authorityPythonExecutablePath"]
+        ),
+    )
+    result = bridge_module.validate_issued_admission(**common)
+    assert result["state"] == "issued"
+    assert not parent.exists()
+    assert not reservation.exists()
+    assert not claim.exists()
+    assert not claim_witness.exists()
+
+    drift_cases = (
+        ("E2E_PARENT_AUTHORITY_DRIFT", "bad.high-cost-parent-authority.json", "expected_parent_authority_path"),
+        ("E2E_RESERVATION_RECEIPT_PATH_DRIFT", "bad.e2e-final-reservation.json", "reservation_output"),
+        ("E2E_CLAIM_RECEIPT_PATH_DRIFT", "bad.e2e-final-claim.json", "claim_output"),
+        ("E2E_CLAIM_WITNESS_PATH_DRIFT", "bad.e2e-final-claim-witness.json", "claim_witness_output"),
+    )
+    for expected_code, filename, key in drift_cases:
+        bad = dict(common)
+        bad[key] = admission.parent / filename
+        with pytest.raises(E2EFinalAdmissionError, match=expected_code):
+            bridge_module.validate_issued_admission(**bad)
+        assert not parent.exists()
+        assert not reservation.exists()
+        assert not claim.exists()
+        assert not claim_witness.exists()
+
+
+def test_managed_lock_is_environment_independent_across_processes() -> None:
+    _configure_spawn_executable()
+    context = multiprocessing.get_context("spawn")
+    with tempfile.TemporaryDirectory() as root_text:
+        root = Path(root_text)
+        barrier = context.Barrier(2)
+        result_queue = context.Queue()
+        lock_target = root / "canonical-attempt.json"
+        processes = [
+            context.Process(
+                target=_lock_probe_worker,
+                args=(
+                    str(root / "local-a"),
+                    str(root / "temp-a"),
+                    str(root),
+                    str(lock_target),
+                    barrier,
+                    result_queue,
+                ),
+            ),
+            context.Process(
+                target=_lock_probe_worker,
+                args=(
+                    str(root / "local-b"),
+                    str(root / "temp-b"),
+                    str(root),
+                    str(lock_target),
+                    barrier,
+                    result_queue,
+                ),
+            ),
+        ]
+        for process in processes:
+            process.start()
+        results = [result_queue.get(timeout=30) for _ in processes]
+        for process in processes:
+            process.join(timeout=30)
+        assert all(process.exitcode == 0 for process in processes), results
+        assert all("error" not in result for result in results), results
+        assert len({result["ledger"] for result in results}) == 1
+        first, second = sorted(results, key=lambda result: result["entered"])
+        assert first["exited"] <= second["entered"]
+
+
+def test_cross_process_reserve_claim_is_one_shot_under_environment_drift(
+    tmp_path: Path,
+) -> None:
+    _configure_spawn_executable()
+    admission, ledger = _issue(tmp_path / "cross-process")
+    value, arguments = _materialize_runner_arguments_only(admission)
+    parent = Path(value["expectedParentAuthorityPath"])
+    _write_json(
+        parent,
+        {
+            "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+            "state": "activated",
+            "taskIdentity": "fixture-task",
+            "threadId": "fixture-thread",
+            "taskRootUserEventHash": "a" * 64,
+            "latestActualUserEventHash": "b" * 64,
+            "authorizationId": "fixture-authorization",
+            "lineageEpoch": 1,
+        },
+    )
+    context = multiprocessing.get_context("spawn")
+    barrier = context.Barrier(2)
+    result_queue = context.Queue()
+    with tempfile.TemporaryDirectory() as root_text:
+        root = Path(root_text)
+        processes = [
+            context.Process(
+                target=_consume_claim_process_worker,
+                args=(
+                    str(admission),
+                    str(ledger),
+                    str(parent),
+                    str(arguments),
+                    str(root / "local-a"),
+                    str(root / "temp-a"),
+                    barrier,
+                    result_queue,
+                    "1" * 64,
+                ),
+            ),
+            context.Process(
+                target=_consume_claim_process_worker,
+                args=(
+                    str(admission),
+                    str(ledger),
+                    str(parent),
+                    str(arguments),
+                    str(root / "local-b"),
+                    str(root / "temp-b"),
+                    barrier,
+                    result_queue,
+                    "2" * 64,
+                ),
+            ),
+        ]
+        for process in processes:
+            process.start()
+        results = [result_queue.get(timeout=45) for _ in processes]
+        for process in processes:
+            process.join(timeout=45)
+        assert all(process.exitcode == 0 for process in processes), results
+    assert sum(result["claimed"] == "runner_claimed" for result in results) == 1
+    assert sum(result["reserved"] == "runner_reserved" for result in results) == 1
+    assert len({result["ledger"] for result in results}) == 1
+    claim_path = Path(value["expectedClaimReceiptPath"])
+    claim_bytes = claim_path.read_bytes()
+    assert claim_bytes == claim_path.read_bytes()
+    ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
+    assert ledger_value["attempts"][value["attemptKey"]]["state"] == "runner_claimed"
+
+
+def test_claim_seals_and_read_only_validates_os_process_identity() -> None:
+    admission, ledger = _issue(Path(tempfile.mkdtemp()) / "p3-owner")
+    support_value, arguments_path = _materialize_runner_arguments_only(admission)
+    parent = Path(support_value["expectedParentAuthorityPath"])
+    _write_json(
+        parent,
+        {
+            "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+            "state": "activated",
+            "taskIdentity": "fixture-task",
+            "threadId": "fixture-thread",
+            "taskRootUserEventHash": "a" * 64,
+            "latestActualUserEventHash": "b" * 64,
+            "authorizationId": "fixture-authorization",
+            "lineageEpoch": 1,
+        },
+    )
+    reservation = bridge_module.consume_admission(
+        admission_path=admission,
+        ledger_path=ledger,
+        runner_arguments=list(support_value["runnerArguments"]),
+        parent_authority_path=parent,
+        runner_arguments_path=arguments_path,
+        reservation_output=Path(support_value["expectedReservationReceiptPath"]),
+        actual_runner_executable_path=Path(support_value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            support_value["authorityPythonExecutablePath"]
+        ),
+    )
+    identity = {
+        "pid": 4321,
+        "parentPid": 1234,
+        "creationFileTimeUtc": "2026-08-10T00:00:00.0000000Z",
+        "imagePath": str(Path(support_value["runnerExecutablePath"]).resolve()),
+        "imageSha256": _sha256(Path(support_value["runnerExecutablePath"]).resolve()),
+    }
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(bridge_module, "_query_process_identity", lambda pid: identity)
+    try:
+        claimed = bridge_module.claim_runner(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=list(support_value["runnerArguments"]),
+            parent_authority_path=parent,
+            runner_arguments_path=arguments_path,
+            reservation_receipt=Path(support_value["expectedReservationReceiptPath"]),
+            claim_output=Path(support_value["expectedClaimReceiptPath"]),
+            actual_runner_executable_path=Path(support_value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(
+                support_value["authorityPythonExecutablePath"]
+            ),
+            current_runner_pid=identity["pid"],
+            claim_nonce="f" * 64,
+        )
+        assert claimed["ownerProcessIdentity"] == identity
+        witness = bridge_module.validate_runner_claim(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=list(support_value["runnerArguments"]),
+            parent_authority_path=parent,
+            runner_arguments_path=arguments_path,
+            reservation_receipt=Path(support_value["expectedReservationReceiptPath"]),
+            claim_receipt=Path(support_value["expectedClaimReceiptPath"]),
+            actual_runner_executable_path=Path(support_value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(
+                support_value["authorityPythonExecutablePath"]
+            ),
+            expected_owner_pid=identity["pid"],
+        )
+        assert witness["claimReceiptPath"] == str(
+            Path(support_value["expectedClaimReceiptPath"]).resolve()
+        )
+        monkeypatch.setattr(
+            bridge_module,
+            "_query_process_identity",
+            lambda pid: {**identity, "creationFileTimeUtc": "different"},
+        )
+        with pytest.raises(E2EFinalAdmissionError, match="E2E_RUNNER_PROCESS_IDENTITY_DRIFT"):
+            bridge_module.validate_runner_claim(
+                admission_path=admission,
+                ledger_path=ledger,
+                runner_arguments=list(support_value["runnerArguments"]),
+                parent_authority_path=parent,
+                runner_arguments_path=arguments_path,
+                reservation_receipt=Path(support_value["expectedReservationReceiptPath"]),
+                claim_receipt=Path(support_value["expectedClaimReceiptPath"]),
+                actual_runner_executable_path=Path(support_value["runnerExecutablePath"]),
+                actual_authority_python_executable_path=Path(
+                    support_value["authorityPythonExecutablePath"]
+                ),
+                expected_owner_pid=identity["pid"],
+            )
+        monkeypatch.setattr(
+            bridge_module,
+            "_query_process_identity",
+            lambda pid: {
+                **identity,
+                "imagePath": str(
+                    Path(support_value["authorityPythonExecutablePath"]).resolve()
+                ),
+                "imageSha256": _sha256(
+                    Path(support_value["authorityPythonExecutablePath"]).resolve()
+                ),
+            },
+        )
+        with pytest.raises(E2EFinalAdmissionError, match="E2E_RUNNER_PROCESS_IDENTITY_DRIFT"):
+            bridge_module.validate_runner_claim(
+                admission_path=admission,
+                ledger_path=ledger,
+                runner_arguments=list(support_value["runnerArguments"]),
+                parent_authority_path=parent,
+                runner_arguments_path=arguments_path,
+                reservation_receipt=Path(support_value["expectedReservationReceiptPath"]),
+                claim_receipt=Path(support_value["expectedClaimReceiptPath"]),
+                actual_runner_executable_path=Path(support_value["runnerExecutablePath"]),
+                actual_authority_python_executable_path=Path(
+                    support_value["authorityPythonExecutablePath"]
+                ),
+                expected_owner_pid=identity["pid"],
+            )
+        monkeypatch.setattr(
+            bridge_module,
+            "_query_process_identity",
+            lambda pid: {**identity, "pid": identity["pid"] + 1},
+        )
+        with pytest.raises(E2EFinalAdmissionError, match="E2E_RUNNER_PROCESS_IDENTITY_DRIFT"):
+            bridge_module.validate_runner_claim(
+                admission_path=admission,
+                ledger_path=ledger,
+                runner_arguments=list(support_value["runnerArguments"]),
+                parent_authority_path=parent,
+                runner_arguments_path=arguments_path,
+                reservation_receipt=Path(support_value["expectedReservationReceiptPath"]),
+                claim_receipt=Path(support_value["expectedClaimReceiptPath"]),
+                actual_runner_executable_path=Path(support_value["runnerExecutablePath"]),
+                actual_authority_python_executable_path=Path(
+                    support_value["authorityPythonExecutablePath"]
+                ),
+                expected_owner_pid=identity["pid"],
+            )
+    finally:
+        monkeypatch.undo()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows process identity contract")
+def test_windows_process_identity_is_observed_from_os() -> None:
+    identity = bridge_module._query_process_identity(os.getpid())
+    assert identity["pid"] == os.getpid()
+    assert set(identity) == {
+        "pid",
+        "parentPid",
+        "creationFileTimeUtc",
+        "imagePath",
+        "imageSha256",
+    }
+
+
+def test_issue_allows_safe_missing_output_ancestors_after_preflight(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    runner = repo / "scripts" / "ops" / "news-grasp-runner.ps1"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("Write-Output 'runner'\n", encoding="utf-8")
+    output = repo / "missing" / "descendant" / "admission.json"
+    output_parent = output.parent
+    bridge_module.issue_admission(
+        issue_date="2026-08-01",
+        canonical_product_id="News-Grasp",
+        repo_root=repo,
+        runner_path=runner,
+        runner_arguments=["-NoPublish", "-DateStampOverride", "2026-08-01"],
+        expected_parent_authority_path=output_parent / "admission.high-cost-parent-authority.json",
+        runner_arguments_path=output_parent / "admission.runner-arguments.json",
+        expected_reservation_receipt_path=output_parent / "admission.e2e-final-reservation.json",
+        expected_claim_receipt_path=output_parent / "admission.e2e-final-claim.json",
+        runner_executable_path=runner,
+        authority_python_executable_path=Path(sys.executable),
+        evidence_bindings=_green_evidence(tmp_path / "evidence", repo_root=repo),
+        output_path=output,
+    )
+    assert output.is_file()
+    assert not (output_parent / "admission.high-cost-parent-authority.json").exists()

@@ -366,7 +366,7 @@ def _task_launcher_source_contract(path: Path) -> dict:
     except OSError:
         return {"ok": False, "reason": "task_launcher_unreadable"}
     required_tokens = (
-        'choices=("runner","bootstrap")',
+        'choices=("runner","bootstrap","converge-runtime")',
         '"news-grasp-bootstrap.ps1"',
         'ifargs.mode=="runner"',
         '"-Start"',

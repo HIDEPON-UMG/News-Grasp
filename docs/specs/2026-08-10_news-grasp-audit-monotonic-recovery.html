@@ -181,6 +181,7 @@
         <li><strong>WP-03</strong> production source変更前に12 task-specific Redを同じconsumerで実測する。</li>
         <li><strong>WP-04〜06</strong> 型付きresult、状態分離、immutable authority、append-only event、causal retryを実装する。</li>
         <li><strong>Authority境界</strong> receipt単体ではなくmanaged root内のGreen event chainとlatest projectionへexact bindingする。</li>
+        <li><strong>Runtime信頼境界</strong> <code>authorities/</code>、<code>transactions/</code>、<code>quarantine/</code>は同一managed-root trust domainとする。anchorはjournal単体改変とcrash残差を検出する運用証拠であり、暗号学的な発行者認証ではない。同一Windowsユーザーによるroot全体の再署名は境界外とする。</li>
         <li><strong>Crash／並行安全</strong> forward-only WAL、process排他lock、Windows directory handle pinでrollbackとjunction swapを拒否する。</li>
         <li><strong>WP-07</strong> 同じ12 node Green、focused regression、historical scenario、drift/replayを一回ずつ検証する。</li>
         <li><strong>WP-08</strong> safe commit、push、remote HEAD、正規installer、runtime/task parity、rollbackを閉じる。</li>

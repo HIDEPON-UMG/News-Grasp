@@ -65,7 +65,11 @@ function Resolve-NewsGraspRepoDir {
 }
 
 function Resolve-ProductionRuntimeRepo {
-    param([string] $SourceRepoDir)
+    param(
+        [string] $SourceRepoDir,
+        [string] $BootstrapOwnerReceiptPath,
+        [string] $BootstrapOwnerNonce
+    )
 
     $gitExe = 'C:\Program Files\Git\cmd\git.exe'
     if (-not (Test-Path -LiteralPath $gitExe -PathType Leaf)) {
@@ -80,49 +84,27 @@ function Resolve-ProductionRuntimeRepo {
         throw 'PRODUCTION_RUNTIME_ORIGIN_SHA_INVALID'
     }
     $runtimeRoot = Join-Path $env:USERPROFILE '.news-grasp-runtime'
-    $runtimeRepo = Join-Path $runtimeRoot 'production-runtime'
     New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
-    if (-not (Test-Path -LiteralPath $runtimeRepo)) {
-        & $gitExe -C $SourceRepoDir worktree add --detach $runtimeRepo $originSha 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "PRODUCTION_RUNTIME_WORKTREE_CREATE_FAILED exit=$LASTEXITCODE"
-        }
-    } else {
-        $inside = ((& $gitExe -C $runtimeRepo rev-parse --is-inside-work-tree 2>$null) | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0 -or $inside -ne 'true') {
-            throw 'PRODUCTION_RUNTIME_IDENTITY_INVALID'
-        }
-        & $gitExe -c 'core.hooksPath=NUL' -c 'core.fsmonitor=false' -c 'core.attributesFile=NUL' -C $runtimeRepo diff --quiet --no-ext-diff --ignore-cr-at-eol HEAD --
-        $trackedDiffExit = $LASTEXITCODE
-        $untracked = @(
-            & $gitExe -c 'core.hooksPath=NUL' -c 'core.fsmonitor=false' -c 'core.attributesFile=NUL' -C $runtimeRepo ls-files --others --exclude-standard 2>$null |
-                ForEach-Object { ([string]$_).Replace('\', '/') }
-        )
-        $untrackedExit = $LASTEXITCODE
-        $unexpectedUntracked = @(
-            $untracked | Where-Object {
-                $relative = ([string]$_).Trim()
-                $relative -and $relative -notmatch '^build/'
-            }
-        )
-        if ($trackedDiffExit -ne 0 -or $untrackedExit -ne 0 -or $unexpectedUntracked.Count -gt 0) {
-            throw 'PRODUCTION_RUNTIME_DIRTY'
-        }
-        & $gitExe -C $runtimeRepo checkout --detach $originSha --quiet 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "PRODUCTION_RUNTIME_CHECKOUT_FAILED exit=$LASTEXITCODE"
-        }
+    $runtimeHelper = Join-Path $SourceRepoDir 'scripts\ops\news-grasp-task-launcher.pyw'
+    if (-not (Test-Path -LiteralPath $runtimeHelper -PathType Leaf)) {
+        throw 'PRODUCTION_RUNTIME_HELPER_MISSING'
     }
+    $convergenceJson = (& $PythonExe $runtimeHelper 'converge-runtime' '--source-repo' $SourceRepoDir '--origin-sha' $originSha '--bootstrap-owner-pid' ([string]$PID) '--bootstrap-owner-receipt' $BootstrapOwnerReceiptPath '--bootstrap-owner-nonce' $BootstrapOwnerNonce 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "PRODUCTION_RUNTIME_CONVERGENCE_FAILED exit=$LASTEXITCODE detail=$convergenceJson"
+    }
+    try {
+        $convergence = $convergenceJson | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw 'PRODUCTION_RUNTIME_CONVERGENCE_RESULT_INVALID'
+    }
+    if ([string]$convergence.phase -ne 'committed') {
+        throw 'PRODUCTION_RUNTIME_CONVERGENCE_INCOMPLETE'
+    }
+    $runtimeRepo = (Resolve-Path -LiteralPath ([string]$convergence.runtimePath)).Path
     $runtimeSha = ((& $gitExe -C $runtimeRepo rev-parse HEAD 2>$null) | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $runtimeSha -ne $originSha) {
         throw 'PRODUCTION_RUNTIME_HEAD_DRIFT'
-    }
-    foreach ($dependency in @('.venv', 'node_modules')) {
-        $sourceDependency = Join-Path $SourceRepoDir $dependency
-        $runtimeDependency = Join-Path $runtimeRepo $dependency
-        if ((Test-Path -LiteralPath $sourceDependency) -and (-not (Test-Path -LiteralPath $runtimeDependency))) {
-            New-Item -ItemType Junction -Path $runtimeDependency -Target $sourceDependency | Out-Null
-        }
     }
     return $runtimeRepo
 }
@@ -341,8 +323,37 @@ New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 $preliminaryAuthority = $null
 $runtimeMutex = $null
 $runtimeMutexOwned = $false
+$runtimeOwnerReceiptStream = $null
+$runtimeOwnerReceiptPath = ''
+$runtimeOwnerNonce = ''
 if ($UseProductionRuntime) {
     Assert-ScheduledTaskLaunchContext -TaskName $ScheduledTaskName -IsSmokeTest ([bool]$SmokeTest) -AllowLegacyDirectEntrypoint ([bool]$LegacyDirectEntrypoint)
+    $runtimeOwnerReceiptPath = Join-Path $BinDir 'news-grasp-runtime-lifecycle-owner.json'
+    if (Test-Path -LiteralPath $runtimeOwnerReceiptPath) {
+        $ownerItem = Get-Item -LiteralPath $runtimeOwnerReceiptPath -Force
+        if (($ownerItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'PRODUCTION_RUNTIME_MUTEX_OWNER_RECEIPT_INVALID'
+        }
+    }
+    $runtimeOwnerNonce = [Guid]::NewGuid().ToString('N')
+    $ownerReceipt = [ordered]@{
+        schemaVersion = 'NEWS_GRASP_RUNTIME_LIFECYCLE_OWNER_V1'
+        ownerPid = [int]$PID
+        ownerNonce = $runtimeOwnerNonce
+        mutexName = "Global\NewsGraspProductionRuntime-$env:USERNAME"
+        issuedAtUtc = [DateTime]::UtcNow.ToString('o')
+    }
+    $ownerBytes = [System.Text.UTF8Encoding]::new($false).GetBytes(
+        (($ownerReceipt | ConvertTo-Json -Depth 4 -Compress) + [Environment]::NewLine)
+    )
+    $runtimeOwnerReceiptStream = [System.IO.FileStream]::new(
+        $runtimeOwnerReceiptPath,
+        [System.IO.FileMode]::Create,
+        [System.IO.FileAccess]::ReadWrite,
+        [System.IO.FileShare]::Read
+    )
+    $runtimeOwnerReceiptStream.Write($ownerBytes, 0, $ownerBytes.Length)
+    $runtimeOwnerReceiptStream.Flush($true)
     $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspProductionRuntime-$env:USERNAME")
     try {
         $runtimeMutexOwned = $runtimeMutex.WaitOne(0)
@@ -350,6 +361,7 @@ if ($UseProductionRuntime) {
         $runtimeMutexOwned = $true
     }
     if (-not $runtimeMutexOwned) {
+        $runtimeOwnerReceiptStream.Dispose()
         $runtimeMutex.Dispose()
         exit 72
     }
@@ -359,8 +371,8 @@ if ($UseProductionRuntime -and (-not $SmokeTest)) {
     $preliminaryAuthority = Write-PreliminaryLaunchPermit -SourceRepoDir $SourceRepoDir -BinDir $BinDir -IssueDate $DateStamp -PythonExe $PythonExe
 }
 try {
-    $RepoDir = if ($UseProductionRuntime -and (-not $SmokeTest)) {
-        Resolve-ProductionRuntimeRepo -SourceRepoDir $SourceRepoDir
+    $RepoDir = if ($UseProductionRuntime) {
+        Resolve-ProductionRuntimeRepo -SourceRepoDir $SourceRepoDir -BootstrapOwnerReceiptPath $runtimeOwnerReceiptPath -BootstrapOwnerNonce $runtimeOwnerNonce
     } else {
         $SourceRepoDir
     }
@@ -497,6 +509,9 @@ $watcherExit = $LASTEXITCODE
     if ($runtimeMutex) {
         if ($runtimeMutexOwned) {
             try { $runtimeMutex.ReleaseMutex() } catch { }
+        }
+        if ($runtimeOwnerReceiptStream) {
+            try { $runtimeOwnerReceiptStream.Dispose() } catch { }
         }
         $runtimeMutex.Dispose()
     }

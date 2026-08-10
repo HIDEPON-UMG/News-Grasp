@@ -61,8 +61,16 @@ param(
     [string] $LogDirOverride = '',
     [string] $StateFileOverride = '',
     [string] $HighCostAdmissionPath = '',
+    [string] $HighCostParentAuthorityPath = '',
+    [string] $E2EFinalAdmissionPath = '',
+    [string] $E2EFinalRunnerArgumentsPath = '',
+    [string] $E2EFinalReservationReceiptPath = '',
+    [string] $E2EFinalClaimReceiptPath = '',
+    [string] $HighCostClaimWitness = '',
+    [string] $HighCostAttemptId = '',
     [string] $HighCostBudgetToolPath = '',
     [string] $HighCostWorkspaceRoot = '',
+    [string] $PowerShellExe = 'powershell.exe',
     [string] $ScheduledAuthorityEvidencePath = '',
     [string] $ScheduledFailureReceiptRootOverride = '',
     [string] $LegacyTaskReceiptPathOverride = '',
@@ -230,6 +238,7 @@ $CodexOutputSchema = Join-Path $RepoDir 'schemas\model_eval_output.schema.json'
 $CodexLastMessage = Join-Path $RepoDir 'build\codex-last-message.txt'
 $RepoManagedRunner = Join-Path $RepoDir 'scripts\ops\news-grasp-runner.ps1'
 $RepoManagedWatcher = Join-Path $RepoDir 'scripts\ops\watch-news-grasp-runner.ps1'
+$E2EFinalAdmissionBridge = Join-Path $RepoDir 'tools\e2e_final_admission_bridge.py'
 $canonicalMaterializer = Join-Path $OpsRepoRoot 'tools\materialize_editor_output.py'
 $PublicBaseUrl = 'https://hidepon-umg.github.io/News-Grasp/'
 $InvokedLog = Join-Path $env:USERPROFILE 'bin\news-grasp-invoked.log'
@@ -309,6 +318,15 @@ $RunId = [guid]::NewGuid().ToString('N')
 $script:HighCostCallSequence = 0
 $script:HighCostExpectedOperationKind = ''
 $script:HighCostExpectedIssueDate = ''
+$script:HighCostAdmissionPath = $HighCostAdmissionPath
+$script:HighCostParentAuthorityPath = $HighCostParentAuthorityPath
+$script:HighCostParentAuthoritySha256 = ''
+$script:E2EFinalAdmissionPath = $E2EFinalAdmissionPath
+$script:E2EFinalRunnerArgumentsPath = $E2EFinalRunnerArgumentsPath
+$script:E2EFinalReservationReceiptPath = $E2EFinalReservationReceiptPath
+$script:E2EFinalClaimReceiptPath = $E2EFinalClaimReceiptPath
+$script:HighCostClaimWitness = ''
+$script:HighCostAttemptId = if ($HighCostAttemptId) { $HighCostAttemptId } else { $DateStamp }
 $HighCostCallReceiptDir = Join-Path $RepoDir "build\high-cost-call-receipts\$DateStamp\$RunId"
 $script:RunnerCommandLine = ''
 $script:RunnerCommandLineFingerprint = ''
@@ -767,6 +785,18 @@ function Set-RunnerState {
                 $state.highCostAdmissionPath = [System.IO.Path]::GetFullPath($script:HighCostAdmissionPath)
                 $state.highCostAdmissionSha256 = Get-FileSha256Hex -Path $script:HighCostAdmissionPath
             }
+            $state.highCostAttemptId = [string]$script:HighCostAttemptId
+            $state.highCostParentAuthorityPath = [string]$script:HighCostParentAuthorityPath
+            if ($script:HighCostParentAuthorityPath -and (Test-Path -LiteralPath $script:HighCostParentAuthorityPath -PathType Leaf)) {
+                $state.highCostParentAuthoritySha256 = Get-FileSha256Hex -Path $script:HighCostParentAuthorityPath
+            } else {
+                $state.highCostParentAuthoritySha256 = [string]$script:HighCostParentAuthoritySha256
+            }
+            $state.e2eFinalAdmissionPath = [string]$script:E2EFinalAdmissionPath
+            $state.e2eFinalRunnerArgumentsPath = [string]$script:E2EFinalRunnerArgumentsPath
+            $state.e2eFinalReservationReceiptPath = [string]$script:E2EFinalReservationReceiptPath
+            $state.e2eFinalClaimReceiptPath = [string]$script:E2EFinalClaimReceiptPath
+            $state.highCostClaimWitness = [string]$script:HighCostClaimWitness
             if ($GateId) { $state.gate_id = $GateId }
             if ($Category) { $state.category = $Category }
             if ($Attempt -gt 0) { $state.attempt = $Attempt }
@@ -1761,7 +1791,14 @@ function Invoke-CodexWrapper {
         'FlowName' = $FlowName
         'UsageLog' = $CodexUsageLog
         'HighCostWorkspaceRoot' = $HighCostWorkspaceRoot
-        'HighCostAdmissionPath' = $HighCostAdmissionPath
+        'HighCostAdmissionPath' = [string]$script:HighCostAdmissionPath
+        'HighCostParentAuthorityPath' = [string]$script:HighCostParentAuthorityPath
+        'E2EFinalAdmissionPath' = [string]$script:E2EFinalAdmissionPath
+        'E2EFinalRunnerArgumentsPath' = [string]$script:E2EFinalRunnerArgumentsPath
+        'E2EFinalReservationReceiptPath' = [string]$script:E2EFinalReservationReceiptPath
+        'E2EFinalClaimReceiptPath' = [string]$script:E2EFinalClaimReceiptPath
+        'HighCostClaimWitness' = [string]$script:HighCostClaimWitness
+        'HighCostAttemptId' = [string]$script:HighCostAttemptId
         'HighCostExpectedOperationKind' = $script:HighCostExpectedOperationKind
         'HighCostExpectedIssueDate' = $script:HighCostExpectedIssueDate
         'HighCostBudgetToolPath' = $HighCostBudgetToolPath
@@ -2874,28 +2911,182 @@ function Assert-HighCostOperationAdmission {
     }
     if ($NoPublish) {
         $operationKind = 'full_e2e'
-        if (-not $HighCostAdmissionPath) {
-            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED'
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
+        if ($HighCostAdmissionPath) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_NOPUBLISH_SHARED_ADMISSION_FORBIDDEN'
+            Set-RunnerState -Status 'operation_rejected_high_cost_mode_conflict' -Message 'HIGH_COST_NOPUBLISH_SHARED_ADMISSION_FORBIDDEN' -ExitCode 76
             exit 76
         }
-        $admissionReceipt = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
-        $admissionValidator = Join-Path $RepoDir 'tools\high_cost_admission_receipt.py'
-        $expectedAttemptId = "nopublish:$DateStamp"
-        if ((-not (Test-Path -LiteralPath $admissionReceipt -PathType Leaf)) -or (-not (Test-Path -LiteralPath $admissionValidator -PathType Leaf))) {
-            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED'
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_REQUIRED' -ExitCode 76
+        if ($HighCostClaimWitness) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_FINAL_CLAIM_WITNESS_FORBIDDEN'
+            Set-RunnerState -Status 'operation_rejected_high_cost_mode_conflict' -Message 'HIGH_COST_FINAL_CLAIM_WITNESS_FORBIDDEN' -ExitCode 76
             exit 76
         }
-        & $PyExe $admissionValidator 'validate' '--path' $admissionReceipt '--expected-operation-kind' $operationKind '--expected-attempt-id' $expectedAttemptId
+        if ($ResumeFromStage) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_NOPUBLISH_RESUME_FORBIDDEN'
+            Set-RunnerState -Status 'operation_rejected_high_cost_mode_conflict' -Message 'HIGH_COST_NOPUBLISH_RESUME_FORBIDDEN' -ExitCode 76
+            exit 76
+        }
+        $script:HighCostAdmissionPath = ''
+        $expectedFullE2EAttemptId = "nopublish:$DateStamp"
+        if ($HighCostAttemptId -and $HighCostAttemptId -cne $expectedFullE2EAttemptId) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_NOPUBLISH_ATTEMPT_ID_DRIFT'
+            Set-RunnerState -Status 'operation_rejected_high_cost_mode_conflict' -Message 'HIGH_COST_NOPUBLISH_ATTEMPT_ID_DRIFT' -ExitCode 76
+            exit 76
+        }
+        $script:HighCostAttemptId = $expectedFullE2EAttemptId
+        $script:HighCostParentAuthorityPath = ''
+        $script:HighCostParentAuthoritySha256 = ''
+        if (-not $HighCostParentAuthorityPath) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED'
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED' -ExitCode 76
+            exit 76
+        }
+        if (-not $E2EFinalAdmissionPath -or -not $E2EFinalRunnerArgumentsPath -or
+            -not $E2EFinalReservationReceiptPath -or -not $E2EFinalClaimReceiptPath) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED'
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED' -ExitCode 76
+            exit 76
+        }
+        $parentAuthorityReceipt = [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath)
+        $finalAdmissionReceipt = [System.IO.Path]::GetFullPath($E2EFinalAdmissionPath)
+        $finalRunnerArguments = [System.IO.Path]::GetFullPath($E2EFinalRunnerArgumentsPath)
+        $finalReservationReceipt = [System.IO.Path]::GetFullPath($E2EFinalReservationReceiptPath)
+        $finalClaimReceipt = [System.IO.Path]::GetFullPath($E2EFinalClaimReceiptPath)
+        try {
+            $finalAdmissionValue = Get-Content -LiteralPath $finalAdmissionReceipt -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            $finalClaimWitness = [System.IO.Path]::GetFullPath([string]$finalAdmissionValue.expectedClaimWitnessPath)
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_CLAIM_WITNESS_PATH_INVALID reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_CLAIM_WITNESS_PATH_INVALID' -ExitCode 76
+            exit 76
+        }
+        if ((-not (Test-Path -LiteralPath $parentAuthorityReceipt -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $finalAdmissionReceipt -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $finalRunnerArguments -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $finalReservationReceipt -PathType Leaf)) -or
+            (-not (Test-Path -LiteralPath $E2EFinalAdmissionBridge -PathType Leaf))) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED'
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED' -ExitCode 76
+            exit 76
+        }
+        $script:E2EFinalAdmissionPath = $finalAdmissionReceipt
+        $script:E2EFinalRunnerArgumentsPath = $finalRunnerArguments
+        $script:E2EFinalReservationReceiptPath = $finalReservationReceipt
+        $script:E2EFinalClaimReceiptPath = $finalClaimReceipt
+        if ((Test-Path -LiteralPath $finalClaimReceipt) -or (Test-Path -LiteralPath $finalClaimWitness)) {
+            Add-RunnerLogLine -Text 'ERROR: HIGH_COST_FINAL_CLAIM_OUTPUT_EXISTS'
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_CLAIM_OUTPUT_EXISTS' -ExitCode 76
+            exit 76
+        }
+        try {
+            $HighCostWorkspaceRoot = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $HighCostWorkspaceRoot -ErrorAction Stop).Path)
+            $RepoDir = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $RepoDir -ErrorAction Stop).Path)
+            $highCostAuthorityTool = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath (Join-Path $HighCostWorkspaceRoot 'tools\harness\high_cost_operation_budget.py') -ErrorAction Stop).Path)
+            $authorityPythonPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $PyExe -ErrorAction Stop).Path)
+            $powerShellCommand = if (Test-Path -LiteralPath $PowerShellExe -PathType Leaf) {
+                Get-Item -LiteralPath $PowerShellExe -ErrorAction Stop
+            } else {
+                Get-Command $PowerShellExe -CommandType Application -ErrorAction Stop | Select-Object -First 1
+            }
+            $powerShellCommandPath = if ($powerShellCommand -is [System.IO.FileInfo]) {
+                $powerShellCommand.FullName
+            } elseif ($powerShellCommand.Source) {
+                $powerShellCommand.Source
+            } else {
+                $powerShellCommand.Path
+            }
+            $runnerExecutablePath = [System.IO.Path]::GetFullPath([string]$powerShellCommandPath)
+            if (-not (Test-Path -LiteralPath $runnerExecutablePath -PathType Leaf)) {
+                throw 'runner executable is not a regular file'
+            }
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_EXECUTION_IDENTITY_INVALID reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_EXECUTION_IDENTITY_INVALID' -ExitCode 76
+            exit 76
+        }
+        $canonicalValidationOutput = (& $authorityPythonPath -I $highCostAuthorityTool 'validate-activated' '--workspace-root' $HighCostWorkspaceRoot '--admission' $parentAuthorityReceipt '--expected-attempt-kind' 'full_e2e' '--expected-execution-root' $RepoDir 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
-            Add-RunnerLogLine -Text "ERROR: HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID exit=$LASTEXITCODE"
-            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID' -ExitCode 76
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID' -ExitCode 76
+            exit 76
+        }
+        try {
+            $parentAuthority = $canonicalValidationOutput | ConvertFrom-Json -ErrorAction Stop
+            if (
+                [string]$parentAuthority.schemaVersion -ne 'HIGH_COST_OPERATION_ADMISSION_V1' -or
+                [string]$parentAuthority.state -ne 'activated' -or
+                [string]$parentAuthority.attemptKind -ne 'full_e2e' -or
+                [System.IO.Path]::GetFullPath([string]$parentAuthority.executionRoot) -ne [System.IO.Path]::GetFullPath($RepoDir)
+            ) {
+                throw 'HIGH_COST_PARENT_AUTHORITY_IDENTITY_MISMATCH'
+            }
+            $script:HighCostParentAuthorityPath = $parentAuthorityReceipt
+            $script:HighCostParentAuthoritySha256 = Get-FileSha256Hex -Path $parentAuthorityReceipt
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_INVALID' -ExitCode 76
+            exit 76
+        }
+        $claimNonce = Get-StringSha256Hex -Text "$script:HighCostAttemptId|$PID|$RunId"
+        $claimOutput = (& $authorityPythonPath -I $E2EFinalAdmissionBridge 'claim-runner' '--admission' $finalAdmissionReceipt '--runner-arguments-file' $finalRunnerArguments '--parent-authority' $parentAuthorityReceipt '--reservation-receipt' $finalReservationReceipt '--claim-output' $finalClaimReceipt '--runner-executable' $runnerExecutablePath '--authority-python-executable' $authorityPythonPath '--current-runner-pid' $PID '--claim-nonce' $claimNonce 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_RUNNER_CLAIM_REJECTED exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_RUNNER_CLAIM_REJECTED' -ExitCode 76
+            exit 76
+        }
+        try {
+            if ($claimOutput.Length -gt 262144) { throw 'HIGH_COST_FINAL_RUNNER_CLAIM_OUTPUT_UNBOUNDED' }
+            $claimReceipt = $claimOutput | ConvertFrom-Json -ErrorAction Stop
+            if (
+                [string]$claimReceipt.schemaVersion -ne 'E2E_FINAL_RUNNER_CLAIM_V1' -or
+                [string]$claimReceipt.state -ne 'runner_claimed' -or
+                [System.IO.Path]::GetFullPath([string]$claimReceipt.admissionPath) -ne $finalAdmissionReceipt -or
+                [System.IO.Path]::GetFullPath([string]$claimReceipt.reservationReceiptPath) -ne $finalReservationReceipt -or
+                [string]$claimReceipt.runnerPid -ne [string]$PID
+            ) { throw 'HIGH_COST_FINAL_RUNNER_CLAIM_OUTPUT_INVALID' }
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_RUNNER_CLAIM_OUTPUT_INVALID reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_RUNNER_CLAIM_OUTPUT_INVALID' -ExitCode 76
+            exit 76
+        }
+        $claimWitnessOutput = (& $authorityPythonPath -I $E2EFinalAdmissionBridge 'write-runner-claim-witness' '--admission' $finalAdmissionReceipt '--runner-arguments-file' $finalRunnerArguments '--parent-authority' $parentAuthorityReceipt '--reservation-receipt' $finalReservationReceipt '--claim-receipt' $finalClaimReceipt '--witness-output' $finalClaimWitness '--runner-executable' $runnerExecutablePath '--authority-python-executable' $authorityPythonPath '--expected-owner-pid' $PID 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_REJECTED exit=$LASTEXITCODE"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_REJECTED' -ExitCode 76
+            exit 76
+        }
+        try {
+            if ($claimWitnessOutput.Length -gt 131072) { throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_UNBOUNDED' }
+            $claimWitness = $claimWitnessOutput | ConvertFrom-Json -ErrorAction Stop
+            foreach ($field in @('claimId', 'claimReceiptPath', 'claimReceiptSha256', 'ownerProcessIdentity', 'attemptKey', 'admissionId')) {
+                if ($null -eq $claimWitness.$field) { throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_INVALID' }
+            }
+            if ([System.IO.Path]::GetFullPath([string]$claimWitness.claimReceiptPath) -ne $finalClaimReceipt) {
+                throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_PATH_DRIFT'
+            }
+            if (-not (Test-Path -LiteralPath $finalClaimWitness -PathType Leaf)) {
+                throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_FILE_MISSING'
+            }
+            $script:HighCostClaimWitness = $finalClaimWitness
+        } catch {
+            Add-RunnerLogLine -Text "ERROR: HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_INVALID reason=$($_.Exception.Message)"
+            Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_INVALID' -ExitCode 76
             exit 76
         }
         $script:HighCostExpectedOperationKind = $operationKind
         $script:HighCostExpectedIssueDate = ''
         return
+    }
+
+    if ($HighCostParentAuthorityPath -or $E2EFinalAdmissionPath -or $E2EFinalRunnerArgumentsPath -or
+        $E2EFinalReservationReceiptPath -or $E2EFinalClaimReceiptPath -or $HighCostClaimWitness) {
+        Add-RunnerLogLine -Text 'ERROR: HIGH_COST_SCHEDULED_FINAL_ADMISSION_FORBIDDEN'
+        Set-RunnerState -Status 'operation_rejected_high_cost_mode_conflict' -Message 'HIGH_COST_SCHEDULED_FINAL_ADMISSION_FORBIDDEN' -ExitCode 76
+        exit 76
+    }
+
+    if ($HighCostAdmissionPath) {
+        $script:HighCostAdmissionPath = $HighCostAdmissionPath
     }
 
     $stageDecisionReceipt = ''
@@ -2984,7 +3175,7 @@ function Assert-HighCostOperationAdmission {
         }
         $admissionJson = (Get-Content -LiteralPath $HighCostAdmissionPath -Raw -Encoding UTF8).Trim()
     } else {
-        $admissionJson = (& $PyExe $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
+        $admissionJson = (& $PyExe -I $modelSpawnBroker 'admit' '--operation-kind' $operationKind '--attempt-id' $DateStamp '--issue-date' $DateStamp '--authority-evidence' $ScheduledAuthorityEvidencePath '--expected-task-action-sha256' $taskActionSha256 '--expected-runner-sha256' $runnerSha256 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0) {
             Add-RunnerLogLine -Text "ERROR: HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
             Set-RunnerState -Status 'operation_rejected_high_cost_admission' -Message 'HIGH_COST_OPERATION_ADMISSION_REJECTED; local critical path remains available' -ExitCode 76
@@ -3214,7 +3405,7 @@ if ($RecoverOnly) {
         Write-Log "scheduled recovery stage start boundary satisfied by HIGH_COST_SCHEDULED_RECOVERY_CONTINUATION_V1 for ResumeFromStage=$ResumeFromStage"
     } else {
         try {
-            $stageWitnessJson = (& $PyExe $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
+            $stageWitnessJson = (& $PyExe -I $modelSpawnBroker 'start-news-grasp-recovery-stage' '--decision' $stageDecisionReceipt '--recovery-authority' $ScheduledAuthorityEvidencePath '--consumer-run-id' $RunId 2>&1 | Out-String).Trim()
             if ($LASTEXITCODE -ne 0) {
                 throw "SCHEDULED_RECOVERY_STAGE_START_FAILED exit=$LASTEXITCODE"
             }
@@ -3401,6 +3592,7 @@ if ($RecoverOnly) {
     $ReporterReasoningEffort = Get-ModelPolicyValue -Role 'reporter' -Key 'reasoning'
     $ReporterArtifacts = @()
     $ReporterMaxAttempts = 3
+    if ($NoPublish) { $ReporterMaxAttempts = 1 }
     $ReporterFailureSignatures = @{}
 
     function Get-ReporterFailureSignature {
@@ -3519,7 +3711,14 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                 $ReporterReasoningEffort,
                 $usageLog,
                 $HighCostWorkspaceRoot,
-                $HighCostAdmissionPath,
+                $script:HighCostAdmissionPath,
+                $script:HighCostParentAuthorityPath,
+                $script:E2EFinalAdmissionPath,
+                $script:E2EFinalRunnerArgumentsPath,
+                $script:E2EFinalReservationReceiptPath,
+                $script:E2EFinalClaimReceiptPath,
+                $script:HighCostClaimWitness,
+                $script:HighCostAttemptId,
                 $script:HighCostExpectedOperationKind,
                 $script:HighCostExpectedIssueDate,
                 $HighCostBudgetToolPath,
@@ -3544,6 +3743,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     [string]$UsageLog,
                     [string]$HighCostWorkspaceRoot,
                     [string]$HighCostAdmissionPath,
+                    [string]$HighCostParentAuthorityPath,
+                    [string]$E2EFinalAdmissionPath,
+                    [string]$E2EFinalRunnerArgumentsPath,
+                    [string]$E2EFinalReservationReceiptPath,
+                    [string]$E2EFinalClaimReceiptPath,
+                    [string]$HighCostClaimWitness,
+                    [string]$HighCostAttemptId,
                     [string]$HighCostExpectedOperationKind,
                     [string]$HighCostExpectedIssueDate,
                     [string]$HighCostBudgetToolPath,
@@ -3568,6 +3774,13 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     -UsageLog $UsageLog `
                     -HighCostWorkspaceRoot $HighCostWorkspaceRoot `
                     -HighCostAdmissionPath $HighCostAdmissionPath `
+                    -HighCostParentAuthorityPath $HighCostParentAuthorityPath `
+                    -E2EFinalAdmissionPath $E2EFinalAdmissionPath `
+                    -E2EFinalRunnerArgumentsPath $E2EFinalRunnerArgumentsPath `
+                    -E2EFinalReservationReceiptPath $E2EFinalReservationReceiptPath `
+                    -E2EFinalClaimReceiptPath $E2EFinalClaimReceiptPath `
+                    -HighCostClaimWitness $HighCostClaimWitness `
+                    -HighCostAttemptId $HighCostAttemptId `
                     -HighCostExpectedOperationKind $HighCostExpectedOperationKind `
                     -HighCostExpectedIssueDate $HighCostExpectedIssueDate `
                     -HighCostBudgetToolPath $HighCostBudgetToolPath `
@@ -3588,7 +3801,6 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     wrapper_log = $WrapperLog
                     usage_log = $UsageLog
                     last_message = $OutputLastMessage
-                    wrapper_pid = -1
                 }
             }
             $job | Add-Member -NotePropertyName Category -NotePropertyValue $waveCat
@@ -3645,11 +3857,6 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
                     Stop-Job -Job $job -Force -ErrorAction SilentlyContinue
                     $partial = @($job | Receive-Job -ErrorAction SilentlyContinue)
                     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
-                    foreach ($item in $partial) {
-                        if ($item.wrapper_pid -and [int]$item.wrapper_pid -gt 0) {
-                            try { Stop-Process -Id ([int]$item.wrapper_pid) -Force -ErrorAction SilentlyContinue } catch { }
-                        }
-                    }
                     $timeoutResult = [pscustomobject]@{
                         category = [string]$job.Category
                         attempt = [int]$job.Attempt
@@ -4030,6 +4237,7 @@ external fan-out の返却はコンパクト JSON のみとし、フル record�
     }
 
     $MaxAgentAttempts = 3
+    if ($NoPublish) { $MaxAgentAttempts = 1 }
     $preHead = (& $GitExe @GitSafeArgs -C $RepoDir rev-parse HEAD 2>$null)
     $agentRc = $null
     $EditorRetryFeedback = ''

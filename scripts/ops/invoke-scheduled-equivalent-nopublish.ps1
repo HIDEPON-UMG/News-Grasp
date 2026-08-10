@@ -15,32 +15,169 @@ param(
     [Parameter(Mandatory=$true)][string] $StaticReceiptPath,
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
-    [string] $HighCostAdmissionPath = '',
+    [string] $HighCostParentAuthorityPath = '',
     [string] $PowerShellExe = 'powershell.exe'
 )
 
 $ErrorActionPreference = 'Stop'
-$repoPath = [System.IO.Path]::GetFullPath($RepoRoot)
+$null = Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
+$repoPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $RepoRoot -ErrorAction Stop).Path)
 $statePath = [System.IO.Path]::GetFullPath($StateFile)
 $logPath = [System.IO.Path]::GetFullPath($LogDir)
 $receiptFullPath = [System.IO.Path]::GetFullPath($ReceiptPath)
-$workspacePath = [System.IO.Path]::GetFullPath($WorkspaceRoot)
-$highCostBudgetToolPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
-if (-not $HighCostAdmissionPath) {
-    $HighCostAdmissionPath = "$receiptFullPath.high-cost-admission.json"
+$workspacePath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkspaceRoot -ErrorAction Stop).Path)
+$highCostOperationBudgetPath = Join-Path $workspacePath 'tools\harness\high_cost_operation_budget.py'
+$highCostModelBrokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+$operationKind = 'full_e2e'
+$attemptId = "nopublish:$DateStamp"
+function Get-CanonicalExistingFile {
+    param(
+        [Parameter(Mandatory=$true)][string] $Path,
+        [Parameter(Mandatory=$true)][string] $Label,
+        [string] $Boundary = '',
+        [int64] $MaxBytes = 67108864
+    )
+    try {
+        $resolved = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path)
+        if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
+            throw "$Label is not a regular file"
+        }
+        $item = Get-Item -LiteralPath $resolved -Force -ErrorAction Stop
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "$Label contains a reparse point"
+        }
+        if ($Boundary) {
+            $boundaryPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Boundary -ErrorAction Stop).Path).TrimEnd('\')
+            $boundaryPrefix = $boundaryPath + '\'
+            if (-not [string]::Equals($resolved, $boundaryPath, [System.StringComparison]::OrdinalIgnoreCase) -and
+                -not $resolved.StartsWith($boundaryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "$Label is outside its canonical boundary"
+            }
+        }
+        $cursor = $resolved
+        while ($cursor) {
+            $cursorItem = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+            if (($cursorItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "$Label traversal contains a reparse point"
+            }
+            $cursorParent = Split-Path -Parent $cursor
+            if (-not $cursorParent -or $cursorParent -eq $cursor) { break }
+            $cursor = $cursorParent
+        }
+        if ([int64]$item.Length -gt $MaxBytes) {
+            throw "$Label exceeds bounded size"
+        }
+        return $resolved
+    } catch {
+        throw "HIGH_COST_CANONICAL_FILE_INVALID label=$Label path=$Path reason=$($_.Exception.Message)"
+    }
 }
-$highCostAdmissionFullPath = [System.IO.Path]::GetFullPath($HighCostAdmissionPath)
+
+function Get-CanonicalFuturePath {
+    param(
+        [Parameter(Mandatory=$true)][string] $Path,
+        [string] $Suffix = '',
+        [Parameter(Mandatory=$true)][string] $Boundary,
+        [Parameter(Mandatory=$true)][string] $Label
+    )
+    try {
+        $candidate = [System.IO.Path]::GetFullPath($Path)
+        if ($Suffix -and -not $candidate.EndsWith($Suffix, [System.StringComparison]::Ordinal)) {
+            throw "$Label suffix mismatch"
+        }
+        $boundaryPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Boundary -ErrorAction Stop).Path).TrimEnd('\')
+        $boundaryPrefix = $boundaryPath + '\'
+        if (-not $candidate.StartsWith($boundaryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "$Label is outside its canonical boundary"
+        }
+        $cursor = Split-Path -Parent $candidate
+        while ($cursor) {
+            if (Test-Path -LiteralPath $cursor) {
+                $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+                if (($item.Attributes -band [System.IO.FileAttributes]::Directory) -eq 0) {
+                    throw "$Label ancestor is not a directory"
+                }
+                if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    throw "$Label ancestor is a reparse point"
+                }
+            }
+            if ([string]::Equals($cursor, $boundaryPath, [System.StringComparison]::OrdinalIgnoreCase)) { break }
+            $parent = Split-Path -Parent $cursor
+            if (-not $parent -or $parent -eq $cursor) { throw "$Label boundary traversal failed" }
+            $cursor = $parent
+        }
+        if (Test-Path -LiteralPath $candidate) {
+            throw "$Label output already exists"
+        }
+        return $candidate
+    } catch {
+        throw "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID label=$Label path=$Path reason=$($_.Exception.Message)"
+    }
+}
+
+function Get-CanonicalFutureDirectory {
+    param(
+        [Parameter(Mandatory=$true)][string] $Path,
+        [Parameter(Mandatory=$true)][string] $Boundary,
+        [Parameter(Mandatory=$true)][string] $Label,
+        [switch] $AllowExisting
+    )
+    try {
+        $candidate = [System.IO.Path]::GetFullPath($Path)
+        $boundaryPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Boundary -ErrorAction Stop).Path).TrimEnd('\')
+        $boundaryPrefix = $boundaryPath + '\'
+        if (-not $candidate.StartsWith($boundaryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "$Label is outside its canonical boundary"
+        }
+        $cursor = Split-Path -Parent $candidate
+        while ($cursor) {
+            if (Test-Path -LiteralPath $cursor) {
+                $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+                if (($item.Attributes -band [System.IO.FileAttributes]::Directory) -eq 0 -or
+                    ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    throw "$Label ancestor is invalid"
+                }
+            }
+            if ([string]::Equals($cursor, $boundaryPath, [System.StringComparison]::OrdinalIgnoreCase)) { break }
+            $parent = Split-Path -Parent $cursor
+            if (-not $parent -or $parent -eq $cursor) { throw "$Label boundary traversal failed" }
+            $cursor = $parent
+        }
+        if (Test-Path -LiteralPath $candidate) {
+            $item = Get-Item -LiteralPath $candidate -Force -ErrorAction Stop
+            if (($item.Attributes -band [System.IO.FileAttributes]::Directory) -eq 0 -or
+                ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "$Label output is not a regular directory"
+            }
+            if (-not $AllowExisting) { throw "$Label output already exists" }
+        } elseif ($AllowExisting) {
+            throw "$Label output disappeared after creation"
+        }
+        return $candidate
+    } catch {
+        throw "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID label=$Label path=$Path reason=$($_.Exception.Message)"
+    }
+}
+
+$parentAuthorityFullPath = "$receiptFullPath.high-cost-parent-authority.json"
+if ($HighCostParentAuthorityPath -and
+    -not [string]::Equals(
+        [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath),
+        $parentAuthorityFullPath,
+        [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "HIGH_COST_PARENT_AUTHORITY_PATH_DRIFT: expected=$parentAuthorityFullPath actual=$HighCostParentAuthorityPath"
+}
 $repoPrefix = $repoPath.TrimEnd('\') + '\'
-foreach ($candidate in @($statePath, $logPath, $receiptFullPath, $highCostAdmissionFullPath)) {
+foreach ($candidate in @($statePath, $logPath, $receiptFullPath, $parentAuthorityFullPath)) {
     if (-not $candidate.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "隔離 state/log/receipt は RepoRoot 配下でなければなりません: $candidate"
+        throw "HIGH_COST_CANONICAL_FUTURE_OUTPUT_INVALID: $candidate"
     }
 }
 
 $runnerPath = Join-Path $repoPath 'scripts\ops\news-grasp-runner.ps1'
 $codexWrapperPath = Join-Path $repoPath 'scripts\ops\run_codex_with_timeout.ps1'
 $e2eAdmissionBridgePath = Join-Path $repoPath 'tools\e2e_final_admission_bridge.py'
-$highCostAdmissionValidatorPath = Join-Path $repoPath 'tools\high_cost_admission_receipt.py'
 if (-not (Test-Path -LiteralPath $runnerPath -PathType Leaf)) {
     throw "runner が見つかりません: $runnerPath"
 }
@@ -50,28 +187,76 @@ if (-not (Test-Path -LiteralPath $codexWrapperPath -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $e2eAdmissionBridgePath -PathType Leaf)) {
     throw "E2E final admission consumer が見つかりません: $e2eAdmissionBridgePath"
 }
-if (-not (Test-Path -LiteralPath $highCostAdmissionValidatorPath -PathType Leaf)) {
-    throw "high-cost admission validator が見つかりません: $highCostAdmissionValidatorPath"
-}
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) {
     throw "Python 実行体が見つかりません: $PythonExe"
 }
-if (-not (Test-Path -LiteralPath $highCostBudgetToolPath -PathType Leaf)) {
-    throw "workspace-global high-cost budget consumer が見つかりません: $highCostBudgetToolPath"
+if (-not (Test-Path -LiteralPath $highCostOperationBudgetPath -PathType Leaf)) {
+    throw "workspace-global high-cost operation budget consumer が見つかりません: $highCostOperationBudgetPath"
+}
+if (-not (Test-Path -LiteralPath $highCostModelBrokerPath -PathType Leaf)) {
+    throw "installed canonical model broker が見つかりません: $highCostModelBrokerPath"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $repoPath '.git'))) {
     throw "RepoRoot は git worktree でなければなりません: $repoPath"
 }
+try {
+    $pythonCanonicalPath = Get-CanonicalExistingFile -Path $PythonExe -Label 'authority Python' -MaxBytes 67108864
+    $powerShellCommand = if (Test-Path -LiteralPath $PowerShellExe -PathType Leaf) {
+        Get-Item -LiteralPath $PowerShellExe -ErrorAction Stop
+    } else {
+        Get-Command $PowerShellExe -CommandType Application -ErrorAction Stop | Select-Object -First 1
+    }
+    $powerShellCommandPath = if ($powerShellCommand -is [System.IO.FileInfo]) {
+        $powerShellCommand.FullName
+    } else {
+        $powerShellCommand.Source
+    }
+    $powerShellCanonicalPath = Get-CanonicalExistingFile -Path ([string]$powerShellCommandPath) -Label 'runner executable' -MaxBytes 67108864
+    $runnerPath = Get-CanonicalExistingFile -Path $runnerPath -Label 'runner script' -Boundary $repoPath -MaxBytes 67108864
+    $codexWrapperPath = Get-CanonicalExistingFile -Path $codexWrapperPath -Label 'Codex wrapper' -Boundary $repoPath -MaxBytes 67108864
+    $e2eAdmissionBridgePath = Get-CanonicalExistingFile -Path $e2eAdmissionBridgePath -Label 'E2E admission bridge' -Boundary $repoPath -MaxBytes 67108864
+    $highCostOperationBudgetPath = Get-CanonicalExistingFile -Path $highCostOperationBudgetPath -Label 'high-cost operation budget' -Boundary $workspacePath -MaxBytes 67108864
+    $highCostModelBrokerPath = Get-CanonicalExistingFile -Path $highCostModelBrokerPath -Label 'installed model broker' -MaxBytes 67108864
+    $pythonSha256 = (Get-FileHash -LiteralPath $pythonCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $powerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
+} catch {
+    throw "HIGH_COST_EXECUTABLE_IDENTITY_INVALID: $($_.Exception.Message)"
+}
 
+$BudgetPath = Get-CanonicalExistingFile -Path $BudgetPath -Label 'budget evidence' -Boundary $workspacePath -MaxBytes 4194304
+$EfficiencyDesignPath = Get-CanonicalExistingFile -Path $EfficiencyDesignPath -Label 'efficiency evidence' -Boundary $workspacePath -MaxBytes 4194304
+$AdversarialReviewPath = Get-CanonicalExistingFile -Path $AdversarialReviewPath -Label 'adversarial evidence' -Boundary $workspacePath -MaxBytes 4194304
+$RouteManifestPath = Get-CanonicalExistingFile -Path $RouteManifestPath -Label 'route manifest evidence' -Boundary $workspacePath -MaxBytes 4194304
+$StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label 'static evidence' -Boundary $workspacePath -MaxBytes 4194304
+$SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
+$E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
+$statePath = Get-CanonicalFuturePath -Path $statePath -Boundary $repoPath -Label 'state file'
+$logPath = Get-CanonicalFutureDirectory -Path $logPath -Boundary $repoPath -Label 'log directory'
+$receiptFullPath = Get-CanonicalFuturePath -Path $receiptFullPath -Boundary $repoPath -Label 'final receipt'
+$parentAuthorityFullPath = Get-CanonicalFuturePath -Path $parentAuthorityFullPath -Suffix '.high-cost-parent-authority.json' -Boundary $repoPath -Label 'parent authority'
+$runnerArgumentsPath = Get-CanonicalFuturePath -Path "$receiptFullPath.runner-arguments.json" -Suffix '.runner-arguments.json' -Boundary $repoPath -Label 'runner arguments'
+$reservationReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-reservation.json" -Suffix '.e2e-final-reservation.json' -Boundary $repoPath -Label 'reservation receipt'
+$claimReceiptPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim.json" -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
+$claimWitnessPath = Get-CanonicalFuturePath -Path "$receiptFullPath.e2e-final-claim-witness.json" -Suffix '.e2e-final-claim-witness.json' -Boundary $repoPath -Label 'claim witness'
+if ($HighCostParentAuthorityPath -and
+    -not [string]::Equals(
+        [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath),
+        $parentAuthorityFullPath,
+        [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "HIGH_COST_PARENT_AUTHORITY_PATH_DRIFT: expected=$parentAuthorityFullPath actual=$HighCostParentAuthorityPath"
+}
 New-Item -ItemType Directory -Path (Split-Path -Parent $statePath) -Force | Out-Null
 New-Item -ItemType Directory -Path $logPath -Force | Out-Null
 New-Item -ItemType Directory -Path (Split-Path -Parent $receiptFullPath) -Force | Out-Null
-
-foreach ($evidencePath in @($BudgetPath, $EfficiencyDesignPath, $AdversarialReviewPath, $RouteManifestPath, $StaticReceiptPath, $SimulationReceiptPath, $E2EAdmissionPath)) {
-    if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) {
-        throw "HIGH_COST_TRUSTED_EVIDENCE_REQUIRED missing=$([IO.Path]::GetFileName($evidencePath))"
-    }
-}
+$logPath = Get-CanonicalFutureDirectory -Path $logPath -Boundary $repoPath -Label 'log directory' -AllowExisting
+$statePath = Get-CanonicalFuturePath -Path $statePath -Boundary $repoPath -Label 'state file'
+$receiptFullPath = Get-CanonicalFuturePath -Path $receiptFullPath -Boundary $repoPath -Label 'final receipt'
+$parentAuthorityFullPath = Get-CanonicalFuturePath -Path $parentAuthorityFullPath -Suffix '.high-cost-parent-authority.json' -Boundary $repoPath -Label 'parent authority'
+$runnerArgumentsPath = Get-CanonicalFuturePath -Path $runnerArgumentsPath -Suffix '.runner-arguments.json' -Boundary $repoPath -Label 'runner arguments'
+$reservationReceiptPath = Get-CanonicalFuturePath -Path $reservationReceiptPath -Suffix '.e2e-final-reservation.json' -Boundary $repoPath -Label 'reservation receipt'
+$claimReceiptPath = Get-CanonicalFuturePath -Path $claimReceiptPath -Suffix '.e2e-final-claim.json' -Boundary $repoPath -Label 'claim receipt'
+$claimWitnessPath = Get-CanonicalFuturePath -Path $claimWitnessPath -Suffix '.e2e-final-claim-witness.json' -Boundary $repoPath -Label 'claim witness'
 $runnerArguments = @(
     '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
     '-File', $runnerPath,
@@ -81,33 +266,94 @@ $runnerArguments = @(
     '-CodexWrapperOverride', $codexWrapperPath,
     '-StateFileOverride', $statePath,
     '-LogDirOverride', $logPath,
-    '-PyExeOverride', $PythonExe,
+    '-PyExeOverride', $pythonCanonicalPath,
+    '-PowerShellExe', $powerShellCanonicalPath,
     '-HighCostWorkspaceRoot', $workspacePath,
-    '-HighCostBudgetToolPath', $highCostBudgetToolPath,
-    '-HighCostAdmissionPath', $highCostAdmissionFullPath
+    '-HighCostBudgetToolPath', $highCostModelBrokerPath,
+    '-HighCostParentAuthorityPath', $parentAuthorityFullPath,
+    '-E2EFinalAdmissionPath', $E2EAdmissionPath,
+    '-E2EFinalRunnerArgumentsPath', $runnerArgumentsPath,
+    '-E2EFinalReservationReceiptPath', $reservationReceiptPath,
+    '-E2EFinalClaimReceiptPath', $claimReceiptPath,
+    '-HighCostAttemptId', $attemptId
 )
-$runnerArgumentsPath = "$receiptFullPath.runner-arguments.json"
-$runnerArgumentsJson = $runnerArguments | ConvertTo-Json
+if (Test-Path -LiteralPath $runnerArgumentsPath) {
+    throw "HIGH_COST_RUNNER_ARGUMENTS_OUTPUT_EXISTS: $runnerArgumentsPath"
+}
+$runnerArgumentsJson = $runnerArguments | ConvertTo-Json -Compress -Depth 10
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-[System.IO.File]::WriteAllText($runnerArgumentsPath, ($runnerArgumentsJson + [Environment]::NewLine), $utf8NoBom)
-$operationKind = 'full_e2e'
-$attemptId = "nopublish:$DateStamp"
-$highCostAdmissionJson = & $PythonExe $highCostBudgetToolPath 'admit' '--operation-kind' $operationKind '--attempt-id' $attemptId
-if ($LASTEXITCODE -ne 0) {
-    throw "HIGH_COST_OPERATION_ADMISSION_REJECTED exit=$LASTEXITCODE"
+$runnerArgumentsBytes = $utf8NoBom.GetBytes($runnerArgumentsJson + "`n")
+$runnerArgumentsStream = $null
+try {
+    $runnerArgumentsStream = [System.IO.File]::Open(
+        $runnerArgumentsPath,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::None
+    )
+    $runnerArgumentsStream.Write($runnerArgumentsBytes, 0, $runnerArgumentsBytes.Length)
+    $runnerArgumentsStream.Flush()
+} finally {
+    if ($runnerArgumentsStream) { $runnerArgumentsStream.Dispose() }
 }
-$highCostAdmissionText = ($highCostAdmissionJson -join [Environment]::NewLine).Trim()
-[System.IO.File]::WriteAllText($highCostAdmissionFullPath, ($highCostAdmissionText + [Environment]::NewLine), $utf8NoBom)
-& $PythonExe $highCostAdmissionValidatorPath 'validate' '--path' $highCostAdmissionFullPath '--expected-operation-kind' $operationKind '--expected-attempt-id' $attemptId
+$e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'validate-issued' `
+    '--admission' $E2EAdmissionPath `
+    '--runner-arguments-file' $runnerArgumentsPath `
+    '--parent-authority' $parentAuthorityFullPath `
+    '--reservation-output' $reservationReceiptPath `
+    '--claim-output' $claimReceiptPath `
+    '--claim-witness-output' $claimWitnessPath `
+    '--runner-executable' $powerShellCanonicalPath `
+    '--authority-python-executable' $pythonCanonicalPath
 if ($LASTEXITCODE -ne 0) {
-    throw "HIGH_COST_OPERATION_ADMISSION_RECEIPT_INVALID exit=$LASTEXITCODE"
+    throw "E2E_FINAL_ISSUED_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
-& $PythonExe $e2eAdmissionBridgePath 'consume' '--admission' $E2EAdmissionPath '--runner-arguments-file' $runnerArgumentsPath
+$authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize' `
+    '--workspace-root' $workspacePath `
+    '--budget' $BudgetPath `
+    '--efficiency-design' $EfficiencyDesignPath `
+    '--adversarial-review' $AdversarialReviewPath `
+    '--route-manifest' $RouteManifestPath `
+    '--static-receipt' $StaticReceiptPath `
+    '--simulation-receipt' $SimulationReceiptPath `
+    '--e2e-admission' $E2EAdmissionPath `
+    '--attempt-kind' $operationKind `
+    '--execution-root' $repoPath `
+    '--output', $parentAuthorityFullPath
+if ($LASTEXITCODE -ne 0) {
+    throw "HIGH_COST_OPERATION_AUTHORIZATION_REJECTED exit=$LASTEXITCODE"
+}
+$activateOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate' `
+    '--workspace-root' $workspacePath `
+    '--admission', $parentAuthorityFullPath
+if ($LASTEXITCODE -ne 0) {
+    throw "HIGH_COST_OPERATION_ACTIVATION_REJECTED exit=$LASTEXITCODE"
+}
+$validatedOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'validate-activated' `
+    '--workspace-root' $workspacePath `
+    '--admission' $parentAuthorityFullPath `
+    '--expected-attempt-kind' $operationKind `
+    '--expected-execution-root' $repoPath
+if ($LASTEXITCODE -ne 0) {
+    throw "HIGH_COST_OPERATION_VALIDATION_REJECTED exit=$LASTEXITCODE"
+}
+& $pythonCanonicalPath -I $e2eAdmissionBridgePath 'consume' `
+    '--admission' $E2EAdmissionPath `
+    '--runner-arguments-file' $runnerArgumentsPath `
+    '--parent-authority' $parentAuthorityFullPath `
+    '--reservation-output' $reservationReceiptPath `
+    '--runner-executable' $powerShellCanonicalPath `
+    '--authority-python-executable' $pythonCanonicalPath
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
 
 $startedAt = Get-Date
+$launchPowerShellSha256 = (Get-FileHash -LiteralPath $powerShellCanonicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($launchPowerShellSha256 -ne $powerShellSha256) {
+    throw "HIGH_COST_POWERSHELL_EXECUTABLE_DRIFT: $powerShellCanonicalPath"
+}
+$PowerShellExe = $powerShellCanonicalPath
 & $PowerShellExe @runnerArguments
 $runnerExitCode = $LASTEXITCODE
 
@@ -144,6 +390,9 @@ $receipt = [ordered]@{
     duration_slo_met = $durationSloMet
     runner_exit_code = $runnerExitCode
     observed_terminal_state = $observedStatus
+    high_cost_attempt_id = $attemptId
+    high_cost_parent_authority_path = $parentAuthorityFullPath
+    high_cost_parent_authority_sha256 = if (Test-Path -LiteralPath $parentAuthorityFullPath -PathType Leaf) { (Get-FileHash -LiteralPath $parentAuthorityFullPath -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
     ok = ($runnerExitCode -eq 0 -and $observedStatus -eq 'publish_dry_run_ok' -and $durationSloMet)
 }
 $json = $receipt | ConvertTo-Json -Depth 6

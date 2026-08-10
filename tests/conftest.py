@@ -13,9 +13,11 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
     broker = tmp_path / "bin" / "ai-model-spawn-broker.py"
     workspace = tmp_path / "workspace"
     registry = workspace / "docs" / "harness" / "high_cost_model_routes_v1.json"
+    budget_validator = workspace / "tools" / "harness" / "high_cost_operation_budget.py"
     admission = tmp_path / "scheduled-operation-admission.json"
     broker.parent.mkdir(parents=True, exist_ok=True)
     registry.parent.mkdir(parents=True, exist_ok=True)
+    budget_validator.parent.mkdir(parents=True, exist_ok=True)
     broker.write_text(
         "import json\n"
         "import subprocess\n"
@@ -39,6 +41,7 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         encoding="utf-8",
     )
     registry.write_text("{}\n", encoding="utf-8")
+    budget_validator.write_text("# fixture sentinel\n", encoding="utf-8")
     admission.write_text("{}\n", encoding="utf-8")
     env = os.environ.copy()
     env["USERPROFILE"] = str(tmp_path)
@@ -48,6 +51,6 @@ def canonical_model_broker(tmp_path: Path) -> tuple[list[str], dict[str, str]]:
         "-HighCostPythonExe", sys.executable,
         "-HighCostCallId", f"test-{tmp_path.name}",
         "-HighCostAdmissionPath", str(admission),
-        "-HighCostExpectedOperationKind", "full_e2e",
+        "-HighCostExpectedOperationKind", "scheduled_production",
     ]
     return args, env

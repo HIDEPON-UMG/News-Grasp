@@ -47,12 +47,19 @@ param(
     [int64] $MaxCapturedOutputBytes = 52428800,
     [Parameter(Mandatory=$true)] [string] $HighCostWorkspaceRoot,
     [string] $HighCostAdmissionPath = '',
+    [string] $HighCostParentAuthorityPath = '',
+    [string] $HighCostAttemptId = '',
     [Parameter(Mandatory=$true)] [string] $HighCostExpectedOperationKind,
     [string] $HighCostExpectedIssueDate = '',
     [string] $HighCostBudgetToolPath = '',
     [Parameter(Mandatory=$true)] [string] $HighCostPythonExe,
     [Parameter(Mandatory=$true)] [string] $HighCostCallId,
     [string] $HighCostCallReceiptPath = '',
+    [string] $E2EFinalAdmissionPath = '',
+    [string] $E2EFinalRunnerArgumentsPath = '',
+    [string] $E2EFinalReservationReceiptPath = '',
+    [string] $E2EFinalClaimReceiptPath = '',
+    [string] $HighCostClaimWitness = '',
     [string[]] $ExtraArgs = @()
 )
 
@@ -80,10 +87,48 @@ function Add-WrapperLog {
     }
 }
 
+function Get-CanonicalFutureLeafPath {
+    param(
+        [Parameter(Mandatory=$true)][string] $ManagedRoot,
+        [Parameter(Mandatory=$true)][string] $Candidate,
+        [string] $ErrorCode = 'HIGH_COST_CANONICAL_FUTURE_PATH_INVALID'
+    )
+    try {
+        $root = [System.IO.Path]::GetFullPath($ManagedRoot)
+        $candidatePath = [System.IO.Path]::GetFullPath($Candidate)
+    } catch {
+        throw $ErrorCode
+    }
+    $rootKey = $root.TrimEnd('\') + '\'
+    if (-not $candidatePath.StartsWith($rootKey, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw $ErrorCode
+    }
+    $leaf = Get-Item -LiteralPath $candidatePath -Force -ErrorAction SilentlyContinue
+    if ($null -ne $leaf) {
+        throw $ErrorCode
+    }
+    $cursor = Split-Path -Parent $candidatePath
+    while ($cursor) {
+        $existing = Get-Item -LiteralPath $cursor -Force -ErrorAction SilentlyContinue
+        if ($null -ne $existing) {
+            if (($existing.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                (-not ($existing.PSIsContainer))) {
+                throw $ErrorCode
+            }
+        }
+        if ($cursor.TrimEnd('\').Equals($root.TrimEnd('\'), [System.StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        $next = Split-Path -Parent $cursor
+        if ($next -eq $cursor) { throw $ErrorCode }
+        $cursor = $next
+    }
+    return $candidatePath
+}
+
 function Assert-CanonicalModelBroker {
     if ((-not (Test-Path -LiteralPath $HighCostWorkspaceRoot -PathType Container)) -or
-        (-not (Test-Path -LiteralPath $HighCostPythonExe -PathType Leaf)) -or
-        (-not (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf))) {
+        (-not (Test-Path -LiteralPath $HighCostPythonExe -PathType Leaf))) {
         Add-WrapperLog 'HIGH_COST_MODEL_CALL_ADMISSION_REQUIRED'
         exit 126
     }
@@ -91,8 +136,78 @@ function Assert-CanonicalModelBroker {
         Add-WrapperLog 'HIGH_COST_OPERATION_ADMISSION_IDENTITY_REQUIRED'
         exit 126
     }
+    if ($HighCostExpectedOperationKind -in @('scheduled_production', 'scheduled_recovery')) {
+        if ($HighCostParentAuthorityPath) {
+            Add-WrapperLog 'HIGH_COST_SCHEDULED_PARENT_AUTHORITY_FORBIDDEN'
+            exit 126
+        }
+        if (-not (Test-Path -LiteralPath $HighCostAdmissionPath -PathType Leaf)) {
+            Add-WrapperLog 'HIGH_COST_OPERATION_ADMISSION_REQUIRED'
+            exit 126
+        }
+    } elseif ($HighCostExpectedOperationKind -eq 'full_e2e') {
+        if ($HighCostAdmissionPath) {
+            Add-WrapperLog 'HIGH_COST_FULL_E2E_SHARED_ADMISSION_FORBIDDEN'
+            exit 126
+        }
+        if ($HighCostParentAuthorityPath) {
+            if ((-not (Test-Path -LiteralPath $HighCostParentAuthorityPath -PathType Leaf)) -or
+                [string]::IsNullOrWhiteSpace($HighCostAttemptId) -or
+                [string]::IsNullOrWhiteSpace($HighCostCallReceiptPath)) {
+                Add-WrapperLog 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED'
+                exit 126
+            }
+        } else {
+            Add-WrapperLog 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED'
+            exit 126
+        }
+    }
     $expectedInstalledBroker = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'))
     $modelSpawnBroker = if ($HighCostBudgetToolPath) { [System.IO.Path]::GetFullPath($HighCostBudgetToolPath) } else { $expectedInstalledBroker }
+    $budgetValidator = [System.IO.Path]::GetFullPath((Join-Path $HighCostWorkspaceRoot 'tools\harness\high_cost_operation_budget.py'))
+    if (-not (Test-Path -LiteralPath $budgetValidator -PathType Leaf)) {
+        Add-WrapperLog 'HIGH_COST_OPERATION_BUDGET_VALIDATOR_UNAVAILABLE'
+        exit 126
+    }
+    $script:CanonicalExecutionRoot = [System.IO.Path]::GetFullPath($WorkingDirectory)
+    if (-not (Test-Path -LiteralPath $script:CanonicalExecutionRoot -PathType Container)) {
+        Add-WrapperLog 'HIGH_COST_EXECUTION_ROOT_INVALID'
+        exit 126
+    }
+    if ($HighCostExpectedOperationKind -eq 'full_e2e') {
+        if (-not $E2EFinalAdmissionPath -or -not $E2EFinalRunnerArgumentsPath -or
+            -not $E2EFinalReservationReceiptPath -or -not $E2EFinalClaimReceiptPath -or
+            -not $HighCostClaimWitness -or [string]::IsNullOrWhiteSpace($HighCostCallReceiptPath)) {
+            Add-WrapperLog 'HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED'
+            exit 126
+        }
+        foreach ($path in @($E2EFinalAdmissionPath, $E2EFinalRunnerArgumentsPath, $E2EFinalReservationReceiptPath, $E2EFinalClaimReceiptPath)) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+                Add-WrapperLog 'HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED'
+                exit 126
+            }
+        }
+        if (-not (Test-Path -LiteralPath $E2EFinalClaimReceiptPath -PathType Leaf)) {
+            Add-WrapperLog 'HIGH_COST_FINAL_CLAIM_RECEIPT_REQUIRED'
+            exit 126
+        }
+        try {
+            $callReceiptRoot = [System.IO.Path]::GetFullPath((Join-Path $script:CanonicalExecutionRoot 'build\high-cost-call-receipts'))
+            $script:CanonicalHighCostCallReceiptPath = Get-CanonicalFutureLeafPath -ManagedRoot $script:CanonicalExecutionRoot -Candidate $HighCostCallReceiptPath -ErrorCode 'HIGH_COST_CANONICAL_FUTURE_OUTPUT_INVALID'
+            $callRootKey = $callReceiptRoot.TrimEnd('\') + '\'
+            if (-not $script:CanonicalHighCostCallReceiptPath.StartsWith($callRootKey, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw 'HIGH_COST_CANONICAL_FUTURE_OUTPUT_INVALID'
+            }
+        } catch {
+            Add-WrapperLog "HIGH_COST_CANONICAL_FUTURE_OUTPUT_INVALID reason=$($_.Exception.Message)"
+            exit 126
+        }
+        $validatedParent = (& $HighCostPythonExe -I $budgetValidator 'validate-activated' '--workspace-root' $HighCostWorkspaceRoot '--admission' $HighCostParentAuthorityPath '--expected-attempt-kind' 'full_e2e' '--expected-execution-root' $script:CanonicalExecutionRoot 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            Add-WrapperLog "HIGH_COST_PARENT_AUTHORITY_INVALID exit=$LASTEXITCODE"
+            exit 126
+        }
+    }
     $routeRegistry = Join-Path $HighCostWorkspaceRoot 'docs\harness\high_cost_model_routes_v1.json'
     if ((-not $modelSpawnBroker.Equals($expectedInstalledBroker, [System.StringComparison]::OrdinalIgnoreCase)) -or (-not (Test-Path -LiteralPath $modelSpawnBroker -PathType Leaf)) -or (-not (Test-Path -LiteralPath $routeRegistry -PathType Leaf))) {
         Add-WrapperLog 'MODEL_SPAWN_BROKER_UNAVAILABLE'
@@ -120,7 +235,9 @@ if (-not (Test-Path -LiteralPath $PromptFile)) {
 if (-not $WorkingDirectory) {
     $WorkingDirectory = (Get-Location).Path
 }
-if (-not (Test-Path -LiteralPath $WorkingDirectory)) {
+try {
+    $WorkingDirectory = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkingDirectory -ErrorAction Stop).Path)
+} catch {
     Add-WrapperLog "WorkingDirectory not found: $WorkingDirectory"
     exit 125
 }
@@ -133,6 +250,10 @@ if ([string]::IsNullOrWhiteSpace($promptText)) {
 }
 
 Add-WrapperLog "wrapper ALIVE: pid=$PID CodexExe=$([IO.Path]::GetFileName($CodexExe)) PromptFile=$([IO.Path]::GetFileName($PromptFile)) TimeoutSec=$TimeoutSec IdleTimeoutSec=$IdleTimeoutSec WorkingDirectory=$([IO.Path]::GetFileName($WorkingDirectory))"
+if ($SuccessProbeCommand) {
+    Add-WrapperLog 'SUCCESS_PROBE_EARLY_TERMINATION_FORBIDDEN: broker-owned terminal only'
+    exit 125
+}
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("news-grasp-codex-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
@@ -452,36 +573,6 @@ public static class NewsGraspOwnedJob
 
 $ownedJobHandle = [IntPtr]::Zero
 
-function Stop-ProcessTree {
-    param([int] $ProcessId)
-    $children = @()
-    try {
-        $children = @(Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $ProcessId })
-    } catch {
-        $children = @()
-    }
-    $stoppedIds = @()
-    foreach ($child in $children) {
-        $stoppedIds += @(Stop-ProcessTree -ProcessId ([int]$child.ProcessId))
-    }
-    try { Stop-Process -Id $ProcessId -Force -ErrorAction Stop } catch { }
-    return @($stoppedIds + $ProcessId)
-}
-
-function Wait-ProcessTreeExit {
-    param(
-        [int[]] $ProcessIds,
-        [int] $TimeoutMilliseconds = 5000
-    )
-    $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMilliseconds)
-    do {
-        $alive = @($ProcessIds | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
-        if ($alive.Count -eq 0) { return $true }
-        Start-Sleep -Milliseconds 100
-    } while ([DateTime]::UtcNow -lt $deadline)
-    return $false
-}
-
 function Invoke-SuccessProbe {
     param(
         [string] $Command,
@@ -558,6 +649,30 @@ if ($ExtraArgs) {
 
 Assert-CanonicalModelBroker
 
+if ($HighCostExpectedOperationKind -eq 'full_e2e') {
+    try {
+        $e2eAdmissionBridge = [System.IO.Path]::GetFullPath((Join-Path $script:CanonicalExecutionRoot 'tools\e2e_final_admission_bridge.py'))
+        if (-not (Test-Path -LiteralPath $e2eAdmissionBridge -PathType Leaf)) { throw 'HIGH_COST_FINAL_ADMISSION_BRIDGE_UNAVAILABLE' }
+        $canonicalClaimWitnessPath = [System.IO.Path]::GetFullPath($HighCostClaimWitness)
+        if (-not (Test-Path -LiteralPath $canonicalClaimWitnessPath -PathType Leaf)) { throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_MISSING' }
+        $claimWitnessOutput = (& $HighCostPythonExe -I $e2eAdmissionBridge 'validate-runner-claim-witness' '--admission' $E2EFinalAdmissionPath '--claim-witness' $canonicalClaimWitnessPath 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $claimWitnessOutput.Length -gt 131072 -or [string]::IsNullOrWhiteSpace($claimWitnessOutput)) {
+            throw 'HIGH_COST_FINAL_RUNNER_CLAIM_INVALID'
+        }
+        $claimWitness = $claimWitnessOutput | ConvertFrom-Json -ErrorAction Stop
+        foreach ($field in @('claimId', 'claimReceiptPath', 'claimReceiptSha256', 'ownerProcessIdentity', 'attemptKey', 'admissionId')) {
+            if ($null -eq $claimWitness.$field) { throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_INVALID' }
+        }
+        if ([System.IO.Path]::GetFullPath([string]$claimWitness.claimReceiptPath) -ne [System.IO.Path]::GetFullPath($E2EFinalClaimReceiptPath)) {
+            throw 'HIGH_COST_FINAL_RUNNER_CLAIM_WITNESS_PATH_DRIFT'
+        }
+        $HighCostClaimWitness = $canonicalClaimWitnessPath
+    } catch {
+        Add-WrapperLog "HIGH_COST_FINAL_RUNNER_CLAIM_INVALID reason=$($_.Exception.Message)"
+        exit 126
+    }
+}
+
 try {
     $oldPythonIoEncoding = [Environment]::GetEnvironmentVariable("PYTHONIOENCODING", "Process")
     $oldPythonUtf8 = [Environment]::GetEnvironmentVariable("PYTHONUTF8", "Process")
@@ -580,7 +695,74 @@ try {
             throw 'MODEL_SPAWN_BROKER_UNAVAILABLE'
         }
         $filePath = $HighCostPythonExe
-        $effectiveArgs = @($modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--operation-admission', $HighCostAdmissionPath, '--expected-operation-kind', $HighCostExpectedOperationKind, '--expected-issue-date', $HighCostExpectedIssueDate, '--executable', $modelExecutable, '--') + $modelArgs
+        $operationAdmissionPath = $HighCostAdmissionPath
+        if ($HighCostExpectedOperationKind -eq 'full_e2e') {
+            $HighCostCallReceiptPath = $script:CanonicalHighCostCallReceiptPath
+            if (Test-Path -LiteralPath $HighCostCallReceiptPath) {
+                Add-WrapperLog 'HIGH_COST_CALL_RECEIPT_REUSE_FORBIDDEN'
+                exit 126
+            }
+            try {
+                $callReceiptParent = Split-Path -Parent ([System.IO.Path]::GetFullPath($HighCostCallReceiptPath))
+                if ($callReceiptParent -and -not (Test-Path -LiteralPath $callReceiptParent -PathType Container)) {
+                    New-Item -ItemType Directory -Path $callReceiptParent -Force | Out-Null
+                }
+                $null = Get-CanonicalFutureLeafPath -ManagedRoot $script:CanonicalExecutionRoot -Candidate $HighCostCallReceiptPath -ErrorCode 'HIGH_COST_CANONICAL_FUTURE_OUTPUT_INVALID'
+                $admitArgs = @(
+                    'admit',
+                    '--operation-kind', 'full_e2e',
+                    '--attempt-id', $HighCostAttemptId,
+                    '--parent-operation-authority', $HighCostParentAuthorityPath,
+                    '--execution-root', $script:CanonicalExecutionRoot,
+                    '--route', $FlowName,
+                    '--call-id', $HighCostCallId,
+                    '--executable', $modelExecutable,
+                    '--e2e-final-admission', $E2EFinalAdmissionPath,
+                    '--e2e-final-runner-arguments-file', $E2EFinalRunnerArgumentsPath,
+                    '--e2e-final-reservation-receipt', $E2EFinalReservationReceiptPath,
+                    '--e2e-final-claim-receipt', $E2EFinalClaimReceiptPath,
+                    '--e2e-final-claim-witness', $HighCostClaimWitness,
+                    '--'
+                ) + @($modelArgs)
+                $childAdmissionOutput = & $HighCostPythonExe -I $modelSpawnBroker @admitArgs 2>&1
+                $childAdmissionExitCode = $LASTEXITCODE
+                $childAdmissionText = (@($childAdmissionOutput) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+                if ($childAdmissionExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($childAdmissionText)) {
+                    Add-WrapperLog "HIGH_COST_CHILD_ADMISSION_REJECTED exit=$childAdmissionExitCode"
+                    exit 126
+                }
+                $childAdmission = $childAdmissionText.Trim() | ConvertFrom-Json -ErrorAction Stop
+                if (
+                    [string]$childAdmission.schemaVersion -ne 'HIGH_COST_OPERATION_ADMISSION_V3' -or
+                    [string]$childAdmission.operationKind -ne 'full_e2e' -or
+                    [string]$childAdmission.attemptId -ne $HighCostAttemptId -or
+                    [string]$childAdmission.route -ne $FlowName -or
+                    [string]$childAdmission.executionRoot -ne [string]$script:CanonicalExecutionRoot -or
+                    [System.IO.Path]::GetFullPath([string]$childAdmission.parentAuthorityPath) -ne [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath) -or
+                    [string]$childAdmission.callIdSha256 -notmatch '^[0-9a-f]{64}$' -or
+                    [string]$childAdmission.commandSha256 -notmatch '^[0-9a-f]{64}$' -or
+                    [string]$childAdmission.receiptPath -notmatch '^[^\r\n]+$' -or
+                    (-not (Test-Path -LiteralPath ([string]$childAdmission.receiptPath) -PathType Leaf))
+                ) {
+                    Add-WrapperLog 'HIGH_COST_CHILD_ADMISSION_IDENTITY_MISMATCH'
+                    exit 126
+                }
+                [System.IO.File]::WriteAllText($HighCostCallReceiptPath, ($childAdmissionText.Trim() + [Environment]::NewLine), $utf8NoBom)
+                $operationAdmissionPath = [System.IO.Path]::GetFullPath([string]$childAdmission.receiptPath)
+            } catch {
+                Add-WrapperLog "HIGH_COST_CHILD_ADMISSION_INVALID reason=$($_.Exception.Message)"
+                exit 126
+            }
+        }
+        $effectiveArgs = @('-I', $modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--operation-admission', $operationAdmissionPath, '--expected-operation-kind', $HighCostExpectedOperationKind, '--expected-issue-date', $HighCostExpectedIssueDate, '--execution-root', $script:CanonicalExecutionRoot)
+        if ($TimeoutSec -gt 0) { $effectiveArgs += @('--timeout-seconds', [string]$TimeoutSec) }
+        if ($IdleTimeoutSec -gt 0) { $effectiveArgs += @('--idle-timeout-seconds', [string]$IdleTimeoutSec) }
+        if ($MaxCapturedOutputBytes -gt 0) { $effectiveArgs += @('--max-output-bytes', [string]$MaxCapturedOutputBytes) }
+        $effectiveArgs += @('--executable', $modelExecutable)
+        if ($HighCostExpectedOperationKind -eq 'full_e2e') {
+            $effectiveArgs += @('--e2e-final-admission', $E2EFinalAdmissionPath, '--e2e-final-runner-arguments-file', $E2EFinalRunnerArgumentsPath, '--e2e-final-reservation-receipt', $E2EFinalReservationReceiptPath, '--e2e-final-claim-receipt', $E2EFinalClaimReceiptPath, '--e2e-final-claim-witness', $HighCostClaimWitness)
+        }
+        $effectiveArgs += @('--') + $modelArgs
         $effectiveArgString = ConvertTo-ProcessArgumentString -Arguments $effectiveArgs
         # brokerをsuspendedで生成し、専用Jobへ所属させてから初めて実行する。
         $ownedLaunch = [NewsGraspOwnedJob]::CreateSuspendedAssignedProcess($filePath, $effectiveArgString, $WorkingDirectory, $stdinFile, $stdoutFile, $stderrFile)
@@ -604,11 +786,6 @@ try {
     while (-not $proc.HasExited) {
         Start-Sleep -Seconds 1
         $capturedBytes = (Get-Item -LiteralPath $stdoutFile).Length + (Get-Item -LiteralPath $stderrFile).Length
-        if ($MaxCapturedOutputBytes -gt 0 -and $capturedBytes -gt $MaxCapturedOutputBytes) {
-            Add-WrapperLog "OUTPUT LIMIT exceeded: captured=$capturedBytes limit=$MaxCapturedOutputBytes; killing PID $($proc.Id)"
-            [void](Stop-ProcessTree -ProcessId $proc.Id)
-            exit 125
-        }
         $hadStdout = Add-NewFileBytesToLog -Path $stdoutFile -Offset ([ref]$stdoutOffset)
         $hadStderr = Add-NewFileBytesToLog -Path $stderrFile -Offset ([ref]$stderrOffset)
         $nowUtc = [DateTime]::UtcNow
@@ -623,36 +800,6 @@ try {
                 Add-WrapperLog "heartbeat: elapsed=$elapsedSec idle=$idleSec"
             } catch { }
             $nextHeartbeatUtc = $nowUtc.AddSeconds($HeartbeatSec)
-        }
-        if ($SuccessProbeCommand -and $elapsedSec -ge $SuccessProbeMinElapsedSec -and $nowUtc -ge $nextSuccessProbeUtc) {
-            $nextSuccessProbeUtc = $nowUtc.AddSeconds([Math]::Max(1, $SuccessProbeIntervalSec))
-            if (Invoke-SuccessProbe -Command $SuccessProbeCommand -WorkingDirectory $WorkingDirectory -TempRoot $tempRoot) {
-                Add-WrapperLog "success probe passed; killing PID $($proc.Id) and returning rc=0"
-                $stoppedProcessIds = @(Stop-ProcessTree -ProcessId $proc.Id)
-                if (-not (Wait-ProcessTreeExit -ProcessIds $stoppedProcessIds)) {
-                    Add-WrapperLog "process tree did not stop after success probe; returning rc=125"
-                    exit 125
-                }
-                Add-WrapperLog "process tree confirmed stopped after success probe"
-                if (-not (Invoke-SuccessProbe -Command $SuccessProbeCommand -WorkingDirectory $WorkingDirectory -TempRoot $tempRoot)) {
-                    Add-WrapperLog "success probe changed after child stop; returning rc=125"
-                    exit 125
-                }
-                [void](Add-NewFileBytesToLog -Path $stdoutFile -Offset ([ref]$stdoutOffset))
-                [void](Add-NewFileBytesToLog -Path $stderrFile -Offset ([ref]$stderrOffset))
-                Write-UsageRecord -ExitCode 0 -StdoutPath $stdoutFile -StderrPath $stderrFile
-                exit 0
-            }
-        }
-        if ($TimeoutSec -gt 0 -and $elapsedSec -ge $TimeoutSec) {
-            try { Add-WrapperLog "TIMEOUT after $TimeoutSec sec, killing PID $($proc.Id)" } catch { }
-            [void](Stop-ProcessTree -ProcessId $proc.Id)
-            exit 124
-        }
-        if ($IdleTimeoutSec -gt 0 -and $idleSec -ge $IdleTimeoutSec) {
-            try { Add-WrapperLog "IDLE TIMEOUT after $IdleTimeoutSec sec, killing PID $($proc.Id)" } catch { }
-            [void](Stop-ProcessTree -ProcessId $proc.Id)
-            exit 124
         }
     }
 

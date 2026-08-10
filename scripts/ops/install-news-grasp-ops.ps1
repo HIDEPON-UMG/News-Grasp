@@ -164,7 +164,7 @@ function Recover-NewsGraspInterruptedInstall {
             [string]$journal.transaction_id -ne $transactionDir.Name -or
             [string]$journal.phase -notin @(
                 'prepared', 'files_installed', 'authority_issued',
-                'tasks_registered', 'committed', 'rolled_back'
+                'tasks_converged', 'verified', 'committed', 'rolled_back'
             )
         ) {
             throw 'NEWS_GRASP_INSTALL_JOURNAL_INGEST_INVALID'

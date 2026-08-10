@@ -9,7 +9,12 @@ from pathlib import Path
 from tools.run_model_eval import VARIANTS
 
 ROOT = Path(__file__).resolve().parent.parent
-RUNNER = Path(os.environ.get("NEWS_GRASP_RUNNER", str(Path.home() / "bin" / "news-grasp-runner.ps1")))
+RUNNER = Path(
+    os.environ.get(
+        "NEWS_GRASP_RUNNER",
+        str(ROOT / "scripts" / "ops" / "news-grasp-runner.ps1"),
+    )
+)
 
 
 def _read(path: Path) -> str:
