@@ -2927,6 +2927,11 @@ function Assert-HighCostOperationAdmission {
             exit 76
         }
         $script:HighCostAdmissionPath = ''
+        # Preserve the caller-supplied authority path before clearing the
+        # script-scope projection.  In PowerShell a script parameter lives in
+        # script scope, so assigning the same $script: variable would erase
+        # the input value used by this admission gate.
+        $incomingHighCostParentAuthorityPath = [string]$HighCostParentAuthorityPath
         $expectedFullE2EAttemptId = "nopublish:$DateStamp"
         if ($HighCostAttemptId -and $HighCostAttemptId -cne $expectedFullE2EAttemptId) {
             Add-RunnerLogLine -Text 'ERROR: HIGH_COST_NOPUBLISH_ATTEMPT_ID_DRIFT'
@@ -2936,7 +2941,7 @@ function Assert-HighCostOperationAdmission {
         $script:HighCostAttemptId = $expectedFullE2EAttemptId
         $script:HighCostParentAuthorityPath = ''
         $script:HighCostParentAuthoritySha256 = ''
-        if (-not $HighCostParentAuthorityPath) {
+        if (-not $incomingHighCostParentAuthorityPath) {
             Add-RunnerLogLine -Text 'ERROR: HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED'
             Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED' -ExitCode 76
             exit 76
@@ -2947,7 +2952,7 @@ function Assert-HighCostOperationAdmission {
             Set-RunnerState -Status 'operation_rejected_high_cost_admission_required' -Message 'HIGH_COST_FINAL_ADMISSION_PATHS_REQUIRED' -ExitCode 76
             exit 76
         }
-        $parentAuthorityReceipt = [System.IO.Path]::GetFullPath($HighCostParentAuthorityPath)
+        $parentAuthorityReceipt = [System.IO.Path]::GetFullPath($incomingHighCostParentAuthorityPath)
         $finalAdmissionReceipt = [System.IO.Path]::GetFullPath($E2EFinalAdmissionPath)
         $finalRunnerArguments = [System.IO.Path]::GetFullPath($E2EFinalRunnerArgumentsPath)
         $finalReservationReceipt = [System.IO.Path]::GetFullPath($E2EFinalReservationReceiptPath)
