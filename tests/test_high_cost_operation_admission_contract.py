@@ -44,8 +44,10 @@ def test_nopublish_wrapper_propagates_parent_authority_not_shared_child_receipt(
     assert "-HighCostParentAuthorityPath" in text
     assert "-HighCostAdmissionPath" not in text
     assert "high_cost_admission_receipt.py" not in text
-    assert "'--output', $parentAuthorityFullPath" in text
-    assert "'--admission', $parentAuthorityFullPath" in text
+    assert "'--output' $parentAuthorityFullPath" in text
+    assert "'--admission' $parentAuthorityFullPath" in text
+    assert "'--output', $parentAuthorityFullPath" not in text
+    assert "'--admission', $parentAuthorityFullPath" not in text
 
 
 def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:

@@ -322,13 +322,13 @@ $authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'autho
     '--e2e-admission' $E2EAdmissionPath `
     '--attempt-kind' $operationKind `
     '--execution-root' $repoPath `
-    '--output', $parentAuthorityFullPath
+    '--output' $parentAuthorityFullPath
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_AUTHORIZATION_REJECTED exit=$LASTEXITCODE"
 }
 $activateOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate' `
     '--workspace-root' $workspacePath `
-    '--admission', $parentAuthorityFullPath
+    '--admission' $parentAuthorityFullPath
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_ACTIVATION_REJECTED exit=$LASTEXITCODE"
 }
