@@ -7,6 +7,7 @@ import json
 import hashlib
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -2880,7 +2881,9 @@ def test_runner_executes_compound_repair_plan_before_single_gate_reverify() -> N
     assert "compound deterministic repair OK" in runner
 
 
-def _run_install_guard(command: str) -> subprocess.CompletedProcess[str]:
+def _run_install_guard(
+    command: str, *, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     guard = OPS_DIR / "install-news-grasp-ops-guard.ps1"
     script = (
         "$ErrorActionPreference='Stop'; "
@@ -2895,6 +2898,7 @@ def _run_install_guard(command: str) -> subprocess.CompletedProcess[str]:
         errors="replace",
         check=False,
         timeout=30,
+        env=env,
     )
 
 
@@ -2910,7 +2914,13 @@ def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation()
     assert "rev-parse --show-toplevel" in guard
     assert "refs/remotes/origin/main" in guard
     assert "ls-files -v" in guard
-    assert "hash-object --stdin-paths" in guard
+    assert "hash-object --no-filters --" in guard
+    assert "'GIT_CONFIG_NOSYSTEM' = '1'" in guard
+    assert "'GIT_CONFIG_GLOBAL' = 'NUL'" in guard
+    assert "'GIT_ATTR_NOSYSTEM' = '1'" in guard
+    assert "'GIT_NO_REPLACE_OBJECTS' = '1'" in guard
+    assert "diff --quiet HEAD --" not in guard
+    assert "diff --cached --quiet --no-ext-diff --no-textconv --" in guard
     assert "[int] $MaxEntries = 16384" in guard
     assert "[string]$runtimeRoot.evidenceRepoDir" in guard
     assert "Test-NewsGraspUnsafeTraversalReparsePoint -Item $buildItem" in guard
@@ -2954,7 +2964,9 @@ def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_
     assert sentinel.read_text(encoding="utf-8") == "unchanged"
 
 
-def _install_source_generation_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
+def _install_source_generation_fixture(
+    tmp_path: Path, *, include_tracked_build: bool = False
+) -> tuple[Path, Path, Path]:
     git = r"C:\Program Files\Git\cmd\git.exe"
     canonical_repo = tmp_path / "canonical"
     promoted_repo = tmp_path / "promoted"
@@ -2962,10 +2974,16 @@ def _install_source_generation_fixture(tmp_path: Path) -> tuple[Path, Path, Path
     canonical_repo.mkdir()
     bin_dir.mkdir()
     subprocess.run([git, "-C", str(canonical_repo), "init", "-b", "main"], check=True)
+    subprocess.run([git, "-C", str(canonical_repo), "config", "core.autocrlf", "false"], check=True)
     subprocess.run([git, "-C", str(canonical_repo), "config", "user.email", "test@example.invalid"], check=True)
     subprocess.run([git, "-C", str(canonical_repo), "config", "user.name", "News Grasp Test"], check=True)
     (canonical_repo / "tracked.txt").write_text("clean\n", encoding="utf-8")
     (canonical_repo / ".gitignore").write_text(".venv/\n", encoding="utf-8")
+    if include_tracked_build:
+        (canonical_repo / "build").mkdir()
+        (canonical_repo / "build" / "tracked-artifact.json").write_text(
+            "{\"generation\":\"clean\"}\n", encoding="utf-8"
+        )
     subprocess.run([git, "-C", str(canonical_repo), "add", "."], check=True)
     subprocess.run([git, "-C", str(canonical_repo), "commit", "-m", "fixture"], check=True)
     subprocess.run(
@@ -3179,6 +3197,126 @@ def test_install_guard_rejects_assume_unchanged_tracked_payload(tmp_path: Path) 
     assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
 
 
+def test_install_guard_rejects_working_payload_hidden_by_inherited_global_clean_filter(
+    tmp_path: Path,
+) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    poisoned_home = tmp_path / "poisoned-home"
+    poisoned_home.mkdir()
+    attributes_file = poisoned_home / "global-attributes"
+    attributes_file.write_text("tracked.txt filter=restore-head\n", encoding="utf-8")
+    filter_script = poisoned_home / "restore_head.py"
+    filter_sentinel = poisoned_home / "filter-executed.txt"
+    filter_script.write_text(
+        "import sys\n"
+        "from pathlib import Path\n"
+        f"Path({str(filter_sentinel)!r}).write_text('executed', encoding='utf-8')\n"
+        "sys.stdin.buffer.read()\n"
+        "sys.stdout.buffer.write(b'clean\\n')\n",
+        encoding="utf-8",
+    )
+    poisoned_env = os.environ.copy()
+    poisoned_env["HOME"] = str(poisoned_home)
+    poisoned_env["XDG_CONFIG_HOME"] = str(poisoned_home / "xdg")
+    filter_command = f'"{sys.executable}" "{filter_script}"'
+    subprocess.run(
+        [git, "config", "--global", "core.attributesFile", str(attributes_file)],
+        check=True,
+        env=poisoned_env,
+    )
+    subprocess.run(
+        [git, "config", "--global", "filter.restore-head.clean", filter_command],
+        check=True,
+        env=poisoned_env,
+    )
+    (promoted_repo / "tracked.txt").write_text("installer payload drift\n", encoding="utf-8")
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null",
+        env=poisoned_env,
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+    assert not filter_sentinel.exists()
+
+
+def test_install_guard_rejects_staged_payload_hidden_by_repo_local_external_diff(
+    tmp_path: Path,
+) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    diff_sentinel = tmp_path / "external-diff-executed.txt"
+    diff_script = tmp_path / "external_diff.py"
+    diff_script.write_text(
+        "from pathlib import Path\n"
+        f"Path({str(diff_sentinel)!r}).write_text('executed', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    diff_command = f'"{sys.executable}" "{diff_script}"'
+    subprocess.run(
+        [git, "-C", str(promoted_repo), "config", "diff.external", diff_command],
+        check=True,
+    )
+    subprocess.run(
+        [git, "-C", str(promoted_repo), "config", "diff.trustExitCode", "true"],
+        check=True,
+    )
+    (promoted_repo / "tracked.txt").write_text("staged payload drift\n", encoding="utf-8")
+    subprocess.run([git, "-C", str(promoted_repo), "add", "tracked.txt"], check=True)
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+    assert not diff_sentinel.exists()
+
+
+def test_install_guard_rejects_staged_payload_hidden_by_replace_ref(tmp_path: Path) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(tmp_path)
+    git = r"C:\Program Files\Git\cmd\git.exe"
+    head = subprocess.check_output(
+        [git, "-C", str(promoted_repo), "rev-parse", "HEAD"],
+        text=True,
+        encoding="utf-8",
+    ).strip()
+    (promoted_repo / "tracked.txt").write_text("replace-ref payload drift\n", encoding="utf-8")
+    subprocess.run([git, "-C", str(promoted_repo), "add", "tracked.txt"], check=True)
+    tree = subprocess.check_output(
+        [git, "-C", str(promoted_repo), "write-tree"],
+        text=True,
+        encoding="utf-8",
+    ).strip()
+    replacement_commit = subprocess.check_output(
+        [git, "-C", str(promoted_repo), "commit-tree", tree, "-m", "replacement"],
+        text=True,
+        encoding="utf-8",
+    ).strip()
+    subprocess.run(
+        [git, "-C", str(promoted_repo), "update-ref", f"refs/replace/{head}", replacement_commit],
+        check=True,
+    )
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
 def test_install_guard_rejects_unrelated_repo_recreated_at_canonical_runtime_path(
     tmp_path: Path,
 ) -> None:
@@ -3221,6 +3359,26 @@ def test_install_guard_rejects_tracked_bytes_hidden_by_stat_cache(tmp_path: Path
     original_stat = tracked.stat()
     tracked.write_bytes(b"drift\n")
     os.utime(tracked, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
+
+    completed = _run_install_guard(
+        "Assert-NewsGraspCanonicalInstallSource "
+        f"-ResolvedRepoDir '{promoted_repo}' -RequestedBinDir '{bin_dir}' "
+        f"-CanonicalBinDir '{bin_dir}' -TrustedBoundary '{tmp_path}' "
+        "-ManagedTaskNames @() | Out-Null"
+    )
+
+    assert completed.returncode != 0
+    assert "NEWS_GRASP_NONCANONICAL_INSTALL_SOURCE" in completed.stderr
+
+
+def test_install_guard_rejects_tracked_build_bytes_hidden_by_missing_working_diff(
+    tmp_path: Path,
+) -> None:
+    _, promoted_repo, bin_dir = _install_source_generation_fixture(
+        tmp_path, include_tracked_build=True
+    )
+    tracked_build = promoted_repo / "build" / "tracked-artifact.json"
+    tracked_build.write_text("{\"generation\":\"drift\"}\n", encoding="utf-8")
 
     completed = _run_install_guard(
         "Assert-NewsGraspCanonicalInstallSource "
