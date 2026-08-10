@@ -2914,12 +2914,11 @@ def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation()
     assert "rev-parse --show-toplevel" in guard
     assert "refs/remotes/origin/main" in guard
     assert "ls-files -v" in guard
-    assert "hash-object --stdin-paths" in guard
-    assert "'GIT_CONFIG_NOSYSTEM' = '1'" in guard
+    assert "hash-object -- " in guard
     assert "'GIT_CONFIG_GLOBAL' = 'NUL'" in guard
     assert "'GIT_ATTR_NOSYSTEM' = '1'" in guard
     assert "'GIT_NO_REPLACE_OBJECTS' = '1'" in guard
-    assert "'GIT_CONFIG_KEY_3' = 'core.autocrlf'" in guard
+    assert "'GIT_CONFIG_NOSYSTEM'" not in guard
     assert "diff --quiet HEAD --" not in guard
     assert "diff --cached --quiet --no-ext-diff --no-textconv --" in guard
     assert "[int] $MaxEntries = 16384" in guard
