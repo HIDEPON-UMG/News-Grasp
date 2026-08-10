@@ -1883,6 +1883,88 @@ def test_claim_seals_and_read_only_validates_os_process_identity() -> None:
         monkeypatch.undo()
 
 
+def test_claim_accepts_causal_replacement_metadata_kept_in_ledger_row(
+    tmp_path: Path,
+) -> None:
+    """causal replacementのledger専用metadataで正規claimをcross-lineageにしない。"""
+
+    admission, ledger = _issue(tmp_path / "replacement-claim")
+    value, arguments_path = _materialize_runner_arguments_only(admission)
+    parent = Path(value["expectedParentAuthorityPath"])
+    _write_json(
+        parent,
+        {
+            "schemaVersion": "HIGH_COST_OPERATION_ADMISSION_V1",
+            "state": "activated",
+            "taskIdentity": "fixture-task",
+            "threadId": "fixture-thread",
+            "taskRootUserEventHash": "a" * 64,
+            "latestActualUserEventHash": "b" * 64,
+            "authorizationId": "fixture-authorization",
+            "lineageEpoch": 1,
+        },
+    )
+    bridge_module.consume_admission(
+        admission_path=admission,
+        ledger_path=ledger,
+        runner_arguments=list(value["runnerArguments"]),
+        parent_authority_path=parent,
+        runner_arguments_path=arguments_path,
+        reservation_output=Path(value["expectedReservationReceiptPath"]),
+        actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+        actual_authority_python_executable_path=Path(
+            value["authorityPythonExecutablePath"]
+        ),
+    )
+    ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
+    attempt_key = str(value["attemptKey"])
+    row = ledger_value["attempts"][attempt_key]
+    original_row = dict(row)
+    original_row["admissionId"] = "b" * 64
+    original_row["reservationReceiptSha256"] = "c" * 64
+    proof_sha256 = "a" * 64
+    row["causalReplacementProofSha256"] = proof_sha256
+    row["replacesAdmissionId"] = original_row["admissionId"]
+    ledger_value["replacements"][attempt_key] = {
+        "originalAdmissionId": original_row["admissionId"],
+        "originalReservationReceiptSha256": original_row[
+            "reservationReceiptSha256"
+        ],
+        "originalRow": original_row,
+        "replacementAdmissionId": row["admissionId"],
+        "proofSha256": proof_sha256,
+    }
+    _write_json(ledger, ledger_value)
+    identity = {
+        "pid": 4321,
+        "parentPid": 1234,
+        "creationFileTimeUtc": "2026-08-10T00:00:00.0000000Z",
+        "imagePath": str(Path(value["runnerExecutablePath"]).resolve()),
+        "imageSha256": _sha256(Path(value["runnerExecutablePath"]).resolve()),
+    }
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(bridge_module, "_query_process_identity", lambda pid: identity)
+    try:
+        claimed = bridge_module.claim_runner(
+            admission_path=admission,
+            ledger_path=ledger,
+            runner_arguments=list(value["runnerArguments"]),
+            parent_authority_path=parent,
+            runner_arguments_path=arguments_path,
+            reservation_receipt=Path(value["expectedReservationReceiptPath"]),
+            claim_output=Path(value["expectedClaimReceiptPath"]),
+            actual_runner_executable_path=Path(value["runnerExecutablePath"]),
+            actual_authority_python_executable_path=Path(
+                value["authorityPythonExecutablePath"]
+            ),
+            current_runner_pid=identity["pid"],
+            claim_nonce="f" * 64,
+        )
+    finally:
+        monkeypatch.undo()
+    assert claimed["state"] == "runner_claimed"
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows process identity contract")
 def test_windows_process_identity_is_observed_from_os() -> None:
     identity = bridge_module._query_process_identity(os.getpid())

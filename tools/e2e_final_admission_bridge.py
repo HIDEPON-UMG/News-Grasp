@@ -2095,6 +2095,40 @@ def _same_reservation_lineage(
     return all(row.get(key) == item for key, item in expected.items())
 
 
+def _reservation_row_matches_receipt(
+    row: object,
+    expected: dict[str, Any],
+    *,
+    attempt_key: str,
+    replacements: object,
+) -> bool:
+    """receiptにないcausal replacement metadataだけをledger側で許容する。"""
+
+    if not isinstance(row, dict):
+        return False
+    if row == expected:
+        return True
+    ledger_only_fields = {
+        "causalReplacementProofSha256",
+        "replacesAdmissionId",
+    }
+    extras = set(row) - set(expected)
+    if extras != ledger_only_fields:
+        return False
+    if any(row.get(key) != value for key, value in expected.items()):
+        return False
+    if not isinstance(replacements, dict):
+        return False
+    replacement = replacements.get(attempt_key)
+    return (
+        isinstance(replacement, dict)
+        and row.get("causalReplacementProofSha256")
+        == replacement.get("proofSha256")
+        and row.get("replacesAdmissionId")
+        == replacement.get("originalAdmissionId")
+    )
+
+
 def _claim_receipt(
     *,
     reservation: dict[str, Any],
@@ -2514,7 +2548,12 @@ def claim_runner(
         attempt_key = source["attemptKey"]
         expected_reserved_row = _reservation_row(reservation, reservation_path)
         row = ledger_value["attempts"].get(attempt_key)
-        if row != expected_reserved_row:
+        if not _reservation_row_matches_receipt(
+            row,
+            expected_reserved_row,
+            attempt_key=attempt_key,
+            replacements=ledger_value.get("replacements", {}),
+        ):
             if isinstance(row, dict) and _same_reservation_lineage(
                 row,
                 source=source,
