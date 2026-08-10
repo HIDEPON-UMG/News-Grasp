@@ -16,6 +16,7 @@ param(
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
     [Parameter(Mandatory=$true)][string] $CausalReplacementProofPath,
+    [string] $SupersessionApprovalPath = '',
     [string] $HighCostParentAuthorityPath = '',
     [string] $PowerShellExe = 'powershell.exe'
 )
@@ -172,6 +173,10 @@ if ($HighCostParentAuthorityPath -and
     )) {
     throw "HIGH_COST_PARENT_AUTHORITY_PATH_DRIFT: expected=$parentAuthorityFullPath actual=$HighCostParentAuthorityPath"
 }
+$supersessionArguments = @()
+if ($SupersessionApprovalPath) {
+    $supersessionArguments = @('--supersession-approval', $SupersessionApprovalPath)
+}
 $repoPrefix = $repoPath.TrimEnd('\') + '\'
 foreach ($candidate in @($statePath, $logPath, $receiptFullPath, $parentAuthorityFullPath)) {
     if (-not $candidate.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -235,6 +240,9 @@ $StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label '
 $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
 $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
 $CausalReplacementProofPath = Get-CanonicalExistingFile -Path $CausalReplacementProofPath -Label 'causal replacement proof' -Boundary $workspacePath -MaxBytes 2097152
+if ($SupersessionApprovalPath) {
+    $SupersessionApprovalPath = Get-CanonicalExistingFile -Path $SupersessionApprovalPath -Label 'pre-admission supersession approval' -Boundary $workspacePath -MaxBytes 4194304
+}
 $statePath = Get-CanonicalFuturePath -Path $statePath -Boundary $repoPath -Label 'state file'
 $logPath = Get-CanonicalFutureDirectory -Path $logPath -Boundary $repoPath -Label 'log directory'
 $receiptFullPath = Get-CanonicalFuturePath -Path $receiptFullPath -Boundary $repoPath -Label 'final receipt'
@@ -324,7 +332,7 @@ $authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'autho
     '--e2e-admission' $E2EAdmissionPath `
     '--causal-replacement-proof' $CausalReplacementProofPath `
     '--execution-root' $repoPath `
-    '--output' $parentAuthorityFullPath
+    '--output' $parentAuthorityFullPath @supersessionArguments
 if ($LASTEXITCODE -ne 0) {
     throw "HIGH_COST_OPERATION_AUTHORIZATION_REJECTED exit=$LASTEXITCODE"
 }

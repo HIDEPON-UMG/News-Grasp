@@ -50,6 +50,18 @@ def test_nopublish_wrapper_propagates_parent_authority_not_shared_child_receipt(
     assert "'--admission', $parentAuthorityFullPath" not in text
 
 
+def test_nopublish_wrapper_threads_optional_user_supersession_approval_fail_closed() -> None:
+    text = WRAPPER.read_text(encoding="utf-8-sig")
+    assert "[string] $SupersessionApprovalPath = ''" in text
+    assert "pre-admission supersession approval" in text
+    assert "$supersessionArguments = @('--supersession-approval', $SupersessionApprovalPath)" in text
+    authorize = text.index("'authorize-causal-replacement'")
+    approval = text.index("@supersessionArguments", authorize)
+    runner = text.index("& $PowerShellExe @runnerArguments")
+    assert authorize < approval < runner
+    assert "SupersessionApprovalPath" not in text[text.index("$runnerArguments = @("):runner]
+
+
 def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
     text = RUNNER.read_text(encoding="utf-8-sig")
     consume = text.index("HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED")
