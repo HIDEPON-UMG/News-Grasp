@@ -366,7 +366,6 @@ def _task_launcher_source_contract(path: Path) -> dict:
     except OSError:
         return {"ok": False, "reason": "task_launcher_unreadable"}
     required_tokens = (
-        'choices=("runner","bootstrap","converge-runtime")',
         '"news-grasp-bootstrap.ps1"',
         'ifargs.mode=="runner"',
         '"-Start"',
@@ -378,6 +377,11 @@ def _task_launcher_source_contract(path: Path) -> dict:
         "subprocess.CREATE_NO_WINDOW",
     )
     missing = [token for token in required_tokens if token not in compact]
+    if not (
+        'choices=("runner","bootstrap","converge-runtime")' in compact
+        or 'choices=("runner","bootstrap","converge-runtime","maintain-runtime")' in compact
+    ):
+        missing.append('choices=("runner","bootstrap","converge-runtime")')
     try:
         tree = ast.parse(source)
     except SyntaxError:

@@ -6,9 +6,11 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
+import zipfile
 from contextlib import contextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -33,9 +35,52 @@ MAX_GIT_OUTPUT_BYTES = 1024 * 1024
 MAX_UNTRACKED_PATHS = 1024
 RUNTIME_TRANSACTION_ID = re.compile(r"^[0-9]{8}T[0-9]{12}Z-[0-9a-f]{16}$")
 RUNTIME_LEDGER_MAX_ENTRIES = 64
+RUNTIME_RECOVERY_METADATA_MAX_BYTES = 64 * 1024 * 1024
+RUNTIME_RECOVERY_MIN_FREE_BYTES = 128 * 1024 * 1024
 RUNTIME_ORCHESTRATION_MUTEX_PREFIX = "Global\\NewsGraspBootstrapOrchestration-"
 RUNTIME_PRODUCTION_MUTEX_PREFIX = "Global\\NewsGraspProductionRuntime-"
 RUNTIME_LEGACY_MUTEX_NAME = "Global\\NewsGraspProductionRuntimeConvergence"
+
+
+def _runtime_mutex_identity() -> str:
+    """環境変数で偽装できない、現在tokenのSIDをmutex identityに使う。"""
+    if sys.platform != "win32":
+        return str(getattr(os, "getuid", lambda: 0)())
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    advapi32.OpenProcessToken.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(ctypes.c_void_p)]
+    advapi32.OpenProcessToken.restype = ctypes.c_int
+    advapi32.GetTokenInformation.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(ctypes.c_uint32)]
+    advapi32.GetTokenInformation.restype = ctypes.c_int
+    advapi32.ConvertSidToStringSidW.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_wchar_p)]
+    advapi32.ConvertSidToStringSidW.restype = ctypes.c_int
+    kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    token = ctypes.c_void_p()
+    if not advapi32.OpenProcessToken(kernel32.GetCurrentProcess(), 0x0008, ctypes.byref(token)):
+        raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+    try:
+        required = ctypes.c_uint32(0)
+        advapi32.GetTokenInformation(token, 1, None, 0, ctypes.byref(required))
+        if required.value <= 0 or required.value > 64 * 1024:
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+        buffer = ctypes.create_string_buffer(required.value)
+        if not advapi32.GetTokenInformation(token, 1, buffer, required.value, ctypes.byref(required)):
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+        sid_ptr = ctypes.cast(buffer, ctypes.POINTER(ctypes.c_void_p))[0]
+        sid_text = ctypes.c_wchar_p()
+        if not advapi32.ConvertSidToStringSidW(sid_ptr, ctypes.byref(sid_text)):
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+        try:
+            identity = str(sid_text.value or "")
+        finally:
+            kernel32.LocalFree(sid_text)
+        if not identity:
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+        return identity
+    finally:
+        kernel32.CloseHandle(token)
 
 
 def write_startup_failure_state(
@@ -170,7 +215,7 @@ def _production_runtime_mutex():
 @contextmanager
 def _production_runtime_outer_mutex():
     """新しいproduction mutex。receipt検証からruntime mutationまで同一lockで覆う。"""
-    mutex_name = f"{RUNTIME_PRODUCTION_MUTEX_PREFIX}{os.environ.get('USERNAME', '')}"
+    mutex_name = f"{RUNTIME_PRODUCTION_MUTEX_PREFIX}{_runtime_mutex_identity()}"
     if sys.platform == "win32":
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_wchar_p]
@@ -196,6 +241,45 @@ def _production_runtime_outer_mutex():
     import fcntl
 
     lock_path = Path("/tmp/news-grasp-production-runtime.lock")
+    with lock_path.open("a+b") as stream:
+        try:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_BUSY") from error
+        try:
+            yield
+        finally:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+
+@contextmanager
+def _production_runtime_lifecycle_mutex():
+    """direct-call経路もbootstrap lifecycleと同じowner mutexへ束縛する。"""
+    mutex_name = f"{RUNTIME_ORCHESTRATION_MUTEX_PREFIX}{_runtime_mutex_identity()}"
+    if sys.platform == "win32":
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_wchar_p]
+        kernel32.CreateMutexW.restype = ctypes.c_void_p
+        kernel32.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        kernel32.WaitForSingleObject.restype = ctypes.c_uint32
+        kernel32.ReleaseMutex.argtypes = [ctypes.c_void_p]
+        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+        handle = kernel32.CreateMutexW(None, False, mutex_name)
+        if not handle:
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_INVALID")
+        observed = kernel32.WaitForSingleObject(handle, 0)
+        if observed not in (0, 0x80):
+            kernel32.CloseHandle(handle)
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_BUSY")
+        try:
+            yield
+        finally:
+            kernel32.ReleaseMutex(handle)
+            kernel32.CloseHandle(handle)
+        return
+    import fcntl
+
+    lock_path = Path("/tmp/news-grasp-runtime-lifecycle.lock")
     with lock_path.open("a+b") as stream:
         try:
             fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -282,21 +366,48 @@ def _require_bootstrap_runtime_mutex_owner(
         receipt = json.loads(candidate_receipt.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError, TypeError) as error:
         raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_RECEIPT_INVALID") from error
-    expected_mutex_name = (
-        f"{RUNTIME_ORCHESTRATION_MUTEX_PREFIX}{os.environ.get('USERNAME', '')}"
-    )
+    expected_mutex_name = f"{RUNTIME_ORCHESTRATION_MUTEX_PREFIX}{_runtime_mutex_identity()}"
     if (
         receipt.get("schemaVersion") != RUNTIME_LIFECYCLE_OWNER_SCHEMA
         or receipt.get("ownerPid") != owner_pid
         or receipt.get("ownerNonce") != owner_nonce
         or receipt.get("mutexName") != expected_mutex_name
+        or not isinstance(receipt.get("ownerScriptPath"), str)
+        or not str(receipt.get("ownerScriptPath") or "").lower().endswith(
+            "news-grasp-bootstrap.ps1"
+        )
+        or Path(str(receipt.get("ownerProcessImage") or "")).name.lower()
+        not in {"powershell.exe", "pwsh.exe"}
     ):
         raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_RECEIPT_INVALID")
     if sys.platform != "win32":
         return
-    username = str(os.environ.get("USERNAME") or "")
-    if not username:
+    # PIDだけでは、別プロセスが同じmutex観測を借用できる。実際の
+    # bootstrap executableも束縛し、直接spawnされた任意parentを拒否する。
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    kernel32.QueryFullProcessImageNameW.argtypes = [
+        ctypes.c_void_p, ctypes.c_uint32, ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_uint32)
+    ]
+    kernel32.QueryFullProcessImageNameW.restype = ctypes.c_int
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    process = kernel32.OpenProcess(0x1000, False, int(owner_pid))
+    if not process:
         raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+    try:
+        image_buffer = ctypes.create_unicode_buffer(32768)
+        image_length = ctypes.c_uint32(len(image_buffer))
+        if not kernel32.QueryFullProcessImageNameW(
+            process, 0, image_buffer, ctypes.byref(image_length)
+        ):
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+        image_name = Path(image_buffer.value).name.lower()
+        if image_name not in {"powershell.exe", "pwsh.exe"}:
+            raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
+    finally:
+        kernel32.CloseHandle(process)
+    mutex_identity = _runtime_mutex_identity()
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel32.CreateFileW.argtypes = [
         ctypes.c_wchar_p,
@@ -333,7 +444,7 @@ def _require_bootstrap_runtime_mutex_owner(
     handle = kernel32.CreateMutexW(
         None,
         False,
-        f"{RUNTIME_ORCHESTRATION_MUTEX_PREFIX}{username}",
+        f"{RUNTIME_ORCHESTRATION_MUTEX_PREFIX}{mutex_identity}",
     )
     if not handle:
         raise RuntimeError("PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID")
@@ -395,6 +506,8 @@ def _assert_managed_path(path: Path, boundary: Path, code: str) -> Path:
 def _managed_directory_handle(path: Path, boundary: Path, code: str):
     """検査後のreparse/junction交換を、delete-deny handleの寿命内で封じる。"""
     candidate = _assert_managed_path(path, boundary, code)
+    root = Path(os.path.abspath(os.fspath(boundary)))
+    relative = candidate.relative_to(root)
     if sys.platform != "win32":
         if candidate.is_symlink():
             raise RuntimeError(code)
@@ -412,36 +525,75 @@ def _managed_directory_handle(path: Path, boundary: Path, code: str):
         ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32
     ]
     kernel32.GetFinalPathNameByHandleW.restype = ctypes.c_uint32
+    kernel32.GetFileInformationByHandle.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    kernel32.GetFileInformationByHandle.restype = ctypes.c_int
     kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
     invalid = ctypes.c_void_p(-1).value
     attributes = kernel32.GetFileAttributesW(str(candidate))
     if attributes == 0xFFFFFFFF or attributes & 0x400:
         raise RuntimeError(code)
-    handle = kernel32.CreateFileW(
-        str(candidate),
-        0x80,
-        0x3,
-        None,
-        3,
-        0x02000000 | 0x00200000,
-        None,
-    )
-    if handle == invalid or not handle:
+    # rootからcandidate直前までの全既存componentをdelete-denyで保持する。
+    # candidateだけを開く方式では、子parentのreparse交換を許していた。
+    existing_components: list[Path] = []
+    current = root
+    if current.exists():
+        existing_components.append(current)
+    for part in relative.parts:
+        current = current / part
+        if not current.exists():
+            break
+        existing_components.append(current)
+    handles: list[ctypes.c_void_p] = []
+    for component in existing_components:
+        handle = kernel32.CreateFileW(
+            str(component), 0x80, 0x3, None, 3,
+            0x02000000 | 0x00200000, None,
+        )
+        if handle == invalid or not handle:
+            for opened in reversed(handles):
+                kernel32.CloseHandle(opened)
+            raise RuntimeError(code)
+        handles.append(handle)
+    if not handles:
         raise RuntimeError(code)
     try:
-        buffer = ctypes.create_unicode_buffer(32768)
-        length = kernel32.GetFinalPathNameByHandleW(handle, buffer, len(buffer), 0)
-        if not length:
-            raise RuntimeError(code)
-        final_path = str(buffer.value).replace("\\\\?\\", "")
-        expected = str(candidate).replace("\\\\?\\", "")
-        if os.path.normcase(os.path.abspath(final_path)) != os.path.normcase(
-            os.path.abspath(expected)
-        ):
-            raise RuntimeError(code)
+        # 各opened componentのfinal pathを再照合し、別directoryへ差し替えられた
+        # handleをconsumerへ渡さない。
+        for opened, component in zip(handles, existing_components):
+            # open後のhandle属性を再検査し、検査/open間にreparseへ交換された
+            # componentをconsumerへ渡さない。
+            class _ByHandleFileInformation(ctypes.Structure):
+                _fields_ = [
+                    ("dwFileAttributes", ctypes.c_uint32),
+                    ("ftCreationTime", ctypes.c_uint64),
+                    ("ftLastAccessTime", ctypes.c_uint64),
+                    ("ftLastWriteTime", ctypes.c_uint64),
+                    ("dwVolumeSerialNumber", ctypes.c_uint32),
+                    ("nFileSizeHigh", ctypes.c_uint32),
+                    ("nFileSizeLow", ctypes.c_uint32),
+                    ("nNumberOfLinks", ctypes.c_uint32),
+                    ("nFileIndexHigh", ctypes.c_uint32),
+                    ("nFileIndexLow", ctypes.c_uint32),
+                ]
+            information = _ByHandleFileInformation()
+            if not kernel32.GetFileInformationByHandle(opened, ctypes.byref(information)):
+                raise RuntimeError(code)
+            if information.dwFileAttributes & 0x400:
+                raise RuntimeError(code)
+            buffer = ctypes.create_unicode_buffer(32768)
+            length = kernel32.GetFinalPathNameByHandleW(opened, buffer, len(buffer), 0)
+            if not length:
+                raise RuntimeError(code)
+            final_path = str(buffer.value).replace("\\\\?\\", "")
+            expected = str(component).replace("\\\\?\\", "")
+            if os.path.normcase(os.path.abspath(final_path)) != os.path.normcase(
+                os.path.abspath(expected)
+            ):
+                raise RuntimeError(code)
         yield candidate
     finally:
-        kernel32.CloseHandle(handle)
+        for opened in reversed(handles):
+            kernel32.CloseHandle(opened)
 
 
 def _run_git(repo: Path, *args: str, allowed_codes: tuple[int, ...] = (0,)) -> str:
@@ -493,6 +645,100 @@ def _runtime_recovery_terminal_path(runtime_root: Path, transaction_id: str) -> 
     return runtime_root / "ledger" / "terminals" / f"{transaction_id}.json"
 
 
+def _runtime_recovery_authority_ledger_path(runtime_root: Path) -> Path:
+    return runtime_root / "ledger" / "authority-issuance.jsonl"
+
+
+def _runtime_recovery_canonical_authority_ledger_path(runtime_root: Path) -> Path:
+    """runtime root外のcanonical broker ledger。runtime配下の自己発行を権威にしない。"""
+    return runtime_root.parent / ".news-grasp-runtime-authority-issuance-v1.jsonl"
+
+
+def _append_runtime_recovery_authority_ledger(
+    *, runtime_root: Path, authority: dict[str, object], issue: dict[str, object]
+) -> None:
+    """authority発行をruntime内投影とruntime外canonical ledgerへ同時記録する。"""
+    ledger_path = _runtime_recovery_authority_ledger_path(runtime_root)
+    canonical_path = _runtime_recovery_canonical_authority_ledger_path(runtime_root)
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    canonical_path.parent.mkdir(parents=True, exist_ok=True)
+    record: dict[str, object] = {
+        "schemaVersion": "NEWS_GRASP_RUNTIME_RECOVERY_AUTHORITY_ISSUANCE_LEDGER_V1",
+        "transactionId": authority["transactionId"],
+        "authoritySha256": authority["authoritySha256"],
+        "issueSha256": issue["issueSha256"],
+        "authorityPath": authority["authorityPath"],
+        "issuePath": str(_runtime_recovery_issue_path(runtime_root, str(authority["transactionId"]))),
+        "issuedAtUtc": authority["issuedAtUtc"],
+        "canonicalLedgerPath": str(canonical_path),
+    }
+    record["recordSha256"] = _sha256_json(record)
+    line = json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    for target in (ledger_path, canonical_path):
+        boundary = target.parent
+        _assert_managed_path(target, boundary, "PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID")
+        with _managed_directory_handle(boundary, boundary, "PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID"):
+            with target.open("a", encoding="utf-8", newline="\n") as stream:
+                if sys.platform == "win32":
+                    import msvcrt
+                    handle_value = ctypes.c_void_p(msvcrt.get_osfhandle(stream.fileno()))
+                    class _LedgerFileInformation(ctypes.Structure):
+                        _fields_ = [("dwFileAttributes", ctypes.c_uint32), ("_rest", ctypes.c_byte * 56)]
+                    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+                    kernel32.GetFileInformationByHandle.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+                    kernel32.GetFileInformationByHandle.restype = ctypes.c_int
+                    info = _LedgerFileInformation()
+                    if not kernel32.GetFileInformationByHandle(handle_value, ctypes.byref(info)) or info.dwFileAttributes & 0x400:
+                        raise RuntimeError("PRODUCTION_RUNTIME_REPARSE_INVALID")
+                stream.write(line)
+                stream.flush()
+                os.fsync(stream.fileno())
+
+
+def _load_runtime_recovery_authority_ledger_record(
+    *, runtime_root: Path, transaction_id: str, authority: dict[str, object], issue: dict[str, object]
+) -> dict[str, object]:
+    expected_path = _runtime_recovery_canonical_authority_ledger_path(runtime_root)
+    records: list[dict[str, object]] = []
+    for ledger_path in (_runtime_recovery_authority_ledger_path(runtime_root), expected_path):
+        try:
+            lines = ledger_path.read_text(encoding="utf-8-sig").splitlines()
+        except OSError as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID") from error
+        # runtime内ledgerはbounded projection、runtime外canonical ledgerはappend-only
+        # provenanceとして保持する（長期運用で64件を超えても拒否しない）。
+        if ledger_path == _runtime_recovery_authority_ledger_path(runtime_root) and len(lines) > RUNTIME_LEDGER_MAX_ENTRIES:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        found: dict[str, object] | None = None
+        for line in lines:
+            try:
+                record = json.loads(line)
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(record, dict) or record.get("transactionId") != transaction_id:
+                continue
+            unsigned = dict(record)
+            record_sha = str(unsigned.pop("recordSha256", ""))
+            if record_sha != _sha256_json(unsigned):
+                raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID")
+            if (
+                record.get("authoritySha256") == authority.get("authoritySha256")
+                and record.get("issueSha256") == issue.get("issueSha256")
+                and record.get("authorityPath") == authority.get("authorityPath")
+                and record.get("issuePath") == issue.get("issuePath")
+                and record.get("canonicalLedgerPath") == str(expected_path)
+            ):
+                found = record
+        if found is None:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID")
+        records.append(found)
+    if records[0]["recordSha256"] != records[1]["recordSha256"]:
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID")
+    if records:
+        return records[1]
+    raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID")
+
+
 def _load_runtime_recovery_issue(
     *, transaction_id: str, runtime_root: Path, authority: dict[str, object]
 ) -> dict[str, object]:
@@ -525,6 +771,13 @@ def _load_runtime_recovery_issue(
         raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID")
     issue["issuePath"] = str(issue_path)
     issue["issueSha256"] = issue_sha
+    authority["authorityPath"] = str(_runtime_recovery_authority_path(runtime_root, transaction_id))
+    _load_runtime_recovery_authority_ledger_record(
+        runtime_root=runtime_root,
+        transaction_id=transaction_id,
+        authority=authority,
+        issue=issue,
+    )
     return issue
 
 
@@ -549,6 +802,46 @@ def _load_runtime_recovery_terminal(
         raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_TERMINAL_REPLAY")
     terminal["terminalPath"] = str(terminal_path)
     return terminal
+
+
+def _ensure_runtime_recovery_terminal_from_archive(
+    *, runtime_root: Path, archive_path: Path, journal: dict[str, object]
+) -> Path:
+    """archive昇格後terminal書込み前のcrashを、次回scanでforwardする。"""
+    if journal.get("phase") != "committed":
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_ARCHIVE_INVALID")
+    transaction_id = str(journal.get("transactionId") or "")
+    if not RUNTIME_TRANSACTION_ID.fullmatch(transaction_id):
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_ARCHIVE_INVALID")
+    _assert_managed_path(archive_path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+    terminal_path = _runtime_recovery_terminal_path(runtime_root, transaction_id)
+    _assert_managed_path(terminal_path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+    archived_bytes = archive_path.read_bytes()
+    terminal: dict[str, object] = {
+        "schemaVersion": "NEWS_GRASP_PRODUCTION_RUNTIME_RECOVERY_TERMINAL_V1",
+        "transactionId": transaction_id,
+        "finalJournalSha256": hashlib.sha256(archived_bytes).hexdigest(),
+        "archivePath": str(archive_path),
+        "authoritySha256": journal["authoritySha256"],
+        "issuePath": journal["issuePath"],
+        "issueSha256": journal["issueSha256"],
+        "committedAtUtc": str(journal.get("updatedAtUtc") or datetime.now(timezone.utc).isoformat()),
+    }
+    terminal["terminalSha256"] = _sha256_json(terminal)
+    terminal_path.parent.mkdir(parents=True, exist_ok=True)
+    if terminal_path.exists() or terminal_path.is_symlink():
+        actual = _load_runtime_recovery_terminal(
+            transaction_id=transaction_id, runtime_root=runtime_root
+        )
+        for key in (
+            "transactionId", "finalJournalSha256", "archivePath",
+            "authoritySha256", "issuePath", "issueSha256",
+        ):
+            if actual.get(key) != terminal.get(key):
+                raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_TERMINAL_REPLAY")
+    else:
+        _write_json_exclusive(terminal_path, terminal)
+    return terminal_path
 
 
 def _assert_no_runtime_recovery_terminal(*, transaction_id: str, runtime_root: Path) -> None:
@@ -655,6 +948,11 @@ def _issue_runtime_recovery_authority(
     authority["authorityPath"] = str(authority_path)
     authority["issuePath"] = str(issue_path)
     authority["issueSha256"] = issue["issueSha256"]
+    _append_runtime_recovery_authority_ledger(
+        runtime_root=runtime_root,
+        authority=authority,
+        issue=issue,
+    )
     return authority
 
 
@@ -730,6 +1028,71 @@ def _runtime_state(runtime: Path, origin_sha: str) -> dict[str, object]:
         "headMatches": head == origin_sha,
         "unexpected": unexpected,
     }
+
+
+def _discard_owned_partial_staging(
+    *, source_repo: Path, staging_runtime: Path, transaction_dir: Path, runtime_root: Path
+) -> None:
+    """transactionが所有する壊れたstagingだけを安全に捨て、再作成可能にする。"""
+    expected = transaction_dir / "replacement-staging" / "production-runtime"
+    if staging_runtime != expected:
+        raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID")
+    if not (staging_runtime.exists() or staging_runtime.is_symlink()):
+        return
+    _assert_managed_path(staging_runtime, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+    if staging_runtime.is_symlink() or not staging_runtime.is_dir():
+        raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID")
+    try:
+        for root, dirs, files in os.walk(staging_runtime, topdown=True, followlinks=False):
+            for name in list(dirs) + list(files):
+                candidate = Path(root) / name
+                _assert_managed_path(candidate, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+                if candidate.is_symlink():
+                    raise RuntimeError("PRODUCTION_RUNTIME_REPARSE_INVALID")
+    except OSError as error:
+        raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID") from error
+    # git metadataを先に整合させる。未登録・半端なaddは失敗してもowned pathを除去する。
+    try:
+        _run_git(source_repo, "worktree", "remove", "--force", str(staging_runtime), allowed_codes=(0, 1))
+    except RuntimeError:
+        pass
+    if staging_runtime.exists():
+        try:
+            shutil.rmtree(staging_runtime)
+        except OSError as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID") from error
+
+
+def _discard_owned_partial_runtime(
+    *, source_repo: Path, runtime: Path, runtime_root: Path
+) -> None:
+    """promotion途中に生成されたruntimeだけを、reparse拒否後に除去する。"""
+    expected = runtime_root / "production-runtime"
+    if runtime != expected:
+        raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID")
+    if not (runtime.exists() or runtime.is_symlink()):
+        return
+    _assert_managed_path(runtime, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+    if runtime.is_symlink() or not runtime.is_dir():
+        raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID")
+    try:
+        for root, dirs, files in os.walk(runtime, topdown=True, followlinks=False):
+            for name in list(dirs) + list(files):
+                candidate = Path(root) / name
+                _assert_managed_path(candidate, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+                if candidate.is_symlink():
+                    raise RuntimeError("PRODUCTION_RUNTIME_REPARSE_INVALID")
+    except OSError as error:
+        raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID") from error
+    try:
+        _run_git(source_repo, "worktree", "remove", "--force", str(runtime), allowed_codes=(0, 1))
+    except RuntimeError:
+        pass
+    if runtime.exists():
+        try:
+            shutil.rmtree(runtime)
+        except OSError as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID") from error
 
 
 def _load_runtime_recovery_journal(path: Path, runtime_root: Path) -> dict[str, object]:
@@ -984,28 +1347,274 @@ def _assert_runtime_recovery_capacity(runtime_root: Path) -> None:
     collections = (
         runtime_root / "transactions",
         runtime_root / "authorities",
+        runtime_root / "ledger",
+        runtime_root / "quarantine",
+    )
+    total_bytes = 0
+    total_entries = 0
+    for collection in collections:
+        if not collection.exists():
+            continue
+        try:
+            for root, dirs, files in os.walk(collection, topdown=True, followlinks=False):
+                root_path = Path(root)
+                _assert_managed_path(root_path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+                # quarantine/transaction下のproduction-runtimeは製品payloadであり、
+                # metadata quotaの対象外。ただしそれ自体はreparse拒否する。
+                if collection.name == "quarantine" and root_path.name == "production-runtime":
+                    dirs[:] = []
+                    continue
+                for name in list(dirs) + list(files):
+                    item = root_path / name
+                    _assert_managed_path(item, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+                    if item.is_symlink():
+                        raise RuntimeError("PRODUCTION_RUNTIME_REPARSE_INVALID")
+                    total_entries += 1
+                    if item.is_file():
+                        total_bytes += item.stat().st_size
+        except (OSError, RuntimeError) as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED") from error
+    if total_entries >= MAX_RUNTIME_RECOVERY_SCAN_ENTRIES:
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+    transaction_count = sum(
+        1 for item in (runtime_root / "transactions").iterdir()
+        if item.is_dir() and not item.is_symlink()
+    )
+    if transaction_count >= MAX_RUNTIME_RECOVERY_TRANSACTIONS:
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+    for bounded in (
+        runtime_root / "authorities",
         runtime_root / "ledger" / "issues",
         runtime_root / "ledger" / "terminals",
-    )
-    for collection in collections:
+    ):
         try:
-            count = sum(1 for _ in collection.iterdir()) if collection.exists() else 0
+            if sum(1 for item in bounded.iterdir() if not item.is_symlink()) >= RUNTIME_LEDGER_MAX_ENTRIES:
+                raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        except FileNotFoundError:
+            continue
         except OSError as error:
             raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED") from error
-        if count >= RUNTIME_LEDGER_MAX_ENTRIES:
+    if total_bytes >= RUNTIME_RECOVERY_METADATA_MAX_BYTES:
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+    try:
+        if shutil.disk_usage(runtime_root).free < RUNTIME_RECOVERY_MIN_FREE_BYTES:
             raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+    except OSError as error:
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED") from error
+
+
+def _resume_runtime_recovery_checkpoint_deletions(
+    *, runtime_root: Path, archive_root: Path, manifest_path: Path
+) -> None:
+    """checkpointのpending deletionを次回maintenanceでforward完了する。"""
+    if not manifest_path.is_file():
+        return
+    try:
+        lines = manifest_path.read_text(encoding="utf-8-sig").splitlines()
+    except OSError as error:
+        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED") from error
+    completed_ids = set()
+    pending: list[dict[str, object]] = []
+    for line in lines:
+        try:
+            value = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(value, dict) or value.get("schemaVersion") != "NEWS_GRASP_RUNTIME_RECOVERY_CHECKPOINT_V1":
+            continue
+        unsigned = dict(value)
+        record_sha = str(unsigned.pop("recordSha256", ""))
+        if record_sha != _sha256_json(unsigned):
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        transaction_id = str(value.get("transactionId") or "")
+        if value.get("deletionState") == "completed":
+            completed_ids.add(transaction_id)
+        elif value.get("deletionState") == "pending":
+            pending.append(value)
+    for value in pending:
+        transaction_id = str(value.get("transactionId") or "")
+        if transaction_id in completed_ids:
+            continue
+        bundle_path = Path(str(value.get("bundlePath") or ""))
+        _assert_managed_path(bundle_path, archive_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+        if not bundle_path.is_file():
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        expected_bundle_sha = str(value.get("bundleSha256") or "")
+        if not re.fullmatch(r"[0-9a-f]{64}", expected_bundle_sha):
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        if hashlib.sha256(bundle_path.read_bytes()).hexdigest() != expected_bundle_sha:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        files = value.get("files")
+        if not isinstance(files, list):
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+        for item in files:
+            if not isinstance(item, dict):
+                raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+            path = Path(str(item.get("path") or ""))
+            _assert_managed_path(path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+            if path.exists():
+                if hashlib.sha256(path.read_bytes()).hexdigest() != str(item.get("sha256") or ""):
+                    raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+                path.unlink()
+        transaction_dir = runtime_root / "transactions" / transaction_id
+        quarantine_dir = runtime_root / "quarantine" / transaction_id
+        if transaction_dir.exists():
+            shutil.rmtree(transaction_dir)
+        if quarantine_dir.exists():
+            _assert_managed_path(quarantine_dir, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+            shutil.rmtree(quarantine_dir)
+        completed_record = dict(value)
+        completed_record["deletionState"] = "completed"
+        completed_record["completedAtUtc"] = datetime.now(timezone.utc).isoformat()
+        completed_record["recordSha256"] = _sha256_json({k: v for k, v in completed_record.items() if k != "recordSha256"})
+        with manifest_path.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(json.dumps(completed_record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+
+
+def maintain_production_runtime_recovery(
+    *, runtime_root: Path, max_archives: int = 48
+) -> dict[str, object]:
+    """完了済みmetadataをruntime外のhash-preserving archiveへcheckpointする。"""
+    runtime_root = Path(os.path.abspath(os.fspath(runtime_root)))
+    archive_root = runtime_root.parent / ".news-grasp-runtime-recovery-archive"
+    archive_root.mkdir(parents=True, exist_ok=True)
+    _assert_managed_path(archive_root, runtime_root.parent, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+    manifest_path = archive_root / "manifest.jsonl"
+    _resume_runtime_recovery_checkpoint_deletions(
+        runtime_root=runtime_root, archive_root=archive_root, manifest_path=manifest_path
+    )
+    candidates: list[tuple[datetime, str, Path]] = []
+    quarantine_root = runtime_root / "quarantine"
+    for item in quarantine_root.iterdir() if quarantine_root.exists() else ():
+        if not item.is_dir() or item.is_symlink() or not RUNTIME_TRANSACTION_ID.fullmatch(item.name):
+            continue
+        archive_path = item / "runtime-recovery.json"
+        terminal_path = runtime_root / "ledger" / "terminals" / f"{item.name}.json"
+        if not archive_path.is_file() or not terminal_path.is_file():
+            continue
+        terminal = _load_runtime_recovery_terminal(transaction_id=item.name, runtime_root=runtime_root)
+        stamp = str(terminal.get("committedAtUtc") or "")
+        try:
+            committed_at = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        except ValueError:
+            committed_at = datetime.min.replace(tzinfo=timezone.utc)
+        candidates.append((committed_at, item.name, item))
+    candidates.sort()
+    archived: list[str] = []
+    for _, transaction_id, quarantine_dir in candidates[: max(0, int(max_archives))]:
+        files = [
+            quarantine_dir / "runtime-recovery.json",
+            runtime_root / "authorities" / f"{transaction_id}.json",
+            runtime_root / "ledger" / "issues" / f"{transaction_id}.json",
+            runtime_root / "ledger" / "terminals" / f"{transaction_id}.json",
+        ]
+        if not all(path.is_file() for path in files):
+            continue
+        bundle_path = archive_root / f"{transaction_id}.zip"
+        temporary = archive_root / f".{transaction_id}.{uuid4().hex}.tmp"
+        manifest_files: list[dict[str, object]] = []
+        with zipfile.ZipFile(temporary, "x", compression=zipfile.ZIP_DEFLATED) as bundle:
+            for path in files:
+                payload = path.read_bytes()
+                member = path.name if path.parent == quarantine_dir else f"{path.parent.name}/{path.name}"
+                bundle.writestr(member, payload)
+                manifest_files.append({"path": str(path), "sha256": hashlib.sha256(payload).hexdigest()})
+        temporary.replace(bundle_path)
+        # 原本削除前に、昇格後ZIPを再読込して全member hashとfile hashを確定する。
+        try:
+            with zipfile.ZipFile(bundle_path, "r") as bundle:
+                for row in manifest_files:
+                    member = Path(str(row["path"])).name if Path(str(row["path"])).parent == quarantine_dir else f"{Path(str(row['path'])).parent.name}/{Path(str(row['path'])).name}"
+                    if hashlib.sha256(bundle.read(member)).hexdigest() != str(row["sha256"]):
+                        raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED")
+                # Windowsでは読み取り専用ハンドルをFlushFileBuffers/fsyncへ渡せないため、
+                # 既存bundleを読み書き可能ハンドルで開いて永続化を確認する。
+                with bundle_path.open("r+b") as persisted:
+                    os.fsync(persisted.fileno())
+        except (OSError, KeyError, ValueError, zipfile.BadZipFile) as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED") from error
+        bundle_sha256 = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+        record: dict[str, object] = {
+            "schemaVersion": "NEWS_GRASP_RUNTIME_RECOVERY_CHECKPOINT_V1",
+            "transactionId": transaction_id,
+            "bundlePath": str(bundle_path),
+            "files": manifest_files,
+            "bundleSha256": bundle_sha256,
+            "checkpointedAtUtc": datetime.now(timezone.utc).isoformat(),
+            "deletionState": "pending",
+        }
+        record["recordSha256"] = _sha256_json(record)
+        with manifest_path.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        for path in files:
+            _assert_managed_path(path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+            path.unlink()
+        transaction_dir = runtime_root / "transactions" / transaction_id
+        if transaction_dir.exists():
+            shutil.rmtree(transaction_dir)
+        shutil.rmtree(quarantine_dir)
+        completed_record = dict(record)
+        completed_record["deletionState"] = "completed"
+        completed_record["completedAtUtc"] = datetime.now(timezone.utc).isoformat()
+        completed_record["recordSha256"] = _sha256_json({k: v for k, v in completed_record.items() if k != "recordSha256"})
+        with manifest_path.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(json.dumps(completed_record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        archived.append(transaction_id)
+    if archived:
+        projection = _runtime_recovery_authority_ledger_path(runtime_root)
+        try:
+            lines = projection.read_text(encoding="utf-8-sig").splitlines()
+            kept: list[str] = []
+            archived_set = set(archived)
+            for line in lines:
+                try:
+                    value = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(value, dict) or value.get("transactionId") not in archived_set:
+                    kept.append(line)
+            temporary = projection.with_name(f".{projection.name}.{uuid4().hex}.tmp")
+            temporary.write_text("".join(f"{line}\n" for line in kept), encoding="utf-8", newline="\n")
+            temporary.replace(projection)
+        except OSError as error:
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED") from error
+    return {
+        "schemaVersion": "NEWS_GRASP_RUNTIME_RECOVERY_MAINTENANCE_V1",
+        "status": "Green",
+        "archivedTransactionIds": archived,
+        "archiveRoot": str(archive_root),
+    }
+
+
+def _ensure_runtime_recovery_capacity(runtime_root: Path) -> None:
+    try:
+        _assert_runtime_recovery_capacity(runtime_root)
+    except RuntimeError as error:
+        if str(error) != "PRODUCTION_RUNTIME_RECOVERY_MAINTENANCE_REQUIRED":
+            raise
+        maintain_production_runtime_recovery(runtime_root=runtime_root)
+        _assert_runtime_recovery_capacity(runtime_root)
 
 
 def converge_production_runtime(
     *, source_repo: Path, runtime_root: Path, origin_sha: str
 ) -> dict[str, object]:
-    with _production_runtime_outer_mutex():
-        with _production_runtime_mutex():
-            return _converge_production_runtime_locked(
-                source_repo=source_repo,
-                runtime_root=runtime_root,
-                origin_sha=origin_sha,
-            )
+    # direct import/callもbootstrapのlifecycle ownerと同じmutexへ束縛する。
+    # これによりCLIのowner receipt検査を迂回した二重writerを許可しない。
+    with _production_runtime_lifecycle_mutex():
+        with _production_runtime_outer_mutex():
+            with _production_runtime_mutex():
+                return _converge_production_runtime_locked(
+                    source_repo=source_repo,
+                    runtime_root=runtime_root,
+                    origin_sha=origin_sha,
+                )
 
 
 def _converge_production_runtime_locked(
@@ -1033,6 +1642,7 @@ def _converge_production_runtime_locked(
     ledger_terminals.mkdir(parents=True, exist_ok=True)
     for managed in (transactions, quarantine_root, authorities, ledger, ledger_issues, ledger_terminals, runtime):
         _assert_managed_path(managed, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+    _ensure_runtime_recovery_capacity(runtime_root)
 
     source_common = _git_common_dir(source_repo)
     transaction_dirs = [item for item in transactions.iterdir() if item.is_dir()]
@@ -1058,21 +1668,11 @@ def _converge_production_runtime_locked(
                 or archived.get("phase") != "committed"
             ):
                 raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_ARCHIVE_INVALID")
-            terminal_path = _runtime_recovery_terminal_path(
-                runtime_root, transaction_dir.name
+            _ensure_runtime_recovery_terminal_from_archive(
+                runtime_root=runtime_root,
+                archive_path=archived_path,
+                journal=archived,
             )
-            if terminal_path.exists() or terminal_path.is_symlink():
-                terminal = _load_runtime_recovery_terminal(
-                    transaction_id=transaction_dir.name, runtime_root=runtime_root
-                )
-                if (
-                    terminal.get("archivePath") != str(archived_path)
-                    or terminal.get("finalJournalSha256")
-                    != hashlib.sha256(archived_path.read_bytes()).hexdigest()
-                    or terminal.get("authoritySha256") != archived.get("authoritySha256")
-                    or terminal.get("issueSha256") != archived.get("issueSha256")
-                ):
-                    raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_TERMINAL_REPLAY")
             _archive_runtime_recovery_temp_files(
                 transaction_dir=transaction_dir,
                 archive_dir=archived_path.parent,
@@ -1130,12 +1730,7 @@ def _converge_production_runtime_locked(
             _assert_runtime_common_dir(runtime, source_common)
             _bind_runtime_dependencies(source_repo, runtime)
             return {"phase": "committed", "runtimePath": str(runtime), "quarantinePath": ""}
-        if not state["exists"]:
-            _run_git(source_repo, "worktree", "add", "--detach", str(runtime), origin_sha)
-            _assert_runtime_common_dir(runtime, source_common)
-            _bind_runtime_dependencies(source_repo, runtime)
-            return {"phase": "committed", "runtimePath": str(runtime), "quarantinePath": ""}
-        _assert_runtime_recovery_capacity(runtime_root)
+        _ensure_runtime_recovery_capacity(runtime_root)
         transaction_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ-") + uuid4().hex[:16]
         transaction_dir = transactions / transaction_id
         authority = _issue_runtime_recovery_authority(
@@ -1148,7 +1743,7 @@ def _converge_production_runtime_locked(
         journal_path = transaction_dir / "runtime-recovery.json"
         journal = _journal_from_runtime_recovery_authority(
             authority,
-            runtime_dirty=True,
+            runtime_dirty=bool(state["exists"]),
             runtime_head=str(state["head"]),
         )
         _append_runtime_recovery_event(
@@ -1157,16 +1752,22 @@ def _converge_production_runtime_locked(
             phase="prepared",
             observations=dict(journal.pop("preparedObservations")),
         )
+        if not state["exists"]:
+            # clean runtimeの初回作成もfinal pathへ直接addせず、transaction-owned
+            # stagingからpromotionする。途中終了時はjournalが再開境界になる。
+            quarantine_path = Path(str(authority["quarantinePath"]))
+            quarantine_path.mkdir(parents=True, exist_ok=True)
+        active = [(journal_path, journal)]
 
     quarantine = Path(str(journal["quarantinePath"]))
     phase = str(journal["phase"])
     runtime_state = _runtime_state(runtime, origin_sha)
     if runtime_state["exists"]:
         _assert_runtime_common_dir(runtime, source_common)
-    if quarantine.exists():
+    if quarantine.exists() and runtime_state["exists"]:
         _assert_runtime_common_dir(quarantine, source_common)
     if phase == "prepared":
-        _assert_runtime_recovery_capacity(runtime_root)
+        _ensure_runtime_recovery_capacity(runtime_root)
         if runtime_state["exists"] and not quarantine.exists():
             quarantine.parent.mkdir(parents=True, exist_ok=True)
             _assert_managed_path(
@@ -1180,9 +1781,18 @@ def _converge_production_runtime_locked(
                 runtime_root, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID"
             ):
                 _run_git(source_repo, "worktree", "move", str(runtime), str(quarantine))
-        elif runtime_state["exists"] or not quarantine.exists():
+        elif not runtime_state["exists"]:
+            quarantine.parent.mkdir(parents=True, exist_ok=True)
+            if quarantine.exists() and (quarantine / ".git").exists():
+                _assert_runtime_common_dir(quarantine, source_common)
+            elif quarantine.exists() and any(quarantine.iterdir()):
+                raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_STATE_DIVERGED")
+            else:
+                quarantine.mkdir(parents=True, exist_ok=True)
+        else:
             raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_STATE_DIVERGED")
-        _assert_runtime_common_dir(quarantine, source_common)
+        if runtime_state["exists"]:
+            _assert_runtime_common_dir(quarantine, source_common)
         _run_git(source_repo, "worktree", "repair")
         _append_runtime_recovery_event(
             journal_path,
@@ -1196,11 +1806,33 @@ def _converge_production_runtime_locked(
     if phase == "runtime_quarantined":
         if not quarantine.exists():
             raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_STATE_DIVERGED")
-        _assert_runtime_common_dir(quarantine, source_common)
+        if (quarantine / ".git").exists():
+            _assert_runtime_common_dir(quarantine, source_common)
         staging_runtime = Path(str(journal["replacementStagingPath"]))
         staging_container = staging_runtime.parent
         _assert_managed_path(staging_container, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
         staging_container.mkdir(parents=True, exist_ok=True)
+        if staging_runtime.exists() or staging_runtime.is_symlink():
+            _assert_managed_path(staging_runtime, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
+            try:
+                existing_staging_state = _runtime_state(staging_runtime, origin_sha)
+            except (OSError, RuntimeError, ValueError):
+                _discard_owned_partial_staging(
+                    source_repo=source_repo,
+                    staging_runtime=staging_runtime,
+                    transaction_dir=staging_container.parent,
+                    runtime_root=runtime_root,
+                )
+                existing_staging_state = {"exists": False, "clean": False, "headMatches": False}
+            if existing_staging_state.get("exists") and (
+                not existing_staging_state.get("clean") or not existing_staging_state.get("headMatches")
+            ):
+                _discard_owned_partial_staging(
+                    source_repo=source_repo,
+                    staging_runtime=staging_runtime,
+                    transaction_dir=staging_container.parent,
+                    runtime_root=runtime_root,
+                )
         if not runtime_state["exists"]:
             if not staging_runtime.exists():
                 _run_git(source_repo, "worktree", "add", "--detach", str(staging_runtime), origin_sha)
@@ -1221,16 +1853,70 @@ def _converge_production_runtime_locked(
 
     if phase == "replacement_created":
         staging_runtime = Path(str(journal["replacementStagingPath"]))
+        promotion_intent = journal.get("promotionIntent")
+        if promotion_intent is not None and not isinstance(promotion_intent, dict):
+            raise RuntimeError("PRODUCTION_RUNTIME_RECOVERY_JOURNAL_INVALID")
+        if promotion_intent is not None and runtime.exists() and staging_runtime.exists():
+            try:
+                runtime_state_now = _runtime_state(runtime, origin_sha)
+                staging_state_now = _runtime_state(staging_runtime, origin_sha)
+            except (OSError, RuntimeError, ValueError):
+                runtime_state_now = {"exists": True, "clean": False, "headMatches": False}
+                staging_state_now = {"exists": True, "clean": False, "headMatches": False}
+            if (
+                runtime_state_now.get("clean") and runtime_state_now.get("headMatches")
+                and staging_state_now.get("clean") and staging_state_now.get("headMatches")
+                and runtime_state_now.get("head") == staging_state_now.get("head")
+            ):
+                _discard_owned_partial_staging(
+                    source_repo=source_repo,
+                    staging_runtime=staging_runtime,
+                    transaction_dir=staging_runtime.parent.parent,
+                    runtime_root=runtime_root,
+                )
+            elif not runtime_state_now.get("clean") or not runtime_state_now.get("headMatches"):
+                _discard_owned_partial_runtime(
+                    source_repo=source_repo, runtime=runtime, runtime_root=runtime_root
+                )
+        elif promotion_intent is not None and runtime.exists():
+            try:
+                runtime_state_now = _runtime_state(runtime, origin_sha)
+            except (OSError, RuntimeError, ValueError):
+                runtime_state_now = {"exists": True, "clean": False, "headMatches": False}
+            if not runtime_state_now.get("clean") or not runtime_state_now.get("headMatches"):
+                _discard_owned_partial_runtime(
+                    source_repo=source_repo, runtime=runtime, runtime_root=runtime_root
+                )
         if not runtime.exists() and staging_runtime.exists():
-            _assert_runtime_recovery_capacity(runtime_root)
+            _ensure_runtime_recovery_capacity(runtime_root)
+            journal["promotionIntent"] = {
+                "sourcePath": str(staging_runtime),
+                "destinationPath": str(runtime),
+                "originSha": origin_sha,
+                "startedAtUtc": datetime.now(timezone.utc).isoformat(),
+            }
+            _write_json_atomic(journal_path, journal)
             with _managed_directory_handle(
                 runtime_root, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID"
             ):
                 _run_git(source_repo, "worktree", "move", str(staging_runtime), str(runtime))
+        if not runtime.exists() and not staging_runtime.exists():
+            staging_runtime.parent.mkdir(parents=True, exist_ok=True)
+            journal["promotionIntent"] = {
+                "sourcePath": str(staging_runtime),
+                "destinationPath": str(runtime),
+                "originSha": origin_sha,
+                "startedAtUtc": datetime.now(timezone.utc).isoformat(),
+            }
+            _write_json_atomic(journal_path, journal)
+            _run_git(source_repo, "worktree", "add", "--detach", str(staging_runtime), origin_sha)
         if not runtime.exists():
             raise RuntimeError("PRODUCTION_RUNTIME_REPLACEMENT_INVALID")
         _assert_runtime_common_dir(runtime, source_common)
         _bind_runtime_dependencies(source_repo, runtime)
+        if "promotionIntent" in journal:
+            journal.pop("promotionIntent", None)
+            _write_json_atomic(journal_path, journal)
         _append_runtime_recovery_event(
             journal_path,
             journal,
@@ -1374,7 +2060,7 @@ def record_missing_pre_attempt_from_task_history(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("runner", "bootstrap", "converge-runtime"))
+    parser.add_argument("mode", choices=("runner", "bootstrap", "converge-runtime", "maintain-runtime"))
     parser.add_argument("--probe", type=Path)
     parser.add_argument("--repo-dir", type=Path)
     parser.add_argument("--python-exe", type=Path)
@@ -1384,8 +2070,21 @@ def main() -> int:
     parser.add_argument("--bootstrap-owner-pid", type=int)
     parser.add_argument("--bootstrap-owner-receipt", type=Path)
     parser.add_argument("--bootstrap-owner-nonce")
+    parser.add_argument("--runtime-root", type=Path)
     parser.add_argument("--scheduled-task-name", required=False)
     args = parser.parse_args()
+    if args.mode == "maintain-runtime":
+        runtime_root = args.runtime_root or (Path.home() / ".news-grasp-runtime")
+        try:
+            with _production_runtime_lifecycle_mutex():
+                with _production_runtime_outer_mutex():
+                    with _production_runtime_mutex():
+                        result = maintain_production_runtime_recovery(runtime_root=runtime_root)
+        except (OSError, RuntimeError, ValueError) as error:
+            print(json.dumps({"status": "failed", "reasonCode": str(error)}, ensure_ascii=False, sort_keys=True), file=sys.stderr)
+            return 72
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0
     if args.mode == "converge-runtime":
         if (
             args.source_repo is None

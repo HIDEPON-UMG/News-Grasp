@@ -336,11 +336,15 @@ if ($UseProductionRuntime) {
         }
     }
     $runtimeOwnerNonce = [Guid]::NewGuid().ToString('N')
+    $runtimeMutexIdentity = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value
+    if ([string]::IsNullOrWhiteSpace($runtimeMutexIdentity)) { throw 'PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID' }
     $ownerReceipt = [ordered]@{
         schemaVersion = 'NEWS_GRASP_RUNTIME_LIFECYCLE_OWNER_V1'
         ownerPid = [int]$PID
         ownerNonce = $runtimeOwnerNonce
-        mutexName = "Global\NewsGraspBootstrapOrchestration-$env:USERNAME"
+        mutexName = "Global\NewsGraspBootstrapOrchestration-$runtimeMutexIdentity"
+        ownerScriptPath = (Resolve-Path -LiteralPath $PSCommandPath).Path
+        ownerProcessImage = [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
         issuedAtUtc = [DateTime]::UtcNow.ToString('o')
     }
     $ownerBytes = [System.Text.UTF8Encoding]::new($false).GetBytes(
@@ -354,7 +358,7 @@ if ($UseProductionRuntime) {
     )
     $runtimeOwnerReceiptStream.Write($ownerBytes, 0, $ownerBytes.Length)
     $runtimeOwnerReceiptStream.Flush($true)
-    $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspBootstrapOrchestration-$env:USERNAME")
+    $runtimeMutex = New-Object System.Threading.Mutex($false, "Global\NewsGraspBootstrapOrchestration-$runtimeMutexIdentity")
     try {
         $runtimeMutexOwned = $runtimeMutex.WaitOne(0)
     } catch [System.Threading.AbandonedMutexException] {

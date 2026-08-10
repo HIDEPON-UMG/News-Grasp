@@ -21,7 +21,7 @@ REPAIR_SKILL = (
 def test_nopublish_wrapper_authorizes_and_activates_parent_before_runner_launch() -> None:
     text = WRAPPER.read_text(encoding="utf-8-sig")
     validate_issued = text.index("'validate-issued'")
-    authorize = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize'")
+    authorize = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize-causal-replacement'")
     activate = text.index("& $pythonCanonicalPath -I $highCostOperationBudgetPath 'activate'")
     validate_parent = text.index("'validate-activated'")
     consume = text.index("& $pythonCanonicalPath -I $e2eAdmissionBridgePath 'consume'")
@@ -62,6 +62,7 @@ def test_runner_requires_activated_parent_before_any_reporter_fanout() -> None:
     assert "'admit'" in gate or '"admit"' in gate
     assert "blocked_high_cost" not in gate
     assert "if (-not $incomingHighCostParentAuthorityPath)" in gate
+    assert "HIGH_COST_PARENT_AUTHORITY_RECEIPT_REQUIRED" in gate
     assert "HIGH_COST_OPERATION_ADMISSION_V1" in gate
     assert "activated" in gate
     assert "'scheduled_production'" in gate
@@ -97,13 +98,14 @@ def test_wrapper_and_runner_do_not_reserve_two_full_e2e_attempts() -> None:
     runner_gate = runner.split("function Assert-HighCostOperationAdmission", 1)[1].split(
         "# ===== sentinel", 1
     )[0]
-    assert wrapper_gate.count("'authorize'") == 1
+    assert wrapper_gate.count("'authorize-causal-replacement'") == 1
     assert wrapper_gate.count("'activate'") == 1
     assert "'admit'" not in wrapper_gate
     nopublish_gate = runner_gate.split("if ($NoPublish)", 1)[1].split(
         "\n    if ($HighCostAdmissionPath)", 1
     )[0]
     assert "if (-not $incomingHighCostParentAuthorityPath)" in nopublish_gate
+    assert "incomingHighCostParentAuthorityPath" in nopublish_gate
     assert "return" in nopublish_gate
     assert "'admit'" not in nopublish_gate
 
@@ -333,8 +335,10 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
         str(evidence),
         "-StaticReceiptPath",
         str(evidence),
-        "-SimulationReceiptPath",
-        str(evidence),
+            "-SimulationReceiptPath",
+            str(evidence),
+            "-CausalReplacementProofPath",
+            str(evidence),
         "-E2EAdmissionPath",
         str(repo / "admission.json"),
         "-PowerShellExe",
@@ -355,8 +359,10 @@ def test_official_wrapper_rejects_junction_outputs_before_outside_write(tmp_path
     )
     after = sorted(path.relative_to(outside).as_posix() for path in outside.rglob("*"))
     assert result.returncode != 0
-    assert "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID" in (
-        result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    assert (
+        "HIGH_COST_CANONICAL_FUTURE_PATH_INVALID" in output
+        or "HIGH_COST_EXECUTABLE_IDENTITY_INVALID" in output
     )
     assert before == after
     assert marker.read_text(encoding="utf-8") == "outside-stable\n"

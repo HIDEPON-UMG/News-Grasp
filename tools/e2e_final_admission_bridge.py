@@ -1469,8 +1469,37 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
     if (
         value.get("schemaVersion") != LEDGER_SCHEMA
         or not isinstance(value.get("attempts"), dict)
+        or (
+            "replacements" in value
+            and not isinstance(value.get("replacements"), dict)
+        )
     ):
         raise E2EFinalAdmissionError("E2E_ATTEMPT_LEDGER_INVALID")
+    replacements = value.get("replacements", {})
+    attempts = value["attempts"]
+    for attempt_key, replacement in replacements.items():
+        if (
+            attempt_key not in attempts
+            or not isinstance(replacement, dict)
+            or set(replacement)
+            != {
+                "originalAdmissionId",
+                "originalReservationReceiptSha256",
+                "originalRow",
+                "replacementAdmissionId",
+                "proofSha256",
+            }
+            or not isinstance(replacement.get("originalRow"), dict)
+            or replacement["originalRow"].get("state") != "runner_reserved"
+            or replacement["originalRow"].get("claimReceiptPath")
+            or replacement["originalRow"].get("claimReceiptSha256")
+            or replacement["originalRow"].get("admissionId")
+            != replacement.get("originalAdmissionId")
+            or replacement["originalRow"].get("reservationReceiptSha256")
+            != replacement.get("originalReservationReceiptSha256")
+            or HEX_64_RE.fullmatch(str(replacement.get("proofSha256") or "")) is None
+        ):
+            raise E2EFinalAdmissionError("E2E_CAUSAL_REPLACEMENT_LINEAGE_INVALID")
 
 
 def _ledger_snapshot(path: Path) -> tuple[dict[str, Any], str | None]:
@@ -1480,7 +1509,7 @@ def _ledger_snapshot(path: Path) -> tuple[dict[str, Any], str | None]:
         allow_missing=True,
     )
     if value is None:
-        value = {"schemaVersion": LEDGER_SCHEMA, "attempts": {}}
+        value = {"schemaVersion": LEDGER_SCHEMA, "attempts": {}, "replacements": {}}
     else:
         _validate_attempt_ledger(value)
     return value, digest
@@ -2135,6 +2164,7 @@ def _immutable_consume_admission(
     actual_authority_python_executable_path: Path | None,
     runner_executable_path: Path | None,
     authority_python_executable_path: Path | None,
+    causal_replacement_proof: Path | None = None,
 ) -> dict[str, Any]:
     actual_runner, actual_python = _resolve_executable_aliases(
         actual_runner_executable_path=actual_runner_executable_path,
@@ -2194,6 +2224,88 @@ def _immutable_consume_admission(
         attempt_key = source["attemptKey"]
         existing = ledger_value["attempts"].get(attempt_key)
         if existing is not None:
+            if causal_replacement_proof is not None:
+                proof_path = Path(causal_replacement_proof).resolve(strict=True)
+                proof, proof_hash = _json_file_snapshot(
+                    proof_path, "E2E_CAUSAL_REPLACEMENT_PROOF_INVALID"
+                )
+                successor = proof.get("successor") if isinstance(proof, dict) else None
+                original_evidence = (
+                    proof.get("originalEvidence") if isinstance(proof, dict) else None
+                )
+                original_final_admission = (
+                    original_evidence.get("finalAdmission")
+                    if isinstance(original_evidence, dict)
+                    else None
+                )
+                if (
+                    proof is None
+                    or proof_hash is None
+                    or proof.get("schemaVersion")
+                    != "HIGH_COST_CAUSAL_REPLACEMENT_PROOF_V1"
+                    or proof.get("canonicalAttemptKey") != attempt_key
+                    or not isinstance(successor, dict)
+                    or successor.get("admissionId") != source.get("admissionId")
+                    or Path(
+                        str(
+                            original_final_admission.get("path")
+                            if isinstance(original_final_admission, dict)
+                            else ""
+                        )
+                    ).resolve()
+                    != Path(str(existing.get("admissionPath") or "")).resolve()
+                    or not isinstance(original_final_admission, dict)
+                    or original_final_admission.get("sha256")
+                    != existing.get("admissionSha256")
+                    or existing.get("state") != "runner_reserved"
+                    or existing.get("claimReceiptPath")
+                    or existing.get("claimReceiptSha256")
+                ):
+                    raise E2EFinalAdmissionError(
+                        "E2E_CAUSAL_REPLACEMENT_PREDECESSOR_INVALID"
+                    )
+                if ledger_value.get("replacements", {}).get(attempt_key):
+                    raise E2EFinalAdmissionError(
+                        "E2E_CAUSAL_REPLACEMENT_LIMIT"
+                    )
+                receipt = _reservation_receipt(
+                    admission=admission,
+                    admission_hash=source_hash,
+                    source=source,
+                    bindings=bindings,
+                )
+                row = _reservation_row(receipt, reservation_path)
+                row["causalReplacementProofSha256"] = proof_hash
+                row["replacesAdmissionId"] = existing.get("admissionId")
+                target_ledger = {
+                    "schemaVersion": LEDGER_SCHEMA,
+                    "attempts": dict(ledger_value["attempts"]),
+                    "replacements": dict(ledger_value.get("replacements", {})),
+                }
+                target_ledger["attempts"][attempt_key] = row
+                target_ledger["replacements"][attempt_key] = {
+                    "originalAdmissionId": existing.get("admissionId"),
+                    "originalReservationReceiptSha256": existing.get(
+                        "reservationReceiptSha256"
+                    ),
+                    "originalRow": dict(existing),
+                    "replacementAdmissionId": source.get("admissionId"),
+                    "proofSha256": proof_hash,
+                }
+                return _apply_wal(
+                    wal_path=wal_path,
+                    admission=admission,
+                    ledger=ledger,
+                    source_admission=source,
+                    source_admission_hash=source_hash,
+                    source_ledger=ledger_value,
+                    source_ledger_hash=ledger_hash,
+                    target_ledger=target_ledger,
+                    ledger_row=row,
+                    target_receipt_path=reservation_path,
+                    target_receipt=receipt,
+                    operation="reserve",
+                )
             replay_lineage = _same_reservation_lineage(
                 existing,
                 source=source,
@@ -2233,6 +2345,7 @@ def _immutable_consume_admission(
         target_ledger = {
             "schemaVersion": LEDGER_SCHEMA,
             "attempts": dict(ledger_value["attempts"]),
+            "replacements": dict(ledger_value.get("replacements", {})),
         }
         target_ledger["attempts"][attempt_key] = row
         return _apply_wal(
@@ -2263,6 +2376,7 @@ def consume_admission(
     actual_authority_python_executable_path: Path | None = None,
     runner_executable_path: Path | None = None,
     authority_python_executable_path: Path | None = None,
+    causal_replacement_proof: Path | None = None,
 ) -> dict[str, Any]:
     """immutable issued intentからappend-only reservation receiptだけを発行する。"""
 
@@ -2277,6 +2391,7 @@ def consume_admission(
         actual_authority_python_executable_path=actual_authority_python_executable_path,
         runner_executable_path=runner_executable_path,
         authority_python_executable_path=authority_python_executable_path,
+        causal_replacement_proof=causal_replacement_proof,
     )
 
 
@@ -2811,6 +2926,7 @@ def main(argv: list[str] | None = None) -> int:
     consume_parser.add_argument(
         "--authority-python-executable", type=Path, required=True
     )
+    consume_parser.add_argument("--causal-replacement-proof", type=Path)
     validate_issued_parser = subparsers.add_parser("validate-issued")
     validate_issued_parser.add_argument("--admission", type=Path, required=True)
     validate_issued_parser.add_argument(
@@ -2898,6 +3014,7 @@ def main(argv: list[str] | None = None) -> int:
                 reservation_output=args.reservation_output,
                 actual_runner_executable_path=args.runner_executable,
                 actual_authority_python_executable_path=args.authority_python_executable,
+                causal_replacement_proof=args.causal_replacement_proof,
             )
         elif args.command == "validate-issued":
             result = validate_issued_admission(

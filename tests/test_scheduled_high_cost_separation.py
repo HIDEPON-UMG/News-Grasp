@@ -1467,6 +1467,7 @@ def test_foreign_runtime_common_dir_is_rejected_before_checkout_or_dependency_bi
 def _lock_runtime_owner_receipt_for_current_process(
     home: Path, *, nonce: str
 ) -> tuple[Path, int]:
+    mutex_identity = _load_task_launcher_module()._runtime_mutex_identity()
     receipt_path = home / "bin" / "news-grasp-runtime-lifecycle-owner.json"
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     payload = (
@@ -1476,8 +1477,10 @@ def _lock_runtime_owner_receipt_for_current_process(
                 "ownerPid": os.getpid(),
                 "ownerNonce": nonce,
                 "mutexName": (
-                    f"Global\\NewsGraspBootstrapOrchestration-{os.environ['USERNAME']}"
+                    f"Global\\NewsGraspBootstrapOrchestration-{mutex_identity}"
                 ),
+                "ownerScriptPath": "C:\\fixture\\news-grasp-bootstrap.ps1",
+                "ownerProcessImage": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
                 "issuedAtUtc": "2026-08-10T03:00:00+00:00",
             },
             separators=(",", ":"),
@@ -1503,9 +1506,10 @@ def _lock_runtime_owner_receipt_for_current_process(
 def _start_runtime_lifecycle_owner(
     home: Path, *, nonce: str
 ) -> tuple[subprocess.Popen[str], Path, int]:
+    mutex_identity = _load_task_launcher_module()._runtime_mutex_identity()
     receipt_path = home / "bin" / "news-grasp-runtime-lifecycle-owner.json"
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    mutex_name = f"Global\\NewsGraspBootstrapOrchestration-{os.environ['USERNAME']}"
+    mutex_name = f"Global\\NewsGraspBootstrapOrchestration-{mutex_identity}"
     owner_code = r'''
 import ctypes, json, os, sys
 receipt_path, nonce, mutex_name = sys.argv[1:4]
@@ -1514,6 +1518,8 @@ payload = (json.dumps({
     "ownerPid": os.getpid(),
     "ownerNonce": nonce,
     "mutexName": mutex_name,
+    "ownerScriptPath": r"C:\fixture\news-grasp-bootstrap.ps1",
+    "ownerProcessImage": r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
     "issuedAtUtc": "2026-08-10T03:00:00+00:00",
 }, separators=(",", ":")) + "\n").encode("utf-8")
 k = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -1566,8 +1572,9 @@ def test_direct_converge_runtime_requires_same_runtime_mutex_across_processes(
     runtime_handle = kernel32.CreateMutexW(
         None, False, "Global\\NewsGraspProductionRuntimeConvergence"
     )
+    mutex_identity = _load_task_launcher_module()._runtime_mutex_identity()
     bootstrap_handle = kernel32.CreateMutexW(
-        None, False, f"Global\\NewsGraspBootstrapOrchestration-{os.environ['USERNAME']}"
+        None, False, f"Global\\NewsGraspBootstrapOrchestration-{mutex_identity}"
     )
     assert runtime_handle and bootstrap_handle
     assert kernel32.WaitForSingleObject(runtime_handle, 0) in (0, 0x80)
@@ -1616,7 +1623,7 @@ def test_direct_converge_runtime_requires_same_runtime_mutex_across_processes(
         kernel32.ReleaseMutex(runtime_handle)
         kernel32.CloseHandle(runtime_handle)
     assert completed.returncode == 72
-    assert "PRODUCTION_RUNTIME_MUTEX_BUSY" in completed.stderr
+    assert "PRODUCTION_RUNTIME_MUTEX_OWNER_INVALID" in completed.stderr
 
 
 def test_direct_converge_runtime_is_blocked_while_bootstrap_runtime_lifecycle_mutex_is_held(
@@ -1907,6 +1914,15 @@ def _write_anchored_committed_runtime_transaction(
     }
     issue["issueSha256"] = launcher._sha256_json(issue)
     issue_path.write_text(json.dumps(issue), encoding="utf-8")
+    authority_for_ledger = dict(authority)
+    authority_for_ledger["authorityPath"] = str(authority_path)
+    issue_for_ledger = dict(issue)
+    issue_for_ledger["issuePath"] = str(issue_path)
+    launcher._append_runtime_recovery_authority_ledger(
+        runtime_root=runtime_root,
+        authority=authority_for_ledger,
+        issue=issue_for_ledger,
+    )
     events: list[dict[str, object]] = []
     previous = "0" * 64
     for sequence, phase in enumerate(launcher.RUNTIME_RECOVERY_PHASES, start=1):
@@ -1960,7 +1976,7 @@ def _write_anchored_committed_runtime_transaction(
     terminal_path.write_text(json.dumps(terminal), encoding="utf-8")
 
 
-def test_runtime_recovery_remains_operational_after_64_committed_turnovers(
+def test_runtime_recovery_requires_maintenance_before_64_committed_turnovers(
     tmp_path: Path,
 ) -> None:
     launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
@@ -1973,16 +1989,40 @@ def test_runtime_recovery_remains_operational_after_64_committed_turnovers(
             index=index,
         )
 
-    result = launcher.converge_production_runtime(
+    recovered = launcher.converge_production_runtime(
         source_repo=source,
         runtime_root=runtime_root,
         origin_sha=origin_sha,
     )
+    assert recovered["phase"] == "committed"
+    assert len(list((runtime_root / "transactions").iterdir())) == 0
+    archive_root = runtime_root.parent / ".news-grasp-runtime-recovery-archive"
+    assert len(list(archive_root.glob("*.zip"))) == 48
+    assert (archive_root / "manifest.jsonl").is_file()
 
+
+def test_clean_runtime_is_created_via_transaction_owned_staging(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    _git(source, "worktree", "remove", "--force", str(runtime))
+    calls: list[tuple[str, ...]] = []
+    real_run_git = launcher._run_git
+
+    def recording_run_git(repo: Path, *args: str, **kwargs: object) -> str:
+        if args[:3] == ("worktree", "add", "--detach"):
+            calls.append(tuple(args))
+        return real_run_git(repo, *args, **kwargs)
+
+    monkeypatch.setattr(launcher, "_run_git", recording_run_git)
+    result = launcher.converge_production_runtime(
+        source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+    )
     assert result["phase"] == "committed"
-    assert not any((runtime_root / "transactions").iterdir())
-    archived = list((runtime_root / "quarantine").glob("*/runtime-recovery.json"))
-    assert len(archived) == 65
+    assert runtime.exists()
+    assert calls
+    assert Path(calls[0][-2]) != runtime
 
 
 def test_runtime_recovery_rejects_forged_journal_path_before_mutation(
@@ -2445,7 +2485,8 @@ def test_runtime_recovery_rejects_third_party_outer_mutex_bypass_before_mutation
     launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
     runtime = runtime_root / "production-runtime"
     before = (runtime / "tracked.txt").read_bytes()
-    mutex_name = f"Global\\NewsGraspProductionRuntime-{os.environ['USERNAME']}"
+    mutex_identity = _load_task_launcher_module()._runtime_mutex_identity()
+    mutex_name = f"Global\\NewsGraspProductionRuntime-{mutex_identity}"
     holder_code = r'''
 import ctypes, sys
 k = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -2558,6 +2599,44 @@ def test_runtime_recovery_rejects_terminal_transaction_replay_before_mutation(
     assert (runtime / "tracked.txt").read_text(encoding="utf-8") == "terminal replay preserved\n"
 
 
+def test_runtime_recovery_forwards_archive_to_missing_terminal_after_crash(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    _write_anchored_committed_runtime_transaction(
+        launcher, source=source, runtime_root=runtime_root, origin_sha=origin_sha, index=1000
+    )
+    transaction_id = "20260810T000000001000Z-00000000000003e8"
+    terminal_path = runtime_root / "ledger" / "terminals" / f"{transaction_id}.json"
+    terminal_path.unlink()
+    recovered = launcher.converge_production_runtime(
+        source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+    )
+    assert recovered["phase"] == "committed"
+    assert terminal_path.is_file()
+    assert not (runtime_root / "transactions" / transaction_id).exists()
+
+
+def test_runtime_recovery_requires_runtime_external_canonical_authority_ledger(
+    tmp_path: Path,
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    transaction_id = "20260810T120000000000Z-0123456789abcdee"
+    launcher._issue_runtime_recovery_authority(
+        transaction_id=transaction_id,
+        runtime_root=runtime_root,
+        origin_sha=origin_sha,
+        source_common=launcher._git_common_dir(source),
+    )
+    canonical = launcher._runtime_recovery_canonical_authority_ledger_path(runtime_root)
+    canonical.unlink()
+    (runtime_root / "transactions" / transaction_id).mkdir(parents=True)
+    with pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_RECOVERY_AUTHORITY_INVALID"):
+        launcher.converge_production_runtime(
+            source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+        )
+
+
 def test_runtime_recovery_rejects_parent_junction_swap_without_external_write_or_move(
     tmp_path: Path,
 ) -> None:
@@ -2604,6 +2683,36 @@ def test_runtime_recovery_forwards_after_partial_replacement_worktree_add_crash(
     assert recovered["phase"] == "committed"
     assert _git(runtime, "rev-parse", "HEAD") == origin_sha
     assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(encoding="utf-8") == "partial add preserved\n"
+
+
+def test_runtime_recovery_forwards_after_partial_promotion_move_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launcher, source, runtime_root, origin_sha = _runtime_fixture(tmp_path)
+    runtime = runtime_root / "production-runtime"
+    (runtime / "tracked.txt").write_text("partial move preserved\n", encoding="utf-8")
+    real_run_git = launcher._run_git
+    injected = {"raised": False}
+
+    def crash_after_move(repo, *args, **kwargs):
+        result = real_run_git(repo, *args, **kwargs)
+        if args[:2] == ("worktree", "move") and not injected["raised"]:
+            injected["raised"] = True
+            raise RuntimeError("INJECTED_AFTER_PARTIAL_PROMOTION_MOVE")
+        return result
+
+    monkeypatch.setattr(launcher, "_run_git", crash_after_move)
+    with pytest.raises(RuntimeError, match="INJECTED_AFTER_PARTIAL_PROMOTION_MOVE"):
+        launcher.converge_production_runtime(
+            source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+        )
+    monkeypatch.setattr(launcher, "_run_git", real_run_git)
+    recovered = launcher.converge_production_runtime(
+        source_repo=source, runtime_root=runtime_root, origin_sha=origin_sha
+    )
+    assert recovered["phase"] == "committed"
+    assert _git(runtime, "rev-parse", "HEAD") == origin_sha
+    assert (Path(recovered["quarantinePath"]) / "tracked.txt").read_text(encoding="utf-8") == "partial move preserved\n"
 
 
 def test_runtime_recovery_capacity_admission_precedes_runtime_move_and_bounds_metadata(

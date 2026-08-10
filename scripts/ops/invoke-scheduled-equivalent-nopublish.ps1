@@ -15,6 +15,7 @@ param(
     [Parameter(Mandatory=$true)][string] $StaticReceiptPath,
     [Parameter(Mandatory=$true)][string] $SimulationReceiptPath,
     [Parameter(Mandatory=$true)][string] $E2EAdmissionPath,
+    [Parameter(Mandatory=$true)][string] $CausalReplacementProofPath,
     [string] $HighCostParentAuthorityPath = '',
     [string] $PowerShellExe = 'powershell.exe'
 )
@@ -233,6 +234,7 @@ $RouteManifestPath = Get-CanonicalExistingFile -Path $RouteManifestPath -Label '
 $StaticReceiptPath = Get-CanonicalExistingFile -Path $StaticReceiptPath -Label 'static evidence' -Boundary $workspacePath -MaxBytes 4194304
 $SimulationReceiptPath = Get-CanonicalExistingFile -Path $SimulationReceiptPath -Label 'simulation evidence' -Boundary $workspacePath -MaxBytes 4194304
 $E2EAdmissionPath = Get-CanonicalExistingFile -Path $E2EAdmissionPath -Label 'issued E2E admission' -Boundary $repoPath -MaxBytes 65536
+$CausalReplacementProofPath = Get-CanonicalExistingFile -Path $CausalReplacementProofPath -Label 'causal replacement proof' -Boundary $workspacePath -MaxBytes 2097152
 $statePath = Get-CanonicalFuturePath -Path $statePath -Boundary $repoPath -Label 'state file'
 $logPath = Get-CanonicalFutureDirectory -Path $logPath -Boundary $repoPath -Label 'log directory'
 $receiptFullPath = Get-CanonicalFuturePath -Path $receiptFullPath -Boundary $repoPath -Label 'final receipt'
@@ -311,7 +313,7 @@ $e2eAdmissionValidation = & $pythonCanonicalPath -I $e2eAdmissionBridgePath 'val
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ISSUED_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }
-$authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize' `
+$authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'authorize-causal-replacement' `
     '--workspace-root' $workspacePath `
     '--budget' $BudgetPath `
     '--efficiency-design' $EfficiencyDesignPath `
@@ -320,7 +322,7 @@ $authorizeOutput = & $pythonCanonicalPath -I $highCostOperationBudgetPath 'autho
     '--static-receipt' $StaticReceiptPath `
     '--simulation-receipt' $SimulationReceiptPath `
     '--e2e-admission' $E2EAdmissionPath `
-    '--attempt-kind' $operationKind `
+    '--causal-replacement-proof' $CausalReplacementProofPath `
     '--execution-root' $repoPath `
     '--output' $parentAuthorityFullPath
 if ($LASTEXITCODE -ne 0) {
@@ -346,7 +348,8 @@ if ($LASTEXITCODE -ne 0) {
     '--parent-authority' $parentAuthorityFullPath `
     '--reservation-output' $reservationReceiptPath `
     '--runner-executable' $powerShellCanonicalPath `
-    '--authority-python-executable' $pythonCanonicalPath
+    '--authority-python-executable' $pythonCanonicalPath `
+    '--causal-replacement-proof' $CausalReplacementProofPath
 if ($LASTEXITCODE -ne 0) {
     throw "E2E_FINAL_ADMISSION_REJECTED exit=$LASTEXITCODE"
 }

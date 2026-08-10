@@ -964,6 +964,35 @@ def test_valid_admission_is_consumed_once(tmp_path: Path) -> None:
     ]
 
 
+def test_causal_replacement_ledger_preserves_original_row_and_rejects_tamper() -> None:
+    original_row = {
+        "state": "runner_reserved",
+        "admissionId": "a" * 64,
+        "reservationReceiptSha256": "b" * 64,
+    }
+    ledger = {
+        "schemaVersion": bridge_module.LEDGER_SCHEMA,
+        "attempts": {"News-Grasp:2026-08-10:scheduled-equivalent-nopublish": {
+            "state": "runner_reserved",
+            "admissionId": "c" * 64,
+        }},
+        "replacements": {
+            "News-Grasp:2026-08-10:scheduled-equivalent-nopublish": {
+                "originalAdmissionId": original_row["admissionId"],
+                "originalReservationReceiptSha256": original_row["reservationReceiptSha256"],
+                "originalRow": original_row,
+                "replacementAdmissionId": "c" * 64,
+                "proofSha256": "d" * 64,
+            }
+        },
+    }
+    bridge_module._validate_attempt_ledger(ledger)
+    tampered = json.loads(json.dumps(ledger))
+    tampered["replacements"][next(iter(tampered["replacements"]))]["originalRow"]["admissionId"] = "e" * 64
+    with pytest.raises(bridge_module.E2EFinalAdmissionError, match="E2E_CAUSAL_REPLACEMENT_LINEAGE_INVALID"):
+        bridge_module._validate_attempt_ledger(tampered)
+
+
 def test_consumer_rejects_production_dependency_drift(tmp_path: Path) -> None:
     admission, ledger = _issue(tmp_path)
     dependency = tmp_path / "repo" / "tools" / "production_validator.py"
