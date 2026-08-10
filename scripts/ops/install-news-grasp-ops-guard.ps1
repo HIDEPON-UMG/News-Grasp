@@ -145,22 +145,56 @@ function Get-NewsGraspTrackedWorkingHashes {
         [Parameter(Mandatory = $true)][System.Collections.Generic.List[string]] $TrackedPaths,
         [Parameter(Mandatory = $true)][int] $MaxEntries
     )
-    # hash-object --stdin-paths remains the canonical batch contract; Windows PowerShell
-    # legacy encoders can prepend a BOM to stdin, so the bounded fallback hashes each
-    # normalized path directly when that host cannot provide a BOM-free stream.
-    $directHashes = [System.Collections.Generic.List[string]]::new()
+    # hash-object --stdin-paths remains the canonical batch contract.  Writing
+    # bytes to StandardInput.BaseStream avoids Windows PowerShell's BOM-prone
+    # text pipeline and keeps the whole generation hash in one git process.
+    $normalizedPaths = [System.Collections.Generic.List[string]]::new()
     foreach ($trackedPath in $TrackedPaths) {
-        $normalizedTrackedPath = ([string]$trackedPath).TrimStart([char]0xFEFF)
-        $directHash = @(& $GitExe -C $RepoDir hash-object -- $normalizedTrackedPath 2>$null)
-        if ($LASTEXITCODE -ne 0 -or $directHash.Count -ne 1 -or [string]$directHash[0] -notmatch '^[0-9a-f]{40}$') {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        $directHashes.Add(([string]$directHash[0]).ToLowerInvariant())
-        if ($directHashes.Count -gt $MaxEntries) {
+        $normalizedPaths.Add(([string]$trackedPath).TrimStart([char]0xFEFF))
+        if ($normalizedPaths.Count -gt $MaxEntries) {
             throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
         }
     }
-    return @($directHashes)
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $GitExe
+    $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
+    $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --stdin-paths'
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardInput = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    try {
+        if (-not $process.Start()) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $payload = [Text.Encoding]::UTF8.GetBytes((($normalizedPaths -join "`n") + "`n"))
+        $process.StandardInput.BaseStream.Write($payload, 0, $payload.Length)
+        $process.StandardInput.BaseStream.Flush()
+        $process.StandardInput.Close()
+        $process.WaitForExit()
+        $stdout = $stdoutTask.Result
+        $stderr = $stderrTask.Result
+        if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
+        if ($hashes.Count -ne $normalizedPaths.Count) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        foreach ($hash in $hashes) {
+            if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
+                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+            }
+        }
+        return @($hashes | ForEach-Object { ([string]$_).ToLowerInvariant() })
+    } finally {
+        $process.Dispose()
+    }
 }
 
 function Test-NewsGraspPromotableInstallSource {
