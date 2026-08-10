@@ -3681,3 +3681,10 @@ def test_task_xml_backup_hash_is_checked_again_immediately_before_privileged_res
         rollback = installer.split(marker, 1)[1]
         assert "Read-NewsGraspVerifiedTaskXml" in rollback
         assert "-ExpectedSha256 ([string]$snapshot.xml_backup_sha256)" in rollback
+
+
+def test_nopublish_parent_authority_input_survives_script_scope_projection_reset() -> None:
+    runner = (OPS_DIR / "news-grasp-runner.ps1").read_text(encoding="utf-8-sig")
+    assert "$incomingHighCostParentAuthorityPath = [string]$HighCostParentAuthorityPath" in runner
+    assert "if (-not $incomingHighCostParentAuthorityPath)" in runner
+    assert "GetFullPath($incomingHighCostParentAuthorityPath)" in runner
