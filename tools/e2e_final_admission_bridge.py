@@ -1478,34 +1478,17 @@ def _validate_attempt_ledger(value: dict[str, Any]) -> None:
     replacements = value.get("replacements", {})
     attempts = value["attempts"]
     for attempt_key, replacement in replacements.items():
-        replacement_keys = set(replacement) if isinstance(replacement, dict) else set()
-        legacy_keys = {
-            "originalAdmissionId",
-            "originalReservationReceiptSha256",
-            "originalRow",
-            "replacementAdmissionId",
-            "proofSha256",
-        }
-        supersession_keys = legacy_keys | {
-            "supersessionCount",
-            "supersededReplacementAdmissionId",
-            "supersededReplacementProofSha256",
-        }
-        valid_extended_supersession = (
-            replacement_keys == supersession_keys
-            and replacement.get("supersessionCount") == 1
-            and HEX_64_RE.fullmatch(
-                str(replacement.get("supersededReplacementAdmissionId") or "")
-            )
-            and HEX_64_RE.fullmatch(
-                str(replacement.get("supersededReplacementProofSha256") or "")
-            )
-        )
         if (
             attempt_key not in attempts
             or not isinstance(replacement, dict)
-            or (replacement_keys != legacy_keys and replacement_keys != supersession_keys)
-            or (replacement_keys == supersession_keys and not valid_extended_supersession)
+            or set(replacement)
+            != {
+                "originalAdmissionId",
+                "originalReservationReceiptSha256",
+                "originalRow",
+                "replacementAdmissionId",
+                "proofSha256",
+            }
             or not isinstance(replacement.get("originalRow"), dict)
             or replacement["originalRow"].get("state") != "runner_reserved"
             or replacement["originalRow"].get("claimReceiptPath")
@@ -2289,24 +2272,6 @@ def _immutable_consume_admission(
                     if isinstance(original_evidence, dict)
                     else None
                 )
-                prior_replacement = ledger_value.get("replacements", {}).get(attempt_key)
-                prior_replacement_is_unclaimed = (
-                    isinstance(prior_replacement, dict)
-                    and prior_replacement.get("replacementAdmissionId")
-                    == existing.get("admissionId")
-                    and prior_replacement.get("supersessionCount", 0) == 0
-                    and existing.get("state") == "runner_reserved"
-                    and not existing.get("claimReceiptPath")
-                    and not existing.get("claimReceiptSha256")
-                    and isinstance(prior_replacement.get("originalRow"), dict)
-                    and original_final_admission is not None
-                    and original_final_admission.get("admissionId")
-                    == prior_replacement.get("originalAdmissionId")
-                    and original_final_admission.get("sha256")
-                    == prior_replacement.get("originalRow", {}).get("admissionSha256")
-                    and prior_replacement.get("proofSha256")
-                    == existing.get("causalReplacementProofSha256")
-                )
                 if (
                     proof is None
                     or proof_hash is None
@@ -2315,28 +2280,17 @@ def _immutable_consume_admission(
                     or proof.get("canonicalAttemptKey") != attempt_key
                     or not isinstance(successor, dict)
                     or successor.get("admissionId") != source.get("admissionId")
-                    or (
-                        not prior_replacement_is_unclaimed
-                        and Path(
-                            str(
-                                original_final_admission.get("path")
-                                if isinstance(original_final_admission, dict)
-                                else ""
-                            )
-                        ).resolve()
-                        != Path(str(existing.get("admissionPath") or "")).resolve()
-                    )
+                    or Path(
+                        str(
+                            original_final_admission.get("path")
+                            if isinstance(original_final_admission, dict)
+                            else ""
+                        )
+                    ).resolve()
+                    != Path(str(existing.get("admissionPath") or "")).resolve()
                     or not isinstance(original_final_admission, dict)
-                    or (
-                        not prior_replacement_is_unclaimed
-                        and original_final_admission.get("sha256")
-                        != existing.get("admissionSha256")
-                    )
-                    or (
-                        prior_replacement_is_unclaimed
-                        and original_final_admission.get("admissionId")
-                        != prior_replacement.get("originalAdmissionId")
-                    )
+                    or original_final_admission.get("sha256")
+                    != existing.get("admissionSha256")
                     or existing.get("state") != "runner_reserved"
                     or existing.get("claimReceiptPath")
                     or existing.get("claimReceiptSha256")
@@ -2344,7 +2298,7 @@ def _immutable_consume_admission(
                     raise E2EFinalAdmissionError(
                         "E2E_CAUSAL_REPLACEMENT_PREDECESSOR_INVALID"
                     )
-                if ledger_value.get("replacements", {}).get(attempt_key) and not prior_replacement_is_unclaimed:
+                if ledger_value.get("replacements", {}).get(attempt_key):
                     raise E2EFinalAdmissionError(
                         "E2E_CAUSAL_REPLACEMENT_LIMIT"
                     )
@@ -2363,27 +2317,15 @@ def _immutable_consume_admission(
                     "replacements": dict(ledger_value.get("replacements", {})),
                 }
                 target_ledger["attempts"][attempt_key] = row
-                if prior_replacement_is_unclaimed:
-                    target_ledger["replacements"][attempt_key] = {
-                        **dict(prior_replacement),
-                        "replacementAdmissionId": source.get("admissionId"),
-                        "proofSha256": proof_hash,
-                        "supersessionCount": 1,
-                        "supersededReplacementAdmissionId": existing.get("admissionId"),
-                        "supersededReplacementProofSha256": prior_replacement.get(
-                            "proofSha256"
-                        ),
-                    }
-                else:
-                    target_ledger["replacements"][attempt_key] = {
-                        "originalAdmissionId": existing.get("admissionId"),
-                        "originalReservationReceiptSha256": existing.get(
-                            "reservationReceiptSha256"
-                        ),
-                        "originalRow": dict(existing),
-                        "replacementAdmissionId": source.get("admissionId"),
-                        "proofSha256": proof_hash,
-                    }
+                target_ledger["replacements"][attempt_key] = {
+                    "originalAdmissionId": existing.get("admissionId"),
+                    "originalReservationReceiptSha256": existing.get(
+                        "reservationReceiptSha256"
+                    ),
+                    "originalRow": dict(existing),
+                    "replacementAdmissionId": source.get("admissionId"),
+                    "proofSha256": proof_hash,
+                }
                 return _apply_wal(
                     wal_path=wal_path,
                     admission=admission,
