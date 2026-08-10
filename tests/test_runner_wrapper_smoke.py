@@ -765,8 +765,8 @@ def test_codex_wrapper_never_overrides_success_rc_from_quoted_quota_terms(tmp_pa
     assert '"exit_code":0' in usage_log.read_text(encoding="utf-8")
 
 
-def test_codex_wrapper_success_probe_returns_after_artifact_gate_green(tmp_path: Path) -> None:
-    """成果物ゲートがGreenなら、長引くcodex子プロセスを待たずにrc=0で制御を戻す。"""
+def test_codex_wrapper_rejects_success_probe_early_termination(tmp_path: Path) -> None:
+    """broker-owned terminal契約ではsuccess probeの早期終了を拒否する。"""
     prompt_file = tmp_path / "prompt.md"
     log_file = tmp_path / "wrapper.log"
     usage_log = tmp_path / "usage.jsonl"
@@ -802,12 +802,7 @@ def test_codex_wrapper_success_probe_returns_after_artifact_gate_green(tmp_path:
     )
 
     log = log_file.read_text(encoding="utf-8", errors="replace")
-    assert result.returncode == 0, result.stderr + log
-    assert "success probe passed" in log
-    assert "process tree confirmed stopped" in log
-    assert '"flow":"newsroom_editor"' in usage_log.read_text(encoding="utf-8", errors="replace")
-    assert '"exit_code":0' in usage_log.read_text(encoding="utf-8", errors="replace")
-    import time
-
-    time.sleep(3)
-    assert sentinel.read_text(encoding="utf-8") == "green"
+    assert result.returncode == 125, result.stderr + log
+    assert "SUCCESS_PROBE_EARLY_TERMINATION_FORBIDDEN" in log
+    assert not sentinel.exists()
+    assert not usage_log.exists()
