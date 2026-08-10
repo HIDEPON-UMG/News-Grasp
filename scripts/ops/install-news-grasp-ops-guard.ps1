@@ -144,6 +144,37 @@ function Assert-NewsGraspExactKeys {
     }
 }
 
+function ConvertTo-NewsGraspWindowsProcessArgument {
+    param([Parameter(Mandatory = $true)][string] $Value)
+    $builder = [System.Text.StringBuilder]::new()
+    [void]$builder.Append('"')
+    $backslashes = 0
+    foreach ($character in $Value.ToCharArray()) {
+        if ($character -eq '\') {
+            $backslashes += 1
+            continue
+        }
+        if ($character -eq '"') {
+            if ($backslashes -gt 0) {
+                [void]$builder.Append(('\' * (($backslashes * 2) + 1)))
+            }
+            [void]$builder.Append('"')
+            $backslashes = 0
+            continue
+        }
+        if ($backslashes -gt 0) {
+            [void]$builder.Append(('\' * $backslashes))
+            $backslashes = 0
+        }
+        [void]$builder.Append($character)
+    }
+    if ($backslashes -gt 0) {
+        [void]$builder.Append(('\' * ($backslashes * 2)))
+    }
+    [void]$builder.Append('"')
+    return $builder.ToString()
+}
+
 function Get-NewsGraspTrackedWorkingHashes {
     param(
         [Parameter(Mandatory = $true)][string] $GitExe,
@@ -168,19 +199,18 @@ function Get-NewsGraspTrackedWorkingHashes {
         $batch = @($normalizedPaths[$offset..$end])
         $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $startInfo.FileName = $GitExe
-        # ProcessStartInfo.Arguments を手組みすると、Git for Windows の
-        # MSYS argv 変換が引用符を文字として残し、日本語名の tracked file
-        # を開けない。ArgumentList は Windows の argv 境界を保持する。
-        if ($null -eq $startInfo.ArgumentList) {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_ARGUMENT_LIST_UNAVAILABLE'
-        }
-        $startInfo.ArgumentList.Add('-C')
-        $startInfo.ArgumentList.Add($RepoDir)
-        $startInfo.ArgumentList.Add('hash-object')
-        $startInfo.ArgumentList.Add('--no-filters')
-        $startInfo.ArgumentList.Add('--')
-        foreach ($path in $batch) {
-            $startInfo.ArgumentList.Add([string]$path)
+        # PS7/.NETではArgumentListでargv境界を保持し、PS5.1では同じ
+        # Windows command-line quotingへフォールバックする。
+        $argumentValues = @('-C', $RepoDir, 'hash-object', '--no-filters', '--') + @($batch)
+        $argumentListProperty = $startInfo.PSObject.Properties['ArgumentList']
+        if ($null -ne $argumentListProperty) {
+            foreach ($argument in $argumentValues) {
+                $argumentListProperty.Value.Add([string]$argument)
+            }
+        } else {
+            $startInfo.Arguments = (($argumentValues | ForEach-Object {
+                ConvertTo-NewsGraspWindowsProcessArgument -Value ([string]$_)
+            }) -join ' ')
         }
         $startInfo.UseShellExecute = $false
         $startInfo.CreateNoWindow = $true
