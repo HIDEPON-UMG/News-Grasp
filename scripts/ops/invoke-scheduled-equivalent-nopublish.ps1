@@ -60,6 +60,9 @@ function Get-CanonicalExistingFile {
             if (($cursorItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
                 throw "$Label traversal contains a reparse point"
             }
+            if ($Boundary -and [string]::Equals($cursor, $boundaryPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+                break
+            }
             $cursorParent = Split-Path -Parent $cursor
             if (-not $cursorParent -or $cursorParent -eq $cursor) { break }
             $cursor = $cursorParent
@@ -200,7 +203,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $repoPath '.git'))) {
     throw "RepoRoot は git worktree でなければなりません: $repoPath"
 }
 try {
-    $pythonCanonicalPath = Get-CanonicalExistingFile -Path $PythonExe -Label 'authority Python' -MaxBytes 67108864
+    $pythonCanonicalPath = Get-CanonicalExistingFile -Path $PythonExe -Label 'authority Python' -Boundary $workspacePath -MaxBytes 67108864
     $powerShellCommand = if (Test-Path -LiteralPath $PowerShellExe -PathType Leaf) {
         Get-Item -LiteralPath $PowerShellExe -ErrorAction Stop
     } else {

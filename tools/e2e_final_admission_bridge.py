@@ -97,8 +97,13 @@ def _canonical_sha256(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _has_reparse_component(path: Path) -> bool:
+def _has_reparse_component(path: Path, *, stop_at: Path | None = None) -> bool:
     cursor = Path(os.path.abspath(os.fspath(path)))
+    stop_key = (
+        os.path.normcase(os.path.normpath(os.path.abspath(os.fspath(stop_at))))
+        if stop_at is not None
+        else None
+    )
     try:
         while True:
             item = cursor.lstat()
@@ -107,6 +112,10 @@ def _has_reparse_component(path: Path) -> bool:
                 & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
             ):
                 return True
+            if stop_key is not None and os.path.normcase(
+                os.path.normpath(os.path.abspath(os.fspath(cursor)))
+            ) == stop_key:
+                return False
             parent = cursor.parent
             if parent == cursor:
                 return False
@@ -115,14 +124,20 @@ def _has_reparse_component(path: Path) -> bool:
         return True
 
 
-def _read_stable_bytes(path: Path, *, max_bytes: int, code: str) -> bytes:
+def _read_stable_bytes(
+    path: Path,
+    *,
+    max_bytes: int,
+    code: str,
+    trusted_root: Path | None = None,
+) -> bytes:
     candidate = Path(os.path.abspath(os.fspath(path)))
     try:
         before = candidate.lstat()
         if (
             not stat.S_ISREG(before.st_mode)
             or stat.S_ISLNK(before.st_mode)
-            or _has_reparse_component(candidate.parent)
+            or _has_reparse_component(candidate.parent, stop_at=trusted_root)
             or before.st_size > max_bytes
         ):
             raise OSError("non-regular or oversized file")
@@ -373,6 +388,7 @@ def _canonical_file(
     *,
     code: str,
     root: Path | None = None,
+    trusted_root: Path | None = None,
     max_bytes: int = MAX_EXECUTABLE_BYTES,
 ) -> Path:
     candidate = Path(path)
@@ -382,15 +398,40 @@ def _canonical_file(
         resolved = candidate.resolve(strict=True)
     except OSError as error:
         raise E2EFinalAdmissionError(code) from error
-    if not resolved.is_file() or _has_reparse_component(candidate):
+    if trusted_root is not None:
+        trusted_root = Path(trusted_root).resolve(strict=True)
+        try:
+            resolved.relative_to(trusted_root)
+        except ValueError as error:
+            raise E2EFinalAdmissionError(code) from error
+    if not resolved.is_file() or _has_reparse_component(
+        candidate, stop_at=trusted_root
+    ):
         raise E2EFinalAdmissionError(code)
     if root is not None:
         try:
             resolved.relative_to(Path(root).resolve(strict=True))
         except (OSError, ValueError) as error:
             raise E2EFinalAdmissionError(code) from error
-    _read_stable_bytes(resolved, max_bytes=max_bytes, code=code)
+    _read_stable_bytes(
+        resolved,
+        max_bytes=max_bytes,
+        code=code,
+        trusted_root=trusted_root,
+    )
     return resolved
+
+
+def _trusted_workspace_root(repo_root: Path) -> Path | None:
+    """OneDrive上でもworkspace境界内のreparseだけを拒否する。"""
+
+    for candidate in (repo_root, *repo_root.parents):
+        if (
+            (candidate / "tools" / "harness" / "high_cost_operation_budget.py").is_file()
+            and (candidate / "News-Grasp").is_dir()
+        ):
+            return candidate.resolve()
+    return None
 
 
 def _canonical_directory(path: Path, *, code: str) -> Path:
@@ -1211,6 +1252,7 @@ def issue_admission(
         raise E2EFinalAdmissionError("E2E_PRODUCT_ID_INVALID")
     try:
         repo = _canonical_directory(repo_root, code="E2E_RUNNER_INVALID")
+        trusted_workspace = _trusted_workspace_root(repo)
         runner = _canonical_file(
             runner_path,
             code="E2E_RUNNER_INVALID",
@@ -1256,6 +1298,7 @@ def issue_admission(
         authority_python_executable = _canonical_file(
             authority_python_executable_path,
             code="E2E_AUTHORITY_PYTHON_INVALID",
+            trusted_root=trusted_workspace,
             max_bytes=MAX_EXECUTABLE_BYTES,
         )
     except OSError as error:
@@ -1499,6 +1542,7 @@ def _validate_runtime_bindings(
         repo_root = _canonical_directory(
             Path(str(value["repoRoot"])), code="E2E_ADMISSION_INVALID"
         )
+        trusted_workspace = _trusted_workspace_root(repo_root)
         runner = _canonical_file(
             Path(str(value["runnerPath"])),
             code="E2E_RUNNER_INVALID",
@@ -1551,6 +1595,7 @@ def _validate_runtime_bindings(
         authority_python = _canonical_file(
             actual_authority_python_executable_path,
             code="E2E_AUTHORITY_PYTHON_INVALID",
+            trusted_root=trusted_workspace,
             max_bytes=MAX_EXECUTABLE_BYTES,
         )
         parent: Path | None = None
