@@ -145,71 +145,56 @@ function Get-NewsGraspTrackedWorkingHashes {
         [Parameter(Mandatory = $true)][System.Collections.Generic.List[string]] $TrackedPaths,
         [Parameter(Mandatory = $true)][int] $MaxEntries
     )
-    $allHashes = [System.Collections.Generic.List[string]]::new()
-    $runBatch = {
-        param([System.Collections.Generic.List[string]] $Paths)
-        if ($Paths.Count -eq 0) { return }
-        $quotedPaths = @($Paths | ForEach-Object { '"{0}"' -f $_ })
-        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-        $startInfo.FileName = $GitExe
-        $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
-        $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --no-filters -- ' + ([string]::Join(' ', $quotedPaths))
-        $startInfo.UseShellExecute = $false
-        $startInfo.CreateNoWindow = $true
-        $startInfo.RedirectStandardOutput = $true
-        $startInfo.RedirectStandardError = $true
-        $process = [System.Diagnostics.Process]::new()
-        $process.StartInfo = $startInfo
-        try {
-            if (-not $process.Start()) {
-                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-            }
-            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-            $stderrTask = $process.StandardError.ReadToEndAsync()
-            $process.WaitForExit()
-            $stdout = $stdoutTask.Result
-            $stderr = $stderrTask.Result
-            if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
-                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-            }
-            $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
-            if ($hashes.Count -ne $Paths.Count) {
-                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-            }
-            foreach ($hash in $hashes) {
-                if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
-                    throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-                }
-                $allHashes.Add(([string]$hash).ToLowerInvariant())
-            }
-        } finally {
-            $process.Dispose()
-        }
-    }
-    $batch = [System.Collections.Generic.List[string]]::new()
-    $argumentChars = 0
+    # Feed UTF-8 path bytes directly to one git process.  stdin-paths applies
+    # the repository's canonical clean filter, so CRLF worktree bytes are
+    # compared with the exact index generation rather than a raw-file hash.
+    $normalizedPaths = [System.Collections.Generic.List[string]]::new()
     foreach ($trackedPath in $TrackedPaths) {
-        $normalizedPath = ([string]$trackedPath) -replace '^[\uFEFF]', ''
-        if ($normalizedPath -notmatch '^[^"\r\n]+$') {
-            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
-        }
-        $quotedLength = $normalizedPath.Length + 2
-        if ($batch.Count -ge 128 -or $argumentChars + $quotedLength -gt 24000) {
-            & $runBatch $batch
-            $batch.Clear()
-            $argumentChars = 0
-        }
-        $batch.Add($normalizedPath)
-        $argumentChars += $quotedLength + 1
-        if ($batch.Count -gt $MaxEntries) {
+        $normalizedPaths.Add(([string]$trackedPath).TrimStart([char]0xFEFF))
+        if ($normalizedPaths.Count -gt $MaxEntries) {
             throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
         }
     }
-    & $runBatch $batch
-    if ($allHashes.Count -ne $TrackedPaths.Count -or $allHashes.Count -gt $MaxEntries) {
-        throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $GitExe
+    $quotedRepo = '"' + $RepoDir.Replace('"', '\"') + '"'
+    $startInfo.Arguments = '-C ' + $quotedRepo + ' hash-object --stdin-paths'
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardInput = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    try {
+        if (-not $process.Start()) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $payload = [Text.Encoding]::UTF8.GetBytes((($normalizedPaths -join "`n") + "`n"))
+        $process.StandardInput.BaseStream.Write($payload, 0, $payload.Length)
+        $process.StandardInput.BaseStream.Flush()
+        $process.StandardInput.Close()
+        $process.WaitForExit()
+        $stdout = $stdoutTask.Result
+        $stderr = $stderrTask.Result
+        if ($process.ExitCode -ne 0 -or $stderr -or [string]::IsNullOrWhiteSpace($stdout)) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        $hashes = @($stdout -split "`r?`n" | Where-Object { $_ -ne '' })
+        if ($hashes.Count -ne $normalizedPaths.Count) {
+            throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+        }
+        foreach ($hash in $hashes) {
+            if ([string]$hash -notmatch '^[0-9a-f]{40}$') {
+                throw 'NEWS_GRASP_INSTALL_SOURCE_HASH_PROCESS_INVALID'
+            }
+        }
+        return @($hashes | ForEach-Object { ([string]$_).ToLowerInvariant() })
+    } finally {
+        $process.Dispose()
     }
-    return $allHashes.ToArray()
 }
 
 function Test-NewsGraspPromotableInstallSource {
