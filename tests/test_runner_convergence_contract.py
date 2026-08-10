@@ -2924,6 +2924,7 @@ def test_ops_installer_rejects_noncanonical_source_before_recovery_or_mutation()
     assert "diff --cached --quiet --no-ext-diff --no-textconv --" in guard
     assert "[int] $MaxEntries = 16384" in guard
     assert "[string]$runtimeRoot.evidenceRepoDir" in guard
+    assert "[string] $EvidenceRepoDir" in installer
     assert "Test-NewsGraspUnsafeTraversalReparsePoint -Item $buildItem" in guard
     main = installer.split("$RepoDir = Resolve-NewsGraspRepoDir", 1)[1]
     authority_call = main.index("Assert-NewsGraspCanonicalInstallSource")

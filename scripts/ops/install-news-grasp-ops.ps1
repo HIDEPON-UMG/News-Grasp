@@ -2,6 +2,7 @@
     [string] $RepoDir = '',
     [string] $BinDir = (Join-Path $env:USERPROFILE 'bin'),
     [string] $TaskPythonwPath = '',
+    [string] $EvidenceRepoDir = '',
     [string] $RunnerTaskName = 'News-Grasp Production',
     [string] $BootstrapTaskName = 'News-Grasp Bootstrap',
     [string] $DeadmanTaskName = 'News-Grasp Deadman',
@@ -558,7 +559,15 @@ foreach ($file in $files) {
     $row['after_sha256'] = $afterHash
 }
 $runtimePythonPath = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
-$runtimeEvidenceRepoDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $TaskPythonwPath))
+$runtimeEvidenceRepoDir = if ($EvidenceRepoDir) {
+    if (-not (Test-Path -LiteralPath $EvidenceRepoDir -PathType Container)) {
+        throw "指定されたEvidence repoが見つかりません: $EvidenceRepoDir"
+    }
+    (Resolve-Path -LiteralPath $EvidenceRepoDir).Path
+} else {
+    Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $TaskPythonwPath))
+}
+Assert-NewsGraspNoReparsePath -Path $runtimeEvidenceRepoDir -Boundary $installTrustedBoundary
 $runtimeRoot = [ordered]@{
     schemaVersion = 'NEWS_GRASP_RUNTIME_ROOT_V1'
     repoDir = $RepoDir
