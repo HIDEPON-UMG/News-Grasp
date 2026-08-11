@@ -1,0 +1,48 @@
+{
+  "date": "2026-08-12",
+  "category_id": "manufacturing",
+  "candidate_file": "build/deduped-candidates/manufacturing.jsonl",
+  "dedup_file": "build/deduped-candidates/manufacturing.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "製造 OR 半導体 OR 工場 OR サプライチェーン OR 量産 OR 特許 OR semiconductor OR supply chain when:1d",
+    "Stage1 dedup candidate review: manufacturing.jsonl",
+    "selected candidate article-page date and OGP verification"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 3,
+  "coverage_terms_checked": [
+    "TSMC",
+    "Samsung",
+    "Intel",
+    "NVIDIA",
+    "Foxconn",
+    "Toyota"
+  ],
+  "dropped": [
+    {"title":"ＩＢＭとスタートアップが2.4億ドル契約、エヌビディア半導体でＡＩ基盤構築","url":"https://jp.reuters.com/economy/25UAJ7TEE5PWXAAQCIMENSDQM4-2026-08-11/","reason":"AI基盤契約が中心で、製造能力・供給網の構造変化という本カテゴリの主軸が選定3件より弱い"},
+    {"title":"ソニーセミコンとTSMCの合弁、熊本で次世代イメージセンサーを2029年量産：製造マネジメントニュース","url":"https://monoist.itmedia.co.jp/mn/articles/2608/12/news051.html","reason":"ソニー・TSMCの同一量産計画を報じる重複候補で、一次報道のNHK記事を優先"},
+    {"title":"【関市】関の工場参観日プレイベント「関の工場参観日夏まつり」が開催されました！","url":"https://sakadachibooks.com/kojo-summer2026rp/","reason":"地域イベントの開催報告で、生産能力・技術・供給網の構造変化が薄い"},
+    {"title":"サプライチェーンAIの急速な導入が見込まれる中、キナクシスがスポンサーを務めた調査が説明責任をめぐるギャップを明らかに","url":"https://www.businesswire.com/news/home/20260811990172/ja","reason":"スポンサー調査の転載で、一次情報度と製造現場への具体性が選定3件より低い"},
+    {"title":"日本半導体産業、外資進出で生産基盤に厚み 投資額6兆円規模に","url":"https://www.nikkei.com/article/DGXZQOUC100GW0Q6A810C2000000/","reason":"ソニー・TSMC投資を含む総括記事で、個別の量産計画を扱うNHK記事を優先"},
+    {"title":"ツムラ 茨城工場にQC棟新設 安定供給と品質保証強化 28年秋までに移管へ（茨城新聞クロスアイ）","url":"https://news.yahoo.co.jp/articles/994329efcb2ba5bcdf9569044096f7968202c673","reason":"個別工場の品質保証投資だが、記事固有OGPを確認できずthumb必須条件を満たさない"},
+    {"title":"特集「AI半導体、推論シフト考」まとめ読み 対抗NVIDIA","url":"https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC057GO0V00C26A8000000","reason":"特集のまとめ読みで新規の当日発表ではなく、製造現場の一次材料が薄い"},
+    {"title":"熊本知事「復興へ心強い」 ソニーとTSMCが次世代半導体量産発表","url":"https://www.nikkei.com/article/DGXZQOJC111DF0R10C26A8000000/","reason":"ソニー・TSMCの同一量産発表を扱う重複候補で、NHK記事を優先"},
+    {"title":"花王株が5年ぶり高値 スキンケアの「洗浄力」、半導体も磨く","url":"https://www.nikkei.com/prime/veritas/article/DGXZQOUB054IQ0V00C26A8000000/?n_cid=DSPRM1OTRtopprime","reason":"株価と素材用途の解説が中心で、当日の製造能力・投資シグナルが弱い"},
+    {"title":"キオクシアやAppleの特許を分析 知財記事まとめ読み","url":"https://www.nikkei.com/prime/tech-foresight/article/DGXZQOUC05BAQ0V00C26A8000000","reason":"特許記事のまとめ読みで、当日発生した製造計画ではない"},
+    {"title":"有楽製菓の札幌工場、道内限定「白いブラックサンダー」を製造","url":"https://www.nikkei.com/article/DGXZQOFC044470U6A800C2000000/","reason":"地域商品と工場紹介の話題で、産業全体の競争力・技術シグナルが小さい"},
+    {"title":"トランプ氏お気に入り州知事が語る日本製造業との「KIZUNA」 支援拡大に意欲「大統領とビジョン共有」","url":"https://www.tokyo-np.co.jp/article/507529","reason":"政治家インタビューが中心で、具体的な設備投資・生産計画の一次材料が薄い"},
+    {"title":"京都市左京区にあった「日本一」の工場閉鎖から半世紀 残された倉庫が秘める「再々生」の可能性","url":"https://www.kyoto-np.co.jp/articles/-/1766751","reason":"過去の工場閉鎖と再生の背景記事で、当日性のある製造ニュースではない"},
+    {"title":"いかに名店の味を再現？ 三井不動産が手掛けるプレミアム冷食の製造拠点公開：工場ニュース（1/2 ページ）","url":"https://monoist.itmedia.co.jp/mn/articles/2608/12/news013.html","reason":"施設公開は7月29日の実施で、当日発生の構造変化としては優先度が低い"},
+    {"title":"ソニーとTSMC 合弁会社を設立へ","url":"https://news.yahoo.co.jp/pickup/6591358","reason":"ピックアップ転載で、NHKの元記事単位の一次報道を優先"},
+    {"title":"ソニーグループと台湾の半導体大手「TSMC」 熊本県に合弁会社設立を発表","url":"https://www.fnn.jp/articles/-/1092996","reason":"ソニー・TSMCの同一合弁発表を扱う重複候補で、NHK記事を優先"},
+    {"title":"株価70倍、記録的増収増益 半導体大手キオクシアが快進撃 岩手・北上工場で聞く「何が起きていますか？」","url":"https://kahoku.news/articles/20260810khn000033.html","reason":"キオクシア動向の補助報道で、専業化と競争力を分析するJBpress記事を優先"},
+    {"title":"食料品工場跡で大麻草栽培1千株 男2人を再逮捕 北海道警 [北海道]","url":"https://www.asahi.com/articles/ASV8C22N2V8CIIPE007M.html","reason":"事件報道で、製造業の競争力・技術・供給網に該当しない"},
+    {"title":"＜2026年熊本地震＞馬肉工場被災、一時出荷停止も 千興ファーム（御船町）","url":"https://kumanichi.com/articles/2024301","reason":"地域の被災・出荷停止報道で、選定3件より産業構造の新規性が低い"},
+    {"title":"「即戦力」育成もアメリカのスケール 大学は進出企業が求める技術に焦点を当て、地域経済の好循環を回す","url":"https://www.tokyo-np.co.jp/article/506926","reason":"人材育成と地域経済の論点が中心で、当日の生産計画・技術発表ではない"},
+    {"title":"福岡工業大学が半導体工学コースを新設、全員が台湾留学へ","url":"https://edu.watch.impress.co.jp/docs/news/2131924.html","reason":"教育課程の新設であり、製造能力・量産・供給網の直接ニュースではない"},
+    {"title":"ソニーとTSMC、地震にも熊本に1兆円投じ合弁半導体工場作る（中央日報日本語版）","url":"https://news.yahoo.co.jp/articles/0a04e5affaa1c7eff0c2097c254e296ce6feef55","reason":"ソニー・TSMCの同一計画を扱う二次転載で、NHK記事を優先"}
+  ],
+  "quality_shortfall_reason": "Stage1 dedup済み候補を再収集・再dedupせず、記事ページで公開日と固有OGPを確認でき、製造業の構造的インパクトが高い3件を採用。5件を満たすための広域再収集は実施していない。"
+}

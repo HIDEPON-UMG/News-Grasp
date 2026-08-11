@@ -1,0 +1,47 @@
+{
+  "date": "2026-08-12",
+  "category_id": "fx",
+  "queries": [
+    "為替 OR ドル円 OR 円安 OR FX OR 利上げ OR FOMC OR 日銀 OR forex when:1d",
+    "site:diamond.jp 日銀 利上げ 9月 2026",
+    "site:fx.minkabu.jp ドル円 159 CPI 2026",
+    "site:mainichi.jp ウォーシュ FRB 為替 2026",
+    "site:newscast.jp 為替介入研究所 半減期"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": [
+    "USDJPY",
+    "EURUSD",
+    "BOJ",
+    "Fed",
+    "ECB"
+  ],
+  "dropped": [
+    {
+      "title": "アメリカ ドル / 日本 円【USDJPY=X】：為替レート・相場",
+      "url": "https://finance.yahoo.co.jp/quote/USDJPY=X",
+      "reason": "相場ページで記事単位のニュースではないため不採用"
+    },
+    {
+      "title": "１１日の為替市場の四本値（ドル円・ユーロドル・ユーロ円）",
+      "url": "https://fx.minkabu.jp/news/375845",
+      "reason": "採用したNY為替概況と内容が重なり、追加の論点が薄いため不採用"
+    },
+    {
+      "title": "豪中銀、政策金利2会合連続据え置き 総裁「追加利上げ十分あり得る」",
+      "url": "https://jp.reuters.com/opinion/ZPKZP4NKC5MVVCMZ7RFIATICPM-2026-08-11/",
+      "reason": "本文とOGPを取得できず、検証可能なthumb条件を満たせないため不採用"
+    },
+    {
+      "title": "韓国中銀、追加利上げの公算大きい＝副総裁",
+      "url": "https://jp.reuters.com/markets/japan/UXFDROBTZJNHPLLI3SNVGXFJLU-2026-08-11/",
+      "reason": "本文とOGPを取得できず、検証可能なthumb条件を満たせないため不採用"
+    },
+    {
+      "url": "https://mainichi.jp/premier/business/articles/20260806/biz/00m/020/005000c",
+      "reason": "quarantined by gate"
+    }
+  ]
+}

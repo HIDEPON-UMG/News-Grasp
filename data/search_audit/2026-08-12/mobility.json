@@ -1,0 +1,40 @@
+{
+  "date": "2026-08-12",
+  "category_id": "mobility",
+  "candidate_file": "build/deduped-candidates/mobility.jsonl",
+  "dedup_file": "build/deduped-candidates/mobility.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "\"白熱インドEVバイク、株価が明暗 新興エイサー快走・オラは失速\"",
+    "\"BMW新型 i3 ミュンヘン工場 生産開始 2026年8月12日\"",
+    "\"ウーバー ロボタクシー 100億ドル 12万台\"",
+    "\"メキシコ EVバス Taruk DINA 70% 2026年8月12日\"",
+    "\"GM サムスンSDI 35億ドル 持分 49.99% 2026年8月11日\""
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["Tesla", "Waymo", "BYD", "Toyota", "Uber"],
+  "dropped": [
+    {"title":"ホンダ新EV､想定外の補助金 読まれた記事〜規制･政策編","url":"https://www.nikkei.com/prime/mobility/article/DGXZQOUC041LZ0U6A800C2000000","reason":"1〜7月の読まれた記事特集で、当日ニュースではない"},
+    {"title":"戦争が後押しする中国EV、世界の自動車市場を一変か","url":"https://jp.wsj.com/articles/war-is-helping-chinese-evs-upend-the-global-car-market-b5d99e10?mod=1","reason":"本文取得不可で公開日・事実関係を確定できない"},
+    {"title":"BYD、軽EV「ラッコ」9月納車開始…派生モデル検討へ","url":"https://newswitch.jp/p/49977","reason":"BYD軽EVの続報で、上位5件との重複が大きい"},
+    {"title":"ロボトラック、自動運転トラックで関東〜中部260kmの走行に成功。国産AI活用で自動運転トラックの早期社会実装めざす","url":"https://smart-mobility.jp/_ct/17856758?o=0","reason":"一次発表の実証日は2026年5月で、号日の鮮度条件を満たさない"},
+    {"title":"蓄電池大ブーム：BYDの軽EV「RACCO」は200万円のグローバル基準車だった 稲留正英・編集部","url":"https://weekly-economist.mainichi.jp/articles/20260901/se1/00m/020/052000c","reason":"BYD軽EVの背景記事で、上位5件との重複が大きい"},
+    {"title":"Ｖグリーン、ジャカルタに大型ＥＶ充電拠点","url":"https://www.nna.jp/news/2955153","reason":"本文の公開内容を十分に確認できず、事実確定を優先して除外"},
+    {"title":"テスラ、ロボタクシーの拡大証拠が投資家の確信強化に必要＝モルガン・スタンレー 執筆","url":"https://jp.investing.com/news/stock-market-news/article-1642705","reason":"本文取得不可で公開日・事実関係を確定できない"},
+    {"title":"中国勢とのEV競争、不可避 米新興ルーシッドCEOが警告","url":"https://www.nikkei.com/prime/ft/article/DGXZQOCB0613J0W6A800C2000000","reason":"EV競争の背景論点で、上位の具体的な投資・生産ニュースを優先"},
+    {"title":"SOCAR、EV・プレミアム戦略が奏功…営業利益271%急増","url":"https://finance.biggo.jp/news/03ef73c7-b512-47bd-b275-bd29ba8d77e0","reason":"カテゴリ内の読者影響が上位5件より限定的"},
+    {"title":"西区に人気ベーカリーが手がけるお店「Kitchen Ev. from BAKE UP」オープン！充実のフードをランチ＆ディナーで","url":"https://www.week.co.jp/postpic/1160151/","reason":"モビリティ対象外"},
+    {"title":"中国製の太陽電池で「無限に走れるロボタクシー」誕生か","url":"https://jidounten-lab.com/u_66238","reason":"推測的な見出しで一次情報性が低い"},
+    {"title":"BYD「海豹06」が10万元市場に参入、5分急速充電がEVの標準装備に","url":"https://finance.biggo.jp/news/0fd4b616-2584-4aa1-8b92-794b77599130","reason":"二次転載で、上位記事より一次情報性が低い"},
+    {"title":"韓国中古車市場もEV・HVが主導、テスラ「モデル3」3.3%上昇","url":"https://finance.biggo.jp/news/da1acef1-5326-4aa8-9bf3-4e2cd5a631d5","reason":"二次転載で、上位記事より重要度が低い"},
+    {"title":"SAやPAのEV充電スペースにガソリン車が駐車！法律的にどう扱われる？【写真・2枚目】","url":"https://motor-fan.jp/headline/1578400/4857098_m/","reason":"制度解説で、当日の構造変化を示すニュース性が低い"},
+    {"title":"Hankook Tire、Q2営業利益58%急増…高インチ・EVタイヤが牽引","url":"https://finance.biggo.jp/news/585d2082-4c8f-4ed0-b617-160e334f0a0b","reason":"二次転載で、上位記事より重要度が低い"},
+    {"title":"サーフ・エア・モビリティ、1,400万ドルの有担保社債発行を完了 執筆","url":"https://jp.investing.com/news/sec-filings/article-93CH-1642959","reason":"本文取得不可で事実の独立確認ができない"},
+    {"title":"ＢＹＤ軽ＥＶ「ＲＡＣＣＯ」、日本発売２週間で受注１０００台突破(サーチナ)","url":"https://finance.yahoo.co.jp/news/detail/a0bd8db7e0dd24ba168fd4794d4cf8f2c6ff9a1d","reason":"BYD軽EVの続報で、上位5件との重複が大きい"},
+    {"title":"買ったあとも機能が進化する!? 世界初のSDV軽EV「BYDラッコ」はOTAで何が変わるのか","url":"https://bestcarweb.jp/newcar/1593881","reason":"BYD軽EVの解説記事で、上位5件との重複が大きい"},
+    {"title":"非核三原則見直し、BYDの軽EV、ワンピース… スイスのメディアが報じた日本のニュース","url":"https://www.swissinfo.ch/jpn/various/%E9%9D%9E%E6%A0%B8%E4%B8%89%E5%8E%9F%E5%89%87%E8%A6%8B%E7%9B%B4%E3%81%97%E3%80%81byd%E3%81%AE%E8%BB%BDEV%E3%80%81%E3%83%AF%E3%83%B3%E3%83%94%E3%83%BC%E3%82%B9-%E3%82%B9%E3%82%A4%E3%82%B9%E3%81%AE%E3%83%A1%E3%83%87%E3%82%A3%E3%82%A2%E3%81%8C%E5%A0%B1%E3%81%98%E3%81%9F%E6%97%A5%E6%9C%AC%E3%81%AE%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9/91878661?utm_source=multiple&utm_campaign=swi-rss&utm_medium=rss&utm_content=o","reason":"複数話題の転載で、モビリティ記事としての焦点が弱い"},
+    {"title":"【インドネシア】リープモーター、ＥＶの現地生産開始（NNA）","url":"https://news.yahoo.co.jp/articles/04f52fcb2ffc955d8532371081047a8607042c4c","reason":"重要だが、5件上限内でEV投資・供給網の構造変化を優先"}
+  ]
+}

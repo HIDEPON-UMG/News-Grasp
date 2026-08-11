@@ -1,0 +1,142 @@
+{
+  "date": "2026-08-12",
+  "category_id": "economy",
+  "queries": [
+    "経済 OR 景気 OR GDP OR インフレ OR 金融政策 OR 決算 OR \"economy\" OR \"interest rate\" when:1d",
+    "GDP OR インフレ OR 金融政策 OR 決算 OR 日経平均 when:1d",
+    "景気 OR 雇用統計 OR 消費者物価 OR interest rate when:1d",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://www.federalreserve.gov/feeds/press_all.xml",
+    "https://www.boj.or.jp/rss/whatsnew.xml",
+    "https://www.mof.go.jp/english/news.rss",
+    "https://www.fsa.go.jp/fsaEnNewsList_rss2.xml",
+    "https://www.cnbc.com/id/10001147/device/rss/rss.html"
+  ],
+  "raw_results_total": 242,
+  "candidates_total": 25,
+  "selected_total": 4,
+  "source_policy": "stage0_stage1_only",
+  "candidate_file": "build/deduped-candidates/economy.jsonl",
+  "dedup_file": "build/deduped-candidates/economy.jsonl",
+  "coverage_terms_checked": [
+    "Nikkei",
+    "S&P 500",
+    "Fed",
+    "BOJ",
+    "SoftBank",
+    "NVIDIA"
+  ],
+  "canonical_validation": {
+    "method": "py -3 tools/fetch_article_body.py + py -3 tools/fetch_ogp.py",
+    "validated_count": 5,
+    "date_evidence_source": "htmldate",
+    "thumb_status": "5/5 selected URLs have external HTTP(S) images"
+  },
+  "dropped": [
+    {
+      "title": "最大の懸念はインフレ、労働市場は安定＝米シカゴ連銀総裁",
+      "url": "https://jp.reuters.com/markets/japan/QTOW2FKWOVKI5HQVPQYAWE7DNE-2026-08-11/",
+      "reason": "本文・OGP取得がHTTP 401で、記事単位の確認を閉じられないため"
+    },
+    {
+      "title": "キャッシュレスで使いすぎる「心理の罠」 行動経済学の専門家に聞く",
+      "url": "https://www.asahi.com/articles/ASV7R1P5HV7RUTIL01LM.html",
+      "reason": "連載インタビューで、主要マクロ・市場論点より優先度が低いため"
+    },
+    {
+      "title": "【決算速報】ルメンタム・ホールディングス、売上高は予想を上回り、利益は予想を上回る結果に 執筆",
+      "url": "https://jp.investing.com/news/earnings/article-1643602",
+      "reason": "個別企業の決算で、カテゴリ全体への影響が限定的なため"
+    },
+    {
+      "title": "本日の経済スケジュール ─ マネーストックなど",
+      "url": "https://s.kabutan.jp/news/n202608120146/",
+      "reason": "予定表で独立したニュース性が弱いため"
+    },
+    {
+      "title": "北朝鮮、弾道ミサイル発射の可能性",
+      "url": "https://www.nikkei.com/article/DGXZQOUA120360S6A810C2000000/",
+      "reason": "経済カテゴリの主要論点との適合が弱いため"
+    },
+    {
+      "title": "［トムソン・ロイター：Q2 2026 決算まとめ］紙を手放し、自社大規模言語モデルで士業の仕事場を獲りにいく",
+      "url": "https://www.businessinsider.jp/article/2608-earnings-thomson-reuters-corporation-q2-2026-earnings-call-summary/",
+      "reason": "個別企業決算で、代表性の高い記事を優先したため"
+    },
+    {
+      "title": "ゼネコン大手４社の第１四半期決算、全社増益／建設投資など堅調",
+      "url": "https://www.denkishimbun.com/archives/414412",
+      "reason": "個別業種の決算で、マクロ・消費・資本市場の組み合わせを優先したため"
+    },
+    {
+      "title": "経済プラス：きっかけはセガ 世界のエヌビディアが国産AIに注目する背景",
+      "url": "https://mainichi.jp/articles/20260810/k00/00m/020/108000c",
+      "reason": "AIカテゴリとの適合がより強いため"
+    },
+    {
+      "title": "ラピッド７、決算受け大幅高 通期１株利益の見通しを上方修正＝米国株個別(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/ca210dbdb534ef5fe66fea539024509cbdf1f71b",
+      "reason": "個別株材料で、代表性の高い決算を優先したため"
+    },
+    {
+      "title": "セーブル・オフショア、決算受け下落 予想を大きく下回る＝米国株個別(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/ff1c5ab068ffb51caaecb48956e4c31ff81aa011",
+      "reason": "個別株材料で、代表性の高い決算を優先したため"
+    },
+    {
+      "title": "【要人発言】米アトランタ連銀暫定総裁「FRBの『インフレ』と『雇用』という2つの使命には・・・」",
+      "url": "https://finance.yahoo.co.jp/news/detail/1e0809cf323e00fae3e5e2c22f66a0a1c0f8d0c1",
+      "reason": "二次報道で、記事単位の独自材料が薄いため"
+    },
+    {
+      "title": "ＡＣＶオークションズ、決算受け下落 ガイダンスを嫌気＝米国株個別(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/14427ecb7b2a8c5bc6893e9fa53c57e3a4838d68",
+      "reason": "個別株材料で、代表性の高い決算を優先したため"
+    },
+    {
+      "title": "【決算】一正蒲鉾、2026年6月期は増収減益",
+      "url": "https://www.fnn.jp/articles/-/1093069",
+      "reason": "個別企業決算で、カテゴリ全体への影響が限定的なため"
+    },
+    {
+      "title": "毒親母「離婚協議のため子どもを田舎に置き去り」",
+      "url": "https://news.yahoo.co.jp/articles/dc0f91fa2e96ee9d4caede89a5f1350f111c3da2",
+      "reason": "経済カテゴリの適合が弱いため"
+    },
+    {
+      "title": "【経済産業省・環境省】PETボトル循環、容リ制度の見直しへ",
+      "url": "https://plasticjournal.net/backnumber/companies-and-people/24886.html",
+      "reason": "制度論点はあるが、主要マクロ・市場論点より優先度が低いため"
+    },
+    {
+      "title": "プラグ・パワー、決算受け上昇 通期の売上高見通しを引き上げ＝米国株個別(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/e3ef9f72ae494c054fad978a97e009023d4fe351",
+      "reason": "個別株材料で、代表性の高い決算を優先したため"
+    },
+    {
+      "title": "ＡＳＴスペースモバイルが決算 売上高が予想下回る 株価は上昇＝米国株個別(株探ニュース)",
+      "url": "https://finance.yahoo.co.jp/news/detail/36b1f8e07aa07014f5644eb780649adaad7d0838",
+      "reason": "個別株材料で、代表性の高い決算を優先したため"
+    },
+    {
+      "title": "【決算速報】Stabilis Solutions、売上高は予想を下回り、利益は予想を下回る結果に",
+      "url": "https://jp.investing.com/news/earnings/article-1643710",
+      "reason": "個別企業決算で、カテゴリ全体への影響が限定的なため"
+    },
+    {
+      "title": "アンテリクス、第1四半期決算がアナリスト予想を上回るも株価下落",
+      "url": "https://jp.investing.com/news/earnings/article-93CH-1643772",
+      "reason": "個別株材料で、代表性の高い決算を優先したため"
+    },
+    {
+      "title": "トランプ氏、イラン巡る選択肢は「経済破綻」か「強力な攻撃」",
+      "url": "https://jp.reuters.com/world/us/NOWABQ473NJLPIDZ4U7UCCCOSQ-2026-08-11/",
+      "reason": "本文・OGP取得がHTTP 401で、記事単位の確認を閉じられないため"
+    },
+    {
+      "url": "https://mainichi.jp/premier/business/articles/20260810/biz/00m/020/006000c",
+      "reason": "quarantined by gate"
+    }
+  ],
+  "quality_shortfall_reason": "reserve candidates exhausted after quarantine"
+}

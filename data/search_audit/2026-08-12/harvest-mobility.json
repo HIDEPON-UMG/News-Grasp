@@ -1,0 +1,96 @@
+{
+  "category_id": "mobility",
+  "queries": [
+    "自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d",
+    "EV OR SDV OR ADAS OR 自動運転 OR robotaxi when:1d",
+    "Toyota OR Tesla OR Waymo OR BYD OR ホンダ when:1d",
+    "https://electrek.co/feed/",
+    "https://insideevs.com/rss/news/all/",
+    "https://insideevs.com/rss/category/autonomous-vehicles/",
+    "https://insideevs.com/rss/category/battery-tech/",
+    "https://feeds.highgearmedia.com/?sites=GreenCarReports&tags=news"
+  ],
+  "raw_results_total": 204,
+  "candidates_total": 198,
+  "selected_total": 50,
+  "source_breakdown": {
+    "google_news:自動運転 OR EV OR ロボタクシー OR Waymo OR Tesla OR モビリティ OR \"autonomous driving\" OR robotaxi when:1d": {
+      "url": "https://news.google.com/rss/search?q=%E8%87%AA%E5%8B%95%E9%81%8B%E8%BB%A2+OR+EV+OR+%E3%83%AD%E3%83%9C%E3%82%BF%E3%82%AF%E3%82%B7%E3%83%BC+OR+Waymo+OR+Tesla+OR+%E3%83%A2%E3%83%93%E3%83%AA%E3%83%86%E3%82%A3+OR+%22autonomous+driving%22+OR+robotaxi+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 48,
+      "candidates": 48,
+      "dropped": 0
+    },
+    "google_news:EV OR SDV OR ADAS OR 自動運転 OR robotaxi when:1d": {
+      "url": "https://news.google.com/rss/search?q=EV+OR+SDV+OR+ADAS+OR+%E8%87%AA%E5%8B%95%E9%81%8B%E8%BB%A2+OR+robotaxi+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 43,
+      "candidates": 43,
+      "dropped": 0
+    },
+    "google_news:Toyota OR Tesla OR Waymo OR BYD OR ホンダ when:1d": {
+      "url": "https://news.google.com/rss/search?q=Toyota+OR+Tesla+OR+Waymo+OR+BYD+OR+%E3%83%9B%E3%83%B3%E3%83%80+when%3A1d&hl=ja&gl=JP&ceid=JP%3Aja",
+      "mode": "google_news_rss",
+      "trust_tier": "search",
+      "raw": 83,
+      "candidates": 77,
+      "dropped": 6
+    },
+    "electrek.co/feed": {
+      "url": "https://electrek.co/feed/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 10,
+      "candidates": 10,
+      "dropped": 0
+    },
+    "insideevs.com/rss/news/all": {
+      "url": "https://insideevs.com/rss/news/all/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 8,
+      "candidates": 8,
+      "dropped": 0
+    },
+    "insideevs.com/rss/category/autonomous-vehicles": {
+      "url": "https://insideevs.com/rss/category/autonomous-vehicles/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 6,
+      "candidates": 6,
+      "dropped": 0
+    },
+    "insideevs.com/rss/category/battery-tech": {
+      "url": "https://insideevs.com/rss/category/battery-tech/",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 6,
+      "candidates": 6,
+      "dropped": 0
+    },
+    "feeds.highgearmedia.com": {
+      "url": "https://feeds.highgearmedia.com/?sites=GreenCarReports&tags=news",
+      "mode": "rss",
+      "trust_tier": "industry",
+      "raw": 0,
+      "candidates": 0,
+      "dropped": 0
+    }
+  },
+  "negative_filter_dropped": {
+    "global:jobs": 1,
+    "mobility:car_review": 2,
+    "global:homepage_or_section": 2,
+    "global:ranking_only": 1
+  },
+  "scrapling_sources_used": [],
+  "broken_sources": [
+    {
+      "url": "https://feeds.highgearmedia.com/?sites=GreenCarReports&tags=news",
+      "mode": "rss",
+      "reason": "fetch_failed"
+    }
+  ]
+}

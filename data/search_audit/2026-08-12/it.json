@@ -1,0 +1,41 @@
+{
+  "date": "2026-08-12",
+  "category_id": "it",
+  "candidate_file": "build/deduped-candidates/it.jsonl",
+  "dedup_file": "build/deduped-candidates/it.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "IT OR クラウド OR SaaS OR サイバーセキュリティ OR コンサルティング OR \"enterprise software\" OR cybersecurity when:1d",
+    "stage1 candidate verification: frontier AI cyber resilience EY / DIGITAL X",
+    "stage1 candidate verification: Japan Research Institute IT consulting AI / Nikkin ONLINE",
+    "stage1 candidate verification: SAP cloud migration ROI / TechTarget Japan",
+    "stage1 candidate verification: Azure migration observability Tokyo Gas / Business+IT",
+    "stage1 candidate verification: Australia news bargaining code platform regulation / Asahi Shimbun"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["McKinsey", "BCG", "Accenture", "Deloitte", "PwC", "NTT"],
+  "dropped": [
+    {"title":"コアウィーブ、第2四半期売上高が予想超え ＡＩクラウド需要の強さ追い風","url":"https://jp.reuters.com/economy/UA2B4MLUDZOTRL6RGBR4F2NC3M-2026-08-11/","reason":"Reuters本文とOGPが取得できず、公開日・本文を独立確認できないため除外。類似するBloomberg/Yahoo候補も同理由で除外。"},
+    {"title":"AIクラウドのコアウィーブ、需要拡大で売上高倍増－市場予想も上回る","url":"https://www.bloomberg.com/jp/news/articles/2026-08-11/TJMGK6T9NJLX00","reason":"本文とOGPが取得できず、Reuters候補との重複テーマでもあるため除外。"},
+    {"title":"AIクラウドのコアウィーブ、需要拡大で売上高倍増-市場予想も上回る（TBS CROSS DIG with Bloomberg）","url":"https://news.yahoo.co.jp/articles/70524b477b1b87933eb0edf46e81cb1cdca42261","reason":"Bloomberg系の続報で、独立した新材料を確認できず除外。"},
+    {"title":"KPMGコンサルティングとあずさ監査法人、「データナレッジ形式知化・利活用エージェント」提供開始","url":"https://enterprisezine.jp/news/detail/24799","reason":"本文とOGPが取得できず、公開日・詳細を独立確認できないため除外。"},
+    {"title":"イタリアを発信元とするサイバー攻撃が「前年同期比約75倍」に増加──サイバーセキュリティクラウド調査","url":"https://enterprisezine.jp/news/detail/24841","reason":"本文とOGPが取得できず、公開日・詳細を独立確認できないため除外。"},
+    {"title":"正解はわからないたった一度の人生だ","url":"https://www.nogizaka46.com/s/n46/diary/detail/104769?ima=1923","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"フェス・ゴジラ応援企画｜「バーニングミレニアムゴジラ」スーツ制作プロジェクト","url":"https://camp-fire.jp/projects/940720/view","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"ANG2026『陸上は、ライブだ！！』8月14日(金)15日(土)","url":"https://readyfor.jp/projects/ang2026","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"信濃國一之宮 諏訪大社秋宮｜新たな夏の伝統「光の奉納」実施へ","url":"https://readyfor.jp/projects/suwataisha2026cf","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"【横浜・金沢の海】第52回金沢まつり花火大会を未来へ","url":"https://readyfor.jp/projects/kz-matsuri52","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"断水が続く熊本の医療・福祉施設へ、医療と福祉を支える水を届けたい。","url":"https://readyfor.jp/projects/WOTA2026","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"11/29愛媛の子どもたちの「どうせ無理」を植松努氏となくしたい！","url":"https://readyfor.jp/projects/ehime1129","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"オラクルとQuantinuum、クラウド量子コンピューティング提供で複数年契約を締結","url":"https://finance.biggo.jp/news/b0eeeccd-e499-40d6-87d0-d20223a21b73","reason":"アグリゲータ記事で、公開日の独立証拠が本文に無く、一次情報への距離があるため除外。"},
+    {"title":"ブルー・クラウド、スペースXとの1.5億ドルAIインフラ契約で株価が2日間で31%急騰","url":"https://finance.biggo.jp/news/7d7b06b6-b4da-4913-84b8-2dd72b1efe71","reason":"アグリゲータ記事で、公開日の独立証拠が本文に無く、株価材料としての一次確認も不足するため除外。"},
+    {"title":"【そもそも解説】IT大手が脅かす報道機関の経営 問題点は？","url":"https://www.asahi.com/articles/ASV87131DV87UHBI02HM.html","reason":"同日同媒体の豪州規制記事と同一連載で、規制内容を直接報じる一次性の高い記事を優先。"},
+    {"title":"Silverstone’s streak: Fernandez makes it 12 winners from 12 races","url":"https://www.motogp.com/ja/news/2026/08/11/silverstones-streak-fernandez-makes-it-12-winners-from-12-races/1083413","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"Vol.1 神戸から、未来の日本代表を。 / 神戸でSTARTする「コベカツ」から日本代表選手を発掘したい！","url":"https://motion-gallery.net/projects/takatomo3926/updates/62343","reason":"ITカテゴリの主題に該当しないため除外。"},
+    {"title":"なぜDMM.comはオンプレを捨てたのか？ APMとRUM活用の「フルスタックモニタリング」","url":"https://www.sbbit.jp/document/sp/24227","reason":"同媒体の東京ガス導入事例と論点が重なり、影響範囲と新規性の高い方を優先。"},
+    {"title":"デジタル化で進むIT人材不足… 自動車メーカーの課題は？ 各社が取り組む新たな育成と獲得策とは","url":"https://topics.smt.docomo.ne.jp/amp/article/kurumanews/trend/kurumanews-1027999","reason":"自動車の人材・製造が主題で、Mobility/Manufacturingとの境界にあるためITカテゴリから除外。"},
+    {"title":"これが喫緊の課題｢サイバーセキュリティ｣関連22銘柄だ！","url":"https://shikiho.toyokeizai.net/news/0/954535","reason":"本文とOGPを独立確認できず、投資銘柄紹介で業務判断への直接性も相対的に低いため除外。"}
+  ]
+}

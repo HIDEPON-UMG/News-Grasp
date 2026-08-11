@@ -1,0 +1,38 @@
+{
+  "date": "2026-08-12",
+  "category_id": "ai",
+  "candidate_file": "build/deduped-candidates/ai.jsonl",
+  "dedup_file": "build/deduped-candidates/ai.jsonl",
+  "source_policy": "stage0_stage1_only",
+  "queries": [
+    "生成AI OR LLM OR OpenAI OR Anthropic OR Claude OR Gemini OR \"artificial intelligence\" OR \"AI model\" when:1d",
+    "Stage1候補の元記事本文・公開日確認（追加収集なし）",
+    "Stage1候補のOGP確認（追加収集なし）"
+  ],
+  "raw_results_total": 25,
+  "candidates_total": 25,
+  "selected_total": 5,
+  "coverage_terms_checked": ["OpenAI", "Anthropic", "Google", "Apple", "Microsoft", "Meta", "NVIDIA"],
+  "dropped": [
+    {"title":"AnthropicのClaudeが、167年未解決の数学最大の難問「リーマン予想」の証明を前進","url":"https://www.sbbit.jp/article/cont1/186491","reason":"選定枠の比較で、公開範囲とテーマ分散を優先"},
+    {"title":"トランスフォーマーに限界、 次世代LLMを担う 4つの最新アプローチ","url":"https://www.technologyreview.jp/s/387263/these-startups-are-chasing-the-next-big-thing-in-llms/","reason":"有料範囲があり、当日実務への即時性を優先"},
+    {"title":"【大企業マーケ責任者に聞く、生成AI活用のリアル】","url":"https://www.tv-tokyo.co.jp/plus/external-pr/entry/206829.html","reason":"PR性が高く一次報道としての独自性が低い"},
+    {"title":"声優、生成ＡＩで新サービス 好きなせりふ、依頼通りに","url":"https://www.fukuishimbun.co.jp/articles/-/2672870","reason":"個別サービス事例で波及範囲が限定的"},
+    {"title":"Gemini搭載のGoogleマップ新機能「マップに相談」が日本で提供開始","url":"https://www.kknews.co.jp/news/20260812o04","reason":"機能追加として重要だが、選定5枠外"},
+    {"title":"グーグルハードウェア発表会プレビュー：Geminiは全館スマートホームの焦点","url":"https://finance.biggo.jp/news/47927b9c-a0e4-4e88-b5d7-9a5b33a7a055","reason":"発表前の予測記事で未確定情報が中心"},
+    {"title":"生成AIブームで顕在化した半導体人材不足","url":"https://toyokeizai.net/articles/-/953873?display=b","reason":"人材テーマだが当日AI製品動向より優先度が下"},
+    {"title":"グーグル、Geminiアプリの月間ユーザー数が10億人を突破","url":"https://jp.investing.com/news/company-news/article-1643443","reason":"Gemini月間10億人の重複報道"},
+    {"title":"Rubrik、Anthropic Claude Code向けAIエージェントのセキュリティ基盤","url":"https://thinkit.co.jp/article/39306","reason":"実公開日が2026-06-23で当日性を満たさない"},
+    {"title":"体験：ベンツ新時代の到来、ChatGPTやGeminiも搭載","url":"https://news.yahoo.co.jp/articles/fd2fb206a726311bd581128ff8ee3dc2fd3d57f9","reason":"体験記事でニュース性と一次情報性が低い"},
+    {"title":"AnthropicがClaude Fable 5の生物学セーフガードを更新","url":"https://www.sbbit.jp/article/cont1/186494","reason":"続報だが選定5枠外"},
+    {"title":"AnthropicがClaude Fable 5の生物学セーフガードを更新（ビジネス＋IT）","url":"https://news.yahoo.co.jp/articles/ddf42e17863278edbafed7d1891697374ffc6f77/images/000","reason":"同一テーマの転載・画像URL"},
+    {"title":"AIを便利な議事録係で終わらせない、NECが生成AI時代に挑んだ基盤改革","url":"https://www.sbbit.jp/article/sp/186322","reason":"企業導入の解説で、当日ニュース枠の優先度が下"},
+    {"title":"Gemini搭載で何が変わる？ 新型Google Homeスピーカー","url":"https://news.yahoo.co.jp/articles/e5bd508da1149ab7ea6e97043393879b74dd7409","reason":"機能解説で選定5枠外"},
+    {"title":"OpenAIの幹部ブラッド・ライトキャップが退社し新たなプロジェクトへ","url":"https://jp.investing.com/news/stock-market-news/article-93CH-1643384","reason":"OpenAI幹部退社の重複報道。日経を優先"},
+    {"title":"OpenAI、サイバーセキュリティ特化モデルGPT-5.6-Cyberを発表（Gihyo）","url":"https://gihyo.jp/article/2026/08/gpt-5.6-cyber-with-expanding-daybreak","reason":"同一内容の別媒体。ビジネス＋ITを優先"},
+    {"title":"Claudeの文章に不可視透かし、8月2日以降の新モデルから世界展開","url":"https://xenospectrum.com/claude-text-invisible-watermark/","reason":"Claude透かしの同一テーマ。ITmediaを優先"},
+    {"title":"OpenAIの新端末はドーナツ型、300ドル超で2027年投入へ","url":"https://newsdig.tbs.co.jp/articles/gallery/2857865?station=withbloomberg&image=1","reason":"未確定報道かつフォトギャラリーURL"},
+    {"title":"Anthropicの未公開版Claude、リーマン予想に挑戦","url":"https://finance.biggo.jp/news/61e70186-e8b4-4f7b-a951-a0a8c0be3a7b","reason":"リーマン予想の同一テーマ。選定枠の分散を優先"},
+    {"title":"主なニュース：生成AI・営業DX・新商品・外食企画","url":"https://kabu-ir.com/article/521330328.html","reason":"IR寄せ集めで個別ニュースの独自性が低い"}
+  ]
+}
