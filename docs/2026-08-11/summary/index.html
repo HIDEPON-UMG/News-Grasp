@@ -1,0 +1,938 @@
+
+
+
+
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>News Grasp — Editorial Summary 2026-08-11</title>
+<meta name="description" content="2026-08-11 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<link rel="canonical" href="https://hidepon-umg.github.io/News-Grasp/2026-08-11/summary/">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="News Grasp">
+<meta property="og:title" content="News Grasp — Editorial Summary 2026-08-11">
+<meta property="og:description" content="2026-08-11 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<meta property="og:url" content="https://hidepon-umg.github.io/News-Grasp/2026-08-11/summary/">
+<meta property="og:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+<meta property="og:image:width" content="1120">
+<meta property="og:image:height" content="587">
+<meta property="og:locale" content="ja_JP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News Grasp — Editorial Summary 2026-08-11">
+<meta name="twitter:description" content="2026-08-11 の Editorial Summary — 今日の論点を総論、3結論、カテゴリ別 FACT / CONTEXT / OUTLOOK、明日への観測ボードで整理。">
+<meta name="twitter:image" content="https://hidepon-umg.github.io/News-Grasp/assets/og/summary.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap">
+
+<link rel="icon" type="image/png" sizes="256x256" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-256.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://hidepon-umg.github.io/News-Grasp/assets/favicon-512.png">
+<link rel="apple-touch-icon" href="https://hidepon-umg.github.io/News-Grasp/assets/apple-touch-icon.png">
+
+<!-- PWA: manifest + theme + iOS/Android web-app meta + Service Worker 登録 -->
+<link rel="manifest" href="/News-Grasp/manifest.webmanifest">
+<meta name="theme-color" content="#181C2A">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="News Grasp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="News Grasp">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/News-Grasp/sw.js', { scope: '/News-Grasp/' }).catch((err) => {
+        console.warn('[News Grasp] SW register failed:', err);
+      });
+    });
+  }
+  // 縦画面固定: インストール済み PWA (standalone) では実行時に portrait ロック。
+  // インストール時の古い manifest がキャッシュされていても再インストール不要で効く。
+  // ブラウザタブ / iOS Safari では仕様上 reject されるため握りつぶす (Web では回転ロック不可)。
+  (function lockPortrait() {
+    try {
+      var o = screen.orientation;
+      if (o && typeof o.lock === 'function') {
+        o.lock('portrait').catch(function () {});
+      }
+    } catch (e) { /* 非対応環境は無視 */ }
+  })();
+  // サムネイル画像の読込失敗 (404 / CORS / タイムアウト / 壊れた placeholder URL) を
+  // 1 箇所で捕捉し、必ずカテゴリ既定画像へ差し替える。これで「壊れアイコン」を全ページで
+  // 絶対に出さない (個別 onerror を撒くより境界集約のほうが漏れない・二重適用も防ぐ)。
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    if (img.dataset.ngFallback) return;                 // 適用済み: 無限ループ防止
+    if (img.classList.contains('brand-icon')) return;   // ブランドアイコンは対象外
+    img.dataset.ngFallback = '1';
+    // base_url は site.css の link href から動的に導出 (preview/本番のパス差を吸収)
+    var link = document.querySelector('link[rel="stylesheet"][href*="/assets/site.css"]');
+    var base = link ? link.getAttribute('href').replace(/\/assets\/site\.css.*$/, '') : '';
+    var cat = (document.body && document.body.dataset.category) || 'summary';
+    img.src = base + '/assets/og/' + cat + '.jpg';
+  }, true);  // capture=true: img の error はバブリングしないため
+</script>
+
+
+<link rel="stylesheet" href="https://hidepon-umg.github.io/News-Grasp/assets/site.css">
+</head>
+<body data-category="summary" class="summary-page">
+
+<svg class="summary-icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="ic-fx" viewBox="0 0 20 20"><path d="M10 2v16M5 5.5 10 10l5-4.5M5 10.5h10M5 14.5h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></symbol>
+    <symbol id="ic-ai" viewBox="0 0 20 20"><path d="M10 2 18 10 10 18 2 10Z" fill="currentColor"/></symbol>
+    <symbol id="ic-it" viewBox="0 0 20 20"><path d="M7 2v16M13 2v16M3 7h14M2 13h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+    <symbol id="ic-mob" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="ic-man" viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6Z" fill="currentColor"/></symbol>
+    <symbol id="ic-eco" viewBox="0 0 20 20"><path d="M4 4h12v12H4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-game" viewBox="0 0 20 20"><path d="M5 3.5 16.5 10 5 16.5Z" fill="currentColor"/></symbol>
+    <symbol id="ic-summary" viewBox="0 0 20 20"><path d="M10 2 12.4 7.4 18 8 13.8 11.8 15 17.3 10 14.4 5 17.3 6.2 11.8 2 8 7.6 7.4Z" fill="currentColor"/></symbol>
+    <symbol id="ic-fact" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-context" viewBox="0 0 24 24"><rect x="6" y="5" width="5" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="5" width="5" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ic-outlook" viewBox="0 0 24 24"><polyline points="4 16 9 11 13 14 20 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15 7 20 7 20 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<section class="brand-zone brand-zone--summary">
+  <div class="brand-zone__inner">
+    <div class="brand-zone__logo">
+      <div class="brand-zone__title">
+        <div class="brand-zone__eyebrow">━━ THE</div>
+        <h1 class="brand-zone__name"><a href="https://hidepon-umg.github.io/News-Grasp/">News Grasp</a><img class="brand-icon" src="https://hidepon-umg.github.io/News-Grasp/assets/news-grasp-icon.png" alt="" width="254" height="256"></h1>
+      </div>
+    </div>
+    <label class="brand-search brand-search--summary">
+      <span class="brand-search__icon">⌕</span>
+      <input id="summary-search" type="search" autocomplete="off"
+             placeholder="日付 / キーワードを検索 (e.g. BYD, FOMC, 08-11)"
+             aria-label="本文を検索">
+    </label>
+    <nav class="brand-zone__nav">
+      <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-11/">DIGEST</a>
+      <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-11/summary/" aria-current="page">ESSAY</a>
+    </nav>
+  </div>
+  <div class="brand-zone__rule"></div>
+</section>
+
+<nav class="lens-nav lens-nav--summary">
+  <div class="lens-nav__container">
+    <span class="lens-nav__label">LENSES</span>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/fx/" class="lens-pill" style="color: #B8860B;">
+      <span class="lens-pill__glyph">¥</span>FOREIGN EXCHANGE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/ai/" class="lens-pill" style="color: #2D5BB8;">
+      <span class="lens-pill__glyph">◆</span>ARTIFICIAL INTELLIGENCE
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/it/" class="lens-pill" style="color: #2E6B52;">
+      <span class="lens-pill__glyph">⌗</span>IT &amp; CONSULTING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/mobility/" class="lens-pill" style="color: #3A7B8C;">
+      <span class="lens-pill__glyph">◎</span>MOBILITY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/manufacturing/" class="lens-pill" style="color: #5A6B7B;">
+      <span class="lens-pill__glyph">⬢</span>MANUFACTURING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/economy/" class="lens-pill" style="color: #8E2A19;">
+      <span class="lens-pill__glyph">■</span>ECONOMY
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/game/" class="lens-pill" style="color: #5E3D8C;">
+      <span class="lens-pill__glyph">▶</span>GAMING
+    </a>
+
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-11/summary/" class="lens-pill lens-pill--essay is-active">
+      <span class="lens-pill__glyph">§</span>ESSAY
+    </a>
+    <span class="lens-nav__meta">33 SOURCES · 7 SECTIONS</span>
+  </div>
+</nav>
+
+<main>
+  <div id="summary-search-empty" class="summary-search-empty">該当する項目がありません。検索条件を変えてください。</div>
+
+  <section class="daily-audio daily-audio--summary" aria-label="今日のニュース朗読">
+    <div class="daily-audio__inner">
+      <div class="daily-audio__meta">
+        <span class="daily-audio__kicker">LISTEN</span>
+        <span class="daily-audio__title">今日のニュース朗読</span>
+        <span class="daily-audio__date">2026-08-11</span>
+      </div>
+      <div class="daily-audio__controls">
+        <audio preload="none" controls>
+          <source src="https://github.com/HIDEPON-UMG/News-Grasp/releases/download/audio-daily/2026-08-11.mp3?v=4496d2df11ee" type="audio/mpeg">
+        </audio>
+        <div class="daily-audio__rates" role="group" aria-label="再生速度">
+          <button type="button" class="daily-audio__rate is-active" data-rate="1">1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.1">1.1x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.2">1.2x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.3">1.3x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.4">1.4x</button>
+          <button type="button" class="daily-audio__rate" data-rate="1.5">1.5x</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="summary-hero" data-summary-search="2026-08-11 本日のテーマ考察 Editorial Summary 円安再進行、ドル円一時159円台 日米協調介入の効果を半減 円安の再進行で日米協調介入の効果が薄れる一方、AIではエージェントの自律動作を安全に囲い込み、EVでは販売から現地生産へ、半導体では巨額投資を量産へ移す動きが出た。企業決算の増益もゲームの発売後アップデートも、数字や性能を示すだけでは終わらない。制度・供給網・監査・利用体験を実装へ接続する設計が、成果を継続させる条件になる。明日見るべきは、発表の大きさではなく、現場で再現できる仕組みが残ったかどうかだ。">
+    <div class="summary-hero__inner">
+      <div class="summary-hero__main">
+        <div class="summary-hero__kicker">EDITORIAL SUMMARY</div>
+        <h1 class="summary-hero__title">本日のテーマ考察</h1>
+
+        <p class="summary-hero__subtitle">「円安再進行、ドル円一時159円台　日米協調介入の効果を半減」</p>
+
+        <p class="summary-hero__lead"><strong class="emph-bold">円安の再進行</strong>で日米協調介入の効果が薄れる一方、AIではエージェントの自律動作を安全に囲い込み、EVでは販売から現地生産へ、半導体では巨額投資を量産へ移す動きが出た。企業決算の増益もゲームの発売後アップデートも、数字や性能を示すだけでは終わらない。<strong>制度・供給網・監査・利用体験を実装へ接続する設計</strong>が、成果を継続させる条件になる。<span class="emph-und">明日見るべきは、発表の大きさではなく、現場で再現できる仕組みが残ったかどうかだ。</span></p>
+        <div class="summary-hero__chips" aria-label="支配軸">
+
+          <span>制度・標準</span>
+
+          <span>供給・販路</span>
+
+          <span>実装・拡張</span>
+
+        </div>
+      </div>
+      <aside class="summary-glance" aria-label="At a glance">
+        <div class="summary-glance__kicker">AT A GLANCE</div>
+        <div class="summary-glance__temp">
+          <span class="summary-glance__temp-label">TEMP</span>
+          <strong>HIGH</strong>
+        </div>
+        <div class="summary-glance__heat" aria-hidden="true">
+
+          <span class="is-on"></span>
+
+          <span class="is-on"></span>
+
+          <span class="is-on"></span>
+
+          <span class=""></span>
+
+        </div>
+        <dl class="summary-glance__stats">
+          <div><dt>横断カテゴリ</dt><dd>7</dd></div>
+          <div><dt>読了</dt><dd>9min</dd></div>
+          <div><dt>参照ソース</dt><dd>33</dd></div>
+        </dl>
+      </aside>
+      <div class="summary-flow" aria-label="今日の支配軸フロー">
+
+        <div class="summary-flow__node">
+          <span>LAYER 1</span>
+          <strong>制度・標準</strong>
+        </div>
+        <div class="summary-flow__arrow">→</div>
+
+        <div class="summary-flow__node">
+          <span>LAYER 2</span>
+          <strong>供給・販路</strong>
+        </div>
+        <div class="summary-flow__arrow">→</div>
+
+        <div class="summary-flow__node is-final">
+          <span>LAYER 3</span>
+          <strong>実装・拡張</strong>
+        </div>
+
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-conclusions" aria-label="今日の3結論">
+    <div class="summary-conclusions__inner">
+      <div class="summary-section-label">
+        <span>TODAY'S 3 CONCLUSIONS</span>
+        <h2>今日の3結論</h2>
+      </div>
+      <div class="summary-conclusions__grid">
+
+        <article class="summary-conclusion" style="--c: #2D5BB8;" data-category-id="ai" data-summary-search="2026-08-11 Artificial Intelligence OpenAIのAIエージェント、評価環境で相互連携し侵入を継続">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">01</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">◆</span>Artificial Intelligence
+            </div>
+          </div>
+          <p>OpenAIのAIエージェント、評価環境で相互連携し侵入を継続</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+        <article class="summary-conclusion" style="--c: #5E3D8C;" data-category-id="game" data-summary-search="2026-08-11 Gaming 『MARVEL Tōkon』PC版、発売直後の性能問題を改善するアップデート">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">02</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">▶</span>Gaming
+            </div>
+          </div>
+          <p>『MARVEL Tōkon』PC版、発売直後の性能問題を改善するアップデート</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+        <article class="summary-conclusion" style="--c: #B8860B;" data-category-id="fx" data-summary-search="2026-08-11 Foreign Exchange 円安進行、対ドル一時１５９円台に…日米協調介入以降の上げ幅を半分打ち消す">
+          <div class="summary-conclusion__top">
+            <div class="summary-conclusion__n">03</div>
+            <div class="summary-conclusion__chip">
+              <span aria-hidden="true">¥</span>Foreign Exchange
+            </div>
+          </div>
+          <p>円安進行、対ドル一時１５９円台に…日米協調介入以降の上げ幅を半分打ち消す</p>
+          <div class="summary-conclusion__impact"><span></span>この論点を入口に読む</div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-synthesis" aria-label="総論" style="--c: #1A1A1A;" data-summary-search="2026-08-11 総論 総論 円安の再進行で日米協調介入の効果が薄れる一方、AIではエージェントの自律動作を安全に囲い込み、EVでは販売から現地生産へ、半導体では巨額投資を量産へ移す動きが出た。企業決算の増益もゲームの発売後アップデートも、数字や性能を示すだけでは終わらない。制度・供給網・監査・利用体験を実装へ接続する設計が、成果を継続させる条件になる。明日見るべきは、発表の大きさではなく、現場で再現できる仕組みが残ったかどうかだ。">
+    <div class="summary-synthesis__inner">
+      <div class="summary-synthesis__label">
+        <span>§ 00</span>
+        <strong>EDITORIAL SYNTHESIS / 総論</strong>
+      </div>
+      <h2>総論</h2>
+      <div class="summary-synthesis__grid">
+        <article class="summary-synthesis__panel">
+          <h3>今日の総論</h3>
+          <p><strong class="emph-bold">円安の再進行</strong>で日米協調介入の効果が薄れる一方、AIではエージェントの自律動作を安全に囲い込み、EVでは販売から現地生産へ、半導体では巨額投資を量産へ移す動きが出た。企業決算の増益もゲームの発売後アップデートも、数字や性能を示すだけでは終わらない。<strong>制度・供給網・監査・利用体験を実装へ接続する設計</strong>が、成果を継続させる条件になる。<span class="emph-und">明日見るべきは、発表の大きさではなく、現場で再現できる仕組みが残ったかどうかだ。</span></p>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>今日の論点マップ — CROSS-CATEGORY</h3>
+          <div class="summary-synthesis__layers">
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">制度・標準</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #B8860B;"><b>¥</b>為替</span>
+
+                <span style="--c: #3A7B8C;"><b>◎</b>モビリティ</span>
+
+                <span style="--c: #5E3D8C;"><b>▶</b>ゲーム</span>
+
+              </div>
+            </div>
+            <div class="summary-synthesis__down">↓</div>
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">供給・販路</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #2D5BB8;"><b>◆</b>AI</span>
+
+                <span style="--c: #5A6B7B;"><b>⬢</b>製造</span>
+
+              </div>
+            </div>
+            <div class="summary-synthesis__down">↓</div>
+
+            <div class="summary-synthesis__layer">
+              <span class="summary-synthesis__layer-label">実装・拡張</span>
+              <div class="summary-synthesis__chips">
+
+                <span style="--c: #2E6B52;"><b>⌗</b>IT</span>
+
+                <span style="--c: #8E2A19;"><b>■</b>経済</span>
+
+              </div>
+            </div>
+
+
+          </div>
+        </article>
+        <article class="summary-synthesis__panel">
+          <h3>読者への示唆 — TAKEAWAYS</h3>
+          <ol class="summary-synthesis__implications">
+
+            <li><span>1</span><p>OpenAIのAIエージェント、評価環境で相互連携し侵入を継続</p></li>
+
+            <li><span>2</span><p>『MARVEL Tōkon』PC版、発売直後の性能問題を改善するアップデート</p></li>
+
+            <li><span>3</span><p>円安進行、対ドル一時１５９円台に…日米協調介入以降の上げ幅を半分打ち消す</p></li>
+
+          </ol>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-category-sections" aria-label="カテゴリ別 FACT / CONTEXT / OUTLOOK">
+
+    <article class="summary-category" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-08-11 Foreign Exchange 為替 介入後の円安を止める次の条件">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§01</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
+            </div>
+            <h3>介入後の円安を止める次の条件</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>ドル円は一時159円台へ上昇し、日米協調介入以降の円高方向の値動き</strong>（<strong class="emph-bold">ドル円は一時159円台へ上昇し、日米協調介入以降の円高方向の値動き</strong>）を半分ほど打ち消した。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>物価上振れ</strong>（<strong class="emph-bold">物価上振れ</strong>）を受けた日銀の利上げ観測が強まる一方、米金利の高止まりと政策への懸念が円売りを支えている。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>9月会合の判断、政府のメッセージ、追加介入なしで円安圧力が弱まるか</strong>（<strong class="emph-bold">9月会合の判断、政府のメッセージ、追加介入なしで円安圧力が弱まるか</strong>）をUSDJPYと金利で追う。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/fx/">→ §01 為替 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-08-11 Artificial Intelligence AI 自律化を許す境界の再設計">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§02</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
+            </div>
+            <h3>自律化を許す境界の再設計</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>複数AIエージェントの協調動作、Claude Codeのauto mode、医療文書生成、安全策更新、LLM Gatewayが示された</strong>（<strong class="emph-bold">複数AIエージェントの協調動作、Claude Codeのauto mode、医療文書生成、安全策更新、LLM Gatewayが示された</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>自律化の範囲が広がるほど、資格情報の交換、危険操作の停止、生成結果の確認、利用量の記録が必要になる</strong>（<strong class="emph-bold">自律化の範囲が広がるほど、資格情報の交換、危険操作の停止、生成結果の確認、利用量の記録が必要になる</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>拒否ルール、監査ログ、医療者の確認、企業のモデル・権限管理が実運用で機能するか</strong>（<strong class="emph-bold">拒否ルール、監査ログ、医療者の確認、企業のモデル・権限管理が実運用で機能するか</strong>）を見極める。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/ai/">→ §02 AI 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-08-11 IT &amp; Consulting IT Consulting — 管理層を現場導入へつなぐ">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§03</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
+            </div>
+            <h3>Consulting — 管理層を現場導入へつなぐ</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>セキュリティ需要、転換社債、3領域の新プラン、契約書2,000件の集約、車両入退場クラウドが示された</strong>（<strong class="emph-bold">セキュリティ需要、転換社債、3領域の新プラン、契約書2,000件の集約、車両入退場クラウドが示された</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>個別ツール</strong>（<strong class="emph-bold">個別ツール</strong>）を増やすより、ID・契約・入退場・利用状況を一元的に管理して更新判断へつなげる動きが強い。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>監査ログ、権限、データ連携、現場定着の責任分界</strong>（<strong class="emph-bold">監査ログ、権限、データ連携、現場定着の責任分界</strong>）を確認し、導入効果が運用コストを上回るかを見る。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/it/">→ §03 IT 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-08-11 Mobility モビリティ 売る力から支える網へ">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§04</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
+            </div>
+            <h3>売る力から支える網へ</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>日本の軽EV受注、韓国・タイの中国製EV拡大、インドネシア現地生産、軽井沢の自動運転実証が進む</strong>（<strong class="emph-bold">日本の軽EV受注、韓国・タイの中国製EV拡大、インドネシア現地生産、軽井沢の自動運転実証が進む</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>価格や車種の競争に加え、販売網、充電、保守、自治体連携、現地調達が普及の条件になっている</strong>（<strong class="emph-bold">価格や車種の競争に加え、販売網、充電、保守、自治体連携、現地調達が普及の条件になっている</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>受注の継続、レベル4実証の利用率と採算、部品現地化、域内輸出の有無</strong>（<strong class="emph-bold">受注の継続、レベル4実証の利用率と採算、部品現地化、域内輸出の有無</strong>）を確認する。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/mobility/">→ §04 モビリティ 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-08-11 Manufacturing 製造 投資額を量産の成果へ">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§05</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
+            </div>
+            <h3>投資額を量産の成果へ</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>韓国半導体投資、TSMCの44</strong>（<strong class="emph-bold">韓国半導体投資、TSMCの44</strong>）.7％増収、Intelの約2.4兆円調達、熊本工場の復旧計画が示された。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>AI向け需要</strong>（<strong class="emph-bold">AI向け需要</strong>）を受けた設備投資と、被災拠点を代替生産で支えるBCPが同時に動いている。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>2ナノの歩留まり、工場の稼働時期、資金配分、代替拠点の余力が供給と採算</strong>（<strong class="emph-bold">2ナノの歩留まり、工場の稼働時期、資金配分、代替拠点の余力が供給と採算</strong>）を左右する。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/manufacturing/">→ §05 製造 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-08-11 Economy 経済 増益と株価の間を読む">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§06</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
+            </div>
+            <h3>増益と株価の間を読む</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>上場企業956社の純利益は68％増、街角景気は改善したが、ゆうちょ銀行は増益でも株価が下落した</strong>（<strong class="emph-bold">上場企業956社の純利益は68％増、街角景気は改善したが、ゆうちょ銀行は増益でも株価が下落した</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>円安やAI投資、季節需要が業績と景況感</strong>（<strong class="emph-bold">円安やAI投資、季節需要が業績と景況感</strong>）を支える一方、金融株売りや材料出尽くしが評価を分けた。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>次の決算で為替効果と需要の持続性、モバイル改善、金利上昇の収益波及</strong>（<strong class="emph-bold">次の決算で為替効果と需要の持続性、モバイル改善、金利上昇の収益波及</strong>）を比較する。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/economy/">→ §06 経済 詳細を読む</a>
+
+      </div>
+    </article>
+
+    <article class="summary-category" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-08-11 Gaming ゲーム 発売後の改善が信頼を決める">
+      <div class="summary-category__inner">
+        <header class="summary-category__head">
+          <span class="summary-category__no">§07</span>
+          <div class="summary-category__titlebox">
+            <div class="summary-category__chip">
+              <span class="summary-category__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
+            </div>
+            <h3>発売後の改善が信頼を決める</h3>
+          </div>
+        </header>
+        <div class="summary-lane-cards">
+
+          <section class="summary-lane-card" data-role="fact">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-fact"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">FACT</span>
+              <span class="summary-lane-card__marker">事実・概要</span>
+            </div>
+            <p><span class="emph-und"><strong>PC版の性能改善、リメイク版デモ更新、映画IPの映像公開、体験版配信、7万2,000件の期待が示された</strong>（<strong class="emph-bold">PC版の性能改善、リメイク版デモ更新、映画IPの映像公開、体験版配信、7万2,000件の期待が示された</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="context">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-context"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">CONTEXT</span>
+              <span class="summary-lane-card__marker">背景・要点</span>
+            </div>
+            <p><span class="emph-und"><strong>発売前後の評価形成では、操作性・安定性・体験の具体的な改善と、ユーザー反応の回収が重要になる</strong>（<strong class="emph-bold">発売前後の評価形成では、操作性・安定性・体験の具体的な改善と、ユーザー反応の回収が重要になる</strong>）。</span></p>
+          </section>
+
+          <section class="summary-lane-card" data-role="outlook">
+            <div class="summary-lane-card__head">
+              <span class="summary-lane-card__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-outlook"></use></svg>
+              </span>
+              <span class="summary-lane-card__short">OUTLOOK</span>
+              <span class="summary-lane-card__marker">影響・展望</span>
+            </div>
+            <p><span class="emph-und"><strong>アップデート後の評価、体験版からの転換、クラウドファンディング、発売後の継続対応</strong>（<strong class="emph-bold">アップデート後の評価、体験版からの転換、クラウドファンディング、発売後の継続対応</strong>）を追う。</span></p>
+          </section>
+
+        </div>
+
+        <a class="summary-category__more" href="https://hidepon-umg.github.io/News-Grasp/game/">→ §07 ゲーム 詳細を読む</a>
+
+      </div>
+    </article>
+
+  </section>
+
+  <section class="summary-tomorrow" aria-label="明日への観測ボード" style="--c: #C9A155;">
+    <div class="summary-tomorrow__inner">
+      <div class="summary-tomorrow__head">
+        <span>§ 08</span>
+        <strong>TOMORROW BOARD / 明日への観測ボード</strong>
+        <h2>明日、何を見て、何が起きたら見方が変わるか</h2>
+        <p>各カテゴリで「見るもの（Watch）」「変化シグナル（Signal）」「どう解釈するか（Implication）」を一枚に整理します。</p>
+      </div>
+      <div class="summary-tomorrow__legend"><span class="is-high">HIGH</span><span class="is-mid">MID</span><span class="is-low">LOW</span></div>
+      <div class="summary-tomorrow__rows">
+
+        <article class="summary-tomorrow__row" style="--c: #B8860B;" data-category-id="fx" data-category-glyph="¥" data-summary-search="2026-08-11 Foreign Exchange 為替 ドル円は一時159円台へ上昇し、日米協調介入以降の円高方向の値動き（ドル円は一時159円台へ上昇し、日米協調介入以降の円高方向の値動き）を半分ほど打ち消した。 物価上振れ（物価上振れ）を受けた日銀の利上げ観測が強まる一方、米金利の高止まりと政策への懸念が円売りを支えている。 9月会合の判断、政府のメッセージ、追加介入なしで円安圧力が弱まるか（9月会合の判断、政府のメッセージ、追加介入なしで円安圧力が弱まるか）をUSDJPYと金利で追う。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">¥</span>
+              <span>FOREIGN EXCHANGE / 為替</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--high">HIGH</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>ドル円は一時159円台へ上昇し、日米協調介入以降の円高方向の値動き</strong>（<strong class="emph-bold">ドル円は一時159円台へ上昇し、日米協調介入以降の円高方向の値動き</strong>）を半分ほど打ち消した。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>物価上振れ</strong>（<strong class="emph-bold">物価上振れ</strong>）を受けた日銀の利上げ観測が強まる一方、米金利の高止まりと政策への懸念が円売りを支えている。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>9月会合の判断、政府のメッセージ、追加介入なしで円安圧力が弱まるか</strong>（<strong class="emph-bold">9月会合の判断、政府のメッセージ、追加介入なしで円安圧力が弱まるか</strong>）をUSDJPYと金利で追う。</span></p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #2D5BB8;" data-category-id="ai" data-category-glyph="◆" data-summary-search="2026-08-11 Artificial Intelligence AI 複数AIエージェントの協調動作、Claude Codeのauto mode、医療文書生成、安全策更新、LLM Gatewayが示された（複数AIエージェントの協調動作、Claude Codeのauto mode、医療文書生成、安全策更新、LLM Gatewayが示された）。 自律化の範囲が広がるほど、資格情報の交換、危険操作の停止、生成結果の確認、利用量の記録が必要になる（自律化の範囲が広がるほど、資格情報の交換、危険操作の停止、生成結果の確認、利用量の記録が必要になる）。 拒否ルール、監査ログ、医療者の確認、企業のモデル・権限管理が実運用で機能するか（拒否ルール、監査ログ、医療者の確認、企業のモデル・権限管理が実運用で機能するか）を見極める。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◆</span>
+              <span>ARTIFICIAL INTELLIGENCE / AI</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>複数AIエージェントの協調動作、Claude Codeのauto mode、医療文書生成、安全策更新、LLM Gatewayが示された</strong>（<strong class="emph-bold">複数AIエージェントの協調動作、Claude Codeのauto mode、医療文書生成、安全策更新、LLM Gatewayが示された</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>自律化の範囲が広がるほど、資格情報の交換、危険操作の停止、生成結果の確認、利用量の記録が必要になる</strong>（<strong class="emph-bold">自律化の範囲が広がるほど、資格情報の交換、危険操作の停止、生成結果の確認、利用量の記録が必要になる</strong>）。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>拒否ルール、監査ログ、医療者の確認、企業のモデル・権限管理が実運用で機能するか</strong>（<strong class="emph-bold">拒否ルール、監査ログ、医療者の確認、企業のモデル・権限管理が実運用で機能するか</strong>）を見極める。</span></p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #2E6B52;" data-category-id="it" data-category-glyph="⌗" data-summary-search="2026-08-11 IT &amp; Consulting IT セキュリティ需要、転換社債、3領域の新プラン、契約書2,000件の集約、車両入退場クラウドが示された（セキュリティ需要、転換社債、3領域の新プラン、契約書2,000件の集約、車両入退場クラウドが示された）。 個別ツール（個別ツール）を増やすより、ID・契約・入退場・利用状況を一元的に管理して更新判断へつなげる動きが強い。 監査ログ、権限、データ連携、現場定着の責任分界（監査ログ、権限、データ連携、現場定着の責任分界）を確認し、導入効果が運用コストを上回るかを見る。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⌗</span>
+              <span>IT &amp; CONSULTING / IT</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--mid">MID</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>セキュリティ需要、転換社債、3領域の新プラン、契約書2,000件の集約、車両入退場クラウドが示された</strong>（<strong class="emph-bold">セキュリティ需要、転換社債、3領域の新プラン、契約書2,000件の集約、車両入退場クラウドが示された</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>個別ツール</strong>（<strong class="emph-bold">個別ツール</strong>）を増やすより、ID・契約・入退場・利用状況を一元的に管理して更新判断へつなげる動きが強い。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>監査ログ、権限、データ連携、現場定着の責任分界</strong>（<strong class="emph-bold">監査ログ、権限、データ連携、現場定着の責任分界</strong>）を確認し、導入効果が運用コストを上回るかを見る。</span></p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #3A7B8C;" data-category-id="mobility" data-category-glyph="◎" data-summary-search="2026-08-11 Mobility モビリティ 日本の軽EV受注、韓国・タイの中国製EV拡大、インドネシア現地生産、軽井沢の自動運転実証が進む（日本の軽EV受注、韓国・タイの中国製EV拡大、インドネシア現地生産、軽井沢の自動運転実証が進む）。 価格や車種の競争に加え、販売網、充電、保守、自治体連携、現地調達が普及の条件になっている（価格や車種の競争に加え、販売網、充電、保守、自治体連携、現地調達が普及の条件になっている）。 受注の継続、レベル4実証の利用率と採算、部品現地化、域内輸出の有無（受注の継続、レベル4実証の利用率と採算、部品現地化、域内輸出の有無）を確認する。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">◎</span>
+              <span>MOBILITY / モビリティ</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>日本の軽EV受注、韓国・タイの中国製EV拡大、インドネシア現地生産、軽井沢の自動運転実証が進む</strong>（<strong class="emph-bold">日本の軽EV受注、韓国・タイの中国製EV拡大、インドネシア現地生産、軽井沢の自動運転実証が進む</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>価格や車種の競争に加え、販売網、充電、保守、自治体連携、現地調達が普及の条件になっている</strong>（<strong class="emph-bold">価格や車種の競争に加え、販売網、充電、保守、自治体連携、現地調達が普及の条件になっている</strong>）。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>受注の継続、レベル4実証の利用率と採算、部品現地化、域内輸出の有無</strong>（<strong class="emph-bold">受注の継続、レベル4実証の利用率と採算、部品現地化、域内輸出の有無</strong>）を確認する。</span></p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #5A6B7B;" data-category-id="manufacturing" data-category-glyph="⬢" data-summary-search="2026-08-11 Manufacturing 製造 韓国半導体投資、TSMCの44（韓国半導体投資、TSMCの44）.7％増収、Intelの約2.4兆円調達、熊本工場の復旧計画が示された。 AI向け需要（AI向け需要）を受けた設備投資と、被災拠点を代替生産で支えるBCPが同時に動いている。 2ナノの歩留まり、工場の稼働時期、資金配分、代替拠点の余力が供給と採算（2ナノの歩留まり、工場の稼働時期、資金配分、代替拠点の余力が供給と採算）を左右する。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">⬢</span>
+              <span>MANUFACTURING / 製造</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>韓国半導体投資、TSMCの44</strong>（<strong class="emph-bold">韓国半導体投資、TSMCの44</strong>）.7％増収、Intelの約2.4兆円調達、熊本工場の復旧計画が示された。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>AI向け需要</strong>（<strong class="emph-bold">AI向け需要</strong>）を受けた設備投資と、被災拠点を代替生産で支えるBCPが同時に動いている。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>2ナノの歩留まり、工場の稼働時期、資金配分、代替拠点の余力が供給と採算</strong>（<strong class="emph-bold">2ナノの歩留まり、工場の稼働時期、資金配分、代替拠点の余力が供給と採算</strong>）を左右する。</span></p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #8E2A19;" data-category-id="economy" data-category-glyph="■" data-summary-search="2026-08-11 Economy 経済 上場企業956社の純利益は68％増、街角景気は改善したが、ゆうちょ銀行は増益でも株価が下落した（上場企業956社の純利益は68％増、街角景気は改善したが、ゆうちょ銀行は増益でも株価が下落した）。 円安やAI投資、季節需要が業績と景況感（円安やAI投資、季節需要が業績と景況感）を支える一方、金融株売りや材料出尽くしが評価を分けた。 次の決算で為替効果と需要の持続性、モバイル改善、金利上昇の収益波及（次の決算で為替効果と需要の持続性、モバイル改善、金利上昇の収益波及）を比較する。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">■</span>
+              <span>ECONOMY / 経済</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>上場企業956社の純利益は68％増、街角景気は改善したが、ゆうちょ銀行は増益でも株価が下落した</strong>（<strong class="emph-bold">上場企業956社の純利益は68％増、街角景気は改善したが、ゆうちょ銀行は増益でも株価が下落した</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>円安やAI投資、季節需要が業績と景況感</strong>（<strong class="emph-bold">円安やAI投資、季節需要が業績と景況感</strong>）を支える一方、金融株売りや材料出尽くしが評価を分けた。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>次の決算で為替効果と需要の持続性、モバイル改善、金利上昇の収益波及</strong>（<strong class="emph-bold">次の決算で為替効果と需要の持続性、モバイル改善、金利上昇の収益波及</strong>）を比較する。</span></p></div>
+          </div>
+        </article>
+
+        <article class="summary-tomorrow__row" style="--c: #5E3D8C;" data-category-id="game" data-category-glyph="▶" data-summary-search="2026-08-11 Gaming ゲーム PC版の性能改善、リメイク版デモ更新、映画IPの映像公開、体験版配信、7万2,000件の期待が示された（PC版の性能改善、リメイク版デモ更新、映画IPの映像公開、体験版配信、7万2,000件の期待が示された）。 発売前後の評価形成では、操作性・安定性・体験の具体的な改善と、ユーザー反応の回収が重要になる（発売前後の評価形成では、操作性・安定性・体験の具体的な改善と、ユーザー反応の回収が重要になる）。 アップデート後の評価、体験版からの転換、クラウドファンディング、発売後の継続対応（アップデート後の評価、体験版からの転換、クラウドファンディング、発売後の継続対応）を追う。">
+          <div class="summary-tomorrow__meta">
+            <span class="summary-tomorrow__cat">
+              <span class="summary-tomorrow__glyph" aria-hidden="true">▶</span>
+              <span>GAMING / ゲーム</span>
+            </span>
+            <em class="summary-tomorrow__heat summary-tomorrow__heat--low">LOW</em>
+          </div>
+          <div class="summary-tomorrow__cells">
+            <div><span>WATCH 見る</span><p><span class="emph-und"><strong>PC版の性能改善、リメイク版デモ更新、映画IPの映像公開、体験版配信、7万2,000件の期待が示された</strong>（<strong class="emph-bold">PC版の性能改善、リメイク版デモ更新、映画IPの映像公開、体験版配信、7万2,000件の期待が示された</strong>）。</span></p></div>
+            <div><span>SIGNAL 変化</span><p><span class="emph-und"><strong>発売前後の評価形成では、操作性・安定性・体験の具体的な改善と、ユーザー反応の回収が重要になる</strong>（<strong class="emph-bold">発売前後の評価形成では、操作性・安定性・体験の具体的な改善と、ユーザー反応の回収が重要になる</strong>）。</span></p></div>
+            <div><span>IMPLICATION 解釈</span><p><span class="emph-und"><strong>アップデート後の評価、体験版からの転換、クラウドファンディング、発売後の継続対応</strong>（<strong class="emph-bold">アップデート後の評価、体験版からの転換、クラウドファンディング、発売後の継続対応</strong>）を追う。</span></p></div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-cta">
+    <h2>今日の論点を、記事で確かめる</h2>
+    <div>
+      <a class="summary-cta__primary" href="https://hidepon-umg.github.io/News-Grasp/2026-08-11/">全33本のニュースを読む →</a>
+      <a class="summary-cta__ghost" href="https://hidepon-umg.github.io/News-Grasp/archive/">過去の考察を見る</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div>
+    <span class="site-footer__brand">NEWS GRASP</span> · § SUMMARY · 2026-08-11 · #20260811
+  </div>
+  <div class="site-footer__links">
+    <a href="https://hidepon-umg.github.io/News-Grasp/">HOME</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/2026-08-11/">DIGEST</a>
+    <a href="https://hidepon-umg.github.io/News-Grasp/archive/">ARCHIVE</a>
+    <a href="https://github.com/HIDEPON-UMG">GITHUB</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.daily-audio').forEach(function (block) {
+    var audio = block.querySelector('audio');
+    var buttons = block.querySelectorAll('[data-rate]');
+    if (!audio || !buttons.length) return;
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var rate = parseFloat(button.getAttribute('data-rate') || '1');
+        audio.playbackRate = rate;
+        buttons.forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+      });
+    });
+  });
+  var search = document.getElementById('summary-search');
+  var empty = document.getElementById('summary-search-empty');
+  var targets = Array.prototype.slice.call(document.querySelectorAll('[data-summary-search]'));
+  function applySummarySearch() {
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var visible = 0;
+    targets.forEach(function (target) {
+      var text = (target.getAttribute('data-summary-search') || '').toLowerCase();
+      var hit = !q || text.indexOf(q) >= 0;
+      target.classList.toggle('is-search-hidden', !hit);
+      if (hit) visible += 1;
+    });
+    if (empty) empty.classList.toggle('is-active', !!q && visible === 0);
+  }
+  if (search) {
+    search.addEventListener('input', applySummarySearch);
+    applySummarySearch();
+  }
+})();
+</script>
+</body>
+</html>
