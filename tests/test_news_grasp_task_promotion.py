@@ -117,6 +117,17 @@ def test_installer_reuses_only_exact_valid_audit_mission_authority() -> None:
     assert "$afterSha256 -ne $beforeSha256" in guard
 
 
+def test_installer_verifies_runtime_root_against_fixed_production_runtime() -> None:
+    installer = (
+        Path(__file__).parents[1] / "scripts/ops/install-news-grasp-ops.ps1"
+    ).read_text(encoding="utf-8-sig")
+    assertion = installer.split("$runtimeRoot = [Text.Encoding]::UTF8", 1)[1]
+    assertion = assertion.split("if ($SkipTaskRegistration)", 1)[0]
+
+    assert "GetFullPath($productionRuntimePath)" in assertion
+    assert "GetFullPath($RepoDir)" not in assertion
+
+
 def test_ng3_a19_adversarial_task_fire_during_promotion_is_old_or_new_only(tmp_path: Path) -> None:
     assert callable(getattr(generation, "promote_generation", None))
     with pytest.raises(generation.NewsGraspGenerationError, match="NG_PROMOTION_PHASE_INVALID"):

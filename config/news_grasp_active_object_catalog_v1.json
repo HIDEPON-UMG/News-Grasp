@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "8d39498d95ecc84e6462775322fd40c14a2b1587",
+  "sourceCommit": "06ffce1c7f6398d4ddabcecf1f65b7894888012e",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -488,7 +488,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "ba10ec8b44e8c6dfc12874279ed01bfbf3d3ec1af6f792c4022e88f03c6ec8e9",
+      "sha256": "a6de3488a8f3efcc57ec71298ccd186a8f4198345b702ae5c0c208540b513e3a",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -506,7 +506,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "5c8928311e34dc51dacd8c8607a65a17226da43d93aa99148338e3fb52353dd0",
+      "sha256": "e99828255904e08c7ad47b1de5cd162e7b14fafd470eefe15ea72167eea76cf1",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1024,7 +1024,7 @@
         "NGC-C11",
         "NGC-C13"
       ],
-      "sha256": "4117c4f31f08c67fab106fb6c95f9ecc84b6d725e0becb23f91da31a58673183",
+      "sha256": "6d147fc0ca0d1db01e6007f40fc436c3040dfed4f4eef7dfda302b2e8ccb71c3",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2740,7 +2740,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "723707c7b9e096b3a49da0961e8b1eb0d1f25eeb899e80dca3f40674f302ef9c",
+      "sha256": "26093a98a9c16dd7c59636dc30d537efc473d22ac461317ac1e5df195dc6910d",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4598,5 +4598,5 @@
   "activeObjectCount": 249,
   "unlinkedActiveObjectCount": 0,
   "objectPathSetSha256": "ffcc8f7e520dcee8aeefa138f159a4a4e8ba26c533e3fa684d60aab63dbb57f4",
-  "testNodeSetSha256": "6a79e3c2627fa21708fa3104bc44045c26fe1487e3074eb03123ea0a34266b3a"
+  "testNodeSetSha256": "c9f8090818b47b002b689c195bc91abd36bcab14c329bd90e00a5a74ce6df0e2"
 }

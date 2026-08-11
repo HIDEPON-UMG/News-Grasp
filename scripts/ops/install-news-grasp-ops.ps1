@@ -404,7 +404,7 @@ function Assert-NewsGraspInstalledState {
         [string]$runtimeRoot.schemaVersion -ne 'NEWS_GRASP_RUNTIME_ROOT_V1' -or
         -not [string]::Equals(
             [System.IO.Path]::GetFullPath([string]$runtimeRoot.repoDir),
-            [System.IO.Path]::GetFullPath($RepoDir),
+            [System.IO.Path]::GetFullPath($productionRuntimePath),
             [System.StringComparison]::OrdinalIgnoreCase
         )
     ) {
