@@ -771,7 +771,10 @@ try {
                 exit 126
             }
         }
-        $effectiveArgs = @('-I', $modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--operation-admission', $operationAdmissionPath, '--expected-operation-kind', $HighCostExpectedOperationKind, '--expected-issue-date', $HighCostExpectedIssueDate, '--execution-root', $script:CanonicalExecutionRoot)
+        $effectiveArgs = @('-I', $modelSpawnBroker, 'exec', '--route', $FlowName, '--call-id', $HighCostCallId, '--operation-admission', $operationAdmissionPath, '--expected-operation-kind', $HighCostExpectedOperationKind, '--expected-issue-date', $HighCostExpectedIssueDate)
+        if ($HighCostExpectedOperationKind -notin @('scheduled_production', 'scheduled_recovery')) {
+            $effectiveArgs += @('--execution-root', $script:CanonicalExecutionRoot)
+        }
         if ($TimeoutSec -gt 0) { $effectiveArgs += @('--timeout-seconds', [string]$TimeoutSec) }
         if ($IdleTimeoutSec -gt 0) { $effectiveArgs += @('--idle-timeout-seconds', [string]$IdleTimeoutSec) }
         if ($MaxCapturedOutputBytes -gt 0) { $effectiveArgs += @('--max-output-bytes', [string]$MaxCapturedOutputBytes) }
