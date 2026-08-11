@@ -1734,7 +1734,20 @@ def _assert_runtime_recovery_capacity(runtime_root: Path) -> None:
                 _assert_managed_path(root_path, runtime_root, "PRODUCTION_RUNTIME_REPARSE_INVALID")
                 # quarantine/transaction下のproduction-runtimeは製品payloadであり、
                 # metadata quotaの対象外。ただしそれ自体はreparse拒否する。
-                if collection.name == "quarantine" and root_path.name == "production-runtime":
+                relative_parts = root_path.relative_to(collection).parts
+                is_quarantine_payload = (
+                    collection.name == "quarantine"
+                    and len(relative_parts) == 2
+                    and RUNTIME_TRANSACTION_ID.fullmatch(relative_parts[0]) is not None
+                    and relative_parts[1] == "production-runtime"
+                )
+                is_transaction_payload = (
+                    collection.name == "transactions"
+                    and len(relative_parts) == 3
+                    and RUNTIME_TRANSACTION_ID.fullmatch(relative_parts[0]) is not None
+                    and relative_parts[1:] == ("replacement-staging", "production-runtime")
+                )
+                if is_quarantine_payload or is_transaction_payload:
                     dirs[:] = []
                     continue
                 for name in list(dirs) + list(files):

@@ -2014,6 +2014,29 @@ def test_runtime_recovery_requires_maintenance_before_64_committed_turnovers(
     assert (archive_root / "manifest.jsonl").is_file()
 
 
+def test_runtime_recovery_capacity_excludes_transaction_owned_product_payload(
+    tmp_path: Path,
+) -> None:
+    """replacement worktree本体をmetadata quotaへ誤算入してpromotionを止めない。"""
+    launcher = _load_task_launcher_module()
+    runtime_root = tmp_path / ".news-grasp-runtime"
+    for relative in ("transactions", "authorities", "ledger/issues", "ledger/terminals", "quarantine"):
+        (runtime_root / relative).mkdir(parents=True, exist_ok=True)
+    transaction_id = "20260812T010203040506Z-0123456789abcdef"
+    payload = (
+        runtime_root
+        / "transactions"
+        / transaction_id
+        / "replacement-staging"
+        / "production-runtime"
+    )
+    payload.mkdir(parents=True)
+    for index in range(launcher.MAX_RUNTIME_RECOVERY_SCAN_ENTRIES + 8):
+        (payload / f"tracked-{index:04d}.txt").write_text("payload\n", encoding="utf-8")
+
+    launcher._assert_runtime_recovery_capacity(runtime_root)
+
+
 def test_clean_runtime_is_created_via_transaction_owned_staging(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

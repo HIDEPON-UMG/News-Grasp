@@ -33,6 +33,7 @@
     "scripts/ops/news-grasp-deadman-launcher.pyw",
     "scripts/ops/news-grasp-runner.ps1",
     "tests/test_runner_convergence_contract.py",
+    "tests/test_scheduled_high_cost_separation.py",
     "tests/test_high_cost_operation_admission_contract.py",
     "tests/test_e2e_final_admission_bridge.py",
     "AGENTS.md",
