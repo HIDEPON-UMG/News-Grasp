@@ -60,6 +60,7 @@
     "docs/sw.js",
     "schemas/news_grasp_constitution_v1.schema.json",
     "scripts/ops/invoke-scheduled-equivalent-nopublish.ps1",
+    "scripts/ops/install-news-grasp-ops-guard.ps1",
     "tests/fixtures/constitutional-operations/acceptance-matrix-v1.json",
     "tests/fixtures/constitutional-operations/compound-scenarios-v1.json",
     "tests/fixtures/constitutional-operations/monthly-failure-corpus-v1.json",
@@ -70,6 +71,7 @@
     "tests/test_news_grasp_task_promotion.py",
     "tools/historical_failure_scenarios.py",
     "tools/news_grasp_constitution.py",
+    "tools/news_grasp_mission_authority.py",
     "tools/news_grasp_task_packet.py",
     "tools/news_grasp_convergence.py"
   ],

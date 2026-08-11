@@ -1,6 +1,6 @@
 {
   "schemaVersion": "NEWS_GRASP_ACTIVE_OBJECT_CATALOG_V1",
-  "sourceCommit": "8ce1fdd38e70aff4893aa787c76d66ed3d099109",
+  "sourceCommit": "8d39498d95ecc84e6462775322fd40c14a2b1587",
   "discoveryMode": "git_index_plus_untracked_wip_plus_route_reference_scan",
   "objects": [
     {
@@ -452,7 +452,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "3c7893ddc7ecf1a526930bf6d185668df3f25a0d0b5c3075ce78959da717651d",
+      "sha256": "ec9d9ecf12fc2b541e1343b4dcb6f6f909dc7a5d7e2a95e062362fe73e1e950e",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -488,7 +488,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "5fbab7c0c3368e3408476b4e1e23c81a81b994772ff0261ccfa345cf2f9fe199",
+      "sha256": "ba10ec8b44e8c6dfc12874279ed01bfbf3d3ec1af6f792c4022e88f03c6ec8e9",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -506,7 +506,7 @@
         "NGC-C10",
         "NGC-C14"
       ],
-      "sha256": "fb9f620e1100420c9324e4ecc5ef5215c7a64a78dd060f6f57b4baf737469d3e",
+      "sha256": "5c8928311e34dc51dacd8c8607a65a17226da43d93aa99148338e3fb52353dd0",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1006,7 +1006,7 @@
         "NGC-C11",
         "NGC-C13"
       ],
-      "sha256": "0f5e36ef13b9c0bdb1b087a5983a523714eeec95cbeafa2b344720ee7cb2650b",
+      "sha256": "6bb0cccf20b674758aa8eab86306ef0af1d2009e7df15238561d27f4484e34a1",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -1024,7 +1024,7 @@
         "NGC-C11",
         "NGC-C13"
       ],
-      "sha256": "1fcdd5ed305b560f7ee0967cb5ad960b5b7a50879fb9baf832ee054a9be5cd9e",
+      "sha256": "4117c4f31f08c67fab106fb6c95f9ecc84b6d725e0becb23f91da31a58673183",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -2740,7 +2740,7 @@
         "NGC-C06",
         "NGC-C14"
       ],
-      "sha256": "fe9f84131d199fdf3646b2a9556156278710cb6fba8026b0b9c7363710d0fb51",
+      "sha256": "723707c7b9e096b3a49da0961e8b1eb0d1f25eeb899e80dca3f40674f302ef9c",
       "hashPolicy": "exact",
       "rollback": "restore tracked bytes from the bound source commit"
     },
@@ -4192,6 +4192,25 @@
       "rollback": "restore tracked bytes from the bound source commit"
     },
     {
+      "objectId": "0f5945037855cff369336056",
+      "class": "production_consumer",
+      "path": "tools/news_grasp_mission_authority.py",
+      "owner": "News-Grasp",
+      "generationBinding": "source_commit",
+      "disposition": "active_linked",
+      "active": true,
+      "clauseIds": [
+        "NGC-C04",
+        "NGC-C06",
+        "NGC-C09",
+        "NGC-C10",
+        "NGC-C14"
+      ],
+      "sha256": "de52094305f12a4ebc946247305a08c49d1c076ac6c0d61476b3ba7721a6ddf1",
+      "hashPolicy": "exact",
+      "rollback": "restore tracked bytes from the bound source commit"
+    },
+    {
       "objectId": "a0db36d44f85d909dd5a0eef",
       "class": "production_consumer",
       "path": "tools/news_grasp_nopublish.py",
@@ -4339,6 +4358,7 @@
     "0e16995cbb9c0d43f8964be6",
     "0e7efad24c0088eb85e48274",
     "0f0ed08cdc54fc00dc7875d4",
+    "0f5945037855cff369336056",
     "0f7f11659004c844be15ce07",
     "0fa258f0503654d400faa6a0",
     "12c9fac1e188ea0bad6195f4",
@@ -4575,8 +4595,8 @@
     "fd085ce0fdff5c5187012488",
     "feadf33a19f45a15fbc909b2"
   ],
-  "activeObjectCount": 248,
+  "activeObjectCount": 249,
   "unlinkedActiveObjectCount": 0,
-  "objectPathSetSha256": "bf895bdb367a08d77fe988320be2967bd5bdcc79eee0e9baf63092a281358972",
-  "testNodeSetSha256": "61e0705040685f58705233ab700511baf0d7bd8a74725addd7131fdd49eb84ee"
+  "objectPathSetSha256": "ffcc8f7e520dcee8aeefa138f159a4a4e8ba26c533e3fa684d60aab63dbb57f4",
+  "testNodeSetSha256": "6a79e3c2627fa21708fa3104bc44045c26fe1487e3074eb03123ea0a34266b3a"
 }

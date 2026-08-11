@@ -717,7 +717,14 @@ function Assert-NewsGraspRecoveryJournal {
             }
         }
         if ($fileName -eq 'audit-mission-authority-v1.json') {
-            if ([string]$row.source -ne 'broker:issue-news-grasp-audit-mission' -or $sourceSha256) {
+            $missionSource = [string]$row.source
+            if (
+                $missionSource -notin @('broker:issue-news-grasp-audit-mission', 'existing:validated-audit-mission') -or
+                $sourceSha256 -or
+                ($missionSource -eq 'existing:validated-audit-mission' -and (
+                    -not $beforeSha256 -or ($afterSha256 -and $afterSha256 -ne $beforeSha256)
+                ))
+            ) {
                 throw 'NEWS_GRASP_INSTALL_JOURNAL_SOURCE_INVALID'
             }
         } elseif ($fileName -eq 'news-grasp-runtime-root-v1.json') {

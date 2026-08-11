@@ -720,6 +720,7 @@ $authorityDir = Join-Path $BinDir 'news-grasp-authority'
 $missionAuthorityPath = Join-Path $authorityDir 'audit-mission-authority-v1.json'
 $missionAuthorityBackup = Join-Path $BackupDir 'audit-mission-authority-v1.json'
 $missionAuthorityBeforeHash = ''
+$reuseExistingMissionAuthority = $false
 if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
     $missionAuthoritySnapshot = Read-NewsGraspVerifiedFile `
         -Path $missionAuthorityPath `
@@ -729,10 +730,26 @@ if (Test-Path -LiteralPath $missionAuthorityPath -PathType Leaf) {
         -TrustedBoundary $BackupDir `
         -Bytes $missionAuthoritySnapshot.Bytes | Out-Null
     $missionAuthorityBeforeHash = [string]$missionAuthoritySnapshot.Sha256
+    $missionValidatorPath = Join-Path $RepoDir 'tools\news_grasp_mission_authority.py'
+    $missionValidatorPython = Join-Path (Split-Path -Parent $TaskPythonwPath) 'python.exe'
+    if (
+        (Test-Path -LiteralPath $missionValidatorPath -PathType Leaf) -and
+        (Test-Path -LiteralPath $missionValidatorPython -PathType Leaf)
+    ) {
+        $missionValidationJson = (& $missionValidatorPython '-I' $missionValidatorPath 'validate-existing' '--path' $missionAuthorityPath 2>&1 | Out-String).Trim()
+        $missionValidationExit = $LASTEXITCODE
+        try { $missionValidation = $missionValidationJson | ConvertFrom-Json -ErrorAction Stop } catch { $missionValidation = $null }
+        $reuseExistingMissionAuthority = (
+            $missionValidationExit -eq 0 -and
+            $missionValidation -and
+            [string]$missionValidation.status -ceq 'Green' -and
+            [string]$missionValidation.fileSha256 -ceq $missionAuthorityBeforeHash
+        )
+    }
 }
 $missionAuthorityRow = [ordered]@{
     file = 'audit-mission-authority-v1.json'
-    source = 'broker:issue-news-grasp-audit-mission'
+    source = if ($reuseExistingMissionAuthority) { 'existing:validated-audit-mission' } else { 'broker:issue-news-grasp-audit-mission' }
     destination = $missionAuthorityPath
     backup = if (Test-Path -LiteralPath $missionAuthorityBackup -PathType Leaf) { $missionAuthorityBackup } else { '' }
     before_sha256 = $missionAuthorityBeforeHash
@@ -871,10 +888,31 @@ $stableTaskAuthorityInstalled = Read-NewsGraspVerifiedFile `
 $stableTaskAuthorityRow['after_sha256'] = [string]$stableTaskAuthorityInstalled.Sha256
 Write-NewsGraspInstallJournal -Phase 'files_installed'
 
-$brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
 $pythonPath = $runtimePythonPath
-if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
-    throw 'News-Grasp audit mission authority broker is unavailable.'
+$null = Assert-NewsGraspCanonicalInstallSource `
+    -ResolvedRepoDir $RepoDir `
+    -RequestedBinDir $BinDir `
+    -CanonicalBinDir $canonicalBinDir `
+    -TrustedBoundary $installTrustedBoundary `
+    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
+    -ManagedTaskNames $managedTaskNames
+if ($reuseExistingMissionAuthority) {
+    $missionAuthorityCurrent = Read-NewsGraspVerifiedFile `
+        -Path $missionAuthorityPath `
+        -TrustedBoundary $BinDir `
+        -RequireSingleLink
+    if ([string]$missionAuthorityCurrent.Sha256 -cne $missionAuthorityBeforeHash) {
+        throw 'audit mission authority changed after validation'
+    }
+} else {
+    $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+    if ((-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) -or (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf))) {
+        throw 'News-Grasp audit mission authority broker is unavailable.'
+    }
+    New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
+    $missionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
+    Write-AtomicUtf8Text -Path $missionAuthorityPath -Text ($missionAuthorityJson + [Environment]::NewLine)
 }
 $null = Assert-NewsGraspCanonicalInstallSource `
     -ResolvedRepoDir $RepoDir `
@@ -883,17 +921,6 @@ $null = Assert-NewsGraspCanonicalInstallSource `
     -TrustedBoundary $installTrustedBoundary `
     -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
     -ManagedTaskNames $managedTaskNames
-New-Item -ItemType Directory -Force -Path $authorityDir | Out-Null
-$missionAuthorityJson = (& $pythonPath $brokerPath 'issue-news-grasp-audit-mission' 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) { throw "audit mission authority issuance failed exit=$LASTEXITCODE" }
-$null = Assert-NewsGraspCanonicalInstallSource `
-    -ResolvedRepoDir $RepoDir `
-    -RequestedBinDir $BinDir `
-    -CanonicalBinDir $canonicalBinDir `
-    -TrustedBoundary $installTrustedBoundary `
-    -ExpectedRuntimeRootSha256 $runtimeRootAuthoritySha `
-    -ManagedTaskNames $managedTaskNames
-Write-AtomicUtf8Text -Path $missionAuthorityPath -Text ($missionAuthorityJson + [Environment]::NewLine)
 $missionAuthorityInstalled = Read-NewsGraspVerifiedFile `
     -Path $missionAuthorityPath `
     -TrustedBoundary $BinDir `

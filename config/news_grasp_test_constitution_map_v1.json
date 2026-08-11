@@ -1,8 +1,8 @@
 {
   "schemaVersion": "NEWS_GRASP_TEST_CONSTITUTION_MAP_V1",
   "collectionCommand": "python -m pytest --collect-only -q -p no:cacheprovider",
-  "collectedNodeCount": 2352,
-  "collectedNodeSetSha256": "61e0705040685f58705233ab700511baf0d7bd8a74725addd7131fdd49eb84ee",
+  "collectedNodeCount": 2353,
+  "collectedNodeSetSha256": "6a79e3c2627fa21708fa3104bc44045c26fe1487e3074eb03123ea0a34266b3a",
   "files": [
     {
       "path": "tests/test_all_article_urls_live.py",
@@ -2116,9 +2116,10 @@
     },
     {
       "path": "tests/test_news_grasp_task_promotion.py",
-      "sha256": "fe9f84131d199fdf3646b2a9556156278710cb6fba8026b0b9c7363710d0fb51",
-      "nodeCount": 5,
+      "sha256": "723707c7b9e096b3a49da0961e8b1eb0d1f25eeb899e80dca3f40674f302ef9c",
+      "nodeCount": 6,
       "nodeIds": [
+        "tests/test_news_grasp_task_promotion.py::test_installer_reuses_only_exact_valid_audit_mission_authority",
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_adversarial_task_fire_during_promotion_is_old_or_new_only",
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_installer_persists_stable_task_authority",
         "tests/test_news_grasp_task_promotion.py::test_ng3_a19_primary_stable_task_has_no_repo_path",
