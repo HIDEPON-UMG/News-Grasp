@@ -362,54 +362,118 @@ def _is_isolated_smoke_path(value: str, *, kind: str) -> bool:
 def _task_launcher_source_contract(path: Path) -> dict:
     try:
         source = path.read_text(encoding="utf-8-sig", errors="replace")
-        compact = re.sub(r"\s+", "", source)
     except OSError:
-        return {"ok": False, "reason": "task_launcher_unreadable"}
-    required_tokens = (
-        '"news-grasp-bootstrap.ps1"',
-        'ifargs.mode=="runner"',
-        '"-Start"',
-        '"-SmokeTest"',
-        '"-PollSeconds","1"',
-        '"-TimeoutMinutes","2"',
-        '"-StateFile","ng-smoke-state.json"',
-        '"-LogDir","ng-smoke-logs"',
-        "subprocess.CREATE_NO_WINDOW",
-    )
-    missing = [token for token in required_tokens if token not in compact]
-    if not (
-        'choices=("runner","bootstrap","converge-runtime")' in compact
-        or 'choices=("runner","bootstrap","converge-runtime","maintain-runtime")' in compact
-    ):
-        missing.append('choices=("runner","bootstrap","converge-runtime")')
+        return {
+            "ok": False,
+            "reason": "task_launcher_unreadable",
+            "missing_tokens": ["readable_source"],
+            "modes": [],
+            "missing_modes": [],
+        }
     try:
         tree = ast.parse(source)
     except SyntaxError:
-        tree = None
+        return {
+            "ok": False,
+            "reason": "task_launcher_contract_invalid",
+            "missing_tokens": ["valid_python_ast"],
+            "modes": [],
+            "missing_modes": [],
+        }
+
+    def _string_sequence(node: ast.AST) -> list[str]:
+        if not isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            return []
+        return [
+            str(item.value)
+            for item in node.elts
+            if isinstance(item, ast.Constant) and isinstance(item.value, str)
+        ]
+
+    def _is_add_mode_argument(node: ast.Call) -> bool:
+        if not node.args or not isinstance(node.args[0], ast.Constant) or node.args[0].value != "mode":
+            return False
+        function = node.func
+        return bool(
+            (isinstance(function, ast.Attribute) and function.attr == "add_argument")
+            or (isinstance(function, ast.Name) and function.id == "add_argument")
+        )
+
+    def _is_runner_mode_test(node: ast.AST) -> bool:
+        if not isinstance(node, ast.Compare) or len(node.ops) != 1 or not isinstance(node.ops[0], ast.Eq):
+            return False
+        if len(node.comparators) != 1:
+            return False
+        left = node.left
+        right = node.comparators[0]
+        return bool(
+            isinstance(left, ast.Attribute)
+            and isinstance(left.value, ast.Name)
+            and left.value.id == "args"
+            and left.attr == "mode"
+            and isinstance(right, ast.Constant)
+            and right.value == "runner"
+        )
+
+    mode_choices: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not _is_add_mode_argument(node):
+            continue
+        choices_node = next((keyword.value for keyword in node.keywords if keyword.arg == "choices"), None)
+        if choices_node is not None:
+            mode_choices = _string_sequence(choices_node)
+        break
+
+    required_modes = {
+        "runner",
+        "bootstrap",
+        "converge-runtime",
+        "maintain-runtime",
+        "scheduled-equivalent-nopublish",
+    }
+    missing_modes = sorted(required_modes - set(mode_choices))
+    missing: list[str] = []
+    if missing_modes:
+        missing.append("mode_choices:" + "+".join(missing_modes))
+
+    has_bootstrap_script = any(
+        isinstance(node, ast.Constant) and node.value == "news-grasp-bootstrap.ps1"
+        for node in ast.walk(tree)
+    )
+    if not has_bootstrap_script:
+        missing.append("bootstrap_script:news-grasp-bootstrap.ps1")
+
+    has_no_window = any(
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "subprocess"
+        and node.attr == "CREATE_NO_WINDOW"
+        for node in ast.walk(tree)
+    )
+    if not has_no_window:
+        missing.append("subprocess.CREATE_NO_WINDOW")
+
     runner_args: list[str] = []
     bootstrap_args: list[str] = []
-    if tree is not None:
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Assign) or not any(
-                isinstance(target, ast.Name) and target.id == "extra"
-                for target in node.targets
-            ):
-                continue
-            if not isinstance(node.value, ast.IfExp):
-                continue
-            if isinstance(node.value.body, ast.List):
-                runner_args = [
-                    str(item.value)
-                    for item in node.value.body.elts
-                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
-                ]
-            if isinstance(node.value.orelse, ast.List):
-                bootstrap_args = [
-                    str(item.value)
-                    for item in node.value.orelse.elts
-                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
-                ]
-            break
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or not any(
+            isinstance(target, ast.Name) and target.id == "extra"
+            for target in node.targets
+        ):
+            continue
+        if not isinstance(node.value, ast.IfExp) or not _is_runner_mode_test(node.value.test):
+            continue
+        runner_args = _string_sequence(node.value.body)
+        bootstrap_args = _string_sequence(node.value.orelse)
+        break
+
+    def _option_value(arguments: list[str], option: str) -> str:
+        try:
+            index = arguments.index(option)
+        except ValueError:
+            return ""
+        return arguments[index + 1] if index + 1 < len(arguments) else ""
+
     required_runner_args = [
         "-Start",
         "-UseProductionRuntime",
@@ -428,13 +492,24 @@ def _task_launcher_source_contract(path: Path) -> dict:
         missing.append("runner_args:UseProductionRuntime+ScheduledTaskName")
     if not all(item in bootstrap_args for item in required_bootstrap_args):
         missing.append("bootstrap_args:UseProductionRuntime+ScheduledTaskName")
+    expected_bootstrap_options = {
+        "-PollSeconds": "1",
+        "-TimeoutMinutes": "2",
+        "-StateFile": "ng-smoke-state.json",
+        "-LogDir": "ng-smoke-logs",
+    }
+    for option, expected in expected_bootstrap_options.items():
+        if _option_value(bootstrap_args, option) != expected:
+            missing.append(f"bootstrap_args:{option}={expected}")
     return {
         "ok": not missing,
         "reason": "" if not missing else "task_launcher_contract_invalid",
         "missing_tokens": missing,
-        "timeout_minutes": 2,
-        "state_file": "ng-smoke-state.json",
-        "log_dir": "ng-smoke-logs",
+        "modes": sorted(mode_choices),
+        "missing_modes": missing_modes,
+        "timeout_minutes": _safe_int(_option_value(bootstrap_args, "-TimeoutMinutes")),
+        "state_file": _option_value(bootstrap_args, "-StateFile"),
+        "log_dir": _option_value(bootstrap_args, "-LogDir"),
     }
 
 
@@ -1132,15 +1207,15 @@ def verify_live_runner_readiness(
         and isinstance(runner_start, int)
         and bootstrap_start < runner_start
     )
-    bootstrap_pre_run_ok = bool(
+    bootstrap_definition_ok = bool(
         bootstrap_smoke_contract_ok
         and bootstrap_state_ok
-        and bootstrap_last_result_ok
         and bootstrap_trigger_ok
         and bootstrap_next_run_ok
         and bootstrap_missed_runs_ok
         and bootstrap_before_runner
     )
+    bootstrap_pre_run_ok = bool(bootstrap_definition_ok and bootstrap_last_result_ok)
     runner_schedule_ok = bool(
         runner_state_ok
         and runner_trigger_ok
@@ -1157,14 +1232,16 @@ def verify_live_runner_readiness(
         and bootstrap_action_contract["task_launcher_mode_ok"]
         and task_launcher_ready
     )
-    task_ok = bool(
+    task_definition_ok = bool(
         runner_schedule_ok
         and runner_action_contract["is_production_start"]
-        and bootstrap_pre_run_ok
+        and bootstrap_definition_ok
         and (launcher_runner_ready or legacy_direct_runner_ready)
     )
+    task_ok = bool(task_definition_ok and bootstrap_last_result_ok)
     result["scheduled_task"] = {
         "ok": task_ok,
+        "definition_ok": task_definition_ok,
         "task_name": task_name,
         "action_summary": action_summary,
         "state": task_details.get("state"),
@@ -1212,6 +1289,8 @@ def verify_live_runner_readiness(
         "bootstrap_action_log_dir": bootstrap_action_contract["log_dir"],
         "bootstrap_action_timeout_minutes": bootstrap_action_contract["timeout_minutes"],
         "bootstrap_before_runner": bootstrap_before_runner,
+        "bootstrap_definition_ok": bootstrap_definition_ok,
+        "bootstrap_last_observation_ok": bootstrap_last_result_ok,
         "bootstrap_repairs_before_run": bootstrap_pre_run_ok,
     }
     if not task_ok:
@@ -1265,7 +1344,7 @@ def verify_live_runner_readiness(
             reason = "bootstrap_task_next_run_missing"
         elif runner_targets_runner and not bootstrap_missed_runs_ok:
             reason = "bootstrap_task_missed_runs"
-        elif runner_targets_runner and not bootstrap_last_result_ok:
+        elif bootstrap_definition_ok and not bootstrap_last_result_ok:
             reason = "bootstrap_task_last_result_not_ok"
         elif runner_targets_runner and not bootstrap_before_runner:
             reason = "bootstrap_task_not_before_runner"
@@ -1273,6 +1352,13 @@ def verify_live_runner_readiness(
             reason = "scheduled_task_launcher_required"
         else:
             reason = "scheduled_task_target_mismatch"
+        result["next_run_readiness"] = {
+            "ok": False,
+            "status": "not_ready",
+            "reasonCode": reason,
+            "taskDefinitionStatus": "ready" if task_definition_ok else "not_ready",
+            "bootstrapObservationStatus": "green" if bootstrap_last_result_ok else "red",
+        }
         return {**result, "reason": reason}
 
     if run_canary:

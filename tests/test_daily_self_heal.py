@@ -2580,7 +2580,20 @@ def test_verify_live_runner_readiness_rejects_direct_bootstrap_without_task_laun
     assert result["scheduled_task"]["runner_action_is_production_start"] is True
 
 
-def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(monkeypatch, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("bootstrap_last_result", "expected_ok", "expected_reason"),
+    [
+        (0, True, ""),
+        (1, False, "bootstrap_task_last_result_not_ok"),
+    ],
+)
+def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(
+    monkeypatch,
+    tmp_path: Path,
+    bootstrap_last_result: int,
+    expected_ok: bool,
+    expected_reason: str,
+) -> None:
     """pythonw task launcher の mode 契約を検証し、正規の 06:00/05:55 action を受理する。"""
     repo_ops = tmp_path / "scripts" / "ops"
     live_bin = tmp_path / "bin"
@@ -2588,7 +2601,16 @@ def test_verify_live_runner_readiness_accepts_pythonw_task_launcher_contract(mon
     live_bin.mkdir(parents=True)
     runner_with_interlock = _runner_with_pre_run_interlock_source()
     launcher_source = """
-parser.add_argument("mode", choices=("runner", "bootstrap", "converge-runtime"))
+parser.add_argument(
+    "mode",
+    choices=(
+        "runner",
+        "bootstrap",
+        "converge-runtime",
+        "maintain-runtime",
+        "scheduled-equivalent-nopublish",
+    ),
+)
 script = bin_dir / "news-grasp-bootstrap.ps1"
 extra = [
     "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
@@ -2618,7 +2640,7 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             "state": "Ready",
             "action_summary": f'pythonw.exe "{live_launcher}" {mode}',
             "triggers": [{"enabled": True, "start_boundary": f"2026-06-20T{start}"}],
-            "last_task_result": 0,
+            "last_task_result": bootstrap_last_result if mode == "bootstrap" else 0,
             "next_run_time": f"2026-06-21T{start}",
             "number_of_missed_runs": 0,
         }
@@ -2636,10 +2658,66 @@ creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         run_canary=True,
     )
 
-    assert result["ok"] is True
+    assert result["ok"] is expected_ok
+    assert result["reason"] == expected_reason
+    assert result["scheduled_task"]["definition_ok"] is True
+    assert result["scheduled_task"]["bootstrap_last_observation_ok"] is (
+        bootstrap_last_result == 0
+    )
     assert result["scheduled_task"]["targets_live_task_launcher"] is True
     assert result["scheduled_task"]["bootstrap_targets_live_task_launcher"] is True
     assert result["scheduled_task"]["bootstrap_action_is_smoke_test"] is True
+
+
+def test_task_launcher_contract_accepts_current_registered_multimode_launcher() -> None:
+    """現在のstable launcherを、整形済みsource文字列ではなくAST mode契約で受理する。"""
+    launcher = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "ops"
+        / "news-grasp-task-launcher.pyw"
+    )
+
+    result = dsh._task_launcher_source_contract(launcher)
+
+    assert result["ok"] is True
+    assert set(result["modes"]) >= {
+        "runner",
+        "bootstrap",
+        "converge-runtime",
+        "maintain-runtime",
+        "scheduled-equivalent-nopublish",
+    }
+
+
+def test_task_launcher_contract_rejects_mode_decoy_without_bootstrap(tmp_path: Path) -> None:
+    """コメント相当の文字列decoyがあっても、AST choicesにbootstrapがなければ拒否する。"""
+    launcher = tmp_path / "news-grasp-task-launcher.pyw"
+    launcher.write_text(
+        '''
+mode_decoy = 'choices=("runner","bootstrap","converge-runtime","maintain-runtime","scheduled-equivalent-nopublish")'
+parser.add_argument(
+    "mode",
+    choices=("runner", "converge-runtime", "maintain-runtime", "scheduled-equivalent-nopublish"),
+)
+script = bin_dir / "news-grasp-bootstrap.ps1"
+extra = [
+    "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Runner",
+] if args.mode == "runner" else [
+    "-Start", "-UseProductionRuntime", "-ScheduledTaskName", "News-Grasp Bootstrap",
+    "-SmokeTest", "-SkipSourceSync", "-PollSeconds", "1", "-TimeoutMinutes", "2",
+    "-StateFile", "ng-smoke-state.json", "-LogDir", "ng-smoke-logs",
+]
+creationflags = subprocess.CREATE_NO_WINDOW
+''',
+        encoding="utf-8",
+    )
+
+    result = dsh._task_launcher_source_contract(launcher)
+
+    assert result["ok"] is False
+    assert result["reason"] == "task_launcher_contract_invalid"
+    assert "bootstrap" in result["missing_modes"]
 
 
 def test_verify_live_runner_readiness_rejects_legacy_tombstone_as_canonical_success(

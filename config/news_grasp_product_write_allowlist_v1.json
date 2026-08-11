@@ -74,7 +74,9 @@
     "tools/news_grasp_constitution.py",
     "tools/news_grasp_mission_authority.py",
     "tools/news_grasp_task_packet.py",
-    "tools/news_grasp_convergence.py"
+    "tools/news_grasp_convergence.py",
+    "tools/daily_self_heal.py",
+    "tests/test_daily_self_heal.py"
   ],
   "acceptanceBindings": [
     {
