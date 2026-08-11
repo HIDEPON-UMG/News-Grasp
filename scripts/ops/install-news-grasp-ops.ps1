@@ -58,6 +58,58 @@ function Assert-NewsGraspAssetInstallDestination {
     Assert-NewsGraspNoReparsePath -Path (Split-Path -Parent $canonicalDestination) -Boundary $canonicalBin
 }
 
+function Resolve-NewsGraspWorkspaceHarnessRoot {
+    param([Parameter(Mandatory = $true)][string] $StartPath)
+    $candidate = Get-NewsGraspCanonicalPath -Path $StartPath
+    for ($depth = 0; $depth -lt 6; $depth += 1) {
+        if (
+            (Test-Path -LiteralPath (Join-Path $candidate 'tools\harness\task_model_routing.py') -PathType Leaf) -and
+            (Test-Path -LiteralPath (Join-Path $candidate 'docs\harness\high_cost_model_routes_v1.json') -PathType Leaf)
+        ) {
+            return $candidate
+        }
+        $parent = Split-Path -Parent $candidate
+        if (-not $parent -or (Test-NewsGraspSamePath -Left $parent -Right $candidate)) { break }
+        $candidate = Get-NewsGraspCanonicalPath -Path $parent
+    }
+    throw 'NEWS_GRASP_SHARED_HARNESS_ROOT_UNAVAILABLE'
+}
+
+function Assert-NewsGraspSharedBrokerGeneration {
+    param([Parameter(Mandatory = $true)][string] $ResolvedRepoDir)
+    $brokerPath = Join-Path $env:USERPROFILE 'bin\ai-model-spawn-broker.py'
+    $brokerBoundary = Join-Path $env:USERPROFILE 'bin'
+    if (-not (Test-Path -LiteralPath $brokerPath -PathType Leaf)) {
+        throw 'NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT'
+    }
+    $workspaceRoot = Resolve-NewsGraspWorkspaceHarnessRoot -StartPath $ResolvedRepoDir
+    $brokerFile = Read-NewsGraspVerifiedFile `
+        -Path $brokerPath `
+        -TrustedBoundary $brokerBoundary `
+        -MaxBytes 262144 `
+        -RequireSingleLink
+    $brokerText = [Text.Encoding]::UTF8.GetString($brokerFile.Bytes)
+    $bindings = @(
+        [ordered]@{ name = 'HIGH_COST_CONTROL_SHA256'; path = 'tools\harness\high_cost_control_v2.py' },
+        [ordered]@{ name = 'ROUTE_REGISTRY_SHA256'; path = 'docs\harness\high_cost_model_routes_v1.json' },
+        [ordered]@{ name = 'TASK_MODEL_ROUTING_SHA256'; path = 'tools\harness\task_model_routing.py' },
+        [ordered]@{ name = 'RUNTIME_ASSET_COMPATIBILITY_SHA256'; path = 'tools\harness\codex_runtime_asset_compatibility.py' }
+    )
+    foreach ($binding in $bindings) {
+        $sourcePath = Join-Path $workspaceRoot ([string]$binding.path)
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            throw 'NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT'
+        }
+        $actualHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $pattern = '(?ms)' + [regex]::Escape([string]$binding.name) + '\s*=\s*\(\s*"([0-9a-f]{64})"\s*\)'
+        $match = [regex]::Match($brokerText, $pattern)
+        if (-not $match.Success -or $match.Groups[1].Value.ToLowerInvariant() -ne $actualHash) {
+            throw 'NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT'
+        }
+    }
+    return $true
+}
+
 function Resolve-NewsGraspRepoDir {
     param([string] $Override)
     if ($Override) {
@@ -435,6 +487,8 @@ foreach ($asset in $automationAssetRows) {
     $asset.installPath = Assert-NewsGraspAssetRelativePath ([string]$asset.installPath)
 }
 $TaskPythonwPath = Resolve-NewsGraspTaskPythonw -Override $TaskPythonwPath -ResolvedRepoDir $RepoDir
+$null = Assert-NewsGraspSharedBrokerGeneration `
+    -ResolvedRepoDir $RepoDir
 $ops = Join-Path $RepoDir 'scripts\ops'
 $installTrustedBoundary = (Resolve-Path -LiteralPath $env:USERPROFILE).Path
 $canonicalBinDir = Join-Path $installTrustedBoundary 'bin'

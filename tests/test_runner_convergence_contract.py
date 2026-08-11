@@ -2958,6 +2958,16 @@ def test_ops_installer_allows_clean_evidence_generation_transition() -> None:
     assert "NEWS_GRASP_EVIDENCE_REPO_GENERATION_DRIFT" in installer
 
 
+def test_ops_installer_preflights_shared_broker_generation_before_mutation() -> None:
+    """共有broker/routing driftはproduct runtimeへ触れる前にdeferする。"""
+    installer = (OPS_DIR / "install-news-grasp-ops.ps1").read_text(encoding="utf-8-sig")
+    assert "function Assert-NewsGraspSharedBrokerGeneration" in installer
+    assert "NEWS_GRASP_SHARED_BROKER_GENERATION_DRIFT" in installer
+    preflight = installer.index("Assert-NewsGraspSharedBrokerGeneration `\n    -ResolvedRepoDir $RepoDir")
+    mutation = installer.index("$script:InstallationMutationStarted = $true")
+    assert preflight < mutation
+
+
 def test_install_guard_dynamically_rejects_noncanonical_runtime_root_source(tmp_path: Path) -> None:
     canonical_repo = tmp_path / "canonical"
     legacy_repo = tmp_path / "legacy"
